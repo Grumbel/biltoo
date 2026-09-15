@@ -2,6 +2,34 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-948-crop-draft-freeze-before-mode.** Crop sample freeze before m_cropMode (root race).
+Prior: **947**.
+
+### Analysis (code facts)
+1. `m_cropMode` is set **after** `installFullImageForCrop` (chrome timing).
+2. Prior freeze helpers required `m_cropMode` → **false during the entire draft
+   attach window** → PathRaster/ladder/`finishAsyncHostRematerialize` could still
+   install (soft↔full).
+3. KEEP path required `hasAppliedContentXform`; live colour grade often has
+   applied empty until 180ms commit → forced soft rebuild on graded images.
+
+### Fix
+- `m_cropDraftSampleFrozen` + `m_cropDraftPath` set at identity lock (before prepare)
+- Lock helpers key off freeze, not `m_cropMode`
+- KEEP accepts live grade when display is already large and matches colour
+- Clear freeze in `clearCropModeState` / prepare fail
+
+### Apply
+```bash
+git pull /path/to/biltoo-948-crop-draft-freeze-before-mode.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-947-crop-draft-freeze.** Crop draft freezes sample; no soft demote on graded full-frame.
 Prior: **946**.
 

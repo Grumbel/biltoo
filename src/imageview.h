@@ -2001,6 +2001,14 @@ private:
     SessionImageId m_cropTargetId = kInvalidSessionImageId;
     /** Non-owning; ImageItem is not a QObject so QPointer is unavailable. */
     ImageItem *m_cropTargetItem = nullptr;
+    /**
+     * Sample freeze for the crop draft. Set when the subject is locked (before
+     * m_cropMode / before any draft install). Cleared on leave/fail.
+     * Install/ladder/rematerialize must key off this — not m_cropMode alone —
+     * because m_cropMode is intentionally false until after the first draft attach.
+     */
+    bool m_cropDraftSampleFrozen = false;
+    QString m_cropDraftPath;
     /** Draft may extend outside the image; apply pads with background. */
     bool m_cropAllowExpand = false;
     /** Draft crop rotation (degrees, about m_cropRect centre). */

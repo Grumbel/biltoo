@@ -340,6 +340,14 @@ bool ImageView::enterCropModeFromUi()
     // Lock identity for the whole crop session (IDENTITY.md).
     m_cropTargetItem = item;
     m_cropTargetId = item->sessionId();
+    // Freeze sample installs immediately — before prepare attaches the draft.
+    // m_cropMode stays false until after the first draft attach (chrome timing);
+    // freeze must not wait on m_cropMode or ladder/async can land in between.
+    m_cropDraftSampleFrozen = true;
+    m_cropDraftPath = item->path();
+    if (m_pathRaster && !m_cropDraftPath.isEmpty()) {
+        m_pathRaster->cancel(m_cropDraftPath);
+    }
     // m_cropMode is set only after the full-frame draft is installed (see
     // prepareCropModeFullImage / end of this function). Setting it earlier
     // painted one frame of crop chrome on the still-cropped bake.
@@ -377,6 +385,8 @@ bool ImageView::enterCropModeFromUi()
             viewport()->setUpdatesEnabled(true);
         }
         m_cropMode = false; // prepare may have set it for fitItem then failed
+        m_cropDraftSampleFrozen = false;
+        m_cropDraftPath.clear();
         m_cropEnterValid = false;
         m_cropEnterSource = QImage();
         if (m_cropHadStashedPlacement) {
@@ -467,7 +477,7 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
 
 bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 {
-    if (!m_cropMode || !item) {
+    if (!m_cropDraftSampleFrozen || !item) {
         return false;
     }
     if (m_cropTargetItem && item == m_cropTargetItem) {
@@ -477,8 +487,7 @@ bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
         && item->sessionId() == m_cropTargetId) {
         return true;
     }
-    if (!m_cropTargetItem && !item->path().isEmpty()
-        && isCropDraftLockedPath(item->path())) {
+    if (!item->path().isEmpty() && isCropDraftLockedPath(item->path())) {
         return true;
     }
     return false;
@@ -486,8 +495,12 @@ bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 
 bool ImageView::isCropDraftLockedPath(const QString &path) const
 {
-    if (!m_cropMode || path.isEmpty()) {
+    if (!m_cropDraftSampleFrozen || path.isEmpty()) {
         return false;
+    }
+    // Prefer the path captured at lock time — survives item pointer churn.
+    if (!m_cropDraftPath.isEmpty() && path == m_cropDraftPath) {
+        return true;
     }
     if (m_cropTargetItem && m_cropTargetItem->path() == path) {
         return true;
@@ -540,15 +553,28 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     }
     const ContentXform::Value wantX = ContentXform::Value::fromState(contentOnly);
     const bool hadPriorCrop = haveApp && app && app->hasCrop && !app->cropRect.isEmpty();
+    const bool needGeomBake = contentOnly.contentHFlip || contentOnly.contentVFlip
+        || contentOnly.contentQuarterTurns != 0;
+    const bool needColor = !contentOnly.colorAdjust.isIdentity();
 
-    // Already showing full-frame orient+grade (no crop bake): keep high-res
-    // pixels. Rebuilding a soft graded stand-in was the soft↔full thrash source
-    // when colour grade forced a lower-res materialize on enter.
-    if (!hadPriorCrop && item->hasDisplayPixels()
-        && item->hasAppliedContentXform()
+    // Full-frame already on the item (no crop bake): keep those pixels.
+    // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
+    // Accept either matching applied xform, or live grade (no applied yet) when
+    // the painted sample is already large enough.
+    const bool appliedOk = item->hasAppliedContentXform()
         && !item->appliedContentXform().hasCrop
+        && ContentXform::equal(item->appliedContentXform(), wantX);
+    const bool liveGradeOk = !item->hasAppliedContentXform()
+        && !needGeomBake
+        && item->colorAdjustments().brightness == contentOnly.colorAdjust.brightness
+        && item->colorAdjustments().contrast == contentOnly.colorAdjust.contrast
+        && item->colorAdjustments().saturation == contentOnly.colorAdjust.saturation
+        && item->colorAdjustments().hue == contentOnly.colorAdjust.hue
+        && item->colorAdjustments().invert == contentOnly.colorAdjust.invert
+        && qFuzzyCompare(item->colorAdjustments().gamma, contentOnly.colorAdjust.gamma);
+    if (!hadPriorCrop && item->hasDisplayPixels()
         && !item->sessionHasCrop()
-        && ContentXform::equal(item->appliedContentXform(), wantX)
+        && (appliedOk || liveGradeOk)
         && item->displayPixelLongEdge() >= ContentXform::kGuiMaterializeMaxEdge) {
         item->setItemRotation(0.0);
         item->setItemShear(0.0);
@@ -594,9 +620,6 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     // ≤2048 sample without the 512 materialize clamp.
     QImage sample = full;
     SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
-    const bool needGeomBake = contentOnly.contentHFlip || contentOnly.contentVFlip
-        || contentOnly.contentQuarterTurns != 0;
-    const bool needColor = !contentOnly.colorAdjust.isIdentity();
     constexpr int kCropDraftMaxEdge = 2048;
     if (needGeomBake
         && ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
@@ -1536,6 +1559,8 @@ void ImageView::clearCropModeState()
     m_cropStashedPlacementRotation = 0.0;
     m_cropStashedPlacementShear = 0.0;
     m_cropMode = false;
+    m_cropDraftSampleFrozen = false;
+    m_cropDraftPath.clear();
     m_cropShowingFullImage = false;
     m_cropAwaitingFullPath.clear();
     m_cropEnterValid = false;
