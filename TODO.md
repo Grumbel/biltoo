@@ -2,22 +2,21 @@
 
 ## Status (2026-09-15)
 
-**Tip: biltoo-974-filmstrip-surface-tick-rename.** Rename filmstrip recovery tick.
-Prior: **973**.
+**Tip: biltoo-975-filmstrip-surface-tick-rename.** Filmstrip recovery tick rename (+ comment).
+Prior: **973**. (974 artifact may lack one comment fix; prefer **975** full stack.)
 
 ### Change
 - `ThumbnailBar::qualityWatchdogTick` → `filmstripSurfaceTick`
-- Timer local → `filmstripSurfaceTimer`
-
-Naming matches ImageView `slideshowPhaseSurfaceTick` / Gallery soft recovery:
-surface evaluate only, not DisplayQuality InstallHostBetter.
+- Timer → `filmstripSurfaceTimer`
+- Stale comment updated
 
 ### Apply
 ```bash
-git pull /path/to/biltoo-974-filmstrip-surface-tick-rename.bundle HEAD
+git pull /path/to/biltoo-975-filmstrip-surface-tick-rename.bundle HEAD
 ```
 
 ---
+
 
 # TODO / agent handoff
 
