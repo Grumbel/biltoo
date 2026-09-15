@@ -756,6 +756,19 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     if (m_slideshowProgressActive) {
         return;
     }
+    // Crop draft owns the live sample — do not replace with ladder soft/store want.
+    if (m_cropMode) {
+        if (m_cropTargetItem && m_cropTargetItem->path() == path) {
+            return;
+        }
+        if (m_cropTargetId != kInvalidSessionImageId) {
+            if (ImageItem *cur = imageModeItemForPath(path)) {
+                if (cur->sessionId() == m_cropTargetId) {
+                    return;
+                }
+            }
+        }
+    }
 
     bool displayReady = false;
     const QImage pixels = resolveImageModePendingPixels(path, preview, &displayReady);
@@ -2288,6 +2301,20 @@ bool ImageView::tryInstallImageModeSampleBaked(const QString &path, const QImage
     // Name is historical: @p image is host-raw. installDisplayPixels materializes.
     if (!isImageMode() || path.isEmpty() || image.isNull()) {
         return false;
+    }
+    // Crop session: draft sample is owned by installFullImageForCrop. Ladder /
+    // PathRaster must not reinstall (store want still has crop → wrong bake).
+    if (m_cropMode) {
+        if (m_cropTargetItem && m_cropTargetItem->path() == path) {
+            return false;
+        }
+        if (m_cropTargetId != kInvalidSessionImageId) {
+            if (ImageItem *cur = imageModeItemForPath(path)) {
+                if (cur->sessionId() == m_cropTargetId) {
+                    return false;
+                }
+            }
+        }
     }
     if (ImageItem *cur = imageModeItemForPath(path)) {
         if (canAcceptDisplaySample(cur, image, kind)) {

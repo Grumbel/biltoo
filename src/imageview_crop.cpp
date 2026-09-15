@@ -522,28 +522,41 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     // Interactive crop draft: orient-only full frame (never prior crop bake).
     // MUST use materializeDisplay for orient — do NOT attach raw + bakeRotate90.
     //
-    // Quality: identity orient needs no CPU bake — keep host resolution (cap
-    // 2048 for GUI memory). Only clamp to kGuiMaterializeMaxEdge when flips/
-    // turns must run on the GUI thread (that was the blur on crop enter).
+    // Quality:
+    // - Identity orient/colour: keep host resolution (cap 2048 for GUI memory).
+    // - Geom bake (flip/turns): materializeDisplay on GUI only ≤ kGuiMaterializeMaxEdge.
+    // - Colour-only: do NOT force 512 Soft just because grade is set — that made
+    //   the quality watchdog InstallHostBetter every second (soft↔full thrash).
+    //   Apply grade via applyColorAdjustments on a ≤2048 sample instead.
     QImage sample = full;
     SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
-    const bool needBake =
-        SessionAppearance::hasContentAppearance(contentOnly)
-        || !contentOnly.colorAdjust.isIdentity();
-    if (needBake
+    const bool needGeomBake = contentOnly.contentHFlip || contentOnly.contentVFlip
+        || contentOnly.contentQuarterTurns != 0;
+    const bool needColor = !contentOnly.colorAdjust.isIdentity();
+    constexpr int kCropDraftMaxEdge = 2048;
+    if (needGeomBake
         && ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
         sample = ImageCache::clampToMaxEdge(
             sample, ContentXform::kGuiMaterializeMaxEdge);
         kind = SessionAppearance::PixelKind::SoftPreview;
-    } else if (!needBake
-               && ImageCache::longEdge(sample) > 2048) {
-        sample = ImageCache::clampToMaxEdge(sample, 2048);
+    } else if (!needGeomBake
+               && ImageCache::longEdge(sample) > kCropDraftMaxEdge) {
+        sample = ImageCache::clampToMaxEdge(sample, kCropDraftMaxEdge);
         kind = SessionAppearance::PixelKind::SoftPreview;
     }
 
     QImage display;
-    if (unorientedSource) {
+    if (unorientedSource && needGeomBake) {
         display = SessionAppearance::materializeDisplay(sample, contentOnly, kind);
+        if (display.isNull()) {
+            display = sample;
+        }
+    } else if (unorientedSource && needColor) {
+        // Colour only — avoid materializeDisplay size clamp to 512.
+        display = applyColorAdjustments(sample, contentOnly.colorAdjust);
+        if (display.isNull()) {
+            display = sample;
+        }
     } else {
         display = sample;
     }

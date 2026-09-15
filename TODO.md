@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-946-crop-grade-no-thrash.** Crop + colour grade no longer soft↔full every second.
+Prior: **945**.
+
+### Cause
+Colour grade made crop enter `needBake` → SoftPreview ≤512. Image-mode display-quality
+watchdog (1s) saw host better and kept trying install/climb. Soft ladder / pending-tile
+paths could also reinstall store want (still has crop) over the orient-only draft.
+
+### Fix
+- Skip quality watchdog installs while `m_cropMode`
+- Reject tryInstall / pending-tile for crop target path
+- Colour-only crop enter: grade on ≤2048 sample (not forced 512 materialize)
+
+### Apply
+```bash
+git pull /path/to/biltoo-946-crop-grade-no-thrash.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-945-gallery-grade-no-double.** Gallery colour grade was double-applied via setSourceImage.
 Prior: **944**.
 

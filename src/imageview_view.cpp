@@ -1660,7 +1660,9 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 void ImageView::displayQualityWatchdogTick()
 {
     // Image-mode canvas: host better than painted, or LQIP while climbing to soft+.
-    if (isImageMode()) {
+    // Crop draft owns the target sample (orient-only full frame). Soft 512 stand-in
+    // + multi-MP host would InstallHostBetter every tick and thrash soft↔full.
+    if (isImageMode() && !m_cropMode) {
         ImageItem *item = primaryItem();
         if (item && !item->path().isEmpty()) {
             const QString path = item->path();
