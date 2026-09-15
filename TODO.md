@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-927-duplicate-no-cache-pollute.** Duplicate copies display-ready pixels; never ImageCache::put of bake.
+Prior: **926**.
+
+### Problem
+`duplicateSelected` used `createItemFromImage(path, sourceImage(), false)`.
+`sourceImage()` is already content-baked display. createItemFromImage then
+`ImageCache::put` that bake as host → path-keyed cache pollution and later
+materialize double-applies crop on rematerialize from cache.
+
+### Fix
+Build the new tile with `attachDisplaySample` of the current display pixels and
+store want. Never put the bake into ImageCache. Soft-only sources use SoftPreview.
+
+### Apply
+```bash
+git pull /path/to/biltoo-927-duplicate-no-cache-pollute.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-926-workspace-restore-rematerialize.** Workspace restore rematerializes when full host reload fails.
 Prior: **925**.
 

@@ -530,43 +530,56 @@ void ImageView::duplicateSelected()
 
     m_scene->clearSelection();
     for (ImageItem *src : sources) {
-        // Copy current displayed pixels as-is (no second session-crop pass).
-        // Value copy of current pixels + appearance (not a shared reference).
-        ImageItem *copy = createItemFromImage(src->path(), src->sourceImage(),
-                                              /*applyStoredSessionCrop=*/false);
-        if (!copy) {
+        // Display-ready copy of current pixels — never createItemFromImage with
+        // sourceImage/preview: that ImageCache::put's baked samples as host.
+        QImage display = src->sourceImage();
+        SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
+        if (display.isNull()) {
+            display = src->previewImage();
+            kind = SessionAppearance::PixelKind::SoftPreview;
+        }
+        if (display.isNull()) {
+            display = src->displayImage();
+            kind = SessionAppearance::PixelKind::SoftPreview;
+        }
+        if (display.isNull()) {
             continue;
         }
-        // Preserve source logical size (createItem uses path layout; crop
-        // duplicates must keep the cropped item size).
-        {
-            const QSize sz = src->imageSize();
-            if (sz.isValid() && sz.width() > 1 && sz.height() > 1) {
-                copy->setIntrinsicSize(sz);
+
+        WorkspaceItemState content;
+        if (src->sessionId() != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *app = m_appearance.get(src->sessionId())) {
+                content = *app;
             }
         }
-        copy->setContentHFlip(src->contentHFlip());
-        copy->setContentVFlip(src->contentVFlip());
-        copy->setSessionCrop(src->sessionHasCrop(), src->sessionCropRect());
-        // Non-destructive colour grade must be on the live item immediately so
-        // the duplicate tile matches the source before session-id bind.
-        copy->setColorAdjustments(src->colorAdjustments());
-        // Stage full content appearance (incl. cropRotation + colorAdjust) for the new session id.
-        {
-            WorkspaceItemState content;
-            if (src->sessionId() != kInvalidSessionImageId) {
-                if (const WorkspaceItemState *app = m_appearance.get(src->sessionId())) {
-                    content = *app;
-                }
-            }
-            content.path = src->path();
-            content.hasCrop = src->sessionHasCrop();
-            content.cropRect = src->sessionCropRect();
-            content.contentHFlip = src->contentHFlip();
-            content.contentVFlip = src->contentVFlip();
-            content.colorAdjust = src->colorAdjustments();
-            m_pendingItemAppearance.insert(copy, content);
+        content.path = src->path();
+        content.hasCrop = src->sessionHasCrop();
+        content.cropRect = src->sessionCropRect();
+        content.contentHFlip = src->contentHFlip();
+        content.contentVFlip = src->contentVFlip();
+        content.colorAdjust = src->colorAdjustments();
+        if (src->hasAppliedContentXform()
+            && !SessionAppearance::hasContentAppearance(content)) {
+            ContentXform::Value x = src->appliedContentXform();
+            x.applyToState(content);
         }
+
+        QSize intrinsic = src->imageSize();
+        if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {
+            const QSize native = layoutSizeForPath(src->path(), QImage());
+            intrinsic = ContentXform::layoutSize(native, content);
+        }
+        if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {
+            intrinsic = display.size();
+        }
+
+        auto *copy = new ImageItem(src->path(), intrinsic);
+        applyItemModeFlags(copy);
+        m_scene->addItem(copy);
+        m_items.append(copy);
+        // Attach already-baked display; do not put into ImageCache.
+        attachDisplaySample(copy, display, content, kind);
+        m_pendingItemAppearance.insert(copy, content);
         if (isWorkspaceMode()) {
             copy->setItemScale(src->itemScaleX(), src->itemScaleY());
             copy->setItemShear(src->itemShear());
