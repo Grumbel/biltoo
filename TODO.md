@@ -2,6 +2,33 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-960-slideshow-phase-decide.** Slideshow phase recovery via decide.
+Prior: **959**.
+
+### Change
+- `displayQualityWatchdogTick` (slideshow only): phase from/to buffers driven by
+  `DisplaySurface::decide` (identity xform). No `checkSurface` InstallHostBetter.
+- Attach / async → `scheduleSlideshowPhaseBufferUpgrade`; climb → PathRaster
+  EscalateToFull.
+
+### DisplaySurface install coverage
+Image · Gallery · Filmstrip · Workspace · Slideshow phases — all decide-based.
+
+### Next
+**961** SurfaceId bind/unbind lifecycle, or remove unused DisplayQuality
+verdict call sites / tests.
+
+### Apply
+```bash
+git pull /path/to/biltoo-960-slideshow-phase-decide.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-959-gallery-decide-only-dq-docs.** Gallery soft tick decide-only; DQ docs.
 Prior: **958**.
 

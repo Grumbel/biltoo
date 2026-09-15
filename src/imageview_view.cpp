@@ -1659,36 +1659,50 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 
 void ImageView::displayQualityWatchdogTick()
 {
-    // ImageFocus: never. DisplaySurface::decide is driven by rasterImproved,
-    // tryInstall, and zoom/resize climb — not this timer.
+    // ImageFocus: never. Slideshow phase buffers only, while a transition is live.
+    // Policy: DisplaySurface::decide (identity xform — phase buffers are oriented
+    // host samples, not session crop tiles).
     if (!m_slideshowProgressActive) {
         return;
     }
 
-    auto checkPhase = [this](const QString &path, int shownEdge, const char *tag) {
+    auto drivePhase = [this](const QString &path, int shownEdge) {
         if (path.isEmpty()) {
             return;
         }
         const int target = slideshowTargetEdge();
-        const DisplayQuality::Check dq =
-            DisplayQuality::checkSurface(path, shownEdge, target, false);
-        if (dq.verdict == DisplayQuality::Verdict::InstallHostBetter) {
+        DisplaySurface::State ds;
+        ds.needEdge = target;
+        ds.haveDisplayEdge = shownEdge;
+        ds.hostLongEdge = DisplayQuality::hostLongEdge(path);
+        ds.climbPending =
+            m_pathRaster && m_pathRaster->isClimbPending(path);
+        if (shownEdge > 0) {
+            ds.attachedKind = (shownEdge >= (target * 9) / 10)
+                ? DisplaySurface::AttachedKind::FullSource
+                : DisplaySurface::AttachedKind::SoftPreview;
+        }
+        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        using AT = DisplaySurface::ActionType;
+        if (act.type == AT::None) {
+            return;
+        }
+        if (act.type == AT::AttachSoft || act.type == AT::AttachFull
+            || act.type == AT::ScheduleAsyncMaterialize) {
             const QImage host = ImageCache::get(path);
             if (!host.isNull()) {
                 scheduleSlideshowPhaseBufferUpgrade(path, host);
             }
-            DisplayQuality::reportViolation(tag, path, dq, false);
-        } else if (dq.verdict == DisplayQuality::Verdict::StuckWeak) {
-            DisplayQuality::reportViolation(tag, path, dq, /*assertHard=*/false);
-            if (m_pathRaster) {
-                m_pathRaster->ensure(
-                    path, slideshowTargetEdge(), logicalSizeForPath(path),
-                    PathRasterService::ClimbPolicy::EscalateToFull);
-            }
+            return;
+        }
+        if (act.type == AT::ScheduleClimb && m_pathRaster) {
+            m_pathRaster->ensure(
+                path, target, logicalSizeForPath(path),
+                PathRasterService::ClimbPolicy::EscalateToFull);
         }
     };
-    checkPhase(m_ssFromPath, ImageCache::longEdge(m_ssFromImage), "slideshow-from");
-    checkPhase(m_ssToPath, ImageCache::longEdge(m_ssToImage), "slideshow-to");
+    drivePhase(m_ssFromPath, ImageCache::longEdge(m_ssFromImage));
+    drivePhase(m_ssToPath, ImageCache::longEdge(m_ssToImage));
 }
 
 
