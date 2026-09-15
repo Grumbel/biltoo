@@ -15,8 +15,10 @@ class DisplaySurfaceTest : public QObject
 
 private slots:
     void decide_frozen_alwaysNone();
-    void decide_fullSourceEqualWant_ignoresLargeHost();
+    void decide_fullSourceEqualWant_cropSettled_none();
+    void decide_fullSourcePreferCachePlateau_climb();
     void decide_softEqualWant_largeHost_asyncOnly();
+    void decide_softEqualWant_overviewHost_shortNeed_climb();
     void decide_softEqualWant_guiHost_attachFull();
     void decide_softEqualWant_noHost_climb();
     void decide_blank_noHost_climb();
@@ -56,9 +58,10 @@ void DisplaySurfaceTest::decide_frozen_alwaysNone()
     QCOMPARE(DisplaySurface::decide(s).type, ActionType::None);
 }
 
-void DisplaySurfaceTest::decide_fullSourceEqualWant_ignoresLargeHost()
+void DisplaySurfaceTest::decide_fullSourceEqualWant_cropSettled_none()
 {
-    // Root cause of the 1s crop pulse: host 4000 vs shown crop 200.
+    // Crop pulse root cause: host 4000 vs post-crop shown 200, but host already
+    // covers need — FullSource matching want is settled (no soft demote).
     State s;
     s.want = cropXform();
     s.applied = cropXform();
@@ -67,6 +70,21 @@ void DisplaySurfaceTest::decide_fullSourceEqualWant_ignoresLargeHost()
     s.hostLongEdge = 4000;
     s.needEdge = 2048;
     QCOMPARE(DisplaySurface::decide(s).type, ActionType::None);
+}
+
+void DisplaySurfaceTest::decide_fullSourcePreferCachePlateau_climb()
+{
+    // Stuck at PreferCache overview (1024) while viewport need is higher.
+    State s;
+    s.want = identityXform();
+    s.applied = identityXform();
+    s.attachedKind = AttachedKind::FullSource;
+    s.haveDisplayEdge = 1024;
+    s.hostLongEdge = 1024;
+    s.needEdge = 2048;
+    const DisplaySurface::Action a = DisplaySurface::decide(s);
+    QCOMPARE(a.type, ActionType::ScheduleClimb);
+    QCOMPARE(a.climbNeedEdge, 2048);
 }
 
 void DisplaySurfaceTest::decide_softEqualWant_largeHost_asyncOnly()
@@ -79,6 +97,20 @@ void DisplaySurfaceTest::decide_softEqualWant_largeHost_asyncOnly()
     s.hostLongEdge = 4000;
     s.needEdge = 2048;
     QCOMPARE(DisplaySurface::decide(s).type, ActionType::ScheduleAsyncMaterialize);
+}
+
+void DisplaySurfaceTest::decide_softEqualWant_overviewHost_shortNeed_climb()
+{
+    State s;
+    s.want = identityXform();
+    s.applied = identityXform();
+    s.attachedKind = AttachedKind::SoftPreview;
+    s.haveDisplayEdge = 1024;
+    s.hostLongEdge = 1024;
+    s.needEdge = 2048;
+    const DisplaySurface::Action a = DisplaySurface::decide(s);
+    QCOMPARE(a.type, ActionType::ScheduleClimb);
+    QCOMPARE(a.climbNeedEdge, 2048);
 }
 
 void DisplaySurfaceTest::decide_softEqualWant_guiHost_attachFull()

@@ -2,23 +2,27 @@
 
 ## Status (2026-09-15)
 
-**Tip: biltoo-976-display-surface-workline-complete.** DisplaySurface install work line closed.
-Prior: **975**.
+**Tip: biltoo-977-decide-climb-past-prefercache-1024.** Fix stuck-at-1024 via decide needEdge.
+Prior: **976**.
 
-### Summary
-Install-policy rewrite complete (953–975). No further tips required for the
-crop quality pulse / watchdog removal / decide architecture unless a **new**
-failure is observed.
+### Bug
+`decide()` treated FullSource matching want as always settled, ignoring
+`needEdge`. PreferCache overview (1024) installed as FullSource never climbed
+to viewport need (2048+).
+
+### Fix
+- FullSource + equal want + need unmet: **None** only if host already covers
+  need (crop settled). If host also short of need → **ScheduleClimb**.
+- Soft matching want with overview host short of need → **ScheduleClimb**.
+- Crop case preserved: large host covering need, small post-crop have → None.
 
 ### Apply
 ```bash
-git pull /path/to/biltoo-976-display-surface-workline-complete.bundle HEAD
+git pull /path/to/biltoo-977-decide-climb-past-prefercache-1024.bundle HEAD
 ```
 
-### Next
-Do **not** auto-continue polish. Wait for user bug report or a new task.
-
 ---
+
 
 
 

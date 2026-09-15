@@ -5,11 +5,26 @@
 
 namespace DisplaySurface {
 
+namespace {
+
+/** Match ImageView coversEdge (9/10). */
+bool coversNeed(int haveLongEdge, int needEdge)
+{
+    if (needEdge <= 0) {
+        return true;
+    }
+    if (haveLongEdge <= 0) {
+        return false;
+    }
+    return haveLongEdge >= (needEdge * 9) / 10;
+}
+
+} // namespace
+
 Action decide(const State &s)
 {
     Action a;
 
-    // Crop draft / explicit hold: no replace, no climb, no async.
     if (s.frozen) {
         a.type = ActionType::None;
         return a;
@@ -19,18 +34,31 @@ Action decide(const State &s)
     const bool hasHost = s.hostLongEdge > 0;
     const int climbNeed =
         s.needEdge > 0 ? s.needEdge : ContentXform::kGuiMaterializeMaxEdge;
+    const bool needUnmet = !coversNeed(s.haveDisplayEdge, s.needEdge);
+    const bool hostCoversNeed = hasHost && coversNeed(s.hostLongEdge, s.needEdge);
 
-    // Settled FullSource matching store want. Host edge is pre-crop; display
-    // edge is post-crop — never treat host ≫ shown as InstallHostBetter.
+    // FullSource matching want: never soft-demote via host≫shown (crop pulse).
+    // PreferCache plateau (host and have both ~1024 while need is 2048+) must
+    // still ScheduleClimb — host does not cover need.
+    // Crop case: host covers need, post-crop have is small → None (settled).
     if (s.attachedKind == AttachedKind::FullSource && xformEqual) {
-        a.type = ActionType::None;
+        if (!needUnmet || hostCoversNeed) {
+            a.type = ActionType::None;
+            return a;
+        }
+        if (s.climbPending) {
+            a.type = ActionType::None;
+            return a;
+        }
+        a.type = ActionType::ScheduleClimb;
+        a.climbNeedEdge = climbNeed;
         return a;
     }
 
-    // Soft stand-in already matches want: only escalate to full, never re-soft.
+    // Soft matching want: escalate host / need.
     if (s.attachedKind == AttachedKind::SoftPreview && xformEqual) {
         if (!hasHost) {
-            if (s.climbPending) {
+            if (s.climbPending || !needUnmet) {
                 a.type = ActionType::None;
                 return a;
             }
@@ -39,19 +67,37 @@ Action decide(const State &s)
             return a;
         }
         if (s.hostLongEdge > ContentXform::kGuiMaterializeMaxEdge) {
+            // PreferCache overview still short of need → climb, not only async.
+            if (needUnmet && !hostCoversNeed) {
+                if (s.climbPending) {
+                    a.type = ActionType::None;
+                    return a;
+                }
+                a.type = ActionType::ScheduleClimb;
+                a.climbNeedEdge = climbNeed;
+                return a;
+            }
             a.type = ActionType::ScheduleAsyncMaterialize;
             return a;
         }
-        // Host fits GUI thread materialize — one full bake if it can improve.
         if (s.hostLongEdge > s.haveDisplayEdge) {
             a.type = ActionType::AttachFull;
+            return a;
+        }
+        if (needUnmet && !hostCoversNeed) {
+            if (s.climbPending) {
+                a.type = ActionType::None;
+                return a;
+            }
+            a.type = ActionType::ScheduleClimb;
+            a.climbNeedEdge = climbNeed;
             return a;
         }
         a.type = ActionType::None;
         return a;
     }
 
-    // Blank tile or appearance changed (applied != want).
+    // Blank or appearance changed.
     if (!hasHost) {
         if (s.climbPending) {
             a.type = ActionType::None;
@@ -63,13 +109,9 @@ Action decide(const State &s)
     }
 
     if (s.hostLongEdge > ContentXform::kGuiMaterializeMaxEdge) {
-        // Multi-MP: soft stand-in now if nothing matches want yet, then async full.
         if (s.attachedKind == AttachedKind::None || !xformEqual) {
             if (s.attachedKind == AttachedKind::None || s.haveDisplayEdge <= 0
                 || !xformEqual) {
-                // Prefer visible soft immediately when blank; async alone is
-                // correct when soft already shows a *stale* xform (controller
-                // will soft-rematerialize then async in a later phase).
                 if (s.attachedKind == AttachedKind::None || s.haveDisplayEdge <= 0) {
                     a.type = ActionType::AttachSoft;
                     return a;
@@ -99,7 +141,6 @@ DisplaySurface::SurfaceId DisplaySurfaceController::bind(DisplaySurface::Kind ki
     b.path = path;
     b.sessionId = sessionId;
     b.generation = m_generationClock++;
-    b.state = DisplaySurface::State{};
     m_byId.insert(b.id, b);
     return b.id;
 }
@@ -107,11 +148,6 @@ DisplaySurface::SurfaceId DisplaySurfaceController::bind(DisplaySurface::Kind ki
 void DisplaySurfaceController::unbind(DisplaySurface::SurfaceId id)
 {
     m_byId.remove(id);
-}
-
-void DisplaySurfaceController::unbindAll()
-{
-    m_byId.clear();
 }
 
 DisplaySurface::Binding *DisplaySurfaceController::mutableBinding(
