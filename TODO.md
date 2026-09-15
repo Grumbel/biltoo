@@ -2,6 +2,30 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-901-crop-apply-fit-no-stretch.** Apply crop: fitItem must not use draft layout under m_cropMode.
+Prior: **900**.
+
+### Bug
+After Crop Apply, one frame (or sticky) stretched the crop bake into the
+pre-crop contentRect. `leaveCropModeInternal` calls `applyCropCommit` →
+`fitItem` **while `m_cropMode` is still true**. `fitItem` treated any
+`m_cropMode` as draft and forced orient-only full intrinsic on crop pixels.
+
+### Fix
+- `fitItem` cropDraft = `m_cropMode && !applied.hasCrop && !sessionHasCrop`
+- Apply: hold viewport paints; layout size before pixel attach
+
+### Apply
+```bash
+git pull /path/to/biltoo-901-crop-apply-fit-no-stretch.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-900-action-help-texts.** Seed whatsThis for remaining commands; drop Help placeholder.
 Prior: **899**.
 

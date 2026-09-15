@@ -1331,10 +1331,17 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // m_source is set (setPreviewImage no-op). Clear first so the crop bake
         // replaces full-frame pixels — otherwise canvas stretches full into the
         // crop box and filmstrip gets img=full (cropApply with uncropped pixels).
+        //
+        // Hold viewport paints across clear → layout → pixels → fit so the view
+        // never composites crop pixels into the pre-crop contentRect (or the
+        // reverse). fitItem still runs under m_cropMode; it must not treat Apply
+        // as draft (see fitItem cropDraft).
+        const bool holdPaint = viewport() && viewport()->updatesEnabled();
+        if (holdPaint) {
+            viewport()->setUpdatesEnabled(false);
+        }
         item->clearDecodedPixels();
-        const auto pixelKind = multiMp ? SessionAppearance::PixelKind::SoftPreview
-                                       : SessionAppearance::PixelKind::FullSource;
-        attachDisplaySample(item, display, st, pixelKind);
+        // Geometry before pixels: empty item with crop intrinsic, then bake.
         applyContentLayoutSize(item, st);
         {
             const QSize isz = item->imageSize();
@@ -1345,6 +1352,9 @@ bool ImageView::applyCropCommit(ImageItem *item)
                 item->setIntrinsicSize(QSize(qMax(1, qRound(cropW)), qMax(1, qRound(cropH))));
             }
         }
+        const auto pixelKind = multiMp ? SessionAppearance::PixelKind::SoftPreview
+                                       : SessionAppearance::PixelKind::FullSource;
+        attachDisplaySample(item, display, st, pixelKind);
         // Restore enter placement scale if something else mutated it during draft.
         if (m_cropEnterValid && m_cropEnterState.scale > 1e-6) {
             const qreal sx = m_cropEnterState.scale;
@@ -1366,6 +1376,10 @@ bool ImageView::applyCropCommit(ImageItem *item)
             fitItem(item, currentFitAspectMode());
         } else if (isGalleryMode()) {
             applyLayout(GalleryPackReason::ContentChange);
+        }
+        if (holdPaint) {
+            viewport()->setUpdatesEnabled(true);
+            viewport()->update();
         }
 
         commitItemSessionEdit(item);

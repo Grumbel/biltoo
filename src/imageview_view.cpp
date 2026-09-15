@@ -3461,13 +3461,18 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     // (docs/CROP_MODE.md). wantAppearance still has the stored crop — using it
     // here collapsed intrinsic to the old crop box right after enter (Image
     // mode calls fitItem; Workspace does not — that is why Workspace worked).
-    // Crop draft (m_cropMode or applied orient-only): never layoutSize with
-    // store crop — that collapses the full-frame draft to the old crop box.
+    // Crop draft: never layoutSize with store crop — that collapses the
+    // full-frame draft to the old crop box.
+    //
+    // Critical: m_cropMode stays true through applyCropCommit → fitItem, *after*
+    // the crop bake is attached. Treating any m_cropMode as draft forced
+    // orient-only layout on top of crop pixels → stretch into the pre-crop
+    // contentRect. Only pure draft (no applied crop, no session crop on the
+    // item) is draft geometry.
     const bool cropDraft =
         m_cropMode
-        || (item->hasAppliedContentXform()
-            && !item->appliedContentXform().hasCrop
-            && item->sessionHasCrop() == false);
+        && !(item->hasAppliedContentXform() && item->appliedContentXform().hasCrop)
+        && !item->sessionHasCrop();
     if (!path.isEmpty() && !item->sessionHasCrop() && !cropDraft) {
         const QSize fileNative = ensureLogicalSizeForPath(path);
         if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
