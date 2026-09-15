@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-970-apply-display-surface-action.** Shared Action executor.
+Prior: **969**.
+
+### Change
+- `applyDisplaySurfaceAction`: single path for ScheduleClimb / ScheduleAsyncMaterialize
+  / AttachSoft / AttachFull (soft→async re-eval included).
+- Wired: onImagePreviewLoaded, ensureWorkspaceQualityClimb, driveImageFocusSurface,
+  gallery soft tick.
+
+### Apply
+```bash
+git pull /path/to/biltoo-970-apply-display-surface-action.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-969-slideshow-phase-surface-ids.** Slideshow from/to phase SurfaceIds.
 Prior: **968**.
 

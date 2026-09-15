@@ -1591,34 +1591,18 @@ void ImageView::ensureWorkspaceQualityClimb()
                 ? m_displaySurfaces.evaluate(sid)
                 : DisplaySurface::decide(
                       displaySurfaceStateForItem(ii, -1, pending));
-        using AT = DisplaySurface::ActionType;
-        if (act.type == AT::None) {
-            continue;
-        }
-        if (act.type == AT::ScheduleAsyncMaterialize) {
-            scheduleAsyncHostRematerialize(
-                path, ii->sessionId(),
-                wantAppearanceForItem(ii, ii->sessionId()));
-            continue;
-        }
-        if (act.type == AT::ScheduleClimb
-            || act.type == AT::AttachSoft
-            || act.type == AT::AttachFull) {
-            const int needEdge =
-                (sid != DisplaySurface::kInvalidSurfaceId
-                 && m_displaySurfaces.binding(sid))
-                    ? m_displaySurfaces.binding(sid)->state.needEdge
-                    : itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
-            const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : needEdge;
-            if (need > 0) {
-                m_pathRaster->ensure(path, need, logicalSizeForPath(path),
-                                     PathRasterService::ClimbPolicy::EscalateToFull);
-            }
-            if (m_pathRaster->isGaveUp(path)
-                && !coversEdge(ii->displayPixelLongEdge(),
-                               need > 0 ? need : needEdge)) {
-                scheduleImageModeNativeDecodeOnce(path);
-            }
+        const int needEdge =
+            (sid != DisplaySurface::kInvalidSurfaceId
+             && m_displaySurfaces.binding(sid))
+                ? m_displaySurfaces.binding(sid)->state.needEdge
+                : itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
+        (void)applyDisplaySurfaceAction(
+            ii, act, QImage(), needEdge,
+            PathRasterService::ClimbPolicy::EscalateToFull);
+        if (act.type != DisplaySurface::ActionType::None
+            && m_pathRaster->isGaveUp(path)
+            && !coversEdge(ii->displayPixelLongEdge(), needEdge)) {
+            scheduleImageModeNativeDecodeOnce(path);
         }
     }
 }
@@ -1704,55 +1688,11 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         DisplaySurface::State ds =
             displaySurfaceStateForItem(item, incoming, climbPending);
         const DisplaySurface::Action act = DisplaySurface::decide(ds);
-        using AT = DisplaySurface::ActionType;
-        if (act.type == AT::None) {
-            continue;
-        }
-        if (act.type == AT::ScheduleClimb) {
-            if (m_pathRaster) {
-                const auto pol = isWorkspaceMode()
-                    ? PathRasterService::ClimbPolicy::EscalateToFull
-                    : PathRasterService::ClimbPolicy::SoftDisplay;
-                m_pathRaster->ensure(
-                    path, act.climbNeedEdge > 0 ? act.climbNeedEdge : ds.needEdge,
-                    logicalSizeForPath(path), pol);
-            }
-            continue;
-        }
-        if (act.type == AT::ScheduleAsyncMaterialize) {
-            scheduleAsyncHostRematerialize(
-                path, item->sessionId(),
-                wantAppearanceForItem(item, item->sessionId()));
-            continue;
-        }
-        if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
-            const auto kind = (act.type == AT::AttachSoft)
-                ? SessionAppearance::PixelKind::SoftPreview
-                : SessionAppearance::PixelKind::FullSource;
-            const QSize before = item->imageSize();
-            installDisplayPixels(item, image, kind, item->sessionId());
-            if (item->imageSize() != before) {
-                gallerySizeChanged = true;
-            }
-            item->update();
-            if (m_scene) {
-                m_scene->update(item->sceneBoundingRect());
-            }
-            // Multi-MP content: soft attach then async full in one delivery.
-            if (act.type == AT::AttachSoft) {
-                DisplaySurface::State ds2 = ds;
-                ds2.attachedKind = DisplaySurface::AttachedKind::SoftPreview;
-                ds2.haveDisplayEdge = item->displayPixelLongEdge();
-                if (item->hasAppliedContentXform()) {
-                    ds2.applied = item->appliedContentXform();
-                }
-                const DisplaySurface::Action again = DisplaySurface::decide(ds2);
-                if (again.type == AT::ScheduleAsyncMaterialize) {
-                    scheduleAsyncHostRematerialize(
-                        path, item->sessionId(),
-                        wantAppearanceForItem(item, item->sessionId()));
-                }
-            }
+        const auto pol = isWorkspaceMode()
+            ? PathRasterService::ClimbPolicy::EscalateToFull
+            : PathRasterService::ClimbPolicy::SoftDisplay;
+        if (applyDisplaySurfaceAction(item, act, image, ds.needEdge, pol)) {
+            gallerySizeChanged = true;
         }
     }
     if (gallerySizeChanged && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
@@ -2670,58 +2610,11 @@ void ImageView::driveImageFocusSurface()
                                                           : m_currentSessionId;
     }
 
-    using AT = DisplaySurface::ActionType;
-    switch (action.type) {
-    case AT::None:
-        break;
-    case AT::ScheduleClimb: {
-        if (!m_pathRaster) {
-            break;
-        }
-        const int edge =
-            action.climbNeedEdge > 0 ? action.climbNeedEdge
-                                     : cappedDisplayEdgeForPath(path, 0);
-        m_pathRaster->ensure(path, edge, logicalSizeForPath(path),
-                             PathRasterService::ClimbPolicy::EscalateToFull);
-        break;
-    }
-    case AT::ScheduleAsyncMaterialize: {
-        const WorkspaceItemState want = wantAppearanceForItem(item, sid);
-        scheduleAsyncHostRematerialize(path, sid, want);
-        break;
-    }
-    case AT::AttachSoft:
-    case AT::AttachFull: {
-        const QImage host = ImageCache::get(path);
-        if (host.isNull()) {
-            break;
-        }
-        const auto kind = (action.type == AT::AttachSoft)
-            ? SessionAppearance::PixelKind::SoftPreview
-            : SessionAppearance::PixelKind::FullSource;
-        if (canAcceptDisplaySample(item, host, kind)) {
-            installImageModeSampleInPlace(item, path, host, kind);
-        }
-        // After soft stand-in on multi-MP content, evaluate again for async full.
-        if (action.type == AT::AttachSoft) {
-            syncImageFocusSurfaceState();
-            const DisplaySurface::Action again =
-                m_displaySurfaces.evaluate(m_imageFocusSurface);
-            if (again.type == AT::ScheduleAsyncMaterialize) {
-                const WorkspaceItemState want = wantAppearanceForItem(item, sid);
-                scheduleAsyncHostRematerialize(path, sid, want);
-            } else if (again.type == AT::ScheduleClimb && m_pathRaster) {
-                m_pathRaster->ensure(
-                    path,
-                    again.climbNeedEdge > 0 ? again.climbNeedEdge
-                                            : cappedDisplayEdgeForPath(path, 0),
-                    logicalSizeForPath(path),
-                    PathRasterService::ClimbPolicy::EscalateToFull);
-            }
-        }
-        break;
-    }
-    }
+    Q_UNUSED(sid);
+    (void)applyDisplaySurfaceAction(
+        item, action, QImage(),
+        cappedDisplayEdgeForPath(path, 0),
+        PathRasterService::ClimbPolicy::EscalateToFull);
 }
 
 void ImageView::registerItemDisplaySurface(ImageItem *item)

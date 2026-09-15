@@ -782,41 +782,29 @@ void ImageView::gallerySoftWatchdogTick()
                 st.have = qMax(st.have, hostEdge);
             }
             st.weakSinceMs = 0;
-        } else if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
-            const QImage host = ImageCache::get(path);
-            if (!host.isNull()) {
-                const auto kind = (act.type == AT::AttachSoft)
-                    ? SessionAppearance::PixelKind::SoftPreview
-                    : SessionAppearance::PixelKind::FullSource;
-                installDisplayPixels(item, host, kind, item->sessionId());
-                if (m_scene) {
-                    m_scene->update(item->sceneBoundingRect());
-                }
-                st.have = qMax(st.have, hostEdge);
+        } else {
+            const auto pol =
+                (target > ThumtooCache::kBatchOverviewEdge)
+                    ? PathRasterService::ClimbPolicy::EscalateToFull
+                    : PathRasterService::ClimbPolicy::SoftDisplay;
+            if (act.type == AT::ScheduleClimb) {
+                clearGallerySoftInflight(st);
+            }
+            const bool sizeChanged =
+                applyDisplaySurfaceAction(item, act, QImage(), target, pol);
+            if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
                 ++repaired;
+                Q_UNUSED(sizeChanged);
             }
-            st.weakSinceMs = 0;
-        } else if (act.type == AT::ScheduleAsyncMaterialize) {
-            scheduleAsyncHostRematerialize(
-                path, item->sessionId(),
-                wantAppearanceForItem(item, item->sessionId()));
-            if (hostEdge > 0) {
-                st.have = qMax(st.have, hostEdge);
-            }
-            st.weakSinceMs = 0;
-        } else if (act.type == AT::ScheduleClimb) {
-            clearGallerySoftInflight(st);
-            if (m_pathRaster && !m_pathRaster->isGaveUp(path)) {
-                const auto pol =
-                    (target > ThumtooCache::kBatchOverviewEdge)
-                        ? PathRasterService::ClimbPolicy::EscalateToFull
-                        : PathRasterService::ClimbPolicy::SoftDisplay;
-                m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
-                if (m_pathRaster->isClimbPending(path)) {
+            if (act.type == AT::ScheduleClimb) {
+                scheduleGalleryDecode(path);
+                if (m_pathRaster && m_pathRaster->isClimbPending(path)) {
                     needWindow = true;
                 }
             }
-            scheduleGalleryDecode(path);
+            if (hostEdge > 0) {
+                st.have = qMax(st.have, hostEdge);
+            }
             st.weakSinceMs = 0;
         }
 

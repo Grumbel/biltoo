@@ -1371,6 +1371,16 @@ private:
                                                      int hostLongEdge = -1,
                                                      bool climbPending = false) const;
     /**
+     * Execute a DisplaySurface::Action for @p item (climb / async / attach).
+     * @p hostSample used for Attach*; empty → ImageCache::get(path).
+     * @return true if item layout size changed after attach.
+     */
+    bool applyDisplaySurfaceAction(ImageItem *item,
+                                   const DisplaySurface::Action &act,
+                                   const QImage &hostSample,
+                                   int fallbackNeedEdge,
+                                   PathRasterService::ClimbPolicy climbPolicy);
+    /**
      * If ImageCache has a sample with long edge ≤512, materializeDisplay
      * for @p want and attach to @p item. Returns true when attached.
      */
