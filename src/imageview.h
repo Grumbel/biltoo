@@ -122,6 +122,15 @@ public:
     };
 
     explicit ImageView(QWidget *parent = nullptr);
+
+    /**
+     * Optional filmstrip soft source for ←/→ pending tile. When set, prefer
+     * strip samples (and ImageCache) over size-probe LQIP alone.
+     */
+    using ImageModeSoftProvider =
+        std::function<QImage(const QString &path, SessionImageId sid, bool *displayReady)>;
+    void setImageModeSoftProvider(ImageModeSoftProvider provider);
+
     ~ImageView() override;
 
     bool loadImage(const QString &path);
@@ -1437,13 +1446,6 @@ private:
      * for @p path immediately (do not wait for the background decode).
      */
     void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
-    /**
-     * Optional filmstrip soft source for ←/→ pending tile. When set, prefer
-     * strip samples (and ImageCache) over size-probe LQIP alone.
-     */
-    using ImageModeSoftProvider =
-        std::function<QImage(const QString &path, SessionImageId sid, bool *displayReady)>;
-    void setImageModeSoftProvider(ImageModeSoftProvider provider);
     /** Bind Image-mode item to the current session cursor (id + index). */
     void bindImageModeSessionCursor(ImageItem *item);
     /** Neutral Image-mode pose (no Workspace free-form scale/rotation). */

@@ -2,6 +2,27 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-993-soft-provider-public-api.** Public soft-provider APIs for MainWindow.
+Prior: **992**.
+
+### Build error
+`setImageModeSoftProvider` / `sampleForImageModePending` were private; MainWindow
+could not call them.
+
+### Fix
+Declare both in the public section of the headers.
+
+### Apply
+```bash
+git pull /path/to/biltoo-993-soft-provider-public-api.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-992-prefs-mime-tree-check-crash.** Preferences default-apps checkbox crash.
 Prior: **991**.
 

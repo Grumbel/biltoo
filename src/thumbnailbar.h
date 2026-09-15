@@ -95,6 +95,15 @@ public:
     ~ThumbnailBar() override;
 
     void setFiles(const QStringList &files);
+
+    /**
+     * Best in-process sample for Image-mode ←/→ pending tile (shared with
+     * ImageCache + filmstrip icons). Session-id override → display-ready;
+     * path icon / ImageCache → host-raw. Prefer over LQIP when the strip
+     * already decoded the cell.
+     */
+    QImage sampleForImageModePending(const QString &path, SessionImageId sid,
+                                     bool *displayReadyOut = nullptr) const;
     /**
      * Atomic session list update: install ids before rebuilding rows so
      * scheduleThumbnailLoads never pairs a row with a stale session id
@@ -254,14 +263,6 @@ private:
     int labelBandHeight() const;
     int thumbSizeFromBarExtent(int extent) const;
     QImage makeThumbnail(const QString &path, int maxSize) const;
-    /**
-     * Best in-process sample for Image-mode ←/→ pending tile (shared with
-     * ImageCache + filmstrip icons). Session-id override → display-ready;
-     * path icon / ImageCache → host-raw. Prefer over LQIP when the strip
-     * already decoded the cell.
-     */
-    QImage sampleForImageModePending(const QString &path, SessionImageId sid,
-                                     bool *displayReadyOut = nullptr) const;
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
     /** Physical pixel edge for decode/prepare (logical thumb × devicePixelRatio). */
     int thumbDecodePixels() const;
