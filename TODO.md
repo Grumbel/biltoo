@@ -2,6 +2,32 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-936-gallery-enter-no-premature-pack.** Cold Gallery enter does not pack previous-mode tiles.
+Prior: **935**.
+
+### Problem
+`enterGalleryMode` called `enterGallery` then `populateGalleryCanvas`.
+`GalleryController::enter` always `applyLayout` on whatever live items existed
+(Image single tile / Workspace free-form poses). That painted a random wrong
+layout for a moment; cold cache made it worse while size-resolve deferred the
+real pack. Then `setWorkspacePaths` / finish size-resolve packed correctly.
+
+### Fix
+- Pack in `enter` only for layout-switch or restash return from Image.
+- Cold enter (no stash): `clearLiveCanvas` after prepare so nothing paints until
+  `populateGalleryCanvas` → `setWorkspacePaths` / `finishGallerySizeResolve`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-936-gallery-enter-no-premature-pack.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-935-ground-truth-status.** Install invariant closed; handoff notes for next work.
 Prior: **934**.
 

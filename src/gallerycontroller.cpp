@@ -254,11 +254,12 @@ void GalleryController::enter(int packagedLayoutInt)
     // Returning from Image: reattach cached tiles before packing.
     // Hold paints until after applyLayout so crop-sized cells never show with
     // pre-crop pixels for a frame (peer sync + pack ordering).
-    const bool holdPaint = !layoutSwitch && !m_stashedItems.isEmpty();
+    const bool restoredStash = !layoutSwitch && !m_stashedItems.isEmpty();
+    const bool holdPaint = restoredStash;
     if (holdPaint && m_view->viewport()) {
         m_view->viewport()->setUpdatesEnabled(false);
     }
-    if (!layoutSwitch && !m_stashedItems.isEmpty()) {
+    if (restoredStash) {
         restoreStashedItems();
     }
 
@@ -297,8 +298,15 @@ void GalleryController::enter(int packagedLayoutInt)
         m_view->resetTransform();
         m_view->enableFitMode();  // layout-switch soft reset
     } else {
-        // Clear residual Image/Workspace view state before packing.
+        // Clear residual Image/Workspace view state. Drop previous-mode tiles
+        // when there is no Gallery stash to restore — otherwise the Image
+        // single-item (or free-form Workspace poses) remain visible until
+        // populateGalleryCanvas rebuilds, and used to be packed into a
+        // nonsense layout for a frame (cold open glitch).
         m_view->prepareGalleryCanvas();
+        if (!restoredStash) {
+            m_view->clearLiveCanvas();
+        }
     }
     m_view->setActiveMode(ImageView::ViewMode::Gallery, packagedLayout);
     if (!layoutSwitch) {
@@ -333,7 +341,16 @@ void GalleryController::enter(int packagedLayoutInt)
             m_view->pathOrder() = livePaths;
         }
     }
-    m_view->applyLayout(GalleryPackReason::EnterGallery);
+    // Pack now only when tiles already belong to this Gallery session:
+    // layout switch inside Gallery, or restash return from Image.
+    // Cold enter from Image/Workspace still holds the previous mode's tiles
+    // (or a single Image item). Packing those first paints a random/wrong
+    // layout until populateGalleryCanvas → setWorkspacePaths rebuilds —
+    // worst on cold cache while size-resolve runs. First pack is owned by
+    // setWorkspacePaths / finishGallerySizeResolve.
+    if (layoutSwitch || restoredStash) {
+        m_view->applyLayout(GalleryPackReason::EnterGallery);
+    }
 
     if (holdPaint && m_view->viewport()) {
         m_view->viewport()->setUpdatesEnabled(true);
