@@ -1659,10 +1659,13 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 
 void ImageView::displayQualityWatchdogTick()
 {
+    // Crop draft: one sample, frozen at enter. Quality climb must not run at all
+    // (not "gated install" — do not PathRaster::ensure / InstallHostBetter).
+    if (m_cropDraftSampleFrozen) {
+        return;
+    }
     // Image-mode canvas: host better than painted, or LQIP while climbing to soft+.
-    // Crop draft owns the target sample (orient-only full frame). Soft 512 stand-in
-    // + multi-MP host would InstallHostBetter every tick and thrash soft↔full.
-    if (isImageMode() && !m_cropMode) {
+    if (isImageMode()) {
         ImageItem *item = primaryItem();
         if (item && !item->path().isEmpty()) {
             const QString path = item->path();

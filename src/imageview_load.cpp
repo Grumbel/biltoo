@@ -1534,6 +1534,10 @@ void ImageView::ensureWorkspaceQualityClimb()
         if (path.isEmpty()) {
             continue;
         }
+        // Crop draft sample is frozen — do not escalate this path.
+        if (isCropDraftLockedPath(path)) {
+            continue;
+        }
         const int need = itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
         const int have = ii->displayPixelLongEdge();
         if (need <= 0 || coversEdge(have, need)) {

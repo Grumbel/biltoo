@@ -2,6 +2,34 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-951-crop-stop-quality-pulse.** Crop draft: quality watchdog off (no 1s pulse work).
+Prior: **950**.
+
+### Timed pulse (the actual 1s source)
+`ImageView` constructs `m_gallerySoftWatchdog` with **setInterval(1000)** and starts it permanently. Every tick it runs:
+1. `gallerySoftWatchdogTick()` if Gallery
+2. **`displayQualityWatchdogTick()` always**
+
+That is the only continuous ~1s pulse on the image canvas. Filmstrip has a separate 1500ms quality timer (strip only).
+
+During crop the image branch was skipped only when `m_cropMode` — still ran PathRaster ensure paths and slideshow checks. Now: **if `m_cropDraftSampleFrozen`, return immediately** — no InstallHostBetter, no PathRaster ensure.
+
+Workspace climb skips frozen paths.
+
+### One functional path for crop draft
+Enter → attach sample once → freeze → quality system does nothing → Apply/Cancel → unfreeze.
+
+### Apply
+```bash
+git pull /path/to/biltoo-951-crop-stop-quality-pulse.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-950-crop-apply-rematerialize-after-freeze.** Verification fix: Apply full bake after freeze clears.
 Prior: **949**.
 
