@@ -95,62 +95,10 @@ QImage clampSoftForGalleryCell(const QImage &pixels, int needEdge, int minEdge)
  * Must not run on the GUI — materialize + scale of multi-MP samples is the
  * ←/→ hitch when done in installDisplayPixels.
  */
-QImage prepareImageModeDisplaySample(const QString &path, QImage raw,
-                                     SessionAppearance::PixelKind kind,
-                                     const WorkspaceItemState *sessionApp = nullptr)
-{
-    ASSERT_NOT_GUI_THREAD();
-    if (raw.isNull()) {
-        return {};
-    }
-    // Host cache must stay unoriented (raw). Live rotate rematerializes from it.
-    if (!path.isEmpty()) {
-        ImageCache::put(path, raw);
-    }
-    WorkspaceItemState app;
-    // Session crop/flips are keyed by SessionImageId (m_appearance), not path.
-    // Gallery→Image must pass a snapshot; durable path store alone misses
-    // in-session crops that were never written to thumtoo.
-    if (sessionApp
-        && (SessionAppearance::hasContentAppearance(*sessionApp)
-            || !sessionApp->colorAdjust.isIdentity())) {
-        app = *sessionApp;
-    } else {
-        ThumtooCache::StoredContentAppearance stored;
-        if (ThumtooCache::loadContentAppearance(path, &stored)) {
-            app.contentHFlip = stored.contentHFlip;
-            app.contentVFlip = stored.contentVFlip;
-            app.contentQuarterTurns = stored.contentQuarterTurns;
-            app.hasCrop = stored.hasCrop;
-            app.cropRect = stored.cropRect;
-            app.cropSourceSize = stored.cropSourceSize;
-            app.cropRotation = stored.cropRotation;
-            if (stored.hasGrade) {
-                app.colorAdjust.brightness = stored.gradeBrightness;
-                app.colorAdjust.contrast =
-                    stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
-                app.colorAdjust.saturation =
-                    stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
-                app.colorAdjust.hue = stored.gradeHue;
-                app.colorAdjust.gamma = stored.gradeGamma <= 0
-                    ? 1.0
-                    : (stored.gradeGamma / 100.0);
-                app.colorAdjust.invert = stored.gradeInvert;
-            }
-        }
-    }
-    if (SessionAppearance::hasContentAppearance(app)
-        || !app.colorAdjust.isIdentity()) {
-        raw = SessionAppearance::materializeDisplay(raw, app, kind);
-    }
-    const int cap = (kind == SessionAppearance::PixelKind::SoftPreview)
-                        ? ThumtooCache::kGalleryLadderEdge
-                        : ThumtooCache::kImageLadderEdge;
-    if (ImageCache::longEdge(raw) > cap) {
-        raw = raw.scaled(cap, cap, Qt::KeepAspectRatio, Qt::FastTransformation);
-    }
-    return raw;
-}
+// prepareImageModeDisplaySample removed: workers must return host-raw only.
+// GUI installDisplayPixels is the sole materialize site (see CONTENT_PIPELINE
+// install invariant). Baking in the worker + put/materialize on the GUI
+// double-applied crop and polluted ImageCache with content-baked samples.
 
 /** Queue onImagePreviewLoaded on the GUI thread; no-op if @a guard is gone. */
 void queuePreviewLoaded(const QPointer<ImageView> &guard, const QString &path,
@@ -231,15 +179,17 @@ void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
                               static_cast<unsigned long long>(gen));
                 return;
             }
+            // Host-raw only. GUI installDisplayPixels materializes store want
+            // once (never bake here — that double-applied crop and polluted
+            // ImageCache when the GUI put the baked sample back under path).
             QImage preview = loadSoftPreviewPixels(path, softEdge);
             biltooLoadDbg("softJob DONE path=%s got=%dx%d",
                           qPrintable(QFileInfo(path).fileName()),
                           preview.width(), preview.height());
-            if (!preview.isNull()) {
-                preview = prepareImageModeDisplaySample(
-                    path, preview, SessionAppearance::PixelKind::SoftPreview,
-                    &sessionApp);
+            if (!preview.isNull() && !path.isEmpty()) {
+                ImageCache::put(path, preview);
             }
+            Q_UNUSED(sessionApp);
             queuePreviewLoaded(guard, path, preview, gen, roleInt);
         },
         2);
@@ -297,15 +247,17 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                     },
                     Qt::QueuedConnection);
             }
-            if (!image.isNull()) {
-                image = prepareImageModeDisplaySample(
-                    path, image, SessionAppearance::PixelKind::FullSource,
-                    &sessionApp);
+            // Host-raw only; GUI install materializes (soft stand-in + async
+            // for multi-MP). Do not bake here — same double-bake/cache pollution
+            // as the soft job.
+            if (!image.isNull() && !path.isEmpty()) {
+                ImageCache::put(path, image);
             }
             if (ImageCache::longEdge(image) > qualityEdge) {
                 image = image.scaled(qualityEdge, qualityEdge, Qt::KeepAspectRatio,
                                      Qt::FastTransformation);
             }
+            Q_UNUSED(sessionApp);
             queueImageLoaded(guard, path, image, gen, roleInt);
         },
         -1);
@@ -1484,46 +1436,10 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
                 qPrintable(QFileInfo(path).fileName()), req, image.width(),
                 image.height());
     }
-    // Ladder samples are raw (no session crop). Bake on a worker when needed —
-    // materializeDisplay must not run on the GUI for multi-MP.
-    const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
-    const bool needBake = SessionAppearance::hasContentAppearance(sessionApp)
-        || !sessionApp.colorAdjust.isIdentity();
-    if (needBake) {
-        const QPointer<ImageView> guard(this);
-        const quint64 gen = m_loadGeneration.load();
-        const SessionAppearance::PixelKind kind =
-            pixelKindForImageModeSample(path, image);
-        QThreadPool::globalInstance()->start(
-            [guard, path, image, sessionApp, gen, kind]() {
-                ImageView *view = guard.data();
-                if (!view || !view->matchesLoadGeneration(gen)) {
-                    return;
-                }
-                QImage baked = prepareImageModeDisplaySample(
-                    path, image, kind, &sessionApp);
-                if (baked.isNull()) {
-                    return;
-                }
-                // Capture expected path by value; resolve the view pointer on the
-                // GUI slot so classicPath() is not evaluated on a null QPointer
-                // (silences -Wnull-dereference on QString copy).
-                QTimer::singleShot(0, view, [guard, path, baked, gen, kind]() {
-                    ImageView *v = guard.data();
-                    if (!v || !v->matchesLoadGeneration(gen)) {
-                        return;
-                    }
-                    if (path != v->classicPath()) {
-                        return;
-                    }
-                    // Already prepared — do not bake again in tryInstall.
-                    (void)v->tryInstallImageModeSampleBaked(path, baked, kind);
-                });
-            },
-            1);
-        return;
-    }
-    // PathRasterService already recorded this delivery in onLadderReady.
+    // Ladder samples are host-raw. installDisplayPixels materializes want
+    // (soft stand-in ≤512 + async full for multi-MP). Never bake here and
+    // put the result into ImageCache — that double-applied crop.
+    Q_UNUSED(maxEdge);
     (void)tryInstallImageModeSample(path, image);
 }
 
@@ -2345,61 +2261,16 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
     if (!isImageMode() || path.isEmpty() || image.isNull()) {
         return false;
     }
+    // @p image is host-raw (soft job, ladder, quality job). Single materialize
+    // in installDisplayPixels — soft stand-in + async full when multi-MP want.
     const SessionAppearance::PixelKind kind = pixelKindForImageModeSample(path, image);
-    // Full/native/PreferCache samples must bake session crop on a worker.
-    // installDisplayPixels only materializes ≤512 on the GUI — larger raw
-    // installs were replacing a correctly cropped soft frame with an uncropped
-    // full frame (Gallery→Image crop "lost").
-    const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
-    const bool needBake = SessionAppearance::hasContentAppearance(sessionApp)
-        || !sessionApp.colorAdjust.isIdentity();
-    if (needBake && ImageCache::longEdge(image) > ThumtooCache::kGalleryLadderEdge) {
-        const QPointer<ImageView> guard(this);
-        const quint64 gen = m_loadGeneration.load();
-        const QImage raw = image;
-        QThreadPool::globalInstance()->start([guard, path, raw, kind, sessionApp, gen]() {
-            ASSERT_NOT_GUI_THREAD();
-            QImage baked = prepareImageModeDisplaySample(path, raw, kind, &sessionApp);
-            if (!guard || baked.isNull()) {
-                return;
-            }
-            QMetaObject::invokeMethod(
-                guard.data(),
-                [guard, path, baked, kind, gen]() {
-                    ImageView *const host = guard.data();
-                    if (!host || gen != host->m_loadGeneration.load()
-                        || !host->isImageMode() || path != host->classicPath()) {
-                        return;
-                    }
-                    (void)host->tryInstallImageModeSampleBaked(path, baked, kind);
-                },
-                Qt::QueuedConnection);
-        });
-        // Still climb using raw size (want/need), not blocked by bake.
-        if (ImageItem *cur = imageModeItemForPath(path)) {
-            const int incoming = ImageCache::longEdge(image);
-            const int painted = cur->displayPixelLongEdge();
-            const bool noUpgrade = incoming > 0 && painted > 0 && incoming <= painted;
-            if (kind == SessionAppearance::PixelKind::SoftPreview
-                || !sampleCoversNativeLogical(path, image)) {
-                if (!(noUpgrade && m_pathRaster && m_pathRaster->isGaveUp(path))) {
-                    ensureImageModeQualityClimb(path, image);
-                } else {
-                    const int need = imageModeOnScreenNeedEdge();
-                    if (need > painted) {
-                        scheduleImageModeNativeDecodeOnce(path);
-                    }
-                }
-            }
-        }
-        return true;
-    }
     return tryInstallImageModeSampleBaked(path, image, kind);
 }
 
 bool ImageView::tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
                                                SessionAppearance::PixelKind kind)
 {
+    // Name is historical: @p image is host-raw. installDisplayPixels materializes.
     if (!isImageMode() || path.isEmpty() || image.isNull()) {
         return false;
     }

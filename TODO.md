@@ -2,6 +2,32 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-923-host-only-decode-jobs.** Decode/soft jobs return host-raw; sole materialize is installDisplayPixels.
+Prior: **922**.
+
+### Problem
+Image soft/quality jobs and ladder upgrade baked session appearance on the
+worker, then `onImagePreviewLoaded` / `installDisplayPixels` put that bake into
+`ImageCache` and materialize()'d **again** → double crop and host cache pollution.
+
+### Fix
+- Soft + display-quality jobs: host-raw only (`ImageCache::put` unoriented).
+- Image ladder upgrade: host → `tryInstallImageModeSample` → install gate.
+- Remove `prepareImageModeDisplaySample` (worker bake helper).
+- Multi-MP want still uses soft stand-in + async full inside installDisplayPixels
+  (921 invariant). One materialize site.
+
+### Apply
+```bash
+git pull /path/to/biltoo-923-host-only-decode-jobs.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-922-pending-tile-display-ready.** Image ←/→ stash soft is display-ready only for same id + matching applied.
 Prior: **921**.
 
