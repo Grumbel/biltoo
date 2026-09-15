@@ -20,6 +20,7 @@
 | G10 | P0 | Slideshow `loadImage` / PreferCache after phase-from already at target edge | **Fixed 696** — no LoadReplace while slideshow session active |
 | G11 | P0 | Promote cleared dwell atlas → multi-MP `drawImage` every frame until rebuild | **Fixed 696** — transfer to-atlas on promote |
 | G12 | P1 | Slideshow atlas `FastTransformation` soft upscale looked nearest-neighbour | **Fixed 697** — SmoothTransformation on pool; smooth soft fallback |
+| G13 | P0 | `pathsNeedBackgroundExpand` + `canonicalImagePath` stat/exists on GUI before Indexing | **Fixed 903** — no isFile/isDir/isAvailable; absolute path only; expand off-GUI |
 
 ## Residual
 
@@ -29,6 +30,8 @@
 - `fillImageAnalysis` still on GUI when decodedHint is present (CPU only).
 - Image-mode settle still does one PreferCache climb after quiet; first soft frame
   uses async `update` while nav-hot (single-tap PreferCache ~80 ms later).
+- First `ThumtooCache::isAvailable()` still runs `Client::open` where first called
+  (worker during expand is preferred; avoid calling it on GUI for open gating).
 
 ## Image / slideshow nav (normative)
 
