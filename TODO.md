@@ -2,6 +2,31 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-985-workspace-export-high-res.** PNG/PDF/print use native host materialize.
+Prior: **984**.
+
+### Problem
+Workspace on-screen climb targets viewport footprint only (often Soft ≤512).
+Export PNG, PDF, and print used `QGraphicsScene::render` of those Soft samples,
+so output stayed low-res even at large export widths.
+
+### Fix
+- `blockingExportDisplayForItem`: off-GUI `ImageLoader::load` when host is soft/
+  short of native; `materializeDisplay` FullSource for crop/orient/grade
+- `paintHighResExportItems` + `renderExportImage` / Workspace `renderForPrint`
+- Image-mode print also uses the same high-res bake
+
+### Apply
+```bash
+git pull /path/to/biltoo-985-workspace-export-high-res.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-984-thumtoo-init-off-gui.** Client::open never on GUI thread.
 Prior: **983**.
 

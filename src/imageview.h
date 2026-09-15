@@ -1367,6 +1367,10 @@ private:
                                              SessionImageId sid = kInvalidSessionImageId) const;
     bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
                                  SessionAppearance::PixelKind kind) const;
+    /** Native host + materialize for PNG/PDF/print (off-GUI load). */
+    QImage blockingExportDisplayForItem(const ImageItem *item) const;
+    void paintHighResExportItems(QPainter *painter, const QRectF &sourceScene,
+                                 const QRectF &targetRect) const;
     DisplaySurface::State displaySurfaceStateForItem(const ImageItem *item,
                                                      int hostLongEdge = -1,
                                                      bool climbPending = false) const;

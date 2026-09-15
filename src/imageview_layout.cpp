@@ -36,6 +36,10 @@
 #include <QTimer>
 #include <QSet>
 #include <QThreadPool>
+#include <QMutex>
+#include <QWaitCondition>
+#include <memory>
+#include <algorithm>
 #include <QPointer>
 #include <QVector>
 #include <QDragEnterEvent>
@@ -2105,11 +2109,15 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
         return;
     }
 
-    if (isWorkspaceMode() && m_pageGuideVisible && m_scene) {
-        // Exact mapping: guide scene rect → page rect. KeepAspectRatio letterboxed
-        // when full-sheet guide and margin-only pageRect differed, shifting items.
-        const QRectF source = pageGuideSceneRect();
-        m_scene->render(painter, pageRect, source, Qt::IgnoreAspectRatio);
+    if (isWorkspaceMode() && m_scene) {
+        const QRectF source = (m_pageGuideVisible && pageGuideSceneRect().isValid())
+            ? pageGuideSceneRect()
+            : contentExportBounds();
+        if (!source.isValid() || source.isEmpty()) {
+            return;
+        }
+        // High-res materialize — same path as PNG export (not Soft scene samples).
+        paintHighResExportItems(painter, source, pageRect);
         return;
     }
 
@@ -2118,8 +2126,8 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
         if (!item) {
             item = targetItem();
         }
-        if (item && item->hasDecodedPixels()) {
-            const QImage &img = item->sourceImage();
+        if (item && !item->path().isEmpty()) {
+            const QImage img = blockingExportDisplayForItem(item);
             if (!img.isNull()) {
                 QSizeF fitted(img.size());
                 fitted.scale(pageRect.size(), Qt::KeepAspectRatio);
@@ -2133,6 +2141,7 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
                 painter->scale(item->itemHFlip() ? -1.0 : 1.0,
                                item->itemVFlip() ? -1.0 : 1.0);
                 painter->translate(-target.center());
+                painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
                 painter->drawImage(target, img);
                 painter->restore();
                 return;
@@ -2532,6 +2541,111 @@ QSizeF ImageView::nativeSize(const ImageItem *item)
 
 
 
+QImage ImageView::blockingExportDisplayForItem(const ImageItem *item) const
+{
+    if (!item || item->path().isEmpty()) {
+        return {};
+    }
+    const QString path = item->path();
+    const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
+    const QImage fallback = item->displayImage();
+
+    struct Shared {
+        QMutex mu;
+        QWaitCondition cv;
+        QImage out;
+        bool done = false;
+    };
+    auto shared = std::make_shared<Shared>();
+    QThreadPool::globalInstance()->start([path, want, shared]() {
+        ASSERT_NOT_GUI_THREAD();
+        QImage host = ImageCache::get(path);
+        const int hostEdge = ImageCache::longEdge(host);
+        bool needLoad = host.isNull();
+        if (!needLoad) {
+            const QSize cached = ThumtooCache::cachedSize(path);
+            if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
+                const int native = qMax(cached.width(), cached.height());
+                if (hostEdge * 10 < native * 9) {
+                    needLoad = true;
+                }
+            } else if (hostEdge > 0 && hostEdge <= ThumtooCache::kBatchOverviewEdge) {
+                needLoad = true;
+            }
+        }
+        if (needLoad) {
+            const QImage loaded = ImageLoader::load(path);
+            if (!loaded.isNull()) {
+                host = loaded;
+                ImageCache::put(path, loaded);
+            }
+        }
+        QImage display;
+        if (host.isNull()) {
+            display = {};
+        } else if (!SessionAppearance::hasContentAppearance(want)
+                   && want.colorAdjust.isIdentity()) {
+            display = host;
+        } else {
+            display = SessionAppearance::materializeDisplay(
+                host, want, SessionAppearance::PixelKind::FullSource);
+        }
+        QMutexLocker lock(&shared->mu);
+        shared->out = display;
+        shared->done = true;
+        shared->cv.wakeOne();
+    });
+    QMutexLocker lock(&shared->mu);
+    while (!shared->done) {
+        shared->cv.wait(&shared->mu);
+    }
+    return shared->out.isNull() ? fallback : shared->out;
+}
+
+void ImageView::paintHighResExportItems(QPainter *painter, const QRectF &sourceScene,
+                                        const QRectF &targetRect) const
+{
+    if (!painter || !sourceScene.isValid() || !targetRect.isValid()) {
+        return;
+    }
+    QList<ImageItem *> ordered = m_items;
+    std::sort(ordered.begin(), ordered.end(), [](ImageItem *a, ImageItem *b) {
+        if (!a) {
+            return false;
+        }
+        if (!b) {
+            return true;
+        }
+        return a->zValue() < b->zValue();
+    });
+
+    QTransform sceneToPixel;
+    sceneToPixel.translate(targetRect.left(), targetRect.top());
+    sceneToPixel.scale(targetRect.width() / sourceScene.width(),
+                       targetRect.height() / sourceScene.height());
+    sceneToPixel.translate(-sourceScene.left(), -sourceScene.top());
+
+    for (ImageItem *item : ordered) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        const QRectF sceneR = item->contentSceneRect();
+        if (!sceneR.isValid() || sceneR.isEmpty() || !sceneR.intersects(sourceScene)) {
+            continue;
+        }
+        const QImage display = blockingExportDisplayForItem(item);
+        if (display.isNull()) {
+            continue;
+        }
+        painter->save();
+        painter->setOpacity(item->opacity());
+        painter->setTransform(sceneToPixel * item->sceneTransform());
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter->drawImage(item->contentRect(), display);
+        painter->restore();
+    }
+}
+
 QRectF ImageView::contentExportBounds() const
 {
     QRectF bounds;
@@ -2584,7 +2698,6 @@ QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &source
     }
 
     if (!transparentBackground) {
-        // Paint Workspace / app canvas background in scene space, then map to pixels.
         painter.save();
         QTransform xform;
         xform.translate(fitted.left(), fitted.top());
@@ -2593,17 +2706,13 @@ QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &source
         xform.translate(-sourceSceneRect.left(), -sourceSceneRect.top());
         painter.setTransform(xform);
         const qreal exportScale = fitted.width() / sourceSceneRect.width();
-        // paintCanvasBackground is non-const (tile cache); export is const — cast.
         const_cast<ImageView *>(this)->paintCanvasBackground(
             &painter, sourceSceneRect, exportScale);
         painter.restore();
     }
 
-    // Scene items only (no scene background brush).
-    const QBrush oldBrush = m_scene->backgroundBrush();
-    m_scene->setBackgroundBrush(Qt::NoBrush);
-    m_scene->render(&painter, fitted, sourceSceneRect, Qt::IgnoreAspectRatio);
-    m_scene->setBackgroundBrush(oldBrush);
+    // High-res host materialize per item — do not scene-render Soft on-screen samples.
+    paintHighResExportItems(&painter, sourceSceneRect, fitted);
     return img;
 }
 
