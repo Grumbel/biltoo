@@ -2,6 +2,20 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-905-unused-hascrop.** Drop unused hasCrop in attachDisplaySample.
+Prior: **904**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-905-unused-hascrop.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-904-gallery-zoom-selection.** Gallery Fit/Fill/1:1 target selection; sticky follows selection.
 Prior: **903**.
 
