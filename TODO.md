@@ -2,6 +2,43 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-989-workspace-soft-not-fullsource.** Soft no longer blocks Prefer/Full install.
+Prior: **988**.
+
+### Root cause (in-depth)
+`createItemFromImage` (Gallery/Workspace, no content bake) did:
+
+```text
+setSourceImage(soft512);
+setAppliedContentXform(identity);  // hasApplied = true
+```
+
+So Soft was **FullSource decoded** with applied identity.
+
+Then `finishAsyncHostRematerialize` treated Prefer/Full async bakes as already
+settled (`hasDecodedPixels && applied == want`) and **discarded** them.
+
+Also `fillLiveItemsWithDecodedPixels` / `installFullPreservingWorkspaceFootprint`
+refused any upgrade once `hasDecodedPixels()`.
+
+Zoom climb scheduled PathRaster correctly; higher hosts never replaced Soft paint.
+
+### Fix
+- Soft edge → SoftPreview install (not setSourceImage)
+- Footprint / fillLiveItems: upgrade on stricter long edge
+- finishAsync: attach when display is a strict upgrade
+
+### Apply
+```bash
+git pull /path/to/biltoo-989-workspace-soft-not-fullsource.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-988-soft-attach-prefer-intermediate.** Soft installs Prefer host before Full.
 Prior: **987**.
 

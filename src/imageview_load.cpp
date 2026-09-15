@@ -357,12 +357,24 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         if (!path.isEmpty()) {
             ImageCache::put(path, image);
         }
+        // Soft/overview samples must not be marked FullSource decoded.
+        // setSourceImage + applied identity made finishAsyncHostRematerialize
+        // treat Soft as "already settled" and drop Prefer/Full upgrades
+        // (Workspace stuck soft when zoomed).
+        const int hostEdge = ImageCache::longEdge(image);
         if (isImageMode()) {
-            item->setSourceImageReady(image);
+            if (hostEdge > 0 && hostEdge <= ThumtooCache::kGalleryLadderEdge) {
+                item->setPreviewImage(image);
+            } else {
+                item->setSourceImageReady(image);
+            }
+            item->setAppliedContentXform(ContentXform::Value{});
         } else {
-            item->setSourceImage(image);
+            const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
+                ? SessionAppearance::PixelKind::FullSource
+                : SessionAppearance::PixelKind::SoftPreview;
+            installDisplayPixels(item, image, kind, item->sessionId());
         }
-        item->setAppliedContentXform(ContentXform::Value{});
     }
     return item;
 }
@@ -2045,13 +2057,23 @@ int ImageView::fillLiveItemsWithDecodedPixels(const QString &path, const QImage 
 {
     bool sizeChanged = false;
     int have = 0;
+    const int incoming = ImageCache::longEdge(image);
     for (ImageItem *existing : m_items) {
         if (!existing || existing->path() != path) {
             continue;
         }
         ++have;
-        if (!existing->hasDecodedPixels()) {
+        // Soft was wrongly stored as "decoded"; still accept stricter long edge.
+        if (!existing->hasDecodedPixels()
+            || existing->shouldUpgradeDisplayTo(incoming)) {
             if (installFullPreservingWorkspaceFootprint(existing, image)) {
+                sizeChanged = true;
+            } else if (existing->shouldUpgradeDisplayTo(incoming)) {
+                // Footprint helper no-ops once hasDecodedPixels; force upgrade.
+                installDisplayPixels(existing, image,
+                                     SessionAppearance::PixelKind::FullSource,
+                                     existing->sessionId());
+                existing->update();
                 sizeChanged = true;
             }
         }

@@ -711,10 +711,12 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
             }
         }
     }
-    // Already settled FullSource for this want — do not re-attach (avoids a
-    // paint flash if a late async completes after an earlier full bake).
+    // Already settled FullSource for this want at ≥ this resolution — skip.
+    // Soft (or soft-sized) FullSource with applied identity used to match and
+    // discard Prefer/Full async bakes permanently.
     if (item->hasDecodedPixels() && item->hasAppliedContentXform()
-        && ContentXform::equal(item->appliedContentXform(), wantX)) {
+        && ContentXform::equal(item->appliedContentXform(), wantX)
+        && !item->shouldUpgradeDisplayTo(ImageCache::longEdge(display))) {
         return;
     }
     const QSize before = item->imageSize();
@@ -1395,7 +1397,12 @@ void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBi
 
 bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image)
 {
-    if (!item || image.isNull() || item->hasDecodedPixels()) {
+    if (!item || image.isNull()) {
+        return false;
+    }
+    // Soft mis-labeled as decoded must still accept a stricter long edge.
+    if (item->hasDecodedPixels()
+        && !item->shouldUpgradeDisplayTo(ImageCache::longEdge(image))) {
         return false;
     }
     // Drop / LoadAdd placeholder → full. Never non-uniform scale: that stretched
