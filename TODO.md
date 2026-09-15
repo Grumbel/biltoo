@@ -2,6 +2,47 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-915-nav-soft-hotpath.** Fast ←/→: memory soft only; no IPC/escalate storm.
+Prior: **914**.
+
+### Analysis — why fast-forward stalled
+
+On every Image LoadReplace the hot path did:
+
+1. `installImageModePendingTile` → `resolveImageModePendingPixels`
+2. On ImageCache miss: **`ThumtooCache::cachedLqipImage` → sync `client->get_lqip()`**
+   on the **GUI thread** (IPC per keypress when LQIP not already in ImageCache)
+3. Even under `m_slideshowNavHot`, **`requestEscalateClimb` still ran** for cold
+   hosts → PathRaster/PreferCache jobs pile up during key-repeat
+4. Soft climb + classic decode + 16ms timers + 80ms settle = async pile-up
+
+Filmstrip thumbs are intentionally **not** path-host ImageCache (crop overrides
+must not poison unoriented host). LQIP/soft for Image mode must come from
+ImageCache already primed (gallery probe, prior visit, settle climb).
+
+### Intended model (clean)
+
+| Phase | Work |
+|-------|------|
+| **Key-repeat (nav hot)** | Swap best **in-process** ImageCache soft; layout update; **return**. No IPC, no escalate, no classic decode. |
+| **Miss** | Blank placeholder at correct layout (OK). |
+| **Settle (~80ms quiet)** | Clear nav-hot → `loadImage` → PreferCache/full for **current** path only. |
+
+### Fix
+- `resolveImageModePendingPixels`: ImageCache / slideshowRaster only (no sync LQIP IPC)
+- `scheduleImageLoad`: nav-hot returns immediately after soft install (no escalate)
+
+### Apply
+```bash
+git pull /path/to/biltoo-915-nav-soft-hotpath.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-914-paint-aspect-contract.** Analysis-based fix for Image ←/→ aspect stretch.
 Prior: **913** (chrome clear alone was insufficient).
 

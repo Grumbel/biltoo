@@ -710,8 +710,10 @@ void ImageView::resetImageModeItemPlacement(ImageItem *item)
 QImage ImageView::resolveImageModePendingPixels(const QString &path,
                                                 const QImage &preview) const
 {
-    // Prefer explicit preview, then best ImageCache sample (not filmstrip-only
-    // 256 when 512+ is already cached), then LQIP. GUI-safe — no loadThumbnail.
+    // Image-mode ←/→ hot path: process memory only. Never sync thumtoo IPC
+    // (cachedLqipImage → get_lqip) or disk decode here — that stalls key-repeat.
+    // LQIP/ladder must already live in ImageCache (gallery probe, prior visit,
+    // settle-time climb). Miss → blank contentRect until settle.
     if (!preview.isNull()) {
         return preview;
     }
@@ -722,12 +724,6 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     }
     if (pixels.isNull()) {
         pixels = ImageCache::get(path);
-    }
-    if (pixels.isNull()) {
-        pixels = ThumtooCache::cachedLqipImage(path);
-        if (!pixels.isNull()) {
-            ImageCache::put(path, pixels);
-        }
     }
     return pixels;
 }
@@ -948,23 +944,25 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         return;
     }
 
-    // Image mode: paint soft/LQIP from cache immediately (pixel swap only).
+    // Image mode: swap best in-process soft/LQIP immediately (no IPC, no pool).
     if (role == LoadReplace && isImageMode()) {
         installImageModePendingTile(path);
-        // Soft already on the item: only climb PreferCache; skip soft pool job.
+        // Rapid ←/→: stop here. No PreferCache, no classic decode, no escalate —
+        // those race the next key and stall the GUI. Settle timer (MainWindow
+        // ~80ms quiet) clears nav-hot and calls loadImage again for climb.
+        if (m_slideshowNavHot) {
+            const int edge = imageModeItemForPath(path)
+                ? imageModeItemForPath(path)->displayPixelLongEdge()
+                : 0;
+            biltooLoadDbg("PATH nav-hot soft-only path=%s edge=%d",
+                          qPrintable(QFileInfo(path).fileName()), edge);
+            return;
+        }
         if (ImageItem *it = imageModeItemForPath(path)) {
             if (it->displayPixelLongEdge() > 0) {
-                // Rapid ←/→: soft only. PreferCache after settle clears nav hot.
-                if (m_slideshowNavHot) {
-                    biltooLoadDbg("PATH soft-on-item skip climb (nav hot) path=%s edge=%d",
-                                  qPrintable(QFileInfo(path).fileName()),
-                                  it->displayPixelLongEdge());
-                    return;
-                }
                 const QImage soft = it->displayImage();
                 const QString pathCopy = path;
-                // 16ms: let the soft repaint land one frame before PreferCache
-                // schedules more GUI work (scheduleProbe/Pixels/Display).
+                // One frame for soft paint, then PreferCache for the settled path.
                 QTimer::singleShot(16, this, [this, pathCopy, soft]() {
                     if (!isImageMode() || classicPath() != pathCopy) {
                         return;
@@ -974,24 +972,14 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
                     }
                     ensureImageModeQualityClimb(pathCopy, soft);
                 });
-                biltooLoadDbg("PATH soft-on-item skip softJob climb deferred path=%s edge=%d",
-                              qPrintable(QFileInfo(path).fileName()),
-                              it->displayPixelLongEdge());
                 return;
             }
         }
     }
 
-    // Cold host: Soft→PreferCache→Full via PathRaster only (contract §1).
+    // Cold host (not nav-hot): Soft→PreferCache→Full via PathRaster.
     if (role == LoadReplace && ImageCache::get(path).isNull()) {
         requestEscalateClimb(path, ThumtooCache::kGalleryLadderEdge);
-    }
-
-    // Rapid ←/→: soft schedule only — no native full / PreferCache until settle.
-    if (role == LoadReplace && m_slideshowNavHot && isImageMode()) {
-        biltooLoadDbg("PATH nav-hot skip classic decode path=%s",
-                      qPrintable(QFileInfo(path).fileName()));
-        return;
     }
 
     if (m_slideshowProgressActive) {
