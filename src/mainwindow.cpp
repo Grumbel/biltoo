@@ -266,16 +266,27 @@ MainWindow::MainWindow(QWidget *parent)
             this, [this](const ColorAdjustments &adj) {
                 if (m_imageView) {
                     m_imageView->setTargetColorAdjustments(adj);
-                    if (m_adjustmentsPanel) {
+                }
+                // Histogram / vectorscope: rebuild after slider idle (not every tick).
+                if (!m_adjustmentsPreviewTimer) {
+                    m_adjustmentsPreviewTimer = new QTimer(this);
+                    m_adjustmentsPreviewTimer->setSingleShot(true);
+                    m_adjustmentsPreviewTimer->setInterval(200);
+                    connect(m_adjustmentsPreviewTimer, &QTimer::timeout, this, [this]() {
+                        if (!m_adjustmentsPanel || !m_imageView) {
+                            return;
+                        }
                         ImageItem *item = m_imageView->targetItem();
-                        if (!item && !m_imageView->liveItems().isEmpty() && m_imageView->isImageMode()) {
+                        if (!item && !m_imageView->liveItems().isEmpty()
+                            && m_imageView->isImageMode()) {
                             item = m_imageView->liveItems().first();
                         }
                         if (item) {
                             m_adjustmentsPanel->setPreviewImage(item->pixmap().toImage());
                         }
-                    }
+                    });
                 }
+                m_adjustmentsPreviewTimer->start();
             });
 
     m_layoutPanel = new LayoutPanel(this);

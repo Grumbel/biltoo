@@ -1024,6 +1024,11 @@ public:
     void copySessionAppearance(SessionImageId fromId, SessionImageId toId);
     void setTargetColorAdjustments(const ColorAdjustments &adj);
     ColorAdjustments targetColorAdjustments() const;
+    /** Interactive grade: clamped host bake (no SQLite / filmstrip). */
+    void applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemState &want);
+    /** After slider idle: durable save, filmstrip, full rematerialize if needed. */
+    void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
+    void flushColorAdjustCommit();
     /** Bake ±90° content into pixels and session state (not placement). */
     WorkspaceItemState captureContentBakeBeforeState(ImageItem *item) const;
     SessionImageId resolveContentEditSessionId(ImageItem *item) const;
@@ -2055,6 +2060,10 @@ private:
     QTimer *m_gallerySoftWatchdog = nullptr;
     QTimer *m_layoutDebounceTimer = nullptr;
     GalleryPackReason m_debouncedPackReason = GalleryPackReason::ContentChange;
+    /** Debounce colour-slider durable write + filmstrip (see setTargetColorAdjustments). */
+    QTimer *m_colorAdjustCommitTimer = nullptr;
+    SessionImageId m_colorAdjustCommitSid = kInvalidSessionImageId;
+    QString m_colorAdjustCommitPath;
 };
 
 #endif // IMAGEVIEW_H

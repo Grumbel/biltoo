@@ -2588,6 +2588,119 @@ QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &source
 }
 
 
+void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemState &want)
+{
+    if (!item) {
+        return;
+    }
+    const QString path = item->path();
+    QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+    // Ungraded FullSource without applied content xform is still host-shaped.
+    if (host.isNull() && item->hasDecodedPixels() && !item->hasAppliedContentXform()) {
+        host = item->sourceImage();
+    }
+    if (host.isNull()) {
+        // No host: legacy live grade on item source (only correct when unbaked).
+        item->setColorAdjustments(want.colorAdjust);
+        return;
+    }
+    // Interactive: keep ≤1024 long edge so slider ticks stay snappy. Full
+    // rematerialize (native host) runs after the commit debounce.
+    constexpr int kInteractiveGradeMaxEdge = 1024;
+    if (ImageCache::longEdge(host) > kInteractiveGradeMaxEdge) {
+        host = ImageCache::clampToMaxEdge(host, kInteractiveGradeMaxEdge);
+    }
+    const auto kind = item->hasDecodedPixels()
+        ? SessionAppearance::PixelKind::FullSource
+        : SessionAppearance::PixelKind::SoftPreview;
+    const QImage display = SessionAppearance::materializeDisplay(host, want, kind);
+    if (display.isNull()) {
+        item->setColorAdjustmentsRecord(want.colorAdjust);
+        return;
+    }
+    // Soft stand-in while dragging on a large full tile — avoid leaving a
+    // full-resolution graded pixmap that every tick would rebuild.
+    if (kind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()
+        && ImageCache::longEdge(item->sourceImage()) > kInteractiveGradeMaxEdge) {
+        item->clearDecodedPixels();
+    }
+    attachDisplaySample(item, display, want, kind);
+}
+
+void ImageView::scheduleColorAdjustCommit(SessionImageId sid, const QString &path)
+{
+    m_colorAdjustCommitSid = sid;
+    m_colorAdjustCommitPath = path;
+    if (m_colorAdjustCommitTimer) {
+        m_colorAdjustCommitTimer->start();
+    } else {
+        flushColorAdjustCommit();
+    }
+}
+
+void ImageView::flushColorAdjustCommit()
+{
+    const SessionImageId sid = m_colorAdjustCommitSid;
+    const QString path = m_colorAdjustCommitPath;
+    m_colorAdjustCommitSid = kInvalidSessionImageId;
+    m_colorAdjustCommitPath.clear();
+    if (sid == kInvalidSessionImageId && path.isEmpty()) {
+        return;
+    }
+    ImageItem *item = nullptr;
+    if (sid != kInvalidSessionImageId) {
+        for (ImageItem *it : m_items) {
+            if (it && it->sessionId() == sid) {
+                item = it;
+                break;
+            }
+        }
+    }
+    if (!item && isImageMode() && !m_items.isEmpty()) {
+        item = m_items.first();
+    }
+    WorkspaceItemState want;
+    if (sid != kInvalidSessionImageId && m_appearance.contains(sid)) {
+        want = m_appearance.value(sid);
+    } else if (item) {
+        want = captureState(item);
+        want.colorAdjust = item->colorAdjustments();
+    } else {
+        return;
+    }
+    if (item) {
+        // Full rematerialize from host (may schedule async for multi-MP).
+        rematerializeItemContent(item, want);
+    }
+    // Grade is path-durable (XDG); persistDurableContentAppearance omits grade.
+    const QString persistPath = (item && !item->path().isEmpty()) ? item->path() : path;
+    if (!persistPath.isEmpty()) {
+        ThumtooCache::StoredContentAppearance stored;
+        ThumtooCache::loadContentAppearance(persistPath, &stored);
+        const ColorAdjustments &adj = want.colorAdjust;
+        stored.hasGrade = !adj.isIdentity();
+        stored.gradeBrightness = adj.brightness;
+        stored.gradeContrast = adj.contrast;
+        stored.gradeSaturation = adj.saturation;
+        stored.gradeHue = adj.hue;
+        stored.gradeGamma = int(adj.gamma * 100.0 + 0.5);
+        stored.gradeInvert = adj.invert;
+        if (stored.isIdentity()) {
+            ThumtooCache::clearContentAppearance(persistPath);
+        } else {
+            ThumtooCache::saveContentAppearance(persistPath, stored);
+        }
+    }
+    if (item) {
+        const QImage appearance = sessionAppearanceImage(item);
+        if (!appearance.isNull()) {
+            emit sessionAppearanceChanged(sid != kInvalidSessionImageId ? sid : item->sessionId(),
+                                          item->path().isEmpty() ? path : item->path(),
+                                          appearance);
+        }
+    }
+}
+
 void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
 {
     ImageItem *item = targetItem();
@@ -2597,40 +2710,25 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     if (!item) {
         return;
     }
-    item->setColorAdjustments(adj);
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && isImageMode()) {
         sid = m_currentSessionId;
     }
+    WorkspaceItemState slot = (sid != kInvalidSessionImageId && m_appearance.contains(sid))
+        ? m_appearance.value(sid)
+        : captureState(item);
     if (sid != kInvalidSessionImageId) {
-        WorkspaceItemState slot = m_appearance.contains(sid)
-            ? m_appearance.value(sid)
-            : captureState(item);
         slot.sessionId = sid;
         slot.path = item->path();
         slot.colorAdjust = adj;
         m_appearance.set(sid, slot);
-        // Persist colour grade (incl. Negative) to durable content appearance.
-        {
-            ThumtooCache::StoredContentAppearance stored;
-            ThumtooCache::loadContentAppearance(item->path(), &stored);
-            stored.hasGrade = !adj.isIdentity();
-            stored.gradeBrightness = adj.brightness;
-            stored.gradeContrast = adj.contrast;
-            stored.gradeSaturation = adj.saturation;
-            stored.gradeHue = adj.hue;
-            stored.gradeGamma = int(adj.gamma * 100.0 + 0.5);
-            stored.gradeInvert = adj.invert;
-            if (stored.isIdentity()) {
-                ThumtooCache::clearContentAppearance(item->path());
-            } else {
-                ThumtooCache::saveContentAppearance(item->path(), stored);
-            }
-        }
-        const QImage appearance = sessionAppearanceImage(item);
-        if (!appearance.isNull()) {
-            emit sessionAppearanceChanged(sid, item->path(), appearance);
-        }
+    } else {
+        slot.colorAdjust = adj;
+    }
+    // Fast path while dragging: bake from clamped host (no SQLite / filmstrip).
+    applyInteractiveColorGrade(item, slot);
+    if (sid != kInvalidSessionImageId || !item->path().isEmpty()) {
+        scheduleColorAdjustCommit(sid, item->path());
     }
     emit statusChanged();
 }

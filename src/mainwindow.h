@@ -504,6 +504,8 @@ private:
     MetadataPanel *m_metadataPanel = nullptr;
     AdjustmentsPanel *m_adjustmentsPanel = nullptr;
     QDockWidget *m_adjustmentsDock = nullptr;
+    /** Debounce histogram/vectorscope rebuild while colour sliders move. */
+    QTimer *m_adjustmentsPreviewTimer = nullptr;
     QAction *m_toggleAdjustmentsAct = nullptr;
     QString m_metadataPath;
     QDockWidget *m_metadataDock = nullptr;

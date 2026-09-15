@@ -256,6 +256,13 @@ ImageView::ImageView(QWidget *parent)
             applyLayout(m_debouncedPackReason);
         }
     });
+    // Colour sliders fire every tick — durable SQLite + filmstrip bake are deferred.
+    m_colorAdjustCommitTimer = new QTimer(this);
+    m_colorAdjustCommitTimer->setSingleShot(true);
+    m_colorAdjustCommitTimer->setInterval(180);
+    connect(m_colorAdjustCommitTimer, &QTimer::timeout, this, [this]() {
+        flushColorAdjustCommit();
+    });
     connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
         m_hudFlashVisible = false;
         m_hudIdentityPulse = false;
