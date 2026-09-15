@@ -2,6 +2,28 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-986-workspace-gallery-restore.** Gallery→Workspace keeps durable snapshot.
+Prior: **985**.
+
+### Bug
+`WorkspaceController::restore()` called `clearWorkspace()`, which clears
+`m_savedItems` (the durable free-form snapshot). Gallery→Workspace then restored
+from an empty list — arrangement lost.
+
+### Fix
+Restore uses `clearLiveCanvas()` only; durable `m_savedItems` retained.
+
+### Apply
+```bash
+git pull /path/to/biltoo-986-workspace-gallery-restore.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-985-workspace-export-high-res.** PNG/PDF/print use native host materialize.
 Prior: **984**.
 

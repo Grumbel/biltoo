@@ -38,7 +38,9 @@ void WorkspaceController::snapshot()
 
 void WorkspaceController::restore()
 {
-    m_view->clearWorkspace();
+    // clearWorkspace() also clears m_savedItems — that wiped this durable
+    // snapshot and left Gallery→Workspace empty. Only drop live tiles.
+    m_view->clearLiveCanvas();
     m_view->clearPendingWorkspacePaths();
     // Merge session appearance (crop / flip / orientation) from the live map into
     // the durable snapshot so Image-mode edits survive a full rebuild.
