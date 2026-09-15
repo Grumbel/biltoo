@@ -1666,15 +1666,18 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_zoomInAct, tr("<p>Zoom the view in around the viewport centre (or cursor where applicable).</p>"));
     setHelp(m_zoomOutAct, tr("<p>Zoom the view out.</p>"));
     setHelp(m_zoomFitAct, tr(
-        "<p>Scale so the whole image fits inside the viewport (letterboxed if aspects differ).</p>"
-        "<p>When sticky Fit is active, each new Image-mode picture is reframed the same way. "
-        "Click Fit again, or zoom freely, to release sticky framing.</p>"));
+        "<p>Scale so the target fits inside the viewport (letterboxed if aspects differ).</p>"
+        "<p><b>Image mode:</b> the current picture. <b>Gallery:</b> the current selection "
+        "(or the whole pack if nothing is selected).</p>"
+        "<p>When sticky Fit is active, Image navigation and Gallery selection changes "
+        "reframe the same way. Click Fit again, or zoom freely, to release sticky framing.</p>"));
     setHelp(m_zoomFillAct, tr(
-        "<p>Scale to cover the viewport (may crop edges). Sticky Fill re-applies on "
-        "navigation and tries to keep the relative pan centre.</p>"));
+        "<p>Scale to cover the viewport (may crop edges). <b>Gallery:</b> selection, or "
+        "the whole pack if none. Sticky Fill re-applies on Image navigation and Gallery "
+        "selection changes.</p>"));
     setHelp(m_zoom1to1Act, tr(
-        "<p>Show pixels 1:1 with the screen. Sticky 1:1 re-applies on Image navigation "
-        "with best-effort pan retention.</p>"));
+        "<p>Show pixels 1:1 with the screen. <b>Gallery:</b> primary selection (or first "
+        "tile). Sticky 1:1 re-applies on Image navigation and Gallery selection changes.</p>"));
     setHelp(m_zoomRegionAct, tr(
         "<p>Drag a rectangle on the image to zoom the view to that region (one-shot tool).</p>"));
     setHelp(m_fullscreenAct, tr(
