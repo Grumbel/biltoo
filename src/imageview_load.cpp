@@ -1542,20 +1542,48 @@ void ImageView::ensureWorkspaceQualityClimb()
         if (path.isEmpty()) {
             continue;
         }
-        // Crop draft sample is frozen — do not escalate this path.
         if (isCropDraftLockedPath(path)) {
             continue;
         }
-        const int need = itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
-        const int have = ii->displayPixelLongEdge();
-        if (need <= 0 || coversEdge(have, need)) {
+        DisplaySurface::State ds;
+        ds.needEdge = itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
+        ds.hostLongEdge = ImageCache::longEdge(ImageCache::get(path));
+        ds.climbPending = m_pathRaster->isClimbPending(path);
+        ds.want = ContentXform::Value::fromState(
+            wantAppearanceForItem(ii, ii->sessionId()));
+        if (ii->hasDisplayPixels()) {
+            ds.haveDisplayEdge = ii->displayPixelLongEdge();
+            ds.attachedKind = ii->hasDecodedPixels()
+                ? DisplaySurface::AttachedKind::FullSource
+                : DisplaySurface::AttachedKind::SoftPreview;
+            if (ii->hasAppliedContentXform()) {
+                ds.applied = ii->appliedContentXform();
+            }
+        }
+        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        using AT = DisplaySurface::ActionType;
+        if (act.type == AT::None) {
             continue;
         }
-        m_pathRaster->ensure(path, need, logicalSizeForPath(path),
-                             PathRasterService::ClimbPolicy::EscalateToFull);
-        if (m_pathRaster->isGaveUp(path)
-            && !coversEdge(ii->displayPixelLongEdge(), need)) {
-            scheduleImageModeNativeDecodeOnce(path);
+        if (act.type == AT::ScheduleAsyncMaterialize) {
+            scheduleAsyncHostRematerialize(
+                path, ii->sessionId(),
+                wantAppearanceForItem(ii, ii->sessionId()));
+            continue;
+        }
+        if (act.type == AT::ScheduleClimb
+            || act.type == AT::AttachSoft
+            || act.type == AT::AttachFull) {
+            // Climb when soft/short; Attach* will land via rasterImproved delivery.
+            const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : ds.needEdge;
+            if (need > 0) {
+                m_pathRaster->ensure(path, need, logicalSizeForPath(path),
+                                     PathRasterService::ClimbPolicy::EscalateToFull);
+            }
+            if (m_pathRaster->isGaveUp(path)
+                && !coversEdge(ii->displayPixelLongEdge(), need > 0 ? need : ds.needEdge)) {
+                scheduleImageModeNativeDecodeOnce(path);
+            }
         }
     }
 }
@@ -1628,36 +1656,86 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         // Empty multi-item canvas: fall through to per-item fill.
     }
 
-    // Gallery / Workspace: install or upgrade samples for this path.
-    // SoftPreview tiles must accept PreferCache/Full upgrades (hasDecodedPixels
-    // is false for soft). FullSource tiles still reject SoftPreview demotion in
-    // canAcceptDisplaySample.
+    // Gallery / Workspace: DisplaySurface::decide per item (SessionImageId want).
+    // Avoid host-vs-shown shouldUpgrade on cropped FullSource (pulse / no-op spam).
     const int incoming = ImageCache::longEdge(image);
     bool gallerySizeChanged = false;
     for (ImageItem *item : m_items) {
         if (!item || item->path() != path) {
             continue;
         }
-        // FullSource already native-class: only accept strict upgrades.
-        if (item->hasDecodedPixels() && !item->shouldUpgradeDisplayTo(incoming)) {
+        DisplaySurface::State ds;
+        ds.hostLongEdge = incoming;
+        ds.climbPending =
+            m_pathRaster && m_pathRaster->isClimbPending(path);
+        if (isGalleryMode()) {
+            ds.needEdge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        } else if (isWorkspaceMode()) {
+            ds.needEdge = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
+        } else {
+            ds.needEdge = incoming;
+        }
+        ds.want = ContentXform::Value::fromState(
+            wantAppearanceForItem(item, item->sessionId()));
+        if (item->hasDisplayPixels()) {
+            ds.haveDisplayEdge = item->displayPixelLongEdge();
+            ds.attachedKind = item->hasDecodedPixels()
+                ? DisplaySurface::AttachedKind::FullSource
+                : DisplaySurface::AttachedKind::SoftPreview;
+            if (item->hasAppliedContentXform()) {
+                ds.applied = item->appliedContentXform();
+            }
+        }
+        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        using AT = DisplaySurface::ActionType;
+        if (act.type == AT::None) {
             continue;
         }
-        if (!item->hasDecodedPixels() && item->hasDisplayPixels()
-            && !item->shouldUpgradeDisplayTo(incoming)) {
+        if (act.type == AT::ScheduleClimb) {
+            if (m_pathRaster) {
+                const auto pol = isWorkspaceMode()
+                    ? PathRasterService::ClimbPolicy::EscalateToFull
+                    : PathRasterService::ClimbPolicy::SoftDisplay;
+                m_pathRaster->ensure(
+                    path, act.climbNeedEdge > 0 ? act.climbNeedEdge : ds.needEdge,
+                    logicalSizeForPath(path), pol);
+            }
             continue;
         }
-        const SessionAppearance::PixelKind kind =
-            (incoming > ThumtooCache::kGalleryLadderEdge)
-                ? SessionAppearance::PixelKind::FullSource
-                : SessionAppearance::PixelKind::SoftPreview;
-        const QSize before = item->imageSize();
-        installDisplayPixels(item, image, kind, item->sessionId());
-        if (item->imageSize() != before) {
-            gallerySizeChanged = true;
+        if (act.type == AT::ScheduleAsyncMaterialize) {
+            scheduleAsyncHostRematerialize(
+                path, item->sessionId(),
+                wantAppearanceForItem(item, item->sessionId()));
+            continue;
         }
-        item->update();
-        if (m_scene) {
-            m_scene->update(item->sceneBoundingRect());
+        if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
+            const auto kind = (act.type == AT::AttachSoft)
+                ? SessionAppearance::PixelKind::SoftPreview
+                : SessionAppearance::PixelKind::FullSource;
+            const QSize before = item->imageSize();
+            installDisplayPixels(item, image, kind, item->sessionId());
+            if (item->imageSize() != before) {
+                gallerySizeChanged = true;
+            }
+            item->update();
+            if (m_scene) {
+                m_scene->update(item->sceneBoundingRect());
+            }
+            // Multi-MP content: soft attach then async full in one delivery.
+            if (act.type == AT::AttachSoft) {
+                DisplaySurface::State ds2 = ds;
+                ds2.attachedKind = DisplaySurface::AttachedKind::SoftPreview;
+                ds2.haveDisplayEdge = item->displayPixelLongEdge();
+                if (item->hasAppliedContentXform()) {
+                    ds2.applied = item->appliedContentXform();
+                }
+                const DisplaySurface::Action again = DisplaySurface::decide(ds2);
+                if (again.type == AT::ScheduleAsyncMaterialize) {
+                    scheduleAsyncHostRematerialize(
+                        path, item->sessionId(),
+                        wantAppearanceForItem(item, item->sessionId()));
+                }
+            }
         }
     }
     if (gallerySizeChanged && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
@@ -1665,7 +1743,6 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
     } else if (viewport()) {
         viewport()->update();
     }
-    // Workspace soft land: start PreferCache→Full (was never ensured until select).
     if (isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
     }

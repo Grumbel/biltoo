@@ -2,6 +2,32 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-958-workspace-gallery-decide-delivery.** Workspace/Gallery delivery via decide.
+Prior: **957**.
+
+### Change
+- `onImagePreviewLoaded` multi-item path (Gallery + Workspace): per-item
+  `DisplaySurface::decide` instead of `shouldUpgradeDisplayTo(host vs shown)`.
+  Actions: Attach soft/full, ScheduleAsyncMaterialize, ScheduleClimb, None.
+- Soft attach on multi-MP content immediately re-evaluates for async full.
+- `ensureWorkspaceQualityClimb`: decide-gated; settled FullSource matching want
+  does not PreferCache-spam; soft+content schedules async materialize.
+
+### Next
+**959** SurfaceId registry for gallery tiles / filmstrip rows, or delete dead
+DisplayQuality install drivers.
+
+### Apply
+```bash
+git pull /path/to/biltoo-958-workspace-gallery-decide-delivery.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-957-gallery-filmstrip-decide.** Gallery + filmstrip use DisplaySurface::decide.
 Prior: **956**.
 
