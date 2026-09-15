@@ -291,16 +291,10 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
     if (!app || !SessionAppearance::hasContentAppearance(*app)) {
         return src;
     }
-    // Single pipeline — no parallel flip/rotate implementation.
-    // SoftPreview + crop stripped: soft samples are sampling only; crop is
-    // FullSource / rematerialize territory (same contract as before).
-    WorkspaceItemState soft = *app;
-    soft.hasCrop = false;
-    soft.cropRect = {};
-    soft.cropSourceSize = {};
-    soft.cropRotation = 0.0;
+    // Single pipeline — SoftPreview scales crop into soft pixel space
+    // (SessionAppearance::materializeDisplay contract). Never strip crop.
     const QImage out = SessionAppearance::materializeDisplay(
-        src, soft, SessionAppearance::PixelKind::SoftPreview);
+        src, *app, SessionAppearance::PixelKind::SoftPreview);
     return out.isNull() ? src : out;
 }
 
@@ -526,41 +520,46 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
         // FullSource without applied xform is still host-shaped (rare).
         raw = item->sourceImage();
     }
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
     if (raw.isNull()) {
-        // No unoriented host: schedule async from PathRaster/host when possible.
-        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-            ? item->sessionId()
-            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        // No unoriented host: schedule async; do not claim applied yet.
         if (!path.isEmpty() && SessionAppearance::hasContentAppearance(want)) {
-            item->setAppliedContentXform(ContentXform::Value::fromState(want));
             scheduleAsyncHostRematerialize(path, sid, want);
         }
         return;
     }
-    const int edge = qMax(raw.width(), raw.height());
-    if (edge <= ContentXform::kGuiMaterializeMaxEdge) {
-        const auto kind = item->hasDecodedPixels() || !item->previewImage().isNull()
-            ? (item->hasDecodedPixels()
-                   ? SessionAppearance::PixelKind::FullSource
-                   : SessionAppearance::PixelKind::SoftPreview)
-            : SessionAppearance::PixelKind::FullSource;
-        // Prefer FullSource when we have a host/full sample.
-        const auto bakeKind = (edge > 0 && item->hasDecodedPixels())
-            ? SessionAppearance::PixelKind::FullSource
-            : kind;
-        const QImage display =
-            SessionAppearance::materializeDisplay(raw, want, bakeKind);
-        if (!display.isNull()) {
-            attachDisplaySample(item, display, want, bakeKind);
-        }
+    const int maxGui = ContentXform::kGuiMaterializeMaxEdge;
+    int edge = qMax(raw.width(), raw.height());
+    QImage host = raw;
+    SessionAppearance::PixelKind bakeKind = item->hasDecodedPixels()
+        ? SessionAppearance::PixelKind::FullSource
+        : SessionAppearance::PixelKind::SoftPreview;
+    bool scheduleFull = false;
+    if (edge > maxGui) {
+        // Soft stand-in now (crop/orient visible); full bake async.
+        host = ImageCache::clampToMaxEdge(raw, maxGui);
+        edge = qMax(host.width(), host.height());
+        bakeKind = SessionAppearance::PixelKind::SoftPreview;
+        scheduleFull = true;
+    }
+    if (edge <= 0 || edge > maxGui) {
+        scheduleAsyncHostRematerialize(path, sid, want);
         return;
     }
-    // Multi-MP: pure materialize on worker; keep current pixels until finish.
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
-    item->setAppliedContentXform(ContentXform::Value::fromState(want));
-    scheduleAsyncHostRematerialize(path, sid, want);
+    const QImage display = SessionAppearance::materializeDisplay(host, want, bakeKind);
+    if (display.isNull()) {
+        scheduleAsyncHostRematerialize(path, sid, want);
+        return;
+    }
+    if (bakeKind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
+        item->clearDecodedPixels();
+    }
+    attachDisplaySample(item, display, want, bakeKind);
+    if (scheduleFull) {
+        scheduleAsyncHostRematerialize(path, sid, want);
+    }
 }
 
 
@@ -720,9 +719,13 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
         return;
     }
     const ContentXform::Value wantX = ContentXform::Value::fromState(want);
-    if (item->hasAppliedContentXform()
-        && !ContentXform::equal(item->appliedContentXform(), wantX)) {
-        return;
+    // Discard stale worker result if the store moved on for this session id.
+    if (sid != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *cur = m_appearance.get(sid)) {
+            if (!ContentXform::equal(ContentXform::Value::fromState(*cur), wantX)) {
+                return;
+            }
+        }
     }
     const QSize before = item->imageSize();
     attachDisplaySample(item, display, want, SessionAppearance::PixelKind::FullSource);

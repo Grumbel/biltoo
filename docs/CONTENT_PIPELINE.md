@@ -74,6 +74,30 @@ Path is decode source only. Duplicates share a path and must keep independent
 appearance under different ids. See [IDENTITY.md](../IDENTITY.md),
 [CONTENT-VARIANT.md](../CONTENT-VARIANT.md).
 
+## Install invariant (bound tiles)
+
+For any item with a valid `SessionImageId`:
+
+1. **ImageCache** holds only **unoriented host** (path-keyed). Never write a
+   content-baked sample under the path key.
+2. **`installDisplayPixels`** treats incoming pixels as host-raw. When store
+   want has crop/orient/grade:
+   - GUI-safe host (long edge ≤ `kGuiMaterializeMaxEdge`):  
+     `display = materializeDisplay(host, want)` → `attachDisplaySample`.
+   - Larger host: clamp to max edge, materialize as **SoftPreview** stand-in
+     (crop visible immediately), then `scheduleAsyncHostRematerialize` only if
+     the caller requested FullSource. **Never** attach raw host under want.
+3. **`appliedContentXform` is set only inside `attachDisplaySample`** after a
+   real bake. Scheduling async must not claim applied == want while pixels
+   still show the unoriented host.
+4. SoftPreview **includes crop** (scaled into soft space). Helpers must not
+   strip `hasCrop` before `materializeDisplay`.
+5. Path duplicates: one host sample in ImageCache; **per-id** materialize on
+   each tile from `m_appearance.get(sid)`.
+
+Gallery soft ladder and PreferCache display climbs both go through this gate.
+Post-install “if applied ≠ want, rematerialize” checks are not a substitute.
+
 ## Entry points
 
 | Path | API |
@@ -108,8 +132,10 @@ Workspace footprint must not jump (see recent crop tips).
 ## ImageView::rematerializeItemContent
 
 When an item already holds (or host has) raw pixels and absolute want is known,
-use this instead of `SessionAppearance::applyContentToItem`. Same rules:
-host ≤512 materialize + attach; multi-MP schedules async pure materialize.
+use this instead of `SessionAppearance::applyContentToItem`. Same rules as
+install: host ≤512 materialize + attach; multi-MP clamps to SoftPreview
+stand-in (crop visible) then schedules async FullSource materialize. Never
+sets applied without attaching a matching bake.
 
 ## Propagation (modes and widgets)
 

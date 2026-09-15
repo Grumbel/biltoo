@@ -2,6 +2,42 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-921-display-want-invariant.** Install gate: never host under content want; applied only after bake.
+Prior: **920**.
+
+### Problem
+Gallery (and any soft/FullSource install) could show **unoriented host** while
+layout/applied claimed store crop. Root causes:
+
+1. `installDisplayPixels` FullSource path attached raw host when edge > 512
+   and set `applied = want` without a bake.
+2. Multi-MP soft path scheduled async and claimed applied early.
+3. `imageWithSessionAppearance` stripped crop for SoftPreview (contradicted
+   `materializeDisplay` contract).
+4. 920 post-hoc rematerialize could not fix cases where applied already lied.
+
+### Fix (single ground truth)
+- **Install invariant:** incoming pixels = host; attach only
+  `materializeDisplay(host, store want)`. Multi-MP → SoftPreview stand-in
+  (clamp ≤512) then optional async FullSource bake. Never attach host under want.
+- **applied** only via `attachDisplaySample` after a real bake.
+- SoftPreview **keeps crop** (no strip path).
+- `finishAsyncHostRematerialize` discards stale worker results against **current
+  store** want (not the old applied==want lie).
+- Docs: `CONTENT_PIPELINE.md` install invariant. Stash restore still uses
+  `rematerializeGalleryItemFromStore` for pre-crop stashed soft.
+
+### Apply
+```bash
+git pull /path/to/biltoo-921-display-want-invariant.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-920-gallery-crop-pixels.** Gallery tiles bake store crop; no full-frame soft under crop.
 Prior: **919**.
 

@@ -584,16 +584,19 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     // Absolute want xform (session store / path map / live flags).
     const WorkspaceItemState appearance = wantAppearanceForItem(item, sid);
 
-    // Host cache is unoriented. SoftPreview install input is always the raw
-    // ladder/LQIP sample (Gallery + Image). Display-ready stash soft never
+    // Host cache is unoriented. Every ladder/decode sample that enters here is
+    // host-raw (Gallery, Image, Workspace). Display-ready stash soft never
     // enters this function — pendingTile attaches it via attachDisplaySample.
+    //
+    // Invariant: for session-bound tiles, attach only materializeDisplay(host,
+    // store want). Never attach host under a content want. Never set applied
+    // xform unless the attached pixels match that bake.
     const bool wantBake =
         SessionAppearance::hasContentAppearance(appearance)
         || !appearance.colorAdjust.isIdentity();
     if (!path.isEmpty()) {
-        if (!wantBake || kind == SessionAppearance::PixelKind::SoftPreview) {
-            ImageCache::put(path, pixels);
-        }
+        // Incoming is always unoriented host — keep ImageCache pure.
+        ImageCache::put(path, pixels);
     }
 
     // raw → optional gallery soft clamp → materializeDisplay → attach.
@@ -605,34 +608,47 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             ThumtooCache::kFilmstripLadderEdge);
     }
     QImage display = pixelsForDisplay;
+    SessionAppearance::PixelKind attachKind = kind;
+    bool scheduleFullBake = false;
     if (wantBake) {
-        int edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
-        if (edge > ContentXform::kGuiMaterializeMaxEdge
-            && kind == SessionAppearance::PixelKind::SoftPreview) {
-            pixelsForDisplay = ImageCache::clampToMaxEdge(
-                pixelsForDisplay, ContentXform::kGuiMaterializeMaxEdge);
-            edge = qMax(pixelsForDisplay.width(), pixelsForDisplay.height());
+        const int maxGui = ContentXform::kGuiMaterializeMaxEdge;
+        const int hostEdge = ImageCache::longEdge(pixelsForDisplay);
+        // Multi-MP host cannot materialize on the GUI thread. Soft stand-in
+        // (clamp ≤512 + SoftPreview bake) keeps crop/orient visible now;
+        // full-resolution bake is scheduled async. Never attach raw host.
+        if (hostEdge > maxGui) {
+            pixelsForDisplay = ImageCache::clampToMaxEdge(pixelsForDisplay, maxGui);
+            attachKind = SessionAppearance::PixelKind::SoftPreview;
+            // Only escalate to full async bake when the caller asked for FullSource.
+            scheduleFullBake = (kind == SessionAppearance::PixelKind::FullSource);
         }
-        if (edge <= ContentXform::kGuiMaterializeMaxEdge) {
-            display = SessionAppearance::materializeDisplay(
-                pixelsForDisplay, appearance, kind);
-        } else if (kind == SessionAppearance::PixelKind::FullSource) {
-            display = pixelsForDisplay;
-        } else if (item->hasDisplayPixels()
-                   && SessionAppearance::hasContentAppearance(appearance)) {
-            item->setAppliedContentXform(
-                ContentXform::Value::fromState(appearance));
+        const int edge = ImageCache::longEdge(pixelsForDisplay);
+        if (edge <= 0) {
             scheduleAsyncHostRematerialize(path, sid, appearance);
             return;
-        } else {
-            item->setAppliedContentXform(
-                ContentXform::Value::fromState(appearance));
+        }
+        if (edge > maxGui) {
+            // Clamp failed oddly — still do not attach host under want.
             scheduleAsyncHostRematerialize(path, sid, appearance);
             return;
+        }
+        display = SessionAppearance::materializeDisplay(
+            pixelsForDisplay, appearance, attachKind);
+        if (display.isNull()) {
+            scheduleAsyncHostRematerialize(path, sid, appearance);
+            return;
+        }
+        // Soft attach is ignored while FullSource is present.
+        if (attachKind == SessionAppearance::PixelKind::SoftPreview
+            && item->hasDecodedPixels()) {
+            item->clearDecodedPixels();
         }
     }
     const QSize sizeBeforeAttach = item->imageSize();
-    attachDisplaySample(item, display, appearance, kind);
+    attachDisplaySample(item, display, appearance, attachKind);
+    if (scheduleFullBake) {
+        scheduleAsyncHostRematerialize(path, sid, appearance);
+    }
     // Soft→layout may change aspect; keep Image view scale continuous.
     if (isImageMode() && item == targetItem()
         && sizeBeforeAttach != item->imageSize()
@@ -640,21 +656,6 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         preserveImageViewOnLogicalSizeChange(item, sizeBeforeAttach, item->imageSize());
     } else if (isImageMode() && m_scene && m_items.size() == 1) {
         m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-    }
-
-    // Gallery: soft ladder is raw host. If the session store has crop/orient,
-    // materialize above should have applied it. If applied fingerprint still
-    // disagrees (accept path skipped bake, stale full soft), force rematerialize
-    // so tiles do not show the original full frame under a crop layout.
-    if (isGalleryMode() && item->hasDisplayPixels()) {
-        const ContentXform::Value wantX = ContentXform::Value::fromState(appearance);
-        const ContentXform::Value appliedX = item->hasAppliedContentXform()
-            ? item->appliedContentXform()
-            : ContentXform::Value{};
-        if (SessionAppearance::hasContentAppearance(appearance)
-            && !ContentXform::equal(appliedX, wantX)) {
-            rematerializeItemContent(item, appearance);
-        }
     }
 
     // Do NOT emit sessionAppearanceChanged from decode/install (filmstrip is
