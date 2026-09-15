@@ -2,6 +2,31 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-918-clear-soft-on-path-change.** Path change must clear soft OR full.
+Docs: **docs/IMAGE_MODE_NAV_SOFT.md** (state machine contract).
+Prior: **917**.
+
+### Root cause (why LQIP never showed)
+
+On ←/→ path change, clear used `hasDecodedPixels()` which is **full-source only**.
+Prior image was almost always soft-only → previous soft stayed on the item →
+`canAcceptDisplaySample` compared shown soft edge to the next LQIP and **rejected**
+the install. Gallery still looked fine (its own tiles).
+
+### Fix
+`if (item->hasDisplayPixels()) clearDecodedPixels()` on path change.
+
+### Apply
+```bash
+git pull /path/to/biltoo-918-clear-soft-on-path-change.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-917-soft-host-seed-restore.** Restored SoftPreview ImageCache seeding; stash soft is display-ready attach.
 Prior: **916** (broke host seed for SoftPreview+wantBake).
 

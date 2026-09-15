@@ -770,7 +770,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             item->setPath(path);
             bindImageModeSessionCursor(item);
             if (pathChanged) {
-                if (item->hasDecodedPixels()) {
+                // Soft OR full — hasDecodedPixels is full-only and left prior soft
+                // in place so canAccept rejected the next path's smaller LQIP.
+                if (item->hasDisplayPixels()) {
                     item->clearDecodedPixels();
                 }
                 item->setSessionCrop(false, QRect());
@@ -831,7 +833,9 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         // merges item->sessionHasCrop / contentHFlip when the store slot is empty;
         // leaking the previous image's crop into the new soft is the ←/→ stretch.
         if (pathChanged) {
-            if (item->hasDecodedPixels()) {
+            // Soft OR full. hasDecodedPixels is full-only; leaving prior soft
+            // made canAccept reject the next path's LQIP (shown edge ≥ incoming).
+            if (item->hasDisplayPixels()) {
                 item->clearDecodedPixels();
             }
             item->setSessionCrop(false, QRect());
