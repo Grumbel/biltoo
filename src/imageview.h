@@ -1367,6 +1367,9 @@ private:
                                              SessionImageId sid = kInvalidSessionImageId) const;
     bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
                                  SessionAppearance::PixelKind kind) const;
+    DisplaySurface::State displaySurfaceStateForItem(const ImageItem *item,
+                                                     int hostLongEdge = -1,
+                                                     bool climbPending = false) const;
     /**
      * If ImageCache has a sample with long edge ≤512, materializeDisplay
      * for @p want and attach to @p item. Returns true when attached.

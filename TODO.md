@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-963-canaccept-via-decide.** canAcceptDisplaySample uses DisplaySurface::decide.
+Prior: **962**.
+
+### Change
+- `displaySurfaceStateForItem`: shared State builder (need/host/want/attached).
+- `canAcceptDisplaySample`: decide-based accept (no host-vs-shown rematerialize
+  edge compare). Soft demote of Full still hard-rejected.
+- ImageFocus sync + Gallery/Workspace delivery use the shared builder.
+
+### Apply
+```bash
+git pull /path/to/biltoo-963-canaccept-via-decide.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-962-drop-dead-displayquality-install.** Remove unused checkSurface API.
 Prior: **961**.
 

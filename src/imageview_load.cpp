@@ -478,11 +478,48 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
     return appearance;
 }
 
+DisplaySurface::State ImageView::displaySurfaceStateForItem(const ImageItem *item,
+                                                            int hostLongEdge,
+                                                            bool climbPending) const
+{
+    DisplaySurface::State ds;
+    if (!item) {
+        return ds;
+    }
+    ds.climbPending = climbPending;
+    ds.hostLongEdge = hostLongEdge >= 0
+        ? hostLongEdge
+        : (item->path().isEmpty()
+               ? 0
+               : ImageCache::longEdge(ImageCache::get(item->path())));
+    ds.want = ContentXform::Value::fromState(
+        wantAppearanceForItem(item, item->sessionId()));
+    if (item->hasDisplayPixels()) {
+        ds.haveDisplayEdge = item->displayPixelLongEdge();
+        ds.attachedKind = item->hasDecodedPixels()
+            ? DisplaySurface::AttachedKind::FullSource
+            : DisplaySurface::AttachedKind::SoftPreview;
+        if (item->hasAppliedContentXform()) {
+            ds.applied = item->appliedContentXform();
+        }
+    }
+    if (isImageMode()) {
+        int need = 0;
+        if (viewport()) {
+            need = qMax(viewport()->width(), viewport()->height());
+        }
+        ds.needEdge = cappedDisplayEdgeForPath(item->path(), need);
+    } else if (isGalleryMode()) {
+        ds.needEdge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+    } else if (isWorkspaceMode()) {
+        ds.needEdge = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
+    }
+    return ds;
+}
+
 bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
                                        SessionAppearance::PixelKind kind) const
 {
-    // Soft must not demote full. Otherwise accept when ContentXform says
-    // rematerialize (xform change or strict edge upgrade) or the tile is blank.
     if (!item || pixels.isNull()) {
         return false;
     }
@@ -490,32 +527,30 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
     if (incoming <= 0) {
         return false;
     }
+    // Soft must not demote FullSource (also enforced by decide Soft path).
     if (kind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
         return false;
     }
     if (!item->hasDisplayPixels()) {
         return true;
     }
-    const WorkspaceItemState wantState = wantAppearanceForItem(item, item->sessionId());
-    const ContentXform::Value want = ContentXform::Value::fromState(wantState);
-    const ContentXform::Value applied = item->hasAppliedContentXform()
-        ? item->appliedContentXform()
-        : ContentXform::Value{};
-    // FullSource bake already matches store want. Host long edge is *pre-crop*
-    // file size; displayPixelLongEdge is *post-crop*. Comparing them as an
-    // "upgrade" re-accepts FullSource installs forever → soft demote (GUI max
-    // 512) + async full bake every watchdog tick (1s soft↔full pulse on crop).
-    if (item->hasDecodedPixels() && item->hasAppliedContentXform()
-        && ContentXform::equal(applied, want)) {
+    DisplaySurface::State ds = displaySurfaceStateForItem(item, incoming, false);
+    if (isCropDraftLockedItem(item) || isCropDraftLockedPath(item->path())) {
+        ds.frozen = true;
+    }
+    const DisplaySurface::Action act = DisplaySurface::decide(ds);
+    using AT = DisplaySurface::ActionType;
+    if (act.type == AT::None) {
         return false;
     }
-    const int shown = item->displayPixelLongEdge();
-    // No applied fingerprint yet: fall back to edge-only (pre-tag tiles).
-    if (!item->hasAppliedContentXform()) {
-        return item->shouldUpgradeDisplayTo(incoming)
-            || ContentXform::needsRematerialize(applied, want, shown, incoming);
+    if (kind == SessionAppearance::PixelKind::SoftPreview) {
+        return act.type == AT::AttachSoft
+            || act.type == AT::ScheduleAsyncMaterialize;
     }
-    return ContentXform::needsRematerialize(applied, want, shown, incoming);
+    // FullSource: accept when decide wants full attach or async full bake.
+    return act.type == AT::AttachFull
+        || act.type == AT::ScheduleAsyncMaterialize
+        || act.type == AT::AttachSoft;
 }
 
 void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
@@ -1545,21 +1580,8 @@ void ImageView::ensureWorkspaceQualityClimb()
         if (isCropDraftLockedPath(path)) {
             continue;
         }
-        DisplaySurface::State ds;
-        ds.needEdge = itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
-        ds.hostLongEdge = ImageCache::longEdge(ImageCache::get(path));
-        ds.climbPending = m_pathRaster->isClimbPending(path);
-        ds.want = ContentXform::Value::fromState(
-            wantAppearanceForItem(ii, ii->sessionId()));
-        if (ii->hasDisplayPixels()) {
-            ds.haveDisplayEdge = ii->displayPixelLongEdge();
-            ds.attachedKind = ii->hasDecodedPixels()
-                ? DisplaySurface::AttachedKind::FullSource
-                : DisplaySurface::AttachedKind::SoftPreview;
-            if (ii->hasAppliedContentXform()) {
-                ds.applied = ii->appliedContentXform();
-            }
-        }
+        DisplaySurface::State ds = displaySurfaceStateForItem(
+            ii, -1, m_pathRaster->isClimbPending(path));
         const DisplaySurface::Action act = DisplaySurface::decide(ds);
         using AT = DisplaySurface::ActionType;
         if (act.type == AT::None) {
@@ -1664,28 +1686,10 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         if (!item || item->path() != path) {
             continue;
         }
-        DisplaySurface::State ds;
-        ds.hostLongEdge = incoming;
-        ds.climbPending =
+        const bool climbPending =
             m_pathRaster && m_pathRaster->isClimbPending(path);
-        if (isGalleryMode()) {
-            ds.needEdge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-        } else if (isWorkspaceMode()) {
-            ds.needEdge = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
-        } else {
-            ds.needEdge = incoming;
-        }
-        ds.want = ContentXform::Value::fromState(
-            wantAppearanceForItem(item, item->sessionId()));
-        if (item->hasDisplayPixels()) {
-            ds.haveDisplayEdge = item->displayPixelLongEdge();
-            ds.attachedKind = item->hasDecodedPixels()
-                ? DisplaySurface::AttachedKind::FullSource
-                : DisplaySurface::AttachedKind::SoftPreview;
-            if (item->hasAppliedContentXform()) {
-                ds.applied = item->appliedContentXform();
-            }
-        }
+        DisplaySurface::State ds =
+            displaySurfaceStateForItem(item, incoming, climbPending);
         const DisplaySurface::Action act = DisplaySurface::decide(ds);
         using AT = DisplaySurface::ActionType;
         if (act.type == AT::None) {
@@ -2621,47 +2625,17 @@ void ImageView::syncImageFocusSurfaceState()
         return;
     }
     const QString path = item->path();
-    int need = 0;
-    if (viewport()) {
-        need = qMax(viewport()->width(), viewport()->height());
-    }
-    need = cappedDisplayEdgeForPath(path, need);
-    m_displaySurfaces.setNeed(m_imageFocusSurface, need);
-
-    const bool frozen =
-        m_cropDraftSampleFrozen && isCropDraftLockedPath(path);
-    m_displaySurfaces.setFrozen(m_imageFocusSurface, frozen);
-
-    const int hostEdge = path.isEmpty() ? 0 : ImageCache::longEdge(ImageCache::get(path));
-    m_displaySurfaces.setHostLongEdge(m_imageFocusSurface, hostEdge);
-
     const bool pending =
         m_pathRaster && !path.isEmpty() && m_pathRaster->isClimbPending(path);
-    m_displaySurfaces.setClimbPending(m_imageFocusSurface, pending);
-
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId) {
-        sid = m_currentSessionId;
-    }
-    const WorkspaceItemState wantState = wantAppearanceForItem(item, sid);
-    m_displaySurfaces.setWant(m_imageFocusSurface,
-                              ContentXform::Value::fromState(wantState));
-
-    DisplaySurface::AttachedKind kind = DisplaySurface::AttachedKind::None;
-    int have = 0;
-    ContentXform::Value applied;
-    if (item->hasDisplayPixels()) {
-        have = item->displayPixelLongEdge();
-        if (item->hasDecodedPixels()) {
-            kind = DisplaySurface::AttachedKind::FullSource;
-        } else {
-            kind = DisplaySurface::AttachedKind::SoftPreview;
-        }
-        if (item->hasAppliedContentXform()) {
-            applied = item->appliedContentXform();
-        }
-    }
-    m_displaySurfaces.setAttached(m_imageFocusSurface, kind, have, applied);
+    DisplaySurface::State ds = displaySurfaceStateForItem(item, -1, pending);
+    ds.frozen = m_cropDraftSampleFrozen && isCropDraftLockedPath(path);
+    m_displaySurfaces.setNeed(m_imageFocusSurface, ds.needEdge);
+    m_displaySurfaces.setFrozen(m_imageFocusSurface, ds.frozen);
+    m_displaySurfaces.setHostLongEdge(m_imageFocusSurface, ds.hostLongEdge);
+    m_displaySurfaces.setClimbPending(m_imageFocusSurface, ds.climbPending);
+    m_displaySurfaces.setWant(m_imageFocusSurface, ds.want);
+    m_displaySurfaces.setAttached(m_imageFocusSurface, ds.attachedKind,
+                                  ds.haveDisplayEdge, ds.applied);
 }
 
 void ImageView::driveImageFocusSurface()
