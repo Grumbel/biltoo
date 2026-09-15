@@ -166,6 +166,9 @@ Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
     bool fullDone = m_.fullDone;
 
     // --- PreferCache (intermediate) ---
+    // Progressive ladder: Soft → Prefer delivery → Full only after Prefer
+    // plateaus short of need. Scheduling Full in the same plan as first Prefer
+    // starved intermediate paints (long wait, then jump to native).
     const bool needFullBand = need > overviewCap;
     if (!m_.preferGaveUp) {
         const bool displayBusy =
@@ -174,20 +177,16 @@ Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
             p.scheduleDisplay = true;
             p.displayEdge = m_.want;
         }
-        // Soft not covered yet: Soft + PreferCache only (no Full yet).
-        if (!softCovered) {
-            return p;
-        }
-        // Soft covered + high need: fall through to Full in the same plan.
-        if (!needFullBand) {
-            return p;
-        }
-    } else if (!softCovered) {
+        // Soft not covered: Soft + Prefer only (no Full).
+        // Soft covered: wait for Prefer delivery/plateau before Full.
+        return p;
+    }
+    if (!softCovered) {
         // Gave up PreferCache but still need soft — keep soft in plan, no Full.
         return p;
     }
 
-    // --- Full band (requires soft covered or PreferCache already plateaued) ---
+    // --- Full band: soft covered and PreferCache already plateaued ---
     if (needFullBand) {
         if (!m_.tilesQueued) {
             p.scheduleTiles = true;

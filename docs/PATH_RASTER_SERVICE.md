@@ -32,6 +32,12 @@ failure, and consumers invented different recoveries.
 SoftDisplay / EscalateToFull — Soft → PreferCache (≤1024 effective) → Full when want > 1024
 ```
 
+**Progressive order (EscalateToFull):** Soft and Prefer may share a plan while
+soft is uncovered. **Full is not scheduled until PreferCache has plateaued**
+(`preferGaveUp`) short of need. Same-plan Soft+Prefer+Full delayed intermediate
+paints (long blank/soft, then jump to native).
+
+
 thumtoo PreferCache above soft max is overview-clamped to 1024. Whole-frame
 edges above that need **Full**. Gallery only ensures a concurrency-bounded
 visible set so Full is not N× archive extract.

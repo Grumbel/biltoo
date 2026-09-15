@@ -505,13 +505,10 @@ DisplaySurface::State ImageView::displaySurfaceStateForItem(const ImageItem *ite
         }
     }
     if (isImageMode()) {
-        // ImageFocus: on-screen need and native long edge (ladder-capped).
-        // Viewport-only need left PreferCache idle at ~2048 while native is 6k+.
-        int need = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
-        const QSize logical = logicalSizeForPath(item->path());
-        if (isPositiveSize(logical) && !isProvisionalImageSize(item->path())) {
-            need = qMax(need, qMax(logical.width(), logical.height()));
-        }
+        // ImageFocus: on-screen (window) need only. Forcing need ≥ file native
+        // jumped straight to Full and skipped Soft→Prefer progressive installs.
+        // Zoom / 1:1 raises on-screen need; climb then escalates.
+        const int need = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
         ds.needEdge = cappedDisplayEdgeForPath(item->path(), need);
     } else if (isGalleryMode()) {
         ds.needEdge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
@@ -1199,8 +1196,11 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
     startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
     if (isImageMode() && !m_slideshowProgressActive && !m_slideshowNavHot
         && role == LoadReplace) {
-        requestEscalateClimb(path, ThumtooCache::kImageLadderEdge);
-        scheduleImageModeNativeDecodeOnce(path);
+        // Progressive climb to on-screen need only — not native/8192 up front.
+        // PathRaster Soft→Prefer→Full; native decode is recovery after plateau.
+        const int need = imageModeOnScreenNeedEdge();
+        requestEscalateClimb(
+            path, need > 0 ? need : ThumtooCache::kBatchOverviewEdge);
     }
     Q_UNUSED(gen);
 }
@@ -2395,16 +2395,11 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
 
     const int need = imageModeOnScreenNeedEdge();
     const int have = sample.isNull() ? 0 : ImageCache::longEdge(sample);
+    // Climb to on-screen need (ladder-capped), not file native. Native is
+    // requested only when the window actually needs it (zoom / large view).
     int climbTo = ThumtooCache::kBatchOverviewEdge;
     if (need > 0) {
         climbTo = qMax(climbTo, need);
-    }
-    // Image mode: escalate toward native (ladder-capped), not only viewport.
-    {
-        const QSize logical = logicalSizeForPath(path);
-        if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
-            climbTo = qMax(climbTo, qMax(logical.width(), logical.height()));
-        }
     }
     if (climbTo < ThumtooCache::kGalleryLadderEdge) {
         climbTo = ThumtooCache::kGalleryLadderEdge;

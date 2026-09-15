@@ -76,18 +76,16 @@ forces a rematerialize cycle.
 ### ImageFocus (Image mode)
 
 ```text
-need₀ = itemOnScreenNeedEdge(item)
-        // contentSceneRect → map to view → long edge × DPR → ceil ladder
-need₁ = max(need₀, fileNativeLongEdge)   // logicalSizeForPath — FILE, not crop box
-need  = cappedDisplayEdgeForPath(path, need₁)
-        // min(want, ladder max, known native); ceil ladder; clamp native again
+need = cappedDisplayEdgeForPath(path, itemOnScreenNeedEdge(item))
+       // contentSceneRect → view × DPR → ceil ladder; clamp to known native
 ```
 
 - After crop **Apply**, `contentSceneRect` follows the **crop intrinsic**, so
   on-screen need tracks the cropped footprint in the viewport.
-- The **native floor** is still the full-file long edge (tip 978: PreferCache
-  must not idle at ~2048 while the file is 6k+). That can request more host
-  resolution than a heavy crop strictly needs on screen.
+- Need is **window-driven**, not file-native. Tip 978 forced `need ≥ file native`,
+  which scheduled Full immediately and skipped Soft→Prefer paints. Zoom / 1:1
+  raises on-screen need; climb then escalates (including Full when need > Prefer
+  plateau).
 
 ### Gallery / Workspace
 
@@ -194,10 +192,11 @@ event.
 Path-keyed (not SessionImageId / crop-keyed):
 
 ```text
-ensure(want) → Soft (≤512) → PreferCache / overview (≤~1024) → Full (native)
+ensure(want) → Soft (≤512) → PreferCache / overview (≤~1024) → Full (if need > Prefer)
 have ← deliveries into ImageCache only (upward-only)
 PreferCache plateau is normal; raising want clears the plateau latch
-EscalateToFull (ImageFocus / slideshow): Full may share a plan with Prefer
+EscalateToFull (ImageFocus / slideshow): Full only **after** Prefer plateau
+  (same-plan Soft+Prefer+Full starved intermediate UI updates)
 SoftDisplay (Gallery / filmstrip): soft band unless escalated
 ```
 
@@ -289,7 +288,7 @@ or the host already covers the (capped) need / native floor.
 |-------|--------|
 | Ladder quantization | Deliveries and need snap to ladder steps |
 | PreferCache plateau | Temporary sub-native host is expected |
-| ImageFocus need ≥ file native | Heavy crops may over-request host vs pure on-screen crop need |
+| ImageFocus need = on-screen only | 1:1 on a 6k file still climbs Soft→Prefer→Full; no native floor at fit |
 | Linear crop estimate | AABB ratio; free-rot usable detail can differ slightly |
 | Frozen draft | No progress until Apply/Cancel |
 | Terminal PathRaster give-up | May stop short of native |

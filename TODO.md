@@ -2,6 +2,38 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-981-progressive-ladder-window-need.** Soft→Prefer→Full; need = window.
+Prior: **980**.
+
+### Problem
+ImageFocus forced `need ≥ file native` (978) and RasterClimb scheduled **Full in
+the same plan** once Soft was covered. LoadReplace also escalated to 8192 +
+native decode up front. Result: skip intermediate paints, long wait, then jump
+to full resolution even when the window only needed ~1–2k.
+
+### Fix
+- ImageFocus `needEdge` / `ensureImageModeQualityClimb`: **on-screen only**
+- `RasterClimb::plan`: after Soft, Prefer only until `preferGaveUp`; **then** Full
+- LoadReplace: escalate to on-screen need (or overview), not 8192 + immediate native decode
+- Docs: RESOLUTION_STATE_MACHINE + PATH_RASTER progressive order
+
+### Done criteria
+- [x] Soft installs before Prefer/Full starve the UI
+- [x] Full only after Prefer plateau when need > overview
+- [x] Need tracks window, not forced native at fit
+- [x] Docs; next **982**
+
+### Apply
+```bash
+git pull /path/to/biltoo-981-progressive-ladder-window-need.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-980-resolution-sm-doc-soft-est.** Resolution SM doc; Soft decide uses crop estimate.
 Prior: **979**.
 
