@@ -330,9 +330,9 @@ ImageView::ImageView(QWidget *parent)
             gallerySoftWatchdogTick();
         }
         // ImageFocus is event-driven only (rasterImproved / load / resize climb).
-        // Slideshow phase recovery while a transition is live.
+        // Slideshow phase buffers: DisplaySurface::decide while transition is live.
         if (m_slideshowProgressActive) {
-            displayQualityWatchdogTick();
+            slideshowPhaseSurfaceTick();
         }
     });
     m_gallerySoftWatchdog->start();

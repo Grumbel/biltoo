@@ -5,8 +5,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Display surface controller (host pixel install)
 
-**Status:** design lock for implementation tips. Normative for moving quality /
-install / rematerialize **out of ImageView**.
+**Status:** decide policy + surface registry implemented (tips 953–967).
+Install policy is `DisplaySurface::decide`; consumers attach after evaluate.
 
 **Related:** [CONTENT_PIPELINE.md](CONTENT_PIPELINE.md),
 [PATH_RASTER_SERVICE.md](PATH_RASTER_SERVICE.md),
@@ -26,7 +26,7 @@ with parallel copies in `ThumbnailBar` and Gallery soft state.
 
 Symptoms that proved the design is wrong:
 
-1. A permanent 1s timer (`displayQualityWatchdogTick`) re-ran
+1. A permanent 1s timer (`displayQualityWatchdogTick`, removed) re-ran
    `InstallHostBetter` on the Image canvas.
 2. `DisplayQuality::checkSurface` compared **pre-crop host** long edge to
    **post-crop shown** long edge → contract never cleared for cropped tiles →
@@ -260,8 +260,11 @@ Keep on ImageView: scene, modes, input, pack geometry, crop chrome, paint.
 | **H** | No install path calls checkSurface | done (961) |
 | **H2** | Delete unused checkSurface / reportViolation | done (962) |
 
-**Residual:** per-tile `SurfaceId` bind/unbind lifecycle (optional); ImageView
-still owns materialize/attach helpers called *after* decide.
+**SurfaceId registry (done 964–967):** canvas `ImageItem::displaySurfaceId`,
+filmstrip `ThumbnailBar::m_rowSurfaceIds`, ImageFocus aliases primary item id.
+
+**Residual:** ImageView still owns materialize/attach helpers *after* decide;
+optional `displayReady` signal orchestration; slideshow phase SurfaceId bind.
 
 Each phase must leave the app usable: soft still appears; full still arrives
 via **events**, not a 1s InstallHostBetter poller.

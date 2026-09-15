@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-968-surface-docs-slideshow-tick-rename.** Registry docs; rename slideshow tick.
+Prior: **967**.
+
+### Change
+- `displayQualityWatchdogTick` → `slideshowPhaseSurfaceTick` (name matches
+  behaviour: slideshow phases only, never ImageFocus).
+- `DISPLAY_SURFACE.md`: status reflects decide + SurfaceId registry (964–967);
+  residual narrowed to post-decide attach helpers / optional phase SurfaceId.
+
+### Apply
+```bash
+git pull /path/to/biltoo-968-surface-docs-slideshow-tick-rename.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-967-filmstrip-surface-registry.** Filmstrip cells bind FilmstripCell surfaces.
 Prior: **966**.
 

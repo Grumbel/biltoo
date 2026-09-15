@@ -1483,8 +1483,8 @@ private:
     void clearGallerySoftInflight(GallerySoftState &soft);
     /** Recover stalled soft installs (cache hit not painted / inflight stuck). */
     void gallerySoftWatchdogTick();
-    /** Image-mode + slideshow phase: DisplayQuality host-vs-shown contract. */
-    void displayQualityWatchdogTick();
+    /** Slideshow phase buffers only: DisplaySurface::decide while transition live. */
+    void slideshowPhaseSurfaceTick();
     /** Phase C: bind/sync ImageFocus surface and apply DisplaySurface::decide. */
     void ensureImageFocusSurface();
     void syncImageFocusSurfaceState();

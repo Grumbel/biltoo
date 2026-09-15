@@ -1657,7 +1657,7 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
 }
 
 
-void ImageView::displayQualityWatchdogTick()
+void ImageView::slideshowPhaseSurfaceTick()
 {
     // ImageFocus: never. Slideshow phase buffers only, while a transition is live.
     // Policy: DisplaySurface::decide (identity xform — phase buffers are oriented
