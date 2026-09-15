@@ -24,6 +24,7 @@
 
 namespace {
 constexpr qreal kHandleScreenPx = 16.0;      // scale/rotate markers in *viewport* px (grow on hover)
+constexpr qreal kContentEditMarkScreenPx = 20.0; // crop/orient/grade folds (viewport px)
 constexpr qreal kRotateOffsetPx = 36.0;      // rotate handle distance from edge (viewport px)
 // Chrome buttons (flip / raise / lower / reset): larger + roomier.
 constexpr qreal kChromeBtnScreenPx = 34.0;   // diameter in viewport px
@@ -1140,10 +1141,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
     const QRectF r = cropped ? crop : displayContentRect();
 
-    // Content-edit marks (View → Show content edit marks). Crop stays bottom-right
-    // (filmstrip parity). Orient / grade sit bottom-left so they do not collide.
-    if (contentEditMarksVisible() && r.width() > 12.0 && r.height() > 12.0) {
-        const qreal fold = qBound(10.0, qMin(r.width(), r.height()) * 0.12, 36.0);
+    // Content-edit marks (View → Show content edit marks). Fixed ~20px on screen
+    // (not fraction of tile — Gallery was tiny, tight crops were huge).
+    if (contentEditMarksVisible() && r.width() > 4.0 && r.height() > 4.0) {
+        const qreal fold = kContentEditMarkScreenPx / qMax(0.01, screenScale());
 
         auto drawCornerFold = [&](const QPointF &corner, const QPointF &alongX,
                                   const QPointF &alongY, const QColor &face,

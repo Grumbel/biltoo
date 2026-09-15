@@ -2,6 +2,24 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-1000-edit-marks-screen-px.** Content-edit folds fixed ~20px on screen.
+Prior: **999**.
+
+### Fix
+Marks used `min(tile)*0.12` — tiny in Gallery, huge on tight crops.
+Now `20 / screenScale()` (viewport-constant), same idea as handles.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1000-edit-marks-screen-px.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-999-archive-appearance-no-spam.** Archive content ids + no seed busy-loop.
 Prior: **998**.
 
