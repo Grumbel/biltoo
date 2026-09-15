@@ -2,6 +2,26 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-972-preview-evaluate-surface-docs.** Preview uses evaluate; migration docs complete.
+Prior: **971**.
+
+### Change
+- `onImagePreviewLoaded` multi-item path: `syncItemDisplaySurface` + `evaluate(id)`.
+- DISPLAY_SURFACE.md phases I–J (registry + executor); residual narrowed.
+
+DisplaySurface migration is **functionally complete** for install policy.
+
+### Apply
+```bash
+git pull /path/to/biltoo-972-preview-evaluate-surface-docs.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-971-apply-display-surface-action-body.** Define applyDisplaySurfaceAction.
 Prior: **970** (call sites only; body was missing — link fix).
 

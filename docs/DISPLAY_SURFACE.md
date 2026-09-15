@@ -259,12 +259,20 @@ Keep on ImageView: scene, modes, input, pack geometry, crop chrome, paint.
 | **G** | Workspace delivery + slideshow phases | done (958, 960) |
 | **H** | No install path calls checkSurface | done (961) |
 | **H2** | Delete unused checkSurface / reportViolation | done (962) |
+| **I** | SurfaceId registry (items + filmstrip + phases) | done (964–969) |
+| **J** | Shared applyDisplaySurfaceAction executor | done (970–971) |
 
 **SurfaceId registry (done 964–967):** canvas `ImageItem::displaySurfaceId`,
 filmstrip `ThumbnailBar::m_rowSurfaceIds`, ImageFocus aliases primary item id.
 
-**Residual:** ImageView still owns materialize/attach helpers *after* decide;
-optional `displayReady` signal orchestration.
+**Executor (done 970–971):** `ImageView::applyDisplaySurfaceAction` maps Action →
+climb / async rematerialize / attach (soft→async follow-up). Gallery, Workspace,
+ImageFocus, and preview delivery share it.
+
+**Slideshow phases (done 969):** `m_ssFromSurface` / `m_ssToSurface`.
+
+**Residual:** optional Qt signal `displayReady` if external observers need it;
+materialize still lives in SessionAppearance / ContentXform called from install helpers.
 
 Each phase must leave the app usable: soft still appears; full still arrives
 via **events**, not a 1s InstallHostBetter poller.

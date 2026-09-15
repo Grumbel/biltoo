@@ -1497,7 +1497,7 @@ private:
     void slideshowPhaseSurfaceTick();
     void bindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id, const QString &path);
     void unbindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id);
-    /** Phase C: bind/sync ImageFocus surface and apply DisplaySurface::decide. */
+    /** Bind/sync ImageFocus surface (aliases primary item surface id). */
     void ensureImageFocusSurface();
     void syncImageFocusSurfaceState();
     void driveImageFocusSurface();

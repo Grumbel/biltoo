@@ -1772,9 +1772,15 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         }
         const bool climbPending =
             m_pathRaster && m_pathRaster->isClimbPending(path);
+        syncItemDisplaySurface(item, incoming, climbPending);
         DisplaySurface::State ds =
             displaySurfaceStateForItem(item, incoming, climbPending);
-        const DisplaySurface::Action act = DisplaySurface::decide(ds);
+        const DisplaySurface::SurfaceId sid =
+            static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
+        const DisplaySurface::Action act =
+            (sid != DisplaySurface::kInvalidSurfaceId)
+                ? m_displaySurfaces.evaluate(sid)
+                : DisplaySurface::decide(ds);
         const auto pol = isWorkspaceMode()
             ? PathRasterService::ClimbPolicy::EscalateToFull
             : PathRasterService::ClimbPolicy::SoftDisplay;
