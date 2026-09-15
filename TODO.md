@@ -2,6 +2,34 @@
 
 ## Status (2026-09-15)
 
+**Tip: biltoo-942-color-adjust-interactive.** Fast colour-slider path (debounce durable + clamped bake).
+Prior: **941**.
+
+### Problem
+Every Adjustments slider tick called `setTargetColorAdjustments`, which:
+1. Full-pixel grade (or wrong double-grade on baked display)
+2. SQLite durable `saveContentAppearance`
+3. Filmstrip `sessionAppearanceChanged` rebuild
+4. Histogram/vectorscope from full pixmap
+
+Felt unusable after content-pipeline bake made grade part of materialize.
+
+### Fix
+- Interactive: bake from ImageCache host clamped to ≤1024; no SQLite/filmstrip
+- After 180ms idle: full `rematerializeItemContent` + durable grade + filmstrip
+- Histogram/scope rebuild debounced 200ms in MainWindow
+
+### Apply
+```bash
+git pull /path/to/biltoo-942-color-adjust-interactive.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-15)
+
 **Tip: biltoo-941-attention-selection-undo.** Standard attention multi-point selection + undo.
 Prior: **940**.
 
