@@ -342,12 +342,13 @@ void ImageView::paintHudPanels(QPainter &painter)
     //   bottom    — filename (+ technical detail when the HUD is pinned)
     // Crop mode: always show a pinned “Crop mode” cue so the tool state is clear.
     const QString ssPrefetchLine = slideshowPrefetchHudLine();
-    const QString loadingLine = loadingStatusHudLine();
+    // Loading · … only in the extended (pinned) HUD — not as a free-floating
+    // chip during slideshow or normal Image browsing.
+    const QString loadingLine = m_hudVisible ? loadingStatusHudLine() : QString();
     if (m_cropMode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
         || m_slideshowPausedHud || m_gallerySizeResolveActive
         || !m_centreProgressTitle.isEmpty()
         || !ssPrefetchLine.isEmpty()
-        || !loadingLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
@@ -502,17 +503,6 @@ void ImageView::paintHudPanels(QPainter &painter)
                 actionLine += QLatin1Char(' ') + m_hudDetail;
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
-        } else if ((!ssPrefetchLine.isEmpty() || !loadingLine.isEmpty())
-                   && !(m_hudVisible || m_hudIdentityPulse)) {
-            // Loading status chip (cache vs file) without pinning the full HUD.
-            QList<HudLine> chip;
-            if (!loadingLine.isEmpty()) {
-                chip.append({loadingLine, true});
-            }
-            if (!ssPrefetchLine.isEmpty()) {
-                chip.append({ssPrefetchLine, false});
-            }
-            drawPanel(chip, margin, margin, false, false);
         } else if (m_hudVisible || m_hudIdentityPulse) {
             QList<HudLine> topLeft;
             if (!loadingLine.isEmpty()) {
@@ -691,13 +681,17 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         paintAttentionOverlay(painter);
     }
     paintWorkspaceViewportChrome(painter);
+
+    // Letterbox composite fills the viewport during slideshow; edge chevrons
+    // and HUD must paint after it or they are covered.
+    paintSlideshowLetterboxComposite(painter);
+    paintEmptySessionInvite(painter);
+
     if (!m_cropMode && !m_attentionMode && m_hoverEdge != EdgeZone::None && isImageMode()
         && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
 
-    paintSlideshowLetterboxComposite(painter);
-    paintEmptySessionInvite(painter);
     paintHudPanels(painter);
     paintSlideshowSeekbar(painter);
 }

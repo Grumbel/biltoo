@@ -1,5 +1,35 @@
 # TODO / agent handoff
 
+## Status (2026-09-16)
+
+**Tip: biltoo-1001-slideshow-edge-hud.** Edge chevrons in slideshow; Loading only with HUD (H).
+Prior: **1000**.
+
+### Problem
+- Left/right/up edge affordances (chevrons) never appeared during slideshow:
+  `drawEdgeAffordances` ran *before* `paintSlideshowLetterboxComposite`, which
+  fills the viewport and covered them. Mouse hit-testing was already correct.
+- A free-floating **Loading · …** chip showed whenever thumtoo had work, even
+  with the extended HUD off. User wants that only when H pins the HUD.
+
+### Fix
+- Paint edge affordances after the slideshow letterbox composite (and empty
+  invite), still before HUD/seekbar.
+- `loadingStatusHudLine()` only consulted when `m_hudVisible`; removed the
+  standalone non-HUD loading chip branch.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1001-slideshow-edge-hud.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1001**
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-15)
 
 **Tip: biltoo-1000-edit-marks-screen-px.** Content-edit folds fixed ~20px on screen.
