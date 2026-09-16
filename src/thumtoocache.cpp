@@ -1850,6 +1850,11 @@ bool scheduleSoftPixels(const QString &path, int maxEdge)
     if (maxEdge <= 0) {
         return false;
     }
+    // Size-first: ensure a probe is queued before soft (thumtoo runs ProbeSize
+    // ahead of EnsurePixels). Parallel soft is fine once probe is in flight.
+    if (!cachedSize(path).isValid()) {
+        scheduleProbe(path);
+    }
     // PreferCache/TileSynth when tiles exist; SoftOnly otherwise (filmstrip cost).
     const bool ok = hasDurableTiles(path)
                         ? scheduleDisplayPixels(path, maxEdge)

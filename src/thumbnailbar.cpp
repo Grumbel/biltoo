@@ -476,12 +476,17 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     if (!it) {
                         continue;
                     }
-                    // Loaded thumb already fixed aspect from pixels.
-                    if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()) {
-                        continue;
-                    }
+                    // Always apply durable size — even if LQIP already painted.
+                    // Skipping when ThumbLoadedRole was set left cells at sample
+                    // aspect until a soft upgrade (PDF LQIP growth).
                     applyNativeAspect(it, size);
                     any = true;
+                    // Size-first: soft after layout geometry is known.
+                    if (ThumtooCache::isAvailable()) {
+                        const int decodeSize = filmstripDecodeEdge();
+                        (void)ThumtooCache::scheduleSoftPixels(
+                            path, qMin(decodeSize, ThumtooCache::kGalleryLadderEdge));
+                    }
                 }
                 if (any) {
                     doItemsLayout();
@@ -2029,7 +2034,11 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     }
                     if (ThumtooCache::isAvailable()) {
                         host->m_thumbAwaitLadder.insert(i);
-                        if (decodeSize > ThumtooCache::kGalleryLadderEdge
+                        const QSize known = ThumtooCache::cachedSize(path);
+                        if (!(known.isValid() && known.width() > 0 && known.height() > 0)) {
+                            // Size-first: probe only; soft runs from sizeReady.
+                            ThumtooCache::scheduleProbe(path);
+                        } else if (decodeSize > ThumtooCache::kGalleryLadderEdge
                             && decodeSize <= ThumtooCache::kBatchOverviewEdge) {
                             if (!ThumtooCache::interestOwnsOverview()) {
                                 (void)ThumtooCache::scheduleOverviewPixels(
@@ -2038,7 +2047,6 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                                          ThumtooCache::kBatchOverviewEdge));
                             }
                         } else {
-                            // SoftOnly, or PreferCache/TileSynth when tiles exist.
                             (void)ThumtooCache::scheduleSoftPixels(
                                 path,
                                 qMin(decodeSize, ThumtooCache::kGalleryLadderEdge));

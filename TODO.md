@@ -2,6 +2,29 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1019-size-first-then-soft.** Size probe before soft; fix PDF LQIP growth.
+Prior: **1018**. Prefer **thumtoo ≥ 292** (ProbeSize priority).
+
+### Change
+- Filmstrip `sizeReady`: always `applyNativeAspect` (even if LQIP already “loaded”)
+- Filmstrip: schedule soft from sizeReady; weak miss only probes until size known
+- `scheduleSoftPixels`: `scheduleProbe` first when size unknown
+- PDF LQIP growth: was skipping native aspect when ThumbLoadedRole set by LQIP
+
+### Apply
+```bash
+git pull /path/to/biltoo-1019-size-first-then-soft.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1019**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1018-fix-motion-logical-unused.** Drop unused image/longEdge in motion size.
 Prior: **1017**.
 
