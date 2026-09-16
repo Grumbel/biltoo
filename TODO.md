@@ -2,6 +2,32 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1005-tilesynth-prefer-plateau.** TileSynth Prefer short-of-want → Full escalate.
+Prior: **1004**.
+
+### Change
+- `RasterClimb::noteDelivery`: soft-covered Prefer delivery short of host want
+  sets `preferGaveUp` (covers clamped request / TileSynth mid-edge cases).
+- Tests: mid-edge TileSynth; Prefer covers request but not want.
+
+### Next
+- Optional filmstrip SoftOnly→PreferCache only when tiles known present
+- Exercise against dual-path thumtoo with tiles-only soft cache
+
+### Apply
+```bash
+git pull /path/to/biltoo-1005-tilesynth-prefer-plateau.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1005**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1004-data-root-tilesynth-contract.** XDG data_root + TileSynth PreferCache contract.
 Prior: **1001** (1002/1003 tip chain was not on origin; re-applied here).
 
