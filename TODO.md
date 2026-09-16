@@ -2,6 +2,32 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1004-data-root-tilesynth-contract.** XDG data_root + TileSynth PreferCache contract.
+Prior: **1001** (1002/1003 tip chain was not on origin; re-applied here).
+
+### Change
+- `defaultDataRoot()` + `Client::open(..., data_root)` for user.sqlite under XDG_DATA
+- ENVIRONMENT.md: cache vs data split
+- THUMTOO_HOST_CONTRACT: TileSynth is valid PreferCache/Overview delivery; SoftOnly stays soft-only
+
+### Next
+- PathRaster: after PreferCache TileSynth short of want, escalate Full without soft-miss loop
+- Optional filmstrip SoftOnly→PreferCache only when tiles known present (avoid bulk TileSynth)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1004-data-root-tilesynth-contract.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1004**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1001-slideshow-edge-hud.** Edge chevrons in slideshow; Loading only with HUD (H).
 Prior: **1000**.
 

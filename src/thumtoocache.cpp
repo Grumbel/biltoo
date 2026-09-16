@@ -526,6 +526,18 @@ std::filesystem::path defaultCacheRoot()
     return std::filesystem::path(".cache") / "thumtoo";
 }
 
+/// User overlays (tags, collections, bookmarks) — must survive cache wipe.
+std::filesystem::path defaultDataRoot()
+{
+    if (const char *xdg = std::getenv("XDG_DATA_HOME"); xdg && *xdg) {
+        return std::filesystem::path(xdg) / "thumtoo";
+    }
+    if (const char *home = std::getenv("HOME"); home && *home) {
+        return std::filesystem::path(home) / ".local" / "share" / "thumtoo";
+    }
+    return std::filesystem::path(".local") / "share" / "thumtoo";
+}
+
 /**
  * Archive member image filter aligned with ImageLoader::imageSuffixes base
  * set (no imageloader include — circular). Broader than thumtoo's short
@@ -590,7 +602,10 @@ void openClientUnlocked()
     g_inited = true;
     try {
         thumtoo::image_library_init();
-        g_client = thumtoo::Client::open(defaultCacheRoot(), qtExecutor());
+        // data_root: user.sqlite under XDG_DATA so tags/sets survive cache wipe.
+        // Requires thumtoo dual-path Store (THUMTOO_API_STORE).
+        g_client = thumtoo::Client::open(defaultCacheRoot(), qtExecutor(), 0,
+                                        defaultDataRoot());
     } catch (...) {
         g_client.reset();
     }

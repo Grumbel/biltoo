@@ -53,8 +53,9 @@ warnings, and enables thumtoo debug the same way as the env vars above.
 
 | Variable | Effect |
 |----------|--------|
-| **`XDG_CACHE_HOME`** | Base for durable cache and `thumtoo-debug.log` (`$XDG_CACHE_HOME/biltoo/`). |
-| **`HOME`** | Fallback when `XDG_CACHE_HOME` is unset (`~/.cache/biltoo/`). |
+| **`XDG_CACHE_HOME`** | Base for durable cache and `thumtoo-debug.log` (`$XDG_CACHE_HOME/biltoo/`). Thumtoo pixel cache: `$XDG_CACHE_HOME/thumtoo/`. |
+| **`XDG_DATA_HOME`** | Thumtoo user overlays (`user.sqlite`: tags, collections) at `$XDG_DATA_HOME/thumtoo/` so they survive cache wipe. Passed as `Client::open` `data_root`. |
+| **`HOME`** | Fallback when `XDG_*` is unset (`~/.cache/…`, `~/.local/share/thumtoo`). |
 
 Qt settings still follow the usual Qt paths (e.g. `~/.config/biltoo/biltoo.conf`
 on Linux).
