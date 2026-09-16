@@ -90,12 +90,22 @@ void Machine::noteDelivery(int requestEdge, int got, int softMax)
     m_.fullQueued = false;
 
     constexpr int kMinPreferPlateau = 96;
+    // Prefer plateau vs the Prefer request edge (classic soft/overview shortfall).
     if (requestEdge > 0 && got > 0
         && got * kCoverDenom < requestEdge * kCoverNumer) {
         if (got >= kMinPreferPlateau
             || (m_.want > softMax && got <= softMax)) {
             m_.preferGaveUp = true;
         }
+    }
+    // TileSynth / mid-ladder Prefer can cover the scheduled Prefer edge while
+    // still short of host want (clamped request, or tiles assemble to overview
+    // while want is Full-band). Soft-covered but short-of-want → Prefer plateau
+    // so plan() escalates Full instead of re-requesting Prefer forever.
+    if (got >= kMinPreferPlateau && m_.want > softMax
+        && !covers(got, m_.want)
+        && (covers(got, softMax) || got >= softMax)) {
+        m_.preferGaveUp = true;
     }
     if (covers(m_.have, effectiveNeed())) {
         m_.preferGaveUp = false;

@@ -16,6 +16,8 @@ private slots:
     void soft_then_display_under_overview();
     void soft_covered_high_need_prefers_before_full();
     void prefercache_soft_delivery_sets_plateau_then_full();
+    void prefercache_tilesynth_mid_edge_then_full();
+    void prefercache_covers_request_but_short_of_want();
     void full_shortfall_clears_done_in_plan();
     void host_lru_demotion_resets_queues();
     void reconcile_clears_sticky_queued();
@@ -89,6 +91,32 @@ void RasterClimbSmTest::prefercache_soft_delivery_sets_plateau_then_full()
     m.setWant(4096, 6048, Policy::SoftDisplay, kSoft, kOverview);
     m.setHaveFromHost(512, kSoft);
     m.noteDelivery(4096, 512, kSoft); // PreferCache returned soft
+    QVERIFY(m.state().preferGaveUp);
+    const Plan p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(p.scheduleFull);
+}
+
+void RasterClimbSmTest::prefercache_tilesynth_mid_edge_then_full()
+{
+    // TileSynth PreferCache returned ~2048 for a Full-band want.
+    Machine m;
+    m.setWant(4096, 6048, Policy::SoftDisplay, kSoft, kOverview);
+    m.setHaveFromHost(512, kSoft);
+    m.noteDelivery(4096, 2048, kSoft);
+    QVERIFY(m.state().preferGaveUp);
+    const Plan p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(p.scheduleFull);
+    QVERIFY(!p.scheduleDisplay); // plateaued; Full band owns the path
+}
+
+void RasterClimbSmTest::prefercache_covers_request_but_short_of_want()
+{
+    // Prefer was scheduled at a clamped edge that TileSynth fully covers, while
+    // host want still needs Full-band. Must still preferGaveUp → Full.
+    Machine m;
+    m.setWant(4096, 6048, Policy::SoftDisplay, kSoft, kOverview);
+    m.setHaveFromHost(512, kSoft);
+    m.noteDelivery(2048, 2048, kSoft); // covers request, short of want
     QVERIFY(m.state().preferGaveUp);
     const Plan p = m.plan(kSoft, kOverview, kDispMax);
     QVERIFY(p.scheduleFull);
