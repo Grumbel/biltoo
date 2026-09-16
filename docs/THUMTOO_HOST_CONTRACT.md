@@ -18,7 +18,7 @@ branches that contradict it are bugs.
 
 | Layer | Owns | Does **not** own |
 |-------|------|------------------|
-| **Thumtoo** | Durable soft ladder, overview, PreferCache decode, tiles, full pixels; settle keys; `ladderReady` delivery. **`PixelSource::TileSynth` is a valid PreferCache/Overview delivery** (same `ladderReady` path as soft levels). SoftOnly stays soft-ladder-only (no TileSynth — filmstrip cost). | Host geometry, mode policy, which band a product surface needs |
+| **Thumtoo** | Durable soft ladder, overview, PreferCache decode, tiles, full pixels; settle keys; `ladderReady` delivery. **`PixelSource::TileSynth` is a valid PreferCache/Overview delivery** (same `ladderReady` path as soft levels). SoftOnly stays soft-ladder-only on cold paths; host `scheduleSoftPixels` may PreferCache when `hasDurableTiles` is true. | Host geometry, mode policy, which band a product surface needs |
 | **ImageCache** | Process RAM path → best raw sample (upward-only, ≤ display max) | Scheduling |
 | **PathRasterService** | Per-path want / have / climb band / escalate policy; the **only** host scheduler of soft → PreferCache → (optional) full | Paint, phase buffers, gallery prioritization |
 | **ImageView / consumers** | Need edge (viewport, zoom, slideshow headroom); install into items / phase buffers | Direct PreferCache re-queue after shortfall; inventing a second climb |

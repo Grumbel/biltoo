@@ -2,6 +2,31 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1006-schedule-soft-or-tiles.** Filmstrip SoftOnly→PreferCache when tiles exist.
+Prior: **1005**.
+
+### Change
+- `ThumtooCache::hasDurableTiles` / `scheduleSoftPixels` (PreferCache if tiles, else SoftOnly)
+- Filmstrip + ImageLoader soft schedules use `scheduleSoftPixels`
+
+### Next
+- Gallery SoftDisplay path may already PreferCache — verify tiles-only soft cache
+- Drop legacy soft levels on thumtoo after hosts stable
+
+### Apply
+```bash
+git pull /path/to/biltoo-1006-schedule-soft-or-tiles.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1006**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1005-tilesynth-prefer-plateau.** TileSynth Prefer short-of-want → Full escalate.
 Prior: **1004**.
 
