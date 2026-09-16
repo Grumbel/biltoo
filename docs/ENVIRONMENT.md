@@ -93,13 +93,9 @@ See also [AGENT-ENV.md](../AGENT-ENV.md) and [AGENTS.md](../AGENTS.md).
 
 ## THUMTOO_STORE_ONLY
 
-Default **on** in thumtoo ≥257: Client opens no legacy `index.sqlite` /
-`blobs.sqlite`. Durable pixels/meta live on the redesign Store only.
+**Ignored** in thumtoo ≥262 (and permanently after ≥272): Client is always
+Store-only. Legacy `Database` / `BlobStore` classes were removed from thumtoo;
+setting `THUMTOO_STORE_ONLY=0` has no effect.
 
-Opt out (dual-path + dual-write):
-
-```bash
-export THUMTOO_STORE_ONLY=0
-```
-
-Requires **thumtoo ≥ 257** for the default; **thumtoo ≥ 253** for opt-in Store-only.
+Durable pixels/meta live on the redesign Store (`index.sqlite` + `bulk.sqlite`
+at the cache root by default).

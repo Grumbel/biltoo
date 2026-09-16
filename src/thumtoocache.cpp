@@ -463,29 +463,17 @@ void scheduleBackgroundRevalidate(const QString &path, const std::string &uri)
         if (!c) {
             return;
         }
-        // Prefer the path we scheduled (works under THUMTOO_STORE_ONLY where
-        // Client::db() is unavailable). Fall back to legacy locator outer_path.
+        // Store-only Client (thumtoo ≥262): size/mtime from redesign locator.
+        // Prefer the filesystem path we scheduled for the outer file check.
         std::filesystem::path outer;
         std::optional<std::int64_t> cached_mtime;
         std::optional<std::int64_t> cached_size;
         if (!pathCopy.isEmpty()) {
             outer = std::filesystem::path(pathCopy.toStdString());
         }
-        if (c->has_legacy()) {
-            const auto loc = c->db().find_locator(uriCopy);
-            if (loc) {
-                if (outer.empty() && loc->outer_path && !loc->outer_path->empty()) {
-                    outer = std::filesystem::path(*loc->outer_path);
-                }
-                cached_mtime = loc->mtime_ns;
-                cached_size = loc->size;
-            }
-        } else {
-            // Store-only: size/mtime on redesign locator.
-            if (auto loc = c->store().find_locator(uriCopy)) {
-                cached_mtime = loc->mtime_ns;
-                cached_size = loc->size;
-            }
+        if (auto loc = c->store().find_locator(uriCopy)) {
+            cached_mtime = loc->mtime_ns;
+            cached_size = loc->size;
         }
         if (outer.empty()) {
             return;
@@ -679,7 +667,7 @@ void shutdown()
 #ifdef BILTOO_HAVE_THUMTOO
     // Abort superseded interest jobs and cancel host work *before* destroying
     // the client. aboutToQuit used to g_client.reset() while a pool thread was
-    // still inside Client::set_interest → Database::find_locator (NFS/archive
+    // still inside Client::set_interest → Store::find_locator (NFS/archive
     // paths hold the DB mutex for a long time) → use-after-free / hang on
     // QThreadPool::waitForDone in ~QCoreApplication.
     ++g_interestJobGen;

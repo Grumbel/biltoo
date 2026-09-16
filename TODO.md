@@ -2,6 +2,28 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1011-drop-legacy-client-branch.** Store-only revalidate; no Client::db().
+Prior: **1010**. Requires **thumtoo ≥ 268** (no `Client::db()`; ≥272 preferred).
+
+### Change
+- Background revalidate uses only `store().find_locator` (path + Store mtime/size)
+- Removed `has_legacy()` / `Client::db()` branch
+- ENVIRONMENT: `THUMTOO_STORE_ONLY` documented as ignored (≥262/≥272)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1011-drop-legacy-client-branch.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1011**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1010-store-only-default-docs.** ENVIRONMENT: STORE_ONLY default on (thumtoo ≥257).
 Prior: **1009**.
 
