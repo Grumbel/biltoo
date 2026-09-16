@@ -61,6 +61,9 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
             break;
         }
         const QString &path = item->path();
+        if (isProvisionalImageSize(path)) {
+            continue;
+        }
         const QImage hostSample = ImageCache::get(path);
         if (hostSample.isNull()) {
             continue;
@@ -197,6 +200,10 @@ void ImageView::updateGalleryDecodeWindow()
     // Image mode full decode is separate.
     // -------------------------------------------------------------------------
     if (!isGalleryMode() || m_items.isEmpty()) {
+        return;
+    }
+    // Size-first: do not install LQIP/soft onto tiles while probes still run.
+    if (m_gallerySizeResolveActive) {
         return;
     }
 

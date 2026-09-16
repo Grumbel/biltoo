@@ -159,9 +159,17 @@ ImageView::ImageView(QWidget *parent)
                                 if (item->hasDisplayPixels()) {
                                     continue;
                                 }
+                                // Geometry first — LQIP must not pack from 1×1.
+                                const SessionImageId sid = item->sessionId();
+                                const WorkspaceItemState want =
+                                    wantAppearanceForItem(item, sid);
+                                const QSize lay = ContentXform::layoutSize(size, want);
+                                if (isPositiveSize(lay) && lay.width() > 1) {
+                                    item->setIntrinsicSize(lay);
+                                }
                                 installDisplayPixels(item, lqip,
                                                      SessionAppearance::PixelKind::SoftPreview,
-                                                     item->sessionId());
+                                                     sid);
                             }
                         }
                     }

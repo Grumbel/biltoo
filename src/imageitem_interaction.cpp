@@ -1084,7 +1084,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // the box. When they disagree — provisional layout, LQIP, stale soft
         // under a probe upgrade, crop soft under full-frame layout — *stretch
         // is never correct*: letterbox so the page is not distorted.
-        auto drawSampleInContentRect = [&](const QImage &img) {
+        auto drawSampleInContentRect = [&](const QImage &img, bool forceLetterbox) {
             const QRectF box = contentRect();
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {
                 return;
@@ -1092,7 +1092,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
             const double aBox = box.width() / box.height();
             const double aImg = double(img.width()) / double(qMax(1, img.height()));
-            if (qAbs(aBox - aImg) <= 0.03) {
+            // Soft/LQIP: always letterbox. Filling when aspect is "close enough"
+            // made LQIP (wrong aspect) sit small, then soft fill the cell — looked
+            // like the tile grew when the ladder arrived.
+            if (!forceLetterbox && qAbs(aBox - aImg) <= 0.03) {
                 painter->drawImage(box, img);
                 return;
             }
@@ -1113,12 +1116,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             if (!pixmap().isNull()) {
                 // Pixmap path: same aspect rule via QImage convert only when needed.
                 const QImage img = pixmap().toImage();
-                drawSampleInContentRect(img);
+                drawSampleInContentRect(img, /*forceLetterbox=*/false);
             } else {
-                drawSampleInContentRect(m_source);
+                drawSampleInContentRect(m_source, /*forceLetterbox=*/false);
             }
         } else if (!m_preview.isNull()) {
-            drawSampleInContentRect(m_preview);
+            drawSampleInContentRect(m_preview, /*forceLetterbox=*/true);
         } else {
             // Loading placeholder while decode is pending or unloaded.
             const QRectF cr = contentRect();

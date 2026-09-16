@@ -2,6 +2,29 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1020-gallery-lqip-no-grow.** Gallery LQIP letterbox; size before soft paint.
+Prior: **1019**. Prefer **thumtoo ≥ 292**.
+
+### Change
+- Soft/LQIP paint always letterboxes (no fill when aspect ≈ box) — stops visual grow soft→fill
+- `updateGalleryDecodeWindow` idle while size-resolve active
+- Host soft install skips provisional-size paths
+- `sizeReady` sets intrinsic from probe **before** LQIP install
+
+### Apply
+```bash
+git pull /path/to/biltoo-1020-gallery-lqip-no-grow.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1020**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1019-size-first-then-soft.** Size probe before soft; fix PDF LQIP growth.
 Prior: **1018**. Prefer **thumtoo ≥ 292** (ProbeSize priority).
 
