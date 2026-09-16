@@ -209,13 +209,13 @@ QImage loadPageRef(const QString &path, int maxEdge)
     if (ThumtooCache::isAvailable()) {
         QImage img = ThumtooCache::rasterizePageRef(path, edge);
         if (!img.isNull()) {
-            // Soft ladder only — do not schedulePixels at native edge (1584…).
-            ThumtooCache::schedulePixels(
+            // Soft band; PreferCache/TileSynth when durable tiles exist.
+            ThumtooCache::scheduleSoftPixels(
                 path, qMin(edge, ThumtooCache::kGalleryLadderEdge));
             return scaleToMaxEdge(img, maxEdge);
         }
-        // Soft band only (THUMTOO_HOST_CONTRACT §1) — never Soft at page native edge.
-        ThumtooCache::schedulePixels(
+        // Soft band (THUMTOO_HOST_CONTRACT §1) — never Soft at page native edge.
+        ThumtooCache::scheduleSoftPixels(
             path, qMin(edge, ThumtooCache::kGalleryLadderEdge));
         return {};
     }
@@ -871,8 +871,8 @@ QImage load(const QString &path)
             }
         }
         if (ThumtooCache::isAvailable()) {
-            // Soft band only — Full/native is host PathRaster / crop Full (contract).
-            ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
+            // Soft band; PreferCache/TileSynth when durable tiles exist.
+            ThumtooCache::scheduleSoftPixels(path, ThumtooCache::kGalleryLadderEdge);
         }
         return {};
     }
@@ -949,7 +949,7 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                     const int softWant = qMin(ThumtooCache::ceilLadderEdge(maxEdge),
                                               ThumtooCache::kGalleryLadderEdge);
                     if (softWant > haveStep) {
-                        ThumtooCache::schedulePixels(path, softWant);
+                        ThumtooCache::scheduleSoftPixels(path, softWant);
                     }
                     // FastBatch overview when display needs more than soft max.
                     // Always schedule with callback — setInterest alone has no
@@ -982,7 +982,7 @@ QImage loadThumbnail(const QString &path, int maxEdge)
             }
         }
         // True miss: soft ladder (≤ soft max); overview when display is larger.
-        ThumtooCache::schedulePixels(
+        ThumtooCache::scheduleSoftPixels(
             path, qMin(maxEdge, ThumtooCache::kGalleryLadderEdge));
         if (maxEdge > ThumtooCache::kGalleryLadderEdge
             && maxEdge <= ThumtooCache::kBatchOverviewEdge) {

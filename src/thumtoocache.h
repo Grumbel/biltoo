@@ -180,6 +180,19 @@ quint64 setPrimaryInterest(const QString &path, int edge);
  */
 bool scheduleTilePyramid(const QString &path);
 
+/**
+ * Cache-only: at least one durable tile exists for @p path (legacy or Store).
+ * Used so SoftOnly filmstrip can PreferCache/TileSynth when tiles are present
+ * without forcing TileSynth on cold paths (HOST_CUTOVER / SoftOnly cost).
+ */
+bool hasDurableTiles(const QString &path);
+
+/**
+ * Soft band schedule: SoftOnly when no tiles; PreferCache when tiles exist so
+ * TileSynth can satisfy filmstrip without encoding a soft ladder.
+ */
+bool scheduleSoftPixels(const QString &path, int maxEdge);
+
 /** Human label for last ladderProvenance on this path (empty if unknown). */
 QString lastPixelSourceLabel(const QString &path);
 

@@ -2003,7 +2003,8 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                                          ThumtooCache::kBatchOverviewEdge));
                             }
                         } else {
-                            (void)ThumtooCache::schedulePixels(
+                            // SoftOnly, or PreferCache/TileSynth when tiles exist.
+                            (void)ThumtooCache::scheduleSoftPixels(
                                 path,
                                 qMin(decodeSize, ThumtooCache::kGalleryLadderEdge));
                         }

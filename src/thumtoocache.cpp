@@ -1798,6 +1798,54 @@ bool scheduleTilePyramid(const QString &path)
 #endif
 }
 
+bool hasDurableTiles(const QString &path)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty() || isUnsupported(path)) {
+        return false;
+    }
+    init();
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return false;
+    }
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return false;
+    }
+    // Spot-check scale 0/1 origin tiles — definitive for dual-path Store/legacy.
+    if (c->has_tile(uri, 0, 0, 0) || c->has_tile(uri, 1, 0, 0)) {
+        return true;
+    }
+    return false;
+#else
+    Q_UNUSED(path);
+    return false;
+#endif
+}
+
+bool scheduleSoftPixels(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (maxEdge <= 0) {
+        return false;
+    }
+    // PreferCache/TileSynth when tiles exist; SoftOnly otherwise (filmstrip cost).
+    if (hasDurableTiles(path)) {
+        return scheduleDisplayPixels(path, maxEdge);
+    }
+    return schedulePixels(path, maxEdge);
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+    return false;
+#endif
+}
+
 void preparePaths(const QStringList &paths)
 {
 #ifdef BILTOO_HAVE_THUMTOO
