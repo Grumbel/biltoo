@@ -2,6 +2,31 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1007-pathraster-soft-or-tiles.** PathRaster Soft band uses scheduleSoftPixels.
+Prior: **1006**.
+
+### Change
+- `PathRasterService::pump` soft schedule → `scheduleSoftPixels` (Gallery SoftDisplay
+  / Soft→Prefer climb can TileSynth when tiles exist)
+
+### Next
+- Optional THUMTOO_TILES_ONLY on thumtoo to refuse soft-level writes under test
+- Host soak: tiles-only soft cache; then drop legacy levels write path
+
+### Apply
+```bash
+git pull /path/to/biltoo-1007-pathraster-soft-or-tiles.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1007**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1006-schedule-soft-or-tiles.** Filmstrip SoftOnly→PreferCache when tiles exist.
 Prior: **1005**.
 
