@@ -2,6 +2,29 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1017-canon-thumtoo-source-path.** Ignore trailing-slash THUMTOO path drift.
+Prior: **1016**.
+
+### Change
+- `_biltoo_canon_path` + resolve via `cd && pwd`
+- biltoo-build compares canonical cache vs current (no false reconfigure on `…/thumtoo.git` vs `…/thumtoo.git/`)
+- shellHook normalizes exported `THUMTOO_SOURCE_DIR` the same way
+
+### Apply
+```bash
+git pull /path/to/biltoo-1017-canon-thumtoo-source-path.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1017**
+- [x] Trailing slash alone does not trigger biltoo-configure
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1016-no-sample-intrinsic.** Block all sample→intrinsic size paths.
 Prior: **1015**.
 

@@ -87,6 +87,16 @@
             fi
             BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"
 
+            # Canonical path for comparisons (strip trailing /; resolve . / ..).
+            _biltoo_canon_path() {
+              local p="$1"
+              p="''${p%/}"
+              if [ -d "$p" ]; then
+                ( cd "$p" && pwd )
+              else
+                printf '%s\n' "$p"
+              fi
+            }
             _biltoo_resolve_thumtoo() {
               if [ -n "''${THUMTOO_SOURCE_DIR:-}" ] && [ -f "''${THUMTOO_SOURCE_DIR}/CMakeLists.txt" ]; then
                 case "''${THUMTOO_SOURCE_DIR}" in
@@ -97,7 +107,7 @@
                     echo "    export THUMTOO_SOURCE_DIR=/path/to/thumtoo && biltoo-configure" >&2
                     ;;
                 esac
-                printf '%s\n' "''${THUMTOO_SOURCE_DIR}"
+                _biltoo_canon_path "''${THUMTOO_SOURCE_DIR}"
                 return 0
               fi
               local cand
@@ -107,7 +117,7 @@
                 "''${BILTOO_SOURCE}/../thumtoo/thumtoo.git"
               do
                 if [ -f "''${cand}/CMakeLists.txt" ]; then
-                  ( cd "''${cand}" && pwd )
+                  _biltoo_canon_path "''${cand}"
                   return 0
                 fi
               done
@@ -141,6 +151,7 @@
               cache="$BILTOO_BUILD_DIR/CMakeCache.txt"
               if [ -f "$cache" ]; then
                 cached="$(sed -n 's/^THUMTOO_SOURCE_DIR:PATH=//p' "$cache" | head -n1 || true)"
+                cached="$(_biltoo_canon_path "$cached")"
                 if [ -n "$cached" ] && [ "$cached" != "$THUMTOO_SOURCE_DIR" ]; then
                   echo "biltoo-build: THUMTOO_SOURCE_DIR changed since configure:" >&2
                   echo "  cmake cache: $cached" >&2
@@ -224,7 +235,9 @@
             export BILTOO_BUILD_DIR="''${BILTOO_BUILD_DIR:-/tmp/biltoo-build}"
 
             # Same live-tree resolution as biltoo-configure (see biltooDevPreamble).
-            if [ -z "''${THUMTOO_SOURCE_DIR:-}" ] || [ ! -f "''${THUMTOO_SOURCE_DIR}/CMakeLists.txt" ]; then
+            if [ -n "''${THUMTOO_SOURCE_DIR:-}" ] && [ -f "''${THUMTOO_SOURCE_DIR}/CMakeLists.txt" ]; then
+              THUMTOO_SOURCE_DIR="$(cd "''${THUMTOO_SOURCE_DIR}" && pwd)"
+            elif [ -z "''${THUMTOO_SOURCE_DIR:-}" ] || [ ! -f "''${THUMTOO_SOURCE_DIR}/CMakeLists.txt" ]; then
               for cand in \
                 "$BILTOO_SOURCE/../thumtoo" \
                 "$BILTOO_SOURCE/../thumtoo.git" \
