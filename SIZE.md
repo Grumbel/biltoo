@@ -57,6 +57,9 @@ only magnitude changes, scale the view so the on-screen footprint stays put.
 `layoutSizeForPath` ignores `previewHint` for geometry. Size is the first durable
 query and must not jump when LQIP or a ladder sample appears.
 
+Item intrinsic stays **1×1** (or filmstrip square provisional) until `sizeReady`
+/ cachedSize; soft install never calls `setIntrinsicSize` from sample dims.
+
 Gallery pack is debounced on aspect change (`requestDebouncedGalleryPack`).
 
 ## Display edge vs native

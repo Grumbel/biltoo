@@ -1003,13 +1003,8 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
             }
         }
         item->setIntrinsicSize(logical);
-    } else if (!item->displayImage().isNull()) {
-        // Provisional: frame from sample aspect so underlay is not square-squashed.
-        logical = scaleToLongEdge(item->displayImage().size(), kProvisionalLayoutLongEdge);
-        if (isPositiveSize(logical)) {
-            item->setIntrinsicSize(logical);
-        }
     }
+    // Provisional / unknown: leave intrinsic alone — LQIP/soft must not set geometry.
     const QRectF content = item->contentRect();
     if (content.width() < 1.0 || content.height() < 1.0) {
         return;
@@ -2964,16 +2959,8 @@ QSize ImageView::resolveMotionLogicalSize(const QImage &image, const QString &pa
         longEdge = qMax(fileNative.width(), fileNative.height());
     }
 
-    if (!image.isNull() && isPositiveSize(image.size())
-        && image.width() > 1 && image.height() > 1) {
-        // Sample aspect is ground truth for this blit (raw or oriented).
-        const QSize fromSample = scaleToLongEdge(image.size(), longEdge);
-        if (isPositiveSize(fromSample)) {
-            return fromSample;
-        }
-    }
-
-    // No sample yet: file-native, oriented if appearance is known.
+    // File-native owns motion dest size (SIZE.md). Sample is blit-only; using
+    // sample aspect here made cover rect jump when LQIP → soft → full arrived.
     if (isPositiveSize(fileNative) && !path.isEmpty()) {
         WorkspaceItemState app;
         if (snapshotSlideshowContentAppearance(path, &app)

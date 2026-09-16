@@ -322,11 +322,14 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
             app = appearanceForNewImageModeItem(path);
         }
     }
-    QSize native = layoutSizeForPath(path, image);
-    if (!isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
-        native = image.size();
+    // Logical size only from probe / map — never sample (LQIP/soft) dims.
+    QSize native = layoutSizeForPath(path, QImage());
+    if (isProvisionalImageSize(path)
+        || !isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
+        // Cold: 1×1 until sizeReady; soft install must not invent geometry.
+        native = QSize(1, 1);
+        scheduleImageSizeProbe(path);
     }
-    // Layout from file-native × want — never sample pixel size as crop intrinsic.
     QSize intrinsic = ContentXform::layoutSize(native, app);
     if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {
         intrinsic = QSize(1, 1);
@@ -1073,18 +1076,16 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                                  item->sessionId());
         }
 
-        // Intrinsic already set by attachDisplaySample (file-native × want).
-        // Only re-frame when we have a definitive file size to orient.
+        // Intrinsic only from definitive file size — never from soft/LQIP sz.
         const QSize known = logicalSizeForPath(path);
         QSize targetSize = item->imageSize();
         if (isPositiveSize(known) && known.width() > 1 && known.height() > 1
             && !isProvisionalImageSize(path)) {
             targetSize = ContentXform::layoutSize(known, want);
-        } else if (!(isPositiveSize(targetSize) && targetSize.width() > 1)) {
-            targetSize = (sz.width() > 1 && sz.height() > 1) ? sz : sizeBefore;
         }
         int didFit = 0;
-        if (isPositiveSize(targetSize) && targetSize.width() > 1) {
+        if (isPositiveSize(targetSize) && targetSize.width() > 1
+            && !isProvisionalImageSize(path)) {
             item->setIntrinsicSize(targetSize);
             const bool needFit =
                 sizeBefore.width() <= 1

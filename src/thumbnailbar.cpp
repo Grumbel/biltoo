@@ -1068,9 +1068,8 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
         }
         if (!aspectBasis.isValid()) {
             const QSize prev = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
-            if (prev.isValid() && prev.width() > 0 && prev.height() > 0
-                && incomingEdge <= DisplayQuality::kLqipMaxEdge) {
-                // LQIP only: keep prior cell size (provisional or native).
+            if (prev.isValid() && prev.width() > 0 && prev.height() > 0) {
+                // Keep prior cell geometry; only the pixmap upgrades (LQIP→soft).
                 const QSize hint = m_delegate->cellSizeForContent(font(), prev);
                 it->setSizeHint(hint);
                 const QModelIndex idx = indexFromItem(it);
@@ -1086,7 +1085,9 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
                 }
                 return;
             }
-            aspectBasis = image.size();
+            // First paint, no durable size yet: square provisional at thumbSize.
+            // sizeReady → applyNativeAspect sets real aspect once.
+            aspectBasis = QSize(m_thumbSize, m_thumbSize);
         }
         const QSize content = m_delegate->letterboxContentSize(aspectBasis);
         it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);

@@ -570,7 +570,8 @@ void ImageView::duplicateSelected()
             intrinsic = ContentXform::layoutSize(native, content);
         }
         if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {
-            intrinsic = display.size();
+            // Do not adopt sample pixel size (LQIP/soft).
+            intrinsic = QSize(1, 1);
         }
 
         auto *copy = new ImageItem(src->path(), intrinsic);

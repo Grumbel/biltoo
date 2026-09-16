@@ -2,6 +2,32 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1016-no-sample-intrinsic.** Block all sample→intrinsic size paths.
+Prior: **1015**.
+
+### Change
+- `createItemFromImage`: never `image.size()`; 1×1 + probe until definitive
+- Slideshow framing / motion logical: no sample aspect for geometry
+- Pending soft install: `setIntrinsicSize` only when !provisional
+- Transform copy: no `display.size()` fallback
+- Filmstrip: keep prior cell size on any pixmap upgrade; first paint square until
+  `sizeReady` → `applyNativeAspect`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1016-no-sample-intrinsic.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1016**
+- [x] No LQIP/soft path writes logical size
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1015-fix-filmstrip-debug-scope.** Fix setThumbnailIcon debug locals.
 Prior: **1014**.
 
