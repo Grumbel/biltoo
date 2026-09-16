@@ -291,7 +291,7 @@ public:
      * image size (m_imageSizeByPath / thumtoo cache), never the raster's pixel
      * dimensions — soft placeholders are sampling only.
      */
-    QSize resolveMotionLogicalSize(const QImage &image, const QString &path) const;
+    QSize resolveMotionLogicalSize(const QString &path) const;
     QRectF computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh,
                                       qreal motionT, QPointF biasA, QPointF biasB,
                                       const QString &path) const;

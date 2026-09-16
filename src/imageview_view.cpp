@@ -2946,21 +2946,11 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     painter->fillRect(viewportRect, slideshowPadColor());
 }
 
-QSize ImageView::resolveMotionLogicalSize(const QImage &image, const QString &path) const
+QSize ImageView::resolveMotionLogicalSize(const QString &path) const
 {
-    // Dest aspect must match the *pixels being drawn* (sample). Rapid ←/→ arms
-    // unoriented stand-ins then async ContentXform orient; a dest keyed only on
-    // file-native or only on contentApplied races and stretches for a frame.
-    // Magnitude comes from durable logical long-edge when known.
-    const QSize fileNative = logicalSizeForPath(path);
-    int longEdge = kProvisionalLayoutLongEdge;
-    if (isPositiveSize(fileNative) && !path.isEmpty()
-        && !isProvisionalImageSize(path)) {
-        longEdge = qMax(fileNative.width(), fileNative.height());
-    }
-
     // File-native owns motion dest size (SIZE.md). Sample is blit-only; using
     // sample aspect here made cover rect jump when LQIP → soft → full arrived.
+    const QSize fileNative = logicalSizeForPath(path);
     if (isPositiveSize(fileNative) && !path.isEmpty()) {
         WorkspaceItemState app;
         if (snapshotSlideshowContentAppearance(path, &app)
@@ -3100,7 +3090,7 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     const int vw = qMax(1, viewport()->width());
     const int vh = qMax(1, viewport()->height());
 
-    const QSize logical = resolveMotionLogicalSize(image, path);
+    const QSize logical = resolveMotionLogicalSize(path);
     const qreal iw = qreal(logical.width());
     const qreal ih = qreal(logical.height());
     if (iw < 1.0 || ih < 1.0) {

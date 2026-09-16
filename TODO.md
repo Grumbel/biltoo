@@ -2,6 +2,27 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1018-fix-motion-logical-unused.** Drop unused image/longEdge in motion size.
+Prior: **1017**.
+
+### Change
+- `resolveMotionLogicalSize(path)` only — no sample image arg (SIZE.md)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1018-fix-motion-logical-unused.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1018**
+- [x] No -Wunused-parameter / -Wunused-but-set-variable on that function
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1017-canon-thumtoo-source-path.** Ignore trailing-slash THUMTOO path drift.
 Prior: **1016**.
 
