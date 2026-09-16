@@ -463,22 +463,44 @@ void scheduleBackgroundRevalidate(const QString &path, const std::string &uri)
         if (!c) {
             return;
         }
-        const auto loc = c->db().find_locator(uriCopy);
-        if (!loc || !loc->outer_path || loc->outer_path->empty()) {
+        // Prefer the path we scheduled (works under THUMTOO_STORE_ONLY where
+        // Client::db() is unavailable). Fall back to legacy locator outer_path.
+        std::filesystem::path outer;
+        std::optional<std::int64_t> cached_mtime;
+        std::optional<std::int64_t> cached_size;
+        if (!pathCopy.isEmpty()) {
+            outer = std::filesystem::path(pathCopy.toStdString());
+        }
+        if (c->has_legacy()) {
+            const auto loc = c->db().find_locator(uriCopy);
+            if (loc) {
+                if (outer.empty() && loc->outer_path && !loc->outer_path->empty()) {
+                    outer = std::filesystem::path(*loc->outer_path);
+                }
+                cached_mtime = loc->mtime_ns;
+                cached_size = loc->size;
+            }
+        } else {
+            // Store-only: size/mtime on redesign locator.
+            if (auto loc = c->store().find_locator(uriCopy)) {
+                cached_mtime = loc->mtime_ns;
+                cached_size = loc->size;
+            }
+        }
+        if (outer.empty()) {
             return;
         }
-        const std::filesystem::path outer(*loc->outer_path);
         const auto mtime = fileMtimeFingerprint(outer);
         const auto size = fileSizeBytes(outer);
         // No stored fingerprint: nothing to compare; leave cache as-is.
-        if (!loc->mtime_ns && !loc->size) {
+        if (!cached_mtime && !cached_size) {
             return;
         }
         bool mismatch = false;
-        if (loc->mtime_ns && mtime && *loc->mtime_ns != *mtime) {
+        if (cached_mtime && mtime && *cached_mtime != *mtime) {
             mismatch = true;
         }
-        if (loc->size && size && *loc->size != *size) {
+        if (cached_size && size && *cached_size != *size) {
             mismatch = true;
         }
         // Source vanished.

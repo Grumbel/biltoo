@@ -2,6 +2,33 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1009-store-only-revalidate.** Revalidate without Client::db() for STORE_ONLY.
+Prior: **1008**. Requires **thumtoo ≥ 256** (`has_legacy()`, Store-only public APIs).
+
+### Change
+- Background revalidate uses path + `store().find_locator` when `!has_legacy()`
+- Still uses legacy locator under dual-path
+
+### Soak
+```bash
+export THUMTOO_STORE_ONLY=1
+biltoo …
+```
+
+### Apply
+```bash
+git pull /path/to/biltoo-1009-store-only-revalidate.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1009**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1008-tiles-first-env.** Document thumtoo tiles-first soft-level policy.
 Prior: **1007**.
 
@@ -22,7 +49,7 @@ git pull /path/to/biltoo-1008-tiles-first-env.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-16)
 
@@ -47,7 +74,7 @@ git pull /path/to/biltoo-1007-pathraster-soft-or-tiles.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-16)
 
@@ -72,7 +99,7 @@ git pull /path/to/biltoo-1006-schedule-soft-or-tiles.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-16)
 
@@ -98,7 +125,7 @@ git pull /path/to/biltoo-1005-tilesynth-prefer-plateau.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-16)
 
@@ -124,7 +151,7 @@ git pull /path/to/biltoo-1004-data-root-tilesynth-contract.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-16)
 
@@ -154,7 +181,7 @@ git pull /path/to/biltoo-1001-slideshow-edge-hud.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -172,7 +199,7 @@ git pull /path/to/biltoo-1000-edit-marks-screen-px.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -195,7 +222,7 @@ git pull /path/to/biltoo-999-archive-appearance-no-spam.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -223,7 +250,7 @@ git pull /path/to/biltoo-998-restore-durable-orient.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -243,7 +270,7 @@ git pull /path/to/biltoo-997-content-edit-marks.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -272,7 +299,7 @@ git pull /path/to/biltoo-996-seed-durable-orient-on-open.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -290,7 +317,7 @@ git pull /path/to/biltoo-995-pending-tile-const-fix.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -315,7 +342,7 @@ git pull /path/to/biltoo-994-appearance-persist-grade-nav.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -336,7 +363,7 @@ git pull /path/to/biltoo-993-soft-provider-public-api.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -358,7 +385,7 @@ git pull /path/to/biltoo-992-prefs-mime-tree-check-crash.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -383,7 +410,7 @@ git pull /path/to/biltoo-991-image-nav-share-filmstrip-soft.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -405,7 +432,7 @@ git pull /path/to/biltoo-990-displaysurface-soft-host-edge.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -442,7 +469,7 @@ git pull /path/to/biltoo-989-workspace-soft-not-fullsource.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -467,7 +494,7 @@ git pull /path/to/biltoo-988-soft-attach-prefer-intermediate.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -491,7 +518,7 @@ git pull /path/to/biltoo-987-workspace-zoom-climb.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -513,7 +540,7 @@ git pull /path/to/biltoo-986-workspace-gallery-restore.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -538,7 +565,7 @@ git pull /path/to/biltoo-985-workspace-export-high-res.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -562,7 +589,7 @@ git pull /path/to/biltoo-984-thumtoo-init-off-gui.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -581,7 +608,7 @@ git pull /path/to/biltoo-983-rasterclimb-test-prefer-before-full.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -610,7 +637,7 @@ git pull /path/to/biltoo-982-status-improving-not-stuck.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -642,7 +669,7 @@ git pull /path/to/biltoo-981-progressive-ladder-window-need.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -669,7 +696,7 @@ git pull /path/to/biltoo-980-resolution-sm-doc-soft-est.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -701,7 +728,7 @@ git pull /path/to/biltoo-979-crop-aware-display-surface-decide.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -733,7 +760,7 @@ git pull /path/to/biltoo-978-imagefocus-need-native.bundle HEAD
 
 
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -757,7 +784,7 @@ git pull /path/to/biltoo-973-docs-gallery-soft-surface-policy.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -777,7 +804,7 @@ git pull /path/to/biltoo-972-preview-evaluate-surface-docs.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -795,7 +822,7 @@ git pull /path/to/biltoo-971-apply-display-surface-action-body.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -815,7 +842,7 @@ git pull /path/to/biltoo-970-apply-display-surface-action.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -834,7 +861,7 @@ git pull /path/to/biltoo-969-slideshow-phase-surface-ids.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -854,7 +881,7 @@ git pull /path/to/biltoo-968-surface-docs-slideshow-tick-rename.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -873,7 +900,7 @@ git pull /path/to/biltoo-967-filmstrip-surface-registry.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -894,7 +921,7 @@ git pull /path/to/biltoo-966-workspace-imagefocus-bound-surfaces.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -913,7 +940,7 @@ git pull /path/to/biltoo-965-gallery-surface-evaluate.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -936,7 +963,7 @@ git pull /path/to/biltoo-964-item-surface-id-lifecycle.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -956,7 +983,7 @@ git pull /path/to/biltoo-963-canaccept-via-decide.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -976,7 +1003,7 @@ git pull /path/to/biltoo-962-drop-dead-displayquality-install.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1000,7 +1027,7 @@ git pull /path/to/biltoo-961-display-surface-migration-status.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1027,7 +1054,7 @@ git pull /path/to/biltoo-960-slideshow-phase-decide.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1061,7 +1088,7 @@ git pull /path/to/biltoo-959-gallery-decide-only-dq-docs.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1087,7 +1114,7 @@ git pull /path/to/biltoo-958-workspace-gallery-decide-delivery.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1113,7 +1140,7 @@ git pull /path/to/biltoo-957-gallery-filmstrip-decide.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1142,7 +1169,7 @@ git pull /path/to/biltoo-956-imagefocus-event-only.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1171,7 +1198,7 @@ git pull /path/to/biltoo-955-imagefocus-display-surface.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1202,7 +1229,7 @@ git pull /path/to/biltoo-954-displaysurface-decide.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1240,7 +1267,7 @@ git pull /path/to/biltoo-953-display-surface-plan.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1313,7 +1340,7 @@ git pull /path/to/biltoo-951-crop-stop-quality-pulse.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1335,7 +1362,7 @@ git pull /path/to/biltoo-950-crop-apply-rematerialize-after-freeze.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1359,7 +1386,7 @@ git pull /path/to/biltoo-949-crop-no-soft-demote.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1387,7 +1414,7 @@ git pull /path/to/biltoo-948-crop-draft-freeze-before-mode.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1411,7 +1438,7 @@ git pull /path/to/biltoo-947-crop-draft-freeze.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1435,7 +1462,7 @@ git pull /path/to/biltoo-946-crop-grade-no-thrash.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1456,7 +1483,7 @@ git pull /path/to/biltoo-945-gallery-grade-no-double.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1478,7 +1505,7 @@ git pull /path/to/biltoo-944-color-adjust-panel-filmstrip.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1500,7 +1527,7 @@ git pull /path/to/biltoo-943-color-grade-no-thumtoo-gui.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1528,7 +1555,7 @@ git pull /path/to/biltoo-942-color-adjust-interactive.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1556,7 +1583,7 @@ git pull /path/to/biltoo-941-attention-selection-undo.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1577,7 +1604,7 @@ git pull /path/to/biltoo-940-env-docs-manpage.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1639,7 +1666,7 @@ git pull /path/to/biltoo-939-todo-0.2-session-browser.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1664,7 +1691,7 @@ git pull /path/to/biltoo-938-image-host-better-fullsource.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1690,7 +1717,7 @@ git pull /path/to/biltoo-937-size-resolve-no-processEvents.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1716,7 +1743,7 @@ git pull /path/to/biltoo-936-gallery-enter-no-premature-pack.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1761,7 +1788,7 @@ git pull /path/to/biltoo-935-ground-truth-status.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1781,7 +1808,7 @@ git pull /path/to/biltoo-934-remove-dead-crop-helpers.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1801,7 +1828,7 @@ git pull /path/to/biltoo-933-remove-dead-applyContentToItem.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1821,7 +1848,7 @@ git pull /path/to/biltoo-932-remove-dead-applyContentBakes.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1844,7 +1871,7 @@ git pull /path/to/biltoo-931-workspace-grade-rematerialize.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1865,7 +1892,7 @@ git pull /path/to/biltoo-930-rematerialize-public.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1886,7 +1913,7 @@ git pull /path/to/biltoo-929-pipeline-docs-soft-test.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1905,7 +1932,7 @@ git pull /path/to/biltoo-928-createitem-via-install-gate.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1929,7 +1956,7 @@ git pull /path/to/biltoo-927-duplicate-no-cache-pollute.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1952,7 +1979,7 @@ git pull /path/to/biltoo-926-workspace-restore-rematerialize.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -1975,7 +2002,7 @@ git pull /path/to/biltoo-925-restore-rematerialize.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2002,7 +2029,7 @@ git pull /path/to/biltoo-924-createitem-host-materialize.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2028,7 +2055,7 @@ git pull /path/to/biltoo-923-host-only-decode-jobs.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2055,7 +2082,7 @@ git pull /path/to/biltoo-922-pending-tile-display-ready.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2091,7 +2118,7 @@ git pull /path/to/biltoo-921-display-want-invariant.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2115,7 +2142,7 @@ git pull /path/to/biltoo-920-gallery-crop-pixels.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2140,7 +2167,7 @@ git pull /path/to/biltoo-919-slideshow-nav-hot-settle.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2165,7 +2192,7 @@ git pull /path/to/biltoo-918-clear-soft-on-path-change.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2200,7 +2227,7 @@ git pull /path/to/biltoo-917-soft-host-seed-restore.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2239,7 +2266,7 @@ git pull /path/to/biltoo-916-image-soft-from-gallery-stash.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2280,7 +2307,7 @@ git pull /path/to/biltoo-915-nav-soft-hotpath.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2317,7 +2344,7 @@ git pull /path/to/biltoo-914-paint-aspect-contract.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2341,7 +2368,7 @@ git pull /path/to/biltoo-913-nav-clear-content-chrome.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2359,7 +2386,7 @@ git pull /path/to/biltoo-912-nav-clear-wrong-pixels.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2384,7 +2411,7 @@ git pull /path/to/biltoo-911-nav-no-aspect-stretch.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2404,7 +2431,7 @@ git pull /path/to/biltoo-910-crop-badge.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2428,7 +2455,7 @@ git pull /path/to/biltoo-909-contentxform-combo-tests.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2451,7 +2478,7 @@ git pull /path/to/biltoo-908-crop-rotate-no-double.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2471,7 +2498,7 @@ git pull /path/to/biltoo-907-sticky-image-only.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2492,7 +2519,7 @@ git pull /path/to/biltoo-906-sticky-no-ensurevisible.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2506,7 +2533,7 @@ git pull /path/to/biltoo-905-unused-hascrop.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2526,7 +2553,7 @@ git pull /path/to/biltoo-904-gallery-zoom-selection.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2552,7 +2579,7 @@ git pull /path/to/biltoo-903-expand-no-gui-stat.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2578,7 +2605,7 @@ git pull /path/to/biltoo-902-quality-silent-bootstrap.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2602,7 +2629,7 @@ git pull /path/to/biltoo-901-crop-apply-fit-no-stretch.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2624,7 +2651,7 @@ git pull /path/to/biltoo-900-action-help-texts.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2645,7 +2672,7 @@ git pull /path/to/biltoo-899-crop-rotate-verify.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2679,7 +2706,7 @@ ctest -R contentxform --output-on-failure
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2698,7 +2725,7 @@ git pull /path/to/biltoo-897-test-link.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2717,7 +2744,7 @@ git pull /path/to/biltoo-896-build-fix.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2738,7 +2765,7 @@ git pull /path/to/biltoo-895-drag-preview.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2761,7 +2788,7 @@ git pull /path/to/biltoo-894-slideshow-crop.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2789,7 +2816,7 @@ ctest -R 'contentxform|sessionappearance-crop' --output-on-failure
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2811,7 +2838,7 @@ git pull /path/to/biltoo-892-crop-apply-clear-pixels.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2831,7 +2858,7 @@ git pull /path/to/biltoo-891-filmstrip-paint-override.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2851,7 +2878,7 @@ git pull /path/to/biltoo-890-filmstrip-crop-override.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2872,7 +2899,7 @@ git pull /path/to/biltoo-889-filmstrip-no-upscale-lqip.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2900,7 +2927,7 @@ git pull /path/to/biltoo-888-peer-sync-paint.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2928,7 +2955,7 @@ git pull /path/to/biltoo-887-crop-enter-quality.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -2963,7 +2990,7 @@ git pull /path/to/biltoo-886-crop-mode-before-fit.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -3003,7 +3030,7 @@ git pull /path/to/biltoo-885-crop-mode-plan-fititem.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -3036,7 +3063,7 @@ git pull /path/to/biltoo-884-image-crop-race.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -3071,7 +3098,7 @@ full image with prior rect. Apply second crop works.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-15)
 
@@ -3096,7 +3123,7 @@ git pull /path/to/biltoo-882-filmstrip-settle.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3134,7 +3161,7 @@ git pull /path/to/biltoo-881-attach-layoutsize-only.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3167,7 +3194,7 @@ git pull /path/to/biltoo-880-crop-scale-gallery-scroll.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3203,7 +3230,7 @@ that row.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3243,7 +3270,7 @@ BILTOO_DEBUG_CROP=1 BILTOO_DEBUG_FILMSTRIP=1 biltoo-run
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3281,7 +3308,7 @@ git pull /path/to/biltoo-877-crop-gallery-filmstrip-workspace.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3321,7 +3348,7 @@ git pull /path/to/biltoo-876-crop-filmstrip-workspace-roots.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3356,7 +3383,7 @@ git pull /path/to/biltoo-875-propagate-content-transform-views.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3386,7 +3413,7 @@ git pull /path/to/biltoo-874-path-xdg-no-bound-crop.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3428,7 +3455,7 @@ git pull /path/to/biltoo-873-appearance-ownership-docs-tests.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3447,7 +3474,7 @@ git pull /path/to/biltoo-872-crop-verified-target-scale-filmstrip.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3466,7 +3493,7 @@ git pull /path/to/biltoo-871-crop-noimage-footprint-filmstrip.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3492,7 +3519,7 @@ git pull /path/to/biltoo-870-crop-layout-not-sample.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3515,7 +3542,7 @@ git pull /path/to/biltoo-869-workspace-crop-footprint.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3541,7 +3568,7 @@ git pull /path/to/biltoo-868-crop-rotate-contentxform.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3566,7 +3593,7 @@ git pull /path/to/biltoo-867-crop-soft-not-full.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3591,7 +3618,7 @@ git pull /path/to/biltoo-866-slideshow-first-frame-phase-arm.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3621,7 +3648,7 @@ git pull /path/to/biltoo-865-slideshow-no-double-orient.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3642,7 +3669,7 @@ git pull /path/to/thumtoo-207-exif-autorot-display-size.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3670,7 +3697,7 @@ git pull /path/to/biltoo-863-slideshow-first-frame-orient.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3694,7 +3721,7 @@ git pull /path/to/biltoo-862-shutdown-thumtoo-no-uaf.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3729,7 +3756,7 @@ git pull /path/to/biltoo-861-contentxform-single-pipeline.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3755,7 +3782,7 @@ git pull /path/to/biltoo-860-slideshow-sample-aspect-dest.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3782,7 +3809,7 @@ git pull /path/to/biltoo-859-slideshow-layoutsize-orient.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3796,7 +3823,7 @@ git pull /path/to/biltoo-858-slideshow-shadow-fix.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3810,7 +3837,7 @@ git pull /path/to/biltoo-857-slideshow-shadow-warning.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3839,7 +3866,7 @@ git pull /path/to/biltoo-856-slideshow-contentxform-phase.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3866,7 +3893,7 @@ git pull /path/to/biltoo-855-chrome-flip-display-axes.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3895,7 +3922,7 @@ git pull /path/to/biltoo-854-rotate-no-scale-drop-init.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3928,7 +3955,7 @@ git pull /path/to/biltoo-853-workspace-drop-uniform-footprint.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3957,7 +3984,7 @@ git pull /path/to/biltoo-852-workspace-crop-source-truth.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -3986,7 +4013,7 @@ git pull /path/to/biltoo-851-one-rotate-path.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4024,7 +4051,7 @@ git pull /path/to/biltoo-850-gallery-rotate-contentxform-truth.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4055,7 +4082,7 @@ git pull /path/to/biltoo-849-fititem-orient-layout-crop-draft.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4086,7 +4113,7 @@ git pull /path/to/biltoo-848-rotate-layout-crop-responsive.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4113,7 +4140,7 @@ git pull /path/to/biltoo-847-rotate-host-cache-raw.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4141,7 +4168,7 @@ git pull /path/to/biltoo-846-fix-rotate-layout-double-swap.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4155,7 +4182,7 @@ git pull /path/to/biltoo-845-restore-sessionappearance-symbols.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4169,7 +4196,7 @@ git pull /path/to/biltoo-844-sessionappearance-no-redef.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4183,7 +4210,7 @@ git pull /path/to/biltoo-843-imageitem-applied-members.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4202,7 +4229,7 @@ git pull /path/to/biltoo-842-rematerialize-item-content.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4221,7 +4248,7 @@ git pull /path/to/biltoo-841-crop-through-attach-path.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4242,7 +4269,7 @@ git pull /path/to/biltoo-840-one-attach-display-sample.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4256,7 +4283,7 @@ git pull /path/to/biltoo-839-finish-async-host-rematerialize.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4279,7 +4306,7 @@ git pull /path/to/biltoo-838-async-multip-host-rematerialize.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4302,7 +4329,7 @@ git pull /path/to/biltoo-837-rematerialize-helper-soft-install.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4323,7 +4350,7 @@ git pull /path/to/biltoo-836-rematerialize-flip-from-host.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4346,7 +4373,7 @@ git pull /path/to/biltoo-835-rematerialize-rotate-from-host.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4371,7 +4398,7 @@ git pull /path/to/biltoo-834-tag-applied-on-attach-bypasses.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4395,7 +4422,7 @@ git pull /path/to/biltoo-833-accept-needs-rematerialize.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4429,7 +4456,7 @@ git pull /path/to/biltoo-832-contentxform-pure.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4458,7 +4485,7 @@ git pull /path/to/biltoo-831-rotate-content-rect-aspect.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4486,7 +4513,7 @@ git pull /path/to/biltoo-830-filmstrip-multiselect-open-selection.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4516,7 +4543,7 @@ git pull /path/to/biltoo-829-slideshow-hide-bars-from-gallery.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4543,7 +4570,7 @@ git pull /path/to/biltoo-828-gallery-host-better-no-clamp-spam.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4569,7 +4596,7 @@ git pull /path/to/biltoo-827-gallery-crop-preserve-on-install.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4593,7 +4620,7 @@ git pull /path/to/biltoo-826-pdf-embedded-images-menu.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4622,7 +4649,7 @@ git pull /path/to/biltoo-825-image-mode-scene-rect-sync.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4649,7 +4676,7 @@ git pull /path/to/biltoo-824-soft-size-preserve-view.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4677,7 +4704,7 @@ Full stack from this work line base is in the tip bundle.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4703,7 +4730,7 @@ git pull /path/to/biltoo-822-soft-fill-contentrect.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4720,7 +4747,7 @@ git pull /path/to/biltoo-821-full-settle-no-retry.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4742,7 +4769,7 @@ git pull /path/to/biltoo-819-rasterclimbsm-test-terminal-shortfall.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4768,7 +4795,7 @@ git pull /path/to/biltoo-818-full-shortfall-terminal.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4796,7 +4823,7 @@ ctest -R 'rasterclimbsm|gallerysoftsm' --output-on-failure
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4828,7 +4855,7 @@ git pull /path/to/biltoo-816-raster-climb-sm-tests.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4856,7 +4883,7 @@ git pull /path/to/biltoo-815-raster-climb-sm.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4882,7 +4909,7 @@ git pull /path/to/biltoo-814-pass1-no-clamp-loop.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4910,7 +4937,7 @@ git pull /path/to/biltoo-813-full-native-retry.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4938,7 +4965,7 @@ git pull /path/to/biltoo-812-gallery-zoom-escalate-full.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4968,7 +4995,7 @@ git pull /path/to/biltoo-811-quiet-schedule-climb.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -4995,7 +5022,7 @@ git pull /path/to/biltoo-810-stale-soft-queue-flags.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5023,7 +5050,7 @@ git pull /path/to/biltoo-809-quality-target-first.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5044,7 +5071,7 @@ git pull /path/to/biltoo-808-filmstrip-pad-2x.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5077,7 +5104,7 @@ git pull /path/to/biltoo-807-stuck-weak-no-lqip-assert.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5103,7 +5130,7 @@ git pull /path/to/biltoo-806-filmstrip-host-upgrade.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5128,7 +5155,7 @@ git pull /path/to/biltoo-805-document-index-expand.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5166,7 +5193,7 @@ git pull /path/to/biltoo-804-cache-evict-reschedule.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5201,7 +5228,7 @@ git pull /path/to/biltoo-803-quality-watchdog-grace.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5222,7 +5249,7 @@ git pull /path/to/biltoo-802-loading-breakdown-decl.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5246,7 +5273,7 @@ git pull /path/to/biltoo-801-display-quality-contract.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5273,7 +5300,7 @@ git pull /path/to/biltoo-800-filmstrip-lqip-upgrade.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5295,7 +5322,7 @@ git pull /path/to/biltoo-799-loading-hud-gallery-scroll.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5321,7 +5348,7 @@ git pull /path/to/biltoo-798-slideshow-phase-upgrade.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5344,7 +5371,7 @@ git pull /path/to/biltoo-797-slideshow-loop-option.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5371,7 +5398,7 @@ git pull /path/to/biltoo-796-gallery-lqip-display-upgrade.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5398,7 +5425,7 @@ git pull /path/to/biltoo-795-filmstrip-absolute-pad.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5425,7 +5452,7 @@ git pull /path/to/biltoo-794-gallery-lqip-climb.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5447,7 +5474,7 @@ git pull /path/to/biltoo-793-size-reply-lqip.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5469,7 +5496,7 @@ git pull /path/to/biltoo-792-slideshow-single-image.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5492,7 +5519,7 @@ git pull /path/to/biltoo-791-readable-window-geometry.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5513,7 +5540,7 @@ git pull /path/to/biltoo-790-docs-workspace-drag-only.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5541,7 +5568,7 @@ git pull /path/to/biltoo-789-ui-chrome-polish.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5558,7 +5585,7 @@ git pull /path/to/biltoo-788-help-shortcuts-btn.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5575,7 +5602,7 @@ git pull /path/to/biltoo-787-help-shadow-warning.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5599,7 +5626,7 @@ git pull /path/to/biltoo-786-recent-sessions-help.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5624,7 +5651,7 @@ git pull /path/to/biltoo-785-shortcuts-table.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5649,7 +5676,7 @@ git pull /path/to/biltoo-784-help-docs-modes.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5675,7 +5702,7 @@ git pull /path/to/biltoo-783-help-toolbar-disabled.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5703,7 +5730,7 @@ git pull /path/to/biltoo-782-help-panel-infra.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5724,7 +5751,7 @@ git pull /path/to/biltoo-781-doc-flow-aspect-shuffle.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5750,7 +5777,7 @@ git pull /path/to/biltoo-780-slideshow-climb-past-1024.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5767,7 +5794,7 @@ git pull /path/to/biltoo-779-sort-by-path.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5784,7 +5811,7 @@ git pull /path/to/biltoo-778-drop-slideshow-ladder-chip.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-14)
 
@@ -5807,7 +5834,7 @@ git pull /path/to/biltoo-777-multi-file-open-progress.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -5824,7 +5851,7 @@ git pull /path/to/biltoo-776-docs-sticky-zoom-windowstate.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -5847,7 +5874,7 @@ git pull /path/to/biltoo-775-disable-windowstate-restore.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -5869,7 +5896,7 @@ git pull /path/to/biltoo-774-free-nav-preserve-zoom-pan.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -5894,7 +5921,7 @@ git pull /path/to/biltoo-773-sticky-pan-null-guards.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -5916,7 +5943,7 @@ git pull /path/to/biltoo-772-sticky-pan-survive-upgrades.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -5938,7 +5965,7 @@ git pull /path/to/biltoo-771-sticky-pan-best-effort.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -5960,7 +5987,7 @@ git pull /path/to/biltoo-770-sticky-toggle-fit-fill-1to1.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -5977,7 +6004,7 @@ git pull /path/to/biltoo-769-sticky-zoom-members.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6000,7 +6027,7 @@ git pull /path/to/biltoo-768-sticky-zoom.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6026,7 +6053,7 @@ writer contention, GUI `sizeReady` storms.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6051,7 +6078,7 @@ git pull /path/to/biltoo-766-windowstate-version-gate.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6071,7 +6098,7 @@ git pull /path/to/biltoo-765-unused-defer-vars.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6098,7 +6125,7 @@ git pull /path/to/biltoo-764-hard-gate-tiles-until-sizes.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6125,7 +6152,7 @@ git pull /path/to/biltoo-763-drop-loadfiles-parity.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6152,7 +6179,7 @@ git pull /path/to/biltoo-762-gallery-defer-tiles-until-sizes.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6181,7 +6208,7 @@ git pull /path/to/biltoo-761-centre-progress-expand-sizes.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6211,7 +6238,7 @@ git pull /path/to/biltoo-760-gallery-size-hud-visible.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6242,7 +6269,7 @@ git pull /path/to/biltoo-759-gallery-size-first-hud.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6268,7 +6295,7 @@ git pull /path/to/biltoo-758-gallery-image-crop-bake.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6291,7 +6318,7 @@ git pull /path/to/biltoo-757-display-cap-8192.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6317,7 +6344,7 @@ git pull /path/to/biltoo-756-workspace-climb-rebased.bundle HEAD
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6344,7 +6371,7 @@ had no native fallback after Full shortfall.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6366,7 +6393,7 @@ Prior: **752**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6388,7 +6415,7 @@ That conversion is string + path cleanup, not decode.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6413,7 +6440,7 @@ Prior: **750**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6439,7 +6466,7 @@ Prior: **749**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6463,7 +6490,7 @@ does not — so the Full branch was **compiled out**. Runtime only PreferCache
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6490,7 +6517,7 @@ FocusFull cannot make PreferCache return 2048. Column changes called
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6519,7 +6546,7 @@ want 2048, have 1024 forever, "high res for zoom" never generated.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6540,7 +6567,7 @@ edges (up to 4096+), violating Soft ≤512 and the host contract Soft-band rule.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6562,7 +6589,7 @@ contracted to the service.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6584,7 +6611,7 @@ GallerySoftState still updated PreferCache plateau (`gaveUpWant`) in
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6608,7 +6635,7 @@ called `scheduleDisplayPixels` / Full directly.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6635,7 +6662,7 @@ request means or who escalates.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6658,7 +6685,7 @@ Prior: **740**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6685,7 +6712,7 @@ already falls back to quiet full pixels on gave-up; slideshow did not.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6700,7 +6727,7 @@ Prior: **738**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6724,7 +6751,7 @@ multi-MP to compensate.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6746,7 +6773,7 @@ when appearance had crop/flips. Multi-MP samples on the GUI thread hit
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6769,7 +6796,7 @@ After reconfigure: `libunarr ....... enabled` in cmake summary / About ✔.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6790,7 +6817,7 @@ reconfigure. User diagnosis confirmed.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6820,7 +6847,7 @@ biltoo-build       # incremental after thumtoo edits
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6844,7 +6871,7 @@ About → libunarr ✔. `biltoo /tmp/archive.rar` after `thumtoo-gc --path /tmp/
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6869,7 +6896,7 @@ fitItem afterward.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6894,7 +6921,7 @@ smaller pixels → paint stretched the crop into the full frame. Peer sync used
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6914,7 +6941,7 @@ at the full-frame size → crop stretched into the old aspect box.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6937,7 +6964,7 @@ crop frame / painted full sample the wrong ratio.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6959,7 +6986,7 @@ Prior: **727**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -6981,7 +7008,7 @@ Prior: **726**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7008,7 +7035,7 @@ on the shortfall sample.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7032,7 +7059,7 @@ Prior: **724**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7058,7 +7085,7 @@ Prior: **723**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7082,7 +7109,7 @@ Prior: **722**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7100,7 +7127,7 @@ Prior: **721**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7122,7 +7149,7 @@ includes all commits from the agreed base through the new tip (full stack).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7146,7 +7173,7 @@ re-queued full → ladderReady forever.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7163,7 +7190,7 @@ Prior: **717**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7175,7 +7202,7 @@ Prior: **716**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7187,7 +7214,7 @@ Prior: **715**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7204,7 +7231,7 @@ Prior: **714**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7220,7 +7247,7 @@ even when samples already sat in host caches.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7232,7 +7259,7 @@ Prior: **712**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7253,7 +7280,7 @@ Prior: **711**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7269,7 +7296,7 @@ Speed change does not remap absolute ms — position is unchanged.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7291,7 +7318,7 @@ Changing slideshow speed restarted progress clock, cleared dwell atlas via
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7312,7 +7339,7 @@ Prior: **708**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7333,7 +7360,7 @@ Prior: **707**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7354,7 +7381,7 @@ atlas on screen.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7375,7 +7402,7 @@ paintMotionCover dest while soft/atlas had the real aspect → stretch.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7394,7 +7421,7 @@ mode climb, PreferCache schedule, slideshow preload/HUD.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7410,7 +7437,7 @@ Prior: **703**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7431,7 +7458,7 @@ old pixels on the Image-mode item (pendingTile "keep prior frame" on soft miss).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7451,7 +7478,7 @@ when still in Image mode.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7472,7 +7499,7 @@ inflight jobs, not tiles still waiting for soft.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7493,7 +7520,7 @@ need edge, and soft preload did not re-queue PreferCache after a shortfall.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-13)
 
@@ -7514,7 +7541,7 @@ when size was ≤1×1, so real aspect waited for the durable probe → visible r
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7531,7 +7558,7 @@ Prior: **697**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7553,7 +7580,7 @@ Slideshow looked nearest-neighbour: atlas rebuild used `Qt::FastTransformation`
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7581,7 +7608,7 @@ multi-MP drawImage until rebuild (frame drops).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7606,7 +7633,7 @@ while the 16ms pure-phase clock kept ticking.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7629,7 +7656,7 @@ LoadReplace (sync `repaint`, PreferCache climb timers, chrome title/location).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7655,7 +7682,7 @@ Prior: **692**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7683,7 +7710,7 @@ Log `tryInstall REJECT` when canAccept fails.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7713,7 +7740,7 @@ Soft via `setSourceImageReady` ⇒ `hasDecodedPixels()==true` ⇒ `canAccept(Sof
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7743,7 +7770,7 @@ from cache, and soft was often filmstrip 256 (`get(path)` not `get(path, 512)`).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7770,7 +7797,7 @@ re-layouts the strip and kicks more `makeThumbnail` jobs.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7795,7 +7822,7 @@ GUI thread work on ←/→ is now: QImage ref assign + QGraphicsItem::update.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7821,7 +7848,7 @@ on every ←/→ pending INSTALLED:
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7851,7 +7878,7 @@ Also: process later **segfaulted** (need stack on next crash).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7879,7 +7906,7 @@ background is expected.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7899,7 +7926,7 @@ HQ PreferCache still runs after soft via `ensureImageModeQualityClimb`.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7910,7 +7937,7 @@ Native full path remains `scheduleImageModeNativeFullQuiet` (zoom / PreferCache 
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7934,7 +7961,7 @@ requesting in the background without blocking the GUI or delaying soft.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7956,7 +7983,7 @@ callbacks often run on the **main thread** and used to decode JPEG payloads ther
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -7985,7 +8012,7 @@ Soft HITs were fine; the queue was drowned by 2048 + tile pyramid work.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8010,7 +8037,7 @@ Assert was silent because identity materialize is fine — the hitch was elsewhe
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8032,7 +8059,7 @@ Gallery `ladderReady` (edge=1024, no content appearance) aborted on the GUI.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8053,7 +8080,7 @@ libvips made GLib's `GDBusSignalInfo **signals` fail to compile.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8077,7 +8104,7 @@ must still run on a pool thread; the assert catches accidental GUI calls.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8108,7 +8135,7 @@ Soft-first alone cannot win if the *full* install freezes the UI on arrival.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8132,7 +8159,7 @@ LoadReplace soft path did not → crossfade could stay blank/LQIP until preload.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8160,7 +8187,7 @@ Prior: **672**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8184,7 +8211,7 @@ were never added to `ImageView` in `imageview.h`. Compile failed on
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8203,7 +8230,7 @@ Prior: **670**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8226,7 +8253,7 @@ every 16ms frame **smooth-scaled the full sample** → steady frame drops.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8250,7 +8277,7 @@ Slideshow still dropped frames and Image ←/→ felt slow because:
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8268,7 +8295,7 @@ Prior: **667**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8291,7 +8318,7 @@ re-scale on the GUI thread.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8310,7 +8337,7 @@ Prior: **665**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8335,7 +8362,7 @@ the pool thread for QPixmap).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8354,7 +8381,7 @@ Prior: **663**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8373,7 +8400,7 @@ Prior: **662**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8390,7 +8417,7 @@ Prior: **661**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8408,7 +8435,7 @@ Prior: **660**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8427,7 +8454,7 @@ Prior: **659**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8450,7 +8477,7 @@ High quality only flashed briefly before the hitch.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8467,7 +8494,7 @@ Prior: **657**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8484,7 +8511,7 @@ Prior: **656**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8502,7 +8529,7 @@ Prior: **655**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8520,7 +8547,7 @@ Prior: **654**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8538,7 +8565,7 @@ Prior: **653**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8562,7 +8589,7 @@ UI frozen, endless scheduleProbe/schedulePixels/scheduleDisplay.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8587,7 +8614,7 @@ Prior: **651**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8612,7 +8639,7 @@ Prior: **650**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8633,7 +8660,7 @@ Prior: **649**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8659,7 +8686,7 @@ Prior: **648**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8681,7 +8708,7 @@ Prior: **647**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8710,7 +8737,7 @@ stuck, HUD lied.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8733,7 +8760,7 @@ Prior: **645**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8757,7 +8784,7 @@ Prior: **644**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8783,7 +8810,7 @@ Prior: **643**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8813,7 +8840,7 @@ scheduled soft pixels but the PreferCache completion never upgraded the item.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8829,7 +8856,7 @@ Prior: **641**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8847,7 +8874,7 @@ Prior: **640**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8864,7 +8891,7 @@ Prior: **639**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8881,7 +8908,7 @@ Prior: **638**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8898,7 +8925,7 @@ Prior: **637**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8916,7 +8943,7 @@ Prior: **636**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8933,7 +8960,7 @@ Prior: **635**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8951,7 +8978,7 @@ Prior: **634**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8968,7 +8995,7 @@ Prior: **633**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -8986,7 +9013,7 @@ Prior: **632**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9003,7 +9030,7 @@ Prior: **631**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9020,7 +9047,7 @@ Prior: **630**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9038,7 +9065,7 @@ Prior: **629**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9057,7 +9084,7 @@ Prior: **628**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9074,7 +9101,7 @@ Prior: **627**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9092,7 +9119,7 @@ Prior: **626**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9109,7 +9136,7 @@ Prior: **625**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9128,7 +9155,7 @@ Prior: **624**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9146,7 +9173,7 @@ Prior: **623**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9165,7 +9192,7 @@ Prior: **622**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9184,7 +9211,7 @@ Prior: **621**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9204,7 +9231,7 @@ Prior: **620**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9223,7 +9250,7 @@ Prior: **619**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9245,7 +9272,7 @@ Prior: **618**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9261,7 +9288,7 @@ Prior: **617**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9280,7 +9307,7 @@ Prior: **616**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9300,7 +9327,7 @@ Prior: **615**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9319,7 +9346,7 @@ Prior: **614**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9336,7 +9363,7 @@ Prior: **613**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9354,7 +9381,7 @@ Prior: **612**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9373,7 +9400,7 @@ Prior: **611**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9390,7 +9417,7 @@ Prior: **610**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9410,7 +9437,7 @@ Prior: **609**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9426,7 +9453,7 @@ Prior: **608**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9444,7 +9471,7 @@ Prior: **607**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9461,7 +9488,7 @@ Prior: **606**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9481,7 +9508,7 @@ Prior: **605**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9506,7 +9533,7 @@ Prior: **604**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9523,7 +9550,7 @@ Prior: **603**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9542,7 +9569,7 @@ Prior: **602**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9559,7 +9586,7 @@ Prior: **601**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9576,7 +9603,7 @@ Prior: **600**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9594,7 +9621,7 @@ Prior: **599**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9613,7 +9640,7 @@ Prior: **598**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9632,7 +9659,7 @@ Prior: **597**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9650,7 +9677,7 @@ Prior: **596**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9668,7 +9695,7 @@ Prior: **595**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9686,7 +9713,7 @@ Prior: **594**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9704,7 +9731,7 @@ Prior: **593**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9722,7 +9749,7 @@ Prior: **592**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9741,7 +9768,7 @@ Prior: **591**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9760,7 +9787,7 @@ Prior: **590**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9778,7 +9805,7 @@ Prior: **589**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9796,7 +9823,7 @@ Prior: **588**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9814,7 +9841,7 @@ Prior: **587**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9833,7 +9860,7 @@ Prior: **586**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9853,7 +9880,7 @@ Prior: **585**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9873,7 +9900,7 @@ Prior: **584**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9892,7 +9919,7 @@ Prior: **583**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9911,7 +9938,7 @@ Prior: **582**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9932,7 +9959,7 @@ Prior: **581**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9957,7 +9984,7 @@ Prior: **580**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -9980,7 +10007,7 @@ Prior: **579**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10015,7 +10042,7 @@ a sharp `ImageItem` buffer. Parallel stores (`m_ssRasterByPath`,
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10031,7 +10058,7 @@ Prior: **577**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10052,7 +10079,7 @@ Prior: **576**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10081,7 +10108,7 @@ sharper payload. Phase entry locked soft placeholders for the whole dwell.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10099,7 +10126,7 @@ Prior: **574**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10123,7 +10150,7 @@ also always fitItem. High-res arrival reset zoom.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10141,7 +10168,7 @@ Prior: **572**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10160,7 +10187,7 @@ Prior: **571**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10178,7 +10205,7 @@ Prior: **570**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10197,7 +10224,7 @@ Prior: **569**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10216,7 +10243,7 @@ Prior: **568**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10235,7 +10262,7 @@ Prior: **567**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10256,7 +10283,7 @@ Prior: **566**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10275,7 +10302,7 @@ Prior: **565**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10294,7 +10321,7 @@ Prior: **564**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10315,7 +10342,7 @@ Prior: **563**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10334,7 +10361,7 @@ Prior: **562**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10356,7 +10383,7 @@ putSlideshowRaster               // samples only; never size map
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10381,7 +10408,7 @@ poisoning `m_imageSizeByPath`.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10400,7 +10427,7 @@ Prior: **559**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10419,7 +10446,7 @@ Deleting the live paint branch also dropped the local `fillPad` / ZoomBlur under
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10440,7 +10467,7 @@ Tip 556 member cleanup dropped `m_ssRasterInflight` / `m_ssRasterPending` from t
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10467,7 +10494,7 @@ Prior: **556**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10500,7 +10527,7 @@ Prior: **555**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10529,7 +10556,7 @@ Members (`m_live*`) remain for ABI/residual clears; no longer driven.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10561,7 +10588,7 @@ m_ssRasterPending  // latest neighbour only
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10596,7 +10623,7 @@ Prior: **552**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10625,7 +10652,7 @@ Prior: **551**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10654,7 +10681,7 @@ Prior: **550**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10683,7 +10710,7 @@ Prior: **549**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10707,7 +10734,7 @@ Key-repeat still skips loadImage; only settled/auto-advance climbs.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10729,7 +10756,7 @@ dwell stuck on old itemPath while phase advances, occasional 683×1024 phase.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10744,7 +10771,7 @@ calls the private scheduler.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10769,7 +10796,7 @@ starvation under auto-repeat.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10805,7 +10832,7 @@ anymore (phase logs show ~512). Remaining structural costs:
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10827,7 +10854,7 @@ edge=2048 tile_synth, dwell-upgrade 1024, cascade preload-start.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10845,7 +10872,7 @@ Collect drop keys, then remove by key — no erase-while-iterating.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10872,7 +10899,7 @@ extract; every Image-mode LoadReplace called setPrimaryInterest (EnsureTiles).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10895,7 +10922,7 @@ native still used; each start bumped generation and cancelled siblings.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10920,7 +10947,7 @@ Slideshow next/prev felt very slow (esp. archive members).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10947,7 +10974,7 @@ image upgrade (CPU spikes only).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -10972,7 +10999,7 @@ Prior: **537**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11006,7 +11033,7 @@ API change — not addressed here.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11019,7 +11046,7 @@ Prior: **535**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11041,7 +11068,7 @@ until ladderReady. GUI ok after 534; load spun.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11060,7 +11087,7 @@ Prior: **533**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11080,7 +11107,7 @@ the GUI for many tiles → hundreds of ms per decode-window turn.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11102,7 +11129,7 @@ Likely causes still in the hot path:
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11124,7 +11151,7 @@ Prior: **530**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11141,7 +11168,7 @@ Prior: **529**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11158,7 +11185,7 @@ Prior: **528**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11177,7 +11204,7 @@ Prior: **527**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11200,7 +11227,7 @@ Prior: **526**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11219,7 +11246,7 @@ Prior: **525**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11247,7 +11274,7 @@ BILTOO_PERF=1 biltoo-run --debug /path/to/archive.rar
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11281,7 +11308,7 @@ Quality HUD uses **display pixel long edge**, not on-screen need. Zoomed-out til
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11302,7 +11329,7 @@ Prior: **522**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11320,7 +11347,7 @@ Prior: **521**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11342,7 +11369,7 @@ Prior: **520**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11373,7 +11400,7 @@ Prior: **519**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11400,7 +11427,7 @@ Each PreferCache INSTALL called `updateGalleryDecodeWindow()` synchronously
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11428,7 +11455,7 @@ on an external trigger.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11441,7 +11468,7 @@ Prior: **516**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11466,7 +11493,7 @@ called `item->update()` but the view did not repaint until selection’s
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11483,7 +11510,7 @@ multiple definition). Moved to public methods before `signals:`.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11499,7 +11526,7 @@ Prior: **513**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11520,7 +11547,7 @@ scroll / ladderReady / 1s watchdog — so tiles stayed blank while the strip had
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11544,7 +11571,7 @@ So blank tiles could skip ImageCache soft entirely while filmstrip had it.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11568,7 +11595,7 @@ stayed blank while ImageCache already had filmstrip soft.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11596,7 +11623,7 @@ onImagePreviewLoaded → setPreviewImage (NoCache) → paint m_preview.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11619,7 +11646,7 @@ Prior: **508**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11652,7 +11679,7 @@ Prior: **507**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11677,7 +11704,7 @@ work. Soft installs also toggled DeviceCoordinateCache per tile (GUI stalls).
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11701,7 +11728,7 @@ Interest near edge=1024 also starved SoftOnly for first paint.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11717,7 +11744,7 @@ Prior: **504**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11749,7 +11776,7 @@ export BILTOO_DEBUG_SLIDESHOW=1 # phase from/to sizes
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11776,7 +11803,7 @@ Prior: **502**. Needs **thumtoo-178**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11805,7 +11832,7 @@ GUI thread — separate investigation if still bad after upgrade fix.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11825,7 +11852,7 @@ each paint frame during transitions (from vs to), causing underlay flicker.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11847,7 +11874,7 @@ g_pixelsSettled → same paths re-queued forever while need=1024 have=256.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11868,7 +11895,7 @@ Prior: **496**. Companion: **thumtoo-174**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11889,7 +11916,7 @@ Prior: **495**. Companion: **thumtoo-174**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11910,7 +11937,7 @@ Prior: **494**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11931,7 +11958,7 @@ Prior: **493**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11952,7 +11979,7 @@ Prior: **492**. Companion: **thumtoo-173**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11974,7 +12001,7 @@ Prior: **491**. Companion: **thumtoo-173**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -11997,7 +12024,7 @@ Prior: **490**. Companion: **thumtoo-173**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12017,7 +12044,7 @@ Prior: **489**. Companion: **thumtoo-172**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12039,7 +12066,7 @@ Prior: **488**. Companion: **thumtoo-171**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12061,7 +12088,7 @@ Prior: **487**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12085,7 +12112,7 @@ Prior: **486**. Companion: **thumtoo-169**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12106,7 +12133,7 @@ Prior: **485**. Companion: **thumtoo-169**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12128,7 +12155,7 @@ Prior: **484**. Companion: **thumtoo-168**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12151,7 +12178,7 @@ Prior: **483**. Companion: **thumtoo-167**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12173,7 +12200,7 @@ Prior: **482**. Companion: **thumtoo-167**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12196,7 +12223,7 @@ Prior: **481**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12218,7 +12245,7 @@ For full overview + cancel behaviour, point THUMTOO_SOURCE_DIR at thumtoo tip �
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12242,7 +12269,7 @@ Prior: **479**. Companions: **thumtoo-163**, **thumtoo-164**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 
@@ -12255,7 +12282,7 @@ Prior: **478**. Companion: **thumtoo-162-fastbatch-archive-cursor**.
 
 ---
 
-# TODO / agent handoff
+
 
 ## Status (2026-09-12)
 

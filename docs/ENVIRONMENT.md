@@ -89,3 +89,20 @@ application binary itself.
 | **`XDG_DATA_DIRS`** | Prepends `$BILTOO_SOURCE/data` so theme icons resolve in-tree. |
 
 See also [AGENT-ENV.md](../AGENT-ENV.md) and [AGENTS.md](../AGENTS.md).
+
+
+## THUMTOO_STORE_ONLY
+
+`THUMTOO_STORE_ONLY=1` — experimental Store-only Client (no legacy `index.sqlite` /
+`blobs.sqlite`). Requires a thumtoo build with Store-only support (≥247). Probe,
+pixels, and tiles for common URI kinds go to the redesign Store only.
+
+Soak: run biltoo with a dedicated cache dir, e.g.
+
+```bash
+export THUMTOO_STORE_ONLY=1
+# optional: export XDG_CACHE_HOME=/tmp/biltoo-store-only-cache
+biltoo /path/to/images
+```
+
+Do **not** default this until host soak is confirmed.
