@@ -1079,49 +1079,27 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->setClipRect(crop);
         }
         painter->setOpacity(m_opacity);
-        // Samples are drawn into the logical contentRect. When pixel aspect and
-        // contentRect aspect agree (the normal case after a correct bake), fill
-        // the box. When they disagree — provisional layout, LQIP, stale soft
-        // under a probe upgrade, crop soft under full-frame layout — *stretch
-        // is never correct*: letterbox so the page is not distorted.
-        auto drawSampleInContentRect = [&](const QImage &img, bool forceLetterbox) {
+        // Samples are drawn into the logical contentRect. Geometry comes from the
+        // size probe (SIZE.md); LQIP/soft/full are only textures. Always stretch
+        // to the full box so a correct layout does not show a small letterboxed
+        // LQIP that later "grows" when soft fills the same rect.
+        auto drawSampleInContentRect = [&](const QImage &img) {
             const QRectF box = contentRect();
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {
                 return;
             }
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-            const double aBox = box.width() / box.height();
-            const double aImg = double(img.width()) / double(qMax(1, img.height()));
-            // Soft/LQIP: always letterbox. Filling when aspect is "close enough"
-            // made LQIP (wrong aspect) sit small, then soft fill the cell — looked
-            // like the tile grew when the ladder arrived.
-            if (!forceLetterbox && qAbs(aBox - aImg) <= 0.03) {
-                painter->drawImage(box, img);
-                return;
-            }
-            // Letterbox: fit sample inside contentRect, preserve aspect.
-            QRectF dest = box;
-            if (aImg > aBox) {
-                const qreal h = box.width() / aImg;
-                dest.setTop(box.top() + (box.height() - h) * 0.5);
-                dest.setHeight(h);
-            } else {
-                const qreal w = box.height() * aImg;
-                dest.setLeft(box.left() + (box.width() - w) * 0.5);
-                dest.setWidth(w);
-            }
-            painter->drawImage(dest, img);
+            painter->drawImage(box, img);
         };
         if (!m_source.isNull() && !m_previewPixels) {
             if (!pixmap().isNull()) {
-                // Pixmap path: same aspect rule via QImage convert only when needed.
                 const QImage img = pixmap().toImage();
-                drawSampleInContentRect(img, /*forceLetterbox=*/false);
+                drawSampleInContentRect(img);
             } else {
-                drawSampleInContentRect(m_source, /*forceLetterbox=*/false);
+                drawSampleInContentRect(m_source);
             }
         } else if (!m_preview.isNull()) {
-            drawSampleInContentRect(m_preview, /*forceLetterbox=*/true);
+            drawSampleInContentRect(m_preview);
         } else {
             // Loading placeholder while decode is pending or unloaded.
             const QRectF cr = contentRect();

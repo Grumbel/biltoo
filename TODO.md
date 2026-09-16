@@ -2,6 +2,27 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1021-stretch-lqip-to-content-rect.** Stretch samples to full contentRect.
+Prior: **1020**.
+
+### Change
+- Paint always `drawImage(contentRect, sample)` — no letterbox for LQIP/soft
+- SIZE.md: samples are textures; geometry is size-probe only
+
+### Apply
+```bash
+git pull /path/to/biltoo-1021-stretch-lqip-to-content-rect.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1021**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1020-gallery-lqip-no-grow.** Gallery LQIP letterbox; size before soft paint.
 Prior: **1019**. Prefer **thumtoo ≥ 292**.
 

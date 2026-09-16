@@ -68,3 +68,9 @@ PreferCache / soft climb request edges are **capped at the known native long
 edge** (`cappedDisplayEdgeForPath`). Ladder ceil (1024→2048) must not produce a
 request larger than the file — a 1920×1080 image never targets 2048.
 
+## Paint
+
+Logical `contentRect` is fixed by the size probe. LQIP / soft / full are textures
+only: **stretch samples to the full contentRect**. Do not letterbox previews into
+a smaller dest — that looks like the image “grows” when a better sample arrives.
+
