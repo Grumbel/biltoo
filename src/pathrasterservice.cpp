@@ -244,7 +244,7 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     if (plan.scheduleSoft) {
         const int edge = plan.softEdge > 0 ? plan.softEdge
                                            : ThumtooCache::kGalleryLadderEdge;
-        // SoftOnly on cold paths; PreferCache/TileSynth when durable tiles exist.
+        // SoftOnly on cold paths; PreferCache/TileSynth when Store tiles exist.
         if (ThumtooCache::scheduleSoftPixels(path, edge)
             || ThumtooCache::isPixelsPending(path, edge)) {
             accepted.scheduleSoft = true;

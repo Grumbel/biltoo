@@ -184,6 +184,7 @@ at the end of configuration (also listed in **Help → About**):
 | **libexiv2** | Full Exif / IPTC / XMP in the Metadata panel |
 | **libarchive** | Open images inside zip, tar, 7z, rar, and related archives |
 | **gio-unix-2.0** | “Default application” Preferences (Linux) |
+| **thumtoo** | Durable size index, tiles, session soft / PreferCache (optional; Nix flakes default on) |
 
 Qt **imageformats** plugins (e.g. KDE **KImageFormats** for XCF/KRA/ORA) are
 loaded at runtime when installed — not a compile-time link.

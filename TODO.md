@@ -2,6 +2,28 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1013-store-only-host-polish.** Host polish + Store-only docs (rebased on origin).
+Prior: **1012**. Requires **thumtoo ≥ 280**.
+
+### Change
+- ThumtooCache: coverage PreferCache probe; LQIP warm; dual-path comments gone
+- ENVIRONMENT / PERFORMANCE / GALLERY / PATH_RASTER / HOST_CONTRACT / pipeline redesign
+- README thumtoo dep; CMake Store wording
+
+### Apply
+```bash
+git pull /path/to/biltoo-1013-store-only-host-polish.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1013** (rebased on origin/master after flake.lock)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1012-prefercache-store-docs.** PreferCache docs for Store-only thumtoo ≥280.
 Prior: **1011**. Requires **thumtoo ≥ 280** (page LQIP / Store lists; ≥284 preferred).
 

@@ -463,7 +463,7 @@ void scheduleBackgroundRevalidate(const QString &path, const std::string &uri)
         if (!c) {
             return;
         }
-        // Store-only Client (thumtoo ≥262): size/mtime from redesign locator.
+        // Store locator size/mtime (Store-only Client).
         // Prefer the filesystem path we scheduled for the outer file check.
         std::filesystem::path outer;
         std::optional<std::int64_t> cached_mtime;
@@ -613,7 +613,7 @@ void openClientUnlocked()
     try {
         thumtoo::image_library_init();
         // data_root: user.sqlite under XDG_DATA so tags/sets survive cache wipe.
-        // Requires thumtoo dual-path Store (THUMTOO_API_STORE).
+        // Store-only Client (schema ≥100); user.sqlite under data_root.
         g_client = thumtoo::Client::open(defaultCacheRoot(), qtExecutor(), 0,
                                         defaultDataRoot());
     } catch (...) {
@@ -1827,9 +1827,15 @@ bool hasDurableTiles(const QString &path)
     if (uri.empty()) {
         return false;
     }
-    // Spot-check scale 0/1 origin tiles — definitive for dual-path Store/legacy.
+    // Durable pyramid on Store: origin tiles at scale 0 or 1, or coverage
+    // min_scale origin when get_tile_coverage reports stored scales.
     if (c->has_tile(uri, 0, 0, 0) || c->has_tile(uri, 1, 0, 0)) {
         return true;
+    }
+    if (auto cov = c->get_tile_coverage(uri)) {
+        if (c->has_tile(uri, cov->min_scale, 0, 0)) {
+            return true;
+        }
     }
     return false;
 #else
@@ -1845,10 +1851,26 @@ bool scheduleSoftPixels(const QString &path, int maxEdge)
         return false;
     }
     // PreferCache/TileSynth when tiles exist; SoftOnly otherwise (filmstrip cost).
-    if (hasDurableTiles(path)) {
-        return scheduleDisplayPixels(path, maxEdge);
+    const bool ok = hasDurableTiles(path)
+                        ? scheduleDisplayPixels(path, maxEdge)
+                        : schedulePixels(path, maxEdge);
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+    if (ok) {
+        init();
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (c) {
+            const std::string uri = toThumtooUri(path);
+            if (!uri.empty() && !c->get_lqip(uri)) {
+                c->request_lqip(uri);
+            }
+        }
     }
-    return schedulePixels(path, maxEdge);
+#endif
+    return ok;
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);

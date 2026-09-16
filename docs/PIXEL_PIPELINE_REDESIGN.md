@@ -5,6 +5,11 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Pixel pipeline redesign (thumtoo first)
 
+> **Historical note (2026-09):** Sections that assume durable schema-4 soft
+> ladder rows / dual-path `Database` are archival. Live thumtoo is **Store-only**
+> (schema ≥100): session soft + durable tiles PreferCache/TileSynth. See
+> [ENVIRONMENT.md](ENVIRONMENT.md) and [THUMTOO_HOST_CONTRACT.md](THUMTOO_HOST_CONTRACT.md).
+
 **Goal:** minimise time-to-pixel-on-screen for both low-resolution placeholders
 and high-resolution display, with a clean quality model, tile-backed arbitrary
 ladder levels, and archive-aware parallel work lanes.

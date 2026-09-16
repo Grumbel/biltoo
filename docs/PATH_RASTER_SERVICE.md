@@ -21,7 +21,7 @@ failure, and consumers invented different recoveries.
 
 | Layer | Role |
 |-------|------|
-| **Thumtoo** | Durable soft, overview, PreferCache, full; settle keys |
+| **Thumtoo** | Session soft, overview, PreferCache (TileSynth), durable tiles, full; settle keys |
 | **ImageCache** | Process RAM path → best raw sample (upward-only) |
 | **PathRasterService** | want / have / PreferCache plateau / optional Full; **only** host scheduler |
 | **ImageView / paint** | Need edge + install; **do not** schedule PreferCache directly |

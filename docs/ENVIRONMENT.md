@@ -33,24 +33,22 @@ and `man biltoo`.
 | **`BILTOO_PERF`** | Paint and decode-window timing (FPS-style HUD path). Also enabled when `THUMTOO_DEBUG` is on. |
 | **`THUMTOO_DEBUG_OVERLAY`** / **`BILTOO_DEBUG_OVERLAY`** | Stamp a tiled watermark + border on decoded samples so soft vs full vs host origin is visible on the canvas. |
 
-### Thumtoo cache policy (library ≥ 234)
+### Thumtoo cache policy (Store-only, library ≥ 272)
+
+Durable pixels on disk are **tiles** (and full decode paths), not schema-4 soft
+ladder rows. Session soft replies still come from Client soft/request paths;
+PreferCache may synthesize from tiles (`TileSynth`).
 
 | Variable | Effect |
 |----------|--------|
-| *(default)* | **Tiles-first:** soft/overview levels are not written; tiles + full_native still are. |
-| **`THUMTOO_SOFT_LEVELS=1`** | Restore durable soft/overview level writes (rollback). |
-| **`THUMTOO_TILES_ONLY=0`** | Same as soft levels on. |
-| **`THUMTOO_TILES_ONLY=1`** | Explicit tiles-first (same as default). |
+| **`THUMTOO_SOFT_LEVELS`** / **`THUMTOO_TILES_ONLY`** | **Ignored** for Client writes (≥265). Historical rollback knobs only. |
+| **`THUMTOO_STORE_ONLY`** | **Ignored** (≥262 / ≥272). Client is always Store-only. |
+| **`THUMTOO_STORE_ROOT`** | Default **on**: Store at cache root; see thumtoo HOST_CUTOVER. |
 
-Requires biltoo ≥1007 (`scheduleSoftPixels`) for filmstrip/Gallery soft via PreferCache when tiles exist.
-With **thumtoo ≥ 280**, PreferCache is fully Store-backed (no legacy soft levels);
-`scheduleSoftPixels` uses TileSynth/PreferCache when durable tiles exist, else SoftOnly.
+Filmstrip/Gallery soft: biltoo ≥1007 `scheduleSoftPixels` — PreferCache when
+`hasDurableTiles`, else SoftOnly. With **thumtoo ≥ 280**, that path is fully
+Store-backed (page LQIP, no legacy soft levels).
 
-CLI `--debug` turns on `biltoo.slideshow` Qt logging categories and libexiv2
-warnings, and enables thumtoo debug the same way as the env vars above.
-`--thumtoo-debug` enables only the thumtoo traces.
-
----
 
 ## Concurrency knobs
 
