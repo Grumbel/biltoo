@@ -43,6 +43,8 @@ and `man biltoo`.
 | **`THUMTOO_TILES_ONLY=1`** | Explicit tiles-first (same as default). |
 
 Requires biltoo ≥1007 (`scheduleSoftPixels`) for filmstrip/Gallery soft via PreferCache when tiles exist.
+With **thumtoo ≥ 280**, PreferCache is fully Store-backed (no legacy soft levels);
+`scheduleSoftPixels` uses TileSynth/PreferCache when durable tiles exist, else SoftOnly.
 
 CLI `--debug` turns on `biltoo.slideshow` Qt logging categories and libexiv2
 warnings, and enables thumtoo debug the same way as the env vars above.

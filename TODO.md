@@ -2,6 +2,27 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1012-prefercache-store-docs.** PreferCache docs for Store-only thumtoo ≥280.
+Prior: **1011**. Requires **thumtoo ≥ 280** (page LQIP / Store lists; ≥284 preferred).
+
+### Change
+- ENVIRONMENT: PreferCache/filmstrip path documented against Store-only thumtoo
+- No code change — `scheduleSoftPixels` already PreferCache-when-tiles
+
+### Apply
+```bash
+git pull /path/to/biltoo-1012-prefercache-store-docs.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1012**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1011-drop-legacy-client-branch.** Store-only revalidate; no Client::db().
 Prior: **1010**. Requires **thumtoo ≥ 268** (no `Client::db()`; ≥272 preferred).
 

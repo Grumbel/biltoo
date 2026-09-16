@@ -16,9 +16,9 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-1011-drop-legacy-client-branch**.
-Next bundle number: **1012**.
-Requires **thumtoo ≥ 257** (STORE_ONLY default on; see ENVIRONMENT);
+Latest agent handoff: **TODO.md → biltoo-1012-prefercache-store-docs**.
+Next bundle number: **1013**.
+Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo dual-path Store** (`THUMTOO_API_STORE`) for `Client::open` data_root.
 Requires **thumtoo ≥ 202** (`THUMTOO_API_DOCUMENT_INDEX`) for PDF/DjVu/EPUB page-count cache.
 **Environment variables:** [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) (debug traces, concurrency, cache paths, `nix develop` helpers); also `man biltoo`.
