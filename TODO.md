@@ -2,6 +2,31 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1014-stable-size-ignore-lqip-geometry.** Size fixed; LQIP is sample only.
+Prior: **1013**. Requires **thumtoo ≥ 280** (size probe).
+
+### Change
+- `attachDisplaySample`: never `setIntrinsicSize(display.size())` (LQIP 32px box)
+- `layoutSizeForPath`: ignore previewHint; probe only defines geometry after stand-in
+- Filmstrip `setThumbnailIcon`: prefer `cachedSize` for cell aspect; LQIP must not
+  resize cells that already have a content size
+- SIZE.md: provisional → definitive table matches
+
+### Apply
+```bash
+git pull /path/to/biltoo-1014-stable-size-ignore-lqip-geometry.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1014**
+- [x] LQIP/soft install does not change layout size once stand-in or probe is set
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1013-store-only-host-polish.** Host polish + Store-only docs (rebased on origin).
 Prior: **1012**. Requires **thumtoo ≥ 280**.
 

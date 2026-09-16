@@ -1051,20 +1051,51 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     const QPixmap pm = QPixmap::fromImage(image);
     it->setData(ThumbnailDelegate::ThumbPixmapRole, pm);
     it->setIcon(QIcon(pm));
-
-    // Logical content at thumbSize (crop = square; letterbox = cross-axis fit).
-    // image.size() is aspect only — never use decode pixels as layout size.
-    const QSize content = m_cropToSquare
-        ? QSize(m_thumbSize, m_thumbSize)
-        : m_delegate->letterboxContentSize(image.size());
-    it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
     it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
     it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole, incomingEdge);
 
-    const QSize hint = m_cropToSquare
-        ? m_delegate->cellSize(font())
-        : m_delegate->cellSizeForContent(font(), content);
-    it->setSizeHint(hint);
+    // SIZE.md: sample (LQIP/soft) must not redefine cell geometry. Prefer durable
+    // size probe; else keep an existing content size; else letterbox the sample
+    // only when we have nothing yet (first paint before sizeReady).
+    if (!m_cropToSquare) {
+        QSize aspectBasis;
+        const QString path = (row >= 0 && row < m_files.size()) ? m_files.at(row) : QString();
+        if (!path.isEmpty()) {
+            const QSize native = ThumtooCache::cachedSize(path);
+            if (native.isValid() && native.width() > 0 && native.height() > 0) {
+                aspectBasis = native;
+            }
+        }
+        if (!aspectBasis.isValid()) {
+            const QSize prev = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
+            if (prev.isValid() && prev.width() > 0 && prev.height() > 0
+                && incomingEdge <= DisplayQuality::kLqipMaxEdge) {
+                // LQIP only: keep prior cell size (provisional or native).
+                const QSize hint = m_delegate->cellSizeForContent(font(), prev);
+                it->setSizeHint(hint);
+                const QModelIndex idx = indexFromItem(it);
+                if (idx.isValid()) {
+                    dataChanged(idx, idx, {Qt::DecorationRole, Qt::SizeHintRole,
+                                           ThumbnailDelegate::ThumbLoadedRole,
+                                           ThumbnailDelegate::ThumbPixmapRole});
+                }
+                doItemsLayout();
+                scheduleLayoutRefresh();
+                if (viewport()) {
+                    viewport()->update(visualItemRect(it));
+                }
+                return;
+            }
+            aspectBasis = image.size();
+        }
+        const QSize content = m_delegate->letterboxContentSize(aspectBasis);
+        it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
+        it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
+    } else {
+        const QSize content(m_thumbSize, m_thumbSize);
+        it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
+        it->setSizeHint(m_delegate->cellSize(font()));
+    }
 
     if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FILMSTRIP")) {
         qWarning().noquote()

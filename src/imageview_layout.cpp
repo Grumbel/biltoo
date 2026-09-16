@@ -466,14 +466,10 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
     // The old "crop → display.size()" branch set soft crop pixels as geometry,
     // which collapsed Workspace scale to ~1% and broke second-crop draft size.
     applyContentLayoutSize(item, want);
-    {
-        const QSize cur = item->imageSize();
-        if ((cur.width() <= 1 || cur.height() <= 1)
-            && display.width() > 1 && display.height() > 1) {
-            // Cold open only: no durable native yet.
-            item->setIntrinsicSize(display.size());
-        }
-    }
+    // SIZE.md: samples (LQIP / soft / full ladder) never write intrinsic.
+    // Cold open keeps the provisional stand-in until sizeReady / cachedSize.
+    // Adopting display.size() made 32× LQIP the layout box, then jumped when
+    // the durable probe arrived.
     if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")
         || (want.hasCrop && item->imageSize().width() <= 1)) {
         const QSize isz = item->imageSize();

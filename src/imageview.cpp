@@ -461,24 +461,16 @@ QSize ImageView::imageSizeForPath(const QString &path)
 
 QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHint)
 {
-    // Prefer definitive logical size (map / thumtoo) — never soft sample dims.
+    // Prefer definitive logical size (map / thumtoo) — never soft/LQIP sample dims.
+    // previewHint is display-only; using it for aspect made layout jump when LQIP
+    // (wrong aspect / tiny box) was replaced by the size probe.
+    Q_UNUSED(previewHint);
     const QSize known = logicalSizeForPath(path);
     if (isPositiveSize(known) && !isProvisionalImageSize(path)) {
         return known;
     }
-    // Soft / LQIP aspect is better than a square archive stand-in while the
-    // durable probe is in flight. Magnitude stays at provisional long-edge.
-    if (!previewHint.isNull() && isPositiveSize(previewHint.size())) {
+    if (!path.isEmpty()) {
         scheduleImageSizeProbe(path);
-        m_provisionalSizePaths.insert(path);
-        const QSize scaled =
-            scaleToLongEdge(previewHint.size(), kProvisionalLayoutLongEdge);
-        if (isPositiveSize(scaled)) {
-            // Store provisional aspect so pack/layout see the same size without
-            // a soft sample on every call.
-            m_imageSizeByPath.insert(path, scaled);
-            return scaled;
-        }
     }
     const auto it = m_imageSizeByPath.constFind(path);
     if (it != m_imageSizeByPath.cend() && isPositiveSize(*it)) {

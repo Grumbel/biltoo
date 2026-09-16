@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-1013-store-only-host-polish**.
-Next bundle number: **1014**.
+Latest agent handoff: **TODO.md → biltoo-1014-stable-size-ignore-lqip-geometry**.
+Next bundle number: **1015**
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100).
 Requires **thumtoo ≥ 280** for Store-only PreferCache/LQIP; document index APIs as built.
