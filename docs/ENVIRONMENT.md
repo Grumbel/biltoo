@@ -93,16 +93,13 @@ See also [AGENT-ENV.md](../AGENT-ENV.md) and [AGENTS.md](../AGENTS.md).
 
 ## THUMTOO_STORE_ONLY
 
-`THUMTOO_STORE_ONLY=1` — experimental Store-only Client (no legacy `index.sqlite` /
-`blobs.sqlite`). Requires a thumtoo build with Store-only support (≥247). Probe,
-pixels, and tiles for common URI kinds go to the redesign Store only.
+Default **on** in thumtoo ≥257: Client opens no legacy `index.sqlite` /
+`blobs.sqlite`. Durable pixels/meta live on the redesign Store only.
 
-Soak: run biltoo with a dedicated cache dir, e.g.
+Opt out (dual-path + dual-write):
 
 ```bash
-export THUMTOO_STORE_ONLY=1
-# optional: export XDG_CACHE_HOME=/tmp/biltoo-store-only-cache
-biltoo /path/to/images
+export THUMTOO_STORE_ONLY=0
 ```
 
-Do **not** default this until host soak is confirmed.
+Requires **thumtoo ≥ 257** for the default; **thumtoo ≥ 253** for opt-in Store-only.

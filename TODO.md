@@ -2,6 +2,23 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1010-store-only-default-docs.** ENVIRONMENT: STORE_ONLY default on (thumtoo ≥257).
+Prior: **1009**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1010-store-only-default-docs.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1010**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1009-store-only-revalidate.** Revalidate without Client::db() for STORE_ONLY.
 Prior: **1008**. Requires **thumtoo ≥ 256** (`has_legacy()`, Store-only public APIs).
 
