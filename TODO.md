@@ -2,6 +2,30 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1008-tiles-first-env.** Document thumtoo tiles-first soft-level policy.
+Prior: **1007**.
+
+### Change
+- ENVIRONMENT.md: THUMTOO_SOFT_LEVELS / TILES_ONLY default tiles-first (thumtoo ≥234)
+
+### Next
+- Soak without THUMTOO_SOFT_LEVELS; report regressions
+- Store-only open on thumtoo when ready
+
+### Apply
+```bash
+git pull /path/to/biltoo-1008-tiles-first-env.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1008**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1007-pathraster-soft-or-tiles.** PathRaster Soft band uses scheduleSoftPixels.
 Prior: **1006**.
 

@@ -33,6 +33,17 @@ and `man biltoo`.
 | **`BILTOO_PERF`** | Paint and decode-window timing (FPS-style HUD path). Also enabled when `THUMTOO_DEBUG` is on. |
 | **`THUMTOO_DEBUG_OVERLAY`** / **`BILTOO_DEBUG_OVERLAY`** | Stamp a tiled watermark + border on decoded samples so soft vs full vs host origin is visible on the canvas. |
 
+### Thumtoo cache policy (library ≥ 234)
+
+| Variable | Effect |
+|----------|--------|
+| *(default)* | **Tiles-first:** soft/overview levels are not written; tiles + full_native still are. |
+| **`THUMTOO_SOFT_LEVELS=1`** | Restore durable soft/overview level writes (rollback). |
+| **`THUMTOO_TILES_ONLY=0`** | Same as soft levels on. |
+| **`THUMTOO_TILES_ONLY=1`** | Explicit tiles-first (same as default). |
+
+Requires biltoo ≥1007 (`scheduleSoftPixels`) for filmstrip/Gallery soft via PreferCache when tiles exist.
+
 CLI `--debug` turns on `biltoo.slideshow` Qt logging categories and libexiv2
 warnings, and enables thumtoo debug the same way as the env vars above.
 `--thumtoo-debug` enables only the thumtoo traces.
