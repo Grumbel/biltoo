@@ -2,6 +2,27 @@
 
 ## Status (2026-09-16)
 
+**Tip: biltoo-1015-fix-filmstrip-debug-scope.** Fix setThumbnailIcon debug locals.
+Prior: **1014**.
+
+### Change
+- `BILTOO_DEBUG_FILMSTRIP` path reads content/hint from item after size refactor
+
+### Apply
+```bash
+git pull /path/to/biltoo-1015-fix-filmstrip-debug-scope.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1015**
+- [x] Builds
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-16)
+
 **Tip: biltoo-1014-stable-size-ignore-lqip-geometry.** Size fixed; LQIP is sample only.
 Prior: **1013**. Requires **thumtoo ≥ 280** (size probe).
 

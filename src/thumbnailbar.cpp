@@ -1098,6 +1098,9 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     }
 
     if (qEnvironmentVariableIsSet("BILTOO_DEBUG_FILMSTRIP")) {
+        const QSize content =
+            it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
+        const QSize hint = it->sizeHint();
         qWarning().noquote()
             << QStringLiteral("[filmstrip] icon row=%1 img=%2x%3 content=%4x%5 hint=%6x%7 crop=%8")
                    .arg(row)
