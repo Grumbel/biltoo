@@ -384,6 +384,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | min_scale clamp pure test | Done (1071) |
 | Parent UV + underlay stand-in | Done (1072) |
 | Zoom path GUI-thread perf | Done (1073) |
+| Debug overlay LADDER/TILE/HOST | Done (1074) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -401,6 +402,23 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Debug overlay kinds (biltoo-1074)
+
+With `BILTOO_DEBUG_OVERLAY=1` / `THUMTOO_DEBUG_OVERLAY=1`:
+
+| Stamp / outline | Meaning |
+|-----------------|--------|
+| **LADDER** / **SOFT** (thumtoo, yellow on pixels) | Soft overview sample ≤512, stretched as underlay |
+| **TILE** `scale=N (1:2^N)` (thumtoo) | Grid cell; scale 0 = full-res |
+| **HOST** (biltoo cyan) | ImageCache PreferCache / host sample |
+| **EXACT** green (paint) | Plan cell with exact-scale tile |
+| **PARENT** amber (paint) | Coarser stand-in |
+| **HOLE soft** blue (paint) | No tile yet — soft/host shows through |
+
+Center without magenta tile stamps is usually HOST/PreferCache underlay where
+tiles have not covered yet (or PreferCache is the visible sample).
 
 
 ## Zoom path performance (biltoo-1073)

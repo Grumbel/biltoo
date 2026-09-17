@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+
+#include <cstdlib>
 #include "tilelod/tile_lod_controller.hpp"
 #include "thumtoocache.h"
+#include "imagecache.h"
 #include "contentxform.h"
 #include "coloradjust.h"
 
@@ -1424,6 +1427,58 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     args.smooth = true;
                     args.resolve = resolve;
                     tilelod::paint_draw_plan(painter, args);
+
+                // DEBUG_OVERLAY / BILTOO_TILE_DEBUG: outline each draw-plan cell
+                // so ladder underlay vs ExactTile vs CoarserTile is visible.
+                if (ImageCache::debugOverlayEnabled()
+                    || []() {
+                           const char *e = std::getenv("BILTOO_TILE_DEBUG");
+                           return e && e[0] && e[0] != '0';
+                       }()) {
+                    painter->save();
+                    QFont of = painter->font();
+                    of.setBold(true);
+                    of.setPixelSize(11);
+                    painter->setFont(of);
+                    for (const tilelod::DrawCommand &cmd : plan.commands) {
+                        const QRectF dst(cmd.dst_content.x, cmd.dst_content.y,
+                                        cmd.dst_content.w, cmd.dst_content.h);
+                        if (dst.isEmpty()) {
+                            continue;
+                        }
+                        QColor penC(80, 80, 80);
+                        QString tag;
+                        if (cmd.kind == tilelod::DrawKind::ExactTile) {
+                            penC = QColor(0, 255, 80); // green = exact scale
+                            tag = QStringLiteral("EXACT s=%1 xy=%2,%3")
+                                      .arg(cmd.src_key.scale)
+                                      .arg(cmd.src_key.x)
+                                      .arg(cmd.src_key.y);
+                        } else if (cmd.kind == tilelod::DrawKind::CoarserTile) {
+                            penC = QColor(255, 200, 0); // amber = parent stand-in
+                            tag = QStringLiteral("PARENT s=%1 xy=%2,%3")
+                                      .arg(cmd.src_key.scale)
+                                      .arg(cmd.src_key.x)
+                                      .arg(cmd.src_key.y);
+                        } else if (cmd.kind == tilelod::DrawKind::Underlay) {
+                            penC = QColor(120, 120, 255); // blue = soft hole
+                            tag = QStringLiteral("HOLE soft");
+                        } else {
+                            continue;
+                        }
+                        painter->setPen(QPen(penC, 0));
+                        painter->setBrush(Qt::NoBrush);
+                        painter->drawRect(dst);
+                        painter->setPen(Qt::black);
+                        painter->drawText(dst.adjusted(2, 2, -2, -2),
+                                          Qt::AlignTop | Qt::AlignLeft, tag);
+                        painter->setPen(penC);
+                        painter->drawText(dst.adjusted(1, 1, -1, -1),
+                                          Qt::AlignTop | Qt::AlignLeft, tag);
+                    }
+                    painter->restore();
+                }
+
                     painter->restore();
                 } else {
                     for (tilelod::DrawCommand &cmd : plan.commands) {
@@ -1449,6 +1504,58 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     args.resolve = resolve;
                     tilelod::paint_draw_plan(painter, args);
                     (void)under;
+
+                // DEBUG_OVERLAY / BILTOO_TILE_DEBUG: outline each draw-plan cell
+                // so ladder underlay vs ExactTile vs CoarserTile is visible.
+                if (ImageCache::debugOverlayEnabled()
+                    || []() {
+                           const char *e = std::getenv("BILTOO_TILE_DEBUG");
+                           return e && e[0] && e[0] != '0';
+                       }()) {
+                    painter->save();
+                    QFont of = painter->font();
+                    of.setBold(true);
+                    of.setPixelSize(11);
+                    painter->setFont(of);
+                    for (const tilelod::DrawCommand &cmd : plan.commands) {
+                        const QRectF dst(cmd.dst_content.x, cmd.dst_content.y,
+                                        cmd.dst_content.w, cmd.dst_content.h);
+                        if (dst.isEmpty()) {
+                            continue;
+                        }
+                        QColor penC(80, 80, 80);
+                        QString tag;
+                        if (cmd.kind == tilelod::DrawKind::ExactTile) {
+                            penC = QColor(0, 255, 80); // green = exact scale
+                            tag = QStringLiteral("EXACT s=%1 xy=%2,%3")
+                                      .arg(cmd.src_key.scale)
+                                      .arg(cmd.src_key.x)
+                                      .arg(cmd.src_key.y);
+                        } else if (cmd.kind == tilelod::DrawKind::CoarserTile) {
+                            penC = QColor(255, 200, 0); // amber = parent stand-in
+                            tag = QStringLiteral("PARENT s=%1 xy=%2,%3")
+                                      .arg(cmd.src_key.scale)
+                                      .arg(cmd.src_key.x)
+                                      .arg(cmd.src_key.y);
+                        } else if (cmd.kind == tilelod::DrawKind::Underlay) {
+                            penC = QColor(120, 120, 255); // blue = soft hole
+                            tag = QStringLiteral("HOLE soft");
+                        } else {
+                            continue;
+                        }
+                        painter->setPen(QPen(penC, 0));
+                        painter->setBrush(Qt::NoBrush);
+                        painter->drawRect(dst);
+                        painter->setPen(Qt::black);
+                        painter->drawText(dst.adjusted(2, 2, -2, -2),
+                                          Qt::AlignTop | Qt::AlignLeft, tag);
+                        painter->setPen(penC);
+                        painter->drawText(dst.adjusted(1, 1, -1, -1),
+                                          Qt::AlignTop | Qt::AlignLeft, tag);
+                    }
+                    painter->restore();
+                }
+
                 }
             }
         }

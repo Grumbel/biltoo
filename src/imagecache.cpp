@@ -105,8 +105,9 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     p.setBrush(Qt::NoBrush);
     p.drawRect(border / 2, border / 2, w - border, h - border);
 
+    // HOST = biltoo ImageCache / PreferCache / soft sample (not a grid tile).
     QStringList lines;
-    lines << QStringLiteral("biltoo");
+    lines << QStringLiteral("HOST");
     if (!label.isEmpty()) {
         lines << label;
     }

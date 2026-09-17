@@ -2,6 +2,28 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1074-tilelod-debug-overlay-kinds.** Paint-time tile plan overlay + HOST stamp label.
+Prior: **1073**.
+
+### Change
+- ImageCache stamp leads with `HOST` (PreferCache/soft sample, not grid tile)
+- When DEBUG_OVERLAY or BILTOO_TILE_DEBUG: outline draw-plan cells
+  - green EXACT s=N xy=
+  - amber PARENT s=N (coarser stand-in)
+  - blue HOLE soft (no tile yet)
+- Pair with thumtoo-304 LADDER vs TILE pixel stamps
+
+### Apply
+```bash
+git pull /path/to/biltoo-1074-tilelod-debug-overlay-kinds.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1073-tilelod-zoom-gui-perf.** Reduce GUI-thread work on continuous zoom.
 Prior: **1072**.
 
