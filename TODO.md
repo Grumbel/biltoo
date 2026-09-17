@@ -2,6 +2,20 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1094-tile-budget-shadow.** Rename timer lambda budget to issueBudget (-Wshadow).
+Prior: **1093**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1094-tile-budget-shadow.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1093-tile-repaint-uaf.** Fix use-after-free in tickTileLod repaint singleShot.
 Prior: **1092**.
 

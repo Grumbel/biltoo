@@ -2949,8 +2949,10 @@ void ImageView::tickPrimaryTileLod(int budget)
             connect(m_tileLodTimer, &QTimer::timeout, this, [this]() {
                 // Image mode: one focus item can use a fuller batch.
                 // Gallery/Workspace: modest global budget (split across ≤8 targets).
-                const int budget = isImageMode() ? 12 : 6;
-                tickPrimaryTileLod(budget);
+                // (Name avoids shadowing tickPrimaryTileLod's budget parameter —
+                // this connect lives inside that function.)
+                const int issueBudget = isImageMode() ? 12 : 6;
+                tickPrimaryTileLod(issueBudget);
             });
         }
         // 50ms while filling (~20Hz): 33ms competed with input under load.
