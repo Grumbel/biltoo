@@ -2,6 +2,28 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1088-draw-plan-cache.** Cache DrawPlan across paints until pump/viewport change.
+Prior: **1087**.
+
+### Analysis
+- `draw_plan()` rebuilt the full visible-key command list on every paint while
+  tiles were streaming or the view was idle between completions.
+
+### Change
+- Mutable plan cache; dirty on `set_viewport` plan change, `pump` applied>0,
+  content size / has_lqip changes.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1088-draw-plan-cache.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1087-tile-paint-fast-transform.** Skip SmoothPixmapTransform near 1:1 tile zoom.
 Prior: **1086**.
 

@@ -43,7 +43,7 @@ public:
   int max_scale() const { return m_max_scale; }
 
   /// Optional LQIP underlay presence (bitmap owned by host; flag only here).
-  void set_has_lqip(bool on) { m_has_lqip = on; }
+  void set_has_lqip(bool on) { m_has_lqip = on; m_draw_plan_dirty = true; }
   bool has_lqip() const { return m_has_lqip; }
 
   void set_viewport(Viewport const& vp, double margin_content = 0.0);
@@ -147,6 +147,11 @@ private:
   std::size_t m_byte_budget = TileMemoryCache::kDefaultBudgetBytes;
 
   std::shared_ptr<CompletionInbox> m_inbox;
+
+  // Paint calls draw_plan every frame; rebuild only when viewport gen or
+  // Succeeded set changes (pump / set_viewport).
+  mutable bool m_draw_plan_dirty = true;
+  mutable DrawPlan m_draw_plan_cache;
 };
 
 }  // namespace tilelod

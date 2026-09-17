@@ -64,6 +64,7 @@ void TileSession::set_content_size(int width, int height, int min_scale)
   m_target_scale = m_max_scale;
   m_desired_scale = m_max_scale;
   m_have_stable_scale = false;
+  m_draw_plan_dirty = true;
 }
 
 
@@ -161,6 +162,7 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
   // the visible set or scale changed.
   if (plan_changed) {
     cancel_obsolete();
+    m_draw_plan_dirty = true;
   }
 }
 
@@ -222,6 +224,9 @@ int TileSession::pump()
     }
   }
   m_cache->trim_to_budget(m_byte_budget, protect);
+  if (applied > 0) {
+    m_draw_plan_dirty = true;
+  }
   return applied;
 }
 
@@ -418,6 +423,9 @@ void TileSession::cancel_obsolete()
 
 DrawPlan TileSession::draw_plan() const
 {
+  if (!m_draw_plan_dirty) {
+    return m_draw_plan_cache;
+  }
   BuildDrawPlanInput in;
   in.content_w = m_content_w;
   in.content_h = m_content_h;
@@ -428,7 +436,9 @@ DrawPlan TileSession::draw_plan() const
   in.lookup = [this](TileKey const& k) -> CacheEntry const* {
     return m_cache->find(k);
   };
-  return build_draw_plan(in);
+  m_draw_plan_cache = build_draw_plan(in);
+  m_draw_plan_dirty = false;
+  return m_draw_plan_cache;
 }
 
 bool TileSession::has_any_succeeded_tile() const

@@ -675,6 +675,12 @@ does not hit Store `has_tile` every frame. Cleared on discover / scheduleTilePyr
 tick. Earlier code gave each target the full N (up to 8×N concurrent requests).
 
 
+## Draw plan cache (biltoo-1088)
+
+`TileSession::draw_plan()` caches the last plan until viewport plan change or
+tile completions are pumped.
+
+
 ## Tile paint transform (biltoo-1087)
 
 `SmoothPixmapTransform` is off for ExactTile-only plans when device zoom of the
