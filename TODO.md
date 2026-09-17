@@ -2,6 +2,30 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1086-omit-underlay-plan-cmds.** Skip per-cell Underlay/Empty when soft is the continuous base.
+Prior: **1085**.
+
+### Analysis
+- Host paints soft/PreferCache over the full contentRect, then the tile grid.
+- Draw plan still emitted Underlay/Empty for every missing cell; paint skipped
+  them (lqip null) but plan build + debug washes still walked all holes.
+
+### Change
+- `setHasLqip(false)` on prepare (soft is continuous base).
+- `build_draw_plan`: only emit Underlay when has_lqip; omit Empty holes.
+- Debug overlay: hole count = vis − exact − parent.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1086-omit-underlay-plan-cmds.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1085-tile-scale0-after-coarser.** Do not issue exact scale-0 until a coarser tile succeeds.
 Prior: **1084**.
 

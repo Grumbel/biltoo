@@ -79,17 +79,18 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const QColor edgeParent(255, 160, 40);
     const QColor edgeHole(60, 220, 255);
 
-    int nExact = 0, nParent = 0, nHole = 0;
+    int nExact = 0, nParent = 0;
     for (const tilelod::DrawCommand &cmd : plan.commands) {
         if (cmd.kind == tilelod::DrawKind::ExactTile) {
             ++nExact;
         } else if (cmd.kind == tilelod::DrawKind::CoarserTile) {
             ++nParent;
-        } else if (cmd.kind == tilelod::DrawKind::Underlay) {
-            ++nHole;
         }
     }
     const tilelod::TileSession::Coverage cov = session->coverage();
+    // Holes are omitted from the draw plan when soft is the continuous base;
+    // derive count from coverage vs painted exact/parent commands.
+    const int nHole = qMax(0, cov.visible - nExact - nParent);
     const int target = session->target_scale();
     const int desired = session->desired_scale();
 
@@ -1435,7 +1436,10 @@ void ImageItem::prepareTileLodPlan()
     // min_scale from durable coverage so we do not request finer than the pyramid.
     m_tileLod->setContentSize(native.width(), native.height(),
                               ThumtooCache::durableTileMinScale(m_path));
-    m_tileLod->setHasLqip(hasDisplayPixels());
+    // Soft/PreferCache is painted as a continuous base before the tile grid.
+    // has_lqip would emit per-cell Underlay commands that re-stretch the full
+    // soft into every hole (or no-op when lqip is null) — pure cost.
+    m_tileLod->setHasLqip(false);
 
     const qreal dpc = tileDevicePerContent();
     QRectF visLocal = contentRect();

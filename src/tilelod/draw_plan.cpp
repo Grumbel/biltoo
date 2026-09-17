@@ -62,16 +62,15 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
       continue;
     }
 
-    // 3. LQIP underlay (host paints); still list the content rect
+    // 3. Hole: host already paints a continuous soft/PreferCache base under the
+    // tile grid. Emitting Underlay/Empty here forced paint_draw_plan (and debug
+    // washes) to walk every missing cell for no visual gain when lqip is null.
     if (in.has_lqip) {
       cmd.kind = DrawKind::Underlay;
       cmd.use_lqip = true;
       plan.commands.push_back(cmd);
-      continue;
     }
-
-    cmd.kind = DrawKind::Empty;
-    plan.commands.push_back(cmd);
+    // else: omit — soft shows through; parent/exact commands still listed above.
   }
 
   return plan;

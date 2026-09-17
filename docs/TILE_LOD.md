@@ -675,6 +675,12 @@ does not hit Store `has_tile` every frame. Cleared on discover / scheduleTilePyr
 tick. Earlier code gave each target the full N (up to 8×N concurrent requests).
 
 
+## Underlay plan commands (biltoo-1086)
+
+Host paints soft as a continuous base. Draw plans omit Underlay/Empty hole cells
+unless `has_lqip` (legacy). Plan size tracks exact+parent only under normal zoom.
+
+
 ## Scale-0 gate (biltoo-1085)
 
 Exact cells at **scale 0** are not issued until the path cache has a Succeeded
