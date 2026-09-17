@@ -534,6 +534,48 @@ void test_failed_no_spam_same_generation()
 }
 
 
+void test_host_prepare_loop_stable()
+{
+  // Host prepareTileLod: set_content_size + set_viewport every frame.
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  session.set_content_size(2048, 2048);
+  tilelod::Viewport vp;
+  vp.content_rect = {100, 100, 400, 400};
+  vp.device_per_content = 2.0;
+  session.set_viewport(vp);
+  std::uint64_t const gen0 = session.generation();
+  auto keys0 = session.visible_keys();
+  CHECK(!keys0.empty());
+
+  // Simulate 30 paint/tick frames with identical size and viewport.
+  for (int i = 0; i < 30; ++i) {
+    session.set_content_size(2048, 2048);
+    session.set_viewport(vp);
+  }
+  CHECK_EQ(session.generation(), gen0);
+  CHECK_EQ(static_cast<int>(session.visible_keys().size()),
+           static_cast<int>(keys0.size()));
+
+  // Fail all requested cells, then ensure stable plan does not re-request.
+  session.issue_requests(64);
+  CHECK(!src.requested.empty());
+  if (src.last_cb) {
+    auto keys = src.requested;
+    for (auto const& k : keys) {
+      src.last_cb(k, std::nullopt);
+    }
+  }
+  session.pump();
+  src.requested.clear();
+  for (int i = 0; i < 10; ++i) {
+    session.set_content_size(2048, 2048);
+    session.set_viewport(vp);
+    session.issue_requests(64);
+  }
+  CHECK_EQ(static_cast<int>(src.requested.size()), 0);
+}
+
 void test_set_content_size_idempotent()
 {
   FakeTileSource src;
@@ -676,6 +718,7 @@ int main()
   test_shared_no_drop_finer();
   test_failed_no_spam_same_generation();
   test_set_content_size_idempotent();
+  test_host_prepare_loop_stable();
   test_destroy_while_inflight();
   test_parent_prefetch();
   test_destroy_clears_inflight_shared();

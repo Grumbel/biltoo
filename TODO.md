@@ -2,6 +2,31 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1067-tilelod-host-prepare-loop-test.** Regression test for host prepare loop stability.
+Prior: **1066**.
+
+### Change
+- `test_host_prepare_loop_stable`: 30× set_content_size + set_viewport keeps generation/keys
+- Failed cells stay quiet on stable plan (1055 + 1064)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1067-tilelod-host-prepare-loop-test.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1067**
+- [x] Pure tilelod_test passes
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist on a display
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1066-tilelod-scrollbar-tick-and-runtime-docs.** Scrollbar restarts tile tick; refresh runtime checklist.
 Prior: **1065**.
 

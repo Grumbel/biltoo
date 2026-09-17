@@ -377,6 +377,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | set_content_size idempotent | Done (1064) |
 | Pan restarts tile tick | Done (1065) |
 | Scrollbar restarts tile tick | Done (1066) |
+| Host prepare-loop regression test | Done (1067) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -394,6 +395,13 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Host prepare-loop test (biltoo-1067)
+
+Pure test simulates `prepareTileLod` (set_content_size + set_viewport every
+frame). Generation and visible keys stay stable; failed cells are not
+re-requested while the plan is unchanged (guards 1055 + 1064 together).
 
 
 ## Scrollbar restarts tile tick (biltoo-1066)
