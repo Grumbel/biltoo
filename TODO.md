@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1062-tilelod-durable-tiles-memo.** Memoize positive hasDurableTiles results.
+Prior: **1061**.
+
+### Change
+- Process-wide `g_durableTilesYes` under `g_mu`
+- Avoid SQLite `has_tile` every paint/tick once a pyramid is known
+- Negatives not cached (mid-session prepare/FocusFull can still enable tiles)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1062-tilelod-durable-tiles-memo.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1062**
+- [x] Positive durable-tiles check is O(1) after first hit
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1061-tilelod-require-durable-tiles.** tileLodWanted requires hasDurableTiles.
 Prior: **1060**.
 

@@ -190,6 +190,8 @@ struct PendingPixels {
 std::vector<PendingPixels> g_pixelsQueue;
 /** path#edge already finished (hit or miss) this process — no re-queue. */
 QSet<QString> g_pixelsSettled;
+/** Paths known to have at least one durable tile (positive cache only). */
+QSet<QString> g_durableTilesYes;
 /** path → last PixelSource int from ladderProvenance. */
 QHash<QString, int> g_lastPixelSource;
 /** 0 unknown, 1 cache soft/tiles, 2 file/archive encode (inflight paths). */
@@ -1816,6 +1818,15 @@ bool hasDurableTiles(const QString &path)
     if (path.isEmpty() || isUnsupported(path)) {
         return false;
     }
+    // Positive memo: tileLodWanted/paint/tick call this often; SQLite has_tile
+    // must not run every frame once we know a pyramid exists. Negatives are not
+    // cached so a prepare/FocusFull that lands mid-session can still flip true.
+    {
+        std::lock_guard lock(g_mu);
+        if (g_durableTilesYes.contains(path)) {
+            return true;
+        }
+    }
     init();
     thumtoo::Client *c = nullptr;
     {
@@ -1831,15 +1842,19 @@ bool hasDurableTiles(const QString &path)
     }
     // Durable pyramid on Store: origin tiles at scale 0 or 1, or coverage
     // min_scale origin when get_tile_coverage reports stored scales.
+    bool yes = false;
     if (c->has_tile(uri, 0, 0, 0) || c->has_tile(uri, 1, 0, 0)) {
-        return true;
-    }
-    if (auto cov = c->get_tile_coverage(uri)) {
+        yes = true;
+    } else if (auto cov = c->get_tile_coverage(uri)) {
         if (c->has_tile(uri, cov->min_scale, 0, 0)) {
-            return true;
+            yes = true;
         }
     }
-    return false;
+    if (yes) {
+        std::lock_guard lock(g_mu);
+        g_durableTilesYes.insert(path);
+    }
+    return yes;
 #else
     Q_UNUSED(path);
     return false;

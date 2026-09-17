@@ -372,6 +372,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Identity tile QImage paint cache | Done (1059) |
 | Tile source epoch not per-request | Done (1060) |
 | tileLodWanted requires durable tiles | Done (1061) |
+| hasDurableTiles positive memo | Done (1062) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -389,6 +390,14 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Durable tiles memo (biltoo-1062)
+
+`hasDurableTiles` is on the paint/tick hot path via `tileLodWanted`. Positive
+hits are memoized process-wide (`g_durableTilesYes`) so SQLite `has_tile` is not
+repeated every frame. Negatives are not cached so a mid-session pyramid build
+can still enable the tile band.
 
 
 ## Durable tiles gate (biltoo-1061)
