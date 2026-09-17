@@ -663,6 +663,12 @@ sessions. Ctrl+wheel inspect still crosses the threshold.
 Image / Workspace still use content long edge × `tileDevicePerContent()` and
 the 512×1.05 soft-max rule.
 
+## hasDurableTiles memo (biltoo-1084)
+
+Positive paths stay memoized. Misses use a **2.5s negative TTL** so Gallery paint
+does not hit Store `has_tile` every frame. Cleared on discover / scheduleTilePyramid.
+
+
 ## Global issue budget (biltoo-1083)
 
 `tickPrimaryTileLod(N)` splits **N** across the (≤8) priority targets for that

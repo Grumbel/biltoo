@@ -190,10 +190,18 @@ struct PendingPixels {
 std::vector<PendingPixels> g_pixelsQueue;
 /** path#edge already finished (hit or miss) this process — no re-queue. */
 QSet<QString> g_pixelsSettled;
-/** Paths known to have at least one durable tile (positive cache only). */
+/** Paths known to have at least one durable tile (positive cache). */
 QSet<QString> g_durableTilesYes;
 /** Finest available scale for paths in g_durableTilesYes (default 0). */
 QHash<QString, int> g_durableTileMinScale;
+/**
+ * Negative memo: path → earliest msecs-since-epoch to re-query Store.
+ * tileLodWanted/paint called hasDurableTiles every frame; uncached misses
+ * hit has_tile SQLite on every Gallery cell and dominated the GUI under load.
+ * Short TTL so mid-session prepare/FocusFull can still flip true.
+ */
+QHash<QString, qint64> g_durableTilesNoUntilMs;
+constexpr qint64 kDurableTilesNegativeTtlMs = 2500;
 /** path → last PixelSource int from ladderProvenance. */
 QHash<QString, int> g_lastPixelSource;
 /** 0 unknown, 1 cache soft/tiles, 2 file/archive encode (inflight paths). */
@@ -1803,6 +1811,10 @@ bool scheduleTilePyramid(const QString &path)
         if (uri.empty()) {
             return;
         }
+        {
+            std::lock_guard lock(g_mu);
+            g_durableTilesNoUntilMs.remove(pathCopy);
+        }
         c->request_tile_pyramid(uri, /*min_scale=*/0, /*max_scale=*/-1, {});
         thumtooDbg("scheduleTilePyramid path=%s",
                    qPrintable(QFileInfo(pathCopy).fileName()));
@@ -1820,13 +1832,16 @@ bool hasDurableTiles(const QString &path)
     if (path.isEmpty() || isUnsupported(path)) {
         return false;
     }
-    // Positive memo: tileLodWanted/paint/tick call this often; SQLite has_tile
-    // must not run every frame once we know a pyramid exists. Negatives are not
-    // cached so a prepare/FocusFull that lands mid-session can still flip true.
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    // Positive / negative memos: tileLodWanted/paint/tick call this often.
     {
         std::lock_guard lock(g_mu);
         if (g_durableTilesYes.contains(path)) {
             return true;
+        }
+        const auto it = g_durableTilesNoUntilMs.constFind(path);
+        if (it != g_durableTilesNoUntilMs.cend() && nowMs < it.value()) {
+            return false;
         }
     }
     init();
@@ -1865,6 +1880,7 @@ bool hasDurableTiles(const QString &path)
             first = !g_durableTilesYes.contains(path);
             g_durableTilesYes.insert(path);
             g_durableTileMinScale.insert(path, minScale);
+            g_durableTilesNoUntilMs.remove(path);
         }
         if (first) {
             // GUI may already be deep-zoomed with the tile timer stopped; wake it.
@@ -1874,6 +1890,9 @@ bool hasDurableTiles(const QString &path)
                 [pathCopy]() { emit bridge()->durableTilesReady(pathCopy); },
                 Qt::QueuedConnection);
         }
+    } else {
+        std::lock_guard lock(g_mu);
+        g_durableTilesNoUntilMs.insert(path, nowMs + kDurableTilesNegativeTtlMs);
     }
     return yes;
 #else

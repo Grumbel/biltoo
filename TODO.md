@@ -2,6 +2,29 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1084-durable-tiles-negative-memo.** TTL-cache hasDurableTiles misses (avoid SQLite every frame).
+Prior: **1083**.
+
+### Analysis
+- `tileLodWanted` / paint / tick call `hasDurableTiles` often for every Gallery cell.
+- Positive hits were memoized; **misses** re-queried Store `has_tile` every time →
+  SQLite on the GUI hot path under large sessions without prepared pyramids.
+
+### Change
+- Negative memo with 2.5s TTL (`g_durableTilesNoUntilMs`).
+- Clear on positive discover and when `scheduleTilePyramid` runs for that path.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1084-durable-tiles-negative-memo.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1083-tile-issue-budget-split.** Split global tile issue budget across Gallery/Workspace items.
 Prior: **1082**.
 
