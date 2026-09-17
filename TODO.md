@@ -2,6 +2,29 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1089-skip-soft-when-tiles-cover.** Skip soft base paint when tiles fully cover; avoid pixmap→image.
+Prior: **1088**.
+
+### Analysis
+- Every tile-band paint stretched the soft/PreferCache sample under the grid,
+  including when exact tiles already fully covered the viewport.
+- Soft path used `pixmap().toImage()` every frame (full buffer copy).
+
+### Change
+- Skip soft/preview base when `tileLodWanted && tileLodViewportCovered`.
+- Draw soft via `drawPixmap` (no toImage) when the item pixmap is available.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1089-skip-soft-when-tiles-cover.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1088-draw-plan-cache.** Cache DrawPlan across paints until pump/viewport change.
 Prior: **1087**.
 

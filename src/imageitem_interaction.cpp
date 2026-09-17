@@ -1576,6 +1576,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // size probe (SIZE.md); LQIP/soft/full are only textures. Always stretch
         // to the full box so a correct layout does not show a small letterboxed
         // LQIP that later "grows" when soft fills the same rect.
+        // When the tile plan fully covers the viewport with exact cells, skip
+        // the soft/PreferCache base — it is completely occluded and
+        // pixmap().toImage() + stretch was pure paint cost on every frame.
+        const bool tilesFullyCover =
+            tileLodWanted() && tileLodViewportCovered();
+
         auto drawSampleInContentRect = [&](const QImage &img) {
             const QRectF box = contentRect();
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {
@@ -1584,31 +1590,35 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
             painter->drawImage(box, img);
         };
-        if (!m_source.isNull() && !m_previewPixels) {
-            if (!pixmap().isNull()) {
-                const QImage img = pixmap().toImage();
-                drawSampleInContentRect(img);
+        if (!tilesFullyCover) {
+            if (!m_source.isNull() && !m_previewPixels) {
+                const QRectF box = contentRect();
+                if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0) {
+                    // Avoid pixmap().toImage() every paint (full buffer copy).
+                    painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+                    painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
+                } else if (!m_source.isNull()) {
+                    drawSampleInContentRect(m_source);
+                }
+            } else if (!m_preview.isNull()) {
+                drawSampleInContentRect(m_preview);
             } else {
-                drawSampleInContentRect(m_source);
+                // Loading placeholder while decode is pending or unloaded.
+                const QRectF cr = contentRect();
+                painter->fillRect(cr, QColor(40, 40, 44));
+                const qreal inset = qMin(cr.width(), cr.height()) * 0.06;
+                const QRectF inner = cr.adjusted(inset, inset, -inset, -inset);
+                painter->setPen(QPen(QColor(70, 72, 80), 0));
+                painter->setBrush(QColor(52, 54, 62));
+                painter->drawRoundedRect(inner, inset * 0.8, inset * 0.8);
+                painter->setPen(QPen(QColor(140, 145, 160), 0));
+                QFont f = painter->font();
+                const qreal edge = qMin(inner.width(), inner.height());
+                f.setPointSizeF(qBound(8.0, edge * 0.08, 28.0));
+                f.setBold(true);
+                painter->setFont(f);
+                painter->drawText(inner, Qt::AlignCenter, QStringLiteral("⋯"));
             }
-        } else if (!m_preview.isNull()) {
-            drawSampleInContentRect(m_preview);
-        } else {
-            // Loading placeholder while decode is pending or unloaded.
-            const QRectF cr = contentRect();
-            painter->fillRect(cr, QColor(40, 40, 44));
-            const qreal inset = qMin(cr.width(), cr.height()) * 0.06;
-            const QRectF inner = cr.adjusted(inset, inset, -inset, -inset);
-            painter->setPen(QPen(QColor(70, 72, 80), 0));
-            painter->setBrush(QColor(52, 54, 62));
-            painter->drawRoundedRect(inner, inset * 0.8, inset * 0.8);
-            painter->setPen(QPen(QColor(140, 145, 160), 0));
-            QFont f = painter->font();
-            const qreal edge = qMin(inner.width(), inner.height());
-            f.setPointSizeF(qBound(8.0, edge * 0.08, 28.0));
-            f.setBold(true);
-            painter->setFont(f);
-            painter->drawText(inner, Qt::AlignCenter, QStringLiteral("⋯"));
         }
 
         // Deep zoom: grid tiles over soft/LQIP underlay (TILE_LOD.md).

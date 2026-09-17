@@ -675,6 +675,13 @@ does not hit Store `has_tile` every frame. Cleared on discover / scheduleTilePyr
 tick. Earlier code gave each target the full N (up to 8×N concurrent requests).
 
 
+## Soft base under tiles (biltoo-1089)
+
+When the tile plan fully covers the viewport (`tileLodViewportCovered`), the
+soft/PreferCache base is not painted. Soft path uses `drawPixmap` (no
+`pixmap().toImage()` copy) while tiles are still filling.
+
+
 ## Draw plan cache (biltoo-1088)
 
 `TileSession::draw_plan()` caches the last plan until viewport plan change or
