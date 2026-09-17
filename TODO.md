@@ -2,6 +2,37 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1025-tilelod-core.** Qt-free tile LOD core + tests; LQIP as base underlay only.
+Prior: **1024**.
+
+### Change
+- `docs/TILE_LOD.md`: normative planner / fallback / session / LQIP policy
+- `src/tilelod/`: types, math, LodPlanner, DrawPlan, TileMemoryCache, TileSession, TileSource
+- `tests/tilelod_test.cpp`: no Qt — planner, fallback UV, budget, cancel, LQIP→tile
+- CMake: link tilelod into biltoo; `biltoo-tilelod-test` always built
+- Galapix used as failure-mode checklist only (not ported)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1025-tilelod-core.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1025**
+- [x] `biltoo-tilelod-test` passes without Qt
+- [ ] Phase B: Image-mode painter + ThumtooTileSource (next)
+
+### Next
+- `ThumtooTileSource` + Qt `TilePainter`
+- Wire Image-mode deep zoom to TileSession
+- Keep soft/PreferCache out of zoom authority
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1024-readme-screenshots.** Gallery, PDF, EPUB, Workspace crop shots in README.
 Prior: **1023**.
 

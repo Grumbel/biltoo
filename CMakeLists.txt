@@ -187,6 +187,10 @@ add_executable(biltoo
   src/layoutpanel.h
   src/defaultapps.cpp
   src/defaultapps.h
+  src/tilelod/lod_planner.cpp
+  src/tilelod/draw_plan.cpp
+  src/tilelod/tile_memory_cache.cpp
+  src/tilelod/tile_session.cpp
   src/icons.qrc
 )
 
@@ -482,3 +486,15 @@ if(Qt6Test_FOUND)
   # contentxform_test (layoutSize + scaleCropRect formula). Do not link a partial
   # sessionappearance TU without imageitem (undefined refs at link time).
 endif()
+
+# tilelod core: pure C++ (no Qt)
+add_executable(biltoo-tilelod-test
+  tests/tilelod_test.cpp
+  src/tilelod/lod_planner.cpp
+  src/tilelod/draw_plan.cpp
+  src/tilelod/tile_memory_cache.cpp
+  src/tilelod/tile_session.cpp
+)
+target_include_directories(biltoo-tilelod-test PRIVATE src)
+target_compile_features(biltoo-tilelod-test PRIVATE cxx_std_17)
+add_test(NAME tilelod COMMAND biltoo-tilelod-test)

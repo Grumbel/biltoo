@@ -1,0 +1,226 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+# Tile level-of-detail (LOD) — host display path
+
+Normative rules for **viewport-driven grid tiles** in biltoo (and any host that
+shares the same core). thumtoo remains the durable tile store; this document
+defines the **host-side planner, RAM cache, session, and draw plan**.
+
+Related: [thumtoo TILES.md](../../thumtoo/TILES.md) (encode model), Galapix
+`ImageTileCache` (historical problem statement — **not** a port target).
+
+## Goals
+
+1. Deep zoom and large on-screen regions use **256² grid tiles**, not whole-frame
+   soft / PreferCache samples.
+2. **Logic is Qt-free** and unit-testable (`tilelod` core).
+3. Coarser tiles are **temporary stand-ins**; the exact target scale is always
+   requested when visible.
+4. **LQIP** (and optionally a single soft underlay) is the **base placeholder**
+   only until the first useful tile arrives for a cell; after that, paint uses
+   tiles (exact or coarser parent). LQIP is retrieved with size when cached and
+   may remain attached to the image object, but it is not the LOD system.
+
+## Non-goals (first cut)
+
+- Changing thumtoo tile schema or encode path.
+- Process-wide shared tile RAM across apps (per-image session first).
+- Animating pop-in inside the core (host may fade).
+- Porting Galapix `Surface` / global static budgets / job stack.
+
+## Coordinate model (must match thumtoo)
+
+| Symbol | Meaning |
+|--------|---------|
+| `kTileSize` | **256** |
+| `scale` | **0** = full resolution; each **+1** halves width and height |
+| `(x, y)` | Tile indices from the top-left of that scale’s image |
+| Edge tiles | May be smaller than 256×256 in pixel payload |
+
+Dimension at scale (same as thumtoo `dim_at_tile_scale`): successive
+**integer floor-half**, not `ceil(n / 2^scale)`:
+
+```text
+dim(n, 0) = n
+dim(n, s+1) = floor(dim(n, s) / 2)
+```
+
+Grid size at scale `s` for content size `(W, H)`:
+
+```text
+tw(s) = ceil(dim(W, s) / 256)
+th(s) = ceil(dim(H, s) / 256)
+```
+
+`max_scale` = smallest `s ≥ 0` such that `tw(s) == 1 && th(s) == 1`
+(or a configured cap). `min_scale` is usually `0` for rasters; PDF may use
+negative scales later — core accepts any integer scale range the source reports.
+
+Content-space rectangle covered by tile `(s, x, y)`:
+
+```text
+# At scale s the full image is dim(W,s) × dim(H,s) pixels.
+# Each tile is 256×256 in that space (edge tiles smaller).
+# Map back to content (scale-0) space by multiplying by 2^s:
+
+left   = x * 256 * 2^s
+top    = y * 256 * 2^s
+right  = min(W, (x+1) * 256 * 2^s)
+bottom = min(H, (y+1) * 256 * 2^s)
+```
+
+Parent of `(s, x, y)` at coarser scale `s+k` (`k ≥ 1`):
+
+```text
+parent = (s+k, floor(x / 2^k), floor(y / 2^k))
+```
+
+## Module layout
+
+```text
+src/tilelod/          # Qt-free core
+  tile_types.hpp      # TileKey, Rect, constants
+  lod_math.hpp/.cpp   # dim, grid, content rect, parent
+  lod_planner.hpp/.cpp
+  draw_plan.hpp/.cpp
+  tile_memory_cache.hpp/.cpp
+  tile_source.hpp     # abstract async fetch
+  tile_session.hpp/.cpp
+
+# Later (thin Qt / product boundary — not in first tip):
+#   ThumtooTileSource, TilePainter, registry on host
+```
+
+Tests link **only** `tilelod` (+ fake source). No Qt, no thumtoo in unit tests.
+
+## Pure planner
+
+**Input:** content `W×H`, viewport rectangle in **content space**, desired
+**device pixels per content pixel** (from the view transform).
+
+**Output:**
+
+- `target_scale` — finest scale whose tile pixel density is ≥ need
+  (clamped to `[min_scale, max_scale]`).
+- `visible_keys` — all `(target_scale, x, y)` whose content rect intersects the
+  viewport (optional margin in content pixels).
+
+No I/O. Choosing target scale:
+
+```text
+# Need roughly (device_px / content_px) samples per content unit.
+# At scale s, one content unit maps to 1/2^s tile-space pixels.
+# We want 2^{-s} ≳ device_per_content  (tile pixels per content ≥ screen need)
+# ⇒ s ≲ -log2(device_per_content)
+# Prefer the finest scale that still meets density, clamped.
+
+need = device_pixels_per_content_pixel
+if need <= 0: treat as very zoomed out
+ideal_s = round toward coarser of floor( -log2(need) )   # need=1 → scale 0
+target_scale = clamp(ideal_s, min_scale, max_scale)
+```
+
+Exact formula is implemented in `LodPlanner` and locked by tests.
+
+## Fallback (draw only — do not request parents)
+
+For each visible key `K = (s, x, y)` when building a **DrawPlan**:
+
+1. If cache has **exact** `K` → use it (full UV of that tile payload).
+2. Else walk coarser scales `s+1, s+2, …` and take the **finest** parent cell
+   that is already **Succeeded** in the RAM cache; compute UV sub-rect of that
+   parent covering `K`’s content region.
+3. Else if session has an **LQIP / underlay** still active for this image and
+   **no** tile (exact or parent) has succeeded for this cell yet → host may
+   paint LQIP for that region.
+4. Else empty → host placeholder.
+
+**Do not** mark coarser parents as “needed” solely for fallback. Request **only**
+exact visible cells at `target_scale` (plus optional one-shot overview prime at
+`max_scale` if the product wants an early whole-image stand-in beyond LQIP).
+
+Lesson from Galapix: mixing “mark ancestors needed” with cancel produced stuck
+`REQUESTED` cells and purple voids.
+
+### LQIP policy (product)
+
+- LQIP is fetched with size when already cached; it **stays attached** to the
+  image identity for the lifetime of the open item if desired.
+- Once **any** tile for a visible cell has arrived (exact or coarser used for
+  paint), that cell’s draw entry prefers the tile; LQIP is no longer the active
+  fill for that region.
+- Session may expose `has_any_tile()` so the host can drop global LQIP underlay
+  after the first successful tile for the current viewport generation.
+
+## TileSession (state machine)
+
+Per open image (URI / content id):
+
+| Host call | Effect |
+|-----------|--------|
+| `set_content_size(W,H)` | Computes `max_scale`, grid dims; required before viewport |
+| `set_lqip(...)` | Optional base underlay (opaque blob / bitmap handle) |
+| `set_viewport(vp, device_per_content)` | Recomputes `target_scale` + visible set |
+| `pump(completions)` | Integrate arrivals; clear in-flight; bump generation as needed |
+| `issue_requests(budget)` | Start up to N missing **exact** keys (center-first priority) |
+| `draw_plan()` | List of `{dst_content_rect, src_key, src_uv, kind}` |
+| `cancel_obsolete()` | Best-effort cancel in-flight keys no longer visible |
+| `trim_cache(...)` | Optional LRU / far-scale drop |
+
+Completions may arrive on a worker thread; `pump` is called from the host frame
+tick and applies them under session ownership.
+
+**Generation:** each `set_viewport` that changes the visible set may bump a
+generation counter; late completions for obsolete keys are ignored.
+
+## TileSource (async interface)
+
+```text
+request(keys[], on_each(key, optional<TileBitmap>))
+cancel(keys[])   // best-effort
+max_scale / min_scale / content size from probe
+```
+
+Production: thumtoo `get_tile` / `request_tiles`. Tests: fake solid-color or
+checkerboard tiles keyed by `(s,x,y)`.
+
+Decode JPEG → RGBA happens in the source/worker path (or stays compressed for
+the painter); the core stores opaque `TileBitmap` (width, height, pixels or
+encoded bytes + codec).
+
+## Integration phases (biltoo)
+
+| Phase | Work |
+|-------|------|
+| **A** | `tilelod` + tests (this tip family) — no product UI change |
+| **B** | Image-mode deep zoom uses `TileSession` + Qt painter |
+| **C** | PreferCache / whole-frame climb no longer authority for zoomed display |
+| **D** | Workspace items; Gallery large cells if needed |
+| **E** | Delete dead whole-frame zoom path; soft ladder remains for thumbs |
+
+Do not delete thumtoo soft APIs in early tips; stop **calling** them for deep
+zoom first.
+
+## Testing matrix (no Qt)
+
+| Test | Asserts |
+|------|---------|
+| Planner 1:1 | scale 0, correct cell count for viewport |
+| Planner zoomed out | higher scale, fewer cells |
+| Fallback parent | missing `(0,0,0)` uses parent with correct UV |
+| Budget | only N requests leave `issue_requests` |
+| Cancel / generation | after viewport move, obsolete completions ignored |
+| Full coverage | entire image in view → all cells at target scale |
+| Edge tiles | non-multiple of 256 dimensions |
+
+## Galapix checklist (regressions to avoid)
+
+- Do not enqueue from the draw / fallback path.
+- Do not mark parents needed only as stand-ins.
+- Per-frame request budget; prioritize center / exact scale.
+- Cancel obsolete in-flight on pan/zoom; ignore stale completions.
+- Overview / LQIP is underlay, not mixed identity with high-quality tiles.
+- Keep succeeded coarser tiles for fallback when cleaning finer scales.
