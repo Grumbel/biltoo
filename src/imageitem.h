@@ -315,6 +315,8 @@ public:
      * Safe during paint; does not issue network/worker work beyond state.
      */
     void prepareTileLod();
+    /** Update viewport/plan only (no issue_requests). Safe from paint. */
+    void prepareTileLodPlan();
     /** screenScale × viewport devicePixelRatioF. */
     qreal tileDevicePerContent() const;
     ContentXform::Value tileContentXform() const;

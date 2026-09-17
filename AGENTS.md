@@ -16,9 +16,9 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-1074-tilelod-debug-overlay-kinds**.
-Next bundle number: **1075**
-**Tile LOD:** [docs/TILE_LOD.md](docs/TILE_LOD.md) — overlay EXACT/PARENT/HOLE; [TILE_LOD_RUNTIME.md](docs/TILE_LOD_RUNTIME.md).
+Latest agent handoff: **TODO.md → biltoo-1075-tilelod-zoom-out-coarse-plan**.
+Next bundle number: **1076**
+**Tile LOD:** [docs/TILE_LOD.md](docs/TILE_LOD.md) — zoom-out coarse plan; overlay; [TILE_LOD_RUNTIME.md](docs/TILE_LOD_RUNTIME.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
 **Environment variables:** [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) (debug traces, concurrency, cache paths, `nix develop` helpers); also `man biltoo`.

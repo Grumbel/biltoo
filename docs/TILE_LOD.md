@@ -385,6 +385,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Parent UV + underlay stand-in | Done (1072) |
 | Zoom path GUI-thread perf | Done (1073) |
 | Debug overlay LADDER/TILE/HOST | Done (1074) |
+| Zoom-out plan refresh (coarse scale) | Done (1075) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -402,6 +403,16 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Zoom-out plan refresh (biltoo-1075)
+
+After 1073, paint used the last tick plan. Zooming out kept **scale-0** cells on
+screen until the debounced tick, looking like a carpet of tiny full-res tiles.
+
+Paint now calls `prepareTileLodPlan()` (viewport + plan only, no
+`issue_requests`). Tick still owns fetches. Margin is ~64 **device** px in
+content space (`64/dpc`). Pure test: dpc=0.05 → target scale ≥ 4.
 
 
 ## Debug overlay kinds (biltoo-1074)

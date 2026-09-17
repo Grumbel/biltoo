@@ -1246,7 +1246,7 @@ bool ImageItem::tileLodWanted() const
         tileDevicePerContent(), displayLong);
 }
 
-void ImageItem::prepareTileLod()
+void ImageItem::prepareTileLodPlan()
 {
     if (!tileLodWanted()) {
         return;
@@ -1284,8 +1284,14 @@ void ImageItem::prepareTileLod()
         // Identity xform: display == source when layout matches native.
         visSource = visDisplay;
     }
-    const double margin = 64.0 * qMax(1.0, dpc);
+    // Margin in *content* pixels: ~64 device px so prefetch is stable across zoom.
+    const double margin = 64.0 / qMax(1e-6, dpc);
     m_tileLod->updateViewport(visSource, dpc, margin);
+}
+
+void ImageItem::prepareTileLod()
+{
+    prepareTileLodPlan();
 }
 
 void ImageItem::tickTileLod(int budget)
@@ -1378,10 +1384,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
 
         // Deep zoom: grid tiles over soft/LQIP underlay (TILE_LOD.md).
-        // Viewport plan + requests are owned by ImageView::tickPrimaryTileLod.
-        // Do not prepareTileLod here — that re-ran set_viewport/cancel on every
-        // paint (zoom/pan) and competed with the GUI thread. Paint the last plan.
+        // Refresh *plan* here so zoom-out does not keep painting scale-0 cells
+        // until the debounced tick runs. Requests stay on tick only (cheap
+        // set_viewport; cancel only when plan_changed).
         if (tileLodWanted()) {
+            prepareTileLodPlan();
             if (m_tileLod && m_tileLod->session()) {
                 const QImage under = hasDecodedPixels() ? m_source
                     : (!m_preview.isNull() ? m_preview : QImage());

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1075-tilelod-zoom-out-coarse-plan.** Paint refreshes plan on zoom so far-out uses coarse tiles.
+Prior: **1074**.
+
+### Change
+- `prepareTileLodPlan()` — viewport/plan only; used from paint
+- Avoids stale scale-0 grids while debounced tick lags
+- Margin = 64 device px in content space; pure test dpc=0.05 → scale ≥ 4
+
+### Apply
+```bash
+git pull /path/to/biltoo-1075-tilelod-zoom-out-coarse-plan.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1074-tilelod-debug-overlay-kinds.** Paint-time tile plan overlay + HOST stamp label.
 Prior: **1073**.
 

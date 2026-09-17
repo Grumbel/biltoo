@@ -560,6 +560,24 @@ void test_failed_no_spam_same_generation()
 }
 
 
+void test_zoom_out_targets_coarse_scale()
+{
+  // Far zoom-out must not request scale-0 grids (tiny full-res cells).
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  session.set_content_size(4096, 4096);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 4096, 4096};
+  vp.device_per_content = 0.05; // ~5% of native on screen
+  session.set_viewport(vp);
+  CHECK(session.target_scale() >= 4);
+  for (auto const& k : session.visible_keys()) {
+    CHECK(k.scale >= 4);
+  }
+  // Far fewer cells than scale 0 (16×16 = 256).
+  CHECK(static_cast<int>(session.visible_keys().size()) <= 16);
+}
+
 void test_min_scale_clamps_target()
 {
   FakeTileSource src;
@@ -766,6 +784,7 @@ int main()
   test_failed_no_spam_same_generation();
   test_set_content_size_idempotent();
   test_host_prepare_loop_stable();
+  test_zoom_out_targets_coarse_scale();
   test_min_scale_clamps_target();
   test_destroy_while_inflight();
   test_parent_prefetch();
