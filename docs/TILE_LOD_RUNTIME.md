@@ -55,6 +55,7 @@ Flip / 90° / axis-aligned crop / free-rotated crop: tiles via ContentXform maps
 
 ## Gallery
 
-1. Pack at normal size — soft only.
-2. Ctrl+wheel zoom until a cell is large on screen — tiles should appear for
-   that cell when a pyramid exists.
+1. Pack at normal size — soft only (on-screen cell ≤ ~512 device px).
+2. Ctrl+wheel zoom until a cell is large on screen (> ~512 device px) — tiles
+   should appear for that cell when a pyramid exists. Threshold uses scene cell
+   × view scale × DPR (not content × item×view).

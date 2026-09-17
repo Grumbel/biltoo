@@ -363,6 +363,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Free-rotated crop UV | Done (maps + paint transform) |
 | Color-graded content | Done (grade on paint resolve) |
 | Crop draft suppresses tiles | Done (1053) |
+| Gallery on-screen cell threshold | Done (1054) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -380,6 +381,18 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Gallery cell threshold (biltoo-1054)
+
+`tileLodWanted` for packed Gallery cells uses the **on-screen cell** long edge:
+
+- `galleryCellSize` is the scene footprint (item scale already applied at pack).
+- Map scene → device with the **view transform only** × DPR.
+- Do **not** multiply by `tileDevicePerContent()` (view×item): that under-counted
+  by ~itemScale and blocked Ctrl+wheel inspection tiles.
+
+Image / Workspace still use content long edge × `tileDevicePerContent()`.
 
 
 ## Crop draft suppress (biltoo-1053)

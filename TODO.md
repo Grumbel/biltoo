@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1054-tilelod-gallery-cell-threshold.** Fix Gallery on-screen cell tile threshold.
+Prior: **1053**.
+
+### Change
+- Packed Gallery: threshold = scene `galleryCellSize` × **view** scale × DPR
+- Do not use `tileDevicePerContent()` (view×item) with scene cell — under-counted by itemScale
+- Image / Workspace path unchanged (content long edge × dpc)
+- Docs: TILE_LOD.md + TILE_LOD_RUNTIME Gallery section
+
+### Apply
+```bash
+git pull /path/to/biltoo-1054-tilelod-gallery-cell-threshold.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1054**
+- [x] Gallery inspection zoom can enter tile band at ~512 device px cell
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist (Gallery Ctrl+wheel + crop draft)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1053-tilelod-crop-draft-suppress.** Crop draft freezes tile LOD like PreferCache.
 Prior: **1052**.
 

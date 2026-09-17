@@ -1194,19 +1194,43 @@ bool ImageItem::tileLodWanted() const
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;
     }
-    // Display long edge: layout size, or gallery cell footprint when packed.
-    int displayLong = 0;
+
+    // Gallery packed cell: threshold is *on-screen cell* long edge, not
+    // content×(view×item). galleryCellSize is already scene footprint (item
+    // scale baked in); only the view transform maps scene → device pixels.
+    // Using tileDevicePerContent() (view×item) here under-counted by ~itemScale
+    // and blocked Ctrl+wheel inspection tiles (TILE_LOD_RUNTIME.md).
     if (!m_galleryCellSize.isEmpty()) {
-        displayLong = qMax(qCeil(m_galleryCellSize.width()),
-                           qCeil(m_galleryCellSize.height()));
-    } else {
-        const QSize isz = imageSize();
-        displayLong = qMax(isz.width(), isz.height());
+        qreal viewScale = 1.0;
+        qreal dpr = 1.0;
+        if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
+            QGraphicsView *view = scene()->views().first();
+            const QTransform vt = view->transform();
+            qreal sMax = 1.0;
+            qreal sMin = 1.0;
+            singularValues2x2(vt.m11(), vt.m12(), vt.m21(), vt.m22(), &sMax, &sMin);
+            viewScale = qMax(0.01, sMax);
+            if (QWidget *vp = view->viewport()) {
+                dpr = vp->devicePixelRatioF();
+            }
+        }
+        if (!(dpr > 0.0)) {
+            dpr = 1.0;
+        }
+        const qreal cellLong = qMax(m_galleryCellSize.width(), m_galleryCellSize.height());
+        if (!(cellLong > 0.0)) {
+            return false;
+        }
+        const qreal screenLong = cellLong * viewScale * dpr;
+        return screenLong > 512.0 * 1.05;
     }
+
+    // Image / Workspace: layout content long edge × device-per-content.
+    const QSize isz = imageSize();
+    const int displayLong = qMax(isz.width(), isz.height());
     if (displayLong < 1) {
         return false;
     }
-    // Gallery: only when the *on-screen* cell exceeds soft max (inspection zoom).
     return tilelod::TileLodController::shouldUseTiles(
         tileDevicePerContent(), displayLong);
 }
