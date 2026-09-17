@@ -46,6 +46,12 @@ TileSession::~TileSession()
 
 void TileSession::set_content_size(int width, int height, int min_scale)
 {
+  // prepareTileLod calls this every paint/tick with the same native size.
+  // Always resetting cleared visible_keys and bumped generation, so
+  // set_viewport always saw a plan change and failed no-spam never held.
+  if (m_content_w == width && m_content_h == height && m_min_scale == min_scale) {
+    return;
+  }
   m_content_w = width;
   m_content_h = height;
   m_min_scale = min_scale;

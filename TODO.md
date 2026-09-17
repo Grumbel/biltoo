@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1064-tilelod-content-size-idempotent.** set_content_size no-ops when size unchanged.
+Prior: **1063**.
+
+### Change
+- `TileSession::set_content_size` returns early if w/h/min_scale match
+- Stops prepareTileLod from clearing visible_keys / bumping generation every frame
+- Restores effectiveness of failed no-spam (1055) on the host path
+- Unit test: same size keeps generation and visible keys
+
+### Apply
+```bash
+git pull /path/to/biltoo-1064-tilelod-content-size-idempotent.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1064**
+- [x] Pure tilelod_test passes
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1063-tilelod-durable-tiles-ready-signal.** Wake tile LOD when durable tiles first appear.
 Prior: **1062**.
 

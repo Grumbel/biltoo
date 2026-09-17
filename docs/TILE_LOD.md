@@ -374,6 +374,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | tileLodWanted requires durable tiles | Done (1061) |
 | hasDurableTiles positive memo | Done (1062) |
 | durableTilesReady wakes tile tick | Done (1063) |
+| set_content_size idempotent | Done (1064) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -391,6 +392,15 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## set_content_size idempotent (biltoo-1064)
+
+`prepareTileLod` calls `setContentSize` every paint/tick. `set_content_size`
+always cleared `visible_keys` and bumped generation, so `set_viewport` always
+saw a plan change — failed no-spam (1055) never held on the host path.
+
+No-op when width/height/min_scale are unchanged.
 
 
 ## durableTilesReady (biltoo-1063)

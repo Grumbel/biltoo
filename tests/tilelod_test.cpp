@@ -534,6 +534,29 @@ void test_failed_no_spam_same_generation()
 }
 
 
+void test_set_content_size_idempotent()
+{
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  session.set_content_size(1024, 1024);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;
+  session.set_viewport(vp);
+  std::uint64_t const gen0 = session.generation();
+  auto keys0 = session.visible_keys();
+  CHECK(!keys0.empty());
+
+  // Same size again must not clear plan or bump generation.
+  session.set_content_size(1024, 1024);
+  CHECK_EQ(session.generation(), gen0);
+  CHECK_EQ(static_cast<int>(session.visible_keys().size()),
+           static_cast<int>(keys0.size()));
+
+  session.set_content_size(2048, 2048);
+  CHECK(session.generation() != gen0);
+}
+
 void test_destroy_while_inflight()
 {
   FakeTileSource src;
@@ -652,6 +675,7 @@ int main()
   test_trim_protects_parents();
   test_shared_no_drop_finer();
   test_failed_no_spam_same_generation();
+  test_set_content_size_idempotent();
   test_destroy_while_inflight();
   test_parent_prefetch();
   test_destroy_clears_inflight_shared();
