@@ -1482,8 +1482,10 @@ void ImageItem::prepareTileLodPlan()
     m_tileLodLastVisSource = visSource;
     // Soft is continuous base; only set once (set_has_lqip no-ops on same value).
     m_tileLod->setHasLqip(false);
-    // Margin in *content* pixels: ~64 device px so prefetch is stable across zoom.
-    const double margin = 64.0 / qMax(1e-6, dpc);
+    // Prefetch margin in content pixels: ~one tile side of *screen* space
+    // (256 device px). Enough to absorb small pans without issuing a second
+    // ring of cells; not a full off-screen ring (that multiplies issue work).
+    const double margin = 256.0 / qMax(1e-6, dpc);
     m_tileLod->updateViewport(visSource, dpc, margin);
 }
 

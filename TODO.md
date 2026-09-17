@@ -2,6 +2,29 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1099-lqip-cache-then-tiles.** Image mode: cache LQIP only, then tiles; no SoftOnly.
+Prior: **1098**.
+
+### Policy
+- Underlay before tiles: **LQIP/ImageCache hit only** (already in cache). Never SoftOnly encode.
+- Image classic decode: `scheduleProbe` + `tickPrimaryTileLod`; no soft job / PreferCache.
+- Tile prefetch margin: **~1 tile side of screen** (256 device px → content via /dpc).
+
+### Prefetch note
+Issuing more than ~one screen-tile of margin multiplies cold encode work. Visible
+keys stay centre-first with budgeted issue; margin only expands the plan set.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1099-lqip-cache-then-tiles.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1098-tiles-replace-soft-band.** Tiles own display past ~256px screen; skip SoftOnly when tileLodWanted.
 Prior: **1097**.
 

@@ -672,6 +672,13 @@ sessions. Ctrl+wheel inspect still crosses the threshold.
 Image / Workspace still use content long edge × `tileDevicePerContent()` and
 the 512×1.05 soft-max rule.
 
+## LQIP then tiles (biltoo-1099)
+
+Image mode underlay is **cache-only LQIP / ImageCache** — no SoftOnly encode.
+Tiles are issued for the visible set plus ~**one tile side** of screen margin
+(256 device px). PreferCache/Full are not started in parallel when tiles own the view.
+
+
 ## Tiles replace soft ≤512 (biltoo-1098)
 
 `shouldUseTiles` / Gallery threshold: on-screen long edge **> 256** (one tile side).

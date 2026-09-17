@@ -970,6 +970,13 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     if (pixels.isNull()) {
         pixels = ImageCache::get(path);
     }
+    // LQIP only if already in the durable/process cache — never request encode.
+    if (pixels.isNull()) {
+        pixels = ThumtooCache::cachedLqipImage(path);
+        if (!pixels.isNull()) {
+            ImageCache::put(path, pixels);
+        }
+    }
     if (!pixels.isNull()) {
         return pixels;
     }
@@ -1286,10 +1293,8 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         }
     }
 
-    // Cold host (not nav-hot): Soft→PreferCache→Full via PathRaster.
-    if (role == LoadReplace && ImageCache::get(path).isNull()) {
-        requestEscalateClimb(path, ThumtooCache::kGalleryLadderEdge);
-    }
+    // Image mode: do not SoftOnly/PreferCache on cold open — LQIP (if cached)
+    // + tiles. Other modes still seed Soft via scheduleClassicImageDecode.
 
     if (m_slideshowProgressActive) {
         scheduleSlideshowReplaceDecode(path, gen, role);
@@ -1336,33 +1341,24 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
 void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
                                            LoadRole role)
 {
-    // Image mode tiles-first: coarse grid cells replace SoftOnly ≤512 when the
-    // on-screen long edge already exceeds one tile side (tileLodWanted).
+    // Image mode: LQIP/cache underlay only if already present, then tiles.
+    // No SoftOnly encode and no PreferCache/Full climb in parallel with tiles.
     if (isImageMode() && !m_slideshowProgressActive && !m_slideshowNavHot
         && role == LoadReplace) {
+        // Size probe so tileNativeSize / layout can resolve (no soft encode).
+        ThumtooCache::scheduleProbe(path);
         tickPrimaryTileLod(12);
-        if (ImageItem *it = imageModeItemForPath(path)) {
-            if (it->tileLodWanted()) {
-                Q_UNUSED(gen);
-                return;
-            }
-        }
+        Q_UNUSED(gen);
+        return;
     }
 
-    // Soft underlay only when tiles do not yet own the viewport (tiny view /
-    // Gallery-driven paths / cold size unknown).
+    // Slideshow / non–Image-mode: soft stand-in job still used for fast paint.
     const QPointer<ImageView> guard(this);
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
 
     startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
-    if (isImageMode() && !m_slideshowProgressActive && !m_slideshowNavHot
-        && role == LoadReplace) {
-        const int need = imageModeOnScreenNeedEdge();
-        requestEscalateClimb(
-            path, need > 0 ? need : ThumtooCache::kBatchOverviewEdge);
-    }
     Q_UNUSED(gen);
 }
 
