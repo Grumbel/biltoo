@@ -2,6 +2,35 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1080-gallery-tile-threshold-debug-overlay.** Gallery soft-covered skip; readable HOST/TILE overlays.
+Prior: **1079**.
+
+### Analysis
+- Gallery at 100% with soft 512 showed dense tile HOLE grids + repeated HOST stamps:
+  - `tileLodWanted` used `screenLong > 512*1.05`, so large masonry cells entered the
+    tile band while soft already covered the cell (need/have 512).
+  - HOST watermark was a repeated cyan grid baked into every soft sample.
+  - Tile plan overlay labeled every cell at fixed 11px — unreadable / noisy; no
+    in-flight / coverage indication of background tile work.
+
+### Change
+- Gallery `tileLodWanted`: threshold `512*1.5`; skip when soft long edge already
+  covers on-screen cell (≥1.05×).
+- HOST stamp: single bottom-right plate (no grid).
+- Tile plan debug: summary plate (`TILE s=… vis/exact/parent/hole ok/flight LOADING`)
+  + thin outlines; per-cell labels only when ≥~40 device px.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1080-gallery-tile-threshold-debug-overlay.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1079-fix-appearance-seed-link.** Define missing applyStoredContentAppearanceSeed.
 Prior: **1078**.
 

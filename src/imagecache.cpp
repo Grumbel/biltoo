@@ -98,26 +98,25 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     }
     const int w = image->width();
     const int h = image->height();
-    // Host (biltoo) stamp: cyan border + cyan text, bottom-right biased grid —
-    // distinct from thumtoo magenta/yellow top-left soft stamps.
-    const int border = qMax(2, qMin(w, h) / 64);
+    // Single cyan plate (not a repeated grid) — readable when soft is stretched
+    // into large Gallery cells. Distinct from thumtoo magenta/yellow TILE stamps.
+    const int border = qMax(2, qMin(8, qMin(w, h) / 48));
     p.setPen(QPen(QColor(0, 220, 255), border));
     p.setBrush(Qt::NoBrush);
     p.drawRect(border / 2, border / 2, w - border, h - border);
 
-    // HOST = biltoo ImageCache / PreferCache / soft sample (not a grid tile).
     QStringList lines;
     lines << QStringLiteral("HOST");
     if (!label.isEmpty()) {
         lines << label;
     }
-    lines << QStringLiteral("%1x%2").arg(w).arg(h);
+    lines << QStringLiteral("%1×%2").arg(w).arg(h);
     lines << QStringLiteral("le=%1").arg(qMax(w, h));
 
     QFont f = p.font();
     f.setBold(true);
-    // ~2× previous 9–14px band.
-    f.setPixelSize(qBound(18, qMin(w, h) / 24, 28));
+    // Fixed readable band; avoid tiny soft fonts and avoid huge stretched ones.
+    f.setPixelSize(qBound(14, qMin(w, h) / 18, 22));
     p.setFont(f);
     const QFontMetrics fm(f);
     int blockW = 0;
@@ -125,43 +124,24 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
         blockW = qMax(blockW, fm.horizontalAdvance(line));
     }
     const int lineH = fm.height();
-    const int blockH = lineH * lines.size() + 2;
-    const int stepX = qMax(blockW + 36, w / 3);
-    const int stepY = qMax(blockH + 28, h / 4);
+    const int pad = 4;
+    const int blockH = lineH * lines.size() + pad * 2;
+    blockW += pad * 2;
 
-    auto drawOutlined = [&](const QPoint &o, const QString &s) {
-        for (const QPoint d : {QPoint(-1, 0), QPoint(1, 0), QPoint(0, -1),
-                               QPoint(0, 1)}) {
-            p.setPen(Qt::black);
-            p.drawText(o + d, s);
-        }
-        p.setPen(QColor(0, 255, 220)); // cyan — host
-        p.drawText(o, s);
-    };
-
-    // Start from bottom-right quadrant so thumtoo top-left yellow stays readable.
-    const int x0 = qMax(border + 4, w / 2);
-    const int y0 = qMax(border + 4, h / 2);
-    for (int y = y0; y + blockH < h - border; y += stepY) {
-        for (int x = x0; x + blockW < w - border; x += stepX) {
-            for (int i = 0; i < lines.size(); ++i) {
-                drawOutlined(QPoint(x, y + (i + 1) * lineH), lines.at(i));
-            }
-        }
-    }
-    // One block near bottom-left as well if the BR grid is empty (tiny images).
-    if (y0 + blockH >= h - border || x0 + blockW >= w - border) {
-        const int x = border + 4;
-        const int y = qMax(border + 4, h - border - blockH - 4);
-        for (int i = 0; i < lines.size(); ++i) {
-            drawOutlined(QPoint(x, y + (i + 1) * lineH), lines.at(i));
-        }
+    // One plate, bottom-right (thumtoo soft stamps stay top-left).
+    const int x = qMax(border + 2, w - border - blockW - 4);
+    const int y = qMax(border + 2, h - border - blockH - 4);
+    p.fillRect(QRect(x, y, blockW, blockH), QColor(0, 0, 0, 180));
+    p.setPen(QColor(0, 255, 220));
+    for (int i = 0; i < lines.size(); ++i) {
+        p.drawText(QPoint(x + pad, y + pad + (i + 1) * lineH - fm.descent()),
+                   lines.at(i));
     }
     p.end();
     static bool once = false;
     if (!once) {
         once = true;
-        fprintf(stderr, "biltoo: DEBUG_OVERLAY host watermark (cyan, BR)\n");
+        fprintf(stderr, "biltoo: DEBUG_OVERLAY host watermark (cyan plate, BR)\n");
     }
 }
 

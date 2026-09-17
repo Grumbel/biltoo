@@ -439,13 +439,12 @@ With `BILTOO_DEBUG_OVERLAY=1` / `THUMTOO_DEBUG_OVERLAY=1`:
 |-----------------|--------|
 | **LADDER** / **SOFT** (thumtoo, yellow on pixels) | Soft overview sample ≤512, stretched as underlay |
 | **TILE** `scale=N (1:2^N)` (thumtoo) | Grid cell; scale 0 = full-res |
-| **HOST** (biltoo cyan) | ImageCache PreferCache / host sample |
-| **EXACT** green (paint) | Plan cell with exact-scale tile |
-| **PARENT** amber (paint) | Coarser stand-in |
-| **HOLE soft** blue (paint) | No tile yet — soft/host shows through |
+| **HOST** (biltoo cyan plate, BR) | ImageCache PreferCache / host sample (one plate, not a grid) |
+| **TILE** summary plate (paint) | Target scale, vis/exact/parent/hole, flight, LOADING/WAITING |
+| **E / P / H** outlines (paint) | Exact / parent / hole cells (labels only if large on screen) |
 
-Center without magenta tile stamps is usually HOST/PreferCache underlay where
-tiles have not covered yet (or PreferCache is the visible sample).
+Center without tile outlines is usually HOST/PreferCache underlay where the
+tile band is inactive (Gallery soft-covered) or tiles have not covered yet.
 
 
 ## Zoom path performance (biltoo-1073)
@@ -645,7 +644,7 @@ visible key set). Identical viewport re-sets keep the generation; a real pan/
 zoom that changes keys or scale allows retry.
 
 
-## Gallery cell threshold (biltoo-1054)
+## Gallery cell threshold (biltoo-1054 / 1080)
 
 `tileLodWanted` for packed Gallery cells uses the **on-screen cell** long edge:
 
@@ -654,7 +653,21 @@ zoom that changes keys or scale allows retry.
 - Do **not** multiply by `tileDevicePerContent()` (view×item): that under-counted
   by ~itemScale and blocked Ctrl+wheel inspection tiles.
 
-Image / Workspace still use content long edge × `tileDevicePerContent()`.
+**1080:** threshold is **512×1.5** (not 512×1.05). If the installed soft/host
+sample long edge already covers the cell (≥1.05× screen long), stay out of the
+tile band — overview with soft 512 must not spawn dense HOLE grids / tile
+sessions. Ctrl+wheel inspect still crosses the threshold.
+
+Image / Workspace still use content long edge × `tileDevicePerContent()` and
+the 512×1.05 soft-max rule.
+
+## Debug overlay readability (biltoo-1080)
+
+- **HOST** (ImageCache): single cyan plate, bottom-right — not a repeated grid.
+- **Tile plan** (`BILTOO_DEBUG_OVERLAY` / `BILTOO_TILE_DEBUG`): summary plate with
+  target scale, vis/exact/parent/hole counts, `ok`/`flight`, and
+  `LOADING…` / `WAITING` / `COMPLETE`; thin cell outlines; short per-cell tags
+  only when the cell is ≳40 device px.
 
 
 ## Crop draft suppress (biltoo-1053)
