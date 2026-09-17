@@ -329,10 +329,19 @@ ImageView::ImageView(QWidget *parent)
         // Debounce: every scroll pixel used to scan all tiles + start pool
         // work and could peg a core while the user was only panning.
         scheduleGalleryDecodeWindowRefresh(150);
+        // Image/Workspace deep zoom: timer may be stopped after coverage;
+        // scrollbar drag (or pan setValue) must re-issue visible cells.
+        // Hand pan already ticks; skip when m_panning to avoid double work.
+        if (!m_panning && !isGalleryMode()) {
+            tickPrimaryTileLod(4);
+        }
     });
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
         scheduleGalleryDecodeWindowRefresh(150);
+        if (!m_panning && !isGalleryMode()) {
+            tickPrimaryTileLod(4);
+        }
     });
 
     // Recover Gallery tiles that received soft pixels but never repainted

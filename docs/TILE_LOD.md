@@ -376,6 +376,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | durableTilesReady wakes tile tick | Done (1063) |
 | set_content_size idempotent | Done (1064) |
 | Pan restarts tile tick | Done (1065) |
+| Scrollbar restarts tile tick | Done (1066) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -393,6 +394,16 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Scrollbar restarts tile tick (biltoo-1066)
+
+Image/Workspace scrollbar `valueChanged` calls `tickPrimaryTileLod` when not
+already hand-panning (Gallery already refreshes via decode window). Complements
+1065 for scrollbar-driven viewport moves after coverage stop.
+
+Runtime checklist (`TILE_LOD_RUNTIME.md`) refreshed for durable-tiles gate, pan,
+crop suppress, failed no-spam, and mid-session pyramid.
 
 
 ## Pan restarts tile tick (biltoo-1065)

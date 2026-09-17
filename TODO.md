@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1066-tilelod-scrollbar-tick-and-runtime-docs.** Scrollbar restarts tile tick; refresh runtime checklist.
+Prior: **1065**.
+
+### Change
+- Image/Workspace: scrollbar `valueChanged` → `tickPrimaryTileLod(4)` when not hand-panning
+- Gallery unchanged (decode window path already ticks)
+- `TILE_LOD_RUNTIME.md` rewritten for durable-tiles gate, pan, crop, failed no-spam, mid-session pyramid
+
+### Apply
+```bash
+git pull /path/to/biltoo-1066-tilelod-scrollbar-tick-and-runtime-docs.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1066**
+- [x] Runtime checklist matches current tip stack
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist on a display
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1065-tilelod-pan-restarts-tick.** Hand pan restarts tile LOD tick after coverage stop.
 Prior: **1064**.
 
