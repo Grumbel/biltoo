@@ -366,6 +366,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Gallery on-screen cell threshold | Done (1054) |
 | Failed no-spam (plan-stable generation) | Done (1055) |
 | Tick update only on plan/completion | Done (1056) |
+| Leave-band stops tile requests | Done (1057) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -383,6 +384,17 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Leave tile band (biltoo-1057)
+
+When `tileLodWanted()` becomes false (zoom out below soft max), `tickTileLod`
+must not continue pumping the previous deep-zoom session. Previously
+`prepareTileLod` returned early but `tick()` still issued requests for the
+stale viewport.
+
+Gate: `tickTileLod` returns immediately when not wanted; `tickPrimaryTileLod`
+only calls it for wanted items. Session/RAM cache are kept for a later re-entry.
 
 
 ## Tick update throttle (biltoo-1056)

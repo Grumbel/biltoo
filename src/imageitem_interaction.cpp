@@ -1278,6 +1278,11 @@ void ImageItem::prepareTileLod()
 
 void ImageItem::tickTileLod(int budget)
 {
+    // Leave tile band: do not pump/issue on a stale deep-zoom viewport.
+    // (Previously prepareTileLod returned early but tick still ran on m_tileLod.)
+    if (!tileLodWanted()) {
+        return;
+    }
     prepareTileLod();
     if (!m_tileLod) {
         return;

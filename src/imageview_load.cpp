@@ -2705,9 +2705,11 @@ void ImageView::tickPrimaryTileLod(int budget)
         } else if (!path.isEmpty()) {
             m_tileLodPreferCancelled.remove(path);
         }
-        item->tickTileLod(budget);
-        if (item->tileLodWanted() && !item->tileLodViewportCovered()) {
-            anyIncomplete = true;
+        if (item->tileLodWanted()) {
+            item->tickTileLod(budget);
+            if (!item->tileLodViewportCovered()) {
+                anyIncomplete = true;
+            }
         }
     }
 

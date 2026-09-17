@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1057-tilelod-leave-band-stop-requests.** Stop tile pump/issue when leaving the tile band.
+Prior: **1056**.
+
+### Change
+- `tickTileLod`: return immediately when `!tileLodWanted()` (no stale viewport requests)
+- `tickPrimaryTileLod`: only call `tickTileLod` for wanted items
+- Keep session/RAM cache for re-entry
+
+### Apply
+```bash
+git pull /path/to/biltoo-1057-tilelod-leave-band-stop-requests.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1057**
+- [x] Zoom below soft max stops tile requests
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1056-tilelod-tick-update-throttle.** Repaint on tile completion or plan change only.
 Prior: **1055**.
 
