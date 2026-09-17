@@ -1570,16 +1570,14 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // size probe (SIZE.md); LQIP/soft/full are only textures. Always stretch
         // to the full box so a correct layout does not show a small letterboxed
         // LQIP that later "grows" when soft fills the same rect.
-        // Tiles own the plate when wanted: do not stretch a HOST/soft sample
-        // underneath (that is what the HOST overlay looked like). LQIP underlay
-        // only until the first cell arrives; then tiles + hole underlays only.
+        // Soft/LQIP underlay whenever the *current* viewport is not fully
+        // covered by the tile plan. Gating on hasAnyTile alone was wrong:
+        // after zoom-out, leftover fine cells left hasAnyTile true while the
+        // coarse plan still had holes → blank plate with only the debug HUD.
         const bool tilesWanted = tileLodWanted();
         const bool tilesFullyCover =
             tilesWanted && tileLodViewportCovered();
-        const bool hasAnyTile =
-            m_tileLod && m_tileLod->enabled() && m_tileLod->hasAnyTile();
-        const bool drawSoftBase =
-            !tilesWanted || (!hasAnyTile && !tilesFullyCover);
+        const bool drawSoftBase = !tilesFullyCover;
 
         auto drawSampleInContentRect = [&](const QImage &img) {
             const QRectF box = contentRect();

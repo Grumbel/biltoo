@@ -2,6 +2,28 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1102-soft-underlay-until-covered.** Soft underlay until tile viewport covered (fix blank zoom-out).
+Prior: **1101**.
+
+### Bug
+- Paint skipped soft base when `hasAnyTile` even if the current plan did not
+  cover the viewport. Zoom-out left fine cells in cache → blank image, debug only.
+
+### Fix
+- `drawSoftBase = !tileLodViewportCovered()` (when tiles wanted). Soft stays
+  until the *current* visible set is covered; then soft is skipped.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1102-soft-underlay-until-covered.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1101-tiles-own-not-host-underlay.** Tiles own paint; no soft/HOST base once cells exist; gallery skip soft; clearer overlay labels.
 Prior: **1100**.
 
