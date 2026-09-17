@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1060-tilelod-source-epoch-not-per-request.** Do not bump tile source epoch on every request.
+Prior: **1059**.
+
+### Change
+- `ThumtooTileSource::request` captures `m_batch_id` without incrementing
+- Epoch still advances on `set_uri` / `cancel_all` only
+- Fixes stuck InFlight when a second issue_requests batch dropped prior completions
+
+### Apply
+```bash
+git pull /path/to/biltoo-1060-tilelod-source-epoch-not-per-request.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1060**
+- [x] Concurrent request batches complete without dropping earlier cells
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist (pan/zoom under load especially)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1059-tilelod-identity-qimage-cache.** Cache TileBitmap→QImage for identity grade too.
 Prior: **1058**.
 

@@ -56,6 +56,7 @@ private:
   FetchFn m_fetch;
   CancelFn m_cancel;
   std::mutex m_mu;
+  /** Epoch bumped by set_uri / cancel_all only (not per request). */
   std::uint64_t m_batch_id = 0;
 };
 

@@ -369,6 +369,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Leave-band stops tile requests | Done (1057) |
 | Tile fetch without QImage round-trip | Done (1058) |
 | Identity tile QImage paint cache | Done (1059) |
+| Tile source epoch not per-request | Done (1060) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -386,6 +387,16 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Tile source epoch (biltoo-1060)
+
+`ThumtooTileSource::request` used to `++m_batch_id` on every call. A second
+`issue_requests` batch then dropped all completions from the first (`batch !=
+m_batch_id`), leaving cells stuck **InFlight** in the shared RAM cache.
+
+Epoch advances only on `set_uri` / `cancel_all`. Concurrent request batches of
+the same path complete normally.
 
 
 ## Identity tile QImage cache (biltoo-1059)

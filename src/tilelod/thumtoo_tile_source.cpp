@@ -84,11 +84,14 @@ void ThumtooTileSource::request(std::vector<TileKey> keys, Completion on_each)
     return;
   }
   std::string uri;
-  std::uint64_t batch = 0;
+  std::uint64_t epoch = 0;
   {
     std::lock_guard<std::mutex> lock(m_mu);
     uri = m_uri;
-    batch = ++m_batch_id;
+    // Capture epoch only — do NOT increment. Every request used to ++m_batch_id,
+    // so a second issue_requests dropped all completions from the first and left
+    // keys stuck InFlight in the RAM cache.
+    epoch = m_batch_id;
   }
   if (uri.empty()) {
     for (TileKey const& k : keys) {
@@ -108,12 +111,12 @@ void ThumtooTileSource::request(std::vector<TileKey> keys, Completion on_each)
   auto cb = std::make_shared<Completion>(std::move(on_each));
 
   m_fetch(uri, coords,
-          [this, batch, keyCopy, cb](std::size_t index,
+          [this, epoch, keyCopy, cb](std::size_t index,
                                      std::optional<TileBitmap> bitmap) {
             {
               std::lock_guard<std::mutex> lock(m_mu);
-              // Drop if URI was rebound or cancel_all advanced the batch id.
-              if (batch != m_batch_id) {
+              // Drop only if URI was rebound or cancel_all advanced the epoch.
+              if (epoch != m_batch_id) {
                 return;
               }
             }
