@@ -2396,6 +2396,12 @@ void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
     if (isCropDraftLockedPath(path)) {
         return;
     }
+    // Deep-zoom tile band: grid tiles own display; skip PreferCache/Full climb.
+    if (ImageItem *it = imageModeItemForPath(path)) {
+        if (it->tileLodWanted()) {
+            return;
+        }
+    }
     const int edge = cappedDisplayEdgeForPath(
         path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
     biltooLoadDbg("escalateClimb(service) path=%s edge=%d",

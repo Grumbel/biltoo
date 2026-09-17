@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1035-tilelod-skip-prefercache.** No PreferCache schedule when tiles own the band.
+Prior: **1034**.
+
+### Change
+- Gallery decode window: skip soft/PreferCache candidate when `item->tileLodWanted()`
+- `requestEscalateClimb`: no-op for Image-mode items in the tile band
+- Complements cancel-once on enter + workspace quality-climb skip
+
+### Apply
+```bash
+git pull /path/to/biltoo-1035-tilelod-skip-prefercache.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1035**
+- [x] Pure tilelod tests pass
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1034-tilelod-gallery-large-cells.** Gallery inspection zoom uses tiles for oversized cells.
 Prior: **1033**.
 

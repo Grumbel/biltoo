@@ -298,6 +298,11 @@ void ImageView::updateGalleryDecodeWindow()
             st.gaveUpWant = 0;
         }
 
+        // Tile LOD owns oversized on-screen cells — do not PreferCache-climb them.
+        if (item->tileLodWanted()) {
+            continue;
+        }
+
         if (!st.needsSoftSchedule(want, anyBlank, anyFull)) {
             continue;
         }

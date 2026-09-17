@@ -286,3 +286,13 @@ thumtoo grid tiles are keyed in **source** pixel space. Item layout is
 `ContentXform::mapDisplayRectToSource` / `mapSourceRectToDisplay` convert the
 viewport and draw destinations. Free-rotated crop (`|cropRotation| > ε`) still
 disables tile LOD (AABB map only). Soft/PreferCache cover that case.
+
+
+## PreferCache vs tiles (biltoo-1035)
+
+When `tileLodWanted()` is true, hosts must not schedule PreferCache/Full
+whole-frame climbs for that path:
+
+- Gallery decode window skips those cells
+- `requestEscalateClimb` returns early for Image-mode tile-band items
+- Workspace quality climb already skipped; PathRaster cancel-once on enter
