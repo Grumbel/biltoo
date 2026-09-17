@@ -290,25 +290,47 @@ int TileSession::issue_requests(int budget)
     return true;
   };
 
-  // 1) Exact visible cells (centre-first).
-  for (Scored const& s : missing) {
-    if (static_cast<int>(batch.size()) >= budget) {
-      break;
-    }
-    enqueue(s.key);
-  }
+  // Cold path (no Succeeded tiles yet): prefer coarser parents first.
+  // thumtoo build_tile_cell for scale>0 uses vips_jpegload shrink (DCT) on
+  // JPEG sources; scale 0 still full-decodes the source. Exact-first on a cold
+  // pyramid therefore spent the issue budget on the most expensive cells and
+  // felt like "doing far more work than needed".
+  bool const cold = !has_any_succeeded_tile();
 
-  // 2) One coarser parent per still-missing exact (stand-in while fine loads).
-  if (static_cast<int>(batch.size()) < budget) {
+  auto enqueue_parents = [&](int steps) {
     for (Scored const& s : missing) {
       if (static_cast<int>(batch.size()) >= budget) {
         break;
       }
-      if (s.key.scale >= m_max_scale) {
+      if (steps < 1 || s.key.scale + steps > m_max_scale) {
         continue;
       }
-      TileKey const pk = parent_key(s.key, 1);
+      TileKey const pk = parent_key(s.key, steps);
       enqueue(pk);
+    }
+  };
+
+  if (cold) {
+    enqueue_parents(1);
+    if (static_cast<int>(batch.size()) < budget) {
+      enqueue_parents(2);
+    }
+    for (Scored const& s : missing) {
+      if (static_cast<int>(batch.size()) >= budget) {
+        break;
+      }
+      enqueue(s.key);
+    }
+  } else {
+    // Warm: exact first (centre-first), then one-level parents as stand-ins.
+    for (Scored const& s : missing) {
+      if (static_cast<int>(batch.size()) >= budget) {
+        break;
+      }
+      enqueue(s.key);
+    }
+    if (static_cast<int>(batch.size()) < budget) {
+      enqueue_parents(1);
     }
   }
 

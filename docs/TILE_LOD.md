@@ -663,6 +663,14 @@ sessions. Ctrl+wheel inspect still crosses the threshold.
 Image / Workspace still use content long edge × `tileDevicePerContent()` and
 the 512×1.05 soft-max rule.
 
+## Cold issue order (biltoo-1082)
+
+`TileSession::issue_requests`: when the path cache has **no** Succeeded tile yet,
+enqueue **parent(+1), parent(+2), then exact**. Warm paths keep exact-first.
+
+Matches thumtoo cost model: JPEG `scale>0` → DCT shrink; `scale==0` → full decode.
+
+
 ## Debug overlay readability (biltoo-1080 / 1081)
 
 - **HOST** (ImageCache): single cyan plate, bottom-right — not a repeated grid.

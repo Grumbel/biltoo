@@ -2,6 +2,30 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1082-tile-cold-parent-first.** Cold tile issue prefers coarse (JPEG shrink) before scale-0.
+Prior: **1081**.
+
+### Analysis
+- thumtoo `build_tile_cell`: scale>0 on JPEG uses `vips_jpegload(..., shrink=2/4/8)` (DCT scale).
+  scale 0 still full-decodes the source then crops the 256² cell.
+- Host `issue_requests` was **exact-first**, so a cold viewport spent the budget on
+  the most expensive cells before any coarse coverage existed.
+
+### Change
+- Cold session (`!has_any_succeeded_tile`): enqueue parent(+1), then parent(+2), then exact.
+- Warm session: keep exact-first, then parent(+1).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1082-tile-cold-parent-first.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1081-tile-overlay-washes.** Semi-transparent cell washes by tile source.
 Prior: **1080**.
 
