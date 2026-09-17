@@ -2,6 +2,28 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1093-tile-repaint-uaf.** Fix use-after-free in tickTileLod repaint singleShot.
+Prior: **1092**.
+
+### Bug
+- `QTimer::singleShot(0, scene/app, [this]{ scene(); update(); })` outlived the
+  ImageItem when the scene was cleared or the item deleted → SIGSEGV in
+  `QGraphicsItem::scene()`.
+
+### Fix
+- `shared_ptr<bool> m_tileLodAlive` cleared in `~ImageItem`; lambda returns if dead.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1093-tile-repaint-uaf.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1092-graded-cache-key-budget.** Numeric graded-cache keys; Image-mode issue budget 12.
 Prior: **1091**.
 

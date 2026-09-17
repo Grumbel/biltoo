@@ -1534,9 +1534,16 @@ void ImageItem::tickTileLod(int budget)
             QGraphicsScene *sc = scene();
             QObject *ctx = sc ? static_cast<QObject *>(sc)
                               : static_cast<QObject *>(QCoreApplication::instance());
-            QTimer::singleShot(0, ctx, [this, sc]() {
-                // Drop if item left the scene (destroyed or reparented).
+            // Capture lifetime flag: ImageItem is not QObject, so the functor
+            // can outlive *this when the scene is cleared or the item is deleted.
+            std::shared_ptr<bool> alive = m_tileLodAlive;
+            QTimer::singleShot(0, ctx, [this, sc, alive]() {
+                if (!alive || !*alive) {
+                    return;
+                }
+                // Drop if item left the scene (reparented) without destruction.
                 if (sc && scene() != sc) {
+                    m_tileLodRepaintQueued = false;
                     return;
                 }
                 m_tileLodRepaintQueued = false;

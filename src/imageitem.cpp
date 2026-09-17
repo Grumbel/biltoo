@@ -40,7 +40,16 @@ bool ImageItem::contentEditMarksVisible()
     return s_contentEditMarksVisible;
 }
 
-ImageItem::~ImageItem() = default;
+ImageItem::~ImageItem()
+{
+    // Invalidate pending QTimer::singleShot from tickTileLod (queued on the
+    // scene/app, not tied to this QGraphicsItem lifetime).
+    if (m_tileLodAlive) {
+        *m_tileLodAlive = false;
+    }
+    m_tileLodRepaintQueued = false;
+}
+
 
 void ImageItem::setPath(const QString &path)
 {

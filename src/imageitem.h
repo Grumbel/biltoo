@@ -397,6 +397,8 @@ private:
     /** Crop-draft (and similar) freeze: no tile requests or paint. */
     bool m_tileLodSuppressed = false;
     bool m_tileLodRepaintQueued = false;
+    /** false after destruction — pending tickTileLod singleShot must not touch this. */
+    std::shared_ptr<bool> m_tileLodAlive{std::make_shared<bool>(true)};
     double m_tileLodLastDpc = -1.0;
     QRectF m_tileLodLastVisSource;
     /** Last tile plan generation that triggered update() (avoid 250ms repaint spam). */
