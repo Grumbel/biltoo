@@ -663,13 +663,21 @@ zoom that changes keys or scale allows retry.
 - Do **not** multiply by `tileDevicePerContent()` (view×item): that under-counted
   by ~itemScale and blocked Ctrl+wheel inspection tiles.
 
-**1080:** threshold is **512×1.5** (not 512×1.05). If the installed soft/host
-sample long edge already covers the cell (≥1.05× screen long), stay out of the
+**1098:** Gallery threshold is **256** (one tile side). Soft no longer blocks
+tiles when a host sample “covers” the cell — coarse tiles own that band.
+Historical 1080 note: soft-cover early-out removed.
 tile band — overview with soft 512 must not spawn dense HOLE grids / tile
 sessions. Ctrl+wheel inspect still crosses the threshold.
 
 Image / Workspace still use content long edge × `tileDevicePerContent()` and
 the 512×1.05 soft-max rule.
+
+## Tiles replace soft ≤512 (biltoo-1098)
+
+`shouldUseTiles` / Gallery threshold: on-screen long edge **> 256** (one tile side).
+Image-mode classic decode and quality climb skip SoftOnly/PreferCache when
+`tileLodWanted` — coarse tiles cover the old soft band.
+
 
 ## Tile band without durable pyramid (biltoo-1097)
 

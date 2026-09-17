@@ -2,6 +2,25 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1098-tiles-replace-soft-band.** Tiles own display past ~256px screen; skip SoftOnly when tileLodWanted.
+Prior: **1097**.
+
+### Intent
+- Soft ≤512 whole-frame is redundant once coarse pyramid tiles can cover the view.
+- Threshold: on-screen long edge > **256** (Image + Gallery).
+- Image classic decode / quality climb: if `tileLodWanted`, tick tiles and skip soft/Prefer/Full.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1098-tiles-replace-soft-band.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1097-tiles-without-durable-gate.** Tile band no longer requires durable pyramid (skip 2048 PreferCache).
 Prior: **1096**.
 

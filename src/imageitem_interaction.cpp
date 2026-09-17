@@ -1414,23 +1414,10 @@ bool ImageItem::tileLodWanted() const
             return false;
         }
         const qreal screenLong = cellLong * viewScale * dpr;
-        // Gallery overview: soft/PreferCache owns display until the cell is
-        // clearly past the soft band. Threshold used to be 512*1.05 so mild
-        // upsizing of a 512 soft sample (or large masonry cells) activated the
-        // full tile pyramid — dense HOLE grids and many tile sessions with no
-        // visible benefit. Require ~1.5× soft max; Ctrl+wheel inspect still
-        // crosses this. Soft sample that already covers the cell stays soft.
-        constexpr qreal kGalleryTileScreenMin = 512.0 * 1.5;
-        if (!(screenLong > kGalleryTileScreenMin)) {
-            return false;
-        }
-        if (!m_source.isNull()) {
-            const int softLong = qMax(m_source.width(), m_source.height());
-            if (softLong > 0 && static_cast<qreal>(softLong) * 1.05 >= screenLong) {
-                return false;
-            }
-        }
-        return true;
+        // Same density band as Image mode: once a cell is larger than one tile
+        // side on screen, coarse tiles own display (soft ≤512 is redundant).
+        constexpr qreal kGalleryTileScreenMin = 256.0;
+        return screenLong > kGalleryTileScreenMin;
     }
 
     // Image / Workspace: layout content long edge × device-per-content.

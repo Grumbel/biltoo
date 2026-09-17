@@ -17,7 +17,9 @@ bool TileLodController::shouldUseTiles(double devicePerContent, int contentLongE
     return false;
   }
   double const screenLong = devicePerContent * static_cast<double>(contentLongEdge);
-  return screenLong > 512.0 * 1.05;
+  // Soft ≤512 whole-frame is redundant once a tile cell is on-screen:
+  // coarse pyramid scales cover the same band with grid cells.
+  return screenLong > 256.0;
 }
 
 void TileLodController::unbind()

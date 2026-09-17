@@ -56,8 +56,8 @@ public:
   TileSession const* session() const { return m_session.get(); }
 
   /**
-   * When device density is high enough that soft ≤512 is insufficient,
-   * tiles should own the display path.
+   * When on-screen long edge exceeds one tile side (~256px), tiles own display.
+   * Soft ≤512 whole-frame samples are redundant with coarse pyramid cells.
    */
   static bool shouldUseTiles(double devicePerContent, int contentLongEdge);
 

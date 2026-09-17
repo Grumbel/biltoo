@@ -1336,8 +1336,21 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
 void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
                                            LoadRole role)
 {
-    // Soft for fast paint. Image LoadReplace also starts Escalate + host native
-    // (skipped during slideshow nav hot / active show).
+    // Image mode tiles-first: coarse grid cells replace SoftOnly ≤512 when the
+    // on-screen long edge already exceeds one tile side (tileLodWanted).
+    if (isImageMode() && !m_slideshowProgressActive && !m_slideshowNavHot
+        && role == LoadReplace) {
+        tickPrimaryTileLod(12);
+        if (ImageItem *it = imageModeItemForPath(path)) {
+            if (it->tileLodWanted()) {
+                Q_UNUSED(gen);
+                return;
+            }
+        }
+    }
+
+    // Soft underlay only when tiles do not yet own the viewport (tiny view /
+    // Gallery-driven paths / cold size unknown).
     const QPointer<ImageView> guard(this);
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
@@ -1346,8 +1359,6 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
     startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
     if (isImageMode() && !m_slideshowProgressActive && !m_slideshowNavHot
         && role == LoadReplace) {
-        // Progressive climb to on-screen need only — not native/8192 up front.
-        // PathRaster Soft→Prefer→Full; native decode is recovery after plateau.
         const int need = imageModeOnScreenNeedEdge();
         requestEscalateClimb(
             path, need > 0 ? need : ThumtooCache::kBatchOverviewEdge);
@@ -2599,6 +2610,14 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
     }
     if (m_slideshowProgressActive) {
         return;
+    }
+    // Tiles own the soft/Prefer/Full band once on-screen long edge exceeds one
+    // tile side — do not schedule SoftOnly/PreferCache/Full in parallel.
+    if (ImageItem *it = imageModeItemForPath(path)) {
+        if (it->tileLodWanted()) {
+            tickPrimaryTileLod(12);
+            return;
+        }
     }
     if (!sample.isNull() && sampleCoversNativeLogical(path, sample)) {
         return;
