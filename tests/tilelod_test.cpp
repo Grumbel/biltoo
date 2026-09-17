@@ -534,6 +534,26 @@ void test_failed_no_spam_same_generation()
 }
 
 
+void test_min_scale_clamps_target()
+{
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  // Partial pyramid: only scales >= 2 exist.
+  session.set_content_size(4096, 4096, /*min_scale=*/2);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 8.0; // would want scale 0 without min clamp
+  session.set_viewport(vp);
+  CHECK(session.target_scale() >= 2);
+  for (auto const& k : session.visible_keys()) {
+    CHECK(k.scale >= 2);
+  }
+  session.issue_requests(32);
+  for (auto const& k : src.requested) {
+    CHECK(k.scale >= 2);
+  }
+}
+
 void test_host_prepare_loop_stable()
 {
   // Host prepareTileLod: set_content_size + set_viewport every frame.
@@ -719,6 +739,7 @@ int main()
   test_failed_no_spam_same_generation();
   test_set_content_size_idempotent();
   test_host_prepare_loop_stable();
+  test_min_scale_clamps_target();
   test_destroy_while_inflight();
   test_parent_prefetch();
   test_destroy_clears_inflight_shared();

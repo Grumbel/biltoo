@@ -2,6 +2,31 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1071-tilelod-min-scale-clamp-test.** Pure test that min_scale clamps target and requests.
+Prior: **1070**.
+
+### Change
+- `test_min_scale_clamps_target`: content min_scale=2 → target/visible/requested keys all ≥ 2
+- Guards coverage min_scale (1068) at the session layer
+
+### Apply
+```bash
+git pull /path/to/biltoo-1071-tilelod-min-scale-clamp-test.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1071**
+- [x] Pure tilelod_test passes
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist on a display
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1070-tilelod-workspace-tick-priority.** Workspace tile tick bounds to 8 with wanted/in-view priority.
 Prior: **1069**.
 

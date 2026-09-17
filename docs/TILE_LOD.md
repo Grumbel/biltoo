@@ -381,6 +381,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Session min_scale from durable coverage | Done (1068) |
 | Gallery tick prioritizes visible cells | Done (1069) |
 | Workspace tick prioritizes + bounds | Done (1070) |
+| min_scale clamp pure test | Done (1071) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -398,6 +399,12 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## min_scale clamp test (biltoo-1071)
+
+Pure test: `set_content_size(..., min_scale=2)` with high device density still
+targets scale ≥ 2 and never requests finer keys (guards 1068 at the session layer).
 
 
 ## Workspace tick priority (biltoo-1070)
