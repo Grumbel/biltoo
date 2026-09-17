@@ -1615,9 +1615,17 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
         maybeUpgradeCropFullRaster(path, image);
     }
 
-    // PreferCache/FocusFull may have co-built durable tiles; wake tile LOD if
-    // already past soft (timer may be stopped from a prior no-pyramid state).
-    tickPrimaryTileLod(6);
+    // PreferCache/FocusFull may have co-built durable tiles; wake tile LOD only
+    // if some on-canvas item for this path already wants tiles (avoids a full
+    // tickPrimary scan on every soft delivery).
+    if (isImageMode() || isWorkspaceMode() || isGalleryMode()) {
+        for (ImageItem *ii : m_items) {
+            if (ii && ii->path() == path && ii->tileLodWanted()) {
+                tickPrimaryTileLod(6);
+                break;
+            }
+        }
+    }
 
     if (!isGalleryMode()) {
         return;
@@ -2851,7 +2859,8 @@ void ImageView::tickPrimaryTileLod(int budget)
                 tickPrimaryTileLod(6);
             });
         }
-        const int interval = anyIncomplete ? 33 : 250;
+        // 50ms while filling (~20Hz): 33ms competed with input under load.
+        const int interval = anyIncomplete ? 50 : 250;
         if (m_tileLodTimer->interval() != interval) {
             m_tileLodTimer->setInterval(interval);
         }

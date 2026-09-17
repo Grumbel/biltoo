@@ -11,6 +11,7 @@
 
 #include <QApplication>
 #include <QThreadPool>
+#include <QThread>
 #include <QGuiApplication>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
@@ -66,6 +67,12 @@ int main(int argc, char *argv[])
     }
 
     QApplication app(argc, argv);
+    // Leave headroom for the GUI thread under tile/soft background load.
+    {
+        const int ideal = QThread::idealThreadCount();
+        const int cap = ideal <= 2 ? 1 : ideal - 1;
+        QThreadPool::globalInstance()->setMaxThreadCount(qMax(1, cap));
+    }
     // After QApplication so thumtoo callbacks can queue onto the GUI thread.
     ThumtooCache::init();
     QObject::connect(&app, &QCoreApplication::aboutToQuit, []() {

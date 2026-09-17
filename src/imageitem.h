@@ -395,6 +395,9 @@ private:
     std::unique_ptr<tilelod::TileLodController> m_tileLod;
     /** Crop-draft (and similar) freeze: no tile requests or paint. */
     bool m_tileLodSuppressed = false;
+    bool m_tileLodRepaintQueued = false;
+    double m_tileLodLastDpc = -1.0;
+    QRectF m_tileLodLastVisSource;
     /** Last tile plan generation that triggered update() (avoid 250ms repaint spam). */
     std::uint64_t m_tileLodLastUpdateGen = 0;
     mutable QHash<QString, QImage> m_tileGradedCache;

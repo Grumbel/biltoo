@@ -2,6 +2,30 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1076-tilelod-gui-relief-background.** Keep GUI responsive while soft/tiles run in background.
+Prior: **1075**.
+
+### Change
+- Skip prepareTileLodPlan when dpc+vis unchanged (paint while streaming)
+- Coalesce tile update() via QueuedConnection
+- Tile timer 50ms while incomplete (was 33ms)
+- onLadderReady ticks tiles only if path wants tiles
+- QThreadPool max = idealThreadCount−1
+
+### Apply
+```bash
+git pull /path/to/biltoo-1076-tilelod-gui-relief-background.bundle HEAD
+```
+
+### Next
+- If still sticky: profile paint with BILTOO_PERF; consider lowering issue budget under load
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1075-tilelod-zoom-out-coarse-plan.** Paint refreshes plan on zoom so far-out uses coarse tiles.
 Prior: **1074**.
 

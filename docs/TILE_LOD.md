@@ -386,6 +386,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Zoom path GUI-thread perf | Done (1073) |
 | Debug overlay LADDER/TILE/HOST | Done (1074) |
 | Zoom-out plan refresh (coarse scale) | Done (1075) |
+| Background load GUI relief | Done (1076) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -403,6 +404,21 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Background load GUI relief (biltoo-1076)
+
+While soft/tiles complete, the GUI thread was still busy:
+
+| Issue | Mitigation |
+|-------|------------|
+| `prepareTileLodPlan` every paint while cells stream | Skip when dpc + visSource unchanged |
+| `update()` per tick completion | Coalesce to one queued `update()` per event-loop turn |
+| Tile pump at 33ms while incomplete | 50ms (~20Hz) fill; 250ms when covered |
+| `onLadderReady` → always `tickPrimaryTileLod` | Only if an item for that path `tileLodWanted()` |
+| Qt global pool uses all cores | Cap at `idealThreadCount - 1` (leave GUI headroom) |
+
+Decode remains off-GUI. Remaining cost is paint of visible cells + occasional plan.
 
 
 ## Zoom-out plan refresh (biltoo-1075)

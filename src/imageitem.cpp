@@ -51,6 +51,9 @@ void ImageItem::setPath(const QString &path)
     m_tileLod.reset();
     m_tileLodLastUpdateGen = 0;
     m_tileLodSuppressed = false;
+    m_tileLodRepaintQueued = false;
+    m_tileLodLastDpc = -1.0;
+    m_tileLodLastVisSource = QRectF();
     clearTileGradedCache();
 }
 

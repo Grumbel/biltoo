@@ -22,6 +22,7 @@
 #include <QLineF>
 #include <QMetaObject>
 #include <QPainter>
+#include <QPointer>
 #include <QPainterPath>
 #include <QPolygonF>
 #include <QStyle>
@@ -1284,6 +1285,19 @@ void ImageItem::prepareTileLodPlan()
         // Identity xform: display == source when layout matches native.
         visSource = visDisplay;
     }
+    // Skip set_viewport when density and visible region are unchanged — paint
+    // runs this every frame while tiles stream in; replanning is pure waste.
+    if (m_tileLod->session()
+        && m_tileLodLastDpc > 0.0
+        && qAbs(dpc - m_tileLodLastDpc) < 1e-4
+        && qAbs(visSource.x() - m_tileLodLastVisSource.x()) < 0.5
+        && qAbs(visSource.y() - m_tileLodLastVisSource.y()) < 0.5
+        && qAbs(visSource.width() - m_tileLodLastVisSource.width()) < 0.5
+        && qAbs(visSource.height() - m_tileLodLastVisSource.height()) < 0.5) {
+        return;
+    }
+    m_tileLodLastDpc = dpc;
+    m_tileLodLastVisSource = visSource;
     // Margin in *content* pixels: ~64 device px so prefetch is stable across zoom.
     const double margin = 64.0 / qMax(1e-6, dpc);
     m_tileLod->updateViewport(visSource, dpc, margin);
@@ -1314,7 +1328,21 @@ void ImageItem::tickTileLod(int budget)
         m_tileLod->session() ? m_tileLod->session()->generation() : 0;
     if (applied > 0 || gen != m_tileLodLastUpdateGen) {
         m_tileLodLastUpdateGen = gen;
-        update();
+        // Coalesce many completions in one event-loop turn into one update().
+        if (!m_tileLodRepaintQueued) {
+            m_tileLodRepaintQueued = true;
+            QPointer<ImageItem> self(this);
+            QMetaObject::invokeMethod(
+                this,
+                [self]() {
+                    if (!self) {
+                        return;
+                    }
+                    self->m_tileLodRepaintQueued = false;
+                    self->update();
+                },
+                Qt::QueuedConnection);
+        }
     }
 }
 
