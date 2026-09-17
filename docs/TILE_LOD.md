@@ -672,6 +672,13 @@ sessions. Ctrl+wheel inspect still crosses the threshold.
 Image / Workspace still use content long edge × `tileDevicePerContent()` and
 the 512×1.05 soft-max rule.
 
+## Tiles own plate (biltoo-1101)
+
+Once `tileLodWanted` and any cell has landed, paint does **not** stretch a
+soft/HOST underlay under the grid. Gallery does not SoftOnly when tiles want
+the cell. Overlay labels: LQIP ≤96, SOFT ≤512, HOST larger.
+
+
 ## LQIP then tiles (biltoo-1099)
 
 Image mode underlay is **cache-only LQIP / ImageCache** — no SoftOnly encode.

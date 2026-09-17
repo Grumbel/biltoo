@@ -1576,6 +1576,13 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
+    // Tiles own the cell — no SoftOnly/PreferCache HOST climb in parallel.
+    for (ImageItem *ii : m_items) {
+        if (ii && ii->path() == path && ii->tileLodWanted()) {
+            tickPrimaryTileLod(6);
+            return;
+        }
+    }
     // Size-first still probes in the background, but never blocks decode:
     // provisional layout must still climb to the zoom-appropriate ladder edge.
     if (isProvisionalImageSize(path)) {

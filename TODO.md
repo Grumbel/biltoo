@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1101-tiles-own-not-host-underlay.** Tiles own paint; no soft/HOST base once cells exist; gallery skip soft; clearer overlay labels.
+Prior: **1100**.
+
+### Remaining limits found
+1. Paint drew soft/HOST base until *fully* tile-covered → HOST always visible.
+2. Gallery still SoftOnly/PreferCache even when tileLodWanted.
+3. shouldUseTiles required screenLong > 256 (still soft for fitted views).
+4. Overlay stamped every ImageCache sample as "HOST".
+
+### Change
+- shouldUseTiles: content ≥256 and screenLong > 32.
+- Paint: no soft base when tiles wanted and any cell present.
+- Gallery scheduleGalleryDecode: tick tiles, skip soft if tileLodWanted.
+- Overlay: LQIP / SOFT / HOST by long edge.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1101-tiles-own-not-host-underlay.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1100-tile-source-epoch-lifetime.** Fix UAF: tile fetch completions no longer lock destroyed mutex.
 Prior: **1099**.
 

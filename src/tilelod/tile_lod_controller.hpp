@@ -56,8 +56,8 @@ public:
   TileSession const* session() const { return m_session.get(); }
 
   /**
-   * When on-screen long edge exceeds one tile side (~256px), tiles own display.
-   * Soft ≤512 whole-frame samples are redundant with coarse pyramid cells.
+   * When the file is large enough for a pyramid and on-screen footprint is
+   * meaningful (~32px+), tiles own display. Soft/HOST whole-frame is underlay only.
    */
   static bool shouldUseTiles(double devicePerContent, int contentLongEdge);
 

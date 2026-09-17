@@ -1570,11 +1570,16 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // size probe (SIZE.md); LQIP/soft/full are only textures. Always stretch
         // to the full box so a correct layout does not show a small letterboxed
         // LQIP that later "grows" when soft fills the same rect.
-        // When the tile plan fully covers the viewport with exact cells, skip
-        // the soft/PreferCache base — it is completely occluded and
-        // pixmap().toImage() + stretch was pure paint cost on every frame.
+        // Tiles own the plate when wanted: do not stretch a HOST/soft sample
+        // underneath (that is what the HOST overlay looked like). LQIP underlay
+        // only until the first cell arrives; then tiles + hole underlays only.
+        const bool tilesWanted = tileLodWanted();
         const bool tilesFullyCover =
-            tileLodWanted() && tileLodViewportCovered();
+            tilesWanted && tileLodViewportCovered();
+        const bool hasAnyTile =
+            m_tileLod && m_tileLod->enabled() && m_tileLod->hasAnyTile();
+        const bool drawSoftBase =
+            !tilesWanted || (!hasAnyTile && !tilesFullyCover);
 
         auto drawSampleInContentRect = [&](const QImage &img) {
             const QRectF box = contentRect();
@@ -1584,7 +1589,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
             painter->drawImage(box, img);
         };
-        if (!tilesFullyCover) {
+        if (drawSoftBase && !tilesFullyCover) {
             if (!m_source.isNull() && !m_previewPixels) {
                 const QRectF box = contentRect();
                 if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0) {

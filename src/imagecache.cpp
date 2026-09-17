@@ -106,12 +106,20 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     p.drawRect(border / 2, border / 2, w - border, h - border);
 
     QStringList lines;
-    lines << QStringLiteral("HOST");
+    // Distinguish underlay size so "HOST" is not confused with tile ownership.
+    const int le = qMax(w, h);
+    if (le <= 96) {
+        lines << QStringLiteral("LQIP");
+    } else if (le <= 512) {
+        lines << QStringLiteral("SOFT");
+    } else {
+        lines << QStringLiteral("HOST");
+    }
     if (!label.isEmpty()) {
         lines << label;
     }
     lines << QStringLiteral("%1×%2").arg(w).arg(h);
-    lines << QStringLiteral("le=%1").arg(qMax(w, h));
+    lines << QStringLiteral("le=%1").arg(le);
 
     QFont f = p.font();
     f.setBold(true);

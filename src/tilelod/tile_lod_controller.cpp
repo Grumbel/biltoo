@@ -16,10 +16,13 @@ bool TileLodController::shouldUseTiles(double devicePerContent, int contentLongE
   if (!(devicePerContent > 0.0) || contentLongEdge <= 0) {
     return false;
   }
+  // Files smaller than one tile: no useful pyramid — keep soft/LQIP only.
+  if (contentLongEdge < 256) {
+    return false;
+  }
   double const screenLong = devicePerContent * static_cast<double>(contentLongEdge);
-  // Soft ≤512 whole-frame is redundant once a tile cell is on-screen:
-  // coarse pyramid scales cover the same band with grid cells.
-  return screenLong > 256.0;
+  // Any meaningful on-screen footprint: tiles own display (LQIP underlay only).
+  return screenLong > 32.0;
 }
 
 void TileLodController::unbind()
