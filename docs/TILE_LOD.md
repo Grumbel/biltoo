@@ -275,3 +275,16 @@ re-planning the visible grid (avoids enqueueing intermediate pyramids every
 wheel notch). Jumps of more than one scale commit immediately.
 
 Manual checks: [TILE_LOD_RUNTIME.md](TILE_LOD_RUNTIME.md).
+
+
+## Content orient / crop (current limitation)
+
+thumtoo grid tiles are keyed in **source** pixel space. `ImageItem` layout and
+paint use **display** space after content flip, quarter-turns, and crop
+([CONTENT_COORDINATES.md](CONTENT_COORDINATES.md)).
+
+Until a source→display map is applied to tile UV/dst, **tile LOD is disabled**
+when any content appearance is active (`hFlip` / `vFlip` / `quarterTurns` /
+crop). Soft and PreferCache remain the path for those images.
+
+Straight (identity content) deep zoom is the supported tile path.

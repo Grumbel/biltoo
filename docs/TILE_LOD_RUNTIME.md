@@ -44,3 +44,9 @@ export THUMTOO_DEBUG=1
 # optional: biltoo load traces
 export BILTOO_LOAD_DEBUG=1
 ```
+
+
+## Content orient / crop
+
+With flip, 90° turns, or crop applied, tile LOD stays off (source vs display
+space). Expect PreferCache / soft only until mapping lands.

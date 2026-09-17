@@ -1092,6 +1092,20 @@ bool ImageItem::tileLodWanted() const
     if (!m_galleryCellSize.isEmpty()) {
         return false;
     }
+    // Grid tiles are in thumtoo *source* space (unoriented full raster).
+    // Item geometry is *display* space after content flip/turn/crop
+    // (CONTENT_COORDINATES.md). Until tiles are mapped through ContentXform,
+    // disable the tile path when any content appearance is active — PreferCache
+    // / soft still cover those cases.
+    if (m_contentHFlip || m_contentVFlip || m_sessionHasCrop) {
+        return false;
+    }
+    if (m_hasAppliedContentXform) {
+        const ContentXform::Value &x = m_appliedContentXform;
+        if (x.hFlip || x.vFlip || x.quarterTurns != 0 || x.hasCrop) {
+            return false;
+        }
+    }
     const QSize isz = imageSize();
     if (!isz.isValid() || isz.width() < 1 || isz.height() < 1) {
         return false;

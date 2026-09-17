@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1032-tilelod-content-xform-gate.** Disable tiles when content flip/turn/crop active.
+Prior: **1031**.
+
+### Change
+- `tileLodWanted` returns false if content H/V flip, session crop, or applied ContentXform (turns/crop)
+- Tiles stay source-space; display-space mapping deferred (CONTENT_COORDINATES)
+- Soft / PreferCache still handle oriented/cropped deep zoom
+- Docs: TILE_LOD + TILE_LOD_RUNTIME limitation notes
+
+### Apply
+```bash
+git pull /path/to/biltoo-1032-tilelod-content-xform-gate.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1032**
+- [x] Identity content still eligible for tiles; xform disables path
+
+### Next
+- Optional: map tile UV through ContentXform for crop/orient
+- Manual runtime checklist (TILE_LOD_RUNTIME.md)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1031-tilelod-scale-hold.** Debounce adjacent scale steps; runtime checklist.
 Prior: **1030**.
 
