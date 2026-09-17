@@ -2,6 +2,31 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1069-tilelod-gallery-tick-priority.** Gallery tile tick prioritizes in-view / largest cells.
+Prior: **1068**.
+
+### Change
+- Gallery candidates sorted in-view first, then by on-screen long edge
+- Avoids starving late `m_items` when >8 cells are past soft threshold
+
+### Apply
+```bash
+git pull /path/to/biltoo-1069-tilelod-gallery-tick-priority.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1069**
+- [x] Visible large Gallery cells get tile budget first
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist on a display
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1068-tilelod-min-scale-from-coverage.** Session min_scale from durable tile coverage.
 Prior: **1067**.
 

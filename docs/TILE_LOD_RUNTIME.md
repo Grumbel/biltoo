@@ -45,6 +45,7 @@ not claimed (`tileLodWanted` requires `hasDurableTiles`).
 2. Ctrl+wheel zoom until a cell is large on screen (> ~512 device px) **and** a pyramid exists — tiles should appear for that cell.
    Threshold uses **scene cell × view scale × DPR** (not content × item×view).
 3. Scroll after coverage — decode window refresh + tile tick for oversized cells.
+4. Many large cells (Ctrl+wheel pack): in-view cells get tile budget before off-screen.
 
 ## Crop draft
 

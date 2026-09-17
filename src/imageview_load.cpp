@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+
+#include <algorithm>
 #include "displayquality.h"
 #include "coloradjust.h"
 
@@ -2668,14 +2670,59 @@ void ImageView::tickPrimaryTileLod(int budget)
             }
         }
     } else if (isGalleryMode()) {
-        // Large on-screen cells only (tileLodWanted filters); bound work.
-        int n = 0;
+        // Large cells only (tileLodWanted); prefer those in the view, then by
+        // on-screen long edge. List order alone starved late cells when >8
+        // cells were past the soft threshold.
+        struct Cand {
+            ImageItem *item = nullptr;
+            bool inView = false;
+            qreal screenLong = 0;
+        };
+        QRectF sceneVis;
+        if (m_scene) {
+            sceneVis = mapToScene(viewport()->rect()).boundingRect();
+        }
+        QVector<Cand> cands;
+        cands.reserve(16);
         for (ImageItem *ii : m_items) {
             if (!ii || ii->path().isEmpty() || !ii->tileLodWanted()) {
                 continue;
             }
-            targets.append(ii);
-            if (++n >= 8) {
+            Cand c;
+            c.item = ii;
+            c.inView = sceneVis.isNull()
+                || ii->sceneBoundingRect().intersects(sceneVis);
+            QSizeF cell = ii->galleryCellSize();
+            if (cell.isEmpty()) {
+                const QRectF br = ii->sceneBoundingRect();
+                cell = QSizeF(br.width(), br.height());
+            }
+            qreal viewScale = 1.0;
+            qreal dpr = 1.0;
+            if (QWidget *vp = viewport()) {
+                dpr = vp->devicePixelRatioF();
+            }
+            {
+                const QTransform vt = transform();
+                // Axis-aligned gallery view: m11/m22 are sufficient (no shear).
+                viewScale = qMax(0.01, qMax(qAbs(vt.m11()), qAbs(vt.m22())));
+            }
+            if (!(dpr > 0.0)) {
+                dpr = 1.0;
+            }
+            const qreal cellLong = qMax(cell.width(), cell.height());
+            c.screenLong = cellLong * viewScale * dpr;
+            cands.append(c);
+        }
+        std::sort(cands.begin(), cands.end(), [](const Cand &a, const Cand &b) {
+            if (a.inView != b.inView) {
+                return a.inView;
+            }
+            return a.screenLong > b.screenLong;
+        });
+        for (const Cand &c : cands) {
+            targets.append(c.item);
+            if (targets.size() >= 8) {
                 break;
             }
         }

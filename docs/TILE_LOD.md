@@ -379,6 +379,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Scrollbar restarts tile tick | Done (1066) |
 | Host prepare-loop regression test | Done (1067) |
 | Session min_scale from durable coverage | Done (1068) |
+| Gallery tick prioritizes visible cells | Done (1069) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -396,6 +397,13 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Gallery tick priority (biltoo-1069)
+
+Gallery tile tick is bounded to 8 items. Selection was list order, so late cells
+past the soft threshold could starve. Candidates are sorted **in-view first**,
+then by on-screen long edge (cell × view scale × DPR).
 
 
 ## Session min_scale (biltoo-1068)
