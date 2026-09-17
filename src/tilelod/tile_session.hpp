@@ -43,7 +43,14 @@ public:
   int max_scale() const { return m_max_scale; }
 
   /// Optional LQIP underlay presence (bitmap owned by host; flag only here).
-  void set_has_lqip(bool on) { m_has_lqip = on; m_draw_plan_dirty = true; }
+  void set_has_lqip(bool on)
+  {
+    if (m_has_lqip == on) {
+      return;
+    }
+    m_has_lqip = on;
+    m_draw_plan_dirty = true;
+  }
   bool has_lqip() const { return m_has_lqip; }
 
   void set_viewport(Viewport const& vp, double margin_content = 0.0);

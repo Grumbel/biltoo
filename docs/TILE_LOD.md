@@ -675,6 +675,12 @@ does not hit Store `has_tile` every frame. Cleared on discover / scheduleTilePyr
 tick. Earlier code gave each target the full N (up to 8×N concurrent requests).
 
 
+## Draw plan cache validity (biltoo-1090)
+
+`set_has_lqip` only dirties the cached plan when the flag changes. prepare no
+longer calls it on the stable dpc/vis early-out path.
+
+
 ## Soft base under tiles (biltoo-1089)
 
 When the tile plan fully covers the viewport (`tileLodViewportCovered`), the

@@ -1459,10 +1459,6 @@ void ImageItem::prepareTileLodPlan()
     // min_scale from durable coverage so we do not request finer than the pyramid.
     m_tileLod->setContentSize(native.width(), native.height(),
                               ThumtooCache::durableTileMinScale(m_path));
-    // Soft/PreferCache is painted as a continuous base before the tile grid.
-    // has_lqip would emit per-cell Underlay commands that re-stretch the full
-    // soft into every hole (or no-op when lqip is null) — pure cost.
-    m_tileLod->setHasLqip(false);
 
     const qreal dpc = tileDevicePerContent();
     QRectF visLocal = contentRect();
@@ -1497,6 +1493,8 @@ void ImageItem::prepareTileLodPlan()
     }
     m_tileLodLastDpc = dpc;
     m_tileLodLastVisSource = visSource;
+    // Soft is continuous base; only set once (set_has_lqip no-ops on same value).
+    m_tileLod->setHasLqip(false);
     // Margin in *content* pixels: ~64 device px so prefetch is stable across zoom.
     const double margin = 64.0 / qMax(1e-6, dpc);
     m_tileLod->updateViewport(visSource, dpc, margin);

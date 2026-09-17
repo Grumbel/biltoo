@@ -2,6 +2,28 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1090-draw-plan-cache-fix.** set_has_lqip only dirties plan on change (was every paint).
+Prior: **1089**.
+
+### Analysis
+- prepareTileLodPlan called `setHasLqip(false)` every paint.
+- `set_has_lqip` always set `m_draw_plan_dirty`, defeating the 1088 plan cache.
+
+### Change
+- Dirty only when the flag actually changes.
+- Move setHasLqip after the stable dpc/vis early-out.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1090-draw-plan-cache-fix.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1089-skip-soft-when-tiles-cover.** Skip soft base paint when tiles fully cover; avoid pixmap→image.
 Prior: **1088**.
 
