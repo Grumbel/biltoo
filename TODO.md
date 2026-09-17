@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1034-tilelod-gallery-large-cells.** Gallery inspection zoom uses tiles for oversized cells.
+Prior: **1033**.
+
+### Change
+- `tileLodWanted`: gallery cells eligible when on-screen cell long edge past soft max
+- `tickPrimaryTileLod`: Gallery mode ticks up to 8 wanted cells
+- `updateGalleryDecodeWindow` ends with `tickPrimaryTileLod(6)`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1034-tilelod-gallery-large-cells.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1034**
+- [x] Pure tilelod tests pass
+
+### Next
+- Manual: Gallery Ctrl+zoom on prepared pyramid cells
+- Optional: skip PreferCache schedule for gallery cells already in tile band
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1033-tilelod-content-map.** Source↔display ContentXform maps; item offset fix.
 Prior: **1032**.
 

@@ -2651,6 +2651,21 @@ void ImageView::tickPrimaryTileLod(int budget)
                 }
             }
         }
+    } else if (isGalleryMode()) {
+        // Large on-screen cells only (tileLodWanted filters); bound work.
+        int n = 0;
+        for (ImageItem *ii : m_items) {
+            if (!ii || ii->path().isEmpty() || !ii->tileLodWanted()) {
+                continue;
+            }
+            targets.append(ii);
+            if (++n >= 8) {
+                break;
+            }
+        }
+        if (targets.isEmpty()) {
+            return;
+        }
     } else {
         return;
     }

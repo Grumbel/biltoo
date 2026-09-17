@@ -334,6 +334,8 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     scheduleIdleGalleryDecodes(rest);
+    // Deep-zoom inspection: grid tiles for oversized on-screen cells.
+    tickPrimaryTileLod(6);
     if (m_perfEnabled && decodeWinTimer.isValid()) {
         m_perfLastDecodeWindowUs = decodeWinTimer.nsecsElapsed() / 1000;
         m_perfMaxDecodeWindowUs =

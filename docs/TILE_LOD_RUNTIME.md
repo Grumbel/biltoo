@@ -50,3 +50,10 @@ export BILTOO_LOAD_DEBUG=1
 
 Axis-aligned flip / 90° / crop: tiles should track via ContentXform maps.
 Free-rotated crop: tile LOD off (soft / PreferCache only).
+
+
+## Gallery
+
+1. Pack at normal size — soft only.
+2. Ctrl+wheel zoom until a cell is large on screen — tiles should appear for
+   that cell when a pyramid exists.

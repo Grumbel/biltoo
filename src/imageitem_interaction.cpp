@@ -1109,11 +1109,7 @@ QSize ImageItem::tileNativeSize() const
 
 bool ImageItem::tileLodWanted() const
 {
-    // Gallery packed cells stay on soft ladder only.
     if (m_path.isEmpty() || !ThumtooCache::isAvailable()) {
-        return false;
-    }
-    if (!m_galleryCellSize.isEmpty()) {
         return false;
     }
     const ContentXform::Value x = tileContentXform();
@@ -1125,12 +1121,19 @@ bool ImageItem::tileLodWanted() const
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;
     }
-    // On-screen need from *display* long edge (layout size).
-    const QSize isz = imageSize();
-    const int displayLong = qMax(isz.width(), isz.height());
+    // Display long edge: layout size, or gallery cell footprint when packed.
+    int displayLong = 0;
+    if (!m_galleryCellSize.isEmpty()) {
+        displayLong = qMax(qCeil(m_galleryCellSize.width()),
+                           qCeil(m_galleryCellSize.height()));
+    } else {
+        const QSize isz = imageSize();
+        displayLong = qMax(isz.width(), isz.height());
+    }
     if (displayLong < 1) {
         return false;
     }
+    // Gallery: only when the *on-screen* cell exceeds soft max (inspection zoom).
     return tilelod::TileLodController::shouldUseTiles(
         tileDevicePerContent(), displayLong);
 }
