@@ -1113,7 +1113,14 @@ bool ImageItem::tileLodWanted() const
         return false;
     }
     const ContentXform::Value x = tileContentXform();
-    (void)x; // maps handle free-rot via ContentXform::map*
+    // Grid tiles are ungraded raw cells. Soft/PreferCache bake color adjust.
+    // Until the paint path applies grade to tiles, stay on soft when adjusted.
+    if (!x.colorAdjust.isIdentity()) {
+        return false;
+    }
+    if (!m_colorAdjust.isIdentity()) {
+        return false;
+    }
     const QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;

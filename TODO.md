@@ -2,6 +2,31 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1049-tilelod-skip-color-grade.** Disable tiles when color adjust is active.
+Prior: **1048**.
+
+### Change
+- `tileLodWanted` false if applied ContentXform or item `m_colorAdjust` is non-identity
+- Soft/PreferCache keep graded display until tile paint applies grade
+
+### Apply
+```bash
+git pull /path/to/biltoo-1049-tilelod-skip-color-grade.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1049**
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional: apply color grade in tile paint path
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1048-tilelod-destroy-clear-inflight.** Session destroy clears shared InFlight.
 Prior: **1047**.
 
