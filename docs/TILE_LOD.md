@@ -332,3 +332,10 @@ Debug: `BILTOO_TILE_DEBUG=1` prints covered/active per tick.
 A tile that fails for the current viewport generation is not re-requested on
 every pump tick. Changing the viewport (generation++) allows a retry. Prevents
 thumtoo hammering when a cell is missing from the pyramid.
+
+
+## Session lifetime (biltoo-1043)
+
+Source callbacks capture a `shared_ptr<CompletionInbox>`, not `TileSession*`.
+Destroying the session marks the inbox dead, cancels in-flight keys, and
+clears pending completions so late worker replies are no-ops.

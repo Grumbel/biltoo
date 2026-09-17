@@ -14,7 +14,25 @@ namespace tilelod {
 TileSession::TileSession(TileSource* source, TileMemoryCache* shared_cache)
     : m_source(source)
     , m_cache(shared_cache ? shared_cache : &m_owned_cache)
+    , m_inbox(std::make_shared<CompletionInbox>())
 {
+}
+
+TileSession::~TileSession()
+{
+  if (m_inbox) {
+    m_inbox->alive.store(false);
+  }
+  if (m_source && m_cache) {
+    std::vector<TileKey> inflight = m_cache->in_flight_keys();
+    if (!inflight.empty()) {
+      m_source->cancel(inflight);
+    }
+  }
+  if (m_inbox) {
+    std::lock_guard<std::mutex> lock(m_inbox->mu);
+    m_inbox->pending.clear();
+  }
 }
 
 void TileSession::set_content_size(int width, int height, int min_scale)
@@ -121,8 +139,14 @@ void TileSession::on_source_completion(TileKey key,
                                        std::optional<TileBitmap> bitmap,
                                        std::uint64_t gen)
 {
-  std::lock_guard<std::mutex> lock(m_pending_mutex);
-  m_pending.push_back(PendingCompletion{key, std::move(bitmap), gen});
+  if (!m_inbox || !m_inbox->alive.load()) {
+    return;
+  }
+  std::lock_guard<std::mutex> lock(m_inbox->mu);
+  if (!m_inbox->alive.load()) {
+    return;
+  }
+  m_inbox->pending.push_back(PendingCompletion{key, std::move(bitmap), gen});
 }
 
 void TileSession::inject_completion(TileKey key,
@@ -134,9 +158,9 @@ void TileSession::inject_completion(TileKey key,
 int TileSession::pump()
 {
   std::vector<PendingCompletion> batch;
-  {
-    std::lock_guard<std::mutex> lock(m_pending_mutex);
-    batch.swap(m_pending);
+  if (m_inbox) {
+    std::lock_guard<std::mutex> lock(m_inbox->mu);
+    batch.swap(m_inbox->pending);
   }
 
   int applied = 0;
@@ -225,10 +249,20 @@ int TileSession::issue_requests(int budget)
     batch.push_back(key);
   }
 
-  // Capture generation at request time for stale filtering.
-  m_source->request(batch, [this, gen](TileKey key,
-                                       std::optional<TileBitmap> bitmap) {
-    on_source_completion(std::move(key), std::move(bitmap), gen);
+  // Capture generation + inbox (not `this`) so late worker callbacks are safe
+  // after TileSession destruction.
+  std::shared_ptr<CompletionInbox> inbox = m_inbox;
+  m_source->request(batch, [inbox, gen](TileKey key,
+                                        std::optional<TileBitmap> bitmap) {
+    if (!inbox || !inbox->alive.load()) {
+      return;
+    }
+    std::lock_guard<std::mutex> lock(inbox->mu);
+    if (!inbox->alive.load()) {
+      return;
+    }
+    inbox->pending.push_back(
+        PendingCompletion{std::move(key), std::move(bitmap), gen});
   });
 
   return n;

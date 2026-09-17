@@ -10,7 +10,9 @@
 #include "tilelod/tile_source.hpp"
 #include "tilelod/tile_types.hpp"
 
+#include <atomic>
 #include <chrono>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <vector>
@@ -29,6 +31,10 @@ public:
    *        the session owns a private TileMemoryCache.
    */
   explicit TileSession(TileSource* source, TileMemoryCache* shared_cache = nullptr);
+  ~TileSession();
+
+  TileSession(TileSession const&) = delete;
+  TileSession& operator=(TileSession const&) = delete;
 
   void set_content_size(int width, int height, int min_scale = 0);
   int content_w() const { return m_content_w; }
@@ -99,6 +105,16 @@ private:
     std::uint64_t generation = 0;
   };
 
+  /**
+   * Shared with source callbacks so completions remain safe after the
+   * TileSession object is destroyed (cancel + drop).
+   */
+  struct CompletionInbox {
+    std::mutex mu;
+    std::vector<PendingCompletion> pending;
+    std::atomic<bool> alive{true};
+  };
+
   void on_source_completion(TileKey key, std::optional<TileBitmap> bitmap,
                             std::uint64_t gen);
 
@@ -128,8 +144,7 @@ private:
   TileMemoryCache* m_cache = nullptr;  // → shared or &m_owned_cache
   std::size_t m_byte_budget = TileMemoryCache::kDefaultBudgetBytes;
 
-  mutable std::mutex m_pending_mutex;
-  std::vector<PendingCompletion> m_pending;
+  std::shared_ptr<CompletionInbox> m_inbox;
 };
 
 }  // namespace tilelod

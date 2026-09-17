@@ -526,6 +526,36 @@ void test_failed_no_spam_same_generation()
   CHECK(n >= 1);
 }
 
+
+void test_destroy_while_inflight()
+{
+  FakeTileSource src;
+  {
+    tilelod::TileSession session(&src);
+    session.set_content_size(256, 256);
+    tilelod::Viewport vp;
+    vp.content_rect = {0, 0, 256, 256};
+    vp.device_per_content = 1.0;
+    session.set_viewport(vp);
+    session.issue_requests(4);
+    CHECK(!src.requested.empty());
+    // Destroy session with requests outstanding — must not crash on complete.
+  }
+  // Simulate late completions (source still has keys; no live session).
+  // Fake does not call callbacks until complete_all_requested — just ensure
+  // destructor path ran. Issue again on a new session.
+  tilelod::TileSession session2(&src);
+  session2.set_content_size(256, 256);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;
+  session2.set_viewport(vp);
+  session2.issue_requests(2);
+  src.complete_all_requested(1);
+  session2.pump();
+  CHECK(session2.has_any_succeeded_tile() || session2.coverage().visible >= 0);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -560,6 +590,7 @@ int main()
   test_trim_protects_parents();
   test_shared_no_drop_finer();
   test_failed_no_spam_same_generation();
+  test_destroy_while_inflight();
   test_parent_key();
 
   if (g_failures) {

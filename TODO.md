@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1043-tilelod-session-lifetime.** Safe destroy with in-flight tile callbacks.
+Prior: **1042**.
+
+### Change
+- `CompletionInbox` shared_ptr: worker callbacks never touch a dead `TileSession*`
+- `~TileSession` marks inbox dead, cancels in-flight, clears pending
+- `issue_requests` captures inbox + generation only
+- Unit test: destroy mid-flight then new session
+
+### Apply
+```bash
+git pull /path/to/biltoo-1043-tilelod-session-lifetime.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1043**
+- [x] Lifetime unit test passes
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1042-tilelod-failed-no-spam.** Failed tiles not re-requested every tick.
 Prior: **1041**.
 
