@@ -2,6 +2,31 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1096-soft-only-no-reschedule-loop.** Stop SoftOnly re-queue when store soft < softMax.
+Prior: **1095**.
+
+### Problem
+- Gallery DEBUG_OVERLAY looped `soft 85x128 req=256/512` for the same paths.
+- SoftOnly often returns a ladder rung smaller than softMax (512). Climb required
+  softCovered (≈90% of 512); schedulePixels RETRY required 90% of edge — both
+  re-fired SoftOnly forever. `forgetSoftSettled` on shortfall made it worse.
+
+### Change
+- `softAttempted` after SoftOnly got>0; plan does not re-SoftOnly while host has pixels.
+- schedulePixels settled: retry only when host have==0 (not 90% of edge).
+- Drop forgetSoftSettled on soft shortfall.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1096-soft-only-no-reschedule-loop.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1095-zoom-out-scale-immediate.** Zoom-out commits coarser target scale immediately (no hold).
 Prior: **1094**.
 

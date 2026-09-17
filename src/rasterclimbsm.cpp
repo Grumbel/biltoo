@@ -52,6 +52,9 @@ void Machine::setHaveFromHost(int hostHave, int softMax)
         m_.lastDisplayGot = 0;
         m_.fullDone = false;
         m_.fullQueued = false;
+        if (hostHave <= 0) {
+            m_.softAttempted = false;
+        }
     }
     m_.have = std::max(0, hostHave);
     if (covers(m_.have, effectiveNeed())) {
@@ -83,6 +86,11 @@ void Machine::noteDelivery(int requestEdge, int got, int softMax)
         m_.have = std::max(m_.have, got);
         if (requestEdge > 0) {
             m_.lastDisplayGot = std::max(m_.lastDisplayGot, got);
+        }
+        // SoftOnly often returns a store rung smaller than softMax (or LQIP-ish).
+        // Mark attempted so plan() does not re-SoftOnly forever.
+        if (requestEdge <= softMax) {
+            m_.softAttempted = true;
         }
     }
     m_.displayQueued = false;
@@ -157,9 +165,13 @@ Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
     const bool softCovered = covers(m_.have, softMax) || m_.have >= softMax;
 
     // --- Soft ---
-    if (!softCovered && !m_.softQueued) {
+    // softAttempted: SoftOnly already returned pixels (possibly < softMax).
+    // Re-requesting SoftOnly when have is 85–128 and softMax is 512 spun forever
+    // (DEBUG_OVERLAY soft 85x128 req=256/512 loop in Gallery).
+    if (!softCovered && !m_.softQueued && !m_.softAttempted) {
         p.scheduleSoft = true;
-        p.forgetSoftSettled = (m_.have > 0 && m_.have < softMax);
+        // Do not forget settled on shortfall — that re-opened SoftOnly forever.
+        p.forgetSoftSettled = false;
     }
 
     // Full edge: min(want, native, displayMax)

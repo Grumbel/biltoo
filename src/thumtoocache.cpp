@@ -1261,12 +1261,12 @@ bool schedulePixels(const QString &path, int maxEdge)
             return false;
         }
         if (g_pixelsSettled.contains(inflightKey)) {
-            // Settled only means "we already ran SoftOnly for this edge".
-            // ImageCache LRU may have dropped the sample — host paint is gone
-            // while SKIP would leave Gallery blank forever. Allow retry when
-            // the host cache no longer holds ~90% of the requested edge.
+            // Settled means SoftOnly already ran for this edge. Soft samples are
+            // often smaller than maxEdge (ladder rung / best available). Requiring
+            // 90% of maxEdge caused infinite RETRY (have=128, edge=512).
+            // Only retry when the host cache lost the sample entirely.
             const int have = ImageCache::longEdge(ImageCache::get(path));
-            if (have * 10 >= maxEdge * 9) {
+            if (have > 0) {
                 if (thumtooDebugEnabled()) {
                     thumtooDbg("schedulePixels SKIP path=%s edge=%d (settled have=%d)",
                                qPrintable(path), maxEdge, have);
@@ -1275,8 +1275,8 @@ bool schedulePixels(const QString &path, int maxEdge)
             }
             g_pixelsSettled.remove(inflightKey);
             if (thumtooDebugEnabled()) {
-                thumtooDbg("schedulePixels RETRY path=%s edge=%d (settled but host have=%d)",
-                           qPrintable(path), maxEdge, have);
+                thumtooDbg("schedulePixels RETRY path=%s edge=%d (settled but host have=0)",
+                           qPrintable(path), maxEdge);
             }
         }
         g_pixelsInflight.insert(inflightKey);

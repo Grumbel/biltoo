@@ -23,6 +23,7 @@ private slots:
     void reconcile_clears_sticky_queued();
     void escalate_resets_full_done();
     void gave_up_not_terminal_while_short();
+    void soft_shortfall_does_not_reschedule();
 };
 
 static constexpr int kSoft = 512;
@@ -185,6 +186,23 @@ void RasterClimbSmTest::gave_up_not_terminal_while_short()
     m.state().fullDone = true;
     // Still short of need — must not report terminal give-up
     QVERIFY(!m.isGaveUp(kOverview));
+}
+
+void RasterClimbSmTest::soft_shortfall_does_not_reschedule()
+{
+    // SoftOnly returned 128 while softMax is 512 — must not loop SoftOnly.
+    Machine m;
+    m.setWant(256, 4000, Policy::SoftDisplay, kSoft, kOverview);
+    m.setHaveFromHost(0, kSoft);
+    Plan p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(p.scheduleSoft);
+
+    m.noteDelivery(/*requestEdge=*/512, /*got=*/128, kSoft);
+    QVERIFY(m.state().softAttempted);
+    QCOMPARE(m.state().have, 128);
+    p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(!p.scheduleSoft);
+    QVERIFY(!p.forgetSoftSettled);
 }
 
 QTEST_MAIN(RasterClimbSmTest)

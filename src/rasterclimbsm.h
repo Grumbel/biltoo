@@ -14,6 +14,8 @@
  * Invariants:
  * 1. have comes only from setHaveFromHost / noteDelivery (host is authority).
  * 2. softQueued/displayQueued/fullQueued are cleared when external pending is false.
+ * 2b. softAttempted: SoftOnly completed with got>0; do not re-SoftOnly while
+ *     host still holds a sample (avoids SoftOnly loops when store soft < softMax).
  * 3. When soft is covered and effectiveNeed > overviewCap, plan may emit Full
  *    in the same tick as PreferCache — PreferCache cannot monopolize the path.
  * 4. fullDone is cleared while have is a shortfall vs effectiveNeed.
@@ -69,6 +71,8 @@ struct State {
     int lastDisplayGot = 0;
     int postTilePreferAttempts = 0;
     bool softQueued = false;
+    /** SoftOnly already ran and returned pixels (may be < softMax). */
+    bool softAttempted = false;
     bool displayQueued = false;
     bool fullQueued = false;
     bool preferGaveUp = false;
