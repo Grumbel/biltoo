@@ -1,5 +1,26 @@
 # TODO / agent handoff
 
+## Status (2026-09-17)
+
+**Tip: biltoo-1022-user-docs.** User-focused README; neutral THUMTOO_SOURCE_DIR examples.
+Prior: **1021**.
+
+### Change
+- README rewritten for end users (features, build, thumtoo path)
+- AGENTS/TODO: placeholder path for THUMTOO_SOURCE_DIR
+
+### Apply
+```bash
+git pull /path/to/biltoo-1022-user-docs.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1022**
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-16)
 
 **Tip: biltoo-1021-stretch-lqip-to-content-rect.** Stretch samples to full contentRect.
@@ -7102,7 +7123,7 @@ reconfigure; each new snapshot path forces a full thumtoo rebuild.
 
 ### Workflow
 ```bash
-export THUMTOO_SOURCE_DIR=/home/ingo/projects/thumtoo/thumtoo.git
+export THUMTOO_SOURCE_DIR=/path/to/thumtoo
 biltoo-configure   # once
 biltoo-build       # incremental after thumtoo edits
 ```

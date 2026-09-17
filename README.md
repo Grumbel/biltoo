@@ -1,90 +1,63 @@
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Biltoo
 
-**Biltoo** is a classic Qt 6 desktop image viewer with three modes on one canvas:
-
-**Requires Qt ≥ 6.9** (uses `QImage::flipped`).
+**Biltoo** is a Qt 6 desktop image viewer with three modes on one canvas:
 
 | Mode | Purpose |
 |------|---------|
-| **Image** | Browse one file at a time — zoom, pan, rotate, flip, crop, slideshow |
-| **Gallery** | See the whole session in packaged layouts (strip, grid, masonry, …) |
-| **Workspace** | Arrange several images freely for comparison, markup framing, and export |
+| **Image** | One file at a time — zoom, pan, rotate, flip, crop, slideshow |
+| **Gallery** | Overview of the whole session in packed layouts |
+| **Workspace** | Arrange several images freely for comparison and export |
 
-**Gallery** — session overview in packed layouts:
+**Gallery**
 
 ![Biltoo Gallery mode](screenshots/gallery.png)
 
-**Workspace** — free-form multi-image canvas:
+**Workspace**
 
 ![Biltoo Workspace mode](screenshots/workspace.png)
 
+Requires **Qt 6.9** or newer.
+
 ## Features
 
-### Session & files
+### Session and files
 
-- Open files, directories, or **archives** (zip, tar variants, 7z, rar) via File dialogs, drag-and-drop, or the command line
-- **File → Open** replaces the session; **File → Add** and drops **append**
-- **Recent Sessions** and **Recent Projects** menus
-- Sort by name, **path**, **aspect ratio**, **shuffle**, date, size, width, height, or pixel count
-- Thumbnail bar with per-mode visibility defaults, edge placement, labels, optional square crop
+- Open files, directories, or **archives** (zip, tar, 7z, rar, …) from the file
+  dialog, drag-and-drop, or the command line
+- **Open** replaces the session; **Add** and drops append
+- Recent sessions and recent projects
+- Sort by name, path, date, size, dimensions, aspect ratio, shuffle, and more
+- Thumbnail bar with flexible placement and labels
 
 ### Image mode
 
-- Zoom: in/out, **1:1**, **Fit**, **Fill**, rubber-band region (**Z**)
-- **Sticky framing:** Fit / Fill / 1:1 are checkable. While one is checked it
-  re-applies on prev/next. Click the same mode again, or use ± / wheel / region
-  zoom, to unlock. Sticky Fill and 1:1 keep a **best-effort** relative pan
-  (viewport centre in image-normalized coords) for comparing nearby images
-- **No sticky mode:** navigation keeps the current **view scale and pan** instead
-  of forcing Fit (cold open still fits)
-- Pan; rotate ±90°; flip H/V (session transforms until export)
-- **Slideshow**: Space to start/stop; `[` / `]` change dwell; optional fullscreen
-- Transitions (Preferences): none, crossfade, fade through black, slide projector
-- Optional **pan & scan** during each dwell (cover framing; landscape pans L→R, portrait T→B)
-- Edge navigation; HUD with optional dwell progress line
+- Zoom in/out, 1:1, fit, fill, and rubber-band zoom
+- Optional sticky fit / fill / 1:1 when stepping through a session
+- Rotate, flip, and non-destructive crop (session only until you export)
+- Slideshow with adjustable dwell, transitions, and optional pan-and-scan
+- Fullscreen and a simple HUD
 
-### Gallery
+### Gallery and Workspace
 
-- Layouts: side-by-side, vertical strip, grid, masonry (columns or rows), masonry fill
-- Opening a large set (archive/dir) **waits for image sizes** before packing tiles;
-  centre HUD shows probe progress (soft tile paint is still a later milestone)
-- PDF / EPUB / DjVu page sessions open Gallery in **Flow** by default (reading order)
-- Multi-select; double-click or Enter opens Image mode
-- Return restores the previous Gallery viewport
-- Incremental re-packs (new tiles, decode size) keep the approximate scroll position
-- Grid-crop layout remains disabled until it coexists cleanly with session crop
+- Gallery layouts: strip, grid, masonry, and related packings
+- Workspace: free placement, multi-select, framing for comparison
+- New window for a second view of the selection
 
-### Workspace
+### Export and projects
 
-- Free placement: move, scale, rotate, shear, opacity, raise/lower
-- Tools: **Select**, **Pan**, **Zoom** (region) on a left toolbar
-- Durable canvas: leaving for Gallery/Image and returning restores the snapshot
-- Entering an empty Workspace does not import Image/Gallery tiles; selection starts empty
-- **Layout panel**: pack the current selection without leaving Workspace
-- **Page Guide** and **Fit Page Guide to Content** for export framing
-- Custom **Workspace background** (solid, checker, image tile) with temporary Default preview
-- Delete removes from the canvas only; session membership stays
-- **New Window** (Ctrl+Shift+N); open the current selection in a new window
+- Print and print preview; export PDF or PNG
+- **Projects** (`.biltoo`): session layout and appearance with content-hash
+  addressing for external files
+- Source files are never overwritten by export
 
-### Crop & appearance
+### Keyboard shortcuts
 
-- Crop in Image mode or on a single Workspace selection (rotatable draft, expand/pad, modifiers)
-- Colour **Adjustments** dock (opt-in); metadata side panel
-- Non-destructive session/project appearance until you export
-
-### Print & export
-
-- Page Setup, Print, Print Preview, **Export PDF**
-- **Export PNG** at a chosen width (content bounds or page guide; optional transparency)
-- Sources are never overwritten by export
-
-### Projects
-
-- **Open/Save Project** (`.biltoo`): session ids, appearance, Workspace poses, SHA-256 content addressing for external files
-
-## Keyboard shortcuts
-
-Press **F1** in the app for the full list. Highlights:
+Press **F1** in the app for the full list. Common bindings:
 
 | Keys | Action |
 |------|--------|
@@ -92,114 +65,89 @@ Press **F1** in the app for the full list. Highlights:
 | Space | Slideshow start/stop |
 | `[` / `]` | Slideshow slower / faster |
 | F / F11 | Fullscreen |
-| H | HUD on/off |
 | Ctrl+0 / + / − | 1:1 / zoom in / out |
-| Z | Zoom to region (one-shot) |
+| Z | Zoom to region |
 | C | Crop |
 | R | Rotate right |
 | Ctrl+O / Ctrl+S | Open / save project |
-| Q / Ctrl+Q | Quit (plain **Q** for fast in/out) |
-| Ctrl+Shift+N | New window |
 
 ## Command line
 
 ```bash
-biltoo [options] [files-or-directories…]
+biltoo [options] [files-or-dirs…]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `-r`, `--recursive` | Expand directories recursively |
-| `--start-at=N` | Start at the *N*-th image (1-based) |
-| `--sort=name\|path\|mtime` | Sort by name, full path, or modification time |
-| `--mode=image\|gallery\|workspace` | Initial mode |
-| `--slideshow` | Start slideshow after loading |
-| `--interval=ms` | Slideshow dwell in milliseconds |
-| `-f`, `--fullscreen` | Start fullscreen |
-| `--thumbnails` / `--no-thumbnails` | Force thumbnail bar on or off |
-| `--debug` | Verbose diagnostics (slideshow traces, libexiv2 warnings) |
+| Option | Meaning |
+|--------|---------|
+| `--fullscreen` | Start fullscreen |
+| `--slideshow` | Start slideshow |
+| `--debug` | Extra diagnostics |
 
-Drag-and-drop onto the window **appends** to the session.
-
-Shortcuts are **window-scoped**: each window (File → New Window) has its own
-Space / Q / navigation bindings so two frames do not fight for the same keys.
+Drag-and-drop onto the window appends to the session. Shortcuts apply per
+window when several windows are open.
 
 ## Image formats
 
-Common formats use Qt. Extra types (e.g. GIMP `.xcf` and related plugins) work when **KImageFormats** is available — the Nix package includes it. Archives are expanded when **libarchive** is linked at build time.
+Common formats use Qt. Extra types (for example GIMP `.xcf`) work when
+**KImageFormats** plugins are available — the Nix package includes them.
+Opening images inside archives needs **libarchive** at build time.
 
 ## Settings
 
-Preferences live in the usual Qt location (e.g. `~/.config/biltoo/biltoo.conf` on Linux).
+Preferences use the normal Qt config location (for example
+`~/.config/biltoo/biltoo.conf` on Linux). Window geometry is restored across
+runs. Sticky fit/fill/1:1 is remembered when you set it.
 
-- Window **geometry** is restored across runs
-- **Dock layout** (`windowState`) is **not** restored or saved: on some Qt 6.11
-  builds, `QMainWindow::restoreState` can SIGSEGV in dock layout on startup.
-  Docks use code defaults each launch until that is safe again
-- Sticky Fit/Fill/1:1 is remembered when set
+## Build and install
 
-## Desktop integration
-
-Installed files (CMake / Nix):
-
-| File | Location |
-|------|----------|
-| `biltoo.desktop` | `$prefix/share/applications/` |
-| `biltoo.metainfo.xml` | `$prefix/share/metainfo/` (AppStream) |
-| `biltoo.svg` | `$prefix/share/icons/hicolor/scalable/apps/` |
-| `biltoo.1` | `$prefix/share/man/man1/` |
-
-The `.desktop` entry registers common image MIME types and popular archive types so file managers can open them with Biltoo.
-
-Debug and concurrency environment variables are listed in `man biltoo` and [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
-
-## Build / install
+Version is read from the top-level `VERSION` file (currently `0.1.0-dev`).
 
 ### Nix
 
 ```bash
 nix run github:Grumbel/biltoo
 # from a checkout:
-nix develop    # shell
-nix build      # package
-nix run        # run
+nix develop
+nix build
+nix run
 ```
 
-### CMake (Qt ≥ 6.9 Widgets)
+### CMake
+
+Needs Qt 6.9+ (Widgets and related modules).
 
 ```bash
-mkdir build && cd build
-cmake ..
-cmake --build .
-cmake --install .   # optional; installs binary, desktop, metainfo, icon
-./biltoo
+cmake -B build -S .
+cmake --build build
+./build/biltoo
 ```
 
-Optional libraries are detected via pkg-config; CMake prints a feature summary
-at the end of configuration (also listed in **Help → About**):
+Optional libraries are detected with pkg-config; the configure summary lists
+what was found:
 
-| Library | Feature when enabled |
-|---------|----------------------|
-| **libvips** | Extra codecs, EXIF autorot, attention-based slideshow Pan&Zoom |
-| **libexiv2** | Full Exif / IPTC / XMP in the Metadata panel |
-| **libarchive** | Open images inside zip, tar, 7z, rar, and related archives |
-| **gio-unix-2.0** | “Default application” Preferences (Linux) |
-| **thumtoo** | Durable size index, tiles, session soft / PreferCache (optional; Nix flakes default on) |
+| Library | Enables |
+|---------|---------|
+| **libvips** | Extra codecs, EXIF orientation helpers, attention-based pan-and-zoom |
+| **libexiv2** | Richer metadata panel |
+| **libarchive** | Images inside archives |
+| **gio-unix-2.0** | “Default application” preference on Linux |
+| **[thumtoo](https://github.com/Grumbel/thumtoo)** | Durable size index and preview tiles (faster reopen) |
 
-Qt **imageformats** plugins (e.g. KDE **KImageFormats** for XCF/KRA/ORA) are
-loaded at runtime when installed — not a compile-time link.
+**thumtoo** (recommended): build against a thumtoo source tree:
 
-CMake tests include `biltoo --help` and project-file round-trip unit tests.
+```bash
+cmake -B build -S . -DTHUMTOO_SOURCE_DIR=/path/to/thumtoo
+```
+
+With Nix flakes, thumtoo is pulled in automatically. Sibling checkouts named
+`../thumtoo` are also picked up by the development helpers when configured.
+
+### Desktop files
+
+Install (CMake or Nix) can place a `.desktop` entry, AppStream metainfo, icon,
+and man page under the usual `$prefix/share/…` paths so file managers can open
+images with Biltoo.
 
 ## License
 
-GPL-3.0-or-later. See [LICENSES](LICENSES) and [REUSE.md](REUSE.md).
-
-## Links
-
-- GitHub: <https://github.com/Grumbel/biltoo>
-- Radicle: [`rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a`](https://radicle.network/nodes/rosa.radicle.network/rad:z3BEnqZd8JN1DNMPEuLPv5ACgzq3a)
-
-## Developer docs
-
-In-tree notes for contributors: [AGENTS.md](AGENTS.md), [DOMAIN.md](DOMAIN.md), [SESSION.md](SESSION.md), [TODO.md](TODO.md).
+GPL-3.0-or-later.
