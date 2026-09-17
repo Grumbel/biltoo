@@ -2,6 +2,38 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1028-tilelod-image-workspace-fix.** Image-mode tiles (no interactive req); Workspace tick; PreferCache cancel.
+Prior: **1027**.
+
+### Change
+- **Bugfix:** `tileLodWanted` no longer requires `m_interactive` (Image mode was always false → tiles never ran)
+- Gallery cells still excluded (`galleryCellSize` set)
+- `setPath` resets `m_tileLod`
+- `tickPrimaryTileLod` covers Image + Workspace (selection / up to 8 items)
+- Entering tile band: `PathRasterService::cancel(path)` drops PreferCache climb
+- Workspace quality climb skips PreferCache when `tileLodWanted`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1028-tilelod-image-workspace-fix.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1028**
+- [x] Image-mode primary can want tiles without interactive chrome
+- [ ] Runtime verify deep zoom + workspace zoom on tiled sources
+
+### Next
+- Optional: registry of TileSession by path to share cache across duplicate items
+- Gallery large-cell tile scale (later)
+- Full Phase E: delete dead whole-frame zoom assumptions
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1027-tilelod-tick-outside-paint.** Tile requests from view; PreferCache skipped when tiles own zoom.
 Prior: **1026**.
 

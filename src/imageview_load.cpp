@@ -1737,6 +1737,9 @@ void ImageView::ensureWorkspaceQualityClimb()
             }
         }
     }
+    // Tile LOD for workspace items that need past soft max.
+    tickPrimaryTileLod(8);
+
     for (ImageItem *ii : targets) {
         if (!ii) {
             continue;
@@ -1746,6 +1749,10 @@ void ImageView::ensureWorkspaceQualityClimb()
             continue;
         }
         if (isCropDraftLockedPath(path)) {
+            continue;
+        }
+        // Deep zoom: tiles own display; skip PreferCache whole-frame climb.
+        if (ii->tileLodWanted()) {
             continue;
         }
         // Always measure need after the current view transform (zoom/pan).
@@ -2611,19 +2618,60 @@ int ImageView::imageModeOnScreenNeedEdge() const
 
 void ImageView::tickPrimaryTileLod(int budget)
 {
-    if (!isImageMode() || m_slideshowProgressActive) {
+    if (m_slideshowProgressActive) {
         return;
     }
-    ImageItem *item = imageModeItemForPath(classicPath());
-    if (!item) {
-        item = targetItem();
-    }
-    if (!item) {
+    QList<ImageItem *> targets;
+    if (isImageMode()) {
+        ImageItem *item = imageModeItemForPath(classicPath());
+        if (!item) {
+            item = targetItem();
+        }
+        if (item) {
+            targets.append(item);
+        }
+    } else if (isWorkspaceMode()) {
+        // Selection first; else up to 8 on-canvas items (same bound as quality climb).
+        if (m_scene) {
+            for (QGraphicsItem *gi : m_scene->selectedItems()) {
+                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    targets.append(ii);
+                }
+            }
+        }
+        if (targets.isEmpty()) {
+            int n = 0;
+            for (ImageItem *ii : m_items) {
+                if (!ii || ii->path().isEmpty()) {
+                    continue;
+                }
+                targets.append(ii);
+                if (++n >= 8) {
+                    break;
+                }
+            }
+        }
+    } else {
         return;
     }
-    item->tickTileLod(budget);
-    // Keep a light timer while tiles are wanted so in-flight completions paint.
-    if (item->tileLodWanted()) {
+
+    bool anyWanted = false;
+    for (ImageItem *item : targets) {
+        if (!item) {
+            continue;
+        }
+        if (item->tileLodWanted()) {
+            anyWanted = true;
+            // Drop PreferCache / PathRaster whole-frame climb for this path —
+            // tiles own the deep-zoom band (TILE_LOD Phase C partial).
+            if (m_pathRaster && !item->path().isEmpty()) {
+                m_pathRaster->cancel(item->path());
+            }
+        }
+        item->tickTileLod(budget);
+    }
+
+    if (anyWanted) {
         if (!m_tileLodTimer) {
             m_tileLodTimer = new QTimer(this);
             m_tileLodTimer->setInterval(33);

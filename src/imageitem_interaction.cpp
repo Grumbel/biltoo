@@ -1068,7 +1068,12 @@ QVariant ImageItem::itemChange(GraphicsItemChange change, const QVariant &value)
 
 bool ImageItem::tileLodWanted() const
 {
-    if (!m_interactive || m_path.isEmpty() || !ThumtooCache::isAvailable()) {
+    // Image mode uses non-interactive items; Workspace uses interactive ones.
+    // Gallery packed cells (galleryCellSize set) stay on soft ladder only.
+    if (m_path.isEmpty() || !ThumtooCache::isAvailable()) {
+        return false;
+    }
+    if (!m_galleryCellSize.isEmpty()) {
         return false;
     }
     const QSize isz = imageSize();
@@ -1087,6 +1092,8 @@ void ImageItem::prepareTileLod()
     const QSize isz = imageSize();
     if (!m_tileLod) {
         m_tileLod = std::make_unique<tilelod::TileLodController>();
+        m_tileLod->setPath(m_path);
+    } else if (m_tileLod->path() != m_path) {
         m_tileLod->setPath(m_path);
     }
     m_tileLod->setContentSize(isz.width(), isz.height());

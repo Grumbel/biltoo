@@ -42,6 +42,15 @@ bool ImageItem::contentEditMarksVisible()
 
 ImageItem::~ImageItem() = default;
 
+void ImageItem::setPath(const QString &path)
+{
+    if (m_path == path) {
+        return;
+    }
+    m_path = path;
+    m_tileLod.reset();
+}
+
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)
     : QGraphicsPixmapItem(parent)
     , m_path(path)

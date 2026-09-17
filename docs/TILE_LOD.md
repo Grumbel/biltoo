@@ -244,3 +244,11 @@ zoom first.
 - Paint only `prepareTileLod` + `paint` (draw plan).
 - When `tileLodWanted()` (on-screen long edge past soft ~512), Image-mode
   **skips PreferCache whole-frame climb**; soft/LQIP stays the underlay.
+
+
+## biltoo-1028
+
+- Image mode items are **not** interactive; `tileLodWanted` must not gate on chrome.
+- Gallery soft cells: still soft-only (`galleryCellSize` non-empty).
+- Workspace: same tick path as Image for selection / up to 8 items.
+- Crossing into tile band cancels PathRaster PreferCache for that path.

@@ -73,7 +73,7 @@ public:
     ~ImageItem() override;
 
     QString path() const { return m_path; }
-    void setPath(const QString &path) { m_path = path; }
+    void setPath(const QString &path);
     /**
      * Stable session-image id (0 = unbound). Survives session insert/delete;
      * list index does not. Identity for appearance and Workspace association.
