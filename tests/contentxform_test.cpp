@@ -48,6 +48,9 @@ private slots:
     void layoutSize_staleCropSourceOrientation();
     void mapCropRect_negativeTurnsEqualsPlusThree();
     void mapCropRect_fourTurnsIdentity();
+    void mapSourceRect_identity();
+    void mapSourceRect_turn90();
+    void mapDisplayRect_cropRoundTrip();
     void layoutSize_freeCropRotationDoesNotChangeSize();
     void mapCropThrough_freeRotationAngleTracksContentTurn();
     void layoutSize_freeRotThenContentTurn();
@@ -885,6 +888,50 @@ void ContentXformTest::combo_equal_detectsAllContentFields()
 
 
 QTEST_MAIN(ContentXformTest)
+
+void ContentXformTest::mapSourceRect_identity()
+{
+    ContentXform::Value x;
+    QSize n(100, 50);
+    QRectF src(10, 5, 20, 10);
+    QRectF d = ContentXform::mapSourceRectToDisplay(src, n, x);
+    QVERIFY(qAbs(d.x() - 10) < 1e-6);
+    QVERIFY(qAbs(d.y() - 5) < 1e-6);
+    QVERIFY(qAbs(d.width() - 20) < 1e-6);
+    QVERIFY(qAbs(d.height() - 10) < 1e-6);
+    QRectF back = ContentXform::mapDisplayRectToSource(d, n, x);
+    QVERIFY(qAbs(back.x() - src.x()) < 1e-4);
+    QVERIFY(qAbs(back.y() - src.y()) < 1e-4);
+}
+
+void ContentXformTest::mapSourceRect_turn90()
+{
+    ContentXform::Value x;
+    x.quarterTurns = 1;
+    QSize n(100, 50); // oriented becomes 50x100
+    QRectF src(0, 0, 100, 50); // full
+    QRectF d = ContentXform::mapSourceRectToDisplay(src, n, x);
+    QVERIFY(d.isValid());
+    // Full frame after 90 should cover oriented size
+    QVERIFY(d.width() > 40 && d.height() > 40);
+}
+
+void ContentXformTest::mapDisplayRect_cropRoundTrip()
+{
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(10, 10, 40, 30);
+    x.cropSourceSize = QSize(100, 100);
+    QSize n(100, 100);
+    QRectF disp(0, 0, 40, 30);
+    QRectF src = ContentXform::mapDisplayRectToSource(disp, n, x);
+    QVERIFY(qAbs(src.x() - 10) < 1e-4);
+    QVERIFY(qAbs(src.y() - 10) < 1e-4);
+    QRectF back = ContentXform::mapSourceRectToDisplay(src, n, x);
+    QVERIFY(qAbs(back.x() - 0) < 1e-4);
+    QVERIFY(qAbs(back.width() - 40) < 1e-4);
+}
+
 #include "contentxform_test.moc"
 
 

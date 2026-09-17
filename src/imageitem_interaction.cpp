@@ -1082,36 +1082,57 @@ qreal ImageItem::tileDevicePerContent() const
     return screenScale() * dpr;
 }
 
+ContentXform::Value ImageItem::tileContentXform() const
+{
+    if (m_hasAppliedContentXform) {
+        return m_appliedContentXform;
+    }
+    ContentXform::Value x;
+    x.hFlip = m_contentHFlip;
+    x.vFlip = m_contentVFlip;
+    x.hasCrop = m_sessionHasCrop;
+    // Session crop rect is not stored on the item for all paths; applied
+    // xform is preferred. Without applied crop geometry, crop flag alone
+    // cannot map — treat as no crop for tile planning.
+    return x;
+}
+
+QSize ImageItem::tileNativeSize() const
+{
+    const QSize cached = ThumtooCache::cachedSize(m_path);
+    if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
+        return cached;
+    }
+    // Fall back to layout size when native unknown (identity xform only).
+    return imageSize();
+}
+
 bool ImageItem::tileLodWanted() const
 {
-    // Image mode uses non-interactive items; Workspace uses interactive ones.
-    // Gallery packed cells (galleryCellSize set) stay on soft ladder only.
+    // Gallery packed cells stay on soft ladder only.
     if (m_path.isEmpty() || !ThumtooCache::isAvailable()) {
         return false;
     }
     if (!m_galleryCellSize.isEmpty()) {
         return false;
     }
-    // Grid tiles are in thumtoo *source* space (unoriented full raster).
-    // Item geometry is *display* space after content flip/turn/crop
-    // (CONTENT_COORDINATES.md). Until tiles are mapped through ContentXform,
-    // disable the tile path when any content appearance is active — PreferCache
-    // / soft still cover those cases.
-    if (m_contentHFlip || m_contentVFlip || m_sessionHasCrop) {
+    const ContentXform::Value x = tileContentXform();
+    // Free-rotated crop: no axis-aligned source↔display map yet.
+    if (x.hasCrop && qAbs(x.cropRotation) > 1e-3) {
         return false;
     }
-    if (m_hasAppliedContentXform) {
-        const ContentXform::Value &x = m_appliedContentXform;
-        if (x.hFlip || x.vFlip || x.quarterTurns != 0 || x.hasCrop) {
-            return false;
-        }
+    const QSize native = tileNativeSize();
+    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+        return false;
     }
+    // On-screen need from *display* long edge (layout size).
     const QSize isz = imageSize();
-    if (!isz.isValid() || isz.width() < 1 || isz.height() < 1) {
+    const int displayLong = qMax(isz.width(), isz.height());
+    if (displayLong < 1) {
         return false;
     }
     return tilelod::TileLodController::shouldUseTiles(
-        tileDevicePerContent(), qMax(isz.width(), isz.height()));
+        tileDevicePerContent(), displayLong);
 }
 
 void ImageItem::prepareTileLod()
@@ -1119,30 +1140,39 @@ void ImageItem::prepareTileLod()
     if (!tileLodWanted()) {
         return;
     }
-    const QSize isz = imageSize();
+    const QSize native = tileNativeSize();
     if (!m_tileLod) {
         m_tileLod = std::make_unique<tilelod::TileLodController>();
         m_tileLod->setPath(m_path);
     } else if (m_tileLod->path() != m_path) {
         m_tileLod->setPath(m_path);
     }
-    m_tileLod->setContentSize(isz.width(), isz.height());
+    // Tile grid is always full native (source) size.
+    m_tileLod->setContentSize(native.width(), native.height());
     m_tileLod->setHasLqip(hasDisplayPixels());
 
     const qreal dpc = tileDevicePerContent();
-    QRectF vis = contentRect();
+    QRectF visLocal = contentRect();
     if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
         QGraphicsView *view = scene()->views().first();
         const QRectF sceneVis =
             view->mapToScene(view->viewport()->rect()).boundingRect();
         const QRectF localVis = mapFromScene(sceneVis).boundingRect();
-        vis = localVis.intersected(contentRect());
+        visLocal = localVis.intersected(contentRect());
     }
-    if (!vis.isEmpty()) {
-        // Margin grows with zoom so pan has prefetched neighbours.
-        const double margin = 64.0 * qMax(1.0, dpc);
-        m_tileLod->updateViewport(vis, dpc, margin);
+    if (visLocal.isEmpty()) {
+        return;
     }
+    // Item local → display content (0..layout); then → source for the planner.
+    const QRectF visDisplay = visLocal.translated(-offset());
+    const ContentXform::Value x = tileContentXform();
+    QRectF visSource = ContentXform::mapDisplayRectToSource(visDisplay, native, x);
+    if (visSource.isEmpty()) {
+        // Identity xform: display == source when layout matches native.
+        visSource = visDisplay;
+    }
+    const double margin = 64.0 * qMax(1.0, dpc);
+    m_tileLod->updateViewport(visSource, dpc, margin);
 }
 
 void ImageItem::tickTileLod(int budget)
@@ -1219,12 +1249,44 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
         // Deep zoom: grid tiles over soft/LQIP underlay (TILE_LOD.md).
         // Requests are issued from ImageView::tickPrimaryTileLod, not here.
+        // Tile plan is source-space; paint in item local (offset + display map).
         if (tileLodWanted()) {
             prepareTileLod();
-            if (m_tileLod) {
+            if (m_tileLod && m_tileLod->session()) {
                 const QImage under = hasDecodedPixels() ? m_source
                     : (!m_preview.isNull() ? m_preview : QImage());
-                m_tileLod->paint(painter, under);
+                tilelod::DrawPlan plan = m_tileLod->session()->draw_plan();
+                const QSize native = tileNativeSize();
+                const ContentXform::Value x = tileContentXform();
+                const QPointF off = offset();
+                for (tilelod::DrawCommand &cmd : plan.commands) {
+                    QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
+                                  cmd.dst_content.w, cmd.dst_content.h);
+                    QRectF disp = ContentXform::mapSourceRectToDisplay(srcBox, native, x);
+                    if (disp.isEmpty()) {
+                        disp = srcBox; // identity
+                    }
+                    cmd.dst_content = {disp.x() + off.x(), disp.y() + off.y(),
+                                       disp.width(), disp.height()};
+                }
+                tilelod::PaintDrawPlanArgs args;
+                args.plan = &plan;
+                args.lqip = under;
+                args.smooth = true;
+                args.resolve = [this](tilelod::TileKey const &key,
+                                      tilelod::TileBitmap const &) -> QImage {
+                    if (!m_tileLod || !m_tileLod->session()) {
+                        return {};
+                    }
+                    tilelod::CacheEntry const *e =
+                        m_tileLod->session()->cache().find(key);
+                    if (!e || e->state != tilelod::TileState::Succeeded
+                        || !e->bitmap.valid()) {
+                        return {};
+                    }
+                    return tilelod::tile_bitmap_to_qimage(e->bitmap);
+                };
+                tilelod::paint_draw_plan(painter, args);
             }
         }
         painter->restore();

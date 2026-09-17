@@ -277,14 +277,12 @@ wheel notch). Jumps of more than one scale commit immediately.
 Manual checks: [TILE_LOD_RUNTIME.md](TILE_LOD_RUNTIME.md).
 
 
-## Content orient / crop (current limitation)
+## Content orient / crop
 
-thumtoo grid tiles are keyed in **source** pixel space. `ImageItem` layout and
-paint use **display** space after content flip, quarter-turns, and crop
+thumtoo grid tiles are keyed in **source** pixel space. Item layout is
+**display** space after flips → quarter-turns → crop
 ([CONTENT_COORDINATES.md](CONTENT_COORDINATES.md)).
 
-Until a source→display map is applied to tile UV/dst, **tile LOD is disabled**
-when any content appearance is active (`hFlip` / `vFlip` / `quarterTurns` /
-crop). Soft and PreferCache remain the path for those images.
-
-Straight (identity content) deep zoom is the supported tile path.
+`ContentXform::mapDisplayRectToSource` / `mapSourceRectToDisplay` convert the
+viewport and draw destinations. Free-rotated crop (`|cropRotation| > ε`) still
+disables tile LOD (AABB map only). Soft/PreferCache cover that case.

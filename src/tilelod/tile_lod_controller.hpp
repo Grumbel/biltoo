@@ -52,6 +52,7 @@ public:
   bool hasAnyTile() const;
   int targetScale() const;
   TileSession* session() { return m_session.get(); }
+  TileSession const* session() const { return m_session.get(); }
 
   /**
    * When device density is high enough that soft ≤512 is insufficient,

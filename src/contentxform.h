@@ -8,6 +8,7 @@
 #include "imageview_types.h"
 
 #include <QRect>
+#include <QRectF>
 #include <QSize>
 #include <QSizeF>
 
@@ -107,6 +108,22 @@ int estimatedDisplayLongEdge(int hostLongEdge, const Value &want);
  * in scene units (Workspace crop Apply must not shrink the tile).
  */
 QSizeF scaleToPreserveFootprint(qreal footW, qreal footH, const QSize &logical);
+
+/**
+ * Map an axis-aligned rect between **source** (full native raster) and
+ * **display** (layout / contentRect) spaces for identity free-rotation.
+ *
+ * Pipeline matches materializeDisplay: flips → quarter turns → crop translate.
+ * Corners are mapped; the result is the AABB (exact for axis-aligned crop
+ * with cropRotation ≈ 0). Empty if inputs are invalid.
+ *
+ * Free-rotated crop (|cropRotation| > ε): returns empty — callers should not
+ * use the tile grid until a oriented UV path exists.
+ */
+QRectF mapSourceRectToDisplay(const QRectF &sourceRect, const QSize &native,
+                              const Value &x);
+QRectF mapDisplayRectToSource(const QRectF &displayRect, const QSize &native,
+                              const Value &x);
 
 } // namespace ContentXform
 

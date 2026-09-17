@@ -48,5 +48,5 @@ export BILTOO_LOAD_DEBUG=1
 
 ## Content orient / crop
 
-With flip, 90° turns, or crop applied, tile LOD stays off (source vs display
-space). Expect PreferCache / soft only until mapping lands.
+Axis-aligned flip / 90° / crop: tiles should track via ContentXform maps.
+Free-rotated crop: tile LOD off (soft / PreferCache only).

@@ -2,6 +2,36 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1033-tilelod-content-map.** Source↔display ContentXform maps; item offset fix.
+Prior: **1032**.
+
+### Change
+- `ContentXform::mapSourceRectToDisplay` / `mapDisplayRectToSource` (flips→turns→crop)
+- Tile grid uses **native** size; viewport mapped display→source; paint maps source→display + item offset
+- Free-rotated crop still disables tiles
+- Unit tests in contentxform_test (identity, turn90, crop round-trip)
+- Fixed tile paint coordinate space (was 0..W without offset — misaligned vs soft)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1033-tilelod-content-map.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1033**
+- [x] Pure tilelod tests pass
+- [ ] contentxform_test in full build
+
+### Next
+- Manual runtime with crop + 90° on prepared pyramid
+- Gallery large cells (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1032-tilelod-content-xform-gate.** Disable tiles when content flip/turn/crop active.
 Prior: **1031**.
 
