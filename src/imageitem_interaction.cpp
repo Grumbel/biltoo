@@ -22,7 +22,7 @@
 #include <QLineF>
 #include <QMetaObject>
 #include <QPainter>
-#include <QPointer>
+#include <QTimer>
 #include <QPainterPath>
 #include <QPolygonF>
 #include <QStyle>
@@ -1331,17 +1331,18 @@ void ImageItem::tickTileLod(int budget)
         // Coalesce many completions in one event-loop turn into one update().
         if (!m_tileLodRepaintQueued) {
             m_tileLodRepaintQueued = true;
-            QPointer<ImageItem> self(this);
-            QMetaObject::invokeMethod(
-                this,
-                [self]() {
-                    if (!self) {
-                        return;
-                    }
-                    self->m_tileLodRepaintQueued = false;
-                    self->update();
-                },
-                Qt::QueuedConnection);
+            // ImageItem is QGraphicsItem, not QObject — queue on the app.
+            QGraphicsScene *sc = scene();
+            QObject *ctx = sc ? static_cast<QObject *>(sc)
+                              : static_cast<QObject *>(QCoreApplication::instance());
+            QTimer::singleShot(0, ctx, [this, sc]() {
+                // Drop if item left the scene (destroyed or reparented).
+                if (sc && scene() != sc) {
+                    return;
+                }
+                m_tileLodRepaintQueued = false;
+                update();
+            });
         }
     }
 }

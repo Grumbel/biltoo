@@ -2,6 +2,24 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1077-tilelod-repaint-queue-fix.** Fix build: ImageItem is not QObject.
+Prior: **1076**.
+
+### Change
+- Coalesced tile repaint uses `QTimer::singleShot(0, scene|qApp, …)` instead of
+  `QMetaObject::invokeMethod(this, …)` (ImageItem inherits QGraphicsItem only)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1077-tilelod-repaint-queue-fix.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1076-tilelod-gui-relief-background.** Keep GUI responsive while soft/tiles run in background.
 Prior: **1075**.
 
