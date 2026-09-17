@@ -10,11 +10,13 @@
 #include <QGraphicsPixmapItem>
 #include <QColor>
 #include <QImage>
+#include <QHash>
 #include <QString>
 #include <QPolygonF>
 #include <QRect>
 #include <memory>
 
+#include "tilelod/tile_types.hpp"
 namespace tilelod { class TileLodController; }
 
 /**
@@ -193,11 +195,13 @@ public:
     {
         m_appliedContentXform = x;
         m_hasAppliedContentXform = true;
+        clearTileGradedCache();
     }
     void clearAppliedContentXform()
     {
         m_appliedContentXform = {};
         m_hasAppliedContentXform = false;
+        clearTileGradedCache();
     }
     bool hasAppliedContentXform() const { return m_hasAppliedContentXform; }
 
@@ -314,6 +318,10 @@ public:
     qreal tileDevicePerContent() const;
     ContentXform::Value tileContentXform() const;
     QSize tileNativeSize() const;
+    /** Paint-time graded tile images (raw stays in shared RAM cache). */
+    void clearTileGradedCache() const;
+    QImage resolveGradedTile(tilelod::TileKey const &key,
+                             ColorAdjustments const &grade) const;
     /** Pump completions and issue budgeted requests (view after zoom/pan). */
     void tickTileLod(int budget = 8);
     /** True when on-screen need exceeds soft max (tiles should own display). */
@@ -376,6 +384,8 @@ private:
     QString m_path;
     /** Deep-zoom grid tiles (Image mode); null until first need. */
     std::unique_ptr<tilelod::TileLodController> m_tileLod;
+    mutable QHash<QString, QImage> m_tileGradedCache;
+    mutable quint64 m_tileGradeSig = 0;
     SessionImageId m_sessionId = kInvalidSessionImageId;
     int m_sessionIndex = -1; // list order cache only
     qint64 m_displaySurfaceId = 0;

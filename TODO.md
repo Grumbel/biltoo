@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1051-tilelod-graded-cache.** Cache paint-time graded tile QImages.
+Prior: **1050**.
+
+### Change
+- `ImageItem::resolveGradedTile` — identity → raw; non-identity → cache by scale,x,y + grade signature
+- Clear on path change, color adjust, applied ContentXform
+- Cap ~256 entries per item
+- Avoids re-running `applyColorAdjustments` every paint frame
+
+### Apply
+```bash
+git pull /path/to/biltoo-1051-tilelod-graded-cache.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1051**
+- [x] Pure tilelod tests pass
+
+### Next
+- Manual color grade + deep zoom
+- TILE_LOD_RUNTIME.md checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1050-tilelod-color-grade-paint.** Apply color grade when resolving tiles for paint.
 Prior: **1049**.
 

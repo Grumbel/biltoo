@@ -383,6 +383,7 @@ not stall forever waiting for a completion that will never be pumped.
 
 ## Color grade (biltoo-1049 / 1050)
 
-Tiles stay raw in the RAM cache. At paint time, `applyColorAdjustments` runs on
-each resolved tile image using applied ContentXform grade (or item
-`m_colorAdjust`). Soft underlay remains pre-graded from materialize.
+Tiles stay raw in the shared RAM cache. At paint time, `applyColorAdjustments`
+runs on resolve (ContentXform or item grade). Graded `QImage`s are cached per
+item (`resolveGradedTile`) keyed by cell + grade signature so pan/repaint does
+not re-grade every frame. Soft underlay remains pre-graded from materialize.

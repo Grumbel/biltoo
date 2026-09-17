@@ -1098,6 +1098,69 @@ ContentXform::Value ImageItem::tileContentXform() const
     return x;
 }
 
+
+static quint64 colorAdjustSignature(const ColorAdjustments &g)
+{
+    // Stable fingerprint for graded-tile cache keys.
+    quint64 h = 1469598103934665603ull;
+    auto mix = [&](quint64 v) {
+        h ^= v;
+        h *= 1099511628211ull;
+    };
+    mix(static_cast<quint64>(static_cast<uint32_t>(g.brightness)));
+    mix(static_cast<quint64>(static_cast<uint32_t>(g.contrast)));
+    mix(static_cast<quint64>(static_cast<uint32_t>(g.saturation)));
+    mix(static_cast<quint64>(static_cast<uint32_t>(g.hue)));
+    mix(static_cast<quint64>(qRound(g.gamma * 1000.0)));
+    mix(g.invert ? 1ull : 0ull);
+    return h;
+}
+
+void ImageItem::clearTileGradedCache() const
+{
+    m_tileGradedCache.clear();
+    m_tileGradeSig = 0;
+}
+
+QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
+                                    ColorAdjustments const &grade) const
+{
+    if (!m_tileLod || !m_tileLod->session()) {
+        return {};
+    }
+    tilelod::CacheEntry const *e = m_tileLod->session()->cache().find(key);
+    if (!e || e->state != tilelod::TileState::Succeeded || !e->bitmap.valid()) {
+        return {};
+    }
+    if (grade.isIdentity()) {
+        return tilelod::tile_bitmap_to_qimage(e->bitmap);
+    }
+    const quint64 sig = colorAdjustSignature(grade);
+    if (sig != m_tileGradeSig) {
+        m_tileGradedCache.clear();
+        m_tileGradeSig = sig;
+    }
+    const QString ck = QStringLiteral("%1,%2,%3")
+                           .arg(key.scale)
+                           .arg(key.x)
+                           .arg(key.y);
+    auto it = m_tileGradedCache.constFind(ck);
+    if (it != m_tileGradedCache.constEnd()) {
+        return it.value();
+    }
+    QImage img = tilelod::tile_bitmap_to_qimage(e->bitmap);
+    if (img.isNull()) {
+        return {};
+    }
+    img = applyColorAdjustments(img, grade);
+    // Bound cache growth (visible set is typically tens of tiles).
+    if (m_tileGradedCache.size() > 256) {
+        m_tileGradedCache.clear();
+    }
+    m_tileGradedCache.insert(ck, img);
+    return img;
+}
+
 QSize ImageItem::tileNativeSize() const
 {
     const QSize cached = ThumtooCache::cachedSize(m_path);
@@ -1268,30 +1331,13 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 const bool freeRot = x.hasCrop && !x.cropRect.isEmpty()
                     && qAbs(x.cropRotation) > 1e-3;
 
-                auto resolve = [this, &x](tilelod::TileKey const &key,
-                                          tilelod::TileBitmap const &) -> QImage {
-                    if (!m_tileLod || !m_tileLod->session()) {
-                        return {};
-                    }
-                    tilelod::CacheEntry const *e =
-                        m_tileLod->session()->cache().find(key);
-                    if (!e || e->state != tilelod::TileState::Succeeded
-                        || !e->bitmap.valid()) {
-                        return {};
-                    }
-                    QImage img = tilelod::tile_bitmap_to_qimage(e->bitmap);
-                    if (img.isNull()) {
-                        return {};
-                    }
-                    // Prefer applied ContentXform grade; fall back to item grade.
-                    ColorAdjustments grade = x.colorAdjust;
-                    if (grade.isIdentity() && !m_colorAdjust.isIdentity()) {
-                        grade = m_colorAdjust;
-                    }
-                    if (!grade.isIdentity()) {
-                        img = applyColorAdjustments(img, grade);
-                    }
-                    return img;
+                ColorAdjustments grade = x.colorAdjust;
+                if (grade.isIdentity() && !m_colorAdjust.isIdentity()) {
+                    grade = m_colorAdjust;
+                }
+                auto resolve = [this, grade](tilelod::TileKey const &key,
+                                             tilelod::TileBitmap const &) -> QImage {
+                    return resolveGradedTile(key, grade);
                 };
 
                 if (freeRot) {

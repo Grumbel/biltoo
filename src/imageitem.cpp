@@ -49,6 +49,7 @@ void ImageItem::setPath(const QString &path)
     }
     m_path = path;
     m_tileLod.reset();
+        clearTileGradedCache();
 }
 
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)
@@ -551,6 +552,7 @@ void ImageItem::setColorAdjustments(const ColorAdjustments &adj)
         return;
     }
     m_colorAdjust = adj;
+    clearTileGradedCache();
     // Live grade only when the sample is still host-raw (no applied ContentXform
     // bake). Once materializeDisplay has graded pixels into m_source, re-running
     // updateDisplayedPixmap would double-apply (Gallery used to hit this via
@@ -564,6 +566,7 @@ void ImageItem::setColorAdjustments(const ColorAdjustments &adj)
 void ImageItem::setColorAdjustmentsRecord(const ColorAdjustments &adj)
 {
     m_colorAdjust = adj;
+    clearTileGradedCache();
 }
 
 void ImageItem::updateDisplayedPixmap()
