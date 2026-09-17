@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1040-tilelod-trim-protect-parents.** Budget trim keeps coarser parent stand-ins.
+Prior: **1039**.
+
+### Change
+- `pump` protect list = visible keys + all parent_key(…, d) up to max_scale
+- Parents touched for LRU so incomplete coverage keeps CoarserTile fallbacks
+- Unit test: parent retained, unrelated tile evicted under tight budget
+
+### Apply
+```bash
+git pull /path/to/biltoo-1040-tilelod-trim-protect-parents.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1040**
+- [x] Parent-protect unit test passes
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1039-tilelod-zoomout-drop-debug.** Drop finer tiles on zoom-out; BILTOO_TILE_DEBUG.
 Prior: **1038**.
 

@@ -154,11 +154,20 @@ int TileSession::pump()
     }
     ++applied;
   }
-  // Protect current visible keys; evict other Succeeded tiles under budget.
+  // Protect current visible keys and their coarser parents (draw-plan
+  // stand-ins). Evict other Succeeded tiles under budget.
+  std::vector<TileKey> protect;
+  protect.reserve(m_visible_keys.size() * 4);
   for (TileKey const& k : m_visible_keys) {
     m_cache->touch(k, m_generation);
+    protect.push_back(k);
+    for (int d = 1; k.scale + d <= m_max_scale; ++d) {
+      TileKey const pk = parent_key(k, d);
+      m_cache->touch(pk, m_generation);
+      protect.push_back(pk);
+    }
   }
-  m_cache->trim_to_budget(m_byte_budget, m_visible_keys);
+  m_cache->trim_to_budget(m_byte_budget, protect);
   return applied;
 }
 

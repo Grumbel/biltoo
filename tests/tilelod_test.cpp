@@ -435,6 +435,33 @@ void test_drop_finer_on_zoom_out()
   CHECK(!any_scale0);
 }
 
+
+void test_trim_protects_parents()
+{
+  tilelod::TileMemoryCache cache;
+  tilelod::TileBitmap bm;
+  bm.width = 256;
+  bm.height = 256;
+  bm.bytes.resize(256 * 256 * 4, 3);
+
+  // Exact visible key at scale 0 and its parent at scale 1.
+  tilelod::TileKey exact{0, 0, 0};
+  tilelod::TileKey parent = tilelod::parent_key(exact, 1);
+  cache.set_succeeded(exact, bm, 10);
+  cache.set_succeeded(parent, bm, 5);
+  // Unrelated old tile to be evicted
+  tilelod::TileKey other{0, 9, 9};
+  cache.set_succeeded(other, bm, 1);
+
+  std::size_t const per = 256ull * 256ull * 4ull;
+  std::vector<tilelod::TileKey> protect = {exact, parent};
+  // Budget fits exactly 2 tiles → other must go; parent stays.
+  cache.trim_to_budget(per * 2, protect);
+  CHECK(cache.find(exact) != nullptr);
+  CHECK(cache.find(parent) != nullptr);
+  CHECK(cache.find(other) == nullptr);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -466,6 +493,7 @@ int main()
   test_coverage_fully_covered();
   test_trim_budget();
   test_drop_finer_on_zoom_out();
+  test_trim_protects_parents();
   test_parent_key();
 
   if (g_failures) {
