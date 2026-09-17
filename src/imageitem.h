@@ -320,6 +320,8 @@ public:
     bool tileLodWanted() const;
     /** True when at least one grid tile has arrived. */
     bool tileLodActive() const;
+    /** All exact visible tiles present and scale hold settled. */
+    bool tileLodViewportCovered() const;
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;

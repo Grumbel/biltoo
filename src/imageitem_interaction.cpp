@@ -1195,6 +1195,11 @@ bool ImageItem::tileLodActive() const
     return m_tileLod && m_tileLod->enabled() && m_tileLod->hasAnyTile();
 }
 
+bool ImageItem::tileLodViewportCovered() const
+{
+    return m_tileLod && m_tileLod->viewportFullyCovered();
+}
+
 void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                       QWidget *widget)
 {

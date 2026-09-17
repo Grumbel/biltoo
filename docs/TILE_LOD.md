@@ -296,3 +296,11 @@ whole-frame climbs for that path:
 - Gallery decode window skips those cells
 - `requestEscalateClimb` returns early for Image-mode tile-band items
 - Workspace quality climb already skipped; PathRaster cancel-once on enter
+
+
+## Coverage idle (biltoo-1036)
+
+`TileSession::coverage()` reports exact Succeeded vs visible keys. The host
+33ms tile timer runs only while tiles are wanted **and** the viewport is not
+fully covered (or scale hold is still settling). Zoom/pan/decode-window calls
+restart the pump when coverage drops.

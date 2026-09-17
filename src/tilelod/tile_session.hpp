@@ -73,6 +73,19 @@ public:
   /// True if any Succeeded tile exists in the cache (host may drop LQIP fill).
   bool has_any_succeeded_tile() const;
 
+  /** Exact-tile coverage of the current visible key set. */
+  struct Coverage {
+    int visible = 0;
+    int exact_succeeded = 0;
+    int in_flight = 0;
+    bool fully_covered() const
+    {
+      return visible > 0 && exact_succeeded >= visible && in_flight == 0
+             && exact_succeeded > 0;
+    }
+  };
+  Coverage coverage() const;
+
   /// Test helper: enqueue a completion as if the source called back.
   void inject_completion(TileKey key, std::optional<TileBitmap> bitmap);
 

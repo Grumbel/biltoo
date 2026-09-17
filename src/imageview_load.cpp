@@ -2677,6 +2677,7 @@ void ImageView::tickPrimaryTileLod(int budget)
     }
 
     bool anyWanted = false;
+    bool anyIncomplete = false;
     for (ImageItem *item : targets) {
         if (!item) {
             continue;
@@ -2695,9 +2696,15 @@ void ImageView::tickPrimaryTileLod(int budget)
             m_tileLodPreferCancelled.remove(path);
         }
         item->tickTileLod(budget);
+        if (item->tileLodWanted() && !item->tileLodViewportCovered()) {
+            anyIncomplete = true;
+        }
     }
 
-    if (anyWanted) {
+    // Pump only while tiles are wanted *and* the visible set is incomplete
+    // (or scale hold is settling). Stops the 33ms timer when idle at full
+    // coverage; zoom/pan/decode-window calls restart it.
+    if (anyWanted && anyIncomplete) {
         if (!m_tileLodTimer) {
             m_tileLodTimer = new QTimer(this);
             m_tileLodTimer->setInterval(33);

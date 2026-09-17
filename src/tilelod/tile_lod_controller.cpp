@@ -122,6 +122,12 @@ bool TileLodController::hasAnyTile() const
   return m_session && m_session->has_any_succeeded_tile();
 }
 
+bool TileLodController::viewportFullyCovered() const
+{
+  return m_session && m_session->coverage().fully_covered()
+         && !m_session->request_scale_holding();
+}
+
 int TileLodController::targetScale() const
 {
   return m_session ? m_session->target_scale() : 0;

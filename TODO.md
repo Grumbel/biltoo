@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1036-tilelod-coverage-idle.** Viewport coverage; stop tile timer when complete.
+Prior: **1035**.
+
+### Change
+- `TileSession::Coverage` + `coverage()` — exact Succeeded vs visible / in-flight
+- `viewportFullyCovered()` (controller + ImageItem) — full exact set and scale hold settled
+- `tickPrimaryTileLod` runs the 33ms pump only while wanted **and** incomplete
+- Unit test: coverage after pump completes
+
+### Apply
+```bash
+git pull /path/to/biltoo-1036-tilelod-coverage-idle.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1036**
+- [x] Coverage unit test passes
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1035-tilelod-skip-prefercache.** No PreferCache schedule when tiles own the band.
 Prior: **1034**.
 

@@ -357,6 +357,26 @@ void test_scale_hold_adjacent()
   CHECK(!session.request_scale_holding());
 }
 
+
+void test_coverage_fully_covered()
+{
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  session.set_content_size(256, 256);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;
+  session.set_viewport(vp);
+  CHECK(session.coverage().visible >= 1);
+  CHECK(!session.coverage().fully_covered());
+  session.issue_requests(16);
+  src.complete_all_requested(7);
+  session.pump();
+  auto c = session.coverage();
+  CHECK(c.exact_succeeded >= c.visible);
+  CHECK(c.fully_covered());
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -385,6 +405,7 @@ int main()
   test_edge_tile_content_rect();
   test_shared_cache_two_sessions();
   test_scale_hold_adjacent();
+  test_coverage_fully_covered();
   test_parent_key();
 
   if (g_failures) {

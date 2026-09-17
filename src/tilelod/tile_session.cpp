@@ -261,4 +261,22 @@ bool TileSession::has_any_succeeded_tile() const
   return false;
 }
 
+TileSession::Coverage TileSession::coverage() const
+{
+  Coverage c;
+  c.visible = static_cast<int>(m_visible_keys.size());
+  for (TileKey const& key : m_visible_keys) {
+    CacheEntry const* e = m_cache->find(key);
+    if (!e) {
+      continue;
+    }
+    if (e->state == TileState::Succeeded && e->bitmap.valid()) {
+      ++c.exact_succeeded;
+    } else if (e->state == TileState::InFlight) {
+      ++c.in_flight;
+    }
+  }
+  return c;
+}
+
 }  // namespace tilelod

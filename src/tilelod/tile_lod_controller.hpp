@@ -50,6 +50,7 @@ public:
   void setEnabled(bool on) { m_enabled = on; }
 
   bool hasAnyTile() const;
+  bool viewportFullyCovered() const;
   int targetScale() const;
   TileSession* session() { return m_session.get(); }
   TileSession const* session() const { return m_session.get(); }
