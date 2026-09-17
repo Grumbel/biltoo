@@ -1132,9 +1132,8 @@ QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
     if (!e || e->state != tilelod::TileState::Succeeded || !e->bitmap.valid()) {
         return {};
     }
-    if (grade.isIdentity()) {
-        return tilelod::tile_bitmap_to_qimage(e->bitmap);
-    }
+    // Cache QImage conversion for identity and graded alike. Identity used to
+    // re-copy every rgba8 cell on every paint frame (256²×4 per tile).
     const quint64 sig = colorAdjustSignature(grade);
     if (sig != m_tileGradeSig) {
         m_tileGradedCache.clear();
@@ -1152,7 +1151,9 @@ QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
     if (img.isNull()) {
         return {};
     }
-    img = applyColorAdjustments(img, grade);
+    if (!grade.isIdentity()) {
+        img = applyColorAdjustments(img, grade);
+    }
     // Bound cache growth (visible set is typically tens of tiles).
     if (m_tileGradedCache.size() > 256) {
         m_tileGradedCache.clear();

@@ -368,6 +368,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Tick update only on plan/completion | Done (1056) |
 | Leave-band stops tile requests | Done (1057) |
 | Tile fetch without QImage round-trip | Done (1058) |
+| Identity tile QImage paint cache | Done (1059) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -385,6 +386,13 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Identity tile QImage cache (biltoo-1059)
+
+`resolveGradedTile` always caches the `TileBitmap` → `QImage` conversion,
+including identity grade. Previously identity re-copied every rgba8 cell on
+every paint frame. Grade signature still invalidates the cache on adjust change.
 
 
 ## Tile fetch bitmap path (biltoo-1058)
@@ -459,6 +467,6 @@ Prevents tile requests/paint over the full-frame crop draft.
 ## Color grade (biltoo-1049 / 1050)
 
 Tiles stay raw in the shared RAM cache. At paint time, `applyColorAdjustments`
-runs on resolve (ContentXform or item grade). Graded `QImage`s are cached per
+runs on resolve (ContentXform or item grade). Converted `QImage`s (identity or graded) are cached per
 item (`resolveGradedTile`) keyed by cell + grade signature so pan/repaint does
-not re-grade every frame. Soft underlay remains pre-graded from materialize.
+not re-copy or re-grade every frame. Soft underlay remains pre-graded from materialize.

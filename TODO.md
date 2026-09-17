@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1059-tilelod-identity-qimage-cache.** Cache TileBitmap→QImage for identity grade too.
+Prior: **1058**.
+
+### Change
+- `resolveGradedTile` caches conversion for identity and graded paths
+- Avoids re-copying every rgba8 cell on every paint frame when grade is identity
+- Signature still clears cache on color-adjust change
+
+### Apply
+```bash
+git pull /path/to/biltoo-1059-tilelod-identity-qimage-cache.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1059**
+- [x] Identity grade does not re-copy tiles every paint
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1058-tilelod-fetch-bitmap-no-qimage.** Tile fetch delivers TileBitmap without QImage round-trip.
 Prior: **1057**.
 
