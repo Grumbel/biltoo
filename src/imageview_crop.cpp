@@ -345,6 +345,7 @@ bool ImageView::enterCropModeFromUi()
     // freeze must not wait on m_cropMode or ladder/async can land in between.
     m_cropDraftSampleFrozen = true;
     m_cropDraftPath = item->path();
+    item->setTileLodSuppressed(true);
     if (m_pathRaster && !m_cropDraftPath.isEmpty()) {
         m_pathRaster->cancel(m_cropDraftPath);
     }
@@ -387,6 +388,7 @@ bool ImageView::enterCropModeFromUi()
         m_cropMode = false; // prepare may have set it for fitItem then failed
         m_cropDraftSampleFrozen = false;
         m_cropDraftPath.clear();
+        item->setTileLodSuppressed(false);
         m_cropEnterValid = false;
         m_cropEnterSource = QImage();
         if (m_cropHadStashedPlacement) {
@@ -1577,6 +1579,13 @@ void ImageView::clearCropModeState()
     m_cropAwaitingFullPath.clear();
     m_cropEnterValid = false;
     m_cropEnterSource = QImage();
+    if (m_cropTargetItem) {
+        m_cropTargetItem->setTileLodSuppressed(false);
+    } else if (m_cropTargetId != kInvalidSessionImageId) {
+        if (ImageItem *byId = findItemBySessionId(m_cropTargetId)) {
+            byId->setTileLodSuppressed(false);
+        }
+    }
     m_cropTargetItem = nullptr;
     m_cropTargetId = kInvalidSessionImageId;
     m_cropRect = QRectF();

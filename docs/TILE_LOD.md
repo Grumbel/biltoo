@@ -362,6 +362,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Session lifetime / failed no-spam | Done |
 | Free-rotated crop UV | Done (maps + paint transform) |
 | Color-graded content | Done (grade on paint resolve) |
+| Crop draft suppresses tiles | Done (1053) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -379,6 +380,19 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Crop draft suppress (biltoo-1053)
+
+While the crop-draft sample is frozen (`m_cropDraftSampleFrozen`), PreferCache
+climb is already blocked via `isCropDraftLockedPath`. Tile LOD now matches:
+
+- `ImageItem::setTileLodSuppressed(true)` on freeze → `tileLodWanted()` false,
+  private `TileLodController` dropped (shared path RAM cache kept).
+- `tickPrimaryTileLod` skips locked/suppressed items.
+- Clear suppress on `clearCropModeState` and failed crop prepare.
+
+Prevents tile requests/paint over the full-frame crop draft.
 
 
 ## Color grade (biltoo-1049 / 1050)

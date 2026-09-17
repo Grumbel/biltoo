@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1053-tilelod-crop-draft-suppress.** Crop draft freezes tile LOD like PreferCache.
+Prior: **1052**.
+
+### Change
+- `ImageItem::setTileLodSuppressed` — `tileLodWanted()` false; drop private TileLodController
+- Crop enter: suppress + Prefer cancel; clear on `clearCropModeState` / failed prepare
+- `tickPrimaryTileLod` skips crop-draft-locked / suppressed items
+- Remove dead ContentXform fetch in `tileLodWanted`
+- Docs: TILE_LOD.md status + section; TILE_LOD_RUNTIME negative check
+
+### Apply
+```bash
+git pull /path/to/biltoo-1053-tilelod-crop-draft-suppress.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1053**
+- [x] Crop draft: no tile requests or paint over draft full frame
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist (incl. crop draft + tile band)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1052-tilelod-shadow-fix.** Rename free-rot crop local to avoid -Wshadow.
 Prior: **1051**.
 

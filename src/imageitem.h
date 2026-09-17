@@ -326,6 +326,12 @@ public:
     void tickTileLod(int budget = 8);
     /** True when on-screen need exceeds soft max (tiles should own display). */
     bool tileLodWanted() const;
+    /**
+     * Suppress tile LOD (requests + paint) for this item.
+     * Used while crop draft freezes the sample (TILE_LOD_RUNTIME.md).
+     */
+    void setTileLodSuppressed(bool on);
+    bool tileLodSuppressed() const { return m_tileLodSuppressed; }
     /** True when at least one grid tile has arrived. */
     bool tileLodActive() const;
     /** All exact visible tiles present and scale hold settled. */
@@ -384,6 +390,8 @@ private:
     QString m_path;
     /** Deep-zoom grid tiles (Image mode); null until first need. */
     std::unique_ptr<tilelod::TileLodController> m_tileLod;
+    /** Crop-draft (and similar) freeze: no tile requests or paint. */
+    bool m_tileLodSuppressed = false;
     mutable QHash<QString, QImage> m_tileGradedCache;
     mutable quint64 m_tileGradeSig = 0;
     SessionImageId m_sessionId = kInvalidSessionImageId;

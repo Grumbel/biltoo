@@ -1171,13 +1171,25 @@ QSize ImageItem::tileNativeSize() const
     return imageSize();
 }
 
+void ImageItem::setTileLodSuppressed(bool on)
+{
+    if (m_tileLodSuppressed == on) {
+        return;
+    }
+    m_tileLodSuppressed = on;
+    if (on && m_tileLod) {
+        // Drop private session so paint cannot draw stale cells over the
+        // crop-draft full frame; shared path cache is left intact.
+        m_tileLod.reset();
+        clearTileGradedCache();
+    }
+}
+
 bool ImageItem::tileLodWanted() const
 {
-    if (m_path.isEmpty() || !ThumtooCache::isAvailable()) {
+    if (m_tileLodSuppressed || m_path.isEmpty() || !ThumtooCache::isAvailable()) {
         return false;
     }
-    const ContentXform::Value x = tileContentXform();
-    (void)x;
     const QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;

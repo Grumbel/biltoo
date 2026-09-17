@@ -2688,6 +2688,10 @@ void ImageView::tickPrimaryTileLod(int budget)
         if (!item) {
             continue;
         }
+        // Crop draft freeze: no tile climb (mirrors PreferCache lock).
+        if (isCropDraftLockedItem(item) || item->tileLodSuppressed()) {
+            continue;
+        }
         const QString path = item->path();
         if (item->tileLodWanted()) {
             anyWanted = true;

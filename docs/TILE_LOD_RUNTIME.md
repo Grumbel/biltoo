@@ -35,7 +35,7 @@ Open the same path in biltoo (Image mode). Soft/LQIP may still appear first.
 ## Negative
 
 - Gallery packed cells: still soft-only (no grid tile path).
-- Crop draft locked path: no tile/Prefer climb (existing freeze).
+- Crop draft locked path: no tile/Prefer climb (`setTileLodSuppressed` + Prefer lock).
 
 ## Debug
 
