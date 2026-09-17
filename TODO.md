@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1072-tilelod-parent-uv-underlay.** Fix repeated low-res stand-ins (underlay + parent UV).
+Prior: **1071**.
+
+### Change
+- Host: do not pass full soft as per-cell `lqip` (holes showed repeated mini soft)
+- `parent_uv_for_child`: content-rect → parent pixel UV (edge tiles correct)
+- Pure test for edge-tile UV
+
+### Apply
+```bash
+git pull /path/to/biltoo-1072-tilelod-parent-uv-underlay.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1072**
+- [x] Pure tilelod_test passes
+- [ ] Visual: coarse stand-ins cover the same content region as missing fine cells (re-check screenshot case)
+
+### Next
+- Re-verify Gallery deep zoom with partial tile coverage (user screenshot)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1071-tilelod-min-scale-clamp-test.** Pure test that min_scale clamps target and requests.
 Prior: **1070**.
 

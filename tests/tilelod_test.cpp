@@ -167,6 +167,32 @@ void test_planner_partial_viewport()
   CHECK_EQ(out.visible_keys[0].y, 0);
 }
 
+void test_parent_uv_edge_tile()
+{
+  // Non power-of-two content: uniform span UV drifts; content-rect mapping must
+  // place the fine cell at the correct fraction of the parent.
+  tilelod::TileKey fine{0, 3, 0};
+  tilelod::TileKey parent{1, 1, 0};
+  int const content_w = 1000;
+  int const content_h = 1000;
+  int const parent_px = 244; // typical edge payload
+  auto uv = tilelod::parent_uv_for_child(fine, parent, parent_px, parent_px,
+                                         content_w, content_h);
+  auto fine_cr = tilelod::tile_content_rect(content_w, content_h, fine);
+  auto parent_cr = tilelod::tile_content_rect(content_w, content_h, parent);
+  CHECK(!fine_cr.empty());
+  CHECK(!parent_cr.empty());
+  // UV origin ≈ (fine.x - parent.x) / parent.w * parent_px
+  double expect_u = (static_cast<double>(fine_cr.x - parent_cr.x)
+                     / static_cast<double>(parent_cr.w))
+                    * parent_px;
+  CHECK(uv.x + 1e-6 >= expect_u - 1e-3);
+  CHECK(uv.x <= expect_u + 1e-3);
+  CHECK(uv.w > 0 && uv.h > 0);
+  // Must not be the full parent (that was the "repeated whole tile" symptom).
+  CHECK(uv.w < parent_px - 1e-3 || uv.h < parent_px - 1e-3 || uv.x > 1e-3);
+}
+
 void test_fallback_parent_uv()
 {
   tilelod::TileMemoryCache cache;
@@ -724,6 +750,7 @@ int main()
   test_planner_1to1();
   test_planner_zoomed_out();
   test_planner_partial_viewport();
+  test_parent_uv_edge_tile();
   test_fallback_parent_uv();
   test_lqip_until_tile();
   test_budget_and_session();

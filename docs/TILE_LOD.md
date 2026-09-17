@@ -382,6 +382,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Gallery tick prioritizes visible cells | Done (1069) |
 | Workspace tick prioritizes + bounds | Done (1070) |
 | min_scale clamp pure test | Done (1071) |
+| Parent UV + underlay stand-in | Done (1072) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -399,6 +400,18 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Parent UV stand-in (biltoo-1072)
+
+Two host/paint bugs made missing fine tiles look like **repeated** low-res content:
+
+1. **Per-cell soft underlay** — non-free-rot paint passed the full soft image as
+   `lqip`, so every `Underlay` command stretched the whole soft into that cell.
+   Soft is already painted full-frame; leave `lqip` empty (same as free-rot).
+2. **Parent UV** — `parent_uv_for_child` now maps fine/parent **content rects**
+   into parent pixel space so edge tiles (partial payloads) get the correct
+   sub-region, not a uniform span subdivision that drifts.
 
 
 ## min_scale clamp test (biltoo-1071)

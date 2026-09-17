@@ -1439,10 +1439,16 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     }
                     tilelod::PaintDrawPlanArgs args;
                     args.plan = &plan;
-                    args.lqip = under;
+                    // Soft is already painted over contentRect above. Passing
+                    // it as lqip would stretch the *full* soft into every
+                    // Underlay cell (repeated mini-images in holes). Leave
+                    // empty so holes show the continuous soft underneath;
+                    // CoarserTile stand-ins still paint via resolve.
+                    args.lqip = QImage();
                     args.smooth = true;
                     args.resolve = resolve;
                     tilelod::paint_draw_plan(painter, args);
+                    (void)under;
                 }
             }
         }

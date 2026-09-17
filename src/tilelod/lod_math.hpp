@@ -134,26 +134,42 @@ namespace tilelod {
 /**
  * UV sub-rect inside a coarser parent tile that covers the fine key's region.
  *
- * Parent tile pixel space is [0, parent_w] × [0, parent_h] (actual payload size,
- * often 256×256 except edges). Fine key is at scale parent.scale - delta.
+ * Maps the fine key's content-space rect into parent pixel space [0, parent_w] ×
+ * [0, parent_h]. Content-rect mapping stays correct for edge tiles (partial
+ * width/height); uniform span subdivision drifts when dim_at_tile_scale is not
+ * a pure power-of-two multiple of the parent step.
  */
 [[nodiscard]] inline RectF parent_uv_for_child(TileKey const& fine,
                                                TileKey const& parent,
                                                int parent_pixel_w,
-                                               int parent_pixel_h) noexcept
+                                               int parent_pixel_h,
+                                               int content_w,
+                                               int content_h) noexcept
 {
-  int const delta = parent.scale - fine.scale;
-  if (delta <= 0 || parent_pixel_w <= 0 || parent_pixel_h <= 0) {
+  if (parent_pixel_w <= 0 || parent_pixel_h <= 0) {
+    return {};
+  }
+  if (parent.scale <= fine.scale) {
     return {0, 0, static_cast<double>(parent_pixel_w),
             static_cast<double>(parent_pixel_h)};
   }
-  int const span = pow2i(delta);  // fine cells per parent cell axis
-  int const local_x = fine.x - parent.x * span;
-  int const local_y = fine.y - parent.y * span;
-  // Map local fine cell into parent pixel space (parent covers span×span fine cells).
-  double const cell_w = static_cast<double>(parent_pixel_w) / static_cast<double>(span);
-  double const cell_h = static_cast<double>(parent_pixel_h) / static_cast<double>(span);
-  return {local_x * cell_w, local_y * cell_h, cell_w, cell_h};
+  RectI const fine_cr = tile_content_rect(content_w, content_h, fine);
+  RectI const parent_cr = tile_content_rect(content_w, content_h, parent);
+  if (fine_cr.empty() || parent_cr.empty() || parent_cr.w <= 0 || parent_cr.h <= 0) {
+    return {0, 0, static_cast<double>(parent_pixel_w),
+            static_cast<double>(parent_pixel_h)};
+  }
+  double const u0 = (static_cast<double>(fine_cr.x - parent_cr.x)
+                     / static_cast<double>(parent_cr.w))
+                    * static_cast<double>(parent_pixel_w);
+  double const v0 = (static_cast<double>(fine_cr.y - parent_cr.y)
+                     / static_cast<double>(parent_cr.h))
+                    * static_cast<double>(parent_pixel_h);
+  double const uw = (static_cast<double>(fine_cr.w) / static_cast<double>(parent_cr.w))
+                    * static_cast<double>(parent_pixel_w);
+  double const vh = (static_cast<double>(fine_cr.h) / static_cast<double>(parent_cr.h))
+                    * static_cast<double>(parent_pixel_h);
+  return {u0, v0, uw, vh};
 }
 
 }  // namespace tilelod

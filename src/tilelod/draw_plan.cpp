@@ -50,7 +50,8 @@ DrawPlan build_draw_plan(BuildDrawPlanInput const& in)
       }
       cmd.src_key = pk;
       cmd.src_uv = parent_uv_for_child(key, pk, parent->bitmap.width,
-                                       parent->bitmap.height);
+                                       parent->bitmap.height, in.content_w,
+                                       in.content_h);
       cmd.kind = DrawKind::CoarserTile;
       plan.any_tile = true;
       plan.commands.push_back(cmd);
