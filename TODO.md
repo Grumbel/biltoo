@@ -2,6 +2,30 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1078-startup-io-off-gui.** Avoid GUI freezes during “Reading file info…” / session open.
+Prior: **1077**.
+
+### Analysis
+- Sort probes (mtime/size) were already on a worker; progress HUD updated often.
+- `seedSessionAppearancesFromPaths` ran `pathContentId` + appearance load **on the GUI** for every path (exists/isFile/canonical + SQLite) and could freeze the event loop around open.
+- `pathContentId` used exists()+isFile()+canonicalFilePath (extra NFS-friendly stalls).
+
+### Change
+- `pathContentId`: single size/mtime check; absoluteFilePath only
+- Appearance seed for >24 paths: worker loads, GUI applies
+- Sort progress UI at most ~4 Hz
+
+### Apply
+```bash
+git pull /path/to/biltoo-1078-startup-io-off-gui.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1077-tilelod-repaint-queue-fix.** Fix build: ImageItem is not QObject.
 Prior: **1076**.
 

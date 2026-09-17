@@ -386,13 +386,57 @@ void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
     // Fresh session: allow seed again for new ids (old set cleared on invalidate).
     const int n = qMin(paths.size(), ids.size());
     for (int i = 0; i < n; ++i) {
-        // Permit re-seed when open replaces session (id may be reused rarely).
         m_appearanceSeedAttempted.remove(ids.at(i));
-        if (ids.at(i) == kInvalidSessionImageId || paths.at(i).isEmpty()) {
-            continue;
-        }
-        seedSessionAppearanceFromState(ids.at(i), paths.at(i));
     }
+    // Small sessions: fine on GUI (few stats). Large sessions: pathContentId +
+    // appearance SQLite used to run O(n) on the GUI during open and freeze the
+    // event loop while the HUD still said "Reading file info…".
+    if (n <= 24) {
+        for (int i = 0; i < n; ++i) {
+            if (ids.at(i) == kInvalidSessionImageId || paths.at(i).isEmpty()) {
+                continue;
+            }
+            seedSessionAppearanceFromState(ids.at(i), paths.at(i));
+        }
+        return;
+    }
+    QVector<SessionImageId> idsCopy = ids.mid(0, n);
+    QStringList pathsCopy = paths.mid(0, n);
+    const QPointer<ImageView> guard(this);
+    QThreadPool::globalInstance()->start([guard, pathsCopy, idsCopy]() {
+        struct Hit {
+            SessionImageId sid = kInvalidSessionImageId;
+            QString path;
+            ThumtooCache::StoredContentAppearance stored;
+        };
+        QVector<Hit> hits;
+        hits.reserve(pathsCopy.size());
+        for (int i = 0; i < pathsCopy.size(); ++i) {
+            if (idsCopy.at(i) == kInvalidSessionImageId || pathsCopy.at(i).isEmpty()) {
+                continue;
+            }
+            ThumtooCache::StoredContentAppearance stored;
+            if (!ThumtooCache::loadContentAppearance(pathsCopy.at(i), &stored)) {
+                continue;
+            }
+            if (stored.isIdentity()) {
+                continue;
+            }
+            hits.push_back(Hit{idsCopy.at(i), pathsCopy.at(i), stored});
+        }
+        if (hits.isEmpty()) {
+            return;
+        }
+        QMetaObject::invokeMethod(guard.data(), [guard, hits]() {
+            ImageView *host = guard.data();
+            if (!host) {
+                return;
+            }
+            for (const Hit &h : hits) {
+                host->applyStoredContentAppearanceSeed(h.sid, h.path, h.stored);
+            }
+        }, Qt::QueuedConnection);
+    });
 }
 
 void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString &path)

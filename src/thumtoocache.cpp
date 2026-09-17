@@ -2933,20 +2933,20 @@ std::string pathContentId(const QString &path)
         }
         return {};
     }
+    // One lightweight QFileInfo — avoid exists()+isFile()+canonicalFilePath
+    // (extra syscalls; NFS stalls). size()/lastModified() already stat; size 0
+    // with null mtime is enough to treat as missing without a second probe.
     const QFileInfo fi(fileForHash);
-    if (!fi.exists() || !fi.isFile()) {
+    const qint64 size = fi.size();
+    const QDateTime mtime = fi.lastModified();
+    if (size <= 0 && !mtime.isValid()) {
         if (appearanceDebug()) {
-            appearanceLog(QStringLiteral("pathContentId reject: not a file path=%1 exists=%2 isFile=%3")
-                              .arg(fileForHash)
-                              .arg(fi.exists())
-                              .arg(fi.isFile()));
+            appearanceLog(QStringLiteral("pathContentId reject: no stat path=%1")
+                              .arg(fileForHash));
         }
         return {};
     }
-    const QString abs = fi.canonicalFilePath().isEmpty() ? fi.absoluteFilePath()
-                                                         : fi.canonicalFilePath();
-    const qint64 size = fi.size();
-    const QDateTime mtime = fi.lastModified();
+    const QString abs = fi.absoluteFilePath();
     // Cache key includes page/member so compound refs do not collide.
     QString cacheKey = abs;
     if (page1 > 0) {

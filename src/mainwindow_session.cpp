@@ -967,7 +967,9 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
                 sizes.insert(path, ImageLoader::probeSize(path));
             }
             const qint64 now = clock.elapsed();
-            if (now - lastUi >= 120 || i + 1 == paths.size()) {
+            // ~4 Hz max — centre progress + status used to flood the GUI
+            // while QFileInfo/probe still ran on the worker.
+            if (now - lastUi >= 250 || i + 1 == paths.size()) {
                 lastUi = now;
                 const int done = i + 1;
                 const int total = paths.size();
