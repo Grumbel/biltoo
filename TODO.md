@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1044-tilelod-parent-prefetch.** Request coarser parents as stand-ins; keep them in cancel.
+Prior: **1043**.
+
+### Change
+- `issue_requests`: after exact cells, use remaining budget for `parent_key(k, 1)`
+- `cancel_obsolete`: keep in-flight parents of visible keys (not only exact)
+- Unit test: scale-0 viewport also requests scale-1 parents
+- Budget test updated for extra parent requests
+
+### Apply
+```bash
+git pull /path/to/biltoo-1044-tilelod-parent-prefetch.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1044**
+- [x] Parent-prefetch unit test passes
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1043-tilelod-session-lifetime.** Safe destroy with in-flight tile callbacks.
 Prior: **1042**.
 

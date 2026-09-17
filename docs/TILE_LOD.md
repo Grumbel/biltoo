@@ -339,3 +339,10 @@ thumtoo hammering when a cell is missing from the pyramid.
 Source callbacks capture a `shared_ptr<CompletionInbox>`, not `TileSession*`.
 Destroying the session marks the inbox dead, cancels in-flight keys, and
 clears pending completions so late worker replies are no-ops.
+
+
+## Parent prefetch (biltoo-1044)
+
+After exact visible keys are queued, remaining request budget fetches one
+coarser parent per missing exact cell so `CoarserTile` stand-ins appear while
+fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.

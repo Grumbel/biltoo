@@ -243,8 +243,9 @@ void test_budget_and_session()
   CHECK_EQ(static_cast<int>(src.requested.size()), 2);
 
   n = session.issue_requests(10);
-  CHECK_EQ(n, 2);  // remaining two
-  CHECK_EQ(static_cast<int>(src.requested.size()), 4);
+  // Remaining exact cells plus optional coarser parents (stand-in prefetch).
+  CHECK(n >= 2);
+  CHECK(static_cast<int>(src.requested.size()) >= 4);
 
   // Completions
   src.complete_all_requested(200);
@@ -556,6 +557,32 @@ void test_destroy_while_inflight()
   CHECK(session2.has_any_succeeded_tile() || session2.coverage().visible >= 0);
 }
 
+
+void test_parent_prefetch()
+{
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  session.set_content_size(1024, 1024);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;  // scale 0
+  session.set_viewport(vp);
+  int n = session.issue_requests(8);
+  CHECK(n >= 2);
+  bool has_exact = false;
+  bool has_parent = false;
+  for (auto const& k : src.requested) {
+    if (k.scale == 0) {
+      has_exact = true;
+    }
+    if (k.scale == 1) {
+      has_parent = true;
+    }
+  }
+  CHECK(has_exact);
+  CHECK(has_parent);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -591,6 +618,7 @@ int main()
   test_shared_no_drop_finer();
   test_failed_no_spam_same_generation();
   test_destroy_while_inflight();
+  test_parent_prefetch();
   test_parent_key();
 
   if (g_failures) {

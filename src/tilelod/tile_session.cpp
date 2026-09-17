@@ -235,18 +235,55 @@ int TileSession::issue_requests(int budget)
   std::sort(missing.begin(), missing.end(),
             [](Scored const& a, Scored const& b) { return a.dist2 < b.dist2; });
 
-  int const n = std::min(budget, static_cast<int>(missing.size()));
-  if (n <= 0) {
-    return 0;
-  }
-
   std::vector<TileKey> batch;
-  batch.reserve(static_cast<size_t>(n));
+  batch.reserve(static_cast<size_t>(budget));
   std::uint64_t const gen = m_generation;
-  for (int i = 0; i < n; ++i) {
-    TileKey const& key = missing[static_cast<size_t>(i)].key;
+  std::set<TileKey> queued;
+
+  auto enqueue = [&](TileKey const& key) -> bool {
+    if (static_cast<int>(batch.size()) >= budget) {
+      return false;
+    }
+    if (!queued.insert(key).second) {
+      return true;
+    }
+    CacheEntry const* e = m_cache->find(key);
+    if (e && (e->state == TileState::Succeeded ||
+              e->state == TileState::InFlight)) {
+      return true;
+    }
+    if (e && e->state == TileState::Failed && e->generation == m_generation) {
+      return true;
+    }
     m_cache->set_in_flight(key, gen);
     batch.push_back(key);
+    return true;
+  };
+
+  // 1) Exact visible cells (centre-first).
+  for (Scored const& s : missing) {
+    if (static_cast<int>(batch.size()) >= budget) {
+      break;
+    }
+    enqueue(s.key);
+  }
+
+  // 2) One coarser parent per still-missing exact (stand-in while fine loads).
+  if (static_cast<int>(batch.size()) < budget) {
+    for (Scored const& s : missing) {
+      if (static_cast<int>(batch.size()) >= budget) {
+        break;
+      }
+      if (s.key.scale >= m_max_scale) {
+        continue;
+      }
+      TileKey const pk = parent_key(s.key, 1);
+      enqueue(pk);
+    }
+  }
+
+  if (batch.empty()) {
+    return 0;
   }
 
   // Capture generation + inbox (not `this`) so late worker callbacks are safe
@@ -265,7 +302,7 @@ int TileSession::issue_requests(int budget)
         PendingCompletion{std::move(key), std::move(bitmap), gen});
   });
 
-  return n;
+  return static_cast<int>(batch.size());
 }
 
 void TileSession::cancel_obsolete()
@@ -273,10 +310,16 @@ void TileSession::cancel_obsolete()
   if (!m_source) {
     return;
   }
-  std::set<TileKey> visible(m_visible_keys.begin(), m_visible_keys.end());
+  // Keep exact visible keys and their coarser parents (prefetch / stand-ins).
+  std::set<TileKey> keep(m_visible_keys.begin(), m_visible_keys.end());
+  for (TileKey const& k : m_visible_keys) {
+    for (int d = 1; k.scale + d <= m_max_scale; ++d) {
+      keep.insert(parent_key(k, d));
+    }
+  }
   std::vector<TileKey> drop;
   for (TileKey const& key : m_cache->in_flight_keys()) {
-    if (visible.find(key) == visible.end()) {
+    if (keep.find(key) == keep.end()) {
       drop.push_back(key);
     }
   }
