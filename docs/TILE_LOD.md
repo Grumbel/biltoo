@@ -383,6 +383,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Workspace tick prioritizes + bounds | Done (1070) |
 | min_scale clamp pure test | Done (1071) |
 | Parent UV + underlay stand-in | Done (1072) |
+| Zoom path GUI-thread perf | Done (1073) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -400,6 +401,42 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Zoom path performance (biltoo-1073)
+
+### Analysis (what was slow)
+
+JPEG/tile **decode is not on the GUI thread** — `ThumtooCache::requestTiles` →
+thumtoo worker → completion inbox → `pump()` on tick. The sluggish zoom feel
+came from **synchronous GUI work every wheel notch / every paint**:
+
+| Hot path | Cost | Notes |
+|----------|------|--------|
+| Image/Workspace **wheel** → `maybeClimb` / `ensureWorkspace` → `tickPrimaryTileLod` | High | Per notch: up to 8× `prepareTileLod` → `set_viewport` → `cancel_obsolete` → `issue_requests` |
+| **Paint** → `prepareTileLod` | High | Same plan work again on every repaint while zooming |
+| `cancel_obsolete` when plan unchanged | Medium | Walked all InFlight keys every call |
+| `tile_bitmap_to_qimage` first paint of a cell | Medium | One-time 256²×4 copy; then graded/identity QImage cache |
+| `SmoothPixmapTransform` × N tiles | Medium | Expected for non-integer zoom |
+| `hasDurableTiles` | Low after 1062 | Positive memo; first hit may touch SQLite |
+
+Gallery Ctrl+wheel was already better: `scheduleGalleryDecodeWindowRefresh(120)`.
+
+### Changes
+
+1. **Debounce zoom climb/tick** (`scheduleTileLodAfterInteraction(50)`): continuous
+   wheel/toolbar zoom coalesces to one climb+tick after settle. Pan still ticks
+   immediately (1065/1066).
+2. **Paint does not `prepareTileLod`**: plan is owned by the tick path; paint
+   draws the last plan over soft.
+3. **`cancel_obsolete` only when `plan_changed`**: stable viewport no longer
+   walks InFlight.
+
+### Still on GUI (acceptable / later)
+
+- `drawImage` of visible cells with smooth transform (must be paint-thread).
+- `statusChanged` / chrome on zoom.
+- First-time QImage conversion per cell (cached after).
 
 
 ## Parent UV stand-in (biltoo-1072)

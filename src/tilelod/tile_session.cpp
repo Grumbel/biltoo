@@ -157,7 +157,11 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
     m_cache->drop_finer_than(m_target_scale);
   }
 
-  cancel_obsolete();
+  // Host calls set_viewport every paint/tick; cancel work is only useful when
+  // the visible set or scale changed.
+  if (plan_changed) {
+    cancel_obsolete();
+  }
 }
 
 void TileSession::on_source_completion(TileKey key,

@@ -366,12 +366,10 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     m_fitMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
-    // Soft / PreferCache samples: climb when on-screen need exceeds have.
-    if (isImageMode()) {
-        maybeClimbImageModePixelsForView();
-    } else if (isWorkspaceMode()) {
-        ensureWorkspaceQualityClimb();
-    }
+    // Soft / PreferCache / tile LOD: coalesce continuous wheel notches.
+    // Per-notch climb+tick was heavy on the GUI thread (set_viewport, cancel,
+    // issue_requests). Paint uses the last plan + soft until the debounce fires.
+    scheduleTileLodAfterInteraction(50);
     viewport()->update(); // refresh viewport-space chrome at the new scale
     emit statusChanged();
     event->accept();

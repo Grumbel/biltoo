@@ -295,17 +295,13 @@ void ImageView::zoomViewBy(qreal factor)
     if (viewport()) {
         viewport()->update();
     }
-    // Zoom changes on-screen cell size → may need a higher ladder step.
-    // Match Ctrl+wheel: debounce so rapid toolbar/shortcut zoom does not
-    // rescan all tiles + setInterest on every notch (GUI_THREAD_AUDIT G5).
+    // Zoom changes on-screen cell size → ladder / tile LOD after settle.
+    // Gallery already debounced interest; Image/Workspace match that pattern
+    // so continuous zoom does not issue tile work every notch.
     if (isGalleryMode()) {
         scheduleGalleryDecodeWindowRefresh(120);
-    } else if (isWorkspaceMode()) {
-        // Toolbar/shortcut zoom used zoomViewBy and never climbed — Soft stayed
-        // soft while the view scale grew (wheel path already called ensure).
-        ensureWorkspaceQualityClimb();
-    } else if (isImageMode()) {
-        maybeClimbImageModePixelsForView();
+    } else {
+        scheduleTileLodAfterInteraction(50);
     }
     emit statusChanged();
 }

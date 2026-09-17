@@ -1375,10 +1375,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
 
         // Deep zoom: grid tiles over soft/LQIP underlay (TILE_LOD.md).
-        // Requests are issued from ImageView::tickPrimaryTileLod, not here.
-        // Tile plan is source-space; paint in item local (offset + display map).
+        // Viewport plan + requests are owned by ImageView::tickPrimaryTileLod.
+        // Do not prepareTileLod here — that re-ran set_viewport/cancel on every
+        // paint (zoom/pan) and competed with the GUI thread. Paint the last plan.
         if (tileLodWanted()) {
-            prepareTileLod();
             if (m_tileLod && m_tileLod->session()) {
                 const QImage under = hasDecodedPixels() ? m_source
                     : (!m_preview.isNull() ? m_preview : QImage());

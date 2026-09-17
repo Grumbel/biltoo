@@ -1375,6 +1375,12 @@ private:
     void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
     /** Image-mode tile LOD: viewport + budgeted requests (not from paint). */
     void tickPrimaryTileLod(int budget = 8);
+    /**
+     * Debounce climb + tile tick after zoom (wheel/toolbar). Avoids per-notch
+     * set_viewport/issue_requests on the GUI thread during continuous zoom.
+     * Pan still ticks immediately.
+     */
+    void scheduleTileLodAfterInteraction(int delayMs = 50);
     /** PreferCache/display edge: min(want, ladder max, known native long edge). */
     int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     void installImageModeSampleInPlace(ImageItem *item, const QString &path, const QImage &image,
@@ -2122,6 +2128,8 @@ private:
     QTimer *m_statusRefreshTimer = nullptr;
     /** Pump tile LOD while zoomed (Image mode). */
     QTimer *m_tileLodTimer = nullptr;
+    /** Single-shot: coalesce zoom notches before climb/tick. */
+    QTimer *m_tileLodZoomDebounce = nullptr;
     /** Paths for which PreferCache was cancelled after entering tile band. */
     QSet<QString> m_tileLodPreferCancelled;
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */

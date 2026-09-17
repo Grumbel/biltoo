@@ -2634,6 +2634,27 @@ int ImageView::imageModeOnScreenNeedEdge() const
     return itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
 }
 
+void ImageView::scheduleTileLodAfterInteraction(int delayMs)
+{
+    if (!m_tileLodZoomDebounce) {
+        m_tileLodZoomDebounce = new QTimer(this);
+        m_tileLodZoomDebounce->setSingleShot(true);
+        connect(m_tileLodZoomDebounce, &QTimer::timeout, this, [this]() {
+            if (isGalleryMode()) {
+                tickPrimaryTileLod(8);
+                return;
+            }
+            if (isImageMode()) {
+                maybeClimbImageModePixelsForView();
+            } else if (isWorkspaceMode()) {
+                ensureWorkspaceQualityClimb();
+            }
+        });
+    }
+    m_tileLodZoomDebounce->setInterval(qMax(0, delayMs));
+    m_tileLodZoomDebounce->start();
+}
+
 void ImageView::tickPrimaryTileLod(int budget)
 {
     if (m_slideshowProgressActive) {

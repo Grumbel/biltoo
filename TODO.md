@@ -2,6 +2,37 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1073-tilelod-zoom-gui-perf.** Reduce GUI-thread work on continuous zoom.
+Prior: **1072**.
+
+### Analysis summary
+- Tile JPEG decode is already off-GUI (thumtoo workers).
+- Sluggish zoom was per-notch `tickPrimaryTileLod` + per-paint `prepareTileLod` + unconditional `cancel_obsolete`.
+
+### Change
+- `scheduleTileLodAfterInteraction(50)`: debounce climb+tick after wheel/toolbar zoom
+- Paint no longer calls `prepareTileLod` (last plan only)
+- `cancel_obsolete` only when the plan changed
+- Pan still immediate tick
+
+### Apply
+```bash
+git pull /path/to/biltoo-1073-tilelod-zoom-gui-perf.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1073**
+- [ ] Feel: continuous wheel zoom stays responsive; tiles catch up after settle
+
+### Next
+- Manual zoom feel check; optional later: skip SmoothPixmapTransform at integer scales
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1072-tilelod-parent-uv-underlay.** Fix repeated low-res stand-ins (underlay + parent UV).
 Prior: **1071**.
 
