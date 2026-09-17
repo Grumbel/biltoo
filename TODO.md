@@ -2,6 +2,30 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1052-tilelod-shadow-fix.** Rename free-rot crop local to avoid -Wshadow.
+Prior: **1051**.
+
+### Change
+- `paint`: `contentCrop` instead of `crop` (shadowed `galleryClipLocal` crop)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1052-tilelod-shadow-fix.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1052**
+- [x] -Wshadow fixed for free-rot paint
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1051-tilelod-graded-cache.** Cache paint-time graded tile QImages.
 Prior: **1050**.
 

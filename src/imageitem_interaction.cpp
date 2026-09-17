@@ -1353,13 +1353,13 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                         }
                         cmd.dst_content = {ori.x(), ori.y(), ori.width(), ori.height()};
                     }
-                    const QRect crop = x.cropRect.normalized();
+                    const QRect contentCrop = x.cropRect.normalized();
                     const QRectF cr = contentRect();
                     painter->save();
                     painter->setClipRect(cr);
                     painter->translate(cr.center());
                     painter->rotate(-x.cropRotation);
-                    painter->translate(-QPointF(crop.center()));
+                    painter->translate(-QPointF(contentCrop.center()));
                     tilelod::PaintDrawPlanArgs args;
                     args.plan = &plan;
                     args.lqip = QImage(); // soft already in display space
