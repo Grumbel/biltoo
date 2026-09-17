@@ -36,9 +36,13 @@ view a gallery overview, or arrange pages on the workspace.
 
 ## Screenshots
 
-[![Gallery](screenshots/gallery.png)](screenshots/gallery.png)
+[![Gallery](screenshots/gallery-thumb.jpg)](screenshots/gallery.png)
 
-[![Workspace](screenshots/workspace.png)](screenshots/workspace.png)
+[![PDF in Gallery](screenshots/pdf-gallery-thumb.jpg)](screenshots/pdf-gallery.png)
+
+[![EPUB with text search](screenshots/epub-find-thumb.jpg)](screenshots/epub-find.png)
+
+[![Workspace crop](screenshots/workspace-crop-thumb.jpg)](screenshots/workspace-crop.png)
 
 ## Command line
 

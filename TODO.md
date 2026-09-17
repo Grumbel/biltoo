@@ -2,6 +2,23 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1024-readme-screenshots.** Gallery, PDF, EPUB, Workspace crop shots in README.
+Prior: **1023**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1024-readme-screenshots.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1024**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1023-readme-intro.** README intro and feature list for end users.
 Prior: **1022**.
 
