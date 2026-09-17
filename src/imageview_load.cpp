@@ -2649,24 +2649,60 @@ void ImageView::tickPrimaryTileLod(int budget)
             targets.append(item);
         }
     } else if (isWorkspaceMode()) {
-        // Selection first; else up to 8 on-canvas items (same bound as quality climb).
+        // Prefer selection; else on-canvas items. Bound to 8 with in-view first
+        // (same starvation class as Gallery list-order).
+        QList<ImageItem *> pool;
         if (m_scene) {
             for (QGraphicsItem *gi : m_scene->selectedItems()) {
                 if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    targets.append(ii);
+                    if (!ii->path().isEmpty()) {
+                        pool.append(ii);
+                    }
                 }
             }
         }
-        if (targets.isEmpty()) {
-            int n = 0;
+        if (pool.isEmpty()) {
             for (ImageItem *ii : m_items) {
                 if (!ii || ii->path().isEmpty()) {
                     continue;
                 }
-                targets.append(ii);
-                if (++n >= 8) {
-                    break;
-                }
+                pool.append(ii);
+            }
+        }
+        QRectF sceneVis;
+        if (m_scene) {
+            sceneVis = mapToScene(viewport()->rect()).boundingRect();
+        }
+        struct Cand {
+            ImageItem *item = nullptr;
+            bool inView = false;
+            bool wanted = false;
+            int need = 0;
+        };
+        QVector<Cand> cands;
+        cands.reserve(pool.size());
+        for (ImageItem *ii : pool) {
+            Cand c;
+            c.item = ii;
+            c.inView = sceneVis.isNull()
+                || ii->sceneBoundingRect().intersects(sceneVis);
+            c.wanted = ii->tileLodWanted();
+            c.need = itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
+            cands.append(c);
+        }
+        std::sort(cands.begin(), cands.end(), [](const Cand &a, const Cand &b) {
+            if (a.wanted != b.wanted) {
+                return a.wanted;
+            }
+            if (a.inView != b.inView) {
+                return a.inView;
+            }
+            return a.need > b.need;
+        });
+        for (const Cand &c : cands) {
+            targets.append(c.item);
+            if (targets.size() >= 8) {
+                break;
             }
         }
     } else if (isGalleryMode()) {

@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1070-tilelod-workspace-tick-priority.** Workspace tile tick bounds to 8 with wanted/in-view priority.
+Prior: **1069**.
+
+### Change
+- Selection or canvas pool sorted: tileLodWanted → in-view → on-screen need
+- Hard bound of 8 (selection was previously unbounded)
+- Matches Gallery prioritization pattern
+
+### Apply
+```bash
+git pull /path/to/biltoo-1070-tilelod-workspace-tick-priority.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1070**
+- [x] Large Workspace multi-select does not tick all selected items
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist on a display
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1069-tilelod-gallery-tick-priority.** Gallery tile tick prioritizes in-view / largest cells.
 Prior: **1068**.
 

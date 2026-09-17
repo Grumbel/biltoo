@@ -380,6 +380,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Host prepare-loop regression test | Done (1067) |
 | Session min_scale from durable coverage | Done (1068) |
 | Gallery tick prioritizes visible cells | Done (1069) |
+| Workspace tick prioritizes + bounds | Done (1070) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -397,6 +398,13 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Workspace tick priority (biltoo-1070)
+
+Workspace tile tick uses selection when non-empty, else all canvas items.
+Both paths are **bounded to 8** and sorted: `tileLodWanted` first, then in-view,
+then on-screen need edge. Large multi-select no longer ticks every selected item.
 
 
 ## Gallery tick priority (biltoo-1069)
