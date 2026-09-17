@@ -284,8 +284,8 @@ thumtoo grid tiles are keyed in **source** pixel space. Item layout is
 ([CONTENT_COORDINATES.md](CONTENT_COORDINATES.md)).
 
 `ContentXform::mapDisplayRectToSource` / `mapSourceRectToDisplay` convert the
-viewport and draw destinations. Free-rotated crop (`|cropRotation| > ε`) still
-disables tile LOD (AABB map only). Soft/PreferCache cover that case.
+viewport and draw destinations. Free-rotated crop uses the materializeDisplay centre/rotate window; maps return
+the AABB of transformed corners for viewport request and draw destinations.
 
 
 ## PreferCache vs tiles (biltoo-1035)
@@ -360,6 +360,6 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | ContentXform axis-aligned map | Done |
 | PreferCache skipped in tile band | Done |
 | Session lifetime / failed no-spam | Done |
-| Free-rotated crop UV | Deferred |
+| Free-rotated crop UV | Done (AABB via ContentXform maps) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 

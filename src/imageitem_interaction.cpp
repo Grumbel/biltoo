@@ -1113,10 +1113,7 @@ bool ImageItem::tileLodWanted() const
         return false;
     }
     const ContentXform::Value x = tileContentXform();
-    // Free-rotated crop: no axis-aligned source↔display map yet.
-    if (x.hasCrop && qAbs(x.cropRotation) > 1e-3) {
-        return false;
-    }
+    (void)x; // maps handle free-rot via ContentXform::map*
     const QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;

@@ -49,8 +49,8 @@ export BILTOO_LOAD_DEBUG=1
 
 ## Content orient / crop
 
-Axis-aligned flip / 90° / crop: tiles should track via ContentXform maps.
-Free-rotated crop: tile LOD off (soft / PreferCache only).
+Flip / 90° / axis-aligned crop / free-rotated crop: tiles via ContentXform maps
+(AABB of corners for free rot). Soft remains underlay until cells arrive.
 
 
 ## Gallery

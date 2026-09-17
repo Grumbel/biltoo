@@ -4,6 +4,7 @@
 #include "contentxform.h"
 
 #include <QtMath>
+#include <QTransform>
 
 namespace ContentXform {
 
@@ -368,9 +369,6 @@ QRectF mapSourceRectToDisplay(const QRectF &sourceRect, const QSize &native,
     if (!isPositiveSize(native) || sourceRect.isEmpty()) {
         return {};
     }
-    if (hasFreeCropRotation(x)) {
-        return {};
-    }
     const QPointF c[4] = {
         sourceRect.topLeft(),
         sourceRect.topRight(),
@@ -386,9 +384,27 @@ QRectF mapSourceRectToDisplay(const QRectF &sourceRect, const QSize &native,
         return oriented;
     }
     const QRect crop = x.cropRect.normalized();
-    // Display is crop-local: subtract crop origin; intersect with crop box.
+    const qreal dw = crop.width();
+    const qreal dh = crop.height();
+    if (hasFreeCropRotation(x)) {
+        // Match SessionAppearance materializeDisplay free-rot window sample:
+        // translate to crop centre, rotate -θ, into display (0..dw)×(0..dh).
+        const QPointF srcCenter(crop.center());
+        QTransform t;
+        t.translate(dw / 2.0, dh / 2.0);
+        t.rotate(-x.cropRotation);
+        t.translate(-srcCenter.x(), -srcCenter.y());
+        QPointF d[4];
+        for (int i = 0; i < 4; ++i) {
+            d[i] = t.map(o[i]);
+        }
+        QRectF local = aabbFromCorners(d);
+        QRectF cropLocal(0, 0, dw, dh);
+        return local.intersected(cropLocal);
+    }
+    // Axis-aligned crop: subtract crop origin.
     QRectF local = oriented.translated(-crop.x(), -crop.y());
-    QRectF cropLocal(0, 0, crop.width(), crop.height());
+    QRectF cropLocal(0, 0, dw, dh);
     return local.intersected(cropLocal);
 }
 
@@ -398,26 +414,42 @@ QRectF mapDisplayRectToSource(const QRectF &displayRect, const QSize &native,
     if (!isPositiveSize(native) || displayRect.isEmpty()) {
         return {};
     }
-    if (hasFreeCropRotation(x)) {
-        return {};
-    }
-    QRectF oriented = displayRect;
-    if (x.hasCrop && !x.cropRect.isEmpty()) {
-        const QRect crop = x.cropRect.normalized();
-        oriented = displayRect.translated(crop.x(), crop.y());
-    }
-    // Oriented full-frame size after flips+turns.
     QSize orientedSize = swapsAspect(x) ? QSize(native.height(), native.width())
                                         : native;
-    const QPointF c[4] = {
-        oriented.topLeft(),
-        oriented.topRight(),
-        oriented.bottomRight(),
-        oriented.bottomLeft(),
-    };
+    QPointF orientedPts[4];
+    if (x.hasCrop && !x.cropRect.isEmpty() && hasFreeCropRotation(x)) {
+        const QRect crop = x.cropRect.normalized();
+        const qreal dw = crop.width();
+        const qreal dh = crop.height();
+        const QPointF srcCenter(crop.center());
+        // Inverse of materialize free-rot: from display → oriented.
+        QTransform inv;
+        inv.translate(srcCenter.x(), srcCenter.y());
+        inv.rotate(x.cropRotation);
+        inv.translate(-dw / 2.0, -dh / 2.0);
+        const QPointF d[4] = {
+            displayRect.topLeft(),
+            displayRect.topRight(),
+            displayRect.bottomRight(),
+            displayRect.bottomLeft(),
+        };
+        for (int i = 0; i < 4; ++i) {
+            orientedPts[i] = inv.map(d[i]);
+        }
+    } else {
+        QRectF oriented = displayRect;
+        if (x.hasCrop && !x.cropRect.isEmpty()) {
+            const QRect crop = x.cropRect.normalized();
+            oriented = displayRect.translated(crop.x(), crop.y());
+        }
+        orientedPts[0] = oriented.topLeft();
+        orientedPts[1] = oriented.topRight();
+        orientedPts[2] = oriented.bottomRight();
+        orientedPts[3] = oriented.bottomLeft();
+    }
     QPointF s[4];
     for (int i = 0; i < 4; ++i) {
-        s[i] = orientedPointToSource(c[i], orientedSize, x);
+        s[i] = orientedPointToSource(orientedPts[i], orientedSize, x);
     }
     return aabbFromCorners(s);
 }

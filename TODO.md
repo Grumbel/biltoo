@@ -2,6 +2,35 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1046-tilelod-free-rot-maps.** Free-rotated crop ContentXform maps for tiles.
+Prior: **1045**.
+
+### Change
+- `mapSourceRectToDisplay` / `mapDisplayRectToSource` handle free crop rotation
+  (same centre/rotate window as materializeDisplay; AABB of corners)
+- `tileLodWanted` no longer disables free-rot crops
+- contentxform_test: free-rot expands source AABB
+- TILE_LOD status: free-rot marked done
+
+### Apply
+```bash
+git pull /path/to/biltoo-1046-tilelod-free-rot-maps.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1046**
+- [x] Pure tilelod tests pass
+
+### Next
+- Manual runtime with free-rot crop on prepared pyramid
+- contentxform_test in full Qt build
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1045-tilelod-prefercache-gates.** PreferCache skip for all modes; status table.
 Prior: **1044**.
 

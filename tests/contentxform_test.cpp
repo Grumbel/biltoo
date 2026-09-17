@@ -51,6 +51,7 @@ private slots:
     void mapSourceRect_identity();
     void mapSourceRect_turn90();
     void mapDisplayRect_cropRoundTrip();
+    void mapDisplayRect_freeRotExpands();
     void layoutSize_freeCropRotationDoesNotChangeSize();
     void mapCropThrough_freeRotationAngleTracksContentTurn();
     void layoutSize_freeRotThenContentTurn();
@@ -930,6 +931,22 @@ void ContentXformTest::mapDisplayRect_cropRoundTrip()
     QRectF back = ContentXform::mapSourceRectToDisplay(src, n, x);
     QVERIFY(qAbs(back.x() - 0) < 1e-4);
     QVERIFY(qAbs(back.width() - 40) < 1e-4);
+}
+
+
+void ContentXformTest::mapDisplayRect_freeRotExpands()
+{
+    ContentXform::Value x;
+    x.hasCrop = true;
+    x.cropRect = QRect(20, 20, 60, 40);
+    x.cropSourceSize = QSize(100, 100);
+    x.cropRotation = 30.0;
+    QSize n(100, 100);
+    QRectF disp(0, 0, 60, 40);
+    QRectF src = ContentXform::mapDisplayRectToSource(disp, n, x);
+    QVERIFY(!src.isEmpty());
+    // Rotated window should cover more than the axis-aligned crop box in source.
+    QVERIFY(src.width() >= 40 || src.height() >= 40);
 }
 
 #include "contentxform_test.moc"

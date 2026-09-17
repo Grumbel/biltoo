@@ -117,8 +117,8 @@ QSizeF scaleToPreserveFootprint(qreal footW, qreal footH, const QSize &logical);
  * Corners are mapped; the result is the AABB (exact for axis-aligned crop
  * with cropRotation ≈ 0). Empty if inputs are invalid.
  *
- * Free-rotated crop (|cropRotation| > ε): returns empty — callers should not
- * use the tile grid until a oriented UV path exists.
+ * Free-rotated crop uses the same centre/rotate window as
+ * SessionAppearance::materializeDisplay (AABB of mapped corners).
  */
 QRectF mapSourceRectToDisplay(const QRectF &sourceRect, const QSize &native,
                               const Value &x);
