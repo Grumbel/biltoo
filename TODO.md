@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1079-fix-appearance-seed-link.** Define missing applyStoredContentAppearanceSeed.
+Prior: **1078**.
+
+### Analysis
+- 1078 declared `ImageView::applyStoredContentAppearanceSeed` and called it from the
+  worker→GUI lambda in `seedSessionAppearancesFromPaths`, but never defined it →
+  link error (`undefined reference`).
+- Large-session worker path also never marked miss/identity sids in
+  `m_appearanceSeedAttempted`, so paint could re-drive pathContentId.
+
+### Change
+- Implement `applyStoredContentAppearanceSeed` (orient/flip/grade only; no crop)
+- `seedSessionAppearanceFromState` loads then calls apply
+- Worker reports all examined sids; GUI marks attempted, then applies hits
+- `markAppearanceSeedAttempted` helper for the miss path
+
+### Apply
+```bash
+git pull /path/to/biltoo-1079-fix-appearance-seed-link.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1078-startup-io-off-gui.** Avoid GUI freezes during “Reading file info…” / session open.
 Prior: **1077**.
 

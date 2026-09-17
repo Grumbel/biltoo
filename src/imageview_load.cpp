@@ -411,10 +411,16 @@ void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
         };
         QVector<Hit> hits;
         hits.reserve(pathsCopy.size());
+        // Every examined sid must be marked attempted on the GUI (including
+        // load miss / identity) so wantAppearanceForItem does not re-drive
+        // pathContentId on every paint.
+        QVector<SessionImageId> attempted;
+        attempted.reserve(pathsCopy.size());
         for (int i = 0; i < pathsCopy.size(); ++i) {
             if (idsCopy.at(i) == kInvalidSessionImageId || pathsCopy.at(i).isEmpty()) {
                 continue;
             }
+            attempted.push_back(idsCopy.at(i));
             ThumtooCache::StoredContentAppearance stored;
             if (!ThumtooCache::loadContentAppearance(pathsCopy.at(i), &stored)) {
                 continue;
@@ -424,13 +430,16 @@ void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
             }
             hits.push_back(Hit{idsCopy.at(i), pathsCopy.at(i), stored});
         }
-        if (hits.isEmpty()) {
+        if (hits.isEmpty() && attempted.isEmpty()) {
             return;
         }
-        QMetaObject::invokeMethod(guard.data(), [guard, hits]() {
+        QMetaObject::invokeMethod(guard.data(), [guard, hits, attempted]() {
             ImageView *host = guard.data();
             if (!host) {
                 return;
+            }
+            for (const SessionImageId sid : attempted) {
+                host->markAppearanceSeedAttempted(sid);
             }
             for (const Hit &h : hits) {
                 host->applyStoredContentAppearanceSeed(h.sid, h.path, h.stored);
@@ -450,6 +459,32 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
         return;
     }
     m_appearanceSeedAttempted.insert(sid);
+    ThumtooCache::StoredContentAppearance stored;
+    if (!ThumtooCache::loadContentAppearance(path, &stored)) {
+        return;
+    }
+    if (stored.isIdentity()) {
+        return;
+    }
+    applyStoredContentAppearanceSeed(sid, path, stored);
+}
+
+void ImageView::markAppearanceSeedAttempted(SessionImageId sid)
+{
+    if (sid != kInvalidSessionImageId) {
+        m_appearanceSeedAttempted.insert(sid);
+    }
+}
+
+void ImageView::applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
+                                                 const ThumtooCache::StoredContentAppearance &stored)
+{
+    if (sid == kInvalidSessionImageId || path.isEmpty() || stored.isIdentity()) {
+        return;
+    }
+    // Worker path may not have marked attempted yet; mark here so paint does not
+    // re-drive pathContentId via wantAppearanceForItem.
+    m_appearanceSeedAttempted.insert(sid);
     if (m_appearance.contains(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.
@@ -458,13 +493,6 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
                 return;
             }
         }
-    }
-    ThumtooCache::StoredContentAppearance stored;
-    if (!ThumtooCache::loadContentAppearance(path, &stored)) {
-        return;
-    }
-    if (stored.isIdentity()) {
-        return;
     }
     WorkspaceItemState seed;
     seed.sessionId = sid;

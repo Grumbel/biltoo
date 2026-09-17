@@ -1559,6 +1559,8 @@ private:
     void seedSessionAppearanceFromState(SessionImageId sid, const QString &path);
     void applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
                                           const ThumtooCache::StoredContentAppearance &stored);
+    /** Record that durable appearance was probed for @p sid (hit or miss). */
+    void markAppearanceSeedAttempted(SessionImageId sid);
     /**
      * Map item-local draft rect to source pixel rect of the *current* pixmap,
      * then compose into original on-disk coordinates in @p state.
