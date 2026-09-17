@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1065-tilelod-pan-restarts-tick.** Hand pan restarts tile LOD tick after coverage stop.
+Prior: **1064**.
+
+### Change
+- `tryMouseMovePan`: `tickPrimaryTileLod(4)` while panning
+- `tryMouseReleasePan`: `tickPrimaryTileLod(8)` on release
+- Covers deep-zoom pan when the 33ms timer had stopped after full coverage
+
+### Apply
+```bash
+git pull /path/to/biltoo-1065-tilelod-pan-restarts-tick.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1065**
+- [x] Pan after covered viewport issues new cell requests without requiring zoom
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist (pan while deep-zoomed)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1064-tilelod-content-size-idempotent.** set_content_size no-ops when size unchanged.
 Prior: **1063**.
 

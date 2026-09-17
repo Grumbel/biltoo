@@ -375,6 +375,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | hasDurableTiles positive memo | Done (1062) |
 | durableTilesReady wakes tile tick | Done (1063) |
 | set_content_size idempotent | Done (1064) |
+| Pan restarts tile tick | Done (1065) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -392,6 +393,16 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Pan restarts tile tick (biltoo-1065)
+
+The tile timer stops once the visible set is fully covered. Hand pan changes
+the viewport without a zoom/climb event, so `tickPrimaryTileLod` was never
+restarted and new cells waited until the next wheel/resize.
+
+`tryMouseMovePan` / `tryMouseReleasePan` call `tickPrimaryTileLod` so deep-zoom
+pan keeps filling the grid.
 
 
 ## set_content_size idempotent (biltoo-1064)

@@ -1146,6 +1146,9 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
     }
     horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
     verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
+    // Tile LOD timer stops once the viewport is covered. Panning changes the
+    // visible set without a zoom/climb event — keep issuing requests.
+    tickPrimaryTileLod(4);
     event->accept();
     return true;
 }
@@ -1768,6 +1771,7 @@ bool ImageView::tryMouseReleasePan(QMouseEvent *event)
     }
     m_panning = false;
     restoreToolCursor();
+    tickPrimaryTileLod(8);
     event->accept();
     return true;
 }
