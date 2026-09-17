@@ -364,6 +364,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Color-graded content | Done (grade on paint resolve) |
 | Crop draft suppresses tiles | Done (1053) |
 | Gallery on-screen cell threshold | Done (1054) |
+| Failed no-spam (plan-stable generation) | Done (1055) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -381,6 +382,18 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Failed no-spam generation (biltoo-1055)
+
+`TileSession::set_viewport` used to `++m_generation` on every call. The host
+calls it every paint/tick with a stable viewport, so `Failed.generation` never
+matched `m_generation` and failed cells were re-requested every 33 ms
+(defeating biltoo-1042).
+
+Generation now advances only when the **plan** changes (target scale or
+visible key set). Identical viewport re-sets keep the generation; a real pan/
+zoom that changes keys or scale allows retry.
 
 
 ## Gallery cell threshold (biltoo-1054)

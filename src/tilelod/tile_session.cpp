@@ -107,7 +107,6 @@ bool TileSession::request_scale_holding() const
 void TileSession::set_viewport(Viewport const& vp, double margin_content)
 {
   m_viewport = vp;
-  ++m_generation;
 
   PlannerInput in;
   in.content_w = m_content_w;
@@ -131,6 +130,17 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
   }
   PlannerOutput const out = plan_visible_tiles(in);
   int const prev_target = m_target_scale;
+
+  // Only bump generation when the *plan* changes. Host calls set_viewport every
+  // paint/tick with a stable viewport; bumping every time made Failed.generation
+  // never match m_generation, so failed cells were re-requested every 33ms
+  // (biltoo-1042 no-spam was ineffective on the real host path).
+  bool const plan_changed =
+      out.target_scale != m_target_scale || out.visible_keys != m_visible_keys;
+  if (plan_changed) {
+    ++m_generation;
+  }
+
   m_target_scale = out.target_scale;
   m_visible_keys = out.visible_keys;
 
@@ -228,8 +238,9 @@ int TileSession::issue_requests(int budget)
               e->state == TileState::InFlight)) {
       continue;
     }
-    // Same viewport generation already failed — do not re-hammer the source
-    // every 33ms. A later set_viewport bumps generation and allows retry.
+    // Same plan generation already failed — do not re-hammer the source
+    // every 33ms. A plan change (visible keys / target scale) bumps
+    // generation and allows retry.
     if (e && e->state == TileState::Failed && e->generation == m_generation) {
       continue;
     }

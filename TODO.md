@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1055-tilelod-failed-nospam-generation.** Only bump tile plan generation when keys/scale change.
+Prior: **1054**.
+
+### Change
+- `TileSession::set_viewport`: `++m_generation` only when target scale or visible keys change
+- Identical host re-sets (every paint/tick) no longer clear Failed no-spam
+- Test: same viewport after fail must not re-request
+- Docs: TILE_LOD.md
+
+### Apply
+```bash
+git pull /path/to/biltoo-1055-tilelod-failed-nospam-generation.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1055**
+- [x] Failed cells not re-requested every 33ms on stable viewport
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist
+- Optional: pure tilelod_test in CI without full Qt build
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1054-tilelod-gallery-cell-threshold.** Fix Gallery on-screen cell tile threshold.
 Prior: **1053**.
 

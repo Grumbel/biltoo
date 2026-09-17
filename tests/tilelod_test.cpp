@@ -500,14 +500,14 @@ void test_failed_no_spam_same_generation()
 {
   FakeTileSource src;
   tilelod::TileSession session(&src);
-  session.set_content_size(256, 256);
+  // Large enough for multiple pyramid scales so density can change the plan.
+  session.set_content_size(2048, 2048);
   tilelod::Viewport vp;
-  vp.content_rect = {0, 0, 256, 256};
-  vp.device_per_content = 1.0;
+  vp.content_rect = {0, 0, 512, 512};
+  vp.device_per_content = 0.25; // coarse target scale
   session.set_viewport(vp);
   int n = session.issue_requests(4);
   CHECK(n >= 1);
-  int const first = static_cast<int>(src.requested.size());
   // Complete as failed
   auto keys = src.requested;
   src.requested.clear();
@@ -515,13 +515,19 @@ void test_failed_no_spam_same_generation()
     session.inject_completion(k, std::nullopt);
   }
   session.pump();
-  // Same generation: should not re-request
+  // Same plan: should not re-request
   n = session.issue_requests(8);
   CHECK_EQ(n, 0);
   CHECK_EQ(static_cast<int>(src.requested.size()), 0);
 
-  // New viewport generation allows retry
-  vp.content_rect = {1, 1, 255, 255};
+  // Host re-sets the same viewport every tick — must still not spam.
+  session.set_viewport(vp);
+  n = session.issue_requests(8);
+  CHECK_EQ(n, 0);
+  CHECK_EQ(static_cast<int>(src.requested.size()), 0);
+
+  // Plan change (finer target scale) allows retry
+  vp.device_per_content = 2.0;
   session.set_viewport(vp);
   n = session.issue_requests(8);
   CHECK(n >= 1);
