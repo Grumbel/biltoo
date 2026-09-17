@@ -11,7 +11,11 @@
 
 namespace tilelod {
 
-TileSession::TileSession(TileSource* source) : m_source(source) {}
+TileSession::TileSession(TileSource* source, TileMemoryCache* shared_cache)
+    : m_source(source)
+    , m_cache(shared_cache ? shared_cache : &m_owned_cache)
+{
+}
 
 void TileSession::set_content_size(int width, int height, int min_scale)
 {
@@ -73,15 +77,15 @@ int TileSession::pump()
   for (auto& pc : batch) {
     // Ignore completions from older viewport generations when key is InFlight
     // for a newer gen — still accept Succeeded data for fallback utility.
-    CacheEntry const* existing = m_cache.find(pc.key);
+    CacheEntry const* existing = m_cache->find(pc.key);
     if (existing && existing->state == TileState::InFlight &&
         existing->generation > pc.generation) {
       continue;
     }
     if (pc.bitmap && pc.bitmap->valid()) {
-      m_cache.set_succeeded(pc.key, std::move(*pc.bitmap), pc.generation);
+      m_cache->set_succeeded(pc.key, std::move(*pc.bitmap), pc.generation);
     } else {
-      m_cache.set_failed(pc.key, pc.generation);
+      m_cache->set_failed(pc.key, pc.generation);
     }
     ++applied;
   }
@@ -106,7 +110,7 @@ int TileSession::issue_requests(int budget)
   double const cy = m_viewport.content_rect.y + m_viewport.content_rect.h * 0.5;
 
   for (TileKey const& key : m_visible_keys) {
-    CacheEntry const* e = m_cache.find(key);
+    CacheEntry const* e = m_cache->find(key);
     if (e && (e->state == TileState::Succeeded ||
               e->state == TileState::InFlight)) {
       continue;
@@ -132,7 +136,7 @@ int TileSession::issue_requests(int budget)
   std::uint64_t const gen = m_generation;
   for (int i = 0; i < n; ++i) {
     TileKey const& key = missing[static_cast<size_t>(i)].key;
-    m_cache.set_in_flight(key, gen);
+    m_cache->set_in_flight(key, gen);
     batch.push_back(key);
   }
 
@@ -152,7 +156,7 @@ void TileSession::cancel_obsolete()
   }
   std::set<TileKey> visible(m_visible_keys.begin(), m_visible_keys.end());
   std::vector<TileKey> drop;
-  for (TileKey const& key : m_cache.in_flight_keys()) {
+  for (TileKey const& key : m_cache->in_flight_keys()) {
     if (visible.find(key) == visible.end()) {
       drop.push_back(key);
     }
@@ -162,9 +166,14 @@ void TileSession::cancel_obsolete()
   }
   m_source->cancel(drop);
   for (TileKey const& key : drop) {
-    // Leave entry as InFlight until completion, or erase so we can re-request
-    // if it becomes visible again — erase so issue_requests can retry.
-    m_cache.erase(key);
+    // Drop InFlight so the key can be re-requested if it returns to view.
+    // Never erase Succeeded tiles — shared caches keep stand-ins for other
+    // viewports of the same path.
+    CacheEntry const* e = m_cache->find(key);
+    if (e && e->state == TileState::Succeeded) {
+      continue;
+    }
+    m_cache->erase(key);
   }
 }
 
@@ -178,14 +187,14 @@ DrawPlan TileSession::draw_plan() const
   in.visible_keys = m_visible_keys;
   in.has_lqip = m_has_lqip;
   in.lookup = [this](TileKey const& k) -> CacheEntry const* {
-    return m_cache.find(k);
+    return m_cache->find(k);
   };
   return build_draw_plan(in);
 }
 
 bool TileSession::has_any_succeeded_tile() const
 {
-  for (auto const& [k, e] : m_cache.map()) {
+  for (auto const& [k, e] : m_cache->map()) {
     (void)k;
     if (e.state == TileState::Succeeded && e.bitmap.valid()) {
       return true;

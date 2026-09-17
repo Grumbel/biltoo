@@ -4,8 +4,8 @@
 #ifndef BILTOO_TILELOD_TILE_LOD_CONTROLLER_HPP
 #define BILTOO_TILELOD_TILE_LOD_CONTROLLER_HPP
 
+#include "tilelod/tile_lod_registry.hpp"
 #include "tilelod/tile_session.hpp"
-#include "tilelod/thumtoo_tile_source.hpp"
 #include "tilelod/tile_painter.hpp"
 
 #include <QImage>
@@ -16,12 +16,16 @@
 namespace tilelod {
 
 /**
- * Host glue for one ImageItem path: owns ThumtooTileSource + TileSession.
+ * Host glue for one ImageItem: shared path cache + private viewport session.
  * Call from GUI thread: setPath, setContentSize, updateViewport, tick, paint.
  */
 class TileLodController {
 public:
   TileLodController();
+  ~TileLodController();
+
+  TileLodController(TileLodController const&) = delete;
+  TileLodController& operator=(TileLodController const&) = delete;
 
   void setPath(QString path);
   QString path() const { return m_path; }
@@ -56,11 +60,12 @@ public:
   static bool shouldUseTiles(double devicePerContent, int contentLongEdge);
 
 private:
-  void ensureSource();
+  void bindSession();
+  void unbind();
 
   QString m_path;
   bool m_enabled = true;
-  std::unique_ptr<ThumtooTileSource> m_source;
+  std::shared_ptr<SharedPathTiles> m_shared;
   std::unique_ptr<TileSession> m_session;
 };
 

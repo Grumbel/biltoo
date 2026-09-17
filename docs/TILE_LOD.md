@@ -252,3 +252,11 @@ zoom first.
 - Gallery soft cells: still soft-only (`galleryCellSize` non-empty).
 - Workspace: same tick path as Image for selection / up to 8 items.
 - Crossing into tile band cancels PathRaster PreferCache for that path.
+
+
+## biltoo-1029 — shared path cache
+
+- **Shared:** `ThumtooTileSource` + `TileMemoryCache` per path (`TileLodRegistry`).
+- **Per item:** `TileSession` (viewport, request budget, generation).
+- Workspace duplicates of the same file reuse Succeeded tiles in RAM.
+- Cancel obsolete never drops Succeeded entries from a shared cache.

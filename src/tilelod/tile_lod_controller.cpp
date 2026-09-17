@@ -3,85 +3,59 @@
 
 #include "tilelod/tile_lod_controller.hpp"
 
-#include "thumtoocache.h"
-
 #include <QPainter>
-#include <cstring>
 
 namespace tilelod {
 
 TileLodController::TileLodController() = default;
+
+TileLodController::~TileLodController() { unbind(); }
 
 bool TileLodController::shouldUseTiles(double devicePerContent, int contentLongEdge)
 {
   if (!(devicePerContent > 0.0) || contentLongEdge <= 0) {
     return false;
   }
-  // Soft ladder max long edge is 512. When the on-screen long edge exceeds
-  // that, grid tiles are the correct path for sharp display.
   double const screenLong = devicePerContent * static_cast<double>(contentLongEdge);
   return screenLong > 512.0 * 1.05;
 }
 
-void TileLodController::ensureSource()
+void TileLodController::unbind()
 {
-  if (m_source) {
+  m_session.reset();
+  if (m_shared) {
+    QString const p = m_shared->path;
+    m_shared.reset();
+    TileLodRegistry::instance().release(p);
+  }
+}
+
+void TileLodController::bindSession()
+{
+  if (!m_shared || !m_shared->source || !m_shared->cache) {
+    m_session.reset();
     return;
   }
-  auto fetch = [](std::string const& /*uri*/,
-                  std::vector<ThumtooTileSource::TileCoord> const& coords,
-                  std::function<void(std::size_t, std::optional<TileBitmap>)> on_cell) {
-    // URI is bound via path on the controller; ThumtooCache maps path → uri.
-    // We pass path through a side channel: requestTiles uses m_path from outer.
-    // This lambda is replaced in setPath with a path-capturing one.
-    Q_UNUSED(coords);
-    Q_UNUSED(on_cell);
-  };
-  m_source = std::make_unique<ThumtooTileSource>(std::string{}, std::move(fetch));
-  m_session = std::make_unique<TileSession>(m_source.get());
+  m_session = std::make_unique<TileSession>(m_shared->source.get(),
+                                            m_shared->cache.get());
 }
 
 void TileLodController::setPath(QString path)
 {
+  if (m_path == path && m_shared) {
+    return;
+  }
+  unbind();
   m_path = std::move(path);
-  ensureSource();
-
-  QString pathCopy = m_path;
-  auto fetch = [pathCopy](std::string const& /*uri*/,
-                          std::vector<ThumtooTileSource::TileCoord> const& coords,
-                          std::function<void(std::size_t, std::optional<TileBitmap>)> on_cell) {
-    QVector<ThumtooCache::TileCoord> qcoords;
-    qcoords.reserve(static_cast<int>(coords.size()));
-    for (auto const& c : coords) {
-      qcoords.push_back({c.scale, c.x, c.y});
-    }
-    ThumtooCache::requestTiles(
-        pathCopy, qcoords,
-        [on_cell](std::size_t index, QImage image) {
-          if (image.isNull()) {
-            on_cell(index, std::nullopt);
-            return;
-          }
-          QImage rgba = image.convertToFormat(QImage::Format_RGBA8888);
-          TileBitmap bm;
-          bm.width = rgba.width();
-          bm.height = rgba.height();
-          bm.codec = "rgba8";
-          bm.bytes.resize(static_cast<size_t>(bm.width * bm.height * 4));
-          for (int y = 0; y < bm.height; ++y) {
-            std::memcpy(bm.bytes.data() + static_cast<size_t>(y * bm.width * 4),
-                        rgba.constScanLine(y), static_cast<size_t>(bm.width * 4));
-          }
-          on_cell(index, std::move(bm));
-        });
-  };
-  m_source = std::make_unique<ThumtooTileSource>(std::string{"path"}, std::move(fetch));
-  m_session = std::make_unique<TileSession>(m_source.get());
+  if (m_path.isEmpty()) {
+    return;
+  }
+  m_shared = TileLodRegistry::instance().acquire(m_path);
+  bindSession();
 }
 
 void TileLodController::setContentSize(int w, int h)
 {
-  ensureSource();
   if (m_session) {
     m_session->set_content_size(w, h);
   }

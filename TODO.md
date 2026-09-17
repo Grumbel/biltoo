@@ -2,6 +2,36 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1029-tilelod-shared-path-cache.** Path registry shares RAM tiles; per-item viewport sessions.
+Prior: **1028**.
+
+### Change
+- `TileSession` accepts optional shared `TileMemoryCache*`
+- `TileLodRegistry` + `SharedPathTiles` (ThumtooTileSource + cache per path)
+- `TileLodController` acquires/releases registry; private session per item
+- `cancel_obsolete` keeps Succeeded tiles (shared stand-ins)
+- Unit test: two sessions, one shared cache — second draws without re-request
+
+### Apply
+```bash
+git pull /path/to/biltoo-1029-tilelod-shared-path-cache.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1029**
+- [x] Shared-cache unit test passes
+- [ ] Runtime: two Workspace items same path share tile RAM
+
+### Next
+- Runtime verification on prepared pyramid
+- Gallery large-cell tiles (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1028-tilelod-image-workspace-fix.** Image-mode tiles (no interactive req); Workspace tick; PreferCache cancel.
 Prior: **1027**.
 

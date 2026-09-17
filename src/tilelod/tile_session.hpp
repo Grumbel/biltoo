@@ -22,7 +22,12 @@ namespace tilelod {
  */
 class TileSession {
 public:
-  explicit TileSession(TileSource* source);
+  /**
+   * @param source non-owning tile backend
+   * @param shared_cache optional shared RAM cache (e.g. per path). When null,
+   *        the session owns a private TileMemoryCache.
+   */
+  explicit TileSession(TileSource* source, TileMemoryCache* shared_cache = nullptr);
 
   void set_content_size(int width, int height, int min_scale = 0);
   int content_w() const { return m_content_w; }
@@ -58,8 +63,8 @@ public:
 
   DrawPlan draw_plan() const;
 
-  TileMemoryCache const& cache() const { return m_cache; }
-  TileMemoryCache& cache() { return m_cache; }
+  TileMemoryCache const& cache() const { return *m_cache; }
+  TileMemoryCache& cache() { return *m_cache; }
 
   /// True if any Succeeded tile exists in the cache (host may drop LQIP fill).
   bool has_any_succeeded_tile() const;
@@ -89,7 +94,8 @@ private:
   std::vector<TileKey> m_visible_keys;
   std::uint64_t m_generation = 0;
 
-  TileMemoryCache m_cache;
+  TileMemoryCache m_owned_cache;
+  TileMemoryCache* m_cache = nullptr;  // → shared or &m_owned_cache
 
   mutable std::mutex m_pending_mutex;
   std::vector<PendingCompletion> m_pending;

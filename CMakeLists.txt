@@ -194,6 +194,7 @@ add_executable(biltoo
   src/tilelod/tile_painter.cpp
   src/tilelod/thumtoo_tile_source.cpp
   src/tilelod/tile_lod_controller.cpp
+  src/tilelod/tile_lod_registry.cpp
   src/icons.qrc
 )
 

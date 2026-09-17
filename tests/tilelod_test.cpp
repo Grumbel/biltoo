@@ -293,6 +293,39 @@ void test_edge_tile_content_rect()
   CHECK_EQ(r1.w, 44);
 }
 
+
+void test_shared_cache_two_sessions()
+{
+  FakeTileSource src;
+  tilelod::TileMemoryCache shared;
+  tilelod::TileSession a(&src, &shared);
+  tilelod::TileSession b(&src, &shared);
+  a.set_content_size(512, 512);
+  b.set_content_size(512, 512);
+
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;
+  a.set_viewport(vp);
+  a.issue_requests(4);
+  src.complete_all_requested(42);
+  CHECK(a.pump() >= 1);
+  CHECK(a.has_any_succeeded_tile());
+
+  // B sees the same Succeeded tiles without requesting.
+  vp.content_rect = {0, 0, 256, 256};
+  b.set_viewport(vp);
+  auto plan = b.draw_plan();
+  CHECK(plan.any_tile);
+  int exact = 0;
+  for (auto const& c : plan.commands) {
+    if (c.kind == tilelod::DrawKind::ExactTile) {
+      ++exact;
+    }
+  }
+  CHECK(exact >= 1);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -319,6 +352,7 @@ int main()
   test_budget_and_session();
   test_cancel_on_viewport_change();
   test_edge_tile_content_rect();
+  test_shared_cache_two_sessions();
   test_parent_key();
 
   if (g_failures) {
