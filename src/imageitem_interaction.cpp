@@ -1066,6 +1066,22 @@ QVariant ImageItem::itemChange(GraphicsItemChange change, const QVariant &value)
 }
 
 
+qreal ImageItem::tileDevicePerContent() const
+{
+    // Logical view scale × widget devicePixelRatio (Retina / fractional DPI).
+    qreal dpr = 1.0;
+    if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
+        QWidget *vp = scene()->views().first()->viewport();
+        if (vp) {
+            dpr = vp->devicePixelRatioF();
+        }
+    }
+    if (!(dpr > 0.0)) {
+        dpr = 1.0;
+    }
+    return screenScale() * dpr;
+}
+
 bool ImageItem::tileLodWanted() const
 {
     // Image mode uses non-interactive items; Workspace uses interactive ones.
@@ -1081,7 +1097,7 @@ bool ImageItem::tileLodWanted() const
         return false;
     }
     return tilelod::TileLodController::shouldUseTiles(
-        screenScale(), qMax(isz.width(), isz.height()));
+        tileDevicePerContent(), qMax(isz.width(), isz.height()));
 }
 
 void ImageItem::prepareTileLod()
@@ -1099,7 +1115,7 @@ void ImageItem::prepareTileLod()
     m_tileLod->setContentSize(isz.width(), isz.height());
     m_tileLod->setHasLqip(hasDisplayPixels());
 
-    const qreal dpc = screenScale();
+    const qreal dpc = tileDevicePerContent();
     QRectF vis = contentRect();
     if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
         QGraphicsView *view = scene()->views().first();
@@ -1109,7 +1125,9 @@ void ImageItem::prepareTileLod()
         vis = localVis.intersected(contentRect());
     }
     if (!vis.isEmpty()) {
-        m_tileLod->updateViewport(vis, dpc, 64.0);
+        // Margin grows with zoom so pan has prefetched neighbours.
+        const double margin = 64.0 * qMax(1.0, dpc);
+        m_tileLod->updateViewport(vis, dpc, margin);
     }
 }
 
@@ -1119,8 +1137,8 @@ void ImageItem::tickTileLod(int budget)
     if (!m_tileLod) {
         return;
     }
-    m_tileLod->tick(budget);
-    if (m_tileLod->hasAnyTile()) {
+    const int applied = m_tileLod->tick(budget);
+    if (applied > 0 || m_tileLod->hasAnyTile()) {
         update();
     }
 }

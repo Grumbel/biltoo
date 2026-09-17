@@ -2660,13 +2660,18 @@ void ImageView::tickPrimaryTileLod(int budget)
         if (!item) {
             continue;
         }
+        const QString path = item->path();
         if (item->tileLodWanted()) {
             anyWanted = true;
-            // Drop PreferCache / PathRaster whole-frame climb for this path —
-            // tiles own the deep-zoom band (TILE_LOD Phase C partial).
-            if (m_pathRaster && !item->path().isEmpty()) {
-                m_pathRaster->cancel(item->path());
+            // Cancel PreferCache once per path when entering the tile band —
+            // not every tick (avoids thrashing PathRaster state).
+            if (m_pathRaster && !path.isEmpty()
+                && !m_tileLodPreferCancelled.contains(path)) {
+                m_pathRaster->cancel(path);
+                m_tileLodPreferCancelled.insert(path);
             }
+        } else if (!path.isEmpty()) {
+            m_tileLodPreferCancelled.remove(path);
         }
         item->tickTileLod(budget);
     }

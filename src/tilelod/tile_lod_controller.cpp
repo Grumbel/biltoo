@@ -82,13 +82,14 @@ void TileLodController::updateViewport(QRectF const& contentVisible,
   m_session->set_viewport(vp, marginContent);
 }
 
-void TileLodController::tick(int requestBudget)
+int TileLodController::tick(int requestBudget)
 {
   if (!m_session || !m_enabled) {
-    return;
+    return 0;
   }
-  m_session->pump();
+  int const applied = m_session->pump();
   m_session->issue_requests(requestBudget);
+  return applied;
 }
 
 bool TileLodController::paint(QPainter* painter, QImage const& lqipUnderlay) const

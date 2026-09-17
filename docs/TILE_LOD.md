@@ -260,3 +260,9 @@ zoom first.
 - **Per item:** `TileSession` (viewport, request budget, generation).
 - Workspace duplicates of the same file reuse Succeeded tiles in RAM.
 - Cancel obsolete never drops Succeeded entries from a shared cache.
+
+
+## biltoo-1030
+
+- Device density includes **devicePixelRatioF** (logical zoom × DPR).
+- PreferCache cancel is **edge-triggered** (once per path in tile band).

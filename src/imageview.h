@@ -2122,6 +2122,8 @@ private:
     QTimer *m_statusRefreshTimer = nullptr;
     /** Pump tile LOD while zoomed (Image mode). */
     QTimer *m_tileLodTimer = nullptr;
+    /** Paths for which PreferCache was cancelled after entering tile band. */
+    QSet<QString> m_tileLodPreferCancelled;
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
     bool m_perfEnabled = false;
     QElapsedTimer m_perfFpsClock;

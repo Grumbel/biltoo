@@ -40,8 +40,8 @@ public:
   void updateViewport(QRectF const& contentVisible, double devicePerContent,
                       double marginContent = 0.0);
 
-  /** pump completions + issue up to budget requests. */
-  void tick(int requestBudget = 8);
+  /** pump completions + issue up to budget requests. @return completions applied. */
+  int tick(int requestBudget = 8);
 
   /** Paint tiles into content space; returns true if any tile was drawn. */
   bool paint(QPainter* painter, QImage const& lqipUnderlay = {}) const;

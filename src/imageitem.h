@@ -310,6 +310,8 @@ public:
      * Safe during paint; does not issue network/worker work beyond state.
      */
     void prepareTileLod();
+    /** screenScale × viewport devicePixelRatioF. */
+    qreal tileDevicePerContent() const;
     /** Pump completions and issue budgeted requests (view after zoom/pan). */
     void tickTileLod(int budget = 8);
     /** True when on-screen need exceeds soft max (tiles should own display). */

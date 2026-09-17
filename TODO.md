@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1030-tilelod-hidpi-cancel-once.** HiDPI density; PreferCache cancel once; tick returns applied.
+Prior: **1029**.
+
+### Change
+- `tileDevicePerContent()` = screenScale × viewport devicePixelRatioF (Retina)
+- Prefetch margin scales with density
+- PreferCache/PathRaster cancel **once** per path when entering tile band (no thrash)
+- `TileLodController::tick` returns completion count; item updates on applied > 0
+
+### Apply
+```bash
+git pull /path/to/biltoo-1030-tilelod-hidpi-cancel-once.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1030**
+- [x] Pure tilelod tests pass
+
+### Next
+- Runtime verify on HiDPI + prepared pyramid
+- Gallery large-cell tiles (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1029-tilelod-shared-path-cache.** Path registry shares RAM tiles; per-item viewport sessions.
 Prior: **1028**.
 
