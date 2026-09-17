@@ -37,6 +37,11 @@ signals:
     void ladderReady(const QString &path, int maxEdge, const QImage &image);
     /** PixelSource as int (thumtoo::PixelSource); 0 = unknown. */
     void ladderProvenance(const QString &path, int maxEdge, int pixelSource);
+    /**
+     * First time this process sees durable tiles for path (pyramid ready).
+     * ImageView starts tile LOD if already past soft max.
+     */
+    void durableTilesReady(const QString &path);
 };
 
 /** Process-wide notifier (created on first use). */

@@ -1851,8 +1851,20 @@ bool hasDurableTiles(const QString &path)
         }
     }
     if (yes) {
-        std::lock_guard lock(g_mu);
-        g_durableTilesYes.insert(path);
+        bool first = false;
+        {
+            std::lock_guard lock(g_mu);
+            first = !g_durableTilesYes.contains(path);
+            g_durableTilesYes.insert(path);
+        }
+        if (first) {
+            // GUI may already be deep-zoomed with the tile timer stopped; wake it.
+            const QString pathCopy = path;
+            QMetaObject::invokeMethod(
+                bridge(),
+                [pathCopy]() { emit bridge()->durableTilesReady(pathCopy); },
+                Qt::QueuedConnection);
+        }
     }
     return yes;
 #else

@@ -373,6 +373,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Tile source epoch not per-request | Done (1060) |
 | tileLodWanted requires durable tiles | Done (1061) |
 | hasDurableTiles positive memo | Done (1062) |
+| durableTilesReady wakes tile tick | Done (1063) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -390,6 +391,14 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## durableTilesReady (biltoo-1063)
+
+First process-wide positive `hasDurableTiles` emits `Bridge::durableTilesReady`.
+ImageView starts `tickPrimaryTileLod` so a mid-session pyramid (or FocusFull)
+can enter the tile band while already deep-zoomed (timer was stopped when
+wanted was false). `onLadderReady` also ticks as a second path.
 
 
 ## Durable tiles memo (biltoo-1062)

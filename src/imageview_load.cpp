@@ -1613,6 +1613,10 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
         maybeUpgradeCropFullRaster(path, image);
     }
 
+    // PreferCache/FocusFull may have co-built durable tiles; wake tile LOD if
+    // already past soft (timer may be stopped from a prior no-pyramid state).
+    tickPrimaryTileLod(6);
+
     if (!isGalleryMode()) {
         return;
     }

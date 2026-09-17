@@ -238,6 +238,12 @@ ImageView::ImageView(QWidget *parent)
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             &ImageView::onLadderReady);
+    connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::durableTilesReady, this,
+            [this](const QString &path) {
+                Q_UNUSED(path);
+                // Pyramid appeared mid-session; start tile pump if already in band.
+                tickPrimaryTileLod(8);
+            });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
         if (m_hudVisible || m_hudFlashVisible || m_slideshowPausedHud) {

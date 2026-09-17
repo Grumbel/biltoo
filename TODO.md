@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1063-tilelod-durable-tiles-ready-signal.** Wake tile LOD when durable tiles first appear.
+Prior: **1062**.
+
+### Change
+- `Bridge::durableTilesReady(path)` on first positive `hasDurableTiles` memo insert
+- ImageView connects → `tickPrimaryTileLod(8)`
+- `onLadderReady` also ticks (PreferCache/FocusFull may co-build tiles)
+- Fixes deep zoom with timer stopped until scroll when pyramid lands mid-session
+
+### Apply
+```bash
+git pull /path/to/biltoo-1063-tilelod-durable-tiles-ready-signal.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1063**
+- [x] Mid-session pyramid can enter tile band without requiring a zoom gesture
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1062-tilelod-durable-tiles-memo.** Memoize positive hasDurableTiles results.
 Prior: **1061**.
 
