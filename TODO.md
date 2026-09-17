@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1056-tilelod-tick-update-throttle.** Repaint on tile completion or plan change only.
+Prior: **1055**.
+
+### Change
+- `tickTileLod`: `update()` only when `applied > 0` or plan generation changed
+- Avoids continuous 250ms repaints while covered (Gallery DeviceCoordinateCache)
+- `setPath`: clear suppress + last-update gen; fix indent
+
+### Apply
+```bash
+git pull /path/to/biltoo-1056-tilelod-tick-update-throttle.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1056**
+- [x] Covered heartbeat does not force update every tick
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1055-tilelod-failed-nospam-generation.** Only bump tile plan generation when keys/scale change.
 Prior: **1054**.
 

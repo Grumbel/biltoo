@@ -1181,6 +1181,7 @@ void ImageItem::setTileLodSuppressed(bool on)
         // Drop private session so paint cannot draw stale cells over the
         // crop-draft full frame; shared path cache is left intact.
         m_tileLod.reset();
+        m_tileLodLastUpdateGen = 0;
         clearTileGradedCache();
     }
 }
@@ -1282,7 +1283,14 @@ void ImageItem::tickTileLod(int budget)
         return;
     }
     const int applied = m_tileLod->tick(budget);
-    if (applied > 0 || m_tileLod->hasAnyTile()) {
+    // Repaint when new cells land, or when the plan changed (pan/zoom needs
+    // parent UV stand-ins without waiting for completions). Do not update on
+    // every 250ms heartbeat while covered — that defeated DeviceCoordinateCache
+    // in Gallery and burned CPU with no visual change.
+    const std::uint64_t gen =
+        m_tileLod->session() ? m_tileLod->session()->generation() : 0;
+    if (applied > 0 || gen != m_tileLodLastUpdateGen) {
+        m_tileLodLastUpdateGen = gen;
         update();
     }
 }

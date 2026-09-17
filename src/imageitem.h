@@ -14,6 +14,7 @@
 #include <QString>
 #include <QPolygonF>
 #include <QRect>
+#include <cstdint>
 #include <memory>
 
 #include "tilelod/tile_types.hpp"
@@ -392,6 +393,8 @@ private:
     std::unique_ptr<tilelod::TileLodController> m_tileLod;
     /** Crop-draft (and similar) freeze: no tile requests or paint. */
     bool m_tileLodSuppressed = false;
+    /** Last tile plan generation that triggered update() (avoid 250ms repaint spam). */
+    std::uint64_t m_tileLodLastUpdateGen = 0;
     mutable QHash<QString, QImage> m_tileGradedCache;
     mutable quint64 m_tileGradeSig = 0;
     SessionImageId m_sessionId = kInvalidSessionImageId;

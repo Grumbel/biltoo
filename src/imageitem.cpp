@@ -49,7 +49,9 @@ void ImageItem::setPath(const QString &path)
     }
     m_path = path;
     m_tileLod.reset();
-        clearTileGradedCache();
+    m_tileLodLastUpdateGen = 0;
+    m_tileLodSuppressed = false;
+    clearTileGradedCache();
 }
 
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)

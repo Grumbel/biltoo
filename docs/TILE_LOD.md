@@ -365,6 +365,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Crop draft suppresses tiles | Done (1053) |
 | Gallery on-screen cell threshold | Done (1054) |
 | Failed no-spam (plan-stable generation) | Done (1055) |
+| Tick update only on plan/completion | Done (1056) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -382,6 +383,20 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Tick update throttle (biltoo-1056)
+
+`tickTileLod` used to call `update()` whenever any tile had succeeded, including
+the 250 ms covered heartbeat with no new completions. That forced continuous
+repaints (and defeated Gallery `DeviceCoordinateCache`).
+
+Repaint now only when:
+
+- completions were applied (`applied > 0`), or
+- plan generation changed (pan/zoom needs parent UV stand-ins)
+
+`setPath` clears suppress + last-update generation.
 
 
 ## Failed no-spam generation (biltoo-1055)
