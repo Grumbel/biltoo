@@ -298,9 +298,12 @@ whole-frame climbs for that path:
 - Workspace quality climb already skipped; PathRaster cancel-once on enter
 
 
-## Coverage idle (biltoo-1036)
+## Coverage + heartbeat (biltoo-1036 / 1037)
 
-`TileSession::coverage()` reports exact Succeeded vs visible keys. The host
-33ms tile timer runs only while tiles are wanted **and** the viewport is not
-fully covered (or scale hold is still settling). Zoom/pan/decode-window calls
-restart the pump when coverage drops.
+`TileSession::coverage()` reports exact Succeeded vs visible keys.
+
+| State | Timer |
+|-------|--------|
+| Wanted + incomplete | 33ms pump |
+| Wanted + fully covered | 250ms heartbeat (pan discovers new cells) |
+| Not wanted | stopped |

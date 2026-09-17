@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1037-tilelod-coverage-heartbeat.** Slow heartbeat while covered so pan refills cells.
+Prior: **1036**.
+
+### Change
+- Covered + wanted → **250ms** tile timer (not stopped)
+- Incomplete + wanted → **33ms**
+- Not wanted → timer stopped
+- Avoids pan-after-coverage stall without paint→view circular deps
+
+### Apply
+```bash
+git pull /path/to/biltoo-1037-tilelod-coverage-heartbeat.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1037**
+- [x] Pure tilelod tests pass
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1036-tilelod-coverage-idle.** Viewport coverage; stop tile timer when complete.
 Prior: **1035**.
 

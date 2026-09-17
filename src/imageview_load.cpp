@@ -2701,16 +2701,19 @@ void ImageView::tickPrimaryTileLod(int budget)
         }
     }
 
-    // Pump only while tiles are wanted *and* the visible set is incomplete
-    // (or scale hold is settling). Stops the 33ms timer when idle at full
-    // coverage; zoom/pan/decode-window calls restart it.
-    if (anyWanted && anyIncomplete) {
+    // Fast pump (33ms) while incomplete; slow heartbeat (250ms) while covered
+    // so pan can discover new cells without a continuous high-rate timer.
+    // Stop entirely when no item wants tiles.
+    if (anyWanted) {
         if (!m_tileLodTimer) {
             m_tileLodTimer = new QTimer(this);
-            m_tileLodTimer->setInterval(33);
             connect(m_tileLodTimer, &QTimer::timeout, this, [this]() {
                 tickPrimaryTileLod(6);
             });
+        }
+        const int interval = anyIncomplete ? 33 : 250;
+        if (m_tileLodTimer->interval() != interval) {
+            m_tileLodTimer->setInterval(interval);
         }
         if (!m_tileLodTimer->isActive()) {
             m_tileLodTimer->start();
