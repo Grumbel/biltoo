@@ -16,9 +16,9 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-1030-tilelod-hidpi-cancel-once**.
-Next bundle number: **1031**
-**Tile LOD:** [docs/TILE_LOD.md](docs/TILE_LOD.md) — HiDPI density; PreferCache cancel once per path.
+Latest agent handoff: **TODO.md → biltoo-1031-tilelod-scale-hold**.
+Next bundle number: **1032**
+**Tile LOD:** [docs/TILE_LOD.md](docs/TILE_LOD.md) — scale hold; [TILE_LOD_RUNTIME.md](docs/TILE_LOD_RUNTIME.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
 **Environment variables:** [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) (debug traces, concurrency, cache paths, `nix develop` helpers); also `man biltoo`.

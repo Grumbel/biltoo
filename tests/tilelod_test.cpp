@@ -326,6 +326,37 @@ void test_shared_cache_two_sessions()
   CHECK(exact >= 1);
 }
 
+
+void test_scale_hold_adjacent()
+{
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  session.set_content_size(4096, 4096);
+
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 4096, 4096};
+  // 1:1 → scale 0
+  vp.device_per_content = 1.0;
+  session.set_viewport(vp);
+  CHECK_EQ(session.target_scale(), 0);
+  CHECK_EQ(session.desired_scale(), 0);
+
+  // Adjacent coarser (0.5 → scale 1). Hold should keep scale 0 briefly.
+  vp.device_per_content = 0.5;
+  session.set_viewport(vp);
+  CHECK_EQ(session.desired_scale(), 1);
+  CHECK_EQ(session.target_scale(), 0);  // still holding
+  CHECK(session.request_scale_holding());
+
+  // Large jump denser than one step: commit immediately.
+  // need ~0.125 → scale ~3
+  vp.device_per_content = 0.125;
+  session.set_viewport(vp);
+  CHECK(session.desired_scale() >= 2);
+  CHECK_EQ(session.target_scale(), session.desired_scale());
+  CHECK(!session.request_scale_holding());
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -353,6 +384,7 @@ int main()
   test_cancel_on_viewport_change();
   test_edge_tile_content_rect();
   test_shared_cache_two_sessions();
+  test_scale_hold_adjacent();
   test_parent_key();
 
   if (g_failures) {

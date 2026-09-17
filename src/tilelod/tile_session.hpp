@@ -10,6 +10,7 @@
 #include "tilelod/tile_source.hpp"
 #include "tilelod/tile_types.hpp"
 
+#include <chrono>
 #include <mutex>
 #include <optional>
 #include <vector>
@@ -42,6 +43,9 @@ public:
   void set_viewport(Viewport const& vp, double margin_content = 0.0);
 
   int target_scale() const { return m_target_scale; }
+  /** Ideal scale from density before hold damping. */
+  int desired_scale() const { return m_desired_scale; }
+  bool request_scale_holding() const;
   std::vector<TileKey> const& visible_keys() const { return m_visible_keys; }
   std::uint64_t generation() const { return m_generation; }
 
@@ -91,8 +95,18 @@ private:
 
   Viewport m_viewport;
   int m_target_scale = 0;
+  int m_desired_scale = 0;
   std::vector<TileKey> m_visible_keys;
   std::uint64_t m_generation = 0;
+
+  // Debounce adjacent scale steps during continuous zoom (Galapix lesson).
+  bool m_have_stable_scale = false;
+  int m_stable_scale = 0;
+  int m_pending_scale = 0;
+  std::chrono::steady_clock::time_point m_pending_since{};
+  static constexpr std::chrono::milliseconds kScaleHold{150};
+
+  int stable_request_scale(int desired_scale);
 
   TileMemoryCache m_owned_cache;
   TileMemoryCache* m_cache = nullptr;  // → shared or &m_owned_cache

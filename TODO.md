@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1031-tilelod-scale-hold.** Debounce adjacent scale steps; runtime checklist.
+Prior: **1030**.
+
+### Change
+- `TileSession::stable_request_scale` — hold adjacent scale ~150ms (Galapix lesson); large jumps commit immediately
+- Visible keys planned at held scale during continuous wheel zoom
+- Unit test: adjacent hold vs multi-step jump
+- `docs/TILE_LOD_RUNTIME.md` — manual verification checklist
+
+### Apply
+```bash
+git pull /path/to/biltoo-1031-tilelod-scale-hold.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1031**
+- [x] Scale-hold unit test passes
+
+### Next
+- Manual runtime on prepared pyramid (see TILE_LOD_RUNTIME.md)
+- Gallery large-cell tiles (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1030-tilelod-hidpi-cancel-once.** HiDPI density; PreferCache cancel once; tick returns applied.
 Prior: **1029**.
 

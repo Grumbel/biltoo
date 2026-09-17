@@ -266,3 +266,12 @@ zoom first.
 
 - Device density includes **devicePixelRatioF** (logical zoom × DPR).
 - PreferCache cancel is **edge-triggered** (once per path in tile band).
+
+
+## biltoo-1031 — scale hold
+
+During continuous zoom, **adjacent** scale steps are held ~150ms before
+re-planning the visible grid (avoids enqueueing intermediate pyramids every
+wheel notch). Jumps of more than one scale commit immediately.
+
+Manual checks: [TILE_LOD_RUNTIME.md](TILE_LOD_RUNTIME.md).

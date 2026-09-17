@@ -29,6 +29,52 @@ void TileSession::set_content_size(int width, int height, int min_scale)
   ++m_generation;
   m_visible_keys.clear();
   m_target_scale = m_max_scale;
+  m_desired_scale = m_max_scale;
+  m_have_stable_scale = false;
+}
+
+
+int TileSession::stable_request_scale(int desired_scale)
+{
+  using clock = std::chrono::steady_clock;
+  if (!m_have_stable_scale) {
+    m_have_stable_scale = true;
+    m_stable_scale = desired_scale;
+    m_pending_scale = desired_scale;
+    m_pending_since = clock::now();
+    return m_stable_scale;
+  }
+  if (desired_scale == m_stable_scale) {
+    m_pending_scale = desired_scale;
+    return m_stable_scale;
+  }
+  int const delta = desired_scale > m_stable_scale
+                        ? desired_scale - m_stable_scale
+                        : m_stable_scale - desired_scale;
+  // Large jumps (fit, multi-notch) commit immediately.
+  if (delta > 1) {
+    m_stable_scale = desired_scale;
+    m_pending_scale = desired_scale;
+    m_pending_since = clock::now();
+    return m_stable_scale;
+  }
+  // Adjacent step: hold previous scale briefly so wheel zoom does not
+  // enqueue a full intermediate grid every frame.
+  if (desired_scale != m_pending_scale) {
+    m_pending_scale = desired_scale;
+    m_pending_since = clock::now();
+    return m_stable_scale;
+  }
+  if (clock::now() - m_pending_since >= kScaleHold) {
+    m_stable_scale = desired_scale;
+    return m_stable_scale;
+  }
+  return m_stable_scale;
+}
+
+bool TileSession::request_scale_holding() const
+{
+  return m_have_stable_scale && m_desired_scale != m_stable_scale;
 }
 
 void TileSession::set_viewport(Viewport const& vp, double margin_content)
@@ -44,6 +90,18 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
   in.viewport = vp;
   in.margin_content = margin_content;
 
+  // Desired scale from density, then hold adjacent steps during continuous zoom.
+  PlannerOutput const ideal = plan_visible_tiles(in);
+  m_desired_scale = ideal.target_scale;
+  int const held = stable_request_scale(m_desired_scale);
+  in.viewport = vp;
+  // Re-plan visible keys at the held request scale (not every intermediate).
+  if (held != ideal.target_scale) {
+    // Force planner to use held scale by adjusting density so target matches held.
+    // denser → lower scale. We instead set max=min=held via temporary clamp.
+    in.min_scale = held;
+    in.max_scale = held;
+  }
   PlannerOutput const out = plan_visible_tiles(in);
   m_target_scale = out.target_scale;
   m_visible_keys = out.visible_keys;
