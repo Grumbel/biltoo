@@ -290,8 +290,9 @@ the AABB of transformed corners for viewport request and draw destinations.
 
 ## PreferCache vs tiles (biltoo-1035)
 
-When `tileLodWanted()` is true, hosts must not schedule PreferCache/Full
-whole-frame climbs for that path:
+When `tileLodWanted()` is true (on-screen need past soft **and** durable
+tiles exist), hosts must not schedule PreferCache/Full whole-frame climbs
+for that path:
 
 - Gallery decode window skips those cells
 - `requestEscalateClimb` returns early for Image-mode tile-band items
@@ -370,6 +371,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Tile fetch without QImage round-trip | Done (1058) |
 | Identity tile QImage paint cache | Done (1059) |
 | Tile source epoch not per-request | Done (1060) |
+| tileLodWanted requires durable tiles | Done (1061) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -387,6 +389,14 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Durable tiles gate (biltoo-1061)
+
+`tileLodWanted()` requires `ThumtooCache::hasDurableTiles(path)`. Crossing into
+the tile band cancels PreferCache; without a pyramid every cell fails and soft
+would stick with no Prefer climb. PreferCache/Full keep authority until durable
+tiles exist (after `thumtoo-prepare --tiles` or FocusFull pyramid build).
 
 
 ## Tile source epoch (biltoo-1060)

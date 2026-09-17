@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1061-tilelod-require-durable-tiles.** tileLodWanted requires hasDurableTiles.
+Prior: **1060**.
+
+### Change
+- `tileLodWanted()` false unless `ThumtooCache::hasDurableTiles(path)`
+- Avoids cancelling PreferCache when no pyramid exists (soft would stick)
+- PreferCache/Full keep authority until durable tiles are present
+
+### Apply
+```bash
+git pull /path/to/biltoo-1061-tilelod-require-durable-tiles.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1061**
+- [x] Deep zoom without pyramid still uses PreferCache
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist (with and without prepared pyramid)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1060-tilelod-source-epoch-not-per-request.** Do not bump tile source epoch on every request.
 Prior: **1059**.
 

@@ -16,9 +16,9 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-1060-tilelod-source-epoch-not-per-request**.
-Next bundle number: **1061**
-**Tile LOD:** [docs/TILE_LOD.md](docs/TILE_LOD.md) — source epoch; identity QImage cache; fetch bitmap; [TILE_LOD_RUNTIME.md](docs/TILE_LOD_RUNTIME.md).
+Latest agent handoff: **TODO.md → biltoo-1061-tilelod-require-durable-tiles**.
+Next bundle number: **1062**
+**Tile LOD:** [docs/TILE_LOD.md](docs/TILE_LOD.md) — durable-tiles gate; source epoch; identity cache; [TILE_LOD_RUNTIME.md](docs/TILE_LOD_RUNTIME.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
 **Environment variables:** [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) (debug traces, concurrency, cache paths, `nix develop` helpers); also `man biltoo`.

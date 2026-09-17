@@ -1192,6 +1192,12 @@ bool ImageItem::tileLodWanted() const
     if (m_tileLodSuppressed || m_path.isEmpty() || !ThumtooCache::isAvailable()) {
         return false;
     }
+    // Without a durable pyramid, PreferCache/Full still own the display band.
+    // Entering the tile band cancels PreferCache; do not claim the band when
+    // no tiles exist or every cell would only fail (soft stuck forever).
+    if (!ThumtooCache::hasDurableTiles(m_path)) {
+        return false;
+    }
     const QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;

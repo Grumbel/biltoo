@@ -17,6 +17,8 @@ thumtoo-prepare --tiles ~/Pictures/big/
 ```
 
 Open the same path in biltoo (Image mode). Soft/LQIP may still appear first.
+Without a prepared pyramid, deep zoom stays on PreferCache (tile band is not
+claimed).
 
 ## Image mode
 
