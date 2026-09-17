@@ -1323,13 +1323,17 @@ QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
         m_tileGradedCache.clear();
         m_tileGradeSig = sig;
     }
+    // ~96 MiB of rgba cell images; LRU eviction instead of nuke-at-256.
+    constexpr int kGradedCacheMaxKiB = 96 * 1024;
+    if (m_tileGradedCache.maxCost() < kGradedCacheMaxKiB) {
+        m_tileGradedCache.setMaxCost(kGradedCacheMaxKiB);
+    }
     const QString ck = QStringLiteral("%1,%2,%3")
                            .arg(key.scale)
                            .arg(key.x)
                            .arg(key.y);
-    auto it = m_tileGradedCache.constFind(ck);
-    if (it != m_tileGradedCache.constEnd()) {
-        return it.value();
+    if (const QImage *hit = m_tileGradedCache.object(ck)) {
+        return *hit; // QImage is implicitly shared
     }
     QImage img = tilelod::tile_bitmap_to_qimage(e->bitmap);
     if (img.isNull()) {
@@ -1338,12 +1342,10 @@ QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
     if (!grade.isIdentity()) {
         img = applyColorAdjustments(img, grade);
     }
-    // Bound cache growth (visible set is typically tens of tiles).
-    if (m_tileGradedCache.size() > 256) {
-        m_tileGradedCache.clear();
-    }
-    m_tileGradedCache.insert(ck, img);
-    return img;
+    const int costKiB = qMax(1, (img.width() * img.height() * 4) / 1024);
+    auto *stored = new QImage(std::move(img));
+    m_tileGradedCache.insert(ck, stored, costKiB);
+    return *stored;
 }
 
 QSize ImageItem::tileNativeSize() const

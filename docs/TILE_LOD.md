@@ -675,6 +675,12 @@ does not hit Store `has_tile` every frame. Cleared on discover / scheduleTilePyr
 tick. Earlier code gave each target the full N (up to 8×N concurrent requests).
 
 
+## Graded tile QImage cache (biltoo-1091)
+
+Paint resolves Succeeded cells to QImage via a cost-bounded QCache (~96 MiB,
+LRU) instead of clearing the whole hash at 256 entries.
+
+
 ## Draw plan cache validity (biltoo-1090)
 
 `set_has_lqip` only dirties the cached plan when the flag changes. prepare no

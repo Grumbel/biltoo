@@ -10,6 +10,7 @@
 #include <QGraphicsPixmapItem>
 #include <QColor>
 #include <QImage>
+#include <QCache>
 #include <QHash>
 #include <QString>
 #include <QPolygonF>
@@ -400,7 +401,8 @@ private:
     QRectF m_tileLodLastVisSource;
     /** Last tile plan generation that triggered update() (avoid 250ms repaint spam). */
     std::uint64_t m_tileLodLastUpdateGen = 0;
-    mutable QHash<QString, QImage> m_tileGradedCache;
+    /** QImage cells for paint; cost ≈ KiB of rgba. Evicts LRU instead of full clear. */
+    mutable QCache<QString, QImage> m_tileGradedCache;
     mutable quint64 m_tileGradeSig = 0;
     SessionImageId m_sessionId = kInvalidSessionImageId;
     int m_sessionIndex = -1; // list order cache only

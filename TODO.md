@@ -2,6 +2,28 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1091-graded-tile-qcache.** Graded tile QImage cache uses QCache LRU (~96 MiB) instead of clear-at-256.
+Prior: **1090**.
+
+### Analysis
+- resolveGradedTile used QHash and `clear()` when size > 256, forcing a full
+  rgba re-convert of every visible cell on the next paint (zoom/pan jank).
+
+### Change
+- `QCache<QString, QImage>` with max cost ≈ 96 MiB (cost = image KiB).
+- LRU eviction keeps hot cells; grade signature change still clears.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1091-graded-tile-qcache.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1090-draw-plan-cache-fix.** set_has_lqip only dirties plan on change (was every paint).
 Prior: **1089**.
 
