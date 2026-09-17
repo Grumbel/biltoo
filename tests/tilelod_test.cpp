@@ -494,6 +494,38 @@ void test_shared_no_drop_finer()
   CHECK(any_scale0);
 }
 
+
+void test_failed_no_spam_same_generation()
+{
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  session.set_content_size(256, 256);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;
+  session.set_viewport(vp);
+  int n = session.issue_requests(4);
+  CHECK(n >= 1);
+  int const first = static_cast<int>(src.requested.size());
+  // Complete as failed
+  auto keys = src.requested;
+  src.requested.clear();
+  for (auto const& k : keys) {
+    session.inject_completion(k, std::nullopt);
+  }
+  session.pump();
+  // Same generation: should not re-request
+  n = session.issue_requests(8);
+  CHECK_EQ(n, 0);
+  CHECK_EQ(static_cast<int>(src.requested.size()), 0);
+
+  // New viewport generation allows retry
+  vp.content_rect = {1, 1, 255, 255};
+  session.set_viewport(vp);
+  n = session.issue_requests(8);
+  CHECK(n >= 1);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -527,6 +559,7 @@ int main()
   test_drop_finer_on_zoom_out();
   test_trim_protects_parents();
   test_shared_no_drop_finer();
+  test_failed_no_spam_same_generation();
   test_parent_key();
 
   if (g_failures) {

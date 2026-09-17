@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1042-tilelod-failed-no-spam.** Failed tiles not re-requested every tick.
+Prior: **1041**.
+
+### Change
+- `issue_requests` skips `Failed` entries for the **current** viewport generation
+- Viewport change bumps generation → allows retry
+- Unit test: fail → no spam; move viewport → request again
+
+### Apply
+```bash
+git pull /path/to/biltoo-1042-tilelod-failed-no-spam.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1042**
+- [x] Failed-no-spam unit test passes
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1041-tilelod-shared-no-drop-finer.** Zoom-out drop_finer only on private caches.
 Prior: **1040**.
 

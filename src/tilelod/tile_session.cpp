@@ -195,6 +195,11 @@ int TileSession::issue_requests(int budget)
               e->state == TileState::InFlight)) {
       continue;
     }
+    // Same viewport generation already failed — do not re-hammer the source
+    // every 33ms. A later set_viewport bumps generation and allows retry.
+    if (e && e->state == TileState::Failed && e->generation == m_generation) {
+      continue;
+    }
     RectI const cr = tile_content_rect(m_content_w, m_content_h, key);
     double const tx = cr.x + cr.w * 0.5;
     double const ty = cr.y + cr.h * 0.5;

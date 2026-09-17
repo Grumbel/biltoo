@@ -325,3 +325,10 @@ caches skip this (Workspace duplicates must not lose fine tiles another view
 still needs); they rely on the 128 MiB budget trim + parent protect instead.
 
 Debug: `BILTOO_TILE_DEBUG=1` prints covered/active per tick.
+
+
+## Failed tiles (biltoo-1042)
+
+A tile that fails for the current viewport generation is not re-requested on
+every pump tick. Changing the viewport (generation++) allows a retry. Prevents
+thumtoo hammering when a cell is missing from the pyramid.
