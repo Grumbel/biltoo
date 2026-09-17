@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1068-tilelod-min-scale-from-coverage.** Session min_scale from durable tile coverage.
+Prior: **1067**.
+
+### Change
+- `ThumtooCache::durableTileMinScale(path)` — memoized with positive durable discovery
+- `TileLodController::setContentSize(w, h, minScale)`
+- Host `prepareTileLod` passes min scale so the planner does not request finer than the pyramid
+
+### Apply
+```bash
+git pull /path/to/biltoo-1068-tilelod-min-scale-from-coverage.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1068**
+- [x] Partial pyramids clamp target scale to available min
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist on a display
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1067-tilelod-host-prepare-loop-test.** Regression test for host prepare loop stability.
 Prior: **1066**.
 

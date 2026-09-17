@@ -1256,7 +1256,9 @@ void ImageItem::prepareTileLod()
         m_tileLod->setPath(m_path);
     }
     // Tile grid is always full native (source) size.
-    m_tileLod->setContentSize(native.width(), native.height());
+    // min_scale from durable coverage so we do not request finer than the pyramid.
+    m_tileLod->setContentSize(native.width(), native.height(),
+                              ThumtooCache::durableTileMinScale(m_path));
     m_tileLod->setHasLqip(hasDisplayPixels());
 
     const qreal dpc = tileDevicePerContent();

@@ -54,10 +54,10 @@ void TileLodController::setPath(QString path)
   bindSession();
 }
 
-void TileLodController::setContentSize(int w, int h)
+void TileLodController::setContentSize(int w, int h, int minScale)
 {
   if (m_session) {
-    m_session->set_content_size(w, h);
+    m_session->set_content_size(w, h, minScale);
   }
 }
 

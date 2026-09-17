@@ -194,6 +194,11 @@ bool scheduleTilePyramid(const QString &path);
  * without forcing TileSynth on cold paths (HOST_CUTOVER / SoftOnly cost).
  */
 bool hasDurableTiles(const QString &path);
+/**
+ * Finest durable pyramid scale for path (0 = full res). 0 if unknown / none.
+ * Populates via hasDurableTiles discovery; process-memoized with positive hits.
+ */
+int durableTileMinScale(const QString &path);
 
 /**
  * Soft band schedule: SoftOnly when no tiles; PreferCache when tiles exist so

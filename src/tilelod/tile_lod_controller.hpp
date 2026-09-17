@@ -30,7 +30,7 @@ public:
   void setPath(QString path);
   QString path() const { return m_path; }
 
-  void setContentSize(int w, int h);
+  void setContentSize(int w, int h, int minScale = 0);
   void setHasLqip(bool on);
 
   /**

@@ -192,6 +192,8 @@ std::vector<PendingPixels> g_pixelsQueue;
 QSet<QString> g_pixelsSettled;
 /** Paths known to have at least one durable tile (positive cache only). */
 QSet<QString> g_durableTilesYes;
+/** Finest available scale for paths in g_durableTilesYes (default 0). */
+QHash<QString, int> g_durableTileMinScale;
 /** path → last PixelSource int from ladderProvenance. */
 QHash<QString, int> g_lastPixelSource;
 /** 0 unknown, 1 cache soft/tiles, 2 file/archive encode (inflight paths). */
@@ -1843,11 +1845,17 @@ bool hasDurableTiles(const QString &path)
     // Durable pyramid on Store: origin tiles at scale 0 or 1, or coverage
     // min_scale origin when get_tile_coverage reports stored scales.
     bool yes = false;
-    if (c->has_tile(uri, 0, 0, 0) || c->has_tile(uri, 1, 0, 0)) {
+    int minScale = 0;
+    if (c->has_tile(uri, 0, 0, 0)) {
         yes = true;
+        minScale = 0;
+    } else if (c->has_tile(uri, 1, 0, 0)) {
+        yes = true;
+        minScale = 1;
     } else if (auto cov = c->get_tile_coverage(uri)) {
         if (c->has_tile(uri, cov->min_scale, 0, 0)) {
             yes = true;
+            minScale = cov->min_scale;
         }
     }
     if (yes) {
@@ -1856,6 +1864,7 @@ bool hasDurableTiles(const QString &path)
             std::lock_guard lock(g_mu);
             first = !g_durableTilesYes.contains(path);
             g_durableTilesYes.insert(path);
+            g_durableTileMinScale.insert(path, minScale);
         }
         if (first) {
             // GUI may already be deep-zoomed with the tile timer stopped; wake it.
@@ -1870,6 +1879,30 @@ bool hasDurableTiles(const QString &path)
 #else
     Q_UNUSED(path);
     return false;
+#endif
+}
+
+int durableTileMinScale(const QString &path)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty() || isUnsupported(path)) {
+        return 0;
+    }
+    {
+        std::lock_guard lock(g_mu);
+        if (g_durableTilesYes.contains(path)) {
+            return g_durableTileMinScale.value(path, 0);
+        }
+    }
+    // Discover (and memoize) via hasDurableTiles.
+    if (!hasDurableTiles(path)) {
+        return 0;
+    }
+    std::lock_guard lock(g_mu);
+    return g_durableTileMinScale.value(path, 0);
+#else
+    Q_UNUSED(path);
+    return 0;
 #endif
 }
 
