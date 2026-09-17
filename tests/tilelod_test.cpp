@@ -403,6 +403,38 @@ void test_trim_budget()
   CHECK(cache.find({0, 2, 0}) == nullptr);
 }
 
+
+void test_drop_finer_on_zoom_out()
+{
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  session.set_content_size(1024, 1024);
+
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;  // scale 0
+  session.set_viewport(vp);
+  CHECK_EQ(session.target_scale(), 0);
+  session.issue_requests(4);
+  src.complete_all_requested(9);
+  session.pump();
+  CHECK(session.has_any_succeeded_tile());
+
+  // Zoom out hard → higher target scale; finer tiles should be dropped.
+  vp.device_per_content = 0.125;
+  session.set_viewport(vp);
+  CHECK(session.target_scale() >= 2);
+  // Cache may still have coarser; scale-0 keys for the old region should be gone
+  // (drop_finer_than(target)).
+  bool any_scale0 = false;
+  for (auto const& [k, e] : session.cache().map()) {
+    if (k.scale == 0 && e.state == tilelod::TileState::Succeeded) {
+      any_scale0 = true;
+    }
+  }
+  CHECK(!any_scale0);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -433,6 +465,7 @@ int main()
   test_scale_hold_adjacent();
   test_coverage_fully_covered();
   test_trim_budget();
+  test_drop_finer_on_zoom_out();
   test_parent_key();
 
   if (g_failures) {

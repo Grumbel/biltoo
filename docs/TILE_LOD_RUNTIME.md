@@ -41,6 +41,7 @@ Open the same path in biltoo (Image mode). Soft/LQIP may still appear first.
 
 ```bash
 export THUMTOO_DEBUG=1
+export BILTOO_TILE_DEBUG=1   # path / covered / active per tile tick
 # optional: biltoo load traces
 export BILTOO_LOAD_DEBUG=1
 ```

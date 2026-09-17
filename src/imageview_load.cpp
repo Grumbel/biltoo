@@ -2701,6 +2701,26 @@ void ImageView::tickPrimaryTileLod(int budget)
         }
     }
 
+    if (anyWanted) {
+        static int s_tileDbg = -1;
+        if (s_tileDbg < 0) {
+            const char *e = std::getenv("BILTOO_TILE_DEBUG");
+            s_tileDbg = (e && e[0] && e[0] != '0') ? 1 : 0;
+        }
+        if (s_tileDbg) {
+            for (ImageItem *item : targets) {
+                if (!item || !item->tileLodWanted()) {
+                    continue;
+                }
+                fprintf(stderr,
+                        "biltoo/tile: path=%s wanted=1 covered=%d active=%d\n",
+                        qPrintable(item->path()),
+                        item->tileLodViewportCovered() ? 1 : 0,
+                        item->tileLodActive() ? 1 : 0);
+            }
+        }
+    }
+
     // Fast pump (33ms) while incomplete; slow heartbeat (250ms) while covered
     // so pan can discover new cells without a continuous high-rate timer.
     // Stop entirely when no item wants tiles.

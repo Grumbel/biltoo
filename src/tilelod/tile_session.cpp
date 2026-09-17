@@ -103,8 +103,15 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
     in.max_scale = held;
   }
   PlannerOutput const out = plan_visible_tiles(in);
+  int const prev_target = m_target_scale;
   m_target_scale = out.target_scale;
   m_visible_keys = out.visible_keys;
+
+  // Zoomed out (higher scale index): drop finer Succeeded tiles that the
+  // draw path no longer uses as exact or parent stand-ins for this target.
+  if (m_target_scale > prev_target) {
+    m_cache->drop_finer_than(m_target_scale);
+  }
 
   cancel_obsolete();
 }

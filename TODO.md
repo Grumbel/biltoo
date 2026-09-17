@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1039-tilelod-zoomout-drop-debug.** Drop finer tiles on zoom-out; BILTOO_TILE_DEBUG.
+Prior: **1038**.
+
+### Change
+- `set_viewport`: when target scale **increases** (zoom out), `drop_finer_than(target)`
+- `BILTOO_TILE_DEBUG=1` logs path / covered / active on each tile tick
+- Unit test: scale-0 tiles gone after hard zoom-out
+
+### Apply
+```bash
+git pull /path/to/biltoo-1039-tilelod-zoomout-drop-debug.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1039**
+- [x] drop_finer unit test passes
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1038-tilelod-cache-budget.** Shared RAM tile cache trims to ~128 MiB.
 Prior: **1037**.
 

@@ -315,3 +315,12 @@ Shared path `TileMemoryCache` keeps at most ~**128 MiB** of Succeeded tile
 payloads by default. After each `pump`, visible keys are protected; older
 Succeeded tiles are evicted by `last_used`. InFlight entries are never dropped
 by the budget trim.
+
+
+## Zoom-out drop (biltoo-1039)
+
+When the held target scale **increases** (zoom out), Succeeded tiles with
+`scale < target` are dropped. They are not used as exact cells or as coarser
+parents for the new target. Combined with the 128 MiB budget trim.
+
+Debug: `BILTOO_TILE_DEBUG=1` prints covered/active per tick.
