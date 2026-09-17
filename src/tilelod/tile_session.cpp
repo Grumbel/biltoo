@@ -310,6 +310,16 @@ int TileSession::issue_requests(int budget)
     }
   };
 
+  // scale 0 = full-res decode in thumtoo (no DCT shrink). Do not issue exact
+  // scale-0 cells until at least one coarser Succeeded tile exists, so the first
+  // paint wave stays on jpeg_shrink parents. Exception: single-level pyramids.
+  auto may_issue_exact = [&](TileKey const& key) -> bool {
+    if (key.scale > 0 || m_max_scale <= 0) {
+      return true;
+    }
+    return has_succeeded_scale_ge(1);
+  };
+
   if (cold) {
     enqueue_parents(1);
     if (static_cast<int>(batch.size()) < budget) {
@@ -319,18 +329,33 @@ int TileSession::issue_requests(int budget)
       if (static_cast<int>(batch.size()) >= budget) {
         break;
       }
+      if (!may_issue_exact(s.key)) {
+        continue;
+      }
       enqueue(s.key);
     }
   } else {
     // Warm: exact first (centre-first), then one-level parents as stand-ins.
+    // Still gate scale-0 until a coarser tile landed (zoom-in from soft-only).
     for (Scored const& s : missing) {
       if (static_cast<int>(batch.size()) >= budget) {
         break;
+      }
+      if (!may_issue_exact(s.key)) {
+        continue;
       }
       enqueue(s.key);
     }
     if (static_cast<int>(batch.size()) < budget) {
       enqueue_parents(1);
+    }
+    // If scale-0 was gated, fill remaining budget with parents again.
+    if (static_cast<int>(batch.size()) < budget && !has_succeeded_scale_ge(1)
+        && m_max_scale > 0) {
+      enqueue_parents(1);
+      if (static_cast<int>(batch.size()) < budget) {
+        enqueue_parents(2);
+      }
     }
   }
 
@@ -411,6 +436,17 @@ bool TileSession::has_any_succeeded_tile() const
   for (auto const& [k, e] : m_cache->map()) {
     (void)k;
     if (e.state == TileState::Succeeded && e.bitmap.valid()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool TileSession::has_succeeded_scale_ge(int min_scale) const
+{
+  for (auto const& [k, e] : m_cache->map()) {
+    if (k.scale >= min_scale && e.state == TileState::Succeeded
+        && e.bitmap.valid()) {
       return true;
     }
   }

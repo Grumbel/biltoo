@@ -675,6 +675,13 @@ does not hit Store `has_tile` every frame. Cleared on discover / scheduleTilePyr
 tick. Earlier code gave each target the full N (up to 8×N concurrent requests).
 
 
+## Scale-0 gate (biltoo-1085)
+
+Exact cells at **scale 0** are not issued until the path cache has a Succeeded
+tile at **scale ≥ 1** (unless the pyramid is single-level). Keeps the first wave
+on DCT-shrink parents.
+
+
 ## Cold issue order (biltoo-1082)
 
 `TileSession::issue_requests`: when the path cache has **no** Succeeded tile yet,

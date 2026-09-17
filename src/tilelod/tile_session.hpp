@@ -78,6 +78,8 @@ public:
 
   /// True if any Succeeded tile exists in the cache (host may drop LQIP fill).
   bool has_any_succeeded_tile() const;
+  /** True if any Succeeded tile has scale >= @p min_scale (e.g. 1 = non–full-res). */
+  bool has_succeeded_scale_ge(int min_scale) const;
 
   /** Exact-tile coverage of the current visible key set. */
   struct Coverage {

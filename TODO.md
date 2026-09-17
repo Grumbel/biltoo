@@ -2,6 +2,29 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1085-tile-scale0-after-coarser.** Do not issue exact scale-0 until a coarser tile succeeds.
+Prior: **1084**.
+
+### Analysis
+- thumtoo scale 0 = full source decode (no DCT shrink).
+- Even after cold parent-first, warm exact-first could still enqueue scale-0 cells
+  before any coarser Succeeded tile existed (zoom-in from soft-only).
+
+### Change
+- `may_issue_exact`: scale 0 requires `has_succeeded_scale_ge(1)` (unless max_scale==0).
+- Warm path: if gated, spend remaining budget on parents again.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1085-tile-scale0-after-coarser.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1084-durable-tiles-negative-memo.** TTL-cache hasDurableTiles misses (avoid SQLite every frame).
 Prior: **1083**.
 
