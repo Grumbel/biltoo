@@ -317,10 +317,11 @@ parents** are protected (draw-plan stand-ins); older Succeeded tiles are
 evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 
 
-## Zoom-out drop (biltoo-1039)
+## Zoom-out drop (biltoo-1039 / 1041)
 
-When the held target scale **increases** (zoom out), Succeeded tiles with
-`scale < target` are dropped. They are not used as exact cells or as coarser
-parents for the new target. Combined with the 128 MiB budget trim.
+When the held target scale **increases** (zoom out) on a **private** session
+cache, Succeeded tiles with `scale < target` are dropped. **Shared** path
+caches skip this (Workspace duplicates must not lose fine tiles another view
+still needs); they rely on the 128 MiB budget trim + parent protect instead.
 
 Debug: `BILTOO_TILE_DEBUG=1` prints covered/active per tick.

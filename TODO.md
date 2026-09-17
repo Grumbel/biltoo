@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1041-tilelod-shared-no-drop-finer.** Zoom-out drop_finer only on private caches.
+Prior: **1040**.
+
+### Change
+- `drop_finer_than` on viewport zoom-out runs only when `m_cache == &m_owned_cache`
+- Shared path caches rely on budget trim + parent protect (no cross-item wipe)
+- Unit test: two sessions, one zooms out, scale-0 remains in shared map
+
+### Apply
+```bash
+git pull /path/to/biltoo-1041-tilelod-shared-no-drop-finer.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1041**
+- [x] Shared no-drop-finer unit test passes
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1040-tilelod-trim-protect-parents.** Budget trim keeps coarser parent stand-ins.
 Prior: **1039**.
 

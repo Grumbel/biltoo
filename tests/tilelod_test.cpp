@@ -462,6 +462,38 @@ void test_trim_protects_parents()
   CHECK(cache.find(other) == nullptr);
 }
 
+
+void test_shared_no_drop_finer()
+{
+  FakeTileSource src;
+  tilelod::TileMemoryCache shared;
+  tilelod::TileSession a(&src, &shared);
+  tilelod::TileSession b(&src, &shared);
+  a.set_content_size(1024, 1024);
+  b.set_content_size(1024, 1024);
+
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;
+  a.set_viewport(vp);
+  a.issue_requests(4);
+  src.complete_all_requested(11);
+  a.pump();
+  CHECK(a.has_any_succeeded_tile());
+
+  // B still at fine zoom; A zooms out — must not wipe shared scale-0 tiles.
+  vp.device_per_content = 0.125;
+  a.set_viewport(vp);
+  CHECK(a.target_scale() >= 2);
+  bool any_scale0 = false;
+  for (auto const& [k, e] : shared.map()) {
+    if (k.scale == 0 && e.state == tilelod::TileState::Succeeded) {
+      any_scale0 = true;
+    }
+  }
+  CHECK(any_scale0);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -494,6 +526,7 @@ int main()
   test_trim_budget();
   test_drop_finer_on_zoom_out();
   test_trim_protects_parents();
+  test_shared_no_drop_finer();
   test_parent_key();
 
   if (g_failures) {

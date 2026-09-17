@@ -107,9 +107,10 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
   m_target_scale = out.target_scale;
   m_visible_keys = out.visible_keys;
 
-  // Zoomed out (higher scale index): drop finer Succeeded tiles that the
-  // draw path no longer uses as exact or parent stand-ins for this target.
-  if (m_target_scale > prev_target) {
+  // Zoomed out: drop finer Succeeded tiles only on a *private* cache.
+  // Shared path caches must not drop scale-0 cells another ImageItem of the
+  // same path still needs (Workspace duplicates / multi-view).
+  if (m_target_scale > prev_target && m_cache == &m_owned_cache) {
     m_cache->drop_finer_than(m_target_scale);
   }
 
