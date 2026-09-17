@@ -5,6 +5,7 @@
 #include "tilelod/tile_lod_controller.hpp"
 #include "thumtoocache.h"
 #include "contentxform.h"
+#include "coloradjust.h"
 
 #include <QCoreApplication>
 #include "placementlinear.h"
@@ -1113,14 +1114,7 @@ bool ImageItem::tileLodWanted() const
         return false;
     }
     const ContentXform::Value x = tileContentXform();
-    // Grid tiles are ungraded raw cells. Soft/PreferCache bake color adjust.
-    // Until the paint path applies grade to tiles, stay on soft when adjusted.
-    if (!x.colorAdjust.isIdentity()) {
-        return false;
-    }
-    if (!m_colorAdjust.isIdentity()) {
-        return false;
-    }
+    (void)x;
     const QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;
@@ -1274,8 +1268,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 const bool freeRot = x.hasCrop && !x.cropRect.isEmpty()
                     && qAbs(x.cropRotation) > 1e-3;
 
-                auto resolve = [this](tilelod::TileKey const &key,
-                                      tilelod::TileBitmap const &) -> QImage {
+                auto resolve = [this, &x](tilelod::TileKey const &key,
+                                          tilelod::TileBitmap const &) -> QImage {
                     if (!m_tileLod || !m_tileLod->session()) {
                         return {};
                     }
@@ -1285,7 +1279,19 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                         || !e->bitmap.valid()) {
                         return {};
                     }
-                    return tilelod::tile_bitmap_to_qimage(e->bitmap);
+                    QImage img = tilelod::tile_bitmap_to_qimage(e->bitmap);
+                    if (img.isNull()) {
+                        return {};
+                    }
+                    // Prefer applied ContentXform grade; fall back to item grade.
+                    ColorAdjustments grade = x.colorAdjust;
+                    if (grade.isIdentity() && !m_colorAdjust.isIdentity()) {
+                        grade = m_colorAdjust;
+                    }
+                    if (!grade.isIdentity()) {
+                        img = applyColorAdjustments(img, grade);
+                    }
+                    return img;
                 };
 
                 if (freeRot) {

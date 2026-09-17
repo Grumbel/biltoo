@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1050-tilelod-color-grade-paint.** Apply color grade when resolving tiles for paint.
+Prior: **1049**.
+
+### Change
+- Tile paint resolve: `applyColorAdjustments` from ContentXform or item grade
+- `tileLodWanted` no longer skips color-graded content
+- RAM cache keeps raw tiles (grade is paint-time only)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1050-tilelod-color-grade-paint.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1050**
+- [x] Pure tilelod tests pass
+
+### Next
+- Manual runtime with color grade + deep zoom
+- TILE_LOD_RUNTIME.md full checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1049-tilelod-skip-color-grade.** Disable tiles when color adjust is active.
 Prior: **1048**.
 

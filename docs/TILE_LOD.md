@@ -361,7 +361,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | PreferCache skipped in tile band | Done |
 | Session lifetime / failed no-spam | Done |
 | Free-rotated crop UV | Done (maps + paint transform) |
-| Color-graded content | Deferred (soft/PreferCache) |
+| Color-graded content | Done (grade on paint resolve) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -381,8 +381,8 @@ removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
 
 
-## Color grade (biltoo-1049)
+## Color grade (biltoo-1049 / 1050)
 
-Tiles are raw thumtoo cells. When content color adjust is non-identity,
-`tileLodWanted` is false so graded soft/PreferCache remains the display path
-until tile paint can apply the same grade.
+Tiles stay raw in the RAM cache. At paint time, `applyColorAdjustments` runs on
+each resolved tile image using applied ContentXform grade (or item
+`m_colorAdjust`). Soft underlay remains pre-graded from materialize.
