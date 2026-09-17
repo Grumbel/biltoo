@@ -2,6 +2,34 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1047-tilelod-free-rot-paint.** Free-rot tiles painted with materialize transform.
+Prior: **1046**.
+
+### Change
+- `mapSourceRectToOriented` — flips/turns only (no crop)
+- Free-rot paint: clip to contentRect, centre/`rotate(-θ)`/`-crop.center`, draw oriented tile rects
+- Soft underlay stays display-space; tile plan skips LQIP under free-rot
+- Non-free-rot path unchanged (display map + item offset)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1047-tilelod-free-rot-paint.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1047**
+- [x] Pure tilelod tests pass
+
+### Next
+- Manual free-rot crop deep zoom on prepared pyramid
+- contentxform_test in full Qt build
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1046-tilelod-free-rot-maps.** Free-rotated crop ContentXform maps for tiles.
 Prior: **1045**.
 

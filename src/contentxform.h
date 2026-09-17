@@ -125,6 +125,10 @@ QRectF mapSourceRectToDisplay(const QRectF &sourceRect, const QSize &native,
 QRectF mapDisplayRectToSource(const QRectF &displayRect, const QSize &native,
                               const Value &x);
 
+/** Source → post-flip/turn oriented space (no crop / free-rot). */
+QRectF mapSourceRectToOriented(const QRectF &sourceRect, const QSize &native,
+                               const Value &x);
+
 } // namespace ContentXform
 
 #endif

@@ -1264,21 +1264,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 const QSize native = tileNativeSize();
                 const ContentXform::Value x = tileContentXform();
                 const QPointF off = offset();
-                for (tilelod::DrawCommand &cmd : plan.commands) {
-                    QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
-                                  cmd.dst_content.w, cmd.dst_content.h);
-                    QRectF disp = ContentXform::mapSourceRectToDisplay(srcBox, native, x);
-                    if (disp.isEmpty()) {
-                        disp = srcBox; // identity
-                    }
-                    cmd.dst_content = {disp.x() + off.x(), disp.y() + off.y(),
-                                       disp.width(), disp.height()};
-                }
-                tilelod::PaintDrawPlanArgs args;
-                args.plan = &plan;
-                args.lqip = under;
-                args.smooth = true;
-                args.resolve = [this](tilelod::TileKey const &key,
+                const bool freeRot = x.hasCrop && !x.cropRect.isEmpty()
+                    && qAbs(x.cropRotation) > 1e-3;
+
+                auto resolve = [this](tilelod::TileKey const &key,
                                       tilelod::TileBitmap const &) -> QImage {
                     if (!m_tileLod || !m_tileLod->session()) {
                         return {};
@@ -1291,7 +1280,53 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     }
                     return tilelod::tile_bitmap_to_qimage(e->bitmap);
                 };
-                tilelod::paint_draw_plan(painter, args);
+
+                if (freeRot) {
+                    // Draw tiles in oriented space under the same centre/rotate
+                    // transform as materializeDisplay (not AABB-squashed).
+                    for (tilelod::DrawCommand &cmd : plan.commands) {
+                        QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
+                                      cmd.dst_content.w, cmd.dst_content.h);
+                        QRectF ori = ContentXform::mapSourceRectToOriented(
+                            srcBox, native, x);
+                        if (ori.isEmpty()) {
+                            ori = srcBox;
+                        }
+                        cmd.dst_content = {ori.x(), ori.y(), ori.width(), ori.height()};
+                    }
+                    const QRect crop = x.cropRect.normalized();
+                    const QRectF cr = contentRect();
+                    painter->save();
+                    painter->setClipRect(cr);
+                    painter->translate(cr.center());
+                    painter->rotate(-x.cropRotation);
+                    painter->translate(-QPointF(crop.center()));
+                    tilelod::PaintDrawPlanArgs args;
+                    args.plan = &plan;
+                    args.lqip = QImage(); // soft already in display space
+                    args.smooth = true;
+                    args.resolve = resolve;
+                    tilelod::paint_draw_plan(painter, args);
+                    painter->restore();
+                } else {
+                    for (tilelod::DrawCommand &cmd : plan.commands) {
+                        QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
+                                      cmd.dst_content.w, cmd.dst_content.h);
+                        QRectF disp = ContentXform::mapSourceRectToDisplay(
+                            srcBox, native, x);
+                        if (disp.isEmpty()) {
+                            disp = srcBox;
+                        }
+                        cmd.dst_content = {disp.x() + off.x(), disp.y() + off.y(),
+                                           disp.width(), disp.height()};
+                    }
+                    tilelod::PaintDrawPlanArgs args;
+                    args.plan = &plan;
+                    args.lqip = under;
+                    args.smooth = true;
+                    args.resolve = resolve;
+                    tilelod::paint_draw_plan(painter, args);
+                }
             }
         }
         painter->restore();

@@ -363,3 +363,11 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Free-rotated crop UV | Done (AABB via ContentXform maps) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
+
+
+## Free-rot paint (biltoo-1047)
+
+Viewport requests use the free-rot AABB in source space. **Paint** applies the
+same centre/`rotate(-θ)` transform as `materializeDisplay` and draws tile
+rects in **oriented** coordinates so cells are not axis-aligned-squashed into
+the AABB.

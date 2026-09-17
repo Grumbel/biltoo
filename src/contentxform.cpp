@@ -363,6 +363,25 @@ QRectF aabbFromCorners(const QPointF corners[4])
 
 } // namespace
 
+QRectF mapSourceRectToOriented(const QRectF &sourceRect, const QSize &native,
+                               const Value &x)
+{
+    if (!isPositiveSize(native) || sourceRect.isEmpty()) {
+        return {};
+    }
+    const QPointF c[4] = {
+        sourceRect.topLeft(),
+        sourceRect.topRight(),
+        sourceRect.bottomRight(),
+        sourceRect.bottomLeft(),
+    };
+    QPointF o[4];
+    for (int i = 0; i < 4; ++i) {
+        o[i] = sourcePointToOriented(c[i], native, x);
+    }
+    return aabbFromCorners(o);
+}
+
 QRectF mapSourceRectToDisplay(const QRectF &sourceRect, const QSize &native,
                               const Value &x)
 {
