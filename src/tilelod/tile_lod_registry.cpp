@@ -5,8 +5,6 @@
 
 #include "thumtoocache.h"
 
-#include <cstring>
-
 namespace tilelod {
 namespace {
 
@@ -20,25 +18,8 @@ ThumtooTileSource::FetchFn makeFetch(QString path)
     for (auto const& c : coords) {
       qcoords.push_back({c.scale, c.x, c.y});
     }
-    ThumtooCache::requestTiles(
-        path, qcoords,
-        [on_cell](std::size_t index, QImage image) {
-          if (image.isNull()) {
-            on_cell(index, std::nullopt);
-            return;
-          }
-          QImage rgba = image.convertToFormat(QImage::Format_RGBA8888);
-          TileBitmap bm;
-          bm.width = rgba.width();
-          bm.height = rgba.height();
-          bm.codec = "rgba8";
-          bm.bytes.resize(static_cast<size_t>(bm.width * bm.height * 4));
-          for (int y = 0; y < bm.height; ++y) {
-            std::memcpy(bm.bytes.data() + static_cast<size_t>(y * bm.width * 4),
-                        rgba.constScanLine(y), static_cast<size_t>(bm.width * 4));
-          }
-          on_cell(index, std::move(bm));
-        });
+    // TileBitmap delivered directly (decode once in ThumtooCache::requestTiles).
+    ThumtooCache::requestTiles(path, qcoords, on_cell);
   };
 }
 

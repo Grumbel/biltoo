@@ -2011,7 +2011,7 @@ QImage getTile(const QString &path, int scale, int x, int y)
 }
 
 void requestTiles(const QString &path, const QVector<TileCoord> &coords,
-                  TileCellCallback on_cell)
+                  TileBitmapCellCallback on_cell)
 {
 #ifdef BILTOO_HAVE_THUMTOO
     if (!on_cell || coords.isEmpty()) {
@@ -2021,7 +2021,7 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
     const std::string uri = toThumtooUri(path);
     if (uri.empty()) {
         for (int i = 0; i < coords.size(); ++i) {
-            on_cell(static_cast<std::size_t>(i), QImage());
+            on_cell(static_cast<std::size_t>(i), std::nullopt);
         }
         return;
     }
@@ -2032,7 +2032,7 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
     }
     if (!c) {
         for (int i = 0; i < coords.size(); ++i) {
-            on_cell(static_cast<std::size_t>(i), QImage());
+            on_cell(static_cast<std::size_t>(i), std::nullopt);
         }
         return;
     }
@@ -2041,23 +2041,22 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
     for (const TileCoord &t : coords) {
         tc.push_back({t.scale, t.x, t.y});
     }
+    // Decode once to rgba8 TileBitmap — no QImage intermediate for the RAM cache.
     c->request_tiles(uri, std::move(tc),
                      [on_cell](std::size_t index, std::optional<thumtoo::TileBlob> tile) {
-                         QImage img;
-                         if (tile) {
-                             auto decoded = tilelod::decode_tile_payload(
-                                 tile->width, tile->height, tile->codec, tile->bytes);
-                             if (decoded) {
-                                 img = tilelod::tile_bitmap_to_qimage(*decoded);
-                             }
+                         if (!tile) {
+                             on_cell(index, std::nullopt);
+                             return;
                          }
-                         on_cell(index, img);
+                         on_cell(index, tilelod::decode_tile_payload(
+                                            tile->width, tile->height, tile->codec,
+                                            tile->bytes));
                      });
 #else
     Q_UNUSED(path);
     if (on_cell) {
         for (int i = 0; i < coords.size(); ++i) {
-            on_cell(static_cast<std::size_t>(i), QImage());
+            on_cell(static_cast<std::size_t>(i), std::nullopt);
         }
     }
 #endif

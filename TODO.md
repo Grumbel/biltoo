@@ -2,6 +2,32 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1058-tilelod-fetch-bitmap-no-qimage.** Tile fetch delivers TileBitmap without QImage round-trip.
+Prior: **1057**.
+
+### Change
+- `ThumtooCache::requestTiles` → `TileBitmapCellCallback` (optional TileBitmap)
+- Decode once to rgba8; registry `makeFetch` passes through to session cache
+- Removes TileBitmap → QImage → TileBitmap conversion on every cell
+
+### Apply
+```bash
+git pull /path/to/biltoo-1058-tilelod-fetch-bitmap-no-qimage.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1058**
+- [x] Single decode path into shared RAM cache
+
+### Next
+- Manual TILE_LOD_RUNTIME.md checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1057-tilelod-leave-band-stop-requests.** Stop tile pump/issue when leaving the tile band.
 Prior: **1056**.
 

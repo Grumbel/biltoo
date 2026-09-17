@@ -13,6 +13,8 @@
 #include <QRectF>
 #include <QVector>
 #include <functional>
+#include <optional>
+#include "tilelod/tile_types.hpp"
 
 /**
  * Thin biltoo façade over thumtoo::Client (durable size index + ladder).
@@ -235,9 +237,14 @@ struct TileCoord {
     int x = 0;
     int y = 0;
 };
-using TileCellCallback = std::function<void(std::size_t index, QImage image)>;
+/**
+ * Async tile cells as rgba8 TileBitmap (no QImage round-trip).
+ * nullopt = miss/fail for that index.
+ */
+using TileBitmapCellCallback =
+    std::function<void(std::size_t index, std::optional<tilelod::TileBitmap> tile)>;
 void requestTiles(const QString &path, const QVector<TileCoord> &coords,
-                  TileCellCallback on_cell);
+                  TileBitmapCellCallback on_cell);
 /** Cache-only synchronous get; null image on miss. Prefer requestTiles. */
 QImage getTile(const QString &path, int scale, int x, int y);
 

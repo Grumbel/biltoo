@@ -367,6 +367,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Failed no-spam (plan-stable generation) | Done (1055) |
 | Tick update only on plan/completion | Done (1056) |
 | Leave-band stops tile requests | Done (1057) |
+| Tile fetch without QImage round-trip | Done (1058) |
 | Manual pyramid QA | See TILE_LOD_RUNTIME.md |
 
 
@@ -384,6 +385,13 @@ the AABB.
 When a session is destroyed with outstanding requests, InFlight entries are
 removed from the shared path cache so another ImageItem of the same path does
 not stall forever waiting for a completion that will never be pumped.
+
+
+## Tile fetch bitmap path (biltoo-1058)
+
+`ThumtooCache::requestTiles` delivers `tilelod::TileBitmap` (rgba8 after one
+decode) instead of `QImage`. The registry `makeFetch` path no longer converts
+TileBitmap → QImage → TileBitmap for the shared RAM cache.
 
 
 ## Leave tile band (biltoo-1057)
