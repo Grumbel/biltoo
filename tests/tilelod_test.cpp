@@ -583,6 +583,35 @@ void test_parent_prefetch()
   CHECK(has_parent);
 }
 
+
+void test_destroy_clears_inflight_shared()
+{
+  FakeTileSource src;
+  tilelod::TileMemoryCache shared;
+  {
+    tilelod::TileSession a(&src, &shared);
+    a.set_content_size(256, 256);
+    tilelod::Viewport vp;
+    vp.content_rect = {0, 0, 256, 256};
+    vp.device_per_content = 1.0;
+    a.set_viewport(vp);
+    a.issue_requests(4);
+    CHECK(!src.requested.empty());
+    CHECK(!shared.in_flight_keys().empty());
+  }
+  // After destroy, InFlight must be cleared so peer can request.
+  CHECK(shared.in_flight_keys().empty());
+
+  tilelod::TileSession b(&src, &shared);
+  b.set_content_size(256, 256);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;
+  b.set_viewport(vp);
+  int n = b.issue_requests(4);
+  CHECK(n >= 1);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -619,6 +648,7 @@ int main()
   test_failed_no_spam_same_generation();
   test_destroy_while_inflight();
   test_parent_prefetch();
+  test_destroy_clears_inflight_shared();
   test_parent_key();
 
   if (g_failures) {

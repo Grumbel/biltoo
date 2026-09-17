@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1048-tilelod-destroy-clear-inflight.** Session destroy clears shared InFlight.
+Prior: **1047**.
+
+### Change
+- `~TileSession`: after cancel, erase InFlight keys from the (shared) cache
+- Peer sessions of the same path can re-request instead of stalling forever
+- Succeeded tiles kept; unit test covers shared clear + peer re-request
+
+### Apply
+```bash
+git pull /path/to/biltoo-1048-tilelod-destroy-clear-inflight.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1048**
+- [x] Clear-inflight unit test passes
+
+### Next
+- Manual free-rot + deep zoom on prepared pyramid
+- contentxform_test in full Qt build
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1047-tilelod-free-rot-paint.** Free-rot tiles painted with materialize transform.
 Prior: **1046**.
 

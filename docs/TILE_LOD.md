@@ -371,3 +371,10 @@ Viewport requests use the free-rot AABB in source space. **Paint** applies the
 same centre/`rotate(-θ)` transform as `materializeDisplay` and draws tile
 rects in **oriented** coordinates so cells are not axis-aligned-squashed into
 the AABB.
+
+
+## Destroy clears InFlight (biltoo-1048)
+
+When a session is destroyed with outstanding requests, InFlight entries are
+removed from the shared path cache so another ImageItem of the same path does
+not stall forever waiting for a completion that will never be pumped.

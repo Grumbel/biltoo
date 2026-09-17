@@ -27,6 +27,15 @@ TileSession::~TileSession()
     std::vector<TileKey> inflight = m_cache->in_flight_keys();
     if (!inflight.empty()) {
       m_source->cancel(inflight);
+      // Shared caches: drop InFlight so peer sessions of the same path can
+      // re-request. Completions for this session are already dropped (inbox).
+      // Succeeded tiles are left intact.
+      for (TileKey const& key : inflight) {
+        CacheEntry const* e = m_cache->find(key);
+        if (e && e->state == TileState::InFlight) {
+          m_cache->erase(key);
+        }
+      }
     }
   }
   if (m_inbox) {
