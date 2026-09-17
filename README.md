@@ -5,71 +5,40 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Biltoo
 
-**Biltoo** is a Qt 6 desktop image viewer with three modes on one canvas:
+Biltoo is a desktop image and document viewer for Linux, loosely inspired by
+Ristretto but expanded beyond it. It caches image sizes and previews, keeping
+large folders and archives responsive instead of repeatedly decoding the same
+files.
 
-| Mode | Purpose |
-|------|---------|
-| **Image** | One file at a time — zoom, pan, rotate, flip, crop, slideshow |
-| **Gallery** | Overview of the whole session in packed layouts |
-| **Workspace** | Arrange several images freely for comparison and export |
+It supports common image formats including JPEG, PNG, WebP, TIFF, GIF, BMP, and
+XCF, as well as multi-page PDF, EPUB, and DjVu documents. Images can also be
+viewed directly from ZIP, tar, 7z, RAR, and similar archives without unpacking
+them first.
 
-**Gallery**
-
-![Biltoo Gallery mode](screenshots/gallery.png)
-
-**Workspace**
-
-![Biltoo Workspace mode](screenshots/workspace.png)
-
-Requires **Qt 6.9** or newer.
+Documents use the same navigation as images: step through pages, zoom and pan,
+view a gallery overview, or arrange pages on the workspace.
 
 ## Features
 
-### Session and files
+* Open individual files, directories, or archives
+* Navigate files and pages with the keyboard
+* Zoom and pan
+* Slideshow and fullscreen modes
+* Gallery view for browsing an open set of files
+* Workspace for arranging multiple images or pages on a single canvas
+* Compare images or pages side by side
+* Prepare sheets for print or export
+* Export the workspace to PDF or PNG
+* Rotate, flip, crop, and adjust colour or contrast
+* Session-only editing: the original files are never modified
+* Cached image sizes and previews for fast browsing of large collections
+* View images directly inside archives without extracting them
 
-- Open files, directories, or **archives** (zip, tar, 7z, rar, …) from the file
-  dialog, drag-and-drop, or the command line
-- **Open** replaces the session; **Add** and drops append
-- Recent sessions and recent projects
-- Sort by name, path, date, size, dimensions, aspect ratio, shuffle, and more
-- Thumbnail bar with flexible placement and labels
+## Screenshots
 
-### Image mode
+[![Gallery](screenshots/gallery.png)](screenshots/gallery.png)
 
-- Zoom in/out, 1:1, fit, fill, and rubber-band zoom
-- Optional sticky fit / fill / 1:1 when stepping through a session
-- Rotate, flip, and non-destructive crop (session only until you export)
-- Slideshow with adjustable dwell, transitions, and optional pan-and-scan
-- Fullscreen and a simple HUD
-
-### Gallery and Workspace
-
-- Gallery layouts: strip, grid, masonry, and related packings
-- Workspace: free placement, multi-select, framing for comparison
-- New window for a second view of the selection
-
-### Export and projects
-
-- Print and print preview; export PDF or PNG
-- **Projects** (`.biltoo`): session layout and appearance with content-hash
-  addressing for external files
-- Source files are never overwritten by export
-
-### Keyboard shortcuts
-
-Press **F1** in the app for the full list. Common bindings:
-
-| Keys | Action |
-|------|--------|
-| ← / → | Previous / next |
-| Space | Slideshow start/stop |
-| `[` / `]` | Slideshow slower / faster |
-| F / F11 | Fullscreen |
-| Ctrl+0 / + / − | 1:1 / zoom in / out |
-| Z | Zoom to region |
-| C | Crop |
-| R | Rotate right |
-| Ctrl+O / Ctrl+S | Open / save project |
+[![Workspace](screenshots/workspace.png)](screenshots/workspace.png)
 
 ## Command line
 
@@ -83,24 +52,9 @@ biltoo [options] [files-or-dirs…]
 | `--slideshow` | Start slideshow |
 | `--debug` | Extra diagnostics |
 
-Drag-and-drop onto the window appends to the session. Shortcuts apply per
-window when several windows are open.
-
-## Image formats
-
-Common formats use Qt. Extra types (for example GIMP `.xcf`) work when
-**KImageFormats** plugins are available — the Nix package includes them.
-Opening images inside archives needs **libarchive** at build time.
-
-## Settings
-
-Preferences use the normal Qt config location (for example
-`~/.config/biltoo/biltoo.conf` on Linux). Window geometry is restored across
-runs. Sticky fit/fill/1:1 is remembered when you set it.
-
 ## Build and install
 
-Version is read from the top-level `VERSION` file (currently `0.1.0-dev`).
+Version is read from the top-level `VERSION` file.
 
 ### Nix
 
@@ -114,7 +68,7 @@ nix run
 
 ### CMake
 
-Needs Qt 6.9+ (Widgets and related modules).
+Needs Qt 6.9 or newer.
 
 ```bash
 cmake -B build -S .
@@ -122,31 +76,14 @@ cmake --build build
 ./build/biltoo
 ```
 
-Optional libraries are detected with pkg-config; the configure summary lists
-what was found:
-
-| Library | Enables |
-|---------|---------|
-| **libvips** | Extra codecs, EXIF orientation helpers, attention-based pan-and-zoom |
-| **libexiv2** | Richer metadata panel |
-| **libarchive** | Images inside archives |
-| **gio-unix-2.0** | “Default application” preference on Linux |
-| **[thumtoo](https://github.com/Grumbel/thumtoo)** | Durable size index and preview tiles (faster reopen) |
-
-**thumtoo** (recommended): build against a thumtoo source tree:
+Optional libraries (pkg-config) enable extra codecs, metadata, archives, and
+durable caching via [thumtoo](https://github.com/Grumbel/thumtoo):
 
 ```bash
 cmake -B build -S . -DTHUMTOO_SOURCE_DIR=/path/to/thumtoo
 ```
 
-With Nix flakes, thumtoo is pulled in automatically. Sibling checkouts named
-`../thumtoo` are also picked up by the development helpers when configured.
-
-### Desktop files
-
-Install (CMake or Nix) can place a `.desktop` entry, AppStream metainfo, icon,
-and man page under the usual `$prefix/share/…` paths so file managers can open
-images with Biltoo.
+With Nix flakes, thumtoo is included automatically.
 
 ## License
 

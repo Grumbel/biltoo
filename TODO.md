@@ -2,6 +2,23 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1023-readme-intro.** README intro and feature list for end users.
+Prior: **1022**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1023-readme-intro.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1023**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1022-user-docs.** User-focused README; neutral THUMTOO_SOURCE_DIR examples.
 Prior: **1021**.
 
