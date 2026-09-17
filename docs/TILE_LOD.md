@@ -318,6 +318,13 @@ parents** are protected (draw-plan stand-ins); older Succeeded tiles are
 evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 
 
+## Scale hold (biltoo-1095)
+
+Adjacent-step hold applies only when **zooming in** (finer scale). **Zoom-out**
+commits the coarser target immediately so the request grid does not stay on
+high-res cells while the content viewport expands.
+
+
 ## Zoom-out drop (biltoo-1039 / 1041)
 
 When the held target scale **increases** (zoom out) on a **private** session

@@ -368,11 +368,19 @@ void test_scale_hold_adjacent()
   CHECK_EQ(session.target_scale(), 0);
   CHECK_EQ(session.desired_scale(), 0);
 
-  // Adjacent coarser (0.5 → scale 1). Hold should keep scale 0 briefly.
+  // Adjacent coarser (0.5 → scale 1): zoom-out commits immediately so the
+  // fine grid is not expanded across a larger content viewport.
   vp.device_per_content = 0.5;
   session.set_viewport(vp);
   CHECK_EQ(session.desired_scale(), 1);
-  CHECK_EQ(session.target_scale(), 0);  // still holding
+  CHECK_EQ(session.target_scale(), 1);
+  CHECK(!session.request_scale_holding());
+
+  // Adjacent finer (back toward 1:1): hold coarser briefly.
+  vp.device_per_content = 1.0;
+  session.set_viewport(vp);
+  CHECK_EQ(session.desired_scale(), 0);
+  CHECK_EQ(session.target_scale(), 1);  // still holding
   CHECK(session.request_scale_holding());
 
   // Large jump denser than one step: commit immediately.

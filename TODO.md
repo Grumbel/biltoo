@@ -2,6 +2,29 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1095-zoom-out-scale-immediate.** Zoom-out commits coarser target scale immediately (no hold).
+Prior: **1094**.
+
+### Problem
+- Adjacent scale hold applied to zoom-out as well as zoom-in.
+- While the fine grid was held, the content viewport expanded → many high-res
+  cells instead of a few coarse overview tiles.
+
+### Change
+- `stable_request_scale`: commit immediately when desired scale is coarser.
+- Hold only applies when zooming in (finer). Tests updated.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1095-zoom-out-scale-immediate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1094-tile-budget-shadow.** Rename timer lambda budget to issueBudget (-Wshadow).
 Prior: **1093**.
 

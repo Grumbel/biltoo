@@ -82,18 +82,24 @@ int TileSession::stable_request_scale(int desired_scale)
     m_pending_scale = desired_scale;
     return m_stable_scale;
   }
-  int const delta = desired_scale > m_stable_scale
-                        ? desired_scale - m_stable_scale
-                        : m_stable_scale - desired_scale;
-  // Large jumps (fit, multi-notch) commit immediately.
+  // Zoom out (desired coarser / higher scale): commit immediately.
+  // Holding the fine grid while the content viewport expands floods the
+  // request queue with high-res cells instead of a few overview tiles.
+  if (desired_scale > m_stable_scale) {
+    m_stable_scale = desired_scale;
+    m_pending_scale = desired_scale;
+    m_pending_since = clock::now();
+    return m_stable_scale;
+  }
+  // Zoom in (desired finer): large jumps commit; adjacent steps hold briefly
+  // so wheel zoom does not enqueue a full intermediate grid every frame.
+  int const delta = m_stable_scale - desired_scale;
   if (delta > 1) {
     m_stable_scale = desired_scale;
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
     return m_stable_scale;
   }
-  // Adjacent step: hold previous scale briefly so wheel zoom does not
-  // enqueue a full intermediate grid every frame.
   if (desired_scale != m_pending_scale) {
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
