@@ -12,6 +12,7 @@
 #include <QStringList>
 #include <QRectF>
 #include <QVector>
+#include <functional>
 
 /**
  * Thin biltoo façade over thumtoo::Client (durable size index + ladder).
@@ -223,6 +224,22 @@ void preparePaths(const QStringList &paths);
  * (GUI_THREAD_AUDIT G6). Safe no-op when thumtoo is unavailable.
  */
 void warmUris(const QStringList &paths);
+
+/**
+ * Grid tiles (tilelod / Image zoom). Scale 0 = full res; +1 halves.
+ * Callback may run on thumtoo worker — decode already performed into RGBA QImage.
+ * No-op when thumtoo unavailable.
+ */
+struct TileCoord {
+    int scale = 0;
+    int x = 0;
+    int y = 0;
+};
+using TileCellCallback = std::function<void(std::size_t index, QImage image)>;
+void requestTiles(const QString &path, const QVector<TileCoord> &coords,
+                  TileCellCallback on_cell);
+/** Cache-only synchronous get; null image on miss. Prefer requestTiles. */
+QImage getTile(const QString &path, int scale, int x, int y);
 
 /** True when built with thumtoo and the client opened successfully. */
 bool isAvailable();

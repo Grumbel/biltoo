@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "tilelod/tile_lod_controller.hpp"
+#include "thumtoocache.h"
 #include "contentxform.h"
 
 #include <QCoreApplication>
@@ -1063,6 +1065,23 @@ QVariant ImageItem::itemChange(GraphicsItemChange change, const QVariant &value)
     return QGraphicsPixmapItem::itemChange(change, value);
 }
 
+
+void ImageItem::tickTileLod(int budget)
+{
+    if (!m_tileLod) {
+        return;
+    }
+    m_tileLod->tick(budget);
+    if (m_tileLod->hasAnyTile()) {
+        update();
+    }
+}
+
+bool ImageItem::tileLodActive() const
+{
+    return m_tileLod && m_tileLod->enabled() && m_tileLod->hasAnyTile();
+}
+
 void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                       QWidget *widget)
 {
@@ -1116,6 +1135,38 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             f.setBold(true);
             painter->setFont(f);
             painter->drawText(inner, Qt::AlignCenter, QStringLiteral("⋯"));
+        }
+
+        // Deep zoom: grid tiles over soft/LQIP underlay when on-screen need
+        // exceeds the soft ladder (TILE_LOD.md). Soft remains the base until
+        // the first tile arrives for a cell.
+        if (m_interactive && ThumtooCache::isAvailable() && !m_path.isEmpty()) {
+            const QSize isz = imageSize();
+            const qreal dpc = screenScale();
+            if (isz.isValid()
+                && tilelod::TileLodController::shouldUseTiles(dpc, qMax(isz.width(), isz.height()))) {
+                if (!m_tileLod) {
+                    m_tileLod = std::make_unique<tilelod::TileLodController>();
+                    m_tileLod->setPath(m_path);
+                    m_tileLod->setContentSize(isz.width(), isz.height());
+                    m_tileLod->setHasLqip(hasDisplayPixels());
+                }
+                QRectF vis = contentRect();
+                if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
+                    QGraphicsView *view = scene()->views().first();
+                    const QRectF sceneVis =
+                        view->mapToScene(view->viewport()->rect()).boundingRect();
+                    const QRectF localVis = mapFromScene(sceneVis).boundingRect();
+                    vis = localVis.intersected(contentRect());
+                }
+                if (!vis.isEmpty()) {
+                    m_tileLod->updateViewport(vis, dpc, 64.0);
+                    m_tileLod->tick(6);
+                    const QImage under = hasDecodedPixels() ? m_source
+                        : (!m_preview.isNull() ? m_preview : QImage());
+                    m_tileLod->paint(painter, under);
+                }
+            }
         }
         painter->restore();
     }

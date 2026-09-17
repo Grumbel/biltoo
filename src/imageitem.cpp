@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "tilelod/tile_lod_controller.hpp"
 #include "displayquality.h"
 #include "imagecache.h"
 #include <QFileInfo>
@@ -38,6 +39,8 @@ bool ImageItem::contentEditMarksVisible()
 {
     return s_contentEditMarksVisible;
 }
+
+ImageItem::~ImageItem() = default;
 
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)
     : QGraphicsPixmapItem(parent)

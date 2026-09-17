@@ -224,3 +224,14 @@ zoom first.
 - Cancel obsolete in-flight on pan/zoom; ignore stale completions.
 - Overview / LQIP is underlay, not mixed identity with high-quality tiles.
 - Keep succeeded coarser tiles for fallback when cleaning finer scales.
+
+
+## Phase B status (biltoo-1026)
+
+- `ThumtooTileSource` + `ThumtooCache::requestTiles` / `getTile`
+- `tile_painter` + `TileLodController`
+- **ImageItem** (interactive): when on-screen long edge exceeds soft max (~512),
+  updates viewport, issues budgeted tile requests, paints exact/coarser tiles
+  over the existing soft/LQIP sample. LQIP/soft remains the base underlay until
+  cells have tiles.
+- PreferCache whole-frame climb is still present for other paths (Phase C).

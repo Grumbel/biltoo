@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thumtoocache.h"
+#include "tilelod/thumtoo_tile_source.hpp"
+#include "tilelod/tile_painter.hpp"
 #include "imageloader.h"
 #include "imagecache.h"
 #include "biltoo_thread.h"
@@ -1970,6 +1972,94 @@ void warmUris(const QStringList &paths)
     });
 #else
     Q_UNUSED(paths);
+#endif
+}
+
+QImage getTile(const QString &path, int scale, int x, int y)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return {};
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return {};
+    }
+    auto blob = c->get_tile(uri, scale, x, y);
+    if (!blob) {
+        return {};
+    }
+    auto decoded = tilelod::decode_tile_payload(blob->width, blob->height, blob->codec,
+                                                blob->bytes);
+    if (!decoded) {
+        return {};
+    }
+    return tilelod::tile_bitmap_to_qimage(*decoded);
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(scale);
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+    return {};
+#endif
+}
+
+void requestTiles(const QString &path, const QVector<TileCoord> &coords,
+                  TileCellCallback on_cell)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (!on_cell || coords.isEmpty()) {
+        return;
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        for (int i = 0; i < coords.size(); ++i) {
+            on_cell(static_cast<std::size_t>(i), QImage());
+        }
+        return;
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        for (int i = 0; i < coords.size(); ++i) {
+            on_cell(static_cast<std::size_t>(i), QImage());
+        }
+        return;
+    }
+    std::vector<thumtoo::Client::TileCoord> tc;
+    tc.reserve(static_cast<size_t>(coords.size()));
+    for (const TileCoord &t : coords) {
+        tc.push_back({t.scale, t.x, t.y});
+    }
+    c->request_tiles(uri, std::move(tc),
+                     [on_cell](std::size_t index, std::optional<thumtoo::TileBlob> tile) {
+                         QImage img;
+                         if (tile) {
+                             auto decoded = tilelod::decode_tile_payload(
+                                 tile->width, tile->height, tile->codec, tile->bytes);
+                             if (decoded) {
+                                 img = tilelod::tile_bitmap_to_qimage(*decoded);
+                             }
+                         }
+                         on_cell(index, img);
+                     });
+#else
+    Q_UNUSED(path);
+    if (on_cell) {
+        for (int i = 0; i < coords.size(); ++i) {
+            on_cell(static_cast<std::size_t>(i), QImage());
+        }
+    }
 #endif
 }
 

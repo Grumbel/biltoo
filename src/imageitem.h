@@ -13,6 +13,9 @@
 #include <QString>
 #include <QPolygonF>
 #include <QRect>
+#include <memory>
+
+namespace tilelod { class TileLodController; }
 
 /**
  * A single image on the workspace. Owns its pixmap, source pixels (for colour
@@ -67,6 +70,7 @@ public:
     /** Placeholder tile (Gallery virtualization) — geometry from @p intrinsicSize. */
     explicit ImageItem(const QString &path, const QSize &intrinsicSize,
                        QGraphicsItem *parent = nullptr);
+    ~ImageItem() override;
 
     QString path() const { return m_path; }
     void setPath(const QString &path) { m_path = path; }
@@ -352,6 +356,8 @@ private:
     QList<Handle> activeHandles() const;
 
     QString m_path;
+    /** Deep-zoom grid tiles (Image mode); null until first need. */
+    std::unique_ptr<tilelod::TileLodController> m_tileLod;
     SessionImageId m_sessionId = kInvalidSessionImageId;
     int m_sessionIndex = -1; // list order cache only
     qint64 m_displaySurfaceId = 0;

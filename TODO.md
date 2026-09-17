@@ -2,6 +2,39 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1026-tilelod-thumtoo-image.** ThumtooTileSource, TilePainter, ImageItem deep-zoom path.
+Prior: **1025**.
+
+### Change
+- `ThumtooTileSource` + `decode_tile_payload` (JPEG/rgb888 → rgba8)
+- `tile_painter`: DrawPlan → QPainter in content space
+- `TileLodController`: path/session glue; `shouldUseTiles` when screen long edge > ~512
+- `ThumtooCache::requestTiles` / `getTile`
+- `ImageItem::paint`: soft/LQIP underlay first; grid tiles on top when zoomed; `tickTileLod`
+- Docs: TILE_LOD Phase B note
+
+### Apply
+```bash
+git pull /path/to/biltoo-1026-tilelod-thumtoo-image.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1026**
+- [x] Pure tilelod tests still pass
+- [ ] Runtime verify: Image zoom on prepared tile pyramid shows sharp cells
+- [ ] PreferCache climb no longer required for deep zoom (Phase C)
+
+### Next
+- Frame-tick / scroll: ensure tickTileLod on primary Image item outside paint
+- Workspace items share TileLodController pattern
+- Phase C: stop PreferCache whole-frame authority for zoom
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1025-tilelod-core.** Qt-free tile LOD core + tests; LQIP as base underlay only.
 Prior: **1024**.
 
