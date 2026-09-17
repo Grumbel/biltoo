@@ -2947,7 +2947,10 @@ void ImageView::tickPrimaryTileLod(int budget)
         if (!m_tileLodTimer) {
             m_tileLodTimer = new QTimer(this);
             connect(m_tileLodTimer, &QTimer::timeout, this, [this]() {
-                tickPrimaryTileLod(6);
+                // Image mode: one focus item can use a fuller batch.
+                // Gallery/Workspace: modest global budget (split across ≤8 targets).
+                const int budget = isImageMode() ? 12 : 6;
+                tickPrimaryTileLod(budget);
             });
         }
         // 50ms while filling (~20Hz): 33ms competed with input under load.

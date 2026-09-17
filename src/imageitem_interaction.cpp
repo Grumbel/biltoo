@@ -1328,10 +1328,10 @@ QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
     if (m_tileGradedCache.maxCost() < kGradedCacheMaxKiB) {
         m_tileGradedCache.setMaxCost(kGradedCacheMaxKiB);
     }
-    const QString ck = QStringLiteral("%1,%2,%3")
-                           .arg(key.scale)
-                           .arg(key.x)
-                           .arg(key.y);
+    // Pack scale,x,y into one key — avoid QString alloc per cell per paint.
+    const quint64 ck = (static_cast<quint64>(static_cast<uint32_t>(key.scale)) << 42)
+                       | (static_cast<quint64>(static_cast<uint32_t>(key.x)) << 21)
+                       | static_cast<quint64>(static_cast<uint32_t>(key.y));
     if (const QImage *hit = m_tileGradedCache.object(ck)) {
         return *hit; // QImage is implicitly shared
     }

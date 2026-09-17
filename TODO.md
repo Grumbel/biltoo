@@ -2,6 +2,24 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1092-graded-cache-key-budget.** Numeric graded-cache keys; Image-mode issue budget 12.
+Prior: **1091**.
+
+### Change
+- Graded QImage cache key is packed `scale|x|y` (quint64) — no QString per cell/paint.
+- Tile timer: Image mode issue budget **12**, Gallery/Workspace **6** (still split across targets).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1092-graded-cache-key-budget.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1091-graded-tile-qcache.** Graded tile QImage cache uses QCache LRU (~96 MiB) instead of clear-at-256.
 Prior: **1090**.
 

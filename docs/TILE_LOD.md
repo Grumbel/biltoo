@@ -675,6 +675,12 @@ does not hit Store `has_tile` every frame. Cleared on discover / scheduleTilePyr
 tick. Earlier code gave each target the full N (up to 8×N concurrent requests).
 
 
+## Graded cache keys / issue budget (biltoo-1092)
+
+Cache keys are packed `quint64` (scale,x,y). Timer issue budget: **12** in Image
+mode, **6** in Gallery/Workspace (split across ≤8 targets).
+
+
 ## Graded tile QImage cache (biltoo-1091)
 
 Paint resolves Succeeded cells to QImage via a cost-bounded QCache (~96 MiB,
