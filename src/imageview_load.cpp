@@ -2872,6 +2872,9 @@ void ImageView::tickPrimaryTileLod(int budget)
 
     bool anyWanted = false;
     bool anyIncomplete = false;
+    // Collect items that will receive issue budget this tick.
+    QList<ImageItem *> issueTargets;
+    issueTargets.reserve(targets.size());
     for (ImageItem *item : targets) {
         if (!item) {
             continue;
@@ -2890,14 +2893,30 @@ void ImageView::tickPrimaryTileLod(int budget)
                 m_pathRaster->cancel(path);
                 m_tileLodPreferCancelled.insert(path);
             }
+            issueTargets.append(item);
         } else if (!path.isEmpty()) {
             m_tileLodPreferCancelled.remove(path);
         }
-        if (item->tileLodWanted()) {
-            item->tickTileLod(budget);
-            if (!item->tileLodViewportCovered()) {
-                anyIncomplete = true;
-            }
+    }
+    // Split the global issue budget across items. Previously each of up to 8
+    // targets got the full budget (8×8 = 64 concurrent cell requests / tick),
+    // which flooded thumtoo workers with scale-0 / pyramid work.
+    int remaining = qMax(0, budget);
+    for (int i = 0; i < issueTargets.size(); ++i) {
+        ImageItem *item = issueTargets.at(i);
+        const int left = issueTargets.size() - i;
+        // Earlier targets are higher priority (in-view / larger); give them a
+        // fair share of what remains, at least 1 while budget lasts.
+        const int share = remaining > 0 ? qMax(1, remaining / left) : 0;
+        if (share > 0) {
+            item->tickTileLod(share);
+            remaining -= share;
+        } else {
+            // Still pump completions / plan without new issues.
+            item->tickTileLod(0);
+        }
+        if (!item->tileLodViewportCovered()) {
+            anyIncomplete = true;
         }
     }
 

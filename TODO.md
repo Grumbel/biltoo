@@ -2,6 +2,29 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1083-tile-issue-budget-split.** Split global tile issue budget across Gallery/Workspace items.
+Prior: **1082**.
+
+### Analysis
+- `tickPrimaryTileLod(budget)` passed the **full** budget into each of up to 8
+  targets → up to 64 concurrent cell requests per 50ms tick.
+- Flooded thumtoo workers (especially cold scale-0 / many paths).
+
+### Change
+- Collect wanted items, then split remaining budget (priority order kept).
+- `tickTileLod(0)` still pumps completions when budget is exhausted.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1083-tile-issue-budget-split.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1082-tile-cold-parent-first.** Cold tile issue prefers coarse (JPEG shrink) before scale-0.
 Prior: **1081**.
 

@@ -663,6 +663,12 @@ sessions. Ctrl+wheel inspect still crosses the threshold.
 Image / Workspace still use content long edge × `tileDevicePerContent()` and
 the 512×1.05 soft-max rule.
 
+## Global issue budget (biltoo-1083)
+
+`tickPrimaryTileLod(N)` splits **N** across the (≤8) priority targets for that
+tick. Earlier code gave each target the full N (up to 8×N concurrent requests).
+
+
 ## Cold issue order (biltoo-1082)
 
 `TileSession::issue_requests`: when the path cache has **no** Succeeded tile yet,
