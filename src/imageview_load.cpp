@@ -2397,8 +2397,14 @@ void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
         return;
     }
     // Deep-zoom tile band: grid tiles own display; skip PreferCache/Full climb.
+    // Check Image-mode primary and any Workspace/Gallery item for this path.
     if (ImageItem *it = imageModeItemForPath(path)) {
         if (it->tileLodWanted()) {
+            return;
+        }
+    }
+    for (ImageItem *ii : m_items) {
+        if (ii && ii->path() == path && ii->tileLodWanted()) {
             return;
         }
     }
@@ -2812,8 +2818,14 @@ void ImageView::completeLoadReplace(const QString &path, const QImage &image, qu
     if (image.isNull()) {
         if (ThumtooCache::isAvailable()) {
             // Full native miss: PreferCache display ladder so onLadderReady can
-            // upgrade Image mode (soft→HQ).
-            scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
+            // upgrade Image mode (soft→HQ). Skip when tiles already own zoom.
+            bool tilesOwn = false;
+            if (ImageItem *it = imageModeItemForPath(path)) {
+                tilesOwn = it->tileLodWanted();
+            }
+            if (!tilesOwn) {
+                scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
+            }
             m_lastLoadError.clear();
         } else {
             m_lastLoadError = path;

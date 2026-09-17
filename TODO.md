@@ -2,6 +2,33 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1045-tilelod-prefercache-gates.** PreferCache skip for all modes; status table.
+Prior: **1044**.
+
+### Change
+- `requestEscalateClimb`: also skip when any Workspace/Gallery item for the path has `tileLodWanted`
+- `completeLoadReplace` null image: no PreferCache ladder if tiles own the band
+- `docs/TILE_LOD.md` implementation status table
+
+### Apply
+```bash
+git pull /path/to/biltoo-1045-tilelod-prefercache-gates.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1045**
+- [x] Pure tilelod tests pass
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1044-tilelod-parent-prefetch.** Request coarser parents as stand-ins; keep them in cancel.
 Prior: **1043**.
 

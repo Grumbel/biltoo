@@ -346,3 +346,20 @@ clears pending completions so late worker replies are no-ops.
 After exact visible keys are queued, remaining request budget fetches one
 coarser parent per missing exact cell so `CoarserTile` stand-ins appear while
 fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
+
+
+## Implementation status (1044)
+
+| Area | Status |
+|------|--------|
+| Qt-free planner / session / draw plan | Done |
+| Thumtoo source + Image / Workspace / Gallery | Done |
+| Shared path RAM cache + 128 MiB budget | Done |
+| Parent protect + parent prefetch | Done |
+| HiDPI, scale hold, coverage heartbeat | Done |
+| ContentXform axis-aligned map | Done |
+| PreferCache skipped in tile band | Done |
+| Session lifetime / failed no-spam | Done |
+| Free-rotated crop UV | Deferred |
+| Manual pyramid QA | See TILE_LOD_RUNTIME.md |
+
