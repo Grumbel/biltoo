@@ -1373,6 +1373,8 @@ private:
                                                              const QImage &image) const;
     ImageItem *imageModeItemForPath(const QString &path) const;
     void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
+    /** Image-mode tile LOD: viewport + budgeted requests (not from paint). */
+    void tickPrimaryTileLod(int budget = 8);
     /** PreferCache/display edge: min(want, ladder max, known native long edge). */
     int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     void installImageModeSampleInPlace(ImageItem *item, const QString &path, const QImage &image,
@@ -2118,6 +2120,8 @@ private:
     int m_galleryRelayoutSuppressCount = 0;
     QTimer *m_galleryDecodeScrollTimer = nullptr;
     QTimer *m_statusRefreshTimer = nullptr;
+    /** Pump tile LOD while zoomed (Image mode). */
+    QTimer *m_tileLodTimer = nullptr;
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
     bool m_perfEnabled = false;
     QElapsedTimer m_perfFpsClock;

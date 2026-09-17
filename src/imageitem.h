@@ -305,6 +305,18 @@ public:
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
+    /**
+     * Ensure tile session + viewport from current view (no requests).
+     * Safe during paint; does not issue network/worker work beyond state.
+     */
+    void prepareTileLod();
+    /** Pump completions and issue budgeted requests (view after zoom/pan). */
+    void tickTileLod(int budget = 8);
+    /** True when on-screen need exceeds soft max (tiles should own display). */
+    bool tileLodWanted() const;
+    /** True when at least one grid tile has arrived. */
+    bool tileLodActive() const;
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,

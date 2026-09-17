@@ -2,6 +2,36 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1027-tilelod-tick-outside-paint.** Tile requests from view; PreferCache skipped when tiles own zoom.
+Prior: **1026**.
+
+### Change
+- `ImageItem::prepareTileLod` / `tileLodWanted` — paint only prepares + paints
+- `ImageView::tickPrimaryTileLod` + 33ms timer while tiles wanted
+- `maybeClimbImageModePixelsForView`: deep-zoom band uses tiles; PreferCache only below soft max
+- Soft/LQIP remains underlay until cells have tiles
+
+### Apply
+```bash
+git pull /path/to/biltoo-1027-tilelod-tick-outside-paint.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1027**
+- [x] No tile `issue_requests` from paint path
+- [ ] Runtime: zoom image with tile pyramid; PreferCache not stamped for deep zoom
+
+### Next
+- Workspace TileLodController per item
+- Further Phase C: PreferCache API still used for soft band only
+- Optional: cancel PreferCache in-flight when crossing into tile band
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1026-tilelod-thumtoo-image.** ThumtooTileSource, TilePainter, ImageItem deep-zoom path.
 Prior: **1025**.
 

@@ -235,3 +235,12 @@ zoom first.
   over the existing soft/LQIP sample. LQIP/soft remains the base underlay until
   cells have tiles.
 - PreferCache whole-frame climb is still present for other paths (Phase C).
+
+
+## Phase B+ status (biltoo-1027)
+
+- Tile **requests** are issued from `ImageView::tickPrimaryTileLod` (zoom/resize
+  climb + 33ms timer while `tileLodWanted`), not from `ImageItem::paint`.
+- Paint only `prepareTileLod` + `paint` (draw plan).
+- When `tileLodWanted()` (on-screen long edge past soft ~512), Image-mode
+  **skips PreferCache whole-frame climb**; soft/LQIP stays the underlay.

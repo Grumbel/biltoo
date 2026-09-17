@@ -2609,6 +2609,36 @@ int ImageView::imageModeOnScreenNeedEdge() const
     return itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
 }
 
+void ImageView::tickPrimaryTileLod(int budget)
+{
+    if (!isImageMode() || m_slideshowProgressActive) {
+        return;
+    }
+    ImageItem *item = imageModeItemForPath(classicPath());
+    if (!item) {
+        item = targetItem();
+    }
+    if (!item) {
+        return;
+    }
+    item->tickTileLod(budget);
+    // Keep a light timer while tiles are wanted so in-flight completions paint.
+    if (item->tileLodWanted()) {
+        if (!m_tileLodTimer) {
+            m_tileLodTimer = new QTimer(this);
+            m_tileLodTimer->setInterval(33);
+            connect(m_tileLodTimer, &QTimer::timeout, this, [this]() {
+                tickPrimaryTileLod(6);
+            });
+        }
+        if (!m_tileLodTimer->isActive()) {
+            m_tileLodTimer->start();
+        }
+    } else if (m_tileLodTimer && m_tileLodTimer->isActive()) {
+        m_tileLodTimer->stop();
+    }
+}
+
 void ImageView::maybeClimbImageModePixelsForView()
 {
     // Zoom / resize: PreferCache climbs when on-screen need exceeds painted.
@@ -2629,6 +2659,16 @@ void ImageView::maybeClimbImageModePixelsForView()
     if (isCropDraftLockedPath(path)) {
         return;
     }
+
+    // Tile LOD owns deep zoom when on-screen need exceeds soft max (TILE_LOD).
+    // PreferCache whole-frame climb is skipped for that band; soft/LQIP stays
+    // as underlay until tiles arrive.
+    tickPrimaryTileLod(8);
+    if (item->tileLodWanted()) {
+        driveImageFocusSurface();
+        return;
+    }
+
     const int need = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
     const int have = item->displayPixelLongEdge();
     if (have <= 0) {
@@ -2648,7 +2688,7 @@ void ImageView::maybeClimbImageModePixelsForView()
                 item->hasDecodedPixels() ? 1 : 0);
     }
 
-    // Zoom-in: PathRasterService Soft→PreferCache→Full (contract EscalateToFull).
+    // Moderate zoom still on soft band: PathRaster Soft→PreferCache→Full.
     scheduleImageModePreferCacheClimb(path, need);
     // Soft matching want + large host → ScheduleAsyncMaterialize via decide.
     driveImageFocusSurface();

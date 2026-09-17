@@ -1066,8 +1066,49 @@ QVariant ImageItem::itemChange(GraphicsItemChange change, const QVariant &value)
 }
 
 
+bool ImageItem::tileLodWanted() const
+{
+    if (!m_interactive || m_path.isEmpty() || !ThumtooCache::isAvailable()) {
+        return false;
+    }
+    const QSize isz = imageSize();
+    if (!isz.isValid() || isz.width() < 1 || isz.height() < 1) {
+        return false;
+    }
+    return tilelod::TileLodController::shouldUseTiles(
+        screenScale(), qMax(isz.width(), isz.height()));
+}
+
+void ImageItem::prepareTileLod()
+{
+    if (!tileLodWanted()) {
+        return;
+    }
+    const QSize isz = imageSize();
+    if (!m_tileLod) {
+        m_tileLod = std::make_unique<tilelod::TileLodController>();
+        m_tileLod->setPath(m_path);
+    }
+    m_tileLod->setContentSize(isz.width(), isz.height());
+    m_tileLod->setHasLqip(hasDisplayPixels());
+
+    const qreal dpc = screenScale();
+    QRectF vis = contentRect();
+    if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
+        QGraphicsView *view = scene()->views().first();
+        const QRectF sceneVis =
+            view->mapToScene(view->viewport()->rect()).boundingRect();
+        const QRectF localVis = mapFromScene(sceneVis).boundingRect();
+        vis = localVis.intersected(contentRect());
+    }
+    if (!vis.isEmpty()) {
+        m_tileLod->updateViewport(vis, dpc, 64.0);
+    }
+}
+
 void ImageItem::tickTileLod(int budget)
 {
+    prepareTileLod();
     if (!m_tileLod) {
         return;
     }
@@ -1137,35 +1178,14 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->drawText(inner, Qt::AlignCenter, QStringLiteral("⋯"));
         }
 
-        // Deep zoom: grid tiles over soft/LQIP underlay when on-screen need
-        // exceeds the soft ladder (TILE_LOD.md). Soft remains the base until
-        // the first tile arrives for a cell.
-        if (m_interactive && ThumtooCache::isAvailable() && !m_path.isEmpty()) {
-            const QSize isz = imageSize();
-            const qreal dpc = screenScale();
-            if (isz.isValid()
-                && tilelod::TileLodController::shouldUseTiles(dpc, qMax(isz.width(), isz.height()))) {
-                if (!m_tileLod) {
-                    m_tileLod = std::make_unique<tilelod::TileLodController>();
-                    m_tileLod->setPath(m_path);
-                    m_tileLod->setContentSize(isz.width(), isz.height());
-                    m_tileLod->setHasLqip(hasDisplayPixels());
-                }
-                QRectF vis = contentRect();
-                if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
-                    QGraphicsView *view = scene()->views().first();
-                    const QRectF sceneVis =
-                        view->mapToScene(view->viewport()->rect()).boundingRect();
-                    const QRectF localVis = mapFromScene(sceneVis).boundingRect();
-                    vis = localVis.intersected(contentRect());
-                }
-                if (!vis.isEmpty()) {
-                    m_tileLod->updateViewport(vis, dpc, 64.0);
-                    m_tileLod->tick(6);
-                    const QImage under = hasDecodedPixels() ? m_source
-                        : (!m_preview.isNull() ? m_preview : QImage());
-                    m_tileLod->paint(painter, under);
-                }
+        // Deep zoom: grid tiles over soft/LQIP underlay (TILE_LOD.md).
+        // Requests are issued from ImageView::tickPrimaryTileLod, not here.
+        if (tileLodWanted()) {
+            prepareTileLod();
+            if (m_tileLod) {
+                const QImage under = hasDecodedPixels() ? m_source
+                    : (!m_preview.isNull() ? m_preview : QImage());
+                m_tileLod->paint(painter, under);
             }
         }
         painter->restore();
