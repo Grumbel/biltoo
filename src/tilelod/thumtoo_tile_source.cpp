@@ -73,9 +73,9 @@ ThumtooTileSource::ThumtooTileSource(std::string uri, FetchFn fetch,
 
 void ThumtooTileSource::set_uri(std::string uri)
 {
-  std::lock_guard<std::mutex> lock(m_mu);
+  std::lock_guard<std::mutex> lock(m_epoch->mu);
   m_uri = std::move(uri);
-  ++m_batch_id;
+  ++m_epoch->batch_id;
 }
 
 void ThumtooTileSource::request(std::vector<TileKey> keys, Completion on_each)
@@ -85,13 +85,14 @@ void ThumtooTileSource::request(std::vector<TileKey> keys, Completion on_each)
   }
   std::string uri;
   std::uint64_t epoch = 0;
+  std::shared_ptr<EpochState> epochState = m_epoch;
   {
-    std::lock_guard<std::mutex> lock(m_mu);
+    std::lock_guard<std::mutex> lock(epochState->mu);
     uri = m_uri;
-    // Capture epoch only — do NOT increment. Every request used to ++m_batch_id,
+    // Capture epoch only — do NOT increment. Every request used to ++batch_id,
     // so a second issue_requests dropped all completions from the first and left
     // keys stuck InFlight in the RAM cache.
-    epoch = m_batch_id;
+    epoch = epochState->batch_id;
   }
   if (uri.empty()) {
     for (TileKey const& k : keys) {
@@ -110,13 +111,14 @@ void ThumtooTileSource::request(std::vector<TileKey> keys, Completion on_each)
   auto keyCopy = std::make_shared<std::vector<TileKey>>(std::move(keys));
   auto cb = std::make_shared<Completion>(std::move(on_each));
 
+  // Capture epochState (not this): completions can outlive the TileSource when
+  // the path is unbound while thumtoo still delivers durable/encode hits.
   m_fetch(uri, coords,
-          [this, epoch, keyCopy, cb](std::size_t index,
-                                     std::optional<TileBitmap> bitmap) {
+          [epochState, epoch, keyCopy, cb](std::size_t index,
+                                           std::optional<TileBitmap> bitmap) {
             {
-              std::lock_guard<std::mutex> lock(m_mu);
-              // Drop only if URI was rebound or cancel_all advanced the epoch.
-              if (epoch != m_batch_id) {
+              std::lock_guard<std::mutex> lock(epochState->mu);
+              if (epoch != epochState->batch_id) {
                 return;
               }
             }
@@ -134,7 +136,7 @@ void ThumtooTileSource::cancel(std::vector<TileKey> const& keys)
   }
   std::string uri;
   {
-    std::lock_guard<std::mutex> lock(m_mu);
+    std::lock_guard<std::mutex> lock(m_epoch->mu);
     uri = m_uri;
   }
   if (uri.empty()) {
@@ -150,10 +152,14 @@ void ThumtooTileSource::cancel(std::vector<TileKey> const& keys)
 
 void ThumtooTileSource::cancel_all()
 {
-  std::lock_guard<std::mutex> lock(m_mu);
-  ++m_batch_id;
-  if (m_cancel && !m_uri.empty()) {
-    m_cancel(m_uri, {});
+  std::string uri;
+  {
+    std::lock_guard<std::mutex> lock(m_epoch->mu);
+    ++m_epoch->batch_id;
+    uri = m_uri;
+  }
+  if (m_cancel && !uri.empty()) {
+    m_cancel(uri, {});
   }
 }
 

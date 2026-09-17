@@ -7,6 +7,7 @@
 #include "tilelod/tile_source.hpp"
 
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -52,12 +53,20 @@ public:
   void cancel_all() override;
 
 private:
+  /**
+   * Shared with in-flight fetch completions so callbacks remain safe after the
+   * ThumtooTileSource is destroyed (path unbind / registry release).
+   */
+  struct EpochState {
+    std::mutex mu;
+    /** Bumped by set_uri / cancel_all only (not per request). */
+    std::uint64_t batch_id = 0;
+  };
+
   std::string m_uri;
   FetchFn m_fetch;
   CancelFn m_cancel;
-  std::mutex m_mu;
-  /** Epoch bumped by set_uri / cancel_all only (not per request). */
-  std::uint64_t m_batch_id = 0;
+  std::shared_ptr<EpochState> m_epoch{std::make_shared<EpochState>()};
 };
 
 /**

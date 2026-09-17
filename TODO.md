@@ -2,6 +2,28 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1100-tile-source-epoch-lifetime.** Fix UAF: tile fetch completions no longer lock destroyed mutex.
+Prior: **1099**.
+
+### Bug
+- `ThumtooTileSource::request` lambda captured `this` and locked `m_mu`.
+- Path unbind / registry release destroyed the source while thumtoo still delivered
+  hits → `std::mutex::lock` on freed mutex → SIGABRT (`system_error`).
+
+### Fix
+- Shared `EpochState` (mutex + batch_id) captured by completions; outlives the source.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1100-tile-source-epoch-lifetime.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1099-lqip-cache-then-tiles.** Image mode: cache LQIP only, then tiles; no SoftOnly.
 Prior: **1098**.
 
