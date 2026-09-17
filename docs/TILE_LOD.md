@@ -378,7 +378,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Tile fetch without QImage round-trip | Done (1058) |
 | Identity tile QImage paint cache | Done (1059) |
 | Tile source epoch not per-request | Done (1060) |
-| tileLodWanted requires durable tiles | Done (1061) |
+| tileLodWanted density-only (no durable gate) | Done (1097) |
 | hasDurableTiles positive memo | Done (1062) |
 | durableTilesReady wakes tile tick | Done (1063) |
 | set_content_size idempotent | Done (1064) |
@@ -586,8 +586,9 @@ can still enable the tile band.
 
 ## Durable tiles gate (biltoo-1061)
 
-`tileLodWanted()` requires `ThumtooCache::hasDurableTiles(path)`. Crossing into
-the tile band cancels PreferCache; without a pyramid every cell fails and soft
+`tileLodWanted()` is density-based (on-screen long edge past soft). Durable
+tiles are optional (fast Store hits); without them interactive `request_tiles`
+encodes on miss. Crossing into the tile band cancels PreferCache; soft stays
 would stick with no Prefer climb. PreferCache/Full keep authority until durable
 tiles exist (after `thumtoo-prepare --tiles` or FocusFull pyramid build).
 
@@ -669,6 +670,13 @@ sessions. Ctrl+wheel inspect still crosses the threshold.
 
 Image / Workspace still use content long edge × `tileDevicePerContent()` and
 the 512×1.05 soft-max rule.
+
+## Tile band without durable pyramid (biltoo-1097)
+
+`tileLodWanted` no longer requires `hasDurableTiles`. PreferCache/Full whole-frame
+climbs (often →2048) were redundant with interactive tiles once on-screen need
+passed the soft band. Soft remains the underlay until cells arrive.
+
 
 ## hasDurableTiles memo (biltoo-1084)
 

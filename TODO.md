@@ -2,6 +2,29 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1097-tiles-without-durable-gate.** Tile band no longer requires durable pyramid (skip 2048 PreferCache).
+Prior: **1096**.
+
+### Problem
+- `tileLodWanted` required `hasDurableTiles`, so deep zoom ran PreferCache/Full
+  whole-frame climbs (often →2048) before tiles could start.
+- Interactive `request_tiles` already encodes on miss; durable is a cache hit, not a gate.
+
+### Change
+- Density-only `tileLodWanted` (durable optional).
+- Existing `requestEscalateClimb` skip when tiles wanted now engages without pyramid.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1097-tiles-without-durable-gate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1096-soft-only-no-reschedule-loop.** Stop SoftOnly re-queue when store soft < softMax.
 Prior: **1095**.
 
