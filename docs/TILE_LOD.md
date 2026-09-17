@@ -675,6 +675,13 @@ does not hit Store `has_tile` every frame. Cleared on discover / scheduleTilePyr
 tick. Earlier code gave each target the full N (up to 8×N concurrent requests).
 
 
+## Tile paint transform (biltoo-1087)
+
+`SmoothPixmapTransform` is off for ExactTile-only plans when device zoom of the
+target scale is near an integer ≥1 (nearest-neighbour, cheaper). Parent stand-ins
+still use smooth filtering.
+
+
 ## Underlay plan commands (biltoo-1086)
 
 Host paints soft as a continuous base. Draw plans omit Underlay/Empty hole cells

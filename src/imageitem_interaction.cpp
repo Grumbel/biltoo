@@ -4,6 +4,7 @@
 #include "imageitem.h"
 
 #include <cstdlib>
+#include <cmath>
 #include "tilelod/tile_lod_controller.hpp"
 #include "thumtoocache.h"
 #include "imagecache.h"
@@ -40,6 +41,28 @@ bool tilePlanDebugOverlayEnabled()
     }
     const char *e = std::getenv("BILTOO_TILE_DEBUG");
     return e && e[0] && e[0] != '0';
+}
+
+/** SmoothPixmapTransform is expensive; skip at near-integer device zoom of the
+ *  target scale (1:1 / 2:1 tile pixels). Parent stand-ins still need smooth. */
+bool tilePaintNeedsSmooth(double devicePerContent, int targetScale,
+                          const tilelod::DrawPlan &plan)
+{
+    for (const tilelod::DrawCommand &cmd : plan.commands) {
+        if (cmd.kind == tilelod::DrawKind::CoarserTile) {
+            return true;
+        }
+    }
+    if (!(devicePerContent > 0.0) || targetScale < 0) {
+        return true;
+    }
+    const int s = qMin(targetScale, 12);
+    const double dpp = devicePerContent * static_cast<double>(1 << s);
+    const double nearest = std::round(dpp);
+    if (nearest >= 1.0 && std::abs(dpp - nearest) < 0.08) {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -1636,7 +1659,9 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     tilelod::PaintDrawPlanArgs args;
                     args.plan = &plan;
                     args.lqip = QImage(); // soft already in display space
-                    args.smooth = true;
+                    args.smooth = tilePaintNeedsSmooth(
+                        tileDevicePerContent(),
+                        m_tileLod->session()->target_scale(), plan);
                     args.resolve = resolve;
                     tilelod::paint_draw_plan(painter, args);
 
@@ -1666,7 +1691,9 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     // empty so holes show the continuous soft underneath;
                     // CoarserTile stand-ins still paint via resolve.
                     args.lqip = QImage();
-                    args.smooth = true;
+                    args.smooth = tilePaintNeedsSmooth(
+                        tileDevicePerContent(),
+                        m_tileLod->session()->target_scale(), plan);
                     args.resolve = resolve;
                     tilelod::paint_draw_plan(painter, args);
                     (void)under;

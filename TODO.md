@@ -2,6 +2,28 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1087-tile-paint-fast-transform.** Skip SmoothPixmapTransform near 1:1 tile zoom.
+Prior: **1086**.
+
+### Analysis
+- Tile paint always enabled SmoothPixmapTransform — costly for many ExactTiles
+  when already at integer device zoom of the target scale.
+
+### Change
+- `tilePaintNeedsSmooth`: false when no parent stand-ins and device pixels per
+  tile-pixel are near an integer ≥1; true when any CoarserTile or fractional zoom.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1087-tile-paint-fast-transform.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1086-omit-underlay-plan-cmds.** Skip per-cell Underlay/Empty when soft is the continuous base.
 Prior: **1085**.
 
