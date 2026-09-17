@@ -2,6 +2,27 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1081-tile-overlay-washes.** Semi-transparent cell washes by tile source.
+Prior: **1080**.
+
+### Change
+- Tile plan debug: full-cell semi-transparent fills (image still visible)
+  - Yellow = ExactTile (cache)
+  - Orange = CoarserTile (parent cache)
+  - Cyan = Underlay hole (soft/ladder)
+- Keep summary plate + edge + labels on large cells
+
+### Apply
+```bash
+git pull /path/to/biltoo-1081-tile-overlay-washes.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1080-gallery-tile-threshold-debug-overlay.** Gallery soft-covered skip; readable HOST/TILE overlays.
 Prior: **1079**.
 

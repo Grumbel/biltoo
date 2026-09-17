@@ -441,7 +441,9 @@ With `BILTOO_DEBUG_OVERLAY=1` / `THUMTOO_DEBUG_OVERLAY=1`:
 | **TILE** `scale=N (1:2^N)` (thumtoo) | Grid cell; scale 0 = full-res |
 | **HOST** (biltoo cyan plate, BR) | ImageCache PreferCache / host sample (one plate, not a grid) |
 | **TILE** summary plate (paint) | Target scale, vis/exact/parent/hole, flight, LOADING/WAITING |
-| **E / P / H** outlines (paint) | Exact / parent / hole cells (labels only if large on screen) |
+| **Yellow wash** | ExactTile — target-scale tile cache |
+| **Orange wash** | CoarserTile — parent scale cache stand-in |
+| **Cyan wash** | Underlay hole — soft/ladder underlay |
 
 Center without tile outlines is usually HOST/PreferCache underlay where the
 tile band is inactive (Gallery soft-covered) or tiles have not covered yet.
@@ -661,13 +663,16 @@ sessions. Ctrl+wheel inspect still crosses the threshold.
 Image / Workspace still use content long edge × `tileDevicePerContent()` and
 the 512×1.05 soft-max rule.
 
-## Debug overlay readability (biltoo-1080)
+## Debug overlay readability (biltoo-1080 / 1081)
 
 - **HOST** (ImageCache): single cyan plate, bottom-right — not a repeated grid.
 - **Tile plan** (`BILTOO_DEBUG_OVERLAY` / `BILTOO_TILE_DEBUG`): summary plate with
   target scale, vis/exact/parent/hole counts, `ok`/`flight`, and
-  `LOADING…` / `WAITING` / `COMPLETE`; thin cell outlines; short per-cell tags
-  only when the cell is ≳40 device px.
+  `LOADING…` / `WAITING` / `COMPLETE`; short per-cell tags only when ≳40 device px.
+- **Washes (1081):** semi-transparent full-cell fills (image still visible):
+  - **Yellow** — ExactTile (target-scale cache)
+  - **Orange** — CoarserTile / parent cache stand-in
+  - **Cyan** — Underlay hole (soft / ladder showing through)
 
 
 ## Crop draft suppress (biltoo-1053)

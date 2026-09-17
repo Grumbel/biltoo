@@ -42,7 +42,14 @@ bool tilePlanDebugOverlayEnabled()
     return e && e[0] && e[0] != '0';
 }
 
-/** Readable tile-plan overlay: summary plate + thin cell outlines; skip tiny labels. */
+/**
+ * Tile-plan debug overlay: semi-transparent washes by source so the image
+ * still shows through, plus a summary plate.
+ *
+ *   Exact (target-scale cache)  — yellow
+ *   Parent (coarser cache)      — amber / orange
+ *   Hole (soft / ladder under)  — cyan
+ */
 void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
                                const tilelod::DrawPlan &plan,
                                const QRectF &contentBounds)
@@ -51,6 +58,8 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         return;
     }
     painter->save();
+    // Washes under labels; keep image readable.
+    painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     const QTransform dt = painter->deviceTransform();
     const qreal sx = qMax(1e-6, qSqrt(dt.m11() * dt.m11() + dt.m12() * dt.m12()));
     // Aim for ~13–16 device px font regardless of zoom.
@@ -60,6 +69,15 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     of.setPixelSize(fontPx);
     painter->setFont(of);
     const QFontMetrics fm(of);
+
+    // Alpha high enough to read at a glance, low enough to see the photo.
+    constexpr int kWashAlpha = 90;
+    const QColor fillExact(255, 220, 40, kWashAlpha);   // yellow — exact cache
+    const QColor fillParent(255, 140, 20, kWashAlpha);  // orange — parent cache
+    const QColor fillHole(40, 200, 255, kWashAlpha);    // cyan — soft/ladder hole
+    const QColor edgeExact(255, 230, 60);
+    const QColor edgeParent(255, 160, 40);
+    const QColor edgeHole(60, 220, 255);
 
     int nExact = 0, nParent = 0, nHole = 0;
     for (const tilelod::DrawCommand &cmd : plan.commands) {
@@ -75,6 +93,46 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const int target = session->target_scale();
     const int desired = session->desired_scale();
 
+    // Cell washes first (under the summary plate).
+    const qreal minLabelLocal = 40.0 / sx;
+    for (const tilelod::DrawCommand &cmd : plan.commands) {
+        const QRectF dst(cmd.dst_content.x, cmd.dst_content.y,
+                         cmd.dst_content.w, cmd.dst_content.h);
+        if (dst.isEmpty()) {
+            continue;
+        }
+        QColor fill;
+        QColor edge;
+        QString tag;
+        if (cmd.kind == tilelod::DrawKind::ExactTile) {
+            fill = fillExact;
+            edge = edgeExact;
+            tag = QStringLiteral("E %1,%2").arg(cmd.src_key.x).arg(cmd.src_key.y);
+        } else if (cmd.kind == tilelod::DrawKind::CoarserTile) {
+            fill = fillParent;
+            edge = edgeParent;
+            tag = QStringLiteral("P s%1").arg(cmd.src_key.scale);
+        } else if (cmd.kind == tilelod::DrawKind::Underlay) {
+            fill = fillHole;
+            edge = edgeHole;
+            tag = QStringLiteral("H");
+        } else {
+            continue;
+        }
+        painter->fillRect(dst, fill);
+        painter->setPen(QPen(edge, 0));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRect(dst);
+        if (qMin(dst.width(), dst.height()) >= minLabelLocal && !tag.isEmpty()) {
+            painter->fillRect(QRectF(dst.left(), dst.top(),
+                                     fm.horizontalAdvance(tag) + 4, fm.height() + 2),
+                              QColor(0, 0, 0, 170));
+            painter->setPen(edge);
+            painter->drawText(dst.adjusted(2, 1, -1, -1),
+                              Qt::AlignTop | Qt::AlignLeft, tag);
+        }
+    }
+
     QStringList summary;
     summary << QStringLiteral("TILE s=%1").arg(target);
     if (desired != target) {
@@ -88,6 +146,7 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     summary << QStringLiteral("ok=%1 flight=%2")
                    .arg(cov.exact_succeeded)
                    .arg(cov.in_flight);
+    summary << QStringLiteral("Y=exact  O=parent  C=hole");
     if (cov.fully_covered()) {
         summary << QStringLiteral("COMPLETE");
     } else if (cov.in_flight > 0) {
@@ -104,52 +163,25 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const int lineH = fm.height();
     const int blockH = lineH * summary.size() + pad * 2;
     blockW += pad * 2;
-    // fontPx is in local units so text is ~14 device px after deviceTransform.
     const QRectF plate(contentBounds.left() + 4.0,
                        contentBounds.top() + 4.0,
                        blockW + 2.0,
                        blockH + 2.0);
-    painter->fillRect(plate, QColor(0, 0, 0, 190));
-    painter->setPen(QColor(255, 255, 255));
+    painter->fillRect(plate, QColor(0, 0, 0, 200));
+    // Colour-coded first lines for the wash legend.
     for (int i = 0; i < summary.size(); ++i) {
+        QColor pen(255, 255, 255);
+        if (summary.at(i).startsWith(QStringLiteral("Y="))) {
+            pen = edgeExact;
+        } else if (cov.fully_covered() && summary.at(i) == QStringLiteral("COMPLETE")) {
+            pen = QColor(120, 255, 120);
+        } else if (summary.at(i).startsWith(QStringLiteral("LOADING"))) {
+            pen = QColor(255, 220, 120);
+        }
+        painter->setPen(pen);
         painter->drawText(QPointF(plate.left() + pad,
                                   plate.top() + pad + (i + 1) * lineH - fm.descent()),
                           summary.at(i));
-    }
-
-    // Thin cell outlines; label only when cell is large enough on screen (~40px).
-    const qreal minLabelLocal = 40.0 / sx;
-    for (const tilelod::DrawCommand &cmd : plan.commands) {
-        const QRectF dst(cmd.dst_content.x, cmd.dst_content.y,
-                         cmd.dst_content.w, cmd.dst_content.h);
-        if (dst.isEmpty()) {
-            continue;
-        }
-        QColor penC(80, 80, 80);
-        QString tag;
-        if (cmd.kind == tilelod::DrawKind::ExactTile) {
-            penC = QColor(0, 255, 80);
-            tag = QStringLiteral("E %1,%2").arg(cmd.src_key.x).arg(cmd.src_key.y);
-        } else if (cmd.kind == tilelod::DrawKind::CoarserTile) {
-            penC = QColor(255, 200, 0);
-            tag = QStringLiteral("P s%1").arg(cmd.src_key.scale);
-        } else if (cmd.kind == tilelod::DrawKind::Underlay) {
-            penC = QColor(100, 160, 255);
-            tag = QStringLiteral("H");
-        } else {
-            continue;
-        }
-        painter->setPen(QPen(penC, 0));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRect(dst);
-        if (qMin(dst.width(), dst.height()) >= minLabelLocal && !tag.isEmpty()) {
-            painter->fillRect(QRectF(dst.left(), dst.top(),
-                                     fm.horizontalAdvance(tag) + 4, lineH + 2),
-                              QColor(0, 0, 0, 160));
-            painter->setPen(penC);
-            painter->drawText(dst.adjusted(2, 1, -1, -1),
-                              Qt::AlignTop | Qt::AlignLeft, tag);
-        }
     }
     painter->restore();
 }
