@@ -147,6 +147,11 @@ int TileSession::pump()
     }
     ++applied;
   }
+  // Protect current visible keys; evict other Succeeded tiles under budget.
+  for (TileKey const& k : m_visible_keys) {
+    m_cache->touch(k, m_generation);
+  }
+  m_cache->trim_to_budget(m_byte_budget, m_visible_keys);
   return applied;
 }
 

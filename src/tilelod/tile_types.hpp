@@ -112,6 +112,7 @@ struct CacheEntry {
   TileState state = TileState::Missing;
   TileBitmap bitmap;
   std::uint64_t generation = 0;  ///< Viewport generation when requested
+  std::uint64_t last_used = 0;    ///< For budget eviction (monotonic touch)
 };
 
 enum class DrawKind {

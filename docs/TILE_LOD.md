@@ -307,3 +307,11 @@ whole-frame climbs for that path:
 | Wanted + incomplete | 33ms pump |
 | Wanted + fully covered | 250ms heartbeat (pan discovers new cells) |
 | Not wanted | stopped |
+
+
+## Cache budget (biltoo-1038)
+
+Shared path `TileMemoryCache` keeps at most ~**128 MiB** of Succeeded tile
+payloads by default. After each `pump`, visible keys are protected; older
+Succeeded tiles are evicted by `last_used`. InFlight entries are never dropped
+by the budget trim.

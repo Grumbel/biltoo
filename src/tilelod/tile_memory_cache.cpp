@@ -3,6 +3,9 @@
 
 #include "tilelod/tile_memory_cache.hpp"
 
+#include <algorithm>
+#include <set>
+
 namespace tilelod {
 
 CacheEntry const* TileMemoryCache::find(TileKey const& key) const
@@ -39,6 +42,7 @@ void TileMemoryCache::set_succeeded(TileKey const& key, TileBitmap bitmap,
   e.state = TileState::Succeeded;
   e.bitmap = std::move(bitmap);
   e.generation = generation;
+  e.last_used = generation;
 }
 
 void TileMemoryCache::set_failed(TileKey const& key, std::uint64_t generation)
@@ -63,6 +67,62 @@ void TileMemoryCache::drop_finer_than(int keep_min_scale)
       ++it;
     }
   }
+}
+
+std::size_t TileMemoryCache::approx_bytes() const
+{
+  std::size_t n = 0;
+  for (auto const& [k, e] : m_map) {
+    (void)k;
+    if (e.state == TileState::Succeeded) {
+      n += e.bitmap.bytes.size();
+    }
+  }
+  return n;
+}
+
+void TileMemoryCache::touch(TileKey const& key, std::uint64_t now)
+{
+  auto it = m_map.find(key);
+  if (it != m_map.end() && it->second.state == TileState::Succeeded) {
+    it->second.last_used = now;
+  }
+}
+
+std::size_t TileMemoryCache::trim_to_budget(std::size_t max_bytes,
+                                           std::vector<TileKey> const& protect)
+{
+  if (approx_bytes() <= max_bytes) {
+    return 0;
+  }
+  std::set<TileKey> keep(protect.begin(), protect.end());
+  // Candidates: Succeeded not protected, sorted by last_used ascending.
+  std::vector<std::pair<std::uint64_t, TileKey>> victims;
+  for (auto const& [k, e] : m_map) {
+    if (e.state != TileState::Succeeded) {
+      continue;
+    }
+    if (keep.find(k) != keep.end()) {
+      continue;
+    }
+    victims.emplace_back(e.last_used, k);
+  }
+  std::sort(victims.begin(), victims.end(),
+            [](auto const& a, auto const& b) { return a.first < b.first; });
+  std::size_t freed = 0;
+  for (auto const& [lu, key] : victims) {
+    (void)lu;
+    if (approx_bytes() <= max_bytes) {
+      break;
+    }
+    auto it = m_map.find(key);
+    if (it == m_map.end()) {
+      continue;
+    }
+    freed += it->second.bitmap.bytes.size();
+    m_map.erase(it);
+  }
+  return freed;
 }
 
 std::vector<TileKey> TileMemoryCache::in_flight_keys() const

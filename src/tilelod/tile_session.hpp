@@ -86,6 +86,9 @@ public:
   };
   Coverage coverage() const;
 
+  void set_byte_budget(std::size_t bytes) { m_byte_budget = bytes; }
+  std::size_t byte_budget() const { return m_byte_budget; }
+
   /// Test helper: enqueue a completion as if the source called back.
   void inject_completion(TileKey key, std::optional<TileBitmap> bitmap);
 
@@ -123,6 +126,7 @@ private:
 
   TileMemoryCache m_owned_cache;
   TileMemoryCache* m_cache = nullptr;  // → shared or &m_owned_cache
+  std::size_t m_byte_budget = TileMemoryCache::kDefaultBudgetBytes;
 
   mutable std::mutex m_pending_mutex;
   std::vector<PendingCompletion> m_pending;

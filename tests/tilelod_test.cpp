@@ -377,6 +377,32 @@ void test_coverage_fully_covered()
   CHECK(c.fully_covered());
 }
 
+
+void test_trim_budget()
+{
+  tilelod::TileMemoryCache cache;
+  tilelod::TileBitmap bm;
+  bm.width = 256;
+  bm.height = 256;
+  bm.bytes.resize(256 * 256 * 4, 1);
+
+  // Insert many Succeeded tiles at different last_used.
+  for (int i = 0; i < 20; ++i) {
+    tilelod::TileKey k{0, i, 0};
+    cache.set_succeeded(k, bm, static_cast<std::uint64_t>(i));
+  }
+  CHECK(cache.approx_bytes() > 1000);
+  // Protect first two keys; budget allows ~3 tiles.
+  std::size_t const per = 256ull * 256ull * 4ull;
+  std::vector<tilelod::TileKey> protect = {{0, 0, 0}, {0, 1, 0}};
+  cache.trim_to_budget(per * 3, protect);
+  CHECK(cache.find({0, 0, 0}) != nullptr);
+  CHECK(cache.find({0, 1, 0}) != nullptr);
+  CHECK(cache.approx_bytes() <= per * 3 + 1);
+  // Oldest non-protected should be gone first
+  CHECK(cache.find({0, 2, 0}) == nullptr);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -406,6 +432,7 @@ int main()
   test_shared_cache_two_sessions();
   test_scale_hold_adjacent();
   test_coverage_fully_covered();
+  test_trim_budget();
   test_parent_key();
 
   if (g_failures) {

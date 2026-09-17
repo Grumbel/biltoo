@@ -2,6 +2,35 @@
 
 ## Status (2026-09-17)
 
+**Tip: biltoo-1038-tilelod-cache-budget.** Shared RAM tile cache trims to ~128 MiB.
+Prior: **1037**.
+
+### Change
+- `TileMemoryCache::approx_bytes` / `trim_to_budget` / `touch`
+- Evict oldest Succeeded tiles not in the protected visible set
+- Default budget `kDefaultBudgetBytes` = 128 MiB; `TileSession::set_byte_budget`
+- Pump touches visible keys then trims
+- Unit test: protect + budget drops oldest
+
+### Apply
+```bash
+git pull /path/to/biltoo-1038-tilelod-cache-budget.bundle HEAD
+```
+
+### Done criteria
+- [x] Bundle **1038**
+- [x] Trim unit test passes
+
+### Next
+- Manual runtime (TILE_LOD_RUNTIME.md)
+- Optional free-rotated crop UV (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-17)
+
 **Tip: biltoo-1037-tilelod-coverage-heartbeat.** Slow heartbeat while covered so pan refills cells.
 Prior: **1036**.
 
