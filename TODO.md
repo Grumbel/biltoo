@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1333-textsearch-canvaspattern-wrap.** TextSearchPolicy, canvas pattern geometry, HUD wrap.
+Prior: **1332**.
+
+### Change
+- `TextSearchPolicy` — pure page-text Find (normalize, alnum, fuzzy match)
+- `CanvasPatternGeometry::{checkerCellScene,tileLodFactor}`
+- `HudGeometry::wrapHudLine` — HUD panel line wrap / elide
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1333-textsearch-canvaspattern-wrap.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1332-hud-layoutprefs-cover.** HudGeometry, LayoutPrefs clamps, cover scale, crop size.
 Prior: **1331**.
 

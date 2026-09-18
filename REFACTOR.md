@@ -320,3 +320,4 @@ part of early-phase exit criteria).
 - **ContentXform** aspectRatio / aspectChanged / footprintScaleFactor; HUD setTimelineProgress.
 - **ViewFraming** aspectMode + sticky pan pure; **ViewTransform::unitFraction**; **SlideshowClocks::progress01**.
 - **HudGeometry** placePanel; **LayoutPrefs** clamps; cover scale + roundedSizeAtLeast1; sanitizeDwellDurationMs.
+- **TextSearchPolicy**; **CanvasPatternGeometry**; **HudGeometry::wrapHudLine**.
