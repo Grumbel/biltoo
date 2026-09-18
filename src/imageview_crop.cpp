@@ -812,8 +812,8 @@ void ImageView::applyAutoCrop()
         return;
     }
 
-    const qreal invSx = cr.width() / qreal(qMax(1, src.width()));
-    const qreal invSy = cr.height() / qreal(qMax(1, src.height()));
+    const qreal invSx = ContentXform::invAxisScale(cr.width(), src.width());
+    const qreal invSy = ContentXform::invAxisScale(cr.height(), src.height());
     m_crop.rect = QRectF(cr.left() + trimmed.x() * invSx,
                         cr.top() + trimmed.y() * invSy,
                         trimmed.width() * invSx,

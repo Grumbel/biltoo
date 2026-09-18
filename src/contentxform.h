@@ -57,6 +57,12 @@ inline QSize roundedSizeAtLeast1(qreal w, qreal h)
     return QSize(qMax(1, qRound(w)), qMax(1, qRound(h)));
 }
 
+/** Map scale from crop extent to source pixel extent (min source 1). */
+inline qreal invAxisScale(qreal cropExtent, int sourceExtent)
+{
+    return cropExtent / qreal(qMax(1, sourceExtent));
+}
+
 
 /** Max long edge for materializeDisplay on the GUI thread (matches SessionAppearance). */
 inline constexpr int kGuiMaterializeMaxEdge = 512;
