@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1234-session-replace-memos.** Session replace clears durable-tile + URI process memos.
+Prior: **1233**.
+
+### Change
+- `ThumtooCache::clearSessionReplaceMemos()` — durable yes/no, min_scale, URI map.
+- Called with registry invalidate on session wipe so old-archive coverage cannot
+  drive hasDurableTilesKnown / wrong min_scale for a new path set.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1234-session-replace-memos.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1233-session-tile-registry-clear.** Session replace clears TileLodRegistry (no old-archive tiles).
 Prior: **1232**.
 

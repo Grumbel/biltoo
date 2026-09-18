@@ -235,6 +235,13 @@ void warmDurableTilesMemo(const QStringList &paths);
 void warmSessionOpenMemos(const QStringList &paths);
 
 /**
+ * Session Open / archive replace: drop process memos that must not outlive the
+ * previous path set (durable-tile yes/no, min_scale, URI cache). Size/LQIP
+ * memos stay; warmSessionOpenMemos refills for the new list.
+ */
+void clearSessionReplaceMemos();
+
+/**
  * Finest durable pyramid scale for path (0 = full res). 0 if unknown / none.
  * Populates via hasDurableTiles discovery; process-memoized with positive hits.
  */

@@ -91,6 +91,7 @@ void ImageView::invalidateSessionLoads()
         m_tilePrefetchTimer->stop();
     }
     tilelod::TileLodRegistry::instance().invalidateAll();
+    ThumtooCache::clearSessionReplaceMemos();
     if (m_pathRaster) {
         m_pathRaster->invalidateAll();
     }
@@ -255,6 +256,7 @@ void ImageView::clearWorkspace()
         m_tilePrefetchTimer->stop();
     }
     tilelod::TileLodRegistry::instance().invalidateAll();
+    ThumtooCache::clearSessionReplaceMemos();
     m_pathOrder.clear();
     m_sessionIdOrder.clear();
     // Path-keyed placement is legacy for unbound tiles only; drop it so a

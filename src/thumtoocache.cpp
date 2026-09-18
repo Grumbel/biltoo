@@ -2185,6 +2185,22 @@ void warmSessionOpenMemos(const QStringList &paths)
 #endif
 }
 
+void clearSessionReplaceMemos()
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    {
+        std::lock_guard lock(g_mu);
+        g_durableTilesYes.clear();
+        g_durableTileMinScale.clear();
+        g_durableTilesNoUntilMs.clear();
+    }
+    {
+        std::lock_guard lock(g_uriMu);
+        g_uriBySessionPath.clear();
+    }
+#endif
+}
+
 int durableTileMinScale(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO
