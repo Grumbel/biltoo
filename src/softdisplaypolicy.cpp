@@ -50,4 +50,23 @@ bool galleryAcceptsLqipUpgrade(int shownEdge, int incomingEdge, int lqipMaxEdge)
         && incomingEdge <= lqipMaxEdge;
 }
 
+
+PathHaveEdge aggregatePathHaveEdge(const int *displayEdges, const bool *decoded,
+                                   int count)
+{
+    PathHaveEdge out;
+    if (!displayEdges || count <= 0) {
+        return out;
+    }
+    for (int i = 0; i < count; ++i) {
+        if (decoded && decoded[i]) {
+            out.anyFull = true;
+        }
+        if (displayEdges[i] > out.have) {
+            out.have = displayEdges[i];
+        }
+    }
+    return out;
+}
+
 } // namespace SoftDisplayPolicy

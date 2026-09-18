@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1287-soft-path-have-edge.** Pure aggregate of per-path display have-edge.
+Prior: **1286**.
+
+### Change
+- `SoftDisplayPolicy::PathHaveEdge` + `aggregatePathHaveEdge`.
+- `galleryHaveEdgeFromItems` collects item edges then calls pure reduce.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1287-soft-path-have-edge.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1286-edge-nav-chrome-layout.** Pure edge chrome fill/button layout for paint.
 Prior: **1285**.
 

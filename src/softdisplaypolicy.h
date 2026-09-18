@@ -6,6 +6,7 @@
 
 #include <QImage>
 #include <QString>
+#include <utility>
 
 /**
  * Pure soft / LQIP underlay sample selection for worker threads.
@@ -31,6 +32,19 @@ bool gallerySoftWithinLqipBand(int incomingEdge, int lqipMaxEdge);
  * True when a larger LQIP may replace the shown underlay (never soft climb).
  */
 bool galleryAcceptsLqipUpgrade(int shownEdge, int incomingEdge, int lqipMaxEdge);
+
+/** Aggregate max display long edge and whether any sample is FullSource. */
+struct PathHaveEdge {
+    int have = 0;
+    bool anyFull = false;
+};
+
+/**
+ * Reduce per-item display edges for one path (caller filters items by path).
+ * @p displayEdges and @p decoded parallel; sizes must match.
+ */
+PathHaveEdge aggregatePathHaveEdge(const int *displayEdges, const bool *decoded,
+                                   int count);
 
 } // namespace SoftDisplayPolicy
 

@@ -77,6 +77,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **EdgeNavPolicy**: pure Image-mode edge chrome hit-test + paint layout (fill/button centre).
 - **MotionScrollChrome**: saved scrollbar policies while Ken Burns underlay is active.
 - **GallerySoftBook** path reset + native-decode set API; SoftDisplayPolicy gallery LQIP gates.
+- **SoftDisplayPolicy::aggregatePathHaveEdge**: pure max display edge + any-full for a path.
 
 
 ## Current pain (evidence)

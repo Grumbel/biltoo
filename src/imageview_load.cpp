@@ -4,6 +4,7 @@
 #include "imageview.h"
 #include "displayedgepolicy.h"
 #include "softdisplaypolicy.h"
+#include <QVarLengthArray>
 #include "ttfp_trace.h"
 
 #include <algorithm>
@@ -1454,21 +1455,23 @@ void ImageView::gallerySoftResetAll()
 
 int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const
 {
-    int have = 0;
-    bool anyFull = false;
+    // Collect edges for this path, then pure aggregate (SoftDisplayPolicy).
+    QVarLengthArray<int, 8> edges;
+    QVarLengthArray<bool, 8> decoded;
     for (ImageItem *item : m_items) {
         if (!item || item->path() != path) {
             continue;
         }
-        if (item->hasDecodedPixels()) {
-            anyFull = true;
-        }
-        have = qMax(have, item->displayPixelLongEdge());
+        edges.append(item->displayPixelLongEdge());
+        decoded.append(item->hasDecodedPixels());
     }
+    const SoftDisplayPolicy::PathHaveEdge agg =
+        SoftDisplayPolicy::aggregatePathHaveEdge(
+            edges.constData(), decoded.constData(), edges.size());
     if (anyFullOut) {
-        *anyFullOut = anyFull;
+        *anyFullOut = agg.anyFull;
     }
-    return have;
+    return agg.have;
 }
 
 
