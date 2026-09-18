@@ -36,6 +36,17 @@ inline qreal clamp01(qreal t)
     return qBound(0.0, t, 1.0);
 }
 
+inline qreal safeDivisor(qreal v, qreal eps = 1e-6)
+{
+    return qMax(eps, v);
+}
+
+inline int pairCount(int a, int b)
+{
+    return qMin(a, b);
+}
+
+
 inline int nonNegMs(int delayMs)
 {
     return qMax(0, delayMs);

@@ -578,7 +578,7 @@ QRectF ImageItem::galleryClipLocal() const
         || m_galleryCellSize.height() <= 0) {
         return {};
     }
-    const qreal s = qMax(0.001, qMax(m_scaleX, m_scaleY));
+    const qreal s = PlacementLinear::maxAxisScale(m_scaleX, m_scaleY);
     const qreal lw = m_galleryCellSize.width() / s;
     const qreal lh = m_galleryCellSize.height() / s;
     const QRectF br = contentRect();
@@ -680,8 +680,9 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor,
     const qreal sy = (isz.height() > 0)
         ? (qreal(m_source.height()) / qreal(isz.height()))
         : 1.0;
-    const int dw = qMax(1, qRound(local.width() * sx));
-    const int dh = qMax(1, qRound(local.height() * sy));
+    const QSize scaled = ContentXform::roundedSizeAtLeast1(local.width() * sx, local.height() * sy);
+    const int dw = scaled.width();
+    const int dh = scaled.height();
     // Centre of the crop in source pixel coordinates.
     const QPointF srcCenter((local.center().x() - off.x()) * sx,
                             (local.center().y() - off.y()) * sy);
@@ -745,8 +746,7 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor,
     // pixel dimensions (SIZE.md). Soft/ladder samples paint into that box;
     // using cropped.size() as intrinsic shrank Workspace tiles to soft pixels.
     setSourceImageReady(cropped);
-    const QSize logical(qMax(1, qRound(local.width())),
-                        qMax(1, qRound(local.height())));
+    const QSize logical = ContentXform::roundedSizeAtLeast1(local.width(), local.height());
     setIntrinsicSize(logical);
     return true;
 }

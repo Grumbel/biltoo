@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "pageguidegeometry.h"
+#include "viewtransform.h"
 
 #include <QLineF>
 #include <QtMath>
@@ -106,10 +107,10 @@ QRectF rectFromHandleDrag(const QPointF &scenePos, const QRectF &startRect, int 
     }
 
     if (lockAspect && corner) {
-        const qreal aspect = r.width() / qMax(1e-6, r.height());
+        const qreal aspect = r.width() / ViewTransform::safeDivisor(r.height());
         qreal w = right - left;
         qreal hh = bottom - top;
-        if (qAbs(w) / qMax(1e-6, qAbs(hh)) > aspect) {
+        if (qAbs(w) / ViewTransform::safeDivisor(qAbs(hh)) > aspect) {
             const qreal newH = qAbs(w) / aspect;
             if (fromCenter) {
                 top = c.y() - newH * 0.5;

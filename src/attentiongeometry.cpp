@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "attentiongeometry.h"
+#include "viewtransform.h"
 
 #include <QLineF>
 #include <QtMath>
@@ -37,8 +38,8 @@ QPointF normFromLocal(const QPointF &local, const QRectF &contentRect)
     if (contentRect.isEmpty()) {
         return {};
     }
-    const qreal nx = (local.x() - contentRect.left()) / qMax(1e-6, contentRect.width());
-    const qreal ny = (local.y() - contentRect.top()) / qMax(1e-6, contentRect.height());
+    const qreal nx = (local.x() - contentRect.left()) / ViewTransform::safeDivisor(contentRect.width());
+    const qreal ny = (local.y() - contentRect.top()) / ViewTransform::safeDivisor(contentRect.height());
     return clampNorm(QPointF(nx, ny));
 }
 
@@ -47,8 +48,8 @@ QPointF normDeltaFromLocalDelta(const QPointF &localDelta, const QRectF &content
     if (contentRect.isEmpty()) {
         return {};
     }
-    return QPointF(localDelta.x() / qMax(1e-6, contentRect.width()),
-                   localDelta.y() / qMax(1e-6, contentRect.height()));
+    return QPointF(localDelta.x() / ViewTransform::safeDivisor(contentRect.width()),
+                   localDelta.y() / ViewTransform::safeDivisor(contentRect.height()));
 }
 
 QVector<QPointF> translateSelectedNorms(const QVector<QPointF> &startPts,

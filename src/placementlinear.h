@@ -155,6 +155,16 @@ inline qreal geometricMeanScale(qreal scaleX, qreal scaleY)
     return qSqrt(qMax(0.01, scaleX) * qMax(0.01, scaleY));
 }
 
+inline qreal maxAxisScale(qreal scaleX, qreal scaleY, qreal floor = 0.001)
+{
+    return qMax(floor, qMax(scaleX, scaleY));
+}
+
+inline qreal clampGroupScaleAxis(qreal scale, qreal lo = 0.05, qreal hi = 20.0)
+{
+    return qBound(lo, qAbs(scale), hi);
+}
+
 } // namespace PlacementLinear
 
 #endif // PLACEMENTLINEAR_H
