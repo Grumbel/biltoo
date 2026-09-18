@@ -3143,15 +3143,13 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
             }
         }
     } else if (cropDraft && !path.isEmpty()) {
-        WorkspaceItemState orientOnly = wantAppearanceForItem(
-            item,
-            item->sessionId() != kInvalidSessionImageId
-                ? item->sessionId()
-                : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId));
-        orientOnly.hasCrop = false;
-        orientOnly.cropRect = QRect();
-        orientOnly.cropSourceSize = QSize();
-        orientOnly.cropRotation = 0.0;
+        const WorkspaceItemState orientOnly = SessionAppearance::withoutCrop(
+            wantAppearanceForItem(
+                item,
+                item->sessionId() != kInvalidSessionImageId
+                    ? item->sessionId()
+                    : (isImageMode() ? m_sessionId.currentId
+                                     : kInvalidSessionImageId)));
         applyContentLayoutSize(item, orientOnly);
     }
     if (isImageMode() || m_items.size() == 1) {

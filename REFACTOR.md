@@ -70,6 +70,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SessionPathOrder** (`sessionpathorder.h`): session path list + parallel SessionImageId order.
 - **SessionAppearanceStore** seed-attempt set (`seedAttempted` / mark / clear with remove).
 - **SessionAppearance::mergeAppliedAndLiveFlags**: pure want overlay (applied xform + live flags).
+- **SessionAppearance::withoutCrop**: orient-only state (crop fields cleared).
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).
 - **DisplayEdgePolicy**: pure long-edge coverage, ladder native cap, sample-covers-native,
   soft cell clamp, screen longPx → needEdge, QualityTier classify for HUD.

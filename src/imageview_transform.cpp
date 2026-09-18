@@ -836,8 +836,7 @@ int ImageView::resetContentAppearanceForTargets()
             slot.contentHFlip = false;
             slot.contentVFlip = false;
             slot.contentQuarterTurns = 0;
-            slot.hasCrop = false;
-            slot.cropRect = QRect();
+            slot = SessionAppearance::withoutCrop(slot);
             slot.cropSourceSize = QSize();
             slot.cropRotation = 0.0;
             // Keep color grade / pose if present.
@@ -850,8 +849,7 @@ int ImageView::resetContentAppearanceForTargets()
             pathSlot.contentHFlip = false;
             pathSlot.contentVFlip = false;
             pathSlot.contentQuarterTurns = 0;
-            pathSlot.hasCrop = false;
-            pathSlot.cropRect = QRect();
+            pathSlot = SessionAppearance::withoutCrop(pathSlot);
             pathSlot.cropSourceSize = QSize();
             pathSlot.cropRotation = 0.0;
             m_itemStateBook.byPath.insert(path, pathSlot);

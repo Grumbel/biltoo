@@ -161,6 +161,9 @@ void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
                               bool liveHFlip, bool liveVFlip,
                               bool liveHasCrop, const QRectF &liveCropRect);
 
+/** Copy of @p state with crop fields cleared (orient-only layout / draft). */
+WorkspaceItemState withoutCrop(const WorkspaceItemState &state);
+
 } // namespace SessionAppearance
 
 /**

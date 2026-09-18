@@ -422,11 +422,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     // Content flips/turns only — crop is drafted on the full post-orient frame.
     WorkspaceItemState contentOnly;
     if (haveApp && app) {
-        contentOnly = *app;
-        contentOnly.hasCrop = false;
-        contentOnly.cropRect = QRect();
-        contentOnly.cropSourceSize = QSize();
-        contentOnly.cropRotation = 0.0;
+        contentOnly = SessionAppearance::withoutCrop(*app);
     }
     const ContentXform::Value wantX = ContentXform::Value::fromState(contentOnly);
     const bool hadPriorCrop = haveApp && app && app->hasCrop && !app->cropRect.isEmpty();
@@ -1105,8 +1101,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         && qAbs(local.width() - cr.width()) < 0.5
         && qAbs(local.height() - cr.height()) < 0.5;
     if (fullFrame && qAbs(m_crop.rotation) < 0.05) {
-        s.hasCrop = false;
-        s.cropRect = QRect();
+        s = SessionAppearance::withoutCrop(s);
         s.cropSourceSize = QSize();
         s.cropRotation = 0.0;
     } else {

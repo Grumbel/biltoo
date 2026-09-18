@@ -307,6 +307,17 @@ void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
     }
 }
 
+
+WorkspaceItemState withoutCrop(const WorkspaceItemState &state)
+{
+    WorkspaceItemState out = state;
+    out.hasCrop = false;
+    out.cropRect = QRect();
+    out.cropSourceSize = QSize();
+    out.cropRotation = 0.0;
+    return out;
+}
+
 } // namespace SessionAppearance
 
 const WorkspaceItemState *SessionAppearanceStore::get(SessionImageId id) const

@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1290-appearance-without-crop.** Pure withoutCrop for orient-only appearance.
+Prior: **1289**.
+
+### Change
+- `SessionAppearance::withoutCrop` clears crop fields for draft/orient-only layout.
+- fitItem crop-draft, crop enter, and transform clear-crop paths use it.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1290-appearance-without-crop.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1289-display-quality-tier.** Pure QualityTier classification for HUD labels.
 Prior: **1288**.
 
