@@ -144,8 +144,9 @@ void scheduleProbe(const QString &path);
 QByteArray cachedLadderBytes(const QString &path, int maxEdge);
 
 /**
- * Soft-band PreferCache (legacy name). Equivalent to scheduleSoftPixels /
- * scheduleDisplayPixels for the soft edge. Prefer scheduleSoftPixels in new code.
+ * Soft-band PreferCache (legacy name → scheduleSoftPixels).
+ * **Product hosts must not call this** — use scheduleDisplayPixels only when
+ * hasDurableTilesKnown, else scheduleTilePyramid (LQIP + tiles).
  * @return false if skipped (already in-flight, settled success, or unsupported).
  */
 bool schedulePixels(const QString &path, int maxEdge);
@@ -233,8 +234,10 @@ void warmSessionOpenMemos(const QStringList &paths);
 int durableTileMinScale(const QString &path);
 
 /**
- * Soft band schedule: PreferCache (TileSynth when tiles exist, else ephemeral
- * soft encode). Soft is not Store-durable — see thumtoo PIXEL_AND_ARCHIVE_POLICY.
+ * Soft band PreferCache (TileSynth when tiles exist, else **ephemeral soft
+ * encode**). **Deprecated for product underlay** — Gallery/Image/filmstrip/
+ * PathRaster soft-band must not call this; use tiles/TileSynth only.
+ * Retained for rare non-product callers and thumtoo interop tests.
  */
 bool scheduleSoftPixels(const QString &path, int maxEdge);
 

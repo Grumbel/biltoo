@@ -28,7 +28,7 @@ branches that contradict it are bugs.
 
 | Layer | Owns | Does **not** own |
 |-------|------|------------------|
-| **Thumtoo** | Ephemeral soft / overview, PreferCache (incl. TileSynth), **durable tiles + LQIP**, full pixels; settle keys; `ladderReady` delivery. **`PixelSource::TileSynth` is a valid PreferCache/Overview delivery**. SoftOnly is cold ephemeral only; prefer tiles when `tileLodWanted` / durable tiles exist. | Host geometry, mode policy, which band a product surface needs |
+| **Thumtoo** | PreferCache **TileSynth**, **durable tiles + LQIP**, overview/full when needed; settle keys; `ladderReady` delivery. **`PixelSource::TileSynth` is a valid PreferCache delivery**. Host product underlay is LQIP + tiles — not SoftOnly encode. | Host geometry, mode policy, which band a product surface needs |
 | **ImageCache** | Process RAM path → best raw sample (upward-only, ≤ display max) | Scheduling |
 | **PathRasterService** | Per-path want / have / climb band / escalate policy; the **only** host scheduler of soft → PreferCache → (optional) full | Paint, phase buffers, gallery prioritization |
 | **ImageView / consumers** | Need edge (viewport, zoom, slideshow headroom); install into items / phase buffers | Direct PreferCache re-queue after shortfall; inventing a second climb |
@@ -58,10 +58,16 @@ Biltoo requests a **band**, not “exactly N pixels.” Edge numbers snap via
 
 | Band | API (host) | Typical long edge | Thumtoo may return |
 |------|------------|-------------------|--------------------|
-| **Soft** | `scheduleSoftPixels` → PreferCache | ≤ **512** (`kGalleryLadderEdge`) | Ephemeral soft or TileSynth ≤ request (**not** Store-durable) |
-| **Overview** | `scheduleOverviewPixels` | ~**1024** (`kBatchOverviewEdge`) | jpeg_shrink / overview (not a soft level) |
-| **Display (PreferCache)** | `scheduleDisplayPixels` | ≤ **8192** (`kImageLadderEdge`, interim) | **Best available ≤ request**: soft, overview, or tile reconstruct |
+| **LQIP** | cache / size-reply only | ≤ **96** | Free side-effect of prior tile work — **never** `request_lqip` encode |
+| **Display (TileSynth)** | `scheduleDisplayPixels` **only if** `hasDurableTilesKnown` | ≤ **8192** (`kImageLadderEdge`, interim) | PreferCache **TileSynth** from durable tiles |
+| **Cold tiles** | `scheduleTilePyramid` | (pyramid) | Builds durable coverage; then TileSynth |
+| **Overview** | `scheduleOverviewPixels` | ~**1024** (`kBatchOverviewEdge`) | jpeg_shrink / overview (legacy; not product underlay) |
 | **Full** | `scheduleFullPixels` | up to native / host max | Near-native / full decode path |
+
+**Product underlay (Gallery, Image, filmstrip, PathRaster soft-band):** LQIP +
+**tiles** only. Do **not** call `scheduleSoftPixels` (PreferCache still
+soft-encodes when no pyramid). Soft-band PreferCache encode is **removed** from
+host product paths (biltoo ≥1220).
 
 **Critical:** PreferCache does **not** guarantee `got ≥ 0.9 × requested`.
 In current thumtoo, `request_raster(PreferCache)` with `max_edge > 512` is
@@ -70,7 +76,8 @@ of 2048 therefore often returns **1024 TileSynth/overview** with `ok=0`. That is
 thumtoo policy, not a biltoo install bug. Whole-frame samples above 1024 require
 **Full** (`scheduleFullPixels`) or true per-cell tile paint.
 
-Soft is not Store-durable (any edge). Overview is not soft. PreferCache is not “force 2048.”
+Soft PreferCache encode is not a product underlay. Overview is not soft.
+PreferCache is not “force 2048.” Use TileSynth when durable tiles exist.
 
 ---
 

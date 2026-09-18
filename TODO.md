@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1224-contract-tiles-only.** Normative: product underlay is LQIP + tiles.
+Prior: **1223**.
+
+### Change
+- THUMTOO_HOST_CONTRACT: soft band removed from product table; TileSynth + pyramid.
+- ENVIRONMENT: filmstrip tiles path (≥1220).
+- `scheduleSoftPixels` / `schedulePixels` headers: deprecated for product underlay.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1224-contract-tiles-only.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1223-imageloader-tiles-only.** ImageLoader: tiles/TileSynth; no soft PreferCache encode.
 Prior: **1222**.
 

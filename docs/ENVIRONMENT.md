@@ -45,9 +45,9 @@ PreferCache may synthesize from tiles (`TileSynth`).
 | **`THUMTOO_STORE_ONLY`** | **Ignored** (≥262 / ≥272). Client is always Store-only. |
 | **`THUMTOO_STORE_ROOT`** | Default **on**: Store at cache root; see thumtoo HOST_CUTOVER. |
 
-Filmstrip soft: biltoo ≥1007 `scheduleSoftPixels` — PreferCache when
-`hasDurableTiles`, else SoftOnly. With **thumtoo ≥ 280**, that path is fully
-Store-backed (page LQIP, no legacy soft levels).
+Filmstrip (biltoo ≥1220): LQIP underlay + **tiles** (`scheduleFilmstripTilePixels`).
+PreferCache **TileSynth** only when durable tiles are known; else
+`scheduleTilePyramid`. Soft PreferCache encode / SoftOnly is not used.
 
 
 ## Concurrency knobs
