@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1307-group-transform-geometry.** Pure group scale hit-test and factors.
+Prior: **1306**.
+
+### Change
+- `GroupTransformGeometry` (`grouptransformgeometry.{h,cpp}`): scale/rotate
+  handle points, `handleIndexAt`, `scaleAnchor`, `scaleFactorsFromDrag`
+  (edge/corner Shift semantics, factor clamp).
+- `groupHandleAt` / `updateGroupScale` use the pure helpers; item apply stays on host.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1307-group-transform-geometry.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1306-page-guide-geometry.** Pure page-guide hit-test and resize math.
 Prior: **1305**.
 

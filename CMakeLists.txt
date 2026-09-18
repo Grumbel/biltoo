@@ -134,6 +134,8 @@ add_executable(biltoo
   src/attentiongeometry.h
   src/centreprogress.h
   src/grouptransformsession.h
+  src/grouptransformgeometry.cpp
+  src/grouptransformgeometry.h
   src/pageguidesession.h
   src/pageguidegeometry.cpp
   src/pageguidegeometry.h

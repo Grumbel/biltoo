@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "grouptransformgeometry.h"
 #include "imageitem.h"
 #include "placementlinear.h"
 
@@ -16,37 +17,7 @@ int ImageView::groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &it
         return -1;
     }
     const QRect viewRect = mapFromScene(sceneBounds).boundingRect();
-    constexpr qreal kScaleHit = 10.0;
-    constexpr qreal kRotateOffset = 28.0;
-    constexpr qreal kRotateHit = 12.0;
-    const QPointF corners[8] = {
-        viewRect.topLeft(),
-        QPointF(viewRect.center().x(), viewRect.top()),
-        viewRect.topRight(),
-        QPointF(viewRect.right(), viewRect.center().y()),
-        viewRect.bottomRight(),
-        QPointF(viewRect.center().x(), viewRect.bottom()),
-        viewRect.bottomLeft(),
-        QPointF(viewRect.left(), viewRect.center().y()),
-    };
-    // Prefer rotate knobs (outside) so they are not stolen by edge scale hits.
-    const QPointF rot[4] = {
-        QPointF(viewRect.center().x(), viewRect.top() - kRotateOffset),    // 8 T
-        QPointF(viewRect.right() + kRotateOffset, viewRect.center().y()),  // 9 R
-        QPointF(viewRect.center().x(), viewRect.bottom() + kRotateOffset), // 10 B
-        QPointF(viewRect.left() - kRotateOffset, viewRect.center().y()),   // 11 L
-    };
-    for (int i = 0; i < 4; ++i) {
-        if (QLineF(QPointF(viewPos), rot[i]).length() <= kRotateHit) {
-            return 8 + i;
-        }
-    }
-    for (int i = 0; i < 8; ++i) {
-        if (QLineF(QPointF(viewPos), corners[i]).length() <= kScaleHit) {
-            return i;
-        }
-    }
-    return -1;
+    return GroupTransformGeometry::handleIndexAt(viewPos, viewRect);
 }
 
 bool ImageView::beginGroupScale(int handle, const QList<ImageItem *> &items)
@@ -59,8 +30,8 @@ bool ImageView::beginGroupScale(int handle, const QList<ImageItem *> &items)
         return false;
     }
     m_groupXform.handle = handle;
-    m_groupXform.scaleDrag = !isGroupRotateHandle(handle);
-    m_groupXform.rotateDrag = isGroupRotateHandle(handle);
+    m_groupXform.scaleDrag = !GroupTransformGeometry::isRotateHandle(handle);
+    m_groupXform.rotateDrag = GroupTransformGeometry::isRotateHandle(handle);
     m_groupXform.boundsStart = bounds;
     m_groupXform.centerStart = bounds.center();
     m_groupXform.dragItems = items;
@@ -89,86 +60,16 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         endGroupScale();
         return;
     }
-    const QRectF b = m_groupXform.boundsStart;
-    // Fixed opposite corner / edge as anchor (selection AABB at press).
-    QPointF anchor = m_groupXform.centerStart;
-    switch (m_groupXform.handle) {
-    case 0: anchor = b.bottomRight(); break; // TL
-    case 1: anchor = QPointF(b.center().x(), b.bottom()); break; // T
-    case 2: anchor = b.bottomLeft(); break; // TR
-    case 3: anchor = QPointF(b.left(), b.center().y()); break; // R
-    case 4: anchor = b.topLeft(); break; // BR
-    case 5: anchor = QPointF(b.center().x(), b.top()); break; // B
-    case 6: anchor = b.topRight(); break; // BL
-    case 7: anchor = QPointF(b.right(), b.center().y()); break; // L
-    default: break;
-    }
-
-    qreal sx = 1.0;
-    qreal sy = 1.0;
-    const qreal eps = 1.0;
-    const bool edgeHandle = (m_groupXform.handle == 1 || m_groupXform.handle == 3
-                             || m_groupXform.handle == 5 || m_groupXform.handle == 7);
-    const bool cornerHandle = (m_groupXform.handle == 0 || m_groupXform.handle == 2
-                               || m_groupXform.handle == 4 || m_groupXform.handle == 6);
-    switch (m_groupXform.handle) {
-    case 0: // TL
-        sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
-        sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
-        break;
-    case 1: // T — vertical stretch of the selection AABB
-        sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
-        sx = 1.0;
-        break;
-    case 2: // TR
-        sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
-        sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
-        break;
-    case 3: // R — horizontal stretch
-        sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
-        sy = 1.0;
-        break;
-    case 4: // BR
-        sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
-        sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
-        break;
-    case 5: // B — vertical stretch
-        sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
-        sx = 1.0;
-        break;
-    case 6: // BL
-        sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
-        sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
-        break;
-    case 7: // L — horizontal stretch
-        sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
-        sy = 1.0;
-        break;
-    default:
-        break;
-    }
-
-    // Modifier semantics (match drawing-app usual, inverse of prior uniform default):
-    //   Edge handles:   default = axis stretch (H or V); Shift = lock aspect (uniform)
-    //   Corner handles: default = uniform;               Shift = free H/V axes
-    const bool shift = mods & Qt::ShiftModifier;
-    if (edgeHandle && shift) {
-        const qreal s = (m_groupXform.handle == 1 || m_groupXform.handle == 5) ? sy : sx;
-        sx = s;
-        sy = s;
-    } else if (cornerHandle && !shift) {
-        const qreal s = (qAbs(sx) + qAbs(sy)) * 0.5;
-        if (s > 1e-9) {
-            sx = s;
-            sy = s;
-        }
-    }
-    sx = qBound(0.05, qAbs(sx), 20.0);
-    sy = qBound(0.05, qAbs(sy), 20.0);
-
-    if (!qIsFinite(sx) || !qIsFinite(sy) || !qIsFinite(anchor.x()) || !qIsFinite(anchor.y())) {
+    const GroupTransformGeometry::ScaleFactors sf =
+        GroupTransformGeometry::scaleFactorsFromDrag(
+            scenePos, m_groupXform.boundsStart, m_groupXform.handle,
+            mods & Qt::ShiftModifier);
+    if (!sf.valid) {
         return;
     }
+    const qreal sx = sf.sx;
+    const qreal sy = sf.sy;
+    const QPointF anchor = sf.anchor;
 
     const bool anisotropic = qAbs(sx - sy) > 1e-6;
 
