@@ -208,15 +208,15 @@ QImage loadPageRef(const QString &path, int maxEdge)
 
     if (ThumtooCache::isAvailable()) {
         QImage img = ThumtooCache::rasterizePageRef(path, edge);
+        const int want = qMin(edge, ThumtooCache::kBatchOverviewEdge);
+        if (ThumtooCache::hasDurableTilesKnown(path)) {
+            (void)ThumtooCache::scheduleDisplayPixels(path, want);
+        } else {
+            (void)ThumtooCache::scheduleTilePyramid(path);
+        }
         if (!img.isNull()) {
-            // Soft band; PreferCache/TileSynth when durable tiles exist.
-            ThumtooCache::scheduleSoftPixels(
-                path, qMin(edge, ThumtooCache::kGalleryLadderEdge));
             return scaleToMaxEdge(img, maxEdge);
         }
-        // Soft band (THUMTOO_HOST_CONTRACT §1) — never Soft at page native edge.
-        ThumtooCache::scheduleSoftPixels(
-            path, qMin(edge, ThumtooCache::kGalleryLadderEdge));
         return {};
     }
     qWarning("ImageLoader: cannot load page (no thumtoo): %s", qPrintable(path));
@@ -872,8 +872,12 @@ QImage load(const QString &path)
             }
         }
         if (ThumtooCache::isAvailable()) {
-            // Soft band; PreferCache/TileSynth when durable tiles exist.
-            ThumtooCache::scheduleSoftPixels(path, ThumtooCache::kGalleryLadderEdge);
+            if (ThumtooCache::hasDurableTilesKnown(path)) {
+                (void)ThumtooCache::scheduleDisplayPixels(
+                    path, ThumtooCache::kBatchOverviewEdge);
+            } else {
+                (void)ThumtooCache::scheduleTilePyramid(path);
+            }
         }
         return {};
     }
@@ -946,19 +950,12 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                 // is kGalleryLadderEdge; higher display edges use shrink-on-decode
                 // below, not durable soft levels that do not exist.
                 if (got < maxEdge * 9 / 10) {
-                    const int haveStep = ThumtooCache::ceilLadderEdge(got);
-                    const int softWant = qMin(ThumtooCache::ceilLadderEdge(maxEdge),
-                                              ThumtooCache::kGalleryLadderEdge);
-                    if (softWant > haveStep) {
-                        ThumtooCache::scheduleSoftPixels(path, softWant);
-                    }
-                    // FastBatch overview when display needs more than soft max.
-                    // Always schedule with callback — setInterest alone has no
-                    // host ladderReady (Gallery would never install the climb).
-                    if (maxEdge > ThumtooCache::kGalleryLadderEdge
-                        && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
-                        ThumtooCache::scheduleOverviewPixels(
-                            path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
+                    // LQIP/host underlay is cache-only; climb via tiles/TileSynth.
+                    const int want = qMin(maxEdge, ThumtooCache::kBatchOverviewEdge);
+                    if (ThumtooCache::hasDurableTilesKnown(path)) {
+                        (void)ThumtooCache::scheduleDisplayPixels(path, want);
+                    } else {
+                        (void)ThumtooCache::scheduleTilePyramid(path);
                     }
                 }
                 if (decoded.width() > maxEdge || decoded.height() > maxEdge) {
@@ -982,17 +979,12 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                 return {};
             }
         }
-        // True miss: durable → tile pyramid; else soft band + optional overview.
+        // True miss: tiles only (soft PreferCache encode removed).
         if (ThumtooCache::hasDurableTilesKnown(path)) {
-            (void)ThumtooCache::scheduleTilePyramid(path);
+            (void)ThumtooCache::scheduleDisplayPixels(
+                path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
         } else {
-            ThumtooCache::scheduleSoftPixels(
-                path, qMin(maxEdge, ThumtooCache::kGalleryLadderEdge));
-            if (maxEdge > ThumtooCache::kGalleryLadderEdge
-                && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
-                ThumtooCache::scheduleOverviewPixels(
-                    path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
-            }
+            (void)ThumtooCache::scheduleTilePyramid(path);
         }
     }
 

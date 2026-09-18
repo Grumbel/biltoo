@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1223-imageloader-tiles-only.** ImageLoader: tiles/TileSynth; no soft PreferCache encode.
+Prior: **1222**.
+
+### Change
+- `loadThumbnail` miss/upgrade: durable tiles → `scheduleDisplayPixels`, else pyramid.
+- Page-ref path: same (drop `scheduleSoftPixels`).
+- `startDisplayQualityJob`: TileSynth or pyramid only when thumtoo available.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1223-imageloader-tiles-only.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1222-pathraster-no-soft-encode.** PathRaster soft-band → tiles/TileSynth only.
 Prior: **1221**.
 

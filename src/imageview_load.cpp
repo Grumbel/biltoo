@@ -214,11 +214,16 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                 image = ImageCache::get(path);
             }
             if (!ImageCache::adequate(image, qualityEdge)) {
-                // PreferCache only when thumtoo is up — no loadThumbnail (avoids
-                // Soft-schedule + source open). Durable tiles → TileSynth.
+                // Tiles/TileSynth only when thumtoo is up — never soft PreferCache
+                // encode. Without thumtoo, classic shrink decode as last resort.
                 if (ThumtooCache::isAvailable()) {
-                    (void)ThumtooCache::scheduleDisplayPixels(
-                        path, qMin(qualityEdge, ThumtooCache::kBatchOverviewEdge));
+                    const int edge =
+                        qMin(qualityEdge, ThumtooCache::kBatchOverviewEdge);
+                    if (ThumtooCache::hasDurableTilesKnown(path)) {
+                        (void)ThumtooCache::scheduleDisplayPixels(path, edge);
+                    } else {
+                        (void)ThumtooCache::scheduleTilePyramid(path);
+                    }
                 } else {
                     const QImage loaded =
                         ImageLoader::loadThumbnail(path, qualityEdge);
