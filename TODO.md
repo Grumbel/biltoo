@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1330-aspect-footprint-timeline.** ContentXform aspect/footprint + timeline bag.
+Prior: **1329**.
+
+### Change
+- `ContentXform::{aspectRatio,aspectChanged,footprintScaleFactor}`
+- Image-mode fit gate + soft→native view preserve use pure helpers
+- `SlideshowProgressHud::setTimelineProgress`
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1330-aspect-footprint-timeline.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1329-packreason-slideshow-clamps.** GalleryPackReason types fix + slideshow/view clamps.
 Prior: **1328**.
 

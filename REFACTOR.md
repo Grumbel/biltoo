@@ -317,3 +317,4 @@ part of early-phase exit criteria).
   to content, missing-asset relink on load.
 - Workspace thumbnail membership and path-map appearance use SessionImageId
   only (no path-occurrence hide / cross-duplicate flip leakage).
+- **ContentXform** aspectRatio / aspectChanged / footprintScaleFactor; HUD setTimelineProgress.
