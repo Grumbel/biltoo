@@ -256,21 +256,10 @@ void ImageItem::setItemShear(qreal shear)
     prepareGeometryChange();
 }
 
-static qreal normalizeDegrees(qreal degrees)
-{
-    while (degrees >= 360.0) {
-        degrees -= 360.0;
-    }
-    while (degrees < 0.0) {
-        degrees += 360.0;
-    }
-    return degrees;
-}
-
 void ImageItem::setItemRotation(qreal degrees)
 {
     // Placement only — never content. Content 90° turns use bakeRotate90().
-    m_rotation = normalizeDegrees(degrees);
+    m_rotation = PlacementLinear::normalizeDegrees(degrees);
     m_orientation = 0.0;
     m_fineRotation = m_rotation;
     applyLocalTransform();

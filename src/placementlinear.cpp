@@ -76,6 +76,17 @@ qreal angleAbout(const QPointF &centre, const QPointF &scenePos)
     return qRadiansToDegrees(qAtan2(scenePos.y() - centre.y(), scenePos.x() - centre.x()));
 }
 
+qreal normalizeDegrees(qreal degrees)
+{
+    while (degrees >= 360.0) {
+        degrees -= 360.0;
+    }
+    while (degrees < 0.0) {
+        degrees += 360.0;
+    }
+    return degrees;
+}
+
 qreal snapDegrees(qreal degrees, qreal stepDegrees)
 {
     if (stepDegrees <= 0.0) {

@@ -41,6 +41,9 @@ void unitAxes(qreal scaleX, qreal scaleY, qreal shear, qreal rotationDeg,
 /** Angle in degrees from @p centre to @p scenePos (atan2). */
 qreal angleAbout(const QPointF &centre, const QPointF &scenePos);
 
+/** Bring @p degrees into [0, 360). */
+qreal normalizeDegrees(qreal degrees);
+
 /** Snap @p degrees to the nearest multiple of @p stepDegrees. */
 qreal snapDegrees(qreal degrees, qreal stepDegrees);
 
