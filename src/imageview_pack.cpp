@@ -97,7 +97,8 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
             continue;
         }
         GallerySoftState &st = m_gallerySoft[path];
-        st.have = qMax(st.have, hostEdge);
+        // Shown edge only — hostEdge can exceed what install actually attached.
+        st.have = qMax(st.have, after);
         item->update();
         ++installed;
     }
@@ -305,9 +306,14 @@ void ImageView::updateGalleryDecodeWindow()
             st.gaveUpWant = 0;
         }
 
-        // Tile LOD owns oversized on-screen cells — do not PreferCache-climb them.
+        // Tile LOD owns oversized cells past soft max. Still climb soft when the
+        // tile only shows LQIP/blank so underlay is not stuck while tiles load.
         if (item->tileLodWanted()) {
-            continue;
+            const int shown = item->displayPixelLongEdge();
+            if (shown > DisplayQuality::kLqipMaxEdge) {
+                continue;
+            }
+            // LQIP/blank: fall through to soft schedule (soft underlay).
         }
 
         if (!st.needsSoftSchedule(want, anyBlank, anyFull)) {
@@ -810,10 +816,14 @@ void ImageView::gallerySoftWatchdogTick()
                       displaySurfaceStateForItem(item, hostEdge, climbPending));
         using AT = DisplaySurface::ActionType;
         if (act.type == AT::None) {
-            if (hostEdge > 0) {
-                st.have = qMax(st.have, hostEdge);
+            // Shown only. Host soft while tile is LQIP must not mark st.have done.
+            st.have = qMax(st.have, item->displayPixelLongEdge());
+            const int shown = item->displayPixelLongEdge();
+            if (shown > DisplayQuality::kLqipMaxEdge
+                || hostEdge <= shown) {
+                st.weakSinceMs = 0;
             }
-            st.weakSinceMs = 0;
+            // else: leave weakSinceMs so LQIP→soft watchdog can force ensure
         } else {
             const auto pol =
                 (target > ThumtooCache::kBatchOverviewEdge)
@@ -834,10 +844,10 @@ void ImageView::gallerySoftWatchdogTick()
                     needWindow = true;
                 }
             }
-            if (hostEdge > 0) {
-                st.have = qMax(st.have, hostEdge);
+            st.have = qMax(st.have, item->displayPixelLongEdge());
+            if (item->displayPixelLongEdge() > DisplayQuality::kLqipMaxEdge) {
+                st.weakSinceMs = 0;
             }
-            st.weakSinceMs = 0;
         }
 
         // Blank / LQIP for long enough with no climb: force one ensure cycle.

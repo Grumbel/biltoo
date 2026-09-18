@@ -1507,13 +1507,17 @@ bool ImageView::resolveGallerySoftHaveWant(const QString &path, GallerySoftState
             return false;
         }
         // Host soft only for direct callers (decode-window pass1 owns installs).
-        if (have <= 0) {
+        if (have <= DisplayQuality::kLqipMaxEdge) {
             const QImage hostSoft = ImageCache::get(path);
-            if (!hostSoft.isNull()) {
+            if (!hostSoft.isNull()
+                && ImageCache::longEdge(hostSoft) > have) {
                 onImagePreviewLoaded(path, hostSoft, m_loadGeneration.load(),
                                      static_cast<int>(LoadAdd));
-                have = qMax(have, ImageCache::longEdge(hostSoft));
+                have = galleryHaveEdgeFromItems(path, &anyFull);
                 st.have = have;
+                if (anyFull) {
+                    return false;
+                }
             }
         }
         want = galleryWantEdgeForPath(path, sceneVisible);
@@ -1590,18 +1594,30 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    // Tiles own the cell — no soft/PreferCache HOST climb in parallel.
-    for (ImageItem *ii : m_items) {
-        if (ii && ii->path() == path && ii->tileLodWanted()) {
-            // Drop soft inflight accounting so gallery concurrency budget is
-            // not held by a climb we no longer want; tickPrimaryTileLod cancels
-            // PathRaster once per path via m_tileLodPreferCancelled.
+    // Tiles own the cell past soft underlay. If every tileLodWanted item for
+    // this path still only shows LQIP/blank, keep soft PreferCache for underlay.
+    {
+        bool anyTileWanted = false;
+        bool softUnderlayNeeded = false;
+        for (ImageItem *ii : m_items) {
+            if (!ii || ii->path() != path || !ii->tileLodWanted()) {
+                continue;
+            }
+            anyTileWanted = true;
+            if (ii->displayPixelLongEdge() <= DisplayQuality::kLqipMaxEdge) {
+                softUnderlayNeeded = true;
+            }
+        }
+        if (anyTileWanted && !softUnderlayNeeded) {
             auto sit = m_gallerySoft.find(path);
             if (sit != m_gallerySoft.end()) {
                 clearGallerySoftInflight(*sit);
             }
             tickPrimaryTileLod(12);
             return;
+        }
+        if (anyTileWanted) {
+            tickPrimaryTileLod(12); // parallel soft underlay + tiles
         }
     }
     // Size-first still probes in the background, but never blocks decode:

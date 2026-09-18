@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1127-shown-have-and-tile-underlay.** st.have is shown-only; soft under LQIP+tiles.
+Prior: **1126**.
+
+### Bug
+- Watchdog / pass1 still wrote **hostEdge** into `st.have` after installs or
+  `Action::None`, re-poisoning schedule (host soft, tile LQIP).
+- `resolveGallerySoftHaveWant` set have from ImageCache after host install.
+- `tileLodWanted` skipped all soft, so oversized cells could stay on LQIP while
+  tiles were still empty.
+
+### Fix
+- Every `st.have` update uses **item display edge** only.
+- Resolve path reinstalls host when shown ≤ LQIP and host is better; have from items.
+- tileLodWanted still runs soft when shown ≤ LQIP (underlay); skips soft only once soft+.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1127-shown-have-and-tile-underlay.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1126-lqip-install-and-status.** Host soft installs onto LQIP; Gallery status shows quality mix.
 Prior: **1125**.
 
