@@ -161,4 +161,30 @@ qreal verticalShearParamFromDrag(qreal pressScaleY, qreal leverX, qreal len0, qr
     return delta;
 }
 
+QPointF contentAnchorPoint(const QRectF &content, ContentAnchor anchor)
+{
+    const QRectF r = content;
+    switch (anchor) {
+    case ContentAnchor::TopLeft:
+        return r.topLeft();
+    case ContentAnchor::TopRight:
+        return r.topRight();
+    case ContentAnchor::BottomLeft:
+        return r.bottomLeft();
+    case ContentAnchor::BottomRight:
+        return r.bottomRight();
+    case ContentAnchor::TopMid:
+        return QPointF(r.center().x(), r.top());
+    case ContentAnchor::BottomMid:
+        return QPointF(r.center().x(), r.bottom());
+    case ContentAnchor::LeftMid:
+        return QPointF(r.left(), r.center().y());
+    case ContentAnchor::RightMid:
+        return QPointF(r.right(), r.center().y());
+    case ContentAnchor::Center:
+    default:
+        return r.center();
+    }
+}
+
 } // namespace PlacementLinear

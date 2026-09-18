@@ -382,35 +382,41 @@ bool ImageItem::isShearHandle(Handle h) const
 QPointF ImageItem::scaleAnchorLocal(Handle h) const
 {
     // Opposite corner/edge — kept fixed when not scaling from the centre.
-    const QRectF r = contentRect();
+    using A = PlacementLinear::ContentAnchor;
+    PlacementLinear::ContentAnchor anchor = A::Center;
     switch (h) {
     case Handle::ScaleTopLeft:
-        return r.bottomRight();
+        anchor = A::BottomRight;
+        break;
     case Handle::ScaleTopRight:
-        return r.bottomLeft();
+        anchor = A::BottomLeft;
+        break;
     case Handle::ScaleBottomLeft:
-        return r.topRight();
+        anchor = A::TopRight;
+        break;
     case Handle::ScaleBottomRight:
-        return r.topLeft();
+        anchor = A::TopLeft;
+        break;
     case Handle::ScaleTop:
-        return QPointF(r.center().x(), r.bottom());
-    case Handle::ScaleBottom:
-        return QPointF(r.center().x(), r.top());
-    case Handle::ScaleLeft:
-        return QPointF(r.right(), r.center().y());
-    case Handle::ScaleRight:
-        return QPointF(r.left(), r.center().y());
     case Handle::ShearTop:
-        return QPointF(r.center().x(), r.bottom());
+        anchor = A::BottomMid;
+        break;
+    case Handle::ScaleBottom:
     case Handle::ShearBottom:
-        return QPointF(r.center().x(), r.top());
+        anchor = A::TopMid;
+        break;
+    case Handle::ScaleLeft:
     case Handle::ShearLeft:
-        return QPointF(r.right(), r.center().y());
+        anchor = A::RightMid;
+        break;
+    case Handle::ScaleRight:
     case Handle::ShearRight:
-        return QPointF(r.left(), r.center().y());
+        anchor = A::LeftMid;
+        break;
     default:
-        return r.center();
+        break;
     }
+    return PlacementLinear::contentAnchorPoint(contentRect(), anchor);
 }
 
 void ImageItem::drawCornerBracket(QPainter *painter, const QPointF &c,

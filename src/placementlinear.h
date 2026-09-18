@@ -5,6 +5,7 @@
 #define PLACEMENTLINEAR_H
 
 #include <QPointF>
+#include <QRectF>
 #include <QTransform>
 
 /**
@@ -89,6 +90,24 @@ qreal horizontalShearFromDrag(qreal pressShear, qreal pressScaleX, qreal leverY,
  * @p leverX is grip local x; @p len0/@p len1 project onto unit local +Y at press.
  */
 qreal verticalShearParamFromDrag(qreal pressScaleY, qreal leverX, qreal len0, qreal len1);
+
+/**
+ * Fixed opposite corner/edge on @p content for scale/shear about that anchor.
+ * Matches ImageItem scale/shear handle pairing (not from-centre mode).
+ */
+enum class ContentAnchor {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    TopMid,
+    BottomMid,
+    LeftMid,
+    RightMid,
+    Center,
+};
+
+QPointF contentAnchorPoint(const QRectF &content, ContentAnchor anchor);
 
 } // namespace PlacementLinear
 

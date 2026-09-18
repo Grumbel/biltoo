@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1317-content-anchor-point.** Pure scale/shear opposite-anchor points.
+Prior: **1316**.
+
+### Change
+- `PlacementLinear::ContentAnchor` + `contentAnchorPoint`
+- `ImageItem::scaleAnchorLocal` maps handle → opposite anchor via the pure helper.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1317-content-anchor-point.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1316-paint-chrome-frame-geom.** Paint chrome shares FrameViewGeom helpers.
 Prior: **1315**.
 
