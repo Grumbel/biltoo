@@ -1287,8 +1287,8 @@ bool ImageView::snapshotSlideshowContentAppearance(const QString &path,
             }
         }
     }
-    const auto it = m_itemStates.constFind(path);
-    if (it != m_itemStates.cend() && SessionAppearance::hasContentAppearance(*it)) {
+    const auto it = m_itemStateBook.byPath.constFind(path);
+    if (it != m_itemStateBook.byPath.cend() && SessionAppearance::hasContentAppearance(*it)) {
         *out = *it;
         return true;
     }

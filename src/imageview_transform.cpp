@@ -844,9 +844,9 @@ int ImageView::resetContentAppearanceForTargets()
             m_appearance.set(sid, slot);
         }
         // Path map still holds content turns from prior bake/pack; captureState
-        // re-merges turns==0 from m_itemStates and can resurrect orientation.
-        if (m_itemStates.contains(path)) {
-            WorkspaceItemState pathSlot = m_itemStates.value(path);
+        // re-merges turns==0 from m_itemStateBook.byPath and can resurrect orientation.
+        if (m_itemStateBook.byPath.contains(path)) {
+            WorkspaceItemState pathSlot = m_itemStateBook.byPath.value(path);
             pathSlot.contentHFlip = false;
             pathSlot.contentVFlip = false;
             pathSlot.contentQuarterTurns = 0;
@@ -854,7 +854,7 @@ int ImageView::resetContentAppearanceForTargets()
             pathSlot.cropRect = QRect();
             pathSlot.cropSourceSize = QSize();
             pathSlot.cropRotation = 0.0;
-            m_itemStates.insert(path, pathSlot);
+            m_itemStateBook.byPath.insert(path, pathSlot);
         }
 
         item->setContentHFlip(false);

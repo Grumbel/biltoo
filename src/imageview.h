@@ -24,6 +24,7 @@
 #include "sessionchrome.h"
 #include "gallerysoftbook.h"
 #include "imagesizebook.h"
+#include "pathitemstatebook.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
@@ -385,8 +386,10 @@ public:
     SessionAppearanceStore &appearance() { return m_appearance; }
     const SessionAppearanceStore &appearance() const { return m_appearance; }
     /** Controller host: path-keyed placement / unbound appearance cache. */
-    QHash<QString, WorkspaceItemState> &itemStates() { return m_itemStates; }
-    const QHash<QString, WorkspaceItemState> &itemStates() const { return m_itemStates; }
+    PathItemStateBook &itemStates() { return m_itemStateBook; }
+    const PathItemStateBook &itemStates() const { return m_itemStateBook; }
+    QHash<QString, WorkspaceItemState> &itemStatesByPath() { return m_itemStateBook.byPath; }
+    const QHash<QString, WorkspaceItemState> &itemStatesByPath() const { return m_itemStateBook.byPath; }
     bool hasPendingWorkspacePaths() const { return m_loadGate.hasPendingWorkspacePaths(); }
     void clearPendingWorkspacePaths() { m_loadGate.clearPendingWorkspacePaths(); }
     void addPendingWorkspacePath(const QString &path) { m_loadGate.addPendingWorkspacePath(path); }
@@ -1725,7 +1728,7 @@ private:
      * Bound session images: content appearance is m_appearance only.
      * Path map remains Workspace free-placement cache and unbound fallback.
      */
-    QHash<QString, WorkspaceItemState> m_itemStates;
+    PathItemStateBook m_itemStateBook;
     /**
      * Per-session-slot appearance (crop / content flip / quarter turns).
      * Keyed by session index so path duplicates stay independent value copies.

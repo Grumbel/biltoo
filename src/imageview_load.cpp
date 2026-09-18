@@ -278,8 +278,8 @@ WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
         return {};
     }
     // Path map only when unbound (no session image id).
-    const auto it = m_itemStates.constFind(path);
-    if (it != m_itemStates.cend()) {
+    const auto it = m_itemStateBook.byPath.constFind(path);
+    if (it != m_itemStateBook.byPath.cend()) {
         return *it;
     }
     return {};
@@ -301,7 +301,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         // after restart. appearanceForNewImageModeItem seeds then returns
         // identity only if XDG has nothing.
         if (m_sessionId.currentId != kInvalidSessionImageId
-            || m_itemStates.contains(path)) {
+            || m_itemStateBook.byPath.contains(path)) {
             app = appearanceForNewImageModeItem(path);
         }
     }
@@ -547,8 +547,8 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
             }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
-        const auto it = m_itemStates.constFind(item->path());
-        if (it != m_itemStates.cend()) {
+        const auto it = m_itemStateBook.byPath.constFind(item->path());
+        if (it != m_itemStateBook.byPath.cend()) {
             appearance = *it;
         }
     }
@@ -2310,8 +2310,8 @@ void ImageView::applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &pat
     }
     // Content 90°/flip/crop are materialize()'d in createItemFromImage when want is set.
     // Legacy unbaked flips only if content flags not used yet.
-    const auto it = m_itemStates.constFind(path);
-    if (it == m_itemStates.cend()) {
+    const auto it = m_itemStateBook.byPath.constFind(path);
+    if (it == m_itemStateBook.byPath.cend()) {
         return;
     }
     if (!it->contentHFlip && !it->contentVFlip) {

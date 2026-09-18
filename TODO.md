@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1278-path-item-state-book.** Extract PathItemStateBook for path-keyed WorkspaceItemState.
+Prior: **1277**.
+
+### Change
+- `PathItemStateBook` (byPath map + get/set/clear).
+- ImageView holds `m_itemStateBook`; `itemStatesByPath()` for hash access.
+- Workspace free-placement / unbound fallback only; content still id-keyed.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1278-path-item-state-book.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1277-display-edge-soft-screen.** Soft cell clamp + screen needEdge pure helpers.
 Prior: **1276**.
 

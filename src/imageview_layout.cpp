@@ -129,11 +129,11 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
             s.contentVFlip = item->appliedContentXform().vFlip;
         }
         // Bound session image: path map is placement-only. Do not read content
-        // turns/crop meta from m_itemStates.
+        // turns/crop meta from m_itemStateBook.byPath.
     } else {
         // Unbound tile: path map may hold content orient.
-        const auto prev = m_itemStates.constFind(item->path());
-        if (prev != m_itemStates.cend()) {
+        const auto prev = m_itemStateBook.byPath.constFind(item->path());
+        if (prev != m_itemStateBook.byPath.cend()) {
             s.contentQuarterTurns =
                 ContentXform::normalizeQuarterTurns(prev->contentQuarterTurns);
             s.cropRotation = prev->cropRotation;
@@ -147,8 +147,8 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     }
     // Placement path-map hint for session index only (bound or unbound).
     if (s.sessionIndex < 0) {
-        const auto prev = m_itemStates.constFind(item->path());
-        if (prev != m_itemStates.cend() && prev->sessionIndex >= 0) {
+        const auto prev = m_itemStateBook.byPath.constFind(item->path());
+        if (prev != m_itemStateBook.byPath.cend() && prev->sessionIndex >= 0) {
             s.sessionIndex = prev->sessionIndex;
         }
     }
@@ -188,8 +188,8 @@ void ImageView::rememberItemState(ImageItem *item)
         }
         // Unbound legacy tile: path map is the only store.
         WorkspaceItemState s;
-        const auto it = m_itemStates.constFind(item->path());
-        if (it != m_itemStates.cend()) {
+        const auto it = m_itemStateBook.byPath.constFind(item->path());
+        if (it != m_itemStateBook.byPath.cend()) {
             s = *it;
         } else {
             s.path = item->path();
@@ -203,12 +203,12 @@ void ImageView::rememberItemState(ImageItem *item)
         s.contentHFlip = item->contentHFlip();
         s.contentVFlip = item->contentVFlip();
     s.colorAdjust = item->colorAdjustments();
-        if (it != m_itemStates.cend()) {
+        if (it != m_itemStateBook.byPath.cend()) {
             s.contentQuarterTurns = it->contentQuarterTurns;
             s.cropRotation = it->cropRotation;
             s.cropSourceSize = it->cropSourceSize;
         }
-        m_itemStates.insert(item->path(), s);
+        m_itemStateBook.byPath.insert(item->path(), s);
         return;
     }
     // Workspace / Gallery: path map is legacy placement for *unbound* tiles only.
@@ -222,7 +222,7 @@ void ImageView::rememberItemState(ImageItem *item)
         m_appearance.set(item->sessionId(), slot);
         return;
     }
-    m_itemStates.insert(item->path(), captureState(item));
+    m_itemStateBook.byPath.insert(item->path(), captureState(item));
 }
 
 QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
@@ -272,8 +272,8 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
         app = m_appearance.get(sid);
     }
     if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
-        const auto it = m_itemStates.constFind(path);
-        if (it != m_itemStates.cend()) {
+        const auto it = m_itemStateBook.byPath.constFind(path);
+        if (it != m_itemStateBook.byPath.cend()) {
             fallback = *it;
             app = &fallback;
         }
@@ -839,11 +839,11 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             persistDurableContentAppearance(item, s, "bakeRotate");
         }
         // Keep path map content fields in sync so pack afterEach cannot leave
-        // stale turns for any reader that still peeks at m_itemStates.
+        // stale turns for any reader that still peeks at m_itemStateBook.byPath.
         {
             WorkspaceItemState pathSlot;
-            const auto it = m_itemStates.constFind(item->path());
-            if (it != m_itemStates.cend()) {
+            const auto it = m_itemStateBook.byPath.constFind(item->path());
+            if (it != m_itemStateBook.byPath.cend()) {
                 pathSlot = *it;
             }
             pathSlot.path = item->path();
@@ -854,7 +854,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             pathSlot.cropRect = want.cropRect;
             pathSlot.cropRotation = want.cropRotation;
             pathSlot.cropSourceSize = want.cropSourceSize;
-            m_itemStates.insert(item->path(), pathSlot);
+            m_itemStateBook.byPath.insert(item->path(), pathSlot);
         }
         item->setAppliedContentXform(ContentXform::Value::fromState(s));
     }
@@ -959,7 +959,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         s.cropSourceSize = cropMap.cropSourceSize;
         s.contentHFlip = h;
         s.contentVFlip = v;
-        m_itemStates.insert(item->path(), s);
+        m_itemStateBook.byPath.insert(item->path(), s);
     }
 
     commitItemSessionEdit(item);
@@ -1078,7 +1078,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
     }
     if (sid != kInvalidSessionImageId) {
         // Bound: do not last-write appearance onto the path map (duplicates
-        // share a path). Placement remains in m_itemStates from Workspace
+        // share a path). Placement remains in m_itemStateBook.byPath from Workspace
         // rememberItemState / snapshot only.
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
@@ -1508,8 +1508,8 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
         item->setStackZ(m_items.size() - 1);
         return;
     }
-    const auto it = m_itemStates.constFind(path);
-    if (it != m_itemStates.cend()) {
+    const auto it = m_itemStateBook.byPath.constFind(path);
+    if (it != m_itemStateBook.byPath.cend()) {
         applyState(item, *it);
         return;
     }

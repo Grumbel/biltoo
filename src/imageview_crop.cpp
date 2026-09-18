@@ -344,8 +344,8 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
         return true;
     }
     // Last resort for unbound single-instance tiles.
-    const auto it = m_itemStates.constFind(item->path());
-    if (it != m_itemStates.cend()) {
+    const auto it = m_itemStateBook.byPath.constFind(item->path());
+    if (it != m_itemStateBook.byPath.cend()) {
         *app = *it;
         return true;
     }
@@ -773,8 +773,8 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         have = true;
     }
     if (!have) {
-        const auto it = m_itemStates.constFind(item->path());
-        if (it == m_itemStates.cend()) {
+        const auto it = m_itemStateBook.byPath.constFind(item->path());
+        if (it == m_itemStateBook.byPath.cend()) {
             return;
         }
         app = *it;
@@ -849,7 +849,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
             slot.path = item->path();
             m_appearance.set(sid, slot);
         } else {
-            m_itemStates.insert(item->path(), state);
+            m_itemStateBook.byPath.insert(item->path(), state);
         }
     }
     // Appearance persistence is commitItemSessionEdit → m_appearance (by id).
@@ -958,8 +958,8 @@ void ImageView::applyStoredAppearance(ImageItem *item)
         // independent session images that share a file path.
     } else {
         // Path map only when unbound (no session image id).
-        const auto it = m_itemStates.constFind(item->path());
-        if (it != m_itemStates.cend()) {
+        const auto it = m_itemStateBook.byPath.constFind(item->path());
+        if (it != m_itemStateBook.byPath.cend()) {
             fallback = *it;
             app = &fallback;
         }
@@ -997,8 +997,8 @@ void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
             app = &(*it);
         }
     } else {
-        const auto it = m_itemStates.constFind(item->path());
-        if (it != m_itemStates.cend()) {
+        const auto it = m_itemStateBook.byPath.constFind(item->path());
+        if (it != m_itemStateBook.byPath.cend()) {
             fallback = *it;
             app = &fallback;
         }
@@ -1130,7 +1130,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         m_appearance.set(sid, s);
     } else {
         // Unbound only: path map is the sole store.
-        m_itemStates.insert(item->path(), s);
+        m_itemStateBook.byPath.insert(item->path(), s);
     }
 }
 

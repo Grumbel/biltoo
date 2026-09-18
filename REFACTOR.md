@@ -64,6 +64,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **LoadGeneration** (`loadgeneration.h`): monotonic token for async decode accept/reject.
 - **SessionLoadGate** (`sessionloadgate.h`): generation + pending LoadAdd/LoadRestore/scene maps; `clearPending` / `bumpGeneration`.
 - **ImageSizeBook** (`imagesizebook.h`): path→logical size + provisional/probe sets; noteDefinitive HARD RULE.
+- **PathItemStateBook** (`pathitemstatebook.h`): path-keyed WorkspaceItemState (placement / unbound).
 - **SessionBindBook** (`sessionbindbook.h`): LoadAdd PendingSessionBind queue + index/select maps.
 - **SessionAppearanceStore** seed-attempt set (`seedAttempted` / mark / clear with remove).
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).
