@@ -484,10 +484,7 @@ void ImageView::captureStickyPanAnchor(ImageItem *item)
         return;
     }
     const QPointF vc = mapToScene(viewport()->rect().center());
-    m_framing.stickyPanNormX = (vc.x() - r.left()) / r.width();
-    m_framing.stickyPanNormY = (vc.y() - r.top()) / r.height();
-    m_framing.clampStickyPanNorms();
-    m_framing.haveStickyPanAnchor = true;
+    m_framing.setStickyPanFromScene(vc, r);
 }
 
 void ImageView::restoreStickyPanAnchor(ImageItem *item)
@@ -502,9 +499,7 @@ void ImageView::restoreStickyPanAnchor(ImageItem *item)
     if (r.width() < 1.0 || r.height() < 1.0) {
         return;
     }
-    const QPointF target(r.left() + m_framing.stickyPanNormX * r.width(),
-                         r.top() + m_framing.stickyPanNormY * r.height());
-    centerOn(target);
+    centerOn(m_framing.sceneFromStickyPan(r));
 }
 
 void ImageView::applyImageModeFraming(ImageItem *item)
@@ -2933,10 +2928,10 @@ void ImageView::retargetSlideshowMotionDuration(int durationMs)
         if (m_ssDwell.clock.isValid() && !m_ssDwell.motionPaused) {
             elapsed += m_ssDwell.clock.elapsed();
         }
-        progress = qBound(0.0, qreal(elapsed) / qreal(m_ssDwell.durationMs), 1.0);
+        progress = SlideshowClocks::progress01(elapsed, m_ssDwell.durationMs);
     }
-    const int pathMs = durationMs + qMax(0, m_ssSettings.transitionDurationMs);
-    m_ssDwell.durationMs = qMax(durationMs, pathMs);
+    m_ssDwell.durationMs = SlideshowClocks::pathDurationMs(
+        durationMs, m_ssSettings.transitionDurationMs);
     m_ssDwell.elapsedOffsetMs = qint64(progress * qreal(m_ssDwell.durationMs));
     m_ssDwell.clock.start();
     if (m_motionTimer && !m_ssDwell.motionPaused) {
@@ -2969,9 +2964,9 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     // advances (and crossfade runs), from-progress is still < 1 and keeps
     // lerping. Previously duration==interval → progress clamped at 1 for the
     // entire transition → motion looked frozen.
-    const int pathMs = durationMs + qMax(0, m_ssSettings.transitionDurationMs);
-    m_ssDwell.durationMs = qMax(durationMs, pathMs);
-    initialProgress = qBound(0.0, initialProgress, 1.0);
+    m_ssDwell.durationMs = SlideshowClocks::pathDurationMs(
+        durationMs, m_ssSettings.transitionDurationMs);
+    initialProgress = qBound(0.0, initialProgress, 1.0); // [0,1]
     m_ssDwell.clock.start();
     m_ssDwell.motionT = qBound(0.0, initialProgress, 1.0);
     m_ssDwell.elapsedOffsetMs = (m_ssDwell.durationMs > 0)

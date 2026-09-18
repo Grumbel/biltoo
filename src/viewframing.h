@@ -5,6 +5,9 @@
 #define VIEWFRAMING_H
 
 #include <QtGlobal>
+#include <QPointF>
+#include <QRectF>
+#include <QtCore/qnamespace.h>
 
 /**
  * Image-mode framing preferences and sticky/preserved navigation scale.
@@ -27,6 +30,29 @@ struct ViewFraming {
     {
         stickyPanNormX = qBound(0.0, stickyPanNormX, 1.0);
         stickyPanNormY = qBound(0.0, stickyPanNormY, 1.0);
+    }
+
+    Qt::AspectRatioMode aspectMode() const
+    {
+        return fillMode ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio;
+    }
+
+    /** Capture sticky pan as norms of @p sceneCentre within @p itemBounds. */
+    void setStickyPanFromScene(const QPointF &sceneCentre, const QRectF &itemBounds)
+    {
+        if (itemBounds.width() < 1.0 || itemBounds.height() < 1.0) {
+            return;
+        }
+        stickyPanNormX = (sceneCentre.x() - itemBounds.left()) / itemBounds.width();
+        stickyPanNormY = (sceneCentre.y() - itemBounds.top()) / itemBounds.height();
+        clampStickyPanNorms();
+        haveStickyPanAnchor = true;
+    }
+
+    QPointF sceneFromStickyPan(const QRectF &itemBounds) const
+    {
+        return QPointF(itemBounds.left() + stickyPanNormX * itemBounds.width(),
+                       itemBounds.top() + stickyPanNormY * itemBounds.height());
     }
 };
 
