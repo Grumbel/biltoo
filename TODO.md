@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1130-lqip-not-gaveup-block.** LQIP must not be blocked by PreferCache give-up.
+Prior: **1129**.
+
+### Bug
+- `gallerySoftScheduleBlocked` used `have >= 96`, so pure **LQIP (96)** was treated
+  as a soft rung and blocked when `gaveUpWant` was set — no further SoftDisplay.
+- Selection quality said "Quick preview" instead of explicit LQIP.
+
+### Fix
+- Block only when `have > kLqipMaxEdge` (real soft shortfall plateau).
+- Clear `gaveUpWant` / PathRaster prefer give-up while shown ≤ LQIP.
+- Status tier label **LQIP** for edge ≤ 96.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1130-lqip-not-gaveup-block.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1129-provisional-lqip-priority.** Soft install while size provisional; LQIP first.
 Prior: **1128**.
 

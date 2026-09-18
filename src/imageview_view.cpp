@@ -3630,6 +3630,8 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
         tier = tr("Preview");
     } else if (edge >= ThumtooCache::kFilmstripLadderEdge) {
         tier = tr("Thumbnail");
+    } else if (edge <= DisplayQuality::kLqipMaxEdge) {
+        tier = tr("LQIP");
     } else {
         tier = tr("Quick preview");
     }

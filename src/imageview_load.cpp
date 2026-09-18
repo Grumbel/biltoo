@@ -1577,8 +1577,10 @@ bool ImageView::gallerySoftScheduleBlocked(const GallerySoftState &st, int have,
     // gaveUpWant is mirrored from PathRasterService in the decode window /
     // scheduleGalleryDecode; block soft-band retries when still short of soft max.
     const int softCap = ThumtooCache::kGalleryLadderEdge;
-    // LQIP-only have must not be blocked by a mirrored PreferCache plateau.
-    if (have >= 96 && !coversEdge(have, softCap)
+    // LQIP (≤96) must never be blocked by PreferCache plateau — that froze
+    // scheduleGalleryDecode while tiles still showed quick-preview only.
+    // Only real soft rungs (strictly above LQIP) may plateau.
+    if (have > DisplayQuality::kLqipMaxEdge && !coversEdge(have, softCap)
         && st.gaveUpWant >= qMin(want, softCap)) {
         return true;
     }
@@ -1654,6 +1656,14 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
 
     clearGalleryGaveUpIfClimbable(st, have, want);
+    // Shown LQIP is never a PreferCache plateau — drop mirrored give-up so
+    // SoftDisplay can schedule again after a soft shortfall.
+    if (have <= DisplayQuality::kLqipMaxEdge && st.gaveUpWant > 0) {
+        st.gaveUpWant = 0;
+        if (m_pathRaster) {
+            m_pathRaster->clearPreferGaveUp(path);
+        }
+    }
     if (gallerySoftScheduleBlocked(st, have, want)) {
         return;
     }
