@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1192-gallery-lqip-only-deliveries.** Gallery ignores soft PreferCache deliveries; LQIP-only underlay.
+Prior: **1191**.
+
+### Change
+- `onImagePreviewLoaded` in Gallery: install LQIP only; no SoftDisplay PathRaster climb.
+- `applyGalleryLadderReady`: LQIP only; no soft samples onto cells.
+- Cold open: filmstrip deferred 200ms so Gallery owns workers first.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1192-gallery-lqip-only-deliveries.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1191-gallery-before-filmstrip.** Multi-image open: Gallery before filmstrip; no GUI isUnsupported in filmstrip.
 Prior: **1190**.
 

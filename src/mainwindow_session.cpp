@@ -1369,7 +1369,9 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         TtfpTrace::mark("after_enterGalleryMode");
         setCurrentIndex(idx, /*ensureGalleryVisible=*/true);
         TtfpTrace::mark("after_setCurrentIndex");
-        QTimer::singleShot(0, this, installFilmstrip);
+        // Warm: filmstrip next tick (LQIP already in ImageCache). Cold: short
+        // delay so Gallery LQIP + first tile ticks own the worker pool first.
+        QTimer::singleShot(sizesWarm ? 0 : 200, this, installFilmstrip);
         // Background size probes for plain-file misses only (warm paths skipped).
         ThumtooCache::preparePaths(m_session.paths());
         ThumtooCache::warmUris(m_session.paths());

@@ -1828,53 +1828,38 @@ void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
 }
 
 void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
-                                        const QImage &image)
+                                          const QImage &image)
 {
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    const int edge = maxEdge > 0 ? maxEdge : ThumtooCache::kGalleryLadderEdge;
-    // Worker already decoded `image` — never PreferCache on the GUI thread.
-    const int got = image.isNull() ? 0 : ImageCache::longEdge(image);
-    if (!image.isNull()) {
-        if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-            dbg && dbg[0] && dbg[0] != '0') {
-            fprintf(stderr,
-                    "biltoo/gallery: ladderReady INSTALL path=%s edge=%d got=%dx%d\n",
-                    qPrintable(QFileInfo(path).fileName()), edge, image.width(),
-                    image.height());
-        }
-        onImagePreviewLoaded(path, image, 0, static_cast<int>(LoadAdd));
-        // Force LQIP-sized underlay only onto still-blank items (tiles own the rest).
-        if (ImageCache::longEdge(image) <= DisplayQuality::kLqipMaxEdge) {
-            for (ImageItem *item : m_items) {
-                if (!item || item->path() != path || item->hasDisplayPixels()) {
-                    continue;
-                }
-                installDisplayPixels(item, image,
-                                     SessionAppearance::PixelKind::SoftPreview,
-                                     item->sessionId());
+    Q_UNUSED(maxEdge);
+    // Gallery accepts LQIP only. Larger soft samples stay in ImageCache for
+    // filmstrip / Image mode — not painted onto Gallery cells.
+    if (!image.isNull()
+        && ImageCache::longEdge(image) <= DisplayQuality::kLqipMaxEdge) {
+        ImageCache::put(path, image);
+        for (ImageItem *item : m_items) {
+            if (!item || item->path() != path || item->hasDisplayPixels()) {
+                continue;
             }
-            if (viewport()) {
-                viewport()->update();
-            }
+            installDisplayPixels(item, image,
+                                 SessionAppearance::PixelKind::SoftPreview,
+                                 item->sessionId());
         }
-    } else if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-               dbg && dbg[0] && dbg[0] != '0') {
-        fprintf(stderr, "biltoo/gallery: ladderReady EMPTY path=%s edge=%d\n",
-                qPrintable(QFileInfo(path).fileName()), edge);
+        if (viewport()) {
+            viewport()->update();
+        }
     }
 
     auto it = m_gallerySoft.find(path);
     if (it != m_gallerySoft.end()) {
-        it.value().noteLadderDelivery(edge, got, ThumtooCache::kFilmstripLadderEdge);
-        syncGallerySoftMirrorFromPathRaster(path, it.value());
-        // Shown edge after onImagePreviewLoaded above — not host request edge.
+        it.value().terminal = true;
         it.value().have = qMax(it.value().have, galleryHaveEdgeFromItems(path, nullptr));
+        clearGallerySoftInflight(it.value());
     }
 
-    // Debounce window rescan — avoid full setInterest on every tile delivery.
-    scheduleGalleryDecodeWindowRefresh(48); // was 150 — faster LQIP→soft pass1
+    scheduleGalleryDecodeWindowRefresh(16);
     scheduleGalleryStatusRefresh(100);
 }
 
@@ -2054,10 +2039,28 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
         // Empty multi-item canvas: fall through to per-item fill.
     }
 
-    // Gallery / Workspace: DisplaySurface::decide per item (SessionImageId want).
-    // Avoid host-vs-shown shouldUpgrade on cropped FullSource (pulse / no-op spam).
     const int incoming = ImageCache::longEdge(image);
-    bool gallerySizeChanged = false;
+
+    // Gallery: LQIP placeholder only. Soft PreferCache deliveries must not
+    // climb Gallery cells (filmstrip soft used SoftDisplay here).
+    if (isGalleryMode()) {
+        if (incoming > 0 && incoming <= DisplayQuality::kLqipMaxEdge) {
+            for (ImageItem *item : m_items) {
+                if (!item || item->path() != path || item->hasDisplayPixels()) {
+                    continue;
+                }
+                installDisplayPixels(item, image,
+                                     SessionAppearance::PixelKind::SoftPreview,
+                                     item->sessionId());
+            }
+            if (viewport()) {
+                viewport()->update();
+            }
+        }
+        return;
+    }
+
+    // Workspace: DisplaySurface::decide per item.
     for (ImageItem *item : m_items) {
         if (!item || item->path() != path) {
             continue;
@@ -2074,16 +2077,12 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                 ? m_displaySurfaces.evaluate(sid)
                 : DisplaySurface::decide(ds);
         const auto pol =
-            (isWorkspaceMode() && !ThumtooCache::hasDurableTilesKnown(path))
+            (!ThumtooCache::hasDurableTilesKnown(path))
                 ? PathRasterService::ClimbPolicy::EscalateToFull
                 : PathRasterService::ClimbPolicy::SoftDisplay;
-        if (applyDisplaySurfaceAction(item, act, image, ds.needEdge, pol)) {
-            gallerySizeChanged = true;
-        }
+        (void)applyDisplaySurfaceAction(item, act, image, ds.needEdge, pol);
     }
-    if (gallerySizeChanged && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
-        applyLayout(GalleryPackReason::ContentChange);
-    } else if (viewport()) {
+    if (viewport()) {
         viewport()->update();
     }
     if (isWorkspaceMode()) {
