@@ -1723,8 +1723,12 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 }
             }
             tickPrimaryTileLod(12);
-            // Still blank: PreferCache soft underlay once (not terminal).
+            // Still blank: PreferCache soft underlay (direct + PathRaster).
+            // PathRaster alone was blocked for durable paths (tiles-only).
             if (anyBlank && !anyShown) {
+                (void)ThumtooCache::scheduleSoftPixels(
+                    path, ThumtooCache::kGalleryLadderEdge);
+                (void)ThumtooCache::scheduleTilePyramid(path);
                 // Fall through to PathRaster SoftDisplay below for underlay.
             } else {
                 auto sit = m_gallerySoft.find(path);

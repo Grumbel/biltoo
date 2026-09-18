@@ -17,6 +17,9 @@ Small cells (`!tileLodWanted`) use PreferCache / LQIP only (no soft climb to 512
 
 Warm `ImageCache` cover of the soft edge → zero PreferCache work.
 
+PathRaster must **not** skip soft PreferCache solely because a durable
+pyramid exists — that left Gallery blank when LQIP was absent.
+
 
 ## Authority (host climb)
 

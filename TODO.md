@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1165-durable-soft-underlay.** PathRaster soft underlay even when durable.
+Prior: **1164**.
+
+### Root cause
+`PathRasterService::pump` skipped `scheduleSoftPixels` whenever
+`hasDurableTilesKnown` — only `scheduleTilePyramid`. Prepared libraries (common
+after soft-path removal) never got whole-frame underlay. LQIP free-data-only is
+often missing → Gallery stayed blank until per-cell tiles painted (or forever).
+
+### Fix
+- PathRaster: always PreferCache soft band; durable also queues tile pyramid.
+- `scheduleGalleryDecode`: blank tile-band also `scheduleSoftPixels` +
+  `scheduleTilePyramid` directly (does not rely on SM alone).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1165-durable-soft-underlay.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1164-gallery-blank-soft-underlay.** Soft underlay for blank tile-band cells.
 Prior: **1163**.
 
