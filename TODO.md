@@ -2,6 +2,23 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1235-docs-session-tile-clear.** TILE_LOD documents session-replace registry wipe.
+Prior: **1234**.
+
+### Change
+- TILE_LOD: within-session retain vs Open/archive `invalidateAll` + memo clear.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1235-docs-session-tile-clear.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1234-session-replace-memos.** Session replace clears durable-tile + URI process memos.
 Prior: **1233**.
 

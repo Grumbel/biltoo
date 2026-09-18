@@ -354,6 +354,19 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
 keeps identity correct across path switches.
 
+### Session / archive replace (biltoo-1233 / 1234)
+
+Retention is **within one Open session only**. On `invalidateSessionLoads` /
+`clearWorkspace` (new file list, new archive):
+
+1. `TileLodRegistry::invalidateAll()` — drop every path entry (sources + RAM).
+2. Clear ImageView tile prefetch slots.
+3. `ThumtooCache::clearSessionReplaceMemos()` — durable-tile yes/no, min_scale,
+   URI map (size/LQIP host memos stay; `warmSessionOpenMemos` refills).
+
+Otherwise tiles and coverage memos from the previous archive could still drive
+paint or climb after Open.
+
 
 ## Scale hold (biltoo-1095)
 
