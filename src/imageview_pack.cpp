@@ -757,7 +757,7 @@ void ImageView::updateGallerySoftProgressHud()
     }
     // LQIP is a free durable placeholder, not a user-facing "preview stage".
     // Never show "Improving previews… LQIP" — that was noise and mis-sold the product.
-    if (m_centreProgressTitle.startsWith(tr("Improving previews"))) {
+    if (m_centreProgress.title.startsWith(tr("Improving previews"))) {
         clearCentreProgress();
     }
 }

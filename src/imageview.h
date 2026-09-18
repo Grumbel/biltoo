@@ -9,6 +9,8 @@
 #include "tileneighborprefetch.h"
 #include "cropsession.h"
 #include "attentionsession.h"
+#include "centreprogress.h"
+#include "grouptransformsession.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
@@ -191,7 +193,7 @@ public:
      */
     void setCentreProgress(const QString &title, const QString &detail = QString());
     void clearCentreProgress();
-    bool hasCentreProgress() const { return !m_centreProgressTitle.isEmpty(); }
+    bool hasCentreProgress() const { return m_centreProgress.active(); }
     bool gallerySizeResolveActive() const { return m_gallerySizeResolve.active(); }
     /** Controller host: set m_viewMode + m_layoutMode and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
@@ -1767,9 +1769,8 @@ private:
     QSet<QString> m_provisionalSizePaths;
     /** Paths with an in-flight async size probe. */
     QSet<QString> m_sizeProbeScheduled;
-    /** Centre HUD progress (expand / size resolve / sort); empty = inactive. */
-    QString m_centreProgressTitle;
-    QString m_centreProgressDetail;
+    /** Centre HUD progress (expand / size resolve / sort). */
+    CentreProgress m_centreProgress;
     /** Gallery open: wait for sizes before creating scene tiles. */
     bool m_galleryDeferPopulate = false;
     /** Packaged-layout size gate (timers + pending); canvas finish via Host. */
@@ -1945,17 +1946,8 @@ private:
     DisplaySurfaceController m_displaySurfaces;
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
 
-    /** Multi-select: which group handle is active (-1 = none). 0–7 scale, 8–11 rotate. */
-    int m_groupHandle = -1;
-    int m_groupHoverHandle = -1;
-    bool m_groupScaleDrag = false;
-    bool m_groupRotateDrag = false;
-    QRectF m_groupBoundsStart;
-    QPointF m_groupCenterStart;
-    QPointF m_groupPressScenePos;
-    qreal m_groupPressAngleDeg = 0.0;
-    QList<WorkspaceItemState> m_groupDragStartStates;
-    QList<ImageItem *> m_groupDragItems;
+    /** Multi-select group scale/rotate gesture (Workspace). */
+    GroupTransformSession m_groupXform;
     ImageItem *m_dragItem = nullptr;
     WorkspaceItemState m_dragStartState;
 

@@ -607,7 +607,7 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
         // Multi-select: group frame only (no per-item handles).
         const int gh = groupHandleAt(event->pos(), selected);
         if (gh >= 0 && beginGroupScale(gh, selected)) {
-            m_groupPressScenePos = mapToScene(event->pos());
+            m_groupXform.pressScenePos = mapToScene(event->pos());
             event->accept();
             return true;
         }
@@ -1281,13 +1281,13 @@ bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
 {
-    if (m_groupScaleDrag) {
+    if (m_groupXform.scaleDrag) {
         updateGroupScale(mapToScene(event->pos()), event->modifiers());
         viewport()->update();
         event->accept();
         return true;
     }
-    if (m_groupRotateDrag) {
+    if (m_groupXform.rotateDrag) {
         updateGroupRotate(mapToScene(event->pos()), event->modifiers());
         viewport()->update();
         event->accept();
@@ -1348,7 +1348,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
     if (isWorkspaceMode() && m_tool == Tool::Select && !m_handleDragItem
-        && !m_groupScaleDrag && !m_groupRotateDrag && !m_panning) {
+        && !m_groupXform.scaleDrag && !m_groupXform.rotateDrag && !m_panning) {
         const QPointF scenePos = mapToScene(event->pos());
         QList<ImageItem *> candidates;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
@@ -1367,9 +1367,9 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                 }
             }
             const int gh = groupHandleAt(event->pos(), candidates);
-            const bool groupHoverChanged = (gh != m_groupHoverHandle);
+            const bool groupHoverChanged = (gh != m_groupXform.hoverHandle);
             if (groupHoverChanged) {
-                m_groupHoverHandle = gh;
+                m_groupXform.hoverHandle = gh;
                 viewport()->update();
             }
             if (gh >= 0) {
@@ -1407,8 +1407,8 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                 }
             }
         } else {
-            if (m_groupHoverHandle != -1) {
-                m_groupHoverHandle = -1;
+            if (m_groupXform.hoverHandle != -1) {
+                m_groupXform.hoverHandle = -1;
                 viewport()->update();
             }
             ImageItem *hoverOwner = nullptr;
@@ -1693,18 +1693,18 @@ bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
 {
-    if (!(m_groupScaleDrag || m_groupRotateDrag) || event->button() != Qt::LeftButton) {
+    if (!(m_groupXform.scaleDrag || m_groupXform.rotateDrag) || event->button() != Qt::LeftButton) {
         return false;
     }
-    if (m_undoStack && !m_groupDragItems.isEmpty()) {
-        m_undoStack->beginMacro(m_groupRotateDrag ? tr("Rotate selection")
+    if (m_undoStack && !m_groupXform.dragItems.isEmpty()) {
+        m_undoStack->beginMacro(m_groupXform.rotateDrag ? tr("Rotate selection")
                                                   : tr("Scale selection"));
-        for (int i = 0; i < m_groupDragItems.size(); ++i) {
-            ImageItem *item = m_groupDragItems.at(i);
-            if (!item || i >= m_groupDragStartStates.size()) {
+        for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
+            ImageItem *item = m_groupXform.dragItems.at(i);
+            if (!item || i >= m_groupXform.dragStartStates.size()) {
                 continue;
             }
-            pushItemTransformUndo(item, m_groupDragStartStates.at(i), captureState(item),
+            pushItemTransformUndo(item, m_groupXform.dragStartStates.at(i), captureState(item),
                                   tr("Transform"));
         }
         m_undoStack->endMacro();

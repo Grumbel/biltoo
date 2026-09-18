@@ -58,41 +58,41 @@ bool ImageView::beginGroupScale(int handle, const QList<ImageItem *> &items)
     if (!bounds.isValid() || bounds.isEmpty()) {
         return false;
     }
-    m_groupHandle = handle;
-    m_groupScaleDrag = !isGroupRotateHandle(handle);
-    m_groupRotateDrag = isGroupRotateHandle(handle);
-    m_groupBoundsStart = bounds;
-    m_groupCenterStart = bounds.center();
-    m_groupDragItems = items;
-    m_groupDragStartStates.clear();
+    m_groupXform.handle = handle;
+    m_groupXform.scaleDrag = !isGroupRotateHandle(handle);
+    m_groupXform.rotateDrag = isGroupRotateHandle(handle);
+    m_groupXform.boundsStart = bounds;
+    m_groupXform.centerStart = bounds.center();
+    m_groupXform.dragItems = items;
+    m_groupXform.dragStartStates.clear();
     for (ImageItem *item : items) {
-        m_groupDragStartStates.append(captureState(item));
+        m_groupXform.dragStartStates.append(captureState(item));
     }
     return true;
 }
 
 void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers mods)
 {
-    if (!m_groupScaleDrag || m_groupDragItems.isEmpty()
-        || m_groupDragStartStates.size() != m_groupDragItems.size()) {
+    if (!m_groupXform.scaleDrag || m_groupXform.dragItems.isEmpty()
+        || m_groupXform.dragStartStates.size() != m_groupXform.dragItems.size()) {
         return;
     }
     // Drop any pointers no longer on our canvas (deleted mid-drag).
-    for (int i = m_groupDragItems.size() - 1; i >= 0; --i) {
-        ImageItem *item = m_groupDragItems.at(i);
+    for (int i = m_groupXform.dragItems.size() - 1; i >= 0; --i) {
+        ImageItem *item = m_groupXform.dragItems.at(i);
         if (!item || !m_items.contains(item) || item->scene() != m_scene) {
-            m_groupDragItems.removeAt(i);
-            m_groupDragStartStates.removeAt(i);
+            m_groupXform.dragItems.removeAt(i);
+            m_groupXform.dragStartStates.removeAt(i);
         }
     }
-    if (m_groupDragItems.isEmpty()) {
+    if (m_groupXform.dragItems.isEmpty()) {
         endGroupScale();
         return;
     }
-    const QRectF b = m_groupBoundsStart;
+    const QRectF b = m_groupXform.boundsStart;
     // Fixed opposite corner / edge as anchor (selection AABB at press).
-    QPointF anchor = m_groupCenterStart;
-    switch (m_groupHandle) {
+    QPointF anchor = m_groupXform.centerStart;
+    switch (m_groupXform.handle) {
     case 0: anchor = b.bottomRight(); break; // TL
     case 1: anchor = QPointF(b.center().x(), b.bottom()); break; // T
     case 2: anchor = b.bottomLeft(); break; // TR
@@ -107,11 +107,11 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     qreal sx = 1.0;
     qreal sy = 1.0;
     const qreal eps = 1.0;
-    const bool edgeHandle = (m_groupHandle == 1 || m_groupHandle == 3
-                             || m_groupHandle == 5 || m_groupHandle == 7);
-    const bool cornerHandle = (m_groupHandle == 0 || m_groupHandle == 2
-                               || m_groupHandle == 4 || m_groupHandle == 6);
-    switch (m_groupHandle) {
+    const bool edgeHandle = (m_groupXform.handle == 1 || m_groupXform.handle == 3
+                             || m_groupXform.handle == 5 || m_groupXform.handle == 7);
+    const bool cornerHandle = (m_groupXform.handle == 0 || m_groupXform.handle == 2
+                               || m_groupXform.handle == 4 || m_groupXform.handle == 6);
+    switch (m_groupXform.handle) {
     case 0: // TL
         sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
         sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
@@ -153,7 +153,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     //   Corner handles: default = uniform;               Shift = free H/V axes
     const bool shift = mods & Qt::ShiftModifier;
     if (edgeHandle && shift) {
-        const qreal s = (m_groupHandle == 1 || m_groupHandle == 5) ? sy : sx;
+        const qreal s = (m_groupXform.handle == 1 || m_groupXform.handle == 5) ? sy : sx;
         sx = s;
         sy = s;
     } else if (cornerHandle && !shift) {
@@ -172,9 +172,9 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
 
     const bool anisotropic = qAbs(sx - sy) > 1e-6;
 
-    for (int i = 0; i < m_groupDragItems.size(); ++i) {
-        ImageItem *item = m_groupDragItems.at(i);
-        const WorkspaceItemState &st = m_groupDragStartStates.at(i);
+    for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
+        ImageItem *item = m_groupXform.dragItems.at(i);
+        const WorkspaceItemState &st = m_groupXform.dragStartStates.at(i);
         if (!item || !m_items.contains(item)) {
             continue;
         }
@@ -220,35 +220,35 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
 void ImageView::endGroupScale()
 {
     // Undo is committed from mouseReleaseEvent (TransformCommand is local there).
-    m_groupScaleDrag = false;
-    m_groupRotateDrag = false;
-    m_groupHandle = -1;
-    m_groupHoverHandle = -1;
-    m_groupDragItems.clear();
-    m_groupDragStartStates.clear();
+    m_groupXform.scaleDrag = false;
+    m_groupXform.rotateDrag = false;
+    m_groupXform.handle = -1;
+    m_groupXform.hoverHandle = -1;
+    m_groupXform.dragItems.clear();
+    m_groupXform.dragStartStates.clear();
 }
 
 void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods)
 {
-    if (!m_groupRotateDrag || m_groupDragItems.isEmpty()
-        || m_groupDragStartStates.size() != m_groupDragItems.size()) {
+    if (!m_groupXform.rotateDrag || m_groupXform.dragItems.isEmpty()
+        || m_groupXform.dragStartStates.size() != m_groupXform.dragItems.size()) {
         return;
     }
-    for (int i = m_groupDragItems.size() - 1; i >= 0; --i) {
-        ImageItem *item = m_groupDragItems.at(i);
+    for (int i = m_groupXform.dragItems.size() - 1; i >= 0; --i) {
+        ImageItem *item = m_groupXform.dragItems.at(i);
         if (!item || !m_items.contains(item) || item->scene() != m_scene) {
-            m_groupDragItems.removeAt(i);
-            m_groupDragStartStates.removeAt(i);
+            m_groupXform.dragItems.removeAt(i);
+            m_groupXform.dragStartStates.removeAt(i);
         }
     }
-    if (m_groupDragItems.isEmpty()) {
+    if (m_groupXform.dragItems.isEmpty()) {
         return;
     }
 
-    const QPointF centre = m_groupCenterStart;
+    const QPointF centre = m_groupXform.centerStart;
     // Angle from group centre to pointer; seed from first press stored in
-    // m_groupPressScenePos when the drag starts (set in mouse path).
-    const QPointF v0 = m_groupPressScenePos - centre;
+    // m_groupXform.pressScenePos when the drag starts (set in mouse path).
+    const QPointF v0 = m_groupXform.pressScenePos - centre;
     const QPointF v1 = scenePos - centre;
     if (QLineF(QPointF(0, 0), v0).length() < 1e-3) {
         return;
@@ -264,9 +264,9 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
     const qreal c = qCos(rad);
     const qreal s = qSin(rad);
 
-    for (int i = 0; i < m_groupDragItems.size(); ++i) {
-        ImageItem *item = m_groupDragItems.at(i);
-        const WorkspaceItemState &st = m_groupDragStartStates.at(i);
+    for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
+        ImageItem *item = m_groupXform.dragItems.at(i);
+        const WorkspaceItemState &st = m_groupXform.dragStartStates.at(i);
         if (!item || !m_items.contains(item)) {
             continue;
         }

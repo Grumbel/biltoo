@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1256-centre-progress-group-xform.** CentreProgress + GroupTransformSession.
+Prior: **1255**.
+
+### Change
+- `CentreProgress`: title/detail centre HUD (expand, size resolve, sort).
+- `GroupTransformSession`: multi-select scale/rotate drag fields.
+- `ImageView::m_centreProgress` / `m_groupXform`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1256-centre-progress-group-xform.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1255-attention-session.** Extract AttentionSession draft state.
 Prior: **1254**.
 

@@ -277,7 +277,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
     // Empty session: invite the user to open or drop images.
     // Suppress while centre progress is active (archive expand / size resolve).
     if (m_items.isEmpty() && !hasClassicPath() && !m_crop.mode
-        && m_centreProgressTitle.isEmpty() && !gallerySizeResolveActive()) {
+        && m_centreProgress.title.isEmpty() && !gallerySizeResolveActive()) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         QFont titleFont = font();
@@ -347,7 +347,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     const QString loadingLine = m_hudVisible ? loadingStatusHudLine() : QString();
     if (m_crop.mode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
         || m_ssHud.pausedHud || gallerySizeResolveActive()
-        || !m_centreProgressTitle.isEmpty()
+        || !m_centreProgress.title.isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
@@ -483,11 +483,11 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("❚❚  Paused"), true},
                        {tr("Space: resume · Esc: leave"), false}},
                       margin, margin, false, false);
-        } else if (!m_centreProgressTitle.isEmpty()) {
+        } else if (!m_centreProgress.title.isEmpty()) {
             QList<HudLine> lines;
-            lines.append({m_centreProgressTitle, true});
-            if (!m_centreProgressDetail.isEmpty()) {
-                lines.append({m_centreProgressDetail, false});
+            lines.append({m_centreProgress.title, true});
+            if (!m_centreProgress.detail.isEmpty()) {
+                lines.append({m_centreProgress.detail, false});
             }
             drawPanel(lines, 0, 0, false, false, true);
         } else if (gallerySizeResolveActive() && m_gallerySizeResolve.total() > 0) {
@@ -1442,7 +1442,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
     if (isGalleryMode() && !m_hudVisible && !m_hudFlashVisible && !m_hudIdentityPulse
         && !m_ssHud.pausedHud && !gallerySizeResolveActive()
-        && m_centreProgressTitle.isEmpty()
+        && m_centreProgress.title.isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_crop.mode
         && !m_ssDwell.motionActive 
         ) {
@@ -1505,7 +1505,7 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
         return len > 1e-6 ? v / len : QPointF(1, 0);
     };
     auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB, int id) {
-        const bool hot = (m_groupHoverHandle == id || m_groupHandle == id);
+        const bool hot = (m_groupXform.hoverHandle == id || m_groupXform.handle == id);
         const QPointF d1 = unit(alongA);
         const QPointF d2 = unit(alongB);
         const qreal hs = hot ? 12.0 : 10.0;
@@ -1534,7 +1534,7 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
         }
     };
     auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, int id) {
-        const bool hot = (m_groupHoverHandle == id || m_groupHandle == id);
+        const bool hot = (m_groupXform.hoverHandle == id || m_groupXform.handle == id);
         const QPointF a = unit(along);
         const QPointF perp(-a.y(), a.x());
         const qreal hs = hot ? 12.0 : 10.0;
@@ -1582,7 +1582,7 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
     stem.setWidthF(1.25);
     for (int i = 0; i < 4; ++i) {
         const int handleId = 8 + i;
-        const bool hot = (m_groupHoverHandle == handleId || m_groupHandle == handleId);
+        const bool hot = (m_groupXform.hoverHandle == handleId || m_groupXform.handle == handleId);
         painter->setPen(stem);
         painter->drawLine(edgeMid[i], rot[i]);
         const qreal rad = hot ? 7.0 : 5.0;

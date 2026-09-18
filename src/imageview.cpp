@@ -709,7 +709,7 @@ void ImageView::setSizeResolveProgress(const QString &title, const QString &deta
 
 void ImageView::clearSizeResolveProgress()
 {
-    if (m_centreProgressTitle.startsWith(tr("Resolving sizes"))) {
+    if (m_centreProgress.title.startsWith(tr("Resolving sizes"))) {
         clearCentreProgress();
     }
 }
@@ -760,7 +760,7 @@ void ImageView::onSizeResolveGateComplete()
 void ImageView::onSizeResolveGateCancelled()
 {
     m_galleryDeferPopulate = false;
-    if (isGalleryMode() && m_centreProgressTitle.isEmpty()) {
+    if (isGalleryMode() && m_centreProgress.title.isEmpty()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
     clearSizeResolveProgress();
@@ -773,11 +773,11 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
         clearCentreProgress();
         return;
     }
-    if (m_centreProgressTitle == title && m_centreProgressDetail == detail) {
+    if (m_centreProgress.title == title && m_centreProgress.detail == detail) {
         return;
     }
-    m_centreProgressTitle = title;
-    m_centreProgressDetail = detail;
+    m_centreProgress.title = title;
+    m_centreProgress.detail = detail;
     // Empty scene needs FullViewportUpdate or the centre panel never paints.
     // Gallery with tiles must keep BoundingRectViewportUpdate — FullViewport
     // during “Improving previews…” re-painted every item every frame and
@@ -792,11 +792,11 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
 
 void ImageView::clearCentreProgress()
 {
-    if (m_centreProgressTitle.isEmpty() && m_centreProgressDetail.isEmpty()) {
+    if (m_centreProgress.title.isEmpty() && m_centreProgress.detail.isEmpty()) {
         return;
     }
-    m_centreProgressTitle.clear();
-    m_centreProgressDetail.clear();
+    m_centreProgress.title.clear();
+    m_centreProgress.detail.clear();
     if (isGalleryMode() && !gallerySizeResolveActive()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
