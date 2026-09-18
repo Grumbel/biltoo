@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1107-schedulepixels-alias.** schedulePixels → PreferCache display alias.
+Prior: **1106**.
+
+### Change
+- `schedulePixels` is a thin alias of `scheduleDisplayPixels` (same PreferCache
+  soft band as scheduleSoftPixels). Removes the duplicate SoftOnly-era queue path.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1107-schedulepixels-alias.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1106-no-softonly-policy.** Drop RasterPolicy::SoftOnly; PreferCache everywhere soft.
 Prior: **1105**.
 

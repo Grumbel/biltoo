@@ -1243,71 +1243,12 @@ QString lastPixelSourceLabel(const QString &path)
 #endif
 }
 
+// Legacy SoftOnly entry point — PreferCache soft band (TileSynth when tiles exist).
+bool scheduleDisplayPixels(const QString &path, int maxEdge);
+
 bool schedulePixels(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
-    if (maxEdge <= 0 || isUnsupported(path)) {
-        return false;
-    }
-    init();
-    const QString inflightKey = path + QLatin1Char('#') + QString::number(maxEdge);
-    {
-        std::lock_guard lock(g_mu);
-        if (g_pixelsInflight.contains(inflightKey)) {
-            if (thumtooDebugEnabled()) {
-                thumtooDbg("schedulePixels SKIP path=%s edge=%d (inflight)",
-                           qPrintable(path), maxEdge);
-            }
-            return false;
-        }
-        if (g_pixelsSettled.contains(inflightKey)) {
-            // Settled means soft-band PreferCache already ran for this edge. Soft samples are
-            // often smaller than maxEdge (ladder rung / best available). Requiring
-            // 90% of maxEdge caused infinite RETRY (have=128, edge=512).
-            // Only retry when the host cache lost the sample entirely.
-            const int have = ImageCache::longEdge(ImageCache::get(path));
-            if (have > 0) {
-                if (thumtooDebugEnabled()) {
-                    thumtooDbg("schedulePixels SKIP path=%s edge=%d (settled have=%d)",
-                               qPrintable(path), maxEdge, have);
-                }
-                return false;
-            }
-            g_pixelsSettled.remove(inflightKey);
-            if (thumtooDebugEnabled()) {
-                thumtooDbg("schedulePixels RETRY path=%s edge=%d (settled but host have=0)",
-                           qPrintable(path), maxEdge);
-            }
-        }
-        g_pixelsInflight.insert(inflightKey);
-        if (thumtooDebugEnabled()) {
-            thumtooDbg("schedulePixels queue path=%s edge=%d active=%d",
-                       qPrintable(path), maxEdge, g_pixelsActive);
-        }
-    }
-    // Resolve URI off the GUI — archive path→URI is not free.
-    const QString pathCopy = path;
-    const int edge = maxEdge;
-    QThreadPool::globalInstance()->start([pathCopy, edge, inflightKey]() {
-        ASSERT_NOT_GUI_THREAD();
-        const std::string uri = toThumtooUri(pathCopy);
-        std::lock_guard lock(g_mu);
-        if (!g_pixelsInflight.contains(inflightKey)) {
-            return;
-        }
-        if (uri.empty()) {
-            g_pixelsInflight.remove(inflightKey);
-            return;
-        }
-        g_pixelsQueue.push_back(PendingPixels{pathCopy, edge, inflightKey, uri});
-        startNextPixelJobsUnlocked();
-    });
-    return true;
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#endif
+    return scheduleDisplayPixels(path, maxEdge);
 }
 
 bool isPixelsPending(const QString &path, int maxEdge)
