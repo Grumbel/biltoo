@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1327-suppress-viewtransform-clamps.** Relayout suppress, view scale/pad, scale clamps.
+Prior: **1326**.
+
+### Change
+- `GalleryRelayoutSuppress` — nested push/pop counter bag
+- `ViewTransform::{scaleFrom,padded}` — view matrix scale + scene bounds pad
+- `PlacementLinear::clampScaleXY` — group scale drag range
+- ViewFraming / HudAppearance / SlideshowSettings clamp helpers on bags
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1327-suppress-viewtransform-clamps.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1326-debounce-selection-packfit.** Debounce bags, selection union, pack fit, degree normalize.
 Prior: **1325**.
 

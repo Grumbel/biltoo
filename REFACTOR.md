@@ -85,6 +85,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SelectionGeometry::unionContentAabbs**: pure multi-item content AABB union.
 - **GalleryPackFit**: pure pack overshoot targets + uniform scale.
 - **PlacementLinear::normalizeDegrees**: shared [0,360) rotation wrap.
+- **GalleryRelayoutSuppress**: nested counter for Gallery delete vs resize pack.
+- **ViewTransform**: pure scaleFrom (hypot) + padded scene bounds.
+- **PlacementLinear::clampScaleXY**; bag clamps on ViewFraming / HudAppearance / SlideshowSettings.
 - **CropSession::locksPath / locksItem**: draft sample freeze predicates on the session bag.
 - **CropSession::isDraftLayoutGeometry**; **SlideshowProgressHud::lastPaintFp**.
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).
