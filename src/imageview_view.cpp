@@ -827,8 +827,7 @@ void ImageView::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
         && totalMs == m_ssHud.timelineTotalMs) {
         return;
     }
-    m_ssHud.timelineElapsedMs = elapsedMs;
-    m_ssHud.timelineTotalMs = totalMs;
+    m_ssHud.setTimelineProgress(elapsedMs, totalMs);
     // Progress bar needs sub-second updates while the extended HUD is pinned.
     if (m_hudPrefs.visible && viewport()) {
         viewport()->update();
@@ -3033,12 +3032,8 @@ void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
         return;
     }
     const bool beforeOk = before.isValid() && before.width() > 1 && before.height() > 1;
-    auto aspect = [](const QSize &s) -> qreal {
-        return qreal(s.width()) / qreal(qMax(1, s.height()));
-    };
-    const bool aspectChanged =
-        !beforeOk || qAbs(aspect(before) - aspect(after)) > 0.02;
-    if (aspectChanged) {
+    const bool aspectShifted = !beforeOk || ContentXform::aspectChanged(before, after);
+    if (aspectShifted) {
         if (m_ssHud.progressActive && m_ssSettings.motion == SlideshowMotion::Off) {
             applySlideshowZoomFraming(item);
         } else if (!m_ssHud.progressActive) {
@@ -3054,7 +3049,7 @@ void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
         // keeps the same on-screen footprint (soft→native must not zoom).
         // Slideshow pure-phase paints via paintMotionCover (logical size) and
         // does not use the view matrix for framing.
-        const qreal factor = qreal(before.width()) / qreal(after.width());
+        const qreal factor = ContentXform::footprintScaleFactor(before, after);
         if (factor > 0.0 && qIsFinite(factor) && !qFuzzyCompare(factor, 1.0)) {
             const QPointF sceneCenter = mapToScene(viewport()->rect().center());
             const QGraphicsView::ViewportAnchor saved =

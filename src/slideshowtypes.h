@@ -294,6 +294,12 @@ struct SlideshowProgressHud {
         progressIntervalMs = qMax(0, ms);
     }
 
+    void setTimelineProgress(qint64 elapsedMs, qint64 totalMs)
+    {
+        timelineTotalMs = totalMs;
+        timelineElapsedMs = qBound(qint64(0), elapsedMs, totalMs);
+    }
+
     void clearProgress()
     {
         progressActive = false;
