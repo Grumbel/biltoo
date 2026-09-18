@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1197-cold-layout-tile-rearm.** Cold Gallery: pack only after sizes; Image tiles re-arm until covered.
+Prior: **1196**.
+
+### Issues
+1. Cold open (no size cache): items flashed at provisional 1000² then jumped as sizeReady re-packed.
+2. Image deep zoom: only center tile keys climbed to target scale; outer stayed one level coarse until scroll.
+
+### Fix
+- All packaged Gallery layouts defer create+pack until size resolve finishes (items not shown provisionally).
+- `tickPrimaryTileLod` re-arms a timer while any tileLodWanted item is not viewport-covered.
+- Image coordinator: longer wall (8ms), more targets (4).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1197-cold-layout-tile-rearm.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1196-parallel-warm-memos.** Parallel warmSessionOpenMemos (4 workers) for large sessions.
 Prior: **1195**.
 

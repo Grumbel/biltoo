@@ -639,16 +639,14 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
 
 bool ImageView::layoutDefersPopulateUntilSizes(LayoutMode mode)
 {
-    // Fill modes equalize column/row ends using every aspect — a late size
-    // changes the whole scale. FlowFill scales each completed row to width.
-    // Everything else can place with provisional sizes and refine on sizeReady.
+    // Packaged Gallery layouts need definitive aspects before the first pack.
+    // Provisional 1000² cells + sizeReady re-pack was the cold-open "glitch"
+    // (items flash in random positions before layout settles).
     switch (mode) {
-    case LayoutMode::MasonryFill:
-    case LayoutMode::MasonryRowsFill:
-    case LayoutMode::FlowFill:
-        return true;
-    default:
+    case LayoutMode::FreeForm:
         return false;
+    default:
+        return true;
     }
 }
 
@@ -701,16 +699,13 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
     }
 
     if (!layoutDefersPopulateUntilSizes(m_layoutMode)) {
-        // Grid / masonry / flow / …: pack with provisional sizes now. sizeReady
-        // updates intrinsic size and requestDebouncedGalleryPack. Soft/LQIP can
-        // install without waiting for member N.
+        // FreeForm / non-packaged: provisional pack OK.
         m_gallerySizeResolvePending.clear();
         m_gallerySizeResolveTotal = 0;
         return false;
     }
 
-    // Fill layouts: still create placeholders (caller falls through) so soft can
-    // run; only applyLayout is deferred until all sizes settle.
+    // Packaged layouts: defer create+pack until all sizes settle.
     m_gallerySizeResolveActive = true;
     // Safety: never block Gallery forever if a probe hangs.
     if (!m_gallerySizeResolveTimer) {

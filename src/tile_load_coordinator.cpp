@@ -153,7 +153,8 @@ void TileLoadCoordinator::tick(int globalBudget)
     // Gallery overview: many small cells need coarse tiles quickly. Image-mode
     // deep zoom keeps a tight wall so pan stays responsive.
     const bool gallery = m_view->isGalleryMode();
-    const qint64 kWallMs = gallery ? 12 : 4;
+    // Image deep zoom needs enough wall to fill outer keys, not only center.
+    const qint64 kWallMs = gallery ? 12 : 8;
 
     QRectF sceneVis;
     if (m_view->scene()) {
@@ -170,7 +171,7 @@ void TileLoadCoordinator::tick(int globalBudget)
 
     // Prefer draining cells with zero tiles first (stuck LQIP / blank).
     // Gallery: issue many overview cells per tick; Image: keep tight.
-    const int kMaxTargets = gallery ? 16 : 2;
+    const int kMaxTargets = gallery ? 16 : 4;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }

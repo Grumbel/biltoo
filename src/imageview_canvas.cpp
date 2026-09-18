@@ -125,12 +125,17 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     }
 
     if (isGalleryMode() && m_gallerySizeResolveActive) {
-        // Fill pack deferred until sizes settle. Placeholders should exist so
-        // soft/PreferCache can install before finishGallerySizeResolve packs.
-        if (m_items.isEmpty() && !paths.isEmpty()) {
+        // Pack deferred until sizes settle. Keep items hidden so provisional
+        // geometry is never painted (cold-open layout glitch).
+        if (m_items.isEmpty() && !paths.isEmpty() && !m_galleryDeferPopulate) {
             ensureGalleryPlaceholders();
         }
-        updateGalleryDecodeWindow();
+        for (ImageItem *item : m_items) {
+            if (item) {
+                item->setVisible(false);
+            }
+        }
+        // No decode window until finishGallerySizeResolve packs + shows items.
     } else if (isGalleryMode() && m_items.isEmpty() && !paths.isEmpty()) {
         // Non-fill path should have created items; recover if not.
         ensureGalleryPlaceholders();
@@ -193,10 +198,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // first pack never uses 1024² stand-ins (first cell stuck square until reload).
     if (isGalleryMode() && !paths.isEmpty()
         && startGallerySizeResolveIfNeeded(paths)) {
-        // Fill layouts: probes in flight; create placeholders below but skip
-        // applyLayout until finishGallerySizeResolve (see finishSetWorkspacePaths).
-        TtfpTrace::mark("gallery_size_resolve_fill_await_sizes");
-        m_galleryDeferPopulate = false;
+        // Probes in flight — pack once in finishGallerySizeResolve with real sizes.
+        TtfpTrace::mark("gallery_size_resolve_await_sizes");
+        m_galleryDeferPopulate = true;
     } else {
         m_galleryDeferPopulate = false;
     }
@@ -207,6 +211,20 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // existing items. ImageView/filmstrip still load because they do not depend
     // on this path.
     const bool virtualize = isGalleryMode();
+
+    // Cold Gallery: defer all item creation until sizes settle (finish packs once).
+    if (isGalleryMode() && m_galleryDeferPopulate && m_gallerySizeResolveActive) {
+        // Remove any leftover live items so nothing paints at provisional size.
+        for (ImageItem *item : m_items) {
+            if (item) {
+                item->setVisible(false);
+            }
+        }
+        validateUniqueLiveSessionIds("setWorkspacePaths");
+        emit statusChanged();
+        emit workspacePathsChanged();
+        return;
+    }
 
     // --- Ensure one live tile per session row (duplicates = separate items) ---
     QSet<ImageItem *> claimed;

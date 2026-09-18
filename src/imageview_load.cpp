@@ -2867,6 +2867,33 @@ void ImageView::tickPrimaryTileLod(int budget)
         m_tileCoordinator = std::make_unique<TileLoadCoordinator>(this);
     }
     m_tileCoordinator->tick(budget);
+
+    // Image/Workspace: keep issuing until every tileLodWanted item is covered.
+    // Without a re-arm, only the first budget of center keys climbed to target
+    // scale; outer cells stayed one level coarse until a scroll forced a tick.
+    bool needMore = false;
+    for (ImageItem *ii : m_items) {
+        if (!ii || !ii->tileLodWanted()) {
+            continue;
+        }
+        if (!ii->tileLodViewportCovered()) {
+            needMore = true;
+            break;
+        }
+    }
+    if (!needMore) {
+        return;
+    }
+    if (!m_tileLodTimer) {
+        m_tileLodTimer = new QTimer(this);
+        m_tileLodTimer->setSingleShot(true);
+        connect(m_tileLodTimer, &QTimer::timeout, this, [this]() {
+            tickPrimaryTileLod(isGalleryMode() ? 48 : 16);
+        });
+    }
+    if (!m_tileLodTimer->isActive()) {
+        m_tileLodTimer->start(isGalleryMode() ? 16 : 24);
+    }
 }
 
 
