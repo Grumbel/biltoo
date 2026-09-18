@@ -1415,9 +1415,10 @@ bool ImageItem::tileLodWanted() const
             return false;
         }
         const qreal screenLong = cellLong * viewScale * dpr;
-        // Same density band as Image mode: once a cell is larger than one tile
-        // side on screen, coarse tiles own display (soft ≤512 is redundant).
-        constexpr qreal kGalleryTileScreenMin = 256.0;
+        // Match Image mode (shouldUseTiles ~32px screen): Gallery used 256 and
+        // left typical packed cells on soft-only with SOFT debug stamps.
+        // Soft underlay remains until the tile plan fully covers.
+        constexpr qreal kGalleryTileScreenMin = 32.0;
         return screenLong > kGalleryTileScreenMin;
     }
 

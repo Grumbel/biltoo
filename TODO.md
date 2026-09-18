@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1155-gallery-tile-threshold.** Gallery tileLodWanted at 32px screen (was 256).
+Prior: **1154**.
+
+### Why SOFT still showed
+1. Debug overlay stamps SOFT/HOST on the **host underlay** image (≤512 edge).
+2. Soft underlay is still drawn until the **tile plan fully covers** the cell.
+3. Gallery required **>256px** on-screen cell for tiles — most packed cells stayed soft-only.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1155-gallery-tile-threshold.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1154-gui-budget-soft.** GUI budget log-only by default; coordinator time-slice.
 Prior: **1153**.
 
