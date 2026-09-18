@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1120-cold-probe-order-fill-soft.** Session-order size probes; Fill keeps placeholders + soft during gate.
+Prior: **1119**.
+
+### Change
+- Size probes scheduled in **session path order** (primary/cover first).
+- Fill/FlowFill no longer wipe the canvas until sizes land: placeholders are
+  created with provisional sizes; **applyLayout** waits for the gate; soft/LQIP
+  may install while probes run.
+- `updateGalleryDecodeWindow` no longer no-ops for the whole size-resolve gate.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1120-cold-probe-order-fill-soft.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1119-layout-aware-size-gate.** Only Fill/FlowFill defer Gallery populate on cold sizes.
 Prior: **1118**.
 

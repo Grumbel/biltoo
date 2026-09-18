@@ -687,8 +687,19 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
         return false;
     }
 
-    // Always schedule probes; only Fill/FlowFill block populate + decode window.
-    const QList<QString> need = m_gallerySizeResolvePending.values();
+    // Session order first so primary/cover pages finish before the tail (TTFP).
+    QStringList need;
+    need.reserve(m_gallerySizeResolvePending.size());
+    for (const QString &path : m_pathOrder) {
+        if (m_gallerySizeResolvePending.contains(path)) {
+            need.append(path);
+        }
+    }
+    for (const QString &path : m_gallerySizeResolvePending) {
+        if (!need.contains(path)) {
+            need.append(path);
+        }
+    }
     for (const QString &path : need) {
         scheduleImageSizeProbe(path);
     }
@@ -702,6 +713,8 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
         return false;
     }
 
+    // Fill layouts: still create placeholders (caller falls through) so soft can
+    // run; only applyLayout is deferred until all sizes settle.
     m_gallerySizeResolveActive = true;
     // Safety: never block Gallery forever if a probe hangs.
     if (!m_gallerySizeResolveTimer) {

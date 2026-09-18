@@ -125,7 +125,8 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     }
 
     if (isGalleryMode() && m_gallerySizeResolveActive) {
-        // Tiles deferred until finishGallerySizeResolve; HUD shows progress.
+        // Fill pack deferred until sizes settle; soft may still climb.
+        updateGalleryDecodeWindow();
     } else if (isGalleryMode() && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::EnterGallery);
         TtfpTrace::mark("after_applyLayout");
@@ -176,20 +177,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // first pack never uses 1024² stand-ins (first cell stuck square until reload).
     if (isGalleryMode() && !paths.isEmpty()
         && startGallerySizeResolveIfNeeded(paths)) {
-        // Fill layouts only — Grid/masonry already returned false and will
-        // create placeholders below with provisional sizes.
-        TtfpTrace::mark("gallery_size_resolve_defer_populate");
-        m_galleryDeferPopulate = true;
-        // Drop any leftover Image/Gallery tiles so nothing paints at random
-        // poses while probes run (D&D / mode switch residue).
-        clearLiveCanvas();
-        if (m_gallerySizeResolveActive) {
-            // Async probes still in flight — pack once when the gate finishes.
-            finishSetWorkspacePaths(haveIds, paths, sessionIds);
-            return;
-        }
-        // Gate finished synchronously (cached sizeReady during start). Populate
-        // now; defer is meaningless without an active resolve.
+        // Fill layouts: probes in flight; create placeholders below but skip
+        // applyLayout until finishGallerySizeResolve (see finishSetWorkspacePaths).
+        TtfpTrace::mark("gallery_size_resolve_fill_await_sizes");
         m_galleryDeferPopulate = false;
     } else {
         m_galleryDeferPopulate = false;

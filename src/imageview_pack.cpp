@@ -202,10 +202,8 @@ void ImageView::updateGalleryDecodeWindow()
     if (!isGalleryMode() || m_items.isEmpty()) {
         return;
     }
-    // Size-first: do not install LQIP/soft onto tiles while probes still run.
-    if (m_gallerySizeResolveActive) {
-        return;
-    }
+    // Fill size-gate used to block all soft until every probe finished — that
+    // made cold TTFP = sum of all probes. Placeholders exist; allow soft/LQIP.
 
     const QRect viewRect = viewport()->rect().adjusted(
         -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
