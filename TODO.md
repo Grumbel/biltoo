@@ -2,8 +2,8 @@
 
 ## Status (2026-09-18)
 
-**Tip: biltoo-1140-no-standalone-lqip.** Do not request standalone LQIP generation.
-Prior: **1139** (or 1138 if unused-gallery-prev not applied).
+**Tip: biltoo-1140-no-standalone-lqip.** Do not request standalone LQIP; drop unused prev.
+Prior: **1138** (stack includes unused-gallery-prev).
 
 ### Policy
 LQIP is low utility and must **never** be generated on its own (thumtoo
@@ -14,6 +14,7 @@ LQIP is low utility and must **never** be generated on its own (thumtoo
 - Remove `request_lqip` from `scheduleSoftPixels` (was forcing EnsureLqip jobs
   that could full-decode the source).
 - Document host rule in `docs/THUMTOO_HOST_CONTRACT.md`.
+- Drop unused `ImageItem *prev` in `tryMousePressGalleryLeft` (warning).
 
 ### Apply
 ```bash

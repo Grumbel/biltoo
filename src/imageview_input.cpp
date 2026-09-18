@@ -909,13 +909,6 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
                 event->accept();
                 return true;
             }
-            ImageItem *prev = nullptr;
-            {
-                const QList<QGraphicsItem *> sel = m_scene->selectedItems();
-                if (sel.size() == 1) {
-                    prev = qgraphicsitem_cast<ImageItem *>(sel.first());
-                }
-            }
             m_scene->blockSignals(true);
             m_scene->clearSelection();
             hit->setSelected(true);
