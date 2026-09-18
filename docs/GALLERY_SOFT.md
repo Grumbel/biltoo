@@ -200,3 +200,21 @@ controller, and runs `ImageView::applyDisplaySurfaceAction`.
 
 Do **not** reintroduce host-vs-shown InstallHostBetter loops: pre-crop host edge
 must not be compared to post-crop shown edge to force soft reinstall.
+
+
+## LQIP climb invariants (host)
+
+These must stay true or Gallery tiles freeze on quick-preview:
+
+1. **`st.have` is shown edge only** — never copy PathRaster/ImageCache have into
+   it while the tile still paints LQIP (schedule would think soft is done).
+2. **PreferCache give-up does not apply to LQIP** — `have <= 96` must still
+   schedule SoftDisplay; only `have > 96` may plateau on `gaveUpWant`.
+3. **Soft-band samples attach as SoftPreview** — not FullSource (FullSource sets
+   `hasDecodedPixels` and skips soft forever).
+4. **Pass1 installs soft while size is provisional** — geometry probes must not
+   block ImageCache → tile install.
+5. **RasterClimb**: LQIP delivery does not set `softAttempted`; soft-band
+   shortfalls do not set `preferGaveUp`.
+
+See tips biltoo-1126 … 1133.

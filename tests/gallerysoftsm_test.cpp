@@ -14,6 +14,7 @@ private slots:
     void needs_schedule_blank();
     void needs_schedule_covers_want();
     void needs_schedule_lqip_not_plateau();
+    void needs_schedule_lqip_ceiling_edge();
     void needs_schedule_inflight_soft();
     void needs_schedule_any_full();
     void host_install_soft_vs_full();
@@ -43,6 +44,18 @@ void GallerySoftSmTest::needs_schedule_lqip_not_plateau()
     st.gaveUpWant = 512;
     // LQIP must still schedule despite gaveUpWant
     QVERIFY(needsSchedule(st, 512, false, false));
+}
+
+void GallerySoftSmTest::needs_schedule_lqip_ceiling_edge()
+{
+    // have == kDefaultLqipCeiling (96): still LQIP, must not plateau-block.
+    State st;
+    st.have = kDefaultLqipCeiling;
+    st.gaveUpWant = 512;
+    QVERIFY(needsSchedule(st, 512, false, false));
+    // One pixel above LQIP may plateau when gaveUp covers want.
+    st.have = kDefaultLqipCeiling + 1;
+    QVERIFY(!needsSchedule(st, 512, false, false));
 }
 
 void GallerySoftSmTest::needs_schedule_inflight_soft()

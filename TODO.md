@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1134-lqip-invariants-tests.** Document LQIP climb invariants; test have==96.
+Prior: **1133**.
+
+### Change
+- `docs/GALLERY_SOFT.md`: LQIP climb invariants (shown-only have, give-up, SoftPreview,
+  provisional pass1, RasterClimb).
+- GallerySoft test: `have == 96` still schedules; `have == 97` may plateau.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1134-lqip-invariants-tests.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1133-gallery-status-debounce.** Debounce statusChanged during soft climb.
 Prior: **1132**.
 
