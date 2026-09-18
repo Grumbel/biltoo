@@ -389,7 +389,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
     if (m_applyingLayout) {
         return;
     }
-    if (isImageMode() && !m_slideshowProgressActive) {
+    if (isImageMode() && !m_ssHud.progressActive) {
         maybeClimbImageModePixelsForView();
     } else if (isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
@@ -407,10 +407,10 @@ void ImageView::resizeEvent(QResizeEvent *event)
     // Invalidate atlas viewport keys so the next tick rebuilds at new size.
     if (m_ssDwell.motionActive) {
         m_ssDwell.atlasVw = 0;
-        m_zoomBlurUnderlay[0] = QPixmap();
-        m_zoomBlurUnderlay[1] = QPixmap();
-        m_zoomBlurSourceKey[0] = 0;
-        m_zoomBlurSourceKey[1] = 0;
+        m_ssZoomBlur.underlay[0] = QPixmap();
+        m_ssZoomBlur.underlay[1] = QPixmap();
+        m_ssZoomBlur.sourceKey[0] = 0;
+        m_ssZoomBlur.sourceKey[1] = 0;
         if (viewport()) {
             viewport()->update();
         }
@@ -424,15 +424,15 @@ void ImageView::resizeEvent(QResizeEvent *event)
 bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
 {
     // mpv-style seekbar: drag along bottom edge during slideshow.
-    if (!m_slideshowProgressActive || event->button() != Qt::LeftButton
+    if (!m_ssHud.progressActive || event->button() != Qt::LeftButton
         || !viewport() || viewport()->height() <= 0) {
         return false;
     }
     if (event->pos().y() < viewport()->height() - 48) {
         return false;
     }
-    m_slideshowSeekDragging = true;
-    m_slideshowSeekbarVisible = true;
+    m_ssHud.seekDragging = true;
+    m_ssHud.seekbarVisible = true;
     const qreal f = qBound(
         0.0, qreal(event->pos().x()) / qreal(qMax(1, viewport()->width())), 1.0);
     emit slideshowSeekRequested(f);
@@ -703,7 +703,7 @@ bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
     }
     // Slideshow: centre click pauses / resumes. Edges stay navigation above.
     // Ignore the second press of a double-click so we do not toggle twice.
-    if ((m_slideshowProgressActive || m_slideshowPausedHud)
+    if ((m_ssHud.progressActive || m_ssHud.pausedHud)
         && zone == EdgeZone::None) {
         if (m_lastSlideshowCenterClick.isValid()
             && m_lastSlideshowCenterClick.elapsed()
@@ -1327,17 +1327,17 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
 
 void ImageView::updateMouseMoveSlideshowSeek(QMouseEvent *event)
 {
-    if (!m_slideshowProgressActive || !viewport()) {
+    if (!m_ssHud.progressActive || !viewport()) {
         return;
     }
     const int y = event->pos().y();
     const int h = viewport()->height();
     const bool nearBottom = h > 0 && y >= h - 48;
-    if (nearBottom != m_slideshowSeekbarVisible && !m_slideshowSeekDragging) {
-        m_slideshowSeekbarVisible = nearBottom;
+    if (nearBottom != m_ssHud.seekbarVisible && !m_ssHud.seekDragging) {
+        m_ssHud.seekbarVisible = nearBottom;
         viewport()->update();
     }
-    if (m_slideshowSeekDragging && h > 0 && viewport()->width() > 0) {
+    if (m_ssHud.seekDragging && h > 0 && viewport()->width() > 0) {
         const qreal f = qBound(0.0, qreal(event->pos().x()) / qreal(viewport()->width()), 1.0);
         emit slideshowSeekRequested(f);
     }
@@ -1571,10 +1571,10 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
 
 bool ImageView::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
 {
-    if (!m_slideshowSeekDragging || event->button() != Qt::LeftButton) {
+    if (!m_ssHud.seekDragging || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_slideshowSeekDragging = false;
+    m_ssHud.seekDragging = false;
     event->accept();
     if (viewport()) {
         viewport()->update();

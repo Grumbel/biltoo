@@ -46,7 +46,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **CropGeometry** (`cropgeometry.{h,cpp}`): pure crop-rect constrain/translate/shrink; no ImageView state.
 - **CropSession** (`cropsession.h`): draft rect, target binding, enter-stash, handles; `ImageView::m_crop`; enter/apply still on view.
 - **SlideshowPhaseState** + enums (`slideshowtypes.h`): from/to phase buffers, fade/motion clocks, atlas.
-- **SlideshowSettings** / **SlideshowDwellState**: prefs bag + dwell atlas / Ken Burns camera; progress HUD and ZoomBlur still on ImageView.
+- **SlideshowSettings** / **SlideshowDwellState**: prefs bag + dwell atlas / Ken Burns camera.
+- **SlideshowZoomBlurState** / **SlideshowProgressHud**: letterbox blur cache + progress/seek/nav-hot HUD clocks.
 - **LoadGeneration** (`loadgeneration.h`): monotonic token for async decode accept/reject.
 - **SessionLoadGate** (`sessionloadgate.h`): generation + pending LoadAdd/LoadRestore/scene maps; `clearPending` / `bumpGeneration`.
 

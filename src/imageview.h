@@ -277,7 +277,7 @@ public:
      * atlas work until settle; previous underlay is kept until replacement.
      */
     void setSlideshowNavHot(bool hot);
-    bool slideshowNavHot() const { return m_slideshowNavHot; }
+    bool slideshowNavHot() const { return m_ssHud.navHot; }
     /**
      * Warm overview tiles into the process-wide path registry for off-canvas
      * paths (Image-mode ±1 neighbors after nav settle). Controllers stay alive
@@ -855,7 +855,7 @@ public:
      * Independent of flashHud (which times out after ~1s). Cleared on resume/stop.
      */
     void setSlideshowPausedHud(bool on);
-    bool slideshowPausedHud() const { return m_slideshowPausedHud; }
+    bool slideshowPausedHud() const { return m_ssHud.pausedHud; }
     /** Freeze/resume dwell progress elapsed without resetting the timeline. */
     void setSlideshowProgressPaused(bool paused);
     /** Image-mode fit after leaving slideshow (Fit to window). */
@@ -1377,7 +1377,7 @@ private:
     /** Image-mode tile LOD: viewport + budgeted requests (not from paint). */
     void tickPrimaryTileLod(int budget = 8);
     /** Slideshow pure-phase owns viewport — coordinator must not issue tiles. */
-    bool isSlideshowProgressActive() const { return m_slideshowProgressActive; }
+    bool isSlideshowProgressActive() const { return m_ssHud.progressActive; }
     PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
     QSet<QString> *tileLodPreferCancelledForCoordinator() { return &m_tileLodPreferCancelled; }
 
@@ -1846,53 +1846,23 @@ private:
     bool m_hudFlashVisible = false;
     /** Persistent slideshow-paused cue (top-left); not cleared by flash timer. */
     QElapsedTimer m_lastSlideshowCenterClick;
-    bool m_slideshowPausedHud = false;
-    /** mpv-style bottom seekbar while cursor is near the bottom edge. */
-    bool m_slideshowSeekbarVisible = false;
-    bool m_slideshowSeekDragging = false;
     /** Filename + index shown briefly after navigation / flash (not only when pinned). */
     bool m_hudIdentityPulse = false;
     QString m_hudAction;
     QString m_hudDetail;
     QTimer *m_hudFlashTimer = nullptr;
-    /** Slideshow progress (pinned HUD only): active dwell countdown. */
-    bool m_slideshowProgressActive = false;
-    bool m_slideshowProgressClockPaused = false;
-    qint64 m_slideshowProgressBaseMs = 0;
     /** Last [slideshow-paint] fingerprint (size/mode); skip duplicate logs. */
     QString m_lastSlideshowPaintFp;
-    int m_slideshowProgressIntervalMs = 0;
-    QElapsedTimer m_slideshowProgressElapsed;
     QTimer *m_slideshowProgressTimer = nullptr;
-    /** Overall timeline for extended HUD (video-player style). total<=0 = off. */
-    qint64 m_slideshowTimelineElapsedMs = 0;
-    qreal m_slideshowCycleProgress01 = 0.0;
-    bool m_slideshowCycleProgressValid = false;
-    qint64 m_slideshowTimelineTotalMs = 0;
+    SlideshowProgressHud m_ssHud;
     SlideshowSettings m_ssSettings;
     /** Pure-phase composite (from/to buffers, clocks). */
     SlideshowPhaseState m_ss;
     /** Dwell atlas + Ken Burns camera (timer stays below). */
     SlideshowDwellState m_ssDwell;
     // Slideshow samples: ImageCache only (putSlideshowRaster / slideshowRaster).
-    /** Rapid keyboard nav — skip ZoomBlur work until settled. */
-    bool m_slideshowNavHot = false;
-    /** Two-slot ZoomBlur underlay cache (from/to during transitions). */
-    mutable QPixmap m_zoomBlurUnderlay[2];
-    mutable qint64 m_zoomBlurSourceKey[2] = {0, 0};
-    mutable int m_zoomBlurVw = 0;
-    mutable int m_zoomBlurVh = 0;
-    /**
-     * Last successfully built underlay — drawn while a new blur is in flight so
-     * rapid flips never flash solid pad or block the GUI on CPU blur.
-     */
-    mutable QPixmap m_zoomBlurLastGood;
-    mutable qint64 m_zoomBlurLastGoodKey = 0;
-    /** Bumped on every slide change; stale async blur jobs no-op on completion. */
-    mutable quint64 m_zoomBlurGeneration = 0;
-    /// Up to two concurrent blur builds (from+to underlays in a transition).
-    mutable quint64 m_zoomBlurInFlightGen[2] = {0, 0};
-    mutable qint64 m_zoomBlurInFlightKey[2] = {0, 0};
+    /** ZoomBlur letterbox underlay cache (two slots). */
+    mutable SlideshowZoomBlurState m_ssZoomBlur;
     /** Scroll policies restored when Ken Burns underlay returns. */
     Qt::ScrollBarPolicy m_motionSavedHBarPolicy = Qt::ScrollBarAsNeeded;
     Qt::ScrollBarPolicy m_motionSavedVBarPolicy = Qt::ScrollBarAsNeeded;

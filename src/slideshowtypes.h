@@ -204,4 +204,67 @@ struct SlideshowDwellState {
     }
 };
 
+
+/**
+ * ZoomBlur letterbox underlay cache (two slots for from/to during transitions).
+ * Async build generation is bumped on every slide change so stale jobs no-op.
+ */
+struct SlideshowZoomBlurState {
+    mutable QPixmap underlay[2];
+    mutable qint64 sourceKey[2] = {0, 0};
+    mutable int vw = 0;
+    mutable int vh = 0;
+    /** Last good underlay while a new blur is in flight. */
+    mutable QPixmap lastGood;
+    mutable qint64 lastGoodKey = 0;
+    mutable quint64 generation = 0;
+    mutable quint64 inFlightGen[2] = {0, 0};
+    mutable qint64 inFlightKey[2] = {0, 0};
+
+    void clear()
+    {
+        underlay[0] = {};
+        underlay[1] = {};
+        sourceKey[0] = sourceKey[1] = 0;
+        vw = vh = 0;
+        lastGood = {};
+        lastGoodKey = 0;
+        ++generation;
+        inFlightGen[0] = inFlightGen[1] = 0;
+        inFlightKey[0] = inFlightKey[1] = 0;
+    }
+};
+
+/**
+ * Slideshow progress / seek HUD clocks (pinned HUD + timeline).
+ * Progress QTimer stays on ImageView (QObject parent).
+ */
+struct SlideshowProgressHud {
+    bool pausedHud = false;
+    bool seekbarVisible = false;
+    bool seekDragging = false;
+    bool progressActive = false;
+    bool progressClockPaused = false;
+    qint64 progressBaseMs = 0;
+    int progressIntervalMs = 0;
+    QElapsedTimer progressElapsed;
+    qint64 timelineElapsedMs = 0;
+    qreal cycleProgress01 = 0.0;
+    bool cycleProgressValid = false;
+    qint64 timelineTotalMs = 0;
+    bool navHot = false;
+
+    void clearProgress()
+    {
+        progressActive = false;
+        progressClockPaused = false;
+        progressBaseMs = 0;
+        progressIntervalMs = 0;
+        timelineElapsedMs = 0;
+        cycleProgress01 = 0.0;
+        cycleProgressValid = false;
+        timelineTotalMs = 0;
+    }
+};
+
 #endif // SLIDESHOWTYPES_H

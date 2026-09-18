@@ -185,7 +185,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
     };
 
     // Pure-phase composite (SLIDESHOW.md): wall clock sets fadeT; we only blit.
-    if (m_slideshowProgressActive
+    if (m_ssHud.progressActive
         && (!m_ss.fromImage.isNull() || !m_ssDwell.sourceImage.isNull() || !m_ss.toImage.isNull())) {
         const QRect vr = viewport()->rect();
         // Prefer member references (not a local QImage copy) so paintMotionCover
@@ -346,7 +346,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     // chip during slideshow or normal Image browsing.
     const QString loadingLine = m_hudVisible ? loadingStatusHudLine() : QString();
     if (m_crop.mode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
-        || m_slideshowPausedHud || gallerySizeResolveActive()
+        || m_ssHud.pausedHud || gallerySizeResolveActive()
         || !m_centreProgressTitle.isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
@@ -479,7 +479,7 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("Crop mode"), true},
                        {tr("Handles · Reset · Apply · Esc"), false}},
                       margin, margin, false, false);
-        } else if (m_slideshowPausedHud) {
+        } else if (m_ssHud.pausedHud) {
             drawPanel({{tr("❚❚  Paused"), true},
                        {tr("Space: resume · Esc: leave"), false}},
                       margin, margin, false, false);
@@ -572,24 +572,24 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
     // Slideshow timeline (extended HUD only): video-player style progress bar
     // plus elapsed / total and remaining. Driven by setSlideshowTimeline from
     // the host clock. Falls back to per-interval dwell line if no timeline.
-    if (m_slideshowProgressActive
-        && (m_hudVisible || m_slideshowSeekbarVisible || m_slideshowSeekDragging)) {
+    if (m_ssHud.progressActive
+        && (m_hudVisible || m_ssHud.seekbarVisible || m_ssHud.seekDragging)) {
         const int viewW = viewport()->width();
         const int viewH = viewport()->height();
         if (viewW > 0 && viewH > 0) {
             qreal fraction = 0.0;
-            if (m_slideshowTimelineTotalMs > 0) {
-                fraction = qreal(m_slideshowTimelineElapsedMs)
-                    / qreal(m_slideshowTimelineTotalMs);
-            } else if (m_slideshowCycleProgressValid) {
-                fraction = m_slideshowCycleProgress01;
-            } else if (m_slideshowProgressIntervalMs > 0) {
-                qint64 elapsed = m_slideshowProgressBaseMs;
-                if (!m_slideshowProgressClockPaused
-                    && m_slideshowProgressElapsed.isValid()) {
-                    elapsed += m_slideshowProgressElapsed.elapsed();
+            if (m_ssHud.timelineTotalMs > 0) {
+                fraction = qreal(m_ssHud.timelineElapsedMs)
+                    / qreal(m_ssHud.timelineTotalMs);
+            } else if (m_ssHud.cycleProgressValid) {
+                fraction = m_ssHud.cycleProgress01;
+            } else if (m_ssHud.progressIntervalMs > 0) {
+                qint64 elapsed = m_ssHud.progressBaseMs;
+                if (!m_ssHud.progressClockPaused
+                    && m_ssHud.progressElapsed.isValid()) {
+                    elapsed += m_ssHud.progressElapsed.elapsed();
                 }
-                fraction = qreal(elapsed) / qreal(m_slideshowProgressIntervalMs);
+                fraction = qreal(elapsed) / qreal(m_ssHud.progressIntervalMs);
             }
             fraction = qBound(0.0, fraction, 1.0);
 
@@ -601,7 +601,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
             painter.setBrush(track);
             // Thin dwell/session line when HUD pinned; thicker mpv seekbar when
             // the cursor is in the bottom hover zone.
-            const int barH = m_slideshowSeekbarVisible ? 6 : 2;
+            const int barH = m_ssHud.seekbarVisible ? 6 : 2;
             painter.drawRect(0, viewH - barH, viewW, barH);
             if (fraction > 0.0) {
                 const int barW = qMax(1, int(qRound(fraction * viewW)));
@@ -609,7 +609,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                 painter.drawRect(0, viewH - barH, barW, barH);
             }
 
-            if (m_slideshowTimelineTotalMs > 0) {
+            if (m_ssHud.timelineTotalMs > 0) {
                 auto fmt = [](qint64 ms) -> QString {
                     ms = qMax(qint64(0), ms);
                     const qint64 totalSec = ms / 1000;
@@ -626,12 +626,12 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                         .arg(m)
                         .arg(s, 2, 10, QLatin1Char('0'));
                 };
-                const qint64 remain = m_slideshowTimelineTotalMs
-                    - m_slideshowTimelineElapsedMs;
+                const qint64 remain = m_ssHud.timelineTotalMs
+                    - m_ssHud.timelineElapsedMs;
                 const QString timeLine =
                     QStringLiteral("%1 / %2   −%3")
-                        .arg(fmt(m_slideshowTimelineElapsedMs),
-                             fmt(m_slideshowTimelineTotalMs),
+                        .arg(fmt(m_ssHud.timelineElapsedMs),
+                             fmt(m_ssHud.timelineTotalMs),
                              fmt(remain));
 
                 QFont f = painter.font();
@@ -1441,7 +1441,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
     if (isGalleryMode() && !m_hudVisible && !m_hudFlashVisible && !m_hudIdentityPulse
-        && !m_slideshowPausedHud && !gallerySizeResolveActive()
+        && !m_ssHud.pausedHud && !gallerySizeResolveActive()
         && m_centreProgressTitle.isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_crop.mode
         && !m_ssDwell.motionActive 

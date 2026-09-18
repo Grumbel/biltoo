@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1254-slideshow-hud-zoomblur.** SlideshowProgressHud + ZoomBlurState.
+Prior: **1253**.
+
+### Change
+- `SlideshowProgressHud`: paused/seek/progress/timeline/nav-hot clocks.
+- `SlideshowZoomBlurState`: two-slot underlay cache + generation.
+- Progress QTimer remains on ImageView.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1254-slideshow-hud-zoomblur.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1253-slideshow-settings-dwell.** SlideshowSettings + SlideshowDwellState.
 Prior: **1252**.
 
