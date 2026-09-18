@@ -5,10 +5,12 @@
 #define VIEWTRANSFORM_H
 
 #include <QPoint>
+#include <QSize>
 #include <QRect>
 #include <QRectF>
 #include <QTransform>
 #include <QtMath>
+#include <QtGlobal>
 #include <cmath>
 
 /**
@@ -21,6 +23,14 @@ inline qreal scaleFrom(const QTransform &t)
 {
     return std::hypot(t.m11(), t.m12());
 }
+
+/** Viewport size with each axis at least 1 (avoids divide-by-zero). */
+inline QSize atLeast1(const QSize &s)
+{
+    return QSize(qMax(1, s.width()), qMax(1, s.height()));
+}
+
+inline int atLeast1(int v) { return qMax(1, v); }
 
 /** Expand @p bounds by @p pad on each side (empty stays empty). */
 inline QRectF padded(const QRectF &bounds, qreal pad)
