@@ -2,6 +2,33 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1122-gallery-soft-not-fullsource.** Soft-band attach stays SoftPreview; Gallery can upscale.
+Prior: **1121**.
+
+### Bug
+- `DisplaySurface::decide` used **AttachFull** for host ≤512 (soft ladder).
+- Install became `FullSource` → `hasDecodedPixels` → Gallery `anyFull` skipped
+  further soft/PreferCache schedule. Cells stayed at first soft edge (or LQIP)
+  and would not upscale.
+- Stale `inflight` with `have >= 128` also blocked reschedule.
+- ItemCoordinateCache could freeze an older soft pixmap across soft upgrades.
+
+### Fix
+- Soft-band host (≤ `kGuiMaterializeMaxEdge`) → **AttachSoft** (blank + soft upgrade).
+- Clear gallery soft inflight unless have covers the inflight edge.
+- `syncGalleryScrollCache` toggles ItemCoordinateCache on pixmap bake so upgrades paint.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1122-gallery-soft-not-fullsource.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1121-gallery-scroll-item-cache.** Gallery scroll: ItemCoordinateCache + pixmap bake; selection overlay.
 Prior: **1120**.
 

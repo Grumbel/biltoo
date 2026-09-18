@@ -98,7 +98,10 @@ Action decide(const State &s)
                 a.type = ActionType::ScheduleAsyncMaterialize;
                 return a;
             }
-            a.type = ActionType::AttachFull;
+            // Soft-band host (≤ kGuiMaterializeMaxEdge) must stay SoftPreview.
+            // AttachFull marked hasDecodedPixels and Gallery treated the tile as
+            // final (anyFull → no soft/PreferCache climb) while still ≤512 soft.
+            a.type = ActionType::AttachSoft;
             return a;
         }
         if (needUnmet && !hostCoversNeed) {
@@ -139,7 +142,9 @@ Action decide(const State &s)
         return a;
     }
 
-    a.type = ActionType::AttachFull;
+    // Soft-band host on a blank/mismatched surface: SoftPreview, not FullSource.
+    // FullSource here permanently blocked Gallery soft→PreferCache upscale.
+    a.type = ActionType::AttachSoft;
     return a;
 }
 

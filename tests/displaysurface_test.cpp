@@ -115,6 +115,7 @@ void DisplaySurfaceTest::decide_softEqualWant_overviewHost_shortNeed_climb()
 
 void DisplaySurfaceTest::decide_softEqualWant_guiHost_attachFull()
 {
+    // Name kept; soft-band host upgrades stay SoftPreview (not FullSource).
     State s;
     s.want = identityXform();
     s.applied = identityXform();
@@ -122,7 +123,7 @@ void DisplaySurfaceTest::decide_softEqualWant_guiHost_attachFull()
     s.haveDisplayEdge = 256;
     s.hostLongEdge = 512;
     s.needEdge = 512;
-    QCOMPARE(DisplaySurface::decide(s).type, ActionType::AttachFull);
+    QCOMPARE(DisplaySurface::decide(s).type, ActionType::AttachSoft);
 }
 
 void DisplaySurfaceTest::decide_softEqualWant_noHost_climb()
@@ -160,10 +161,11 @@ void DisplaySurfaceTest::decide_blank_largeHost_attachSoft()
 
 void DisplaySurfaceTest::decide_blank_guiHost_attachFull()
 {
+    // Soft-band blank install is SoftPreview so Gallery can still climb.
     State s;
     s.hostLongEdge = 400;
     s.needEdge = 400;
-    QCOMPARE(DisplaySurface::decide(s).type, ActionType::AttachFull);
+    QCOMPARE(DisplaySurface::decide(s).type, ActionType::AttachSoft);
 }
 
 void DisplaySurfaceTest::decide_wantChanged_full_async()

@@ -541,8 +541,12 @@ void ImageItem::syncGalleryScrollCache()
         return;
     }
     // Bake once; paint draws this pixmap. ItemCoordinateCache is in item
-    // space so view scrollbar pan does not rebuild it.
+    // space so view scrollbar pan does not rebuild it. Toggle mode when
+    // already cached so soft 128→256→512 upgrades are not frozen.
     setPixmap(QPixmap::fromImage(img));
+    if (cacheMode() == QGraphicsItem::ItemCoordinateCache) {
+        setCacheMode(QGraphicsItem::NoCache);
+    }
     setCacheMode(QGraphicsItem::ItemCoordinateCache);
 }
 

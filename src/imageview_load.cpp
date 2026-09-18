@@ -1603,10 +1603,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (st.failed) {
         return;
     }
-    // LQIP-only tiles may keep a stale inflight flag after a fast scroll; clear
-    // so SoftDisplay can run again when the tile is still weak.
+    // Stale inflight after fast scroll / empty ladder delivery must not block
+    // soft growth. Only hold the slot while have still covers the inflight edge.
     if (st.inflight > 0) {
-        if (st.have >= 128) {
+        if (st.have > 0 && coversEdge(st.have, st.inflight)) {
             return;
         }
         clearGallerySoftInflight(st);
