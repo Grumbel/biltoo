@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1154-gui-budget-soft.** GUI budget log-only by default; coordinator time-slice.
+Prior: **1153**.
+
+### Fix
+- `GuiBudgetScope` no longer aborts unless `BILTOO_GUI_BUDGET_STRICT=1`.
+- `TileLoadCoordinator`: max 3 targets/tick, 2ms wall-clock issue slice (was 29ms with DEBUG_OVERLAY).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1154-gui-budget-soft.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1153-fix-paint-budget.** Fix GUI_BUDGET_MS inserted into ImageItem::paint signature.
 Prior: **1152**.
 

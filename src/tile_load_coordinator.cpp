@@ -9,6 +9,7 @@
 #include "pathrasterservice.h"
 #include "tilelod/tile_session.hpp"
 
+#include <QElapsedTimer>
 #include <QSet>
 #include <QTransform>
 #include <QWidget>
@@ -117,8 +118,9 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
     sortByPolicy(cands);
 
-    // Cap concurrent targets — coordinator owns the queue, not each item.
-    constexpr int kMaxTargets = 8;
+    // Cap concurrent targets per tick — time-slice so GUI stays under budget.
+    // Full pass of 8× prepareTileLod was ~29ms with DEBUG_OVERLAY.
+    constexpr int kMaxTargets = 3;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }
@@ -165,9 +167,17 @@ void TileLoadCoordinator::tick(int globalBudget)
         return;
     }
 
+    // Hard wall-clock slice: stop issuing mid-tick if we already spent ~2ms.
+    QElapsedTimer slice;
+    slice.start();
+    constexpr qint64 kSliceMs = 2;
+
     const int n = issueTargets.size();
     int remaining = qMax(0, globalBudget);
     for (int i = 0; i < n; ++i) {
+        if (slice.elapsed() >= kSliceMs) {
+            break;
+        }
         ImageItem *item = issueTargets.at(i);
         if (!item) {
             continue;
@@ -176,5 +186,16 @@ void TileLoadCoordinator::tick(int globalBudget)
         const int share = remaining > 0 ? qMax(1, remaining / left) : 0;
         item->tickTileLod(share);
         remaining -= share;
+    }
+    // Pump completions only on remaining candidates (no new issues).
+    for (int i = 0; i < cands.size(); ++i) {
+        if (slice.elapsed() >= kSliceMs + 1) {
+            break;
+        }
+        ImageItem *item = cands.at(i).item;
+        if (!item || issueTargets.contains(item)) {
+            continue;
+        }
+        item->tickTileLod(0);
     }
 }

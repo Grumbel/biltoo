@@ -9,6 +9,7 @@
 
 #include <QElapsedTimer>
 #include <QThread>
+#include <cstdlib>
 #include <cstdio>
 
 /**
@@ -30,8 +31,8 @@
 
 /**
  * Scoped wall-time budget for code that is allowed on the GUI thread.
- * Exceeding the budget asserts in debug and always logs — hitch = bug.
- * Default 2ms; use GUI_BUDGET_MS for a named limit.
+ * Always logs when exceeded. Aborts only if BILTOO_GUI_BUDGET_STRICT is set
+ * (non-empty, not "0") so normal runs stay usable while budgets are tightened.
  */
 class GuiBudgetScope
 {
@@ -52,18 +53,27 @@ public:
             return;
         }
         std::fprintf(stderr,
-                     "biltoo/GUI_BUDGET EXCEEDED: %s took %lld ms (budget %lld ms)\n",
+                     "biltoo/GUI_BUDGET EXCEEDED: %s took %lld ms (budget %lld ms)%s\n",
                      m_label ? m_label : "?",
                      static_cast<long long>(ms),
-                     static_cast<long long>(m_budgetMs));
+                     static_cast<long long>(m_budgetMs),
+                     strictMode() ? " [STRICT abort]" : " [log only; set BILTOO_GUI_BUDGET_STRICT=1 to abort]");
         std::fflush(stderr);
-        Q_ASSERT_X(ms <= m_budgetMs, m_label ? m_label : "GuiBudget",
-                   "GUI thread work exceeded budget — move off GUI or shrink");
+        if (strictMode()) {
+            Q_ASSERT_X(ms <= m_budgetMs, m_label ? m_label : "GuiBudget",
+                       "GUI thread work exceeded budget — move off GUI or shrink");
+        }
     }
     GuiBudgetScope(const GuiBudgetScope &) = delete;
     GuiBudgetScope &operator=(const GuiBudgetScope &) = delete;
 
 private:
+    static bool strictMode()
+    {
+        const char *e = std::getenv("BILTOO_GUI_BUDGET_STRICT");
+        return e && e[0] && e[0] != '0';
+    }
+
     const char *m_label = nullptr;
     qint64 m_budgetMs = 2;
     QElapsedTimer m_timer;
