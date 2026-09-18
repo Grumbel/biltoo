@@ -138,6 +138,8 @@ add_executable(biltoo
   src/sessionappearance.h
   src/sessiondocument.cpp
   src/sessiondocument.h
+  src/sessionopen.cpp
+  src/sessionopen.h
   src/projectfile.cpp
   src/projectfile.h
   src/placementlinear.cpp

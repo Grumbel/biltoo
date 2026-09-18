@@ -27,7 +27,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 | Order | Extract | From | Notes |
 |------:|---------|------|-------|
 | 1 | **GallerySizeResolve** | `ImageView` size-gate timers/pending | Host interface; pack stays on view |
-| 2 | Session open pipeline | `MainWindow` / `mainwindow_session` | expand → wipe → warm → size gate |
+| 2 | **SessionOpen** | `MainWindow` / `mainwindow_session` | beginReplace + prepareExpandedSession |
 | 3 | Thumtoo MemoStore + SizeProbe | `thumtoocache.cpp` | formalize sizeReady vs memo |
 | 4 | ImageLoadCoordinator | `imageview_load` | generation, install gates |
 | 5 | CropSession | `imageview_crop` | draft + apply/undo |
@@ -39,6 +39,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 ### Landed
 
 - **GallerySizeResolve** (`gallerysizeresolve.{h,cpp}`): pending set, 45s safety timer, 50ms memo-sweep progress; `ImageView` implements `GallerySizeResolveHost` for size map / probes / pack-on-complete.
+- **SessionOpen** (`sessionopen.{h,cpp}`): `beginReplace` (invalidate + clear filmstrip), `prepareExpandedSession` (second invalidate, appearance seed, stash drop, memo warm, sizesWarm), shared by Open and append chrome.
 
 
 ## Current pain (evidence)

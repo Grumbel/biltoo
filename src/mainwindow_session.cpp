@@ -6,6 +6,7 @@
 #include <random>
 #include <algorithm>
 #include "thumtoocache.h"
+#include "sessionopen.h"
 #include "ttfp_trace.h"
 #include "projectfile.h"
 #include "archivepath.h"
@@ -1238,17 +1239,7 @@ void MainWindow::applyThumbnailVisibility()
 void MainWindow::loadFiles(const QStringList &paths, int startAt)
 {
     stopSlideshow();
-    // Cancel in-flight soft/PreferCache for the previous session before expand.
-    if (m_imageView) {
-        m_imageView->invalidateSessionLoads();
-    }
-
-    // Drop the previous filmstrip immediately so History / Open does not keep
-    // showing old session thumbs while expand or async sort runs.
-    if (m_thumbnailBar) {
-        // setSession() cancels pending loads (private cancelPendingLoads).
-        m_thumbnailBar->setSession(QStringList(), QVector<SessionImageId>());
-    }
+    SessionOpen::beginReplace(m_imageView, m_thumbnailBar);
 
     if (pathsNeedBackgroundExpand(paths)) {
         expandPathsInBackground(paths, /*append=*/false, startAt);
@@ -1291,30 +1282,11 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
 {
     TtfpTrace::begin("finishApplyExpandedLoad");
     m_currentIndex = -1;
-    // Second barrier after expand/sort: generation may have been bumped at
-    // loadFiles start, but expand is async — bump again so jobs from the
-    // previous session that finished during expand still cannot install.
-    if (m_imageView) {
-        m_imageView->invalidateSessionLoads();
-    }
-    TtfpTrace::mark("after_invalidateSessionLoads");
 
-    // Pull path-XDG orient/flip/grade into SessionAppearanceStore before first paint.
-    if (m_imageView) {
-        m_imageView->seedSessionAppearancesFromPaths(m_session.paths(), m_session.ids());
-    }
+    const bool sizesWarm = SessionOpen::prepareExpandedSession(
+        m_imageView, m_session.paths(), m_session.ids(),
+        /*clearLiveWorkspace=*/isWorkspaceMode());
 
-    // Session open is not a Workspace document. Drop any free-form arrangement
-    // so Image↔Workspace does not resurrect previous tiles; only .biltoo
-    // projects restore Workspace content.
-    if (m_imageView) {
-        m_imageView->discardStashedGallery();
-        m_imageView->discardStashedWorkspace();
-        m_imageView->clearDurableWorkspaceSnapshot();
-        if (isWorkspaceMode()) {
-            m_imageView->clearWorkspace();
-        }
-    }
     m_workspaceReturnActive = false;
     if (m_workspaceModeAct) {
         m_workspaceModeAct->setChecked(false);
@@ -1323,27 +1295,6 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
     int idx = startAt;
     if (idx < 0 || idx >= m_session.paths().size()) {
         idx = 0;
-    }
-
-    // Prefill size + LQIP + durable-tile memos from Store before sizesWarm /
-    // Gallery pack. Without this, cachedSize/LQIP are empty on the GUI and every
-    // open looked cold (probes + blank cells until tiles trickle in).
-    TtfpTrace::mark("before_warmSessionOpenMemos");
-    ThumtooCache::warmSessionOpenMemos(m_session.paths());
-    TtfpTrace::mark("after_warmSessionOpenMemos");
-
-    // Warm = every path already has a durable size in the process memo (Store).
-    bool sizesWarm = true;
-    if (m_session.paths().size() > 1) {
-        for (const QString &path : m_session.paths()) {
-            if (path.isEmpty()) {
-                continue;
-            }
-            if (!ThumtooCache::cachedSize(path).isValid()) {
-                sizesWarm = false;
-                break;
-            }
-        }
     }
 
     // Filmstrip rebuild is O(n) list-widget work; on a warm multi-image open,
@@ -1522,7 +1473,7 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
         ThumtooCache::preparePaths(m_session.paths());
         ThumtooCache::warmUris(m_session.paths());
     } else if (isGalleryMode()) {
-        ThumtooCache::warmSessionOpenMemos(m_session.paths());
+        SessionOpen::warmProcessMemos(m_session.paths());
         // Size-resolve HUD first; preparePaths after so cache fill does not skip it.
         populateGalleryCanvas();
         m_currentIndex = -1;
@@ -1532,17 +1483,8 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
         ThumtooCache::warmUris(m_session.paths());
     } else if (m_session.paths().size() > 1) {
         // Multi-image after append in Image mode — Gallery + size-first like Open.
-        ThumtooCache::warmSessionOpenMemos(m_session.paths());
-        bool sizesWarm = true;
-        for (const QString &path : m_session.paths()) {
-            if (path.isEmpty()) {
-                continue;
-            }
-            if (!ThumtooCache::cachedSize(path).isValid()) {
-                sizesWarm = false;
-                break;
-            }
-        }
+        SessionOpen::warmProcessMemos(m_session.paths());
+        const bool sizesWarm = SessionOpen::allSizesInProcessMemo(m_session.paths());
         if (!sizesWarm) {
             setExpandProgress(
                 0, m_session.paths().size(),

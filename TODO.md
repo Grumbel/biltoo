@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1244-session-open-policy.** Extract SessionOpen replace barriers.
+Prior: **1243**.
+
+### Change
+- `SessionOpen::beginReplace` — Open/History start (invalidate + empty filmstrip).
+- `SessionOpen::prepareExpandedSession` — after expand/sort (second invalidate,
+  appearance seed, stash drop, process memo warm, sizesWarm).
+- Append chrome uses `warmProcessMemos` / `allSizesInProcessMemo`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1244-session-open-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1243-gallery-size-resolve-extract.** Extract GallerySizeResolve collaborator.
 Prior: **1242**.
 
