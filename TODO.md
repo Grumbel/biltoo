@@ -2,6 +2,33 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1179-paint-skip-progressive.** Paint no longer re-plans every frame while climbing.
+Prior: **1178**.
+
+### Investigation
+- Paint called `prepareTileLodPlan` every frame; while `request_scale_holding()` the
+  skip was disabled → N visible cells × set_viewport/plan per frame.
+- Climb already advances in `pump`/`issue_requests` on the tick path.
+
+### Fix
+Restore viewport-stable skip unconditionally. Progressive refine stays on tick.
+
+### Still open (no code)
+- TileLodRegistry does not pass `CancelFn` into ThumtooTileSource — cancel_obsolete
+  only clears InFlight in RAM; thumtoo may still finish obsolete encodes.
+- Coordinator 2-target / 12ms debounce remains a deliberate GUI budget tradeoff.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1179-paint-skip-progressive.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1178-min-scale-memo.** Durable min_scale raise no longer resets progressive climb.
 Prior: **1177**.
 

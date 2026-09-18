@@ -1472,9 +1472,8 @@ void ImageItem::prepareTileLodPlan()
     }
     // Skip set_viewport when density and visible region are unchanged — paint
     // runs this every frame while tiles stream in; replanning is pure waste.
-    // Still run while progressive scale is holding (coarse → fine refine).
+    // Progressive climb advances in TileSession::pump/issue (tick path), not here.
     if (m_tileLod->session()
-        && !m_tileLod->session()->request_scale_holding()
         && m_tileLodLastDpc > 0.0
         && qAbs(dpc - m_tileLodLastDpc) < 1e-4
         && qAbs(visSource.x() - m_tileLodLastVisSource.x()) < 0.5
