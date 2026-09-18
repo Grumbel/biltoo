@@ -279,10 +279,16 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     if (plan.scheduleDisplay) {
         ThumtooCache::scheduleProbe(path);
         const int edge = plan.displayEdge > 0 ? plan.displayEdge : want;
-        if (ThumtooCache::scheduleDisplayPixels(path, edge)
-            || ThumtooCache::isPixelsPending(path, edge)) {
-            accepted.scheduleDisplay = true;
-            accepted.forgetDisplaySettled = plan.forgetDisplaySettled;
+        // PreferCache without durable tiles still soft-encodes — product
+        // underlay is TileSynth only (THUMTOO_HOST_CONTRACT ≥1224).
+        if (ThumtooCache::hasDurableTilesKnown(path)) {
+            if (ThumtooCache::scheduleDisplayPixels(path, edge)
+                || ThumtooCache::isPixelsPending(path, edge)) {
+                accepted.scheduleDisplay = true;
+                accepted.forgetDisplaySettled = plan.forgetDisplaySettled;
+            }
+        } else if (ThumtooCache::scheduleTilePyramid(path)) {
+            accepted.scheduleTiles = true;
         }
     }
     if (plan.scheduleTiles) {

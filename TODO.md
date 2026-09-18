@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1225-pathraster-display-tiles-only.** PathRaster Display PreferCache → TileSynth only.
+Prior: **1224**.
+
+### Bug
+Soft-band was tiles-only (1222), but `plan.scheduleDisplay` still called
+`scheduleDisplayPixels` unconditionally — PreferCache soft-encodes when no
+pyramid exists (slideshow SoftDisplay / Image Escalate intermediate).
+
+### Fix
+- Display plan: TileSynth only if `hasDurableTilesKnown`; else pyramid.
+- Docs: PATH_RASTER soft + display rule.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1225-pathraster-display-tiles-only.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1224-contract-tiles-only.** Normative: product underlay is LQIP + tiles.
 Prior: **1223**.
 
