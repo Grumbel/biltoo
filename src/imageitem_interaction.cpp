@@ -1600,8 +1600,23 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             const QRectF box = contentRect();
             // Gallery scroll path: prefer baked QPixmap (ItemCoordinateCache).
             // Avoids QImage stretch every frame under QOpenGLWidget scroll.
+            // Self-heal: if displayImage is a strict upgrade over the pixmap
+            // (soft installed while pixmap still LQIP), rebake before draw so
+            // ItemCoordinateCache does not keep showing the stand-in.
             if (!m_interactive && !pixmap().isNull()
                 && box.width() >= 1.0 && box.height() >= 1.0) {
+                const QImage &live = displayImage();
+                const int pixEdge = qMax(pixmap().width(), pixmap().height());
+                const int liveEdge = live.isNull()
+                    ? 0
+                    : qMax(live.width(), live.height());
+                if (!live.isNull() && liveEdge > pixEdge) {
+                    setPixmap(QPixmap::fromImage(live));
+                    if (cacheMode() == QGraphicsItem::ItemCoordinateCache) {
+                        setCacheMode(QGraphicsItem::NoCache);
+                        setCacheMode(QGraphicsItem::ItemCoordinateCache);
+                    }
+                }
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
                 painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
             } else if (!m_source.isNull() && !m_previewPixels) {

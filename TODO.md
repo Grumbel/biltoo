@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1136-paint-pixmap-selfheal.** Paint rebakes pixmap when displayImage is larger.
+Prior: **1135**.
+
+### Bug
+- Gallery soft underlay paint prefers **QPixmap**.
+- If `m_preview` upgraded to soft but pixmap lagged (or ItemCoordinateCache
+  held LQIP), paint kept showing LQIP until a full cache path ran.
+
+### Fix
+- Before drawing the Gallery pixmap underlay, if `displayImage` long edge is
+  larger than the pixmap, rebake pixmap and toggle ItemCoordinateCache.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1136-paint-pixmap-selfheal.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1135-tilelod-underlay-upgrade.** Soft underlay pixmap upgrades under tileLodWanted.
 Prior: **1134**.
 
