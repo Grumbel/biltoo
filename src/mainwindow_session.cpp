@@ -1362,16 +1362,14 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
             setExpandProgress(
                 0, m_session.paths().size(),
                 tr("Opening %n image(s)…", "", m_session.paths().size()));
-            installFilmstrip();
-            TtfpTrace::mark("after_filmstrip_cold");
         }
+        // Always pack Gallery before filmstrip. Filmstrip was installed first on
+        // cold opens and competed for thumtoo workers / CPU with Gallery tiles.
         enterGalleryMode(initialGalleryLayoutForOpen());
         TtfpTrace::mark("after_enterGalleryMode");
         setCurrentIndex(idx, /*ensureGalleryVisible=*/true);
         TtfpTrace::mark("after_setCurrentIndex");
-        if (sizesWarm) {
-            QTimer::singleShot(0, this, installFilmstrip);
-        }
+        QTimer::singleShot(0, this, installFilmstrip);
         // Background size probes for plain-file misses only (warm paths skipped).
         ThumtooCache::preparePaths(m_session.paths());
         ThumtooCache::warmUris(m_session.paths());

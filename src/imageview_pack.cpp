@@ -209,7 +209,7 @@ void ImageView::updateGalleryDecodeWindow()
     //
     // Pass 1 — ImageCache soft onto blank tiles (budgeted).
     // Pass 2 — candidates via GallerySoftState::needsSoftSchedule + want edge;
-    //          scheduleGalleryDecode → PathRasterService::ensure (soft → PreferCache).
+    //          scheduleGalleryDecode → LQIP install (+ tiles via coordinator).
     // Pixels: ImageCache / ImageItem. Policy: GallerySoftState + PathRasterService.
     // Image mode full decode is separate.
     // -------------------------------------------------------------------------
@@ -217,7 +217,7 @@ void ImageView::updateGalleryDecodeWindow()
         return;
     }
     // Fill size-gate used to block all soft until every probe finished — that
-    // made cold TTFP = sum of all probes. Placeholders exist; allow soft/LQIP.
+    // made cold TTFP = sum of all probes. Placeholders exist; allow LQIP.
 
     const QRect viewRect = viewport()->rect().adjusted(
         -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,

@@ -2138,7 +2138,7 @@ void ThumbnailBar::primeGeometryFromCache()
             cached.isValid() && cached.width() > 0 && cached.height() > 0) {
             applyNativeAspect(it, cached);
             any = true;
-        } else if (ThumtooCache::isAvailable() && !ThumtooCache::isUnsupported(path)) {
+        } else if (ThumtooCache::isAvailable()) {
             ThumtooCache::scheduleProbe(path);
         }
     }
@@ -2233,8 +2233,8 @@ void ThumbnailBar::setFiles(const QStringList &files)
                 m_delegate->provisionalContentSize());
             item->setData(ThumbnailDelegate::ThumbContentSizeRole, prov);
             item->setSizeHint(provCell);
-            if (!path.isEmpty() && ThumtooCache::isAvailable()
-                && !ThumtooCache::isUnsupported(path)) {
+            if (!path.isEmpty() && ThumtooCache::isAvailable()) {
+                // scheduleProbe skips unsupported on the worker — never get_meta on GUI.
                 ThumtooCache::scheduleProbe(path);
             }
         } else if (m_delegate) {

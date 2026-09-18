@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1191-gallery-before-filmstrip.** Multi-image open: Gallery before filmstrip; no GUI isUnsupported in filmstrip.
+Prior: **1190**.
+
+### Change
+- Always enter Gallery then deferred filmstrip (cold path no longer installs strip first).
+- Filmstrip size probe: no `isUnsupported` on GUI.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1191-gallery-before-filmstrip.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1190-gallery-no-interest-soft.** Gallery: no setInterest Primary (FocusFull flood); warm memos on append; no GUI isUnsupported.
 Prior: **1189**.
 
