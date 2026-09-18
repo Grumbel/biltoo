@@ -5,12 +5,31 @@
 #define DISPLAYEDGEPOLICY_H
 
 #include <QImage>
+#include <QtGlobal>
 
 /**
  * Pure long-edge coverage and ladder-cap rules for PreferCache / soft delivery.
  * ImageView supplies known native sizes; this module does not touch caches.
  */
 namespace DisplayEdgePolicy {
+
+/** Raise climb floor to on-screen need when need > 0. */
+inline int escalateClimbTo(int baseEdge, int needEdge)
+{
+    return needEdge > 0 ? qMax(baseEdge, needEdge) : baseEdge;
+}
+
+/** Bind/tile want count: at least one pending bind, else have. */
+inline int wantedBindCount(int have, int pendingBinds)
+{
+    return qMax(have, pendingBinds > 0 ? pendingBinds : 1);
+}
+
+/** Cap tile-synth request to overview ladder edge. */
+inline int tileSynthEdge(int qualityEdge, int overviewEdge)
+{
+    return qMin(qualityEdge, overviewEdge);
+}
 
 /** ~90% of target long edge counts as delivered (soft/overview stops). */
 bool coversEdge(int haveLongEdge, int targetEdge);

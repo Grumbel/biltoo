@@ -170,8 +170,8 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                 // Tiles/TileSynth only when thumtoo is up — never soft PreferCache
                 // encode. Without thumtoo, classic shrink decode as last resort.
                 if (ThumtooCache::isAvailable()) {
-                    const int edge =
-                        qMin(qualityEdge, ThumtooCache::kBatchOverviewEdge);
+                    const int edge = DisplayEdgePolicy::tileSynthEdge(
+                        qualityEdge, ThumtooCache::kBatchOverviewEdge);
                     (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
                 } else {
                     const QImage loaded =
@@ -803,7 +803,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         const bool navHot = m_ssHud.navHot && isImageMode();
         // Nav-hot: tighter clamp so materializeDisplay stays cheap under hold.
         const int maxGui = navHot
-            ? qMin(ContentXform::kGuiMaterializeMaxEdge, 256)
+            ? ContentXform::materializePreviewEdge()
             : ContentXform::kGuiMaterializeMaxEdge;
         const int hostEdge = ImageCache::longEdge(pixelsForDisplay);
         // Multi-MP host cannot materialize on the GUI thread. Soft stand-in
@@ -2239,7 +2239,7 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
     int wanted = pathOrderCount;
     if (wanted <= 0) {
         // Not in session pathOrder (ad-hoc workspace place): one tile per bind.
-        wanted = qMax(have, pendingBinds > 0 ? pendingBinds : 1);
+        wanted = DisplayEdgePolicy::wantedBindCount(have, pendingBinds);
     }
 
     createMissingLoadAddItems(path, image, have, wanted);
@@ -2520,10 +2520,8 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
     const int need = imageModeOnScreenNeedEdge();
     const int have = sample.isNull() ? 0 : ImageCache::longEdge(sample);
     // Cold path only (no durable tiles): climb to on-screen need, not soft-512 habit.
-    int climbTo = ThumtooCache::kBatchOverviewEdge;
-    if (need > 0) {
-        climbTo = qMax(climbTo, need);
-    }
+    int climbTo = DisplayEdgePolicy::escalateClimbTo(
+        ThumtooCache::kBatchOverviewEdge, need);
     climbTo = cappedDisplayEdgeForPath(path, climbTo);
     if (have > 0 && DisplayEdgePolicy::coversEdge(have, climbTo)) {
         return;
