@@ -18,6 +18,7 @@
 #include <QPointer>
 #include <QThreadPool>
 #include <QElapsedTimer>
+#include <QTimer>
 #include <QHash>
 #include <QDebug>
 
@@ -585,8 +586,8 @@ void MainWindow::applyExpandedPathsResult(const QStringList &images, bool append
         }
         return;
     }
-    setExpandProgressMessage(
-        tr("Opening %n image(s)…", "", images.size()));
+    // Do not set "Opening N images…" here — finishApplyExpandedLoad shows it
+    // only when durable sizes are still missing (warm index stays silent).
     if (append) {
         applyExpandedAppend(images);
     } else {
@@ -1286,8 +1287,6 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         m_imageView->invalidateSessionLoads();
     }
 
-    m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-    applyThumbnailVisibility();
     // Pull path-XDG orient/flip/grade into SessionAppearanceStore before first paint.
     if (m_imageView) {
         m_imageView->seedSessionAppearancesFromPaths(m_session.paths(), m_session.ids());
@@ -1314,10 +1313,9 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         idx = 0;
     }
 
-    // Multi-file: centre progress only when sizes are still unknown. A warm
-    // index must not flash "Opening N images…" while Gallery packs from cache.
+    // Warm = every path already has a durable size in the Store (no probes).
+    bool sizesWarm = true;
     if (m_session.paths().size() > 1) {
-        bool sizesWarm = true;
         for (const QString &path : m_session.paths()) {
             if (path.isEmpty()) {
                 continue;
@@ -1327,17 +1325,35 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
                 break;
             }
         }
+    }
+
+    // Filmstrip rebuild is O(n) list-widget work; on a warm multi-image open,
+    // paint Gallery first and install the strip on the next event-loop turn.
+    const auto installFilmstrip = [this]() {
+        if (!m_thumbnailBar) {
+            return;
+        }
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+        applyThumbnailVisibility();
+    };
+
+    if (m_session.paths().size() > 1) {
         if (!sizesWarm) {
             setExpandProgress(
                 0, m_session.paths().size(),
                 tr("Opening %n image(s)…", "", m_session.paths().size()));
+            installFilmstrip();
         }
         enterGalleryMode(initialGalleryLayoutForOpen());
         setCurrentIndex(idx, /*ensureGalleryVisible=*/true);
+        if (sizesWarm) {
+            QTimer::singleShot(0, this, installFilmstrip);
+        }
         // Background size probes for plain-file misses only (warm paths skipped).
         ThumtooCache::preparePaths(m_session.paths());
         ThumtooCache::warmUris(m_session.paths());
     } else {
+        installFilmstrip();
         ThumtooCache::preparePaths(m_session.paths());
         ThumtooCache::warmUris(m_session.paths());
         if (m_imageView && !isImageMode()) {

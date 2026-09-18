@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1114-warm-open-no-premature-hud.** Warm open: no premature Opening HUD; Gallery before filmstrip.
+Prior: **1113**.
+
+### Problem
+`applyExpandedPathsResult` always set "Opening N images…" before the warm-size
+check, so the HUD stayed up through setSession + enterGalleryMode even when
+every size was already in the Store.
+
+### Change
+- Drop premature Opening message from applyExpandedPathsResult.
+- finishApplyExpandedLoad: Opening HUD only if sizes cold; on warm multi-image
+  open, enter Gallery first and defer filmstrip setSession to next event loop.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1114-warm-open-no-premature-hud.bundle HEAD
+```
+
+Requires **thumtoo-311** for Store-first page sizes (PDF/DjVu/EPUB).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1113-version-thumtoo.** --version and About show thumtoo version + features.
 Prior: **1112**.
 
