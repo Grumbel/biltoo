@@ -667,9 +667,8 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
         if (path.isEmpty()) {
             continue;
         }
-        if (ThumtooCache::isUnsupported(path)) {
-            continue;
-        }
+        // Do not call isUnsupported on the GUI (Store get_meta). Probes no-op
+        // unsupported paths on the worker.
         if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
             continue;
         }

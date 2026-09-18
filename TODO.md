@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1190-gallery-no-interest-soft.** Gallery: no setInterest Primary (FocusFull flood); warm memos on append; no GUI isUnsupported.
+Prior: **1189**.
+
+### Change
+- `publishGalleryInterest` is a no-op — stopped re-queueing FocusFull/soft via setInterest every decode window.
+- `warmSessionOpenMemos` on append → Gallery paths.
+- Size-resolve: no `isUnsupported` on GUI (Store get_meta).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1190-gallery-no-interest-soft.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1189-gallery-no-soft-watchdog.** Gallery watchdog and decode window: LQIP+tiles only; drop PreferCache soft leftovers.
 Prior: **1188**.
 

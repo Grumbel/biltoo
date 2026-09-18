@@ -149,28 +149,13 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
 void ImageView::publishGalleryInterest(const QStringList &interestNear,
                                        const QStringList &interestRest)
 {
-    // Gallery product: tiles only. Do not setInterest near/spec with any soft
-    // edge (even LQIP 96 caused PreferCache soft req=96 DEBUG_OVERLAY). Primary
-    // only — thumtoo FocusFull / EnsureTiles for visible paths.
+    // Gallery drives tiles via TileLoadCoordinator + scheduleTilePyramid only
+    // when durable coverage is missing. setInterest Primary used to enqueue
+    // FocusFull pyramids (and soft PreferCache) every decode window — that
+    // reintroduced multi-second worker load after we stopped unconditional
+    // scheduleTilePyramid. Interest is unused for Gallery.
+    Q_UNUSED(interestNear);
     Q_UNUSED(interestRest);
-    const int ovCap = ThumtooCache::kBatchOverviewEdge;
-    const int imgCap = ThumtooCache::kImageLadderEdge;
-    int primEdge = ovCap;
-    QStringList primary;
-    for (const QString &p : interestNear) {
-        if (primary.size() >= 6) {
-            break;
-        }
-        const auto it = m_gallerySoft.constFind(p);
-        if (it != m_gallerySoft.cend() && it->want > 0) {
-            primEdge = qMax(primEdge, qMin(it->want, imgCap));
-        }
-        primary.append(p);
-    }
-    primary.sort();
-    // Empty near/spec — no soft PreferCache from interest.
-    (void)ThumtooCache::setInterest(QStringList{}, QStringList{}, 0, 0,
-                                    primary, primEdge);
 }
 
 void ImageView::scheduleIdleGalleryDecodes(const QStringList &rest)

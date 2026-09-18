@@ -1497,6 +1497,7 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
         ThumtooCache::preparePaths(m_session.paths());
         ThumtooCache::warmUris(m_session.paths());
     } else if (isGalleryMode()) {
+        ThumtooCache::warmSessionOpenMemos(m_session.paths());
         // Size-resolve HUD first; preparePaths after so cache fill does not skip it.
         populateGalleryCanvas();
         m_currentIndex = -1;
@@ -1506,6 +1507,7 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
         ThumtooCache::warmUris(m_session.paths());
     } else if (m_session.paths().size() > 1) {
         // Multi-image after append in Image mode — Gallery + size-first like Open.
+        ThumtooCache::warmSessionOpenMemos(m_session.paths());
         bool sizesWarm = true;
         for (const QString &path : m_session.paths()) {
             if (path.isEmpty()) {
