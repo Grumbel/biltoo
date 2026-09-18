@@ -215,8 +215,11 @@ void ImageView::updateGalleryDecodeWindow()
     if (!isGalleryMode() || m_items.isEmpty()) {
         return;
     }
-    // Fill size-gate used to block all soft until every probe finished — that
-    // made cold TTFP = sum of all probes. Placeholders exist; allow LQIP.
+    // Wall budget: cold open was stacking install + schedule + tile tick past
+    // GUI_BUDGET. Slice work and re-arm instead of one multi-hundred-ms pass.
+    QElapsedTimer wall;
+    wall.start();
+    constexpr qint64 kDecodeWindowWallMs = 6;
 
     const QRect viewRect = viewport()->rect().adjusted(
         -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
@@ -228,7 +231,7 @@ void ImageView::updateGalleryDecodeWindow()
     qint64 usInterest = 0;
     QElapsedTimer phaseTimer;
 
-    constexpr int kMaxInstallsPerDecodeWindow = 64;
+    constexpr int kMaxInstallsPerDecodeWindow = 24;
     bool moreInstallsPending = false;
     if (m_perfEnabled) {
         phaseTimer.start();
@@ -290,10 +293,10 @@ void ImageView::updateGalleryDecodeWindow()
         }
     }
 
-    constexpr int kSchedBudget = 64;
+    constexpr int kSchedBudget = 32;
     int scheduled = 0;
     for (const QString &path : visible) {
-        if (scheduled >= kSchedBudget) {
+        if (scheduled >= kSchedBudget || wall.elapsed() >= kDecodeWindowWallMs) {
             scheduleGalleryDecodeWindowRefresh(16);
             break;
         }
@@ -312,10 +315,13 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     // Tile issue: one coordinator tick per decode window (not per path).
-    // Do not census tileLodWanted() over all m_items — that was O(n) per refresh
-    // and stacked with scheduleTilePyramid get_meta on cold open.
-    int tileBudget = isGalleryMode() ? 48 : 8;
-    tickPrimaryTileLod(tileBudget);
+    // Skip if the LQIP/schedule slice already burned the wall — re-arm instead.
+    if (wall.elapsed() < kDecodeWindowWallMs) {
+        int tileBudget = isGalleryMode() ? 32 : 8;
+        tickPrimaryTileLod(tileBudget);
+    } else {
+        scheduleGalleryDecodeWindowRefresh(16);
+    }
 
     // Rate-limited tile debug (BILTOO_TILE_DEBUG=1) — sample viewport hits only.
     if (const char *td = std::getenv("BILTOO_TILE_DEBUG");

@@ -206,6 +206,8 @@ QHash<QString, QSize> g_sizeMemo;
 /** Process memo of ContentStatus::Unsupported (get_meta is SQLite — never on GUI). */
 QSet<QString> g_unsupportedYes;
 QSet<QString> g_unsupportedNo;
+/** Paths with an in-flight size probe (dedupe ThreadPool storm on Gallery open). */
+QSet<QString> g_probeQueued;
 /**
  * Negative memo: path → earliest msecs-since-epoch to re-query Store.
  * tileLodWanted/paint called hasDurableTiles every frame; uncached misses
@@ -967,11 +969,27 @@ void scheduleProbe(const QString &path)
     if (path.isEmpty()) {
         return;
     }
+    // Already have size in process memo — no Store round-trip.
+    if (cachedSize(path, /*scheduleRevalidate=*/false).isValid()) {
+        return;
+    }
+    {
+        std::lock_guard lock(g_mu);
+        if (g_probeQueued.contains(path)) {
+            return;
+        }
+        g_probeQueued.insert(path);
+    }
     init();
     const QString pathCopy = path;
     QThreadPool::globalInstance()->start([pathCopy]() {
         ASSERT_NOT_GUI_THREAD();
-        auto fail = [&pathCopy]() {
+        auto finishQueued = [&pathCopy]() {
+            std::lock_guard lock(g_mu);
+            g_probeQueued.remove(pathCopy);
+        };
+        auto fail = [&pathCopy, &finishQueued]() {
+            finishQueued();
             emit bridge()->sizeReady(pathCopy, QSize());
         };
         if (isUnsupported(pathCopy)) {
@@ -996,6 +1014,10 @@ void scheduleProbe(const QString &path)
             thumtooDbg("scheduleProbe path=%s", qPrintable(pathCopy));
         }
         c->request_size(uri, [pathCopy](std::string, thumtoo::SizeReply reply) {
+            {
+                std::lock_guard lock(g_mu);
+                g_probeQueued.remove(pathCopy);
+            }
             // Always emit so the host clears m_sizeProbeScheduled and can
             // advance Gallery size-resolve (failed size must not stick forever).
             if (!reply.size) {

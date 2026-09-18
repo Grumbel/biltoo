@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1206-probe-dedupe-decode-wall.** Dedupe size probes; wall-budget Gallery decode window.
+Prior: **1205**.
+
+### Change
+- `scheduleProbe`: skip if size memo hit; `g_probeQueued` dedupes ThreadPool storms on cold open.
+- `updateGalleryDecodeWindow`: 6 ms wall, fewer installs/schedules per pass, re-arm when over budget.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1206-probe-dedupe-decode-wall.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1205-gui-no-get-meta.** Cold Gallery GUI stalls: isUnsupported memo; no get_meta on GUI; drop O(n) tile census.
 Prior: **1204**.
 
