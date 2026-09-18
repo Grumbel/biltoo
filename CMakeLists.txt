@@ -134,6 +134,9 @@ add_executable(biltoo
   src/pageguidesession.h
   src/iteminteractsession.h
   src/hudflash.h
+  src/viewframing.h
+  src/textlayersession.h
+  src/zoomregiongesture.h
   src/slideshowtypes.h
   src/loadgeneration.h
   src/sessionloadgate.h

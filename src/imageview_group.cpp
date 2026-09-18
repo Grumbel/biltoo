@@ -213,7 +213,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         }
         // If decompose fails, leave linear pose from last good frame (pos already updated).
     }
-    m_fitMode = false;
+    m_framing.fitMode = false;
     emit statusChanged();
 }
 
@@ -280,6 +280,6 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
         item->setPos(newPos);
         item->setItemRotation(st.rotation + delta);
     }
-    m_fitMode = false;
+    m_framing.fitMode = false;
     emit statusChanged();
 }

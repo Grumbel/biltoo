@@ -14,6 +14,9 @@
 #include "pageguidesession.h"
 #include "iteminteractsession.h"
 #include "hudflash.h"
+#include "viewframing.h"
+#include "textlayersession.h"
+#include "zoomregiongesture.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
@@ -635,13 +638,13 @@ public:
      * runs. Gallery and Workspace use one-shot zoom + ensureVisible; sticky is
      * released when leaving Image mode.
      */
-    enum class StickyZoomKind { Fit = 0, Fill = 1, Actual = 2 };
+    // StickyZoomKind: viewframing.h
     void setStickyZoomEnabled(bool on);
     void releaseStickyZoom();
     void captureStickyZoomFromCurrentFraming();
-    bool stickyZoomEnabled() const { return m_stickyZoomEnabled; }
+    bool stickyZoomEnabled() const { return m_framing.stickyZoomEnabled; }
     void setStickyZoomKind(StickyZoomKind kind);
-    StickyZoomKind stickyZoomKind() const { return m_stickyZoomKind; }
+    StickyZoomKind stickyZoomKind() const { return m_framing.stickyZoomKind; }
     /** Image-mode framing after soft/full install (honours sticky zoom). */
     void applyImageModeFraming(ImageItem *item);
     /** Best-effort: remember viewport centre in image-normalized coords. */
@@ -653,7 +656,7 @@ public:
      */
     void armZoomRegion();
     void cancelZoomRegion();
-    bool zoomRegionArmed() const { return m_zoomRegionArmed; }
+    bool zoomRegionArmed() const { return m_zoomRegion.armed; }
     /** Current view-level scale factor (workspace zoom). */
     qreal viewScale() const;
     void rotateLeft();
@@ -718,7 +721,7 @@ public:
 
     /** Debug: paint text/link region rects for page documents (Image mode). */
     void setShowTextRegions(bool on);
-    bool showTextRegions() const { return m_showTextRegions; }
+    bool showTextRegions() const { return m_textLayer.showRegions; }
     void refreshTextLayer();
 
     /**
@@ -727,25 +730,25 @@ public:
      * Returns number of matching regions on the current page.
      */
     int setTextSearchQuery(const QString &query);
-    QString textSearchQuery() const { return m_textSearchQuery; }
-    int textSearchMatchCount() const { return m_textSearchMatches.size(); }
+    QString textSearchQuery() const { return m_textLayer.searchQuery; }
+    int textSearchMatchCount() const { return m_textLayer.searchMatches.size(); }
     bool hasTextLayer() const;
     int textLayerRegionCount() const;
     /** Soft match for OCR noise (alnum-only + light edit distance). Default on. */
     void setTextSearchFuzzy(bool on);
-    bool textSearchFuzzy() const { return m_textSearchFuzzy; }
+    bool textSearchFuzzy() const { return m_textLayer.searchFuzzy; }
     /** True if @p regionText matches @p query under the same rules as Find. */
     static bool textMatchesQuery(const QString &regionText, const QString &query, bool fuzzy);
 
     /** Selected region indices from Shift+drag rubber-band (Image mode page docs). */
-    int textSelectionCount() const { return m_textSelectedRegions.size(); }
+    int textSelectionCount() const { return m_textLayer.selectedRegions.size(); }
     /** Joined text of the selection in reading order; empty if none. */
     QString selectedText() const;
     /** Copy selected text to the clipboard; returns false if nothing selected. */
     bool copySelectedText();
     void clearTextSelection();
     /** Non-empty while the pointer is over a link region. */
-    QString linkHoverTip() const { return m_linkHoverTip; }
+    QString linkHoverTip() const { return m_textLayer.linkHoverTip; }
 
     bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
 
@@ -1795,16 +1798,7 @@ private:
     void endPageGuideResize();
 
     PageGuideSession m_pageGuide;
-    bool m_fitMode = true;
-    bool m_fillMode = false;
-    bool m_stickyZoomEnabled = false;
-    StickyZoomKind m_stickyZoomKind = StickyZoomKind::Fit;
-    bool m_haveStickyPanAnchor = false;
-    qreal m_stickyPanNormX = 0.5;
-    qreal m_stickyPanNormY = 0.5;
-    /** Free (non-sticky) nav: keep absolute view scale across images. */
-    bool m_havePreservedViewScale = false;
-    qreal m_preservedViewScale = 1.0;
+    ViewFraming m_framing;
     ViewMode m_viewMode = ViewMode::Image;
     bool m_imageModeNavEnabled = false;
     bool m_galleryReturnAvailable = false;
@@ -1821,18 +1815,7 @@ private:
     bool m_workspaceBackgroundShowDefault = false;
     QPixmap m_workspaceBgTile; /**< Cached tile for ImageTile mode */
     QString m_workspaceBgTilePath; /**< Path loaded into m_workspaceBgTile */
-    bool m_showTextRegions = false;
-    ThumtooCache::PageTextLayer m_textLayer;
-    QString m_textLayerPath;
-    QString m_textSearchQuery;
-    bool m_textSearchFuzzy = true;
-    /** Indices into m_textLayer.regions that match the current query. */
-    QVector<int> m_textSearchMatches;
-    bool m_textRubberbanding = false;
-    QPoint m_textRubberOrigin;  /**< viewport */
-    QRect m_textRubberRect;     /**< viewport, normalized while dragging */
-    QVector<int> m_textSelectedRegions;
-    QString m_linkHoverTip;
+    TextLayerSession m_textLayer.layer;
     bool m_hudVisible = false;
     int m_hudFontPointSize = 11;
     QColor m_hudTextColor{255, 255, 255};
@@ -1919,11 +1902,8 @@ private:
 
     QPoint m_lastMousePos;
     bool m_panning = false;
-    /** One-shot rubber-band zoom (Z): armed until drag completes or Esc. */
-    bool m_zoomRegionArmed = false;
-    bool m_zoomRegionDragging = false;
-    QPoint m_zoomRegionOrigin;
-    class QRubberBand *m_zoomRubberBand = nullptr;
+    /** One-shot rubber-band zoom (Z). */
+    ZoomRegionGesture m_zoomRegion;
 
     ItemInteractSession m_itemInteract;
 

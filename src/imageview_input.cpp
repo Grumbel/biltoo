@@ -284,8 +284,8 @@ bool ImageView::tryWheelGalleryZoom(QWheelEvent *event)
     }
     const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
     releaseStickyZoom();
-    m_fitMode = false;
-    m_fillMode = false;
+    m_framing.fitMode = false;
+    m_framing.fillMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
@@ -363,7 +363,7 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
     cancelSlideshowMotion();
     releaseStickyZoom();
-    m_fitMode = false;
+    m_framing.fitMode = false;
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
     // Soft / PreferCache / tile LOD: coalesce continuous wheel notches.
@@ -416,7 +416,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
         }
         return;
     }
-    if (m_fitMode && m_items.size() == 1) {
+    if (m_framing.fitMode && m_items.size() == 1) {
         fitItem(m_items.first(), currentFitAspectMode());
     }
 }
@@ -570,17 +570,17 @@ bool ImageView::tryMousePressCrop(QMouseEvent *event)
 
 bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
 {
-    if (!(m_zoomRegionArmed || (isWorkspaceMode() && m_tool == Tool::Zoom))
+    if (!(m_zoomRegion.armed || (isWorkspaceMode() && m_tool == Tool::Zoom))
         || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_zoomRegionDragging = true;
-    m_zoomRegionOrigin = event->pos();
-    if (!m_zoomRubberBand) {
-        m_zoomRubberBand = new QRubberBand(QRubberBand::Rectangle, viewport());
+    m_zoomRegion.dragging = true;
+    m_zoomRegion.origin = event->pos();
+    if (!m_zoomRegion.rubberBand) {
+        m_zoomRegion.rubberBand = new QRubberBand(QRubberBand::Rectangle, viewport());
     }
-    m_zoomRubberBand->setGeometry(QRect(m_zoomRegionOrigin, QSize()));
-    m_zoomRubberBand->show();
+    m_zoomRegion.rubberBand->setGeometry(QRect(m_zoomRegion.origin, QSize()));
+    m_zoomRegion.rubberBand->show();
     event->accept();
     return true;
 }
@@ -644,11 +644,11 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
         || !PagePath::isPageRef(classicPath())) {
         return false;
     }
-    if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
-        const bool hadShow = m_showTextRegions;
-        m_showTextRegions = true;
+    if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
+        const bool hadShow = m_textLayer.showRegions;
+        m_textLayer.showRegions = true;
         refreshTextLayer();
-        m_showTextRegions = hadShow;
+        m_textLayer.showRegions = hadShow;
     }
     int page = 0;
     QString uri;
@@ -669,10 +669,10 @@ bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
         || !PagePath::isPageRef(classicPath())) {
         return false;
     }
-    m_textRubberbanding = true;
-    m_textRubberOrigin = event->pos();
-    m_textRubberRect = QRect(event->pos(), QSize());
-    m_textSelectedRegions.clear();
+    m_textLayer.rubberbanding = true;
+    m_textLayer.rubberOrigin = event->pos();
+    m_textLayer.rubberRect = QRect(event->pos(), QSize());
+    m_textLayer.selectedRegions.clear();
     setCursor(Qt::CrossCursor);
     viewport()->update();
     event->accept();
@@ -1003,10 +1003,10 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
 {
-    if (!m_textRubberbanding || !(event->buttons() & Qt::LeftButton)) {
+    if (!m_textLayer.rubberbanding || !(event->buttons() & Qt::LeftButton)) {
         return false;
     }
-    m_textRubberRect = QRect(m_textRubberOrigin, event->pos()).normalized();
+    m_textLayer.rubberRect = QRect(m_textLayer.rubberOrigin, event->pos()).normalized();
     viewport()->update();
     event->accept();
     return true;
@@ -1015,15 +1015,15 @@ bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
 void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
-    if (isImageMode() && !m_crop.mode && !m_attention.mode && !m_textRubberbanding
+    if (isImageMode() && !m_crop.mode && !m_attention.mode && !m_textLayer.rubberbanding
         && !m_panning && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(classicPath())) {
-        if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
+        if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
             const ThumtooCache::PageTextLayer cached =
                 ThumtooCache::cachedPageTextLayer(classicPath());
             if (!cached.regions.isEmpty()) {
-                m_textLayer = cached;
-                m_textLayerPath = classicPath();
+                m_textLayer.layer = cached;
+                m_textLayer.layerPath = classicPath();
             }
         }
         int page = 0;
@@ -1043,12 +1043,12 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
         } else if (m_hoverEdge == EdgeZone::None) {
             setCursor(m_imageModeLeftDragPan ? Qt::OpenHandCursor : Qt::ArrowCursor);
         }
-        if (tip != m_linkHoverTip) {
-            m_linkHoverTip = tip;
+        if (tip != m_textLayer.linkHoverTip) {
+            m_textLayer.linkHoverTip = tip;
             emit statusChanged();
         }
-    } else if (!m_linkHoverTip.isEmpty() && event->buttons() == Qt::NoButton) {
-        m_linkHoverTip.clear();
+    } else if (!m_textLayer.linkHoverTip.isEmpty() && event->buttons() == Qt::NoButton) {
+        m_textLayer.linkHoverTip.clear();
         emit statusChanged();
     }
 }
@@ -1233,10 +1233,10 @@ bool ImageView::tryMouseMoveCropHover(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
 {
-    if (!m_zoomRegionDragging || !m_zoomRubberBand) {
+    if (!m_zoomRegion.dragging || !m_zoomRegion.rubberBand) {
         return false;
     }
-    m_zoomRubberBand->setGeometry(QRect(m_zoomRegionOrigin, event->pos()).normalized());
+    m_zoomRegion.rubberBand->setGeometry(QRect(m_zoomRegion.origin, event->pos()).normalized());
     event->accept();
     return true;
 }
@@ -1319,7 +1319,7 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
         rot = qRound(rot / 45.0) * 45.0;
     }
     m_itemInteract.rotateItem->setItemRotation(rot);
-    m_fitMode = false;
+    m_framing.fitMode = false;
     emit statusChanged();
     event->accept();
     return true;
@@ -1584,10 +1584,10 @@ bool ImageView::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
 {
-    if (!m_textRubberbanding || event->button() != Qt::LeftButton) {
+    if (!m_textLayer.rubberbanding || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_textRubberRect = QRect(m_textRubberOrigin, event->pos()).normalized();
+    m_textLayer.rubberRect = QRect(m_textLayer.rubberOrigin, event->pos()).normalized();
     finishTextRubberBand();
     unsetCursor();
     event->accept();
@@ -1657,21 +1657,21 @@ bool ImageView::tryMouseReleaseCrop(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 {
-    if (!m_zoomRegionDragging) {
+    if (!m_zoomRegion.dragging) {
         return false;
     }
-    const QRect viewRect = QRect(m_zoomRegionOrigin, event->pos()).normalized();
-    m_zoomRegionDragging = false;
-    if (m_zoomRubberBand) {
-        m_zoomRubberBand->hide();
+    const QRect viewRect = QRect(m_zoomRegion.origin, event->pos()).normalized();
+    m_zoomRegion.dragging = false;
+    if (m_zoomRegion.rubberBand) {
+        m_zoomRegion.rubberBand->hide();
     }
     // Ignore tiny clicks — treat as cancel rather than extreme zoom.
     if (viewRect.width() >= 8 && viewRect.height() >= 8) {
         const QRectF sceneRect = mapToScene(viewRect).boundingRect();
         if (sceneRect.isValid() && !sceneRect.isEmpty()) {
             releaseStickyZoom();
-            m_fitMode = false;
-            m_fillMode = false;
+            m_framing.fitMode = false;
+            m_framing.fillMode = false;
             fitInView(sceneRect, Qt::KeepAspectRatio);
             emit statusChanged();
         }
@@ -1845,7 +1845,7 @@ bool ImageView::tryKeyPressCrop(QKeyEvent *event)
 
 bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
 {
-    if (event->key() != Qt::Key_Escape || !(m_zoomRegionArmed || m_zoomRegionDragging)) {
+    if (event->key() != Qt::Key_Escape || !(m_zoomRegion.armed || m_zoomRegion.dragging)) {
         return false;
     }
     cancelZoomRegion();

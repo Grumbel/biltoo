@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1258-view-framing-text-zoom.** ViewFraming + TextLayerSession + ZoomRegionGesture.
+Prior: **1257**.
+
+### Change
+- `ViewFraming` + `StickyZoomKind`: fit/fill, sticky zoom, pan anchor, preserved scale.
+- `TextLayerSession`: page text layer, search, rubber select, link tip.
+- `ZoomRegionGesture`: Z-tool rubber-band zoom (QRubberBand on view).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1258-view-framing-text-zoom.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1257-page-guide-item-interact-hud.** PageGuide + ItemInteract + HudFlash.
 Prior: **1256**.
 

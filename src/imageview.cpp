@@ -918,7 +918,7 @@ int ImageView::pendingDecodeCount() const
 
 Qt::AspectRatioMode ImageView::currentFitAspectMode() const
 {
-    return m_fillMode ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio;
+    return m_framing.fillMode ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio;
 }
 
 

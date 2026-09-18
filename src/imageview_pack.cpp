@@ -390,7 +390,7 @@ void ImageView::setLayoutMode(LayoutMode mode)
         if (!m_items.isEmpty()) {
             m_scene->setSceneRect(m_scene->itemsBoundingRect().adjusted(-64, -64, 64, 64));
         }
-        m_fitMode = false;
+        m_framing.fitMode = false;
         emit statusChanged();
         return;
     }
@@ -608,7 +608,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     if (verticalScrollBarPolicy() != savedVBar) {
         setVerticalScrollBarPolicy(savedVBar);
     }
-    m_fitMode = true;
+    m_framing.fitMode = true;
     // Keep the guard until after statusChanged so slots cannot re-enter layout.
     emit statusChanged();
     m_applyingLayout = false;

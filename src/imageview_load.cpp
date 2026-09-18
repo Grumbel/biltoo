@@ -1245,7 +1245,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 || qAbs(double(sizeBefore.width()) / qMax(1, sizeBefore.height())
                         - double(targetSize.width()) / qMax(1, targetSize.height()))
                        > 0.02;
-            if (needFit || m_stickyZoomEnabled || m_havePreservedViewScale) {
+            if (needFit || m_framing.stickyZoomEnabled || m_framing.havePreservedViewScale) {
                 // Aspect change, sticky mode, or free-zoom preserve across files.
                 resetImageModeItemPlacement(item);
                 applyImageModeFraming(item);
@@ -2388,8 +2388,8 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
     if (!m_items.isEmpty()) {
         if (m_items.first()->path() != path) {
             captureStickyPanAnchor(m_items.first());
-        } else if (m_stickyZoomEnabled
-                   && m_stickyZoomKind != StickyZoomKind::Fit) {
+        } else if (m_framing.stickyZoomEnabled
+                   && m_framing.stickyZoomKind != StickyZoomKind::Fit) {
             // Same path rebuild: keep looking where we are now.
             captureStickyPanAnchor(m_items.first());
         }
@@ -2435,7 +2435,7 @@ void ImageView::seedEmptyWorkspaceFromReplace(const QString &path, const QImage 
         return;
     }
     item->setSelected(true);
-    m_fitMode = true;
+    m_framing.fitMode = true;
     fitItem(item, currentFitAspectMode());
     emit statusChanged();
 }
@@ -2946,8 +2946,8 @@ bool ImageView::loadImage(const QString &path)
 {
     setClassicPath(path);
     clearTextSelection();
-    m_linkHoverTip.clear();
-    if (m_showTextRegions || !m_textSearchQuery.isEmpty()) {
+    m_textLayer.linkHoverTip.clear();
+    if (m_textLayer.showRegions || !m_textLayer.searchQuery.isEmpty()) {
         refreshTextLayer();
     }
     m_lastLoadError.clear();

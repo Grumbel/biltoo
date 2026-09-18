@@ -167,14 +167,14 @@ void ImageView::applyToolDragMode()
 
 void ImageView::clearFitFillModes()
 {
-    m_fitMode = false;
-    m_fillMode = false;
+    m_framing.fitMode = false;
+    m_framing.fillMode = false;
 }
 
 void ImageView::enableFitMode()
 {
-    m_fitMode = true;
-    m_fillMode = false;
+    m_framing.fitMode = true;
+    m_framing.fillMode = false;
 }
 
 
@@ -278,8 +278,8 @@ void ImageView::prepareImageModeCanvas()
     }
     // Drop large Gallery/Workspace scene rects so fitInView centres cleanly.
     m_scene->setSceneRect(QRectF());
-    m_fitMode = true;
-    m_fillMode = false;
+    m_framing.fitMode = true;
+    m_framing.fillMode = false;
 }
 
 void ImageView::prepareGalleryCanvas()
@@ -296,8 +296,8 @@ void ImageView::prepareGalleryCanvas()
         verticalScrollBar()->setValue(0);
     }
     m_scene->setSceneRect(QRectF());
-    m_fitMode = true;
-    m_fillMode = false;
+    m_framing.fitMode = true;
+    m_framing.fillMode = false;
     // Force a blank pass before items are re-packed.
     viewport()->update();
 }

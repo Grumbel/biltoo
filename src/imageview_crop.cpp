@@ -664,7 +664,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     // m_crop.mode true before fitItem so layout uses orient-only full size.
     m_crop.mode = true;
     if (isImageMode()) {
-        m_fitMode = true;
+        m_framing.fitMode = true;
         fitItem(item, currentFitAspectMode());
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
@@ -808,7 +808,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         rematerializeItemContent(item, app);
     }
     if (isImageMode()) {
-        m_fitMode = true;
+        m_framing.fitMode = true;
         fitItem(item, currentFitAspectMode());
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
@@ -861,7 +861,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
         ThumtooCache::clearContentAppearance(item->path());
     }
     if (isImageMode()) {
-        m_fitMode = true;
+        m_framing.fitMode = true;
         fitItem(item, currentFitAspectMode());
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
@@ -1355,7 +1355,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
             item->setItemRotation(m_crop.rotation);
             updateWorkspaceSceneRect();
         } else if (isImageMode()) {
-            m_fitMode = true;
+            m_framing.fitMode = true;
             fitItem(item, currentFitAspectMode());
         } else if (isGalleryMode()) {
             applyLayout(GalleryPackReason::ContentChange);
@@ -1389,7 +1389,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
 
     // Reset / full frame: keep full pixels; clear session crop metadata.
     if (isImageMode()) {
-        m_fitMode = true;
+        m_framing.fitMode = true;
         fitItem(item, currentFitAspectMode());
     } else if (isWorkspaceMode()) {
         // Drop the enter-time crop-frame offset; restore pre-crop pose.
