@@ -38,4 +38,32 @@ Zone zoneAt(const QPoint &viewPos, int viewportWidth, int viewportHeight,
     return Zone::None;
 }
 
+
+ChromeLayout chromeLayout(Zone zone, const QRect &viewport, int zoneW, int zoneH,
+                          int buttonRadius, int margin)
+{
+    ChromeLayout layout;
+    const int r = buttonRadius;
+    const int w = viewport.width();
+    const int h = viewport.height();
+    switch (zone) {
+    case Zone::GalleryReturn:
+        layout.fillRect = QRect(0, 0, w, zoneH);
+        layout.buttonCenter = QPoint(w / 2, margin + r);
+        break;
+    case Zone::Previous:
+        layout.fillRect = QRect(0, 0, zoneW, h);
+        layout.buttonCenter = QPoint(margin + r, h / 2);
+        break;
+    case Zone::Next:
+        layout.fillRect = QRect(w - zoneW, 0, zoneW, h);
+        layout.buttonCenter = QPoint(w - margin - r, h / 2);
+        break;
+    case Zone::None:
+    default:
+        break;
+    }
+    return layout;
+}
+
 } // namespace EdgeNavPolicy

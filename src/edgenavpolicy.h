@@ -5,6 +5,7 @@
 #define EDGENAVPOLICY_H
 
 #include <QPoint>
+#include <QRect>
 
 /**
  * Pure Image-mode edge chrome geometry (prev / next / gallery return).
@@ -32,6 +33,20 @@ int zoneHeight(int viewportHeight);
  */
 Zone zoneAt(const QPoint &viewPos, int viewportWidth, int viewportHeight,
             bool galleryReturnAvailable, bool imageModeNavEnabled);
+
+/** Gradient fill + chevron button centre for a hovered edge zone. */
+struct ChromeLayout {
+    QRect fillRect;
+    QPoint buttonCenter;
+};
+
+/**
+ * Layout for paint: gradient strip and button centre in viewport coords.
+ * @p zoneW / @p zoneH from zoneWidth / zoneHeight.
+ * Button radius is caller-owned (paint uses 22); margin is 10.
+ */
+ChromeLayout chromeLayout(Zone zone, const QRect &viewport, int zoneW, int zoneH,
+                          int buttonRadius = 22, int margin = 10);
 
 } // namespace EdgeNavPolicy
 

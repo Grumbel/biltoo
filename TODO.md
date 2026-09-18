@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1286-edge-nav-chrome-layout.** Pure edge chrome fill/button layout for paint.
+Prior: **1285**.
+
+### Change
+- `EdgeNavPolicy::ChromeLayout` + `chromeLayout(zone, viewport, zoneW, zoneH)`.
+- `drawEdgeAffordances` uses layout for fill rect and button centre; still paints gradients/chevrons.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1286-edge-nav-chrome-layout.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1285-motion-scroll-chrome.** Extract MotionScrollChrome for Ken Burns bar policies.
 Prior: **1284**.
 

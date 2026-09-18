@@ -74,7 +74,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **DisplayEdgePolicy**: pure long-edge coverage, ladder native cap, sample-covers-native,
   soft cell clamp, screen longPx → needEdge.
 - **SoftDisplayPolicy**: worker LQIP / host-soft underlay selection (no soft encode).
-- **EdgeNavPolicy**: pure Image-mode edge chrome hit-test (prev/next/gallery return).
+- **EdgeNavPolicy**: pure Image-mode edge chrome hit-test + paint layout (fill/button centre).
 - **MotionScrollChrome**: saved scrollbar policies while Ken Burns underlay is active.
 - **GallerySoftBook** path reset + native-decode set API; SoftDisplayPolicy gallery LQIP gates.
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "edgenavpolicy.h"
 #include <QElapsedTimer>
 #include <QClipboard>
 #include <QGuiApplication>
@@ -28,11 +29,30 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
         return;
     }
 
-    const QRect vr = viewport()->rect();
-    painter.setRenderHint(QPainter::Antialiasing, true);
+    EdgeNavPolicy::Zone zone = EdgeNavPolicy::Zone::None;
+    switch (m_hoverEdge) {
+    case EdgeZone::Previous:
+        zone = EdgeNavPolicy::Zone::Previous;
+        break;
+    case EdgeZone::Next:
+        zone = EdgeNavPolicy::Zone::Next;
+        break;
+    case EdgeZone::GalleryReturn:
+        zone = EdgeNavPolicy::Zone::GalleryReturn;
+        break;
+    default:
+        return;
+    }
 
+    const QRect vr = viewport()->rect();
+    const EdgeNavPolicy::ChromeLayout layout = EdgeNavPolicy::chromeLayout(
+        zone, vr, edgeZoneWidth(), edgeZoneHeight());
+    if (layout.fillRect.isEmpty()) {
+        return;
+    }
+
+    painter.setRenderHint(QPainter::Antialiasing, true);
     const int r = 22;
-    constexpr int kEdgeMargin = 10;
 
     auto drawChevronButton = [&](int cx, int cy, auto buildChevron) {
         painter.setPen(Qt::NoPen);
@@ -46,41 +66,31 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
         painter.strokePath(chevron, pen);
     };
 
-    if (m_hoverEdge == EdgeZone::GalleryReturn) {
-        const int zone = edgeZoneHeight();
-        QLinearGradient grad(0, 0, 0, zone);
+    QLinearGradient grad;
+    if (zone == EdgeNavPolicy::Zone::GalleryReturn) {
+        grad = QLinearGradient(0, 0, 0, layout.fillRect.height());
         grad.setColorAt(0.0, QColor(0, 0, 0, 90));
         grad.setColorAt(1.0, QColor(0, 0, 0, 0));
-        painter.fillRect(QRect(0, 0, vr.width(), zone), grad);
-        const int cx = vr.center().x();
-        const int cy = kEdgeMargin + r;
+    } else if (zone == EdgeNavPolicy::Zone::Previous) {
+        grad = QLinearGradient(0, 0, layout.fillRect.width(), 0);
+        grad.setColorAt(0.0, QColor(0, 0, 0, 90));
+        grad.setColorAt(1.0, QColor(0, 0, 0, 0));
+    } else {
+        grad = QLinearGradient(layout.fillRect.left(), 0, layout.fillRect.right(), 0);
+        grad.setColorAt(0.0, QColor(0, 0, 0, 0));
+        grad.setColorAt(1.0, QColor(0, 0, 0, 90));
+    }
+    painter.fillRect(layout.fillRect, grad);
+
+    const int cx = layout.buttonCenter.x();
+    const int cy = layout.buttonCenter.y();
+    if (zone == EdgeNavPolicy::Zone::GalleryReturn) {
         drawChevronButton(cx, cy, [](QPainterPath &chevron, int px, int py) {
             chevron.moveTo(px - 10, py + 5);
             chevron.lineTo(px, py - 6);
             chevron.lineTo(px + 10, py + 5);
         });
-        return;
-    }
-
-    const int zone = edgeZoneWidth();
-    const int cy = vr.center().y();
-    QLinearGradient grad;
-    if (m_hoverEdge == EdgeZone::Previous) {
-        grad = QLinearGradient(0, 0, zone, 0);
-        grad.setColorAt(0.0, QColor(0, 0, 0, 90));
-        grad.setColorAt(1.0, QColor(0, 0, 0, 0));
-        painter.fillRect(QRect(0, 0, zone, vr.height()), grad);
-    } else {
-        grad = QLinearGradient(vr.width() - zone, 0, vr.width(), 0);
-        grad.setColorAt(0.0, QColor(0, 0, 0, 0));
-        grad.setColorAt(1.0, QColor(0, 0, 0, 90));
-        painter.fillRect(QRect(vr.width() - zone, 0, zone, vr.height()), grad);
-    }
-
-    const int cx = (m_hoverEdge == EdgeZone::Previous)
-                       ? (kEdgeMargin + r)
-                       : (vr.width() - kEdgeMargin - r);
-    if (m_hoverEdge == EdgeZone::Previous) {
+    } else if (zone == EdgeNavPolicy::Zone::Previous) {
         drawChevronButton(cx, cy, [](QPainterPath &chevron, int px, int py) {
             chevron.moveTo(px + 5, py - 10);
             chevron.lineTo(px - 6, py);
