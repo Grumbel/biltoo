@@ -2,6 +2,39 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1180-tile-service-central.** Tile service via coordinator + unstick LQIP.
+Prior: **1179**.
+
+### Problem
+Tile logic split across ImageItem paint/prepare/tick, coordinator, gallery decode
+watchdogs. Cells stayed on LQIP/blank: (1) deferred `QTimer::singleShot` repaint,
+(2) ItemCoordinateCache kept LQIP pixmap over tiles, (3) `tileLodWanted` needed
+thumtoo size before layout size counted.
+
+### Centralization
+- **TileLoadCoordinator**: only policy owner — collect, prioritize zero-tile first,
+  budget, call `ImageItem::tickTileLod`.
+- **ImageItem::tickTileLod**: sole per-item service (prepare + pump/issue + immediate
+  update; clear pixmap cache when tiles land).
+- **Paint**: draw plan only — no scheduling.
+
+### Fixes
+- Immediate `update()` when tiles land (no deferred singleShot)
+- Clear pixmap when applied > 0 so LQIP cache cannot cover tiles
+- `tileLodWanted` / prepare fall back to `imageSize()` when probe pending
+- Up to 4 targets when any cell has zero tiles; 8ms debounce
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1180-tile-service-central.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1179-paint-skip-progressive.** Paint no longer re-plans every frame while climbing.
 Prior: **1178**.
 

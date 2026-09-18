@@ -12,15 +12,17 @@ class ImageItem;
 class ImageView;
 
 /**
- * Sole owner of Gallery/Image tile *issue* policy for an ImageView.
+ * Sole owner of Gallery/Image tile *load* policy for an ImageView.
  *
- * ImageItems hold TileLodController for viewport plan + paint only. They must
- * not decide global priority. This coordinator:
- *   1. Collects candidates (tileLodWanted, in view, not suppressed).
- *   2. Prioritizes finishing coarse / incomplete coverage before upres.
- *   3. Splits a global issue budget and calls ImageItem::tickTileLod(share).
+ * All tile issue / progressive climb / per-item tick routing goes through here.
+ * ImageItem::tickTileLod is the only per-item entry (prepare + pump + issue +
+ * repaint). Paint only draws the current DrawPlan — no scheduling.
  *
- * Call only from the GUI thread (ImageView::tickPrimaryTileLod).
+ *   1. Collect viewport hits (gallery screen-edge or tileLodWanted).
+ *   2. Prioritize cells with zero tiles (LQIP/blank) before upres.
+ *   3. Split budget; call ImageItem::tickTileLod(share).
+ *
+ * GUI thread only (ImageView::tickPrimaryTileLod).
  */
 class TileLoadCoordinator
 {

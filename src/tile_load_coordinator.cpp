@@ -135,14 +135,14 @@ void TileLoadCoordinator::tick(int globalBudget)
 
     // Coalesce scroll storms — multiple decode-window refreshes per frame.
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-    if (m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 12) {
+    if (m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 8) {
         return;
     }
     m_lastTickMs = nowMs;
 
     QElapsedTimer wall;
     wall.start();
-    constexpr qint64 kWallMs = 3;
+    constexpr qint64 kWallMs = 4;
 
     QRectF sceneVis;
     if (m_view->scene()) {
@@ -157,8 +157,15 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
     sortByPolicy(cands);
 
-    // Few targets per tick; rest wait for the next debounced tick.
-    constexpr int kMaxTargets = 2;
+    // Prefer draining cells with zero tiles first (stuck LQIP / blank).
+    int needTiles = 0;
+    for (const Cand &c : cands) {
+        if (!c.hasAnyTile) {
+            ++needTiles;
+        }
+    }
+    // More targets when many cells are empty; still capped for GUI budget.
+    const int kMaxTargets = needTiles > 0 ? 4 : 2;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }

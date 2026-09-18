@@ -1384,7 +1384,12 @@ bool ImageItem::tileLodWanted() const
     // Interactive request_tiles encodes on miss (JPEG DCT shrink for scale>0).
     // Requiring hasDurableTiles forced PreferCache/Full whole-frame climbs
     // (often →2048) before any tile cell could run — redundant with the tile path.
-    const QSize native = tileNativeSize();
+    // Prefer thumtoo size; fall back to layout imageSize so Gallery can enter
+    // the tile band before the size probe completes (otherwise LQIP forever).
+    QSize native = tileNativeSize();
+    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+        native = imageSize();
+    }
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;
     }
@@ -1438,7 +1443,13 @@ void ImageItem::prepareTileLodPlan()
     if (!tileLodWanted()) {
         return;
     }
-    const QSize native = tileNativeSize();
+    QSize native = tileNativeSize();
+    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+        native = imageSize();
+    }
+    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+        return;
+    }
     if (!m_tileLod) {
         m_tileLod = std::make_unique<tilelod::TileLodController>();
         m_tileLod->setPath(m_path);
@@ -1500,17 +1511,17 @@ void ImageItem::prepareTileLod()
 
 void ImageItem::tickTileLod(int budget)
 {
+    // Sole per-item tile service entry (called only from TileLoadCoordinator).
     // Leave tile band: do not pump/issue on a stale deep-zoom viewport.
-    // (Previously prepareTileLod returned early but tick still ran on m_tileLod.)
     if (!tileLodWanted()) {
-        // Gallery: restore ItemCoordinateCache after leaving tile inspection.
         if (!m_interactive && cacheMode() == QGraphicsItem::NoCache
             && hasDisplayPixels()) {
             syncGalleryScrollCache();
         }
         return;
     }
-    // Gallery tile cells: plan changes often — keep NoCache while in the band.
+    // Gallery tile cells: plan changes often — keep NoCache while in the band
+    // so ItemCoordinateCache cannot freeze an LQIP pixmap over live tiles.
     if (!m_interactive && cacheMode() != QGraphicsItem::NoCache) {
         setCacheMode(QGraphicsItem::NoCache);
     }
@@ -1519,37 +1530,19 @@ void ImageItem::tickTileLod(int budget)
         return;
     }
     const int applied = m_tileLod->tick(budget);
-    // Repaint when new cells land, or when the plan changed (pan/zoom needs
-    // parent UV stand-ins without waiting for completions). Do not update on
-    // every 250ms heartbeat while covered — that defeated DeviceCoordinateCache
-    // in Gallery and burned CPU with no visual change.
     const std::uint64_t gen =
         m_tileLod->session() ? m_tileLod->session()->generation() : 0;
     if (applied > 0 || gen != m_tileLodLastUpdateGen) {
         m_tileLodLastUpdateGen = gen;
-        // Coalesce many completions in one event-loop turn into one update().
-        if (!m_tileLodRepaintQueued) {
-            m_tileLodRepaintQueued = true;
-            // ImageItem is QGraphicsItem, not QObject — queue on the app.
-            QGraphicsScene *sc = scene();
-            QObject *ctx = sc ? static_cast<QObject *>(sc)
-                              : static_cast<QObject *>(QCoreApplication::instance());
-            // Capture lifetime flag: ImageItem is not QObject, so the functor
-            // can outlive *this when the scene is cleared or the item is deleted.
-            std::shared_ptr<bool> alive = m_tileLodAlive;
-            QTimer::singleShot(0, ctx, [this, sc, alive]() {
-                if (!alive || !*alive) {
-                    return;
-                }
-                // Drop if item left the scene (reparented) without destruction.
-                if (sc && scene() != sc) {
-                    m_tileLodRepaintQueued = false;
-                    return;
-                }
-                m_tileLodRepaintQueued = false;
-                update();
-            });
+        // Immediate repaint when tiles land — deferred singleShot left cells on
+        // LQIP/blank until an unrelated relayout. Drop any stale pixmap cache.
+        if (!m_interactive) {
+            setCacheMode(QGraphicsItem::NoCache);
+            if (!pixmap().isNull() && applied > 0) {
+                setPixmap(QPixmap());
+            }
         }
+        update();
     }
 }
 
