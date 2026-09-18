@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1118-appearance-by-locator-id.** Appearance keyed by thumtoo locator.id (biltoo DB).
+Prior: **1117**.
+
+### Design
+Appearance is a **biltoo** concern (crop/flip/grade), not thumtoo pixels.
+Identity is the **Store locator rowid** for the session URI — no sha256, no
+path-mtime synthetic keys.
+
+- DB: `$XDG_STATE_HOME/biltoo/locator_appearance.sqlite3`
+- Table: `locator_appearance(locator_id INTEGER PRIMARY KEY, …)`
+- Resolve: path → URI → `Client::store().find_locator` → `locator.id`
+
+Requires a locator row (after probe/prepare). No locator → no durable appearance.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1118-appearance-by-locator-id.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1117-path-identity-default.** Appearance keys path+size+mtime by default; content hash optional.
 Prior: **1116**.
 

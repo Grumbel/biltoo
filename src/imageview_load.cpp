@@ -389,7 +389,7 @@ void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
     for (int i = 0; i < n; ++i) {
         m_appearanceSeedAttempted.remove(ids.at(i));
     }
-    // Small sessions: fine on GUI (few stats). Large sessions: pathContentId +
+    // Small sessions: fine on GUI (few stats). Large sessions: locatorId +
     // appearance SQLite used to run O(n) on the GUI during open and freeze the
     // event loop while the HUD still said "Reading file info…".
     if (n <= 24) {
@@ -414,7 +414,7 @@ void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
         hits.reserve(pathsCopy.size());
         // Every examined sid must be marked attempted on the GUI (including
         // load miss / identity) so wantAppearanceForItem does not re-drive
-        // pathContentId on every paint.
+        // locatorId on every paint.
         QVector<SessionImageId> attempted;
         attempted.reserve(pathsCopy.size());
         for (int i = 0; i < pathsCopy.size(); ++i) {
@@ -454,7 +454,7 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
     if (sid == kInvalidSessionImageId || path.isEmpty()) {
         return;
     }
-    // One attempt per session id — archive/miss paths must not re-hit pathContentId
+    // One attempt per session id — archive/miss paths must not re-hit locatorId
     // on every paint via wantAppearanceForItem.
     if (m_appearanceSeedAttempted.contains(sid)) {
         return;
@@ -484,7 +484,7 @@ void ImageView::applyStoredContentAppearanceSeed(SessionImageId sid, const QStri
         return;
     }
     // Worker path may not have marked attempted yet; mark here so paint does not
-    // re-drive pathContentId via wantAppearanceForItem.
+    // re-drive locatorId via wantAppearanceForItem.
     m_appearanceSeedAttempted.insert(sid);
     if (m_appearance.contains(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of

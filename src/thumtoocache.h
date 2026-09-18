@@ -395,10 +395,8 @@ struct StoredContentAppearance {
 };
 
 /**
- * Stable appearance key for @p path (sha256:<hex> form for AppearanceStore).
- * Default: path + size + mtime (+ page/member) — no file-byte checksum.
- * Set BILTOO_CONTENT_HASH=1 for optional full-file SHA-256 (cached; recomputed
- * only when size/mtime change). Empty if path cannot be identified.
+ * Debug string for the thumtoo Store locator.id bound to @p path (empty if none).
+ * Appearance is keyed by that locator rowid, not a content hash.
  */
 QString contentIdForPath(const QString &path);
 

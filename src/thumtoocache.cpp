@@ -15,6 +15,8 @@
 #include <QCoreApplication>
 #include <QObject>
 #include <QFileInfo>
+#include <QDir>
+#include <QDateTime>
 #include <QPainter>
 #include <QPen>
 #include <QFont>
@@ -36,6 +38,7 @@
 #include <filesystem>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <atomic>
 #include <string>
 #include <span>
@@ -77,6 +80,7 @@
 #define BILTOO_HAVE_THUMTOO_LQIP 1
 #endif
 
+#include <sqlite3.h>
 #include <condition_variable>
 #include <list>
 #include <memory>
@@ -2882,243 +2886,130 @@ bool appearanceDebug()
 
 void appearanceLog(const QString &msg)
 {
-    // Always use qWarning so it shows without QT_LOGGING_RULES tweaks.
     qWarning().noquote() << QStringLiteral("[appearance]") << msg;
 }
 
-thumtoo::AppearanceStore &appearanceStore()
+/** Biltoo-owned appearance DB keyed by thumtoo locator.id (not content hashes). */
+sqlite3 *appearanceDb()
 {
-    // Non-throwing open; invalid store → load/save become no-ops.
-    static thumtoo::AppearanceStore store = []() {
-        auto s = thumtoo::AppearanceStore::open();
-        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_APPEARANCE")) {
-            qWarning().noquote() << QStringLiteral("[appearance] store open valid=")
-                                 << s.valid()
-                                 << QStringLiteral("db=")
-                                 << QString::fromStdString(s.db_path().string());
+    static sqlite3 *db = []() -> sqlite3 * {
+        QString root;
+        if (const char *xdg = std::getenv("XDG_STATE_HOME"); xdg && xdg[0]) {
+            root = QString::fromLocal8Bit(xdg) + QStringLiteral("/biltoo");
+        } else if (const char *home = std::getenv("HOME"); home && home[0]) {
+            root = QString::fromLocal8Bit(home)
+                + QStringLiteral("/.local/state/biltoo");
+        } else {
+            root = QStringLiteral(".local/state/biltoo");
         }
-        return s;
+        QDir().mkpath(root);
+        const QString path = root + QStringLiteral("/locator_appearance.sqlite3");
+        sqlite3 *out = nullptr;
+        if (sqlite3_open(path.toUtf8().constData(), &out) != SQLITE_OK) {
+            if (out) {
+                sqlite3_close(out);
+            }
+            return nullptr;
+        }
+        sqlite3_exec(out, "PRAGMA journal_mode=WAL;", nullptr, nullptr, nullptr);
+        sqlite3_exec(out, "PRAGMA busy_timeout=5000;", nullptr, nullptr, nullptr);
+        const char *ddl =
+            "CREATE TABLE IF NOT EXISTS locator_appearance ("
+            "  locator_id INTEGER PRIMARY KEY,"
+            "  updated_unix INTEGER NOT NULL,"
+            "  content_h_flip INTEGER NOT NULL DEFAULT 0,"
+            "  content_v_flip INTEGER NOT NULL DEFAULT 0,"
+            "  content_quarter_turns INTEGER NOT NULL DEFAULT 0,"
+            "  has_crop INTEGER NOT NULL DEFAULT 0,"
+            "  crop_x INTEGER,"
+            "  crop_y INTEGER,"
+            "  crop_w INTEGER,"
+            "  crop_h INTEGER,"
+            "  crop_source_w INTEGER,"
+            "  crop_source_h INTEGER,"
+            "  crop_rotation REAL NOT NULL DEFAULT 0,"
+            "  grade_brightness INTEGER,"
+            "  grade_contrast INTEGER,"
+            "  grade_saturation INTEGER,"
+            "  grade_hue INTEGER,"
+            "  grade_gamma INTEGER,"
+            "  grade_invert INTEGER"
+            ");";
+        if (sqlite3_exec(out, ddl, nullptr, nullptr, nullptr) != SQLITE_OK) {
+            sqlite3_close(out);
+            return nullptr;
+        }
+        if (appearanceDebug()) {
+            appearanceLog(QStringLiteral("db open %1").arg(path));
+        }
+        return out;
     }();
-    return store;
+    return db;
 }
 
-std::string pathContentId(const QString &path)
+/**
+ * Resolve session path → thumtoo Store locator.id.
+ * No file hashing: identity is the locator row that already represents the URI.
+ */
+std::optional<std::int64_t> locatorIdForPath(const QString &path)
 {
     if (path.isEmpty()) {
+        return std::nullopt;
+    }
+    // Session path → URI string cache (cheap).
+    static QHash<QString, std::int64_t> idCache;
+    static std::mutex idMu;
+    {
+        std::lock_guard lock(idMu);
+        const auto it = idCache.constFind(path);
+        if (it != idCache.cend() && it.value() > 0) {
+            return it.value();
+        }
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return std::nullopt;
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return std::nullopt;
+    }
+    std::optional<std::int64_t> id;
+    try {
+        if (auto loc = c->store().find_locator(uri)) {
+            if (loc->id > 0) {
+                id = loc->id;
+            }
+        }
+    } catch (...) {
+        return std::nullopt;
+    }
+    if (id) {
+        std::lock_guard lock(idMu);
+        idCache.insert(path, *id);
         if (appearanceDebug()) {
-            appearanceLog(QStringLiteral("pathContentId reject: empty path"));
-        }
-        return {};
-    }
-    // Allow "file:///..." but reject unknown compound URIs.
-    QString local = path;
-    if (local.startsWith(QStringLiteral("file:"))) {
-        local = QUrl(local).toLocalFile();
-    }
-    QString fileForStat = local;
-    int page1 = 0;
-    QString archiveMember;
-    if (PagePath::isPageRef(local)) {
-        const PagePath::Ref ref = PagePath::parse(local);
-        if (!ref.valid || ref.page < 1 || ref.pdfPath.isEmpty()) {
-            if (appearanceDebug()) {
-                appearanceLog(QStringLiteral("pathContentId reject: invalid page ref path=%1")
-                                  .arg(path));
-            }
-            return {};
-        }
-        fileForStat = ref.pdfPath;
-        page1 = ref.page;
-    } else if (ArchivePath::isArchiveRef(local)) {
-        const ArchivePath::Ref ref = ArchivePath::parse(local);
-        if (!ref.valid || ref.archivePath.isEmpty() || ref.memberPath.isEmpty()) {
-            if (appearanceDebug()) {
-                appearanceLog(QStringLiteral("pathContentId reject: invalid archive ref path=%1")
-                                  .arg(path));
-            }
-            return {};
-        }
-        fileForStat = ref.archivePath;
-        archiveMember = ref.memberPath;
-    } else if (PagePath::isPdfImageRef(local) || local.contains(QStringLiteral("//"))) {
-        static QSet<QString> s_compoundRejectLogged;
-        if (appearanceDebug() && !s_compoundRejectLogged.contains(path)) {
-            s_compoundRejectLogged.insert(path);
-            appearanceLog(QStringLiteral("pathContentId reject: compound/non-page ref path=%1")
+            appearanceLog(QStringLiteral("locator id=%1 path=%2")
+                              .arg(*id)
                               .arg(path));
-        }
-        return {};
-    }
-
-    // Identity is path + size + mtime (+ page/member). Default does NOT read
-    // file bytes — appearance rows are keyed to the Store/path identity, not a
-    // content checksum. Optional BILTOO_CONTENT_HASH=1 hashes file bytes (still
-    // cached; only recomputed when size/mtime change).
-    const QFileInfo fi(fileForStat);
-    const qint64 size = fi.size();
-    const QDateTime mtime = fi.lastModified();
-    if (size <= 0 && !mtime.isValid()) {
-        if (appearanceDebug()) {
-            appearanceLog(QStringLiteral("pathContentId reject: no stat path=%1")
-                              .arg(fileForStat));
-        }
-        return {};
-    }
-    const QString abs = fi.absoluteFilePath();
-    QString cacheKey = abs;
-    if (page1 > 0) {
-        cacheKey += QStringLiteral("#page=") + QString::number(page1);
-    } else if (!archiveMember.isEmpty()) {
-        cacheKey += QStringLiteral("#archive:") + archiveMember;
-    }
-
-    struct CacheEntry {
-        qint64 size = -1;
-        QDateTime mtime;
-        std::string id;
-    };
-    static QHash<QString, CacheEntry> compoundCache;
-    static QHash<QString, CacheEntry> outerFileHashCache; // content-hash mode only
-    static std::mutex cacheMu;
-
-    {
-        std::lock_guard lock(cacheMu);
-        const auto it = compoundCache.constFind(cacheKey);
-        if (it != compoundCache.cend() && it->size == size && it->mtime == mtime) {
-            return it->id;
-        }
-    }
-
-    const bool contentHash = []() {
-        const char *e = std::getenv("BILTOO_CONTENT_HASH");
-        return e && e[0] && e[0] != '0';
-    }();
-
-    std::string id;
-    QString hashStage;
-
-    if (!contentHash) {
-        // Path-identity key: SHA-256 of metadata only (no disk read of payload).
-        // AppearanceStore still wants sha256:<64hex>; this is a stable key, not a
-        // content checksum.
-        QByteArray material = abs.toUtf8();
-        material += '|';
-        material += QByteArray::number(size);
-        material += '|';
-        material += QByteArray::number(mtime.isValid() ? mtime.toMSecsSinceEpoch() : qint64(0));
-        if (page1 > 0) {
-            material += "|page:";
-            material += QByteArray::number(page1);
-        } else if (!archiveMember.isEmpty()) {
-            material += "|archive:";
-            material += archiveMember.toUtf8();
-        }
-        const QByteArray dig = QCryptographicHash::hash(material, QCryptographicHash::Sha256)
-                                   .toHex();
-        id = thumtoo::normalize_content_id(
-            std::string(dig.constData(), static_cast<size_t>(dig.size())));
-        hashStage = QStringLiteral("path-identity");
-    } else {
-        // Optional content checksum of the outer file; one hash per size/mtime.
-        std::string outerId;
-        {
-            std::lock_guard lock(cacheMu);
-            const auto it = outerFileHashCache.constFind(abs);
-            if (it != outerFileHashCache.cend() && it->size == size
-                && it->mtime == mtime && !it->id.empty()) {
-                outerId = it->id;
-                hashStage = QStringLiteral("content-hash-cache");
-            }
-        }
-        if (outerId.empty()) {
-            try {
-                const QByteArray utf8 = abs.toUtf8();
-                const std::string hex = thumtoo::sha256_file_hex(
-                    std::filesystem::path(std::string(
-                        utf8.constData(), static_cast<size_t>(utf8.size()))));
-                if (!hex.empty()) {
-                    outerId = thumtoo::normalize_content_id(hex);
-                    hashStage = QStringLiteral("content-hash");
-                }
-            } catch (...) {
-                outerId.clear();
-            }
-            if (outerId.empty()) {
-                QFile f(abs);
-                if (f.open(QIODevice::ReadOnly)) {
-                    QCryptographicHash h(QCryptographicHash::Sha256);
-                    QByteArray buf;
-                    buf.resize(256 * 1024);
-                    while (!f.atEnd()) {
-                        const qint64 n = f.read(buf.data(), buf.size());
-                        if (n <= 0) {
-                            break;
-                        }
-                        h.addData(QByteArray(buf.constData(), int(n)));
-                    }
-                    const QByteArray dig = h.result().toHex();
-                    outerId = thumtoo::normalize_content_id(
-                        std::string(dig.constData(), static_cast<size_t>(dig.size())));
-                    hashStage = QStringLiteral("content-hash-qt");
-                }
-            }
-            if (!outerId.empty()) {
-                std::lock_guard lock(cacheMu);
-                CacheEntry e;
-                e.size = size;
-                e.mtime = mtime;
-                e.id = outerId;
-                outerFileHashCache.insert(abs, e);
-            }
-        }
-        id = outerId;
-        if (!id.empty() && page1 > 0) {
-            const QByteArray material =
-                QByteArray::fromStdString(id) + ":page:" + QByteArray::number(page1);
-            const QByteArray dig =
-                QCryptographicHash::hash(material, QCryptographicHash::Sha256).toHex();
-            id = thumtoo::normalize_content_id(
-                std::string(dig.constData(), static_cast<size_t>(dig.size())));
-        } else if (!id.empty() && !archiveMember.isEmpty()) {
-            const QByteArray material =
-                QByteArray::fromStdString(id) + ":archive:" + archiveMember.toUtf8();
-            const QByteArray dig =
-                QCryptographicHash::hash(material, QCryptographicHash::Sha256).toHex();
-            id = thumtoo::normalize_content_id(
-                std::string(dig.constData(), static_cast<size_t>(dig.size())));
-        }
-    }
-
-    {
-        std::lock_guard lock(cacheMu);
-        CacheEntry e;
-        e.size = size;
-        e.mtime = mtime;
-        e.id = id;
-        compoundCache.insert(cacheKey, e);
-    }
-    if (appearanceDebug()) {
-        if (id.empty()) {
-            appearanceLog(
-                QStringLiteral("pathContentId EMPTY path=%1 abs=%2 size=%3 stage=%4")
-                    .arg(path, abs)
-                    .arg(size)
-                    .arg(hashStage));
-        } else {
-            appearanceLog(QStringLiteral("pathContentId ok path=%1 id=%2 stage=%3")
-                              .arg(path, QString::fromStdString(id), hashStage));
         }
     }
     return id;
 }
 
-
 } // namespace
 
 QString contentIdForPath(const QString &path)
 {
-    const std::string id = pathContentId(path);
-    return id.empty() ? QString() : QString::fromStdString(id);
+    // Debug/compat: string form of locator id (not a content hash).
+    if (auto id = locatorIdForPath(path)) {
+        return QString::number(*id);
+    }
+    return {};
 }
 
 bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
@@ -3127,163 +3018,210 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
         return false;
     }
     *out = StoredContentAppearance{};
-    const std::string id = pathContentId(path);
-    if (id.empty()) {
-        // Once per path — seed/wantAppearance used to log every frame.
-        static QSet<QString> s_loadSkipLogged;
-        if (appearanceDebug() && !s_loadSkipLogged.contains(path)) {
-            s_loadSkipLogged.insert(path);
-            appearanceLog(QStringLiteral("load SKIP: no content id path=%1").arg(path));
-        }
-        return false;
-    }
-    if (!appearanceStore().valid()) {
+    const auto lid = locatorIdForPath(path);
+    if (!lid) {
         if (appearanceDebug()) {
-            appearanceLog(QStringLiteral("load SKIP: store invalid"));
+            appearanceLog(QStringLiteral("load SKIP: no locator path=%1").arg(path));
         }
         return false;
     }
-    const auto got = appearanceStore().get(id);
-    if (!got) {
+    sqlite3 *db = appearanceDb();
+    if (!db) {
+        return false;
+    }
+    sqlite3_stmt *st = nullptr;
+    if (sqlite3_prepare_v2(
+            db,
+            "SELECT content_h_flip, content_v_flip, content_quarter_turns,"
+            " has_crop, crop_x, crop_y, crop_w, crop_h,"
+            " crop_source_w, crop_source_h, crop_rotation,"
+            " grade_brightness, grade_contrast, grade_saturation,"
+            " grade_hue, grade_gamma, grade_invert"
+            " FROM locator_appearance WHERE locator_id = ?1;",
+            -1, &st, nullptr)
+        != SQLITE_OK) {
+        return false;
+    }
+    sqlite3_bind_int64(st, 1, *lid);
+    if (sqlite3_step(st) != SQLITE_ROW) {
+        sqlite3_finalize(st);
         if (appearanceDebug()) {
-            appearanceLog(QStringLiteral("load MISS id=%1 path=%2")
-                              .arg(QString::fromStdString(id), path));
+            appearanceLog(QStringLiteral("load MISS locator=%1 path=%2")
+                              .arg(*lid)
+                              .arg(path));
         }
         return false;
     }
-    if (appearanceDebug()) {
-        appearanceLog(QStringLiteral("load HIT id=%1 turns=%2 h=%3 v=%4")
-                          .arg(QString::fromStdString(id))
-                          .arg(got->content_quarter_turns)
-                          .arg(got->content_h_flip)
-                          .arg(got->content_v_flip));
+    out->contentHFlip = sqlite3_column_int(st, 0) != 0;
+    out->contentVFlip = sqlite3_column_int(st, 1) != 0;
+    out->contentQuarterTurns = sqlite3_column_int(st, 2);
+    out->hasCrop = sqlite3_column_int(st, 3) != 0;
+    if (out->hasCrop) {
+        out->cropRect = QRect(sqlite3_column_int(st, 4), sqlite3_column_int(st, 5),
+                              sqlite3_column_int(st, 6), sqlite3_column_int(st, 7));
+        out->cropSourceSize =
+            QSize(sqlite3_column_int(st, 8), sqlite3_column_int(st, 9));
+        out->cropRotation = sqlite3_column_double(st, 10);
     }
-    out->contentHFlip = got->content_h_flip;
-    out->contentVFlip = got->content_v_flip;
-    out->contentQuarterTurns = got->content_quarter_turns;
-    out->hasCrop = got->has_crop;
-    if (got->has_crop) {
-        out->cropRect = QRect(got->crop_x, got->crop_y, got->crop_w, got->crop_h);
-        out->cropSourceSize = QSize(got->crop_source_w, got->crop_source_h);
-        out->cropRotation = got->crop_rotation;
-    }
-    if (got->grade_brightness || got->grade_contrast || got->grade_saturation
-        || got->grade_hue || got->grade_gamma
-#if defined(THUMTOO_APPEARANCE_GRADE_INVERT)
-        || got->grade_invert
-#endif
-    ) {
+    const bool anyGrade = sqlite3_column_type(st, 11) != SQLITE_NULL
+        || sqlite3_column_type(st, 12) != SQLITE_NULL
+        || sqlite3_column_type(st, 13) != SQLITE_NULL
+        || sqlite3_column_type(st, 14) != SQLITE_NULL
+        || sqlite3_column_type(st, 15) != SQLITE_NULL
+        || sqlite3_column_type(st, 16) != SQLITE_NULL;
+    if (anyGrade) {
         out->hasGrade = true;
-        out->gradeBrightness = got->grade_brightness.value_or(0);
-        // ColorAdjustments uses contrast/saturation 100 = identity. Missing
-        // optional fields must not collapse to 0 (which blacks out tiles).
-        out->gradeContrast = got->grade_contrast.value_or(100);
-        out->gradeSaturation = got->grade_saturation.value_or(100);
-        out->gradeHue = got->grade_hue.value_or(0);
-        // Stored as percent ×100 of gamma (100 → 1.0).
-        out->gradeGamma = got->grade_gamma.value_or(100);
-#if defined(THUMTOO_APPEARANCE_GRADE_INVERT)
-        out->gradeInvert = got->grade_invert.value_or(0) != 0;
-#endif
+        out->gradeBrightness =
+            sqlite3_column_type(st, 11) != SQLITE_NULL ? sqlite3_column_int(st, 11) : 0;
+        out->gradeContrast =
+            sqlite3_column_type(st, 12) != SQLITE_NULL ? sqlite3_column_int(st, 12) : 100;
+        out->gradeSaturation =
+            sqlite3_column_type(st, 13) != SQLITE_NULL ? sqlite3_column_int(st, 13) : 100;
+        out->gradeHue =
+            sqlite3_column_type(st, 14) != SQLITE_NULL ? sqlite3_column_int(st, 14) : 0;
+        out->gradeGamma =
+            sqlite3_column_type(st, 15) != SQLITE_NULL ? sqlite3_column_int(st, 15) : 100;
+        out->gradeInvert =
+            sqlite3_column_type(st, 16) != SQLITE_NULL && sqlite3_column_int(st, 16) != 0;
     }
-    // Row present = success. Callers use isIdentity() / hasContentAppearance
-    // to decide whether to apply. Returning false on identity blocked nothing
-    // useful and confused "miss" vs "identity row".
+    sqlite3_finalize(st);
+    if (appearanceDebug()) {
+        appearanceLog(QStringLiteral("load HIT locator=%1 path=%2").arg(*lid).arg(path));
+    }
     return true;
 }
 
 void saveContentAppearance(const QString &path, const StoredContentAppearance &app)
 {
-    const std::string id = pathContentId(path);
-    if (id.empty()) {
+    const auto lid = locatorIdForPath(path);
+    if (!lid) {
         if (appearanceDebug()) {
-            appearanceLog(QStringLiteral("save SKIP: no content id for path=%1 (h=%2 v=%3 turns=%4 crop=%5)")
-                              .arg(path)
-                              .arg(app.contentHFlip)
-                              .arg(app.contentVFlip)
-                              .arg(app.contentQuarterTurns)
-                              .arg(app.hasCrop));
+            appearanceLog(QStringLiteral("save SKIP: no locator path=%1").arg(path));
         }
         return;
     }
-    if (!appearanceStore().valid()) {
-        if (appearanceDebug()) {
-            appearanceLog(QStringLiteral("save SKIP: store invalid path=%1").arg(path));
+    sqlite3 *db = appearanceDb();
+    if (!db) {
+        return;
+    }
+    if (app.isIdentity()) {
+        sqlite3_stmt *st = nullptr;
+        if (sqlite3_prepare_v2(
+                db, "DELETE FROM locator_appearance WHERE locator_id = ?1;", -1, &st,
+                nullptr)
+            == SQLITE_OK) {
+            sqlite3_bind_int64(st, 1, *lid);
+            sqlite3_step(st);
+            sqlite3_finalize(st);
         }
         return;
     }
-    thumtoo::ContentAppearance a;
-    a.content_h_flip = app.contentHFlip;
-    a.content_v_flip = app.contentVFlip;
-    a.content_quarter_turns = app.contentQuarterTurns;
-    a.has_crop = app.hasCrop && !app.cropRect.isEmpty();
-    if (a.has_crop) {
-        a.crop_x = app.cropRect.x();
-        a.crop_y = app.cropRect.y();
-        a.crop_w = app.cropRect.width();
-        a.crop_h = app.cropRect.height();
-        a.crop_source_w = app.cropSourceSize.width();
-        a.crop_source_h = app.cropSourceSize.height();
-        a.crop_rotation = app.cropRotation;
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    sqlite3_stmt *st = nullptr;
+    if (sqlite3_prepare_v2(
+            db,
+            "INSERT INTO locator_appearance("
+            " locator_id, updated_unix, content_h_flip, content_v_flip,"
+            " content_quarter_turns, has_crop, crop_x, crop_y, crop_w, crop_h,"
+            " crop_source_w, crop_source_h, crop_rotation,"
+            " grade_brightness, grade_contrast, grade_saturation, grade_hue,"
+            " grade_gamma, grade_invert)"
+            " VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)"
+            " ON CONFLICT(locator_id) DO UPDATE SET"
+            " updated_unix=excluded.updated_unix,"
+            " content_h_flip=excluded.content_h_flip,"
+            " content_v_flip=excluded.content_v_flip,"
+            " content_quarter_turns=excluded.content_quarter_turns,"
+            " has_crop=excluded.has_crop,"
+            " crop_x=excluded.crop_x, crop_y=excluded.crop_y,"
+            " crop_w=excluded.crop_w, crop_h=excluded.crop_h,"
+            " crop_source_w=excluded.crop_source_w,"
+            " crop_source_h=excluded.crop_source_h,"
+            " crop_rotation=excluded.crop_rotation,"
+            " grade_brightness=excluded.grade_brightness,"
+            " grade_contrast=excluded.grade_contrast,"
+            " grade_saturation=excluded.grade_saturation,"
+            " grade_hue=excluded.grade_hue,"
+            " grade_gamma=excluded.grade_gamma,"
+            " grade_invert=excluded.grade_invert;",
+            -1, &st, nullptr)
+        != SQLITE_OK) {
+        return;
+    }
+    sqlite3_bind_int64(st, 1, *lid);
+    sqlite3_bind_int64(st, 2, now);
+    sqlite3_bind_int(st, 3, app.contentHFlip ? 1 : 0);
+    sqlite3_bind_int(st, 4, app.contentVFlip ? 1 : 0);
+    sqlite3_bind_int(st, 5, app.contentQuarterTurns);
+    const bool crop = app.hasCrop && !app.cropRect.isEmpty();
+    sqlite3_bind_int(st, 6, crop ? 1 : 0);
+    if (crop) {
+        sqlite3_bind_int(st, 7, app.cropRect.x());
+        sqlite3_bind_int(st, 8, app.cropRect.y());
+        sqlite3_bind_int(st, 9, app.cropRect.width());
+        sqlite3_bind_int(st, 10, app.cropRect.height());
+        sqlite3_bind_int(st, 11, app.cropSourceSize.width());
+        sqlite3_bind_int(st, 12, app.cropSourceSize.height());
+        sqlite3_bind_double(st, 13, app.cropRotation);
+    } else {
+        for (int i = 7; i <= 12; ++i) {
+            sqlite3_bind_null(st, i);
+        }
+        sqlite3_bind_double(st, 13, 0.0);
     }
     if (app.hasGrade) {
-        a.grade_brightness = app.gradeBrightness;
-        a.grade_contrast = app.gradeContrast;
-        a.grade_saturation = app.gradeSaturation;
-        a.grade_hue = app.gradeHue;
-        a.grade_gamma = app.gradeGamma;
-#if defined(THUMTOO_APPEARANCE_GRADE_INVERT)
-        if (app.gradeInvert) {
-            a.grade_invert = 1;
+        sqlite3_bind_int(st, 14, app.gradeBrightness);
+        sqlite3_bind_int(st, 15, app.gradeContrast);
+        sqlite3_bind_int(st, 16, app.gradeSaturation);
+        sqlite3_bind_int(st, 17, app.gradeHue);
+        sqlite3_bind_int(st, 18, app.gradeGamma);
+        sqlite3_bind_int(st, 19, app.gradeInvert ? 1 : 0);
+    } else {
+        for (int i = 14; i <= 19; ++i) {
+            sqlite3_bind_null(st, i);
         }
-#endif
     }
+    sqlite3_step(st);
+    sqlite3_finalize(st);
     if (appearanceDebug()) {
-        appearanceLog(
-            QStringLiteral("save PUT id=%1 h=%2 v=%3 turns=%4 crop=%5 identity=%6 db=%7")
-                .arg(QString::fromStdString(id))
-                .arg(a.content_h_flip)
-                .arg(a.content_v_flip)
-                .arg(a.content_quarter_turns)
-                .arg(a.has_crop)
-                .arg(a.is_identity())
-                .arg(QString::fromStdString(appearanceStore().db_path().string())));
-    }
-    appearanceStore().put(id, a);
-    if (appearanceDebug()) {
-        const auto got = appearanceStore().get(id);
-        appearanceLog(QStringLiteral("save AFTER put row_present=%1 turns=%2")
-                          .arg(got.has_value())
-                          .arg(got ? got->content_quarter_turns : -1));
+        appearanceLog(QStringLiteral("save PUT locator=%1 path=%2").arg(*lid).arg(path));
     }
 }
 
 bool hasContentAppearance(const QString &path)
 {
     StoredContentAppearance app;
-    return loadContentAppearance(path, &app);
+    if (!loadContentAppearance(path, &app)) {
+        return false;
+    }
+    return !app.isIdentity();
 }
 
 void clearContentAppearance(const QString &path)
 {
-    saveContentAppearance(path, StoredContentAppearance{});
+    const auto lid = locatorIdForPath(path);
+    if (!lid) {
+        return;
+    }
+    sqlite3 *db = appearanceDb();
+    if (!db) {
+        return;
+    }
+    sqlite3_stmt *st = nullptr;
+    if (sqlite3_prepare_v2(
+            db, "DELETE FROM locator_appearance WHERE locator_id = ?1;", -1, &st,
+            nullptr)
+        == SQLITE_OK) {
+        sqlite3_bind_int64(st, 1, *lid);
+        sqlite3_step(st);
+        sqlite3_finalize(st);
+    }
 }
 
-#else // no thumtoo appearance
-
-// Compile-time: thumtoo/appearance.hpp not found — all persistence is a no-op.
-// If the DB file exists from an older build, this binary will not write to it.
+#else
 
 QString contentIdForPath(const QString &)
 {
-    static const bool once = []() {
-        qWarning().noquote()
-            << QStringLiteral("[appearance] DISABLED at compile time "
-                              "(BILTOO_HAVE_THUMTOO_APPEARANCE not set — "
-                              "rebuild biltoo against thumtoo with appearance.hpp)");
-        return true;
-    }();
-    Q_UNUSED(once);
     return {};
 }
 
@@ -3309,6 +3247,7 @@ void clearContentAppearance(const QString &)
 }
 
 #endif
+
 
 
 
