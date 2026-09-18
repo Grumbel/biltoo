@@ -1830,12 +1830,17 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
         soft = ThumtooCache::cachedLqipImage(path);
     }
     if (soft.isNull()) {
-        // Soft + PreferCache/Full via PathRaster only (contract §1).
+        // Soft + PreferCache via PathRaster. Durable tiles: SoftDisplay only
+        // (TileSynth), never Full native during slideshow.
         if (m_pathRaster) {
-            m_pathRaster->ensure(path, edge, logicalSizeForPath(path),
-                                 PathRasterService::ClimbPolicy::EscalateToFull);
+            const auto policy =
+                ThumtooCache::hasDurableTiles(path)
+                    ? PathRasterService::ClimbPolicy::SoftDisplay
+                    : PathRasterService::ClimbPolicy::EscalateToFull;
+            m_pathRaster->ensure(path, edge, logicalSizeForPath(path), policy);
         } else if (ThumtooCache::isAvailable()) {
-            (void)ThumtooCache::scheduleSoftPixels(path, ThumtooCache::kGalleryLadderEdge);
+            (void)ThumtooCache::scheduleDisplayPixels(
+                path, ThumtooCache::kGalleryLadderEdge);
         }
         return {};
     }
@@ -2516,9 +2521,13 @@ void ImageView::preloadSlideshowImage(const QString &path)
         << " edge=" << targetEdge
         << " have=" << haveEdge;
 
-    // Soft → PreferCache → Full (contract ClimbPolicy::EscalateToFull).
-    m_pathRaster->ensure(path, targetEdge, native,
-                         PathRasterService::ClimbPolicy::EscalateToFull);
+    // Soft → PreferCache; Full only when no durable tiles (slideshow paints
+    // whole-frame samples — TileSynth is enough on prepared libraries).
+    const auto policy =
+        ThumtooCache::hasDurableTiles(path)
+            ? PathRasterService::ClimbPolicy::SoftDisplay
+            : PathRasterService::ClimbPolicy::EscalateToFull;
+    m_pathRaster->ensure(path, targetEdge, native, policy);
 
     const QImage have = ImageCache::get(path);
     if (!have.isNull()) {

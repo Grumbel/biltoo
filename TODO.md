@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1142-slideshow-cache-tiles.** Slideshow: warm cache + durable tiles skip Full/soft I/O.
+Prior: **1141**.
+
+### Problem
+Slideshow still queued soft `loadThumbnail` (source open + Soft schedule) and
+`EscalateToFull` even when ImageCache covered the need or Store had durable tiles
+→ continuous Prefer/Full/native CPU on prepared libraries.
+
+### Fix
+- `scheduleSlideshowReplaceDecode`: if ImageCache covers soft/quality → deliver, no jobs.
+- `loadSoftPreviewPixels` / quality job: PreferCache only under thumtoo (no loadThumbnail).
+- Slideshow climb with `hasDurableTiles`: **SoftDisplay** (TileSynth/Prefer), not Full.
+- Placeholder / preload same policy.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1142-slideshow-cache-tiles.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1141-tiles-first-cache-hit.** Tiles-first; ImageCache cover = zero work.
 Prior: **1138**.
 

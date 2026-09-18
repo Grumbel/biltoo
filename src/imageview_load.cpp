@@ -149,6 +149,18 @@ QImage loadSoftPreviewPixels(const QString &path, int softEdge)
     if (ImageCache::adequate(preview, softEdge)) {
         return preview;
     }
+    // Durable tiles / thumtoo: PreferCache (TileSynth) only — never open the
+    // source via loadThumbnail (that schedules Soft + local decode = CPU storm).
+    if (ThumtooCache::isAvailable()) {
+        (void)ThumtooCache::scheduleDisplayPixels(path, softEdge);
+        if (preview.isNull()) {
+            preview = ThumtooCache::cachedLqipImage(path);
+            if (!preview.isNull()) {
+                ImageCache::put(path, preview);
+            }
+        }
+        return preview;
+    }
     const QImage loaded = ImageLoader::loadThumbnail(path, softEdge);
     if (!loaded.isNull()
         && ImageCache::longEdge(loaded) >= ImageCache::longEdge(preview)) {
@@ -218,10 +230,19 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                 image = ImageCache::get(path);
             }
             if (!ImageCache::adequate(image, qualityEdge)) {
-                const QImage loaded = ImageLoader::loadThumbnail(path, qualityEdge);
-                if (!loaded.isNull()
-                    && ImageCache::longEdge(loaded) >= ImageCache::longEdge(image)) {
-                    image = loaded;
+                // PreferCache only when thumtoo is up — no loadThumbnail (avoids
+                // Soft-schedule + source open). Durable tiles → TileSynth.
+                if (ThumtooCache::isAvailable()) {
+                    (void)ThumtooCache::scheduleDisplayPixels(
+                        path, qMin(qualityEdge, ThumtooCache::kBatchOverviewEdge));
+                } else {
+                    const QImage loaded =
+                        ImageLoader::loadThumbnail(path, qualityEdge);
+                    if (!loaded.isNull()
+                        && ImageCache::longEdge(loaded)
+                            >= ImageCache::longEdge(image)) {
+                        image = loaded;
+                    }
                 }
             }
             if (!guard) {
@@ -1352,6 +1373,25 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
     const int roleInt = static_cast<int>(role);
     // Snapshot session appearance for the worker (crop is id-keyed, not path).
     const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
+
+    // Warm ImageCache: deliver immediately — zero PreferCache / soft encode.
+    {
+        const QImage cached = ImageCache::get(path);
+        const int have = ImageCache::longEdge(cached);
+        if (have > 0 && ImageCache::adequate(cached, softEdge)) {
+            ImageCache::put(path, cached);
+            queuePreviewLoaded(guard, path, cached, gen, roleInt);
+            if (ImageCache::adequate(cached, qualityEdge)) {
+                queueImageLoaded(guard, path, cached, gen, roleInt);
+                return;
+            }
+            if (qualityEdge > softEdge) {
+                startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge,
+                                       sessionApp);
+            }
+            return;
+        }
+    }
 
     startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
     if (qualityEdge > softEdge) {
@@ -2579,10 +2619,16 @@ void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
     }
     const int edge = cappedDisplayEdgeForPath(
         path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
-    biltooLoadDbg("escalateClimb(service) path=%s edge=%d",
-                  qPrintable(QFileInfo(path).fileName()), edge);
-    m_pathRaster->ensure(path, edge, logicalSizeForPath(path),
-                         PathRasterService::ClimbPolicy::EscalateToFull);
+    // Slideshow + durable tiles: SoftDisplay (PreferCache/TileSynth) only —
+    // EscalateToFull native decode is the CPU storm on prepared libraries.
+    const auto policy =
+        (m_slideshowProgressActive && ThumtooCache::hasDurableTiles(path))
+            ? PathRasterService::ClimbPolicy::SoftDisplay
+            : PathRasterService::ClimbPolicy::EscalateToFull;
+    biltooLoadDbg("escalateClimb(service) path=%s edge=%d policy=%d",
+                  qPrintable(QFileInfo(path).fileName()), edge,
+                  static_cast<int>(policy));
+    m_pathRaster->ensure(path, edge, logicalSizeForPath(path), policy);
 }
 
 void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &path,

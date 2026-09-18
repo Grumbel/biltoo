@@ -1,5 +1,13 @@
 # Slideshow
 
+## Warm cache / durable tiles
+
+When `ImageCache` already covers the soft or target edge, slideshow must not
+schedule soft encode or Full native decode. When the Store has a **durable tile
+pyramid**, climb policy is **SoftDisplay** (PreferCache / TileSynth) only —
+`EscalateToFull` is for cold paths without tiles.
+
+
 ## Timeline
 
 One continuous wall clock. For each slide **A**, then **B**, then **C**, …:
