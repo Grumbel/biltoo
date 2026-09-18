@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1341-climb-cropfont-materialize.** DisplayEdge climb/bind/synth, crop fonts, materialize preview.
+Prior: **1340**.
+
+### Change
+- `DisplayEdgePolicy::{escalateClimbTo,wantedBindCount,tileSynthEdge}`
+- `CropGeometry::{clampLabelPointSize,clampButtonPointSize}`; display-edge cap via `ImageCache::kDisplayMaxEdge`
+- `ContentXform::materializePreviewEdge`
+- Status quality uses `GallerySoft::maxHave`
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1341-climb-cropfont-materialize.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1340-helpers-pack-avail-maxhave.** Pure stack 1338–1339 + packAvailAxis + maxHave.
 Prior: **1334** (upstream).
 

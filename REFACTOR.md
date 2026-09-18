@@ -323,3 +323,4 @@ part of early-phase exit criteria).
 - **TextSearchPolicy**; **CanvasPatternGeometry**; **HudGeometry::wrapHudLine**.
 - **ViewTransform** significantRubber/chebyshev/sanitizeViewScale; **ContentXform::invAxisScale**; **CanvasBackground** checker; **TextLayerSession::needsLayer**.
 - Stack 1338–1339 pure helpers; **GalleryPackFit::packAvailAxis**; **GallerySoft::maxHave**.
+- **DisplayEdgePolicy** climb/bind/tileSynth; crop font clamps; materializePreviewEdge.
