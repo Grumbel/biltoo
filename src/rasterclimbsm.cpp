@@ -123,7 +123,8 @@ void Machine::noteDelivery(int requestEdge, int got, int softMax)
     // still short of host want (clamped request, or tiles assemble to overview
     // while want is Full-band). Soft-covered but short-of-want → Prefer plateau
     // so plan() escalates Full instead of re-requesting Prefer forever.
-    if (got >= kMinPreferPlateau && m_.want > softMax
+    // Use kLqipCeiling so pure LQIP never counts as a Prefer plateau.
+    if (got > kLqipCeiling && m_.want > softMax
         && !covers(got, m_.want)
         && (covers(got, softMax) || got >= softMax)) {
         m_.preferGaveUp = true;

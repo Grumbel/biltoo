@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1124-rasterclimb-lqip-compile.** Fix kMinPreferPlateau after LQIP climb change.
+Prior: **1123**.
+
+### Fix
+- `noteDelivery` mid-ladder Prefer plateau used removed `kMinPreferPlateau`.
+- Use `kLqipCeiling` so LQIP never counts as Prefer plateau (matches 1123).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1124-rasterclimb-lqip-compile.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1123-lqip-not-soft-attempted.** LQIP must not freeze soft PreferCache climb.
 Prior: **1122**.
 
