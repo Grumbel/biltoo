@@ -27,6 +27,7 @@
 #include "pathitemstatebook.h"
 #include "pendingitemappearancebook.h"
 #include "slideshowtypes.h"
+#include "motionscrollchrome.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
 #include "sessionbindbook.h"
@@ -1795,9 +1796,7 @@ private:
     /** ZoomBlur letterbox underlay cache (two slots). */
     mutable SlideshowZoomBlurState m_ssZoomBlur;
     /** Scroll policies restored when Ken Burns underlay returns. */
-    Qt::ScrollBarPolicy m_motionSavedHBarPolicy = Qt::ScrollBarAsNeeded;
-    Qt::ScrollBarPolicy m_motionSavedVBarPolicy = Qt::ScrollBarAsNeeded;
-    bool m_motionSavedBarPolicies = false;
+    MotionScrollChrome m_motionScroll;
     QTimer *m_motionTimer = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;

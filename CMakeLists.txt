@@ -165,6 +165,7 @@ add_executable(biltoo
   src/displayedgepolicy.cpp
   src/edgenavpolicy.h
   src/edgenavpolicy.cpp
+  src/motionscrollchrome.h
   src/softdisplaypolicy.h
   src/softdisplaypolicy.cpp
   src/imageview_attention.cpp

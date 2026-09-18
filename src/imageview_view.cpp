@@ -1125,17 +1125,17 @@ void ImageView::cancelSlideshowMotion()
     const bool wasMotion = m_ssDwell.motionActive;
     m_ssDwell.motionActive = false;
     m_ssDwell.motionPaused = false;
-    if (m_motionSavedBarPolicies) {
+    if (m_motionScroll.saved) {
         // freezeScrollbars may have saved Gallery AsNeeded from before the
         // session was marked running. Restoring that mid-show brings bars back.
         if (m_ssHud.progressActive) {
             setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
             setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         } else {
-            setHorizontalScrollBarPolicy(m_motionSavedHBarPolicy);
-            setVerticalScrollBarPolicy(m_motionSavedVBarPolicy);
+            setHorizontalScrollBarPolicy(m_motionScroll.savedH);
+            setVerticalScrollBarPolicy(m_motionScroll.savedV);
         }
-        m_motionSavedBarPolicies = false;
+        m_motionScroll.clear();
     }
     setSlideshowUnderlayVisible(true);
     m_ssDwell.atlas = QPixmap();
@@ -2880,11 +2880,7 @@ void ImageView::freezeScrollbarsForMotion()
 {
     // Freeze scrollbars so the view cannot re-clamp/centre while the overlay
     // path is the only thing that should move (underlay is hidden).
-    if (!m_motionSavedBarPolicies) {
-        m_motionSavedHBarPolicy = horizontalScrollBarPolicy();
-        m_motionSavedVBarPolicy = verticalScrollBarPolicy();
-        m_motionSavedBarPolicies = true;
-    }
+    m_motionScroll.capture(horizontalScrollBarPolicy(), verticalScrollBarPolicy());
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     if (horizontalScrollBar()) {

@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1285-motion-scroll-chrome.** Extract MotionScrollChrome for Ken Burns bar policies.
+Prior: **1284**.
+
+### Change
+- `MotionScrollChrome` (savedH/V, capture, clear).
+- ImageView holds `m_motionScroll`; still applies QAbstractScrollArea policies.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1285-motion-scroll-chrome.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1284-edge-nav-policy.** Pure Image-mode edge chrome zone geometry.
 Prior: **1283**.
 
