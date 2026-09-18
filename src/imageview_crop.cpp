@@ -586,7 +586,7 @@ void ImageView::requestCropFullRaster(const QString &path)
         int edge = 8192;
         const QSize native = ThumtooCache::cachedSize(path);
         if (native.isValid() && native.width() > 0 && native.height() > 0) {
-            edge = qMin(8192, ContentXform::longEdge(native));
+            edge = qMin(ImageCache::kDisplayMaxEdge, ContentXform::longEdge(native));
         }
         if (ThumtooCache::scheduleFullPixels(path, edge)) {
             return;
@@ -1685,7 +1685,7 @@ void ImageView::drawCropTextButton(QPainter &painter, const QRect &btn, CropHand
     }
     painter.setPen(text);
     QFont f = painter.font();
-    f.setPointSize(qMax(9, f.pointSize() + 1));
+    f.setPointSize(CropGeometry::clampButtonPointSize(f.pointSize()));
     f.setBold(true);
     painter.setFont(f);
     painter.drawText(btn, Qt::AlignCenter, label);
@@ -1723,7 +1723,7 @@ void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
     const QString sizeLabel = QStringLiteral("%1×%2").arg(cropW).arg(cropH);
     {
         QFont f = painter.font();
-        f.setPointSize(qMax(9, f.pointSize()));
+        f.setPointSize(CropGeometry::clampLabelPointSize(f.pointSize()));
         f.setBold(true);
         painter.setFont(f);
         const QFontMetrics fm(f);

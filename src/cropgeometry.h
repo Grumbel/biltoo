@@ -10,12 +10,23 @@
 #include <QPolygonF>
 #include <QRect>
 #include <QRectF>
+#include <QtGlobal>
 
 /**
  * Pure crop geometry and viewport chrome layout / hit-test.
  * No ImageView state — safe to unit-test and share with paint and input.
  */
 namespace CropGeometry {
+
+inline int clampLabelPointSize(int basePt)
+{
+    return qMax(9, basePt);
+}
+
+inline int clampButtonPointSize(int basePt)
+{
+    return qMax(9, basePt + 1);
+}
 
 /** Four corners of @p rect after rotation about its centre by @p degrees. */
 QPolygonF rotatedCorners(const QRectF &rect, qreal degrees);
