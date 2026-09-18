@@ -7,6 +7,7 @@
 #include "imageitem.h"
 #include "imageloader.h"
 #include "thumtoocache.h"
+#include "tilelod/tile_lod_registry.hpp"
 
 #include <QScrollBar>
 #include <QUndoStack>
@@ -84,6 +85,12 @@ void ImageView::invalidateSessionLoads()
     if (isGalleryMode()) {
         clearLiveCanvas();
     }
+    // Drop process tile RAM retained across sessions (old archive paths).
+    m_tilePrefetchSlots.clear();
+    if (m_tilePrefetchTimer) {
+        m_tilePrefetchTimer->stop();
+    }
+    tilelod::TileLodRegistry::instance().invalidateAll();
     if (m_pathRaster) {
         m_pathRaster->invalidateAll();
     }
@@ -243,6 +250,11 @@ void ImageView::clearWorkspace()
     m_galleryDeferPopulate = false;
     cancelGallerySizeResolve();
     ImageCache::clear();
+    m_tilePrefetchSlots.clear();
+    if (m_tilePrefetchTimer) {
+        m_tilePrefetchTimer->stop();
+    }
+    tilelod::TileLodRegistry::instance().invalidateAll();
     m_pathOrder.clear();
     m_sessionIdOrder.clear();
     // Path-keyed placement is legacy for unbound tiles only; drop it so a

@@ -69,6 +69,13 @@ public:
    */
   void invalidate(QString const& path);
 
+  /**
+   * Drop every path entry (session replace / new archive). Live controllers
+   * must re-acquire; retained idle tiles from the previous session must not
+   * paint under a new path list.
+   */
+  void invalidateAll();
+
   int path_refcount(QString const& path) const;
 
   /** Number of path entries currently in the registry (active + idle retained). */

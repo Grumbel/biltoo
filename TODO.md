@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1233-session-tile-registry-clear.** Session replace clears TileLodRegistry (no old-archive tiles).
+Prior: **1232**.
+
+### Bug
+Process-wide path tile RAM survived session/archive replace. Opening a new
+archive could still paint retained tiles from the previous path set (and
+prefetch controllers kept issuing into the old entries).
+
+### Fix
+- `TileLodRegistry::invalidateAll()`
+- Call from `invalidateSessionLoads` and `clearWorkspace`
+- Clear `m_tilePrefetchSlots` on session wipe
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1233-session-tile-registry-clear.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1232-image-tile-issue-budget.** Image mode issues more tile keys per tick for upres climb.
 Prior: **1231**.
 

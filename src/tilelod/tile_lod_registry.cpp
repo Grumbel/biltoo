@@ -160,6 +160,14 @@ void TileLodRegistry::invalidate(QString const& path)
   m_by_path.erase(key);
 }
 
+void TileLodRegistry::invalidateAll()
+{
+  std::lock_guard<std::mutex> lock(m_mu);
+  // Destroy sources (epoch) and path caches so in-flight completions no-op and
+  // tiles from a previous archive/session cannot be rebound.
+  m_by_path.clear();
+}
+
 int TileLodRegistry::path_refcount(QString const& path) const
 {
   if (path.isEmpty()) {
