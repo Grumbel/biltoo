@@ -28,6 +28,12 @@ inline qreal progress01(qint64 elapsedMs, int durationMs)
     return qBound(0.0, qreal(elapsedMs) / qreal(durationMs), 1.0);
 }
 
+/** Durations below 250 ms are treated as invalid → @p fallbackMs. */
+inline int sanitizeDwellDurationMs(int durationMs, int fallbackMs = 3000)
+{
+    return durationMs < 250 ? fallbackMs : durationMs;
+}
+
 /**
  * Integrate wall Δt into motion T ∈ [0,1].
  * Clocks only measure Δt; pathMs changes alter rate, not remapped progress.

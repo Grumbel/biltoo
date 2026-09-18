@@ -2682,8 +2682,8 @@ bool ImageView::paintSlideshowTiles(QPainter *painter, const QString &path,
     lod->setContentSize(native.width(), native.height(),
                         ThumtooCache::durableTileMinScale(path));
     // Full content into dest (same model as drawImage(dest, image)).
-    const double dpc = qMax(dest.width() / qMax(1.0, qreal(native.width())),
-                            dest.height() / qMax(1.0, qreal(native.height())));
+    const double dpc = SlideshowMotionGeometry::coverDevicePixelScale(
+        QSizeF(dest.width(), dest.height()), native);
     if (!tilelod::TileLodController::shouldUseTiles(dpc, longEdge)) {
         return false;
     }
@@ -2697,8 +2697,8 @@ bool ImageView::paintSlideshowTiles(QPainter *painter, const QString &path,
     }
     painter->save();
     painter->translate(dest.topLeft());
-    painter->scale(dest.width() / qMax(1.0, qreal(native.width())),
-                   dest.height() / qMax(1.0, qreal(native.height())));
+    painter->scale(SlideshowMotionGeometry::coverAxisScaleX(QSizeF(dest.size()), native),
+                   SlideshowMotionGeometry::coverAxisScaleY(QSizeF(dest.size()), native));
     const bool drew = lod->paint(painter, underlay);
     painter->restore();
     return drew;
@@ -2919,9 +2919,7 @@ void ImageView::retargetSlideshowMotionDuration(int durationMs)
     if (!m_ssDwell.motionActive || m_ssSettings.motion == SlideshowMotion::Off) {
         return;
     }
-    if (durationMs < 250) {
-        durationMs = 3000;
-    }
+    durationMs = SlideshowClocks::sanitizeDwellDurationMs(durationMs);
     qreal progress = 0.0;
     if (m_ssDwell.durationMs > 0) {
         qint64 elapsed = m_ssDwell.elapsedOffsetMs;
