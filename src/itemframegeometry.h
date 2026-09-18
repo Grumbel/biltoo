@@ -83,6 +83,23 @@ qreal trackParam(const QPointF &a, const QPointF &b, const QPointF &p);
 /** Map track parameter t to item opacity (5% … 100%). */
 qreal opacityFromTrackParam(qreal t);
 
+/** Closest point on segment a→b to @p p (uses trackParam). */
+QPointF closestPointOnSegment(const QPointF &a, const QPointF &b, const QPointF &p);
+
+/** Distance from @p p to segment a→b. */
+qreal distanceToSegment(const QPointF &a, const QPointF &b, const QPointF &p);
+
+/** Four free-rotate knob centres outside the frame (T/R/B/L). */
+void rotateHandlePoints(const FrameViewGeom &g, QPointF out[4],
+                        qreal offsetPx = kRotateOffsetPx);
+
+/**
+ * Shear diamond centres along edges (T/B/L/R order matching ShearTop…ShearRight).
+ * Offset is distance along the edge from the mid in viewport px.
+ */
+void shearHandlePoints(const FrameViewGeom &g, QPointF out[4],
+                       qreal alongPx = kHandleScreenPx * 2.2);
+
 } // namespace ItemFrameGeometry
 
 #endif // ITEMFRAMEGEOMETRY_H

@@ -768,17 +768,12 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
     auto toView = [this, view](const QPointF &local) -> QPointF {
         return QPointF(view->mapFromScene(mapToScene(local)));
     };
-    auto norm = [](QPointF v) -> QPointF {
-        const qreal len = qHypot(v.x(), v.y());
-        return len > 1e-6 ? v / len : QPointF(1, 0);
-    };
 
     const QRectF localRect = contentRect();
     const QPointF tl = toView(localRect.topLeft());
     const QPointF tr = toView(localRect.topRight());
     const QPointF br = toView(localRect.bottomRight());
     const QPointF bl = toView(localRect.bottomLeft());
-    const QPointF centerV = toView(localRect.center());
     const QPointF p = toView(itemPos);
 
     // Degenerate frame: no chrome hits (matches paint early-out).
@@ -786,38 +781,15 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
         return Handle::None;
     }
 
-    const QPointF dirTop = norm(tr - tl);
-    const QPointF dirRight = norm(br - tr);
-    const QPointF dirBottom = norm(bl - br);
-    const QPointF dirLeft = norm(tl - bl);
-    auto outward = [&](const QPointF &mid, const QPointF &along) -> QPointF {
-        QPointF n(-along.y(), along.x());
-        if (QPointF::dotProduct(n, mid - centerV) < 0) {
-            n = -n;
-        }
-        return n;
-    };
-    const QPointF midTop = (tl + tr) * 0.5;
-    const QPointF midRight = (tr + br) * 0.5;
-    const QPointF midBottom = (br + bl) * 0.5;
-    const QPointF midLeft = (bl + tl) * 0.5;
-    const QPointF outTop = outward(midTop, dirTop);
-    const QPointF outRight = outward(midRight, dirRight);
-    const QPointF outBottom = outward(midBottom, dirBottom);
-    const QPointF outLeft = outward(midLeft, dirLeft);
+    const ItemFrameGeometry::FrameViewGeom fg =
+        ItemFrameGeometry::makeFrameViewGeom(tl, tr, br, bl);
 
     // Opacity + chrome: same adaptive outside layout as paint.
     {
-        const ItemFrameGeometry::FrameViewGeom fg = ItemFrameGeometry::makeFrameViewGeom(tl, tr, br, bl);
         QPointF a, b;
         ItemFrameGeometry::opacityTrackView(fg, &a, &b);
-        const QPointF ab = b - a;
-        const qreal ab2 = QPointF::dotProduct(ab, ab);
-        qreal tt = 0.0;
-        if (ab2 > 1e-6) {
-            tt = qBound(0.0, QPointF::dotProduct(p - a, ab) / ab2, 1.0);
-        }
-        if (QLineF(p, a + ab * tt).length() <= ItemFrameGeometry::kChromeHitScreenPx) {
+        if (ItemFrameGeometry::distanceToSegment(a, b, p)
+            <= ItemFrameGeometry::kChromeHitScreenPx) {
             return Handle::OpacitySlider;
         }
 
@@ -872,10 +844,12 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
                << PointH{Handle::ScaleBottomRight, br}
                << PointH{Handle::ScaleBottomLeft, bl};
     }
-    points << PointH{Handle::RotateTop, midTop + outTop * ItemFrameGeometry::kRotateOffsetPx}
-           << PointH{Handle::RotateRight, midRight + outRight * ItemFrameGeometry::kRotateOffsetPx}
-           << PointH{Handle::RotateBottom, midBottom + outBottom * ItemFrameGeometry::kRotateOffsetPx}
-           << PointH{Handle::RotateLeft, midLeft + outLeft * ItemFrameGeometry::kRotateOffsetPx};
+    QPointF rotPts[4];
+    ItemFrameGeometry::rotateHandlePoints(fg, rotPts);
+    points << PointH{Handle::RotateTop, rotPts[0]}
+           << PointH{Handle::RotateRight, rotPts[1]}
+           << PointH{Handle::RotateBottom, rotPts[2]}
+           << PointH{Handle::RotateLeft, rotPts[3]};
     for (const PointH &ph : points) {
         const qreal d = QLineF(p, ph.c).length();
         if (d <= bestDist) {
@@ -894,34 +868,23 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
             QPointF along;
         };
         const EdgeH edges[] = {
-            {Handle::ScaleTop, midTop, dirTop},
-            {Handle::ScaleRight, midRight, dirRight},
-            {Handle::ScaleBottom, midBottom, dirBottom},
-            {Handle::ScaleLeft, midLeft, dirLeft},
+            {Handle::ScaleTop, fg.midTop, fg.dirTop},
+            {Handle::ScaleRight, fg.midRight, fg.dirRight},
+            {Handle::ScaleBottom, fg.midBottom, fg.dirBottom},
+            {Handle::ScaleLeft, fg.midLeft, fg.dirLeft},
         };
         for (const EdgeH &ed : edges) {
             const QPointF a = ed.mid - ed.along * halfLen;
             const QPointF b = ed.mid + ed.along * halfLen;
-            const QPointF ab = b - a;
-            const qreal ab2 = QPointF::dotProduct(ab, ab);
-            qreal t = 0.0;
-            if (ab2 > 1e-6) {
-                t = qBound(0.0, QPointF::dotProduct(p - a, ab) / ab2, 1.0);
-            }
-            const qreal d = QLineF(p, a + ab * t).length();
+            const qreal d = ItemFrameGeometry::distanceToSegment(a, b, p);
             if (d <= edgeHit && d <= bestDist) {
                 bestDist = d;
                 best = ed.h;
             }
         }
         // Shear diamonds: offset along each edge from mid (view space).
-        const qreal shearAlong = ItemFrameGeometry::kHandleScreenPx * 2.2;
-        const QPointF shearPts[] = {
-            midTop - dirTop * shearAlong,
-            midBottom + dirBottom * shearAlong,
-            midLeft - dirLeft * shearAlong,
-            midRight + dirRight * shearAlong,
-        };
+        QPointF shearPts[4];
+        ItemFrameGeometry::shearHandlePoints(fg, shearPts);
         const Handle shearHs[] = {
             Handle::ShearTop, Handle::ShearBottom,
             Handle::ShearLeft, Handle::ShearRight,

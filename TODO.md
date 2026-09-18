@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1315-handle-at-frame-geom.** Pure handleAt segment/rotate/shear points.
+Prior: **1314**.
+
+### Change
+- `ItemFrameGeometry::closestPointOnSegment` / `distanceToSegment`
+- `rotateHandlePoints` / `shearHandlePoints`
+- `ImageItem::handleAt` builds one `FrameViewGeom` and uses the pure helpers
+  (no duplicated mid/out/dir math).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1315-handle-at-frame-geom.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1314-opacity-shear-pure.** Pure opacity-track param and shear drag math.
 Prior: **1313**.
 

@@ -3,6 +3,7 @@
 
 #include "itemframegeometry.h"
 
+#include <QLineF>
 #include <QtMath>
 
 namespace ItemFrameGeometry {
@@ -141,6 +142,33 @@ qreal trackParam(const QPointF &a, const QPointF &b, const QPointF &p)
 qreal opacityFromTrackParam(qreal t)
 {
     return 0.05 + qBound(0.0, t, 1.0) * 0.95;
+}
+
+QPointF closestPointOnSegment(const QPointF &a, const QPointF &b, const QPointF &p)
+{
+    const qreal t = trackParam(a, b, p);
+    return a + (b - a) * t;
+}
+
+qreal distanceToSegment(const QPointF &a, const QPointF &b, const QPointF &p)
+{
+    return QLineF(p, closestPointOnSegment(a, b, p)).length();
+}
+
+void rotateHandlePoints(const FrameViewGeom &g, QPointF out[4], qreal offsetPx)
+{
+    out[0] = g.midTop + g.outTop * offsetPx;
+    out[1] = g.midRight + g.outRight * offsetPx;
+    out[2] = g.midBottom + g.outBottom * offsetPx;
+    out[3] = g.midLeft + g.outLeft * offsetPx;
+}
+
+void shearHandlePoints(const FrameViewGeom &g, QPointF out[4], qreal alongPx)
+{
+    out[0] = g.midTop - g.dirTop * alongPx;
+    out[1] = g.midBottom + g.dirBottom * alongPx;
+    out[2] = g.midLeft - g.dirLeft * alongPx;
+    out[3] = g.midRight + g.dirRight * alongPx;
 }
 
 } // namespace ItemFrameGeometry
