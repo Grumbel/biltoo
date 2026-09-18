@@ -8,7 +8,10 @@
 
 #include <QPointF>
 #include <QRectF>
+#include <QSize>
+#include <QSizeF>
 #include <QString>
+#include <QtGlobal>
 
 /**
  * Pure Ken Burns / PanScan cover destination geometry and bias-path picks.
@@ -53,6 +56,23 @@ bool attentionBiasPath(const QPointF &att01, uint seed, BiasPath *out);
 /** True when atlas vs image aspect differs by more than @p threshold (default 0.03). */
 bool aspectMismatch(qreal atlasW, qreal atlasH, qreal imageW, qreal imageH,
                     qreal threshold = 0.03);
+
+/** Uniform cover scale: max(dest/native) per axis (Full content into dest). */
+inline qreal coverDevicePixelScale(const QSizeF &dest, const QSize &native)
+{
+    return qMax(dest.width() / qMax(1.0, qreal(native.width())),
+                dest.height() / qMax(1.0, qreal(native.height())));
+}
+
+inline qreal coverAxisScaleX(const QSizeF &dest, const QSize &native)
+{
+    return dest.width() / qMax(1.0, qreal(native.width()));
+}
+
+inline qreal coverAxisScaleY(const QSizeF &dest, const QSize &native)
+{
+    return dest.height() / qMax(1.0, qreal(native.height()));
+}
 
 } // namespace SlideshowMotionGeometry
 
