@@ -2,6 +2,34 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1176-tile-progressive-rewrite.** Rewrite progressive tile scale/issue.
+Prior: **1175**.
+
+### Why
+Layered patches (cold max_scale, any-tile step, parent-chain batches, pump advance)
+left overview stuck or jumped to target. Logic was contradictory.
+
+### Model (single path)
+1. **Cold** `stable_scale = max_scale` (coarsest).
+2. **Plan** only at `stable_scale` (clamp planner min=max=held).
+3. **Issue** only `m_visible_keys` at that scale (centre-first). No parent-chain
+   batch mixing. scale-0 still waits for coarser success.
+4. **Climb** one level when `visible_keys_settled()` (every key Succeeded or
+   Failed, none InFlight/missing) — from `advance_progressive_scale` on pump/issue
+   and from `stable_request_scale` on set_viewport.
+5. **Zoom out** jumps coarse immediately; adjacent zoom-in still debounced.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1176-tile-progressive-rewrite.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1175-tile-upscale-refine.** Progressive coarse tiles never refined to target.
 Prior: **1174**.
 

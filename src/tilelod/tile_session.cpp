@@ -71,51 +71,57 @@ void TileSession::set_content_size(int width, int height, int min_scale)
 int TileSession::stable_request_scale(int desired_scale)
 {
   using clock = std::chrono::steady_clock;
+  // Clamp desired into [min, max].
+  if (desired_scale < m_min_scale) {
+    desired_scale = m_min_scale;
+  }
+  if (desired_scale > m_max_scale) {
+    desired_scale = m_max_scale;
+  }
+  m_desired_scale = desired_scale;
+
   if (!m_have_stable_scale) {
     m_have_stable_scale = true;
-    // Cold open: plan at coarsest so visible_keys are overview cells first.
-    // Refines toward desired after issue/pump lands Succeeded tiles.
-    m_stable_scale =
-        (m_max_scale > desired_scale) ? m_max_scale : desired_scale;
+    // Cold: always open at coarsest so the first paint is a cheap overview.
+    m_stable_scale = m_max_scale;
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
     return m_stable_scale;
   }
-  // Progressive refine: only step one level finer once the held scale has
-  // Succeeded tiles (do not race toward desired every set_viewport tick).
-  if (m_stable_scale > desired_scale) {
-    m_pending_scale = desired_scale;
-    bool held_ready = false;
-    for (auto const& [k, e] : m_cache->map()) {
-      if (k.scale == m_stable_scale && e.state == TileState::Succeeded
-          && e.bitmap.valid()) {
-        held_ready = true;
-        break;
-      }
-    }
-    if (held_ready) {
-      m_stable_scale = m_stable_scale - 1;
-      m_pending_since = clock::now();
-    }
-    return m_stable_scale;
-  }
-  if (desired_scale == m_stable_scale) {
-    m_pending_scale = desired_scale;
-    return m_stable_scale;
-  }
-  // Zoom out (desired coarser / higher scale): commit immediately.
-  // Holding the fine grid while the content viewport expands floods the
-  // request queue with high-res cells instead of a few overview tiles.
+
+  // Zoom out (desired coarser = higher scale number): jump immediately.
   if (desired_scale > m_stable_scale) {
     m_stable_scale = desired_scale;
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
     return m_stable_scale;
   }
-  // Zoom in (desired finer): large jumps commit; adjacent steps hold briefly
-  // so wheel zoom does not enqueue a full intermediate grid every frame.
+
+  // Progressive climb toward a finer desired (lower scale number).
+  // Step at most one level per call, and only when the *current* plan's
+  // visible keys at the held scale have all settled (Succeeded or Failed).
+  // Do not step on "any tile at scale anywhere in the shared cache" — that
+  // raced ahead of coverage and also skipped levels.
+  if (m_stable_scale > desired_scale) {
+    m_pending_scale = desired_scale;
+    if (visible_keys_settled()) {
+      m_stable_scale = m_stable_scale - 1;
+      m_pending_since = clock::now();
+    }
+    return m_stable_scale;
+  }
+
+  // At desired (or finer hold from prior): adjacent zoom-in debounce.
+  if (desired_scale == m_stable_scale) {
+    m_pending_scale = desired_scale;
+    return m_stable_scale;
+  }
+  // desired < stable should have been handled above; remaining is zoom-in
+  // from a previous hold where stable was finer? Treat as approach to desired.
   int const delta = m_stable_scale - desired_scale;
   if (delta > 1) {
+    // Large jump toward finer: still progressive one step if climbing up from
+    // coarse; if somehow stable is finer than desired, snap out already done.
     m_stable_scale = desired_scale;
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
@@ -138,24 +144,40 @@ bool TileSession::request_scale_holding() const
   return m_have_stable_scale && m_desired_scale != m_stable_scale;
 }
 
+bool TileSession::visible_keys_settled() const
+{
+  // No plan yet: stay on current scale until set_viewport builds keys.
+  if (m_visible_keys.empty()) {
+    return false;
+  }
+  for (TileKey const& key : m_visible_keys) {
+    CacheEntry const* e = m_cache->find(key);
+    if (!e) {
+      return false;  // not requested yet
+    }
+    if (e->state == TileState::InFlight) {
+      return false;
+    }
+    // Succeeded or Failed: settled (Failed must not block climb forever).
+  }
+  return true;
+}
+
 bool TileSession::advance_progressive_scale()
 {
-  if (!m_have_stable_scale || m_stable_scale <= m_desired_scale) {
+  if (!m_have_stable_scale || m_content_w <= 0) {
     return false;
   }
-  bool held_ready = false;
-  for (auto const& [k, e] : m_cache->map()) {
-    if (k.scale == m_stable_scale && e.state == TileState::Succeeded
-        && e.bitmap.valid()) {
-      held_ready = true;
-      break;
-    }
-  }
-  if (!held_ready) {
+  if (m_stable_scale <= m_desired_scale) {
     return false;
   }
-  --m_stable_scale;
-  // Re-plan visible keys at the new held scale (same viewport).
+  if (!visible_keys_settled()) {
+    return false;
+  }
+  int const prev = m_stable_scale;
+  m_stable_scale = m_stable_scale - 1;
+
+  // Re-plan at the new held scale with the current viewport.
   PlannerInput in;
   in.content_w = m_content_w;
   in.content_h = m_content_h;
@@ -175,7 +197,7 @@ bool TileSession::advance_progressive_scale()
     cancel_obsolete();
     m_draw_plan_dirty = true;
   }
-  return true;
+  return m_stable_scale != prev;
 }
 
 void TileSession::set_viewport(Viewport const& vp, double margin_content)
@@ -309,18 +331,19 @@ int TileSession::issue_requests(int budget)
     return 0;
   }
 
-  // If coarse level is complete, step toward desired before building the batch.
+  // Climb one level if the current plan is fully settled.
   (void)advance_progressive_scale();
 
-  // Progressive retrieval: always issue coarsest needed tiles first, then
-  // refine toward the exact visible scale. Display is instant (overview) and
-  // sharpens as finer cells land. scale 0 = full-res (expensive) is last.
+  // Issue only keys in the current plan (m_visible_keys at m_target_scale).
+  // Coarser parents are drawn as stand-ins via draw_plan; requesting every
+  // parent chain in the same batch mixed overview with target and felt like
+  // "proper res first". Progressive scale already walks max → desired.
   struct Scored {
     TileKey key;
     double dist2 = 0;
   };
-  std::vector<Scored> missing_exact;
-  missing_exact.reserve(m_visible_keys.size());
+  std::vector<Scored> missing;
+  missing.reserve(m_visible_keys.size());
 
   double const cx = m_viewport.content_rect.x + m_viewport.content_rect.w * 0.5;
   double const cy = m_viewport.content_rect.y + m_viewport.content_rect.h * 0.5;
@@ -334,92 +357,43 @@ int TileSession::issue_requests(int budget)
     if (e && e->state == TileState::Failed && e->generation == m_generation) {
       continue;
     }
+    // scale 0 = full-res: require at least one coarser success first
+    // (unless the pyramid is single-level).
+    if (key.scale == 0 && m_max_scale > 0 && !has_succeeded_scale_ge(1)) {
+      continue;
+    }
     RectI const cr = tile_content_rect(m_content_w, m_content_h, key);
     double const tx = cr.x + cr.w * 0.5;
     double const ty = cr.y + cr.h * 0.5;
     double const dx = tx - cx;
     double const dy = ty - cy;
-    missing_exact.push_back({key, dx * dx + dy * dy});
+    missing.push_back({key, dx * dx + dy * dy});
   }
 
-  // Candidate set = exact missing + parent chain up to max_scale.
-  struct Cand {
-    TileKey key;
-    int scale = 0;   // higher = coarser (issue first)
-    double dist2 = 0;
-  };
-  std::vector<Cand> cands;
-  cands.reserve(missing_exact.size() * 4);
-  std::set<TileKey> seen;
-
-  auto add_cand = [&](TileKey const& key, double dist2) {
-    if (!seen.insert(key).second) {
-      return;
-    }
-    CacheEntry const* e = m_cache->find(key);
-    if (e && (e->state == TileState::Succeeded ||
-              e->state == TileState::InFlight)) {
-      return;
-    }
-    if (e && e->state == TileState::Failed && e->generation == m_generation) {
-      return;
-    }
-    cands.push_back({key, key.scale, dist2});
-  };
-
-  for (Scored const& s : missing_exact) {
-    add_cand(s.key, s.dist2);
-    for (int d = 1; s.key.scale + d <= m_max_scale; ++d) {
-      add_cand(parent_key(s.key, d), s.dist2);
-    }
-  }
-
-  // Coarser scale first; among same scale, centre of viewport first.
-  std::sort(cands.begin(), cands.end(), [](Cand const& a, Cand const& b) {
-    if (a.scale != b.scale) {
-      return a.scale > b.scale;
-    }
-    return a.dist2 < b.dist2;
-  });
-
-  // scale 0 = full-res decode. Do not issue until some coarser tile exists
-  // (single-level pyramids excepted).
-  auto may_issue = [&](TileKey const& key) -> bool {
-    if (key.scale > 0 || m_max_scale <= 0) {
-      return true;
-    }
-    return has_succeeded_scale_ge(1);
-  };
+  std::sort(missing.begin(), missing.end(),
+            [](Scored const& a, Scored const& b) { return a.dist2 < b.dist2; });
 
   std::vector<TileKey> batch;
   batch.reserve(static_cast<size_t>(budget));
   std::uint64_t const gen = m_generation;
 
-  for (Cand const& c : cands) {
+  for (Scored const& s : missing) {
     if (static_cast<int>(batch.size()) >= budget) {
       break;
     }
-    if (!may_issue(c.key)) {
-      continue;
-    }
-    CacheEntry const* e = m_cache->find(c.key);
+    CacheEntry const* e = m_cache->find(s.key);
     if (e && (e->state == TileState::Succeeded ||
               e->state == TileState::InFlight)) {
       continue;
     }
-    if (e && e->state == TileState::Failed && e->generation == m_generation) {
-      continue;
-    }
-    m_cache->set_in_flight(c.key, gen);
-    batch.push_back(c.key);
+    m_cache->set_in_flight(s.key, gen);
+    batch.push_back(s.key);
   }
 
   if (batch.empty()) {
     return 0;
   }
 
-  // Capture generation + inbox (not `this`) so late worker callbacks are safe
-  // after TileSession destruction.
   std::shared_ptr<CompletionInbox> inbox = m_inbox;
   m_source->request(batch, [inbox, gen](TileKey key,
                                         std::optional<TileBitmap> bitmap) {

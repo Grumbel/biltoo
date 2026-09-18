@@ -148,7 +148,9 @@ private:
   static constexpr std::chrono::milliseconds kScaleHold{150};
 
   int stable_request_scale(int desired_scale);
-  /** Step held scale toward desired once held scale has Succeeded tiles. */
+  /** True when every visible key is Succeeded or Failed (not InFlight/missing). */
+  bool visible_keys_settled() const;
+  /** Step held scale toward desired once visible keys at held scale settled. */
   bool advance_progressive_scale();
 
   TileMemoryCache m_owned_cache;
