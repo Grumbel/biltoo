@@ -249,7 +249,7 @@ zoom first.
 ## biltoo-1028
 
 - Image mode items are **not** interactive; `tileLodWanted` must not gate on chrome.
-- Gallery soft cells: still soft-only (`galleryCellSize` non-empty).
+- Gallery cells: LQIP underlay + tiles when on-screen edge > 32 px (soft PreferCache removed).
 - Workspace: same tick path as Image for selection / up to 8 items.
 - Crossing into tile band cancels PathRaster PreferCache for that path.
 

@@ -661,7 +661,8 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
         return false;
     }
     if (act.type == AT::ScheduleClimb) {
-        if (!m_pathRaster) {
+        // Gallery never PreferCache/soft climb — LQIP + tiles only.
+        if (isGalleryMode() || !m_pathRaster) {
             return false;
         }
         const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : fallbackNeedEdge;
@@ -671,6 +672,9 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
         return false;
     }
     if (act.type == AT::ScheduleAsyncMaterialize) {
+        if (isGalleryMode()) {
+            return false;
+        }
         scheduleAsyncHostRematerialize(
             path, item->sessionId(),
             wantAppearanceForItem(item, item->sessionId()));
@@ -732,7 +736,8 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
                 scheduleAsyncHostRematerialize(
                     path, item->sessionId(),
                     wantAppearanceForItem(item, item->sessionId()));
-            } else if (again.type == AT::ScheduleClimb && m_pathRaster) {
+            } else if (again.type == AT::ScheduleClimb && m_pathRaster
+                       && !isGalleryMode()) {
                 const int need = again.climbNeedEdge > 0 ? again.climbNeedEdge
                                                          : fallbackNeedEdge;
                 if (need > 0) {

@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1193-gallery-no-pathraster-ensure.** Gallery hard-blocks PathRaster ensure/climb.
+Prior: **1192**.
+
+### Change
+- `applyDisplaySurfaceAction`: no `ScheduleClimb` / `ScheduleAsyncMaterialize` / follow-up ensure in Gallery mode.
+- Docs: TILE_LOD note on Gallery soft cells corrected.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1193-gallery-no-pathraster-ensure.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1192-gallery-lqip-only-deliveries.** Gallery ignores soft PreferCache deliveries; LQIP-only underlay.
 Prior: **1191**.
 
