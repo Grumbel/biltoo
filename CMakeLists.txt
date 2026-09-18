@@ -127,6 +127,7 @@ add_executable(biltoo
   src/imageview_crop.cpp
   src/cropgeometry.cpp
   src/cropgeometry.h
+  src/cropsession.h
   src/imageview_attention.cpp
   src/imageview_load.cpp
   src/tile_load_coordinator.cpp

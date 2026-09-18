@@ -3012,7 +3012,7 @@ void ImageView::syncImageFocusSurfaceState()
     const bool pending =
         m_pathRaster && !path.isEmpty() && m_pathRaster->isClimbPending(path);
     syncItemDisplaySurface(item, -1, pending);
-    if (m_cropDraftSampleFrozen && isCropDraftLockedPath(path)) {
+    if (m_crop.draftSampleFrozen && isCropDraftLockedPath(path)) {
         m_displaySurfaces.setFrozen(m_imageFocusSurface, true);
     }
 }

@@ -7,6 +7,7 @@
 #include "imageview_types.h"
 #include "gallerysizeresolve.h"
 #include "tileneighborprefetch.h"
+#include "cropsession.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
@@ -684,7 +685,7 @@ public:
      * session already holds native pixels.
      */
     QImage fullRasterForEdit(const QString &path) const;
-    bool isCropMode() const { return m_cropMode; }
+    bool isCropMode() const { return m_crop.active(); }
     void toggleCropMode();
 
     /**
@@ -1615,42 +1616,11 @@ private:
      */
     void recordSessionCrop(ImageItem *item, const QRectF &localCrop);
 
-    /** Crop-mode interaction (viewport chrome; item-local draft rect). */
-    enum class CropHandle {
-        None,
-        /** Translate the draft rect without changing size. */
-        Move,
-        /** Rotate the draft about its centre. */
-        Rotate,
-        Left,
-        Right,
-        Top,
-        Bottom,
-        TopLeft,
-        TopRight,
-        BottomLeft,
-        BottomRight,
-        /**
-         * Toggle: when on, the draft may extend outside the image (pad on apply).
-         * When off, the draft is clamped to the image bounds.
-         */
-        ExpandToggle,
-        /**
-         * Shrink the draft to content: median border colour as background,
-         * trim empty margins (GIMP-style autocrop). Axis-aligned.
-         */
-        Auto,
-        /** Clears the draft rect to the full image (reset session crop on apply). */
-        Reset,
-        /** Leave crop mode and discard the draft. */
-        Cancel,
-        /** Leave crop mode and commit the draft (same as Enter). */
-        Close
-    };
+    // CropHandle is defined in cropsession.h
     ImageItem *cropTargetItem() const;
     void ensureCropRectValid();
-    QRectF cropRectItemLocal() const { return m_cropRect; }
-    qreal cropRotation() const { return m_cropRotation; }
+    QRectF cropRectItemLocal() const { return m_crop.rect; }
+    qreal cropRotation() const { return m_crop.rotation; }
     /** Crop corners in item-local space (rotation about rect centre). */
     QPolygonF cropPolygonItemLocal() const;
     QRectF cropRectView() const;
@@ -1660,7 +1630,7 @@ private:
     QRect cropResetButtonView() const;
     QRect cropCancelButtonView() const;
     QRect cropCloseButtonView() const;
-    bool cropAllowExpand() const { return m_cropAllowExpand; }
+    bool cropAllowExpand() const { return m_crop.allowExpand; }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
     void paintCropDimOutside(QPainter &painter, const QPolygonF &cropViewPoly);
@@ -1704,7 +1674,7 @@ private:
     void leaveCropModeInternal(bool apply);
     /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
     void requestCropFullRaster(const QString &path);
-    /** Upgrade crop source when native full arrives for m_cropAwaitingFullPath. */
+    /** Upgrade crop source when native full arrives for m_crop.awaitingFullPath. */
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
     bool applyCropCommit(ImageItem *item);
@@ -2087,7 +2057,7 @@ private:
 
     ImageItem *m_handleDragItem = nullptr;
 
-    bool m_cropMode = false;
+    CropSession m_crop;
     bool m_attentionMode = false;
     bool m_attentionDragging = false;
     bool m_attentionRubberbanding = false;
@@ -2102,55 +2072,9 @@ private:
     bool m_attentionDraftValid = false;
     QVector<QPointF> m_attentionDraftPts;
     SessionImageId m_attentionDraftSessionId = kInvalidSessionImageId;
-    /** Locked crop subject for the whole crop session (IDENTITY.md). */
-    SessionImageId m_cropTargetId = kInvalidSessionImageId;
-    /** Non-owning; ImageItem is not a QObject so QPointer is unavailable. */
-    ImageItem *m_cropTargetItem = nullptr;
-    /**
-     * Sample freeze for the crop draft. Set when the subject is locked (before
-     * m_cropMode / before any draft install). Cleared on leave/fail.
-     * Install/ladder/rematerialize must key off this — not m_cropMode alone —
-     * because m_cropMode is intentionally false until after the first draft attach.
-     */
-    bool m_cropDraftSampleFrozen = false;
-    QString m_cropDraftPath;
     /** Image-mode focus surface (DisplaySurfaceController). Invalid outside Image. */
     DisplaySurfaceController m_displaySurfaces;
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
-    /** Apply queued full bake while freeze was on; flushed after clearCropModeState. */
-    bool m_cropPendingFullRematerialize = false;
-    QString m_cropPendingFullRematerializePath;
-    SessionImageId m_cropPendingFullRematerializeSid = kInvalidSessionImageId;
-    WorkspaceItemState m_cropPendingFullRematerializeWant;
-    /** Draft may extend outside the image; apply pads with background. */
-    bool m_cropAllowExpand = false;
-    /** Draft crop rotation (degrees, about m_cropRect centre). */
-    qreal m_cropRotation = 0.0;
-    qreal m_cropRotateStartAngle = 0.0;
-    qreal m_cropRotateStartRotation = 0.0;
-    /** True while crop mode shows the full on-disk image (not the cropped pixmap). */
-    bool m_cropShowingFullImage = false;
-    /**
-     * Non-empty while crop entered on a provisional (soft/PreferCache) sample and
-     * a native full decode is in flight. Cleared on upgrade, leave crop, or fail.
-     */
-    QString m_cropAwaitingFullPath;
-    /** Workspace free-rotate stashed while crop runs axis-aligned. */
-    qreal m_cropStashedPlacementRotation = 0.0;
-    qreal m_cropStashedPlacementShear = 0.0;
-    bool m_cropHadStashedPlacement = false;
-    /** Appearance + session state when crop mode was entered (for Apply undo). */
-    QImage m_cropEnterSource;
-    WorkspaceItemState m_cropEnterState;
-    bool m_cropEnterValid = false;
-    /** Draft crop in crop-target item local coordinates (contentRect space). */
-    QRectF m_cropRect;
-    CropHandle m_cropActiveHandle = CropHandle::None;
-    CropHandle m_cropHoverHandle = CropHandle::None;
-    bool m_cropRubberBanding = false;
-    QPointF m_cropRubberOriginLocal;
-    QRectF m_cropDragStartRect;
-    QPointF m_cropDragStartLocal;
 
     /** Multi-select: which group handle is active (-1 = none). 0–7 scale, 8–11 rotate. */
     int m_groupHandle = -1;

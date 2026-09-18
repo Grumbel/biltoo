@@ -115,12 +115,12 @@ ImageItem *ImageView::cropTargetItem() const
     // Crop session is bound to one subject for its entire lifetime. Never
     // re-resolve via selection or primaryItem() — that applied the draft to
     // unrelated tiles when selection changed mid-crop (IDENTITY.md).
-    if (m_cropMode) {
-        if (m_cropTargetItem) {
-            return m_cropTargetItem;
+    if (m_crop.mode) {
+        if (m_crop.targetItem) {
+            return m_crop.targetItem;
         }
-        if (m_cropTargetId != kInvalidSessionImageId) {
-            if (ImageItem *byId = findItemBySessionId(m_cropTargetId)) {
+        if (m_crop.targetId != kInvalidSessionImageId) {
+            if (ImageItem *byId = findItemBySessionId(m_crop.targetId)) {
                 return byId;
             }
         }
@@ -150,30 +150,30 @@ void ImageView::ensureCropRectValid()
         return;
     }
     const QRectF cr = item->contentRect();
-    if (!m_cropRect.isValid() || m_cropRect.isEmpty()) {
-        m_cropRect = cr;
-        m_cropRotation = 0.0;
+    if (!m_crop.rect.isValid() || m_crop.rect.isEmpty()) {
+        m_crop.rect = cr;
+        m_crop.rotation = 0.0;
         return;
     }
-    m_cropRect = m_cropRect.normalized();
-    if (m_cropAllowExpand) {
-        if (m_cropRect.width() < 1.0) {
-            m_cropRect.setWidth(1.0);
+    m_crop.rect = m_crop.rect.normalized();
+    if (m_crop.allowExpand) {
+        if (m_crop.rect.width() < 1.0) {
+            m_crop.rect.setWidth(1.0);
         }
-        if (m_cropRect.height() < 1.0) {
-            m_cropRect.setHeight(1.0);
+        if (m_crop.rect.height() < 1.0) {
+            m_crop.rect.setHeight(1.0);
         }
         return;
     }
-    m_cropRect = CropGeometry::constrainToContent(m_cropRect, m_cropRotation, cr, 1.0);
+    m_crop.rect = CropGeometry::constrainToContent(m_crop.rect, m_crop.rotation, cr, 1.0);
 }
 
 void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
 {
-    if (!item || !m_cropRect.isValid()) {
+    if (!item || !m_crop.rect.isValid()) {
         return;
     }
-    const QPointF current = item->mapToScene(m_cropRect.center());
+    const QPointF current = item->mapToScene(m_crop.rect.center());
     if (!qIsFinite(current.x()) || !qIsFinite(current.y())
         || !qIsFinite(sceneAnchor.x()) || !qIsFinite(sceneAnchor.y())) {
         return;
@@ -213,42 +213,42 @@ bool ImageView::enterCropModeFromUi()
     }
     cancelZoomRegion();
     // Lock identity for the whole crop session (IDENTITY.md).
-    m_cropTargetItem = item;
-    m_cropTargetId = item->sessionId();
+    m_crop.targetItem = item;
+    m_crop.targetId = item->sessionId();
     // Freeze sample installs immediately — before prepare attaches the draft.
-    // m_cropMode stays false until after the first draft attach (chrome timing);
-    // freeze must not wait on m_cropMode or ladder/async can land in between.
-    m_cropDraftSampleFrozen = true;
-    m_cropDraftPath = item->path();
+    // m_crop.mode stays false until after the first draft attach (chrome timing);
+    // freeze must not wait on m_crop.mode or ladder/async can land in between.
+    m_crop.draftSampleFrozen = true;
+    m_crop.draftPath = item->path();
     item->setTileLodSuppressed(true);
-    if (m_pathRaster && !m_cropDraftPath.isEmpty()) {
-        m_pathRaster->cancel(m_cropDraftPath);
+    if (m_pathRaster && !m_crop.draftPath.isEmpty()) {
+        m_pathRaster->cancel(m_crop.draftPath);
     }
-    // m_cropMode is set only after the full-frame draft is installed (see
+    // m_crop.mode is set only after the full-frame draft is installed (see
     // prepareCropModeFullImage / end of this function). Setting it earlier
     // painted one frame of crop chrome on the still-cropped bake.
     // Snapshot appearance before full-image reload so Close can be undone.
-    m_cropEnterSource = item->sourceImage().copy();
-    if (m_cropEnterSource.isNull()) {
-        m_cropEnterSource = item->previewImage().copy();
+    m_crop.enterSource = item->sourceImage().copy();
+    if (m_crop.enterSource.isNull()) {
+        m_crop.enterSource = item->previewImage().copy();
     }
-    m_cropEnterState = captureState(item);
-    m_cropEnterState.hasCrop = item->sessionHasCrop();
-    m_cropEnterState.cropRect = item->sessionCropRect();
+    m_crop.enterState = captureState(item);
+    m_crop.enterState.hasCrop = item->sessionHasCrop();
+    m_crop.enterState.cropRect = item->sessionCropRect();
     // cropRotation / cropSourceSize come from captureState → appearance.
     // Soft-only tiles have preview only; still a valid enter snapshot.
-    m_cropEnterValid = !m_cropEnterSource.isNull() || item->hasDisplayPixels();
+    m_crop.enterValid = !m_crop.enterSource.isNull() || item->hasDisplayPixels();
     // Crop handles are axis-aligned in item space; free Workspace placement
     // rotation makes rubber-band and edge grips unusable. Unrotate for the
     // crop session and restore on exit.
     // Workspace: remember where the *displayed* image centre sits so the
     // restored crop frame can stay fixed while the full image grows around it.
     const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
-    m_cropStashedPlacementRotation = item->itemRotation();
-    m_cropStashedPlacementShear = item->itemShear();
-    m_cropHadStashedPlacement = qAbs(m_cropStashedPlacementRotation) > 0.05
-        || qAbs(m_cropStashedPlacementShear) > 1e-4;
-    if (m_cropHadStashedPlacement) {
+    m_crop.stashedPlacementRotation = item->itemRotation();
+    m_crop.stashedPlacementShear = item->itemShear();
+    m_crop.hadStashedPlacement = qAbs(m_crop.stashedPlacementRotation) > 0.05
+        || qAbs(m_crop.stashedPlacementShear) > 1e-4;
+    if (m_crop.hadStashedPlacement) {
         item->setItemRotation(0.0);
         item->setItemShear(0.0);
     }
@@ -260,19 +260,19 @@ bool ImageView::enterCropModeFromUi()
         if (viewport()) {
             viewport()->setUpdatesEnabled(true);
         }
-        m_cropMode = false; // prepare may have set it for fitItem then failed
-        m_cropDraftSampleFrozen = false;
-        m_cropDraftPath.clear();
+        m_crop.mode = false; // prepare may have set it for fitItem then failed
+        m_crop.draftSampleFrozen = false;
+        m_crop.draftPath.clear();
         item->setTileLodSuppressed(false);
-        m_cropEnterValid = false;
-        m_cropEnterSource = QImage();
-        if (m_cropHadStashedPlacement) {
-            item->setItemRotation(m_cropStashedPlacementRotation);
-            item->setItemShear(m_cropStashedPlacementShear);
+        m_crop.enterValid = false;
+        m_crop.enterSource = QImage();
+        if (m_crop.hadStashedPlacement) {
+            item->setItemRotation(m_crop.stashedPlacementRotation);
+            item->setItemShear(m_crop.stashedPlacementShear);
         }
-        m_cropHadStashedPlacement = false;
-        m_cropTargetItem = nullptr;
-        m_cropTargetId = kInvalidSessionImageId;
+        m_crop.hadStashedPlacement = false;
+        m_crop.targetItem = nullptr;
+        m_crop.targetId = kInvalidSessionImageId;
         flashHud(tr("Crop"), tr("Could not load full image"));
         return false;
     }
@@ -280,24 +280,24 @@ bool ImageView::enterCropModeFromUi()
         // If there was no stored crop angle but the tile was free-rotated,
         // seed the draft rotation so the frame matches the prior pose while
         // the item stays axis-aligned for editing.
-        if (qAbs(m_cropRotation) < 0.05
-            && qAbs(m_cropStashedPlacementRotation) > 0.05) {
-            m_cropRotation = m_cropStashedPlacementRotation;
-            while (m_cropRotation > 180.0) {
-                m_cropRotation -= 360.0;
+        if (qAbs(m_crop.rotation) < 0.05
+            && qAbs(m_crop.stashedPlacementRotation) > 0.05) {
+            m_crop.rotation = m_crop.stashedPlacementRotation;
+            while (m_crop.rotation > 180.0) {
+                m_crop.rotation -= 360.0;
             }
-            while (m_cropRotation <= -180.0) {
-                m_cropRotation += 360.0;
+            while (m_crop.rotation <= -180.0) {
+                m_crop.rotation += 360.0;
             }
             ensureCropRectValid();
         }
         alignCropFrameCenterToScene(item, workspaceAnchorScene);
         updateWorkspaceSceneRect();
     }
-    // m_cropMode already true (set in prepare after full-frame install).
-    m_cropActiveHandle = CropHandle::None;
-    m_cropHoverHandle = CropHandle::None;
-    m_cropRubberBanding = false;
+    // m_crop.mode already true (set in prepare after full-frame install).
+    m_crop.activeHandle = CropHandle::None;
+    m_crop.hoverHandle = CropHandle::None;
+    m_crop.rubberBanding = false;
     flashHud(tr("Crop mode"),
              tr("Apply commits · Esc cancels"));
     emit cropModeChanged(true);
@@ -311,7 +311,7 @@ bool ImageView::enterCropModeFromUi()
 
 void ImageView::setCropMode(bool on)
 {
-    if (on == m_cropMode) {
+    if (on == m_crop.mode) {
         return;
     }
     if (on) {
@@ -354,14 +354,14 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
 
 bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 {
-    if (!m_cropDraftSampleFrozen || !item) {
+    if (!m_crop.draftSampleFrozen || !item) {
         return false;
     }
-    if (m_cropTargetItem && item == m_cropTargetItem) {
+    if (m_crop.targetItem && item == m_crop.targetItem) {
         return true;
     }
-    if (m_cropTargetId != kInvalidSessionImageId
-        && item->sessionId() == m_cropTargetId) {
+    if (m_crop.targetId != kInvalidSessionImageId
+        && item->sessionId() == m_crop.targetId) {
         return true;
     }
     if (!item->path().isEmpty() && isCropDraftLockedPath(item->path())) {
@@ -372,18 +372,18 @@ bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 
 bool ImageView::isCropDraftLockedPath(const QString &path) const
 {
-    if (!m_cropDraftSampleFrozen || path.isEmpty()) {
+    if (!m_crop.draftSampleFrozen || path.isEmpty()) {
         return false;
     }
     // Prefer the path captured at lock time — survives item pointer churn.
-    if (!m_cropDraftPath.isEmpty() && path == m_cropDraftPath) {
+    if (!m_crop.draftPath.isEmpty() && path == m_crop.draftPath) {
         return true;
     }
-    if (m_cropTargetItem && m_cropTargetItem->path() == path) {
+    if (m_crop.targetItem && m_crop.targetItem->path() == path) {
         return true;
     }
-    if (m_cropTargetId != kInvalidSessionImageId) {
-        if (ImageItem *byId = findItemBySessionId(m_cropTargetId)) {
+    if (m_crop.targetId != kInvalidSessionImageId) {
+        if (ImageItem *byId = findItemBySessionId(m_crop.targetId)) {
             if (byId->path() == path) {
                 return true;
             }
@@ -461,7 +461,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
         item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
         item->setAppliedContentXform(wantX);
         applyContentLayoutSize(item, contentOnly);
-        m_cropShowingFullImage = true;
+        m_crop.showingFullImage = true;
         if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
             qWarning().noquote()
                 << QStringLiteral("[crop] enter-full KEEP display edge=%1 path=%2")
@@ -546,7 +546,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                    .arg(item->sessionHasCrop() ? 1 : 0)
                    .arg(contentOnly.contentQuarterTurns);
     }
-    m_cropShowingFullImage = true;
+    m_crop.showingFullImage = true;
 }
 
 void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
@@ -554,7 +554,7 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
 {
     // Start each crop session without Expand; re-enable below if the stored
     // draft (AABB or rotated corners) extends outside the source.
-    m_cropAllowExpand = false;
+    m_crop.allowExpand = false;
 
     const QRectF cr = item->contentRect();
     const QRect priorCrop = (haveApp && app.hasCrop) ? app.cropRect : QRect();
@@ -568,7 +568,7 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
         // size differs from the size at record time — same rule as applyCrop.
         const QRect prior = SessionAppearance::scaleCropRect(
             priorCrop.normalized(), app.cropSourceSize, sz);
-        m_cropRotation = haveApp ? app.cropRotation : 0.0;
+        m_crop.rotation = haveApp ? app.cropRotation : 0.0;
         if (prior.width() <= 1 || prior.height() <= 1) {
             qCritical("initCropRect: prior crop scaled to %dx%d (stored %dx%d "
                       "sourceSize %dx%d live imageSize %dx%d) — draft will be 1×1",
@@ -582,7 +582,7 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
             // Do not mirror for contentHFlip/VFlip: content bake / materialize already
             // put pixels in content-oriented space and the stored rect is in
             // that space. Re-mirroring shifted the frame on re-entry.
-            m_cropRect = QRectF(prior.x() + off.x(), prior.y() + off.y(),
+            m_crop.rect = QRectF(prior.x() + off.x(), prior.y() + off.y(),
                                 prior.width(), prior.height());
             // Expand is not persisted. Detect both axis-aligned overflow and
             // rotated-corner overflow so ensureCropRectValid does not translate
@@ -592,18 +592,18 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
                 || prior.right() > bounds.right()
                 || prior.bottom() > bounds.bottom();
             const bool rotatedOutside =
-                qAbs(m_cropRotation) > 0.05
-                && !CropGeometry::cornersInside(m_cropRect, m_cropRotation, cr);
+                qAbs(m_crop.rotation) > 0.05
+                && !CropGeometry::cornersInside(m_crop.rect, m_crop.rotation, cr);
             if (aabbOutside || rotatedOutside) {
-                m_cropAllowExpand = true;
+                m_crop.allowExpand = true;
             }
         } else {
-            m_cropRect = cr;
-            m_cropRotation = 0.0;
+            m_crop.rect = cr;
+            m_crop.rotation = 0.0;
         }
     } else {
-        m_cropRect = cr;
-        m_cropRotation = 0.0;
+        m_crop.rect = cr;
+        m_crop.rotation = 0.0;
     }
     ensureCropRectValid();
 }
@@ -614,7 +614,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         return false;
     }
     const QString path = item->path();
-    m_cropAwaitingFullPath.clear();
+    m_crop.awaitingFullPath.clear();
 
     WorkspaceItemState app;
     const bool haveApp = resolveCropEnterAppearance(item, &app);
@@ -638,7 +638,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         // Prior crop and no host: force a load; do not enter on the bake.
         if (hadCrop && !path.isEmpty()) {
             requestCropFullRaster(path);
-            m_cropAwaitingFullPath = path;
+            m_crop.awaitingFullPath = path;
             flashHud(tr("Crop"), tr("Loading full image…"));
         }
         flashHud(tr("Crop"), tr("Image not cached yet — try again"));
@@ -661,8 +661,8 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     initCropRectFromPriorAppearance(item, app, haveApp);
 
     // Crop chrome + fitItem only after pixels and contentRect match the draft.
-    // m_cropMode true before fitItem so layout uses orient-only full size.
-    m_cropMode = true;
+    // m_crop.mode true before fitItem so layout uses orient-only full size.
+    m_crop.mode = true;
     if (isImageMode()) {
         m_fitMode = true;
         fitItem(item, currentFitAspectMode());
@@ -670,7 +670,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         updateWorkspaceSceneRect();
     }
 
-    m_cropAwaitingFullPath.clear();
+    m_crop.awaitingFullPath.clear();
     return true;
 }
 
@@ -721,15 +721,15 @@ void ImageView::requestCropFullRaster(const QString &path)
 
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
 {
-    if (!m_cropMode || path.isEmpty() || path != m_cropAwaitingFullPath) {
+    if (!m_crop.mode || path.isEmpty() || path != m_crop.awaitingFullPath) {
         return;
     }
     if (image.isNull()) {
         return;
     }
-    ImageItem *item = m_cropTargetItem;
+    ImageItem *item = m_crop.targetItem;
     if (!item || item->path() != path) {
-        m_cropAwaitingFullPath.clear();
+        m_crop.awaitingFullPath.clear();
         return;
     }
     if (!sampleCoversNativeLogical(path, image)
@@ -745,7 +745,7 @@ void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &im
     if (!path.isEmpty()) {
         ImageCache::put(path, image);
     }
-    m_cropAwaitingFullPath.clear();
+    m_crop.awaitingFullPath.clear();
     flashHud(tr("Crop"), tr("Full image ready"));
 }
 
@@ -817,7 +817,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
 
 void ImageView::toggleCropMode()
 {
-    setCropMode(!m_cropMode);
+    setCropMode(!m_crop.mode);
 }
 
 void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
@@ -873,7 +873,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
 void ImageView::applyAutoCrop()
 {
     ImageItem *item = cropTargetItem();
-    if (!item || !m_cropMode) {
+    if (!item || !m_crop.mode) {
         return;
     }
     QImage src = item->sourceImage();
@@ -893,10 +893,10 @@ void ImageView::applyAutoCrop()
     const qreal sx = qreal(src.width()) / cr.width();
     const qreal sy = qreal(src.height()) / cr.height();
     QRect search(
-        int(qFloor((m_cropRect.left() - cr.left()) * sx)),
-        int(qFloor((m_cropRect.top() - cr.top()) * sy)),
-        int(qCeil(m_cropRect.width() * sx)),
-        int(qCeil(m_cropRect.height() * sy)));
+        int(qFloor((m_crop.rect.left() - cr.left()) * sx)),
+        int(qFloor((m_crop.rect.top() - cr.top()) * sy)),
+        int(qCeil(m_crop.rect.width() * sx)),
+        int(qCeil(m_crop.rect.height() * sy)));
     search = search.intersected(QRect(0, 0, src.width(), src.height()));
 
     QRect trimmed;
@@ -913,12 +913,12 @@ void ImageView::applyAutoCrop()
 
     const qreal invSx = cr.width() / qreal(qMax(1, src.width()));
     const qreal invSy = cr.height() / qreal(qMax(1, src.height()));
-    m_cropRect = QRectF(cr.left() + trimmed.x() * invSx,
+    m_crop.rect = QRectF(cr.left() + trimmed.x() * invSx,
                         cr.top() + trimmed.y() * invSy,
                         trimmed.width() * invSx,
                         trimmed.height() * invSy);
-    m_cropRotation = 0.0;
-    m_cropAllowExpand = false;
+    m_crop.rotation = 0.0;
+    m_crop.allowExpand = false;
     ensureCropRectValid();
     if (viewport()) {
         viewport()->update();
@@ -929,7 +929,7 @@ void ImageView::applyAutoCrop()
 void ImageView::applyCrop()
 {
     // Soft draft is valid — crop is content-space. Do not wait on multi-MP load.
-    m_cropAwaitingFullPath.clear();
+    m_crop.awaitingFullPath.clear();
     leaveCropModeInternal(true);
 }
 
@@ -1017,7 +1017,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     }
     const QRectF cr = item->contentRect();
     QRectF local = localCrop.normalized();
-    if (!m_cropAllowExpand) {
+    if (!m_crop.allowExpand) {
         local = local.intersected(cr);
     }
     if (local.width() < 1.0 || local.height() < 1.0) {
@@ -1053,8 +1053,8 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
             WorkspaceItemState orientOnly;
             // Prefer appearance turns when present.
             SessionImageId sidR = item->sessionId();
-            if (sidR == kInvalidSessionImageId && m_cropTargetId != kInvalidSessionImageId) {
-                sidR = m_cropTargetId;
+            if (sidR == kInvalidSessionImageId && m_crop.targetId != kInvalidSessionImageId) {
+                sidR = m_crop.targetId;
             }
             if (sidR == kInvalidSessionImageId && isImageMode()) {
                 sidR = m_currentSessionId;
@@ -1082,8 +1082,8 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     // Appearance is keyed by SessionImageId only. Prefer the locked crop target
     // id; never invent one from the navigation cursor while other tiles exist.
     SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId && m_cropTargetId != kInvalidSessionImageId) {
-        sid = m_cropTargetId;
+    if (sid == kInvalidSessionImageId && m_crop.targetId != kInvalidSessionImageId) {
+        sid = m_crop.targetId;
     }
     if (sid == kInvalidSessionImageId && isImageMode()) {
         sid = m_currentSessionId;
@@ -1104,7 +1104,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         && qAbs(local.top() - cr.top()) < 0.5
         && qAbs(local.width() - cr.width()) < 0.5
         && qAbs(local.height() - cr.height()) < 0.5;
-    if (fullFrame && qAbs(m_cropRotation) < 0.05) {
+    if (fullFrame && qAbs(m_crop.rotation) < 0.05) {
         s.hasCrop = false;
         s.cropRect = QRect();
         s.cropSourceSize = QSize();
@@ -1113,7 +1113,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         s.hasCrop = true;
         s.cropRect = disp;
         s.cropSourceSize = cropBasis;
-        s.cropRotation = m_cropRotation;
+        s.cropRotation = m_crop.rotation;
         if (cropBasis != QSize(iw, ih)
             && qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
             qWarning().noquote()
@@ -1136,7 +1136,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 
 void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 {
-    if (!m_undoStack || !item || !m_cropEnterValid) {
+    if (!m_undoStack || !item || !m_crop.enterValid) {
         return;
     }
     class CropCommand : public QUndoCommand {
@@ -1178,8 +1178,8 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
     // captureState pulls cropRotation from appearance
     // (recordSessionCrop + commitItemSessionEdit).
     m_undoStack->push(new CropCommand(
-        this, item, m_cropEnterSource, item->sourceImage().copy(),
-        m_cropEnterState, afterSt, text));
+        this, item, m_crop.enterSource, item->sourceImage().copy(),
+        m_crop.enterState, afterSt, text));
 }
 
 bool ImageView::applyCropCommit(ImageItem *item)
@@ -1190,29 +1190,29 @@ bool ImageView::applyCropCommit(ImageItem *item)
 
     const QRectF full = item->contentRect();
     const bool fullFrame =
-        !m_cropRect.isValid()
-        || (qAbs(m_cropRect.left() - full.left()) < 0.5
-            && qAbs(m_cropRect.top() - full.top()) < 0.5
-            && qAbs(m_cropRect.width() - full.width()) < 0.5
-            && qAbs(m_cropRect.height() - full.height()) < 0.5);
+        !m_crop.rect.isValid()
+        || (qAbs(m_crop.rect.left() - full.left()) < 0.5
+            && qAbs(m_crop.rect.top() - full.top()) < 0.5
+            && qAbs(m_crop.rect.width() - full.width()) < 0.5
+            && qAbs(m_crop.rect.height() - full.height()) < 0.5);
     // Record content-space crop while the draft frame is still valid.
-    recordSessionCrop(item, m_cropRect.isValid() ? m_cropRect : full);
+    recordSessionCrop(item, m_crop.rect.isValid() ? m_crop.rect : full);
     if (!fullFrame) {
         // --- Workspace footprint math (verify) ---
         // During crop mode the item is axis-aligned (placement rotation stashed).
-        // Content units: m_cropRect is in item content space (same as contentRect).
+        // Content units: m_crop.rect is in item content space (same as contentRect).
         // Scene size of the draft selection:
-        //   footW = m_cropRect.width()  * itemScaleX
-        //   footH = m_cropRect.height() * itemScaleY
+        //   footW = m_crop.rect.width()  * itemScaleX
+        //   footH = m_crop.rect.height() * itemScaleY
         // After Apply we set intrinsic to (cropW, cropH) in the *same* content
         // units and keep the same scale → scene size unchanged.
         const qreal sx0 = item->itemScaleX();
         const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
-        const qreal cropW = m_cropRect.width();
-        const qreal cropH = m_cropRect.height();
+        const qreal cropW = m_crop.rect.width();
+        const qreal cropH = m_crop.rect.height();
         const qreal footW = cropW * sx0;
         const qreal footH = cropH * sy0;
-        const QPointF cropSceneCenter = item->mapToScene(m_cropRect.center());
+        const QPointF cropSceneCenter = item->mapToScene(m_crop.rect.center());
 
         const QString path = item->path();
         QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
@@ -1239,7 +1239,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         WorkspaceItemState st;
         SessionImageId sid = item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
-            : m_cropTargetId;
+            : m_crop.targetId;
         if (sid == kInvalidSessionImageId) {
             sid = m_currentSessionId;
         }
@@ -1251,12 +1251,12 @@ bool ImageView::applyCropCommit(ImageItem *item)
         if (!st.hasCrop) {
             st = captureState(item);
             st.hasCrop = true;
-            st.cropRect = QRect(qRound(m_cropRect.left() - item->offset().x()),
-                                qRound(m_cropRect.top() - item->offset().y()),
+            st.cropRect = QRect(qRound(m_crop.rect.left() - item->offset().x()),
+                                qRound(m_crop.rect.top() - item->offset().y()),
                                 qMax(1, qRound(cropW)),
                                 qMax(1, qRound(cropH)));
             st.cropSourceSize = item->imageSize();
-            st.cropRotation = m_cropRotation;
+            st.cropRotation = m_crop.rotation;
             if (sid != kInvalidSessionImageId) {
                 m_appearance.set(sid, st);
             }
@@ -1312,7 +1312,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         //
         // Hold viewport paints across clear → layout → pixels → fit so the view
         // never composites crop pixels into the pre-crop contentRect (or the
-        // reverse). fitItem still runs under m_cropMode; it must not treat Apply
+        // reverse). fitItem still runs under m_crop.mode; it must not treat Apply
         // as draft (see fitItem cropDraft).
         const bool holdPaint = viewport() && viewport()->updatesEnabled();
         if (holdPaint) {
@@ -1334,9 +1334,9 @@ bool ImageView::applyCropCommit(ImageItem *item)
                                        : SessionAppearance::PixelKind::FullSource;
         attachDisplaySample(item, display, st, pixelKind);
         // Restore enter placement scale if something else mutated it during draft.
-        if (m_cropEnterValid && m_cropEnterState.scale > 1e-6) {
-            const qreal sx = m_cropEnterState.scale;
-            const qreal sy = (m_cropEnterState.scaleY > 1e-6) ? m_cropEnterState.scaleY : sx;
+        if (m_crop.enterValid && m_crop.enterState.scale > 1e-6) {
+            const qreal sx = m_crop.enterState.scale;
+            const qreal sy = (m_crop.enterState.scaleY > 1e-6) ? m_crop.enterState.scaleY : sx;
             item->setItemScale(sx, sy);
         }
         alignItemCenterToScene(item, cropSceneCenter);
@@ -1345,14 +1345,14 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // scheduleAsyncHostRematerialize is blocked while crop freeze is on —
         // queue here and flush from clearCropModeState after unfreeze.
         if (hostFromCache && multiMp) {
-            m_cropPendingFullRematerialize = true;
-            m_cropPendingFullRematerializePath = path;
-            m_cropPendingFullRematerializeSid = sid;
-            m_cropPendingFullRematerializeWant = st;
+            m_crop.pendingFullRematerialize = true;
+            m_crop.pendingFullRematerializePath = path;
+            m_crop.pendingFullRematerializeSid = sid;
+            m_crop.pendingFullRematerializeWant = st;
         }
 
         if (isWorkspaceMode()) {
-            item->setItemRotation(m_cropRotation);
+            item->setItemRotation(m_crop.rotation);
             updateWorkspaceSceneRect();
         } else if (isImageMode()) {
             m_fitMode = true;
@@ -1393,12 +1393,12 @@ bool ImageView::applyCropCommit(ImageItem *item)
         fitItem(item, currentFitAspectMode());
     } else if (isWorkspaceMode()) {
         // Drop the enter-time crop-frame offset; restore pre-crop pose.
-        if (m_cropEnterValid) {
-            item->setPos(m_cropEnterState.pos);
-            item->setItemScale(m_cropEnterState.scale,
-                               m_cropEnterState.scaleY > 0.0
-                                   ? m_cropEnterState.scaleY
-                                   : m_cropEnterState.scale);
+        if (m_crop.enterValid) {
+            item->setPos(m_crop.enterState.pos);
+            item->setItemScale(m_crop.enterState.scale,
+                               m_crop.enterState.scaleY > 0.0
+                                   ? m_crop.enterState.scaleY
+                                   : m_crop.enterState.scale);
         }
         updateWorkspaceSceneRect();
     } else if (isGalleryMode()) {
@@ -1408,7 +1408,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
     {
         SessionImageId sid = item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
-            : m_cropTargetId;
+            : m_crop.targetId;
         if (sid == kInvalidSessionImageId) {
             sid = m_currentSessionId;
         }
@@ -1420,9 +1420,9 @@ bool ImageView::applyCropCommit(ImageItem *item)
             }
         }
     }
-    if (m_cropEnterValid
-        && (m_cropEnterState.hasCrop
-            || m_cropEnterSource.size() != item->sourceImage().size())) {
+    if (m_crop.enterValid
+        && (m_crop.enterState.hasCrop
+            || m_crop.enterSource.size() != item->sourceImage().size())) {
         pushCropAppearanceUndo(item, tr("Crop reset"));
     }
     flashHud(tr("Crop reset"), tr("Full image"));
@@ -1433,51 +1433,51 @@ void ImageView::cancelCropShowingFullImage(ImageItem *item)
 {
     // Esc / toggle off: put the previous session crop back on the canvas.
     restoreSessionCropAppearance(item);
-    if (isWorkspaceMode() && m_cropEnterValid) {
-        item->setPos(m_cropEnterState.pos);
-        item->setItemScale(m_cropEnterState.scale,
-                           m_cropEnterState.scaleY > 0.0
-                               ? m_cropEnterState.scaleY
-                               : m_cropEnterState.scale);
+    if (isWorkspaceMode() && m_crop.enterValid) {
+        item->setPos(m_crop.enterState.pos);
+        item->setItemScale(m_crop.enterState.scale,
+                           m_crop.enterState.scaleY > 0.0
+                               ? m_crop.enterState.scaleY
+                               : m_crop.enterState.scale);
     }
 }
 
 void ImageView::clearCropModeState()
 {
-    m_cropHadStashedPlacement = false;
-    m_cropStashedPlacementRotation = 0.0;
-    m_cropStashedPlacementShear = 0.0;
-    m_cropMode = false;
-    m_cropDraftSampleFrozen = false;
-    m_cropDraftPath.clear();
-    m_cropShowingFullImage = false;
-    m_cropAwaitingFullPath.clear();
-    m_cropEnterValid = false;
-    m_cropEnterSource = QImage();
-    if (m_cropTargetItem) {
-        m_cropTargetItem->setTileLodSuppressed(false);
-    } else if (m_cropTargetId != kInvalidSessionImageId) {
-        if (ImageItem *byId = findItemBySessionId(m_cropTargetId)) {
+    m_crop.hadStashedPlacement = false;
+    m_crop.stashedPlacementRotation = 0.0;
+    m_crop.stashedPlacementShear = 0.0;
+    m_crop.mode = false;
+    m_crop.draftSampleFrozen = false;
+    m_crop.draftPath.clear();
+    m_crop.showingFullImage = false;
+    m_crop.awaitingFullPath.clear();
+    m_crop.enterValid = false;
+    m_crop.enterSource = QImage();
+    if (m_crop.targetItem) {
+        m_crop.targetItem->setTileLodSuppressed(false);
+    } else if (m_crop.targetId != kInvalidSessionImageId) {
+        if (ImageItem *byId = findItemBySessionId(m_crop.targetId)) {
             byId->setTileLodSuppressed(false);
         }
     }
-    m_cropTargetItem = nullptr;
-    m_cropTargetId = kInvalidSessionImageId;
-    m_cropRect = QRectF();
-    m_cropActiveHandle = CropHandle::None;
-    m_cropHoverHandle = CropHandle::None;
-    m_cropAllowExpand = false;
-    m_cropRotation = 0.0;
-    m_cropRubberBanding = false;
+    m_crop.targetItem = nullptr;
+    m_crop.targetId = kInvalidSessionImageId;
+    m_crop.rect = QRectF();
+    m_crop.activeHandle = CropHandle::None;
+    m_crop.hoverHandle = CropHandle::None;
+    m_crop.allowExpand = false;
+    m_crop.rotation = 0.0;
+    m_crop.rubberBanding = false;
     // Apply may have queued a full bake while freeze was still on.
-    const bool pendingFull = m_cropPendingFullRematerialize;
-    const QString pendingPath = m_cropPendingFullRematerializePath;
-    const SessionImageId pendingSid = m_cropPendingFullRematerializeSid;
-    const WorkspaceItemState pendingWant = m_cropPendingFullRematerializeWant;
-    m_cropPendingFullRematerialize = false;
-    m_cropPendingFullRematerializePath.clear();
-    m_cropPendingFullRematerializeSid = kInvalidSessionImageId;
-    m_cropPendingFullRematerializeWant = WorkspaceItemState{};
+    const bool pendingFull = m_crop.pendingFullRematerialize;
+    const QString pendingPath = m_crop.pendingFullRematerializePath;
+    const SessionImageId pendingSid = m_crop.pendingFullRematerializeSid;
+    const WorkspaceItemState pendingWant = m_crop.pendingFullRematerializeWant;
+    m_crop.pendingFullRematerialize = false;
+    m_crop.pendingFullRematerializePath.clear();
+    m_crop.pendingFullRematerializeSid = kInvalidSessionImageId;
+    m_crop.pendingFullRematerializeWant = WorkspaceItemState{};
     emit cropModeChanged(false);
     emit statusChanged();
     viewport()->unsetCursor();
@@ -1489,7 +1489,7 @@ void ImageView::clearCropModeState()
 
 void ImageView::leaveCropModeInternal(bool apply)
 {
-    if (!m_cropMode) {
+    if (!m_crop.mode) {
         return;
     }
     ImageItem *item = cropTargetItem();
@@ -1499,30 +1499,30 @@ void ImageView::leaveCropModeInternal(bool apply)
     bool preserveCropFrameRotation = false;
     if (apply && item) {
         preserveCropFrameRotation = applyCropCommit(item);
-    } else if (item && m_cropShowingFullImage) {
+    } else if (item && m_crop.showingFullImage) {
         cancelCropShowingFullImage(item);
     }
     // Restore pre-crop placement rotation unless Apply already set it from the
     // crop frame (Workspace non-full-frame commit).
-    if (item && m_cropHadStashedPlacement && !preserveCropFrameRotation) {
-        item->setItemRotation(m_cropStashedPlacementRotation);
-        item->setItemShear(m_cropStashedPlacementShear);
+    if (item && m_crop.hadStashedPlacement && !preserveCropFrameRotation) {
+        item->setItemRotation(m_crop.stashedPlacementRotation);
+        item->setItemShear(m_crop.stashedPlacementShear);
     }
     clearCropModeState();
 }
 
 QPolygonF ImageView::cropPolygonItemLocal() const
 {
-    const QRectF r = m_cropRect.normalized();
+    const QRectF r = m_crop.rect.normalized();
     QPolygonF poly;
     poly << r.topLeft() << r.topRight() << r.bottomRight() << r.bottomLeft();
-    if (qAbs(m_cropRotation) < 0.05) {
+    if (qAbs(m_crop.rotation) < 0.05) {
         return poly;
     }
     const QPointF c = r.center();
     QTransform tr;
     tr.translate(c.x(), c.y());
-    tr.rotate(m_cropRotation);
+    tr.rotate(m_crop.rotation);
     tr.translate(-c.x(), -c.y());
     return tr.map(poly);
 }
@@ -1530,7 +1530,7 @@ QPolygonF ImageView::cropPolygonItemLocal() const
 QRectF ImageView::cropRectView() const
 {
     ImageItem *item = cropTargetItem();
-    if (!item || !m_cropRect.isValid()) {
+    if (!item || !m_crop.rect.isValid()) {
         return QRectF();
     }
     const QPolygonF local = cropPolygonItemLocal();
@@ -1543,7 +1543,7 @@ QRectF ImageView::cropRectView() const
 
 QRect ImageView::cropExpandButtonView() const
 {
-    if (!m_cropMode) {
+    if (!m_crop.mode) {
         return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1552,7 +1552,7 @@ QRect ImageView::cropExpandButtonView() const
 
 QRect ImageView::cropAutoButtonView() const
 {
-    if (!m_cropMode) {
+    if (!m_crop.mode) {
         return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1561,7 +1561,7 @@ QRect ImageView::cropAutoButtonView() const
 
 QRect ImageView::cropResetButtonView() const
 {
-    if (!m_cropMode) {
+    if (!m_crop.mode) {
         return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1570,7 +1570,7 @@ QRect ImageView::cropResetButtonView() const
 
 QRect ImageView::cropCancelButtonView() const
 {
-    if (!m_cropMode) {
+    if (!m_crop.mode) {
         return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1579,7 +1579,7 @@ QRect ImageView::cropCancelButtonView() const
 
 QRect ImageView::cropCloseButtonView() const
 {
-    if (!m_cropMode) {
+    if (!m_crop.mode) {
         return {};
     }
     const CropButtonLayout L = cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1627,7 +1627,7 @@ void ImageView::paintCropResizeHandles(QPainter &painter, const QPolygonF &cropV
     const qreal hs = 14.0;
     auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB,
                           CropHandle h) {
-        const bool hot = (m_cropHoverHandle == h || m_cropActiveHandle == h);
+        const bool hot = (m_crop.hoverHandle == h || m_crop.activeHandle == h);
         auto unit = [](QPointF v) {
             const qreal len = qHypot(v.x(), v.y());
             return len > 1e-6 ? v / len : QPointF(1, 0);
@@ -1665,7 +1665,7 @@ void ImageView::paintCropResizeHandles(QPainter &painter, const QPolygonF &cropV
     drawCorner(br, bl - br, tr - br, CropHandle::BottomRight);
 
     auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, CropHandle h) {
-        const bool hot = (m_cropHoverHandle == h || m_cropActiveHandle == h);
+        const bool hot = (m_crop.hoverHandle == h || m_crop.activeHandle == h);
         auto unit = [](QPointF v) {
             const qreal len = qHypot(v.x(), v.y());
             return len > 1e-6 ? v / len : QPointF(1, 0);
@@ -1707,8 +1707,8 @@ void ImageView::paintCropRotateKnobs(QPainter &painter, const QPolygonF &cropVie
     const QPointF bl = cropViewPoly.at(3);
     {
         const QPointF centre = (tl + tr + br + bl) * 0.25;
-        const bool hot = (m_cropHoverHandle == CropHandle::Rotate
-                          || m_cropActiveHandle == CropHandle::Rotate);
+        const bool hot = (m_crop.hoverHandle == CropHandle::Rotate
+                          || m_crop.activeHandle == CropHandle::Rotate);
         auto drawRotateKnob = [&](QPointF mid, QPointF edgeAlong) {
             qreal alen = qHypot(edgeAlong.x(), edgeAlong.y());
             if (alen > 1e-6) {
@@ -1748,8 +1748,8 @@ void ImageView::paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPo
     const QPointF bl = cropViewPoly.at(3);
     {
         const QPointF centre = (tl + tr + br + bl) * 0.25;
-        const bool hot = (m_cropHoverHandle == CropHandle::Move
-                          || m_cropActiveHandle == CropHandle::Move);
+        const bool hot = (m_crop.hoverHandle == CropHandle::Move
+                          || m_crop.activeHandle == CropHandle::Move);
         const qreal s = hot ? 10.0 : 9.0;
         painter.setPen(QPen(hot ? QColor(255, 255, 255) : QColor(40, 30, 10), hot ? 1.8 : 1.35));
         painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
@@ -1771,7 +1771,7 @@ void ImageView::drawCropTextButton(QPainter &painter, const QRect &btn, CropHand
     if (!btn.isValid()) {
         return;
     }
-    const bool hover = (m_cropHoverHandle == kind);
+    const bool hover = (m_crop.hoverHandle == kind);
     const qreal radius = (role == CropBtnRole::Toggle) ? 6.0 : 11.0; // square vs pill
     QColor fill(50, 50, 50, 230);
     QColor border(255, 190, 40);
@@ -1841,7 +1841,7 @@ void ImageView::paintCropActionButtons(QPainter &painter)
     //   commit  = filled accent (Apply)
     // Local QPoint names must not hide QObject::tr — use ImageView::tr.
     drawCropTextButton(painter, cropExpandButtonView(), CropHandle::ExpandToggle,
-                       ImageView::tr("Expand"), CropBtnRole::Toggle, m_cropAllowExpand);
+                       ImageView::tr("Expand"), CropBtnRole::Toggle, m_crop.allowExpand);
     drawCropTextButton(painter, cropAutoButtonView(), CropHandle::Auto, ImageView::tr("Auto"),
                        CropBtnRole::Action);
     drawCropTextButton(painter, cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"),
@@ -1857,8 +1857,8 @@ void ImageView::paintCropActionButtons(QPainter &painter)
 void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
 {
     // Crop size in image pixels (same coordinate space as the draft rect).
-    const int cropW = qMax(1, qRound(m_cropRect.width()));
-    const int cropH = qMax(1, qRound(m_cropRect.height()));
+    const int cropW = qMax(1, qRound(m_crop.rect.width()));
+    const int cropH = qMax(1, qRound(m_crop.rect.height()));
     const QString sizeLabel = QStringLiteral("%1×%2").arg(cropW).arg(cropH);
     {
         QFont f = painter.font();
@@ -1889,11 +1889,11 @@ void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
 
 void ImageView::paintCropOverlay(QPainter &painter)
 {
-    if (!m_cropMode) {
+    if (!m_crop.mode) {
         return;
     }
     ImageItem *item = cropTargetItem();
-    if (!item || !m_cropRect.isValid()) {
+    if (!item || !m_crop.rect.isValid()) {
         return;
     }
     ensureCropRectValid();
@@ -1931,53 +1931,53 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
         || h == CropHandle::Auto) {
         return;
     }
-    m_cropActiveHandle = h;
-    m_cropDragStartRect = m_cropRect;
-    m_cropDragStartLocal = item->mapFromScene(mapToScene(viewPos));
+    m_crop.activeHandle = h;
+    m_crop.dragStartRect = m_crop.rect;
+    m_crop.dragStartLocal = item->mapFromScene(mapToScene(viewPos));
     if (h == CropHandle::Rotate) {
-        m_cropRotateStartRotation = m_cropRotation;
-        const QPointF c = m_cropRect.center();
-        const QPointF v = m_cropDragStartLocal - c;
-        m_cropRotateStartAngle = qRadiansToDegrees(qAtan2(v.y(), v.x()));
+        m_crop.rotateStartRotation = m_crop.rotation;
+        const QPointF c = m_crop.rect.center();
+        const QPointF v = m_crop.dragStartLocal - c;
+        m_crop.rotateStartAngle = qRadiansToDegrees(qAtan2(v.y(), v.x()));
     }
 }
 
 void ImageView::updateCropMoveDrag(const QPointF &local, const QRectF &cr)
 {
-    const QPointF delta = local - m_cropDragStartLocal;
-    QRectF r = m_cropDragStartRect.translated(delta);
-    if (!m_cropAllowExpand) {
+    const QPointF delta = local - m_crop.dragStartLocal;
+    QRectF r = m_crop.dragStartRect.translated(delta);
+    if (!m_crop.allowExpand) {
         // Move must never shrink the draft (axis-aligned intersect used to clip
         // size at the image edge). Only slide so corners stay inside — same as
         // the rotated-frame path via translateCropInside.
         r = r.normalized();
-        r = CropGeometry::translateInside(r, m_cropRotation, cr);
+        r = CropGeometry::translateInside(r, m_crop.rotation, cr);
     }
-    m_cropRect = r;
+    m_crop.rect = r;
     viewport()->update();
 }
 
 void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qreal minSide)
 {
-    const QPointF c0 = m_cropDragStartRect.center();
+    const QPointF c0 = m_crop.dragStartRect.center();
     const QPointF v = local - c0;
     const qreal angle = qRadiansToDegrees(qAtan2(v.y(), v.x()));
-    m_cropRotation = m_cropRotateStartRotation + (angle - m_cropRotateStartAngle);
-    while (m_cropRotation > 180.0) {
-        m_cropRotation -= 360.0;
+    m_crop.rotation = m_crop.rotateStartRotation + (angle - m_crop.rotateStartAngle);
+    while (m_crop.rotation > 180.0) {
+        m_crop.rotation -= 360.0;
     }
-    while (m_cropRotation <= -180.0) {
-        m_cropRotation += 360.0;
+    while (m_crop.rotation <= -180.0) {
+        m_crop.rotation += 360.0;
     }
     // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
     const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
     if (mods & Qt::ShiftModifier) {
-        m_cropRotation = qRound(m_cropRotation / 15.0) * 15.0;
+        m_crop.rotation = qRound(m_crop.rotation / 15.0) * 15.0;
     } else if (mods & Qt::ControlModifier) {
-        m_cropRotation = qRound(m_cropRotation / 45.0) * 45.0;
+        m_crop.rotation = qRound(m_crop.rotation / 45.0) * 45.0;
     }
-    if (!m_cropAllowExpand) {
-        m_cropRect = CropGeometry::constrainToContent(m_cropDragStartRect, m_cropRotation, cr,
+    if (!m_crop.allowExpand) {
+        m_crop.rect = CropGeometry::constrainToContent(m_crop.dragStartRect, m_crop.rotation, cr,
                                             minSide);
     }
     viewport()->update();
@@ -1986,10 +1986,10 @@ void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qre
 QRectF ImageView::cropLocalResizeRect(const QPointF &local, qreal minSide) const
 {
     // Resize in crop-local axes (axis-aligned about start centre).
-    const QPointF c0 = m_cropDragStartRect.center();
-    const qreal w0 = m_cropDragStartRect.width();
-    const qreal h0 = m_cropDragStartRect.height();
-    const qreal ang = m_cropRotation;
+    const QPointF c0 = m_crop.dragStartRect.center();
+    const qreal w0 = m_crop.dragStartRect.width();
+    const qreal h0 = m_crop.dragStartRect.height();
+    const qreal ang = m_crop.rotation;
     const bool fromCenter =
         QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
     const bool forceSquare =
@@ -2007,18 +2007,18 @@ QRectF ImageView::cropLocalResizeRect(const QPointF &local, qreal minSide) const
     qreal T = -h0 / 2.0;
     qreal B = h0 / 2.0;
 
-    const bool left = (m_cropActiveHandle == CropHandle::Left
-                       || m_cropActiveHandle == CropHandle::TopLeft
-                       || m_cropActiveHandle == CropHandle::BottomLeft);
-    const bool right = (m_cropActiveHandle == CropHandle::Right
-                        || m_cropActiveHandle == CropHandle::TopRight
-                        || m_cropActiveHandle == CropHandle::BottomRight);
-    const bool top = (m_cropActiveHandle == CropHandle::Top
-                      || m_cropActiveHandle == CropHandle::TopLeft
-                      || m_cropActiveHandle == CropHandle::TopRight);
-    const bool bottom = (m_cropActiveHandle == CropHandle::Bottom
-                         || m_cropActiveHandle == CropHandle::BottomLeft
-                         || m_cropActiveHandle == CropHandle::BottomRight);
+    const bool left = (m_crop.activeHandle == CropHandle::Left
+                       || m_crop.activeHandle == CropHandle::TopLeft
+                       || m_crop.activeHandle == CropHandle::BottomLeft);
+    const bool right = (m_crop.activeHandle == CropHandle::Right
+                        || m_crop.activeHandle == CropHandle::TopRight
+                        || m_crop.activeHandle == CropHandle::BottomRight);
+    const bool top = (m_crop.activeHandle == CropHandle::Top
+                      || m_crop.activeHandle == CropHandle::TopLeft
+                      || m_crop.activeHandle == CropHandle::TopRight);
+    const bool bottom = (m_crop.activeHandle == CropHandle::Bottom
+                         || m_crop.activeHandle == CropHandle::BottomLeft
+                         || m_crop.activeHandle == CropHandle::BottomRight);
 
     if (fromCenter) {
         if (left || right) {
@@ -2091,7 +2091,7 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
     // so edges stay under the grips when the frame is rotated.
     QRectF r = cropLocalResizeRect(local, minSide);
 
-    if (m_cropAllowExpand) {
+    if (m_crop.allowExpand) {
         r = r.intersected(limits);
         if (r.width() < minSide) {
             r.setWidth(minSide);
@@ -2099,9 +2099,9 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
         if (r.height() < minSide) {
             r.setHeight(minSide);
         }
-        m_cropRect = r;
+        m_crop.rect = r;
     } else {
-        m_cropRect = CropGeometry::constrainToContent(r, m_cropRotation, cr, minSide);
+        m_crop.rect = CropGeometry::constrainToContent(r, m_crop.rotation, cr, minSide);
     }
     viewport()->update();
 }
@@ -2111,21 +2111,21 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
 void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || m_cropActiveHandle == CropHandle::None) {
+    if (!item || m_crop.activeHandle == CropHandle::None) {
         return;
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
     const QRectF cr = item->contentRect();
-    const QRectF limits = m_cropAllowExpand
+    const QRectF limits = m_crop.allowExpand
         ? cr.adjusted(-cr.width() * 4, -cr.height() * 4, cr.width() * 4, cr.height() * 4)
         : cr;
     const qreal minSide = 4.0;
 
-    if (m_cropActiveHandle == CropHandle::Move) {
+    if (m_crop.activeHandle == CropHandle::Move) {
         updateCropMoveDrag(local, cr);
         return;
     }
-    if (m_cropActiveHandle == CropHandle::Rotate) {
+    if (m_crop.activeHandle == CropHandle::Rotate) {
         updateCropRotateDrag(local, cr, minSide);
         return;
     }
@@ -2134,7 +2134,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 
 void ImageView::endCropHandleDrag()
 {
-    m_cropActiveHandle = CropHandle::None;
+    m_crop.activeHandle = CropHandle::None;
     ensureCropRectValid();
     viewport()->update();
 }
@@ -2149,22 +2149,22 @@ void ImageView::beginCropRubberBand(const QPoint &viewPos)
     if (!item->contentRect().contains(local)) {
         return;
     }
-    m_cropRubberBanding = true;
-    m_cropRubberOriginLocal = local;
-    m_cropRect = QRectF(local, QSizeF(0, 0));
-    m_cropRotation = 0.0; // new rubber-band is axis-aligned
+    m_crop.rubberBanding = true;
+    m_crop.rubberOriginLocal = local;
+    m_crop.rect = QRectF(local, QSizeF(0, 0));
+    m_crop.rotation = 0.0; // new rubber-band is axis-aligned
     viewport()->update();
 }
 
 void ImageView::updateCropRubberBand(const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || !m_cropRubberBanding) {
+    if (!item || !m_crop.rubberBanding) {
         return;
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
     const QRectF cr = item->contentRect();
-    const QPointF origin = m_cropRubberOriginLocal;
+    const QPointF origin = m_crop.rubberOriginLocal;
     QRectF r = QRectF(origin, local).normalized();
     if (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) {
         const qreal side = qMax(qAbs(local.x() - origin.x()), qAbs(local.y() - origin.y()));
@@ -2184,7 +2184,7 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
             r = QRectF(c - QPointF(halfW, halfH), QSizeF(2 * halfW, 2 * halfH));
         }
     }
-    if (!m_cropAllowExpand) {
+    if (!m_crop.allowExpand) {
         r = r.intersected(cr);
     }
     if (r.width() < 1.0) {
@@ -2193,24 +2193,24 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
     if (r.height() < 1.0) {
         r.setHeight(1.0);
     }
-    m_cropRect = m_cropAllowExpand ? r : r.intersected(cr);
+    m_crop.rect = m_crop.allowExpand ? r : r.intersected(cr);
     viewport()->update();
 }
 
 void ImageView::endCropRubberBand()
 {
-    m_cropRubberBanding = false;
+    m_crop.rubberBanding = false;
     ensureCropRectValid();
     viewport()->update();
 }
 
-ImageView::CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
+CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
 {
-    if (!m_cropMode) {
+    if (!m_crop.mode) {
         return CropHandle::None;
     }
     ImageItem *item = cropTargetItem();
-    if (!item || !m_cropRect.isValid()) {
+    if (!item || !m_crop.rect.isValid()) {
         return CropHandle::None;
     }
     // Controls sit near the crop frame (checked before edge handles).

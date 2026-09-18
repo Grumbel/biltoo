@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1249-crop-session.** Consolidate crop draft state into CropSession.
+Prior: **1248**.
+
+### Change
+- `CropSession` + `CropHandle` in `cropsession.h`.
+- `ImageView::m_crop` holds all draft fields; public accessors forward.
+- Enter/apply/leave orchestration remains on ImageView.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1249-crop-session.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1248-crop-geometry.** Extract pure CropGeometry from imageview_crop.
 Prior: **1247**.
 
