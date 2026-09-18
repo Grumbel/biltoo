@@ -1458,9 +1458,14 @@ void ImageItem::prepareTileLodPlan()
         m_tileLod->setPath(m_path);
     }
     // Tile grid is always full native (source) size.
-    // min_scale from durable coverage so we do not request finer than the pyramid.
-    m_tileLod->setContentSize(native.width(), native.height(),
-                              ThumtooCache::durableTileMinScale(m_path));
+    // Gallery: durable min_scale floors the plan (no encode-on-miss budget).
+    // Image/Workspace: always min_scale 0 so density can climb to full-res —
+    // durableTileMinScale alone left ImageView stuck on coarse overview tiles
+    // when the pyramid memo only recorded an incomplete fine floor.
+    const int minScale = m_galleryCellSize.isEmpty()
+        ? 0
+        : ThumtooCache::durableTileMinScale(m_path);
+    m_tileLod->setContentSize(native.width(), native.height(), minScale);
 
     const qreal dpc = tileDevicePerContent();
     QRectF visLocal = contentRect();

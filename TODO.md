@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1229-image-tile-min-scale-zero.** Image mode tile plan min_scale=0 so LOD can upres.
+Prior: **1228**.
+
+### Bug
+`prepareTileLodPlan` always passed `durableTileMinScale` into `setContentSize`.
+When the durable memo reported an incomplete fine floor, ImageView never
+requested finer scales than that floor → stuck on low-quality overview tiles.
+
+### Fix
+- Gallery: keep durable min_scale floor.
+- Image/Workspace (`galleryCellSize` empty): min_scale **0** (encode-on-miss / full climb).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1229-image-tile-min-scale-zero.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1228-docs-tiles-product.** Gallery/PathRaster docs match tiles-only helper.
 Prior: **1227**.
 

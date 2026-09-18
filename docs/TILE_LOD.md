@@ -564,9 +564,13 @@ then by on-screen long edge (cell × view scale × DPR).
 
 ## Session min_scale (biltoo-1068)
 
+**Image/Workspace (biltoo-1229):** always pass `min_scale=0` so density can climb
+to full-res (encode-on-miss). Gallery still uses `durableTileMinScale` as a floor.
+
 `ThumtooCache::durableTileMinScale` records the finest durable scale when
-discovering a pyramid (0 if origin exists, else coverage `min_scale`). Host
+discovering a pyramid (0 if origin exists, else coverage `min_scale`). Gallery
 passes it to `setContentSize` so the planner never targets finer than the
+
 Store can supply (avoids systematic Failed cells for partial pyramids).
 
 
