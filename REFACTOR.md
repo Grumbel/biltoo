@@ -81,6 +81,10 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ItemHandlePolicy** (`itemhandlepolicy.{h,cpp}`): pure ImageItem::Handle classification predicates.
 - **StackGeometry** (`stackgeometry.{h,cpp}`): pure scene content-overlap + raise/lower z-step math.
 - **PerfStats** (`perfstats.h`): BILTOO_PERF paint/FPS + decode-window timings bag.
+- **ColorAdjustCommit** / **LayoutDebounce**: pending grade sid/path + debounced pack reason.
+- **SelectionGeometry::unionContentAabbs**: pure multi-item content AABB union.
+- **GalleryPackFit**: pure pack overshoot targets + uniform scale.
+- **PlacementLinear::normalizeDegrees**: shared [0,360) rotation wrap.
 - **CropSession::locksPath / locksItem**: draft sample freeze predicates on the session bag.
 - **CropSession::isDraftLayoutGeometry**; **SlideshowProgressHud::lastPaintFp**.
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).

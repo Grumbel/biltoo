@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1326-debounce-selection-packfit.** Debounce bags, selection union, pack fit, degree normalize.
+Prior: **1325**.
+
+### Change
+- `ColorAdjustCommit` / `LayoutDebounce` — pending grade target + pack reason bags
+- `SelectionGeometry::unionContentAabbs` — group selection scene bounds
+- `GalleryPackFit` — pure overshoot targets + uniform scale for dual-scrollbar fix
+- `PlacementLinear::normalizeDegrees` — ImageItem rotation wrap
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1326-debounce-selection-packfit.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1325-perf-stats.** Extract PerfStats paint/decode timing bag.
 Prior: **1324**.
 
