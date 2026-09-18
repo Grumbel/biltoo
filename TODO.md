@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1211-prefercache-settle-terminal.** Stop soft PreferCache re-request loops (DEBUG_OVERLAY soft 128 for req=256).
+Prior: **1210**.
+
+### Cause
+PreferCache often returns a **plateau** soft (~128) for request edge 256. Settled only when `got ≥ 90% of edge`, so the key never settled and filmstrip kept calling `scheduleSoftPixels`.
+
+### Fix
+- Always mark `path#disp{edge}` **settled** after PreferCache completes (hit, plateau, or empty).
+- Never clear settled to "retry" the same edge.
+- Cap schedule attempts per key (`kMaxPixelScheduleAttempts`).
+- Filmstrip: soft plateau (`have > LQIP` and decode ≤ soft ladder) is terminal.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1211-prefercache-settle-terminal.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1210-size-first-serial.** Sequential size probes for whole session; gate tiles/filmstrip until sizes resolve.
 Prior: **1209**.
 

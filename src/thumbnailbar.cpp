@@ -1753,6 +1753,13 @@ void ThumbnailBar::filmstripSurfaceTick()
             m_thumbLoadScheduled.remove(i);
             continue;
         }
+        // Soft PreferCache plateau is terminal for soft-band filmstrip demand.
+        if (shown > DisplayQuality::kLqipMaxEdge
+            && decodeSize <= ThumtooCache::kGalleryLadderEdge) {
+            m_thumbAwaitLadder.remove(i);
+            m_thumbLoadScheduled.remove(i);
+            continue;
+        }
 
         // Session-id crop/appearance owns the cell — never paint raw host over it.
         // Path-only rows use DisplaySurface::decide below for host upgrades.
@@ -1976,6 +1983,12 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             const int haveEdge =
                 it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
             if (haveEdge >= decodeSize * 9 / 10) {
+                continue;
+            }
+            // PreferCache soft plateau (e.g. 128 for req=256): do not re-queue
+            // soft forever. Only climb further when decode wants overview+.
+            if (haveEdge > DisplayQuality::kLqipMaxEdge
+                && decodeSize <= ThumtooCache::kGalleryLadderEdge) {
                 continue;
             }
         }

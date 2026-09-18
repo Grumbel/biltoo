@@ -197,6 +197,9 @@ struct PendingPixels {
 std::vector<PendingPixels> g_pixelsQueue;
 /** path#edge already finished (hit or miss) this process — no re-queue. */
 QSet<QString> g_pixelsSettled;
+/** How many times schedule* queued this key (detect soft re-request loops). */
+QHash<QString, int> g_pixelsScheduleCount;
+constexpr int kMaxPixelScheduleAttempts = 4;
 /** Paths known to have at least one durable tile (positive cache). */
 QSet<QString> g_durableTilesYes;
 /** Finest available scale for paths in g_durableTilesYes (default 0). */
@@ -1532,9 +1535,8 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
                 const int got = decoded.isNull()
                                     ? 0
                                     : qMax(decoded.width(), decoded.height());
-                if (got >= (edge * 9) / 10) {
-                    g_pixelsSettled.insert(inflightKey);
-                }
+                // PreferCache/overview BestAvailable is terminal for this edge.
+                g_pixelsSettled.insert(inflightKey);
                 g_pixelsActive = qMax(0, g_pixelsActive - 1);
                 thumtooDbg(
                     "scheduleOverview DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
@@ -1607,20 +1609,23 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
             return false;
         }
         if (g_pixelsSettled.contains(inflightKey)) {
-            const int have = ImageCache::longEdge(ImageCache::get(path));
-            if (have * 10 >= maxEdge * 9) {
-                thumtooDbg("scheduleDisplay SKIP path=%s edge=%d (settled have=%d)",
-                           qPrintable(path), maxEdge, have);
-                return false;
-            }
-            g_pixelsSettled.remove(inflightKey);
-            thumtooDbg("scheduleDisplay RETRY path=%s edge=%d (settled but host have=%d)",
-                       qPrintable(path), maxEdge, have);
+            // PreferCache already answered this edge (hit, plateau, or miss).
+            thumtooDbg("scheduleDisplay SKIP path=%s edge=%d (settled)",
+                       qPrintable(path), maxEdge);
+            return false;
+        }
+        int &attempts = g_pixelsScheduleCount[inflightKey];
+        ++attempts;
+        if (attempts > kMaxPixelScheduleAttempts) {
+            g_pixelsSettled.insert(inflightKey);
+            thumtooDbg("scheduleDisplay LOOP-BREAK path=%s edge=%d attempts=%d",
+                       qPrintable(path), maxEdge, attempts);
+            return false;
         }
         g_pixelsInflight.insert(inflightKey);
         ++g_pixelsActive;
-        thumtooDbg("scheduleDisplay queue path=%s edge=%d active=%d",
-                   qPrintable(path), maxEdge, g_pixelsActive);
+        thumtooDbg("scheduleDisplay queue path=%s edge=%d active=%d attempts=%d",
+                   qPrintable(path), maxEdge, g_pixelsActive, attempts);
     }
     const QString pathCopy = path;
     const int edge = maxEdge;
@@ -1677,15 +1682,16 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
                     const int got = decoded.isNull()
                                         ? 0
                                         : qMax(decoded.width(), decoded.height());
-                    if (got >= (edge * 9) / 10) {
-                        g_pixelsSettled.insert(inflightKey);
-                    }
+                    // PreferCache BestAvailable is terminal for this request edge.
+                    // Requiring got≥90% of edge left soft 128 for req=256 unsettled
+                    // and filmstrip re-scheduled forever (DEBUG_OVERLAY soft loop).
+                    g_pixelsSettled.insert(inflightKey);
                     g_pixelsActive = qMax(0, g_pixelsActive - 1);
                     thumtooDbg(
-                        "scheduleDisplay DONE path=%s edge=%d ok=%d src=%d "
+                        "scheduleDisplay DONE path=%s edge=%d plateau=%d src=%d "
                         "decoded=%dx%d active=%d",
                         qPrintable(pathCopy), edge,
-                        (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
+                        (got < (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
                         decoded.height(), g_pixelsActive);
                     startNextPixelJobsUnlocked();
                 }
