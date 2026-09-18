@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1169-tiles-only-no-soft.** Gallery tiles + LQIP only; remove soft underlay.
+Prior: **1168**.
+
+### Policy
+Gallery product is **tiles only** (plus LQIP ≤96 underlay). Soft PreferCache /
+classic loadThumbnail underlay is forbidden. Reverted soft-underlay experiments
+from 1164–1167; kept size-resolve placeholder fix (1168).
+
+### Code
+- `scheduleGalleryDecode` tile band: LQIP + tile pyramid + tick; no soft jobs
+- `canAccept` / paint / pass1: reject SoftPreview > LQIP
+- `loadSoftPreviewPixels` / soft job: LQIP seed only
+- PathRaster: durable → tiles only, no soft PreferCache
+- Docs + HOST-SAMPLE stamp clarified
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1169-tiles-only-no-soft.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1168-size-resolve-placeholders.** Fill size-resolve left empty canvas.
 Prior: **1167**.
 

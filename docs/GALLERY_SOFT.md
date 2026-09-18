@@ -5,31 +5,29 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Gallery pixels: soft ladder + on-demand full decode
 
-## Tiles-first (product)
+## Tiles only (product)
 
-When **tileLodWanted** and the cell already shows pixels (or tiles are active),
-Gallery does not PreferCache-climb soft — tiles own sharpness. **Blank** tile-band
-cells still get PreferCache soft underlay in parallel with tile LOD until
-something is painted (LQIP is free-data-only and often missing after soft-path
-removal). Once tiles paint, underlay stays LQIP-sized only.
+Gallery **tileLodWanted** cells: **durable tiles + LQIP underlay only**.
 
-Small cells (`!tileLodWanted`) use PreferCache / LQIP only (no soft climb to 512).
+* **No** PreferCache soft whole-frame underlay
+* **No** classic `loadThumbnail` soft plate
+* **No** SOFT/HOST samples as underlay (overlay HOST-SAMPLE means a bug if painted)
 
-Warm `ImageCache` cover of the soft edge → zero PreferCache work.
+Blank cells show LQIP (≤96) if present in Store/ImageCache, else empty until
+tiles paint. `scheduleGalleryDecode` for the tile band: probe, LQIP install,
+`scheduleTilePyramid`, `tickPrimaryTileLod` — then return (no PathRaster soft).
+
+Small cells (`!tileLodWanted`): LQIP only (want capped ≤96).
+
+Warm `ImageCache` LQIP cover → zero work for underlay.
 
 ### Debug overlay (`BILTOO_DEBUG_OVERLAY`)
 
 | Stamp | Meaning |
 |-------|--------|
-| **LQIP** | ≤96 host stand-in |
-| **SOFT-UNDERLAY** | Host whole-frame soft (≤512), not a grid tile |
-| **HOST-UNDERLAY** | Larger host sample (PreferCache / loadThumbnail) |
-| **TILE** / **LADDER** (thumtoo stamps) | Durable pyramid cells |
-
-Cyan HOST/SOFT underlay mixed with magenta TILE stamps means soft arrived before tiles covered the cell (expected until `tileLodActive`).
-
-PathRaster must **not** skip soft PreferCache solely because a durable
-pyramid exists — that left Gallery blank when LQIP was absent.
+| **LQIP** | ≤96 host/store stand-in (allowed underlay) |
+| **HOST-SAMPLE** | Host whole-frame >96 — **must not** be Gallery underlay |
+| **TILE** / **LADDER** (thumtoo) | Durable pyramid cells |
 
 
 ## Authority (host climb)

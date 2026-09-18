@@ -1583,14 +1583,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // size probe (SIZE.md); LQIP/soft/full are only textures. Always stretch
         // to the full box so a correct layout does not show a small letterboxed
         // LQIP that later "grows" when soft fills the same rect.
-        // Underlay until tiles cover. Soft/HOST is allowed while the cell is
-        // still blank (no tile cells yet) — LQIP-only after tiles start so
-        // PreferCache does not fight the pyramid. Post-soft-removal blanks
-        // had neither LQIP nor tiles and painted nothing.
+        // Gallery product: LQIP underlay only until tiles cover. Never soft/HOST
+        // whole-frame under tileLodWanted cells.
         const bool tilesWanted = tileLodWanted();
         const bool tilesFullyCover =
             tilesWanted && tileLodViewportCovered();
-        const bool tilesHaveAny = tilesWanted && tileLodActive();
         const bool drawLqipBase = !tilesFullyCover;
 
         auto isLqipSample = [](const QImage &img) {
@@ -1606,9 +1603,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {
                 return;
             }
-            // Once tiles are painting, keep underlay LQIP-sized only.
-            if (tilesHaveAny && !isLqipSample(img)) {
-                return;
+            if (tilesWanted && !isLqipSample(img)) {
+                return; // never soft/host under tiles
             }
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
             painter->drawImage(box, img);
@@ -1636,9 +1632,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                         setCacheMode(QGraphicsItem::ItemCoordinateCache);
                     }
                 }
-                // Tile cells with active tiles: LQIP-sized pixmap only.
-                // Blank tile cells may show soft pixmap until first tile lands.
-                if (tilesHaveAny
+                // Tile cells: only LQIP-sized pixmap as underlay.
+                if (tilesWanted
                     && qMax(pixmap().width(), pixmap().height())
                         > DisplayQuality::kLqipMaxEdge) {
                     // leave underlay to LQIP branch / placeholder
@@ -1647,12 +1642,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
                 }
             } else if (!m_source.isNull() && !m_previewPixels) {
-                if (tilesHaveAny
+                if (tilesWanted
                     && qMax(m_source.width(), m_source.height())
                         > DisplayQuality::kLqipMaxEdge) {
-                    // skip soft/host once tiles are painting
+                    // skip soft/host underlay
                 } else if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0
-                    && (!tilesHaveAny
+                    && (!tilesWanted
                         || qMax(pixmap().width(), pixmap().height())
                             <= DisplayQuality::kLqipMaxEdge)) {
                     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);

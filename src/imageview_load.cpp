@@ -140,77 +140,50 @@ void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
  * that left Image mode / slideshow blank until the high-res job finished.
  */
 /**
- * Host soft for Gallery underlay / Image open.
- * Prefer ImageCache + Store LQIP, then PreferCache schedule, then classic
- * loadThumbnail when still empty (Gallery stayed blank after soft-path
- * removal when LQIP was missing and tiles had not painted).
+ * LQIP / existing host sample only. Gallery is tiles-only: never PreferCache@soft
+ * or classic loadThumbnail for underlay. Image-mode callers still schedule probe.
  */
-QImage loadSoftPreviewPixels(const QString &path, int softEdge)
+QImage loadSoftPreviewPixels(const QString &path, int /*softEdge*/)
 {
     ASSERT_NOT_GUI_THREAD();
-    const int edge = softEdge > 0 ? softEdge : ThumtooCache::kGalleryLadderEdge;
-    QImage preview = ImageCache::get(path, edge);
-    if (preview.isNull()) {
-        preview = ImageCache::get(path);
-    }
-    if (ImageCache::adequate(preview, edge)) {
+    QImage preview = ImageCache::get(path);
+    if (!preview.isNull()
+        && ImageCache::longEdge(preview) <= DisplayQuality::kLqipMaxEdge) {
         return preview;
     }
-    // PreferCache / TileSynth (async delivery via ladderReady).
-    if (ThumtooCache::isAvailable()) {
-        (void)ThumtooCache::scheduleDisplayPixels(path, edge);
-        if (preview.isNull()) {
-            preview = ThumtooCache::cachedLqipImage(path);
-            if (!preview.isNull()) {
-                ImageCache::put(path, preview);
-            }
-        }
-        // Still empty: classic shrink-on-decode underlay so Gallery is not blank
-        // while tiles/PreferCache complete. Soft samples are ephemeral host-only.
-        if (preview.isNull()) {
-            const QImage loaded = ImageLoader::loadThumbnail(path, edge);
-            if (!loaded.isNull()) {
-                preview = loaded;
-                ImageCache::put(path, preview);
-            }
-        }
+    preview = ThumtooCache::cachedLqipImage(path);
+    if (!preview.isNull()) {
+        ImageCache::put(path, preview);
         return preview;
     }
-    const QImage loaded = ImageLoader::loadThumbnail(path, edge);
-    if (!loaded.isNull()
-        && ImageCache::longEdge(loaded) >= ImageCache::longEdge(preview)) {
-        preview = loaded;
+    // Keep a smaller host sample if present; do not encode soft.
+    preview = ImageCache::get(path);
+    if (!preview.isNull()
+        && ImageCache::longEdge(preview) <= DisplayQuality::kLqipMaxEdge) {
+        return preview;
     }
-    if (preview.isNull()) {
-        preview = ThumtooCache::cachedLqipImage(path);
-        if (!preview.isNull()) {
-            ImageCache::put(path, preview);
-        }
-    }
-    return preview;
+    return QImage();
 }
 
 /**
- * Soft underlay job: PreferCache + classic loadThumbnail fallback.
- * Gallery blank cells use this so SOFT-path removal cannot leave a void.
+ * LQIP seed job only. Never SoftOnly / loadThumbnail / PreferCache soft encode.
+ * Gallery product is tiles + LQIP underlay only.
  */
 void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
                          quint64 gen, int roleInt, int softEdge,
                          const WorkspaceItemState &sessionApp)
 {
-    biltooLoadDbg("softJob START path=%s edge=%d gen=%llu",
-                  qPrintable(QFileInfo(path).fileName()), softEdge,
+    biltooLoadDbg("lqipSeed START path=%s gen=%llu",
+                  qPrintable(QFileInfo(path).fileName()),
                   static_cast<unsigned long long>(gen));
+    Q_UNUSED(softEdge);
     QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, softEdge, sessionApp]() {
+        [guard, path, roleInt, gen, sessionApp]() {
             if (!guard || !guard->matchesLoadGeneration(gen)) {
                 return;
             }
             ThumtooCache::scheduleProbe(path);
-            QImage preview = loadSoftPreviewPixels(path, softEdge);
-            biltooLoadDbg("softJob DONE path=%s got=%dx%d",
-                          qPrintable(QFileInfo(path).fileName()),
-                          preview.width(), preview.height());
+            QImage preview = loadSoftPreviewPixels(path, 0);
             if (!preview.isNull() && !path.isEmpty()) {
                 ImageCache::put(path, preview);
             }
@@ -787,28 +760,23 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
     if (kind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
         return false;
     }
-    // Gallery tile band: blank cells accept SoftPreview underlay (any edge)
-    // until tiles paint. Once shown, reject soft climb so tiles own sharpness.
-    if (!item->hasDisplayPixels()) {
-        return true;
+    // Gallery: LQIP underlay only (≤kLqipMaxEdge). Never soft/HOST whole-frame.
+    if (isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview
+        && incoming > DisplayQuality::kLqipMaxEdge) {
+        return false;
     }
-    // Gallery with tiles active: SoftPreview upgrades are LQIP-only (or reject).
+    if (!item->hasDisplayPixels()) {
+        return true; // blank: LQIP-sized SoftPreview only (gated above)
+    }
     if (isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
         const int shown = item->displayPixelLongEdge();
-        if (item->tileLodWanted()) {
-            // Allow larger LQIP stand-in only; no soft climb over tiles.
-            if (shown <= DisplayQuality::kLqipMaxEdge
-                && incoming > shown
-                && incoming <= DisplayQuality::kLqipMaxEdge) {
-                return true;
-            }
-            return false;
-        }
+        // Only larger LQIP; never soft climb.
         if (shown <= DisplayQuality::kLqipMaxEdge
             && incoming > shown
             && incoming <= DisplayQuality::kLqipMaxEdge) {
             return true;
         }
+        return false;
     }
     DisplaySurface::State ds = displaySurfaceStateForItem(item, incoming, false);
     if (isCropDraftLockedItem(item) || isCropDraftLockedPath(item->path())) {
@@ -1706,24 +1674,14 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    // Tile LOD band: tiles own sharpness once painting. While every item for
-    // this path is still blank, PreferCache soft underlay runs in parallel so
-    // Gallery is never empty after soft-path removal (LQIP is free-data-only).
+    // Gallery product: tiles + LQIP underlay only. Never PreferCache soft /
+    // classic loadThumbnail whole-frame for tileLodWanted paths.
     {
         bool anyTileWanted = false;
-        bool anyBlank = false;
-        bool anyShown = false;
         for (ImageItem *ii : m_items) {
-            if (!ii || ii->path() != path) {
-                continue;
-            }
-            if (ii->tileLodWanted()) {
+            if (ii && ii->path() == path && ii->tileLodWanted()) {
                 anyTileWanted = true;
-            }
-            if (ii->hasDisplayPixels() || ii->tileLodActive()) {
-                anyShown = true;
-            } else {
-                anyBlank = true;
+                break;
             }
         }
         if (anyTileWanted) {
@@ -1731,7 +1689,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 || !ThumtooCache::cachedSize(path).isValid()) {
                 scheduleImageSizeProbe(path);
             }
-            // Install any host sample onto blank cells (soft OK until tiles).
+            // LQIP underlay only (≤kLqipMaxEdge). Downscale host soft if present.
             {
                 QImage host = ImageCache::get(path);
                 if (host.isNull()) {
@@ -1741,45 +1699,46 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     }
                 }
                 if (!host.isNull()) {
-                    for (ImageItem *ii : m_items) {
-                        if (!ii || ii->path() != path) {
-                            continue;
-                        }
-                        if (!ii->hasDisplayPixels()
-                            || (ii->displayPixelLongEdge()
-                                < ImageCache::longEdge(host)
-                                && !ii->tileLodActive())) {
-                            installDisplayPixels(
-                                ii, host,
-                                SessionAppearance::PixelKind::SoftPreview,
-                                ii->sessionId());
+                    if (ImageCache::longEdge(host) > DisplayQuality::kLqipMaxEdge) {
+                        const int cap = DisplayQuality::kLqipMaxEdge;
+                        host = host.scaled(cap, cap, Qt::KeepAspectRatio,
+                                           Qt::SmoothTransformation);
+                    }
+                    if (!host.isNull()) {
+                        for (ImageItem *ii : m_items) {
+                            if (!ii || ii->path() != path) {
+                                continue;
+                            }
+                            if (!ii->hasDisplayPixels()
+                                || ii->displayPixelLongEdge()
+                                    < ImageCache::longEdge(host)) {
+                                installDisplayPixels(
+                                    ii, host,
+                                    SessionAppearance::PixelKind::SoftPreview,
+                                    ii->sessionId());
+                            }
                         }
                     }
                 }
             }
+            (void)ThumtooCache::scheduleTilePyramid(path);
             tickPrimaryTileLod(12);
-            // Still blank: PreferCache + classic soft job underlay.
-            // PathRaster alone was blocked for durable paths (tiles-only);
-            // LQIP free-data-only often missing after soft-path removal.
-            if (anyBlank && !anyShown) {
-                const int softEdge = ThumtooCache::kGalleryLadderEdge;
-                (void)ThumtooCache::scheduleSoftPixels(path, softEdge);
-                (void)ThumtooCache::scheduleTilePyramid(path);
-                startSoftPreviewJob(QPointer<ImageView>(this), path,
-                                    m_loadGeneration.load(),
-                                    static_cast<int>(LoadAdd), softEdge,
-                                    WorkspaceItemState{});
-                // Fall through to PathRaster SoftDisplay below for underlay.
-            } else {
-                auto sit = m_gallerySoft.find(path);
-                if (sit != m_gallerySoft.end()) {
-                    clearGallerySoftInflight(*sit);
-                    if (anyShown) {
-                        sit->terminal = true;
+            auto sit = m_gallerySoft.find(path);
+            if (sit != m_gallerySoft.end()) {
+                clearGallerySoftInflight(*sit);
+                bool anyPx = false;
+                for (ImageItem *ii : m_items) {
+                    if (ii && ii->path() == path
+                        && (ii->hasDisplayPixels() || ii->tileLodActive())) {
+                        anyPx = true;
+                        break;
                     }
                 }
-                return;
+                if (anyPx) {
+                    sit->terminal = true;
+                }
             }
+            return; // never PathRaster soft climb for tile band
         }
     }
     // Size-first still probes in the background, but never blocks decode:
@@ -1838,22 +1797,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (gallerySoftScheduleBlocked(st, have, want)) {
         return;
     }
-    // Gallery: LQIP-only for non-blank cells. Blank tile-band cells may request
-    // soft PreferCache underlay until tiles/LQIP show something.
-    bool blankTileUnderlay = false;
-    if (isGalleryMode()) {
-        for (ImageItem *ii : m_items) {
-            if (ii && ii->path() == path && ii->tileLodWanted()
-                && !ii->hasDisplayPixels() && !ii->tileLodActive()) {
-                blankTileUnderlay = true;
-                break;
-            }
-        }
-        if (blankTileUnderlay) {
-            want = qMax(want, ThumtooCache::kGalleryLadderEdge);
-        } else if (want > DisplayQuality::kLqipMaxEdge) {
-            want = DisplayQuality::kLqipMaxEdge;
-        }
+    // Gallery non-tile cells: LQIP only — no soft climb to 512.
+    if (isGalleryMode() && want > DisplayQuality::kLqipMaxEdge) {
+        want = DisplayQuality::kLqipMaxEdge;
     }
     if (!st.needsSoftSchedule(want, /*anyBlank=*/have <= 0, /*anyFull=*/false)) {
         return;
@@ -2059,19 +2005,19 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
                     image.height());
         }
         onImagePreviewLoaded(path, image, 0, static_cast<int>(LoadAdd));
-        // Startup: DisplaySurface may no-op before pack/viewport settle, leaving
-        // ImageCache warm but cells blank until an explicit relayout re-runs
-        // pass1. Force SoftPreview onto still-blank items for this path.
-        for (ImageItem *item : m_items) {
-            if (!item || item->path() != path || item->hasDisplayPixels()) {
-                continue;
+        // Force LQIP-sized underlay only onto still-blank items (tiles own the rest).
+        if (ImageCache::longEdge(image) <= DisplayQuality::kLqipMaxEdge) {
+            for (ImageItem *item : m_items) {
+                if (!item || item->path() != path || item->hasDisplayPixels()) {
+                    continue;
+                }
+                installDisplayPixels(item, image,
+                                     SessionAppearance::PixelKind::SoftPreview,
+                                     item->sessionId());
             }
-            installDisplayPixels(item, image,
-                                 SessionAppearance::PixelKind::SoftPreview,
-                                 item->sessionId());
-        }
-        if (viewport()) {
-            viewport()->update();
+            if (viewport()) {
+                viewport()->update();
+            }
         }
     } else if (const char *dbg = std::getenv("THUMTOO_DEBUG");
                dbg && dbg[0] && dbg[0] != '0') {

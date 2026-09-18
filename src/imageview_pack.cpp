@@ -112,17 +112,19 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         }
         QImage sample = hostSample;
         int sampleEdge = hostEdge;
-        // Blank cells: soft host is valid underlay until tiles paint. Once the
-        // cell has pixels and tiles are active, only LQIP-sized upgrades.
+        // LQIP underlay only — downscale host soft; never install soft plate.
         if (sampleEdge > DisplayQuality::kLqipMaxEdge) {
-            if (item->hasDisplayPixels() && item->tileLodActive()) {
+            if (item->hasDisplayPixels()) {
                 continue;
             }
-            if (item->hasDisplayPixels()
-                && item->displayPixelLongEdge() >= sampleEdge) {
+            const int cap = DisplayQuality::kLqipMaxEdge;
+            sample = hostSample.scaled(
+                cap, cap, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            sampleEdge = ImageCache::longEdge(sample);
+            if (sample.isNull() || sampleEdge <= 0) {
                 continue;
             }
-            // keep soft-sized sample for blank underlay
+            ImageCache::put(path, sample);
         }
         const SessionAppearance::PixelKind kind =
             SessionAppearance::PixelKind::SoftPreview;
