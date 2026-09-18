@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1106-no-softonly-policy.** Drop RasterPolicy::SoftOnly; PreferCache everywhere soft.
+Prior: **1105**.
+
+### Change
+- `schedulePixels` / pixel job queue: `RasterPolicy::PreferCache` (was SoftOnly).
+- Background size-mismatch revalidate → `scheduleSoftPixels`.
+- Slideshow fallback → `scheduleSoftPixels`.
+- SoftOnly forbade TileSynth; PreferCache allows TileSynth when tiles exist.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1106-no-softonly-policy.bundle HEAD
+```
+
+### Next
+- [ ] thumtoo: optional 7z seek/solid probe → Random when safe
+- [ ] Consider deprecating schedulePixels alias of PreferCache soft band
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1105-gallery-tile-budget-on-band.** Gallery tile issue budget 12 when tileLodWanted.
 Prior: **1104**.
 

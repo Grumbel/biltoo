@@ -1835,7 +1835,7 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
             m_pathRaster->ensure(path, edge, logicalSizeForPath(path),
                                  PathRasterService::ClimbPolicy::EscalateToFull);
         } else if (ThumtooCache::isAvailable()) {
-            (void)ThumtooCache::schedulePixels(path, ThumtooCache::kGalleryLadderEdge);
+            (void)ThumtooCache::scheduleSoftPixels(path, ThumtooCache::kGalleryLadderEdge);
         }
         return {};
     }

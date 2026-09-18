@@ -514,8 +514,8 @@ void scheduleBackgroundRevalidate(const QString &path, const std::string &uri)
         }
         // Refresh durable rows (probe worker re-reads source).
         scheduleProbe(pathCopy);
-        // Also nudge a gallery-level ladder rebuild when size changes.
-        schedulePixels(pathCopy, kGalleryLadderEdge);
+        // Also nudge soft-band PreferCache when size changes (TileSynth if tiles exist).
+        (void)scheduleSoftPixels(pathCopy, kGalleryLadderEdge);
     });
 }
 
@@ -1053,7 +1053,7 @@ void startNextPixelJobsUnlocked()
         req.uri = uri;
         req.max_edge = edge;
         req.frame_idx = 0;
-        req.policy = thumtoo::RasterPolicy::SoftOnly;
+        req.policy = thumtoo::RasterPolicy::PreferCache;
         c->request_raster(std::move(req), std::move(onPixels));
 #else
         c->request_pixels(uri, edge, std::move(onPixels));
@@ -1261,7 +1261,7 @@ bool schedulePixels(const QString &path, int maxEdge)
             return false;
         }
         if (g_pixelsSettled.contains(inflightKey)) {
-            // Settled means SoftOnly already ran for this edge. Soft samples are
+            // Settled means soft-band PreferCache already ran for this edge. Soft samples are
             // often smaller than maxEdge (ladder rung / best available). Requiring
             // 90% of maxEdge caused infinite RETRY (have=128, edge=512).
             // Only retry when the host cache lost the sample entirely.

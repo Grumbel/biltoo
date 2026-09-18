@@ -1139,7 +1139,7 @@ public:
     void clearCanvasSelection();
     /** In-flight LoadAdd / LoadRestore / viewport-window decodes. */
     int pendingDecodeCount() const;
-    /** Install host soft / schedule SoftOnly for the visible Gallery window. */
+    /** Install host soft / schedule soft PreferCache for the visible Gallery window. */
     void publishGalleryInterest(const QStringList &interestNear,
                                 const QStringList &interestRest);
     void scheduleIdleGalleryDecodes(const QStringList &rest);
@@ -1221,7 +1221,7 @@ public slots:
     void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role);
     /**
-     * thumtoo PreferCache / SoftOnly / overview delivery (GUI thread after queue).
+     * thumtoo PreferCache / soft / overview delivery (GUI thread after queue).
      * Seeds ImageCache; upgrades Image mode, slideshow, and Gallery soft state.
      */
     void onLadderReady(const QString &path, int maxEdge, const QImage &image);

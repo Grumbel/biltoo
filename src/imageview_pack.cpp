@@ -237,7 +237,7 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     // ------------------------------------------------------------------
-    // Pass 2: schedule SoftOnly / overview climb (O(n), want from this item).
+    // Pass 2: schedule soft PreferCache / overview climb (O(n), want from this item).
     // ------------------------------------------------------------------
     QStringList visible;
     QStringList rest;

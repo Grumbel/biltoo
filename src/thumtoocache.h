@@ -132,12 +132,13 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge);
 /**
  * Ensure ladder level exists for maxEdge (probe/encode in thumtoo worker).
  * On success (GUI thread): Bridge::ladderReady (+ ladderProvenance when known).
- * Uses thumtoo request_raster(SoftOnly) when THUMTOO_API_REQUEST_RASTER is set.
+ * Uses thumtoo request_raster(PreferCache) when THUMTOO_API_REQUEST_RASTER is set
+ * (TileSynth when tiles exist; SoftOnly policy removed — soft is ephemeral).
  * No-op when isUnsupported(path).
  */
 /** @return false if skipped (already in-flight, settled success, or unsupported). */
 bool schedulePixels(const QString &path, int maxEdge);
-/** True if SoftOnly for path#edge is queued or actively decoding. */
+/** True if soft-band PreferCache for path#edge is queued or decoding. */
 bool isPixelsPending(const QString &path, int maxEdge);
 
 /**
