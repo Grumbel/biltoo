@@ -7,9 +7,12 @@
 #include "imageitem.h"
 #include "imageview.h"
 #include "pathrasterservice.h"
+#include "thumtoocache.h"
 #include "tilelod/tile_session.hpp"
 
+#include <QDateTime>
 #include <QElapsedTimer>
+#include <QGraphicsScene>
 #include <QSet>
 #include <QTransform>
 #include <QWidget>
@@ -24,7 +27,7 @@ QList<TileLoadCoordinator::Cand>
 TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
 {
     QList<Cand> cands;
-    if (!m_view) {
+    if (!m_view || !m_view->scene()) {
         return cands;
     }
     cands.reserve(16);
@@ -41,37 +44,65 @@ TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
     if (!(dpr > 0.0)) {
         dpr = 1.0;
     }
+    constexpr qreal kGalleryTileScreenMin = 32.0;
 
-    const QList<ImageItem *> &items = m_view->liveItems();
-    for (ImageItem *ii : items) {
-        if (!ii || ii->path().isEmpty() || !ii->tileLodWanted()) {
+    // Only items intersecting the viewport — full m_items scan was O(n) with
+    // tileLodWanted() (views() + transform + cachedSize) per cell and blew the
+    // GUI budget on large galleries (hundreds of ms).
+    const QList<QGraphicsItem *> hit =
+        sceneVis.isNull()
+            ? m_view->scene()->items()
+            : m_view->scene()->items(sceneVis, Qt::IntersectsItemBoundingRect);
+
+    for (QGraphicsItem *gi : hit) {
+        auto *ii = qgraphicsitem_cast<ImageItem *>(gi);
+        if (!ii || ii->path().isEmpty()) {
             continue;
         }
         if (m_view->isCropDraftLockedItem(ii) || ii->tileLodSuppressed()) {
             continue;
         }
+        // Gallery packed cell: screen long edge without re-entering tileLodWanted.
+        QSizeF cell = ii->galleryCellSize();
+        if (!cell.isEmpty()) {
+            const qreal screenLong =
+                qMax(cell.width(), cell.height()) * viewScale * dpr;
+            if (screenLong <= kGalleryTileScreenMin) {
+                continue;
+            }
+            Cand c;
+            c.item = ii;
+            c.inView = true;
+            c.hasAnyTile = ii->tileLodActive();
+            c.fullyCovered = ii->tileLodViewportCovered();
+            c.screenLong = screenLong;
+            if (!c.hasAnyTile) {
+                c.coveragePriority = 1000;
+            } else if (!c.fullyCovered) {
+                c.coveragePriority = 500;
+            } else {
+                c.coveragePriority = 0;
+            }
+            cands.append(c);
+            continue;
+        }
+        // Image / Workspace: keep existing gate.
+        if (!ii->tileLodWanted()) {
+            continue;
+        }
         Cand c;
         c.item = ii;
-        c.inView = sceneVis.isNull()
-            || ii->sceneBoundingRect().intersects(sceneVis);
+        c.inView = true;
         c.hasAnyTile = ii->tileLodActive();
         c.fullyCovered = ii->tileLodViewportCovered();
-
-        QSizeF cell = ii->galleryCellSize();
-        if (cell.isEmpty()) {
-            const QRectF br = ii->sceneBoundingRect();
-            cell = QSizeF(br.width(), br.height());
-        }
-        c.screenLong = qMax(cell.width(), cell.height()) * viewScale * dpr;
-
-        // Prefer paths with no tiles yet, then incomplete exact coverage.
-        // coveragePriority: higher runs first among incomplete.
+        const QRectF br = ii->sceneBoundingRect();
+        c.screenLong = qMax(br.width(), br.height()) * viewScale * dpr;
         if (!c.hasAnyTile) {
             c.coveragePriority = 1000;
         } else if (!c.fullyCovered) {
             c.coveragePriority = 500;
         } else {
-            c.coveragePriority = 0; // upres / maintain only after others covered
+            c.coveragePriority = 0;
         }
         cands.append(c);
     }
@@ -81,15 +112,12 @@ TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
 void TileLoadCoordinator::sortByPolicy(QList<Cand> &cands)
 {
     std::sort(cands.begin(), cands.end(), [](const Cand &a, const Cand &b) {
-        // 1. On-screen first
         if (a.inView != b.inView) {
             return a.inView;
         }
-        // 2. Need coarse/any coverage before upres of already-covered cells
         if (a.coveragePriority != b.coveragePriority) {
             return a.coveragePriority > b.coveragePriority;
         }
-        // 3. Larger on-screen footprint
         return a.screenLong > b.screenLong;
     });
 }
@@ -105,6 +133,17 @@ void TileLoadCoordinator::tick(int globalBudget)
         return;
     }
 
+    // Coalesce scroll storms — multiple decode-window refreshes per frame.
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    if (m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 12) {
+        return;
+    }
+    m_lastTickMs = nowMs;
+
+    QElapsedTimer wall;
+    wall.start();
+    constexpr qint64 kWallMs = 3;
+
     QRectF sceneVis;
     if (m_view->scene()) {
         if (QWidget *vp = m_view->viewport()) {
@@ -113,20 +152,17 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
 
     QList<Cand> cands = collectCandidates(sceneVis);
-    if (cands.isEmpty()) {
+    if (cands.isEmpty() || wall.elapsed() >= kWallMs) {
         return;
     }
     sortByPolicy(cands);
 
-    // Cap concurrent targets per tick — time-slice so GUI stays under budget.
-    // Full pass of 8× prepareTileLod was ~29ms with DEBUG_OVERLAY.
-    constexpr int kMaxTargets = 3;
+    // Few targets per tick; rest wait for the next debounced tick.
+    constexpr int kMaxTargets = 2;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }
 
-    // While any in-view cell still lacks *any* tile, do not spend budget on
-    // fully-covered cells (upres). Drain coarse coverage first.
     bool anyInViewNeedsCoverage = false;
     for (const Cand &c : cands) {
         if (c.inView && !c.fullyCovered) {
@@ -141,8 +177,11 @@ void TileLoadCoordinator::tick(int globalBudget)
     QSet<QString> *preferCancelled = m_view->tileLodPreferCancelledForCoordinator();
 
     for (const Cand &c : cands) {
+        if (wall.elapsed() >= kWallMs) {
+            break;
+        }
         if (anyInViewNeedsCoverage && c.fullyCovered) {
-            continue; // upres deferred
+            continue;
         }
         ImageItem *item = c.item;
         if (!item) {
@@ -158,8 +197,10 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
 
     if (issueTargets.isEmpty()) {
-        // Still pump completions on candidates with budget 0.
         for (const Cand &c : cands) {
+            if (wall.elapsed() >= kWallMs) {
+                break;
+            }
             if (c.item) {
                 c.item->tickTileLod(0);
             }
@@ -167,15 +208,10 @@ void TileLoadCoordinator::tick(int globalBudget)
         return;
     }
 
-    // Hard wall-clock slice: stop issuing mid-tick if we already spent ~2ms.
-    QElapsedTimer slice;
-    slice.start();
-    constexpr qint64 kSliceMs = 2;
-
     const int n = issueTargets.size();
     int remaining = qMax(0, globalBudget);
     for (int i = 0; i < n; ++i) {
-        if (slice.elapsed() >= kSliceMs) {
+        if (wall.elapsed() >= kWallMs) {
             break;
         }
         ImageItem *item = issueTargets.at(i);
@@ -186,16 +222,5 @@ void TileLoadCoordinator::tick(int globalBudget)
         const int share = remaining > 0 ? qMax(1, remaining / left) : 0;
         item->tickTileLod(share);
         remaining -= share;
-    }
-    // Pump completions only on remaining candidates (no new issues).
-    for (int i = 0; i < cands.size(); ++i) {
-        if (slice.elapsed() >= kSliceMs + 1) {
-            break;
-        }
-        ImageItem *item = cands.at(i).item;
-        if (!item || issueTargets.contains(item)) {
-            continue;
-        }
-        item->tickTileLod(0);
     }
 }

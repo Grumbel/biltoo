@@ -48,6 +48,7 @@ private:
     static void sortByPolicy(QList<Cand> &cands);
 
     ImageView *m_view = nullptr;
+    qint64 m_lastTickMs = 0;
 };
 
 #endif

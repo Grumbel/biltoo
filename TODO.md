@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1174-tile-tick-viewport-budget.** TileLoadCoordinator under GUI budget.
+Prior: **1173**.
+
+### Problem
+`TileLoadCoordinator::tick` 249–500ms: scanned **all** live items and called
+`tileLodWanted()` each (views()+transform+cachedSize). Slice started after that.
+
+### Fix
+- Collect only `scene()->items(viewport)` hits
+- Gallery gate via cell×viewScale (no per-item `tileLodWanted`)
+- Hard 3ms wall including collect; debounce 12ms between ticks
+- Max 2 issue targets per tick
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1174-tile-tick-viewport-budget.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1173-coarsest-tile-first.** Progressive tile issue: coarsest scale first.
 Prior: **1172**.
 
