@@ -1218,7 +1218,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
                 qCritical("applyCropCommit: layoutSize after crop is %dx%d (draft %gx%g path=%s)",
                           isz.width(), isz.height(), cropW, cropH, qPrintable(path));
                 // Last resort: draft content units (still better than 1x1).
-                item->setIntrinsicSize(QSize(qMax(1, qRound(cropW)), qMax(1, qRound(cropH))));
+                item->setIntrinsicSize(ContentXform::roundedSizeAtLeast1(cropW, cropH));
             }
         }
         const auto pixelKind = multiMp ? SessionAppearance::PixelKind::SoftPreview
@@ -1717,8 +1717,9 @@ void ImageView::paintCropActionButtons(QPainter &painter)
 void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
 {
     // Crop size in image pixels (same coordinate space as the draft rect).
-    const int cropW = qMax(1, qRound(m_crop.rect.width()));
-    const int cropH = qMax(1, qRound(m_crop.rect.height()));
+    const QSize cropSz = ContentXform::roundedSizeAtLeast1(m_crop.rect.width(), m_crop.rect.height());
+    const int cropW = cropSz.width();
+    const int cropH = cropSz.height();
     const QString sizeLabel = QStringLiteral("%1×%2").arg(cropW).arg(cropH);
     {
         QFont f = painter.font();

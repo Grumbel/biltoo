@@ -51,6 +51,12 @@ inline qreal footprintScaleFactor(const QSize &before, const QSize &after)
     return qreal(before.width()) / qreal(after.width());
 }
 
+/** Integer size from continuous crop/layout extents (min 1 per axis). */
+inline QSize roundedSizeAtLeast1(qreal w, qreal h)
+{
+    return QSize(qMax(1, qRound(w)), qMax(1, qRound(h)));
+}
+
 
 /** Max long edge for materializeDisplay on the GUI thread (matches SessionAppearance). */
 inline constexpr int kGuiMaterializeMaxEdge = 512;
