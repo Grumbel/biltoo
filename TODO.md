@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1204-dead-gallery-soft-helpers.** Remove unused Gallery soft-climb helpers after LQIP+tiles.
+Prior: **1203**.
+
+### Removed (dead code)
+- `resolveGallerySoftHaveWant`, `galleryWantEdgeForPath`, `galleryDecodeConcurrency`
+- `clearGalleryGaveUpIfClimbable`, `syncGallerySoftMirrorFromPathRaster`
+- `gallerySoftScheduleBlocked`, `markGallerySoftInflight`
+
+Kept: `scheduleGalleryDecode` (LQIP + tiles), `GallerySoftState` bookkeeping, `clearGallerySoftInflight`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1204-dead-gallery-soft-helpers.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1203-docs-gallery-lqip-tiles.** Docs + type comments: Gallery is LQIP+tiles, not SoftDisplay.
 Prior: **1202**.
 

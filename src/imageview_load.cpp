@@ -1493,21 +1493,6 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
 }
 
 
-int ImageView::galleryDecodeConcurrency()
-{
-    static int n = []() {
-        int v = kMaxConcurrentGalleryDecodes;
-        if (const char *e = std::getenv("BILTOO_GALLERY_DECODE_CONCURRENCY")) {
-            const int parsed = QString::fromLocal8Bit(e).toInt();
-            if (parsed >= 1 && parsed <= 32) {
-                v = parsed;
-            }
-        }
-        return v;
-    }();
-    return n;
-}
-
 int ImageView::gallerySoftInflightCount() const
 {
     int n = 0;
@@ -1532,31 +1517,6 @@ void ImageView::gallerySoftResetAll()
     m_gallerySoft.clear();
 }
 
-int ImageView::galleryWantEdgeForPath(const QString &path,
-                                      const QRectF &sceneVisible) const
-{
-    int want = ThumtooCache::kFilmstripLadderEdge;
-    bool anyVisible = false;
-    for (ImageItem *item : m_items) {
-        if (!item || item->path() != path) {
-            continue;
-        }
-        const QRectF tile = item->contentSceneRect();
-        if (tile.isNull() || !tile.isValid()) {
-            continue;
-        }
-        const bool visible = sceneVisible.intersects(tile);
-        const int edge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/visible);
-        want = qMax(want, edge);
-        anyVisible = anyVisible || visible;
-    }
-    if (!anyVisible) {
-        // Idle / off-screen: placeholder band only.
-        want = qMin(want, ThumtooCache::kGalleryLadderEdge);
-    }
-    return want;
-}
-
 int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const
 {
     int have = 0;
@@ -1574,103 +1534,6 @@ int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) c
         *anyFullOut = anyFull;
     }
     return have;
-}
-
-bool ImageView::resolveGallerySoftHaveWant(const QString &path, GallerySoftState &st,
-                                           int *haveOut, int *wantOut)
-{
-    // Fast path: updateGalleryDecodeWindow already filled st.have / st.want.
-    // Do not re-scan all items here — that was O(n²) on large galleries.
-    int have = st.have;
-    int want = st.want;
-    if (want <= 0) {
-        const QRect viewRect = viewport()->rect().adjusted(
-            -kGalleryDecodeOverscanPx, -kGalleryDecodeOverscanPx,
-            kGalleryDecodeOverscanPx, kGalleryDecodeOverscanPx);
-        const QRectF sceneVisible = mapToScene(viewRect).boundingRect();
-
-        bool anyFull = false;
-        have = galleryHaveEdgeFromItems(path, &anyFull);
-        st.have = have;
-        if (anyFull) {
-            return false;
-        }
-        // Host soft only for direct callers (decode-window pass1 owns installs).
-        if (have <= DisplayQuality::kLqipMaxEdge) {
-            const QImage hostSoft = ImageCache::get(path);
-            if (!hostSoft.isNull()
-                && ImageCache::longEdge(hostSoft) > have) {
-                onImagePreviewLoaded(path, hostSoft, m_loadGeneration.load(),
-                                     static_cast<int>(LoadAdd));
-                have = galleryHaveEdgeFromItems(path, &anyFull);
-                st.have = have;
-                if (anyFull) {
-                    return false;
-                }
-            }
-        }
-        want = galleryWantEdgeForPath(path, sceneVisible);
-        st.want = want;
-    }
-    if (want <= 0 || have >= want) {
-        return false;
-    }
-    *haveOut = have;
-    *wantOut = want;
-    return true;
-}
-
-void ImageView::clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, int want)
-{
-    // Higher zoom/need or soft arrived — clear shortfall mirror so decode window
-    // may schedule again. PathRasterService clears preferGaveUp when want rises.
-    if (st.gaveUpWant > 0
-        && (want > st.gaveUpWant || coversEdge(have, st.gaveUpWant))) {
-        st.gaveUpWant = 0;
-    }
-}
-
-void ImageView::syncGallerySoftMirrorFromPathRaster(const QString &path,
-                                                    GallerySoftState &st)
-{
-    if (!m_pathRaster || path.isEmpty()) {
-        return;
-    }
-    // Do NOT copy PathRaster/ImageCache have into st.have. That made schedule
-    // think soft was done while the tile still showed LQIP (host had soft,
-    // item never installed). st.have tracks *shown* pixels only.
-    if (m_pathRaster->isGaveUp(path)) {
-        const int prWant = m_pathRaster->wantEdge(path);
-        st.gaveUpWant = qMax(st.gaveUpWant, prWant > 0 ? prWant : st.want);
-    } else if (st.want > 0 && st.gaveUpWant > 0 && st.want > st.gaveUpWant) {
-        // Zoom raised product need past mirrored plateau.
-        st.gaveUpWant = 0;
-    }
-}
-
-bool ImageView::gallerySoftScheduleBlocked(const GallerySoftState &st, int have,
-                                           int want) const
-{
-    if (gallerySoftInflightCount() >= galleryDecodeConcurrency()) {
-        return true;
-    }
-    // gaveUpWant is mirrored from PathRasterService in the decode window /
-    // scheduleGalleryDecode; block soft-band retries when still short of soft max.
-    const int softCap = ThumtooCache::kGalleryLadderEdge;
-    // LQIP (≤96) must never be blocked by PreferCache plateau — that froze
-    // scheduleGalleryDecode while tiles still showed quick-preview only.
-    // Only real soft rungs (strictly above LQIP) may plateau.
-    if (have > DisplayQuality::kLqipMaxEdge && !coversEdge(have, softCap)
-        && st.gaveUpWant >= qMin(want, softCap)) {
-        return true;
-    }
-    return false;
-}
-
-void ImageView::markGallerySoftInflight(GallerySoftState &soft, int edge)
-{
-    soft.inflight = edge;
-    soft.inflightSinceMs = QDateTime::currentMSecsSinceEpoch();
 }
 
 void ImageView::clearGallerySoftInflight(GallerySoftState &soft)

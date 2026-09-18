@@ -1529,21 +1529,14 @@ private:
     static bool layoutDefersPopulateUntilSizes(LayoutMode mode);
     void noteGallerySizeProbeSettled(const QString &path);
     void finishGallerySizeResolve();
-    void clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, int want);
-    /** Sync have/gaveUpWant from PathRasterService (climb authority). */
-    void syncGallerySoftMirrorFromPathRaster(const QString &path, GallerySoftState &st);
-    bool gallerySoftScheduleBlocked(const GallerySoftState &st, int have, int want) const;
+    /** LQIP install + tile pyramid request for a Gallery path. */
     void scheduleGalleryDecode(const QString &path);
 
-    /** Resolve have/want for @a path; false if decode not needed. */
     int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut = nullptr) const;
-    bool resolveGallerySoftHaveWant(const QString &path, GallerySoftState &st,
-                                    int *haveOut, int *wantOut);
-    void markGallerySoftInflight(GallerySoftState &soft, int edge);
     void clearGallerySoftInflight(GallerySoftState &soft);
-    /** Recover stalled soft installs (cache hit not painted / inflight stuck). */
+    /** Recover blank Gallery cells that never got LQIP installed. */
     void gallerySoftWatchdogTick();
-    /** Centre HUD while Gallery soft replaces LQIP (not size-resolve). */
+    /** Clear stale "Improving previews" centre HUD noise. */
     void updateGallerySoftProgressHud();
     /** Slideshow phase buffers only: DisplaySurface::decide while transition live. */
     void slideshowPhaseSurfaceTick();
@@ -2019,7 +2012,6 @@ private:
     int gallerySoftInflightCount() const;
     void gallerySoftResetPath(const QString &path);
     void gallerySoftResetAll();
-    int galleryWantEdgeForPath(const QString &path, const QRectF &sceneVisible) const;
     /** @deprecated Gallery always virtualizes; kept for ABI/docs only. */
     static constexpr int kGalleryVirtualThreshold = 1;
     static constexpr int kGalleryDecodeOverscanPx = 400;
@@ -2027,7 +2019,6 @@ private:
     static constexpr int kMaxConcurrentGalleryDecodes = 8;
     /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
     static constexpr int kMaxIdleGalleryDecodes = 2;
-    static int galleryDecodeConcurrency();
     /** Queue of workspace restores still waiting for decode (supports same path twice). */
     QList<WorkspaceItemState> m_pendingRestoreStates;
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */
