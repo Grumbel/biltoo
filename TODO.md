@@ -2,23 +2,29 @@
 
 ## Status (2026-09-18)
 
-**Tip: biltoo-1140-no-standalone-lqip.** Do not request standalone LQIP; drop unused prev.
-Prior: **1138** (stack includes unused-gallery-prev).
+**Tip: biltoo-1141-tiles-first-cache-hit.** Tiles-first; ImageCache cover = zero work.
+Prior: **1138**.
 
-### Policy
-LQIP is low utility and must **never** be generated on its own (thumtoo
-`PIXEL_AND_ARCHIVE_POLICY` §1.1). It is filled only opportunistically when tiles
-(or soft encode) already hold free raster data.
+### Problem
+Gallery still scheduled soft PreferCache heavily; warm ImageCache paths still
+queued PreferCache workers (CPU storm). Durable tiles did not skip soft underlay.
+LQIP was requested standalone. Some cells stayed blank while soft fought tiles.
 
 ### Fix
-- Remove `request_lqip` from `scheduleSoftPixels` (was forcing EnsureLqip jobs
-  that could full-decode the source).
-- Document host rule in `docs/THUMTOO_HOST_CONTRACT.md`.
-- Drop unused `ImageItem *prev` in `tryMousePressGalleryLeft` (warning).
+- `scheduleDisplayPixels`: if ImageCache already covers the edge → settle and
+  return (no thread pool / no PreferCache).
+- Gallery decode: if `hasDurableTiles(path)` → skip soft entirely; tick tile LOD only.
+- Drop standalone `request_lqip` from `scheduleSoftPixels`.
+- Drop unused `prev` in gallery mouse press.
+
+### Still open
+- Slideshow pixel path / motion still needs a dedicated pass (not fixed here).
+- Cold soft underlay while first tiles encode remains for non-durable paths.
+- Blank cells with neither tiles nor soft: needs host repro (probe/size miss).
 
 ### Apply
 ```bash
-git pull /path/to/biltoo-1140-no-standalone-lqip.bundle HEAD
+git pull /path/to/biltoo-1141-tiles-first-cache-hit.bundle HEAD
 ```
 
 ---

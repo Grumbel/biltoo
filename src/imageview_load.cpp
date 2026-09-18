@@ -1605,11 +1605,20 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    // Tiles own the cell past soft underlay. If every tileLodWanted item for
-    // this path still only shows LQIP/blank, keep soft PreferCache for underlay.
+    // Tiles own the cell when durable pyramid exists or tile LOD is active.
+    // Soft underlay only for cold paths (no Store tiles) still showing LQIP/blank.
     {
         bool anyTileWanted = false;
         bool softUnderlayNeeded = false;
+        const bool durable = ThumtooCache::hasDurableTiles(path);
+        if (durable) {
+            auto sit = m_gallerySoft.find(path);
+            if (sit != m_gallerySoft.end()) {
+                clearGallerySoftInflight(*sit);
+            }
+            tickPrimaryTileLod(12);
+            return;
+        }
         for (ImageItem *ii : m_items) {
             if (!ii || ii->path() != path || !ii->tileLodWanted()) {
                 continue;
@@ -1628,7 +1637,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             return;
         }
         if (anyTileWanted) {
-            tickPrimaryTileLod(12); // parallel soft underlay + tiles
+            tickPrimaryTileLod(12); // parallel soft underlay + tiles (cold only)
         }
     }
     // Size-first still probes in the background, but never blocks decode:

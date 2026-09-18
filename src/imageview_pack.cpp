@@ -353,14 +353,17 @@ void ImageView::updateGalleryDecodeWindow()
             st.gaveUpWant = 0;
         }
 
-        // Tile LOD owns oversized cells past soft max. Still climb soft when the
-        // tile only shows LQIP/blank so underlay is not stuck while tiles load.
-        if (item->tileLodWanted()) {
+        // Tiles own display when a durable pyramid exists or the cell is in the
+        // tile LOD band. Soft PreferCache underlay is for cold paths only —
+        // never re-encode soft when Store already has tiles (CPU storm).
+        if (item->tileLodWanted()
+            || ThumtooCache::hasDurableTiles(path)) {
             const int shown = item->displayPixelLongEdge();
-            if (shown > DisplayQuality::kLqipMaxEdge) {
+            if (shown > DisplayQuality::kLqipMaxEdge
+                || ThumtooCache::hasDurableTiles(path)) {
                 continue;
             }
-            // LQIP/blank: fall through to soft schedule (soft underlay).
+            // Cold tileLodWanted + LQIP/blank only: soft underlay while first tiles encode.
         }
 
         if (!st.needsSoftSchedule(want, anyBlank, anyFull)) {

@@ -11,6 +11,10 @@ soft climb, slideshow preload, or PathRasterService. Band widths and codecs:
 
 **Pixel durability (thumtoo):** soft whole-image is **ephemeral** (or TileSynth); durable multi-res is **tiles** + **LQIP** only. See thumtoo `docs/PIXEL_AND_ARCHIVE_POLICY.md`. Biltoo should schedule tiles for display when possible.
 
+**Warm cache rule:** if `ImageCache` already covers the requested edge, host must
+not call PreferCache / soft encode / thread-pool work for that path. Store durable
+tiles → skip soft underlay; tile LOD owns paint.
+
 **LQIP (host rule):** never call `request_lqip` / `ensure_lqip` to generate placeholders.
 LQIP is low utility and must only appear when thumtoo already encoded it for free
 during tile (or soft) work. `get_lqip` / size-reply LQIP is cache-only.

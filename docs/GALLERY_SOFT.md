@@ -5,6 +5,15 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Gallery pixels: soft ladder + on-demand full decode
 
+## Tiles-first (product)
+
+When the Store already has a **durable tile pyramid** for a path, Gallery must
+**not** schedule soft PreferCache for that path. Tile LOD paints (LQIP underlay
+from size reply until first cell). Soft is only for cold paths without tiles.
+
+Warm `ImageCache` cover of the soft edge → zero PreferCache work.
+
+
 ## Authority (host climb)
 
 Gallery soft/display climb is scheduled through **PathRasterService::ensure**

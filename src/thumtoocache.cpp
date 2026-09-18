@@ -1454,6 +1454,18 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
     init();
     const QString inflightKey =
         path + QLatin1Char('#') + QStringLiteral("disp") + QString::number(maxEdge);
+    // Warm host cache: already covering this edge → zero work. Anything that
+    // still hits PreferCache/encode for a covered path is a bug.
+    {
+        const int have = ImageCache::longEdge(ImageCache::get(path));
+        if (have > 0 && have * 10 >= maxEdge * 9) {
+            std::lock_guard lock(g_mu);
+            g_pixelsSettled.insert(inflightKey);
+            thumtooDbg("scheduleDisplay SKIP path=%s edge=%d (ImageCache have=%d)",
+                       qPrintable(path), maxEdge, have);
+            return false;
+        }
+    }
     {
         std::lock_guard lock(g_mu);
         if (g_pixelsInflight.contains(inflightKey)) {
@@ -1934,9 +1946,8 @@ bool scheduleSoftPixels(const QString &path, int maxEdge)
     // Soft is ephemeral (thumtoo PIXEL_AND_ARCHIVE_POLICY). SoftOnly forbids
     // TileSynth, so PreferCache for every soft-band request: TileSynth when a
     // complete scale exists, else one-shot soft encode. No durable soft store.
-    // Soft is ephemeral. Do **not** call request_lqip here: LQIP must never be
-    // generated standalone (thumtoo PIXEL_AND_ARCHIVE_POLICY §1.1). It is filled
-    // opportunistically when tiles/soft encode already hold free raster data.
+    // Soft is ephemeral. Do not request_lqip: LQIP is free-data-only during
+    // tile/soft encode (thumtoo PIXEL_AND_ARCHIVE_POLICY §1.1).
     return scheduleDisplayPixels(path, maxEdge);
 #else
     Q_UNUSED(path);
