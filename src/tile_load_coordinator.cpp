@@ -242,20 +242,22 @@ void TileLoadCoordinator::tick(int globalBudget)
                     ++zero;
                 }
             }
-            fprintf(stderr,
-                    "biltoo/tile-coord: cands=%d zeroTile=%d issue=%d budget=%d "
-                    "wall=%lldms\n",
-                    cands.size(), zero, issueTargets.size(), globalBudget,
-                    static_cast<long long>(wall.elapsed()));
+            std::fprintf(stderr,
+                         "biltoo/tile-coord: cands=%d zeroTile=%d issue=%d "
+                         "budget=%d wall=%lldms\n",
+                         static_cast<int>(cands.size()), zero,
+                         static_cast<int>(issueTargets.size()), globalBudget,
+                         static_cast<long long>(wall.elapsed()));
             int samples = 0;
             for (ImageItem *item : issueTargets) {
                 if (!item || samples >= 4) {
                     break;
                 }
-                fprintf(stderr, "  %s\n", qPrintable(item->tileLodDebugLine()));
+                std::fprintf(stderr, "  %s\n",
+                             qPrintable(item->tileLodDebugLine()));
                 ++samples;
             }
-            fflush(stderr);
+            std::fflush(stderr);
         }
     }
 

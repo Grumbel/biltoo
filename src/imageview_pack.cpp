@@ -383,11 +383,8 @@ void ImageView::updateGalleryDecodeWindow()
         const int before = gallerySoftInflightCount();
         scheduleGalleryDecode(path);
         // Tile-band schedule does not raise soft inflight — still count progress.
-        if (gallerySoftInflightCount() > before) {
-            ++scheduled;
-        } else {
-            ++scheduled; // LQIP/probe/tile prime still consumed a slot this pass
-        }
+        // Count every schedule attempt (tile path does not raise soft inflight).
+        ++scheduled;
     }
     if (m_perfEnabled) {
         usPass2 = phaseTimer.nsecsElapsed() / 1000;
@@ -436,11 +433,11 @@ void ImageView::updateGalleryDecodeWindow()
         const qint64 now = QDateTime::currentMSecsSinceEpoch();
         if (now - s_lastLogMs >= 500) {
             s_lastLogMs = now;
-            fprintf(stderr,
-                    "biltoo/tile: wanted=%d live=%d covered=%d softBusy=%d "
-                    "visibleSched=%d inflight=%d\n",
-                    tileWanted, tileLive, tileCovered, softBusy ? 1 : 0,
-                    scheduled, gallerySoftInflightCount());
+            std::fprintf(stderr,
+                         "biltoo/tile: wanted=%d live=%d covered=%d softBusy=%d "
+                         "visibleSched=%d inflight=%d\n",
+                         tileWanted, tileLive, tileCovered, softBusy ? 1 : 0,
+                         scheduled, gallerySoftInflightCount());
             int samples = 0;
             for (ImageItem *ii : m_items) {
                 if (!ii || !ii->tileLodWanted() || samples >= 3) {
@@ -449,10 +446,11 @@ void ImageView::updateGalleryDecodeWindow()
                 if (ii->tileLodViewportCovered()) {
                     continue;
                 }
-                fprintf(stderr, "  %s\n", qPrintable(ii->tileLodDebugLine()));
+                std::fprintf(stderr, "  %s\n",
+                             qPrintable(ii->tileLodDebugLine()));
                 ++samples;
             }
-            fflush(stderr);
+            std::fflush(stderr);
         }
     }
 

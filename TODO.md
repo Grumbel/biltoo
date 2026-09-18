@@ -2,6 +2,23 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1186-fix-tile-debug-compile.** Fix broken fprintf strings in tile debug.
+Prior: **1185**.
+
+Compile error: format string split with a raw newline (`"…inflight=%d` then newline).
+Rewrote debug logs with explicit `\n` and `static_cast<int>` for qsizetype.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1186-fix-tile-debug-compile.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1185-tile-debug-snapshot.** Richer BILTOO_TILE_DEBUG diagnostics.
 Prior: **1184**.
 
