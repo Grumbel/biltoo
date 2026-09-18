@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "grouptransformgeometry.h"
+#include "placementlinear.h"
+#include "viewtransform.h"
 
 #include <QLineF>
 #include <QtMath>
@@ -93,35 +95,35 @@ ScaleFactors scaleFactorsFromDrag(const QPointF &scenePos, const QRectF &boundsS
 
     switch (handle) {
     case 0:
-        sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
-        sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
+        sx = (anchor.x() - scenePos.x()) / ViewTransform::safeDivisor(anchor.x(, eps) - b.left());
+        sy = (anchor.y() - scenePos.y()) / ViewTransform::safeDivisor(anchor.y(, eps) - b.top());
         break;
     case 1:
-        sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
+        sy = (anchor.y() - scenePos.y()) / ViewTransform::safeDivisor(anchor.y(, eps) - b.top());
         sx = 1.0;
         break;
     case 2:
-        sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
-        sy = (anchor.y() - scenePos.y()) / qMax(eps, anchor.y() - b.top());
+        sx = (scenePos.x() - anchor.x()) / ViewTransform::safeDivisor(b.right(, eps) - anchor.x());
+        sy = (anchor.y() - scenePos.y()) / ViewTransform::safeDivisor(anchor.y(, eps) - b.top());
         break;
     case 3:
-        sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
+        sx = (scenePos.x() - anchor.x()) / ViewTransform::safeDivisor(b.right(, eps) - anchor.x());
         sy = 1.0;
         break;
     case 4:
-        sx = (scenePos.x() - anchor.x()) / qMax(eps, b.right() - anchor.x());
-        sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
+        sx = (scenePos.x() - anchor.x()) / ViewTransform::safeDivisor(b.right(, eps) - anchor.x());
+        sy = (scenePos.y() - anchor.y()) / ViewTransform::safeDivisor(b.bottom(, eps) - anchor.y());
         break;
     case 5:
-        sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
+        sy = (scenePos.y() - anchor.y()) / ViewTransform::safeDivisor(b.bottom(, eps) - anchor.y());
         sx = 1.0;
         break;
     case 6:
-        sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
-        sy = (scenePos.y() - anchor.y()) / qMax(eps, b.bottom() - anchor.y());
+        sx = (anchor.x() - scenePos.x()) / ViewTransform::safeDivisor(anchor.x(, eps) - b.left());
+        sy = (scenePos.y() - anchor.y()) / ViewTransform::safeDivisor(b.bottom(, eps) - anchor.y());
         break;
     case 7:
-        sx = (anchor.x() - scenePos.x()) / qMax(eps, anchor.x() - b.left());
+        sx = (anchor.x() - scenePos.x()) / ViewTransform::safeDivisor(anchor.x(, eps) - b.left());
         sy = 1.0;
         break;
     default:
@@ -139,8 +141,8 @@ ScaleFactors scaleFactorsFromDrag(const QPointF &scenePos, const QRectF &boundsS
             sy = s;
         }
     }
-    sx = qBound(0.05, qAbs(sx), 20.0);
-    sy = qBound(0.05, qAbs(sy), 20.0);
+    sx = PlacementLinear::clampGroupScaleAxis(sx);
+    sy = PlacementLinear::clampGroupScaleAxis(sy);
 
     if (!qIsFinite(sx) || !qIsFinite(sy) || !qIsFinite(anchor.x()) || !qIsFinite(anchor.y())) {
         return out;
