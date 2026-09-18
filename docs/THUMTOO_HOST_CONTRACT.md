@@ -9,6 +9,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 soft climb, slideshow preload, or PathRasterService. Band widths and codecs:
 [PERFORMANCE.md](PERFORMANCE.md). Climb ownership: [PATH_RASTER_SERVICE.md](PATH_RASTER_SERVICE.md).
 
+**Pixel durability (thumtoo):** soft whole-image is **ephemeral** (or TileSynth); durable multi-res is **tiles** + **LQIP** only. See thumtoo `docs/PIXEL_AND_ARCHIVE_POLICY.md`. Biltoo should schedule tiles for display when possible.
+
 This document is the **product rule**. Consumer-specific “retry once then full”
 branches that contradict it are bugs.
 
@@ -18,7 +20,7 @@ branches that contradict it are bugs.
 
 | Layer | Owns | Does **not** own |
 |-------|------|------------------|
-| **Thumtoo** | Session soft pixels, overview, PreferCache (incl. TileSynth), durable tiles, full pixels; settle keys; `ladderReady` delivery. **`PixelSource::TileSynth` is a valid PreferCache/Overview delivery** (same `ladderReady` path as soft levels). SoftOnly stays soft-ladder-only on cold paths; host `scheduleSoftPixels` may PreferCache when `hasDurableTiles` is true. | Host geometry, mode policy, which band a product surface needs |
+| **Thumtoo** | Ephemeral soft / overview, PreferCache (incl. TileSynth), **durable tiles + LQIP**, full pixels; settle keys; `ladderReady` delivery. **`PixelSource::TileSynth` is a valid PreferCache/Overview delivery**. SoftOnly is cold ephemeral only; prefer tiles when `tileLodWanted` / durable tiles exist. | Host geometry, mode policy, which band a product surface needs |
 | **ImageCache** | Process RAM path → best raw sample (upward-only, ≤ display max) | Scheduling |
 | **PathRasterService** | Per-path want / have / climb band / escalate policy; the **only** host scheduler of soft → PreferCache → (optional) full | Paint, phase buffers, gallery prioritization |
 | **ImageView / consumers** | Need edge (viewport, zoom, slideshow headroom); install into items / phase buffers | Direct PreferCache re-queue after shortfall; inventing a second climb |
@@ -48,7 +50,7 @@ Biltoo requests a **band**, not “exactly N pixels.” Edge numbers snap via
 
 | Band | API (host) | Typical long edge | Thumtoo may return |
 |------|------------|-------------------|--------------------|
-| **Soft** | `schedulePixels` | ≤ **512** (`kGalleryLadderEdge`) | Soft ladder level ≤ request (durable) |
+| **Soft** | `schedulePixels` | ≤ **512** (`kGalleryLadderEdge`) | Ephemeral soft or TileSynth ≤ request (**not** Store-durable) |
 | **Overview** | `scheduleOverviewPixels` | ~**1024** (`kBatchOverviewEdge`) | jpeg_shrink / overview (not a soft level) |
 | **Display (PreferCache)** | `scheduleDisplayPixels` | ≤ **8192** (`kImageLadderEdge`, interim) | **Best available ≤ request**: soft, overview, or tile reconstruct |
 | **Full** | `scheduleFullPixels` | up to native / host max | Near-native / full decode path |
@@ -60,7 +62,7 @@ of 2048 therefore often returns **1024 TileSynth/overview** with `ok=0`. That is
 thumtoo policy, not a biltoo install bug. Whole-frame samples above 1024 require
 **Full** (`scheduleFullPixels`) or true per-cell tile paint.
 
-Soft never stores 1024. Overview is not soft. PreferCache is not “force 2048.”
+Soft is not Store-durable (any edge). Overview is not soft. PreferCache is not “force 2048.”
 
 ---
 

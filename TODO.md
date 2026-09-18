@@ -1,5 +1,34 @@
 # TODO / agent handoff
 
+## Status (2026-09-18)
+
+**Tip: biltoo-1103-soft-ephemeral-tiles-durable.** Soft not durable; tiles+LQIP; archive access classes (docs).
+Prior: **1102**.
+
+### Decision (paired with thumtoo-306)
+- Soft whole-image is **ephemeral** (or TileSynth); durable multi-res = **tiles**.
+- Biltoo should use **tiles for display when possible** (Image already mostly there).
+- Archives: Random (ZIP) vs Sequential (tar, solid RAR/7z) — strategy in thumtoo
+  `docs/PIXEL_AND_ARCHIVE_POLICY.md`.
+
+### Change
+- `docs/THUMTOO_HOST_CONTRACT.md`: Soft band = ephemeral/TileSynth; roles table;
+  pointer to thumtoo policy.
+
+### Next
+- [ ] Gallery/filmstrip: prefer tiles over SoftOnly when tileLodWanted
+- [ ] PathRaster Soft band semantics: no “grow soft ladder” loops
+- [ ] Optional: drop SoftOnly entirely on tile-capable paths
+
+### Apply
+```bash
+git pull /path/to/biltoo-1103-soft-ephemeral-tiles-durable.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-17)
 
 **Tip: biltoo-1102-soft-underlay-until-covered.** Soft underlay until tile viewport covered (fix blank zoom-out).
