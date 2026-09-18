@@ -274,6 +274,39 @@ QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,
     return materializeDisplay(src, state, kind);
 }
 
+
+void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
+                              const ContentXform::Value *appliedOrNull,
+                              bool liveHFlip, bool liveVFlip,
+                              bool liveHasCrop, const QRectF &liveCropRect)
+{
+    // Applied fingerprint is authoritative when the store lagged a live edit
+    // (rotate then fitItem before m_appearance was visible to this reader).
+    if (appliedOrNull) {
+        const ContentXform::Value &x = *appliedOrNull;
+        if (appearance.contentQuarterTurns == 0 && x.quarterTurns != 0) {
+            appearance.contentQuarterTurns = x.quarterTurns;
+        }
+        if (!appearance.contentHFlip && x.hFlip) {
+            appearance.contentHFlip = true;
+        }
+        if (!appearance.contentVFlip && x.vFlip) {
+            appearance.contentVFlip = true;
+        }
+    }
+    // Live flags on the item win when the store is still empty for flips/crop.
+    if (liveHFlip) {
+        appearance.contentHFlip = true;
+    }
+    if (liveVFlip) {
+        appearance.contentVFlip = true;
+    }
+    if (liveHasCrop && appearance.cropRect.isEmpty()) {
+        appearance.hasCrop = true;
+        appearance.cropRect = liveCropRect;
+    }
+}
+
 } // namespace SessionAppearance
 
 const WorkspaceItemState *SessionAppearanceStore::get(SessionImageId id) const

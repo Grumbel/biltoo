@@ -1771,12 +1771,10 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
         return kInvalidSessionImageId;
     }
     // Prefer ordered session row (slideshow / gallery path list).
-    for (int i = 0; i < m_pathOrderBook.paths.size() && i < m_pathOrderBook.ids.size(); ++i) {
-        if (m_pathOrderBook.paths.at(i) == path) {
-            const SessionImageId id = m_pathOrderBook.ids.at(i);
-            if (id != kInvalidSessionImageId) {
-                return id;
-            }
+    {
+        const SessionImageId ordered = m_pathOrderBook.firstIdForPath(path);
+        if (ordered != kInvalidSessionImageId) {
+            return ordered;
         }
     }
     // Image-mode slideshow: current session cursor when path matches.

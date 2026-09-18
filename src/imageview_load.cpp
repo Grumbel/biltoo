@@ -522,31 +522,14 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
             appearance = *it;
         }
     }
-    // Applied fingerprint is authoritative when the store lagged a live edit
-    // (rotate then fitItem before m_appearance was visible to this reader).
-    if (item->hasAppliedContentXform()) {
-        const ContentXform::Value x = item->appliedContentXform();
-        if (appearance.contentQuarterTurns == 0 && x.quarterTurns != 0) {
-            appearance.contentQuarterTurns = x.quarterTurns;
-        }
-        if (!appearance.contentHFlip && x.hFlip) {
-            appearance.contentHFlip = true;
-        }
-        if (!appearance.contentVFlip && x.vFlip) {
-            appearance.contentVFlip = true;
-        }
-    }
-    // Live flags on the item win when the store is still empty for flips/crop.
-    if (item->contentHFlip()) {
-        appearance.contentHFlip = true;
-    }
-    if (item->contentVFlip()) {
-        appearance.contentVFlip = true;
-    }
-    if (item->sessionHasCrop() && appearance.cropRect.isEmpty()) {
-        appearance.hasCrop = true;
-        appearance.cropRect = item->sessionCropRect();
-    }
+    const ContentXform::Value applied =
+        item->hasAppliedContentXform() ? item->appliedContentXform()
+                                       : ContentXform::Value{};
+    SessionAppearance::mergeAppliedAndLiveFlags(
+        appearance,
+        item->hasAppliedContentXform() ? &applied : nullptr,
+        item->contentHFlip(), item->contentVFlip(),
+        item->sessionHasCrop(), item->sessionCropRect());
     return appearance;
 }
 

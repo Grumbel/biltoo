@@ -150,6 +150,17 @@ bool hasContentAppearance(const WorkspaceItemState &state);
  */
 
 
+
+/**
+ * Overlay applied ContentXform and live item flags onto a store/path slot.
+ * Applied fingerprint wins when store lagged a live edit; live flips/crop
+ * fill empty store fields only.
+ */
+void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
+                              const ContentXform::Value *appliedOrNull,
+                              bool liveHFlip, bool liveVFlip,
+                              bool liveHasCrop, const QRectF &liveCropRect);
+
 } // namespace SessionAppearance
 
 /**

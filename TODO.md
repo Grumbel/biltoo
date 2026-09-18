@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1283-appearance-merge-applied-live.** Pure merge of applied/live flags into appearance want.
+Prior: **1282**.
+
+### Change
+- `SessionAppearance::mergeAppliedAndLiveFlags` (applied ContentXform + live flips/crop).
+- `SessionPathOrder::firstIdForPath` for ordered session id lookup.
+- wantAppearanceForItem and sessionId-for-path use the helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1283-appearance-merge-applied-live.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1282-session-path-order.** Extract SessionPathOrder for path list + parallel ids.
 Prior: **1281**.
 

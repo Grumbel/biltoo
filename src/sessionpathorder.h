@@ -53,6 +53,21 @@ struct SessionPathOrder {
         }
         return ids.at(index);
     }
+
+    /** First non-invalid id for @p path, or invalid if none. */
+    SessionImageId firstIdForPath(const QString &path) const
+    {
+        if (path.isEmpty()) {
+            return kInvalidSessionImageId;
+        }
+        const int n = qMin(paths.size(), ids.size());
+        for (int i = 0; i < n; ++i) {
+            if (paths.at(i) == path && ids.at(i) != kInvalidSessionImageId) {
+                return ids.at(i);
+            }
+        }
+        return kInvalidSessionImageId;
+    }
 };
 
 #endif // SESSIONPATHORDER_H
