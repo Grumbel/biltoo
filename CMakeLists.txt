@@ -140,6 +140,8 @@ add_executable(biltoo
   src/pageguidegeometry.cpp
   src/pageguidegeometry.h
   src/iteminteractsession.h
+  src/itemframegeometry.cpp
+  src/itemframegeometry.h
   src/hudflash.h
   src/viewframing.h
   src/textlayersession.h

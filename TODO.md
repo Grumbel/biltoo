@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1312-item-frame-geometry.** Pure rotated-frame view geometry.
+Prior: **1311**.
+
+### Change
+- `ItemFrameGeometry` (`itemframegeometry.{h,cpp}`): `FrameViewGeom`, `unitOr`,
+  `makeFrameViewGeom` — corners, edge mids, unit directions, outward normals.
+- ImageItem chrome / opacity / handle paths use the shared pure builder.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1312-item-frame-geometry.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1311-placement-scale-factors.** Pure item scale-handle factor math.
 Prior: **1310**.
 

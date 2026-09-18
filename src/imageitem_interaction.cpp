@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "itemframegeometry.h"
 #include "displayquality.h"
 #include "biltoo_thread.h"
 
@@ -237,50 +238,6 @@ constexpr qreal kSliderClearPx = 16.0;
 // Skip detailed chrome only when the frame is truly a few pixels across.
 constexpr qreal kMinFrameDiagPx = 16.0;
 
-struct FrameViewGeom {
-    QPointF tl, tr, br, bl, center;
-    QPointF midTop, midRight, midBottom, midLeft;
-    QPointF dirTop, dirRight, dirBottom, dirLeft;
-    QPointF outTop, outRight, outBottom, outLeft;
-};
-
-QPointF unitOr(const QPointF &v, const QPointF &fallback = QPointF(1, 0))
-{
-    const qreal len = qHypot(v.x(), v.y());
-    return len > 1e-6 ? v / len : fallback;
-}
-
-FrameViewGeom makeFrameViewGeom(const QPointF &tl, const QPointF &tr,
-                                const QPointF &br, const QPointF &bl)
-{
-    FrameViewGeom g;
-    g.tl = tl;
-    g.tr = tr;
-    g.br = br;
-    g.bl = bl;
-    g.center = (tl + tr + br + bl) * 0.25;
-    g.dirTop = unitOr(tr - tl);
-    g.dirRight = unitOr(br - tr);
-    g.dirBottom = unitOr(bl - br);
-    g.dirLeft = unitOr(tl - bl);
-    g.midTop = (tl + tr) * 0.5;
-    g.midRight = (tr + br) * 0.5;
-    g.midBottom = (br + bl) * 0.5;
-    g.midLeft = (bl + tl) * 0.5;
-    auto outward = [&](const QPointF &mid, const QPointF &along) {
-        QPointF n(-along.y(), along.x());
-        if (QPointF::dotProduct(n, mid - g.center) < 0) {
-            n = -n;
-        }
-        return n;
-    };
-    g.outTop = outward(g.midTop, g.dirTop);
-    g.outRight = outward(g.midRight, g.dirRight);
-    g.outBottom = outward(g.midBottom, g.dirBottom);
-    g.outLeft = outward(g.midLeft, g.dirLeft);
-    return g;
-}
-
 // Top-right outside column. Stack runs along the right edge direction starting
 // near the top-right corner. If the stack would collide with the right rotate
 // knob, the whole column is shifted further "up" (toward / past the top edge).
@@ -288,7 +245,7 @@ FrameViewGeom makeFrameViewGeom(const QPointF &tl, const QPointF &tr,
 // rotate knob (along-edge layout — tracks the content frame).
 //   upper: FlipH, FlipV, Rotate90CCW, Rotate90CW  — prefer top of edge
 //   lower: Raise, Lower, ResetScale, ResetRotation, ResetShear — prefer bottom of edge
-void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
+void chromeCentersView(const ItemFrameGeometry::FrameViewGeom &g, QPointF outCenters[kChromeCount])
 {
     const qreal btn = kChromeBtnScreenPx;
     const qreal step = btn + kChromeBtnGapPx;
@@ -338,7 +295,7 @@ void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
 // edge direction. Left end is kept clear of the bottom scale bar and bottom
 // rotate knob; when the preferred right-aligned position would collide, the
 // whole track shifts toward the bottom-right corner / further right.
-void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
+void opacityTrackView(const ItemFrameGeometry::FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
 {
     // Vertical track outside the *left* edge — same adaptive idea as
     // chromeCentersView lower group: constant size, prefer bottom, pack
@@ -789,7 +746,7 @@ void ImageItem::setOpacityFromSliderPos(const QPointF &scenePos)
     if (QLineF(tl, br).length() < kMinFrameDiagPx) {
         return;
     }
-    const FrameViewGeom fg = makeFrameViewGeom(tl, tr, br, bl);
+    const ItemFrameGeometry::FrameViewGeom fg = ItemFrameGeometry::makeFrameViewGeom(tl, tr, br, bl);
     QPointF a, b;
     opacityTrackView(fg, &a, &b);
     const QPointF p = sceneToViewPx(scenePos);
@@ -992,7 +949,7 @@ ImageItem::Handle ImageItem::handleAt(const QPointF &itemPos) const
 
     // Opacity + chrome: same adaptive outside layout as paint.
     {
-        const FrameViewGeom fg = makeFrameViewGeom(tl, tr, br, bl);
+        const ItemFrameGeometry::FrameViewGeom fg = ItemFrameGeometry::makeFrameViewGeom(tl, tr, br, bl);
         QPointF a, b;
         opacityTrackView(fg, &a, &b);
         const QPointF ab = b - a;
@@ -2256,7 +2213,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     // Chrome buttons: top-right *outside*. Adaptive — stack shifts upward when
     // split upper/lower groups around the right rotate knob (see chromeCentersView).
     {
-        const FrameViewGeom fg = makeFrameViewGeom(tl, tr, br, bl);
+        const ItemFrameGeometry::FrameViewGeom fg = ItemFrameGeometry::makeFrameViewGeom(tl, tr, br, bl);
         QPointF centers[kChromeCount];
         chromeCentersView(fg, centers);
 
@@ -2351,7 +2308,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     // Opacity: left *outside*, vertical. Bottom end = 5%, top end = 100%.
     // Clears the left scale bar and rotate knob (see opacityTrackView).
     {
-        const FrameViewGeom fg = makeFrameViewGeom(tl, tr, br, bl);
+        const ItemFrameGeometry::FrameViewGeom fg = ItemFrameGeometry::makeFrameViewGeom(tl, tr, br, bl);
         QPointF a, b;
         opacityTrackView(fg, &a, &b);
         const QPointF ab = b - a;
