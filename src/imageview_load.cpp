@@ -70,23 +70,6 @@ void biltooLoadDbg(const char *fmt, ...)
 }
 
 /**
- * Gallery soft paint budget: shrink attached soft when the cell needs far less
- * than the sample. Full sample remains in ImageCache for zoom-in.
- */
-QImage clampSoftForGalleryCell(const QImage &pixels, int needEdge, int minEdge)
-{
-    const int have = ImageCache::longEdge(pixels);
-    if (needEdge <= 0 || have <= needEdge * 2) {
-        return pixels;
-    }
-    const int target = qMax(needEdge, minEdge);
-    if (have <= target) {
-        return pixels;
-    }
-    return ImageCache::clampToMaxEdge(pixels, target);
-}
-
-/**
  * Worker-side: bake durable content appearance and clamp for display install.
  * Must not run on the GUI — materialize + scale of multi-MP samples is the
  * ←/→ hitch when done in installDisplayPixels.
@@ -854,7 +837,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     // raw → optional gallery soft clamp → materializeDisplay → attach.
     QImage pixelsForDisplay = pixels;
     if (isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
-        pixelsForDisplay = clampSoftForGalleryCell(
+        pixelsForDisplay = DisplayEdgePolicy::clampSoftForCell(
             pixels,
             galleryDisplayEdgeForItem(item, /*allowHighRes=*/true),
             ThumtooCache::kFilmstripLadderEdge);
@@ -1496,11 +1479,7 @@ int ImageView::itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes) co
     const QPointF b = mapFromScene(br.bottomRight());
     const qreal longPx =
         qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
-    const int need = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
-    if (!allowHighRes) {
-        return qMin(need, ThumtooCache::kGalleryLadderEdge);
-    }
-    return need;
+    return DisplayEdgePolicy::needEdgeFromScreenLongPx(longPx, allowHighRes);
 }
 
 int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const

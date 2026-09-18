@@ -4,6 +4,8 @@
 #ifndef DISPLAYEDGEPOLICY_H
 #define DISPLAYEDGEPOLICY_H
 
+#include <QImage>
+
 /**
  * Pure long-edge coverage and ladder-cap rules for PreferCache / soft delivery.
  * ImageView supplies known native sizes; this module does not touch caches.
@@ -27,6 +29,18 @@ int cappedDisplayEdge(int wantEdge, int nativeLongEdge);
  */
 bool sampleCoversNative(int sampleLongEdge, int nativeLongEdge, bool nativeKnown,
                         int overviewEdge, int imageLadderEdge);
+
+/**
+ * Gallery soft paint budget: shrink attached soft when the cell needs far less
+ * than the sample. Full sample remains in ImageCache for zoom-in.
+ */
+QImage clampSoftForCell(const QImage &pixels, int needEdge, int minEdge);
+
+/**
+ * Ladder-snapped on-screen long-edge need from device-pixel span.
+ * When @p allowHighRes is false, clamps to the soft gallery ladder edge.
+ */
+int needEdgeFromScreenLongPx(qreal longPx, bool allowHighRes);
 
 } // namespace DisplayEdgePolicy
 

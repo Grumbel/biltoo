@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1277-display-edge-soft-screen.** Soft cell clamp + screen needEdge pure helpers.
+Prior: **1276**.
+
+### Change
+- `DisplayEdgePolicy::clampSoftForCell` (gallery soft paint budget).
+- `needEdgeFromScreenLongPx` (ladder snap + optional soft-band clamp).
+- ImageView maps item scene rect → longPx then calls pure policy.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1277-display-edge-soft-screen.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1276-display-edge-policy.** Pure coversEdge / cappedDisplayEdge / sampleCoversNative.
 Prior: **1275**.
 

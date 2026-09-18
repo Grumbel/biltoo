@@ -3,9 +3,11 @@
 
 #include "displayedgepolicy.h"
 
+#include "imagecache.h"
 #include "thumtoocache.h"
 
 #include <QtGlobal>
+#include <QtMath>
 
 namespace DisplayEdgePolicy {
 
@@ -51,6 +53,29 @@ bool sampleCoversNative(int sampleLongEdge, int nativeLongEdge, bool nativeKnown
         return sampleLongEdge >= imageLadderEdge;
     }
     return coversEdge(sampleLongEdge, nativeLongEdge);
+}
+
+
+QImage clampSoftForCell(const QImage &pixels, int needEdge, int minEdge)
+{
+    const int have = ImageCache::longEdge(pixels);
+    if (needEdge <= 0 || have <= needEdge * 2) {
+        return pixels;
+    }
+    const int target = qMax(needEdge, minEdge);
+    if (have <= target) {
+        return pixels;
+    }
+    return ImageCache::clampToMaxEdge(pixels, target);
+}
+
+int needEdgeFromScreenLongPx(qreal longPx, bool allowHighRes)
+{
+    const int need = ThumtooCache::ceilLadderEdge(int(qCeil(longPx)));
+    if (!allowHighRes) {
+        return qMin(need, ThumtooCache::kGalleryLadderEdge);
+    }
+    return need;
 }
 
 } // namespace DisplayEdgePolicy
