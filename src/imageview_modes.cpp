@@ -232,9 +232,7 @@ void ImageView::clearWorkspace()
     m_loadGate.pendingScenePos().clear();
     m_loadGate.clearPendingWorkspacePaths();
     m_loadGate.pendingRestoreStates().clear();
-    m_pendingSessionBinds.clear();
-    m_pendingSessionIndexByPath.clear();
-    m_pendingSelectSessionIds.clear();
+    m_bindBook.clear();
     gallerySoftResetAll();
     m_sizeBook.clear();
     m_gallerySoftBook.deferPopulate = false;

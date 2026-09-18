@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1273-session-bind-book.** Extract SessionBindBook for LoadAdd pending binds.
+Prior: **1272**.
+
+### Change
+- `PendingSessionBind` + `SessionBindBook` (binds, indexByPath, selectIds).
+- ImageView holds `m_bindBook`; has/count/take/clear/remove-by-id are bag helpers.
+- `m_pendingItemAppearance` stays on the view (ImageItem* keys).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1273-session-bind-book.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1272-slideshow-motion-bias-path.** Pure geometric/attention bias paths + aspect mismatch.
 Prior: **1271**.
 

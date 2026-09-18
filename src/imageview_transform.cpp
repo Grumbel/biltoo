@@ -675,7 +675,7 @@ void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &it
     if (m_scene) {
         m_scene->clearSelection();
     }
-    m_pendingSelectSessionIds.clear();
+    m_bindBook.selectIds.clear();
     for (int i = 0; i < items.size(); ++i) {
         const WorkspaceItemState &st = items.at(i);
         const SessionImageId sid = newIds.at(i);
@@ -683,7 +683,7 @@ void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &it
         if (st.path.isEmpty() || sid == kInvalidSessionImageId) {
             continue;
         }
-        m_pendingSelectSessionIds.insert(sid);
+        m_bindBook.selectIds.insert(sid);
         // Appearance (content + pose) must already be in the store under sid.
         addImageForSession(st.path, sid, idx);
     }
@@ -754,7 +754,7 @@ void ImageView::placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
     if (m_scene) {
         m_scene->clearSelection();
     }
-    m_pendingSelectSessionIds.clear();
+    m_bindBook.selectIds.clear();
     for (int i = 0; i < ids.size(); ++i) {
         const SessionImageId sid = ids.at(i);
         if (sid == kInvalidSessionImageId) {
@@ -768,7 +768,7 @@ void ImageView::placeSessionIdsOnCanvas(const QList<SessionImageId> &ids,
             continue; // already on canvas
         }
         const int idx = (i < sessionIndices.size()) ? sessionIndices.at(i) : -1;
-        m_pendingSelectSessionIds.insert(sid);
+        m_bindBook.selectIds.insert(sid);
         addImageForSession(path, sid, idx);
     }
     emit statusChanged();

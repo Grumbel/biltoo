@@ -27,6 +27,7 @@
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
+#include "sessionbindbook.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
@@ -1318,7 +1319,6 @@ protected:
 
 private:
     friend class TileLoadCoordinator;
-    struct PendingSessionBind;
     enum LoadRole {
         LoadReplace = 0,
         LoadAdd = 1,
@@ -1816,9 +1816,7 @@ private:
     static constexpr int kMaxIdleGalleryDecodes = 2;
     /** Queue of workspace restores still waiting for decode (supports same path twice). */
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */
-    /** Session slot to assign when a LoadAdd for @p path finishes. */
-    QHash<QString, int> m_pendingSessionIndexByPath;
-    // --- LoadAdd pending-bind helpers (PendingSessionBind is private) ---
+    // --- LoadAdd pending-bind helpers ---
     int countPendingSessionBinds(const QString &path) const;
     void purgeSatisfiedPendingBinds(const QString &path);
     bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
@@ -1829,16 +1827,7 @@ private:
     void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
                              bool haveBound, const PendingSessionBind &bound);
 
-    struct PendingSessionBind {
-        QString path;
-        SessionImageId id = kInvalidSessionImageId;
-        int index = -1;
-        QPointF scenePos;
-        bool hasScenePos = false;
-    };
-    QList<PendingSessionBind> m_pendingSessionBinds;
-    /** Select these session ids when LoadAdd creates their tiles (paste). */
-    QSet<SessionImageId> m_pendingSelectSessionIds;
+    SessionBindBook m_bindBook;
     /** Content appearance staged by Duplicate until bindSelectedSessionIds. */
     QHash<ImageItem *, WorkspaceItemState> m_pendingItemAppearance;
     ViewportChrome m_chrome;

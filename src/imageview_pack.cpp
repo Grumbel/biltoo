@@ -495,7 +495,7 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
         b.path = path;
         b.id = item->sessionId();
         b.index = item->sessionIndex();
-        m_pendingSessionBinds.append(b);
+        m_bindBook.binds.append(b);
         if (isGalleryMode()) {
             scheduleGalleryDecode(path);
         } else {

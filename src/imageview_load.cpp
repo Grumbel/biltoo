@@ -2113,8 +2113,8 @@ void ImageView::reassertPendingBindPlacement(const QString &path)
         if (!item || item->path() != path) {
             continue;
         }
-        for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
-            const PendingSessionBind &b = m_pendingSessionBinds.at(bi);
+        for (int bi = 0; bi < m_bindBook.binds.size(); ++bi) {
+            const PendingSessionBind &b = m_bindBook.binds.at(bi);
             if (b.path != path) {
                 continue;
             }
@@ -2182,7 +2182,7 @@ void ImageView::claimUnboundItemsForPendingBinds(const QString &path, const QIma
         applyPendingBindScenePos(existing, bound);
         if (bound.id != kInvalidSessionImageId) {
             // Decode must not rewrite filmstrip (sessionAppearanceChanged).
-            if (m_pendingSelectSessionIds.remove(bound.id)) {
+            if (m_bindBook.selectIds.remove(bound.id)) {
                 existing->setSelected(true);
             }
         }
@@ -2241,7 +2241,7 @@ void ImageView::createMissingLoadAddItems(const QString &path, const QImage &ima
         // Decode/membership must not rewrite filmstrip; user edits emit overrides.
         if (haveBound && bound.id != kInvalidSessionImageId) {
             // Paste: select tiles as they finish decoding.
-            if (m_pendingSelectSessionIds.remove(bound.id)) {
+            if (m_bindBook.selectIds.remove(bound.id)) {
                 item->setSelected(true);
             }
         }
@@ -2426,7 +2426,7 @@ void ImageView::seedEmptyWorkspaceFromReplace(const QString &path, const QImage 
     // LoadAdd with pending binds; seeding first would leave an unbound tile
     // (default placement, no flip/grade) and steal the first path's LoadAdd.
     if (!m_items.isEmpty()
-        || !m_pendingSessionBinds.isEmpty()
+        || !m_bindBook.binds.isEmpty()
         || m_loadGate.containsPendingWorkspacePath(path)) {
         return;
     }

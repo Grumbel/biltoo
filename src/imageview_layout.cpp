@@ -1341,54 +1341,30 @@ ImageItem *ImageView::findItemBySessionId(SessionImageId sessionId) const
 
 bool ImageView::hasPendingSessionBindForPath(const QString &path) const
 {
-    if (path.isEmpty()) {
-        return false;
-    }
-    for (const PendingSessionBind &b : m_pendingSessionBinds) {
-        if (b.path == path) {
-            return true;
-        }
-    }
-    return false;
+    return m_bindBook.hasBindForPath(path);
 }
 
 int ImageView::countPendingSessionBinds(const QString &path) const
 {
-    int n = 0;
-    for (const PendingSessionBind &b : m_pendingSessionBinds) {
-        if (b.path == path) {
-            ++n;
-        }
-    }
-    return n;
+    return m_bindBook.countBindsForPath(path);
 }
 
 void ImageView::purgeSatisfiedPendingBinds(const QString &path)
 {
-    for (int bi = m_pendingSessionBinds.size() - 1; bi >= 0; --bi) {
-        const PendingSessionBind &b = m_pendingSessionBinds.at(bi);
+    for (int bi = m_bindBook.binds.size() - 1; bi >= 0; --bi) {
+        const PendingSessionBind &b = m_bindBook.binds.at(bi);
         if (b.path != path || b.id == kInvalidSessionImageId) {
             continue;
         }
         if (findItemBySessionId(b.id)) {
-            m_pendingSessionBinds.removeAt(bi);
+            m_bindBook.binds.removeAt(bi);
         }
     }
 }
 
 bool ImageView::takePendingSessionBind(const QString &path, PendingSessionBind *out)
 {
-    if (!out || path.isEmpty()) {
-        return false;
-    }
-    for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
-        if (m_pendingSessionBinds.at(bi).path != path) {
-            continue;
-        }
-        *out = m_pendingSessionBinds.takeAt(bi);
-        return true;
-    }
-    return false;
+    return m_bindBook.takeBind(path, out);
 }
 
 void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound)
@@ -1470,21 +1446,21 @@ bool ImageView::takePendingSessionBindForNewItem(const QString &path, ImageItem 
     if (!out || path.isEmpty() || !item) {
         return false;
     }
-    for (int bi = 0; bi < m_pendingSessionBinds.size(); ++bi) {
-        if (m_pendingSessionBinds.at(bi).path != path) {
+    for (int bi = 0; bi < m_bindBook.binds.size(); ++bi) {
+        if (m_bindBook.binds.at(bi).path != path) {
             continue;
         }
-        const PendingSessionBind candidate = m_pendingSessionBinds.at(bi);
+        const PendingSessionBind candidate = m_bindBook.binds.at(bi);
         if (candidate.id != kInvalidSessionImageId) {
             if (ImageItem *owner = findItemBySessionId(candidate.id)) {
                 if (owner != item) {
-                    m_pendingSessionBinds.removeAt(bi);
+                    m_bindBook.binds.removeAt(bi);
                     --bi;
                     continue;
                 }
             }
         }
-        *out = m_pendingSessionBinds.takeAt(bi);
+        *out = m_bindBook.binds.takeAt(bi);
         if (out->id != kInvalidSessionImageId) {
             item->setSessionId(out->id);
         }
@@ -1575,7 +1551,7 @@ QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
         m_loadGate.removePendingWorkspacePath(path);
         gallerySoftResetPath(path);
         m_loadGate.pendingScenePos().remove(path);
-        m_pendingSessionIndexByPath.remove(path);
+        m_bindBook.indexByPath.remove(path);
         // destroyCanvasItem clears selection anchor / drag pointers and
         // removes from m_items and both stashes (safe if already only in one).
         destroyCanvasItem(item);
@@ -1585,12 +1561,7 @@ QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
 
 void ImageView::prunePendingBindsAndSavedForSessionId(SessionImageId sessionId)
 {
-    for (int i = m_pendingSessionBinds.size() - 1; i >= 0; --i) {
-        // Match by session id only — same path may still need other binds.
-        if (m_pendingSessionBinds.at(i).id == sessionId) {
-            m_pendingSessionBinds.removeAt(i);
-        }
-    }
+    m_bindBook.removeBindsForSessionId(sessionId);
     for (int i = m_workspace.savedItems().size() - 1; i >= 0; --i) {
         if (m_workspace.savedItems().at(i).sessionId == sessionId) {
             m_workspace.savedItems().removeAt(i);
@@ -1750,7 +1721,7 @@ void ImageView::removeWorkspaceSessionIndex(int sessionIndex)
     if (!pathStillLive) {
         m_loadGate.removePendingWorkspacePath(path);
         m_loadGate.pendingScenePos().remove(path);
-        m_pendingSessionIndexByPath.remove(path);
+        m_bindBook.indexByPath.remove(path);
         gallerySoftResetPath(path);
 }
     destroyCanvasItem(item);
@@ -1782,13 +1753,13 @@ void ImageView::detachCanvasSessionId(SessionImageId sessionId)
         if (!pathStillLive) {
             takePendingWorkspacePath(path);
             m_loadGate.pendingScenePos().remove(path);
-            m_pendingSessionIndexByPath.remove(path);
+            m_bindBook.indexByPath.remove(path);
         gallerySoftResetPath(path);
 }
         // Drop pending binds for this id only (not every same-path bind).
-        for (int i = m_pendingSessionBinds.size() - 1; i >= 0; --i) {
-            if (m_pendingSessionBinds.at(i).id == sessionId) {
-                m_pendingSessionBinds.removeAt(i);
+        for (int i = m_bindBook.binds.size() - 1; i >= 0; --i) {
+            if (m_bindBook.binds.at(i).id == sessionId) {
+                m_bindBook.binds.removeAt(i);
             }
         }
         destroyCanvasItem(item);
@@ -1951,7 +1922,7 @@ void ImageView::removeWorkspacePathOccurrence(const QString &path, int occurrenc
         if (found == occurrence) {
             takePendingWorkspacePath(path);
             m_loadGate.pendingScenePos().remove(path);
-            m_pendingSessionIndexByPath.remove(path);
+            m_bindBook.indexByPath.remove(path);
         gallerySoftResetPath(path);
 destroyCanvasItem(item);
             emit statusChanged();

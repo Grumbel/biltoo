@@ -281,7 +281,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                     b.path = path;
                     b.id = sid;
                     b.index = i;
-                    m_pendingSessionBinds.append(b);
+                    m_bindBook.binds.append(b);
                     if (isGalleryMode()) {
                         scheduleGalleryDecode(path);
                     } else {
@@ -300,8 +300,8 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             b.path = path;
             b.id = sid;
             b.index = i;
-            m_pendingSessionBinds.append(b);
-            m_pendingSessionIndexByPath.insert(path, i);
+            m_bindBook.binds.append(b);
+            m_bindBook.indexByPath.insert(path, i);
         }
 
         if (virtualize) {
@@ -450,9 +450,9 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
         b.path = path;
         b.id = sessionId;
         b.index = sessionIndex;
-        m_pendingSessionBinds.append(b);
+        m_bindBook.binds.append(b);
         if (sessionIndex >= 0) {
-            m_pendingSessionIndexByPath.insert(path, sessionIndex);
+            m_bindBook.indexByPath.insert(path, sessionIndex);
         }
         // Paste / membership must grow pathOrder so LoadAdd's wanted count
         // includes this session image. Without this, a path already on the
@@ -540,7 +540,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     b.scenePos = scenePos;
     b.hasScenePos = true;
     if (sessionId != kInvalidSessionImageId || sessionIndex >= 0 || b.hasScenePos) {
-        m_pendingSessionBinds.append(b);
+        m_bindBook.binds.append(b);
     }
     // Membership order is id-aware: each place of a session image is a row.
     // Path alone cannot express "two tiles, same file".
@@ -942,8 +942,8 @@ void ImageView::ensureGalleryPlaceholders()
             b.path = path;
             b.id = sid;
             b.index = i;
-            m_pendingSessionBinds.append(b);
-            m_pendingSessionIndexByPath.insert(path, i);
+            m_bindBook.binds.append(b);
+            m_bindBook.indexByPath.insert(path, i);
         }
 
         // Prefer definitive size; soft hint only if still provisional (should be rare).
