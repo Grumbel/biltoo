@@ -483,7 +483,8 @@ QSize probeSize(const QString &path)
 {
     // Worker-only for source opens (ASSERT in debug when thumtoo is off).
     // Prefer durable thumtoo index (no source I/O) when a size is already known.
-    if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
+    if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
+        cached.isValid()) {
         return cached;
     }
     // Warm the cache in the background for the next visit (not Unsupported).

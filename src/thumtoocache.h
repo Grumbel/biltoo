@@ -101,8 +101,20 @@ inline int prevLadderEdge(int edge)
     return prev;
 }
 
-/** Cache-only native size for a session path (file or //archive: ref). */
-QSize cachedSize(const QString &path);
+/**
+ * Cache-only native size for a session path (file or //archive: ref).
+ * @param scheduleRevalidate  When true (default), may queue a background
+ *   mtime/size check against the source. Bulk sort / HUD paths must pass
+ *   false so a warm index does not flood the thread pool with stats.
+ */
+QSize cachedSize(const QString &path, bool scheduleRevalidate = true);
+
+/**
+ * Cache-only file size and mtime from the Store locator (no source I/O).
+ * Values are source fingerprint fields stored at last probe (bytes, ns epoch).
+ * @return true if at least one of size/mtime is present in the index.
+ */
+bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs);
 
 /**
  * Cache-only LQIP (Handsum/ThumbHash) as a small QImage.

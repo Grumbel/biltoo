@@ -730,7 +730,7 @@ bool debugTracingEnabled()
     return thumtooDebugEnabled();
 }
 
-QSize cachedSize(const QString &path)
+QSize cachedSize(const QString &path, bool scheduleRevalidate)
 {
 #ifdef BILTOO_HAVE_THUMTOO
     init();
@@ -747,13 +747,63 @@ QSize cachedSize(const QString &path)
         return {};
     }
     if (auto sz = c->get_size(uri)) {
-        scheduleBackgroundRevalidate(path, uri);
+        if (scheduleRevalidate) {
+            scheduleBackgroundRevalidate(path, uri);
+        }
         return QSize(sz->width, sz->height);
     }
 #else
     Q_UNUSED(path);
+    Q_UNUSED(scheduleRevalidate);
 #endif
     return {};
+}
+
+bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs)
+{
+    if (sizeBytes) {
+        *sizeBytes = -1;
+    }
+    if (mtimeNs) {
+        *mtimeNs = -1;
+    }
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty()) {
+        return false;
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return false;
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return false;
+    }
+    bool any = false;
+    try {
+        if (auto loc = c->store().find_locator(uri)) {
+            if (loc->size && sizeBytes) {
+                *sizeBytes = *loc->size;
+                any = true;
+            }
+            if (loc->mtime_ns && mtimeNs) {
+                *mtimeNs = *loc->mtime_ns;
+                any = true;
+            }
+        }
+    } catch (...) {
+        return false;
+    }
+    return any;
+#else
+    Q_UNUSED(path);
+    return false;
+#endif
 }
 
 

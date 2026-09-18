@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1108-sort-cache-no-revalidate.** Sort/file-info uses Store cache; no revalidate flood.
+Prior: **1107**.
+
+### Problem
+- "Reading file info…" always `QFileInfo` every path (NFS/USB stalls).
+- "Measuring images…" used `cachedSize` which **scheduled background revalidate**
+  (stat) per warm hit → thread-pool flood; felt slow even with a warm index.
+
+### Change
+- `cachedSize(path, scheduleRevalidate=true)` — bulk/sort pass `false`.
+- `cachedFileStat` — locator size/mtime from Store (no source I/O).
+- Sort diskMeta: Store fingerprint first, `QFileInfo` only on miss.
+- `ImageLoader::probeSize`: cache hit without revalidate.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1108-sort-cache-no-revalidate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1107-schedulepixels-alias.** schedulePixels → PreferCache display alias.
 Prior: **1106**.
 

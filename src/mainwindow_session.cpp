@@ -959,11 +959,27 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
             const QString &path = paths.at(i);
             if (diskMeta) {
                 if (!mtimes.contains(path)) {
-                    const QFileInfo fi(path);
-                    mtimes.insert(path, fi.lastModified().toMSecsSinceEpoch());
-                    fsizes.insert(path, fi.size());
+                    // Prefer Store locator fingerprint (no source I/O). QFileInfo
+                    // only on miss — warm cache must not re-stat every path.
+                    qint64 stSize = -1;
+                    qint64 stMtimeNs = -1;
+                    if (ThumtooCache::cachedFileStat(path, &stSize, &stMtimeNs)
+                        && (stSize >= 0 || stMtimeNs >= 0)) {
+                        if (stMtimeNs >= 0) {
+                            mtimes.insert(path, stMtimeNs / 1000000); // ns → ms
+                        } else {
+                            mtimes.insert(path, 0);
+                        }
+                        fsizes.insert(path, stSize >= 0 ? stSize : 0);
+                    } else {
+                        const QFileInfo fi(path);
+                        mtimes.insert(path, fi.lastModified().toMSecsSinceEpoch());
+                        fsizes.insert(path, fi.size());
+                    }
                 }
             } else if (!sizes.contains(path)) {
+                // Cache-only first (no background revalidate flood). probeSize
+                // already uses cachedSize(..., false); empty → async scheduleProbe.
                 sizes.insert(path, ImageLoader::probeSize(path));
             }
             const qint64 now = clock.elapsed();
