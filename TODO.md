@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1346-workspace-hud-panzoom-longedge.** WorkspaceGeometry, HUD panel max, panZoom clamp, layout longEdge.
+Prior: **1345**.
+
+### Change
+- `WorkspaceGeometry::{sceneMargin,placementMaxEdge,cappedFootprint}`
+- `HudGeometry::{maxPanelBgW,maxPanelTextW}`
+- `SlideshowSettings::clampPanZoomFactor`
+- Wire `ContentXform::longEdge` in layout rematerialize
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1346-workspace-hud-panzoom-longedge.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1345-maxaxis-groupscale-slideshow-clocks.** maxAxisScale, group scale, SlideshowClocks policy, track clamp01, pairCount.
 Prior: **1341** (upstream `d7d890a`).
 

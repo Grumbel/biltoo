@@ -325,3 +325,4 @@ part of early-phase exit criteria).
 - Stack 1338–1339 pure helpers; **GalleryPackFit::packAvailAxis**; **GallerySoft::maxHave**.
 - **DisplayEdgePolicy** climb/bind/tileSynth; crop font clamps; materializePreviewEdge.
 - **maxAxisScale**; **clampGroupScaleAxis**; **safeDivisor**; **SlideshowClocks** policy clamps; track clamp01; pairCount.
+- **WorkspaceGeometry** margins/footprint; HUD maxPanel widths; clampPanZoomFactor; layout longEdge.
