@@ -261,20 +261,19 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     accepted.fullEdge = plan.fullEdge;
 
     if (plan.scheduleSoft) {
-        // Durable pyramid: tiles only — never soft-band PreferCache (Gallery
-        // product is tiles + LQIP, not soft underlay).
+        // Soft PreferCache encode is removed (LQIP + tiles product). Soft-band
+        // plan → TileSynth when durable tiles are known; else request pyramid.
+        // PreferCache without a pyramid still soft-encodes — do not call it here.
         if (ThumtooCache::hasDurableTilesKnown(path)) {
-            if (ThumtooCache::scheduleTilePyramid(path)) {
-                accepted.scheduleTiles = true;
-            }
-        } else {
             const int edge = plan.softEdge > 0 ? plan.softEdge
                                                : ThumtooCache::kGalleryLadderEdge;
-            // Cold non-durable only (Image/slideshow may still need soft).
-            if (ThumtooCache::scheduleSoftPixels(path, edge)
+            if (ThumtooCache::scheduleDisplayPixels(path, edge)
                 || ThumtooCache::isPixelsPending(path, edge)) {
+                // TileSynth delivery still arrives as ladderReady soft-band edge.
                 accepted.scheduleSoft = true;
             }
+        } else if (ThumtooCache::scheduleTilePyramid(path)) {
+            accepted.scheduleTiles = true;
         }
     }
     if (plan.scheduleDisplay) {

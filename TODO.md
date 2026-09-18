@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1222-pathraster-no-soft-encode.** PathRaster soft-band → tiles/TileSynth only.
+Prior: **1221**.
+
+### Change
+- `plan.scheduleSoft`: never `scheduleSoftPixels`. Durable tiles known →
+  `scheduleDisplayPixels` (TileSynth); else `scheduleTilePyramid` only.
+- Docs: PATH_RASTER_SERVICE consumers + soft-band rule; filmstrip not PathRaster.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1222-pathraster-no-soft-encode.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1221-filmstrip-tile-rediscover.** Filmstrip: rediscover tiles after pyramid; surface re-arm.
 Prior: **1220**.
 

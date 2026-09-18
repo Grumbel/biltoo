@@ -61,12 +61,15 @@ invalidateAll()           — session switch
 |----------|---------------|---------|
 | Gallery | *(none — LQIP + tiles)* | `applyGalleryLadderReady` accepts LQIP only |
 | Image mode | EscalateToFull (cold) / tiles when durable | `rasterImproved` / `tryInstall` |
-| Slideshow | SoftDisplay (screen-fit) | phase buffers + optional tile paint |
-| Filmstrip | SoftDisplay | strip thumbs |
+| Slideshow | SoftDisplay (screen-fit) → tiles/TileSynth | phase buffers + optional tile paint |
+| Filmstrip | *(not PathRaster — `scheduleFilmstripTilePixels`)* | LQIP + TileSynth |
 
 Gallery does not call `ensure`. Decode window installs LQIP and drives
 TileLoadCoordinator. Historical name `GallerySoftState` tracks decode-window
 budget only (not PreferCache soft climb).
+
+**Soft-band plan:** never `scheduleSoftPixels` encode. Durable tiles known →
+`scheduleDisplayPixels` (TileSynth); else `scheduleTilePyramid` only.
 
 ## Edit / crop full raster
 
@@ -83,6 +86,6 @@ display climb (Display band ≤2048). See contract §2 Full vs Display.
 - Pool workers calling thumtoo schedule APIs directly (use `requestEscalateClimb`)
 - ImageView cold LoadReplace using bare `schedulePixels` (use `requestEscalateClimb`)
 
-`ImageLoader` soft `schedulePixels` for filmstrip/loadThumbnail remains allowed
-(Soft band only; see contract §1).
+Filmstrip and Image underlay no longer use soft PreferCache encode (see
+[FILMSTRIP_LAYOUT.md](FILMSTRIP_LAYOUT.md), [GALLERY_SOFT.md](GALLERY_SOFT.md)).
 
