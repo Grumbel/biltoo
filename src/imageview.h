@@ -342,18 +342,8 @@ public:
                               int atlasVw, int atlasVh);
     void finishDwellAtlasRebuild(quint64 generation, const QImage &scaled,
                                 qreal atlasScale, int atlasVw, int atlasVh);
-    struct DwellAtlasParams {
-        int vw = 0;
-        int vh = 0;
-        int longCap = 0;
-        qreal headroom = 0.0;
-        qreal keyScale = 0.0;
-        bool valid = false;
-    };
+    /** Viewport × motion headroom → atlas budget (see SlideshowAtlasPolicy). */
     DwellAtlasParams dwellAtlasParams() const;
-    bool dwellAtlasCoversSource(const QPixmap &atlas, qreal atlasScale, int atlasVw,
-                                int atlasVh, const DwellAtlasParams &params,
-                                const QImage &source) const;
     void invalidateDwellAtlasRebuilds();
     void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale,
                            int *atlasVw, int *atlasVh) const;

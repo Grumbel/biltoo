@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "slideshowatlaspolicy.h"
 #include "slideshowclocks.h"
 #include "zoomblurhelpers.h"
 #include "slideshowphasepolicy.h"
@@ -1396,9 +1397,9 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
             m_ssDwell.atlas.isNull()
             || incoming >= need
             || incoming > ThumtooCache::kGalleryLadderEdge
-            || !dwellAtlasCoversSource(m_ssDwell.atlas, m_ssDwell.atlasScale,
-                                       m_ssDwell.atlasVw, m_ssDwell.atlasVh, params,
-                                       oriented);
+            || !SlideshowAtlasPolicy::coversSource(
+                   m_ssDwell.atlas, m_ssDwell.atlasScale, m_ssDwell.atlasVw,
+                   m_ssDwell.atlasVh, params, oriented);
         if (needAtlas) {
             requestDwellAtlasRebuild();
         }
@@ -1427,8 +1428,9 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
             m_ss.toAtlas.isNull()
             || incoming >= need
             || incoming > ThumtooCache::kGalleryLadderEdge
-            || !dwellAtlasCoversSource(m_ss.toAtlas, m_ss.toAtlasScale, m_ss.toAtlasVw,
-                                       m_ss.toAtlasVh, params, oriented);
+            || !SlideshowAtlasPolicy::coversSource(
+                   m_ss.toAtlas, m_ss.toAtlasScale, m_ss.toAtlasVw, m_ss.toAtlasVh,
+                   params, oriented);
         if (needAtlas) {
             requestToPhaseAtlasRebuild();
         }
@@ -1545,7 +1547,8 @@ void ImageView::requestSlideshowAtlas(SlideshowAtlasKind kind)
     const qreal aScale = (kind == SlideshowAtlasKind::From) ? m_ssDwell.atlasScale : m_ss.toAtlasScale;
     const int aVw = (kind == SlideshowAtlasKind::From) ? m_ssDwell.atlasVw : m_ss.toAtlasVw;
     const int aVh = (kind == SlideshowAtlasKind::From) ? m_ssDwell.atlasVh : m_ss.toAtlasVh;
-    if (dwellAtlasCoversSource(*atlas, aScale, aVw, aVh, params, *source)) {
+    if (SlideshowAtlasPolicy::coversSource(*atlas, aScale, aVw, aVh, params,
+                                           *source)) {
         return;
     }
 
@@ -2053,9 +2056,9 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
     // so paintMotionCover blits the live sample without stretch for a frame.
     const bool keepAtlas = m_ss.fromContentApplied
         && !m_ssDwell.atlas.isNull()
-        && dwellAtlasCoversSource(m_ssDwell.atlas, m_ssDwell.atlasScale, m_ssDwell.atlasVw,
-                                  m_ssDwell.atlasVh, dwellAtlasParams(),
-                                  m_ss.fromImage);
+        && SlideshowAtlasPolicy::coversSource(
+               m_ssDwell.atlas, m_ssDwell.atlasScale, m_ssDwell.atlasVw,
+               m_ssDwell.atlasVh, dwellAtlasParams(), m_ss.fromImage);
     if (!keepAtlas) {
         invalidateDwellAtlasRebuilds();
         m_ssDwell.atlas = QPixmap();
@@ -2480,7 +2483,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
     }
 }
 
-ImageView::DwellAtlasParams ImageView::dwellAtlasParams() const
+DwellAtlasParams ImageView::dwellAtlasParams() const
 {
     // Atlas size is a function of the *viewport* and motion headroom only —
     // not of the source raster's pixel dimensions. Camera dest is aspect-based;
@@ -2496,38 +2499,6 @@ ImageView::DwellAtlasParams ImageView::dwellAtlasParams() const
     p.keyScale = p.headroom;
     p.valid = p.longCap > 0;
     return p;
-}
-
-bool ImageView::dwellAtlasCoversSource(const QPixmap &atlas, qreal atlasScale,
-                                       int atlasVw, int atlasVh,
-                                       const DwellAtlasParams &params,
-                                       const QImage &source) const
-{
-    if (!params.valid || atlas.isNull() || source.isNull()) {
-        return false;
-    }
-    if (!qFuzzyCompare(atlasScale, params.keyScale) || atlasVw != params.vw
-        || atlasVh != params.vh || atlas.width() < params.longCap * 9 / 10) {
-        return false;
-    }
-    const int have = qMax(atlas.width(), atlas.height());
-    const int srcLong = qMax(source.width(), source.height());
-    // Atlas is always ~longCap (viewport budget). Soft samples are *upscaled*
-    // into it, so srcLong << have does NOT mean the atlas is sharp — the old
-    // "srcLong <= have*5/4 → cover" test left soft-looking atlases on screen
-    // forever while PreferCache delivered 1024/native.
-    //
-    // Soft band only: keep the soft-upscaled atlas (skip 256↔512 thrash).
-    // Above soft: require a rebuild so HQ replaces the soft upsample.
-    // At/above longCap: atlas is adequate if it fills the budget.
-    if (srcLong >= (params.longCap * 9) / 10) {
-        return have >= (params.longCap * 9) / 10;
-    }
-    if (srcLong <= ThumtooCache::kGalleryLadderEdge) {
-        return true;
-    }
-    // PreferCache mid/high sample while atlas is still a soft upsample.
-    return false;
 }
 
 void ImageView::invalidateDwellAtlasRebuilds()
@@ -2550,7 +2521,8 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
     if (!params.valid) {
         return;
     }
-    if (dwellAtlasCoversSource(*atlas, *atlasScale, *atlasVw, *atlasVh, params, image)) {
+    if (SlideshowAtlasPolicy::coversSource(*atlas, *atlasScale, *atlasVw, *atlasVh,
+                                           params, image)) {
         return;
     }
     const int srcLong = qMax(image.width(), image.height());

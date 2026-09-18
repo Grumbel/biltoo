@@ -145,6 +145,20 @@ struct SlideshowSettings {
 };
 
 /**
+ * Viewport-derived budget for slideshow motion atlases.
+ * ImageView fills this from viewport size × motion headroom; pure policy
+ * (SlideshowAtlasPolicy) only reads the fields.
+ */
+struct DwellAtlasParams {
+    int vw = 0;
+    int vh = 0;
+    int longCap = 0;
+    qreal headroom = 0.0;
+    qreal keyScale = 0.0;
+    bool valid = false;
+};
+
+/**
  * Dwell atlas and Ken Burns camera path (single-slide leg).
  * Motion QTimer stays on ImageView (QObject parent).
  */

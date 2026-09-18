@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1268-slideshow-atlas-policy.** Pure dwell/phase atlas coverage policy.
+Prior: **1267**.
+
+### Change
+- `DwellAtlasParams` moved to `slideshowtypes.h` (viewport budget fields).
+- `SlideshowAtlasPolicy::coversSource` — soft-band keep / mid PreferCache rebuild /
+  longCap fill rules (was `ImageView::dwellAtlasCoversSource`).
+- ImageView still builds params from viewport × motion headroom and schedules
+  atlas rebuilds.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1268-slideshow-atlas-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1267-image-size-book.** Extract ImageSizeBook path→size bag.
 Prior: **1266**.
 
