@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1171-fix-onLadderReady-typo.** Compile fix: mangled onLadderReady signature.
+Prior: **1170**.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1171-fix-onLadderReady-typo.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1170-stop-soft-prefercache.** Kill remaining soft PreferCache (setInterest/PathRaster).
 Prior: **1169**.
 

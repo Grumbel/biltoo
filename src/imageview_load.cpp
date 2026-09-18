@@ -1838,7 +1838,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     st.terminal = true;
 }
 
-void ImageView::onLadderReadyvoid ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
+void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
 {
     ASSERT_GUI_THREAD();
     if (path.isEmpty()) {
