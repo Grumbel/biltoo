@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1306-page-guide-geometry.** Pure page-guide hit-test and resize math.
+Prior: **1305**.
+
+### Change
+- `PageGuideGeometry` (`pageguidegeometry.{h,cpp}`): `handlePoints`,
+  `handleIndexAt`, `rectFromHandleDrag` (Ctrl centre / Shift aspect / min side).
+- `pageGuideHandleAt`, `pageGuideRectFromHandleDrag`, paint anchors use it.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1306-page-guide-geometry.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1305-attention-geometry-selection.** Pure attention selection set ops.
 Prior: **1304**.
 

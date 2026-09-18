@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "pageguidegeometry.h"
 #include "biltoo_thread.h"
 #include "thumtoocache.h"
 
@@ -2232,23 +2233,7 @@ int ImageView::pageGuideHandleAt(const QPoint &viewPos) const
         return -1;
     }
     const QRect viewRect = mapFromScene(page).boundingRect();
-    constexpr qreal kScaleHit = 12.0;
-    const QPointF corners[8] = {
-        viewRect.topLeft(),
-        QPointF(viewRect.center().x(), viewRect.top()),
-        viewRect.topRight(),
-        QPointF(viewRect.right(), viewRect.center().y()),
-        viewRect.bottomRight(),
-        QPointF(viewRect.center().x(), viewRect.bottom()),
-        viewRect.bottomLeft(),
-        QPointF(viewRect.left(), viewRect.center().y()),
-    };
-    for (int i = 0; i < 8; ++i) {
-        if (QLineF(QPointF(viewPos), corners[i]).length() <= kScaleHit) {
-            return i;
-        }
-    }
-    return -1;
+    return PageGuideGeometry::handleIndexAt(viewPos, viewRect);
 }
 
 bool ImageView::beginPageGuideResize(int handle)
@@ -2273,125 +2258,9 @@ QRectF ImageView::pageGuideRectFromHandleDrag(const QPointF &scenePos,
     //   default = opposite edge/corner fixed
     //   Ctrl    = scale about centre
     //   Shift   = lock starting aspect (corners; with or without Ctrl)
-    const QRectF r = m_pageGuide.dragStartRect;
-    const int h = m_pageGuide.dragHandle;
-    // 0=TL 1=T 2=TR 3=R 4=BR 5=B 6=BL 7=L
-    const bool fromCenter = mods & Qt::ControlModifier;
-    const bool lockAspect = mods & Qt::ShiftModifier;
-    const bool corner = (h == 0 || h == 2 || h == 4 || h == 6);
-    const QPointF c = r.center();
-
-    qreal left = r.left();
-    qreal top = r.top();
-    qreal right = r.right();
-    qreal bottom = r.bottom();
-
-    if (fromCenter) {
-        // Distance from centre to pointer defines half-size on the active axes.
-        const qreal halfW = qAbs(scenePos.x() - c.x());
-        const qreal halfH = qAbs(scenePos.y() - c.y());
-        switch (h) {
-        case 0: case 2: case 4: case 6: // corners
-            left = c.x() - halfW;
-            right = c.x() + halfW;
-            top = c.y() - halfH;
-            bottom = c.y() + halfH;
-            break;
-        case 1: case 5: // top / bottom — vertical only
-            top = c.y() - halfH;
-            bottom = c.y() + halfH;
-            break;
-        case 3: case 7: // right / left — horizontal only
-            left = c.x() - halfW;
-            right = c.x() + halfW;
-            break;
-        default:
-            break;
-        }
-    } else {
-        switch (h) {
-        case 0: // TL
-            left = scenePos.x();
-            top = scenePos.y();
-            break;
-        case 1: // T
-            top = scenePos.y();
-            break;
-        case 2: // TR
-            right = scenePos.x();
-            top = scenePos.y();
-            break;
-        case 3: // R
-            right = scenePos.x();
-            break;
-        case 4: // BR
-            right = scenePos.x();
-            bottom = scenePos.y();
-            break;
-        case 5: // B
-            bottom = scenePos.y();
-            break;
-        case 6: // BL
-            left = scenePos.x();
-            bottom = scenePos.y();
-            break;
-        case 7: // L
-            left = scenePos.x();
-            break;
-        default:
-            break;
-        }
-    }
-
-    if (lockAspect && corner) {
-        const qreal aspect = r.width() / qMax(1e-6, r.height());
-        qreal w = right - left;
-        qreal hh = bottom - top;
-        if (qAbs(w) / qMax(1e-6, qAbs(hh)) > aspect) {
-            const qreal newH = qAbs(w) / aspect;
-            if (fromCenter) {
-                top = c.y() - newH * 0.5;
-                bottom = c.y() + newH * 0.5;
-            } else if (h == 0 || h == 2) {
-                top = bottom - std::copysign(newH, bottom - top);
-            } else {
-                bottom = top + std::copysign(newH, bottom - top);
-            }
-        } else {
-            const qreal newW = qAbs(hh) * aspect;
-            if (fromCenter) {
-                left = c.x() - newW * 0.5;
-                right = c.x() + newW * 0.5;
-            } else if (h == 0 || h == 6) {
-                left = right - std::copysign(newW, right - left);
-            } else {
-                right = left + std::copysign(newW, right - left);
-            }
-        }
-    }
-
-    QRectF next(QPointF(left, top), QPointF(right, bottom));
-    next = next.normalized();
-    constexpr qreal kMin = 32.0;
-    if (next.width() < kMin) {
-        if (fromCenter) {
-            next = QRectF(c.x() - kMin * 0.5, next.top(), kMin, next.height());
-        } else if (h == 0 || h == 6 || h == 7) {
-            next.setLeft(next.right() - kMin);
-        } else {
-            next.setWidth(kMin);
-        }
-    }
-    if (next.height() < kMin) {
-        if (fromCenter) {
-            next = QRectF(next.left(), c.y() - kMin * 0.5, next.width(), kMin);
-        } else if (h == 0 || h == 1 || h == 2) {
-            next.setTop(next.bottom() - kMin);
-        } else {
-            next.setHeight(kMin);
-        }
-    }
-    return next;
+    return PageGuideGeometry::rectFromHandleDrag(
+        scenePos, m_pageGuide.dragStartRect, m_pageGuide.dragHandle,
+        mods & Qt::ControlModifier, mods & Qt::ShiftModifier);
 }
 
 void ImageView::updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods)

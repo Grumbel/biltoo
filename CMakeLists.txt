@@ -135,6 +135,8 @@ add_executable(biltoo
   src/centreprogress.h
   src/grouptransformsession.h
   src/pageguidesession.h
+  src/pageguidegeometry.cpp
+  src/pageguidegeometry.h
   src/iteminteractsession.h
   src/hudflash.h
   src/viewframing.h

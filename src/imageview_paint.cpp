@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "pageguidegeometry.h"
 #include "edgenavpolicy.h"
 #include <QElapsedTimer>
 #include <QClipboard>
@@ -1499,16 +1500,8 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(viewRect);
 
-    const QPointF pts[8] = {
-        viewRect.topLeft(),
-        QPointF(viewRect.center().x(), viewRect.top()),
-        viewRect.topRight(),
-        QPointF(viewRect.right(), viewRect.center().y()),
-        viewRect.bottomRight(),
-        QPointF(viewRect.center().x(), viewRect.bottom()),
-        viewRect.bottomLeft(),
-        QPointF(viewRect.left(), viewRect.center().y()),
-    };
+    QPointF pts[8];
+    PageGuideGeometry::handlePoints(viewRect, pts);
     // Corners 0,2,4,6: rounded line-arc-line; edges 1,3,5,7: short bars.
     auto unit = [](QPointF v) {
         const qreal len = qHypot(v.x(), v.y());
