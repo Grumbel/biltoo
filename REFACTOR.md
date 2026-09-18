@@ -71,6 +71,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SessionAppearanceStore** seed-attempt set (`seedAttempted` / mark / clear with remove).
 - **SessionAppearance::mergeAppliedAndLiveFlags**: pure want overlay (applied xform + live flags).
 - **SessionAppearance::withoutCrop**: orient-only state (crop fields cleared).
+- **SessionAppearance::clearedContentOps**: drop bake ops; keep colour grade / pose.
 - **CropSession::locksPath / locksItem**: draft sample freeze predicates on the session bag.
 - **CropSession::isDraftLayoutGeometry**; **SlideshowProgressHud::lastPaintFp**.
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).

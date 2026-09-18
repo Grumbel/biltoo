@@ -164,6 +164,12 @@ void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
 /** Copy of @p state with crop fields cleared (orient-only layout / draft). */
 WorkspaceItemState withoutCrop(const WorkspaceItemState &state);
 
+/**
+ * Drop content bake ops (flips, quarter turns, crop); keep colour grade and
+ * non-content placement fields.
+ */
+WorkspaceItemState clearedContentOps(const WorkspaceItemState &state);
+
 } // namespace SessionAppearance
 
 /**

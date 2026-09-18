@@ -318,6 +318,18 @@ WorkspaceItemState withoutCrop(const WorkspaceItemState &state)
     return out;
 }
 
+
+WorkspaceItemState clearedContentOps(const WorkspaceItemState &state)
+{
+    WorkspaceItemState out = withoutCrop(state);
+    out.contentHFlip = false;
+    out.contentVFlip = false;
+    out.contentQuarterTurns = 0;
+    out.cropSourceSize = QSize();
+    out.cropRotation = 0.0;
+    return out;
+}
+
 } // namespace SessionAppearance
 
 const WorkspaceItemState *SessionAppearanceStore::get(SessionImageId id) const

@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1294-appearance-cleared-content-ops.** Pure clearedContentOps for reset appearance.
+Prior: **1293**.
+
+### Change
+- `SessionAppearance::clearedContentOps` — drop flips/turns/crop; keep grade/pose.
+- `resetContentAppearanceForTargets` uses it for store + path map slots.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1294-appearance-cleared-content-ops.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1293-merge-live-crop-qrect.** Fix mergeAppliedAndLiveFlags live crop type (QRect).
 Prior: **1292**.
 

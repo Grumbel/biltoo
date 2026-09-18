@@ -830,28 +830,18 @@ int ImageView::resetContentAppearanceForTargets()
 
         // 2) Clear session appearance content fields (keep placement).
         if (sid != kInvalidSessionImageId) {
-            WorkspaceItemState slot = m_appearance.value(sid);
+            WorkspaceItemState slot = SessionAppearance::clearedContentOps(
+                m_appearance.value(sid));
             slot.sessionId = sid;
             slot.path = path;
-            slot.contentHFlip = false;
-            slot.contentVFlip = false;
-            slot.contentQuarterTurns = 0;
-            slot = SessionAppearance::withoutCrop(slot);
-            slot.cropSourceSize = QSize();
-            slot.cropRotation = 0.0;
             // Keep color grade / pose if present.
             m_appearance.set(sid, slot);
         }
         // Path map still holds content turns from prior bake/pack; captureState
         // re-merges turns==0 from m_itemStateBook.byPath and can resurrect orientation.
         if (m_itemStateBook.byPath.contains(path)) {
-            WorkspaceItemState pathSlot = m_itemStateBook.byPath.value(path);
-            pathSlot.contentHFlip = false;
-            pathSlot.contentVFlip = false;
-            pathSlot.contentQuarterTurns = 0;
-            pathSlot = SessionAppearance::withoutCrop(pathSlot);
-            pathSlot.cropSourceSize = QSize();
-            pathSlot.cropRotation = 0.0;
+            WorkspaceItemState pathSlot = SessionAppearance::clearedContentOps(
+                m_itemStateBook.byPath.value(path));
             m_itemStateBook.byPath.insert(path, pathSlot);
         }
 
