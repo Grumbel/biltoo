@@ -26,9 +26,14 @@ ThumtooTileSource::FetchFn makeFetch(QString path)
 ThumtooTileSource::CancelFn makeCancel(QString path)
 {
   return [path](std::string const& /*uri*/,
-                std::vector<ThumtooTileSource::TileCoord> const& /*coords*/) {
-    // thumtoo cancel_uri drops all queued EnsureTiles for the path (not
-    // per-coord). Good enough for pan/zoom obsolete work.
+                std::vector<ThumtooTileSource::TileCoord> const& coords) {
+    // Per-key cancel_obsolete must NOT cancel_uri — that drops *all* queued
+    // EnsureTiles for the path and was invoked on every progressive scale step
+    // (hundreds of ms–seconds on a busy thumtoo queue). Generation filtering
+    // drops late completions; RAM InFlight is erased in TileSession.
+    if (!coords.empty()) {
+      return;
+    }
     (void)ThumtooCache::cancelTilesForPath(path);
   };
 }

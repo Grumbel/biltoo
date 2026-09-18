@@ -158,14 +158,8 @@ void TileLoadCoordinator::tick(int globalBudget)
     sortByPolicy(cands);
 
     // Prefer draining cells with zero tiles first (stuck LQIP / blank).
-    int needTiles = 0;
-    for (const Cand &c : cands) {
-        if (!c.hasAnyTile) {
-            ++needTiles;
-        }
-    }
-    // More targets when many cells are empty; still capped for GUI budget.
-    const int kMaxTargets = needTiles > 0 ? 4 : 2;
+    // Cap hard: each tickTileLod can touch thumtoo locks; 4× was still over budget.
+    constexpr int kMaxTargets = 2;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }
@@ -194,13 +188,26 @@ void TileLoadCoordinator::tick(int globalBudget)
         if (!item) {
             continue;
         }
-        const QString path = item->path();
-        if (pathRaster && preferCancelled && !path.isEmpty()
-            && !preferCancelled->contains(path)) {
+        // Soft cancel is deferred to a single pass after issue targets are
+        // chosen — cancel inside the hot loop blocked on PathRaster state.
+        issueTargets.append(item);
+    }
+
+    if (pathRaster && preferCancelled) {
+        for (ImageItem *item : issueTargets) {
+            if (!item) {
+                continue;
+            }
+            const QString path = item->path();
+            if (path.isEmpty() || preferCancelled->contains(path)) {
+                continue;
+            }
             pathRaster->cancel(path);
             preferCancelled->insert(path);
+            if (wall.elapsed() >= kWallMs) {
+                break;
+            }
         }
-        issueTargets.append(item);
     }
 
     if (issueTargets.isEmpty()) {
@@ -225,9 +232,15 @@ void TileLoadCoordinator::tick(int globalBudget)
         if (!item) {
             continue;
         }
+        // One cell per remaining ms-budget slice; never more than 4 requests.
         const int left = n - i;
-        const int share = remaining > 0 ? qMax(1, remaining / left) : 0;
+        const int share = remaining > 0
+            ? qMin(4, qMax(1, remaining / left))
+            : 0;
         item->tickTileLod(share);
         remaining -= share;
+        if (wall.elapsed() >= kWallMs) {
+            break;
+        }
     }
 }

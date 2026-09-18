@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1182-tick-cancel-storm.** Fix 1s TileLoadCoordinator::tick stalls.
+Prior: **1181**.
+
+### Root cause
+`CancelFn` called `cancel_uri` for **every** `cancel_obsolete` key list. Progressive
+scale steps cancel_obsolete on each climb → full thumtoo queue scan per step
+(hundreds of ms–1s+). Plus synchronous `update()` from tick nested paint.
+
+### Fix
+- Per-key cancel is a no-op (generation drops late completions); `cancel_uri`
+  only on empty-coords cancel_all
+- Repaint via `QTimer::singleShot(0)` again — not inside coordinator
+- Max 2 targets; ≤4 requests/item; wall check after each item
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1182-tick-cancel-storm.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1181-tile-cancel-wire.** Thumtoo tile cancel + live-tile NoCache.
 Prior: **1180**.
 

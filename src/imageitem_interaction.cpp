@@ -1534,15 +1534,33 @@ void ImageItem::tickTileLod(int budget)
         m_tileLod->session() ? m_tileLod->session()->generation() : 0;
     if (applied > 0 || gen != m_tileLodLastUpdateGen) {
         m_tileLodLastUpdateGen = gen;
-        // Immediate repaint when tiles land — deferred singleShot left cells on
-        // LQIP/blank until an unrelated relayout. Drop any stale pixmap cache.
         if (!m_interactive) {
             setCacheMode(QGraphicsItem::NoCache);
             if (!pixmap().isNull() && applied > 0) {
                 setPixmap(QPixmap());
             }
         }
-        update();
+        // Never update() synchronously from coordinator tick — nested paint
+        // + scene work blew the GUI budget to 1s+. Coalesce one post-tick
+        // repaint (same turn as decode window).
+        if (!m_tileLodRepaintQueued) {
+            m_tileLodRepaintQueued = true;
+            QGraphicsScene *sc = scene();
+            QObject *ctx = sc ? static_cast<QObject *>(sc)
+                              : static_cast<QObject *>(QCoreApplication::instance());
+            std::shared_ptr<bool> alive = m_tileLodAlive;
+            QTimer::singleShot(0, ctx, [this, sc, alive]() {
+                if (!alive || !*alive) {
+                    return;
+                }
+                if (sc && scene() != sc) {
+                    m_tileLodRepaintQueued = false;
+                    return;
+                }
+                m_tileLodRepaintQueued = false;
+                update();
+            });
+        }
     }
 }
 
