@@ -8,6 +8,7 @@
 #include "thumtoo/version.hpp"
 #endif
 #include "imageitem.h"
+#include "slideshowclocks.h"
 
 #include <QDebug>
 #include <QSet>

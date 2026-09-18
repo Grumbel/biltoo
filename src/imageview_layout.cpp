@@ -2440,7 +2440,7 @@ QImage ImageView::blockingExportDisplayForItem(const ImageItem *item) const
         if (!needLoad) {
             const QSize cached = ThumtooCache::cachedSize(path);
             if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
-                const int native = ContentXform::longEdge(cached.size());
+                const int native = ContentXform::longEdge(cached);
                 if (hostEdge * 10 < native * 9) {
                     needLoad = true;
                 }

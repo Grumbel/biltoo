@@ -95,39 +95,39 @@ ScaleFactors scaleFactorsFromDrag(const QPointF &scenePos, const QRectF &boundsS
 
     switch (handle) {
     case 0:
-        sx = (anchor.x() - scenePos.x()) / ViewTransform::safeDivisor(anchor.x(, eps) - b.left());
-        sy = (anchor.y() - scenePos.y()) / ViewTransform::safeDivisor(anchor.y(, eps) - b.top());
-        break;
+      sx = (anchor.x() - scenePos.x()) / ViewTransform::safeDivisor(anchor.x(), eps) - b.left();
+      sy = (anchor.y() - scenePos.y()) / ViewTransform::safeDivisor(anchor.y(), eps) - b.top();
+      break;
     case 1:
-        sy = (anchor.y() - scenePos.y()) / ViewTransform::safeDivisor(anchor.y(, eps) - b.top());
-        sx = 1.0;
-        break;
+      sy = (anchor.y() - scenePos.y()) / ViewTransform::safeDivisor(anchor.y(), eps) - b.top();
+      sx = 1.0;
+      break;
     case 2:
-        sx = (scenePos.x() - anchor.x()) / ViewTransform::safeDivisor(b.right(, eps) - anchor.x());
-        sy = (anchor.y() - scenePos.y()) / ViewTransform::safeDivisor(anchor.y(, eps) - b.top());
-        break;
+      sx = (scenePos.x() - anchor.x()) / ViewTransform::safeDivisor(b.right(), eps) - anchor.x();
+      sy = (anchor.y() - scenePos.y()) / ViewTransform::safeDivisor(anchor.y(), eps) - b.top();
+      break;
     case 3:
-        sx = (scenePos.x() - anchor.x()) / ViewTransform::safeDivisor(b.right(, eps) - anchor.x());
-        sy = 1.0;
-        break;
+      sx = (scenePos.x() - anchor.x()) / ViewTransform::safeDivisor(b.right(), eps) - anchor.x();
+      sy = 1.0;
+      break;
     case 4:
-        sx = (scenePos.x() - anchor.x()) / ViewTransform::safeDivisor(b.right(, eps) - anchor.x());
-        sy = (scenePos.y() - anchor.y()) / ViewTransform::safeDivisor(b.bottom(, eps) - anchor.y());
-        break;
+      sx = (scenePos.x() - anchor.x()) / ViewTransform::safeDivisor(b.right(), eps) - anchor.x();
+      sy = (scenePos.y() - anchor.y()) / ViewTransform::safeDivisor(b.bottom(), eps) - anchor.y();
+      break;
     case 5:
-        sy = (scenePos.y() - anchor.y()) / ViewTransform::safeDivisor(b.bottom(, eps) - anchor.y());
-        sx = 1.0;
-        break;
+      sy = (scenePos.y() - anchor.y()) / ViewTransform::safeDivisor(b.bottom(), eps) - anchor.y();
+      sx = 1.0;
+      break;
     case 6:
-        sx = (anchor.x() - scenePos.x()) / ViewTransform::safeDivisor(anchor.x(, eps) - b.left());
-        sy = (scenePos.y() - anchor.y()) / ViewTransform::safeDivisor(b.bottom(, eps) - anchor.y());
-        break;
+      sx = (anchor.x() - scenePos.x()) / ViewTransform::safeDivisor(anchor.x(), eps) - b.left();
+      sy = (scenePos.y() - anchor.y()) / ViewTransform::safeDivisor(b.bottom(), eps) - anchor.y();
+      break;
     case 7:
-        sx = (anchor.x() - scenePos.x()) / ViewTransform::safeDivisor(anchor.x(, eps) - b.left());
-        sy = 1.0;
-        break;
+      sx = (anchor.x() - scenePos.x()) / ViewTransform::safeDivisor(anchor.x(), eps) - b.left();
+      sy = 1.0;
+      break;
     default:
-        break;
+      break;
     }
 
     if (edgeHandle && shift) {
