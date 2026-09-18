@@ -318,3 +318,4 @@ part of early-phase exit criteria).
 - Workspace thumbnail membership and path-map appearance use SessionImageId
   only (no path-occurrence hide / cross-duplicate flip leakage).
 - **ContentXform** aspectRatio / aspectChanged / footprintScaleFactor; HUD setTimelineProgress.
+- **ViewFraming** aspectMode + sticky pan pure; **ViewTransform::unitFraction**; **SlideshowClocks::progress01**.

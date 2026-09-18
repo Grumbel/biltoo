@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1331-framing-unitfraction-progress.** ViewFraming sticky/aspect, unitFraction, progress01.
+Prior: **1330**.
+
+### Change
+- `ViewFraming::{aspectMode,setStickyPanFromScene,sceneFromStickyPan}`
+- `ViewTransform::unitFraction` — seekbar x → [0,1]
+- `SlideshowClocks::progress01` — dwell retarget progress
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1331-framing-unitfraction-progress.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1330-aspect-footprint-timeline.** ContentXform aspect/footprint + timeline bag.
 Prior: **1329**.
 
