@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thumtoocache.h"
+#include "thumtoo_process_memos.h"
 #include "tilelod/thumtoo_tile_source.hpp"
 #include "tilelod/tile_painter.hpp"
 #include "imageloader.h"
@@ -202,12 +203,6 @@ QSet<QString> g_pixelsSettled;
 /** How many times schedule* queued this key (detect soft re-request loops). */
 QHash<QString, int> g_pixelsScheduleCount;
 constexpr int kMaxPixelScheduleAttempts = 4;
-/** Paths known to have at least one durable tile (positive cache). */
-QSet<QString> g_durableTilesYes;
-/** Finest available scale for paths in g_durableTilesYes (default 0). */
-QHash<QString, int> g_durableTileMinScale;
-/** Process memo of durable sizes — GUI must not call Store get_size. */
-QHash<QString, QSize> g_sizeMemo;
 /** Process memo of ContentStatus::Unsupported (get_meta is SQLite — never on GUI). */
 QSet<QString> g_unsupportedYes;
 QSet<QString> g_unsupportedNo;
@@ -217,12 +212,9 @@ QSet<QString> g_probeQueued;
 QStringList g_probeSerialFifo;
 bool g_probeSerialInflight = false;
 /**
- * Negative memo: path → earliest msecs-since-epoch to re-query Store.
- * tileLodWanted/paint called hasDurableTiles every frame; uncached misses
- * hit has_tile SQLite on every Gallery cell and dominated the GUI under load.
- * Short TTL so mid-session prepare/FocusFull can still flip true.
+ * Negative durable-tile memo TTL (ProcessMemos). Short so mid-session
+ * prepare/FocusFull can still flip true after a miss.
  */
-QHash<QString, qint64> g_durableTilesNoUntilMs;
 constexpr qint64 kDurableTilesNegativeTtlMs = 2500;
 /** path → last PixelSource int from ladderProvenance. */
 QHash<QString, int> g_lastPixelSource;
@@ -754,11 +746,7 @@ bool debugTracingEnabled()
 
 void noteCachedSize(const QString &path, const QSize &size)
 {
-    if (path.isEmpty() || !size.isValid() || size.width() <= 0 || size.height() <= 0) {
-        return;
-    }
-    std::lock_guard lock(g_mu);
-    g_sizeMemo.insert(path, size);
+    ProcessMemos::instance().noteSize(path, size);
 }
 
 QSize cachedSize(const QString &path, bool scheduleRevalidate)
@@ -767,12 +755,8 @@ QSize cachedSize(const QString &path, bool scheduleRevalidate)
     if (path.isEmpty()) {
         return {};
     }
-    {
-        std::lock_guard lock(g_mu);
-        const auto it = g_sizeMemo.constFind(path);
-        if (it != g_sizeMemo.cend()) {
-            return it.value();
-        }
+    if (const QSize memo = ProcessMemos::instance().size(path); memo.isValid()) {
+        return memo;
     }
     // GUI: memo only — Store get_size is SQLite I/O (sizes_warm was ~12ms of this).
     if (QThread::isMainThread()) {
@@ -1008,7 +992,7 @@ void pumpProbeSerial()
 {
     QString next;
     // Memo hits: still emit sizeReady so Gallery size-resolve pending clears.
-    // Async warmSessionOpenMemos can fill g_sizeMemo while probes sit in the
+    // Async warmSessionOpenMemos can fill ProcessMemos size while probes sit in the
     // FIFO; skipping without a signal left "Resolving sizes…" stuck until the
     // 45s safety timer.
     QVector<QPair<QString, QSize>> memoHits;
@@ -1019,9 +1003,10 @@ void pumpProbeSerial()
         }
         while (!g_probeSerialFifo.isEmpty()) {
             const QString p = g_probeSerialFifo.takeFirst();
-            if (g_sizeMemo.contains(p) && g_sizeMemo.value(p).isValid()) {
+            const QSize memoSz = ProcessMemos::instance().size(p);
+            if (memoSz.isValid()) {
                 g_probeQueued.remove(p);
-                memoHits.append(qMakePair(p, g_sizeMemo.value(p)));
+                memoHits.append(qMakePair(p, memoSz));
                 continue;
             }
             next = p;
@@ -2015,10 +2000,7 @@ bool scheduleTilePyramid(const QString &path)
         if (uri.empty()) {
             return;
         }
-        {
-            std::lock_guard lock(g_mu);
-            g_durableTilesNoUntilMs.remove(pathCopy);
-        }
+        ProcessMemos::instance().clearDurableNo(pathCopy);
         c->request_tile_pyramid(uri, /*min_scale=*/0, /*max_scale=*/-1, {});
         thumtooDbg("scheduleTilePyramid path=%s",
                    qPrintable(QFileInfo(pathCopy).fileName()));
@@ -2039,16 +2021,13 @@ bool hasDurableTiles(const QString &path)
         return false;
     }
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    ProcessMemos &memos = ProcessMemos::instance();
     // Positive / negative memos: tileLodWanted/paint/tick call this often.
-    {
-        std::lock_guard lock(g_mu);
-        if (g_durableTilesYes.contains(path)) {
-            return true;
-        }
-        const auto it = g_durableTilesNoUntilMs.constFind(path);
-        if (it != g_durableTilesNoUntilMs.cend() && nowMs < it.value()) {
-            return false;
-        }
+    if (memos.durableYes(path)) {
+        return true;
+    }
+    if (memos.durableNoActive(path, nowMs)) {
+        return false;
     }
     init();
     thumtoo::Client *c = nullptr;
@@ -2080,14 +2059,8 @@ bool hasDurableTiles(const QString &path)
         }
     }
     if (yes) {
-        bool first = false;
-        {
-            std::lock_guard lock(g_mu);
-            first = !g_durableTilesYes.contains(path);
-            g_durableTilesYes.insert(path);
-            g_durableTileMinScale.insert(path, minScale);
-            g_durableTilesNoUntilMs.remove(path);
-        }
+        const bool first = !memos.durableYes(path);
+        memos.noteDurableYes(path, minScale);
         if (first) {
             // GUI may already be deep-zoomed with the tile timer stopped; wake it.
             const QString pathCopy = path;
@@ -2097,8 +2070,7 @@ bool hasDurableTiles(const QString &path)
                 Qt::QueuedConnection);
         }
     } else {
-        std::lock_guard lock(g_mu);
-        g_durableTilesNoUntilMs.insert(path, nowMs + kDurableTilesNegativeTtlMs);
+        memos.noteDurableNo(path, nowMs + kDurableTilesNegativeTtlMs);
     }
     return yes;
 #else
@@ -2110,11 +2082,7 @@ bool hasDurableTiles(const QString &path)
 bool hasDurableTilesKnown(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO
-    if (path.isEmpty()) {
-        return false;
-    }
-    std::lock_guard lock(g_mu);
-    return g_durableTilesYes.contains(path);
+    return ProcessMemos::instance().durableYes(path);
 #else
     Q_UNUSED(path);
     return false;
@@ -2209,12 +2177,7 @@ void warmSessionOpenMemos(const QStringList &paths)
 void clearSessionReplaceMemos()
 {
 #ifdef BILTOO_HAVE_THUMTOO
-    {
-        std::lock_guard lock(g_mu);
-        g_durableTilesYes.clear();
-        g_durableTileMinScale.clear();
-        g_durableTilesNoUntilMs.clear();
-    }
+    ProcessMemos::instance().clearSessionReplaceDurable();
     {
         std::lock_guard lock(g_uriMu);
         g_uriBySessionPath.clear();
@@ -2227,14 +2190,11 @@ int durableTileMinScale(const QString &path)
 #ifdef BILTOO_HAVE_THUMTOO
     // Memo only — discovery is warmDurableTilesMemo / hasDurableTiles on workers.
     // Paint path calls this on the GUI; must never has_tile here.
-    if (path.isEmpty()) {
+    ProcessMemos &memos = ProcessMemos::instance();
+    if (!memos.durableYes(path)) {
         return 0;
     }
-    std::lock_guard lock(g_mu);
-    if (!g_durableTilesYes.contains(path)) {
-        return 0;
-    }
-    return g_durableTileMinScale.value(path, 0);
+    return memos.durableMinScale(path);
 #else
     Q_UNUSED(path);
     return 0;

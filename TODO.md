@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1245-process-memos.** Extract ThumtooCache ProcessMemos (size + durable).
+Prior: **1244**.
+
+### Change
+- `ProcessMemos` owns process size memo and durable-tile yes/no/min_scale.
+- `noteCachedSize` / `cachedSize` peek / `hasDurableTiles*` / `durableTileMinScale` /
+  `clearSessionReplaceMemos` (durable half) use the class.
+- URI map clear remains in `clearSessionReplaceMemos`; serial size-probe FIFO
+  stays in `thumtoocache.cpp` for the next tip.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1245-process-memos.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1244-session-open-policy.** Extract SessionOpen replace barriers.
 Prior: **1243**.
 

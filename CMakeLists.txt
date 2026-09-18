@@ -162,6 +162,8 @@ add_executable(biltoo
   src/gallerysoftsm.h
   src/thumtoocache.cpp
   src/thumtoocache.h
+  src/thumtoo_process_memos.cpp
+  src/thumtoo_process_memos.h
   src/archivepath.cpp
   src/archivepath.h
   src/pagepath.cpp
