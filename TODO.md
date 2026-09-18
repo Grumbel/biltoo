@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1178-min-scale-memo.** Durable min_scale raise no longer resets progressive climb.
+Prior: **1177**.
+
+### Further investigation
+1. **Draw plan** still uses CoarserTile parent UV while climbing — correct stand-in.
+2. **`setHasLqip(false)`** on host: tile holes omit Underlay; Gallery LQIP is ImageItem base.
+3. **`durableTileMinScale` memo** often goes 0→N after open; old `set_content_size` full
+   reset wiped `m_reached_desired` / progressive state mid-climb.
+4. Coordinator still 2 targets / 12ms debounce — intentional GUI budget tradeoff.
+5. Unit tests remain green (`test_min_scale_raise_keeps_climb` added).
+
+### Fix
+`set_content_size` same dimensions + new min_scale: raise floor only, clamp scales,
+do not clear climb state.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1178-min-scale-memo.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1177-tile-progressive-harden.** Progressive LOD hardened + unit tests green.
 Prior: **1176**.
 

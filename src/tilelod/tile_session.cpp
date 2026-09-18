@@ -52,6 +52,30 @@ void TileSession::set_content_size(int width, int height, int min_scale)
   if (m_content_w == width && m_content_h == height && m_min_scale == min_scale) {
     return;
   }
+
+  // Durable memo often arrives *after* open (min_scale 0 → N). Raising the
+  // floor must not wipe progressive climb / Succeeded cache state.
+  if (m_content_w == width && m_content_h == height && min_scale != m_min_scale) {
+    m_min_scale = min_scale;
+    m_max_scale = max_scale_for_size(width, height);
+    if (m_max_scale < m_min_scale) {
+      m_max_scale = m_min_scale;
+    }
+    if (m_stable_scale < m_min_scale) {
+      m_stable_scale = m_min_scale;
+    }
+    if (m_desired_scale < m_min_scale) {
+      m_desired_scale = m_min_scale;
+    }
+    if (m_target_scale < m_min_scale) {
+      m_target_scale = m_min_scale;
+      m_visible_keys.clear();
+      ++m_generation;
+      m_draw_plan_dirty = true;
+    }
+    return;
+  }
+
   m_content_w = width;
   m_content_h = height;
   m_min_scale = min_scale;

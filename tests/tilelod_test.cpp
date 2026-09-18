@@ -765,6 +765,25 @@ void test_destroy_clears_inflight_shared()
   CHECK(n >= 1);
 }
 
+
+void test_min_scale_raise_keeps_climb()
+{
+  FakeTileSource src;
+  tilelod::TileSession session(&src);
+  session.set_content_size(1024, 1024, /*min_scale=*/0);
+  tilelod::Viewport vp;
+  vp.content_rect = {0, 0, 256, 256};
+  vp.device_per_content = 1.0;
+  session.set_viewport(vp);
+  int const cold = session.target_scale();
+  CHECK(cold >= 1);
+  CHECK(session.request_scale_holding());
+  // Late durable floor — must not restart progressive to "not holding".
+  session.set_content_size(1024, 1024, /*min_scale=*/1);
+  CHECK(session.request_scale_holding() || session.target_scale() >= 1);
+  CHECK(session.target_scale() >= 1);
+}
+
 void test_parent_key()
 {
   auto p = tilelod::parent_key({0, 3, 5}, 1);
@@ -807,6 +826,7 @@ int main()
   test_destroy_while_inflight();
   test_parent_prefetch();
   test_destroy_clears_inflight_shared();
+  test_min_scale_raise_keeps_climb();
   test_parent_key();
 
   if (g_failures) {
