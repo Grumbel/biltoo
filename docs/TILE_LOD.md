@@ -362,10 +362,13 @@ Retention is **within one Open session only**. On `invalidateSessionLoads` /
 1. `TileLodRegistry::invalidateAll()` — drop every path entry (sources + RAM).
 2. Clear ImageView tile prefetch slots.
 3. `ThumtooCache::clearSessionReplaceMemos()` — durable-tile yes/no, min_scale,
-   URI map (size/LQIP host memos stay; `warmSessionOpenMemos` refills).
+   URI map (size process memo stays; `warmSessionOpenMemos` refills).
+4. `ImageCache::clear()` — path-keyed LQIP / soft underlays from the previous
+   path set (Gallery Open used to skip this; only Workspace `clearWorkspace`
+   cleared it).
 
-Otherwise tiles and coverage memos from the previous archive could still drive
-paint or climb after Open.
+Otherwise tiles, underlays, and coverage memos from the previous archive could
+still drive paint or climb after Open.
 
 
 ## Scale hold (biltoo-1095)

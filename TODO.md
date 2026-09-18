@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1236-session-imagecache-clear.** Session replace clears ImageCache (Gallery Open path).
+Prior: **1235**.
+
+### Bug
+`invalidateSessionLoads` cleared the tile registry but not `ImageCache`. Gallery
+Open never called `clearWorkspace`, so LQIP/soft samples from the previous
+archive could still install as underlays when paths collided or items reused
+cache hits.
+
+### Fix
+- `ImageCache::clear()` in `invalidateSessionLoads` (alongside registry wipe).
+- TILE_LOD session-replace list updated.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1236-session-imagecache-clear.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1235-docs-session-tile-clear.** TILE_LOD documents session-replace registry wipe.
 Prior: **1234**.
 
