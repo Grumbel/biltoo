@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1146-no-lqip-hud.** Drop "Improving previews… LQIP" centre HUD and status spam.
+Prior: **1145**.
+
+### Problem
+User-facing "Improving previews… LQIP · …" sold LQIP as a quality stage. LQIP is a
+low-utility free placeholder, not something the product should advertise.
+
+### Fix
+- `updateGallerySoftProgressHud`: clear that centre title only; never set it.
+- Gallery status bar: pipeline mix (blank/lqip/soft) only under `THUMTOO_DEBUG`.
+- Pixel quality tier: "Placeholder" instead of "LQIP".
+
+### Apply
+```bash
+git pull /path/to/biltoo-1146-no-lqip-hud.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1145-ttfp-decode-window.** Gallery open: defer decode window; no has_tile on GUI.
 Prior: **1144**.
 

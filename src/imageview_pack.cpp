@@ -818,47 +818,12 @@ bool ImageView::layoutWorkspaceItems(const GalleryLayout::Params &userParams,
 
 void ImageView::updateGallerySoftProgressHud()
 {
-    if (!isGalleryMode() || m_items.isEmpty()) {
+    if (!isGalleryMode()) {
         return;
     }
-    // Size-resolve owns the centre panel until probes finish.
-    if (m_gallerySizeResolveActive) {
-        return;
-    }
-    // Opening / explicit progress title from other flows — do not clobber.
-    if (!m_centreProgressTitle.isEmpty()
-        && !m_centreProgressTitle.startsWith(tr("Improving previews"))) {
-        return;
-    }
-    int blank = 0;
-    int lqip = 0;
-    int softOrBetter = 0;
-    for (ImageItem *ii : m_items) {
-        if (!ii || ii->path().isEmpty()) {
-            continue;
-        }
-        const int e = ii->displayPixelLongEdge();
-        if (!ii->hasDisplayPixels() || e <= 0) {
-            ++blank;
-        } else if (e <= DisplayQuality::kLqipMaxEdge) {
-            ++lqip;
-        } else {
-            ++softOrBetter;
-        }
-    }
-    const int weak = blank + lqip;
-    const int total = blank + lqip + softOrBetter;
-    // Only show when a meaningful share is still weak (avoid flicker on tiny sets).
-    if (total >= 4 && weak > 0 && weak * 10 >= total) {
-        setCentreProgress(
-            tr("Improving previews…"),
-            tr("%1 LQIP · %2 blank · %3 soft+ · %4 / %5 ready")
-                .arg(lqip)
-                .arg(blank)
-                .arg(softOrBetter)
-                .arg(softOrBetter)
-                .arg(total));
-    } else if (m_centreProgressTitle.startsWith(tr("Improving previews"))) {
+    // LQIP is a free durable placeholder, not a user-facing "preview stage".
+    // Never show "Improving previews… LQIP" — that was noise and mis-sold the product.
+    if (m_centreProgressTitle.startsWith(tr("Improving previews"))) {
         clearCentreProgress();
     }
 }

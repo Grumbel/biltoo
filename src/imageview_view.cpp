@@ -3646,7 +3646,8 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     } else if (edge >= ThumtooCache::kFilmstripLadderEdge) {
         tier = tr("Thumbnail");
     } else if (edge <= DisplayQuality::kLqipMaxEdge) {
-        tier = tr("LQIP");
+        // Internal name is LQIP — do not show that acronym to users.
+        tier = tr("Placeholder");
     } else {
         tier = tr("Quick preview");
     }
@@ -3753,18 +3754,21 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
                 ++climb;
             }
         }
-        // Explicit quality mix so "Loading N" alone does not hide LQIP stuck.
-        text += tr(" · %1 blank · %2 LQIP · %3 soft · %4 higher")
-                    .arg(blank)
-                    .arg(lqip)
-                    .arg(soft)
-                    .arg(better);
-        if (climb > 0) {
-            text += tr(" · climbing %1").arg(climb);
+        // Pipeline mix is debug-only — never put "LQIP" in the status bar.
+        const char *dbg = std::getenv("THUMTOO_DEBUG");
+        if (dbg && dbg[0] && dbg[0] != '0') {
+            text += tr(" · %1 blank · %2 lqip · %3 soft · %4 higher")
+                        .arg(blank)
+                        .arg(lqip)
+                        .arg(soft)
+                        .arg(better);
+            if (climb > 0) {
+                text += tr(" · climbing %1").arg(climb);
+            }
         }
         const int pending = pendingDecodeCount();
         if (pending > 0) {
-            text += tr(" · work %1").arg(pending);
+            text += tr(" · Loading %1…").arg(pending);
         }
     } else {
         const int pending = pendingDecodeCount();
