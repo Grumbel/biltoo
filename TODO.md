@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1323-stack-geometry.** Pure content-overlap for raise/lower stacking.
+Prior: **1322**.
+
+### Change
+- `StackGeometry` (`stackgeometry.{h,cpp}`): pure `contentOverlaps` (AABB + polygon)
+- `imageview_transform` stacking uses the pure helper via a thin ImageItem adapter.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1323-stack-geometry.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1322-singular-values-angle.** Pure 2×2 singular values + crop rotate start angle.
 Prior: **1321**.
 

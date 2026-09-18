@@ -3,6 +3,7 @@
 
 #include "imageview.h"
 #include "placementlinear.h"
+#include "stackgeometry.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
 #include "sessionappearance.h"
@@ -20,24 +21,9 @@ bool contentOverlaps(const ImageItem *a, const ImageItem *b)
     if (!a || !b || a == b) {
         return false;
     }
-    // Prefer AABB so partial / edge overlaps still count as a stack step.
-    // Polygon-only tests were missing some overlaps and made Raise jump.
-    if (a->contentSceneRect().intersects(b->contentSceneRect())) {
-        return true;
-    }
-    const QPolygonF pa = a->contentScenePolygon();
-    const QPolygonF pb = b->contentScenePolygon();
-    if (pa.isEmpty() || pb.isEmpty()) {
-        return false;
-    }
-    if (pa.intersects(pb)) {
-        return true;
-    }
-    if (pb.containsPoint(pa.boundingRect().center(), Qt::OddEvenFill)
-        || pa.containsPoint(pb.boundingRect().center(), Qt::OddEvenFill)) {
-        return true;
-    }
-    return false;
+    return StackGeometry::contentOverlaps(
+        a->contentSceneRect(), a->contentScenePolygon(),
+        b->contentSceneRect(), b->contentScenePolygon());
 }
 
 /** Overlapping stack including @p item, sorted bottom → top (stable on ties). */

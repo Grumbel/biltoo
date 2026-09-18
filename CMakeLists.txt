@@ -146,6 +146,8 @@ add_executable(biltoo
   src/textlayergeometry.h
   src/itemhandlepolicy.cpp
   src/itemhandlepolicy.h
+  src/stackgeometry.cpp
+  src/stackgeometry.h
   src/hudflash.h
   src/viewframing.h
   src/textlayersession.h
