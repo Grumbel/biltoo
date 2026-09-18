@@ -1674,161 +1674,58 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    // Gallery product: tiles + LQIP underlay only. Never PreferCache soft /
-    // classic loadThumbnail whole-frame for tileLodWanted paths.
-    {
-        bool anyTileWanted = false;
-        for (ImageItem *ii : m_items) {
-            if (ii && ii->path() == path && ii->tileLodWanted()) {
-                anyTileWanted = true;
-                break;
-            }
-        }
-        if (anyTileWanted) {
-            if (isProvisionalImageSize(path)
-                || !ThumtooCache::cachedSize(path).isValid()) {
-                scheduleImageSizeProbe(path);
-            }
-            // One-shot LQIP underlay only when blank — do not re-install every
-            // decode window (was N paths × every 48ms → 100% CPU).
-            bool needLqip = false;
-            for (ImageItem *ii : m_items) {
-                if (ii && ii->path() == path && !ii->hasDisplayPixels()) {
-                    needLqip = true;
-                    break;
-                }
-            }
-            if (needLqip) {
-                QImage host = ImageCache::get(path);
-                if (host.isNull()) {
-                    host = ThumtooCache::cachedLqipImage(path);
-                    if (!host.isNull()) {
-                        ImageCache::put(path, host);
-                    }
-                }
-                if (!host.isNull()
-                    && ImageCache::longEdge(host)
-                        <= DisplayQuality::kLqipMaxEdge) {
-                    for (ImageItem *ii : m_items) {
-                        if (!ii || ii->path() != path) {
-                            continue;
-                        }
-                        if (!ii->hasDisplayPixels()) {
-                            installDisplayPixels(
-                                ii, host,
-                                SessionAppearance::PixelKind::SoftPreview,
-                                ii->sessionId());
-                        }
-                    }
-                }
-            }
-            GallerySoftState &st = m_gallerySoft[path];
-            clearGallerySoftInflight(st);
-            st.terminal = true; // tiles own the path; no soft climb
-            // Pyramid schedule once per path (state flag).
-            if (!st.tilesPyramidQueued) {
-                st.tilesPyramidQueued = true;
-                (void)ThumtooCache::scheduleTilePyramid(path);
-            }
-            return;
-        }
-    }
-    // Size-first still probes in the background, but never blocks decode:
-    // provisional layout must still climb to the zoom-appropriate ladder edge.
-    if (isProvisionalImageSize(path)) {
+    // Gallery: LQIP placeholder + tiles only. Soft PreferCache is removed.
+
+    if (isProvisionalImageSize(path) || !ThumtooCache::cachedSize(path).isValid()) {
         scheduleImageSizeProbe(path);
     }
-    GallerySoftState &st = m_gallerySoft[path];
-    if (st.failed) {
-        return;
-    }
-    // Terminal must not freeze a blank tile — reopen one soft cycle.
-    if (st.terminal) {
-        bool anyPixels = false;
-        for (ImageItem *ii : m_items) {
-            if (ii && ii->path() == path && ii->hasDisplayPixels()) {
-                anyPixels = true;
-                break;
-            }
+
+    bool anyTileWanted = false;
+    bool needLqip = false;
+    for (ImageItem *ii : m_items) {
+        if (!ii || ii->path() != path) {
+            continue;
         }
-        if (!anyPixels) {
-            st.terminal = false;
-            st.ensureAttempts = qMin(st.ensureAttempts, GallerySoft::kMaxEnsureAttempts - 1);
-        } else {
-            return;
+        if (ii->tileLodWanted()) {
+            anyTileWanted = true;
         }
-    }
-    // Stale inflight after fast scroll / empty ladder delivery must not block
-    // soft growth. Only hold the slot while have still covers the inflight edge.
-    if (st.inflight > 0) {
-        if (st.have > 0 && coversEdge(st.have, st.inflight)) {
-            return;
+        if (!ii->hasDisplayPixels()) {
+            needLqip = true;
         }
-        clearGallerySoftInflight(st);
     }
 
-    int have = 0;
-    int want = 0;
-    if (!resolveGallerySoftHaveWant(path, st, &have, &want)) {
-        return;
-    }
-
-    clearGalleryGaveUpIfClimbable(st, have, want);
-    // LQIP may clear Prefer plateau at most twice — unlimited clear was an
-    // endless SoftDisplay loop when install lagged behind ImageCache.
-    if (have <= DisplayQuality::kLqipMaxEdge && st.gaveUpWant > 0
-        && st.ensureAttempts < 2) {
-        st.gaveUpWant = 0;
-        if (m_pathRaster) {
-            m_pathRaster->clearPreferGaveUp(path);
-        }
-    }
-    if (st.terminal || st.failed) {
-        return;
-    }
-    if (gallerySoftScheduleBlocked(st, have, want)) {
-        return;
-    }
-    // Gallery non-tile cells: LQIP only — no soft climb to 512.
-    if (isGalleryMode() && want > DisplayQuality::kLqipMaxEdge) {
-        want = DisplayQuality::kLqipMaxEdge;
-    }
-    if (!st.needsSoftSchedule(want, /*anyBlank=*/have <= 0, /*anyFull=*/false)) {
-        return;
-    }
-
-    // Warm host: install only — never PreferCache when ImageCache covers want.
-    {
+    if (needLqip) {
+        // ImageCache only (warmSessionOpenMemos / probe workers put LQIP there).
         const QImage host = ImageCache::get(path);
-        const int hostEdge = ImageCache::longEdge(host);
-        if (!host.isNull() && coversEdge(hostEdge, want)) {
-            if (hostEdge > have) {
-                onImagePreviewLoaded(path, host, m_loadGeneration.load(),
-                                     static_cast<int>(LoadAdd));
-                st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
-            }
-            clearGallerySoftInflight(st);
-            // Only terminal when something is actually on the tile.
-            bool shown = false;
+        if (!host.isNull()
+            && ImageCache::longEdge(host) <= DisplayQuality::kLqipMaxEdge) {
             for (ImageItem *ii : m_items) {
-                if (ii && ii->path() == path && ii->hasDisplayPixels()) {
-                    shown = true;
-                    break;
+                if (!ii || ii->path() != path || ii->hasDisplayPixels()) {
+                    continue;
                 }
+                installDisplayPixels(ii, host,
+                                     SessionAppearance::PixelKind::SoftPreview,
+                                     ii->sessionId());
             }
-            if (shown && coversEdge(st.have, want)) {
-                st.terminal = true;
-            }
-            return;
         }
     }
 
-    // Gallery product: tiles + LQIP only. Never PathRaster SoftDisplay /
-    // EscalateToFull / PreferCache soft (was DEBUG_OVERLAY soft req=512 flood).
-    // Tile-band paths already returned above; non-tile cells stop at LQIP install.
+    GallerySoftState &st = m_gallerySoft[path];
     clearGallerySoftInflight(st);
-    st.terminal = true;
+    st.terminal = true; // no soft climb ever
+    st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
+
+    if (anyTileWanted) {
+        // Only encode a pyramid when Store has no durable coverage yet.
+        if (!st.tilesPyramidQueued) {
+            st.tilesPyramidQueued = true;
+            if (!ThumtooCache::hasDurableTilesKnown(path)) {
+                (void)ThumtooCache::scheduleTilePyramid(path);
+            }
+        }
+    }
 }
+
 
 void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
 {

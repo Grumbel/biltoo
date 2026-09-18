@@ -1325,7 +1325,14 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         idx = 0;
     }
 
-    // Warm = every path already has a durable size in the Store (no probes).
+    // Prefill size + LQIP + durable-tile memos from Store before sizesWarm /
+    // Gallery pack. Without this, cachedSize/LQIP are empty on the GUI and every
+    // open looked cold (probes + blank cells until tiles trickle in).
+    TtfpTrace::mark("before_warmSessionOpenMemos");
+    ThumtooCache::warmSessionOpenMemos(m_session.paths());
+    TtfpTrace::mark("after_warmSessionOpenMemos");
+
+    // Warm = every path already has a durable size in the process memo (Store).
     bool sizesWarm = true;
     if (m_session.paths().size() > 1) {
         for (const QString &path : m_session.paths()) {
@@ -1350,8 +1357,6 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
     };
 
     TtfpTrace::mark(sizesWarm ? "sizes_warm" : "sizes_cold");
-    // Prefill has_tile memo off GUI before deferred Gallery decode window.
-    ThumtooCache::warmDurableTilesMemo(m_session.paths());
     if (m_session.paths().size() > 1) {
         if (!sizesWarm) {
             setExpandProgress(

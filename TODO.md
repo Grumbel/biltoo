@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1188-gallery-warm-lqip-tiles.** Gallery open: warm size/LQIP/tiles memos; no soft; no pointless pyramid; faster tile issue.
+Prior: **1187**.
+
+### Problem
+Gallery took multi-second to fill: soft underlay removed but Store LQIP/size never reached the GUI (memo-only APIs), every path queued full `request_tile_pyramid` rebuilds, and the tile coordinator issued only 2 cells / ~120 ms.
+
+### Fix
+- `ThumtooCache::warmSessionOpenMemos` — worker fills size memo, ImageCache LQIP, durable-tile memo; joined before `sizesWarm` / pack.
+- `scheduleTilePyramid` skips when `hasDurableTilesKnown` / `hasDurableTiles`.
+- Gallery tile coordinator: more targets (16), longer wall (12 ms), higher key budget.
+- Decode-window re-arm 16 ms while uncovered; up to 64 LQIP installs per window.
+- `scheduleGalleryDecode`: LQIP + tiles only (soft PreferCache path removed).
+- Docs: `GALLERY_PIXELS.md` / `GALLERY_SOFT.md` (soft removed).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1188-gallery-warm-lqip-tiles.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1187-unused-before.** Drop unused `before` in decode window.
 Prior: **1186**.
 

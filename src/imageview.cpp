@@ -511,24 +511,19 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
 
 void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
 {
+    // Expect warmSessionOpenMemos to have filled size memo + ImageCache LQIP.
     for (const QString &path : paths) {
         if (path.isEmpty()) {
             continue;
         }
-        // Native size from durable index (no probe I/O).
         if (!m_imageSizeByPath.contains(path) || isProvisionalImageSize(path)) {
             if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
                 isPositiveSize(cached)) {
                 rememberImageSize(path, cached);
             }
         }
-        // LQIP as soft stand-in until ladder/full arrives (ImageCache is authority).
-        if (!ImageCache::has(path)) {
-            const QImage lqip = ThumtooCache::cachedLqipImage(path);
-            if (!lqip.isNull()) {
-                ImageCache::put(path, lqip);
-            }
-        }
+        // LQIP placeholder already in ImageCache from warmSessionOpenMemos.
+        Q_UNUSED(ImageCache::has(path));
     }
 }
 

@@ -40,6 +40,7 @@
 #include <filesystem>
 #include <functional>
 #include <mutex>
+#include <thread>
 #include <optional>
 #include <atomic>
 #include <string>
@@ -1867,10 +1868,19 @@ bool scheduleTilePyramid(const QString &path)
     if (path.isEmpty() || isUnsupported(path)) {
         return false;
     }
+    // Memo hit: pyramid already on Store — never re-encode (Gallery open was
+    // queuing N full FocusFull rebuilds and burning seconds of CPU).
+    if (hasDurableTilesKnown(path)) {
+        return false;
+    }
     init();
     const QString pathCopy = path;
     QThreadPool::globalInstance()->start([pathCopy]() {
         ASSERT_NOT_GUI_THREAD();
+        // Discover once; skip encode when coverage already exists.
+        if (hasDurableTiles(pathCopy)) {
+            return;
+        }
         thumtoo::Client *c = nullptr;
         {
             std::lock_guard lock(g_mu);
@@ -2006,6 +2016,46 @@ void warmDurableTilesMemo(const QStringList &paths)
             }
         }
     });
+#else
+    Q_UNUSED(paths);
+#endif
+}
+
+void warmSessionOpenMemos(const QStringList &paths)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (paths.isEmpty()) {
+        return;
+    }
+    const QStringList copy = paths;
+    auto work = [copy]() {
+        ASSERT_NOT_GUI_THREAD();
+        init();
+        for (const QString &p : copy) {
+            if (p.isEmpty() || isUnsupported(p)) {
+                continue;
+            }
+            // Size into process memo (cachedSize on worker hits Store).
+            (void)cachedSize(p, /*scheduleRevalidate=*/false);
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+            // LQIP into ImageCache so GUI install never needs Store get_lqip.
+            if (!ImageCache::has(p)) {
+                const QImage lqip = cachedLqipImage(p);
+                if (!lqip.isNull()) {
+                    ImageCache::put(p, lqip);
+                }
+            }
+#endif
+            (void)hasDurableTiles(p);
+        }
+    };
+    if (QThread::isMainThread()) {
+        // Open path needs memos before sizesWarm / pack — join a worker.
+        std::thread th(work);
+        th.join();
+    } else {
+        work();
+    }
 #else
     Q_UNUSED(paths);
 #endif

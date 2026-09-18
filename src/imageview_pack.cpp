@@ -97,13 +97,9 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
             break;
         }
         const QString &path = item->path();
+        // LQIP only from ImageCache (warmSessionOpenMemos / size-probe workers).
+        // Never ThumtooCache::cachedLqipImage on the GUI — it is a no-op there.
         QImage hostSample = ImageCache::get(path);
-        if (hostSample.isNull()) {
-            hostSample = ThumtooCache::cachedLqipImage(path);
-            if (!hostSample.isNull()) {
-                ImageCache::put(path, hostSample);
-            }
-        }
         if (hostSample.isNull()) {
             continue;
         }
@@ -179,28 +175,11 @@ void ImageView::publishGalleryInterest(const QStringList &interestNear,
 
 void ImageView::scheduleIdleGalleryDecodes(const QStringList &rest)
 {
-    // Speculative off-screen soft only when the visible set is settled.
-    // Competing with on-screen PreferCache is the 5–10s Gallery settle storm.
-    if (rest.isEmpty() || gallerySoftInflightCount() > 0) {
-        return;
-    }
-    const int freeSlots = galleryDecodeConcurrency();
-    if (freeSlots <= 0) {
-        return;
-    }
-    const int idleBudget = qMin(freeSlots, kMaxIdleGalleryDecodes);
-    int started = 0;
-    for (const QString &path : rest) {
-        if (started >= idleBudget) {
-            break;
-        }
-        const int before = gallerySoftInflightCount();
-        scheduleGalleryDecode(path);
-        if (gallerySoftInflightCount() > before) {
-            ++started;
-        }
-    }
+    // Soft PreferCache is removed from Gallery. Off-screen work is tiles via
+    // the coordinator when cells enter the viewport — no idle soft climb.
+    Q_UNUSED(rest);
 }
+
 
 GalleryLayout::Mode ImageView::galleryLayoutModeFromViewMode() const
 {
@@ -265,7 +244,7 @@ void ImageView::updateGalleryDecodeWindow()
     qint64 usInterest = 0;
     QElapsedTimer phaseTimer;
 
-    constexpr int kMaxInstallsPerDecodeWindow = 8;
+    constexpr int kMaxInstallsPerDecodeWindow = 64;
     bool moreInstallsPending = false;
     if (m_perfEnabled) {
         phaseTimer.start();
@@ -403,7 +382,8 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     // Tile issue: one coordinator tick per decode window (not per path).
-    int tileBudget = 8;
+    // Gallery overview needs a large budget so many coarse cells fill quickly.
+    int tileBudget = isGalleryMode() ? 48 : 8;
     int tileWanted = 0;
     int tileLive = 0;
     int tileCovered = 0;
@@ -418,9 +398,6 @@ void ImageView::updateGalleryDecodeWindow()
         if (ii->tileLodViewportCovered()) {
             ++tileCovered;
         }
-    }
-    if (tileWanted > 0) {
-        tileBudget = 12;
     }
     tickPrimaryTileLod(tileBudget);
 
@@ -452,11 +429,10 @@ void ImageView::updateGalleryDecodeWindow()
         }
     }
 
-    // Re-arm only for remaining soft work, or uncovered tiles (slow cadence).
-    if (softBusy) {
-        scheduleGalleryDecodeWindowRefresh(80);
-    } else if (tileWanted > tileCovered) {
-        scheduleGalleryDecodeWindowRefresh(120);
+    // Re-arm promptly while cells still need LQIP install or tile coverage.
+    // 120ms cadence was a multi-second settle for large Galleries.
+    if (softBusy || tileWanted > tileCovered) {
+        scheduleGalleryDecodeWindowRefresh(16);
     }
     updateGallerySoftProgressHud();
     if (m_perfEnabled && decodeWinTimer.isValid()) {

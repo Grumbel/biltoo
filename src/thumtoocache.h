@@ -217,6 +217,15 @@ bool hasDurableTilesKnown(const QString &path);
  * Gallery decode does not pay has_tile on the GUI thread at open.
  */
 void warmDurableTilesMemo(const QStringList &paths);
+
+/**
+ * Session open: fill process size memo + ImageCache LQIP + durable-tile memo
+ * from the Store. Safe to call on the GUI — work runs off-thread and joins
+ * before return so sizesWarm / primeGeometry / first pack see warm data.
+ * Does not open source files; Store lookups only.
+ */
+void warmSessionOpenMemos(const QStringList &paths);
+
 /**
  * Finest durable pyramid scale for path (0 = full res). 0 if unknown / none.
  * Populates via hasDurableTiles discovery; process-memoized with positive hits.

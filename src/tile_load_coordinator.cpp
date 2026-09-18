@@ -150,7 +150,10 @@ void TileLoadCoordinator::tick(int globalBudget)
 
     QElapsedTimer wall;
     wall.start();
-    constexpr qint64 kWallMs = 4;
+    // Gallery overview: many small cells need coarse tiles quickly. Image-mode
+    // deep zoom keeps a tight wall so pan stays responsive.
+    const bool gallery = m_view->isGalleryMode();
+    const qint64 kWallMs = gallery ? 12 : 4;
 
     QRectF sceneVis;
     if (m_view->scene()) {
@@ -166,8 +169,8 @@ void TileLoadCoordinator::tick(int globalBudget)
     sortByPolicy(cands);
 
     // Prefer draining cells with zero tiles first (stuck LQIP / blank).
-    // Cap hard: each tickTileLod can touch thumtoo locks; 4× was still over budget.
-    constexpr int kMaxTargets = 2;
+    // Gallery: issue many overview cells per tick; Image: keep tight.
+    const int kMaxTargets = gallery ? 16 : 2;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }
@@ -262,7 +265,7 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
 
     const int n = issueTargets.size();
-    int remaining = qMax(0, globalBudget);
+    int remaining = qMax(0, gallery ? qMax(globalBudget, 48) : globalBudget);
     for (int i = 0; i < n; ++i) {
         if (wall.elapsed() >= kWallMs) {
             break;
@@ -271,10 +274,12 @@ void TileLoadCoordinator::tick(int globalBudget)
         if (!item) {
             continue;
         }
-        // One cell per remaining ms-budget slice; never more than 4 requests.
+        // Gallery overview cells often need only 1–4 coarse keys; allow more
+        // keys when budget remains so one tick covers a full cell.
         const int left = n - i;
+        const int perCellCap = gallery ? 8 : 4;
         const int share = remaining > 0
-            ? qMin(4, qMax(1, remaining / left))
+            ? qMin(perCellCap, qMax(1, remaining / left))
             : 0;
         item->tickTileLod(share);
         remaining -= share;

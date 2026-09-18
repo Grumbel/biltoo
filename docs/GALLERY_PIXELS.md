@@ -1,13 +1,25 @@
-# Display pixels (tiles + LQIP)
+<!--
+SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
 
-**LQIP underlay + grid tiles.** SoftOnly whole-frame encode is removed from the
-host soft-preview job.
+# Gallery display pixels
 
-| Mode | Policy |
-|------|--------|
-| Gallery / Workspace | LQIP + tiles; no SoftOnly job |
-| Image mode | LQIP + tiles when durable or tileLodWanted |
-| Slideshow | LQIP seed + quality job; SoftOnly encode not used |
-| `startSoftPreviewJob` | LQIP from cache/Store only + size probe |
+**LQIP underlay + grid tiles.** Soft PreferCache / soft ladder whole-frame
+encode is **not** used in Gallery (removed).
 
-Filmstrip still uses `scheduleSoftPixels` for small thumbs (separate path).
+| Layer | Role |
+|-------|------|
+| **LQIP** (≤96) | Placeholder until tiles cover. Loaded from Store into ImageCache at session open (warmSessionOpenMemos). |
+| **Tiles** | Sharpness for cells with on-screen long edge > 32 px. Durable Store hits preferred; encode only when coverage missing. |
+
+Filmstrip may still schedule small thumbs on its own path; Gallery never requests
+soft PreferCache for underlay.
+
+## Open path
+
+1. warmSessionOpenMemos — size memo + LQIP into ImageCache + durable-tile memo (worker, joined before pack).
+2. Pack with real aspects when sizes warm.
+3. Install LQIP from ImageCache onto blank cells.
+4. TileLoadCoordinator issues visible tile keys (Gallery uses a higher per-tick budget than Image mode).
+5. scheduleTilePyramid only when durable coverage is not already known.
