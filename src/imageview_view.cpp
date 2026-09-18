@@ -1197,57 +1197,27 @@ bool ImageView::tryApplyAttentionMotionBiases(uint seed, const QImage &source)
     if (!haveAtt) {
         return false;
     }
-    // Map normalized focus to bias space [-1, 1] (same as corner table).
-    QPointF subject((att01.x() - 0.5) * 2.0, (att01.y() - 0.5) * 2.0);
-    subject.setX(qBound(-1.0, subject.x(), 1.0));
-    subject.setY(qBound(-1.0, subject.y(), 1.0));
-    // Near-centre attention still needs travel — fall through to geometry.
-    if (qAbs(subject.x()) <= 0.12 && qAbs(subject.y()) <= 0.12) {
+    SlideshowMotionGeometry::BiasPath path;
+    if (!SlideshowMotionGeometry::attentionBiasPath(att01, seed, &path)) {
         return false;
     }
-    // Subject must sit mid-path: start/end of the dwell are largely
-    // hidden by the transition, so endpoint focus is invisible.
-    // Travel along the subject↔opposite axis, centred on the subject.
-    const QPointF travel = QPointF(subject.x() * 0.55, subject.y() * 0.55);
-    // Seed picks which way the path runs (toward / away from opposite).
-    if (seed & 1u) {
-        m_ssDwell.biasA = subject - travel;
-        m_ssDwell.biasB = subject + travel;
-    } else {
-        m_ssDwell.biasA = subject + travel;
-        m_ssDwell.biasB = subject - travel;
-    }
-    m_ssDwell.biasA.setX(qBound(-1.0, m_ssDwell.biasA.x(), 1.0));
-    m_ssDwell.biasA.setY(qBound(-1.0, m_ssDwell.biasA.y(), 1.0));
-    m_ssDwell.biasB.setX(qBound(-1.0, m_ssDwell.biasB.x(), 1.0));
-    m_ssDwell.biasB.setY(qBound(-1.0, m_ssDwell.biasB.y(), 1.0));
+    m_ssDwell.biasA = path.a;
+    m_ssDwell.biasB = path.b;
     m_ssDwell.biasValid = true;
-    m_ssDwell.travelDir = m_ssDwell.biasB - m_ssDwell.biasA;
-    m_ssDwell.motionSign = (m_ssDwell.travelDir.y() >= 0.0) ? 1.0 : -1.0;
+    m_ssDwell.travelDir = path.travelDir;
+    m_ssDwell.motionSign = path.motionSign;
     return true;
 }
 
 void ImageView::applyGeometricMotionBiases(uint seed)
 {
-    static const QPointF kBias[8] = {
-        QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
-        QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
-        QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
-        QPointF(0.0, -1.0), QPointF(0.0, 1.0),
-    };
-    m_ssDwell.biasA = kBias[seed % 8];
-    m_ssDwell.biasB = kBias[(seed / 8 + 3) % 8];
-    if (qFuzzyCompare(m_ssDwell.biasA.x(), m_ssDwell.biasB.x())
-        && qFuzzyCompare(m_ssDwell.biasA.y(), m_ssDwell.biasB.y())) {
-        m_ssDwell.biasB = kBias[(seed + 5) % 8];
-    }
-    if (qAbs(m_ssDwell.biasA.x() - m_ssDwell.biasB.x()) < 0.1
-        && qAbs(m_ssDwell.biasA.y() - m_ssDwell.biasB.y()) < 0.1) {
-        m_ssDwell.biasB = kBias[(seed + 7) % 8];
-    }
+    const SlideshowMotionGeometry::BiasPath path =
+        SlideshowMotionGeometry::geometricBiasPath(seed);
+    m_ssDwell.biasA = path.a;
+    m_ssDwell.biasB = path.b;
     m_ssDwell.biasValid = true;
-    m_ssDwell.travelDir = m_ssDwell.biasB - m_ssDwell.biasA;
-    m_ssDwell.motionSign = (m_ssDwell.travelDir.y() >= 0.0) ? 1.0 : -1.0;
+    m_ssDwell.travelDir = path.travelDir;
+    m_ssDwell.motionSign = path.motionSign;
 }
 
 void ImageView::pickInterestingMotionBiases(uint seed, const QImage &source)
@@ -1364,9 +1334,9 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         // Orient may swap aspect — drop atlas built from the unoriented sample.
         if (!m_ssDwell.atlas.isNull() && m_ssDwell.atlas.height() > 0
             && oriented.height() > 0) {
-            const qreal aAsp = qreal(m_ssDwell.atlas.width()) / qreal(m_ssDwell.atlas.height());
-            const qreal iAsp = qreal(oriented.width()) / qreal(oriented.height());
-            if (qAbs(aAsp - iAsp) > 0.03) {
+            if (SlideshowMotionGeometry::aspectMismatch(
+                    qreal(m_ssDwell.atlas.width()), qreal(m_ssDwell.atlas.height()),
+                    qreal(oriented.width()), qreal(oriented.height()))) {
                 invalidateDwellAtlasRebuilds();
                 m_ssDwell.atlas = QPixmap();
                 m_ssDwell.atlasScale = 0.0;
@@ -1396,9 +1366,9 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         ImageCache::stampDebugOverlayIfEnabled(&m_ss.toImage, path);
         if (!m_ss.toAtlas.isNull() && m_ss.toAtlas.height() > 0
             && oriented.height() > 0) {
-            const qreal aAsp = qreal(m_ss.toAtlas.width()) / qreal(m_ss.toAtlas.height());
-            const qreal iAsp = qreal(oriented.width()) / qreal(oriented.height());
-            if (qAbs(aAsp - iAsp) > 0.03) {
+            if (SlideshowMotionGeometry::aspectMismatch(
+                    qreal(m_ss.toAtlas.width()), qreal(m_ss.toAtlas.height()),
+                    qreal(oriented.width()), qreal(oriented.height()))) {
                 ++m_ss.toAtlasRebuildGeneration;
                 m_ss.toAtlas = QPixmap();
                 m_ss.toAtlasScale = 0.0;
@@ -2786,9 +2756,9 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     // Stale atlas after ContentXform orient (aspect swap) stretches into dest.
     if (atlas && image.width() > 1 && image.height() > 1
         && atlas->width() > 1 && atlas->height() > 1) {
-        const qreal aAsp = qreal(atlas->width()) / qreal(atlas->height());
-        const qreal iAsp = qreal(image.width()) / qreal(image.height());
-        if (qAbs(aAsp - iAsp) > 0.03) {
+        if (SlideshowMotionGeometry::aspectMismatch(
+                qreal(atlas->width()), qreal(atlas->height()),
+                qreal(image.width()), qreal(image.height()))) {
             atlas = nullptr;
         }
     }

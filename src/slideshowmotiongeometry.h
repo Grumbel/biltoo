@@ -11,11 +11,18 @@
 #include <QString>
 
 /**
- * Pure Ken Burns / PanScan / static cover destination geometry for slideshow
- * paint. No QObject, no viewport widget — callers pass CSS pixel sizes and
- * motion settings.
+ * Pure Ken Burns / PanScan cover destination geometry and bias-path picks.
+ * No QObject, no viewport widget — callers pass CSS pixel sizes and settings.
  */
 namespace SlideshowMotionGeometry {
+
+/** PanZoom / dwell bias endpoints and derived travel direction. */
+struct BiasPath {
+    QPointF a{-1.0, -1.0};
+    QPointF b{1.0, 1.0};
+    QPointF travelDir{0.0, 1.0};
+    qreal motionSign = 1.0;
+};
 
 /**
  * Destination rect in viewport CSS space for a motion-cover blit of an image
@@ -30,6 +37,22 @@ QRectF coverDestRect(SlideshowMotion motion, qreal baseScale, qreal panZoomFacto
                      qreal iw, qreal ih, int vw, int vh, qreal motionT,
                      QPointF biasA, QPointF biasB, bool dwellBiasValid,
                      const QString &pathForSeed);
+
+/**
+ * Corner/edge bias pair from @p seed (same table as historical ImageView path).
+ * Always succeeds; endpoints are distinct after collision repairs.
+ */
+BiasPath geometricBiasPath(uint seed);
+
+/**
+ * Attention-centred bias path from normalized focus @p att01 in [0,1]².
+ * Returns false when attention is near centre (caller should use geometry).
+ */
+bool attentionBiasPath(const QPointF &att01, uint seed, BiasPath *out);
+
+/** True when atlas vs image aspect differs by more than @p threshold (default 0.03). */
+bool aspectMismatch(qreal atlasW, qreal atlasH, qreal imageW, qreal imageH,
+                    qreal threshold = 0.03);
 
 } // namespace SlideshowMotionGeometry
 

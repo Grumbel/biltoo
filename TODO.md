@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1272-slideshow-motion-bias-path.** Pure geometric/attention bias paths + aspect mismatch.
+Prior: **1271**.
+
+### Change
+- `SlideshowMotionGeometry::BiasPath` / `geometricBiasPath` / `attentionBiasPath`.
+- `aspectMismatch` shared by phase-upgrade and paint atlas drop (0.03 threshold).
+- ImageView bias pickers resolve attention then call pure path helpers; coverDestRect
+  uses geometricBiasPath for default PanZoom seeds.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1272-slideshow-motion-bias-path.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1271-slideshow-motion-geometry.** Pure Ken Burns / PanScan cover dest rect.
 Prior: **1270**.
 

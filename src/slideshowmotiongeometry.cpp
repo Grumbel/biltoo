@@ -76,18 +76,13 @@ QRectF coverDestRect(SlideshowMotion motion, qreal baseScale, qreal panZoomFacto
 
         if (!dwellBiasValid && biasA == QPointF(-1.0, -1.0)
             && biasB == QPointF(1.0, 1.0)) {
-            static const QPointF kBias[8] = {
-                QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
-                QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
-                QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
-                QPointF(0.0, -1.0), QPointF(0.0, 1.0),
-            };
             uint seed = pathForSeed.isEmpty() ? 1u : uint(qHash(pathForSeed));
             if (seed == 0) {
                 seed = 1u;
             }
-            biasA = kBias[seed % 8];
-            biasB = kBias[(seed / 8 + 3) % 8];
+            const BiasPath geo = geometricBiasPath(seed);
+            biasA = geo.a;
+            biasB = geo.b;
         }
         // Linear path only: scale s0→s1, image-space pan off0→off1.
         // dest = viewportCentre − off×scale (no bias encoding, no overflow gate —

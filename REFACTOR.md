@@ -53,7 +53,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   and `acceptOrientedUpgrade` for pool→buffer install.
 - **SlideshowAtlasPolicy** + `DwellAtlasParams`: pure atlas coverage, motion headroom,
   target/need edge budgets, `makeParams`, Fit/Fill/Actual `zoomBaseScale`.
-- **SlideshowMotionGeometry**: pure PanScan / PanZoom / static cover destination rect.
+- **SlideshowMotionGeometry**: pure cover dest rect, geometric/attention bias paths, aspectMismatch.
 - **ZoomBlur helpers**: pure slot book + `makeCover` pixel pipeline; async schedule stays on ImageView.
 - **AttentionSession** (`attentionsession.h`): attention draft points + rubber/select gesture state.
 - **CentreProgress** / **GroupTransformSession**: centre HUD panel + multi-select scale/rotate gesture.
