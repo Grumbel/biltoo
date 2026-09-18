@@ -482,10 +482,15 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     applyNativeAspect(it, size);
                     any = true;
                     // Size-first: soft after layout geometry is known.
+                    // Delayed so Gallery open is not flooded with strip soft.
                     if (ThumtooCache::isAvailable()) {
                         const int decodeSize = filmstripDecodeEdge();
-                        (void)ThumtooCache::scheduleSoftPixels(
-                            path, qMin(decodeSize, ThumtooCache::kGalleryLadderEdge));
+                        const int softEdge = qMin(
+                            decodeSize, ThumtooCache::kGalleryLadderEdge);
+                        const QString pathCopy = path;
+                        QTimer::singleShot(400, this, [this, pathCopy, softEdge]() {
+                            (void)ThumtooCache::scheduleSoftPixels(pathCopy, softEdge);
+                        });
                     }
                 }
                 if (any) {
@@ -1908,13 +1913,11 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         }
     }
 
-    // Filmstrip: soft schedulePixels only — Gallery owns setInterest.
-
-    // Pool jobs only — thumtoo pixel concurrency is separate (kMaxConcurrentPixelJobs).
-    // Default 24: 12 left gaps when soft misses parked many rows in AwaitLadder
-    // and only a narrow visible band was filled before the concurrent cap.
+    // Filmstrip: soft schedulePixels only — Gallery owns tiles/LQIP.
+    // Keep concurrent soft low so Gallery tile encode/issue is not starved
+    // (24 soft jobs on open competed with every visible cell's tiles).
     static const int kMaxConcurrentThumbLoads = []() {
-        int v = 24;
+        int v = 6;
         if (const char *e = std::getenv("BILTOO_FILMSTRIP_THUMB_LOADS")) {
             const int parsed = QString::fromLocal8Bit(e).toInt();
             if (parsed >= 1 && parsed <= 64) {
@@ -2036,20 +2039,34 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                         host->m_thumbAwaitLadder.insert(i);
                         const QSize known = ThumtooCache::cachedSize(path);
                         if (!(known.isValid() && known.width() > 0 && known.height() > 0)) {
-                            // Size-first: probe only; soft runs from sizeReady.
                             ThumtooCache::scheduleProbe(path);
-                        } else if (decodeSize > ThumtooCache::kGalleryLadderEdge
-                            && decodeSize <= ThumtooCache::kBatchOverviewEdge) {
-                            if (!ThumtooCache::interestOwnsOverview()) {
-                                (void)ThumtooCache::scheduleOverviewPixels(
-                                    path,
-                                    qMin(decodeSize,
-                                         ThumtooCache::kBatchOverviewEdge));
-                            }
                         } else {
-                            (void)ThumtooCache::scheduleSoftPixels(
-                                path,
-                                qMin(decodeSize, ThumtooCache::kGalleryLadderEdge));
+                            // Delay soft so Gallery tile/LQIP work is not flooded
+                            // by filmstrip PreferCache on the same open.
+                            const int softEdge = qMin(
+                                decodeSize, ThumtooCache::kGalleryLadderEdge);
+                            const int overviewEdge = qMin(
+                                decodeSize, ThumtooCache::kBatchOverviewEdge);
+                            const bool wantOverview =
+                                decodeSize > ThumtooCache::kGalleryLadderEdge
+                                && decodeSize <= ThumtooCache::kBatchOverviewEdge;
+                            QTimer::singleShot(400, host, [guard, gen, path, softEdge,
+                                                           overviewEdge, wantOverview, i]() {
+                                ThumbnailBar *const h = guard.data();
+                                if (!h || gen != h->m_generation.load()) {
+                                    return;
+                                }
+                                if (wantOverview) {
+                                    if (!ThumtooCache::interestOwnsOverview()) {
+                                        (void)ThumtooCache::scheduleOverviewPixels(
+                                            path, overviewEdge);
+                                    }
+                                } else {
+                                    (void)ThumtooCache::scheduleSoftPixels(
+                                        path, softEdge);
+                                }
+                                Q_UNUSED(i);
+                            });
                         }
                     } else if (image.isNull()) {
                         host->m_thumbFailed.insert(i);

@@ -2117,12 +2117,13 @@ void preparePaths(const QStringList &paths)
     QStringList need;
     need.reserve(paths.size());
     for (const QString &p : paths) {
-        if (p.isEmpty() || isUnsupported(p)) {
+        if (p.isEmpty()) {
             continue;
         }
+        // Never isUnsupported on the GUI (Store get_meta). Worker prepare skips
+        // unsupported after probe/get_meta.
         if (ArchivePath::isArchiveRef(p) || PagePath::isPageRef(p)
             || PagePath::isPdfImageRef(p) || PagePath::isPdfImagesCollection(p)) {
-            // Leaves: Gallery/filmstrip scheduleProbe; do not expand containers.
             continue;
         }
         if (cachedSize(p).isValid()) {

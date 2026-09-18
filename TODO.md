@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1194-filmstrip-yield-gallery.** Filmstrip soft yields to Gallery; preparePaths no GUI get_meta.
+Prior: **1193**.
+
+### Change
+- Filmstrip concurrent soft loads default 6 (was 24).
+- Soft/overview schedule from filmstrip delayed 400ms after LQIP/size so Gallery tiles run first.
+- `preparePaths` no longer calls `isUnsupported` on the GUI.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1194-filmstrip-yield-gallery.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1193-gallery-no-pathraster-ensure.** Gallery hard-blocks PathRaster ensure/climb.
 Prior: **1192**.
 
