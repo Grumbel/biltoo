@@ -2,6 +2,35 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1218-image-underlay-lqip-tiles.** Image ←/→: paint host underlay; soft encode gone.
+Prior: **1217**.
+
+### Problem
+Fast-forward in Image mode showed a blank frame even with a hot process cache.
+Soft PreferCache underlay is **removed** (LQIP + tiles only). Image paint still
+applied the Gallery rule “LQIP-only under `tileLodWanted`”, so a filmstrip /
+ImageCache host >96 was suppressed while nav-hot skipped tile paint → blank.
+Blank path also still called `scheduleSoftPixels` (contradicts product).
+
+### Fix
+- Image/Workspace (`m_interactive`): draw any in-process host underlay until
+  tiles fully cover. Gallery stays LQIP-only under tiles.
+- Image blank path: sized/provisional placeholder; size probe only when not
+  nav-hot; **no** `scheduleSoftPixels`.
+- Rewrite `IMAGE_MODE_NAV_SOFT.md`: placeholder → cache LQIP/host → tiles;
+  LQIP is free side-effect of tile work only; size probe is geometry only.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1218-image-underlay-lqip-tiles.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1217-nav-hot-no-surface-climb.** Nav-hot: no DisplaySurface climb / async bake.
 Prior: **1216**.
 

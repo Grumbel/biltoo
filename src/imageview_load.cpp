@@ -1129,26 +1129,26 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 item->setContentVFlip(false);
                 item->setColorAdjustmentsRecord(ColorAdjustments{});
                 item->clearAppliedContentXform();
+                // Intrinsic from size memo/probe when known; else provisional.
+                // Paint draws a sized placeholder until LQIP (cache-only) or tiles.
                 const QSize sz = layoutSizeForPath(path, QImage());
                 if (isPositiveSize(sz)) {
                     item->setIntrinsicSize(sz);
                     syncImageModeSceneRect(item);
                 }
-                // Nav-hot: no thumtoo IPC (IMAGE_MODE_NAV_SOFT.md). Queue flood
-                // of probe+soft on every auto-repeat was a major ←/→ stall.
-                // Settle loadImage (nav-hot cleared) schedules soft/climb once.
+                // Soft PreferCache encode is removed for Image underlay
+                // (LQIP + tiles only). Nav-hot: no IPC — settle loadImage probes
+                // size and issues tiles once. Do not scheduleSoftPixels here.
                 if (!m_slideshowNavHot && ThumtooCache::isAvailable()) {
                     ThumtooCache::scheduleProbe(path);
-                    (void)ThumtooCache::scheduleSoftPixels(
-                        path, ThumtooCache::kGalleryLadderEdge);
                 }
                 if (viewport()) {
                     viewport()->update();
                 }
                 biltooLoadDbg(
                     m_slideshowNavHot
-                        ? "pendingTile DEFER blank path=%s (nav-hot, no soft IPC)"
-                        : "pendingTile DEFER blank path=%s (cleared prior, soft scheduled)",
+                        ? "pendingTile DEFER blank path=%s (nav-hot, placeholder)"
+                        : "pendingTile DEFER blank path=%s (placeholder, probe size)",
                     qPrintable(QFileInfo(path).fileName()));
             } else {
                 biltooLoadDbg("pendingTile DEFER empty soft path=%s keep prior frame",

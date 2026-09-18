@@ -1677,13 +1677,19 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 <= DisplayQuality::kLqipMaxEdge;
         };
 
+        // Gallery: underlay is LQIP-only under tileLodWanted (soft PreferCache
+        // removed — GALLERY_PIXELS.md). Image/Workspace (interactive): any
+        // in-process host (LQIP, filmstrip thumb, prior sample) may underlay
+        // until tiles fully cover — otherwise nav-hot (no tile paint) + a
+        // >96 host left a blank frame while ImageCache was hot.
+        const bool galleryLqipOnlyUnderTiles = tilesWanted && !m_interactive;
         auto drawSampleInContentRect = [&](const QImage &img) {
             const QRectF box = contentRect();
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {
                 return;
             }
-            if (tilesWanted && !isLqipSample(img)) {
-                return; // never soft/host under tiles
+            if (galleryLqipOnlyUnderTiles && !isLqipSample(img)) {
+                return;
             }
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
             painter->drawImage(box, img);
@@ -1693,8 +1699,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             // Gallery scroll path: prefer baked QPixmap (ItemCoordinateCache).
             // Avoids QImage stretch every frame under QOpenGLWidget scroll.
             // Self-heal: if displayImage is a strict upgrade over the pixmap
-            // (soft installed while pixmap still LQIP), rebake before draw so
-            // ItemCoordinateCache does not keep showing the stand-in.
+            // (LQIP → larger host while pixmap still LQIP), rebake before draw.
             if (!m_interactive && !pixmap().isNull()
                 && box.width() >= 1.0 && box.height() >= 1.0) {
                 const QImage &live = displayImage();
@@ -1711,8 +1716,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                         setCacheMode(QGraphicsItem::ItemCoordinateCache);
                     }
                 }
-                // Tile cells: only LQIP-sized pixmap as underlay.
-                if (tilesWanted
+                // Gallery tile cells: only LQIP-sized pixmap as underlay.
+                if (galleryLqipOnlyUnderTiles
                     && qMax(pixmap().width(), pixmap().height())
                         > DisplayQuality::kLqipMaxEdge) {
                     // leave underlay to LQIP branch / placeholder
@@ -1721,12 +1726,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
                 }
             } else if (!m_source.isNull() && !m_previewPixels) {
-                if (tilesWanted
+                if (galleryLqipOnlyUnderTiles
                     && qMax(m_source.width(), m_source.height())
                         > DisplayQuality::kLqipMaxEdge) {
-                    // skip soft/host underlay
+                    // Gallery: skip non-LQIP host under tiles
                 } else if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0
-                    && (!tilesWanted
+                    && (!galleryLqipOnlyUnderTiles
                         || qMax(pixmap().width(), pixmap().height())
                             <= DisplayQuality::kLqipMaxEdge)) {
                     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
@@ -1737,7 +1742,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             } else if (!m_preview.isNull()) {
                 drawSampleInContentRect(m_preview);
             } else {
-                // Loading placeholder while decode is pending or unloaded.
+                // Sized placeholder (intrinsic from size memo/probe) or neutral
+                // provisional box while cold. Never invent LQIP here.
                 const QRectF cr = contentRect();
                 painter->fillRect(cr, QColor(40, 40, 44));
                 const qreal inset = qMin(cr.width(), cr.height()) * 0.06;
