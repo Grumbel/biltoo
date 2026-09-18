@@ -26,6 +26,7 @@
 #include "perfstats.h"
 #include "coloradjustcommit.h"
 #include "layoutdebounce.h"
+#include "galleryrelayoutsuppress.h"
 #include "imagesizebook.h"
 #include "pathitemstatebook.h"
 #include "pendingitemappearancebook.h"
@@ -561,7 +562,7 @@ public:
      * during session delete so the pack and scroll stay put).
      */
     void setGalleryRelayoutSuppressed(bool on);
-    bool galleryRelayoutSuppressed() const { return m_galleryRelayoutSuppressCount > 0; }
+    bool galleryRelayoutSuppressed() const { return m_galleryRelayoutSuppress.active(); }
 
     /**
      * Reload from disk: Image mode — current session image only;
@@ -1850,7 +1851,7 @@ private:
 
     bool m_applyingLayout = false;
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
-    int m_galleryRelayoutSuppressCount = 0;
+    GalleryRelayoutSuppress m_galleryRelayoutSuppress;
     QTimer *m_galleryDecodeScrollTimer = nullptr;
     QTimer *m_galleryStatusRefreshTimer = nullptr;
     QTimer *m_statusRefreshTimer = nullptr;

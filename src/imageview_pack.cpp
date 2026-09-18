@@ -453,12 +453,12 @@ void ImageView::setMasonryRows(int rows)
 void ImageView::setGalleryRelayoutSuppressed(bool on)
 {
     if (on) {
-        ++m_galleryRelayoutSuppressCount;
+        m_galleryRelayoutSuppress.push(true);
         if (m_layoutDebounceTimer) {
             m_layoutDebounceTimer->stop();
         }
-    } else if (m_galleryRelayoutSuppressCount > 0) {
-        --m_galleryRelayoutSuppressCount;
+    } else if (m_galleryRelayoutSuppress.active()) {
+        m_galleryRelayoutSuppress.push(false);
     }
 }
 

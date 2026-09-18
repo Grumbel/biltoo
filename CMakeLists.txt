@@ -163,6 +163,8 @@ add_executable(biltoo
   src/gallerypackfit.h
   src/selectiongeometry.h
   src/coloradjustcommit.h
+  src/viewtransform.h
+  src/galleryrelayoutsuppress.h
   src/imagesizebook.h
   src/pathitemstatebook.h
   src/pendingitemappearancebook.h

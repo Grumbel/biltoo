@@ -1954,7 +1954,7 @@ void ImageView::completeLoadRestore(const QString &path, const QImage &image)
     }
     applyState(item, app);
     if (m_layout.mode != LayoutMode::FreeForm
-        && !(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
+        && !(isGalleryMode() && m_galleryRelayoutSuppress.active())) {
         applyLayout(GalleryPackReason::SessionMutate);
     }
     emit statusChanged();
@@ -2180,7 +2180,7 @@ void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
         if (!m_pathOrderBook.paths.isEmpty()) {
             reorderItemsByPaths(m_pathOrderBook.paths);
         }
-        if (!(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
+        if (!(isGalleryMode() && m_galleryRelayoutSuppress.active())) {
             if (sizeChanged) {
                 applyLayout(GalleryPackReason::ContentChange);
             } else {
