@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1110-cachedsize-default-no-revalidate.** cachedSize defaults to no background revalidate.
+Prior: **1109**.
+
+### Change
+- `cachedSize(path, scheduleRevalidate=false)` by default — paint, layout, filmstrip,
+  and all bulk paths no longer opt into per-hit source stats.
+- Pass `true` only for intentional freshness checks (none required on the hot path).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1110-cachedsize-default-no-revalidate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1109-sort-warm-cache-instant.** Warm-index sort skips HUD; gallery size no revalidate.
 Prior: **1108**.
 

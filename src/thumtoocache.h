@@ -103,11 +103,11 @@ inline int prevLadderEdge(int edge)
 
 /**
  * Cache-only native size for a session path (file or //archive: ref).
- * @param scheduleRevalidate  When true (default), may queue a background
- *   mtime/size check against the source. Bulk sort / HUD paths must pass
- *   false so a warm index does not flood the thread pool with stats.
+ * @param scheduleRevalidate  When true, may queue a background mtime/size
+ *   check against the source. Default is false: cache hits must stay cheap on
+ *   paint/layout/sort. Pass true only for intentional freshness checks.
  */
-QSize cachedSize(const QString &path, bool scheduleRevalidate = true);
+QSize cachedSize(const QString &path, bool scheduleRevalidate = false);
 
 /**
  * Cache-only file size and mtime from the Store locator (no source I/O).
