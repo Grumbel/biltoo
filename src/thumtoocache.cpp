@@ -2204,23 +2204,35 @@ int durableTileMinScale(const QString &path)
 #endif
 }
 
+bool scheduleTileSynthOrPyramid(const QString &path, int maxEdge)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty() || maxEdge <= 0) {
+        return false;
+    }
+    if (!cachedSize(path).isValid()) {
+        scheduleProbe(path);
+    }
+    if (hasDurableTilesKnown(path)) {
+        return scheduleDisplayPixels(path, maxEdge)
+            || isPixelsPending(path, maxEdge);
+    }
+    return scheduleTilePyramid(path);
+#else
+    Q_UNUSED(path);
+    Q_UNUSED(maxEdge);
+    return false;
+#endif
+}
+
 bool scheduleSoftPixels(const QString &path, int maxEdge)
 {
 #ifdef BILTOO_HAVE_THUMTOO
     if (maxEdge <= 0) {
         return false;
     }
-    // Size-first: ensure a probe is queued before soft (thumtoo runs ProbeSize
-    // ahead of EnsurePixels). Parallel soft is fine once probe is in flight.
-    if (!cachedSize(path).isValid()) {
-        scheduleProbe(path);
-    }
-    // Soft is ephemeral (thumtoo PIXEL_AND_ARCHIVE_POLICY). SoftOnly forbids
-    // TileSynth, so PreferCache for every soft-band request: TileSynth when a
-    // complete scale exists, else one-shot soft encode. No durable soft store.
-    // Soft is ephemeral. Do not request_lqip: LQIP is free-data-only during
-    // tile/soft encode (thumtoo PIXEL_AND_ARCHIVE_POLICY §1.1).
-    return scheduleDisplayPixels(path, maxEdge);
+    // Deprecated product path — redirect to tiles/TileSynth (no soft encode).
+    return scheduleTileSynthOrPyramid(path, maxEdge);
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);

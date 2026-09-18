@@ -204,6 +204,13 @@ quint64 setPrimaryInterest(const QString &path, int edge);
 bool scheduleTilePyramid(const QString &path);
 
 /**
+ * Product underlay climb: PreferCache TileSynth when durable tiles are known;
+ * otherwise scheduleTilePyramid only. Never soft PreferCache encode.
+ * @return true if TileSynth or pyramid work was queued / already pending.
+ */
+bool scheduleTileSynthOrPyramid(const QString &path, int maxEdge);
+
+/**
  * Cache-only: at least one durable tile exists for @p path (legacy or Store).
  * Used for tile-band paint/tick and PreferCache shortcuts when a pyramid exists.
  */

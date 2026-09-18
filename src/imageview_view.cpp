@@ -1840,12 +1840,8 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
                 PathRasterService::ClimbPolicy::SoftDisplay;
             m_pathRaster->ensure(path, edge, logicalSizeForPath(path), policy);
         } else if (ThumtooCache::isAvailable()) {
-            if (ThumtooCache::hasDurableTilesKnown(path)) {
-                (void)ThumtooCache::scheduleDisplayPixels(
-                    path, ThumtooCache::kGalleryLadderEdge);
-            } else {
-                (void)ThumtooCache::scheduleTilePyramid(path);
-            }
+            (void)ThumtooCache::scheduleTileSynthOrPyramid(
+                path, ThumtooCache::kGalleryLadderEdge);
         }
         return {};
     }

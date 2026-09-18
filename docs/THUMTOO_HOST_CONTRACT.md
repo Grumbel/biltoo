@@ -65,9 +65,11 @@ Biltoo requests a **band**, not “exactly N pixels.” Edge numbers snap via
 | **Full** | `scheduleFullPixels` | up to native / host max | Near-native / full decode path |
 
 **Product underlay (Gallery, Image, filmstrip, PathRaster soft-band):** LQIP +
-**tiles** only. Do **not** call `scheduleSoftPixels` (PreferCache still
-soft-encodes when no pyramid). Soft-band PreferCache encode is **removed** from
-host product paths (biltoo ≥1220).
+**tiles** only. Use **`scheduleTileSynthOrPyramid`** (TileSynth when durable
+tiles known, else pyramid). Do **not** call bare `scheduleDisplayPixels` or
+`scheduleSoftPixels` without a tiles-known guard — PreferCache still
+soft-encodes when no pyramid. Soft PreferCache encode is **removed** from host
+product paths (biltoo ≥1220; helper ≥1227).
 
 **Critical:** PreferCache does **not** guarantee `got ≥ 0.9 × requested`.
 In current thumtoo, `request_raster(PreferCache)` with `max_edge > 512` is

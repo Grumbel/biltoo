@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1227-tile-synth-or-pyramid.** Central helper: scheduleTileSynthOrPyramid.
+Prior: **1226**.
+
+### Change
+- `ThumtooCache::scheduleTileSynthOrPyramid` — product underlay climb API.
+- `scheduleSoftPixels` redirects to it (no soft encode).
+- PathRaster, filmstrip, ImageLoader, ImageView callers use the helper.
+- Docs: THUMTOO_HOST_CONTRACT.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1227-tile-synth-or-pyramid.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1226-slideshow-tiles-fallback.** Slideshow soft miss: TileSynth/pyramid, not PreferCache encode.
 Prior: **1225**.
 

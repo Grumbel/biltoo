@@ -209,11 +209,7 @@ QImage loadPageRef(const QString &path, int maxEdge)
     if (ThumtooCache::isAvailable()) {
         QImage img = ThumtooCache::rasterizePageRef(path, edge);
         const int want = qMin(edge, ThumtooCache::kBatchOverviewEdge);
-        if (ThumtooCache::hasDurableTilesKnown(path)) {
-            (void)ThumtooCache::scheduleDisplayPixels(path, want);
-        } else {
-            (void)ThumtooCache::scheduleTilePyramid(path);
-        }
+        (void)ThumtooCache::scheduleTileSynthOrPyramid(path, want);
         if (!img.isNull()) {
             return scaleToMaxEdge(img, maxEdge);
         }
@@ -872,12 +868,7 @@ QImage load(const QString &path)
             }
         }
         if (ThumtooCache::isAvailable()) {
-            if (ThumtooCache::hasDurableTilesKnown(path)) {
-                (void)ThumtooCache::scheduleDisplayPixels(
-                    path, ThumtooCache::kBatchOverviewEdge);
-            } else {
-                (void)ThumtooCache::scheduleTilePyramid(path);
-            }
+            (void)ThumtooCache::scheduleTileSynthOrPyramid(path, ThumtooCache::kBatchOverviewEdge);
         }
         return {};
     }
@@ -952,11 +943,7 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                 if (got < maxEdge * 9 / 10) {
                     // LQIP/host underlay is cache-only; climb via tiles/TileSynth.
                     const int want = qMin(maxEdge, ThumtooCache::kBatchOverviewEdge);
-                    if (ThumtooCache::hasDurableTilesKnown(path)) {
-                        (void)ThumtooCache::scheduleDisplayPixels(path, want);
-                    } else {
-                        (void)ThumtooCache::scheduleTilePyramid(path);
-                    }
+                    (void)ThumtooCache::scheduleTileSynthOrPyramid(path, want);
                 }
                 if (decoded.width() > maxEdge || decoded.height() > maxEdge) {
                     decoded = decoded.scaled(maxEdge, maxEdge, Qt::KeepAspectRatio,
@@ -980,12 +967,8 @@ QImage loadThumbnail(const QString &path, int maxEdge)
             }
         }
         // True miss: tiles only (soft PreferCache encode removed).
-        if (ThumtooCache::hasDurableTilesKnown(path)) {
-            (void)ThumtooCache::scheduleDisplayPixels(
-                path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
-        } else {
-            (void)ThumtooCache::scheduleTilePyramid(path);
-        }
+        (void)ThumtooCache::scheduleTileSynthOrPyramid(
+            path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
     }
 
     if (PagePath::isPageRef(path) || PagePath::isPdfImageRef(path)) {

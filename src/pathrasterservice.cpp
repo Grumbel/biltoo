@@ -261,34 +261,26 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     accepted.fullEdge = plan.fullEdge;
 
     if (plan.scheduleSoft) {
-        // Soft PreferCache encode is removed (LQIP + tiles product). Soft-band
-        // plan → TileSynth when durable tiles are known; else request pyramid.
-        // PreferCache without a pyramid still soft-encodes — do not call it here.
-        if (ThumtooCache::hasDurableTilesKnown(path)) {
-            const int edge = plan.softEdge > 0 ? plan.softEdge
-                                               : ThumtooCache::kGalleryLadderEdge;
-            if (ThumtooCache::scheduleDisplayPixels(path, edge)
-                || ThumtooCache::isPixelsPending(path, edge)) {
-                // TileSynth delivery still arrives as ladderReady soft-band edge.
-                accepted.scheduleSoft = true;
+        const int edge = plan.softEdge > 0 ? plan.softEdge
+                                           : ThumtooCache::kGalleryLadderEdge;
+        if (ThumtooCache::scheduleTileSynthOrPyramid(path, edge)) {
+            if (ThumtooCache::hasDurableTilesKnown(path)) {
+                accepted.scheduleSoft = true; // TileSynth via PreferCache
+            } else {
+                accepted.scheduleTiles = true;
             }
-        } else if (ThumtooCache::scheduleTilePyramid(path)) {
-            accepted.scheduleTiles = true;
         }
     }
     if (plan.scheduleDisplay) {
         ThumtooCache::scheduleProbe(path);
         const int edge = plan.displayEdge > 0 ? plan.displayEdge : want;
-        // PreferCache without durable tiles still soft-encodes — product
-        // underlay is TileSynth only (THUMTOO_HOST_CONTRACT ≥1224).
-        if (ThumtooCache::hasDurableTilesKnown(path)) {
-            if (ThumtooCache::scheduleDisplayPixels(path, edge)
-                || ThumtooCache::isPixelsPending(path, edge)) {
+        if (ThumtooCache::scheduleTileSynthOrPyramid(path, edge)) {
+            if (ThumtooCache::hasDurableTilesKnown(path)) {
                 accepted.scheduleDisplay = true;
                 accepted.forgetDisplaySettled = plan.forgetDisplaySettled;
+            } else {
+                accepted.scheduleTiles = true;
             }
-        } else if (ThumtooCache::scheduleTilePyramid(path)) {
-            accepted.scheduleTiles = true;
         }
     }
     if (plan.scheduleTiles) {

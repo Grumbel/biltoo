@@ -219,11 +219,7 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                 if (ThumtooCache::isAvailable()) {
                     const int edge =
                         qMin(qualityEdge, ThumtooCache::kBatchOverviewEdge);
-                    if (ThumtooCache::hasDurableTilesKnown(path)) {
-                        (void)ThumtooCache::scheduleDisplayPixels(path, edge);
-                    } else {
-                        (void)ThumtooCache::scheduleTilePyramid(path);
-                    }
+                    (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
                 } else {
                     const QImage loaded =
                         ImageLoader::loadThumbnail(path, qualityEdge);

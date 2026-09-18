@@ -1260,8 +1260,7 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
         return;
     }
     if (ThumtooCache::hasDurableTilesKnown(path)) {
-        // PreferCache → TileSynth when a complete scale exists (no soft encode).
-        (void)ThumtooCache::scheduleDisplayPixels(path, edge);
+        (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
         return;
     }
     // Cold / memo stale: discover coverage on a worker (hasDurableTiles updates
@@ -1271,11 +1270,9 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
     const int edgeCopy = edge;
     QThreadPool::globalInstance()->start([pathCopy, edgeCopy]() {
         if (ThumtooCache::hasDurableTiles(pathCopy)) {
-            // Memo now known; TileSynth via PreferCache (safe on worker queue).
-            (void)ThumtooCache::scheduleDisplayPixels(pathCopy, edgeCopy);
+            (void)ThumtooCache::scheduleTileSynthOrPyramid(pathCopy, edgeCopy);
             return;
         }
-        // Still no coverage — request durable pyramid (idempotent).
         (void)ThumtooCache::scheduleTilePyramid(pathCopy);
     });
 }
