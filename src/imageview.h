@@ -277,6 +277,13 @@ public:
      */
     void setSlideshowNavHot(bool hot);
     bool slideshowNavHot() const { return m_slideshowNavHot; }
+    /**
+     * Warm overview tiles into the process-wide path registry for off-canvas
+     * paths (Image-mode ±1 neighbors after nav settle). Temporary controller
+     * issues a small budget then releases; registry retention keeps tiles.
+     * No-op while nav-hot; schedules tile pyramid when durable unknown.
+     */
+    void prefetchTilesForPaths(const QStringList &paths, int budgetPerPath = 4);
     void tickSlideshowPhaseMotionClocks();
     void tickSlideshowDwellMotionClock();
     void tickSlideshowMotion();

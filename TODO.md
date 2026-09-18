@@ -2,6 +2,38 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1213-tile-neighbor-prefetch.** Image-mode ±1 overview tiles into global path RAM on settle.
+Prior: **1212**.
+
+### Change
+- `ImageView::prefetchTilesForPaths` — temporary `TileLodController` per off-canvas
+  path; overview viewport (`dpc` capped at 0.25); small request budget; release
+  leaves tiles in registry (1212 retain).
+- Skip on-canvas paths, nav-hot, unknown size, or no durable pyramid (schedule
+  pyramid only).
+- MainWindow Image-mode nav settle (80 ms quiet): after `loadImage` of current,
+  prefetch session index ±1 with budget 4.
+
+### Non-goals
+- Deep-zoom neighbor prefetch.
+- Stripping nav-hot suppress.
+- Slideshow look-ahead (already has `preloadSlideshowImage`).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1213-tile-neighbor-prefetch.bundle HEAD
+```
+
+### Next
+- Revisit nav-hot tile suppress once retention + neighbor prefetch verified.
+- Optional: pump prefetch completions on a short timer (first tick only queues).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1212-tile-ram-global-retain.** Path tile RAM survives controller release (A→B→A keeps tiles).
 Prior: **1211**.
 

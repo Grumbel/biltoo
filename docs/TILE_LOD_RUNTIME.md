@@ -35,6 +35,9 @@ not claimed (`tileLodWanted` requires `hasDurableTiles`).
 10. **A→B→A path switch** (Image ←/→) — tiles for A remain in the global path cache
     after leaving A; returning to A should paint from RAM without a full rebuild
     (until global 384 MiB LRU eviction of idle paths).
+11. **Neighbor prefetch** — after quiet settle on index *i*, ±1 session neighbors
+    should receive a small overview tile issue (when durable pyramid is known);
+    stepping to a neighbor should show coarse tiles sooner than a cold path.
 
 ## Workspace
 

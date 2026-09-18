@@ -344,6 +344,10 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 5. **Paint identity by path** — draw only from `cache[item->path()]`; re-acquire
    after A→B→A rebinds the same retained entry.
 6. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
+7. **Neighbor prefetch (1213):** on Image-mode nav settle, `prefetchTilesForPaths`
+   issues a small overview tile budget for session ±1 into the same registry
+   (temporary controller, then release). Paths without a known durable pyramid
+   only get `scheduleTilePyramid`.
 
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
 keeps identity correct across path switches.

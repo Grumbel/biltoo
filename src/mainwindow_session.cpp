@@ -1712,6 +1712,15 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
                 m_imageView->setSlideshowNavHot(false);
                 // Full load + PreferCache climb for the settled index only.
                 m_imageView->loadImage(m_session.paths().at(m_currentIndex));
+                // ±1 neighbors: overview tiles into global path RAM (1212 retain).
+                QStringList nbr;
+                if (m_currentIndex > 0) {
+                    nbr << m_session.paths().at(m_currentIndex - 1);
+                }
+                if (m_currentIndex + 1 < m_session.paths().size()) {
+                    nbr << m_session.paths().at(m_currentIndex + 1);
+                }
+                m_imageView->prefetchTilesForPaths(nbr, 4);
             });
         }
         m_slideshowNavLoadTimer->start();

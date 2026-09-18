@@ -21,6 +21,7 @@
 #endif
 #include "biltoo_thread.h"
 #include "tile_load_coordinator.h"
+#include "tilelod/tile_lod_controller.hpp"
 
 #include <QDateTime>
 #include <QDebug>
@@ -2718,6 +2719,65 @@ void ImageView::scheduleTileLodAfterInteraction(int delayMs)
     }
     m_tileLodZoomDebounce->setInterval(qMax(0, delayMs));
     m_tileLodZoomDebounce->start();
+}
+
+void ImageView::prefetchTilesForPaths(const QStringList &paths, int budgetPerPath)
+{
+    ASSERT_GUI_THREAD();
+    if (paths.isEmpty() || budgetPerPath <= 0 || m_slideshowNavHot) {
+        return;
+    }
+    if (!ThumtooCache::isAvailable()) {
+        return;
+    }
+    // Overview density only — do not deep-zoom prefetch (wastes budget).
+    constexpr double kPrefetchMaxDpc = 0.25;
+    QWidget *vp = viewport();
+    const qreal dpr = vp ? vp->devicePixelRatioF() : 1.0;
+    const int vpW = vp ? vp->width() : 0;
+    const int vpH = vp ? vp->height() : 0;
+
+    for (const QString &path : paths) {
+        if (path.isEmpty()) {
+            continue;
+        }
+        // Skip paths already bound to a live item — tickPrimaryTileLod owns those.
+        bool onCanvas = false;
+        for (ImageItem *ii : m_items) {
+            if (ii && ii->path() == path) {
+                onCanvas = true;
+                break;
+            }
+        }
+        if (onCanvas) {
+            continue;
+        }
+        const QSize sz = logicalSizeForPath(path);
+        if (sz.width() < 256 || sz.height() < 1) {
+            continue;
+        }
+        if (!ThumtooCache::hasDurableTilesKnown(path)) {
+            (void)ThumtooCache::scheduleTilePyramid(path);
+            continue;
+        }
+        double dpc = kPrefetchMaxDpc;
+        if (vpW > 0 && vpH > 0 && sz.width() > 0 && sz.height() > 0) {
+            const double sx = (static_cast<double>(vpW) * dpr)
+                              / static_cast<double>(sz.width());
+            const double sy = (static_cast<double>(vpH) * dpr)
+                              / static_cast<double>(sz.height());
+            dpc = qMin(kPrefetchMaxDpc, qMin(sx, sy));
+        }
+        if (!(dpc > 0.0)) {
+            continue;
+        }
+        // Stack controller: acquire → issue overview tiles → release (retain).
+        tilelod::TileLodController ctl;
+        ctl.setPath(path);
+        ctl.setContentSize(sz.width(), sz.height());
+        ctl.updateViewport(QRectF(0.0, 0.0, sz.width(), sz.height()), dpc);
+        (void)ctl.tick(budgetPerPath);
+    }
 }
 
 void ImageView::tickPrimaryTileLod(int budget)
