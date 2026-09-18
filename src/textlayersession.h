@@ -27,6 +27,11 @@ struct TextLayerSession {
     QVector<int> selectedRegions;
     QString linkHoverTip;
 
+    bool needsLayer() const
+    {
+        return showRegions || !searchQuery.isEmpty();
+    }
+
     void clearSearch()
     {
         searchQuery.clear();
