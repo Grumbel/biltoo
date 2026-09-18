@@ -55,11 +55,23 @@ void TileSession::set_content_size(int width, int height, int min_scale)
 
   // Durable memo often arrives *after* open (min_scale 0 → N). Raising the
   // floor must not wipe progressive climb / Succeeded cache state.
+  // Lowering the floor (Image mode min_scale 0 after a Gallery durable floor)
+  // must re-open progressive climb so density can target finer scales.
   if (m_content_w == width && m_content_h == height && min_scale != m_min_scale) {
+    int const old_min = m_min_scale;
     m_min_scale = min_scale;
     m_max_scale = max_scale_for_size(width, height);
     if (m_max_scale < m_min_scale) {
       m_max_scale = m_min_scale;
+    }
+    if (min_scale < old_min) {
+      // Floor lowered: allow climb below previous durable floor.
+      m_reached_desired = false;
+      m_have_stable_scale = false;
+      m_visible_keys.clear();
+      ++m_generation;
+      m_draw_plan_dirty = true;
+      return;
     }
     if (m_stable_scale < m_min_scale) {
       m_stable_scale = m_min_scale;

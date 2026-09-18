@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1230-tile-min-scale-lower-reclimb.** Lowering min_scale resets progressive tile climb.
+Prior: **1229**.
+
+### Bug
+After 1229, Image mode passes min_scale 0, but an existing session that already
+had a higher durable floor only updated `m_min_scale` and left
+`m_reached_desired` / stable scale at the coarse floor — still no upres.
+
+### Fix
+`set_content_size`: when min_scale **decreases**, clear reached/stable and bump
+generation so the next viewport plan climbs to density.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1230-tile-min-scale-lower-reclimb.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1229-image-tile-min-scale-zero.** Image mode tile plan min_scale=0 so LOD can upres.
 Prior: **1228**.
 
