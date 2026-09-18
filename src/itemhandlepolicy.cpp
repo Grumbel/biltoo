@@ -3,6 +3,8 @@
 
 #include "itemhandlepolicy.h"
 
+#include <QCoreApplication>
+
 namespace ItemHandlePolicy {
 
 bool isChromeHandle(ImageItem::Handle h)
@@ -48,6 +50,58 @@ bool isUprightChromeHandle(ImageItem::Handle h)
 {
     // Raise/Lower glyphs stay screen-upright so "up" always means raise.
     return h == ImageItem::Handle::Raise || h == ImageItem::Handle::Lower;
+}
+
+QString toolTip(ImageItem::Handle h)
+{
+    using H = ImageItem::Handle;
+    switch (h) {
+    case H::None:
+        return {};
+    case H::ScaleTopLeft:
+    case H::ScaleTopRight:
+    case H::ScaleBottomLeft:
+    case H::ScaleBottomRight:
+        return QCoreApplication::translate("ImageItem",
+            "Scale (Shift: opposite edge; Ctrl: about centre)");
+    case H::ScaleTop:
+    case H::ScaleBottom:
+        return QCoreApplication::translate("ImageItem", "Scale height");
+    case H::ScaleLeft:
+    case H::ScaleRight:
+        return QCoreApplication::translate("ImageItem", "Scale width");
+    case H::ShearTop:
+    case H::ShearBottom:
+    case H::ShearLeft:
+    case H::ShearRight:
+        return QCoreApplication::translate("ImageItem", "Shear");
+    case H::RotateTop:
+    case H::RotateRight:
+    case H::RotateBottom:
+    case H::RotateLeft:
+        return QCoreApplication::translate("ImageItem", "Rotate");
+    case H::FlipH:
+        return QCoreApplication::translate("ImageItem", "Flip horizontal");
+    case H::FlipV:
+        return QCoreApplication::translate("ImageItem", "Flip vertical");
+    case H::Rotate90CCW:
+        return QCoreApplication::translate("ImageItem", "Rotate 90° counter-clockwise");
+    case H::Rotate90CW:
+        return QCoreApplication::translate("ImageItem", "Rotate 90° clockwise");
+    case H::Raise:
+        return QCoreApplication::translate("ImageItem", "Raise (bring forward)");
+    case H::Lower:
+        return QCoreApplication::translate("ImageItem", "Lower (send backward)");
+    case H::ResetScale:
+        return QCoreApplication::translate("ImageItem", "Reset scale to 1:1");
+    case H::ResetRotation:
+        return QCoreApplication::translate("ImageItem", "Reset rotation to 0°");
+    case H::ResetShear:
+        return QCoreApplication::translate("ImageItem", "Reset shear");
+    case H::OpacitySlider:
+        return QCoreApplication::translate("ImageItem", "Opacity");
+    }
+    return {};
 }
 
 } // namespace ItemHandlePolicy

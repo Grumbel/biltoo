@@ -6,6 +6,8 @@
 
 #include "imageitem.h"
 
+#include <QString>
+
 /**
  * Pure classification of ImageItem::Handle values.
  * No item or view state — shared by interaction, cursors, and tooltips.
@@ -19,6 +21,9 @@ bool isEdgeScaleHandle(ImageItem::Handle h);
 bool isScaleHandle(ImageItem::Handle h);
 bool isShearHandle(ImageItem::Handle h);
 bool isUprightChromeHandle(ImageItem::Handle h);
+
+/** Localised tooltip for a handle (context "ImageItem"). */
+QString toolTip(ImageItem::Handle h);
 
 } // namespace ItemHandlePolicy
 

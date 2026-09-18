@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1321-handle-tooltip-policy.** Pure handle tooltip strings in ItemHandlePolicy.
+Prior: **1320**.
+
+### Change
+- `ItemHandlePolicy::toolTip` — localised handle tooltips (context "ImageItem")
+- `ImageItem::handleToolTip` delegates to the pure policy helper.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1321-handle-tooltip-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1320-item-handle-policy.** Pure handle classification + paint warning fix.
 Prior: **1319**.
 
