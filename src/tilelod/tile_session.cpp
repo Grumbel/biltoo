@@ -106,13 +106,18 @@ int TileSession::stable_request_scale(int desired_scale)
 
   if (!m_have_stable_scale) {
     m_have_stable_scale = true;
-    // Cold: coarsest first. Warm shared cache: open at density target.
+    // Warm shared cache: density target immediately.
+    // Cold: at most *one* coarser step than desired — full max_scale walks
+    // left Gallery stuck on LQIP for many coordinator ticks (2 cells/tick).
     if (has_any_succeeded_tile()) {
       m_stable_scale = desired_scale;
       m_reached_desired = true;
+    } else if (m_max_scale > desired_scale) {
+      m_stable_scale = desired_scale + 1;
+      m_reached_desired = false;
     } else {
-      m_stable_scale = m_max_scale;
-      m_reached_desired = (m_stable_scale == desired_scale);
+      m_stable_scale = desired_scale;
+      m_reached_desired = true;
     }
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
@@ -273,8 +278,9 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
   // Failed keys can be retried after a zoom (no-spam still holds for stable plan).
   bool const plan_changed =
       out.target_scale != m_target_scale || out.visible_keys != m_visible_keys;
-  bool const desired_changed = (m_desired_scale != prev_desired);
-  if (plan_changed || desired_changed) {
+  // Bump on plan change. Also when denser (lower desired) so Failed keys can
+  // retry after zoom-in — not on every equal desired re-set (CPU spin).
+  if (plan_changed || (m_desired_scale < prev_desired)) {
     ++m_generation;
   }
 

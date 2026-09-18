@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1183-lqip-cpu-unstick.** Gallery LQIP stick + 100% CPU.
+Prior: **1182**.
+
+### Causes
+1. Cold open at **max_scale** → multi-step climb with 2 cells/tick → LQIP for ages
+2. Generation bump on every desired re-set → Failed re-issue + repaint storm
+3. singleShot update on gen-only changes → CPU spin without tiles
+4. Coordinator ticked cells that failed `tileLodWanted` (no-op forever)
+
+### Fixes
+- Cold start at most **desired+1** (one coarser step), not max_scale walk
+- Gen bump only on plan change or denser desired
+- Repaint storm only when `applied > 0` tiles
+- Collect only `tileLodWanted` items; scheduleProbe when size missing
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1183-lqip-cpu-unstick.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1182-tick-cancel-storm.** Fix 1s TileLoadCoordinator::tick stalls.
 Prior: **1181**.
 

@@ -1514,6 +1514,10 @@ void ImageItem::tickTileLod(int budget)
     // Sole per-item tile service entry (called only from TileLoadCoordinator).
     // Leave tile band: do not pump/issue on a stale deep-zoom viewport.
     if (!tileLodWanted()) {
+        // Size probe may still be pending — without it we never enter the band.
+        if (!m_path.isEmpty() && !ThumtooCache::cachedSize(m_path).isValid()) {
+            ThumtooCache::scheduleProbe(m_path);
+        }
         if (!m_interactive && cacheMode() == QGraphicsItem::NoCache
             && hasDisplayPixels()) {
             syncGalleryScrollCache();
@@ -1532,17 +1536,16 @@ void ImageItem::tickTileLod(int budget)
     const int applied = m_tileLod->tick(budget);
     const std::uint64_t gen =
         m_tileLod->session() ? m_tileLod->session()->generation() : 0;
-    if (applied > 0 || gen != m_tileLodLastUpdateGen) {
+    // Repaint only when tiles actually landed — gen-only changes every pan
+    // queued a singleShot(0) storm (100% CPU, still LQIP).
+    if (applied > 0) {
         m_tileLodLastUpdateGen = gen;
         if (!m_interactive) {
             setCacheMode(QGraphicsItem::NoCache);
-            if (!pixmap().isNull() && applied > 0) {
+            if (!pixmap().isNull()) {
                 setPixmap(QPixmap());
             }
         }
-        // Never update() synchronously from coordinator tick — nested paint
-        // + scene work blew the GUI budget to 1s+. Coalesce one post-tick
-        // repaint (same turn as decode window).
         if (!m_tileLodRepaintQueued) {
             m_tileLodRepaintQueued = true;
             QGraphicsScene *sc = scene();
@@ -1561,6 +1564,10 @@ void ImageItem::tickTileLod(int budget)
                 update();
             });
         }
+    } else if (gen != m_tileLodLastUpdateGen) {
+        m_tileLodLastUpdateGen = gen;
+        // Plan-only change (pan): cheap mark, no pixmap clear.
+        update();
     }
 }
 

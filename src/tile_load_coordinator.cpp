@@ -70,6 +70,11 @@ TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
             if (screenLong <= kGalleryTileScreenMin) {
                 continue;
             }
+            // Must be able to open a session — otherwise we tick forever with
+            // no progress (LQIP stick + CPU).
+            if (!ii->tileLodWanted()) {
+                continue;
+            }
             Cand c;
             c.item = ii;
             c.inView = true;
@@ -135,7 +140,7 @@ void TileLoadCoordinator::tick(int globalBudget)
 
     // Coalesce scroll storms — multiple decode-window refreshes per frame.
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-    if (m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 8) {
+    if (m_lastTickMs > 0 && (nowMs - m_lastTickMs) < 16) {
         return;
     }
     m_lastTickMs = nowMs;

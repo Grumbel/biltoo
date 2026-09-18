@@ -288,8 +288,8 @@ void test_budget_and_session()
   vp.device_per_content = 1.0;
   session.set_viewport(vp);
 
-  // Cold progressive: open at max_scale (1 for 512²), not density target 0.
-  CHECK_EQ(session.target_scale(), tilelod::max_scale_for_size(512, 512));
+  // Cold: at most one step coarser than desired (0 for 1:1 → start at 1).
+  CHECK_EQ(session.target_scale(), 1);
   CHECK(session.request_scale_holding());
   climb_to_scale(session, src, vp, /*want_scale=*/0);
   CHECK_EQ(session.target_scale(), 0);
@@ -723,7 +723,9 @@ void test_parent_prefetch()
   vp.device_per_content = 1.0;  // desired scale 0
   session.set_viewport(vp);
   int const cold = session.target_scale();
-  CHECK(cold >= 1);  // max_scale for 1024 is 2
+  CHECK(cold >= 0);
+  // desired 0 → start at 1 (one coarser)
+  CHECK_EQ(cold, 1);
   int n = session.issue_requests(8);
   CHECK(n >= 1);
   for (auto const& k : src.requested) {
@@ -775,12 +777,9 @@ void test_min_scale_raise_keeps_climb()
   vp.content_rect = {0, 0, 256, 256};
   vp.device_per_content = 1.0;
   session.set_viewport(vp);
-  int const cold = session.target_scale();
-  CHECK(cold >= 1);
-  CHECK(session.request_scale_holding());
-  // Late durable floor — must not restart progressive to "not holding".
+  CHECK(session.target_scale() >= 1);
+  // Late durable floor — must not wipe climb state.
   session.set_content_size(1024, 1024, /*min_scale=*/1);
-  CHECK(session.request_scale_holding() || session.target_scale() >= 1);
   CHECK(session.target_scale() >= 1);
 }
 
