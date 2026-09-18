@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1340-helpers-pack-avail-maxhave.** Pure stack 1338–1339 + packAvailAxis + maxHave.
+Prior: **1334** (upstream).
+
+### Change
+- Rebuild pure helpers from 1338–1339 on tip 1334
+- `GalleryPackFit::packAvailAxis` — usable pack axis after margin
+- `GallerySoft::maxHave` — soft/decode have edge max
+- Pack gallery timers use `ViewTransform::nonNegMs`
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1340-helpers-pack-avail-maxhave.bundle HEAD
+```
+(Bases on tip **1334** / `201dde4`.)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1334-rubber-chebyshev-canvas-textlayer.** ViewTransform rubber/chebyshev, canvas checker, text layer gate.
 Prior: **1333**.
 
