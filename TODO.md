@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1111-archive-expand-store-toc.** Warm archive expand uses Store TOC only.
+Prior: **1110**.
+
+### Problem
+`expandArchiveToImageRefs` always called `refresh_archive_toc` for RAR/CBR when
+unarr was linked, re-walking solid archives on every Open even when the durable
+TOC was already in the Store → "Indexing archive…" felt permanent.
+
+### Change
+- Use `get_archive_entries` when non-empty; `refresh_archive_toc` only if empty.
+- Stale pre-unarr indexes: clear cache once or first empty miss refreshes.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1111-archive-expand-store-toc.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1110-cachedsize-default-no-revalidate.** cachedSize defaults to no background revalidate.
 Prior: **1109**.
 
