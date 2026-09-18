@@ -15,6 +15,12 @@
  */
 namespace GalleryPackFit {
 
+/** Usable pack axis length after margin (min @p floor). */
+inline qreal packAvailAxis(int viewportAxis, qreal margin, qreal floor = 32.0)
+{
+    return qMax(floor, qreal(viewportAxis) - 2.0 * margin);
+}
+
 /**
  * Fitted-axis targets for @p mode (-1 = unconstrained).
  * Height-fitted: SideBySide / MasonryRows*; width-fitted: the rest of pack modes.

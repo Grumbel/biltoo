@@ -33,6 +33,11 @@ constexpr int kSoftProgressFloor = 128;
 /** Hard cap: soft PreferCache ensure cycles per path per want band. */
 constexpr int kMaxEnsureAttempts = 6;
 
+inline int maxHave(int a, int b)
+{
+    return qMax(a, b);
+}
+
 inline bool covers(int have, int need)
 {
     if (need <= 0) {

@@ -3,6 +3,7 @@
 
 #include "displayquality.h"
 #include "imageview.h"
+#include "gallerypackfit.h"
 #include "viewtransform.h"
 #include <cstdio>
 #include <cstdlib>
@@ -41,7 +42,7 @@ void ImageView::scheduleGalleryStatusRefresh(int delayMs)
             }
         });
     }
-    m_galleryStatusRefreshTimer->setInterval(qMax(0, delayMs));
+    m_galleryStatusRefreshTimer->setInterval(ViewTransform::nonNegMs(delayMs));
     m_galleryStatusRefreshTimer->start();
 }
 
@@ -60,7 +61,7 @@ void ImageView::scheduleGalleryDecodeWindowRefresh(int delayMs)
         });
     }
     // Restart with the requested delay (climb uses short; scroll may use longer).
-    m_galleryDecodeScrollTimer->setInterval(qMax(0, delayMs));
+    m_galleryDecodeScrollTimer->setInterval(ViewTransform::nonNegMs(delayMs));
     m_galleryDecodeScrollTimer->start();
 }
 
@@ -140,7 +141,7 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         }
         GallerySoftState &st = m_gallerySoftBook.soft[path];
         // Shown edge only — hostEdge can exceed what install actually attached.
-        st.have = qMax(st.have, after);
+        st.have = GallerySoft::maxHave(st.have, after);
         item->update();
         ++installed;
     }
@@ -296,7 +297,7 @@ void ImageView::updateGalleryDecodeWindow()
         seen.insert(path);
 
         GallerySoftState &st = m_gallerySoftBook.soft[path];
-        st.have = qMax(st.have, item->displayPixelLongEdge());
+        st.have = GallerySoft::maxHave(st.have, item->displayPixelLongEdge());
         st.terminal = true;
 
         // Blank on-screen cells only — off-screen waits until scrolled in.
@@ -576,8 +577,8 @@ void ImageView::applyLayout(GalleryPackReason reason)
 
     const qreal margin = 16.0;
     const qreal gap = 12.0;
-    const qreal availW = qMax(32.0, static_cast<qreal>(viewport()->width()) - 2.0 * margin);
-    const qreal availH = qMax(32.0, static_cast<qreal>(viewport()->height()) - 2.0 * margin);
+    const qreal availW = GalleryPackFit::packAvailAxis(viewport()->width(), margin);
+    const qreal availH = GalleryPackFit::packAvailAxis(viewport()->height(), margin);
 
     GalleryLayout::Params params;
     params.margin = margin;
@@ -682,8 +683,8 @@ bool ImageView::layoutWorkspaceItems(const GalleryLayout::Params &userParams,
     if (params.gap <= 0) {
         params.gap = 12.0;
     }
-    params.availW = qMax(32.0, static_cast<qreal>(viewport()->width()) - 2.0 * margin);
-    params.availH = qMax(32.0, static_cast<qreal>(viewport()->height()) - 2.0 * margin);
+    params.availW = GalleryPackFit::packAvailAxis(viewport()->width(), margin);
+    params.availH = GalleryPackFit::packAvailAxis(viewport()->height(), margin);
 
     // Workspace layout is axis-aligned placement; clear free-form tilt/flips
     // on the targets only (content bakes stay in pixels).
