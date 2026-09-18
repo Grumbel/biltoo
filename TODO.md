@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1198-slideshow-screen-tiles.** Slideshow: screen-fit SoftDisplay only (no Full); tile pyramid warm; shared path tile cache.
+Prior: **1197**.
+
+### Change
+- `slideshowTargetEdge`: viewport×DPR×headroom, capped at overview band (not native/kImageLadderEdge).
+- All slideshow PathRaster climbs: **SoftDisplay only** (never EscalateToFull).
+- Preload warms tile pyramid when durable unknown; ticks shared TileLodRegistry cache.
+- Tile RAM cache was already per-path via `TileLodRegistry` (Gallery/Image/Workspace share).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1198-slideshow-screen-tiles.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1197-cold-layout-tile-rearm.** Cold Gallery: pack only after sizes; Image tiles re-arm until covered.
 Prior: **1196**.
 

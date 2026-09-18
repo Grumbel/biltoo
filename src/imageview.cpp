@@ -203,19 +203,15 @@ ImageView::ImageView(QWidget *parent)
                 if (m_slideshowProgressActive
                     && (path == m_ssFromPath || path == m_ssToPath)) {
                     onSlideshowRasterReady(path, img);
-                    // PreferCache often lands at 1024 first. Cold paths may
-                    // EscalateToFull; durable tiles stay SoftDisplay (TileSynth).
+                    // SoftDisplay only at screen-fit edge (TileSynth when tiles exist).
                     if (m_pathRaster) {
                         const int target = cappedDisplayEdgeForPath(
                             path, slideshowTargetEdge());
                         const int need = target * 7 / 10;
                         if (longEdge > 0 && longEdge < need) {
-                            const auto policy =
-                                ThumtooCache::hasDurableTilesKnown(path)
-                                    ? PathRasterService::ClimbPolicy::SoftDisplay
-                                    : PathRasterService::ClimbPolicy::EscalateToFull;
                             m_pathRaster->ensure(
-                                path, target, logicalSizeForPath(path), policy);
+                                path, target, logicalSizeForPath(path),
+                                PathRasterService::ClimbPolicy::SoftDisplay);
                         }
                     }
                     return;
