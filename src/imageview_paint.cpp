@@ -4,6 +4,7 @@
 #include "imageview.h"
 #include "textsearchpolicy.h"
 #include "canvaspatterngeometry.h"
+#include "viewtransform.h"
 #include "hudgeometry.h"
 #include "textlayergeometry.h"
 #include "pageguidegeometry.h"
@@ -684,7 +685,7 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
     if (!painter) {
         return;
     }
-    viewScale = qMax(1e-6, viewScale);
+    viewScale = ViewTransform::sanitizeViewScale(viewScale);
 
     auto fillChecker = [&](const QColor &a, const QColor &b) {
         const qreal cell = CanvasPatternGeometry::checkerCellScene(viewScale);
@@ -746,16 +747,10 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             painter->fillRect(rect, m_canvasBg.color);
         }
     } else {
-        const bool useChecker =
-            m_canvasBg.pattern == BackgroundPattern::Checkerboard
-            && (!m_canvasBg.checkerWorkspaceOnly || isWorkspaceMode());
-
-        if (!useChecker) {
+        if (!m_canvasBg.useChecker(isWorkspaceMode())) {
             painter->fillRect(rect, m_canvasBg.color);
         } else {
-            const QColor a = m_canvasBg.color;
-            const QColor b = m_canvasBg.colorAlt.isValid() ? m_canvasBg.colorAlt : m_canvasBg.color.lighter(120);
-            fillChecker(a, b);
+            fillChecker(m_canvasBg.color, m_canvasBg.checkerAlt());
         }
     }
 }
@@ -785,7 +780,7 @@ void ImageView::setShowTextRegions(bool on)
         return;
     }
     m_textLayer.showRegions = on;
-    if (m_textLayer.showRegions || !m_textLayer.searchQuery.isEmpty()) {
+    if (m_textLayer.needsLayer()) {
         refreshTextLayer();
     } else {
         m_textLayer.layer = {};
@@ -800,8 +795,7 @@ void ImageView::refreshTextLayer()
     m_textLayer.layer = {};
     m_textLayer.layerPath.clear();
     m_textLayer.searchMatches.clear();
-    const bool needLayer = m_textLayer.showRegions || !m_textLayer.searchQuery.isEmpty();
-    if (!needLayer) {
+    if (!m_textLayer.needsLayer()) {
         return;
     }
     // Search/outlines need a page ref; allow extract outside pure Image mode

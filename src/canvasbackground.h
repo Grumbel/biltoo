@@ -34,6 +34,18 @@ struct CanvasBackground {
         workspaceTile = {};
         workspaceTilePath.clear();
     }
+
+    /** App-default checker when pattern is Checkerboard (optional WS-only). */
+    bool useChecker(bool isWorkspaceMode) const
+    {
+        return pattern == BackgroundPattern::Checkerboard
+            && (!checkerWorkspaceOnly || isWorkspaceMode);
+    }
+
+    QColor checkerAlt() const
+    {
+        return colorAlt.isValid() ? colorAlt : color.lighter(120);
+    }
 };
 
 #endif // CANVASBACKGROUND_H
