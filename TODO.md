@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1324-stack-z-step.** Pure raise/lower z-step math in StackGeometry.
+Prior: **1323**.
+
+### Change
+- `StackGeometry::ZStep` / `raiseStep` / `lowerStep` — sparse-z swap vs equal-z ±1
+- `raiseTargetIndex` / `lowerTargetIndex` — layer neighbour selection
+- `ImageView::raiseItem` / `lowerItem` use the pure helpers (undo only when neighbour moves)
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1324-stack-z-step.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1323-stack-geometry.** Pure content-overlap for raise/lower stacking.
 Prior: **1322**.
 

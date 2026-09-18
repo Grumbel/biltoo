@@ -28,4 +28,34 @@ bool contentOverlaps(const QRectF &aabbA, const QPolygonF &polyA,
     return false;
 }
 
+ZStep raiseStep(qreal selfZ, qreal aboveZ)
+{
+    ZStep step;
+    if (qFuzzyCompare(selfZ, aboveZ)) {
+        step.selfZ = aboveZ + 1.0;
+        step.neighbourZ = aboveZ;
+        step.neighbourChanges = false;
+    } else {
+        step.selfZ = aboveZ;
+        step.neighbourZ = selfZ;
+        step.neighbourChanges = true;
+    }
+    return step;
+}
+
+ZStep lowerStep(qreal selfZ, qreal belowZ)
+{
+    ZStep step;
+    if (qFuzzyCompare(selfZ, belowZ)) {
+        step.selfZ = belowZ - 1.0;
+        step.neighbourZ = belowZ;
+        step.neighbourChanges = false;
+    } else {
+        step.selfZ = belowZ;
+        step.neighbourZ = selfZ;
+        step.neighbourChanges = true;
+    }
+    return step;
+}
+
 } // namespace StackGeometry

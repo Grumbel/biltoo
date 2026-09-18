@@ -244,24 +244,25 @@ void ImageView::raiseItem(ImageItem *item)
     // while 2 was an overlapping neighbour already at 3-epsilon).
     const QList<ImageItem *> layer = overlappingStack(item, m_items);
     const int idx = layer.indexOf(item);
-    if (idx < 0 || idx + 1 >= layer.size()) {
+    const int target = StackGeometry::raiseTargetIndex(idx, layer.size());
+    if (target < 0) {
         return; // already top among overlapping
     }
-    ImageItem *above = layer.at(idx + 1);
+    ImageItem *above = layer.at(target);
     const WorkspaceItemState beforeItem = captureState(item);
     const WorkspaceItemState beforeAbove = captureState(above);
-    const qreal za = item->stackZ();
-    const qreal zb = above->stackZ();
-    if (qFuzzyCompare(za, zb)) {
-        item->setStackZ(zb + 1.0);
-    } else {
-        item->setStackZ(zb);
-        above->setStackZ(za);
+    const StackGeometry::ZStep step =
+        StackGeometry::raiseStep(item->stackZ(), above->stackZ());
+    item->setStackZ(step.selfZ);
+    if (step.neighbourChanges) {
+        above->setStackZ(step.neighbourZ);
     }
     if (m_undoStack) {
         m_undoStack->beginMacro(tr("Raise"));
         pushItemGeometryCommand(tr("Raise"), item, beforeItem, captureState(item));
-        pushItemGeometryCommand(tr("Raise"), above, beforeAbove, captureState(above));
+        if (step.neighbourChanges) {
+            pushItemGeometryCommand(tr("Raise"), above, beforeAbove, captureState(above));
+        }
         m_undoStack->endMacro();
     }
     emit statusChanged();
@@ -274,24 +275,25 @@ void ImageView::lowerItem(ImageItem *item)
     }
     const QList<ImageItem *> layer = overlappingStack(item, m_items);
     const int idx = layer.indexOf(item);
-    if (idx <= 0) {
+    const int target = StackGeometry::lowerTargetIndex(idx, layer.size());
+    if (target < 0) {
         return; // already bottom among overlapping
     }
-    ImageItem *below = layer.at(idx - 1);
+    ImageItem *below = layer.at(target);
     const WorkspaceItemState beforeItem = captureState(item);
     const WorkspaceItemState beforeBelow = captureState(below);
-    const qreal za = item->stackZ();
-    const qreal zb = below->stackZ();
-    if (qFuzzyCompare(za, zb)) {
-        item->setStackZ(zb - 1.0);
-    } else {
-        item->setStackZ(zb);
-        below->setStackZ(za);
+    const StackGeometry::ZStep step =
+        StackGeometry::lowerStep(item->stackZ(), below->stackZ());
+    item->setStackZ(step.selfZ);
+    if (step.neighbourChanges) {
+        below->setStackZ(step.neighbourZ);
     }
     if (m_undoStack) {
         m_undoStack->beginMacro(tr("Lower"));
         pushItemGeometryCommand(tr("Lower"), item, beforeItem, captureState(item));
-        pushItemGeometryCommand(tr("Lower"), below, beforeBelow, captureState(below));
+        if (step.neighbourChanges) {
+            pushItemGeometryCommand(tr("Lower"), below, beforeBelow, captureState(below));
+        }
         m_undoStack->endMacro();
     }
     emit statusChanged();
