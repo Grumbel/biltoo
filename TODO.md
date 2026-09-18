@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1166-classic-soft-fallback.** Classic loadThumbnail underlay when PreferCache empty.
+Prior: **1165**.
+
+### Problem
+Even with PathRaster soft re-enabled, Gallery could stay blank: LQIP free-data-only,
+PreferCache/TileSynth slow or empty, tiles not yet painted. Soft job had been
+reduced to LQIP seed only (no encode).
+
+### Fix
+- `loadSoftPreviewPixels`: PreferCache schedule + **classic `loadThumbnail`**
+  fallback when host/LQIP still empty.
+- `startSoftPreviewJob`: soft underlay job again (not LQIP-only).
+- Blank tile-band `scheduleGalleryDecode` queues that job in parallel with
+  PreferCache + tile pyramid.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1166-classic-soft-fallback.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1165-durable-soft-underlay.** PathRaster soft underlay even when durable.
 Prior: **1164**.
 

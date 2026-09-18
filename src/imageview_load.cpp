@@ -139,46 +139,78 @@ void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
  * Never drop a smaller host soft when the requested edge is not ready yet —
  * that left Image mode / slideshow blank until the high-res job finished.
  */
-/** LQIP / existing host sample only — no SoftOnly encode, no PreferCache@512. */
-QImage loadSoftPreviewPixels(const QString &path, int /*softEdge*/)
+/**
+ * Host soft for Gallery underlay / Image open.
+ * Prefer ImageCache + Store LQIP, then PreferCache schedule, then classic
+ * loadThumbnail when still empty (Gallery stayed blank after soft-path
+ * removal when LQIP was missing and tiles had not painted).
+ */
+QImage loadSoftPreviewPixels(const QString &path, int softEdge)
 {
     ASSERT_NOT_GUI_THREAD();
-    QImage preview = ImageCache::get(path);
-    if (!preview.isNull()
-        && ImageCache::longEdge(preview) <= DisplayQuality::kLqipMaxEdge) {
+    const int edge = softEdge > 0 ? softEdge : ThumtooCache::kGalleryLadderEdge;
+    QImage preview = ImageCache::get(path, edge);
+    if (preview.isNull()) {
+        preview = ImageCache::get(path);
+    }
+    if (ImageCache::adequate(preview, edge)) {
         return preview;
     }
-    if (!preview.isNull()) {
-        // Keep LQIP-sized only for underlay policy; larger samples are host cache.
-        if (ImageCache::longEdge(preview) <= DisplayQuality::kLqipMaxEdge) {
-            return preview;
+    // PreferCache / TileSynth (async delivery via ladderReady).
+    if (ThumtooCache::isAvailable()) {
+        (void)ThumtooCache::scheduleDisplayPixels(path, edge);
+        if (preview.isNull()) {
+            preview = ThumtooCache::cachedLqipImage(path);
+            if (!preview.isNull()) {
+                ImageCache::put(path, preview);
+            }
         }
+        // Still empty: classic shrink-on-decode underlay so Gallery is not blank
+        // while tiles/PreferCache complete. Soft samples are ephemeral host-only.
+        if (preview.isNull()) {
+            const QImage loaded = ImageLoader::loadThumbnail(path, edge);
+            if (!loaded.isNull()) {
+                preview = loaded;
+                ImageCache::put(path, preview);
+            }
+        }
+        return preview;
     }
-    preview = ThumtooCache::cachedLqipImage(path);
-    if (!preview.isNull()) {
-        ImageCache::put(path, preview);
+    const QImage loaded = ImageLoader::loadThumbnail(path, edge);
+    if (!loaded.isNull()
+        && ImageCache::longEdge(loaded) >= ImageCache::longEdge(preview)) {
+        preview = loaded;
+    }
+    if (preview.isNull()) {
+        preview = ThumtooCache::cachedLqipImage(path);
+        if (!preview.isNull()) {
+            ImageCache::put(path, preview);
+        }
     }
     return preview;
 }
 
 /**
- * LQIP seed job only (legacy name). Never SoftOnly / loadThumbnail / Prefer@soft.
+ * Soft underlay job: PreferCache + classic loadThumbnail fallback.
+ * Gallery blank cells use this so SOFT-path removal cannot leave a void.
  */
 void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
                          quint64 gen, int roleInt, int softEdge,
                          const WorkspaceItemState &sessionApp)
 {
-    biltooLoadDbg("lqipSeed START path=%s gen=%llu",
-                  qPrintable(QFileInfo(path).fileName()),
+    biltooLoadDbg("softJob START path=%s edge=%d gen=%llu",
+                  qPrintable(QFileInfo(path).fileName()), softEdge,
                   static_cast<unsigned long long>(gen));
-    Q_UNUSED(softEdge);
     QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, sessionApp]() {
+        [guard, path, roleInt, gen, softEdge, sessionApp]() {
             if (!guard || !guard->matchesLoadGeneration(gen)) {
                 return;
             }
             ThumtooCache::scheduleProbe(path);
-            QImage preview = loadSoftPreviewPixels(path, 0);
+            QImage preview = loadSoftPreviewPixels(path, softEdge);
+            biltooLoadDbg("softJob DONE path=%s got=%dx%d",
+                          qPrintable(QFileInfo(path).fileName()),
+                          preview.width(), preview.height());
             if (!preview.isNull() && !path.isEmpty()) {
                 ImageCache::put(path, preview);
             }
@@ -1723,12 +1755,17 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 }
             }
             tickPrimaryTileLod(12);
-            // Still blank: PreferCache soft underlay (direct + PathRaster).
-            // PathRaster alone was blocked for durable paths (tiles-only).
+            // Still blank: PreferCache + classic soft job underlay.
+            // PathRaster alone was blocked for durable paths (tiles-only);
+            // LQIP free-data-only often missing after soft-path removal.
             if (anyBlank && !anyShown) {
-                (void)ThumtooCache::scheduleSoftPixels(
-                    path, ThumtooCache::kGalleryLadderEdge);
+                const int softEdge = ThumtooCache::kGalleryLadderEdge;
+                (void)ThumtooCache::scheduleSoftPixels(path, softEdge);
                 (void)ThumtooCache::scheduleTilePyramid(path);
+                startSoftPreviewJob(QPointer<ImageView>(this), path,
+                                    m_loadGeneration.load(),
+                                    static_cast<int>(LoadAdd), softEdge,
+                                    WorkspaceItemState{});
                 // Fall through to PathRaster SoftDisplay below for underlay.
             } else {
                 auto sit = m_gallerySoft.find(path);
