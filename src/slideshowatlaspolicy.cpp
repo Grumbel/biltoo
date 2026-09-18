@@ -91,4 +91,25 @@ DwellAtlasParams makeParams(int viewportW, int viewportH, qreal headroom)
     return p;
 }
 
+
+qreal zoomBaseScale(SlideshowZoom zoom, const QSize &logical, int vw, int vh)
+{
+    if (!logical.isValid() || logical.width() < 1 || logical.height() < 1) {
+        return 1.0;
+    }
+    const qreal iw = qreal(logical.width());
+    const qreal ih = qreal(logical.height());
+    const qreal w = qreal(qMax(1, vw));
+    const qreal h = qreal(qMax(1, vh));
+    switch (zoom) {
+    case SlideshowZoom::Fill:
+        return qMax(w / iw, h / ih);
+    case SlideshowZoom::Actual:
+        return 1.0;
+    case SlideshowZoom::Fit:
+    default:
+        return qMin(w / iw, h / ih);
+    }
+}
+
 } // namespace SlideshowAtlasPolicy

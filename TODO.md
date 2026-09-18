@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1270-slideshow-orient-zoom-policy.** Oriented upgrade + Fit/Fill/Actual base scale.
+Prior: **1269**.
+
+### Change
+- `SlideshowPhasePolicy::acceptOrientedUpgrade` (was local acceptPhase lambda).
+- `SlideshowAtlasPolicy::zoomBaseScale` for Fit/Fill/Actual; ImageView wrapper.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1270-slideshow-orient-zoom-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1269-slideshow-edge-policy.** Pure headroom / target / need edge + params.
 Prior: **1268**.
 

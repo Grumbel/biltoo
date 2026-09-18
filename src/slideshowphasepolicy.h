@@ -25,6 +25,12 @@ bool bufferWantsSample(const QString &phasePath, const QImage &phaseImg,
                        bool contentApplied, const QString &incomingPath,
                        int sampleEdge, bool hasPendingContentAppearance);
 
+/**
+ * After orient pool: install when sharper, or same edge while content not yet
+ * applied on the phase arm (unoriented stand-in → oriented same edge).
+ */
+bool acceptOrientedUpgrade(int sampleEdge, int haveEdge, bool contentApplied);
+
 /** Long edge of a raster (0 if null). */
 int longEdge(const QImage &img);
 

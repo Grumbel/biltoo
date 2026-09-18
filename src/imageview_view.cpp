@@ -1352,13 +1352,10 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     const int incoming = ImageCache::longEdge(oriented);
     const int need = SlideshowAtlasPolicy::needEdge(slideshowTargetEdge());
     bool changed = false;
-    auto acceptPhase = [](int sampleEdge, int have, bool contentApplied) {
-        // Sharper always; same edge when ContentXform not yet applied.
-        return sampleEdge > have || (sampleEdge == have && !contentApplied);
-    };
     if (path == m_ss.fromPath
-        && acceptPhase(incoming, ImageCache::longEdge(m_ss.fromImage),
-                       m_ss.fromContentApplied)) {
+        && SlideshowPhasePolicy::acceptOrientedUpgrade(
+               incoming, ImageCache::longEdge(m_ss.fromImage),
+               m_ss.fromContentApplied)) {
         m_ss.fromImage = oriented;
         m_ss.fromContentApplied = true;
         ImageCache::stampDebugOverlayIfEnabled(&m_ss.fromImage, path);
@@ -1390,8 +1387,9 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         changed = true;
     }
     if (path == m_ss.toPath
-        && acceptPhase(incoming, ImageCache::longEdge(m_ss.toImage),
-                       m_ss.toContentApplied)) {
+        && SlideshowPhasePolicy::acceptOrientedUpgrade(
+               incoming, ImageCache::longEdge(m_ss.toImage),
+               m_ss.toContentApplied)) {
         m_ss.toImage = oriented;
         m_ss.toContentApplied = true;
         ImageCache::stampDebugOverlayIfEnabled(&m_ss.toImage, path);
@@ -2326,22 +2324,7 @@ QSize ImageView::ensureLogicalSizeForPath(const QString &path)
 
 qreal ImageView::slideshowZoomBaseScale(const QSize &logical, int vw, int vh) const
 {
-    if (!logical.isValid() || logical.width() < 1 || logical.height() < 1) {
-        return 1.0;
-    }
-    const qreal iw = qreal(logical.width());
-    const qreal ih = qreal(logical.height());
-    const qreal w = qreal(qMax(1, vw));
-    const qreal h = qreal(qMax(1, vh));
-    switch (m_ssSettings.zoom) {
-    case SlideshowZoom::Fill:
-        return qMax(w / iw, h / ih);
-    case SlideshowZoom::Actual:
-        return 1.0;
-    case SlideshowZoom::Fit:
-    default:
-        return qMin(w / iw, h / ih);
-    }
+    return SlideshowAtlasPolicy::zoomBaseScale(m_ssSettings.zoom, logical, vw, vh);
 }
 
 void ImageView::setSlideshowNavHot(bool hot)

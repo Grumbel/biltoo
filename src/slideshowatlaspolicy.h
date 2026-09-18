@@ -11,10 +11,11 @@
 #include <QSize>
 
 /**
- * Pure slideshow atlas / sample-edge policy.
+ * Pure slideshow atlas / sample-edge / framing policy.
  *
  * ImageView supplies viewport size, DPR, and settings; schedules rebuilds and
- * decode climbs. This module answers coverage, headroom, and edge budgets.
+ * decode climbs. This module answers coverage, headroom, edge budgets, and
+ * Fit/Fill/Actual base scale.
  */
 namespace SlideshowAtlasPolicy {
 
@@ -54,6 +55,12 @@ int targetLongEdge(bool viewportValid, int viewportW, int viewportH, qreal dpr,
  * longCap uses CSS viewport × headroom (atlas texture budget, not DPR).
  */
 DwellAtlasParams makeParams(int viewportW, int viewportH, qreal headroom);
+
+/**
+ * Fit / Fill / Actual base scale for logical image size into viewport CSS pixels.
+ * Invalid logical size → 1.0.
+ */
+qreal zoomBaseScale(SlideshowZoom zoom, const QSize &logical, int vw, int vh);
 
 } // namespace SlideshowAtlasPolicy
 

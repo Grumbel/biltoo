@@ -34,4 +34,10 @@ bool bufferWantsSample(const QString &phasePath, const QImage &phaseImg,
     return hasPendingContentAppearance;
 }
 
+bool acceptOrientedUpgrade(int sampleEdge, int haveEdge, bool contentApplied)
+{
+    // Sharper always; same edge when ContentXform not yet applied on the arm.
+    return sampleEdge > haveEdge || (sampleEdge == haveEdge && !contentApplied);
+}
+
 } // namespace SlideshowPhasePolicy
