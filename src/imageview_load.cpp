@@ -688,11 +688,19 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
         if (host.isNull()) {
             return false;
         }
-        const auto kind = (act.type == AT::AttachSoft)
+        auto kind = (act.type == AT::AttachSoft)
             ? SessionAppearance::PixelKind::SoftPreview
             : SessionAppearance::PixelKind::FullSource;
         if (!canAcceptDisplaySample(item, host, kind)) {
-            return false;
+            // Gallery LQIP tile: force SoftPreview when host is a real upgrade.
+            const int shown = item->displayPixelLongEdge();
+            const int hostEdge = ImageCache::longEdge(host);
+            if (!(isGalleryMode()
+                  && shown <= DisplayQuality::kLqipMaxEdge
+                  && hostEdge > shown)) {
+                return false;
+            }
+            kind = SessionAppearance::PixelKind::SoftPreview;
         }
         const QSize before = item->imageSize();
         if (isImageMode()) {
@@ -1535,7 +1543,9 @@ void ImageView::syncGallerySoftMirrorFromPathRaster(const QString &path,
     if (!m_pathRaster || path.isEmpty()) {
         return;
     }
-    st.have = qMax(st.have, m_pathRaster->haveEdge(path));
+    // Do NOT copy PathRaster/ImageCache have into st.have. That made schedule
+    // think soft was done while the tile still showed LQIP (host had soft,
+    // item never installed). st.have tracks *shown* pixels only.
     if (m_pathRaster->isGaveUp(path)) {
         const int prWant = m_pathRaster->wantEdge(path);
         st.gaveUpWant = qMax(st.gaveUpWant, prWant > 0 ? prWant : st.want);
@@ -1644,13 +1654,15 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     m_pathRaster->ensure(path, want, logicalSizeForPath(path), climbPolicy);
     syncGallerySoftMirrorFromPathRaster(path, st);
 
-    // Synchronous cache coverage: ensure may satisfy without async ladderReady.
-    if (st.have > have) {
+    // Host may already hold soft while the tile still shows LQIP — install now.
+    // st.have is *shown* edge only (not ImageCache), so compare host vs have.
+    {
         const QImage img = ImageCache::get(path);
-        if (!img.isNull()) {
+        const int host = ImageCache::longEdge(img);
+        if (!img.isNull() && host > have) {
             onImagePreviewLoaded(path, img, m_loadGeneration.load(),
                                  static_cast<int>(LoadAdd));
-            st.have = qMax(st.have, ImageCache::longEdge(img));
+            st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
         }
     }
     if (coversEdge(st.have, want)) {

@@ -70,9 +70,18 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         }
         const int hostEdge = ImageCache::longEdge(hostSample);
         const int shown = item->displayPixelLongEdge();
-        const GallerySoft::InstallDecision dec = GallerySoft::decideHostInstall(
+        // LQIP (or blank) must always accept a better host sample — do not wait
+        // on DisplaySurface decide when host already has soft.
+        GallerySoft::InstallDecision dec = GallerySoft::decideHostInstall(
             shown, hostEdge, item->hasDisplayPixels(), item->hasDecodedPixels(),
             softMax);
+        if ((dec.kind == GallerySoft::InstallKind::None || !dec.meaningful)
+            && hostEdge > shown
+            && shown <= DisplayQuality::kLqipMaxEdge) {
+            dec.kind = (hostEdge > softMax) ? GallerySoft::InstallKind::FullSource
+                                            : GallerySoft::InstallKind::SoftPreview;
+            dec.meaningful = true;
+        }
         if (dec.kind == GallerySoft::InstallKind::None || !dec.meaningful) {
             continue;
         }
@@ -215,7 +224,7 @@ void ImageView::updateGalleryDecodeWindow()
     qint64 usInterest = 0;
     QElapsedTimer phaseTimer;
 
-    constexpr int kMaxInstallsPerDecodeWindow = 2;
+    constexpr int kMaxInstallsPerDecodeWindow = 8;
     bool moreInstallsPending = false;
     if (m_perfEnabled) {
         phaseTimer.start();
@@ -747,7 +756,9 @@ void ImageView::gallerySoftWatchdogTick()
         return;
     }
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
-    constexpr qint64 kStuckMs = 2500;
+    // Soft/PreferCache should land well under 1s when warm; LQIP stuck longer
+    // than this forces ensure + install. Was 2500ms — felt "frozen on LQIP".
+    constexpr qint64 kStuckMs = 900;
     bool needWindow = false;
     int repaired = 0;
     // Only on-screen (+small overscan) — never walk hundreds of off-screen tiles

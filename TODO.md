@@ -2,6 +2,33 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1126-lqip-install-and-status.** Host soft installs onto LQIP; Gallery status shows quality mix.
+Prior: **1125**.
+
+### Bug
+- `st.have` mirrored PathRaster/ImageCache edge while tiles still showed **LQIP**.
+  Schedule thought soft was done → no further ensure; pass1/decide could skip.
+- Status only said "Loading N" + thumtoo job noise — hard to see LQIP vs soft.
+
+### Fix
+- `st.have` tracks **shown** pixels only (not host cache).
+- After ensure: install host when host edge > shown; refresh have from items.
+- Pass1: force SoftPreview when shown ≤ LQIP and host is better.
+- Attach path: force SoftPreview for Gallery LQIP when canAccept rejects.
+- Watchdog stuck timeout 900ms; pass1 install budget 8.
+- Gallery status: `blank · LQIP · soft · higher · climbing N · work N`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1126-lqip-install-and-status.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1125-thumtoo-version-isolate.** Clear PROJECT_VERSION_FULL around thumtoo add_subdirectory.
 Prior: **1124**.
 

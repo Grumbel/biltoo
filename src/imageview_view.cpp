@@ -3715,9 +3715,45 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
         && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
         text += tr(" · %1×%2").arg(native.width()).arg(native.height());
     }
-    const int pending = pendingDecodeCount();
-    if (pending > 0) {
-        text += tr(" · Loading %1…").arg(pending);
+    if (isGalleryMode()) {
+        int blank = 0, lqip = 0, soft = 0, better = 0, climb = 0;
+        for (ImageItem *ii : m_items) {
+            if (!ii || ii->path().isEmpty()) {
+                continue;
+            }
+            const int e = ii->displayPixelLongEdge();
+            if (!ii->hasDisplayPixels() || e <= 0) {
+                ++blank;
+            } else if (e <= DisplayQuality::kLqipMaxEdge) {
+                ++lqip;
+            } else if (e <= DisplayQuality::kSoftMaxEdge) {
+                ++soft;
+            } else {
+                ++better;
+            }
+            const auto sit = m_gallerySoft.constFind(ii->path());
+            if (sit != m_gallerySoft.cend() && sit->inflight > 0) {
+                ++climb;
+            }
+        }
+        // Explicit quality mix so "Loading N" alone does not hide LQIP stuck.
+        text += tr(" · %1 blank · %2 LQIP · %3 soft · %4 higher")
+                    .arg(blank)
+                    .arg(lqip)
+                    .arg(soft)
+                    .arg(better);
+        if (climb > 0) {
+            text += tr(" · climbing %1").arg(climb);
+        }
+        const int pending = pendingDecodeCount();
+        if (pending > 0) {
+            text += tr(" · work %1").arg(pending);
+        }
+    } else {
+        const int pending = pendingDecodeCount();
+        if (pending > 0) {
+            text += tr(" · Loading %1…").arg(pending);
+        }
     }
     {
         const QString load = ThumtooCache::loadingBreakdownLabel();

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "displayquality.h"
 
 #include <QCoreApplication>
 #include <QEventLoop>
@@ -905,20 +906,22 @@ int ImageView::pendingDecodeCount() const
     int n = pendingAdds + m_pendingRestoreStates.size();
 
     if (isGalleryMode() || isWorkspaceMode()) {
-        // Tiles still without display pixels (waiting for soft / first sample).
-        QSet<QString> blankPaths;
+        // Blank + LQIP-only tiles still need soft/PreferCache (not "done").
+        QSet<QString> weakPaths;
         for (ImageItem *item : m_items) {
             if (!item || item->path().isEmpty()) {
                 continue;
             }
-            if (!item->hasDisplayPixels()) {
-                blankPaths.insert(item->path());
+            const int edge = item->displayPixelLongEdge();
+            if (!item->hasDisplayPixels()
+                || edge <= DisplayQuality::kLqipMaxEdge) {
+                weakPaths.insert(item->path());
             }
         }
-        n += blankPaths.size();
-        // Soft climbs still in flight for tiles that already show a sample.
+        n += weakPaths.size();
+        // Soft climbs still in flight for tiles that already show soft+.
         for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
-            if (blankPaths.contains(it.key())) {
+            if (weakPaths.contains(it.key())) {
                 continue; // already counted
             }
             if (it.value().inflight > 0) {
