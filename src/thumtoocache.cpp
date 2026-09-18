@@ -2975,73 +2975,93 @@ std::string pathContentId(const QString &path)
     } else if (!archiveMember.isEmpty()) {
         cacheKey += QStringLiteral("#archive:") + archiveMember;
     }
-    // Cache sha256 by path+size+mtime — hashing multi‑MB images on every
-    // seed/save would stall the UI thread.
+    // Outer-file SHA is independent of page/member. Hashing a multi‑MB archive
+    // once per member (94× same CBR) made Gallery open ~12s on warm cache.
     struct CacheEntry {
         qint64 size = -1;
         QDateTime mtime;
         std::string id;
     };
-    static QHash<QString, CacheEntry> cache;
+    static QHash<QString, CacheEntry> compoundCache; // full pathContentId
+    static QHash<QString, CacheEntry> outerFileCache; // abs → file content id
     static std::mutex cacheMu;
     {
         std::lock_guard lock(cacheMu);
-        const auto it = cache.constFind(cacheKey);
-        if (it != cache.cend() && it->size == size && it->mtime == mtime) {
-            // Empty id = known miss/reject for this size/mtime — do not re-hash.
+        const auto it = compoundCache.constFind(cacheKey);
+        if (it != compoundCache.cend() && it->size == size && it->mtime == mtime) {
             return it->id;
         }
     }
     std::string id;
     QString hashStage;
-    // Prefer thumtoo hasher; path must be UTF-8 (not QString::toStdString locale).
-    try {
-        const QByteArray utf8 = abs.toUtf8();
-        const std::string hex = thumtoo::sha256_file_hex(
-            std::filesystem::path(std::string(utf8.constData(),
-                                              static_cast<size_t>(utf8.size()))));
-        if (!hex.empty()) {
-            id = thumtoo::normalize_content_id(hex);
-            hashStage = id.empty() ? QStringLiteral("thumtoo-hex-normalize-fail")
-                                   : QStringLiteral("thumtoo");
-        } else {
-            hashStage = QStringLiteral("thumtoo-hex-empty");
+    // Reuse outer-file hash when size/mtime match (archive/PDF members share it).
+    {
+        std::lock_guard lock(cacheMu);
+        const auto it = outerFileCache.constFind(abs);
+        if (it != outerFileCache.cend() && it->size == size && it->mtime == mtime
+            && !it->id.empty()) {
+            id = it->id;
+            hashStage = QStringLiteral("outer-file-cache");
         }
-    } catch (...) {
-        id.clear();
-        hashStage = QStringLiteral("thumtoo-exception");
     }
-    // Fallback: chunked Qt SHA-256 (do not rely on addData(QIODevice*), which
-    // can fail or behave differently across Qt builds).
     if (id.empty()) {
-        QFile f(abs);
-        if (!f.open(QIODevice::ReadOnly)) {
-            hashStage += QStringLiteral("+qt-open-fail:");
-            hashStage += f.errorString();
-        } else {
-            QCryptographicHash h(QCryptographicHash::Sha256);
-            QByteArray buf;
-            buf.resize(256 * 1024);
-            bool ok = true;
-            while (!f.atEnd()) {
-                const qint64 n = f.read(buf.data(), buf.size());
-                if (n < 0) {
-                    ok = false;
-                    hashStage += QStringLiteral("+qt-read-fail");
-                    break;
-                }
-                if (n == 0) {
-                    break;
-                }
-                h.addData(QByteArray(buf.constData(), int(n)));
+        // Prefer thumtoo hasher; path must be UTF-8 (not QString::toStdString locale).
+        try {
+            const QByteArray utf8 = abs.toUtf8();
+            const std::string hex = thumtoo::sha256_file_hex(
+                std::filesystem::path(std::string(utf8.constData(),
+                                                  static_cast<size_t>(utf8.size()))));
+            if (!hex.empty()) {
+                id = thumtoo::normalize_content_id(hex);
+                hashStage = id.empty() ? QStringLiteral("thumtoo-hex-normalize-fail")
+                                       : QStringLiteral("thumtoo");
+            } else {
+                hashStage = QStringLiteral("thumtoo-hex-empty");
             }
-            if (ok) {
-                const QByteArray dig = h.result().toHex();
-                id = thumtoo::normalize_content_id(
-                    std::string(dig.constData(), static_cast<size_t>(dig.size())));
-                hashStage = id.empty() ? QStringLiteral("qt-normalize-fail")
-                                       : QStringLiteral("qt");
+        } catch (...) {
+            id.clear();
+            hashStage = QStringLiteral("thumtoo-exception");
+        }
+        // Fallback: chunked Qt SHA-256 (do not rely on addData(QIODevice*), which
+        // can fail or behave differently across Qt builds).
+        if (id.empty()) {
+            QFile f(abs);
+            if (!f.open(QIODevice::ReadOnly)) {
+                hashStage += QStringLiteral("+qt-open-fail:");
+                hashStage += f.errorString();
+            } else {
+                QCryptographicHash h(QCryptographicHash::Sha256);
+                QByteArray buf;
+                buf.resize(256 * 1024);
+                bool ok = true;
+                while (!f.atEnd()) {
+                    const qint64 n = f.read(buf.data(), buf.size());
+                    if (n < 0) {
+                        ok = false;
+                        hashStage += QStringLiteral("+qt-read-fail");
+                        break;
+                    }
+                    if (n == 0) {
+                        break;
+                    }
+                    h.addData(QByteArray(buf.constData(), int(n)));
+                }
+                if (ok) {
+                    const QByteArray dig = h.result().toHex();
+                    id = thumtoo::normalize_content_id(
+                        std::string(dig.constData(), static_cast<size_t>(dig.size())));
+                    hashStage = id.empty() ? QStringLiteral("qt-normalize-fail")
+                                           : QStringLiteral("qt");
+                }
             }
+        }
+        if (!id.empty()) {
+            std::lock_guard lock(cacheMu);
+            CacheEntry e;
+            e.size = size;
+            e.mtime = mtime;
+            e.id = id;
+            outerFileCache.insert(abs, e);
         }
     }
     // Compound session ref: fold into a plain sha256:<64hex> so AppearanceStore
@@ -3088,7 +3108,7 @@ std::string pathContentId(const QString &path)
         e.size = size;
         e.mtime = mtime;
         e.id = id; // may be empty
-        cache.insert(cacheKey, e);
+        compoundCache.insert(cacheKey, e);
     }
     if (appearanceDebug()) {
         if (id.empty()) {

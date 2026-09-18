@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1116-pathcontentid-outer-cache.** Hash outer archive/PDF once for all members.
+Prior: **1115**.
+
+### Problem (TTFP trace)
+```
+after_primeGalleryGeometryFromCache  ~15 ms
+installDisplayPixels (first LQIP)    ~20 ms
+finishSetWorkspacePaths            ~11915 ms   ← ~12 s
+```
+`pathContentId` SHA-256'd the **entire archive file once per member** (compound
+cache key includes member). 94 members ≈ 94 full-file hashes on the GUI.
+
+### Change
+Two-level cache: outer file id by `abs+size+mtime`, then cheap page/member fold.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1116-pathcontentid-outer-cache.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1115-ttfp-trace.** BILTOO_TTFP stage timings + docs/TTFP.md analysis.
 Prior: **1114**.
 

@@ -299,6 +299,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             scheduleImageLoad(path, LoadAdd);
         }
     }
+    TtfpTrace::mark("after_createPlaceholders");
 
     finishSetWorkspacePaths(haveIds, paths, sessionIds);
 }

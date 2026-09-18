@@ -87,3 +87,9 @@ waited on async decode (worker not GUI).
 
 If `sizes_cold` appears on a prepared album, Store size rows are missing —
 re-run `thumtoo-prepare --lqip --tiles …`.
+
+## Real trace: 12 s between prime and finishSetWorkspacePaths
+
+Cause: `pathContentId` hashed the outer archive **once per member** during
+placeholder `installDisplayPixels` (appearance seed). Fixed in tip **1116**
+(outer-file hash cache).
