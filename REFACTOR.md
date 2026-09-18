@@ -49,7 +49,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowSettings** / **SlideshowDwellState**: prefs bag + dwell atlas / Ken Burns camera.
 - **SlideshowZoomBlurState** / **SlideshowProgressHud**: letterbox blur cache + progress/seek/nav-hot HUD clocks.
 - **SlideshowClocks**: pure motion T∈[0,1] integration (no QObject); ImageView timers call in.
-- **ZoomBlur helpers**: pure slot book (key, prune, claim, install); async build stays on ImageView.
+- **ZoomBlur helpers**: pure slot book + `makeCover` pixel pipeline; async schedule stays on ImageView.
 - **AttentionSession** (`attentionsession.h`): attention draft points + rubber/select gesture state.
 - **CentreProgress** / **GroupTransformSession**: centre HUD panel + multi-select scale/rotate gesture.
 - **PageGuideSession** / **ItemInteractSession** / **HudFlash**: print guide, single-item drag/rotate, action flash.

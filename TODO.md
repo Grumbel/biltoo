@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1264-zoomblur-make-cover.** Move makeZoomBlurCover → ZoomBlur::makeCover.
+Prior: **1263**.
+
+### Change
+- `ZoomBlur::makeCover(src, vw, vh)`: cover-scale + box blur (worker-safe).
+- ImageView pool job calls `ZoomBlur::makeCover`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1264-zoomblur-make-cover.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1263-build-fix-layoutmode-renames.** Fix compile errors from prior tips.
 Prior: **1262**.
 

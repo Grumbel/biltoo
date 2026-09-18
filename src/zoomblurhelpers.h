@@ -7,6 +7,7 @@
 #include "slideshowtypes.h"
 
 #include <QString>
+#include <QImage>
 
 /**
  * Pure ZoomBlur slot-book helpers (no QObject, no QThreadPool).
@@ -44,6 +45,9 @@ void invalidateQueue(SlideshowZoomBlurState *st);
  */
 bool installResult(SlideshowZoomBlurState *st, const QPixmap &blurred, qint64 key,
                    quint64 gen);
+
+/** Cover-scale + box-blur underlay pixels (worker-thread safe). */
+QImage makeCover(const QImage &src, int vw, int vh);
 
 } // namespace ZoomBlur
 
