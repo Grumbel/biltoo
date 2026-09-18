@@ -17,6 +17,9 @@
 #include "viewframing.h"
 #include "textlayersession.h"
 #include "zoomregiongesture.h"
+#include "canvasbackground.h"
+#include "layoutprefs.h"
+#include "viewportchrome.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
@@ -86,11 +89,7 @@ public:
         Zoom /**< Workspace: rubber-band zoom to region */
     };
 
-    enum class BackgroundPattern {
-        Solid,
-        Checkerboard
-    };
-
+    // BackgroundPattern: canvasbackground.h
     // SlideshowTransition / Motion / Zoom / Letterbox: slideshowtypes.h
     enum class ViewMode {
         Image,
@@ -201,7 +200,7 @@ public:
     void clearCentreProgress();
     bool hasCentreProgress() const { return m_centreProgress.active(); }
     bool gallerySizeResolveActive() const { return m_gallerySizeResolve.active(); }
-    /** Controller host: set m_viewMode + m_layoutMode and refresh viewport. */
+    /** Controller host: set m_viewMode + m_layout.mode and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
     /** Controller host: classic path owned by ImageController. */
     QString classicPath() const { return m_image.classicPath(); }
@@ -750,29 +749,29 @@ public:
     /** Non-empty while the pointer is over a link region. */
     QString linkHoverTip() const { return m_textLayer.linkHoverTip; }
 
-    bool imageModeLeftDragPan() const { return m_imageModeLeftDragPan; }
+    bool imageModeLeftDragPan() const { return m_chrome.imageModeLeftDragPan; }
 
     void setBackgroundColor(const QColor &color);
-    QColor backgroundColor() const { return m_bgColor; }
+    QColor backgroundColor() const { return m_canvasBg.color; }
     /**
      * Effective solid pad colour for slideshow letterbox (Solid mode colour,
      * else Preferences background). Used when ZoomBlur cannot run.
      */
     QColor slideshowPadColor() const;
     void setBackgroundColorAlt(const QColor &color);
-    QColor backgroundColorAlt() const { return m_bgColorAlt; }
+    QColor backgroundColorAlt() const { return m_canvasBg.colorAlt; }
     void setBackgroundPattern(BackgroundPattern pattern);
-    BackgroundPattern backgroundPattern() const { return m_bgPattern; }
+    BackgroundPattern backgroundPattern() const { return m_canvasBg.pattern; }
     /** When true, checkerboard is used only in Workspace; other modes stay solid. */
     void setCheckerboardWorkspaceOnly(bool on);
-    bool checkerboardWorkspaceOnly() const { return m_bgCheckerWorkspaceOnly; }
+    bool checkerboardWorkspaceOnly() const { return m_canvasBg.checkerWorkspaceOnly; }
 
     /**
      * Per-Workspace background override (project state). AppDefault uses the
      * preference colours/pattern (technical default) instead of a custom look.
      */
     void setWorkspaceBackground(const WorkspaceBackground &bg);
-    WorkspaceBackground workspaceBackground() const { return m_workspaceBackground; }
+    WorkspaceBackground workspaceBackground() const { return m_canvasBg.workspace; }
     void clearWorkspaceBackground(); /**< AppDefault */
     /**
      * Temporary view of the Preferences / technical background without changing
@@ -780,7 +779,7 @@ public:
      * toolbar toggle.
      */
     void setWorkspaceBackgroundShowDefault(bool on);
-    bool workspaceBackgroundShowDefault() const { return m_workspaceBackgroundShowDefault; }
+    bool workspaceBackgroundShowDefault() const { return m_canvasBg.workspaceShowDefault; }
 
     /**
      * Session position for status line and HUD (index/total, 1-based display).
@@ -968,7 +967,7 @@ public:
 
 
     void setLayoutMode(LayoutMode mode);
-    LayoutMode layoutMode() const { return m_layoutMode; }
+    LayoutMode layoutMode() const { return m_layout.mode; }
     GalleryLayout::Mode galleryLayoutModeFromViewMode() const;
     void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);
     /**
@@ -1006,14 +1005,14 @@ public:
 
     /** Number of columns for LayoutMode::Masonry (images scale to fit column width). */
     void setMasonryColumns(int columns);
-    int masonryColumns() const { return m_masonryColumns; }
+    int masonryColumns() const { return m_layout.masonryColumns; }
     /** Grid / GridCrop columns; 0 = automatic. */
     void setGridColumns(int columns);
-    int gridColumns() const { return m_gridColumns; }
+    int gridColumns() const { return m_layout.gridColumns; }
 
     /** Number of rows for LayoutMode::MasonryRows (images scale to fit row height). */
     void setMasonryRows(int rows);
-    int masonryRows() const { return m_masonryRows; }
+    int masonryRows() const { return m_layout.masonryRows; }
 
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
@@ -1127,7 +1126,7 @@ public:
     QString lastLoadError() const { return m_lastLoadError; }
     /** Basename of the current/target image for the bottom HUD. */
     QString hudFileName() const;
-    ImageMouseInfo mouseInfo() const { return m_mouseInfo; }
+    ImageMouseInfo mouseInfo() const { return m_chrome.mouseInfo; }
     QString currentPath() const;
     QSize imageSize() const;
     int itemCount() const;
@@ -1804,18 +1803,8 @@ private:
     bool m_galleryReturnAvailable = false;
     /** Gallery: path under cursor for HUD filename (empty when none). */
     /** Last mouse position in viewport coords (gallery hover + scroll). */
-    QPoint m_lastHoverViewPos;
-    bool m_imageModeLeftDragPan = true;
-    QColor m_bgColor{42, 42, 42};
-    QColor m_bgColorAlt{48, 48, 48};
-    BackgroundPattern m_bgPattern = BackgroundPattern::Checkerboard;
-    bool m_bgCheckerWorkspaceOnly = true;
-    WorkspaceBackground m_workspaceBackground;
-    /** When true, paint AppDefault even if m_workspaceBackground is custom. */
-    bool m_workspaceBackgroundShowDefault = false;
-    QPixmap m_workspaceBgTile; /**< Cached tile for ImageTile mode */
-    QString m_workspaceBgTilePath; /**< Path loaded into m_workspaceBgTile */
-    TextLayerSession m_textLayer.layer;
+    CanvasBackground m_canvasBg;
+    TextLayerSession m_textLayer;
     bool m_hudVisible = false;
     int m_hudFontPointSize = 11;
     QColor m_hudTextColor{255, 255, 255};
@@ -1847,10 +1836,7 @@ private:
     QTimer *m_motionTimer = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
-    LayoutMode m_layoutMode = LayoutMode::FreeForm;
-    int m_masonryColumns = 3;
-    int m_gridColumns = 0;
-    int m_masonryRows = 3;
+    LayoutPrefs m_layout;
     SessionLoadGate m_loadGate;
     /** Outstanding LoadAdd / gallery decode jobs per path (refcount). */
     /** Per-path Gallery decode-window state — GallerySoftState in imageview_types.h. */
@@ -1898,10 +1884,7 @@ private:
     QSet<SessionImageId> m_pendingSelectSessionIds;
     /** Content appearance staged by Duplicate until bindSelectedSessionIds. */
     QHash<ImageItem *, WorkspaceItemState> m_pendingItemAppearance;
-    ImageMouseInfo m_mouseInfo;
-
-    QPoint m_lastMousePos;
-    bool m_panning = false;
+    ViewportChrome m_chrome;
     /** One-shot rubber-band zoom (Z). */
     ZoomRegionGesture m_zoomRegion;
 

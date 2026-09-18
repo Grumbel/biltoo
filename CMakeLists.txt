@@ -137,6 +137,9 @@ add_executable(biltoo
   src/viewframing.h
   src/textlayersession.h
   src/zoomregiongesture.h
+  src/canvasbackground.h
+  src/layoutprefs.h
+  src/viewportchrome.h
   src/slideshowtypes.h
   src/loadgeneration.h
   src/sessionloadgate.h

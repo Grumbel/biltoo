@@ -27,7 +27,7 @@ void ImageView::stopDeferredPacking()
 void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
 {
     m_viewMode = mode;
-    m_layoutMode = layout;
+    m_layout.mode = layout;
     // Gallery: BoundingRect — FullViewportUpdate repaints every tile on each
     // scroll/zoom tick and is unusable with large soft bitmaps. Soft upgrades
     // must call item->update() (installDisplayPixels already does).
@@ -218,8 +218,8 @@ void ImageView::clearLiveCanvas()
     m_items.clear();
     // Do not m_scene->clear() — that would delete stashed items if any were
     // still parented (they are not). Scene may hold no items; that is fine.
-    m_mouseInfo = {};
-    emit mouseInfoChanged(m_mouseInfo);
+    m_chrome.mouseInfo = {};
+    emit mouseInfoChanged(m_chrome.mouseInfo);
 }
 
 void ImageView::clearWorkspace()
@@ -343,7 +343,7 @@ void ImageView::setViewMode(ViewMode mode)
     // Gallery — sole entry is GalleryController::enter (also used by enterGallery).
     // setViewMode(Gallery) is not used by MainWindow; keep a safe path that
     // restores stash and packs rather than a second divergent implementation.
-    LayoutMode layout = m_layoutMode;
+    LayoutMode layout = m_layout.mode;
     if (layout == LayoutMode::FreeForm) {
         layout = LayoutMode::Masonry;
     }

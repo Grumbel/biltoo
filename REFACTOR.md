@@ -52,6 +52,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **CentreProgress** / **GroupTransformSession**: centre HUD panel + multi-select scale/rotate gesture.
 - **PageGuideSession** / **ItemInteractSession** / **HudFlash**: print guide, single-item drag/rotate, action flash.
 - **ViewFraming** / **TextLayerSession** / **ZoomRegionGesture**: sticky zoom, text overlay, Z-rubber zoom.
+- **CanvasBackground** / **LayoutPrefs** / **ViewportChrome**: bg/tile, grid columns, pan/hover pointer.
 - **LoadGeneration** (`loadgeneration.h`): monotonic token for async decode accept/reject.
 - **SessionLoadGate** (`sessionloadgate.h`): generation + pending LoadAdd/LoadRestore/scene maps; `clearPending` / `bumpGeneration`.
 

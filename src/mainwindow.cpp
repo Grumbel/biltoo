@@ -2139,7 +2139,7 @@ void MainWindow::showPreferences()
     dlg.setBackgroundColor(m_imageView->backgroundColor());
     dlg.setBackgroundColorAlt(m_imageView->backgroundColorAlt());
     dlg.setBackgroundPatternIndex(
-        m_imageView->backgroundPattern() == ImageView::BackgroundPattern::Checkerboard ? 1 : 0);
+        m_imageView->backgroundPattern() == BackgroundPattern::Checkerboard ? 1 : 0);
     dlg.setCheckerboardWorkspaceOnly(m_imageView->checkerboardWorkspaceOnly());
     dlg.setHudFontPointSize(m_imageView->hudFontPointSize());
     dlg.setHudTextColor(m_imageView->hudTextColor());
@@ -2216,8 +2216,8 @@ void MainWindow::showPreferences()
         m_thumbnailBar->setStripBackground(dlg.backgroundColor());
     }
     m_imageView->setBackgroundPattern(
-        dlg.backgroundPatternIndex() == 1 ? ImageView::BackgroundPattern::Checkerboard
-                                          : ImageView::BackgroundPattern::Solid);
+        dlg.backgroundPatternIndex() == 1 ? BackgroundPattern::Checkerboard
+                                          : BackgroundPattern::Solid);
     m_imageView->setCheckerboardWorkspaceOnly(dlg.checkerboardWorkspaceOnly());
     m_imageView->setHudFontPointSize(dlg.hudFontPointSize());
     m_imageView->setHudTextColor(dlg.hudTextColor());
@@ -3107,8 +3107,8 @@ void MainWindow::readSettings()
         const QString pat = settings.value(QStringLiteral("backgroundPattern"),
                                            QStringLiteral("checkerboard")).toString();
         m_imageView->setBackgroundPattern(
-            pat == QLatin1String("solid") ? ImageView::BackgroundPattern::Solid
-                                          : ImageView::BackgroundPattern::Checkerboard);
+            pat == QLatin1String("solid") ? BackgroundPattern::Solid
+                                          : BackgroundPattern::Checkerboard);
         m_imageView->setCheckerboardWorkspaceOnly(
             settings.value(QStringLiteral("checkerboardWorkspaceOnly"), true).toBool());
     }
@@ -3227,7 +3227,7 @@ void MainWindow::writeSettings()
                           m_imageView->backgroundColorAlt().name(QColor::HexRgb));
         settings.setValue(QStringLiteral("backgroundPattern"),
                           m_imageView->backgroundPattern()
-                                  == ImageView::BackgroundPattern::Solid
+                                  == BackgroundPattern::Solid
                               ? QStringLiteral("solid")
                               : QStringLiteral("checkerboard"));
         settings.setValue(QStringLiteral("checkerboardWorkspaceOnly"),

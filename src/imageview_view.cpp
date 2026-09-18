@@ -128,11 +128,11 @@ void ImageView::setGalleryReturnAvailable(bool on)
 
 void ImageView::setBackgroundColor(const QColor &color)
 {
-    if (!color.isValid() || color == m_bgColor) {
+    if (!color.isValid() || color == m_canvasBg.color) {
         return;
     }
-    m_bgColor = color;
-    setBackgroundBrush(QBrush(m_bgColor));
+    m_canvasBg.color = color;
+    setBackgroundBrush(QBrush(m_canvasBg.color));
     if (viewport()) {
         viewport()->update();
     }
@@ -144,8 +144,8 @@ QColor ImageView::slideshowPadColor() const
         && m_ssSettings.padColor.isValid()) {
         return m_ssSettings.padColor;
     }
-    if (m_bgColor.isValid()) {
-        return m_bgColor;
+    if (m_canvasBg.color.isValid()) {
+        return m_canvasBg.color;
     }
     const QBrush b = backgroundBrush();
     if (b.style() != Qt::NoBrush && b.color().isValid()) {
@@ -180,56 +180,56 @@ void ImageView::setSlideshowLetterboxFill(SlideshowLetterboxFill mode)
 
 void ImageView::setBackgroundColorAlt(const QColor &color)
 {
-    if (!color.isValid() || color == m_bgColorAlt) {
+    if (!color.isValid() || color == m_canvasBg.colorAlt) {
         return;
     }
-    m_bgColorAlt = color;
+    m_canvasBg.colorAlt = color;
     viewport()->update();
 }
 
 void ImageView::setBackgroundPattern(BackgroundPattern pattern)
 {
-    if (m_bgPattern == pattern) {
+    if (m_canvasBg.pattern == pattern) {
         return;
     }
-    m_bgPattern = pattern;
+    m_canvasBg.pattern = pattern;
     viewport()->update();
 }
 
 void ImageView::setCheckerboardWorkspaceOnly(bool on)
 {
-    if (m_bgCheckerWorkspaceOnly == on) {
+    if (m_canvasBg.checkerWorkspaceOnly == on) {
         return;
     }
-    m_bgCheckerWorkspaceOnly = on;
+    m_canvasBg.checkerWorkspaceOnly = on;
     viewport()->update();
 }
 
 void ImageView::setWorkspaceBackground(const WorkspaceBackground &bg)
 {
-    if (m_workspaceBackground.mode == bg.mode
-        && m_workspaceBackground.color == bg.color
-        && m_workspaceBackground.colorAlt == bg.colorAlt
-        && m_workspaceBackground.imagePath == bg.imagePath
-        && m_workspaceBackground.imagePathRelative == bg.imagePathRelative) {
+    if (m_canvasBg.workspace.mode == bg.mode
+        && m_canvasBg.workspace.color == bg.color
+        && m_canvasBg.workspace.colorAlt == bg.colorAlt
+        && m_canvasBg.workspace.imagePath == bg.imagePath
+        && m_canvasBg.workspace.imagePathRelative == bg.imagePathRelative) {
         // No-op: leave a temporary "show default" preview alone so the
         // toolbar toggle does not desync from paint.
         return;
     }
     // Permanent override changed — drop temporary preview.
-    m_workspaceBackgroundShowDefault = false;
-    m_workspaceBackground = bg;
+    m_canvasBg.workspaceShowDefault = false;
+    m_canvasBg.workspace = bg;
     if (bg.mode != WorkspaceBackgroundMode::ImageTile
-        || bg.imagePath != m_workspaceBgTilePath) {
-        m_workspaceBgTile = QPixmap();
-        m_workspaceBgTilePath.clear();
+        || bg.imagePath != m_canvasBg.workspaceTilePath) {
+        m_canvasBg.workspaceTile = QPixmap();
+        m_canvasBg.workspaceTilePath.clear();
     }
     if (bg.mode == WorkspaceBackgroundMode::ImageTile && !bg.imagePath.isEmpty()) {
-        if (m_workspaceBgTilePath != bg.imagePath) {
+        if (m_canvasBg.workspaceTilePath != bg.imagePath) {
             QPixmap px(bg.imagePath);
             if (!px.isNull()) {
-                m_workspaceBgTile = px;
-                m_workspaceBgTilePath = bg.imagePath;
+                m_canvasBg.workspaceTile = px;
+                m_canvasBg.workspaceTilePath = bg.imagePath;
             }
         }
     }
@@ -246,10 +246,10 @@ void ImageView::clearWorkspaceBackground()
 
 void ImageView::setWorkspaceBackgroundShowDefault(bool on)
 {
-    if (m_workspaceBackgroundShowDefault == on) {
+    if (m_canvasBg.workspaceShowDefault == on) {
         return;
     }
-    m_workspaceBackgroundShowDefault = on;
+    m_canvasBg.workspaceShowDefault = on;
     if (viewport()) {
         viewport()->update();
     }
@@ -634,7 +634,7 @@ void ImageView::cancelZoomRegion()
     if (m_zoomRegion.rubberBand) {
         m_zoomRegion.rubberBand->hide();
     }
-    if (!m_panning && !m_itemInteract.rotating) {
+    if (!m_chrome.panning && !m_itemInteract.rotating) {
         if (m_tool == Tool::Pan) {
             setCursor(Qt::OpenHandCursor);
         } else if (m_tool == Tool::Zoom) {
@@ -648,7 +648,7 @@ void ImageView::cancelZoomRegion()
 
 void ImageView::setImageModeLeftDragPan(bool on)
 {
-    m_imageModeLeftDragPan = on;
+    m_chrome.imageModeLeftDragPan = on;
 }
 
 void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)

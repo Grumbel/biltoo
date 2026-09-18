@@ -89,7 +89,7 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
     if (m_hoverEdge == EdgeZone::Previous || m_hoverEdge == EdgeZone::Next
         || m_hoverEdge == EdgeZone::GalleryReturn) {
         setCursor(Qt::PointingHandCursor);
-    } else if (!m_panning && !m_itemInteract.rotating) {
+    } else if (!m_chrome.panning && !m_itemInteract.rotating) {
         if (m_tool == Tool::Pan) {
             setCursor(Qt::OpenHandCursor);
         } else if (m_tool == Tool::Zoom) {
@@ -266,12 +266,12 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
         }
     }
 
-    if (info.valid != m_mouseInfo.valid
-        || info.imagePos != m_mouseInfo.imagePos
-        || info.pixelColor != m_mouseInfo.pixelColor
-        || info.path != m_mouseInfo.path) {
-        m_mouseInfo = info;
-        emit mouseInfoChanged(m_mouseInfo);
+    if (info.valid != m_chrome.mouseInfo.valid
+        || info.imagePos != m_chrome.mouseInfo.imagePos
+        || info.pixelColor != m_chrome.mouseInfo.pixelColor
+        || info.path != m_chrome.mouseInfo.path) {
+        m_chrome.mouseInfo = info;
+        emit mouseInfoChanged(m_chrome.mouseInfo);
     }
 }
 
@@ -329,9 +329,9 @@ bool ImageView::tryWheelGalleryScroll(QWheelEvent *event)
 
     // Horizontal strip layouts: vertical wheel pans sideways.
     const bool preferHorizontalScroll =
-        m_layoutMode == LayoutMode::SideBySide
-        || m_layoutMode == LayoutMode::MasonryRows
-        || m_layoutMode == LayoutMode::MasonryRowsFill;
+        m_layout.mode == LayoutMode::SideBySide
+        || m_layout.mode == LayoutMode::MasonryRows
+        || m_layout.mode == LayoutMode::MasonryRowsFill;
 
     if (preferHorizontalScroll && dx == 0 && dy != 0) {
         dx = dy;
@@ -725,22 +725,22 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
     if (!m_ssDwell.motionActive
         && (event->button() == Qt::MiddleButton
             || (event->button() == Qt::LeftButton
-                && ((isImageMode() && m_imageModeLeftDragPan)
+                && ((isImageMode() && m_chrome.imageModeLeftDragPan)
                     || (isWorkspaceMode() && m_tool == Tool::Pan)
                     || (isGalleryMode() && (event->modifiers() & Qt::AltModifier))
                     || (event->modifiers() & Qt::AltModifier))))) {
         if (!(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier)
               && event->button() == Qt::LeftButton)) {
-            m_panning = true;
-            m_lastMousePos = event->pos();
+            m_chrome.panning = true;
+            m_chrome.lastMousePos = event->pos();
             setCursor(Qt::ClosedHandCursor);
             event->accept();
             return true;
         }
     }
     if (event->button() == Qt::MiddleButton && !m_ssDwell.motionActive) {
-        m_panning = true;
-        m_lastMousePos = event->pos();
+        m_chrome.panning = true;
+        m_chrome.lastMousePos = event->pos();
         setCursor(Qt::ClosedHandCursor);
         event->accept();
         return true;
@@ -1016,7 +1016,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
     if (isImageMode() && !m_crop.mode && !m_attention.mode && !m_textLayer.rubberbanding
-        && !m_panning && event->buttons() == Qt::NoButton
+        && !m_chrome.panning && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(classicPath())) {
         if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
             const ThumtooCache::PageTextLayer cached =
@@ -1041,7 +1041,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
                 tip = tr("Link");
             }
         } else if (m_hoverEdge == EdgeZone::None) {
-            setCursor(m_imageModeLeftDragPan ? Qt::OpenHandCursor : Qt::ArrowCursor);
+            setCursor(m_chrome.imageModeLeftDragPan ? Qt::OpenHandCursor : Qt::ArrowCursor);
         }
         if (tip != m_textLayer.linkHoverTip) {
             m_textLayer.linkHoverTip = tip;
@@ -1115,17 +1115,17 @@ bool ImageView::tryMouseMoveCropDrag(QMouseEvent *event)
 
 bool ImageView::tryMouseMovePan(QMouseEvent *event)
 {
-    if (!m_panning) {
+    if (!m_chrome.panning) {
         return false;
     }
     // Dwell camera owns the view transform — do not fight it with hand pan.
     if (m_ssDwell.motionActive) {
-        m_panning = false;
+        m_chrome.panning = false;
         event->accept();
         return true;
     }
-    const QPoint delta = event->pos() - m_lastMousePos;
-    m_lastMousePos = event->pos();
+    const QPoint delta = event->pos() - m_chrome.lastMousePos;
+    m_chrome.lastMousePos = event->pos();
     // Grow the free-form sceneRect with the view so middle-drag is never
     // clamped against a stale zero-range scrollbar.
     if (isWorkspaceMode()) {
@@ -1348,7 +1348,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
     if (isWorkspaceMode() && m_tool == Tool::Select && !m_itemInteract.handleDragItem
-        && !m_groupXform.scaleDrag && !m_groupXform.rotateDrag && !m_panning) {
+        && !m_groupXform.scaleDrag && !m_groupXform.rotateDrag && !m_chrome.panning) {
         const QPointF scenePos = mapToScene(event->pos());
         QList<ImageItem *> candidates;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
@@ -1400,7 +1400,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                         : tr("Scale selection");
                     QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
                 }
-            } else if (!m_panning) {
+            } else if (!m_chrome.panning) {
                 viewport()->unsetCursor();
                 if (groupHoverChanged) {
                     QToolTip::hideText();
@@ -1479,7 +1479,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                         QToolTip::hideText();
                     }
                 }
-            } else if (!m_panning && !m_itemInteract.handleDragItem) {
+            } else if (!m_chrome.panning && !m_itemInteract.handleDragItem) {
                 viewport()->unsetCursor();
                 if (hoverChanged) {
                     QToolTip::hideText();
@@ -1514,9 +1514,9 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         updateHoverEdge(event->pos());
     }
 
-    m_lastHoverViewPos = event->pos();
+    m_chrome.lastHoverViewPos = event->pos();
     updateMouseMoveSlideshowSeek(event);
-    updateGalleryHoverAt(m_lastHoverViewPos);
+    updateGalleryHoverAt(m_chrome.lastHoverViewPos);
     updateMouseMoveWorkspaceChromeHover(event);
 
     QGraphicsView::mouseMoveEvent(event);
@@ -1752,11 +1752,11 @@ bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
 
 bool ImageView::tryMouseReleasePan(QMouseEvent *event)
 {
-    if (!m_panning
+    if (!m_chrome.panning
         || (event->button() != Qt::MiddleButton && event->button() != Qt::LeftButton)) {
         return false;
     }
-    m_panning = false;
+    m_chrome.panning = false;
     restoreToolCursor();
     tickPrimaryTileLod(8);
     event->accept();

@@ -267,7 +267,7 @@ ImageView::ImageView(QWidget *parent)
     m_layoutDebounceTimer->setSingleShot(true);
     m_layoutDebounceTimer->setInterval(48);
     connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
-        if (isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
+        if (isGalleryMode() && m_layout.mode != LayoutMode::FreeForm) {
             applyLayout(m_debouncedPackReason);
         }
     });
@@ -312,7 +312,7 @@ ImageView::ImageView(QWidget *parent)
     setDragMode(QGraphicsView::NoDrag);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
-    setBackgroundBrush(QBrush(m_bgColor));
+    setBackgroundBrush(QBrush(m_canvasBg.color));
     setFrameShape(QFrame::NoFrame);
     setFocusPolicy(Qt::StrongFocus);
     // QGraphicsView delivers moves via the viewport — both need tracking or
@@ -329,8 +329,8 @@ ImageView::ImageView(QWidget *parent)
 
     // Scrolling moves tiles under a stationary cursor — refresh gallery HUD path.
     auto refreshHover = [this]() {
-        if (isGalleryMode() && !m_lastHoverViewPos.isNull()) {
-            updateGalleryHoverAt(m_lastHoverViewPos);
+        if (isGalleryMode() && !m_chrome.lastHoverViewPos.isNull()) {
+            updateGalleryHoverAt(m_chrome.lastHoverViewPos);
         }
     };
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
@@ -341,15 +341,15 @@ ImageView::ImageView(QWidget *parent)
         scheduleGalleryDecodeWindowRefresh(isGalleryMode() ? 48 : 150);
         // Image/Workspace deep zoom: timer may be stopped after coverage;
         // scrollbar drag (or pan setValue) must re-issue visible cells.
-        // Hand pan already ticks; skip when m_panning to avoid double work.
-        if (!m_panning && !isGalleryMode()) {
+        // Hand pan already ticks; skip when m_chrome.panning to avoid double work.
+        if (!m_chrome.panning && !isGalleryMode()) {
             tickPrimaryTileLod(4);
         }
     });
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
         scheduleGalleryDecodeWindowRefresh(isGalleryMode() ? 48 : 150);
-        if (!m_panning && !isGalleryMode()) {
+        if (!m_chrome.panning && !isGalleryMode()) {
             tickPrimaryTileLod(4);
         }
     });
@@ -622,7 +622,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
             preserveImageViewOnLogicalSizeChange(item, cur, layoutSize);
         }
     }
-    if (any && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
+    if (any && isGalleryMode() && m_layout.mode != LayoutMode::FreeForm) {
         // While the open-time size-resolve gate is active, pack once when all
         // probes settle — not on every sizeReady (avoids thrash + tiny cells).
         if (!gallerySizeResolveActive()) {
@@ -699,7 +699,7 @@ QStringList ImageView::sizeResolvePathOrder() const
 
 bool ImageView::sizeResolveLayoutDefersPopulate() const
 {
-    return layoutDefersPopulateUntilSizes(m_layoutMode);
+    return layoutDefersPopulateUntilSizes(m_layout.mode);
 }
 
 void ImageView::setSizeResolveProgress(const QString &title, const QString &detail)
@@ -741,7 +741,7 @@ void ImageView::onSizeResolveGateComplete()
             ensureGalleryPlaceholders();
         }
     }
-    if (isGalleryMode() && !m_items.isEmpty() && m_layoutMode != LayoutMode::FreeForm) {
+    if (isGalleryMode() && !m_items.isEmpty() && m_layout.mode != LayoutMode::FreeForm) {
         applyLayout(GalleryPackReason::EnterGallery);
         updateGalleryDecodeWindow();
         QTimer::singleShot(0, this, [this]() {
@@ -1078,9 +1078,9 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 
 void ImageView::leaveEvent(QEvent *event)
 {
-    if (m_mouseInfo.valid) {
-        m_mouseInfo = {};
-        emit mouseInfoChanged(m_mouseInfo);
+    if (m_chrome.mouseInfo.valid) {
+        m_chrome.mouseInfo = {};
+        emit mouseInfoChanged(m_chrome.mouseInfo);
     }
     if (m_hoverEdge != EdgeZone::None) {
         m_hoverEdge = EdgeZone::None;

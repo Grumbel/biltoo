@@ -240,32 +240,32 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_imageModePanCheck->setToolTip(
         tr("Drag with the left button to pan in Image mode"));
 
-    m_bgPatternCombo = new QComboBox(this);
-    m_bgPatternCombo->addItem(tr("Solid"), 0);
-    m_bgPatternCombo->addItem(tr("Checkerboard"), 1);
-    m_bgPatternCombo->setToolTip(tr("Canvas background fill style"));
+    m_canvasBg.patternCombo = new QComboBox(this);
+    m_canvasBg.patternCombo->addItem(tr("Solid"), 0);
+    m_canvasBg.patternCombo->addItem(tr("Checkerboard"), 1);
+    m_canvasBg.patternCombo->setToolTip(tr("Canvas background fill style"));
 
-    m_bgColorBtn = new QPushButton(this);
-    m_bgColorBtn->setToolTip(tr("Primary background colour"));
-    m_bgColorBtn->setMinimumWidth(80);
-    connect(m_bgColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColor);
+    m_canvasBg.colorBtn = new QPushButton(this);
+    m_canvasBg.colorBtn->setToolTip(tr("Primary background colour"));
+    m_canvasBg.colorBtn->setMinimumWidth(80);
+    connect(m_canvasBg.colorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColor);
 
-    m_bgColorAltBtn = new QPushButton(this);
-    m_bgColorAltBtn->setToolTip(tr("Secondary colour for checkerboard pattern"));
-    m_bgColorAltBtn->setMinimumWidth(80);
-    connect(m_bgColorAltBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColorAlt);
+    m_canvasBg.colorAltBtn = new QPushButton(this);
+    m_canvasBg.colorAltBtn->setToolTip(tr("Secondary colour for checkerboard pattern"));
+    m_canvasBg.colorAltBtn->setMinimumWidth(80);
+    connect(m_canvasBg.colorAltBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColorAlt);
 
-    m_bgCheckerWorkspaceOnlyCheck = new QCheckBox(
+    m_canvasBg.checkerWorkspaceOnlyCheck = new QCheckBox(
         tr("Checkerboard only in Workspace mode"), this);
-    m_bgCheckerWorkspaceOnlyCheck->setChecked(true);
-    m_bgCheckerWorkspaceOnlyCheck->setToolTip(
+    m_canvasBg.checkerWorkspaceOnlyCheck->setChecked(true);
+    m_canvasBg.checkerWorkspaceOnlyCheck->setToolTip(
         tr("Use the checkerboard only on the Workspace canvas"));
 
-    connect(m_bgPatternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_canvasBg.patternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateBackgroundControlsEnabled(); });
 
-    updateColorButton(m_bgColorBtn, m_bgColor);
-    updateColorButton(m_bgColorAltBtn, m_bgColorAlt);
+    updateColorButton(m_canvasBg.colorBtn, m_canvasBg.color);
+    updateColorButton(m_canvasBg.colorAltBtn, m_canvasBg.colorAlt);
     updateBackgroundControlsEnabled();
 
     auto *viewForm = new QFormLayout;
@@ -278,22 +278,22 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                           updateResetButtons();
                       }));
     viewForm->addRow(tr("Background pattern:"),
-                      wrapWithReset(m_bgPatternCombo, &m_resetBgPatternBtn, [this]() {
+                      wrapWithReset(m_canvasBg.patternCombo, &m_resetBgPatternBtn, [this]() {
                           setBackgroundPatternIndex(kDefaultBgPatternIndex);
                           updateResetButtons();
                       }));
     viewForm->addRow(tr("Background colour:"),
-                      wrapWithReset(m_bgColorBtn, &m_resetBgColorBtn, [this]() {
+                      wrapWithReset(m_canvasBg.colorBtn, &m_resetBgColorBtn, [this]() {
                           setBackgroundColor(kDefaultBgColor);
                           updateResetButtons();
                       }));
     viewForm->addRow(tr("Checker colour:"),
-                      wrapWithReset(m_bgColorAltBtn, &m_resetBgColorAltBtn, [this]() {
+                      wrapWithReset(m_canvasBg.colorAltBtn, &m_resetBgColorAltBtn, [this]() {
                           setBackgroundColorAlt(kDefaultBgColorAlt);
                           updateResetButtons();
                       }));
     viewForm->addRow(QString(),
-                      wrapWithReset(m_bgCheckerWorkspaceOnlyCheck, &m_resetCheckerWsBtn, [this]() {
+                      wrapWithReset(m_canvasBg.checkerWorkspaceOnlyCheck, &m_resetCheckerWsBtn, [this]() {
                           setCheckerboardWorkspaceOnly(kDefaultCheckerWorkspaceOnly);
                           updateResetButtons();
                       }));
@@ -591,9 +591,9 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
             this, [this](bool) { updateResetButtons(); });
     connect(m_imageModePanCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
-    connect(m_bgPatternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_canvasBg.patternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
-    connect(m_bgCheckerWorkspaceOnlyCheck, &QCheckBox::toggled,
+    connect(m_canvasBg.checkerWorkspaceOnlyCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
     connect(m_hudFontSpin, QOverload<int>::of(&QSpinBox::valueChanged),
             this, [this](int) { updateResetButtons(); });
@@ -855,7 +855,7 @@ void PreferencesDialog::setImageModeLeftDragPan(bool on)
 
 QColor PreferencesDialog::backgroundColor() const
 {
-    return m_bgColor;
+    return m_canvasBg.color;
 }
 
 void PreferencesDialog::setBackgroundColor(const QColor &color)
@@ -863,13 +863,13 @@ void PreferencesDialog::setBackgroundColor(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_bgColor = color;
-    updateColorButton(m_bgColorBtn, m_bgColor);
+    m_canvasBg.color = color;
+    updateColorButton(m_canvasBg.colorBtn, m_canvasBg.color);
 }
 
 QColor PreferencesDialog::backgroundColorAlt() const
 {
-    return m_bgColorAlt;
+    return m_canvasBg.colorAlt;
 }
 
 void PreferencesDialog::setBackgroundColorAlt(const QColor &color)
@@ -877,36 +877,36 @@ void PreferencesDialog::setBackgroundColorAlt(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_bgColorAlt = color;
-    updateColorButton(m_bgColorAltBtn, m_bgColorAlt);
+    m_canvasBg.colorAlt = color;
+    updateColorButton(m_canvasBg.colorAltBtn, m_canvasBg.colorAlt);
 }
 
 int PreferencesDialog::backgroundPatternIndex() const
 {
-    return m_bgPatternCombo ? m_bgPatternCombo->currentData().toInt() : 0;
+    return m_canvasBg.patternCombo ? m_canvasBg.patternCombo->currentData().toInt() : 0;
 }
 
 void PreferencesDialog::setBackgroundPatternIndex(int index)
 {
-    if (!m_bgPatternCombo) {
+    if (!m_canvasBg.patternCombo) {
         return;
     }
-    const int i = m_bgPatternCombo->findData(index);
+    const int i = m_canvasBg.patternCombo->findData(index);
     if (i >= 0) {
-        m_bgPatternCombo->setCurrentIndex(i);
+        m_canvasBg.patternCombo->setCurrentIndex(i);
     }
     updateBackgroundControlsEnabled();
 }
 
 bool PreferencesDialog::checkerboardWorkspaceOnly() const
 {
-    return m_bgCheckerWorkspaceOnlyCheck && m_bgCheckerWorkspaceOnlyCheck->isChecked();
+    return m_canvasBg.checkerWorkspaceOnlyCheck && m_canvasBg.checkerWorkspaceOnlyCheck->isChecked();
 }
 
 void PreferencesDialog::setCheckerboardWorkspaceOnly(bool on)
 {
-    if (m_bgCheckerWorkspaceOnlyCheck) {
-        m_bgCheckerWorkspaceOnlyCheck->setChecked(on);
+    if (m_canvasBg.checkerWorkspaceOnlyCheck) {
+        m_canvasBg.checkerWorkspaceOnlyCheck->setChecked(on);
     }
 }
 
@@ -998,7 +998,7 @@ void PreferencesDialog::chooseHudPanelColor()
 
 void PreferencesDialog::chooseBackgroundColor()
 {
-    const QColor c = QColorDialog::getColor(m_bgColor, this, tr("Background colour"));
+    const QColor c = QColorDialog::getColor(m_canvasBg.color, this, tr("Background colour"));
     if (c.isValid()) {
         setBackgroundColor(c);
         updateResetButtons();
@@ -1007,7 +1007,7 @@ void PreferencesDialog::chooseBackgroundColor()
 
 void PreferencesDialog::chooseBackgroundColorAlt()
 {
-    const QColor c = QColorDialog::getColor(m_bgColorAlt, this, tr("Checker colour"));
+    const QColor c = QColorDialog::getColor(m_canvasBg.colorAlt, this, tr("Checker colour"));
     if (c.isValid()) {
         setBackgroundColorAlt(c);
         updateResetButtons();
@@ -1017,11 +1017,11 @@ void PreferencesDialog::chooseBackgroundColorAlt()
 void PreferencesDialog::updateBackgroundControlsEnabled()
 {
     const bool checker = backgroundPatternIndex() == 1;
-    if (m_bgColorAltBtn) {
-        m_bgColorAltBtn->setEnabled(checker);
+    if (m_canvasBg.colorAltBtn) {
+        m_canvasBg.colorAltBtn->setEnabled(checker);
     }
-    if (m_bgCheckerWorkspaceOnlyCheck) {
-        m_bgCheckerWorkspaceOnlyCheck->setEnabled(checker);
+    if (m_canvasBg.checkerWorkspaceOnlyCheck) {
+        m_canvasBg.checkerWorkspaceOnlyCheck->setEnabled(checker);
     }
 }
 

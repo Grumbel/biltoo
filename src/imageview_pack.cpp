@@ -168,7 +168,7 @@ void ImageView::scheduleIdleGalleryDecodes(const QStringList &rest)
 
 GalleryLayout::Mode ImageView::galleryLayoutModeFromViewMode() const
 {
-    switch (m_layoutMode) {
+    switch (m_layout.mode) {
     case LayoutMode::SideBySide:
         return GalleryLayout::Mode::SideBySide;
     case LayoutMode::Vertical:
@@ -379,10 +379,10 @@ void ImageView::setLayoutMode(LayoutMode mode)
         if (!isWorkspaceMode()) {
             return;
         }
-        if (m_layoutMode != LayoutMode::FreeForm) {
+        if (m_layout.mode != LayoutMode::FreeForm) {
             // Should not happen in Workspace (always FreeForm).
         }
-        m_layoutMode = LayoutMode::FreeForm;
+        m_layout.mode = LayoutMode::FreeForm;
         for (ImageItem *item : m_items) {
             applyItemModeFlags(item);
         }
@@ -401,11 +401,11 @@ void ImageView::setLayoutMode(LayoutMode mode)
         return;
     }
 
-    if (m_layoutMode == LayoutMode::FreeForm && mode != LayoutMode::FreeForm) {
+    if (m_layout.mode == LayoutMode::FreeForm && mode != LayoutMode::FreeForm) {
         snapshotFreeFormStates();
     }
 
-    m_layoutMode = mode;
+    m_layout.mode = mode;
     for (ImageItem *item : m_items) {
         applyItemModeFlags(item);
     }
@@ -415,14 +415,14 @@ void ImageView::setLayoutMode(LayoutMode mode)
 void ImageView::setGridColumns(int columns)
 {
     const int clamped = qMax(0, columns); // 0 = automatic
-    if (clamped == m_gridColumns) {
+    if (clamped == m_layout.gridColumns) {
         return;
     }
-    m_gridColumns = clamped;
+    m_layout.gridColumns = clamped;
     if (isGalleryMode()
-        && (m_layoutMode == LayoutMode::Grid || m_layoutMode == LayoutMode::GridCrop
-            || m_layoutMode == LayoutMode::Flow || m_layoutMode == LayoutMode::FlowFill
-            || m_layoutMode == LayoutMode::Facing)) {
+        && (m_layout.mode == LayoutMode::Grid || m_layout.mode == LayoutMode::GridCrop
+            || m_layout.mode == LayoutMode::Flow || m_layout.mode == LayoutMode::FlowFill
+            || m_layout.mode == LayoutMode::Facing)) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
 }
@@ -430,11 +430,11 @@ void ImageView::setGridColumns(int columns)
 void ImageView::setMasonryColumns(int columns)
 {
     const int clamped = qBound(1, columns, 32);
-    if (clamped == m_masonryColumns) {
+    if (clamped == m_layout.masonryColumns) {
         return;
     }
-    m_masonryColumns = clamped;
-    if ((m_layoutMode == LayoutMode::Masonry || m_layoutMode == LayoutMode::MasonryFill)
+    m_layout.masonryColumns = clamped;
+    if ((m_layout.mode == LayoutMode::Masonry || m_layout.mode == LayoutMode::MasonryFill)
         && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
@@ -443,11 +443,11 @@ void ImageView::setMasonryColumns(int columns)
 void ImageView::setMasonryRows(int rows)
 {
     const int clamped = qBound(1, rows, 32);
-    if (clamped == m_masonryRows) {
+    if (clamped == m_layout.masonryRows) {
         return;
     }
-    m_masonryRows = clamped;
-    if ((m_layoutMode == LayoutMode::MasonryRows || m_layoutMode == LayoutMode::MasonryRowsFill)
+    m_layout.masonryRows = clamped;
+    if ((m_layout.mode == LayoutMode::MasonryRows || m_layout.mode == LayoutMode::MasonryRowsFill)
         && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
@@ -521,7 +521,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
         return;
     }
     // Packaged packing is Gallery-only; never rearrange Workspace free-form items.
-    if (!isGalleryMode() || m_items.isEmpty() || m_layoutMode == LayoutMode::FreeForm) {
+    if (!isGalleryMode() || m_items.isEmpty() || m_layout.mode == LayoutMode::FreeForm) {
         return;
     }
 
@@ -586,9 +586,9 @@ void ImageView::applyLayout(GalleryPackReason reason)
     params.gap = gap;
     params.availW = availW;
     params.availH = availH;
-    params.masonryColumns = m_masonryColumns;
-    params.gridColumns = m_gridColumns;
-    params.masonryRows = m_masonryRows;
+    params.masonryColumns = m_layout.masonryColumns;
+    params.gridColumns = m_layout.gridColumns;
+    params.masonryRows = m_layout.masonryRows;
     params.mode = galleryLayoutModeFromViewMode();
 
     GalleryLayout::pack(m_items, params, [this](ImageItem *item) {

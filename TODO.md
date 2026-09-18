@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1259-canvas-layout-chrome.** CanvasBackground + LayoutPrefs + ViewportChrome.
+Prior: **1258** (also fixes `TextLayerSession m_textLayer` member typo from tip 1258).
+
+### Change
+- `CanvasBackground` + `BackgroundPattern`: solid/checker, workspace tile cache.
+- `LayoutPrefs`: layout mode + masonry/grid counts.
+- `ViewportChrome`: mouse info, pan, hover pos, left-drag-pan preference.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1259-canvas-layout-chrome.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1258-view-framing-text-zoom.** ViewFraming + TextLayerSession + ZoomRegionGesture.
 Prior: **1257**.
 

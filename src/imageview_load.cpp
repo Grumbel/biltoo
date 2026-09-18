@@ -2031,7 +2031,7 @@ void ImageView::completeLoadRestore(const QString &path, const QImage &image)
         rematerializeItemContent(item, app);
     }
     applyState(item, app);
-    if (m_layoutMode != LayoutMode::FreeForm
+    if (m_layout.mode != LayoutMode::FreeForm
         && !(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
         applyLayout(GalleryPackReason::SessionMutate);
     }
@@ -2254,7 +2254,7 @@ void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
     if (gallerySizeResolveActive() || m_galleryDeferPopulate) {
         return;
     }
-    if (m_layoutMode != LayoutMode::FreeForm) {
+    if (m_layout.mode != LayoutMode::FreeForm) {
         if (!m_pathOrder.isEmpty()) {
             reorderItemsByPaths(m_pathOrder);
         }

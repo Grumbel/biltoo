@@ -748,27 +748,27 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
     };
 
     const bool wsOverride = isWorkspaceMode()
-        && !m_workspaceBackground.isAppDefault()
-        && !m_workspaceBackgroundShowDefault;
+        && !m_canvasBg.workspace.isAppDefault()
+        && !m_canvasBg.workspaceShowDefault;
 
     if (wsOverride) {
-        const WorkspaceBackground &wb = m_workspaceBackground;
+        const WorkspaceBackground &wb = m_canvasBg.workspace;
         if (wb.mode == WorkspaceBackgroundMode::Solid) {
-            painter->fillRect(rect, wb.color.isValid() ? wb.color : m_bgColor);
+            painter->fillRect(rect, wb.color.isValid() ? wb.color : m_canvasBg.color);
         } else if (wb.mode == WorkspaceBackgroundMode::Checkerboard) {
-            const QColor a = wb.color.isValid() ? wb.color : m_bgColor;
+            const QColor a = wb.color.isValid() ? wb.color : m_canvasBg.color;
             const QColor b = wb.colorAlt.isValid() ? wb.colorAlt : a.lighter(120);
             fillChecker(a, b);
         } else if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
-            if (m_workspaceBgTile.isNull() && !wb.imagePath.isEmpty()) {
+            if (m_canvasBg.workspaceTile.isNull() && !wb.imagePath.isEmpty()) {
                 QPixmap px(wb.imagePath);
                 if (!px.isNull()) {
-                    m_workspaceBgTile = px;
-                    m_workspaceBgTilePath = wb.imagePath;
+                    m_canvasBg.workspaceTile = px;
+                    m_canvasBg.workspaceTilePath = wb.imagePath;
                 }
             }
-            if (!m_workspaceBgTile.isNull()) {
-                const QPixmap &tile = m_workspaceBgTile;
+            if (!m_canvasBg.workspaceTile.isNull()) {
+                const QPixmap &tile = m_canvasBg.workspaceTile;
                 qreal tw = qMax(1.0, qreal(tile.width()));
                 qreal th = qMax(1.0, qreal(tile.height()));
                 constexpr qreal kMinScreenPx = 24.0;
@@ -789,21 +789,21 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
                     }
                 }
             } else {
-                painter->fillRect(rect, m_bgColor);
+                painter->fillRect(rect, m_canvasBg.color);
             }
         } else {
-            painter->fillRect(rect, m_bgColor);
+            painter->fillRect(rect, m_canvasBg.color);
         }
     } else {
         const bool useChecker =
-            m_bgPattern == BackgroundPattern::Checkerboard
-            && (!m_bgCheckerWorkspaceOnly || isWorkspaceMode());
+            m_canvasBg.pattern == BackgroundPattern::Checkerboard
+            && (!m_canvasBg.checkerWorkspaceOnly || isWorkspaceMode());
 
         if (!useChecker) {
-            painter->fillRect(rect, m_bgColor);
+            painter->fillRect(rect, m_canvasBg.color);
         } else {
-            const QColor a = m_bgColor;
-            const QColor b = m_bgColorAlt.isValid() ? m_bgColorAlt : m_bgColor.lighter(120);
+            const QColor a = m_canvasBg.color;
+            const QColor b = m_canvasBg.colorAlt.isValid() ? m_canvasBg.colorAlt : m_canvasBg.color.lighter(120);
             fillChecker(a, b);
         }
     }

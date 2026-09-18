@@ -56,11 +56,11 @@ LayoutPanel::LayoutPanel(QWidget *parent)
     m_gridCropBtn = nullptr;
     addMode(m_masonryBtn, tr("Masonry"), QStringLiteral("gallery-masonry"),
             GalleryLayout::Mode::Masonry);
-    addMode(m_masonryRowsBtn, tr("Masonry Rows"), QStringLiteral("gallery-masonry-rows"),
+    addMode(m_layout.masonryRowsBtn, tr("Masonry Rows"), QStringLiteral("gallery-masonry-rows"),
             GalleryLayout::Mode::MasonryRows);
     addMode(m_masonryFillBtn, tr("Masonry Fill"), QStringLiteral("gallery-masonry"),
             GalleryLayout::Mode::MasonryFill);
-    addMode(m_masonryRowsFillBtn, tr("Masonry Rows Fill"), QStringLiteral("gallery-masonry-rows"),
+    addMode(m_layout.masonryRowsFillBtn, tr("Masonry Rows Fill"), QStringLiteral("gallery-masonry-rows"),
             GalleryLayout::Mode::MasonryRowsFill);
 
     root->addWidget(modeBox);

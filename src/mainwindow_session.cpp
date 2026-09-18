@@ -4540,7 +4540,7 @@ void MainWindow::editWorkspaceBackground()
     dlg.setAppDefaultColors(
         m_imageView->backgroundColor(),
         m_imageView->backgroundColorAlt(),
-        m_imageView->backgroundPattern() == ImageView::BackgroundPattern::Checkerboard);
+        m_imageView->backgroundPattern() == BackgroundPattern::Checkerboard);
     dlg.setBackground(before);
     // Live canvas preview while the dialog is open; restore on cancel.
     connect(&dlg, &WorkspaceBackgroundDialog::backgroundChanged, this,
