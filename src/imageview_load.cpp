@@ -2932,7 +2932,7 @@ void ImageView::tickPrimaryTileLod(int budget)
         });
     }
     if (!m_tileLodTimer->isActive()) {
-        m_tileLodTimer->start(isGalleryMode() ? 16 : 16);
+        m_tileLodTimer->start(16);
     }
 }
 

@@ -2,6 +2,23 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1240-tile-lod-timer-interval.** Drop duplicated-branches ternary on tile LOD re-arm.
+Prior: **1239**.
+
+### Change
+`m_tileLodTimer->start(isGalleryMode() ? 16 : 16)` → `start(16)` (both modes already 16 ms).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1240-tile-lod-timer-interval.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1239-warm-memos-no-gui-join.** Open warm must not join on the GUI thread.
 Prior: **1238**.
 
