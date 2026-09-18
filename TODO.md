@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1128-lqip-canaccept-force.** Gallery LQIP always accepts larger soft host.
+Prior: **1127**.
+
+### Bug
+- `installDisplayPixels` gated on `canAcceptDisplaySample` → DisplaySurface decide.
+- Decide sometimes returned **None** (stale settle / climbPending) for LQIP tiles
+  even when ImageCache already held soft → pass1 install no-op'd forever.
+
+### Fix
+- `canAcceptDisplaySample`: Gallery SoftPreview always accepts when shown ≤ LQIP
+  and incoming is larger.
+- Pass1 last resort: `setPreviewImage(host)` if install still no-op.
+- Emit `statusChanged` after pass1 installs so quality mix updates.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1128-lqip-canaccept-force.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1127-shown-have-and-tile-underlay.** st.have is shown-only; soft under LQIP+tiles.
 Prior: **1126**.
 

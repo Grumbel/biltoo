@@ -92,7 +92,15 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         const int before = shown;
         const bool hadDisplay = item->hasDisplayPixels();
         installDisplayPixels(item, hostSample, kind, item->sessionId());
-        const int after = item->displayPixelLongEdge();
+        int after = item->displayPixelLongEdge();
+        // Last resort: soft host over LQIP when install policy still no-op'd.
+        if (after <= before && hadDisplay
+            && before <= DisplayQuality::kLqipMaxEdge
+            && hostEdge > before
+            && kind == SessionAppearance::PixelKind::SoftPreview) {
+            item->setPreviewImage(hostSample);
+            after = item->displayPixelLongEdge();
+        }
         if (after <= before && hadDisplay) {
             continue;
         }
@@ -233,8 +241,11 @@ void ImageView::updateGalleryDecodeWindow()
     const int hostInstalled =
         galleryInstallHostSoftOntoBlanks(kMaxInstallsPerDecodeWindow,
                                          &moreInstallsPending);
-    if (hostInstalled > 0 && viewport()) {
-        viewport()->update();
+    if (hostInstalled > 0) {
+        if (viewport()) {
+            viewport()->update();
+        }
+        emit statusChanged(); // refresh blank/LQIP/soft counts
     }
     if (moreInstallsPending) {
         scheduleGalleryDecodeWindowRefresh(32);

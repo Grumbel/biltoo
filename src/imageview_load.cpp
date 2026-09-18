@@ -759,6 +759,15 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
     if (!item->hasDisplayPixels()) {
         return true;
     }
+    // Gallery LQIP/blank stand-in: always accept a larger host soft sample.
+    // DisplaySurface decide occasionally returned None (stale settle / pending)
+    // and installDisplayPixels then no-op'd — tiles stayed on LQIP forever.
+    if (isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
+        const int shown = item->displayPixelLongEdge();
+        if (shown <= DisplayQuality::kLqipMaxEdge && incoming > shown) {
+            return true;
+        }
+    }
     DisplaySurface::State ds = displaySurfaceStateForItem(item, incoming, false);
     if (isCropDraftLockedItem(item) || isCropDraftLockedPath(item->path())) {
         ds.frozen = true;
