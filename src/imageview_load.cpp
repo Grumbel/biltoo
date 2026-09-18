@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "gallerysoftsm.h"
 #include "viewtransform.h"
 #include "displayedgepolicy.h"
 #include "softdisplaypolicy.h"
@@ -1519,7 +1520,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
 
     GallerySoftState &st = m_gallerySoftBook.soft[path];
     st.terminal = true; // no soft climb ever
-    st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
+    st.have = GallerySoft::maxHave(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
     if (anyTileWanted && !gallerySizeResolveActive()) {
         // Size must be known before pyramid encode (expensive). Wait for resolve.
@@ -1665,7 +1666,7 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
     auto it = m_gallerySoftBook.soft.find(path);
     if (it != m_gallerySoftBook.soft.end()) {
         it.value().terminal = true;
-        it.value().have = qMax(it.value().have, galleryHaveEdgeFromItems(path, nullptr));
+        it.value().have = GallerySoft::maxHave(it.value().have, galleryHaveEdgeFromItems(path, nullptr));
     }
 
     scheduleGalleryDecodeWindowRefresh(16);
@@ -2447,7 +2448,7 @@ int ImageView::cappedDisplayEdgeForPath(const QString &path, int wantEdge) const
     int nativeLong = 0;
     const QSize logical = logicalSizeForPath(path);
     if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
-        nativeLong = qMax(logical.width(), logical.height());
+        nativeLong = ContentXform::longEdge(logical);
     }
     return DisplayEdgePolicy::cappedDisplayEdge(wantEdge, nativeLong);
 }
@@ -2474,7 +2475,7 @@ bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &ima
     bool nativeKnown = false;
     const QSize logical = logicalSizeForPath(path);
     if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
-        nativeLong = qMax(logical.width(), logical.height());
+        nativeLong = ContentXform::longEdge(logical);
         nativeKnown = nativeLong > 0;
     }
     return DisplayEdgePolicy::sampleCoversNative(
@@ -2644,7 +2645,7 @@ void ImageView::scheduleTileLodAfterInteraction(int delayMs)
             }
         });
     }
-    m_tileLodZoomDebounce->setInterval(qMax(0, delayMs));
+    m_tileLodZoomDebounce->setInterval(ViewTransform::nonNegMs(delayMs));
     m_tileLodZoomDebounce->start();
 }
 

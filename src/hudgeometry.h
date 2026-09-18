@@ -98,6 +98,21 @@ inline QStringList wrapHudLine(const QString &text, const QFontMetrics &metrics,
     return out;
 }
 
+inline int clampTitlePointSize(int basePt)
+{
+    return qBound(12, basePt + 4, 28);
+}
+
+inline int clampHintPointSize(int basePt)
+{
+    return qBound(10, basePt + 1, 20);
+}
+
+inline int clampEdgePointSize(int basePt)
+{
+    return qBound(9, basePt, 16);
+}
+
 } // namespace HudGeometry
 
 #endif // HUDGEOMETRY_H

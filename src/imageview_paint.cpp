@@ -175,7 +175,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         }
         const bool haveFrom = !fromSrc.isNull();
         const bool haveTo = !toSrc.isNull();
-        const qreal tt = qBound(0.0, t, 1.0);
+        const qreal tt = ViewTransform::clamp01(t);
         const QString fPath = !fromPath.isEmpty() ? fromPath
             : (!m_ss.fromPath.isEmpty() ? m_ss.fromPath : m_ssDwell.biasPath);
         const QString tPath = !toPath.isEmpty() ? toPath : m_ss.toPath;
@@ -210,7 +210,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const qreal fromT = m_ss.fromMotionT;
         const qreal toT = m_ss.toMotionT;
         if (m_ss.fadeT >= 0.0 && !m_ss.toImage.isNull()) {
-            const qreal t = qBound(0.0, m_ss.fadeT, 1.0);
+            const qreal t = ViewTransform::clamp01(m_ss.fadeT);
             fillPad(vr, fromImg, m_ss.toImage, t, m_ss.fromPath, m_ss.toPath);
             if (m_ssSettings.transition == SlideshowTransition::FadeBlack) {
                 // V envelope: A→black (t in [0,0.5]), then black→B (t in [0.5,1]).
@@ -297,10 +297,10 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         QFont titleFont = font();
-        titleFont.setPointSize(qBound(12, titleFont.pointSize() + 4, 28));
+        titleFont.setPointSize(HudGeometry::clampTitlePointSize(titleFont.pointSize()));
         titleFont.setBold(true);
         QFont hintFont = font();
-        hintFont.setPointSize(qBound(10, hintFont.pointSize() + 1, 20));
+        hintFont.setPointSize(HudGeometry::clampHintPointSize(hintFont.pointSize()));
         const QString title = isWorkspaceMode()
             ? tr("Drop images here")
             : tr("Drop images here or open a file");
@@ -325,7 +325,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
         // Edge-zone captions (Image mode uses these corners once a session is open).
         if (isImageMode() || (!isWorkspaceMode() && !isGalleryMode())) {
             QFont edgeFont = font();
-            edgeFont.setPointSize(qBound(9, edgeFont.pointSize(), 16));
+            edgeFont.setPointSize(HudGeometry::clampEdgePointSize(edgeFont.pointSize()));
             painter.setFont(edgeFont);
             painter.setPen(QColor(160, 160, 160, 180));
             const QFontMetrics efm(edgeFont);
@@ -368,7 +368,7 @@ void ImageView::paintHudPanels(QPainter &painter)
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
-        const int pt = qBound(8, m_hudPrefs.fontPointSize, 48);
+        const int pt = m_hudPrefs.effectiveFontPointSize();
         f.setPointSize(pt);
         QFont boldF = f;
         boldF.setBold(true);
@@ -418,19 +418,11 @@ void ImageView::paintHudPanels(QPainter &painter)
             const HudGeometry::PanelBox box = HudGeometry::placePanel(
                 viewW, viewH, textW, textH, margin, pad, anchorX, anchorY,
                 fromRight, fromBottom, centre);
-            const int bgW = box.bgW;
-            const int bgH = box.bgH;
-            const int x = box.x;
-            const int y = box.y;
             const QRect bg = HudGeometry::panelRect(box);
             painter.setPen(Qt::NoPen);
-            QColor panel = m_hudPrefs.panelColor;
-            if (!panel.isValid() || panel.alpha() == 0) {
-                panel = QColor(0, 0, 0, 160);
-            }
-            painter.setBrush(panel);
+            painter.setBrush(m_hudPrefs.effectivePanelColor());
             painter.drawRoundedRect(bg, 6, 6);
-            painter.setPen(m_hudPrefs.textColor.isValid() ? m_hudPrefs.textColor : QColor(240, 240, 240));
+            painter.setPen(m_hudPrefs.effectiveTextColor());
             int ty = bg.top() + pad;
             const int textAreaW = bg.width() - 2 * pad;
             for (const HudLine &hl : drawn) {
@@ -561,9 +553,9 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                 }
                 fraction = qreal(elapsed) / qreal(m_ssHud.progressIntervalMs);
             }
-            fraction = qBound(0.0, fraction, 1.0);
+            fraction = ViewTransform::clamp01(fraction);
 
-            QColor c = m_hudPrefs.textColor.isValid() ? m_hudPrefs.textColor : QColor(255, 255, 255);
+            QColor c = m_hudPrefs.effectiveTextColor(QColor(255, 255, 255));
             QColor track = c;
             track.setAlpha(60);
             c.setAlpha(200);
@@ -605,7 +597,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                              fmt(remain));
 
                 QFont f = painter.font();
-                f.setPointSize(qMax(8, m_hudPrefs.fontPointSize));
+                f.setPointSize(m_hudPrefs.effectiveFontPointSize());
                 painter.setFont(f);
                 const QFontMetrics fm(f);
                 const int textW = fm.horizontalAdvance(timeLine);
@@ -616,15 +608,10 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                 const int bgH = textH + 2 * padY;
                 const int x = (viewW - bgW) / 2;
                 const int y = viewH - 2 - 8 - bgH;
-                QColor panel = m_hudPrefs.panelColor;
-                if (!panel.isValid() || panel.alpha() == 0) {
-                    panel = QColor(0, 0, 0, 160);
-                }
-                painter.setBrush(panel);
+                painter.setBrush(m_hudPrefs.effectivePanelColor());
                 painter.setPen(Qt::NoPen);
                 painter.drawRoundedRect(QRect(x, y, bgW, bgH), 6, 6);
-                painter.setPen(m_hudPrefs.textColor.isValid() ? m_hudPrefs.textColor
-                                                       : QColor(240, 240, 240));
+                painter.setPen(m_hudPrefs.effectiveTextColor());
                 painter.drawText(QRect(x + padX, y + padY, textW, textH),
                                  Qt::AlignLeft | Qt::AlignVCenter, timeLine);
             }

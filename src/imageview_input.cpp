@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "grouptransformgeometry.h"
 #include "selectiongeometry.h"
 #include "viewtransform.h"
 #include "placementlinear.h"
@@ -281,7 +282,7 @@ bool ImageView::tryWheelGalleryZoom(QWheelEvent *event)
     if (!isGalleryMode() || !(event->modifiers() & Qt::ControlModifier)) {
         return false;
     }
-    const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
+    const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
     releaseStickyZoom();
     m_framing.fitMode = false;
     m_framing.fillMode = false;
@@ -356,7 +357,7 @@ bool ImageView::tryWheelGalleryScroll(QWheelEvent *event)
 
 void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
 {
-    const qreal factor = (event->angleDelta().y() > 0) ? 1.25 : (1.0 / 1.25);
+    const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
     // Image mode and free-form Workspace: zoom the view about the cursor.
     // Do not touch selected-item geometry here — prepareGeometryChange on
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
@@ -423,11 +424,10 @@ void ImageView::resizeEvent(QResizeEvent *event)
 bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
 {
     // mpv-style seekbar: drag along bottom edge during slideshow.
-    if (!m_ssHud.progressActive || event->button() != Qt::LeftButton
-        || !viewport() || viewport()->height() <= 0) {
+    if (event->button() != Qt::LeftButton || !viewport()) {
         return false;
     }
-    if (event->pos().y() < viewport()->height() - 48) {
+    if (!m_ssHud.isSeekHit(event->pos().y(), viewport()->height())) {
         return false;
     }
     m_ssHud.seekDragging = true;
@@ -1112,7 +1112,7 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
         event->accept();
         return true;
     }
-    const QPoint delta = event->pos() - m_chrome.lastMousePos;
+    const QPoint delta = m_chrome.panDeltaFrom(event->pos());
     m_chrome.lastMousePos = event->pos();
     // Grow the free-form sceneRect with the view so middle-drag is never
     // clamped against a stale zero-range scrollbar.
@@ -1380,7 +1380,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                     break;
                 }
                 if (groupHoverChanged) {
-                    const QString tip = (gh >= 8 && gh <= 11)
+                    const QString tip = GroupTransformGeometry::isRotateHandle(gh)
                         ? tr("Rotate selection")
                         : tr("Scale selection");
                     QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
@@ -1643,7 +1643,7 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
         m_zoomRegion.rubberBand->hide();
     }
     // Ignore tiny clicks — treat as cancel rather than extreme zoom.
-    if (ViewTransform::significantRubber(viewRect)) {
+    if (m_zoomRegion.rubberSignificant(viewRect)) {
         const QRectF sceneRect = mapToScene(viewRect).boundingRect();
         if (sceneRect.isValid() && !sceneRect.isEmpty()) {
             releaseStickyZoom();

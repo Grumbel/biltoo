@@ -31,6 +31,22 @@ inline qreal sanitizeViewScale(qreal viewScale, qreal floor = 1e-6)
     return qMax(floor, viewScale);
 }
 
+inline qreal clamp01(qreal t)
+{
+    return qBound(0.0, t, 1.0);
+}
+
+inline int nonNegMs(int delayMs)
+{
+    return qMax(0, delayMs);
+}
+
+constexpr qreal kWheelZoomStep = 1.25;
+inline qreal wheelZoomFactor(int angleDeltaY)
+{
+    return angleDeltaY > 0 ? kWheelZoomStep : (1.0 / kWheelZoomStep);
+}
+
 /** Viewport size with each axis at least 1 (avoids divide-by-zero). */
 inline QSize atLeast1(const QSize &s)
 {

@@ -20,6 +20,21 @@ struct HudAppearance {
     {
         fontPointSize = qBound(8, pt, 48);
     }
+
+    int effectiveFontPointSize() const { return qBound(8, fontPointSize, 48); }
+
+    QColor effectivePanelColor() const
+    {
+        if (!panelColor.isValid() || panelColor.alpha() == 0) {
+            return QColor(0, 0, 0, 160);
+        }
+        return panelColor;
+    }
+
+    QColor effectiveTextColor(const QColor &fallback = QColor(240, 240, 240)) const
+    {
+        return textColor.isValid() ? textColor : fallback;
+    }
 };
 
 #endif // HUDAPPEARANCE_H

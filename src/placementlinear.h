@@ -8,6 +8,7 @@
 #include <QRectF>
 #include <QTransform>
 #include <QtGlobal>
+#include <QtMath>
 
 /**
  * Workspace linear pose helpers: R(θ)·H(k)·S(sx,sy) with
@@ -143,6 +144,16 @@ QPointF contentAnchorPoint(const QRectF &content, ContentAnchor anchor);
  * @p sMin is clamped to at least 1e-6.
  */
 void singularValues2x2(qreal a, qreal b, qreal c, qreal d, qreal *sMax, qreal *sMin);
+
+inline qreal clampShear(qreal shear, qreal lo = -5.0, qreal hi = 5.0)
+{
+    return qBound(lo, shear, hi);
+}
+
+inline qreal geometricMeanScale(qreal scaleX, qreal scaleY)
+{
+    return qSqrt(qMax(0.01, scaleX) * qMax(0.01, scaleY));
+}
 
 } // namespace PlacementLinear
 

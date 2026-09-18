@@ -19,6 +19,12 @@ constexpr qreal kScaleHitPx = 10.0;
 constexpr qreal kRotateOffsetPx = 28.0;
 constexpr qreal kRotateHitPx = 12.0;
 
+/** True for scale grips (0–7). */
+inline bool isScaleHandle(int handle)
+{
+    return handle >= 0 && handle <= 7;
+}
+
 /** True for rotate knobs (8–11). */
 inline bool isRotateHandle(int handle)
 {

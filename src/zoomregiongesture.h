@@ -4,7 +4,10 @@
 #ifndef ZOOMREGIONGESTURE_H
 #define ZOOMREGIONGESTURE_H
 
+#include "viewtransform.h"
+
 #include <QPoint>
+#include <QRect>
 
 class QRubberBand;
 
@@ -13,6 +16,8 @@ class QRubberBand;
  * QRubberBand widget is owned by ImageView (QObject parent).
  */
 struct ZoomRegionGesture {
+    static constexpr int kMinRubberPx = 8;
+
     bool armed = false;
     bool dragging = false;
     QPoint origin;
@@ -29,6 +34,11 @@ struct ZoomRegionGesture {
         armed = false;
         clearDrag();
         // rubberBand lifetime stays with ImageView
+    }
+
+    bool rubberSignificant(const QRect &viewRect) const
+    {
+        return ViewTransform::significantRubber(viewRect, kMinRubberPx);
     }
 };
 

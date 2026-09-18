@@ -74,6 +74,11 @@ inline qreal coverAxisScaleY(const QSizeF &dest, const QSize &native)
     return dest.height() / qMax(1.0, qreal(native.height()));
 }
 
+inline int atlasBudgetPx(int viewportW, int viewportH)
+{
+    return qMax(viewportW, viewportH) * 2;
+}
+
 } // namespace SlideshowMotionGeometry
 
 #endif // SLIDESHOWMOTIONGEOMETRY_H

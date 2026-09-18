@@ -31,6 +31,11 @@
 namespace ContentXform {
 
 /** Width/height ratio; height treated as at least 1. */
+inline int longEdge(const QSize &s)
+{
+    return qMax(s.width(), s.height());
+}
+
 inline qreal aspectRatio(const QSize &s)
 {
     return double(s.width()) / double(qMax(1, s.height()));

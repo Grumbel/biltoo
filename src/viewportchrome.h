@@ -18,6 +18,17 @@ struct ViewportChrome {
     QPoint lastHoverViewPos;
     bool panning = false;
     bool imageModeLeftDragPan = true;
+
+    QPoint panDeltaFrom(const QPoint &pos) const
+    {
+        return pos - lastMousePos;
+    }
+
+    void noteMousePos(const QPoint &pos)
+    {
+        lastMousePos = pos;
+        lastHoverViewPos = pos;
+    }
 };
 
 #endif // VIEWPORTCHROME_H

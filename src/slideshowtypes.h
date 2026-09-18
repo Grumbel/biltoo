@@ -300,6 +300,17 @@ struct SlideshowProgressHud {
         timelineElapsedMs = qBound(qint64(0), elapsedMs, totalMs);
     }
 
+    static qint64 clampElapsedMs(qint64 elapsedMs, qint64 totalMs)
+    {
+        return qBound(qint64(0), elapsedMs, totalMs);
+    }
+
+    bool isSeekHit(int y, int viewportHeight, int edgePx = 48) const
+    {
+        return progressActive && viewportHeight > 0
+            && y >= viewportHeight - edgePx;
+    }
+
     void clearProgress()
     {
         progressActive = false;

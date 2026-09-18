@@ -586,7 +586,7 @@ void ImageView::requestCropFullRaster(const QString &path)
         int edge = 8192;
         const QSize native = ThumtooCache::cachedSize(path);
         if (native.isValid() && native.width() > 0 && native.height() > 0) {
-            edge = qMin(8192, qMax(native.width(), native.height()));
+            edge = qMin(8192, ContentXform::longEdge(native));
         }
         if (ThumtooCache::scheduleFullPixels(path, edge)) {
             return;

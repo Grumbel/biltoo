@@ -9,6 +9,7 @@
 
 #include "coloradjust.h"
 #include "placementlinear.h"
+#include "contentxform.h"
 
 #include <QCursor>
 #include <QGraphicsScene>
@@ -175,7 +176,7 @@ void ImageItem::setSourceImageReady(const QImage &image)
 int ImageItem::displayPixelLongEdge() const
 {
     const QImage &img = displayImage();
-    return img.isNull() ? 0 : qMax(img.width(), img.height());
+    return img.isNull() ? 0 : ContentXform::longEdge(img.size());
 }
 
 bool ImageItem::shouldUpgradeDisplayTo(int incomingLongEdge) const
@@ -232,7 +233,7 @@ void ImageItem::clearDecodedPixels()
 qreal ImageItem::itemScale() const
 {
     // Geometric mean keeps a single % meaningful when axes differ slightly.
-    return qSqrt(qMax(0.01, m_scaleX) * qMax(0.01, m_scaleY));
+    return PlacementLinear::geometricMeanScale(m_scaleX, m_scaleY);
 }
 
 void ImageItem::setItemScale(qreal scale)
@@ -242,8 +243,9 @@ void ImageItem::setItemScale(qreal scale)
 
 void ImageItem::setItemScale(qreal scaleX, qreal scaleY)
 {
-    m_scaleX = qMax(0.01, scaleX);
-    m_scaleY = qMax(0.01, scaleY);
+    m_scaleX = scaleX;
+    m_scaleY = scaleY;
+    PlacementLinear::clampScaleXY(&m_scaleX, &m_scaleY);
     applyLocalTransform();
     prepareGeometryChange();
 }
@@ -251,7 +253,7 @@ void ImageItem::setItemScale(qreal scaleX, qreal scaleY)
 void ImageItem::setItemShear(qreal shear)
 {
     // Keep parallelograms editable; extreme k collapses chrome.
-    m_shear = qBound(-5.0, shear, 5.0);
+    m_shear = PlacementLinear::clampShear(shear);
     applyLocalTransform();
     prepareGeometryChange();
 }
@@ -520,10 +522,10 @@ void ImageItem::syncGalleryScrollCache()
         // Only filling when pixmap is null left LQIP stuck under the tile grid.
         const QImage &img = displayImage();
         if (!img.isNull()) {
-            const int imgEdge = qMax(img.width(), img.height());
+            const int imgEdge = ContentXform::longEdge(img.size());
             const int pixEdge = pixmap().isNull()
                 ? 0
-                : qMax(pixmap().width(), pixmap().height());
+                : ContentXform::longEdge(pixmap().size());
             if (imgEdge > pixEdge) {
                 setPixmap(QPixmap::fromImage(img));
             }

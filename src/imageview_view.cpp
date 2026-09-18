@@ -817,7 +817,7 @@ void ImageView::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
         }
         return;
     }
-    elapsedMs = qBound(qint64(0), elapsedMs, totalMs);
+    elapsedMs = SlideshowProgressHud::clampElapsedMs(elapsedMs, totalMs);
     if (elapsedMs == m_ssHud.timelineElapsedMs
         && totalMs == m_ssHud.timelineTotalMs) {
         return;
@@ -2434,7 +2434,7 @@ void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
                                            params, image)) {
         return;
     }
-    const int srcLong = qMax(image.width(), image.height());
+    const int srcLong = ContentXform::longEdge(image.size());
     // Upscale must be smooth; Fast on soft→viewport is nearest-neighbour mush.
     const auto mode = (srcLong >= params.longCap)
                           ? Qt::FastTransformation
@@ -2675,7 +2675,7 @@ bool ImageView::paintSlideshowTiles(QPainter *painter, const QString &path,
     if (!isPositiveSize(native)) {
         return false;
     }
-    const int longEdge = qMax(native.width(), native.height());
+    const int longEdge = ContentXform::longEdge(native);
     if (longEdge < 256) {
         return false;
     }
@@ -2759,8 +2759,8 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
         // No atlas yet: smooth when the sample is in the display budget so soft
         // placeholders are not nearest-neighbour. Only skip Smooth for huge
         // native samples (rare during slideshow — atlas should cover those).
-        const int srcLong = qMax(image.width(), image.height());
-        const int budget = qMax(vw, vh) * 2;
+        const int srcLong = ContentXform::longEdge(image.size());
+        const int budget = SlideshowMotionGeometry::atlasBudgetPx(vw, vh);
         painter->setRenderHint(QPainter::SmoothPixmapTransform, srcLong <= budget);
         painter->drawImage(dest, image);
     }
@@ -2807,7 +2807,7 @@ void ImageView::maybeStartSlideshowMotion()
         return;
     }
     // Continue from the dwell sample if soft-handoff already set one.
-    const qreal initial = qBound(0.0, m_ssDwell.motionT, 1.0); // already clamped on set
+    const qreal initial = ViewTransform::clamp01(m_ssDwell.motionT); // already clamped on set
     startSlideshowMotion(duration, initial);
 }
 
@@ -2964,9 +2964,9 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     // entire transition → motion looked frozen.
     m_ssDwell.durationMs = SlideshowClocks::pathDurationMs(
         durationMs, m_ssSettings.transitionDurationMs);
-    initialProgress = qBound(0.0, initialProgress, 1.0); // [0,1]
+    initialProgress = ViewTransform::clamp01(initialProgress); // [0,1]
     m_ssDwell.clock.start();
-    m_ssDwell.motionT = qBound(0.0, initialProgress, 1.0);
+    m_ssDwell.motionT = ViewTransform::clamp01(initialProgress);
     m_ssDwell.elapsedOffsetMs = (m_ssDwell.durationMs > 0)
         ? qint64(m_ssDwell.motionT * qreal(m_ssDwell.durationMs))
         : 0;
@@ -3222,7 +3222,7 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     // as FullSource by a mistaken PreferCache shortfall classification.
     const int edge = item->displayPixelLongEdge();
     const QSize logical = logicalSizeForPath(item->path());
-    const int native = isPositiveSize(logical) ? qMax(logical.width(), logical.height()) : 0;
+    const int native = isPositiveSize(logical) ? ContentXform::longEdge(logical) : 0;
     using Tier = DisplayEdgePolicy::QualityTier;
     const Tier t = DisplayEdgePolicy::classifyQualityTier(
         edge, native, item->hasDecodedPixels(),
