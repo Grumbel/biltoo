@@ -57,6 +57,7 @@ ImageView::ImageView(QWidget *parent)
     , m_gallery(this)
     , m_workspace(this)
     , m_image(this)
+    , m_gallerySizeResolve(this, this)
 {
     m_scene = new QGraphicsScene(this);
     // BSP indexing is fragile with frequent add/remove (Duplicate + Delete):
@@ -623,7 +624,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
     if (any && isGalleryMode() && m_layoutMode != LayoutMode::FreeForm) {
         // While the open-time size-resolve gate is active, pack once when all
         // probes settle — not on every sizeReady (avoids thrash + tiny cells).
-        if (!m_gallerySizeResolveActive) {
+        if (!gallerySizeResolveActive()) {
             requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
         }
     } else if (any && viewport()) {
@@ -661,165 +662,59 @@ bool ImageView::layoutDefersPopulateUntilSizes(LayoutMode mode)
 
 bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
 {
-    if (m_gallerySizeResolveTimer) {
-        m_gallerySizeResolveTimer->stop();
-    }
-    m_gallerySizeResolvePending.clear();
-    m_gallerySizeResolveTotal = 0;
-    m_gallerySizeResolveActive = false;
-
-    for (const QString &path : paths) {
-        if (path.isEmpty()) {
-            continue;
-        }
-        // Do not call isUnsupported on the GUI (Store get_meta). Probes no-op
-        // unsupported paths on the worker.
-        if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
-            continue;
-        }
-        if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
-            isPositiveSize(cached)) {
-            rememberImageSize(path, cached);
-            continue;
-        }
-        m_gallerySizeResolvePending.insert(path);
-    }
-
-    m_gallerySizeResolveTotal = m_gallerySizeResolvePending.size();
-    if (m_gallerySizeResolvePending.isEmpty()) {
-        return false;
-    }
-
-    // Session order first so primary/cover pages finish before the tail (TTFP).
-    QStringList need;
-    need.reserve(m_gallerySizeResolvePending.size());
-    for (const QString &path : m_pathOrder) {
-        if (m_gallerySizeResolvePending.contains(path)) {
-            need.append(path);
-        }
-    }
-    for (const QString &path : m_gallerySizeResolvePending) {
-        if (!need.contains(path)) {
-            need.append(path);
-        }
-    }
-    for (const QString &path : need) {
-        scheduleImageSizeProbe(path);
-    }
-
-    if (!layoutDefersPopulateUntilSizes(m_layoutMode)) {
-        // FreeForm / non-packaged: provisional pack OK.
-        m_gallerySizeResolvePending.clear();
-        m_gallerySizeResolveTotal = 0;
-        return false;
-    }
-
-    // Packaged layouts: defer create+pack until all sizes settle.
-    m_gallerySizeResolveActive = true;
-    // Safety: never block Gallery forever if a probe hangs.
-    if (!m_gallerySizeResolveTimer) {
-        m_gallerySizeResolveTimer = new QTimer(this);
-        m_gallerySizeResolveTimer->setSingleShot(true);
-        connect(m_gallerySizeResolveTimer, &QTimer::timeout, this, [this]() {
-            if (!m_gallerySizeResolveActive) {
-                return;
-            }
-            finishGallerySizeResolve();
-        });
-    }
-    m_gallerySizeResolveTimer->start(45000);
-    // Pulse HUD even when sizeReady arrives in one burst (Qt coalesces paints).
-    if (!m_gallerySizeResolveProgressTimer) {
-        m_gallerySizeResolveProgressTimer = new QTimer(this);
-        m_gallerySizeResolveProgressTimer->setInterval(50);
-        connect(m_gallerySizeResolveProgressTimer, &QTimer::timeout, this,
-                &ImageView::updateGallerySizeResolveProgressHud);
-    }
-    m_gallerySizeResolveProgressTimer->start();
-    updateGallerySizeResolveProgressHud();
-    emit statusChanged();
-    // Do NOT processEvents here. Queued sizeReady can finish the entire gate
-    // before setWorkspacePaths arms m_galleryDeferPopulate and clearLiveCanvas,
-    // which either wipes a premature pack or leaves defer stuck with an empty
-    // canvas. HUD updates on the next event-loop turn via the progress timer
-    // (50ms) and a single deferred repaint.
-    QTimer::singleShot(0, this, [this]() {
-        if (!m_gallerySizeResolveActive) {
-            return;
-        }
-        updateGallerySizeResolveProgressHud();
-        if (viewport()) {
-            viewport()->update();
-        }
-    });
-    return true;
-}
-
-void ImageView::updateGallerySizeResolveProgressHud()
-{
-    if (!m_gallerySizeResolveActive || m_gallerySizeResolveTotal <= 0) {
-        return;
-    }
-    // Defense: async warm can fill the process size memo without a probe
-    // callback (or sizeReady can be missed). Sweep pending against the memo
-    // every progress tick so "Resolving sizes…" cannot stick while sizes exist.
-    const QList<QString> pending = m_gallerySizeResolvePending.values();
-    for (const QString &path : pending) {
-        if (path.isEmpty()) {
-            continue;
-        }
-        if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
-            m_gallerySizeResolvePending.remove(path);
-            continue;
-        }
-        const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
-        if (!isPositiveSize(cached)) {
-            continue;
-        }
-        rememberImageSize(path, cached);
-        applyProbedImageSize(path, cached);
-        m_gallerySizeResolvePending.remove(path);
-    }
-    if (m_gallerySizeResolvePending.isEmpty()) {
-        finishGallerySizeResolve();
-        return;
-    }
-    const int done = qMax(0, m_gallerySizeResolveTotal
-                          - m_gallerySizeResolvePending.size());
-    setCentreProgress(tr("Resolving sizes…"),
-                      tr("%1 / %2").arg(done).arg(m_gallerySizeResolveTotal));
+    return m_gallerySizeResolve.startIfNeeded(paths);
 }
 
 void ImageView::noteGallerySizeProbeSettled(const QString &path)
 {
-    if (!m_gallerySizeResolveActive) {
-        return;
-    }
-    if (!path.isEmpty()) {
-        m_gallerySizeResolvePending.remove(path);
-    }
-    if (!m_gallerySizeResolvePending.isEmpty()) {
-        updateGallerySizeResolveProgressHud();
-        return;
-    }
-    finishGallerySizeResolve();
+    m_gallerySizeResolve.noteProbeSettled(path);
 }
 
-void ImageView::finishGallerySizeResolve()
+void ImageView::cancelGallerySizeResolve()
 {
-    if (m_gallerySizeResolveTimer) {
-        m_gallerySizeResolveTimer->stop();
+    m_gallerySizeResolve.cancel();
+}
+
+bool ImageView::hasDefinitiveHostSize(const QString &path) const
+{
+    return m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path);
+}
+
+void ImageView::adoptResolvedSize(const QString &path, const QSize &size)
+{
+    rememberImageSize(path, size);
+    applyProbedImageSize(path, size);
+}
+
+void ImageView::scheduleSizeProbe(const QString &path)
+{
+    scheduleImageSizeProbe(path);
+}
+
+QStringList ImageView::sizeResolvePathOrder() const
+{
+    return m_pathOrder;
+}
+
+bool ImageView::sizeResolveLayoutDefersPopulate() const
+{
+    return layoutDefersPopulateUntilSizes(m_layoutMode);
+}
+
+void ImageView::setSizeResolveProgress(const QString &title, const QString &detail)
+{
+    setCentreProgress(title, detail);
+}
+
+void ImageView::clearSizeResolveProgress()
+{
+    if (m_centreProgressTitle.startsWith(tr("Resolving sizes"))) {
+        clearCentreProgress();
     }
-    const bool wasActive = m_gallerySizeResolveActive;
-    m_gallerySizeResolveActive = false;
-    m_gallerySizeResolvePending.clear();
-    m_gallerySizeResolveTotal = 0;
-    if (!wasActive) {
-        return;
-    }
-    if (m_gallerySizeResolveProgressTimer) {
-        m_gallerySizeResolveProgressTimer->stop();
-    }
+}
+
+void ImageView::onSizeResolveGateComplete()
+{
     clearCentreProgress();
     if (isGalleryMode()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
@@ -861,28 +756,14 @@ void ImageView::finishGallerySizeResolve()
     emit gallerySizeResolveFinished();
 }
 
-void ImageView::cancelGallerySizeResolve()
+void ImageView::onSizeResolveGateCancelled()
 {
-    if (m_gallerySizeResolveTimer) {
-        m_gallerySizeResolveTimer->stop();
+    m_galleryDeferPopulate = false;
+    if (isGalleryMode() && m_centreProgressTitle.isEmpty()) {
+        setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
-    const bool wasActive = m_gallerySizeResolveActive;
-    m_gallerySizeResolveActive = false;
-    m_gallerySizeResolvePending.clear();
-    m_gallerySizeResolveTotal = 0;
-    if (wasActive) {
-        if (m_gallerySizeResolveProgressTimer) {
-            m_gallerySizeResolveProgressTimer->stop();
-        }
-        m_galleryDeferPopulate = false;
-        if (isGalleryMode() && m_centreProgressTitle.isEmpty()) {
-            setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
-        }
-        if (m_centreProgressTitle.startsWith(tr("Resolving sizes"))) {
-            clearCentreProgress();
-        }
-        emit gallerySizeResolveFinished();
-    }
+    clearSizeResolveProgress();
+    emit gallerySizeResolveFinished();
 }
 
 void ImageView::setCentreProgress(const QString &title, const QString &detail)
@@ -915,7 +796,7 @@ void ImageView::clearCentreProgress()
     }
     m_centreProgressTitle.clear();
     m_centreProgressDetail.clear();
-    if (isGalleryMode() && !m_gallerySizeResolveActive) {
+    if (isGalleryMode() && !gallerySizeResolveActive()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
     if (viewport()) {

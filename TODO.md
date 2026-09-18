@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1243-gallery-size-resolve-extract.** Extract GallerySizeResolve collaborator.
+Prior: **1242**.
+
+### Change
+- New `GallerySizeResolve` + `GallerySizeResolveHost` (pending, timers, memo sweep).
+- `ImageView` implements the host; pack / placeholders remain on the view.
+- REFACTOR.md: ownership extraction roadmap (ordered tips).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1243-gallery-size-resolve-extract.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1242-size-resolve-memo-sweep.** Progress tick settles pending from size memo.
 Prior: **1241**.
 

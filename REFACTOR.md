@@ -20,6 +20,27 @@ Implementation must not invent a second domain model.
 
 Non-goals for early phases: rewrite Qt widgets, change user-visible features, drop Workspace.
 
+## Ownership extraction roadmap (2026-09-18)
+
+Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs updated.
+
+| Order | Extract | From | Notes |
+|------:|---------|------|-------|
+| 1 | **GallerySizeResolve** | `ImageView` size-gate timers/pending | Host interface; pack stays on view |
+| 2 | Session open pipeline | `MainWindow` / `mainwindow_session` | expand → wipe → warm → size gate |
+| 3 | Thumtoo MemoStore + SizeProbe | `thumtoocache.cpp` | formalize sizeReady vs memo |
+| 4 | ImageLoadCoordinator | `imageview_load` | generation, install gates |
+| 5 | CropSession | `imageview_crop` | draft + apply/undo |
+| 6 | TilePrefetchHost | prefetch slots | session-replace clear |
+| 7 | SlideshowPresenter | phase/atlas | pure-clock rules |
+
+**Rule:** new collaborator types with explicit Host or narrow public API — not more `imageview_*.cpp` slices alone.
+
+### Landed
+
+- **GallerySizeResolve** (`gallerysizeresolve.{h,cpp}`): pending set, 45s safety timer, 50ms memo-sweep progress; `ImageView` implements `GallerySizeResolveHost` for size map / probes / pack-on-complete.
+
+
 ## Current pain (evidence)
 
 | Symptom | Structural cause |

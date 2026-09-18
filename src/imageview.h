@@ -5,6 +5,7 @@
 #define IMAGEVIEW_H
 
 #include "imageview_types.h"
+#include "gallerysizeresolve.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
@@ -57,7 +58,7 @@ class QPainter;
  *
  * Gallery is not a Workspace layout — it is a separate mode of this view.
  */
-class ImageView : public QGraphicsView
+class ImageView : public QGraphicsView, private GallerySizeResolveHost
 {
     Q_OBJECT
 
@@ -191,7 +192,7 @@ public:
     void setCentreProgress(const QString &title, const QString &detail = QString());
     void clearCentreProgress();
     bool hasCentreProgress() const { return !m_centreProgressTitle.isEmpty(); }
-    bool gallerySizeResolveActive() const { return m_gallerySizeResolveActive; }
+    bool gallerySizeResolveActive() const { return m_gallerySizeResolve.active(); }
     /** Controller host: set m_viewMode + m_layoutMode and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
     /** Controller host: classic path owned by ImageController. */
@@ -558,7 +559,6 @@ public:
                                  const QVector<SessionImageId> &sessionIds);
     /** Create Gallery placeholders for m_pathOrder using definitive sizes only. */
     void ensureGalleryPlaceholders();
-    void updateGallerySizeResolveProgressHud();
     void setWorkspacePaths(const QStringList &paths,
                            const QVector<SessionImageId> &sessionIds);
     /** Reorder canvas items to match @p paths (session / sort order). */
@@ -1527,6 +1527,19 @@ private:
      */
     void rememberSizeFromDecode(const QString &path, const QImage &image);
     void scheduleImageSizeProbe(const QString &path);
+
+    // --- GallerySizeResolveHost -------------------------------------------------
+    bool hasDefinitiveHostSize(const QString &path) const override;
+    void adoptResolvedSize(const QString &path, const QSize &size) override;
+    void scheduleSizeProbe(const QString &path) override;
+    QStringList sizeResolvePathOrder() const override;
+    bool sizeResolveLayoutDefersPopulate() const override;
+    void setSizeResolveProgress(const QString &title,
+                                 const QString &detail) override;
+    void clearSizeResolveProgress() override;
+    void onSizeResolveGateComplete() override;
+    void onSizeResolveGateCancelled() override;
+
     void applyProbedImageSize(const QString &path, const QSize &size);
     /**
      * Gallery open size probes: schedule probes for paths still missing a
@@ -1539,7 +1552,6 @@ private:
     /** True when pack needs every aspect before the first layout (Fill modes). */
     static bool layoutDefersPopulateUntilSizes(LayoutMode mode);
     void noteGallerySizeProbeSettled(const QString &path);
-    void finishGallerySizeResolve();
     /** LQIP install + tile pyramid request for a Gallery path. */
     void scheduleGalleryDecode(const QString &path);
 
@@ -1802,20 +1814,13 @@ private:
     QSet<QString> m_provisionalSizePaths;
     /** Paths with an in-flight async size probe. */
     QSet<QString> m_sizeProbeScheduled;
-    /**
-     * Gallery Enter: wait for definitive sizes before the first pack (policy A).
-     * Progress is painted centred in the viewport HUD.
-     */
-    bool m_gallerySizeResolveActive = false;
-    int m_gallerySizeResolveTotal = 0;
-    QSet<QString> m_gallerySizeResolvePending;
-    QTimer *m_gallerySizeResolveTimer = nullptr;
     /** Centre HUD progress (expand / size resolve / sort); empty = inactive. */
     QString m_centreProgressTitle;
     QString m_centreProgressDetail;
     /** Gallery open: wait for sizes before creating scene tiles. */
     bool m_galleryDeferPopulate = false;
-    QTimer *m_gallerySizeResolveProgressTimer = nullptr;
+    /** Packaged-layout size gate (timers + pending); canvas finish via Host. */
+    GallerySizeResolve m_gallerySizeResolve;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     QStringList m_pathOrder;
     /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */

@@ -277,7 +277,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
     // Empty session: invite the user to open or drop images.
     // Suppress while centre progress is active (archive expand / size resolve).
     if (m_items.isEmpty() && !hasClassicPath() && !m_cropMode
-        && m_centreProgressTitle.isEmpty() && !m_gallerySizeResolveActive) {
+        && m_centreProgressTitle.isEmpty() && !gallerySizeResolveActive()) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         QFont titleFont = font();
@@ -346,7 +346,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     // chip during slideshow or normal Image browsing.
     const QString loadingLine = m_hudVisible ? loadingStatusHudLine() : QString();
     if (m_cropMode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
-        || m_slideshowPausedHud || m_gallerySizeResolveActive
+        || m_slideshowPausedHud || gallerySizeResolveActive()
         || !m_centreProgressTitle.isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
@@ -490,12 +490,12 @@ void ImageView::paintHudPanels(QPainter &painter)
                 lines.append({m_centreProgressDetail, false});
             }
             drawPanel(lines, 0, 0, false, false, true);
-        } else if (m_gallerySizeResolveActive && m_gallerySizeResolveTotal > 0) {
+        } else if (gallerySizeResolveActive() && m_gallerySizeResolve.total() > 0) {
             // Fallback if title was cleared but gate still active.
-            const int done = qMax(0, m_gallerySizeResolveTotal
-                                  - m_gallerySizeResolvePending.size());
+            const int done = qMax(0, m_gallerySizeResolve.total()
+                                  - m_gallerySizeResolve.pendingCount());
             drawPanel({{tr("Resolving sizes…"), true},
-                       {tr("%1 / %2").arg(done).arg(m_gallerySizeResolveTotal), false}},
+                       {tr("%1 / %2").arg(done).arg(m_gallerySizeResolve.total()), false}},
                       0, 0, false, false, true);
         } else if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
             QString actionLine = m_hudAction;
@@ -1441,7 +1441,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
     if (isGalleryMode() && !m_hudVisible && !m_hudFlashVisible && !m_hudIdentityPulse
-        && !m_slideshowPausedHud && !m_gallerySizeResolveActive
+        && !m_slideshowPausedHud && !gallerySizeResolveActive()
         && m_centreProgressTitle.isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_cropMode
         && !m_slideshowMotionActive 
