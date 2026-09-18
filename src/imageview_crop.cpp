@@ -1827,23 +1827,11 @@ void ImageView::updateCropMoveDrag(const QPointF &local, const QRectF &cr)
 
 void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qreal minSide)
 {
-    const QPointF c0 = m_crop.dragStartRect.center();
-    const QPointF v = local - c0;
-    const qreal angle = qRadiansToDegrees(qAtan2(v.y(), v.x()));
-    m_crop.rotation = m_crop.rotateStartRotation + (angle - m_crop.rotateStartAngle);
-    while (m_crop.rotation > 180.0) {
-        m_crop.rotation -= 360.0;
-    }
-    while (m_crop.rotation <= -180.0) {
-        m_crop.rotation += 360.0;
-    }
     // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
     const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
-    if (mods & Qt::ShiftModifier) {
-        m_crop.rotation = qRound(m_crop.rotation / 15.0) * 15.0;
-    } else if (mods & Qt::ControlModifier) {
-        m_crop.rotation = qRound(m_crop.rotation / 45.0) * 45.0;
-    }
+    m_crop.rotation = CropGeometry::rotationFromDrag(
+        local, m_crop.dragStartRect.center(), m_crop.rotateStartRotation,
+        m_crop.rotateStartAngle, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
     if (!m_crop.allowExpand) {
         m_crop.rect = CropGeometry::constrainToContent(m_crop.dragStartRect, m_crop.rotation, cr,
                                             minSide);

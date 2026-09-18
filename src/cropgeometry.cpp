@@ -410,4 +410,37 @@ QRectF resizeDraftRect(CropHandle handle, const QPointF &local,
     return QRectF(c1.x() - newW / 2.0, c1.y() - newH / 2.0, newW, newH);
 }
 
+qreal normalizeRotationDeg(qreal degrees)
+{
+    while (degrees > 180.0) {
+        degrees -= 360.0;
+    }
+    while (degrees <= -180.0) {
+        degrees += 360.0;
+    }
+    return degrees;
+}
+
+qreal snapRotationDeg(qreal degrees, bool snap15, bool snap45)
+{
+    if (snap15) {
+        return qRound(degrees / 15.0) * 15.0;
+    }
+    if (snap45) {
+        return qRound(degrees / 45.0) * 45.0;
+    }
+    return degrees;
+}
+
+qreal rotationFromDrag(const QPointF &local, const QPointF &centre,
+                       qreal rotateStartRotation, qreal rotateStartAngle,
+                       bool snap15, bool snap45)
+{
+    const QPointF v = local - centre;
+    const qreal angle = qRadiansToDegrees(qAtan2(v.y(), v.x()));
+    const qreal raw = normalizeRotationDeg(
+        rotateStartRotation + (angle - rotateStartAngle));
+    return snapRotationDeg(raw, snap15, snap45);
+}
+
 } // namespace CropGeometry

@@ -43,7 +43,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ProcessMemos** (`thumtoo_process_memos.{h,cpp}`): process size memo + durable-tile yes/no/min_scale; session-replace clears durable only.
 - **SizeProbe** (`thumtoo_size_probe.cpp`): serial FIFO `scheduleProbe`; Store I/O via `requestSizeAsync`; memo hits still emit `sizeReady`.
 - **TileNeighborPrefetch** (`tileneighborprefetch.{h,cpp}`): off-canvas neighbor tile warm; `ImageView` is host; session wipe calls `clear()`.
-- **CropGeometry** (`cropgeometry.{h,cpp}`): pure crop-rect constrain/translate/shrink; expand/hit-test/chrome layout; resizeDraftRect; no ImageView state.
+- **CropGeometry** (`cropgeometry.{h,cpp}`): pure crop-rect constrain/translate/shrink; expand/hit-test/chrome; resizeDraftRect; rotationFromDrag; no ImageView state.
 - **CropSession** (`cropsession.h`): draft rect, target binding, enter-stash, handles; `ImageView::m_crop`; enter/apply still on view.
 - **SlideshowPhaseState** + enums (`slideshowtypes.h`): from/to phase buffers, fade/motion clocks, atlas.
 - **SlideshowSettings** / **SlideshowDwellState**: prefs bag + dwell atlas / Ken Burns camera.

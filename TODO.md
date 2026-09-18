@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1301-crop-geometry-rotation-drag.** Pure crop rotate-drag angle math.
+Prior: **1300**.
+
+### Change
+- `CropGeometry::normalizeRotationDeg` / `snapRotationDeg` / `rotationFromDrag`
+  — atan2 delta, wrap (-180, 180], Shift→15° / Ctrl→45° snap.
+- `updateCropRotateDrag` only reads modifiers and clamps rect to content.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1301-crop-geometry-rotation-drag.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1300-crop-geometry-resize-draft.** Pure crop resize-drag geometry.
 Prior: **1299**.
 

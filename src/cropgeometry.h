@@ -119,6 +119,22 @@ QRectF resizeDraftRect(CropHandle handle, const QPointF &local,
                        const QRectF &dragStartRect, qreal rotationDeg,
                        qreal minSide, bool fromCenter, bool forceSquare);
 
+/** Wrap degrees into (-180, 180]. */
+qreal normalizeRotationDeg(qreal degrees);
+
+/**
+ * Optional snap: Shift → 15°, else Ctrl → 45° (includes 90°). Prefer snap15 when both.
+ */
+qreal snapRotationDeg(qreal degrees, bool snap15, bool snap45);
+
+/**
+ * Live crop rotation from pointer: atan2 delta from drag start, normalized,
+ * then snapped. @p centre is the draft rect centre in the same space as @p local.
+ */
+qreal rotationFromDrag(const QPointF &local, const QPointF &centre,
+                       qreal rotateStartRotation, qreal rotateStartAngle,
+                       bool snap15, bool snap45);
+
 } // namespace CropGeometry
 
 #endif // CROPGEOMETRY_H
