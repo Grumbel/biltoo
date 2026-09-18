@@ -109,6 +109,12 @@ enum class ContentAnchor {
 
 QPointF contentAnchorPoint(const QRectF &content, ContentAnchor anchor);
 
+/**
+ * Singular values of the 2×2 linear map [[a,b],[c,d]] (sqrt eigenvalues of MᵀM).
+ * @p sMin is clamped to at least 1e-6.
+ */
+void singularValues2x2(qreal a, qreal b, qreal c, qreal d, qreal *sMax, qreal *sMin);
+
 } // namespace PlacementLinear
 
 #endif // PLACEMENTLINEAR_H

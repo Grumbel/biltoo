@@ -6,6 +6,7 @@
 
 #include "imageview.h"
 #include "cropgeometry.h"
+#include "placementlinear.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
 #include "sessionappearance.h"
@@ -1795,9 +1796,8 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
     m_crop.dragStartLocal = item->mapFromScene(mapToScene(viewPos));
     if (h == CropHandle::Rotate) {
         m_crop.rotateStartRotation = m_crop.rotation;
-        const QPointF c = m_crop.rect.center();
-        const QPointF v = m_crop.dragStartLocal - c;
-        m_crop.rotateStartAngle = qRadiansToDegrees(qAtan2(v.y(), v.x()));
+        m_crop.rotateStartAngle = PlacementLinear::angleAbout(
+            m_crop.rect.center(), m_crop.dragStartLocal);
     }
 }
 

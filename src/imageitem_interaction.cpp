@@ -278,21 +278,6 @@ QPointF ImageItem::localToViewPx(const QPointF &local) const
     return sceneToViewPx(mapToScene(local));
 }
 
-static void singularValues2x2(qreal a, qreal b, qreal c, qreal d, qreal *sMax, qreal *sMin)
-{
-    // Singular values of [[a,b],[c,d]] = sqrt(eigenvalues of M^T M).
-    const qreal e11 = a * a + c * c;
-    const qreal e22 = b * b + d * d;
-    const qreal e12 = a * b + c * d;
-    const qreal tr = e11 + e22;
-    const qreal disc = qMax(0.0, (e11 - e22) * (e11 - e22) + 4.0 * e12 * e12);
-    const qreal root = qSqrt(disc);
-    const qreal ev1 = qMax(0.0, 0.5 * (tr + root));
-    const qreal ev2 = qMax(0.0, 0.5 * (tr - root));
-    *sMax = qMax(qSqrt(ev1), qSqrt(ev2));
-    *sMin = qMax(1e-6, qMin(qSqrt(ev1), qSqrt(ev2)));
-}
-
 qreal ImageItem::screenScale() const
 {
     // Max stretch of local→view (draw chrome ~constant on screen).
@@ -304,7 +289,7 @@ qreal ImageItem::screenScale() const
         }
     }
     qreal sMax = 1.0, sMin = 1.0;
-    singularValues2x2(t.m11(), t.m12(), t.m21(), t.m22(), &sMax, &sMin);
+    PlacementLinear::singularValues2x2(t.m11(), t.m12(), t.m21(), t.m22(), &sMax, &sMin);
     return qMax(0.01, sMax);
 }
 
@@ -320,7 +305,7 @@ qreal ImageItem::deviceScaleMin() const
         }
     }
     qreal sMax = 1.0, sMin = 1.0;
-    singularValues2x2(t.m11(), t.m12(), t.m21(), t.m22(), &sMax, &sMin);
+    PlacementLinear::singularValues2x2(t.m11(), t.m12(), t.m21(), t.m22(), &sMax, &sMin);
     return sMin;
 }
 
@@ -1165,7 +1150,7 @@ bool ImageItem::tileLodWanted() const
             const QTransform vt = view->transform();
             qreal sMax = 1.0;
             qreal sMin = 1.0;
-            singularValues2x2(vt.m11(), vt.m12(), vt.m21(), vt.m22(), &sMax, &sMin);
+            PlacementLinear::singularValues2x2(vt.m11(), vt.m12(), vt.m21(), vt.m22(), &sMax, &sMin);
             viewScale = qMax(0.01, sMax);
             if (QWidget *vp = view->viewport()) {
                 dpr = vp->devicePixelRatioF();

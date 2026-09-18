@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1322-singular-values-angle.** Pure 2×2 singular values + crop rotate start angle.
+Prior: **1321**.
+
+### Change
+- `PlacementLinear::singularValues2x2` — screen/device scale factors from transforms
+- ImageItem `screenScale` / `deviceScaleMin` use the pure helper
+- Crop rotate-drag start uses `PlacementLinear::angleAbout` (no local atan2)
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1322-singular-values-angle.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1321-handle-tooltip-policy.** Pure handle tooltip strings in ItemHandlePolicy.
 Prior: **1320**.
 
