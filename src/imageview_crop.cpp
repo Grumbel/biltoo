@@ -576,14 +576,8 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
             // Expand is not persisted. Detect both axis-aligned overflow and
             // rotated-corner overflow so ensureCropRectValid does not translate
             // a previously applied rotated draft to a new centre.
-            const bool aabbOutside =
-                prior.left() < bounds.left() || prior.top() < bounds.top()
-                || prior.right() > bounds.right()
-                || prior.bottom() > bounds.bottom();
-            const bool rotatedOutside =
-                qAbs(m_crop.rotation) > 0.05
-                && !CropGeometry::cornersInside(m_crop.rect, m_crop.rotation, cr);
-            if (aabbOutside || rotatedOutside) {
+            if (CropGeometry::priorDraftNeedsExpand(
+                    QRectF(prior), QRectF(bounds), m_crop.rect, m_crop.rotation, cr)) {
                 m_crop.allowExpand = true;
             }
         } else {

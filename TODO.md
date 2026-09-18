@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1297-crop-geometry-prior-expand.** Pure prior-draft expand detection.
+Prior: **1296**.
+
+### Change
+- `CropGeometry::axisAlignedOutside` — AABB overflow vs bounds.
+- `CropGeometry::priorDraftNeedsExpand` — AABB or rotated-corner overflow for
+  Expand-on-reenter (same 0.05° rotation threshold as ensureCropRectValid).
+- `initCropRectFromPriorAppearance` uses the pure predicate; no behaviour change.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1297-crop-geometry-prior-expand.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1296-crop-session-locks-cpp.** Move CropSession locksPath/locksItem out of header.
 Prior: **1295**.
 

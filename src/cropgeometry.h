@@ -36,6 +36,21 @@ QRectF shrinkInside(QRectF rect, qreal degrees, const QRectF &bounds, qreal minS
 QRectF constrainToContent(QRectF rect, qreal degrees, const QRectF &bounds,
                           qreal minSide);
 
+/** True when @p rect (axis-aligned) extends outside @p bounds on any edge. */
+bool axisAlignedOutside(const QRectF &rect, const QRectF &bounds);
+
+/**
+ * Expand toggle for re-entering crop on a prior draft: true when the stored
+ * axis-aligned crop overflows image bounds, or a non-trivial rotation has any
+ * corner outside content bounds (same thresholds as ensureCropRectValid).
+ *
+ * @p priorInImage / @p imageBounds are in post-bake image pixel space (0,0…size).
+ * @p draftLocal / @p contentRect are item-local (offset applied).
+ */
+bool priorDraftNeedsExpand(const QRectF &priorInImage, const QRectF &imageBounds,
+                           const QRectF &draftLocal, qreal rotationDeg,
+                           const QRectF &contentRect);
+
 } // namespace CropGeometry
 
 #endif // CROPGEOMETRY_H

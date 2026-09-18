@@ -130,4 +130,25 @@ QRectF constrainToContent(QRectF rect, qreal degrees, const QRectF &bounds,
     return rect;
 }
 
+bool axisAlignedOutside(const QRectF &rect, const QRectF &bounds)
+{
+    return rect.left() < bounds.left() || rect.top() < bounds.top()
+        || rect.right() > bounds.right() || rect.bottom() > bounds.bottom();
+}
+
+bool priorDraftNeedsExpand(const QRectF &priorInImage, const QRectF &imageBounds,
+                           const QRectF &draftLocal, qreal rotationDeg,
+                           const QRectF &contentRect)
+{
+    if (axisAlignedOutside(priorInImage, imageBounds)) {
+        return true;
+    }
+    // Match ensureCropRectValid / initCropRect: ignore near-zero rotation noise.
+    if (qAbs(rotationDeg) > 0.05
+        && !cornersInside(draftLocal, rotationDeg, contentRect)) {
+        return true;
+    }
+    return false;
+}
+
 } // namespace CropGeometry
