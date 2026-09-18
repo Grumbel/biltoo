@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1279-soft-display-policy.** Pure LQIP / host-soft underlay sample selection.
+Prior: **1278**.
+
+### Change
+- `SoftDisplayPolicy::lqipOrCachedSoft` (worker-only; no PreferCache soft encode).
+- `loadSoftPreviewPixels` is a thin wrapper.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1279-soft-display-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1278-path-item-state-book.** Extract PathItemStateBook for path-keyed WorkspaceItemState.
 Prior: **1277**.
 

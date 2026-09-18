@@ -3,6 +3,7 @@
 
 #include "imageview.h"
 #include "displayedgepolicy.h"
+#include "softdisplaypolicy.h"
 #include "ttfp_trace.h"
 
 #include <algorithm>
@@ -109,35 +110,10 @@ void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
     });
 }
 
-/**
- * Host soft first (any size), then loadThumbnail, then LQIP.
- * Never drop a smaller host soft when the requested edge is not ready yet —
- * that left Image mode / slideshow blank until the high-res job finished.
- */
-/**
- * LQIP / existing host sample only. Gallery is tiles-only: never PreferCache@soft
- * or classic loadThumbnail for underlay. Image-mode callers still schedule probe.
- */
+/** Worker LQIP/soft underlay — see SoftDisplayPolicy::lqipOrCachedSoft. */
 QImage loadSoftPreviewPixels(const QString &path, int /*softEdge*/)
 {
-    ASSERT_NOT_GUI_THREAD();
-    QImage preview = ImageCache::get(path);
-    if (!preview.isNull()
-        && ImageCache::longEdge(preview) <= DisplayQuality::kLqipMaxEdge) {
-        return preview;
-    }
-    preview = ThumtooCache::cachedLqipImage(path);
-    if (!preview.isNull()) {
-        ImageCache::put(path, preview);
-        return preview;
-    }
-    // Keep a smaller host sample if present; do not encode soft.
-    preview = ImageCache::get(path);
-    if (!preview.isNull()
-        && ImageCache::longEdge(preview) <= DisplayQuality::kLqipMaxEdge) {
-        return preview;
-    }
-    return QImage();
+    return SoftDisplayPolicy::lqipOrCachedSoft(path);
 }
 
 /**

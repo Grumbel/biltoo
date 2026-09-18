@@ -70,6 +70,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).
 - **DisplayEdgePolicy**: pure long-edge coverage, ladder native cap, sample-covers-native,
   soft cell clamp, screen longPx → needEdge.
+- **SoftDisplayPolicy**: worker LQIP / host-soft underlay selection (no soft encode).
 
 
 ## Current pain (evidence)
