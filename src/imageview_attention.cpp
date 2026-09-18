@@ -58,10 +58,7 @@ QVector<QPointF> ImageView::attentionPointsForTarget() const
             }
         }
     }
-    if (m_attention.mode && m_attention.draftValid
-        && sid != kInvalidSessionImageId
-        && sid == m_attention.draftSessionId
-        && !m_attention.draftPts.isEmpty()) {
+    if (m_attention.hasDraftFor(sid)) {
         return m_attention.draftPts;
     }
     return {};

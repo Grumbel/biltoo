@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1295-attention-draft-live-mods.** Attention draft bind + pure live content-mod flags.
+Prior: **1294**.
+
+### Change
+- `AttentionSession::hasDraftFor(sid)` for draft point binding.
+- `SessionAppearance::liveItemHasContentMods` for crop/flip live flags.
+- `targetHasContentAppearance` and attention point lookup use the helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1295-attention-draft-live-mods.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1294-appearance-cleared-content-ops.** Pure clearedContentOps for reset appearance.
 Prior: **1293**.
 

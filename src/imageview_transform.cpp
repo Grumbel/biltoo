@@ -798,7 +798,8 @@ bool ImageView::targetHasContentAppearance() const
                 }
             }
         }
-        if (item->sessionHasCrop() || item->contentHFlip() || item->contentVFlip()) {
+        if (SessionAppearance::liveItemHasContentMods(
+                item->sessionHasCrop(), item->contentHFlip(), item->contentVFlip())) {
             return true;
         }
         if (ThumtooCache::hasContentAppearance(item->path())) {

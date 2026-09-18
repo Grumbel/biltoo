@@ -23,6 +23,15 @@ class AttentionSession
 public:
     bool active() const { return mode; }
 
+    /** True when mode is on and draft points are bound to @p sid. */
+    bool hasDraftFor(SessionImageId sid) const
+    {
+        return mode && draftValid
+            && sid != kInvalidSessionImageId
+            && sid == draftSessionId
+            && !draftPts.isEmpty();
+    }
+
     void clearInteraction()
     {
         dragging = false;

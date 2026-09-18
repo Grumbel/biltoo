@@ -152,6 +152,12 @@ bool hasContentAppearance(const WorkspaceItemState &state)
            || state.contentQuarterTurns != 0 || !state.colorAdjust.isIdentity();
 }
 
+
+bool liveItemHasContentMods(bool sessionHasCrop, bool contentHFlip, bool contentVFlip)
+{
+    return sessionHasCrop || contentHFlip || contentVFlip;
+}
+
 QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
                           PixelKind kind)
 {
