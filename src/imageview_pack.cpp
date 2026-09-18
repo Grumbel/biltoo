@@ -70,9 +70,7 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         return 0;
     }
     int installed = 0;
-    const int softMax = ThumtooCache::kGalleryLadderEdge;
-    // Prefer LQIP/blank tiles so soft host replaces stand-ins before polishing
-    // already-soft cells (budget used to be eaten by random order).
+    // LQIP underlay only — never install soft/HOST whole-frame into Gallery cells.
     QList<ImageItem *> ordered;
     ordered.reserve(m_items.size());
     for (ImageItem *item : m_items) {
@@ -83,7 +81,7 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         if (!item->hasDisplayPixels() || e <= DisplayQuality::kLqipMaxEdge) {
             ordered.prepend(item);
         } else {
-            ordered.append(item);
+            continue; // already past LQIP — tiles own sharpness
         }
     }
     for (ImageItem *item : ordered) {
@@ -97,32 +95,22 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
             break;
         }
         const QString &path = item->path();
-        // Soft/LQIP install must not wait on definitive size — provisional
-        // geometry is layout-only; blocking here left archive/PDF cells on LQIP
-        // until probe finished (or forever if probe stalled).
-        // ImageCache only on GUI — never Store get_lqip here (size probe
-        // already mirrors LQIP into ImageCache on the worker).
         const QImage hostSample = ImageCache::get(path);
         if (hostSample.isNull()) {
             continue;
         }
         const int hostEdge = ImageCache::longEdge(hostSample);
-        const int shown = item->displayPixelLongEdge();
-        // LQIP (or blank) must always accept a better host sample — do not wait
-        // on DisplaySurface decide when host already has soft.
-        GallerySoft::InstallDecision dec = GallerySoft::decideHostInstall(
-            shown, hostEdge, item->hasDisplayPixels(), item->hasDecodedPixels(),
-            softMax);
-        if ((dec.kind == GallerySoft::InstallKind::None || !dec.meaningful)
-            && hostEdge > shown
-            && shown <= DisplayQuality::kLqipMaxEdge) {
-            dec.kind = (hostEdge > softMax) ? GallerySoft::InstallKind::FullSource
-                                            : GallerySoft::InstallKind::SoftPreview;
-            dec.meaningful = true;
-        }
-        if (dec.kind == GallerySoft::InstallKind::None || !dec.meaningful) {
+        // Only LQIP-sized host samples.
+        if (hostEdge > DisplayQuality::kLqipMaxEdge) {
             continue;
         }
+        const int shown = item->displayPixelLongEdge();
+        if (item->hasDisplayPixels() && hostEdge <= shown) {
+            continue;
+        }
+        GallerySoft::InstallDecision dec;
+        dec.kind = GallerySoft::InstallKind::SoftPreview;
+        dec.meaningful = true;
         const SessionAppearance::PixelKind kind =
             (dec.kind == GallerySoft::InstallKind::FullSource)
                 ? SessionAppearance::PixelKind::FullSource
@@ -360,18 +348,11 @@ void ImageView::updateGalleryDecodeWindow()
             st.gaveUpWant = 0;
         }
 
-        // Tile LOD band: tiles own the cell. Soft underlay only while cold
-        // (no durable pyramid) and still showing LQIP/blank.
-        // Durable tiles + *small* cell (!tileLodWanted): still PreferCache once
-        // for TileSynth underlay — skipping soft left cells blank (1141 bug).
+        // Tile LOD band: tiles + LQIP only — never PreferCache soft schedule.
         if (item->tileLodWanted()) {
-            const int shown = item->displayPixelLongEdge();
-            // Known durable only — never has_tile on GUI for unknown paths.
-            if (shown > DisplayQuality::kLqipMaxEdge
-                || ThumtooCache::hasDurableTilesKnown(path)) {
-                continue;
-            }
-            // Cold tileLodWanted + LQIP/blank: soft underlay while first tiles encode.
+            st.terminal = true;
+            clearGallerySoftInflight(st);
+            continue;
         }
 
         if (!st.needsSoftSchedule(want, anyBlank, anyFull)) {
@@ -943,7 +924,15 @@ void ImageView::gallerySoftWatchdogTick()
             }
         }
 
-        // Blank / LQIP for long enough with no climb: force one ensure cycle.
+        // Tile cells: LQIP underlay is intentional until tiles cover — not stuck soft.
+        if (item->tileLodWanted()) {
+            st.terminal = true;
+            st.weakSinceMs = 0;
+            continue;
+        }
+
+        // Blank / LQIP for long enough with no climb: force one ensure cycle
+        // only for non-tile (tiny) cells.
         if (!item->hasDisplayPixels()
             || (item->displayPixelLongEdge() > 0
                 && item->displayPixelLongEdge() <= DisplayQuality::kLqipMaxEdge

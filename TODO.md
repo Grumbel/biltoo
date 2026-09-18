@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1157-gallery-no-soft-schedule.** Pass1 LQIP-only; pass2/watchdog skip tile soft.
+Prior: **1156**.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1157-gallery-no-soft-schedule.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1156-lqip-tiles-only.** Gallery: LQIP underlay + tiles; no soft/HOST underlay path.
 Prior: **1155**.
 
