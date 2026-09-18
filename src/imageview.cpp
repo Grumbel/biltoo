@@ -229,11 +229,11 @@ ImageView::ImageView(QWidget *parent)
                 // Gallery: soft may land in ImageCache via noteDelivery while the
                 // tile still shows LQIP — mirror ladderReady install.
                 if (isGalleryMode()) {
-                    onImagePreviewLoaded(path, img, m_loadGen.current(),
+                    onImagePreviewLoaded(path, img, m_loadGate.generation(),
                                          static_cast<int>(LoadAdd));
                 }
                 if (isWorkspaceMode()) {
-                    onImagePreviewLoaded(path, img, m_loadGen.current(),
+                    onImagePreviewLoaded(path, img, m_loadGate.generation(),
                                          static_cast<int>(LoadAdd));
                 }
             });
@@ -378,7 +378,7 @@ ImageView::~ImageView()
     m_ss.toTiles.reset();
 
     // Invalidate any queued onImageLoaded invocations from the thread pool.
-    m_loadGen.bump();
+    m_loadGate.bumpGeneration();
 
     if (m_hudFlashTimer) {
         m_hudFlashTimer->stop();
@@ -400,7 +400,7 @@ ImageView::~ImageView()
         m_scene->blockSignals(true);
         m_scene->clear();
         m_items.clear();
-        m_pendingWorkspacePaths.clear();
+        m_loadGate.clearPendingWorkspacePaths();
         gallerySoftResetAll();
         setScene(nullptr);
         delete m_scene;
@@ -819,11 +819,8 @@ int ImageView::pendingDecodeCount() const
 {
     // Remaining work overview — not concurrent inflight. Counting only inflight
     // flickered 1↔0 as each soft job finished before the next was claimed.
-    int pendingAdds = 0;
-    for (int n : m_pendingWorkspacePaths) {
-        pendingAdds += n;
-    }
-    int n = pendingAdds + m_pendingRestoreStates.size();
+    int n = m_loadGate.pendingWorkspaceAddCount()
+          + m_loadGate.pendingRestoreStates().size();
 
     if (isGalleryMode()) {
         // Gallery: blanks still need LQIP. LQIP-only is intentional underlay

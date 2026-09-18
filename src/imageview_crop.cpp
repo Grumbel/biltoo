@@ -695,7 +695,7 @@ void ImageView::requestCropFullRaster(const QString &path)
         }
     }
     // scheduleFull skipped/unavailable: pool ImageLoader::load.
-    const quint64 gen = m_loadGen.current();
+    const quint64 gen = m_loadGate.generation();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
         const QImage decoded = ImageLoader::load(path);
@@ -706,7 +706,7 @@ void ImageView::requestCropFullRaster(const QString &path)
             guard.data(),
             [guard, path, decoded, gen]() {
                 if (ImageView *const host = guard.data()) {
-                    if (gen != host->m_loadGen.current()) {
+                    if (gen != host->m_loadGate.generation()) {
                         return;
                     }
                     if (!decoded.isNull()) {

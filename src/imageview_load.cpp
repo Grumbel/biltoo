@@ -1305,12 +1305,12 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     if (role == LoadAdd) {
         addPendingWorkspacePath(path);
     }
-    // LoadRestore pending is owned by m_pendingRestoreStates (AUDIT M27).
+    // LoadRestore pending is owned by m_loadGate.pendingRestoreStates() (AUDIT M27).
     // AUDIT H3a: only LoadReplace advances the generation token so workspace
     // adds cannot cancel an in-flight Image-mode navigation decode.
-    quint64 gen = m_loadGen.current();
+    quint64 gen = m_loadGate.generation();
     if (role == LoadReplace) {
-        gen = m_loadGen.bump();
+        gen = m_loadGate.bumpGeneration();
         m_imageModeNativeDecodePaths.clear();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
@@ -1761,7 +1761,7 @@ void ImageView::applyWorkspaceLadderReady(const QString &path, int maxEdge,
     }
     Q_UNUSED(maxEdge);
     // Same soft/display install as Gallery tiles — Workspace items share paths.
-    onImagePreviewLoaded(path, image, m_loadGen.current(),
+    onImagePreviewLoaded(path, image, m_loadGate.generation(),
                          static_cast<int>(LoadAdd));
     ensureWorkspaceQualityClimb();
 }
@@ -1866,7 +1866,7 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
         return;
     }
     m_imageModeNativeDecodePaths.insert(path);
-    const quint64 gen = m_loadGen.current();
+    const quint64 gen = m_loadGate.generation();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
         ASSERT_NOT_GUI_THREAD();
@@ -1885,7 +1885,7 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
                     ImageCache::put(path, decoded);
                 }
                 if (host->isImageMode()) {
-                    if (gen != host->m_loadGen.current()) {
+                    if (gen != host->m_loadGate.generation()) {
                         return;
                     }
                     if (!decoded.isNull()) {
@@ -1893,7 +1893,7 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
                     }
                 } else if (host->isWorkspaceMode() && !decoded.isNull()) {
                     host->onImagePreviewLoaded(
-                        path, decoded, host->m_loadGen.current(),
+                        path, decoded, host->m_loadGate.generation(),
                         static_cast<int>(LoadAdd));
                 }
             },
@@ -1916,7 +1916,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
 
     // Replace navigations: drop superseded previews.
     if (role == LoadReplace) {
-        if (generation != m_loadGen.current() || path != classicPath()) {
+        if (generation != m_loadGate.generation() || path != classicPath()) {
             return;
         }
         if (isImageMode()) {
@@ -1983,9 +1983,9 @@ bool ImageView::takePendingRestoreState(const QString &path, WorkspaceItemState 
     if (!out || path.isEmpty()) {
         return false;
     }
-    for (int i = 0; i < m_pendingRestoreStates.size(); ++i) {
-        if (m_pendingRestoreStates.at(i).path == path) {
-            *out = m_pendingRestoreStates.takeAt(i);
+    for (int i = 0; i < m_loadGate.pendingRestoreStates().size(); ++i) {
+        if (m_loadGate.pendingRestoreStates().at(i).path == path) {
+            *out = m_loadGate.pendingRestoreStates().takeAt(i);
             return true;
         }
     }
@@ -2052,11 +2052,11 @@ bool ImageView::acceptPendingLoadAdd(const QString &path, quint64 generation)
     // Mode leave / empty Workspace bumps generation and clears pending paths.
     // Reject superseded gallery window decodes so they cannot spawn tiles on
     // Workspace after the user switched modes mid-decode.
-    if (generation != m_loadGen.current()) {
+    if (generation != m_loadGate.generation()) {
         finishLoadAddStatus(/*refreshGalleryWindow=*/false);
         return false;
     }
-    if (!m_pendingWorkspacePaths.contains(path)) {
+    if (!m_loadGate.containsPendingWorkspacePath(path)) {
         // Cancelled (e.g. path removed from session) — drop the result.
         finishLoadAddStatus(/*refreshGalleryWindow=*/true);
         return false;
@@ -2279,7 +2279,7 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
 
     // Remember size even when the pending membership was cancelled — a successful
     // decode still updates the session size cache for later layout.
-    if (generation == m_loadGen.current() && !image.isNull()) {
+    if (generation == m_loadGate.generation() && !image.isNull()) {
         rememberSizeFromDecode(path, image);
     }
     if (!acceptPendingLoadAdd(path, generation)) {
@@ -2427,7 +2427,7 @@ void ImageView::seedEmptyWorkspaceFromReplace(const QString &path, const QImage 
     // (default placement, no flip/grade) and steal the first path's LoadAdd.
     if (!m_items.isEmpty()
         || !m_pendingSessionBinds.isEmpty()
-        || m_pendingWorkspacePaths.contains(path)) {
+        || m_loadGate.containsPendingWorkspacePath(path)) {
         return;
     }
     ImageItem *item = createItemFromImage(path, image);
@@ -2883,7 +2883,7 @@ void ImageView::maybeClimbImageModePixelsForView()
 
 void ImageView::completeLoadReplace(const QString &path, const QImage &image, quint64 generation)
 {
-    if (generation != m_loadGen.current()) {
+    if (generation != m_loadGate.generation()) {
         return; // superseded by a newer navigation / open
     }
     // Stale navigation: only the current classic path may install.

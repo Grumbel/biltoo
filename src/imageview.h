@@ -10,6 +10,7 @@
 #include "cropsession.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
+#include "sessionloadgate.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
@@ -404,12 +405,12 @@ public:
     /** Controller host: path-keyed placement / unbound appearance cache. */
     QHash<QString, WorkspaceItemState> &itemStates() { return m_itemStates; }
     const QHash<QString, WorkspaceItemState> &itemStates() const { return m_itemStates; }
-    bool hasPendingWorkspacePaths() const { return !m_pendingWorkspacePaths.isEmpty(); }
-    void clearPendingWorkspacePaths() { m_pendingWorkspacePaths.clear(); }
-    void addPendingWorkspacePath(const QString &path) { m_pendingWorkspacePaths[path] += 1; }
+    bool hasPendingWorkspacePaths() const { return m_loadGate.hasPendingWorkspacePaths(); }
+    void clearPendingWorkspacePaths() { m_loadGate.clearPendingWorkspacePaths(); }
+    void addPendingWorkspacePath(const QString &path) { m_loadGate.addPendingWorkspacePath(path); }
     void takePendingWorkspacePath(const QString &path);
-    QList<WorkspaceItemState> &pendingRestoreStates() { return m_pendingRestoreStates; }
-    const QList<WorkspaceItemState> &pendingRestoreStates() const { return m_pendingRestoreStates; }
+    QList<WorkspaceItemState> &pendingRestoreStates() { return m_loadGate.pendingRestoreStates(); }
+    const QList<WorkspaceItemState> &pendingRestoreStates() const { return m_loadGate.pendingRestoreStates(); }
     /** Claim one pending restore snapshot for @a path (FIFO; duplicates OK). */
     bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);
     /**
@@ -1225,7 +1226,7 @@ public slots:
     /** True while @p gen is still the active LoadReplace generation (pool jobs). */
     bool matchesLoadGeneration(quint64 gen) const
     {
-        return m_loadGen.accepts(gen);
+        return m_loadGate.accepts(gen);
     }
 
 protected:
@@ -1931,9 +1932,8 @@ private:
     int m_masonryColumns = 3;
     int m_gridColumns = 0;
     int m_masonryRows = 3;
-    LoadGeneration m_loadGen;
+    SessionLoadGate m_loadGate;
     /** Outstanding LoadAdd / gallery decode jobs per path (refcount). */
-    QHash<QString, int> m_pendingWorkspacePaths;
     /** Per-path Gallery decode-window state — GallerySoftState in imageview_types.h. */
     QHash<QString, GallerySoftState> m_gallerySoft;
     /** Paths that already started host ImageLoader::load for Image-mode HQ. */
@@ -1953,9 +1953,7 @@ private:
     /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
     static constexpr int kMaxIdleGalleryDecodes = 2;
     /** Queue of workspace restores still waiting for decode (supports same path twice). */
-    QList<WorkspaceItemState> m_pendingRestoreStates;
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */
-    QHash<QString, QPointF> m_pendingScenePos;
     /** Session slot to assign when a LoadAdd for @p path finishes. */
     QHash<QString, int> m_pendingSessionIndexByPath;
     // --- LoadAdd pending-bind helpers (PendingSessionBind is private) ---

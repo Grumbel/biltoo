@@ -44,9 +44,7 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
 
 void ImageView::clearPendingLoads()
 {
-    m_pendingScenePos.clear();
-    m_pendingWorkspacePaths.clear();
-    m_pendingRestoreStates.clear();
+    m_loadGate.clearPending();
 }
 
 void ImageView::invalidateGalleryDecodes()
@@ -55,8 +53,8 @@ void ImageView::invalidateGalleryDecodes()
     // cannot create tiles after leaving Gallery. Bump generation so in-flight
     // pool jobs are rejected in onImageLoaded.
     gallerySoftResetAll();
-    m_pendingWorkspacePaths.clear();
-    m_loadGen.bump();
+    m_loadGate.clearPendingWorkspacePaths();
+    m_loadGate.bumpGeneration();
 }
 
 void ImageView::invalidateSessionLoads()
@@ -65,7 +63,7 @@ void ImageView::invalidateSessionLoads()
     // New Open / History session: cancel every in-flight decode and drop the
     // live canvas so a late soft/PreferCache for the previous session cannot
     // paint over the first image of the new set.
-    m_loadGen.bump();
+    m_loadGate.bumpGeneration();
     clearPendingLoads();
     gallerySoftResetAll();
     m_ss.rasterInflight.clear();
@@ -103,14 +101,8 @@ void ImageView::invalidateSessionLoads()
 
 void ImageView::takePendingWorkspacePath(const QString &path)
 {
-    const auto it = m_pendingWorkspacePaths.find(path);
-    if (it == m_pendingWorkspacePaths.end()) {
+    if (!m_loadGate.takePendingWorkspacePath(path)) {
         return;
-    }
-    if (it.value() <= 1) {
-        m_pendingWorkspacePaths.erase(it);
-    } else {
-        it.value() -= 1;
     }
     // Status bar / HUD pending count (even when the caller also emits).
     emit statusChanged();
@@ -239,9 +231,9 @@ void ImageView::clearWorkspace()
     discardStashedWorkspace();
     discardStashedGallery();
     m_workspace.savedItems().clear();
-    m_pendingScenePos.clear();
-    m_pendingWorkspacePaths.clear();
-    m_pendingRestoreStates.clear();
+    m_loadGate.pendingScenePos().clear();
+    m_loadGate.clearPendingWorkspacePaths();
+    m_loadGate.pendingRestoreStates().clear();
     m_pendingSessionBinds.clear();
     m_pendingSessionIndexByPath.clear();
     m_pendingSelectSessionIds.clear();
@@ -263,7 +255,7 @@ void ImageView::clearWorkspace()
     clearClassicPath();
     // Invalidate in-flight LoadReplace so a prior Image-mode decode cannot
     // seed the empty Workspace after this wipe (first-path unbound tile).
-    m_loadGen.bump();
+    m_loadGate.bumpGeneration();
     if (m_scene) {
         m_scene->blockSignals(true);
         m_scene->clear();

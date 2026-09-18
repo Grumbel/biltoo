@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1252-session-load-gate.** SessionLoadGate owns generation + pending maps.
+Prior: **1251**.
+
+### Change
+- `SessionLoadGate`: LoadGeneration + pending workspace paths, restore states,
+  scene positions.
+- `ImageView::m_loadGate`; clearPendingLoads / takePendingWorkspacePath forward.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1252-session-load-gate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1251-load-generation.** Extract LoadGeneration token from ImageView.
 Prior: **1250**.
 
