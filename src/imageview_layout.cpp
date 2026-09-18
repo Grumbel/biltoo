@@ -1712,9 +1712,9 @@ void ImageView::setCurrentSessionId(SessionImageId id)
     }
     m_currentSessionId = id;
     // Attention marker is per SessionImageId — reload draft for the new image.
-    if (m_attentionMode) {
-        m_attentionDraftValid = false;
-        m_attentionDraftSessionId = kInvalidSessionImageId;
+    if (m_attention.mode) {
+        m_attention.draftValid = false;
+        m_attention.draftSessionId = kInvalidSessionImageId;
         ensureAttentionPoint();
         if (viewport()) {
             viewport()->update();

@@ -8,6 +8,7 @@
 #include "gallerysizeresolve.h"
 #include "tileneighborprefetch.h"
 #include "cropsession.h"
+#include "attentionsession.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
@@ -691,7 +692,7 @@ public:
      * when entering if none stored.
      */
     void setAttentionMode(bool on);
-    bool isAttentionMode() const { return m_attentionMode; }
+    bool isAttentionMode() const { return m_attention.active(); }
     void toggleAttentionMode();
     /** Re-run saliency detect on the current image (replaces all points). */
     void detectAttentionPoint();
@@ -1939,20 +1940,7 @@ private:
     ImageItem *m_handleDragItem = nullptr;
 
     CropSession m_crop;
-    bool m_attentionMode = false;
-    bool m_attentionDragging = false;
-    bool m_attentionRubberbanding = false;
-    QPoint m_attentionRubberOrigin;
-    QRect m_attentionRubberRect; // viewport coords
-    QVector<int> m_attentionSelected; // indices into attentionPoints
-    QVector<QPointF> m_attentionDragStartPts; // snapshot at press for selected move
-    QPoint m_attentionDragOriginView;
-    /** Points before the current press gesture (add/move); used for one undo entry. */
-    QVector<QPointF> m_attentionGestureBefore;
-    bool m_attentionGestureActive = false;
-    bool m_attentionDraftValid = false;
-    QVector<QPointF> m_attentionDraftPts;
-    SessionImageId m_attentionDraftSessionId = kInvalidSessionImageId;
+    AttentionSession m_attention;
     /** Image-mode focus surface (DisplaySurfaceController). Invalid outside Image. */
     DisplaySurfaceController m_displaySurfaces;
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;

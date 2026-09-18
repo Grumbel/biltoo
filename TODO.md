@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1255-attention-session.** Extract AttentionSession draft state.
+Prior: **1254**.
+
+### Change
+- `AttentionSession`: mode, draft points/id, rubber-band, selection, gesture.
+- `ImageView::m_attention`; detect/undo/enter still on the view.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1255-attention-session.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1254-slideshow-hud-zoomblur.** SlideshowProgressHud + ZoomBlurState.
 Prior: **1253**.
 

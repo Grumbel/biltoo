@@ -58,11 +58,11 @@ QVector<QPointF> ImageView::attentionPointsForTarget() const
             }
         }
     }
-    if (m_attentionMode && m_attentionDraftValid
+    if (m_attention.mode && m_attention.draftValid
         && sid != kInvalidSessionImageId
-        && sid == m_attentionDraftSessionId
-        && !m_attentionDraftPts.isEmpty()) {
-        return m_attentionDraftPts;
+        && sid == m_attention.draftSessionId
+        && !m_attention.draftPts.isEmpty()) {
+        return m_attention.draftPts;
     }
     return {};
 }
@@ -88,17 +88,17 @@ void ImageView::setAttentionPointsForTarget(const QVector<QPointF> &pts)
     if (item && sid != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
         item->setSessionId(sid);
     }
-    m_attentionDraftPts = clamped;
-    m_attentionDraftValid = true;
-    m_attentionDraftSessionId = sid;
+    m_attention.draftPts = clamped;
+    m_attention.draftValid = true;
+    m_attention.draftSessionId = sid;
 
     QVector<int> kept;
-    for (int i : m_attentionSelected) {
+    for (int i : m_attention.selected) {
         if (i >= 0 && i < clamped.size()) {
             kept.append(i);
         }
     }
-    m_attentionSelected = kept;
+    m_attention.selected = kept;
 
     if (sid != kInvalidSessionImageId) {
         WorkspaceItemState st = m_appearance.value(sid);
@@ -130,11 +130,11 @@ void ImageView::ensureAttentionPoint()
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_appearance.get(sid)) {
             if (!st->attentionPoints.isEmpty() || st->hasAttention) {
-                m_attentionDraftPts = !st->attentionPoints.isEmpty()
+                m_attention.draftPts = !st->attentionPoints.isEmpty()
                     ? st->attentionPoints
                     : QVector<QPointF>{st->attentionNorm};
-                m_attentionDraftValid = true;
-                m_attentionDraftSessionId = sid;
+                m_attention.draftValid = true;
+                m_attention.draftSessionId = sid;
                 return;
             }
         }
@@ -145,9 +145,9 @@ void ImageView::ensureAttentionPoint()
 void ImageView::restoreAttentionPoints(const QVector<QPointF> &pts)
 {
     setAttentionPointsForTarget(pts);
-    m_attentionSelected.clear();
+    m_attention.selected.clear();
     for (int i = 0; i < pts.size(); ++i) {
-        m_attentionSelected.append(i);
+        m_attention.selected.append(i);
     }
     if (viewport()) {
         viewport()->update();
@@ -208,10 +208,10 @@ void ImageView::detectAttentionPoint()
         pts.append(QPointF(0.5, 0.5));
     }
     const QVector<QPointF> before = attentionPointsForTarget();
-    m_attentionSelected.clear();
+    m_attention.selected.clear();
     setAttentionPointsForTarget(pts);
     for (int i = 0; i < pts.size(); ++i) {
-        m_attentionSelected.append(i);
+        m_attention.selected.append(i);
     }
     pushAttentionPointsUndo(before, pts, tr("Detect attention points"));
     if (viewport()) {
@@ -221,7 +221,7 @@ void ImageView::detectAttentionPoint()
 
 void ImageView::setAttentionMode(bool on)
 {
-    if (on == m_attentionMode) {
+    if (on == m_attention.mode) {
         return;
     }
     if (on) {
@@ -232,12 +232,8 @@ void ImageView::setAttentionMode(bool on)
         if (isCropMode()) {
             cancelCrop();
         }
-        m_attentionMode = true;
-        m_attentionDragging = false;
-        m_attentionRubberbanding = false;
-        m_attentionGestureActive = false;
-        m_attentionGestureBefore.clear();
-        m_attentionSelected.clear();
+        m_attention.mode = true;
+        m_attention.clearInteraction();
         if (m_hoverEdge != EdgeZone::None) {
             m_hoverEdge = EdgeZone::None;
         }
@@ -246,13 +242,8 @@ void ImageView::setAttentionMode(bool on)
             viewport()->setCursor(Qt::CrossCursor);
         }
     } else {
-        m_attentionMode = false;
-        m_attentionDragging = false;
-        m_attentionRubberbanding = false;
-        m_attentionGestureActive = false;
-        m_attentionGestureBefore.clear();
-        m_attentionSelected.clear();
-        m_attentionRubberRect = QRect();
+        m_attention.mode = false;
+        m_attention.clearInteraction();
         if (viewport()) {
             viewport()->unsetCursor();
         }
@@ -260,13 +251,13 @@ void ImageView::setAttentionMode(bool on)
     if (viewport()) {
         viewport()->update();
     }
-    emit attentionModeChanged(m_attentionMode);
+    emit attentionModeChanged(m_attention.mode);
     emit statusChanged();
 }
 
 void ImageView::toggleAttentionMode()
 {
-    setAttentionMode(!m_attentionMode);
+    setAttentionMode(!m_attention.mode);
 }
 
 int ImageView::attentionHandleIndexAt(const QPoint &viewPos) const
@@ -297,38 +288,38 @@ bool ImageView::attentionHandleAt(const QPoint &viewPos) const
 
 void ImageView::attentionDeleteSelected()
 {
-    if (m_attentionSelected.isEmpty()) {
+    if (m_attention.selected.isEmpty()) {
         return;
     }
     QVector<QPointF> pts = attentionPointsForTarget();
     const QVector<QPointF> before = pts;
-    QSet<int> kill(m_attentionSelected.begin(), m_attentionSelected.end());
+    QSet<int> kill(m_attention.selected.begin(), m_attention.selected.end());
     QVector<QPointF> kept;
     for (int i = 0; i < pts.size(); ++i) {
         if (!kill.contains(i)) {
             kept.append(pts.at(i));
         }
     }
-    m_attentionSelected.clear();
+    m_attention.selected.clear();
     setAttentionPointsForTarget(kept);
     pushAttentionPointsUndo(before, kept, tr("Delete attention points"));
 }
 
 void ImageView::attentionCommitSelectionMove()
 {
-    if (m_attentionGestureActive) {
+    if (m_attention.gestureActive) {
         const QVector<QPointF> after = attentionPointsForTarget();
-        pushAttentionPointsUndo(m_attentionGestureBefore, after,
+        pushAttentionPointsUndo(m_attention.gestureBefore, after,
                                 tr("Edit attention points"));
     }
-    m_attentionGestureActive = false;
-    m_attentionGestureBefore.clear();
-    m_attentionDragStartPts.clear();
+    m_attention.gestureActive = false;
+    m_attention.gestureBefore.clear();
+    m_attention.dragStartPts.clear();
 }
 
 void ImageView::paintAttentionOverlay(QPainter &painter)
 {
-    if (!m_attentionMode || !isImageMode()) {
+    if (!m_attention.mode || !isImageMode()) {
         return;
     }
     ImageItem *item = targetItem();
@@ -343,7 +334,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
     }
 
     const QVector<QPointF> pts = attentionPointsForTarget();
-    QSet<int> selected(m_attentionSelected.begin(), m_attentionSelected.end());
+    QSet<int> selected(m_attention.selected.begin(), m_attention.selected.end());
 
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -376,10 +367,10 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
                          isPrimary ? tr("P") : QString::number(i + 1));
     }
 
-    if (m_attentionRubberbanding && !m_attentionRubberRect.isEmpty()) {
+    if (m_attention.rubberbanding && !m_attention.rubberRect.isEmpty()) {
         painter.setPen(QPen(QColor(80, 180, 255, 220), 1.2, Qt::DashLine));
         painter.setBrush(QColor(80, 180, 255, 40));
-        painter.drawRect(m_attentionRubberRect.normalized());
+        painter.drawRect(m_attention.rubberRect.normalized());
     }
 
     QFont f = painter.font();
@@ -391,7 +382,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
            "Ctrl+click empty: add · drag handle: move · Del: delete · Ctrl+Z: undo · Esc: exit\n"
            "%1 point(s), %2 selected  (primary “P” = Ken Burns)")
             .arg(pts.size())
-            .arg(m_attentionSelected.size());
+            .arg(m_attention.selected.size());
     painter.drawText(viewport()->rect().adjusted(12, 12, -12, -12),
                      Qt::AlignTop | Qt::AlignLeft, hint);
     painter.restore();

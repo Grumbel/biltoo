@@ -58,7 +58,7 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
     }
     // Tool modes own the canvas: no Up-to-Gallery / prev-next edge chrome
     // (same as crop). Esc or the toolbar toggle leaves the mode.
-    if (m_crop.mode || m_attentionMode) {
+    if (m_crop.mode || m_attention.mode) {
         return EdgeZone::None;
     }
     // Top strip: back to Gallery or Workspace (when Image was opened from there).
@@ -442,7 +442,7 @@ bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
 
 bool ImageView::tryMousePressAttention(QMouseEvent *event)
 {
-    if (!m_attentionMode || event->button() != Qt::LeftButton || !isImageMode()
+    if (!m_attention.mode || event->button() != Qt::LeftButton || !isImageMode()
         || edgeZoneAt(event->pos()) != EdgeZone::None) {
         return false;
     }
@@ -457,20 +457,20 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
     // already selected so multi-drag keeps the set).
     if (hit >= 0) {
         if (shift || ctrl) {
-            if (m_attentionSelected.contains(hit)) {
-                m_attentionSelected.removeAll(hit);
+            if (m_attention.selected.contains(hit)) {
+                m_attention.selected.removeAll(hit);
             } else {
-                m_attentionSelected.append(hit);
+                m_attention.selected.append(hit);
             }
-        } else if (!m_attentionSelected.contains(hit)) {
-            m_attentionSelected = {hit};
+        } else if (!m_attention.selected.contains(hit)) {
+            m_attention.selected = {hit};
         }
-        m_attentionDragging = !m_attentionSelected.isEmpty();
-        m_attentionRubberbanding = false;
-        m_attentionDragOriginView = event->pos();
-        m_attentionDragStartPts = attentionPointsForTarget();
-        m_attentionGestureBefore = m_attentionDragStartPts;
-        m_attentionGestureActive = m_attentionDragging;
+        m_attention.dragging = !m_attention.selected.isEmpty();
+        m_attention.rubberbanding = false;
+        m_attention.dragOriginView = event->pos();
+        m_attention.dragStartPts = attentionPointsForTarget();
+        m_attention.gestureBefore = m_attention.dragStartPts;
+        m_attention.gestureActive = m_attention.dragging;
         viewport()->update();
         event->accept();
         return true;
@@ -486,24 +486,24 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
         QVector<QPointF> pts = before;
         pts.append(QPointF(nx, ny));
         setAttentionPointsForTarget(pts);
-        m_attentionSelected = {int(pts.size() - 1)};
-        m_attentionDragging = true;
-        m_attentionRubberbanding = false;
-        m_attentionDragOriginView = event->pos();
-        m_attentionDragStartPts = attentionPointsForTarget();
-        m_attentionGestureBefore = before;
-        m_attentionGestureActive = true;
+        m_attention.selected = {int(pts.size() - 1)};
+        m_attention.dragging = true;
+        m_attention.rubberbanding = false;
+        m_attention.dragOriginView = event->pos();
+        m_attention.dragStartPts = attentionPointsForTarget();
+        m_attention.gestureBefore = before;
+        m_attention.gestureActive = true;
         event->accept();
         return true;
     }
     // Plain / Shift click on empty: rubber-band select (additive with Shift).
-    m_attentionRubberbanding = true;
-    m_attentionDragging = false;
-    m_attentionGestureActive = false;
-    m_attentionRubberOrigin = event->pos();
-    m_attentionRubberRect = QRect(event->pos(), QSize());
+    m_attention.rubberbanding = true;
+    m_attention.dragging = false;
+    m_attention.gestureActive = false;
+    m_attention.rubberOrigin = event->pos();
+    m_attention.rubberRect = QRect(event->pos(), QSize());
     if (!shift && !ctrl) {
-        m_attentionSelected.clear();
+        m_attention.selected.clear();
     }
     viewport()->update();
     event->accept();
@@ -638,7 +638,7 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
 
 bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 {
-    if (!isImageMode() || m_crop.mode || m_attentionMode
+    if (!isImageMode() || m_crop.mode || m_attention.mode
         || event->button() != Qt::LeftButton
         || event->modifiers() != Qt::NoModifier
         || !PagePath::isPageRef(classicPath())) {
@@ -662,7 +662,7 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 
 bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
 {
-    if (!isImageMode() || m_crop.mode || m_attentionMode
+    if (!isImageMode() || m_crop.mode || m_attention.mode
         || event->button() != Qt::LeftButton
         || !(event->modifiers() & Qt::ShiftModifier)
         || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))
@@ -1015,7 +1015,7 @@ bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
 void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
-    if (isImageMode() && !m_crop.mode && !m_attentionMode && !m_textRubberbanding
+    if (isImageMode() && !m_crop.mode && !m_attention.mode && !m_textRubberbanding
         && !m_panning && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(classicPath())) {
         if (m_textLayer.regions.isEmpty() || m_textLayerPath != classicPath()) {
@@ -1055,30 +1055,30 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
 {
-    if (!m_attentionMode || !isImageMode()) {
+    if (!m_attention.mode || !isImageMode()) {
         return false;
     }
-    if (m_attentionRubberbanding) {
-        m_attentionRubberRect = QRect(m_attentionRubberOrigin, event->pos()).normalized();
+    if (m_attention.rubberbanding) {
+        m_attention.rubberRect = QRect(m_attention.rubberOrigin, event->pos()).normalized();
         viewport()->update();
         event->accept();
         return true;
     }
-    if (m_attentionDragging) {
+    if (m_attention.dragging) {
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()
-            && !m_attentionSelected.isEmpty()
-            && m_attentionDragStartPts.size() == attentionPointsForTarget().size()) {
+            && !m_attention.selected.isEmpty()
+            && m_attention.dragStartPts.size() == attentionPointsForTarget().size()) {
             // Translate selected points by view-delta mapped through content.
-            const QPointF scene0 = mapToScene(m_attentionDragOriginView);
+            const QPointF scene0 = mapToScene(m_attention.dragOriginView);
             const QPointF scene1 = mapToScene(event->pos());
             const QPointF local0 = item->mapFromScene(scene0);
             const QPointF local1 = item->mapFromScene(scene1);
             const QRectF cr = item->contentRect();
             const qreal dx = (local1.x() - local0.x()) / qMax(1e-6, cr.width());
             const qreal dy = (local1.y() - local0.y()) / qMax(1e-6, cr.height());
-            QVector<QPointF> pts = m_attentionDragStartPts;
-            for (int idx : m_attentionSelected) {
+            QVector<QPointF> pts = m_attention.dragStartPts;
+            for (int idx : m_attention.selected) {
                 if (idx < 0 || idx >= pts.size()) {
                     continue;
                 }
@@ -1596,14 +1596,14 @@ bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
 {
-    if (!m_attentionMode || event->button() != Qt::LeftButton) {
+    if (!m_attention.mode || event->button() != Qt::LeftButton) {
         return false;
     }
-    if (m_attentionRubberbanding) {
-        m_attentionRubberbanding = false;
+    if (m_attention.rubberbanding) {
+        m_attention.rubberbanding = false;
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()) {
-            const QRect band = m_attentionRubberRect.normalized();
+            const QRect band = m_attention.rubberRect.normalized();
             const QVector<QPointF> pts = attentionPointsForTarget();
             const bool shift = event->modifiers() & Qt::ShiftModifier;
             QVector<int> hit;
@@ -1615,21 +1615,21 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
             }
             if (shift) {
                 for (int i : hit) {
-                    if (!m_attentionSelected.contains(i)) {
-                        m_attentionSelected.append(i);
+                    if (!m_attention.selected.contains(i)) {
+                        m_attention.selected.append(i);
                     }
                 }
             } else {
-                m_attentionSelected = hit;
+                m_attention.selected = hit;
             }
         }
-        m_attentionRubberRect = QRect();
+        m_attention.rubberRect = QRect();
         viewport()->update();
         event->accept();
         return true;
     }
-    if (m_attentionDragging) {
-        m_attentionDragging = false;
+    if (m_attention.dragging) {
+        m_attention.dragging = false;
         attentionCommitSelectionMove();
         event->accept();
         return true;
@@ -1796,7 +1796,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
 
 bool ImageView::tryKeyPressAttention(QKeyEvent *event)
 {
-    if (!m_attentionMode) {
+    if (!m_attention.mode) {
         return false;
     }
     if (event->key() == Qt::Key_Escape) {
@@ -1811,9 +1811,9 @@ bool ImageView::tryKeyPressAttention(QKeyEvent *event)
     }
     if (event->key() == Qt::Key_A && (event->modifiers() & Qt::ControlModifier)) {
         const int n = attentionPointsForTarget().size();
-        m_attentionSelected.clear();
+        m_attention.selected.clear();
         for (int i = 0; i < n; ++i) {
-            m_attentionSelected.append(i);
+            m_attention.selected.append(i);
         }
         if (viewport()) {
             viewport()->update();

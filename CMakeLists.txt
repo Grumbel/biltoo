@@ -128,6 +128,7 @@ add_executable(biltoo
   src/cropgeometry.cpp
   src/cropgeometry.h
   src/cropsession.h
+  src/attentionsession.h
   src/slideshowtypes.h
   src/loadgeneration.h
   src/sessionloadgate.h

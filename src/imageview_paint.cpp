@@ -677,7 +677,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     if (m_crop.mode) {
         paintCropOverlay(painter);
     }
-    if (m_attentionMode) {
+    if (m_attention.mode) {
         paintAttentionOverlay(painter);
     }
     paintWorkspaceViewportChrome(painter);
@@ -687,7 +687,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     paintSlideshowLetterboxComposite(painter);
     paintEmptySessionInvite(painter);
 
-    if (!m_crop.mode && !m_attentionMode && m_hoverEdge != EdgeZone::None && isImageMode()
+    if (!m_crop.mode && !m_attention.mode && m_hoverEdge != EdgeZone::None && isImageMode()
         && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
