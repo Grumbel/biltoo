@@ -1833,15 +1833,19 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
         soft = ThumtooCache::cachedLqipImage(path);
     }
     if (soft.isNull()) {
-        // Soft + PreferCache via PathRaster. Durable tiles: SoftDisplay only
-        // (TileSynth), never Full native during slideshow.
+        // LQIP/cache miss: PathRaster SoftDisplay → TileSynth or pyramid.
+        // Fallback without PathRaster: same (never PreferCache soft encode).
         if (m_pathRaster) {
             const auto policy =
                 PathRasterService::ClimbPolicy::SoftDisplay;
             m_pathRaster->ensure(path, edge, logicalSizeForPath(path), policy);
         } else if (ThumtooCache::isAvailable()) {
-            (void)ThumtooCache::scheduleDisplayPixels(
-                path, ThumtooCache::kGalleryLadderEdge);
+            if (ThumtooCache::hasDurableTilesKnown(path)) {
+                (void)ThumtooCache::scheduleDisplayPixels(
+                    path, ThumtooCache::kGalleryLadderEdge);
+            } else {
+                (void)ThumtooCache::scheduleTilePyramid(path);
+            }
         }
         return {};
     }

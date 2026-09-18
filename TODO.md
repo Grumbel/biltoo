@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1226-slideshow-tiles-fallback.** Slideshow soft miss: TileSynth/pyramid, not PreferCache encode.
+Prior: **1225**.
+
+### Bug
+`ensureSlideshowRaster` PathRaster-less fallback called
+`scheduleDisplayPixels` unconditionally (soft encode when no pyramid).
+
+### Fix
+- Fallback: durable tiles → TileSynth; else `scheduleTilePyramid`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1226-slideshow-tiles-fallback.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1225-pathraster-display-tiles-only.** PathRaster Display PreferCache → TileSynth only.
 Prior: **1224**.
 
