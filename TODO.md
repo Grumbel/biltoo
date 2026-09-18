@@ -2,6 +2,36 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1150-no-blank-terminal.** Never terminal soft while Gallery tile is blank; soft underlay under tiles.
+Prior: **1149**.
+
+### Problem
+Durable + tileLodWanted marked soft terminal immediately → many cells never got
+host soft underlay (empty tiles). Debug overlay showed SOFT/HOST only where
+samples landed; others drew nothing. Yellow tile plan only on cells with an
+active TileSession + durable pyramid.
+
+### Fix
+- Soft underlay while blank/LQIP even when durable tiles + tileLodWanted.
+- Terminal only after pixels are actually on the item.
+- Reopen terminal if every item for the path is still blank.
+
+### Note
+SOFT/HOST/LQIP text is `BILTOO_DEBUG_OVERLAY` / `THUMTOO_DEBUG_OVERLAY` classifying
+*underlay long edge*, not a failure mode. Yellow grid is tile LOD debug
+(`BILTOO_TILE_DEBUG` or same overlay) for cells that own a tile plan.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1150-no-blank-terminal.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1149-visible-idle-only.** Instant rules: no Store I/O on GUI; speculative only when idle.
 Prior: **1148**.
 

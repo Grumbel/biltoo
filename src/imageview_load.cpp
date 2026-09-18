@@ -1661,14 +1661,16 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 softUnderlayNeeded = true;
             }
         }
-        if (anyTileWanted && durable) {
+        // Tiles own *sharp* display. Soft underlay is still required while the
+        // cell is blank or LQIP-only — terminal-without-underlay left holes
+        // (SOFT/HOST overlay only on cells that got host samples; others empty).
+        if (anyTileWanted && durable && !softUnderlayNeeded) {
             auto sit = m_gallerySoft.find(path);
             if (sit != m_gallerySoft.end()) {
                 clearGallerySoftInflight(*sit);
-                sit->terminal = true; // tiles own — stop soft forever for this path
+                sit->terminal = true;
             } else {
-                GallerySoftState &st = m_gallerySoft[path];
-                st.terminal = true;
+                m_gallerySoft[path].terminal = true;
             }
             tickPrimaryTileLod(12);
             return;
@@ -1682,7 +1684,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             return;
         }
         if (anyTileWanted) {
-            tickPrimaryTileLod(12); // parallel soft underlay + tiles (cold only)
+            tickPrimaryTileLod(12); // tiles + soft underlay while blank/LQIP
         }
     }
     // Size-first still probes in the background, but never blocks decode:
@@ -1693,6 +1695,22 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     GallerySoftState &st = m_gallerySoft[path];
     if (st.failed) {
         return;
+    }
+    // Terminal must not freeze a blank tile — reopen one soft cycle.
+    if (st.terminal) {
+        bool anyPixels = false;
+        for (ImageItem *ii : m_items) {
+            if (ii && ii->path() == path && ii->hasDisplayPixels()) {
+                anyPixels = true;
+                break;
+            }
+        }
+        if (!anyPixels) {
+            st.terminal = false;
+            st.ensureAttempts = qMin(st.ensureAttempts, GallerySoft::kMaxEnsureAttempts - 1);
+        } else {
+            return;
+        }
     }
     // Stale inflight after fast scroll / empty ladder delivery must not block
     // soft growth. Only hold the slot while have still covers the inflight edge.
@@ -1740,7 +1758,15 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
             }
             clearGallerySoftInflight(st);
-            if (coversEdge(st.have, want) || coversEdge(hostEdge, want)) {
+            // Only terminal when something is actually on the tile.
+            bool shown = false;
+            for (ImageItem *ii : m_items) {
+                if (ii && ii->path() == path && ii->hasDisplayPixels()) {
+                    shown = true;
+                    break;
+                }
+            }
+            if (shown && coversEdge(st.have, want)) {
                 st.terminal = true;
             }
             return;
