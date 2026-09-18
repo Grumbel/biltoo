@@ -527,10 +527,17 @@ void ImageItem::syncGalleryScrollCache()
     // Tile grid cells change every completion / pan — do not freeze mid-stream.
     if (tileLodWanted()) {
         setCacheMode(QGraphicsItem::NoCache);
-        // Keep pixmap as soft underlay for the non-tile paint branch when useful.
+        // Soft underlay must upgrade LQIP → soft while tiles stream in.
+        // Only filling when pixmap is null left LQIP stuck under the tile grid.
         const QImage &img = displayImage();
-        if (!img.isNull() && pixmap().isNull()) {
-            setPixmap(QPixmap::fromImage(img));
+        if (!img.isNull()) {
+            const int imgEdge = qMax(img.width(), img.height());
+            const int pixEdge = pixmap().isNull()
+                ? 0
+                : qMax(pixmap().width(), pixmap().height());
+            if (imgEdge > pixEdge) {
+                setPixmap(QPixmap::fromImage(img));
+            }
         }
         return;
     }

@@ -217,4 +217,7 @@ These must stay true or Gallery tiles freeze on quick-preview:
 5. **RasterClimb**: LQIP delivery does not set `softAttempted`; soft-band
    shortfalls do not set `preferGaveUp`.
 
-See tips biltoo-1126 … 1133.
+6. **tileLodWanted underlay pixmap must upgrade** — paint draws QPixmap for
+   soft base; only filling when null left LQIP under tiles after soft install.
+
+See tips biltoo-1126 … 1135.

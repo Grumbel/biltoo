@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1135-tilelod-underlay-upgrade.** Soft underlay pixmap upgrades under tileLodWanted.
+Prior: **1134**.
+
+### Bug
+- `syncGalleryScrollCache` under `tileLodWanted` only set pixmap when **null**.
+- After LQIP was baked, soft upgrades updated `m_preview` but left the **LQIP
+  QPixmap** in place. Gallery paint prefers pixmap for the soft underlay → stuck LQIP
+  under the tile grid.
+
+### Fix
+- When tileLodWanted, replace pixmap if `displayImage` long edge is larger.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1135-tilelod-underlay-upgrade.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1134-lqip-invariants-tests.** Document LQIP climb invariants; test have==96.
 Prior: **1133**.
 
