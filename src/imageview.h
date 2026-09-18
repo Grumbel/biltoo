@@ -11,6 +11,9 @@
 #include "attentionsession.h"
 #include "centreprogress.h"
 #include "grouptransformsession.h"
+#include "pageguidesession.h"
+#include "iteminteractsession.h"
+#include "hudflash.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
@@ -474,14 +477,14 @@ public:
 
     /** Workspace: show a paper-sized frame (scene units) for print layout. */
     void setPageGuideVisible(bool on);
-    bool pageGuideVisible() const { return m_pageGuideVisible; }
+    bool pageGuideVisible() const { return m_pageGuide.visible; }
     /** Update guide size from a printer page layout (millimetres → scene px). */
     void setPageGuideFromPrinter(const QPrinter &printer);
     /** Size page guide to live content bounds (+ margin); shows the guide. */
     void fitPageGuideToContent(qreal marginPx = 16.0);
     /** Scene rectangle of the page guide (printer: centred; fit-content: content AABB). */
     QRectF pageGuideSceneRect() const;
-    bool pageGuideSelected() const { return m_pageGuideSelected; }
+    bool pageGuideSelected() const { return m_pageGuide.selected; }
     void setPageGuideSelected(bool on);
     /** Scene pixels per millimetre for the page guide (layout scale). */
     static qreal pageGuidePxPerMm();
@@ -1791,14 +1794,7 @@ private:
                                        Qt::KeyboardModifiers mods) const;
     void endPageGuideResize();
 
-    bool m_pageGuideVisible = false;
-    QSizeF m_pageGuideSize; // scene px from printer page; empty → A4 at kPageGuideDpi
-    /** When valid, overrides centred-at-origin placement (fit-to-content). */
-    QRectF m_pageGuideRect;
-    bool m_pageGuideSelected = false;
-    int m_pageGuideHoverHandle = -1;
-    int m_pageGuideDragHandle = -1;
-    QRectF m_pageGuideDragStartRect;
+    PageGuideSession m_pageGuide;
     bool m_fitMode = true;
     bool m_fillMode = false;
     bool m_stickyZoomEnabled = false;
@@ -1845,13 +1841,9 @@ private:
     int m_sessionTotal = 0;
     SessionImageId m_currentSessionId = kInvalidSessionImageId;
     QString m_lastLoadError;
-    bool m_hudFlashVisible = false;
+    HudFlash m_hudFlash;
     /** Persistent slideshow-paused cue (top-left); not cleared by flash timer. */
     QElapsedTimer m_lastSlideshowCenterClick;
-    /** Filename + index shown briefly after navigation / flash (not only when pinned). */
-    bool m_hudIdentityPulse = false;
-    QString m_hudAction;
-    QString m_hudDetail;
     QTimer *m_hudFlashTimer = nullptr;
     /** Last [slideshow-paint] fingerprint (size/mode); skip duplicate logs. */
     QString m_lastSlideshowPaintFp;
@@ -1933,12 +1925,7 @@ private:
     QPoint m_zoomRegionOrigin;
     class QRubberBand *m_zoomRubberBand = nullptr;
 
-    bool m_rotating = false;
-    ImageItem *m_rotateItem = nullptr;
-    qreal m_rotateStartAngle = 0.0;
-    qreal m_rotateItemStart = 0.0;
-
-    ImageItem *m_handleDragItem = nullptr;
+    ItemInteractSession m_itemInteract;
 
     CropSession m_crop;
     AttentionSession m_attention;
@@ -1948,8 +1935,6 @@ private:
 
     /** Multi-select group scale/rotate gesture (Workspace). */
     GroupTransformSession m_groupXform;
-    ImageItem *m_dragItem = nullptr;
-    WorkspaceItemState m_dragStartState;
 
     bool m_applyingLayout = false;
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */

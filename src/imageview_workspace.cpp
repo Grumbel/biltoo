@@ -64,7 +64,7 @@ void ImageView::updateWorkspaceSceneRect()
         return;
     }
     QRectF bounds = m_scene->itemsBoundingRect();
-    if (m_pageGuideVisible) {
+    if (m_pageGuide.visible) {
         bounds = bounds.united(pageGuideSceneRect());
     }
     // Viewport in scene coordinates — ensure room to pan around content.

@@ -134,7 +134,7 @@ void ImageView::paintWorkspaceViewportChrome(QPainter &painter)
             }
             paintGroupSelectionChrome(&painter, selected);
         }
-        if (m_pageGuideVisible && m_pageGuideSelected) {
+        if (m_pageGuide.visible && m_pageGuide.selected) {
             paintPageGuideHandles(&painter);
         }
     }
@@ -345,7 +345,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     // Loading · … only in the extended (pinned) HUD — not as a free-floating
     // chip during slideshow or normal Image browsing.
     const QString loadingLine = m_hudVisible ? loadingStatusHudLine() : QString();
-    if (m_crop.mode || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
+    if (m_crop.mode || m_hudVisible || m_hudFlash.visible || m_hudFlash.identityPulse
         || m_ssHud.pausedHud || gallerySizeResolveActive()
         || !m_centreProgress.title.isEmpty()
         || !ssPrefetchLine.isEmpty()
@@ -497,13 +497,13 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("Resolving sizes…"), true},
                        {tr("%1 / %2").arg(done).arg(m_gallerySizeResolve.total()), false}},
                       0, 0, false, false, true);
-        } else if (m_hudFlashVisible && !m_hudAction.isEmpty()) {
-            QString actionLine = m_hudAction;
-            if (!m_hudDetail.isEmpty()) {
-                actionLine += QLatin1Char(' ') + m_hudDetail;
+        } else if (m_hudFlash.visible && !m_hudFlash.action.isEmpty()) {
+            QString actionLine = m_hudFlash.action;
+            if (!m_hudFlash.detail.isEmpty()) {
+                actionLine += QLatin1Char(' ') + m_hudFlash.detail;
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
-        } else if (m_hudVisible || m_hudIdentityPulse) {
+        } else if (m_hudVisible || m_hudFlash.identityPulse) {
             QList<HudLine> topLeft;
             if (!loadingLine.isEmpty()) {
                 topLeft.append({loadingLine, true});
@@ -543,12 +543,12 @@ void ImageView::paintHudPanels(QPainter &painter)
         // user navigation. Not during pure action flashes (slideshow start, …)
         // and not on automatic slideshow advance (pulseIdentity=false).
         const QString badge = sessionBadgeText();
-        if (!badge.isEmpty() && (m_hudVisible || m_hudIdentityPulse)) {
+        if (!badge.isEmpty() && (m_hudVisible || m_hudFlash.identityPulse)) {
             drawPanel({{badge, true}}, 0, margin, true, false);
         }
 
         // Bottom: filename — pinned HUD, identity pulse after user nav, or gallery hover
-        if (m_hudVisible || m_hudIdentityPulse || !m_gallery.hoverPath().isEmpty()) {
+        if (m_hudVisible || m_hudFlash.identityPulse || !m_gallery.hoverPath().isEmpty()) {
             QList<HudLine> bottom;
             const QString name = hudFileName();
             if (!name.isEmpty()) {
@@ -814,7 +814,7 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
     paintCanvasBackground(painter, rect, transform().m11());
 
     // Page guide paper (under images): plain white sheet in scene units.
-    if (m_pageGuideVisible && isWorkspaceMode()) {
+    if (m_pageGuide.visible && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();
         if (page.intersects(rect)) {
             painter->save();
@@ -1338,7 +1338,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
     // Page guide outline above images so the frame stays visible when tiles
     // cover the white sheet (scene coordinates).
-    if (m_pageGuideVisible && isWorkspaceMode()) {
+    if (m_pageGuide.visible && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();
         if (page.intersects(rect)) {
             painter->save();
@@ -1440,7 +1440,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
         paintGallerySelectionFrames(painter, rect);
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
-    if (isGalleryMode() && !m_hudVisible && !m_hudFlashVisible && !m_hudIdentityPulse
+    if (isGalleryMode() && !m_hudVisible && !m_hudFlash.visible && !m_hudFlash.identityPulse
         && !m_ssHud.pausedHud && !gallerySizeResolveActive()
         && m_centreProgress.title.isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_crop.mode
@@ -1600,7 +1600,7 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
 
 void ImageView::paintPageGuideHandles(QPainter *painter) const
 {
-    if (!painter || !m_pageGuideVisible || !m_pageGuideSelected) {
+    if (!painter || !m_pageGuide.visible || !m_pageGuide.selected) {
         return;
     }
     const QRectF page = pageGuideSceneRect();
@@ -1630,7 +1630,7 @@ void ImageView::paintPageGuideHandles(QPainter *painter) const
         return len > 1e-6 ? v / len : QPointF(1, 0);
     };
     auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB, int id) {
-        const bool hot = (m_pageGuideHoverHandle == id || m_pageGuideDragHandle == id);
+        const bool hot = (m_pageGuide.hoverHandle == id || m_pageGuide.dragHandle == id);
         const QPointF d1 = unit(alongA);
         const QPointF d2 = unit(alongB);
         const qreal hs = hot ? 12.0 : 10.0;
@@ -1650,7 +1650,7 @@ void ImageView::paintPageGuideHandles(QPainter *painter) const
         painter->drawPath(path);
     };
     auto drawEdge = [&](const QPointF &c, const QPointF &along, int id) {
-        const bool hot = (m_pageGuideHoverHandle == id || m_pageGuideDragHandle == id);
+        const bool hot = (m_pageGuide.hoverHandle == id || m_pageGuide.dragHandle == id);
         const QPointF d = unit(along);
         const qreal hs = hot ? 11.0 : 9.0;
         const qreal half = hs * 1.1;

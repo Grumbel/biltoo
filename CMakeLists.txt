@@ -131,6 +131,9 @@ add_executable(biltoo
   src/attentionsession.h
   src/centreprogress.h
   src/grouptransformsession.h
+  src/pageguidesession.h
+  src/iteminteractsession.h
+  src/hudflash.h
   src/slideshowtypes.h
   src/loadgeneration.h
   src/sessionloadgate.h

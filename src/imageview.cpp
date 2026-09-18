@@ -247,7 +247,7 @@ ImageView::ImageView(QWidget *parent)
             });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
-        if (m_hudVisible || m_hudFlashVisible || m_ssHud.pausedHud) {
+        if (m_hudVisible || m_hudFlash.visible || m_ssHud.pausedHud) {
             viewport()->update();
         }
     });
@@ -279,10 +279,10 @@ ImageView::ImageView(QWidget *parent)
         flushColorAdjustCommit();
     });
     connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
-        m_hudFlashVisible = false;
-        m_hudIdentityPulse = false;
-        m_hudAction.clear();
-        m_hudDetail.clear();
+        m_hudFlash.visible = false;
+        m_hudFlash.identityPulse = false;
+        m_hudFlash.action.clear();
+        m_hudFlash.detail.clear();
         viewport()->update();
     });
 
@@ -1036,9 +1036,9 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         if (selected.size() == 1) {
             ImageItem *item = selected.first();
             if (item->beginHandleInteraction(scenePos, event->modifiers())) {
-                m_handleDragItem = item;
-                m_dragItem = item;
-                m_dragStartState = captureState(item);
+                m_itemInteract.handleDragItem = item;
+                m_itemInteract.dragItem = item;
+                m_itemInteract.dragStartState = captureState(item);
                 event->accept();
                 return;
             }

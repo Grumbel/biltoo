@@ -181,16 +181,16 @@ void ImageView::enableFitMode()
 
 void ImageView::clearInteractionState()
 {
-    m_handleDragItem = nullptr;
+    m_itemInteract.handleDragItem = nullptr;
     m_groupXform.scaleDrag = false;
     m_groupXform.rotateDrag = false;
     m_groupXform.handle = -1;
     m_groupXform.hoverHandle = -1;
     m_groupXform.dragItems.clear();
     m_groupXform.dragStartStates.clear();
-    m_rotateItem = nullptr;
-    m_rotating = false;
-    m_dragItem = nullptr;
+    m_itemInteract.rotateItem = nullptr;
+    m_itemInteract.rotating = false;
+    m_itemInteract.dragItem = nullptr;
     m_gallery.setSelectionAnchor(nullptr);
 }
 

@@ -271,7 +271,7 @@ void ImageView::refreshStatus()
         m_statusRefreshTimer->setInterval(120);
         connect(m_statusRefreshTimer, &QTimer::timeout, this, [this]() {
             emit statusChanged();
-            if ((m_hudVisible || m_hudFlashVisible || m_ssHud.pausedHud)
+            if ((m_hudVisible || m_hudFlash.visible || m_ssHud.pausedHud)
                 && viewport()) {
                 viewport()->update();
             }
@@ -634,7 +634,7 @@ void ImageView::cancelZoomRegion()
     if (m_zoomRubberBand) {
         m_zoomRubberBand->hide();
     }
-    if (!m_panning && !m_rotating) {
+    if (!m_panning && !m_itemInteract.rotating) {
         if (m_tool == Tool::Pan) {
             setCursor(Qt::OpenHandCursor);
         } else if (m_tool == Tool::Zoom) {
@@ -660,18 +660,18 @@ void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
     // Do not pulse on every statusChanged while total > 0 (AUDIT H7).
     // Slideshow auto-advance passes pulseIdentity=false.
     if (pulseIdentity && changed) {
-        m_hudIdentityPulse = true;
+        m_hudFlash.identityPulse = true;
         if (m_hudFlashTimer) {
             m_hudFlashTimer->start(1000);
         }
     }
-    if (!(changed || m_hudVisible || m_hudFlashVisible || m_hudIdentityPulse
+    if (!(changed || m_hudVisible || m_hudFlash.visible || m_hudFlash.identityPulse
           || m_ssHud.pausedHud)) {
         return;
     }
     // Gallery selection already invalidates the tile; a full viewport()->update()
     // here forced every image through the GL path and felt like lag on click.
-    if (isGalleryMode() && !m_hudVisible && !m_hudIdentityPulse) {
+    if (isGalleryMode() && !m_hudVisible && !m_hudFlash.identityPulse) {
         return;
     }
     if (viewport()) {
@@ -747,10 +747,10 @@ void ImageView::setHudPanelColor(const QColor &color)
 
 void ImageView::flashHud(const QString &action, const QString &detail)
 {
-    m_hudAction = action;
-    m_hudDetail = detail;
-    m_hudFlashVisible = true;
-    m_hudIdentityPulse = true;
+    m_hudFlash.action = action;
+    m_hudFlash.detail = detail;
+    m_hudFlash.visible = true;
+    m_hudFlash.identityPulse = true;
     if (m_hudFlashTimer) {
         m_hudFlashTimer->start(1000);
     }
@@ -1145,15 +1145,15 @@ void ImageView::setSlideshowPausedHud(bool on)
     if (on) {
         // Keep a stable action line for the permanent cue; flash timer must
         // not clear it (paint draws paused HUD independently of flash).
-        m_hudAction = tr("❚❚  Paused");
-        m_hudDetail.clear();
-        m_hudFlashVisible = false;
+        m_hudFlash.action = tr("❚❚  Paused");
+        m_hudFlash.detail.clear();
+        m_hudFlash.visible = false;
         if (m_hudFlashTimer) {
             m_hudFlashTimer->stop();
         }
-    } else if (m_hudAction.contains(QStringLiteral("Paused"))) {
-        m_hudAction.clear();
-        m_hudDetail.clear();
+    } else if (m_hudFlash.action.contains(QStringLiteral("Paused"))) {
+        m_hudFlash.action.clear();
+        m_hudFlash.detail.clear();
     }
     if (viewport()) {
         viewport()->update();

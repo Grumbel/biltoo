@@ -50,6 +50,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowZoomBlurState** / **SlideshowProgressHud**: letterbox blur cache + progress/seek/nav-hot HUD clocks.
 - **AttentionSession** (`attentionsession.h`): attention draft points + rubber/select gesture state.
 - **CentreProgress** / **GroupTransformSession**: centre HUD panel + multi-select scale/rotate gesture.
+- **PageGuideSession** / **ItemInteractSession** / **HudFlash**: print guide, single-item drag/rotate, action flash.
 - **LoadGeneration** (`loadgeneration.h`): monotonic token for async decode accept/reject.
 - **SessionLoadGate** (`sessionloadgate.h`): generation + pending LoadAdd/LoadRestore/scene maps; `clearPending` / `bumpGeneration`.
 

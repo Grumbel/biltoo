@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1257-page-guide-item-interact-hud.** PageGuide + ItemInteract + HudFlash.
+Prior: **1256**.
+
+### Change
+- `PageGuideSession`: visibility, rect, resize-handle drag.
+- `ItemInteractSession`: move / handle scale / free-rotate single item.
+- `HudFlash`: brief top-left action + identity pulse (timer on view).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1257-page-guide-item-interact-hud.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1256-centre-progress-group-xform.** CentreProgress + GroupTransformSession.
 Prior: **1255**.
 

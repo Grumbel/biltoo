@@ -89,7 +89,7 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
     if (m_hoverEdge == EdgeZone::Previous || m_hoverEdge == EdgeZone::Next
         || m_hoverEdge == EdgeZone::GalleryReturn) {
         setCursor(Qt::PointingHandCursor);
-    } else if (!m_panning && !m_rotating) {
+    } else if (!m_panning && !m_itemInteract.rotating) {
         if (m_tool == Tool::Pan) {
             setCursor(Qt::OpenHandCursor);
         } else if (m_tool == Tool::Zoom) {
@@ -616,16 +616,16 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
         // pointer is over another tile's pixmap (handles are drawn on top).
         ImageItem *item = selected.first();
         if (item->beginHandleInteraction(scenePos, event->modifiers())) {
-            m_handleDragItem = item;
-            m_dragItem = item;
-            m_dragStartState = captureState(item);
+            m_itemInteract.handleDragItem = item;
+            m_itemInteract.dragItem = item;
+            m_itemInteract.dragStartState = captureState(item);
             setPageGuideSelected(false);
             event->accept();
             return true;
         }
     }
     // Page guide scale grips when the guide is selected.
-    if (m_pageGuideVisible && m_pageGuideSelected) {
+    if (m_pageGuide.visible && m_pageGuide.selected) {
         const int ph = pageGuideHandleAt(event->pos());
         if (ph >= 0 && beginPageGuideResize(ph)) {
             event->accept();
@@ -774,11 +774,11 @@ bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
     if (!hit) {
         return false;
     }
-    m_rotating = true;
-    m_rotateItem = hit;
-    m_rotateStartAngle = angleAt(scenePos, hit);
-    m_rotateItemStart = hit->itemRotation();
-    m_dragStartState = captureState(hit);
+    m_itemInteract.rotating = true;
+    m_itemInteract.rotateItem = hit;
+    m_itemInteract.rotateStartAngle = angleAt(scenePos, hit);
+    m_itemInteract.rotateItemStart = hit->itemRotation();
+    m_itemInteract.dragStartState = captureState(hit);
     m_scene->clearSelection();
     hit->setSelected(true);
     setCursor(Qt::CrossCursor);
@@ -869,7 +869,7 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            if (m_hudVisible || m_hudFlashVisible) {
+            if (m_hudVisible || m_hudFlash.visible) {
                 emit statusChanged();
             }
             return true;
@@ -892,7 +892,7 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            if (m_hudVisible || m_hudFlashVisible) {
+            if (m_hudVisible || m_hudFlash.visible) {
                 emit statusChanged();
             }
             return true;
@@ -960,7 +960,7 @@ bool ImageView::tryMousePressWorkspaceSelect(QMouseEvent *event)
                 }
             }
         }
-        if (!itemHit && m_pageGuideVisible
+        if (!itemHit && m_pageGuide.visible
             && pageGuideSceneRect().contains(scenePos)) {
             if (m_scene) {
                 m_scene->clearSelection();
@@ -973,8 +973,8 @@ bool ImageView::tryMousePressWorkspaceSelect(QMouseEvent *event)
         setPageGuideSelected(false);
         QGraphicsView::mousePressEvent(event);
         if (ImageItem *hit = targetItem()) {
-            m_dragItem = hit;
-            m_dragStartState = captureState(hit);
+            m_itemInteract.dragItem = hit;
+            m_itemInteract.dragStartState = captureState(hit);
         }
         emit statusChanged();
         return true;
@@ -1243,16 +1243,16 @@ bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
 
 bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
 {
-    if (m_pageGuideDragHandle >= 0) {
+    if (m_pageGuide.dragHandle >= 0) {
         updatePageGuideResize(mapToScene(event->pos()), event->modifiers());
         event->accept();
         return true;
     }
-    if (isWorkspaceMode() && m_pageGuideVisible && m_pageGuideSelected
+    if (isWorkspaceMode() && m_pageGuide.visible && m_pageGuide.selected
         && !(event->buttons() & Qt::LeftButton)) {
         const int ph = pageGuideHandleAt(event->pos());
-        if (ph != m_pageGuideHoverHandle) {
-            m_pageGuideHoverHandle = ph;
+        if (ph != m_pageGuide.hoverHandle) {
+            m_pageGuide.hoverHandle = ph;
             viewport()->update();
         }
         if (ph >= 0) {
@@ -1293,8 +1293,8 @@ bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
         event->accept();
         return true;
     }
-    if (m_handleDragItem && m_handleDragItem->hasActiveHandle()) {
-        m_handleDragItem->updateHandleInteraction(mapToScene(event->pos()),
+    if (m_itemInteract.handleDragItem && m_itemInteract.handleDragItem->hasActiveHandle()) {
+        m_itemInteract.handleDragItem->updateHandleInteraction(mapToScene(event->pos()),
                                                     event->modifiers());
         viewport()->update(); // live chrome while scaling/rotating
         event->accept();
@@ -1305,20 +1305,20 @@ bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
 {
-    if (!m_rotating || !m_rotateItem) {
+    if (!m_itemInteract.rotating || !m_itemInteract.rotateItem) {
         return false;
     }
     const QPointF scenePos = mapToScene(event->pos());
-    const qreal angle = angleAt(scenePos, m_rotateItem);
-    const qreal delta = angle - m_rotateStartAngle;
-    qreal rot = m_rotateItemStart + delta;
+    const qreal angle = angleAt(scenePos, m_itemInteract.rotateItem);
+    const qreal delta = angle - m_itemInteract.rotateStartAngle;
+    qreal rot = m_itemInteract.rotateItemStart + delta;
     if (event->modifiers() & Qt::ControlModifier) {
         rot = qRound(rot / 90.0) * 90.0;
     } else if (event->modifiers() & Qt::ShiftModifier) {
         // Shift is held to start free-rotate; Ctrl snaps 90°, Shift alone 45°.
         rot = qRound(rot / 45.0) * 45.0;
     }
-    m_rotateItem->setItemRotation(rot);
+    m_itemInteract.rotateItem->setItemRotation(rot);
     m_fitMode = false;
     emit statusChanged();
     event->accept();
@@ -1347,7 +1347,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
 {
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
-    if (isWorkspaceMode() && m_tool == Tool::Select && !m_handleDragItem
+    if (isWorkspaceMode() && m_tool == Tool::Select && !m_itemInteract.handleDragItem
         && !m_groupXform.scaleDrag && !m_groupXform.rotateDrag && !m_panning) {
         const QPointF scenePos = mapToScene(event->pos());
         QList<ImageItem *> candidates;
@@ -1479,7 +1479,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                         QToolTip::hideText();
                     }
                 }
-            } else if (!m_panning && !m_handleDragItem) {
+            } else if (!m_panning && !m_itemInteract.handleDragItem) {
                 viewport()->unsetCursor();
                 if (hoverChanged) {
                     QToolTip::hideText();
@@ -1683,7 +1683,7 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 
 bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
 {
-    if (m_pageGuideDragHandle < 0 || event->button() != Qt::LeftButton) {
+    if (m_pageGuide.dragHandle < 0 || event->button() != Qt::LeftButton) {
         return false;
     }
     endPageGuideResize();
@@ -1719,14 +1719,14 @@ bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
 {
-    if (!m_handleDragItem || event->button() != Qt::LeftButton) {
+    if (!m_itemInteract.handleDragItem || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_handleDragItem->endHandleInteraction();
-    pushItemTransformUndo(m_handleDragItem, m_dragStartState,
-                          captureState(m_handleDragItem), tr("Transform"));
-    m_handleDragItem = nullptr;
-    m_dragItem = nullptr;
+    m_itemInteract.handleDragItem->endHandleInteraction();
+    pushItemTransformUndo(m_itemInteract.handleDragItem, m_itemInteract.dragStartState,
+                          captureState(m_itemInteract.handleDragItem), tr("Transform"));
+    m_itemInteract.handleDragItem = nullptr;
+    m_itemInteract.dragItem = nullptr;
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
@@ -1736,15 +1736,15 @@ bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
 {
-    if (!m_rotating || event->button() != Qt::LeftButton) {
+    if (!m_itemInteract.rotating || event->button() != Qt::LeftButton) {
         return false;
     }
-    if (m_rotateItem) {
-        pushItemTransformUndo(m_rotateItem, m_dragStartState, captureState(m_rotateItem),
+    if (m_itemInteract.rotateItem) {
+        pushItemTransformUndo(m_itemInteract.rotateItem, m_itemInteract.dragStartState, captureState(m_itemInteract.rotateItem),
                               tr("Rotate"));
     }
-    m_rotating = false;
-    m_rotateItem = nullptr;
+    m_itemInteract.rotating = false;
+    m_itemInteract.rotateItem = nullptr;
     restoreToolCursor();
     event->accept();
     return true;
@@ -1765,11 +1765,11 @@ bool ImageView::tryMouseReleasePan(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
 {
-    if (!m_dragItem || event->button() != Qt::LeftButton) {
+    if (!m_itemInteract.dragItem || event->button() != Qt::LeftButton) {
         return false;
     }
-    pushItemTransformUndo(m_dragItem, m_dragStartState, captureState(m_dragItem), tr("Move"));
-    m_dragItem = nullptr;
+    pushItemTransformUndo(m_itemInteract.dragItem, m_itemInteract.dragStartState, captureState(m_itemInteract.dragItem), tr("Move"));
+    m_itemInteract.dragItem = nullptr;
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
