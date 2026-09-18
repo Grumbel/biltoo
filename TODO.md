@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1221-filmstrip-tile-rediscover.** Filmstrip: rediscover tiles after pyramid; surface re-arm.
+Prior: **1220**.
+
+### Bug
+Cold filmstrip called `scheduleTilePyramid` then sat on LQIP: pyramid completion
+does not emit `ladderReady`, and `hasDurableTilesKnown` stayed false so
+PreferCache/TileSynth never ran. `m_thumbAwaitLadder` blocked further work.
+
+### Fix
+- `scheduleFilmstripTilePixels`: worker `hasDurableTiles` (updates memo) →
+  TileSynth when found, else pyramid.
+- `filmstripSurfaceTick`: always re-arm tile drive for short visible cells.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1221-filmstrip-tile-rediscover.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1220-filmstrip-tiles.** Filmstrip: LQIP + tiles (TileSynth); no soft encode.
 Prior: **1219**.
 

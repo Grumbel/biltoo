@@ -170,7 +170,7 @@ classic `loadThumbnail` encode is **removed** for filmstrip.
 | Size known | layout aspect from size memo/probe |
 | LQIP in ImageCache | install underlay (cache-only; never `request_lqip`) |
 | Durable tiles known | `scheduleDisplayPixels` → PreferCache **TileSynth** |
-| Cold (no tiles) | `scheduleTilePyramid` only; surface tick retries TileSynth when known |
+| Cold (no tiles) | worker `hasDurableTiles` rediscovery → TileSynth when known, else pyramid; surface tick re-arms every 1.5s |
 
 `prepareThumbnailFromImage` **never upscales**. LQIP (≤96) must keep a small
 `ThumbDecodeEdgeRole` so the quality watchdog continues until TileSynth covers

@@ -1264,9 +1264,20 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
         (void)ThumtooCache::scheduleDisplayPixels(path, edge);
         return;
     }
-    // Cold: build durable tiles only. PreferCache without a pyramid still
-    // soft-encodes — forbidden for filmstrip (LQIP + tiles product).
-    (void)ThumtooCache::scheduleTilePyramid(path);
+    // Cold / memo stale: discover coverage on a worker (hasDurableTiles updates
+    // the process memo). Pyramid completion does not emit ladderReady — without
+    // rediscovery filmstrip stayed on LQIP forever after scheduleTilePyramid.
+    const QString pathCopy = path;
+    const int edgeCopy = edge;
+    QThreadPool::globalInstance()->start([pathCopy, edgeCopy]() {
+        if (ThumtooCache::hasDurableTiles(pathCopy)) {
+            // Memo now known; TileSynth via PreferCache (safe on worker queue).
+            (void)ThumtooCache::scheduleDisplayPixels(pathCopy, edgeCopy);
+            return;
+        }
+        // Still no coverage — request durable pyramid (idempotent).
+        (void)ThumtooCache::scheduleTilePyramid(pathCopy);
+    });
 }
 
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
@@ -1759,6 +1770,9 @@ void ThumbnailBar::filmstripSurfaceTick()
             continue;
         }
         // LQIP-only underlay is not terminal — keep driving tiles until strip edge.
+        // Always re-arm TileSynth/pyramid for short visible cells (awaitLadder used
+        // to stick after pyramid with no PreferCache).
+        scheduleFilmstripTilePixels(path, decodeSize);
 
         // Session-id crop/appearance owns the cell — never paint raw host over it.
         // Path-only rows use DisplaySurface::decide below for host upgrades.
