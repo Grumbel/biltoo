@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1115-ttfp-trace.** BILTOO_TTFP stage timings + docs/TTFP.md analysis.
+Prior: **1114**.
+
+### Change
+- `ttfp_trace.h`: stage marks + flame-style stderr report on first pixels.
+- Wired: finishApplyExpandedLoad, setWorkspacePaths/prime/layout/decode,
+  installDisplayPixels.
+- `docs/TTFP.md`: critical path, expected warm/cold costs, how to measure.
+
+```bash
+BILTOO_TTFP=1 biltoo …
+```
+
+### Apply
+```bash
+git pull /path/to/biltoo-1115-ttfp-trace.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1114-warm-open-no-premature-hud.** Warm open: no premature Opening HUD; Gallery before filmstrip.
 Prior: **1113**.
 

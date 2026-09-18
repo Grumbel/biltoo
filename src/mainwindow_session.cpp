@@ -6,6 +6,7 @@
 #include <random>
 #include <algorithm>
 #include "thumtoocache.h"
+#include "ttfp_trace.h"
 #include "projectfile.h"
 #include "archivepath.h"
 #include "pagepath.h"
@@ -1279,6 +1280,7 @@ void MainWindow::applyExpandedLoad(const QStringList &images, int startAt)
 
 void MainWindow::finishApplyExpandedLoad(int startAt)
 {
+    TtfpTrace::begin("finishApplyExpandedLoad");
     m_currentIndex = -1;
     // Second barrier after expand/sort: generation may have been bumped at
     // loadFiles start, but expand is async — bump again so jobs from the
@@ -1286,6 +1288,7 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
     if (m_imageView) {
         m_imageView->invalidateSessionLoads();
     }
+    TtfpTrace::mark("after_invalidateSessionLoads");
 
     // Pull path-XDG orient/flip/grade into SessionAppearanceStore before first paint.
     if (m_imageView) {
@@ -1337,21 +1340,26 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         applyThumbnailVisibility();
     };
 
+    TtfpTrace::mark(sizesWarm ? "sizes_warm" : "sizes_cold");
     if (m_session.paths().size() > 1) {
         if (!sizesWarm) {
             setExpandProgress(
                 0, m_session.paths().size(),
                 tr("Opening %n image(s)…", "", m_session.paths().size()));
             installFilmstrip();
+            TtfpTrace::mark("after_filmstrip_cold");
         }
         enterGalleryMode(initialGalleryLayoutForOpen());
+        TtfpTrace::mark("after_enterGalleryMode");
         setCurrentIndex(idx, /*ensureGalleryVisible=*/true);
+        TtfpTrace::mark("after_setCurrentIndex");
         if (sizesWarm) {
             QTimer::singleShot(0, this, installFilmstrip);
         }
         // Background size probes for plain-file misses only (warm paths skipped).
         ThumtooCache::preparePaths(m_session.paths());
         ThumtooCache::warmUris(m_session.paths());
+        TtfpTrace::mark("after_preparePaths");
     } else {
         installFilmstrip();
         ThumtooCache::preparePaths(m_session.paths());
@@ -1373,6 +1381,9 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         statusBar()->clearMessage();
     }
     rememberSessionHistory(m_session.paths());
+    TtfpTrace::mark("finishApplyExpandedLoad_return");
+    // First pixels often arrive async; if still none, leave session active for
+    // installDisplayPixels to close the report.
 }
 
 void MainWindow::newSession()

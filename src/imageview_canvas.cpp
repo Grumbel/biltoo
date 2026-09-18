@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "imageview.h"
+#include "ttfp_trace.h"
 #include "imagecache.h"
 #include "imageitem.h"
 #include "imageloader.h"
@@ -109,6 +110,7 @@ void ImageView::destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed)
 void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
                                         const QVector<SessionImageId> &sessionIds)
 {
+    TtfpTrace::mark("finishSetWorkspacePaths");
     // Keep canvas order aligned with session/sort order (not async load order).
     reorderItemsByPaths(m_pathOrder);
 
@@ -126,7 +128,9 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
         // Tiles deferred until finishGallerySizeResolve; HUD shows progress.
     } else if (isGalleryMode() && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::EnterGallery);
+        TtfpTrace::mark("after_applyLayout");
         updateGalleryDecodeWindow();
+        TtfpTrace::mark("after_updateGalleryDecodeWindow");
         // First open can pack while the view is still 0×0 (dock/layout settling).
         QTimer::singleShot(0, this, [this]() {
             if (isGalleryMode() && !m_items.isEmpty()) {
@@ -150,6 +154,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // Phase 1: cache-only sizes + LQIP so the first pack uses real aspects.
     if (isGalleryMode() && !paths.isEmpty()) {
         primeGalleryGeometryFromCache(paths);
+        TtfpTrace::mark("after_primeGalleryGeometryFromCache");
     }
 
     const bool haveIds = !sessionIds.isEmpty();
@@ -171,6 +176,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // first pack never uses 1024² stand-ins (first cell stuck square until reload).
     if (isGalleryMode() && !paths.isEmpty()
         && startGallerySizeResolveIfNeeded(paths)) {
+        TtfpTrace::mark("gallery_size_resolve_started");
         m_galleryDeferPopulate = true;
         // Drop any leftover Image/Gallery tiles so nothing paints at random
         // poses while probes run (D&D / mode switch residue).

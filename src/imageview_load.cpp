@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "ttfp_trace.h"
 
 #include <algorithm>
 #include "displayquality.h"
@@ -784,6 +785,9 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     }
     if (!canAcceptDisplaySample(item, pixels, kind)) {
         return;
+    }
+    if (!pixels.isNull()) {
+        TtfpTrace::noteFirstPixels("installDisplayPixels");
     }
     const QSize layoutBefore = item->imageSize();
 
