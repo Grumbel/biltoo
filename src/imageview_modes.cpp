@@ -241,7 +241,7 @@ void ImageView::clearWorkspace()
     m_imageSizeByPath.clear();
     m_sizeProbeScheduled.clear();
     m_provisionalSizePaths.clear();
-    m_galleryDeferPopulate = false;
+    m_gallerySoftBook.deferPopulate = false;
     cancelGallerySizeResolve();
     ImageCache::clear();
     m_tileNeighborPrefetch.clear();

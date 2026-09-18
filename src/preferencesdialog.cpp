@@ -308,18 +308,18 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_hudFontSpin->setSuffix(tr(" pt"));
     m_hudFontSpin->setToolTip(tr("Point size of the on-image HUD text"));
 
-    m_hudTextColorBtn = new QPushButton(this);
-    m_hudTextColorBtn->setMinimumWidth(80);
-    m_hudTextColorBtn->setToolTip(tr("HUD text colour"));
-    connect(m_hudTextColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudTextColor);
+    m_hudPrefs.textColorBtn = new QPushButton(this);
+    m_hudPrefs.textColorBtn->setMinimumWidth(80);
+    m_hudPrefs.textColorBtn->setToolTip(tr("HUD text colour"));
+    connect(m_hudPrefs.textColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudTextColor);
 
-    m_hudPanelColorBtn = new QPushButton(this);
-    m_hudPanelColorBtn->setMinimumWidth(80);
-    m_hudPanelColorBtn->setToolTip(tr("HUD panel background colour (supports alpha)"));
-    connect(m_hudPanelColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudPanelColor);
+    m_hudPrefs.panelColorBtn = new QPushButton(this);
+    m_hudPrefs.panelColorBtn->setMinimumWidth(80);
+    m_hudPrefs.panelColorBtn->setToolTip(tr("HUD panel background colour (supports alpha)"));
+    connect(m_hudPrefs.panelColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudPanelColor);
 
-    updateColorButton(m_hudTextColorBtn, m_hudTextColor);
-    updateColorButton(m_hudPanelColorBtn, m_hudPanelColor);
+    updateColorButton(m_hudPrefs.textColorBtn, m_hudPrefs.textColor);
+    updateColorButton(m_hudPrefs.panelColorBtn, m_hudPrefs.panelColor);
 
     auto *hudForm = new QFormLayout;
     hudForm->setContentsMargins(0, 0, 0, 0);
@@ -331,12 +331,12 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                          updateResetButtons();
                      }));
     hudForm->addRow(tr("Text colour:"),
-                     wrapWithReset(m_hudTextColorBtn, &m_resetHudTextBtn, [this]() {
+                     wrapWithReset(m_hudPrefs.textColorBtn, &m_resetHudTextBtn, [this]() {
                          setHudTextColor(kDefaultHudTextColor);
                          updateResetButtons();
                      }));
     hudForm->addRow(tr("Panel colour:"),
-                     wrapWithReset(m_hudPanelColorBtn, &m_resetHudPanelBtn, [this]() {
+                     wrapWithReset(m_hudPrefs.panelColorBtn, &m_resetHudPanelBtn, [this]() {
                          setHudPanelColor(kDefaultHudPanelColor);
                          updateResetButtons();
                      }));
@@ -951,7 +951,7 @@ void PreferencesDialog::setHudFontPointSize(int pt)
 
 QColor PreferencesDialog::hudTextColor() const
 {
-    return m_hudTextColor;
+    return m_hudPrefs.textColor;
 }
 
 void PreferencesDialog::setHudTextColor(const QColor &color)
@@ -959,13 +959,13 @@ void PreferencesDialog::setHudTextColor(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_hudTextColor = color;
-    updateColorButton(m_hudTextColorBtn, m_hudTextColor);
+    m_hudPrefs.textColor = color;
+    updateColorButton(m_hudPrefs.textColorBtn, m_hudPrefs.textColor);
 }
 
 QColor PreferencesDialog::hudPanelColor() const
 {
-    return m_hudPanelColor;
+    return m_hudPrefs.panelColor;
 }
 
 void PreferencesDialog::setHudPanelColor(const QColor &color)
@@ -973,13 +973,13 @@ void PreferencesDialog::setHudPanelColor(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_hudPanelColor = color;
-    updateColorButton(m_hudPanelColorBtn, m_hudPanelColor);
+    m_hudPrefs.panelColor = color;
+    updateColorButton(m_hudPrefs.panelColorBtn, m_hudPrefs.panelColor);
 }
 
 void PreferencesDialog::chooseHudTextColor()
 {
-    const QColor c = QColorDialog::getColor(m_hudTextColor, this, tr("HUD text colour"));
+    const QColor c = QColorDialog::getColor(m_hudPrefs.textColor, this, tr("HUD text colour"));
     if (c.isValid()) {
         setHudTextColor(c);
         updateResetButtons();
@@ -988,7 +988,7 @@ void PreferencesDialog::chooseHudTextColor()
 
 void PreferencesDialog::chooseHudPanelColor()
 {
-    const QColor c = QColorDialog::getColor(m_hudPanelColor, this, tr("HUD panel colour"),
+    const QColor c = QColorDialog::getColor(m_hudPrefs.panelColor, this, tr("HUD panel colour"),
                                             QColorDialog::ShowAlphaChannel);
     if (c.isValid()) {
         setHudPanelColor(c);

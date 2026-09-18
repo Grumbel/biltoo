@@ -104,10 +104,10 @@ void ImageView::setTool(Tool tool)
 
 void ImageView::setImageModeNavigationEnabled(bool on)
 {
-    if (m_imageModeNavEnabled == on) {
+    if (m_sessionNav.imageModeNavEnabled == on) {
         return;
     }
-    m_imageModeNavEnabled = on;
+    m_sessionNav.imageModeNavEnabled = on;
     if (!on && m_hoverEdge != EdgeZone::GalleryReturn) {
         m_hoverEdge = EdgeZone::None;
     }
@@ -116,10 +116,10 @@ void ImageView::setImageModeNavigationEnabled(bool on)
 
 void ImageView::setGalleryReturnAvailable(bool on)
 {
-    if (m_galleryReturnAvailable == on) {
+    if (m_sessionNav.galleryReturnAvailable == on) {
         return;
     }
-    m_galleryReturnAvailable = on;
+    m_sessionNav.galleryReturnAvailable = on;
     if (!on && m_hoverEdge == EdgeZone::GalleryReturn) {
         m_hoverEdge = EdgeZone::None;
     }
@@ -271,7 +271,7 @@ void ImageView::refreshStatus()
         m_statusRefreshTimer->setInterval(120);
         connect(m_statusRefreshTimer, &QTimer::timeout, this, [this]() {
             emit statusChanged();
-            if ((m_hudVisible || m_hudFlash.visible || m_ssHud.pausedHud)
+            if ((m_hudPrefs.visible || m_hudFlash.visible || m_ssHud.pausedHud)
                 && viewport()) {
                 viewport()->update();
             }
@@ -653,9 +653,9 @@ void ImageView::setImageModeLeftDragPan(bool on)
 
 void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
 {
-    const bool changed = (m_sessionIndex != index || m_sessionTotal != total);
-    m_sessionIndex = index;
-    m_sessionTotal = total;
+    const bool changed = (m_sessionId.index != index || m_sessionId.total != total);
+    m_sessionId.index = index;
+    m_sessionId.total = total;
     // Pulse only when the session cursor actually moves (user Next/Prev, etc.).
     // Do not pulse on every statusChanged while total > 0 (AUDIT H7).
     // Slideshow auto-advance passes pulseIdentity=false.
@@ -665,13 +665,13 @@ void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
             m_hudFlashTimer->start(1000);
         }
     }
-    if (!(changed || m_hudVisible || m_hudFlash.visible || m_hudFlash.identityPulse
+    if (!(changed || m_hudPrefs.visible || m_hudFlash.visible || m_hudFlash.identityPulse
           || m_ssHud.pausedHud)) {
         return;
     }
     // Gallery selection already invalidates the tile; a full viewport()->update()
     // here forced every image through the GL path and felt like lag on click.
-    if (isGalleryMode() && !m_hudVisible && !m_hudFlash.identityPulse) {
+    if (isGalleryMode() && !m_hudPrefs.visible && !m_hudFlash.identityPulse) {
         return;
     }
     if (viewport()) {
@@ -702,10 +702,10 @@ bool ImageView::contentEditMarksVisible() const
 
 void ImageView::setHudVisible(bool on)
 {
-    if (m_hudVisible == on) {
+    if (m_hudPrefs.visible == on) {
         return;
     }
-    m_hudVisible = on;
+    m_hudPrefs.visible = on;
     // Progress line only paints with the pinned HUD; drive the timer accordingly.
     if (m_slideshowProgressTimer) {
         if (on && m_ssHud.progressActive && m_ssHud.progressIntervalMs > 0) {
@@ -720,28 +720,28 @@ void ImageView::setHudVisible(bool on)
 void ImageView::setHudFontPointSize(int pt)
 {
     pt = qBound(8, pt, 48);
-    if (m_hudFontPointSize == pt) {
+    if (m_hudPrefs.fontPointSize == pt) {
         return;
     }
-    m_hudFontPointSize = pt;
+    m_hudPrefs.fontPointSize = pt;
     viewport()->update();
 }
 
 void ImageView::setHudTextColor(const QColor &color)
 {
-    if (!color.isValid() || color == m_hudTextColor) {
+    if (!color.isValid() || color == m_hudPrefs.textColor) {
         return;
     }
-    m_hudTextColor = color;
+    m_hudPrefs.textColor = color;
     viewport()->update();
 }
 
 void ImageView::setHudPanelColor(const QColor &color)
 {
-    if (!color.isValid() || color == m_hudPanelColor) {
+    if (!color.isValid() || color == m_hudPrefs.panelColor) {
         return;
     }
-    m_hudPanelColor = color;
+    m_hudPrefs.panelColor = color;
     viewport()->update();
 }
 
@@ -870,7 +870,7 @@ void ImageView::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
     m_ssHud.timelineElapsedMs = elapsedMs;
     m_ssHud.timelineTotalMs = totalMs;
     // Progress bar needs sub-second updates while the extended HUD is pinned.
-    if (m_hudVisible && viewport()) {
+    if (m_hudPrefs.visible && viewport()) {
         viewport()->update();
     }
 }
@@ -1865,14 +1865,14 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
         }
     }
     // Image-mode slideshow: current session cursor when path matches.
-    if (m_currentSessionId != kInvalidSessionImageId) {
-        if (ImageItem *it = findItemBySessionId(m_currentSessionId)) {
+    if (m_sessionId.currentId != kInvalidSessionImageId) {
+        if (ImageItem *it = findItemBySessionId(m_sessionId.currentId)) {
             if (it->path() == path) {
-                return m_currentSessionId;
+                return m_sessionId.currentId;
             }
         }
         if (classicPath() == path || currentPath() == path) {
-            return m_currentSessionId;
+            return m_sessionId.currentId;
         }
     }
     return kInvalidSessionImageId;
@@ -3609,7 +3609,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
             && !isProvisionalImageSize(path)) {
             const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
                 ? item->sessionId()
-                : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+                : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId);
             const WorkspaceItemState want = wantAppearanceForItem(item, sid);
             const QSize lay = ContentXform::layoutSize(fileNative, want);
             if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
@@ -3621,7 +3621,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
             item,
             item->sessionId() != kInvalidSessionImageId
                 ? item->sessionId()
-                : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId));
+                : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId));
         orientOnly.hasCrop = false;
         orientOnly.cropRect = QRect();
         orientOnly.cropSourceSize = QSize();
@@ -3663,8 +3663,8 @@ QString ImageView::currentPath() const
 
 QString ImageView::sessionBadgeText() const
 {
-    if (m_sessionTotal > 0 && m_sessionIndex >= 0 && m_sessionIndex < m_sessionTotal) {
-        return tr("%1/%2").arg(m_sessionIndex + 1).arg(m_sessionTotal);
+    if (m_sessionId.total > 0 && m_sessionId.index >= 0 && m_sessionId.index < m_sessionId.total) {
+        return tr("%1/%2").arg(m_sessionId.index + 1).arg(m_sessionId.total);
     }
     return {};
 }
@@ -3679,8 +3679,8 @@ QString ImageView::hudFileName() const
     if (m_items.isEmpty() && isMultiItemMode()) {
         return {};
     }
-    if (!m_lastLoadError.isEmpty()) {
-        return PagePath::displayName(m_lastLoadError);
+    if (!m_sessionId.lastLoadError.isEmpty()) {
+        return PagePath::displayName(m_sessionId.lastLoadError);
     }
     ImageItem *item = targetItem();
     if (!item) {
@@ -3734,8 +3734,8 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     }
     if (isGalleryMode()) {
         const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-        const auto it = m_gallerySoft.constFind(item->path());
-        const int have = (it != m_gallerySoft.cend())
+        const auto it = m_gallerySoftBook.soft.constFind(item->path());
+        const int have = (it != m_gallerySoftBook.soft.cend())
             ? qMax(it->have, edge)
             : edge;
         if (need > 0 && have > 0) {
@@ -3780,8 +3780,8 @@ void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
 
 QString ImageView::statusTextEmpty() const
 {
-    if (!m_lastLoadError.isEmpty()) {
-        return tr("Failed to load “%1”").arg(PagePath::displayName(m_lastLoadError));
+    if (!m_sessionId.lastLoadError.isEmpty()) {
+        return tr("Failed to load “%1”").arg(PagePath::displayName(m_sessionId.lastLoadError));
     }
     if (hasClassicPath() && isImageMode()) {
         return tr("Loading…");
@@ -3830,8 +3830,8 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
             } else {
                 ++better;
             }
-            const auto sit = m_gallerySoft.constFind(ii->path());
-            if (sit != m_gallerySoft.cend() && sit->inflight > 0) {
+            const auto sit = m_gallerySoftBook.soft.constFind(ii->path());
+            if (sit != m_gallerySoftBook.soft.cend() && sit->inflight > 0) {
                 ++climb;
             }
         }

@@ -247,7 +247,7 @@ ImageView::ImageView(QWidget *parent)
             });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
-        if (m_hudVisible || m_hudFlash.visible || m_ssHud.pausedHud) {
+        if (m_hudPrefs.visible || m_hudFlash.visible || m_ssHud.pausedHud) {
             viewport()->update();
         }
     });
@@ -295,7 +295,7 @@ ImageView::ImageView(QWidget *parent)
             if (viewport()) {
                 viewport()->update();
             }
-        } else if (m_hudVisible && m_ssHud.progressIntervalMs > 0) {
+        } else if (m_hudPrefs.visible && m_ssHud.progressIntervalMs > 0) {
             if (viewport()) {
                 viewport()->update();
             }
@@ -605,7 +605,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         // (turns + crop), not a simple axis swap.
         SessionImageId sid = item->sessionId();
         if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_currentSessionId;
+            sid = m_sessionId.currentId;
         }
         WorkspaceItemState want = wantAppearanceForItem(item, sid);
         QSize layoutSize = ContentXform::layoutSize(size, want);
@@ -721,8 +721,8 @@ void ImageView::onSizeResolveGateComplete()
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
     // Create tiles only now — sizes are definitive (or timed out with stand-in).
-    if (m_galleryDeferPopulate) {
-        m_galleryDeferPopulate = false;
+    if (m_gallerySoftBook.deferPopulate) {
+        m_gallerySoftBook.deferPopulate = false;
         ensureGalleryPlaceholders();
     } else {
         for (ImageItem *item : m_items) {
@@ -759,7 +759,7 @@ void ImageView::onSizeResolveGateComplete()
 
 void ImageView::onSizeResolveGateCancelled()
 {
-    m_galleryDeferPopulate = false;
+    m_gallerySoftBook.deferPopulate = false;
     if (isGalleryMode() && m_centreProgress.title.isEmpty()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }

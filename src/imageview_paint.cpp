@@ -24,7 +24,7 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
     if (m_hoverEdge == EdgeZone::None || !isImageMode()) {
         return;
     }
-    if (m_hoverEdge != EdgeZone::GalleryReturn && !m_imageModeNavEnabled) {
+    if (m_hoverEdge != EdgeZone::GalleryReturn && !m_sessionNav.imageModeNavEnabled) {
         return;
     }
 
@@ -344,15 +344,15 @@ void ImageView::paintHudPanels(QPainter &painter)
     const QString ssPrefetchLine = slideshowPrefetchHudLine();
     // Loading · … only in the extended (pinned) HUD — not as a free-floating
     // chip during slideshow or normal Image browsing.
-    const QString loadingLine = m_hudVisible ? loadingStatusHudLine() : QString();
-    if (m_crop.mode || m_hudVisible || m_hudFlash.visible || m_hudFlash.identityPulse
+    const QString loadingLine = m_hudPrefs.visible ? loadingStatusHudLine() : QString();
+    if (m_crop.mode || m_hudPrefs.visible || m_hudFlash.visible || m_hudFlash.identityPulse
         || m_ssHud.pausedHud || gallerySizeResolveActive()
         || !m_centreProgress.title.isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
         QFont f = font();
-        const int pt = qBound(8, m_hudFontPointSize, 48);
+        const int pt = qBound(8, m_hudPrefs.fontPointSize, 48);
         f.setPointSize(pt);
         QFont boldF = f;
         boldF.setBold(true);
@@ -454,13 +454,13 @@ void ImageView::paintHudPanels(QPainter &painter)
             y = qBound(margin, y, viewH - margin - bgH);
             const QRect bg(x, y, bgW, bgH);
             painter.setPen(Qt::NoPen);
-            QColor panel = m_hudPanelColor;
+            QColor panel = m_hudPrefs.panelColor;
             if (!panel.isValid() || panel.alpha() == 0) {
                 panel = QColor(0, 0, 0, 160);
             }
             painter.setBrush(panel);
             painter.drawRoundedRect(bg, 6, 6);
-            painter.setPen(m_hudTextColor.isValid() ? m_hudTextColor : QColor(240, 240, 240));
+            painter.setPen(m_hudPrefs.textColor.isValid() ? m_hudPrefs.textColor : QColor(240, 240, 240));
             int ty = bg.top() + pad;
             const int textAreaW = bg.width() - 2 * pad;
             for (const HudLine &hl : drawn) {
@@ -503,7 +503,7 @@ void ImageView::paintHudPanels(QPainter &painter)
                 actionLine += QLatin1Char(' ') + m_hudFlash.detail;
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
-        } else if (m_hudVisible || m_hudFlash.identityPulse) {
+        } else if (m_hudPrefs.visible || m_hudFlash.identityPulse) {
             QList<HudLine> topLeft;
             if (!loadingLine.isEmpty()) {
                 topLeft.append({loadingLine, true});
@@ -543,18 +543,18 @@ void ImageView::paintHudPanels(QPainter &painter)
         // user navigation. Not during pure action flashes (slideshow start, …)
         // and not on automatic slideshow advance (pulseIdentity=false).
         const QString badge = sessionBadgeText();
-        if (!badge.isEmpty() && (m_hudVisible || m_hudFlash.identityPulse)) {
+        if (!badge.isEmpty() && (m_hudPrefs.visible || m_hudFlash.identityPulse)) {
             drawPanel({{badge, true}}, 0, margin, true, false);
         }
 
         // Bottom: filename — pinned HUD, identity pulse after user nav, or gallery hover
-        if (m_hudVisible || m_hudFlash.identityPulse || !m_gallery.hoverPath().isEmpty()) {
+        if (m_hudPrefs.visible || m_hudFlash.identityPulse || !m_gallery.hoverPath().isEmpty()) {
             QList<HudLine> bottom;
             const QString name = hudFileName();
             if (!name.isEmpty()) {
                 bottom.append({name, true});
             }
-            if (m_hudVisible) {
+            if (m_hudPrefs.visible) {
                 const QString tech = statusText();
                 if (!tech.isEmpty() && tech != name) {
                     bottom.append({tech, false});
@@ -573,7 +573,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
     // plus elapsed / total and remaining. Driven by setSlideshowTimeline from
     // the host clock. Falls back to per-interval dwell line if no timeline.
     if (m_ssHud.progressActive
-        && (m_hudVisible || m_ssHud.seekbarVisible || m_ssHud.seekDragging)) {
+        && (m_hudPrefs.visible || m_ssHud.seekbarVisible || m_ssHud.seekDragging)) {
         const int viewW = viewport()->width();
         const int viewH = viewport()->height();
         if (viewW > 0 && viewH > 0) {
@@ -593,7 +593,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
             }
             fraction = qBound(0.0, fraction, 1.0);
 
-            QColor c = m_hudTextColor.isValid() ? m_hudTextColor : QColor(255, 255, 255);
+            QColor c = m_hudPrefs.textColor.isValid() ? m_hudPrefs.textColor : QColor(255, 255, 255);
             QColor track = c;
             track.setAlpha(60);
             c.setAlpha(200);
@@ -635,7 +635,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                              fmt(remain));
 
                 QFont f = painter.font();
-                f.setPointSize(qMax(8, m_hudFontPointSize));
+                f.setPointSize(qMax(8, m_hudPrefs.fontPointSize));
                 painter.setFont(f);
                 const QFontMetrics fm(f);
                 const int textW = fm.horizontalAdvance(timeLine);
@@ -646,14 +646,14 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                 const int bgH = textH + 2 * padY;
                 const int x = (viewW - bgW) / 2;
                 const int y = viewH - 2 - 8 - bgH;
-                QColor panel = m_hudPanelColor;
+                QColor panel = m_hudPrefs.panelColor;
                 if (!panel.isValid() || panel.alpha() == 0) {
                     panel = QColor(0, 0, 0, 160);
                 }
                 painter.setBrush(panel);
                 painter.setPen(Qt::NoPen);
                 painter.drawRoundedRect(QRect(x, y, bgW, bgH), 6, 6);
-                painter.setPen(m_hudTextColor.isValid() ? m_hudTextColor
+                painter.setPen(m_hudPrefs.textColor.isValid() ? m_hudPrefs.textColor
                                                        : QColor(240, 240, 240));
                 painter.drawText(QRect(x + padX, y + padY, textW, textH),
                                  Qt::AlignLeft | Qt::AlignVCenter, timeLine);
@@ -688,7 +688,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     paintEmptySessionInvite(painter);
 
     if (!m_crop.mode && !m_attention.mode && m_hoverEdge != EdgeZone::None && isImageMode()
-        && (m_imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
+        && (m_sessionNav.imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
 
@@ -1149,7 +1149,7 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
     WorkspaceItemState st;
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_currentSessionId;
+        sid = m_sessionId.currentId;
     }
     if (sid != kInvalidSessionImageId) {
         st = sessionAppearanceValue(sid);
@@ -1440,7 +1440,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
         paintGallerySelectionFrames(painter, rect);
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
-    if (isGalleryMode() && !m_hudVisible && !m_hudFlash.visible && !m_hudFlash.identityPulse
+    if (isGalleryMode() && !m_hudPrefs.visible && !m_hudFlash.visible && !m_hudFlash.identityPulse
         && !m_ssHud.pausedHud && !gallerySizeResolveActive()
         && m_centreProgress.title.isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_crop.mode

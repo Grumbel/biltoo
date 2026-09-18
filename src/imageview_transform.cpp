@@ -789,7 +789,7 @@ bool ImageView::targetHasContentAppearance() const
         }
         SessionImageId sid = item->sessionId();
         if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_currentSessionId;
+            sid = m_sessionId.currentId;
         }
         if (sid != kInvalidSessionImageId) {
             if (const WorkspaceItemState *app = m_appearance.get(sid)) {
@@ -822,7 +822,7 @@ int ImageView::resetContentAppearanceForTargets()
         const QString path = item->path();
         SessionImageId sid = item->sessionId();
         if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_currentSessionId;
+            sid = m_sessionId.currentId;
         }
 
         // 1) Drop durable XDG state for this content.

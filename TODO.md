@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1260-hud-session-gallery-soft.** HudAppearance + SessionIdentity + GallerySoftBook.
+Prior: **1259**.
+
+### Change
+- `HudAppearance`: pinned HUD visibility, font, colours.
+- `SessionIdentity` / `SessionNavFlags`: index/total/id/error + nav flags.
+- `GallerySoftBook`: soft map, deferPopulate, image-mode native decode paths.
+- Soft watchdog timer remains on ImageView (`m_gallerySoftWatchdog`).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1260-hud-session-gallery-soft.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1259-canvas-layout-chrome.** CanvasBackground + LayoutPrefs + ViewportChrome.
 Prior: **1258** (also fixes `TextLayerSession m_textLayer` member typo from tip 1258).
 

@@ -127,7 +127,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     if (isGalleryMode() && gallerySizeResolveActive()) {
         // Pack deferred until sizes settle. Keep items hidden so provisional
         // geometry is never painted (cold-open layout glitch).
-        if (m_items.isEmpty() && !paths.isEmpty() && !m_galleryDeferPopulate) {
+        if (m_items.isEmpty() && !paths.isEmpty() && !m_gallerySoftBook.deferPopulate) {
             ensureGalleryPlaceholders();
         }
         for (ImageItem *item : m_items) {
@@ -200,9 +200,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         && startGallerySizeResolveIfNeeded(paths)) {
         // Probes in flight — pack once in finishGallerySizeResolve with real sizes.
         TtfpTrace::mark("gallery_size_resolve_await_sizes");
-        m_galleryDeferPopulate = true;
+        m_gallerySoftBook.deferPopulate = true;
     } else {
-        m_galleryDeferPopulate = false;
+        m_gallerySoftBook.deferPopulate = false;
     }
 
     // Gallery always virtualizes: placeholders + soft/full ladder. The old
@@ -213,7 +213,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     const bool virtualize = isGalleryMode();
 
     // Cold Gallery: defer all item creation until sizes settle (finish packs once).
-    if (isGalleryMode() && m_galleryDeferPopulate && gallerySizeResolveActive()) {
+    if (isGalleryMode() && m_gallerySoftBook.deferPopulate && gallerySizeResolveActive()) {
         // Remove any leftover live items so nothing paints at provisional size.
         for (ImageItem *item : m_items) {
             if (item) {
@@ -895,7 +895,7 @@ void ImageView::ensureGalleryPlaceholders()
     }
     // Only clear defer-populate. Keep size-resolve active so fill layouts still
     // wait for finishGallerySizeResolve to pack (soft may install meanwhile).
-    m_galleryDeferPopulate = false;
+    m_gallerySoftBook.deferPopulate = false;
     QSet<ImageItem *> claimed;
     for (int i = 0; i < m_pathOrder.size(); ++i) {
         const QString &path = m_pathOrder.at(i);

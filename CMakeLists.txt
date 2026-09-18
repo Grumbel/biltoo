@@ -140,6 +140,9 @@ add_executable(biltoo
   src/canvasbackground.h
   src/layoutprefs.h
   src/viewportchrome.h
+  src/hudappearance.h
+  src/sessionchrome.h
+  src/gallerysoftbook.h
   src/slideshowtypes.h
   src/loadgeneration.h
   src/sessionloadgate.h

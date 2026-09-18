@@ -53,6 +53,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **PageGuideSession** / **ItemInteractSession** / **HudFlash**: print guide, single-item drag/rotate, action flash.
 - **ViewFraming** / **TextLayerSession** / **ZoomRegionGesture**: sticky zoom, text overlay, Z-rubber zoom.
 - **CanvasBackground** / **LayoutPrefs** / **ViewportChrome**: bg/tile, grid columns, pan/hover pointer.
+- **HudAppearance** / **SessionIdentity** / **GallerySoftBook**: HUD prefs, session index/id, gallery soft map.
 - **LoadGeneration** (`loadgeneration.h`): monotonic token for async decode accept/reject.
 - **SessionLoadGate** (`sessionloadgate.h`): generation + pending LoadAdd/LoadRestore/scene maps; `clearPending` / `bumpGeneration`.
 

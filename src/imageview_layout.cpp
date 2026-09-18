@@ -100,7 +100,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.colorAdjust = item->colorAdjustments();
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
-        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *app = m_appearance.get(sid)) {
             s.cropRotation = app->cropRotation;
@@ -177,7 +177,7 @@ void ImageView::rememberItemState(ImageItem *item)
     const SessionImageId sid =
         item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
-            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+            : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId);
 
     // Image mode must not overwrite Workspace placement (pos / scale / free tilt).
     // Bound session images: appearance lives only in m_appearance (Phase 2).
@@ -341,7 +341,7 @@ WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) con
     beforeSt.contentVFlip = item->contentVFlip();
     const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
-        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId);
     beforeSt.sessionId = sid0;
     if (item->hasAppliedContentXform()) {
         const ContentXform::Value x = item->appliedContentXform();
@@ -369,7 +369,7 @@ SessionImageId ImageView::resolveContentEditSessionId(ImageItem *item) const
 {
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_currentSessionId;
+        sid = m_sessionId.currentId;
     }
     return sid;
 }
@@ -509,7 +509,7 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
     }
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
-        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId);
     if (raw.isNull()) {
         // No unoriented host: schedule async; do not claim applied yet.
         if (!path.isEmpty() && SessionAppearance::hasContentAppearance(want)) {
@@ -999,7 +999,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
     // Image mode may bind the cursor id when the live item is not yet tagged.
     // Workspace/Gallery must not invent an id — that merges edits onto peers.
     if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_currentSessionId;
+        sid = m_sessionId.currentId;
     }
     WorkspaceItemState contentSlot;
     bool haveContentSlot = false;
@@ -1096,7 +1096,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
     // Propagate pixel / flip / orientation session edits to matching canvas and
     // stashed instances. Placement (pos, scale, free tilt) is preserved.
     const QString path = item->path();
-    // Strict identity: only a valid SessionImageId. Never m_currentSessionId
+    // Strict identity: only a valid SessionImageId. Never m_sessionId.currentId
     // fallback here — that would push this item's pixels onto another tile.
     const SessionImageId sessionId = item->sessionId();
     const QImage src = item->sourceImage();
@@ -1231,7 +1231,7 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
     // paths that skipped emit, still update the strip.
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
-        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
@@ -1707,10 +1707,10 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
 
 void ImageView::setCurrentSessionId(SessionImageId id)
 {
-    if (m_currentSessionId == id) {
+    if (m_sessionId.currentId == id) {
         return;
     }
-    m_currentSessionId = id;
+    m_sessionId.currentId = id;
     // Attention marker is per SessionImageId — reload draft for the new image.
     if (m_attention.mode) {
         m_attention.draftValid = false;
@@ -2766,7 +2766,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
         item->setColorAdjustments(want.colorAdjust);
         const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
-            : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+            : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId);
         if (sid != kInvalidSessionImageId) {
             const QImage appearance = sessionAppearanceImage(item);
             if (!appearance.isNull()) {
@@ -2808,7 +2808,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
     // strip does not wait for the idle commit (and does not require FullSource).
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
-        : (isImageMode() ? m_currentSessionId : kInvalidSessionImageId);
+        : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
@@ -2895,7 +2895,7 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     }
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_currentSessionId;
+        sid = m_sessionId.currentId;
     }
     WorkspaceItemState slot = (sid != kInvalidSessionImageId && m_appearance.contains(sid))
         ? m_appearance.value(sid)

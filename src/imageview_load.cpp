@@ -290,14 +290,14 @@ WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
     // Prefer stable session-image id appearance; path map is legacy only.
     //
     // Image mode LoadReplace: the sole canvas item is the current session
-    // image, so m_currentSessionId identifies it correctly.
+    // image, so m_sessionId.currentId identifies it correctly.
     //
     // Gallery / Workspace LoadAdd must not call this: each tile is bound to
-    // its own session id *after* creation. Applying m_currentSessionId here
+    // its own session id *after* creation. Applying m_sessionId.currentId here
     // would bake the navigated image's crop into every newly decoded tile.
-    if (m_currentSessionId != kInvalidSessionImageId) {
-        seedSessionAppearanceFromState(m_currentSessionId, path);
-        if (const WorkspaceItemState *sit = m_appearance.get(m_currentSessionId)) {
+    if (m_sessionId.currentId != kInvalidSessionImageId) {
+        seedSessionAppearanceFromState(m_sessionId.currentId, path);
+        if (const WorkspaceItemState *sit = m_appearance.get(m_sessionId.currentId)) {
             return *sit;
         }
         // Bound session image with no appearance entry = full frame, no path fallback.
@@ -326,7 +326,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         // empty — which is exactly when durable rotate/flip must be loaded
         // after restart. appearanceForNewImageModeItem seeds then returns
         // identity only if XDG has nothing.
-        if (m_currentSessionId != kInvalidSessionImageId
+        if (m_sessionId.currentId != kInvalidSessionImageId
             || m_itemStates.contains(path)) {
             app = appearanceForNewImageModeItem(path);
         }
@@ -361,7 +361,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         item->setSessionCrop(app.hasCrop, app.cropRect);
         item->setColorAdjustmentsRecord(app.colorAdjust);
         const SessionImageId sid = isImageMode()
-            ? m_currentSessionId
+            ? m_sessionId.currentId
             : kInvalidSessionImageId;
         const int hostEdge = ImageCache::longEdge(image);
         const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
@@ -379,7 +379,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
             ? SessionAppearance::PixelKind::FullSource
             : SessionAppearance::PixelKind::SoftPreview;
         const SessionImageId sid = isImageMode()
-            ? m_currentSessionId
+            ? m_sessionId.currentId
             : item->sessionId();
         installDisplayPixels(item, image, kind, sid);
     }
@@ -536,7 +536,7 @@ void ImageView::installDisplayPreservingView(ImageItem *item, const QImage &pixe
     if (sid == kInvalidSessionImageId) {
         sid = item->sessionId() != kInvalidSessionImageId
                   ? item->sessionId()
-                  : m_currentSessionId;
+                  : m_sessionId.currentId;
     }
     installDisplayPixels(item, pixels, kind, sid);
     preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
@@ -554,7 +554,7 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
         id = item->sessionId();
     }
     if (id == kInvalidSessionImageId && isImageMode()) {
-        id = m_currentSessionId;
+        id = m_sessionId.currentId;
     }
     if (id != kInvalidSessionImageId) {
         if (const WorkspaceItemState *app = m_appearance.get(id)) {
@@ -836,8 +836,8 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     if (sid == kInvalidSessionImageId) {
         if (item->sessionId() != kInvalidSessionImageId) {
             sid = item->sessionId();
-        } else if (isImageMode() && m_currentSessionId != kInvalidSessionImageId) {
-            sid = m_currentSessionId;
+        } else if (isImageMode() && m_sessionId.currentId != kInvalidSessionImageId) {
+            sid = m_sessionId.currentId;
         }
     }
     seedSessionAppearanceFromState(sid, path);
@@ -947,7 +947,7 @@ ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &in
     // placeholders so soft can install. applyLayout stays deferred until
     // finishGallerySizeResolve. Blocking on gallerySizeResolveActive() left
     // m_items empty until a manual relayout (and never for pure Fill open).
-    if (m_galleryDeferPopulate) {
+    if (m_gallerySoftBook.deferPopulate) {
         return nullptr;
     }
     auto *item = new ImageItem(path, intrinsicSize);
@@ -964,11 +964,11 @@ void ImageView::bindImageModeSessionCursor(ImageItem *item)
         return;
     }
     // Image-mode crop/flip targets the matching Workspace session slot.
-    if (m_currentSessionId != kInvalidSessionImageId) {
-        item->setSessionId(m_currentSessionId);
+    if (m_sessionId.currentId != kInvalidSessionImageId) {
+        item->setSessionId(m_sessionId.currentId);
     }
-    if (m_sessionIndex >= 0) {
-        item->setSessionIndex(m_sessionIndex);
+    if (m_sessionId.index >= 0) {
+        item->setSessionIndex(m_sessionId.index);
     }
 }
 
@@ -1018,7 +1018,7 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     // LRU-evicted the soft). Prefer strip / shared host sample first.
     if (pixels.isNull() && m_imageModeSoftProvider) {
         bool ready = false;
-        pixels = m_imageModeSoftProvider(path, m_currentSessionId, &ready);
+        pixels = m_imageModeSoftProvider(path, m_sessionId.currentId, &ready);
         if (!pixels.isNull()) {
             if (displayReadyOut) {
                 *displayReadyOut = ready;
@@ -1043,8 +1043,8 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     }
 
     WorkspaceItemState want;
-    if (m_currentSessionId != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *st = m_appearance.get(m_currentSessionId)) {
+    if (m_sessionId.currentId != kInvalidSessionImageId) {
+        if (const WorkspaceItemState *st = m_appearance.get(m_sessionId.currentId)) {
             want = *st;
         }
     }
@@ -1058,8 +1058,8 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
         if (pixels.isNull()) {
             continue;
         }
-        const bool sameId = (m_currentSessionId != kInvalidSessionImageId
-                             && cand->sessionId() == m_currentSessionId);
+        const bool sameId = (m_sessionId.currentId != kInvalidSessionImageId
+                             && cand->sessionId() == m_sessionId.currentId);
         const bool hasApplied = cand->hasAppliedContentXform();
         const ContentXform::Value applied = hasApplied
             ? cand->appliedContentXform()
@@ -1283,7 +1283,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     }
     bindImageModeSessionCursor(item);
     installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
-                         m_currentSessionId);
+                         m_sessionId.currentId);
     resetImageModeItemPlacement(item);
     prepareImageModeCanvas();
     applyImageModeFraming(item);
@@ -1311,7 +1311,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     quint64 gen = m_loadGate.generation();
     if (role == LoadReplace) {
         gen = m_loadGate.bumpGeneration();
-        m_imageModeNativeDecodePaths.clear();
+        m_gallerySoftBook.imageModeNativeDecodePaths.clear();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
     }
@@ -1522,7 +1522,7 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
 
 void ImageView::gallerySoftResetPath(const QString &path)
 {
-    m_gallerySoft.remove(path);
+    m_gallerySoftBook.soft.remove(path);
     if (m_pathRaster && !path.isEmpty()) {
         m_pathRaster->cancel(path);
     }
@@ -1530,7 +1530,7 @@ void ImageView::gallerySoftResetPath(const QString &path)
 
 void ImageView::gallerySoftResetAll()
 {
-    m_gallerySoft.clear();
+    m_gallerySoftBook.soft.clear();
 }
 
 int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const
@@ -1596,7 +1596,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         }
     }
 
-    GallerySoftState &st = m_gallerySoft[path];
+    GallerySoftState &st = m_gallerySoftBook.soft[path];
     st.terminal = true; // no soft climb ever
     st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
@@ -1741,8 +1741,8 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
         }
     }
 
-    auto it = m_gallerySoft.find(path);
-    if (it != m_gallerySoft.end()) {
+    auto it = m_gallerySoftBook.soft.find(path);
+    if (it != m_gallerySoftBook.soft.end()) {
         it.value().terminal = true;
         it.value().have = qMax(it.value().have, galleryHaveEdgeFromItems(path, nullptr));
     }
@@ -1862,10 +1862,10 @@ void ImageView::ensureWorkspaceQualityClimb()
 void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
 {
     ASSERT_GUI_THREAD();
-    if (path.isEmpty() || m_imageModeNativeDecodePaths.contains(path)) {
+    if (path.isEmpty() || m_gallerySoftBook.imageModeNativeDecodePaths.contains(path)) {
         return;
     }
-    m_imageModeNativeDecodePaths.insert(path);
+    m_gallerySoftBook.imageModeNativeDecodePaths.insert(path);
     const quint64 gen = m_loadGate.generation();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
@@ -2073,17 +2073,17 @@ void ImageView::handleLoadAddDecodeFailure(const QString &path)
         && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
         ThumtooCache::scheduleProbe(path);
         // Soft state machine will request placeholder / higher steps.
-        m_lastLoadError.clear();
+        m_sessionId.lastLoadError.clear();
         finishLoadAddStatus(/*refreshGalleryWindow=*/true);
         return;
     }
     qWarning("ImageView: decode failed for %s", qPrintable(path));
     if (isGalleryMode()) {
-        GallerySoftState &st = m_gallerySoft[path];
+        GallerySoftState &st = m_gallerySoftBook.soft[path];
         st.failed = true;
         st.inflight = 0;
     }
-    m_lastLoadError = path;
+    m_sessionId.lastLoadError = path;
     // Surface the error on any live placeholder for this path.
     for (ImageItem *item : m_items) {
         if (item && item->path() == path && !item->hasDecodedPixels()) {
@@ -2224,7 +2224,7 @@ int ImageView::fillLiveItemsWithDecodedPixels(const QString &path, const QImage 
 void ImageView::createMissingLoadAddItems(const QString &path, const QImage &image,
                                           int have, int wanted)
 {
-    if (gallerySizeResolveActive() || m_galleryDeferPopulate) {
+    if (gallerySizeResolveActive() || m_gallerySoftBook.deferPopulate) {
         return;
     }
     // Create missing occurrences (each duplicate is a normal separate tile).
@@ -2251,7 +2251,7 @@ void ImageView::createMissingLoadAddItems(const QString &path, const QImage &ima
 
 void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
 {
-    if (gallerySizeResolveActive() || m_galleryDeferPopulate) {
+    if (gallerySizeResolveActive() || m_gallerySoftBook.deferPopulate) {
         return;
     }
     if (m_layout.mode != LayoutMode::FreeForm) {
@@ -2399,7 +2399,7 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
     ImageItem *item = createItemFromImage(path, image);
     if (!item) {
         setUpdatesEnabled(true);
-        m_lastLoadError = path;
+        m_sessionId.lastLoadError = path;
         emit statusChanged();
         return;
     }
@@ -2512,8 +2512,8 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     // Same rules as every other attach: accept → materialize → attachDisplaySample.
     installDisplayPixels(item, image, kind, item->sessionId() != kInvalidSessionImageId
                                              ? item->sessionId()
-                                             : m_currentSessionId);
-    m_lastLoadError.clear();
+                                             : m_sessionId.currentId);
+    m_sessionId.lastLoadError.clear();
     rememberSizeFromDecode(path, image);
     if (viewport()) {
         viewport()->update();
@@ -2902,9 +2902,9 @@ void ImageView::completeLoadReplace(const QString &path, const QImage &image, qu
             if (!tilesOwn) {
                 scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
             }
-            m_lastLoadError.clear();
+            m_sessionId.lastLoadError.clear();
         } else {
-            m_lastLoadError = path;
+            m_sessionId.lastLoadError = path;
         }
         emit statusChanged();
         return;
@@ -2950,7 +2950,7 @@ bool ImageView::loadImage(const QString &path)
     if (m_textLayer.showRegions || !m_textLayer.searchQuery.isEmpty()) {
         refreshTextLayer();
     }
-    m_lastLoadError.clear();
+    m_sessionId.lastLoadError.clear();
 
     if (isMultiItemMode()) {
         // Session navigation while in multi-item mode does not destroy the canvas;
@@ -3049,7 +3049,7 @@ void ImageView::driveImageFocusSurface()
     SessionImageId sid = b->sessionId;
     if (sid == kInvalidSessionImageId) {
         sid = item->sessionId() != kInvalidSessionImageId ? item->sessionId()
-                                                          : m_currentSessionId;
+                                                          : m_sessionId.currentId;
     }
 
     Q_UNUSED(sid);

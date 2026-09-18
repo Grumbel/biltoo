@@ -63,10 +63,10 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
     }
     // Top strip: back to Gallery or Workspace (when Image was opened from there).
     // Takes priority over left/right so the upper corners still return.
-    if (m_galleryReturnAvailable && viewPos.y() < edgeZoneHeight()) {
+    if (m_sessionNav.galleryReturnAvailable && viewPos.y() < edgeZoneHeight()) {
         return EdgeZone::GalleryReturn;
     }
-    if (!m_imageModeNavEnabled) {
+    if (!m_sessionNav.imageModeNavEnabled) {
         return EdgeZone::None;
     }
     const int zone = edgeZoneWidth();
@@ -869,7 +869,7 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            if (m_hudVisible || m_hudFlash.visible) {
+            if (m_hudPrefs.visible || m_hudFlash.visible) {
                 emit statusChanged();
             }
             return true;
@@ -892,7 +892,7 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            if (m_hudVisible || m_hudFlash.visible) {
+            if (m_hudPrefs.visible || m_hudFlash.visible) {
                 emit statusChanged();
             }
             return true;

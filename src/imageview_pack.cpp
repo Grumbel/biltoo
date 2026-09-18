@@ -137,7 +137,7 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         if (after <= before && hadDisplay) {
             continue;
         }
-        GallerySoftState &st = m_gallerySoft[path];
+        GallerySoftState &st = m_gallerySoftBook.soft[path];
         // Shown edge only — hostEdge can exceed what install actually attached.
         st.have = qMax(st.have, after);
         item->update();
@@ -294,7 +294,7 @@ void ImageView::updateGalleryDecodeWindow()
         }
         seen.insert(path);
 
-        GallerySoftState &st = m_gallerySoft[path];
+        GallerySoftState &st = m_gallerySoftBook.soft[path];
         st.have = qMax(st.have, item->displayPixelLongEdge());
         st.terminal = true;
 

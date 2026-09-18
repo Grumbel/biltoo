@@ -20,6 +20,9 @@
 #include "canvasbackground.h"
 #include "layoutprefs.h"
 #include "viewportchrome.h"
+#include "hudappearance.h"
+#include "sessionchrome.h"
+#include "gallerysoftbook.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
@@ -544,8 +547,8 @@ public:
     void setImageModeNavigationEnabled(bool on);
     /** When true, Image mode top edge offers return-to-gallery. */
     void setGalleryReturnAvailable(bool on);
-    bool galleryReturnAvailable() const { return m_galleryReturnAvailable; }
-    bool imageModeNavigationEnabled() const { return m_imageModeNavEnabled; }
+    bool galleryReturnAvailable() const { return m_sessionNav.galleryReturnAvailable; }
+    bool imageModeNavigationEnabled() const { return m_sessionNav.imageModeNavEnabled; }
 
     /**
      * Show exactly the given paths on the workspace. Images already present
@@ -789,15 +792,15 @@ public:
      */
     void setSessionPosition(int index, int total, bool pulseIdentity = true);
     void setCurrentSessionId(SessionImageId id);
-    SessionImageId currentSessionId() const { return m_currentSessionId; }
+    SessionImageId currentSessionId() const { return m_sessionId.currentId; }
     /** Select canvas item for @p path; ensure visible in Gallery. */
     void focusSessionPath(const QString &path);
-    int sessionIndex() const { return m_sessionIndex; }
-    int sessionTotal() const { return m_sessionTotal; }
+    int sessionIndex() const { return m_sessionId.index; }
+    int sessionTotal() const { return m_sessionId.total; }
 
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
-    bool hudVisible() const { return m_hudVisible; }
+    bool hudVisible() const { return m_hudPrefs.visible; }
     /** Corner marks for crop / orient / grade (default on). */
     void setContentEditMarksVisible(bool on);
     /** Seed orient/flip/grade from path XDG for each session id (open/restart). */
@@ -805,11 +808,11 @@ public:
                                          const QVector<SessionImageId> &ids);
     bool contentEditMarksVisible() const;
     void setHudFontPointSize(int pt);
-    int hudFontPointSize() const { return m_hudFontPointSize; }
+    int hudFontPointSize() const { return m_hudPrefs.fontPointSize; }
     void setHudTextColor(const QColor &color);
-    QColor hudTextColor() const { return m_hudTextColor; }
+    QColor hudTextColor() const { return m_hudPrefs.textColor; }
     void setHudPanelColor(const QColor &color);
-    QColor hudPanelColor() const { return m_hudPanelColor; }
+    QColor hudPanelColor() const { return m_hudPrefs.panelColor; }
 
     /**
      * Brief top-left HUD action (slideshow, fit mode, …).
@@ -915,7 +918,7 @@ public:
     SessionImageId sessionIdForPath(const QString &path) const;
     /**
      * Apply path-keyed content appearance (flip / quarter-turns / grade) to
-     * unbaked disk pixels for slideshow paint. Never use m_currentSessionId —
+     * unbaked disk pixels for slideshow paint. Never use m_sessionId.currentId —
      * that is the *dwell* image during a live transition to another path.
      */
     QImage orientSlideshowImage(const QImage &raw, const QString &path) const;
@@ -1123,7 +1126,7 @@ public:
     /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */
     QString sessionBadgeText() const;
     /** Path of the last failed Image-mode decode (empty if none). */
-    QString lastLoadError() const { return m_lastLoadError; }
+    QString lastLoadError() const { return m_sessionId.lastLoadError; }
     /** Basename of the current/target image for the bottom HUD. */
     QString hudFileName() const;
     ImageMouseInfo mouseInfo() const { return m_chrome.mouseInfo; }
@@ -1777,7 +1780,6 @@ private:
     /** Centre HUD progress (expand / size resolve / sort). */
     CentreProgress m_centreProgress;
     /** Gallery open: wait for sizes before creating scene tiles. */
-    bool m_galleryDeferPopulate = false;
     /** Packaged-layout size gate (timers + pending); canvas finish via Host. */
     GallerySizeResolve m_gallerySizeResolve;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
@@ -1799,20 +1801,13 @@ private:
     PageGuideSession m_pageGuide;
     ViewFraming m_framing;
     ViewMode m_viewMode = ViewMode::Image;
-    bool m_imageModeNavEnabled = false;
-    bool m_galleryReturnAvailable = false;
+    SessionNavFlags m_sessionNav;
     /** Gallery: path under cursor for HUD filename (empty when none). */
     /** Last mouse position in viewport coords (gallery hover + scroll). */
     CanvasBackground m_canvasBg;
     TextLayerSession m_textLayer;
-    bool m_hudVisible = false;
-    int m_hudFontPointSize = 11;
-    QColor m_hudTextColor{255, 255, 255};
-    QColor m_hudPanelColor{0, 0, 0, 160};
-    int m_sessionIndex = -1;
-    int m_sessionTotal = 0;
-    SessionImageId m_currentSessionId = kInvalidSessionImageId;
-    QString m_lastLoadError;
+    HudAppearance m_hudPrefs;
+    SessionIdentity m_sessionId;
     HudFlash m_hudFlash;
     /** Persistent slideshow-paused cue (top-left); not cleared by flash timer. */
     QElapsedTimer m_lastSlideshowCenterClick;
@@ -1838,11 +1833,7 @@ private:
     Tool m_tool = Tool::Select;
     LayoutPrefs m_layout;
     SessionLoadGate m_loadGate;
-    /** Outstanding LoadAdd / gallery decode jobs per path (refcount). */
-    /** Per-path Gallery decode-window state — GallerySoftState in imageview_types.h. */
-    QHash<QString, GallerySoftState> m_gallerySoft;
-    /** Paths that already started host ImageLoader::load for Image-mode HQ. */
-    QSet<QString> m_imageModeNativeDecodePaths;
+    GallerySoftBook m_gallerySoftBook;
     /** Central path→raster climb (slideshow + shared PreferCache policy). */
     ImageModeSoftProvider m_imageModeSoftProvider;
 
