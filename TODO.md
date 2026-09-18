@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1173-coarsest-tile-first.** Progressive tile issue: coarsest scale first.
+Prior: **1172**.
+
+### Issue
+Tile issue sorted parents coarsest-first but the same budget batch still mixed
+exact screen-matched keys with overview parents — first paint often looked like
+“proper resolution” instead of lowest-res overview then refine.
+
+### Fix
+- Cold `issue_requests`: only the single coarsest candidate scale per batch.
+- Cold `stable_request_scale`: start at `max_scale`; step one level finer only
+  after Succeeded tiles exist at the held scale.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1173-coarsest-tile-first.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1172-scroll-tile-tick-once.** Scroll perf: one tile tick per decode window.
 Prior: **1171**.
 

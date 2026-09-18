@@ -73,9 +73,30 @@ int TileSession::stable_request_scale(int desired_scale)
   using clock = std::chrono::steady_clock;
   if (!m_have_stable_scale) {
     m_have_stable_scale = true;
-    m_stable_scale = desired_scale;
+    // Cold open: plan at coarsest so visible_keys are overview cells first.
+    // Refines toward desired after issue/pump lands Succeeded tiles.
+    m_stable_scale =
+        (m_max_scale > desired_scale) ? m_max_scale : desired_scale;
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
+    return m_stable_scale;
+  }
+  // Progressive refine: only step one level finer once the held scale has
+  // Succeeded tiles (do not race toward desired every set_viewport tick).
+  if (m_stable_scale > desired_scale) {
+    m_pending_scale = desired_scale;
+    bool held_ready = false;
+    for (auto const& [k, e] : m_cache->map()) {
+      if (k.scale == m_stable_scale && e.state == TileState::Succeeded
+          && e.bitmap.valid()) {
+        held_ready = true;
+        break;
+      }
+    }
+    if (held_ready) {
+      m_stable_scale = m_stable_scale - 1;
+      m_pending_since = clock::now();
+    }
     return m_stable_scale;
   }
   if (desired_scale == m_stable_scale) {
