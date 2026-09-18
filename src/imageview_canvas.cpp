@@ -125,8 +125,19 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     }
 
     if (isGalleryMode() && m_gallerySizeResolveActive) {
-        // Fill pack deferred until sizes settle; soft may still climb.
+        // Fill pack deferred until sizes settle. Placeholders should exist so
+        // soft/PreferCache can install before finishGallerySizeResolve packs.
+        if (m_items.isEmpty() && !paths.isEmpty()) {
+            ensureGalleryPlaceholders();
+        }
         updateGalleryDecodeWindow();
+    } else if (isGalleryMode() && m_items.isEmpty() && !paths.isEmpty()) {
+        // Non-fill path should have created items; recover if not.
+        ensureGalleryPlaceholders();
+        if (!m_items.isEmpty()) {
+            applyLayout(GalleryPackReason::EnterGallery);
+            updateGalleryDecodeWindow();
+        }
     } else if (isGalleryMode() && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::EnterGallery);
         TtfpTrace::mark("after_applyLayout");
@@ -864,9 +875,9 @@ void ImageView::ensureGalleryPlaceholders()
     if (!isGalleryMode() || m_pathOrder.isEmpty()) {
         return;
     }
-    // createPlaceholderItem refuses while defer/resolve flags are set.
+    // Only clear defer-populate. Keep size-resolve active so fill layouts still
+    // wait for finishGallerySizeResolve to pack (soft may install meanwhile).
     m_galleryDeferPopulate = false;
-    m_gallerySizeResolveActive = false;
     QSet<ImageItem *> claimed;
     for (int i = 0; i < m_pathOrder.size(); ++i) {
         const QString &path = m_pathOrder.at(i);

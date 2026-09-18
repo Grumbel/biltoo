@@ -2,6 +2,35 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1168-size-resolve-placeholders.** Fill size-resolve left empty canvas.
+Prior: **1167**.
+
+### Bug
+`createPlaceholderItem` refused while `m_gallerySizeResolveActive` (Fill layouts).
+Open created **zero** items; `finishGallerySizeResolve` only called
+`ensureGalleryPlaceholders` when `m_galleryDeferPopulate` (always false on that
+path). Manual relayout could recover; cold Fill open stayed empty.
+
+### Fix
+- Create placeholders during size-resolve (only block `m_galleryDeferPopulate`).
+- `ensureGalleryPlaceholders` no longer clears size-resolve.
+- finish resolve: ensure placeholders if still empty; open recover paths.
+
+### HOST-SAMPLE overlay
+Debug stamp for host ImageCache samples (not grid tiles). Relabeled
+SOFT-UNDERLAY / HOST-UNDERLAY vs thumtoo TILE stamps.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1168-size-resolve-placeholders.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1167-startup-gallery-decode.** Startup blank until relayout — force install + decode pulses.
 Prior: **1166**.
 

@@ -820,6 +820,10 @@ void ImageView::finishGallerySizeResolve()
                 }
             }
         }
+        // Safety: size-resolve used to refuse createPlaceholder → empty canvas.
+        if (isGalleryMode() && m_items.isEmpty() && !m_pathOrder.isEmpty()) {
+            ensureGalleryPlaceholders();
+        }
     }
     if (isGalleryMode() && !m_items.isEmpty() && m_layoutMode != LayoutMode::FreeForm) {
         applyLayout(GalleryPackReason::EnterGallery);

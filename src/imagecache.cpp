@@ -106,12 +106,15 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     p.drawRect(border / 2, border / 2, w - border, h - border);
 
     QStringList lines;
-    // Product: LQIP underlay + tiles. Do not stamp SOFT/HOST (removed paths).
+    // Host ImageCache sample (classic loadThumbnail / PreferCache whole-frame).
+    // Not a grid tile — thumtoo stamps TILE/LADDER separately on Store pixels.
     const int le = qMax(w, h);
     if (le <= 96) {
         lines << QStringLiteral("LQIP");
+    } else if (le <= 512) {
+        lines << QStringLiteral("SOFT-UNDERLAY");
     } else {
-        lines << QStringLiteral("HOST-SAMPLE"); // should not be underlay in Gallery
+        lines << QStringLiteral("HOST-UNDERLAY");
     }
     if (!label.isEmpty()) {
         lines << label;

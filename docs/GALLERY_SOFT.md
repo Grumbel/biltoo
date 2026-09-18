@@ -17,6 +17,17 @@ Small cells (`!tileLodWanted`) use PreferCache / LQIP only (no soft climb to 512
 
 Warm `ImageCache` cover of the soft edge → zero PreferCache work.
 
+### Debug overlay (`BILTOO_DEBUG_OVERLAY`)
+
+| Stamp | Meaning |
+|-------|--------|
+| **LQIP** | ≤96 host stand-in |
+| **SOFT-UNDERLAY** | Host whole-frame soft (≤512), not a grid tile |
+| **HOST-UNDERLAY** | Larger host sample (PreferCache / loadThumbnail) |
+| **TILE** / **LADDER** (thumtoo stamps) | Durable pyramid cells |
+
+Cyan HOST/SOFT underlay mixed with magenta TILE stamps means soft arrived before tiles covered the cell (expected until `tileLodActive`).
+
 PathRaster must **not** skip soft PreferCache solely because a durable
 pyramid exists — that left Gallery blank when LQIP was absent.
 

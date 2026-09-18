@@ -948,8 +948,11 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
 
 ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
 {
-    // Size-first Gallery open: no scene tiles until definitive sizes land.
-    if (m_gallerySizeResolveActive || m_galleryDeferPopulate) {
+    // Defer-populate only: size-resolve for Fill layouts must still create
+    // placeholders so soft can install. applyLayout stays deferred until
+    // finishGallerySizeResolve. Blocking on m_gallerySizeResolveActive left
+    // m_items empty until a manual relayout (and never for pure Fill open).
+    if (m_galleryDeferPopulate) {
         return nullptr;
     }
     auto *item = new ImageItem(path, intrinsicSize);
