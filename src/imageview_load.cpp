@@ -1665,6 +1665,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             auto sit = m_gallerySoft.find(path);
             if (sit != m_gallerySoft.end()) {
                 clearGallerySoftInflight(*sit);
+                sit->terminal = true; // tiles own — stop soft forever for this path
+            } else {
+                GallerySoftState &st = m_gallerySoft[path];
+                st.terminal = true;
             }
             tickPrimaryTileLod(12);
             return;
@@ -1706,21 +1710,31 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
 
     clearGalleryGaveUpIfClimbable(st, have, want);
-    // Shown LQIP is never a PreferCache plateau — drop mirrored give-up so
-    // SoftDisplay can schedule again after a soft shortfall.
-    if (have <= DisplayQuality::kLqipMaxEdge && st.gaveUpWant > 0) {
+    // LQIP may clear Prefer plateau at most twice — unlimited clear was an
+    // endless SoftDisplay loop when install lagged behind ImageCache.
+    if (have <= DisplayQuality::kLqipMaxEdge && st.gaveUpWant > 0
+        && st.ensureAttempts < 2) {
         st.gaveUpWant = 0;
         if (m_pathRaster) {
             m_pathRaster->clearPreferGaveUp(path);
         }
     }
+    if (st.terminal || st.failed) {
+        return;
+    }
     if (gallerySoftScheduleBlocked(st, have, want)) {
+        return;
+    }
+    if (!st.needsSoftSchedule(want, /*anyBlank=*/have <= 0, /*anyFull=*/false)) {
         return;
     }
 
     if (!m_pathRaster) {
         return;
     }
+
+    GallerySoft::assertNotTerminalForSchedule(st);
+    GallerySoft::noteEnsureScheduled(st, want);
 
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
         dbg && dbg[0] != '\0' && dbg[0] != '0') {

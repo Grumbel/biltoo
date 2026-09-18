@@ -2,12 +2,25 @@
 
 ## Status (2026-09-18)
 
-**Tip: biltoo-1147-warm-archive-hud.** Warm archive open: no Indexing HUD; clear progress when expand ends.
-Prior: **1146**.
+**Tip: biltoo-1148-gallery-soft-terminal.** Gallery soft terminal + ensure caps; stop soft storms.
+Prior: **1147**.
+
+### Problem
+Gallery took 5–10s to settle while a same-size JPEG decode is ~0.26s. Soft PreferCache
+and watchdog re-ensure loops ran without a terminal state (LQIP plateau clear forever,
+stuck watchdog every 900ms).
+
+### Fix (pure SM + host)
+- `GallerySoft`: `ensureAttempts` / `terminal` / `kMaxEnsureAttempts`; `needsSchedule`
+  false when terminal; `noteEnsureScheduled` / `assertNotTerminalForSchedule`.
+- LQIP `gaveUpWant` clear at most twice per band.
+- Durable + tileLodWanted → mark terminal (tiles own).
+- Watchdog skips terminal / durable soft-covered paths.
+- `PathRasterService::pump`: schedule cycle cap (preferGaveUp) + assert at 32.
 
 ### Apply
 ```bash
-git pull /path/to/biltoo-1147-warm-archive-hud.bundle HEAD
+git pull /path/to/biltoo-1148-gallery-soft-terminal.bundle HEAD
 ```
 
 ---

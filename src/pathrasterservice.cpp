@@ -75,9 +75,12 @@ void PathRasterService::ensure(const QString &path, int wantEdge,
     Entry &entry = m_state[path];
     entry.epoch = m_epoch;
     RasterClimb::Machine &m = entry.machine;
-
+    const int prevWant = m.state().want;
     m.setWant(want, native, toSmPolicy(policy), ThumtooCache::kGalleryLadderEdge,
               ThumtooCache::kBatchOverviewEdge);
+    if (want > prevWant) {
+        entry.scheduleCycles = 0;
+    }
 
     if (policy == ClimbPolicy::EscalateToFull) {
         ThumtooCache::forgetPixelsSettled(path, want);
@@ -217,6 +220,21 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     m.setHaveFromHost(ImageCache::longEdge(ImageCache::get(path)),
                       ThumtooCache::kGalleryLadderEdge);
 
+    // Soft/Full schedule storm guard — Gallery was re-pumping for seconds.
+    constexpr int kMaxScheduleCycles = 16;
+    constexpr int kAssertScheduleCycles = 32;
+    if (entry.scheduleCycles >= kMaxScheduleCycles) {
+        m.state().preferGaveUp = true;
+        m.state().softQueued = false;
+        m.state().displayQueued = false;
+        m.state().fullQueued = false;
+        if (entry.scheduleCycles >= kAssertScheduleCycles) {
+            Q_ASSERT_X(false, "PathRasterService::pump",
+                       "schedule cycle cap — climb stuck in unexpected loop");
+        }
+        return;
+    }
+
     const RasterClimb::Plan plan =
         m.plan(ThumtooCache::kGalleryLadderEdge, ThumtooCache::kBatchOverviewEdge,
                ImageCache::kDisplayMaxEdge);
@@ -269,6 +287,10 @@ void PathRasterService::pump(const QString &path, Entry &entry)
             || ThumtooCache::isPixelsPending(path, plan.fullEdge)) {
             accepted.scheduleFull = true;
         }
+    }
+    if (accepted.scheduleSoft || accepted.scheduleDisplay || accepted.scheduleFull
+        || accepted.scheduleTiles) {
+        ++entry.scheduleCycles;
     }
     m.markScheduled(accepted);
 }

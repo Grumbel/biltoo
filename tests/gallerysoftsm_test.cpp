@@ -17,6 +17,8 @@ private slots:
     void needs_schedule_lqip_ceiling_edge();
     void needs_schedule_inflight_soft();
     void needs_schedule_any_full();
+    void needs_schedule_terminal();
+    void needs_schedule_max_attempts();
     void host_install_soft_vs_full();
     void host_install_no_loop_when_shown_matches();
     void host_install_upgrades_lqip();
@@ -66,6 +68,31 @@ void GallerySoftSmTest::needs_schedule_inflight_soft()
     QVERIFY(!needsSchedule(st, 512, false, false));
     // Blank tile still needs work
     QVERIFY(needsSchedule(st, 512, true, false));
+}
+
+void GallerySoftSmTest::needs_schedule_terminal()
+{
+    State st;
+    st.have = 16;
+    st.terminal = true;
+    QVERIFY(!needsSchedule(st, 512, true, false));
+}
+
+void GallerySoftSmTest::needs_schedule_max_attempts()
+{
+    State st;
+    st.have = 16;
+    for (int i = 0; i < kMaxEnsureAttempts; ++i) {
+        noteEnsureScheduled(st, 512);
+    }
+    QVERIFY(st.terminal);
+    QVERIFY(!needsSchedule(st, 512, true, false));
+    // Higher want reopens budget.
+    noteEnsureScheduled(st, 1024);
+    QVERIFY(!st.terminal || st.ensureAttempts == 1);
+    // After noteEnsure on higher want, attempts reset then ++
+    QVERIFY(st.ensureAttempts == 1);
+    QVERIFY(needsSchedule(st, 1024, true, false) || st.ensureAttempts < kMaxEnsureAttempts);
 }
 
 void GallerySoftSmTest::needs_schedule_any_full()

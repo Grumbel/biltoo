@@ -57,6 +57,8 @@ private:
     struct Entry {
         RasterClimb::Machine machine;
         quint64 epoch = 0;
+        /** ensure()/pump schedule cycles — storm detection. */
+        int scheduleCycles = 0;
     };
 
     void pump(const QString &path, Entry &entry);

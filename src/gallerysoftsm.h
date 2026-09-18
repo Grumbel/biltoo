@@ -20,6 +20,9 @@
  * 4. Host install uses FullSource when hostEdge > softMax — never SoftPreview
  *    for large host samples (SoftPreview clamp would leave shown << host forever).
  * 5. Host install is a no-op when shown already covers host (strict upgrade only).
+ * 6. After kMaxEnsureAttempts ensure cycles without settling, terminal=true —
+ *    needsSchedule stays false (no soft storm). Clearing terminal only when
+ *    want rises or the path is reset.
  */
 namespace GallerySoft {
 
@@ -27,6 +30,8 @@ constexpr int kCoverNumer = 9;
 constexpr int kCoverDenom = 10;
 constexpr int kDefaultLqipCeiling = 96;
 constexpr int kSoftProgressFloor = 128;
+/** Hard cap: soft PreferCache ensure cycles per path per want band. */
+constexpr int kMaxEnsureAttempts = 6;
 
 inline bool covers(int have, int need)
 {
@@ -56,6 +61,9 @@ struct State {
     int want = 0;
     int inflight = 0;
     int gaveUpWant = 0;
+    int ensureAttempts = 0;
+    /** True after failed/max attempts — needsSchedule must stay false. */
+    bool terminal = false;
     bool failed = false;
     qint64 inflightSinceMs = 0;
     qint64 weakSinceMs = 0;
@@ -65,7 +73,11 @@ struct State {
 inline bool needsSchedule(const State &st, int wantEdge, bool anyBlank, bool anyFull,
                           int lqipCeiling = kDefaultLqipCeiling)
 {
-    if (st.failed || anyFull) {
+    if (st.failed || st.terminal || anyFull) {
+        return false;
+    }
+    // Cap soft storms: blank may get one last attempt only if under the hard max.
+    if (st.ensureAttempts >= kMaxEnsureAttempts) {
         return false;
     }
     if (st.have >= wantEdge && !anyBlank) {
@@ -78,6 +90,30 @@ inline bool needsSchedule(const State &st, int wantEdge, bool anyBlank, bool any
         return false;
     }
     return true;
+}
+
+/** Call when PathRaster ensure is actually issued for this path. */
+inline void noteEnsureScheduled(State &st, int wantEdge)
+{
+    if (wantEdge > st.want) {
+        // New higher want band — allow a fresh budget.
+        st.ensureAttempts = 0;
+        st.terminal = false;
+    }
+    st.want = wantEdge > 0 ? wantEdge : st.want;
+    ++st.ensureAttempts;
+    if (st.ensureAttempts >= kMaxEnsureAttempts) {
+        st.terminal = true;
+        st.inflight = 0;
+        st.inflightSinceMs = 0;
+    }
+}
+
+/** Illegal to schedule soft after terminal without want rise / reset. */
+inline void assertNotTerminalForSchedule(const State &st)
+{
+    Q_ASSERT_X(!st.terminal, "GallerySoft",
+               "schedule after terminal soft state — soft storm / stuck loop");
 }
 
 void noteLadderDelivery(State &st, int requestEdge, int gotEdge, int softFloor);

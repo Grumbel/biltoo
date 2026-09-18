@@ -857,6 +857,18 @@ void ImageView::gallerySoftWatchdogTick()
             continue;
         }
         GallerySoftState &st = m_gallerySoft[path];
+        // Terminal soft path: tiles/host own display — never force ensure again.
+        if (st.terminal || st.failed
+            || st.ensureAttempts >= GallerySoft::kMaxEnsureAttempts) {
+            st.terminal = true;
+            continue;
+        }
+        // Durable pyramid: soft underlay is optional; watchdog must not storm.
+        if (ThumtooCache::hasDurableTilesKnown(path)
+            && item->displayPixelLongEdge() > DisplayQuality::kLqipMaxEdge) {
+            st.terminal = true;
+            continue;
+        }
 
         // Install policy via bound surface + controller evaluate.
         int target = st.want > 0 ? st.want
@@ -935,23 +947,16 @@ void ImageView::gallerySoftWatchdogTick()
             if (st.weakSinceMs <= 0) {
                 st.weakSinceMs = now;
             } else if ((now - st.weakSinceMs) > kStuckMs) {
-                clearGallerySoftInflight(st);
-                st.gaveUpWant = 0;
-                if (m_pathRaster) {
-                    ThumtooCache::forgetPixelsSettled(
-                        path, ThumtooCache::kGalleryLadderEdge);
-                    m_pathRaster->clearPreferGaveUp(path);
-                    const auto pol =
-                        (target > ThumtooCache::kBatchOverviewEdge
-                         && !ThumtooCache::hasDurableTilesKnown(path)
-                         && !(item && item->tileLodWanted()))
-                            ? PathRasterService::ClimbPolicy::EscalateToFull
-                            : PathRasterService::ClimbPolicy::SoftDisplay;
-                    m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
+                if (st.terminal || st.ensureAttempts >= GallerySoft::kMaxEnsureAttempts) {
+                    st.terminal = true;
+                    st.weakSinceMs = 0;
+                } else {
+                    clearGallerySoftInflight(st);
+                    // Do not clear gaveUpWant forever — limited retries via ensureAttempts.
+                    scheduleGalleryDecode(path);
+                    needWindow = true;
+                    st.weakSinceMs = 0;
                 }
-                scheduleGalleryDecode(path);
-                needWindow = true;
-                st.weakSinceMs = 0;
             }
         } else if (item->hasDisplayPixels()
                    && item->displayPixelLongEdge() > DisplayQuality::kLqipMaxEdge) {
