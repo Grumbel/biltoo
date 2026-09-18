@@ -2190,9 +2190,12 @@ bool isAvailable()
 #endif
 }
 
-QStringList expandArchiveToImageRefs(const QString &archivePath)
+QStringList expandArchiveToImageRefs(const QString &archivePath, bool *fromStore)
 {
     QStringList out;
+    if (fromStore) {
+        *fromStore = false;
+    }
 #ifdef BILTOO_HAVE_THUMTOO
     if (archivePath.isEmpty()) {
         return out;
@@ -2216,13 +2219,16 @@ QStringList expandArchiveToImageRefs(const QString &archivePath)
 
     auto entries = c->get_archive_entries(archiveUri);
     // Prefer durable Store TOC (instant on warm cache). Re-read the archive only
-    // when the index has no members. Do not force-refresh RAR/CBR on every open:
-    // that re-walked solid streams and made "Indexing archive…" feel permanent
-    // even after prepare/first open. Stale pre-unarr indexes: empty Store or
-    // clear cache once; fingerprint drift is handled by later probe paths.
-    if (entries.empty()) {
-        // Source I/O + durable store; callers use this from expand workers.
+    // when the index has no members. Do not force-refresh RAR/CBR on every open.
+    if (!entries.empty()) {
+        if (fromStore) {
+            *fromStore = true;
+        }
+    } else {
         entries = c->refresh_archive_toc(abs);
+        if (fromStore) {
+            *fromStore = false;
+        }
     }
     if (entries.empty()) {
         return out;

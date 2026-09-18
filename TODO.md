@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1147-warm-archive-hud.** Warm archive open: no Indexing HUD; clear progress when expand ends.
+Prior: **1146**.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1147-warm-archive-hud.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1146-no-lqip-hud.** Drop "Improving previews… LQIP" centre HUD and status spam.
 Prior: **1145**.
 

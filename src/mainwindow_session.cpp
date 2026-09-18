@@ -120,12 +120,16 @@ void appendFileContainerOrImage(QStringList &images, const QString &path,
     }
     if (ArchivePath::isArchiveFile(path) && ThumtooCache::isAvailable()) {
         const QString name = QFileInfo(path).fileName();
-        expandReport(report, QObject::tr("Indexing archive “%1”…").arg(name));
-        const QStringList members = ThumtooCache::expandArchiveToImageRefs(path);
-        if (!members.isEmpty()) {
+        bool fromStore = false;
+        const QStringList members =
+            ThumtooCache::expandArchiveToImageRefs(path, &fromStore);
+        if (!fromStore && !members.isEmpty()) {
             expandReport(report,
                          QObject::tr("Archive “%1”: %n image(s)", "", members.size())
                              .arg(name));
+        } else if (!fromStore) {
+            expandReport(report,
+                         QObject::tr("No images in archive “%1”").arg(name));
         }
         images.append(members);
         return;
@@ -586,6 +590,11 @@ void MainWindow::applyExpandedPathsResult(const QStringList &images, bool append
                 expandEmptyResultMessage(sourcePaths, append), 8000);
         }
         return;
+    }
+    // Expand worker done — drop Opening/Indexing HUD before apply/layout.
+    setExpandProgressBusy(false);
+    if (statusBar() && statusBar()->currentMessage().startsWith(tr("Opening"))) {
+        statusBar()->clearMessage();
     }
     // Do not set "Opening N images…" here — finishApplyExpandedLoad shows it
     // only when durable sizes are still missing (warm index stays silent).

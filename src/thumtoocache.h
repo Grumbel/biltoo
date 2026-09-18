@@ -288,7 +288,8 @@ bool isAvailable();
  * unavailable or the archive has no image members. Safe to call from a worker
  * thread. Sole archive expand path in biltoo.
  */
-QStringList expandArchiveToImageRefs(const QString &archivePath);
+QStringList expandArchiveToImageRefs(const QString &archivePath,
+                                     bool *fromStore = nullptr);
 
 /** Expand a PDF into one session path per page (…//page:N, 1-based).
  * Page count is cache-first via thumtoo document_index (≥ 202). */
