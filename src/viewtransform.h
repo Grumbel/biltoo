@@ -5,6 +5,7 @@
 #define VIEWTRANSFORM_H
 
 #include <QPoint>
+#include <QPointF>
 #include <QSize>
 #include <QRect>
 #include <QRectF>
@@ -22,6 +23,12 @@ namespace ViewTransform {
 inline qreal scaleFrom(const QTransform &t)
 {
     return std::hypot(t.m11(), t.m12());
+}
+
+/** Floor near-zero scales so pattern cell math stays finite. */
+inline qreal sanitizeViewScale(qreal viewScale, qreal floor = 1e-6)
+{
+    return qMax(floor, viewScale);
 }
 
 /** Viewport size with each axis at least 1 (avoids divide-by-zero). */
@@ -56,6 +63,18 @@ inline QRectF padded(const QRectF &bounds, qreal pad)
 inline QRect rubberRect(const QPoint &a, const QPoint &b)
 {
     return QRect(a, b).normalized();
+}
+
+/** True when rubber is large enough to act on (not a click). */
+inline bool significantRubber(const QRect &r, int minPx = 8)
+{
+    return r.width() >= minPx && r.height() >= minPx;
+}
+
+/** Chebyshev distance (max axis delta) between scene points. */
+inline qreal chebyshev(const QPointF &a, const QPointF &b)
+{
+    return qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y()));
 }
 
 } // namespace ViewTransform

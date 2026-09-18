@@ -1643,7 +1643,7 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
         m_zoomRegion.rubberBand->hide();
     }
     // Ignore tiny clicks — treat as cancel rather than extreme zoom.
-    if (viewRect.width() >= 8 && viewRect.height() >= 8) {
+    if (ViewTransform::significantRubber(viewRect)) {
         const QRectF sceneRect = mapToScene(viewRect).boundingRect();
         if (sceneRect.isValid() && !sceneRect.isEmpty()) {
             releaseStickyZoom();

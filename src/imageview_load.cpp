@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "viewtransform.h"
 #include "displayedgepolicy.h"
 #include "softdisplaypolicy.h"
 #include <QVarLengthArray>
@@ -1426,7 +1427,7 @@ int ImageView::itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes) co
     const QPointF a = mapFromScene(br.topLeft());
     const QPointF b = mapFromScene(br.bottomRight());
     const qreal longPx =
-        qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y())) * devicePixelRatioF();
+        ViewTransform::chebyshev(a, b) * devicePixelRatioF();
     return DisplayEdgePolicy::needEdgeFromScreenLongPx(longPx, allowHighRes);
 }
 
