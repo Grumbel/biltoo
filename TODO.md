@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1189-gallery-no-soft-watchdog.** Gallery watchdog and decode window: LQIP+tiles only; drop PreferCache soft leftovers.
+Prior: **1188**.
+
+### Change
+- `gallerySoftWatchdogTick`: re-install LQIP on blank on-screen cells + tile tick only (no PreferCache climb).
+- `updateGalleryDecodeWindow` pass2: schedule only blank cells for LQIP; no soft schedule / idle soft.
+- Tile debug uses `lqipBusy` instead of softBusy.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1189-gallery-no-soft-watchdog.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1188-gallery-warm-lqip-tiles.** Gallery open: warm size/LQIP/tiles memos; no soft; no pointless pyramid; faster tile issue.
 Prior: **1187**.
 

@@ -267,18 +267,14 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     // ------------------------------------------------------------------
-    // Pass 2: schedule soft PreferCache / overview climb (O(n), want from this item).
+    // Pass 2: LQIP install for blank cells (tiles owned by coordinator).
     // ------------------------------------------------------------------
     QStringList visible;
-    QStringList rest;
     QStringList interestNear;
     QStringList interestRest;
     QSet<QString> seen;
     constexpr int kMaxSpeculative = 12;
-    const int kMaxRestCandidates = kMaxIdleGalleryDecodes * 4;
-    // Gallery: no soft-band climb — LQIP cap only (tiles own large cells).
-    const int softCap = DisplayQuality::kLqipMaxEdge;
-    const int filmEdge = ThumtooCache::kFilmstripLadderEdge;
+    constexpr int kMaxNear = 24;
 
     for (ImageItem *item : m_items) {
         if (!item) {
@@ -293,9 +289,6 @@ void ImageView::updateGalleryDecodeWindow()
         const QRectF tile = item->contentSceneRect();
         const bool tileOk = !tile.isNull() && tile.isValid();
         const bool onScreen = tileOk && tile.intersects(sceneVisible);
-        // Cap near list — setInterest used to block GUI for ~1s on ~100 near
-        // paths; even async, keep the snapshot small and stable.
-        constexpr int kMaxNear = 24;
         if (onScreen && interestNear.size() < kMaxNear) {
             interestNear.append(path);
         } else if (tileOk && interestRest.size() < kMaxSpeculative) {
@@ -303,64 +296,24 @@ void ImageView::updateGalleryDecodeWindow()
         }
 
         GallerySoftState &st = m_gallerySoft[path];
-        const bool anyFull = item->hasDecodedPixels();
-        const bool anyBlank = !item->hasDisplayPixels();
         st.have = qMax(st.have, item->displayPixelLongEdge());
-        syncGallerySoftMirrorFromPathRaster(path, st);
+        st.terminal = true; // no soft PreferCache climb
+        clearGallerySoftInflight(st);
 
-        // Fast scroll: free soft slots held by off-screen inflight so newly
-        // visible LQIP tiles can schedule. Visible work keeps its inflight.
-        if (!onScreen && st.inflight > 0 && st.inflightSinceMs > 0) {
-            const qint64 age = QDateTime::currentMSecsSinceEpoch() - st.inflightSinceMs;
-            if (age > 1200) {
-                clearGallerySoftInflight(st);
-            }
-        }
-
-        // O(1) want from this item — was galleryWantEdgeForPath O(n) per path.
-        int want = filmEdge;
-        if (tileOk) {
-            const int edge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/onScreen);
-            want = onScreen ? edge : qMin(edge, softCap);
-        }
-        st.want = want;
-        // Higher on-screen need than a prior shortfall band → allow reschedule.
-        if (st.gaveUpWant > 0 && want > st.gaveUpWant) {
-            st.gaveUpWant = 0;
-        }
-
-        // Tile LOD band: never PreferCache. Only re-enter scheduleGalleryDecode
-        // when blank (LQIP install / probe) — not every on-screen tile cell
-        // (that was N× schedule every 48ms → 100% CPU, stuck LQIP).
-        if (item->tileLodWanted()) {
-            clearGallerySoftInflight(st);
-            if (anyBlank) {
-                visible.append(path);
-            }
-            continue;
-        }
-
-        if (!st.needsSoftSchedule(want, anyBlank, anyFull)) {
-            continue;
-        }
-
-        if (onScreen || anyBlank) {
+        // Blank cells: install LQIP (and queue pyramid only if needed).
+        if (!item->hasDisplayPixels() && (onScreen || item->tileLodWanted())) {
             visible.append(path);
-        } else if (rest.size() < kMaxRestCandidates) {
-            rest.append(path);
         }
     }
 
-    const int schedBudget =
-        qMax(1, galleryDecodeConcurrency() - gallerySoftInflightCount()) + 2;
+    constexpr int kSchedBudget = 64;
     int scheduled = 0;
     for (const QString &path : visible) {
-        if (scheduled >= schedBudget) {
-            scheduleGalleryDecodeWindowRefresh(80);
+        if (scheduled >= kSchedBudget) {
+            scheduleGalleryDecodeWindowRefresh(16);
             break;
         }
         scheduleGalleryDecode(path);
-        // Count every attempt (tile path does not raise soft inflight).
         ++scheduled;
     }
     if (m_perfEnabled) {
@@ -368,17 +321,10 @@ void ImageView::updateGalleryDecodeWindow()
         phaseTimer.restart();
     }
 
-    // Soft busy only — tile cells are not soft work.
-    const bool softBusy = gallerySoftInflightCount() > 0
-        || (!visible.isEmpty() && scheduled > 0);
-    publishGalleryInterest(interestNear,
-                           softBusy ? QStringList{} : interestRest);
+    const bool lqipBusy = scheduled > 0 || moreInstallsPending;
+    publishGalleryInterest(interestNear, interestRest);
     if (m_perfEnabled) {
         usInterest = phaseTimer.nsecsElapsed() / 1000;
-    }
-
-    if (!softBusy) {
-        scheduleIdleGalleryDecodes(rest);
     }
 
     // Tile issue: one coordinator tick per decode window (not per path).
@@ -409,9 +355,9 @@ void ImageView::updateGalleryDecodeWindow()
         if (now - s_lastLogMs >= 500) {
             s_lastLogMs = now;
             std::fprintf(stderr,
-                         "biltoo/tile: wanted=%d live=%d covered=%d softBusy=%d "
+                         "biltoo/tile: wanted=%d live=%d covered=%d lqipBusy=%d "
                          "visibleSched=%d inflight=%d\n",
-                         tileWanted, tileLive, tileCovered, softBusy ? 1 : 0,
+                         tileWanted, tileLive, tileCovered, lqipBusy ? 1 : 0,
                          scheduled, gallerySoftInflightCount());
             int samples = 0;
             for (ImageItem *ii : m_items) {
@@ -430,8 +376,7 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     // Re-arm promptly while cells still need LQIP install or tile coverage.
-    // 120ms cadence was a multi-second settle for large Galleries.
-    if (softBusy || tileWanted > tileCovered) {
+    if (scheduled > 0 || moreInstallsPending || tileWanted > tileCovered) {
         scheduleGalleryDecodeWindowRefresh(16);
     }
     updateGallerySoftProgressHud();
@@ -849,166 +794,28 @@ void ImageView::gallerySoftWatchdogTick()
     if (!isGalleryMode() || m_items.isEmpty()) {
         return;
     }
-    const qint64 now = QDateTime::currentMSecsSinceEpoch();
-    // Soft/PreferCache should land well under 1s when warm; LQIP stuck longer
-    // than this forces ensure + install. Was 2500ms — felt "frozen on LQIP".
-    constexpr qint64 kStuckMs = 900;
+    // Soft PreferCache is gone. Watchdog only re-installs LQIP on blank
+    // on-screen cells and keeps the tile coordinator awake.
+    const QRectF sceneVisible =
+        mapToScene(viewport()->rect().adjusted(-80, -80, 80, 80)).boundingRect();
     bool needWindow = false;
-    int repaired = 0;
-    // Only on-screen (+small overscan) — never walk hundreds of off-screen tiles
-    // on the GUI thread while the user is scrolling.
-    const QRectF sceneVisible = mapToScene(viewport()->rect().adjusted(-80, -80, 80, 80))
-                                    .boundingRect();
-
     for (ImageItem *item : m_items) {
-        if (!item) {
+        if (!item || item->path().isEmpty()) {
             continue;
         }
         const QRectF tile = item->contentSceneRect();
         if (!tile.isNull() && tile.isValid() && !tile.intersects(sceneVisible)) {
             continue;
         }
-        const QString path = item->path();
-        if (path.isEmpty()) {
-            continue;
-        }
-        GallerySoftState &st = m_gallerySoft[path];
-        // Terminal soft path: tiles/host own display — never force ensure again.
-        if (st.terminal || st.failed
-            || st.ensureAttempts >= GallerySoft::kMaxEnsureAttempts) {
-            st.terminal = true;
-            continue;
-        }
-        // Durable pyramid: soft underlay is optional; watchdog must not storm.
-        if (ThumtooCache::hasDurableTilesKnown(path)
-            && item->displayPixelLongEdge() > DisplayQuality::kLqipMaxEdge) {
-            st.terminal = true;
-            continue;
-        }
-
-        // Install policy via bound surface + controller evaluate.
-        int target = st.want > 0 ? st.want
-            : galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-        {
-            const QSize logical = logicalSizeForPath(path);
-            const int native = qMax(logical.width(), logical.height());
-            if (native > 0) {
-                target = qMin(target, native);
-            }
-        }
-        const bool climbPending =
-            st.inflight > 0
-            || (m_pathRaster && m_pathRaster->isClimbPending(path));
-        const int hostEdge = DisplayQuality::hostLongEdge(path);
-        syncItemDisplaySurface(item, hostEdge, climbPending);
-        // Gallery soft tick may need a higher need than viewport-derived state.
-        if (item->displaySurfaceId() != 0) {
-            const auto sid = static_cast<DisplaySurface::SurfaceId>(
-                item->displaySurfaceId());
-            m_displaySurfaces.setNeed(sid, target);
-        }
-        const DisplaySurface::Action act =
-            (item->displaySurfaceId() != 0)
-                ? m_displaySurfaces.evaluate(
-                      static_cast<DisplaySurface::SurfaceId>(
-                          item->displaySurfaceId()))
-                : DisplaySurface::decide(
-                      displaySurfaceStateForItem(item, hostEdge, climbPending));
-        using AT = DisplaySurface::ActionType;
-        if (act.type == AT::None) {
-            // Shown only. Host soft while tile is LQIP must not mark st.have done.
-            st.have = qMax(st.have, item->displayPixelLongEdge());
-            const int shown = item->displayPixelLongEdge();
-            if (shown > DisplayQuality::kLqipMaxEdge
-                || hostEdge <= shown) {
-                st.weakSinceMs = 0;
-            }
-            // else: leave weakSinceMs so LQIP→soft watchdog can force ensure
-        } else {
-            // Gallery: never SoftDisplay / PreferCache from watchdog. Tiles + LQIP only.
-            if (act.type == AT::ScheduleClimb) {
-                clearGallerySoftInflight(st);
-                // Re-enter scheduleGalleryDecode for LQIP/tile path only (no soft).
-                scheduleGalleryDecode(path);
-                continue;
-            }
-            const bool sizeChanged =
-                applyDisplaySurfaceAction(
-                    item, act, QImage(), target,
-                    PathRasterService::ClimbPolicy::SoftDisplay);
-            if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
-                ++repaired;
-                Q_UNUSED(sizeChanged);
-            }
-            st.have = qMax(st.have, item->displayPixelLongEdge());
-            if (item->displayPixelLongEdge() > DisplayQuality::kLqipMaxEdge) {
-                st.weakSinceMs = 0;
-            }
-        }
-
-        // Tile cells: LQIP underlay is intentional until tiles cover — not stuck soft.
-        if (item->tileLodWanted()) {
-            st.terminal = true;
-            st.weakSinceMs = 0;
-            continue;
-        }
-
-        // Blank / LQIP for long enough with no climb: force one ensure cycle
-        // only for non-tile (tiny) cells.
-        if (!item->hasDisplayPixels()
-            || (item->displayPixelLongEdge() > 0
-                && item->displayPixelLongEdge() <= DisplayQuality::kLqipMaxEdge
-                && target > DisplayQuality::kLqipMaxEdge
-                && !climbPending
-                && act.type == AT::None)) {
-            if (st.weakSinceMs <= 0) {
-                st.weakSinceMs = now;
-            } else if ((now - st.weakSinceMs) > kStuckMs) {
-                if (st.terminal || st.ensureAttempts >= GallerySoft::kMaxEnsureAttempts) {
-                    st.terminal = true;
-                    st.weakSinceMs = 0;
-                } else {
-                    clearGallerySoftInflight(st);
-                    // Do not clear gaveUpWant forever — limited retries via ensureAttempts.
-                    scheduleGalleryDecode(path);
-                    needWindow = true;
-                    st.weakSinceMs = 0;
-                }
-            }
-        } else if (item->hasDisplayPixels()
-                   && item->displayPixelLongEdge() > DisplayQuality::kLqipMaxEdge) {
-            st.weakSinceMs = 0;
-        }
-
-        if (item->hasDisplayPixels()) {
-            const int edge = item->displayPixelLongEdge();
-            if (edge > st.have) {
-                st.have = edge;
-            }
-        }
-
-        // Stuck inflight: clear and allow reschedule (do not leave forever).
-        if (st.inflight > 0 && st.inflightSinceMs > 0
-            && (now - st.inflightSinceMs) > kStuckMs) {
-            if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-                dbg && dbg[0] && dbg[0] != '0') {
-                fprintf(stderr,
-                        "biltoo/gallery: soft STUCK path need=%d have=%d inflight=%d age=%lldms — reset\n",
-                        st.want, st.have, st.inflight,
-                        static_cast<long long>(now - st.inflightSinceMs));
-            }
-            st.inflight = 0;
-            st.inflightSinceMs = 0;
+        if (!item->hasDisplayPixels()) {
+            scheduleGalleryDecode(item->path());
             needWindow = true;
         }
-
-    }
-
-    if (repaired > 0 && viewport()) {
-        viewport()->update();
     }
     if (needWindow) {
         updateGalleryDecodeWindow();
+    } else {
+        tickPrimaryTileLod(48);
     }
     updateGallerySoftProgressHud();
 }
