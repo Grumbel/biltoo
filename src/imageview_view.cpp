@@ -39,22 +39,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace {
-
-/** Fraction of target edge treated as "good enough" for slideshow samples. */
-constexpr int kSsAdequacyNumer = 7;
-constexpr int kSsAdequacyDenom = 10;
-constexpr int kSsMaxInflight = 4;
-constexpr int kSsMaxPending = 4;
-
-int slideshowNeedEdge(int targetEdge)
-{
-    return targetEdge * kSsAdequacyNumer / kSsAdequacyDenom;
-}
-
-} // namespace
-
-
 void ImageView::setTool(Tool tool)
 {
     if (m_tool == tool) {
@@ -1366,7 +1350,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         return;
     }
     const int incoming = ImageCache::longEdge(oriented);
-    const int need = slideshowNeedEdge(slideshowTargetEdge());
+    const int need = SlideshowAtlasPolicy::needEdge(slideshowTargetEdge());
     bool changed = false;
     auto acceptPhase = [](int sampleEdge, int have, bool contentApplied) {
         // Sharper always; same edge when ContentXform not yet applied.
@@ -1628,7 +1612,7 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
     // the host cache edge increases).
     if (m_pathRaster) {
         const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
-        const int need = slideshowNeedEdge(target);
+        const int need = SlideshowAtlasPolicy::needEdge(target);
         const int phaseHave =
             (path == m_ss.fromPath) ? ImageCache::longEdge(m_ss.fromImage)
                                    : ImageCache::longEdge(m_ss.toImage);
@@ -2016,7 +2000,7 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
         (void)ensureSlideshowLogicalSize(fromPath);
         if (m_ss.fromImage.isNull()
             || ImageCache::longEdge(m_ss.fromImage)
-                   < slideshowNeedEdge(slideshowTargetEdge())) {
+                   < SlideshowAtlasPolicy::needEdge(slideshowTargetEdge())) {
             preloadSlideshowImage(fromPath);
         }
         m_ssDwell.biasValid = false;
@@ -2160,7 +2144,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     }
     // Cold to-path: kick preload immediately (do not wait for neighbour pump).
     if (m_ss.toImage.isNull()
-        || ImageCache::longEdge(m_ss.toImage) < slideshowNeedEdge(slideshowTargetEdge())) {
+        || ImageCache::longEdge(m_ss.toImage) < SlideshowAtlasPolicy::needEdge(slideshowTargetEdge())) {
         preloadSlideshowImage(toPath);
     }
     captureMotionBiasesForPath(toPath, m_ss.toImage, &m_ss.toBiasA, &m_ss.toBiasB);
@@ -2296,34 +2280,19 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
 
 qreal ImageView::slideshowMotionHeadroom() const
 {
-    // Ken Burns / pan-scan sample past 1:1 cover; need extra source pixels or
-    // the zoomed region is soft. Off → 1.0. PanZoom uses the configured factor.
-    if (!m_ssHud.progressActive
-        || m_ssSettings.motion == SlideshowMotion::Off) {
-        return 1.0;
-    }
-    if (m_ssSettings.motion == SlideshowMotion::PanZoom) {
-        return qBound(1.05, m_ssSettings.panZoomFactor, 1.50);
-    }
-    // PanScan can raise scale when travel is short.
-    return 1.25;
+    return SlideshowAtlasPolicy::motionHeadroom(
+        m_ssSettings.motion, m_ssSettings.panZoomFactor, m_ssHud.progressActive);
 }
 
 int ImageView::slideshowTargetEdge() const
 {
-    // Screen-fit only: viewport × DPR × Ken-Burns headroom. Never native /
-    // whole-image PreferCache Full — tiles (TileSynth SoftDisplay) or soft at
-    // this edge. Cap at overview band so 4K+ natives are not pulled in whole.
     if (!viewport()) {
-        return ThumtooCache::kGalleryLadderEdge;
+        return SlideshowAtlasPolicy::targetLongEdge(false, 0, 0, 1.0, 1.0);
     }
-    const qreal dpr = devicePixelRatioF();
     const QSize vs = viewport()->size();
-    const qreal head = slideshowMotionHeadroom();
-    const int longPx = int(qCeil(qMax(vs.width(), vs.height()) * dpr * head));
-    const int snapped = ThumtooCache::ceilLadderEdge(qMax(longPx, 256));
-    // PreferCache SoftDisplay / TileSynth band; never kImageLadderEdge Full.
-    return qMin(snapped, ThumtooCache::kBatchOverviewEdge);
+    return SlideshowAtlasPolicy::targetLongEdge(
+        true, vs.width(), vs.height(), devicePixelRatioF(),
+        slideshowMotionHeadroom());
 }
 
 QSize ImageView::logicalSizeForPath(const QString &path) const
@@ -2393,7 +2362,7 @@ void ImageView::setSlideshowNavHot(bool hot)
 void ImageView::pumpSlideshowPreloadQueue()
 {
     // Start at most one pending path now that an inflight slot freed.
-    const int needEdge = slideshowNeedEdge(slideshowTargetEdge());
+    const int needEdge = SlideshowAtlasPolicy::needEdge(slideshowTargetEdge());
     while (!m_ss.rasterPending.isEmpty()) {
         const QString next = m_ss.rasterPending.takeFirst();
         if (m_ss.rasterInflight.contains(next)) {
@@ -2438,7 +2407,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
         return;
     }
     const int targetEdge = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
-    const int need = slideshowNeedEdge(targetEdge);
+    const int need = SlideshowAtlasPolicy::needEdge(targetEdge);
     const QSize native = logicalSizeForPath(path);
     const QImage cached = ImageCache::get(path);
     const int haveEdge = ImageCache::longEdge(cached);
@@ -2488,17 +2457,11 @@ DwellAtlasParams ImageView::dwellAtlasParams() const
     // Atlas size is a function of the *viewport* and motion headroom only —
     // not of the source raster's pixel dimensions. Camera dest is aspect-based;
     // the atlas is just a sharp enough texture to sample under max zoom.
-    DwellAtlasParams p;
     if (!viewport()) {
-        return p;
+        return {};
     }
-    p.vw = qMax(1, viewport()->width());
-    p.vh = qMax(1, viewport()->height());
-    p.headroom = slideshowMotionHeadroom();
-    p.longCap = int(qCeil(qreal(qMax(p.vw, p.vh)) * p.headroom));
-    p.keyScale = p.headroom;
-    p.valid = p.longCap > 0;
-    return p;
+    return SlideshowAtlasPolicy::makeParams(
+        viewport()->width(), viewport()->height(), slideshowMotionHeadroom());
 }
 
 void ImageView::invalidateDwellAtlasRebuilds()

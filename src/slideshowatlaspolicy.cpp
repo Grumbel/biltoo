@@ -6,8 +6,14 @@
 #include "thumtoocache.h"
 
 #include <QtGlobal>
+#include <QtMath>
 
 namespace SlideshowAtlasPolicy {
+
+namespace {
+constexpr int kAdequacyNumer = 7;
+constexpr int kAdequacyDenom = 10;
+} // namespace
 
 bool coversSource(const QPixmap &atlas, qreal atlasScale, int atlasVw, int atlasVh,
                   const DwellAtlasParams &params, const QImage &source)
@@ -37,6 +43,52 @@ bool coversSource(const QPixmap &atlas, qreal atlasScale, int atlasVw, int atlas
     }
     // PreferCache mid/high sample while atlas is still a soft upsample.
     return false;
+}
+
+qreal motionHeadroom(SlideshowMotion motion, qreal panZoomFactor, bool progressActive)
+{
+    // Ken Burns / pan-scan sample past 1:1 cover; need extra source pixels or
+    // the zoomed region is soft. Off → 1.0. PanZoom uses the configured factor.
+    if (!progressActive || motion == SlideshowMotion::Off) {
+        return 1.0;
+    }
+    if (motion == SlideshowMotion::PanZoom) {
+        return qBound(1.05, panZoomFactor, 1.50);
+    }
+    // PanScan can raise scale when travel is short.
+    return 1.25;
+}
+
+int needEdge(int targetEdge)
+{
+    return targetEdge * kAdequacyNumer / kAdequacyDenom;
+}
+
+int targetLongEdge(bool viewportValid, int viewportW, int viewportH, qreal dpr,
+                   qreal headroom)
+{
+    // Screen-fit only: viewport × DPR × Ken-Burns headroom. Never native /
+    // whole-image PreferCache Full — tiles (TileSynth SoftDisplay) or soft at
+    // this edge. Cap at overview band so 4K+ natives are not pulled in whole.
+    if (!viewportValid) {
+        return ThumtooCache::kGalleryLadderEdge;
+    }
+    const int longPx =
+        int(qCeil(qMax(viewportW, viewportH) * dpr * headroom));
+    const int snapped = ThumtooCache::ceilLadderEdge(qMax(longPx, 256));
+    return qMin(snapped, ThumtooCache::kBatchOverviewEdge);
+}
+
+DwellAtlasParams makeParams(int viewportW, int viewportH, qreal headroom)
+{
+    DwellAtlasParams p;
+    p.vw = qMax(1, viewportW);
+    p.vh = qMax(1, viewportH);
+    p.headroom = headroom;
+    p.longCap = int(qCeil(qreal(qMax(p.vw, p.vh)) * p.headroom));
+    p.keyScale = p.headroom;
+    p.valid = p.longCap > 0;
+    return p;
 }
 
 } // namespace SlideshowAtlasPolicy

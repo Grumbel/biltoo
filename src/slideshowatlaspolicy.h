@@ -8,13 +8,13 @@
 
 #include <QImage>
 #include <QPixmap>
+#include <QSize>
 
 /**
- * Pure policy for whether an existing dwell / phase motion atlas still covers
- * the current source sample under the viewport budget.
+ * Pure slideshow atlas / sample-edge policy.
  *
- * ImageView supplies DwellAtlasParams (viewport × headroom) and schedules
- * rebuilds; this module only answers coverage.
+ * ImageView supplies viewport size, DPR, and settings; schedules rebuilds and
+ * decode climbs. This module answers coverage, headroom, and edge budgets.
  */
 namespace SlideshowAtlasPolicy {
 
@@ -28,6 +28,32 @@ namespace SlideshowAtlasPolicy {
  */
 bool coversSource(const QPixmap &atlas, qreal atlasScale, int atlasVw, int atlasVh,
                   const DwellAtlasParams &params, const QImage &source);
+
+/**
+ * Ken Burns / pan-scan sample headroom past 1:1 cover.
+ * Off or inactive → 1.0; PanZoom uses clamped panZoomFactor; PanScan → 1.25.
+ */
+qreal motionHeadroom(SlideshowMotion motion, qreal panZoomFactor,
+                     bool progressActive);
+
+/**
+ * Fraction of target edge treated as "good enough" for phase samples (7/10).
+ */
+int needEdge(int targetEdge);
+
+/**
+ * Viewport long-edge pixel budget: max(vw,vh) × dpr × headroom, ladder-snapped,
+ * clamped to the overview band (never Full native PreferCache).
+ * When @p viewportValid is false, returns the soft ladder edge.
+ */
+int targetLongEdge(bool viewportValid, int viewportW, int viewportH, qreal dpr,
+                   qreal headroom);
+
+/**
+ * Fill DwellAtlasParams from viewport CSS pixels and headroom (no QWidget).
+ * longCap uses CSS viewport × headroom (atlas texture budget, not DPR).
+ */
+DwellAtlasParams makeParams(int viewportW, int viewportH, qreal headroom);
 
 } // namespace SlideshowAtlasPolicy
 
