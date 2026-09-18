@@ -338,7 +338,7 @@ void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
                                                    const QVector<SessionImageId> &ids)
 {
     // Fresh session: allow seed again for new ids (old set cleared on invalidate).
-    const int n = qMin(paths.size(), ids.size());
+    const int n = ViewTransform::pairCount(paths.size(), ids.size());
     for (int i = 0; i < n; ++i) {
         m_appearance.clearSeedAttempted(ids.at(i));
     }
