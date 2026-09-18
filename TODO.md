@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1328-layout-guard-opacity-rubber.** Layout apply guard, opacity/z pure helpers, rubberRect.
+Prior: **1327**.
+
+### Change
+- `LayoutApplyGuard` — pack re-entrancy flag bag
+- `PlacementLinear::{clampOpacity,opacityAfterStep}` — workspace opacity
+- `StackGeometry::{zLess,zGreater}` — raise/lower / overlap layer sorts
+- `ViewTransform::rubberRect` — text/attention/zoom-region rubber geometry
+- `SlideshowProgressHud::setCycleProgress01` — clamped cycle progress
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1328-layout-guard-opacity-rubber.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1327-suppress-viewtransform-clamps.** Relayout suppress, view scale/pad, scale clamps.
 Prior: **1326**.
 
