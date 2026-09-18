@@ -1542,9 +1542,8 @@ void ImageItem::tickTileLod(int budget)
         m_tileLodLastUpdateGen = gen;
         if (!m_interactive) {
             setCacheMode(QGraphicsItem::NoCache);
-            if (!pixmap().isNull()) {
-                setPixmap(QPixmap());
-            }
+            // Keep LQIP pixmap until paint draws tiles over it — clearing
+            // caused temporary disappear (blank cells while plan catches up).
         }
         if (!m_tileLodRepaintQueued) {
             m_tileLodRepaintQueued = true;

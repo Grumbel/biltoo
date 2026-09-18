@@ -2,6 +2,41 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1184-gallery-decode-spin.** Stop 100% CPU decode-window spin; keep LQIP.
+Prior: **1183**.
+
+### Root causes
+1. **Every** on-screen `tileLodWanted` path was in `visible` each decode window →
+   `scheduleGalleryDecode` × N every 48ms (ImageCache, install, scheduleTilePyramid).
+2. `visibleBusy = !visible.isEmpty()` always true with tile cells → infinite refresh.
+3. Clearing pixmap when tiles landed → temporary blank cells.
+
+### Fixes
+- Tile paths only enter `visible` when **blank** (LQIP/probe needed)
+- `scheduleTilePyramid` once per path (`tilesPyramidQueued`)
+- LQIP install only when `!hasDisplayPixels()`
+- softBusy vs tile cadence (80ms soft / 120ms uncovered tiles)
+- Keep LQIP pixmap under tiles (no clear)
+- `BILTOO_TILE_DEBUG=1` → rate-limited `biltoo/tile:` and `biltoo/tile-coord:` lines
+
+### Debug
+```bash
+BILTOO_TILE_DEBUG=1 ./biltoo …
+# biltoo/tile: wanted=N live=M covered=K softBusy=0 …
+# biltoo/tile-coord: cands=… zeroTile=… issue=… wall=…ms
+```
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1184-gallery-decode-spin.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1183-lqip-cpu-unstick.** Gallery LQIP stick + 100% CPU.
 Prior: **1182**.
 

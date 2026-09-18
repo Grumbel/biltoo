@@ -3,6 +3,8 @@
 
 #include "displayquality.h"
 #include "imageview.h"
+#include <cstdio>
+#include <cstdlib>
 #include "biltoo_thread.h"
 #include "thumtoocache.h"
 #include "gallerylayout.h"
@@ -348,11 +350,12 @@ void ImageView::updateGalleryDecodeWindow()
             st.gaveUpWant = 0;
         }
 
-        // Tile LOD band: still queue for scheduleGalleryDecode (probe + tile
-        // tick + LQIP install). Never PreferCache soft climb.
+        // Tile LOD band: never PreferCache. Only re-enter scheduleGalleryDecode
+        // when blank (LQIP install / probe) — not every on-screen tile cell
+        // (that was N× schedule every 48ms → 100% CPU, stuck LQIP).
         if (item->tileLodWanted()) {
             clearGallerySoftInflight(st);
-            if (onScreen || anyBlank) {
+            if (anyBlank) {
                 visible.append(path);
             }
             continue;
@@ -374,13 +377,16 @@ void ImageView::updateGalleryDecodeWindow()
     int scheduled = 0;
     for (const QString &path : visible) {
         if (scheduled >= schedBudget) {
-            scheduleGalleryDecodeWindowRefresh(48);
+            scheduleGalleryDecodeWindowRefresh(80);
             break;
         }
         const int before = gallerySoftInflightCount();
         scheduleGalleryDecode(path);
+        // Tile-band schedule does not raise soft inflight — still count progress.
         if (gallerySoftInflightCount() > before) {
             ++scheduled;
+        } else {
+            ++scheduled; // LQIP/probe/tile prime still consumed a slot this pass
         }
     }
     if (m_perfEnabled) {
@@ -388,29 +394,64 @@ void ImageView::updateGalleryDecodeWindow()
         phaseTimer.restart();
     }
 
-    // Speculative interest only when visible soft is idle — otherwise thumtoo
-    // spends PreferCache/tiles on off-screen paths while on-screen still climbs.
-    const bool visibleBusy = gallerySoftInflightCount() > 0 || !visible.isEmpty();
+    // Soft busy only — tile cells are not soft work.
+    const bool softBusy = gallerySoftInflightCount() > 0
+        || (!visible.isEmpty() && scheduled > 0);
     publishGalleryInterest(interestNear,
-                           visibleBusy ? QStringList{} : interestRest);
+                           softBusy ? QStringList{} : interestRest);
     if (m_perfEnabled) {
         usInterest = phaseTimer.nsecsElapsed() / 1000;
     }
 
-    if (!visibleBusy) {
+    if (!softBusy) {
         scheduleIdleGalleryDecodes(rest);
     }
-    // Deep-zoom inspection: grid tiles for oversized on-screen cells.
-    // Stronger issue budget when any cell is already in the tile band so
-    // mid-scroll zoom does not starve tile fetches behind soft concurrency.
-    int tileBudget = 6;
+
+    // Tile issue: one coordinator tick per decode window (not per path).
+    int tileBudget = 8;
+    int tileWanted = 0;
+    int tileLive = 0;
+    int tileCovered = 0;
     for (ImageItem *ii : m_items) {
-        if (ii && ii->tileLodWanted()) {
-            tileBudget = 12;
-            break;
+        if (!ii || !ii->tileLodWanted()) {
+            continue;
+        }
+        ++tileWanted;
+        if (ii->tileLodActive()) {
+            ++tileLive;
+        }
+        if (ii->tileLodViewportCovered()) {
+            ++tileCovered;
         }
     }
+    if (tileWanted > 0) {
+        tileBudget = 12;
+    }
     tickPrimaryTileLod(tileBudget);
+
+    // Rate-limited tile debug (BILTOO_TILE_DEBUG=1).
+    if (const char *td = std::getenv("BILTOO_TILE_DEBUG");
+        td && td[0] && td[0] != '0' && tileWanted > 0) {
+        static qint64 s_lastLogMs = 0;
+        const qint64 now = QDateTime::currentMSecsSinceEpoch();
+        if (now - s_lastLogMs >= 500) {
+            s_lastLogMs = now;
+            fprintf(stderr,
+                    "biltoo/tile: wanted=%d live=%d covered=%d softBusy=%d "
+                    "visibleSched=%d inflight=%d
+",
+                    tileWanted, tileLive, tileCovered, softBusy ? 1 : 0,
+                    scheduled, gallerySoftInflightCount());
+            fflush(stderr);
+        }
+    }
+
+    // Re-arm only for remaining soft work, or uncovered tiles (slow cadence).
+    if (softBusy) {
+        scheduleGalleryDecodeWindowRefresh(80);
+    } else if (tileWanted > tileCovered) {
+        scheduleGalleryDecodeWindowRefresh(120);
+    }
     updateGallerySoftProgressHud();
     if (m_perfEnabled && decodeWinTimer.isValid()) {
         m_perfLastDecodeWindowUs = decodeWinTimer.nsecsElapsed() / 1000;

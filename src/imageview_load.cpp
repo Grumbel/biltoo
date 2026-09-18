@@ -1689,10 +1689,16 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 || !ThumtooCache::cachedSize(path).isValid()) {
                 scheduleImageSizeProbe(path);
             }
-            // LQIP underlay only — never scale soft on the GUI (scroll storm).
-            // Tick is owned by updateGalleryDecodeWindow once per pass, not
-            // once per path (was N× TileLoadCoordinator::tick → 100–400ms).
-            {
+            // One-shot LQIP underlay only when blank — do not re-install every
+            // decode window (was N paths × every 48ms → 100% CPU).
+            bool needLqip = false;
+            for (ImageItem *ii : m_items) {
+                if (ii && ii->path() == path && !ii->hasDisplayPixels()) {
+                    needLqip = true;
+                    break;
+                }
+            }
+            if (needLqip) {
                 QImage host = ImageCache::get(path);
                 if (host.isNull()) {
                     host = ThumtooCache::cachedLqipImage(path);
@@ -1707,9 +1713,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                         if (!ii || ii->path() != path) {
                             continue;
                         }
-                        if (!ii->hasDisplayPixels()
-                            || ii->displayPixelLongEdge()
-                                < ImageCache::longEdge(host)) {
+                        if (!ii->hasDisplayPixels()) {
                             installDisplayPixels(
                                 ii, host,
                                 SessionAppearance::PixelKind::SoftPreview,
@@ -1718,11 +1722,13 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                     }
                 }
             }
-            (void)ThumtooCache::scheduleTilePyramid(path);
-            auto sit = m_gallerySoft.find(path);
-            if (sit != m_gallerySoft.end()) {
-                clearGallerySoftInflight(*sit);
-                sit->terminal = true; // tiles own the path; no soft climb
+            GallerySoftState &st = m_gallerySoft[path];
+            clearGallerySoftInflight(st);
+            st.terminal = true; // tiles own the path; no soft climb
+            // Pyramid schedule once per path (state flag).
+            if (!st.tilesPyramidQueued) {
+                st.tilesPyramidQueued = true;
+                (void)ThumtooCache::scheduleTilePyramid(path);
             }
             return;
         }

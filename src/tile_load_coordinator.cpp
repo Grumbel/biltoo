@@ -17,6 +17,8 @@
 #include <QTransform>
 #include <QWidget>
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 
 TileLoadCoordinator::TileLoadCoordinator(ImageView *view)
     : m_view(view)
@@ -225,6 +227,27 @@ void TileLoadCoordinator::tick(int globalBudget)
             }
         }
         return;
+    }
+
+    if (const char *td = std::getenv("BILTOO_TILE_DEBUG");
+        td && td[0] && td[0] != '0') {
+        static qint64 s_last = 0;
+        const qint64 now = QDateTime::currentMSecsSinceEpoch();
+        if (now - s_last >= 500) {
+            s_last = now;
+            int zero = 0;
+            for (const Cand &c : cands) {
+                if (!c.hasAnyTile) {
+                    ++zero;
+                }
+            }
+            fprintf(stderr,
+                    "biltoo/tile-coord: cands=%d zeroTile=%d issue=%d budget=%d "
+                    "wall=%lldms\n",
+                    cands.size(), zero, issueTargets.size(), globalBudget,
+                    static_cast<long long>(wall.elapsed()));
+            fflush(stderr);
+        }
     }
 
     const int n = issueTargets.size();
