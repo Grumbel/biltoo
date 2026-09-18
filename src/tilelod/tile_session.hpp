@@ -148,6 +148,8 @@ private:
   static constexpr std::chrono::milliseconds kScaleHold{150};
 
   int stable_request_scale(int desired_scale);
+  /** Step held scale toward desired once held scale has Succeeded tiles. */
+  bool advance_progressive_scale();
 
   TileMemoryCache m_owned_cache;
   TileMemoryCache* m_cache = nullptr;  // → shared or &m_owned_cache

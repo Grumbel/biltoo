@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1175-tile-upscale-refine.** Progressive coarse tiles never refined to target.
+Prior: **1174**.
+
+### Bug
+Cold path held `stable_scale` at `max_scale`. After coarse Succeeded, host
+`prepareTileLod` skipped `set_viewport` (viewport unchanged) so
+`stable_request_scale` never stepped finer — stuck on overview forever.
+
+### Fix
+- `advance_progressive_scale()` after pump completions and before issue
+- Re-plan visible keys at new held scale
+- prepareTileLod still calls set_viewport while `request_scale_holding()`
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1175-tile-upscale-refine.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1174-tile-tick-viewport-budget.** TileLoadCoordinator under GUI budget.
 Prior: **1173**.
 

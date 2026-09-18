@@ -138,6 +138,46 @@ bool TileSession::request_scale_holding() const
   return m_have_stable_scale && m_desired_scale != m_stable_scale;
 }
 
+bool TileSession::advance_progressive_scale()
+{
+  if (!m_have_stable_scale || m_stable_scale <= m_desired_scale) {
+    return false;
+  }
+  bool held_ready = false;
+  for (auto const& [k, e] : m_cache->map()) {
+    if (k.scale == m_stable_scale && e.state == TileState::Succeeded
+        && e.bitmap.valid()) {
+      held_ready = true;
+      break;
+    }
+  }
+  if (!held_ready) {
+    return false;
+  }
+  --m_stable_scale;
+  // Re-plan visible keys at the new held scale (same viewport).
+  PlannerInput in;
+  in.content_w = m_content_w;
+  in.content_h = m_content_h;
+  in.min_scale = m_stable_scale;
+  in.max_scale = m_stable_scale;
+  in.viewport = m_viewport;
+  in.margin_content = 0;
+  PlannerOutput const out = plan_visible_tiles(in);
+  bool const plan_changed =
+      out.target_scale != m_target_scale || out.visible_keys != m_visible_keys;
+  if (plan_changed) {
+    ++m_generation;
+  }
+  m_target_scale = out.target_scale;
+  m_visible_keys = out.visible_keys;
+  if (plan_changed) {
+    cancel_obsolete();
+    m_draw_plan_dirty = true;
+  }
+  return true;
+}
+
 void TileSession::set_viewport(Viewport const& vp, double margin_content)
 {
   m_viewport = vp;
@@ -254,6 +294,12 @@ int TileSession::pump()
   if (applied > 0) {
     m_draw_plan_dirty = true;
   }
+  // Coarse tiles landed while viewport is static: host prepareTileLod skips
+  // set_viewport, so stable_request_scale never ran again. Advance held scale
+  // here so the next issue_requests targets one level finer.
+  if (applied > 0) {
+    (void)advance_progressive_scale();
+  }
   return applied;
 }
 
@@ -262,6 +308,9 @@ int TileSession::issue_requests(int budget)
   if (!m_source || budget <= 0 || m_content_w <= 0) {
     return 0;
   }
+
+  // If coarse level is complete, step toward desired before building the batch.
+  (void)advance_progressive_scale();
 
   // Progressive retrieval: always issue coarsest needed tiles first, then
   // refine toward the exact visible scale. Display is instant (overview) and
