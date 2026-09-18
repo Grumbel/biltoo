@@ -7,9 +7,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Tiles-first (product)
 
-When the Store already has a **durable tile pyramid** for a path, Gallery must
-**not** schedule soft PreferCache for that path. Tile LOD paints (LQIP underlay
-from size reply until first cell). Soft is only for cold paths without tiles.
+When **tileLodWanted** and a durable pyramid exists, Gallery must not schedule
+soft PreferCache — tiles own the cell. Small cells (`!tileLodWanted`) still use
+PreferCache **TileSynth** underlay so blanks do not appear. Soft encode is only
+for cold paths without tiles.
 
 Warm `ImageCache` cover of the soft edge → zero PreferCache work.
 

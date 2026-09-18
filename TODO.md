@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1143-gallery-blank-durable.** Fix blank gallery cells when durable tiles skip soft.
+Prior: **1142**.
+
+### Bug
+1141 skipped soft PreferCache for **any** `hasDurableTiles` path, including small
+cells where `tileLodWanted` is false. Those cells had neither tile paint nor soft
+→ blank. Slideshow Prefer plateau still EscalateToFull on durable tiles.
+
+### Fix
+- Skip soft only when **tileLodWanted** (tiles own the cell), not merely durable.
+- Small durable cells still PreferCache TileSynth underlay.
+- Pass1 blank install: pull Store LQIP into ImageCache if missing.
+- Slideshow Prefer plateau: SoftDisplay when durable tiles.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1143-gallery-blank-durable.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1142-slideshow-cache-tiles.** Slideshow: warm cache + durable tiles skip Full/soft I/O.
 Prior: **1141**.
 

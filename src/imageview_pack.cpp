@@ -100,7 +100,14 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         // Soft/LQIP install must not wait on definitive size — provisional
         // geometry is layout-only; blocking here left archive/PDF cells on LQIP
         // until probe finished (or forever if probe stalled).
-        const QImage hostSample = ImageCache::get(path);
+        QImage hostSample = ImageCache::get(path);
+        if (hostSample.isNull()) {
+            // Store LQIP not yet mirrored into ImageCache (size probe pending).
+            hostSample = ThumtooCache::cachedLqipImage(path);
+            if (!hostSample.isNull()) {
+                ImageCache::put(path, hostSample);
+            }
+        }
         if (hostSample.isNull()) {
             continue;
         }
@@ -353,17 +360,17 @@ void ImageView::updateGalleryDecodeWindow()
             st.gaveUpWant = 0;
         }
 
-        // Tiles own display when a durable pyramid exists or the cell is in the
-        // tile LOD band. Soft PreferCache underlay is for cold paths only —
-        // never re-encode soft when Store already has tiles (CPU storm).
-        if (item->tileLodWanted()
-            || ThumtooCache::hasDurableTiles(path)) {
+        // Tile LOD band: tiles own the cell. Soft underlay only while cold
+        // (no durable pyramid) and still showing LQIP/blank.
+        // Durable tiles + *small* cell (!tileLodWanted): still PreferCache once
+        // for TileSynth underlay — skipping soft left cells blank (1141 bug).
+        if (item->tileLodWanted()) {
             const int shown = item->displayPixelLongEdge();
             if (shown > DisplayQuality::kLqipMaxEdge
                 || ThumtooCache::hasDurableTiles(path)) {
                 continue;
             }
-            // Cold tileLodWanted + LQIP/blank only: soft underlay while first tiles encode.
+            // Cold tileLodWanted + LQIP/blank: soft underlay while first tiles encode.
         }
 
         if (!st.needsSoftSchedule(want, anyBlank, anyFull)) {
