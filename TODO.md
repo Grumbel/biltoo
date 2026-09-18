@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1201-image-nav-blank-soft-code.** Code for rapid Image nav blank (1200 was docs-only by mistake).
+Prior: **1200**.
+
+### Fix (source)
+- `installImageModePendingTile`: path change with null soft → `scheduleProbe` + `scheduleSoftPixels`.
+- `tryInstallImageModeSample`: `viewport()->update()` on success.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1201-image-nav-blank-soft-code.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1200-image-nav-blank-soft.** Image mode rapid ←/→: schedule soft on blank path change; force viewport update on install.
 Prior: **1199**.
 

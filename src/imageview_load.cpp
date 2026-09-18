@@ -1113,10 +1113,17 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                     item->setIntrinsicSize(sz);
                     syncImageModeSceneRect(item);
                 }
+                // Fast ←/→ with empty ImageCache: request soft so ladderReady can
+                // fill during the burst or at settle (otherwise permanent blank).
+                if (ThumtooCache::isAvailable()) {
+                    ThumtooCache::scheduleProbe(path);
+                    (void)ThumtooCache::scheduleSoftPixels(
+                        path, ThumtooCache::kGalleryLadderEdge);
+                }
                 if (viewport()) {
                     viewport()->update();
                 }
-                biltooLoadDbg("pendingTile DEFER blank path=%s (cleared prior)",
+                biltooLoadDbg("pendingTile DEFER blank path=%s (cleared prior, soft scheduled)",
                               qPrintable(QFileInfo(path).fileName()));
             } else {
                 biltooLoadDbg("pendingTile DEFER empty soft path=%s keep prior frame",
@@ -2767,6 +2774,9 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
     const bool ok = tryInstallImageModeSampleBaked(path, image, kind);
     // Decide soft→async / climb from the new host edge (event-driven).
     driveImageFocusSurface();
+    if (ok && viewport()) {
+        viewport()->update();
+    }
     return ok;
 }
 
