@@ -1147,7 +1147,7 @@ public:
     void clearCanvasSelection();
     /** In-flight LoadAdd / LoadRestore / viewport-window decodes. */
     int pendingDecodeCount() const;
-    /** Install host soft / schedule soft PreferCache for the visible Gallery window. */
+    /** No-op: Gallery does not use setInterest (tiles + LQIP only). */
     void publishGalleryInterest(const QStringList &interestNear,
                                 const QStringList &interestRest);
     void scheduleIdleGalleryDecodes(const QStringList &rest);
@@ -1533,7 +1533,6 @@ private:
     void scheduleGalleryDecode(const QString &path);
 
     int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut = nullptr) const;
-    void clearGallerySoftInflight(GallerySoftState &soft);
     /** Recover blank Gallery cells that never got LQIP installed. */
     void gallerySoftWatchdogTick();
     /** Clear stale "Improving previews" centre HUD noise. */
@@ -2008,14 +2007,12 @@ private:
 
     PathRasterService *m_pathRaster = nullptr;
     std::unique_ptr<TileLoadCoordinator> m_tileCoordinator;
-
-    int gallerySoftInflightCount() const;
     void gallerySoftResetPath(const QString &path);
     void gallerySoftResetAll();
     /** @deprecated Gallery always virtualizes; kept for ABI/docs only. */
     static constexpr int kGalleryVirtualThreshold = 1;
     static constexpr int kGalleryDecodeOverscanPx = 400;
-    /** Default Gallery soft/display worker slots; override BILTOO_GALLERY_DECODE_CONCURRENCY. */
+    /** Historical Gallery concurrency knob (unused after soft removal). */
     static constexpr int kMaxConcurrentGalleryDecodes = 8;
     /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
     static constexpr int kMaxIdleGalleryDecodes = 2;

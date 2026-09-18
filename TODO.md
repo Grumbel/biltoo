@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1209-gallery-pending-inflight-cleanup.** pendingDecodeCount blanks-only; drop dead soft inflight helpers.
+Prior: **1208**.
+
+### Cleanup
+- `pendingDecodeCount`: Gallery counts **blank** cells only (LQIP underlay is done, not "soft pending").
+- Remove `clearGallerySoftInflight` / `gallerySoftInflightCount` (inflight never set after soft removal).
+- Decode window no longer builds interest lists for no-op `publishGalleryInterest`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1209-gallery-pending-inflight-cleanup.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1208-filmstrip-size-first.** Filmstrip never paints LQIP/soft before native size (cold wrong aspect).
 Prior: **1207**.
 

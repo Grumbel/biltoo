@@ -257,9 +257,7 @@ void ImageView::updateGalleryDecodeWindow()
     // Pass 2: LQIP install for blank cells (tiles owned by coordinator).
     // ------------------------------------------------------------------
     QStringList visible;
-    QStringList interestNear;
     QSet<QString> seen;
-    constexpr int kMaxNear = 24;
 
     // Prefer viewport hits only — full m_items + tileLodWanted was O(n) and
     // dominated cold decode windows on large sessions.
@@ -282,14 +280,9 @@ void ImageView::updateGalleryDecodeWindow()
         }
         seen.insert(path);
 
-        if (interestNear.size() < kMaxNear) {
-            interestNear.append(path);
-        }
-
         GallerySoftState &st = m_gallerySoft[path];
         st.have = qMax(st.have, item->displayPixelLongEdge());
         st.terminal = true;
-        clearGallerySoftInflight(st);
 
         // Blank on-screen cells only — off-screen waits until scrolled in.
         if (!item->hasDisplayPixels()) {
@@ -313,7 +306,6 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     const bool lqipBusy = scheduled > 0 || moreInstallsPending;
-    publishGalleryInterest(interestNear, QStringList());
     if (m_perfEnabled) {
         usInterest = phaseTimer.nsecsElapsed() / 1000;
     }
@@ -335,8 +327,8 @@ void ImageView::updateGalleryDecodeWindow()
         if (now - s_lastLogMs >= 500) {
             s_lastLogMs = now;
             std::fprintf(stderr,
-                         "biltoo/tile: lqipBusy=%d visibleSched=%d inflight=%d\n",
-                         lqipBusy ? 1 : 0, scheduled, gallerySoftInflightCount());
+                         "biltoo/tile: lqipBusy=%d visibleSched=%d\n",
+                         lqipBusy ? 1 : 0, scheduled);
             std::fflush(stderr);
         }
     }

@@ -917,8 +917,21 @@ int ImageView::pendingDecodeCount() const
     }
     int n = pendingAdds + m_pendingRestoreStates.size();
 
-    if (isGalleryMode() || isWorkspaceMode()) {
-        // Blank + LQIP-only tiles still need soft/PreferCache (not "done").
+    if (isGalleryMode()) {
+        // Gallery: blanks still need LQIP. LQIP-only is intentional underlay
+        // (tiles own sharpness) — do not count as remaining soft work.
+        QSet<QString> blankPaths;
+        for (ImageItem *item : m_items) {
+            if (!item || item->path().isEmpty()) {
+                continue;
+            }
+            if (!item->hasDisplayPixels()) {
+                blankPaths.insert(item->path());
+            }
+        }
+        n += blankPaths.size();
+    } else if (isWorkspaceMode()) {
+        // Workspace may still climb PreferCache for soft+ samples.
         QSet<QString> weakPaths;
         for (ImageItem *item : m_items) {
             if (!item || item->path().isEmpty()) {
@@ -931,22 +944,6 @@ int ImageView::pendingDecodeCount() const
             }
         }
         n += weakPaths.size();
-        // Soft climbs still in flight for tiles that already show soft+.
-        for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
-            if (weakPaths.contains(it.key())) {
-                continue; // already counted
-            }
-            if (it.value().inflight > 0) {
-                ++n;
-            }
-        }
-    } else {
-        // Image mode: only true in-flight climbs (single item).
-        for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
-            if (it.value().inflight > 0) {
-                ++n;
-            }
-        }
     }
 
     // Slideshow preload queue (inflight + pending neighbours).

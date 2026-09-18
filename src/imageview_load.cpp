@@ -1493,16 +1493,6 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
 }
 
 
-int ImageView::gallerySoftInflightCount() const
-{
-    int n = 0;
-    for (auto it = m_gallerySoft.cbegin(); it != m_gallerySoft.cend(); ++it) {
-        if (it.value().inflight > 0) {
-            ++n;
-        }
-    }
-    return n;
-}
 
 void ImageView::gallerySoftResetPath(const QString &path)
 {
@@ -1536,11 +1526,6 @@ int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) c
     return have;
 }
 
-void ImageView::clearGallerySoftInflight(GallerySoftState &soft)
-{
-    soft.inflight = 0;
-    soft.inflightSinceMs = 0;
-}
 
 void ImageView::scheduleGalleryDecode(const QString &path)
 {
@@ -1586,7 +1571,6 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
 
     GallerySoftState &st = m_gallerySoft[path];
-    clearGallerySoftInflight(st);
     st.terminal = true; // no soft climb ever
     st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
@@ -1731,7 +1715,6 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
     if (it != m_gallerySoft.end()) {
         it.value().terminal = true;
         it.value().have = qMax(it.value().have, galleryHaveEdgeFromItems(path, nullptr));
-        clearGallerySoftInflight(it.value());
     }
 
     scheduleGalleryDecodeWindowRefresh(16);
