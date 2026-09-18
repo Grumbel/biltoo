@@ -14,6 +14,7 @@
 #include "imageloader.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
+#include "tile_load_coordinator.h"
 #include "sessionappearance.h"
 
 #include <QUndoCommand>
@@ -189,6 +190,7 @@ ImageView::ImageView(QWidget *parent)
                 }
             });
     m_pathRaster = new PathRasterService(this);
+    m_tileCoordinator = std::make_unique<TileLoadCoordinator>(this);
     connect(m_pathRaster, &PathRasterService::rasterImproved, this,
             [this](const QString &path, int longEdge) {
                 if (path.isEmpty()) {

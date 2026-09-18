@@ -123,6 +123,7 @@ add_executable(biltoo
   src/imageview_crop.cpp
   src/imageview_attention.cpp
   src/imageview_load.cpp
+  src/tile_load_coordinator.cpp
   src/imageview_view.cpp
   src/imageview_transform.cpp
   src/imageview_input.cpp

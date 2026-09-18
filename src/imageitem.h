@@ -337,7 +337,7 @@ public:
     void clearTileGradedCache() const;
     QImage resolveGradedTile(tilelod::TileKey const &key,
                              ColorAdjustments const &grade) const;
-    /** Pump completions and issue budgeted requests (view after zoom/pan). */
+    /** Pump completions + issue up to @p budget. Only TileLoadCoordinator may pass budget>0. */
     void tickTileLod(int budget = 8);
     /** True when on-screen need exceeds soft max (tiles should own display). */
     bool tileLodWanted() const;

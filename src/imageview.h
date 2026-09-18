@@ -12,6 +12,7 @@
 #include "workspacecontroller.h"
 #include "imagecontroller.h"
 #include "pathrasterservice.h"
+#include "tile_load_coordinator.h"
 #include "displaysurface.h"
 #include "gallerylayout.h"
 
@@ -20,6 +21,7 @@
 #include <QElapsedTimer>
 #include <QGraphicsView>
 #include <QHash>
+#include <memory>
 #include <functional>
 #include <QVector>
 #include <QList>
@@ -1340,6 +1342,7 @@ protected:
     bool viewportEvent(QEvent *event) override;
 
 private:
+    friend class TileLoadCoordinator;
     struct PendingSessionBind;
     enum LoadRole {
         LoadReplace = 0,
@@ -1379,6 +1382,11 @@ private:
     void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
     /** Image-mode tile LOD: viewport + budgeted requests (not from paint). */
     void tickPrimaryTileLod(int budget = 8);
+    /** Slideshow pure-phase owns viewport — coordinator must not issue tiles. */
+    bool isSlideshowProgressActive() const { return m_slideshowProgressActive; }
+    PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
+    QSet<QString> *tileLodPreferCancelledForCoordinator() { return &m_tileLodPreferCancelled; }
+
     /**
      * Debounce climb + tile tick after zoom (wheel/toolbar). Avoids per-notch
      * set_viewport/issue_requests on the GUI thread during continuous zoom.
@@ -1997,6 +2005,7 @@ private:
     ImageModeSoftProvider m_imageModeSoftProvider;
 
     PathRasterService *m_pathRaster = nullptr;
+    std::unique_ptr<TileLoadCoordinator> m_tileCoordinator;
 
     int gallerySoftInflightCount() const;
     void gallerySoftResetPath(const QString &path);

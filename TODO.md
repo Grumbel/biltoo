@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1152-tile-coordinator.** Central TileLoadCoordinator; low-res coverage before upres.
+Prior: **1151**.
+
+### Design
+- `TileLoadCoordinator` is the **only** policy that splits tile issue budget.
+- Priority: in-view + no tiles → in-view incomplete → upres only when coverage done.
+- `ImageView::tickPrimaryTileLod` → `m_tileCoordinator->tick(budget)`.
+- ImageItem still pumps/paints; issue budget >0 only from the coordinator.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1152-tile-coordinator.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1151-gui-budget.** GUI time budgets + size memo (no Store get_size on main thread).
 Prior: **1150**.
 
