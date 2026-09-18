@@ -118,4 +118,24 @@ qreal freeRotationFromDrag(qreal startRotation, qreal startAngleDeg,
     return rot;
 }
 
+qreal uniformScaleFactor(qreal d0, qreal d1, qreal minDist)
+{
+    if (d0 <= minDist) {
+        return 1.0;
+    }
+    return d1 / d0;
+}
+
+qreal axisScaleFromProjection(qreal pressScale, const QPointF &v0, const QPointF &v1,
+                              const QPointF &axis)
+{
+    const qreal uAxis = qMax(1e-9, QPointF::dotProduct(axis, axis));
+    const qreal len0 = QPointF::dotProduct(v0, axis) / uAxis;
+    const qreal len1 = QPointF::dotProduct(v1, axis) / uAxis;
+    if (qAbs(len0) <= 1e-6) {
+        return pressScale;
+    }
+    return pressScale * (qAbs(len1) / qAbs(len0));
+}
+
 } // namespace PlacementLinear

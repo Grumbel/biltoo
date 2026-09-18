@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1311-placement-scale-factors.** Pure item scale-handle factor math.
+Prior: **1310**.
+
+### Change
+- `PlacementLinear::uniformScaleFactor` — corner uniform scale from two distances
+- `axisScaleFromProjection` — edge stretch from press-axis projections
+- `ImageItem::applyScaleHandleDrag` uses the pure helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1311-placement-scale-factors.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1310-placement-free-rotation.** Pure item-handle free-rotate via PlacementLinear.
 Prior: **1309**.
 

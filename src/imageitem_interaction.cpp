@@ -611,7 +611,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             const qreal d0 = QLineF(itemCentre, m_pressScenePos).length();
             const qreal d1 = QLineF(itemCentre, scenePos).length();
             if (d0 > kMinDist) {
-                const qreal f = d1 / d0;
+                const qreal f = PlacementLinear::uniformScaleFactor(d0, d1, kMinDist);
                 setItemScale(m_pressScaleX * f, m_pressScaleY * f);
                 setItemShear(m_pressShear);
             }
@@ -620,7 +620,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             const qreal d0 = QLineF(anchor, m_pressScenePos).length();
             const qreal d1 = QLineF(anchor, scenePos).length();
             if (d0 > kMinDist) {
-                const qreal f = d1 / d0;
+                const qreal f = PlacementLinear::uniformScaleFactor(d0, d1, kMinDist);
                 setItemScale(m_pressScaleX * f, m_pressScaleY * f);
                 setItemShear(m_pressShear);
                 const QPointF now = mapToScene(m_pressAnchorLocal);
@@ -647,18 +647,9 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             const QPointF v0 = m_pressScenePos - itemCentre;
             const QPointF v1 = scenePos - itemCentre;
             if (stretchX) {
-                const qreal len0 = QPointF::dotProduct(v0, axisX) / qMax(1e-9, QPointF::dotProduct(axisX, axisX));
-                const qreal len1 = QPointF::dotProduct(v1, axisX) / qMax(1e-9, QPointF::dotProduct(axisX, axisX));
-                // len is in "press-scale units" of half-width; recover scale factor.
-                if (qAbs(len0) > 1e-6) {
-                    sx = m_pressScaleX * (qAbs(len1) / qAbs(len0));
-                }
+                sx = PlacementLinear::axisScaleFromProjection(m_pressScaleX, v0, v1, axisX);
             } else {
-                const qreal len0 = QPointF::dotProduct(v0, axisY) / qMax(1e-9, QPointF::dotProduct(axisY, axisY));
-                const qreal len1 = QPointF::dotProduct(v1, axisY) / qMax(1e-9, QPointF::dotProduct(axisY, axisY));
-                if (qAbs(len0) > 1e-6) {
-                    sy = m_pressScaleY * (qAbs(len1) / qAbs(len0));
-                }
+                sy = PlacementLinear::axisScaleFromProjection(m_pressScaleY, v0, v1, axisY);
             }
         } else {
             // Anchor fixed: project (pointer - anchor) onto the stretch axis.
@@ -666,19 +657,9 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             const QPointF v0 = m_pressScenePos - anchor;
             const QPointF v1 = scenePos - anchor;
             if (stretchX) {
-                const qreal uAxis = qMax(1e-9, QPointF::dotProduct(axisX, axisX));
-                const qreal len0 = QPointF::dotProduct(v0, axisX) / uAxis;
-                const qreal len1 = QPointF::dotProduct(v1, axisX) / uAxis;
-                if (qAbs(len0) > 1e-6) {
-                    sx = m_pressScaleX * (qAbs(len1) / qAbs(len0));
-                }
+                sx = PlacementLinear::axisScaleFromProjection(m_pressScaleX, v0, v1, axisX);
             } else {
-                const qreal uAxis = qMax(1e-9, QPointF::dotProduct(axisY, axisY));
-                const qreal len0 = QPointF::dotProduct(v0, axisY) / uAxis;
-                const qreal len1 = QPointF::dotProduct(v1, axisY) / uAxis;
-                if (qAbs(len0) > 1e-6) {
-                    sy = m_pressScaleY * (qAbs(len1) / qAbs(len0));
-                }
+                sy = PlacementLinear::axisScaleFromProjection(m_pressScaleY, v0, v1, axisY);
             }
         }
         setItemScale(sx, sy);

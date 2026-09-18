@@ -63,6 +63,19 @@ qreal placementRotationFromDrag(qreal startRotation, qreal startAngleDeg,
 qreal freeRotationFromDrag(qreal startRotation, qreal startAngleDeg,
                            qreal currentAngleDeg, bool snap15, bool snap45);
 
+/**
+ * Uniform scale factor from two scene distances about a fixed pivot.
+ * Returns 1.0 when @p d0 is below @p minDist (ignore near-degenerate samples).
+ */
+qreal uniformScaleFactor(qreal d0, qreal d1, qreal minDist = 1.0);
+
+/**
+ * Axis scale from projecting two vectors onto @p axis (press-time image axis).
+ * Returns @p pressScale when the press projection is near zero.
+ */
+qreal axisScaleFromProjection(qreal pressScale, const QPointF &v0, const QPointF &v1,
+                              const QPointF &axis);
+
 } // namespace PlacementLinear
 
 #endif // PLACEMENTLINEAR_H
