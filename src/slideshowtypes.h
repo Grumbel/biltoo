@@ -10,6 +10,7 @@
 #include <QImage>
 #include <QPixmap>
 #include <QColor>
+#include <QtGlobal>
 #include <QPointF>
 #include <QString>
 #include <QStringList>
@@ -142,6 +143,11 @@ struct SlideshowSettings {
     SlideshowZoom zoom = SlideshowZoom::Fit;
     SlideshowLetterboxFill letterboxFill = SlideshowLetterboxFill::AppBackground;
     QColor padColor{42, 42, 42};
+
+    void setPanZoomFactor(qreal factor)
+    {
+        panZoomFactor = qBound(1.02, factor, 1.5);
+    }
 };
 
 /**

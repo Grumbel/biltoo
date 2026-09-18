@@ -486,8 +486,7 @@ void ImageView::captureStickyPanAnchor(ImageItem *item)
     const QPointF vc = mapToScene(viewport()->rect().center());
     m_framing.stickyPanNormX = (vc.x() - r.left()) / r.width();
     m_framing.stickyPanNormY = (vc.y() - r.top()) / r.height();
-    m_framing.stickyPanNormX = qBound(0.0, m_framing.stickyPanNormX, 1.0);
-    m_framing.stickyPanNormY = qBound(0.0, m_framing.stickyPanNormY, 1.0);
+    m_framing.clampStickyPanNorms();
     m_framing.haveStickyPanAnchor = true;
 }
 
@@ -680,11 +679,11 @@ void ImageView::setHudVisible(bool on)
 
 void ImageView::setHudFontPointSize(int pt)
 {
-    pt = qBound(8, pt, 48);
-    if (m_hudPrefs.fontPointSize == pt) {
+    const int before = m_hudPrefs.fontPointSize;
+    m_hudPrefs.setFontPointSize(pt);
+    if (m_hudPrefs.fontPointSize == before) {
         return;
     }
-    m_hudPrefs.fontPointSize = pt;
     viewport()->update();
 }
 
@@ -919,7 +918,7 @@ void ImageView::setSlideshowMotion(SlideshowMotion mode)
 
 void ImageView::setPanZoomFactor(qreal factor)
 {
-    m_ssSettings.panZoomFactor = qBound(1.02, factor, 1.5);
+    m_ssSettings.setPanZoomFactor(factor);
 }
 
 void ImageView::setSlideshowZoom(SlideshowZoom mode)

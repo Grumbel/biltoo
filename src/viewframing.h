@@ -4,6 +4,8 @@
 #ifndef VIEWFRAMING_H
 #define VIEWFRAMING_H
 
+#include <QtGlobal>
+
 /**
  * Image-mode framing preferences and sticky/preserved navigation scale.
  */
@@ -20,6 +22,12 @@ struct ViewFraming {
     /** Free (non-sticky) nav: keep absolute view scale across images. */
     bool havePreservedViewScale = false;
     qreal preservedViewScale = 1.0;
+
+    void clampStickyPanNorms()
+    {
+        stickyPanNormX = qBound(0.0, stickyPanNormX, 1.0);
+        stickyPanNormY = qBound(0.0, stickyPanNormY, 1.0);
+    }
 };
 
 #endif // VIEWFRAMING_H
