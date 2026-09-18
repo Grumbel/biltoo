@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1293-merge-live-crop-qrect.** Fix mergeAppliedAndLiveFlags live crop type (QRect).
+Prior: **1292**.
+
+### Change
+- `mergeAppliedAndLiveFlags(..., const QRect &liveCropRect)` — matches `WorkspaceItemState::cropRect`
+  and `ImageItem::sessionCropRect()` (was QRectF, failed to compile on Qt 6).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1293-merge-live-crop-qrect.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1292-crop-draft-layout-paint-fp.** Pure draft layout gate + paint fp on ss HUD.
 Prior: **1291**.
 

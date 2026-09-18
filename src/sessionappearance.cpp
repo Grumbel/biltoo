@@ -278,7 +278,7 @@ QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,
 void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
                               const ContentXform::Value *appliedOrNull,
                               bool liveHFlip, bool liveVFlip,
-                              bool liveHasCrop, const QRectF &liveCropRect)
+                              bool liveHasCrop, const QRect &liveCropRect)
 {
     // Applied fingerprint is authoritative when the store lagged a live edit
     // (rotate then fitItem before m_appearance was visible to this reader).

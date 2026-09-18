@@ -159,7 +159,7 @@ bool hasContentAppearance(const WorkspaceItemState &state);
 void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
                               const ContentXform::Value *appliedOrNull,
                               bool liveHFlip, bool liveVFlip,
-                              bool liveHasCrop, const QRectF &liveCropRect);
+                              bool liveHasCrop, const QRect &liveCropRect);
 
 /** Copy of @p state with crop fields cleared (orient-only layout / draft). */
 WorkspaceItemState withoutCrop(const WorkspaceItemState &state);
