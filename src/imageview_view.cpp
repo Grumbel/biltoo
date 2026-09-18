@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "slideshowclocks.h"
 #include "displayquality.h"
 #include "biltoo_thread.h"
 
@@ -61,22 +62,6 @@ qint64 slideshowZoomBlurKey(const QString &path, int vw, int vh)
  * Advance unitless motion progress with wall Δt / pathMs.
  * Clock is a rate sample only (restart each call); T ∈ [0,1] is authority.
  */
-void integrateMotionProgress01(qreal *t, QElapsedTimer *clock, bool running,
-                               bool paused, int pathMs)
-{
-    if (!t || !clock || !running || paused || pathMs <= 0) {
-        return;
-    }
-    if (!clock->isValid()) {
-        clock->start();
-        return;
-    }
-    const qint64 d = clock->restart();
-    if (d > 0) {
-        *t = qBound(0.0, *t + qreal(d) / qreal(pathMs), 1.0);
-    }
-}
-
 } // namespace
 
 
@@ -1105,9 +1090,9 @@ void ImageView::setSlideshowMotionPaused(bool paused)
         // Fold phase-motion clocks into T ∈ [0,1].
         const int pathMs = slideshowPathDurationMs();
         if (pathMs > 0) {
-            integrateMotionProgress01(&m_ss.fromMotionT, &m_ss.fromMotionClock,
+            SlideshowClocks::integrateMotionProgress01(&m_ss.fromMotionT, &m_ss.fromMotionClock,
                                       m_ss.fromMotionClockRunning, false, pathMs);
-            integrateMotionProgress01(&m_ss.toMotionT, &m_ss.toMotionClock,
+            SlideshowClocks::integrateMotionProgress01(&m_ss.toMotionT, &m_ss.toMotionClock,
                                       m_ss.toMotionClockRunning, false, pathMs);
             if (m_ss.fromMotionClockRunning) {
                 m_ssDwell.motionT = m_ss.fromMotionT;
@@ -2244,8 +2229,8 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
 
 int ImageView::slideshowPathDurationMs() const
 {
-    return qMax(250, m_ssHud.progressIntervalMs
-                     + qMax(0, m_ssSettings.transitionDurationMs));
+    return SlideshowClocks::pathDurationMs(m_ssHud.progressIntervalMs,
+                                           m_ssSettings.transitionDurationMs);
 }
 
 void ImageView::warmZoomBlurForCurrentPhase()
@@ -2287,16 +2272,7 @@ bool ImageView::applySlideshowFadeProgressOnly(qreal fadeT)
 void ImageView::updateSlideshowPhaseMotionProgress(int pathMs)
 {
     // T ∈ [0,1] is authority; clocks only measure Δt for integration.
-    // Interval / pathMs changes alter rate only — progress is not remapped.
-    integrateMotionProgress01(&m_ss.fromMotionT, &m_ss.fromMotionClock,
-                              m_ss.fromMotionClockRunning, m_ssDwell.motionPaused,
-                              pathMs);
-    if (m_ss.fromMotionClockRunning) {
-        m_ssDwell.motionT = m_ss.fromMotionT;
-    }
-    integrateMotionProgress01(&m_ss.toMotionT, &m_ss.toMotionClock,
-                              m_ss.toMotionClockRunning, m_ssDwell.motionPaused,
-                              pathMs);
+    SlideshowClocks::advancePhaseMotion(&m_ss, &m_ssDwell, pathMs);
 }
 
 void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT)
@@ -3457,21 +3433,7 @@ void ImageView::tickSlideshowPhaseMotionClocks()
 
 void ImageView::tickSlideshowDwellMotionClock()
 {
-    // Pure dwell motion: integrate Δt into T ∈ [0,1] (same model as phase motion).
-    if (m_ssDwell.durationMs <= 0 || m_ssDwell.motionPaused) {
-        return;
-    }
-    if (!m_ssDwell.clock.isValid()) {
-        m_ssDwell.clock.start();
-        return;
-    }
-    const qint64 d = m_ssDwell.clock.restart();
-    if (d > 0) {
-        m_ssDwell.motionT =
-            qBound(0.0, m_ssDwell.motionT + qreal(d) / qreal(m_ssDwell.durationMs), 1.0);
-        m_ssDwell.elapsedOffsetMs =
-            qint64(m_ssDwell.motionT * qreal(m_ssDwell.durationMs));
-    }
+    SlideshowClocks::advanceDwellMotion(&m_ssDwell);
 }
 
 void ImageView::tickSlideshowMotion()

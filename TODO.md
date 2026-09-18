@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1261-slideshow-clocks.** Pure SlideshowClocks motion integration.
+Prior: **1260**.
+
+### Change
+- `SlideshowClocks::integrateMotionProgress01` / `advancePhaseMotion` / `advanceDwellMotion`.
+- `pathDurationMs(interval, transition)`.
+- ImageView tick wrappers call the namespace; timers stay on the view.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1261-slideshow-clocks.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1260-hud-session-gallery-soft.** HudAppearance + SessionIdentity + GallerySoftBook.
 Prior: **1259**.
 

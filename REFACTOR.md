@@ -32,7 +32,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 | 4 | **LoadGeneration** + **SessionLoadGate** | `imageview_load` | generation + pending maps |
 | 5 | **CropGeometry** + **CropSession** | `imageview_crop` | math + draft state bag |
 | 6 | **TileNeighborPrefetch** | prefetch slots | session-replace clear |
-| 7 | **SlideshowPhaseState** + Settings/Dwell | phase + prefs + Ken Burns | |
+| 7 | **SlideshowPhaseState** + Settings/Dwell + **Clocks** | phase + prefs + pure ticks | |
 
 **Rule:** new collaborator types with explicit Host or narrow public API — not more `imageview_*.cpp` slices alone.
 
@@ -48,6 +48,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowPhaseState** + enums (`slideshowtypes.h`): from/to phase buffers, fade/motion clocks, atlas.
 - **SlideshowSettings** / **SlideshowDwellState**: prefs bag + dwell atlas / Ken Burns camera.
 - **SlideshowZoomBlurState** / **SlideshowProgressHud**: letterbox blur cache + progress/seek/nav-hot HUD clocks.
+- **SlideshowClocks**: pure motion T∈[0,1] integration (no QObject); ImageView timers call in.
 - **AttentionSession** (`attentionsession.h`): attention draft points + rubber/select gesture state.
 - **CentreProgress** / **GroupTransformSession**: centre HUD panel + multi-select scale/rotate gesture.
 - **PageGuideSession** / **ItemInteractSession** / **HudFlash**: print guide, single-item drag/rotate, action flash.

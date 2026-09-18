@@ -144,6 +144,8 @@ add_executable(biltoo
   src/sessionchrome.h
   src/gallerysoftbook.h
   src/slideshowtypes.h
+  src/slideshowclocks.h
+  src/slideshowclocks.cpp
   src/loadgeneration.h
   src/sessionloadgate.h
   src/imageview_attention.cpp
