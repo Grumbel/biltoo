@@ -6,6 +6,7 @@
 
 #include "imageview_types.h"
 #include "gallerysizeresolve.h"
+#include "tileneighborprefetch.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
@@ -58,7 +59,9 @@ class QPainter;
  *
  * Gallery is not a Workspace layout — it is a separate mode of this view.
  */
-class ImageView : public QGraphicsView, private GallerySizeResolveHost
+class ImageView : public QGraphicsView,
+                  private GallerySizeResolveHost,
+                  private TileNeighborPrefetchHost
 {
     Q_OBJECT
 
@@ -251,7 +254,7 @@ public:
      * Lookup only: m_imageSizeByPath, then thumtoo cache. Empty if unknown.
      * Slideshow and Image-mode framing share this.
      */
-    QSize logicalSizeForPath(const QString &path) const;
+    QSize logicalSizeForPath(const QString &path) const override;
     /** @deprecated name — use logicalSizeForPath. */
     QSize slideshowLogicalSize(const QString &path) const {
         return logicalSizeForPath(path);
@@ -1540,6 +1543,12 @@ private:
     void onSizeResolveGateComplete() override;
     void onSizeResolveGateCancelled() override;
 
+    // --- TileNeighborPrefetchHost ------------------------------------------
+    bool pathOnLiveCanvas(const QString &path) const override;
+    QSize viewportWidgetSize() const override;
+    qreal prefetchDevicePixelRatio() const override;
+    bool tilePrefetchNavHot() const override;
+
     void applyProbedImageSize(const QString &path, const QSize &size);
     /**
      * Gallery open size probes: schedule probes for paths still missing a
@@ -2167,20 +2176,8 @@ private:
     QTimer *m_tileLodTimer = nullptr;
     /** Single-shot: coalesce zoom notches before climb/tick. */
     QTimer *m_tileLodZoomDebounce = nullptr;
-    /**
-     * Off-canvas neighbor tile prefetch: keep controllers alive so source
-     * completions can pump into the shared path cache (stack controllers
-     * cancelled InFlight on destroy and dropped tiles).
-     */
-    struct TilePrefetchSlot {
-        QString path;
-        std::unique_ptr<tilelod::TileLodController> controller;
-        int ticksLeft = 0;
-        int budgetPerTick = 4;
-    };
-    std::vector<TilePrefetchSlot> m_tilePrefetchSlots;
-    QTimer *m_tilePrefetchTimer = nullptr;
-    void tickTilePrefetch();
+    /** Off-canvas neighbor tile prefetch (session-replace clears). */
+    TileNeighborPrefetch m_tileNeighborPrefetch;
     /** Paths for which PreferCache was cancelled after entering tile band. */
     QSet<QString> m_tileLodPreferCancelled;
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */

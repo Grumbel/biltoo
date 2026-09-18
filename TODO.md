@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1247-tile-neighbor-prefetch.** Extract TileNeighborPrefetch from ImageView.
+Prior: **1246**.
+
+### Change
+- `TileNeighborPrefetch` + host: slots, timer, overview density prefetch.
+- `ImageView::prefetchTilesForPaths` forwards; session wipe uses `clear()`.
+- Removes `TilePrefetchSlot` / timer members from `ImageView`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1247-tile-neighbor-prefetch.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1246-size-probe-extract.** Extract serial size-probe FIFO from ThumtooCache.
 Prior: **1245**.
 

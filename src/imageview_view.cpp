@@ -2447,10 +2447,7 @@ void ImageView::setSlideshowNavHot(bool hot)
     if (hot) {
         // Drop off-canvas prefetch sessions: their InFlight tiles compete with
         // settle soft/climb after a long key-repeat burst.
-        m_tilePrefetchSlots.clear();
-        if (m_tilePrefetchTimer) {
-            m_tilePrefetchTimer->stop();
-        }
+        m_tileNeighborPrefetch.clear();
     }
 }
 

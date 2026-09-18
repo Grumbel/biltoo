@@ -114,6 +114,8 @@ add_executable(biltoo
   src/gallerycontroller.h
   src/gallerysizeresolve.cpp
   src/gallerysizeresolve.h
+  src/tileneighborprefetch.cpp
+  src/tileneighborprefetch.h
   src/workspacecontroller.cpp
   src/workspacecontroller.h
   src/imagecontroller.cpp

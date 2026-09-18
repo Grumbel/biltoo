@@ -58,6 +58,7 @@ ImageView::ImageView(QWidget *parent)
     , m_workspace(this)
     , m_image(this)
     , m_gallerySizeResolve(this, this)
+    , m_tileNeighborPrefetch(this, this)
 {
     m_scene = new QGraphicsScene(this);
     // BSP indexing is fragile with frequent add/remove (Duplicate + Delete):

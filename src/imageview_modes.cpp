@@ -89,10 +89,7 @@ void ImageView::invalidateSessionLoads()
     // Drop process tile RAM and host underlays retained across sessions
     // (old archive paths / LQIP samples). clearWorkspace does the same for
     // Workspace; Gallery Open only hits invalidateSessionLoads.
-    if (m_tilePrefetchTimer) {
-        m_tilePrefetchTimer->stop();
-    }
-    m_tilePrefetchSlots.clear();
+    m_tileNeighborPrefetch.clear();
     tilelod::TileLodRegistry::instance().invalidateAll();
     ThumtooCache::clearSessionReplaceMemos();
     ImageCache::clear();
@@ -255,10 +252,7 @@ void ImageView::clearWorkspace()
     m_galleryDeferPopulate = false;
     cancelGallerySizeResolve();
     ImageCache::clear();
-    if (m_tilePrefetchTimer) {
-        m_tilePrefetchTimer->stop();
-    }
-    m_tilePrefetchSlots.clear();
+    m_tileNeighborPrefetch.clear();
     tilelod::TileLodRegistry::instance().invalidateAll();
     ThumtooCache::clearSessionReplaceMemos();
     m_pathOrder.clear();
