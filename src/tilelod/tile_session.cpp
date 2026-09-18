@@ -302,6 +302,15 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
   }
 }
 
+void TileSession::set_wake(std::function<void()> wake)
+{
+  if (!m_inbox) {
+    return;
+  }
+  std::lock_guard<std::mutex> lock(m_inbox->mu);
+  m_inbox->wake = std::move(wake);
+}
+
 void TileSession::on_source_completion(TileKey key,
                                        std::optional<TileBitmap> bitmap,
                                        std::uint64_t gen)
@@ -447,12 +456,19 @@ int TileSession::issue_requests(int budget)
     if (!inbox || !inbox->alive.load()) {
       return;
     }
-    std::lock_guard<std::mutex> lock(inbox->mu);
-    if (!inbox->alive.load()) {
-      return;
+    std::function<void()> wake;
+    {
+      std::lock_guard<std::mutex> lock(inbox->mu);
+      if (!inbox->alive.load()) {
+        return;
+      }
+      inbox->pending.push_back(
+          PendingCompletion{std::move(key), std::move(bitmap), gen});
+      wake = inbox->wake;
     }
-    inbox->pending.push_back(
-        PendingCompletion{std::move(key), std::move(bitmap), gen});
+    if (wake) {
+      wake();
+    }
   });
 
   return static_cast<int>(batch.size());

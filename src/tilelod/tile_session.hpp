@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <functional>
 #include <vector>
 
 namespace tilelod {
@@ -118,6 +119,12 @@ public:
   DebugSnapshot debug_snapshot() const;
 
   void set_byte_budget(std::size_t bytes) { m_byte_budget = bytes; }
+
+  /**
+   * Called from any thread when a tile completion is queued in the inbox.
+   * Host should queue a GUI-thread pump+repaint (tiles never appear without it).
+   */
+  void set_wake(std::function<void()> wake);
   std::size_t byte_budget() const { return m_byte_budget; }
 
   /// Test helper: enqueue a completion as if the source called back.
@@ -138,6 +145,7 @@ private:
     std::mutex mu;
     std::vector<PendingCompletion> pending;
     std::atomic<bool> alive{true};
+    std::function<void()> wake;
   };
 
   void on_source_completion(TileKey key, std::optional<TileBitmap> bitmap,

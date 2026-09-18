@@ -286,8 +286,16 @@ ImageView::ImageView(QWidget *parent)
     m_slideshowProgressTimer = new QTimer(this);
     m_slideshowProgressTimer->setInterval(33); // ~30 Hz; cheap 1px redraw
     connect(m_slideshowProgressTimer, &QTimer::timeout, this, [this]() {
-        if (m_hudVisible && m_slideshowProgressActive && m_slideshowProgressIntervalMs > 0) {
-            viewport()->update();
+        if (m_slideshowProgressActive) {
+            // Pump shared path tiles for phase slides (paint uses TileLodController).
+            tickPrimaryTileLod(8);
+            if (viewport()) {
+                viewport()->update();
+            }
+        } else if (m_hudVisible && m_slideshowProgressIntervalMs > 0) {
+            if (viewport()) {
+                viewport()->update();
+            }
         }
     });
 

@@ -14,6 +14,7 @@
 #include "imageloader.h"
 #include "pagepath.h"
 #include "thumtoocache.h"
+#include "tilelod/tile_lod_controller.hpp"
 
 #include <QDebug>
 #include <QElapsedTimer>
@@ -3088,6 +3089,79 @@ QRectF ImageView::computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh,
     return QRectF(destX, destY, dw, dh);
 }
 
+
+tilelod::TileLodController *ImageView::slideshowTilesForPath(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return nullptr;
+    }
+    if (path == m_ssFromPath) {
+        if (!m_ssFromTiles) {
+            m_ssFromTiles = std::make_unique<tilelod::TileLodController>();
+        }
+        if (m_ssFromTiles->path() != path) {
+            m_ssFromTiles->setPath(path);
+        }
+        return m_ssFromTiles.get();
+    }
+    if (path == m_ssToPath) {
+        if (!m_ssToTiles) {
+            m_ssToTiles = std::make_unique<tilelod::TileLodController>();
+        }
+        if (m_ssToTiles->path() != path) {
+            m_ssToTiles->setPath(path);
+        }
+        return m_ssToTiles.get();
+    }
+    return nullptr;
+}
+
+bool ImageView::paintSlideshowTiles(QPainter *painter, const QString &path,
+                                    const QRectF &dest, const QImage &underlay) const
+{
+    if (!painter || path.isEmpty() || dest.isEmpty()) {
+        return false;
+    }
+    tilelod::TileLodController *lod = slideshowTilesForPath(path);
+    if (!lod) {
+        return false;
+    }
+    QSize native = logicalSizeForPath(path);
+    if (!isPositiveSize(native)) {
+        native = ThumtooCache::cachedSize(path);
+    }
+    if (!isPositiveSize(native)) {
+        return false;
+    }
+    const int longEdge = qMax(native.width(), native.height());
+    if (longEdge < 256) {
+        return false;
+    }
+    lod->setContentSize(native.width(), native.height(),
+                        ThumtooCache::durableTileMinScale(path));
+    // Full content into dest (same model as drawImage(dest, image)).
+    const double dpc = qMax(dest.width() / qMax(1.0, qreal(native.width())),
+                            dest.height() / qMax(1.0, qreal(native.height())));
+    if (!tilelod::TileLodController::shouldUseTiles(dpc, longEdge)) {
+        return false;
+    }
+    lod->updateViewport(QRectF(0, 0, native.width(), native.height()), dpc, 0.0);
+    (void)lod->tick(12);
+    if (!lod->hasAnyTile()) {
+        if (!ThumtooCache::hasDurableTilesKnown(path)) {
+            (void)ThumtooCache::scheduleTilePyramid(path);
+        }
+        return false;
+    }
+    painter->save();
+    painter->translate(dest.topLeft());
+    painter->scale(dest.width() / qMax(1.0, qreal(native.width())),
+                   dest.height() / qMax(1.0, qreal(native.height())));
+    const bool drew = lod->paint(painter, underlay);
+    painter->restore();
+    return drew;
+}
+
 void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
                                  qreal motionT, QPointF biasA, QPointF biasB,
                                  const QString &path) const
@@ -3107,6 +3181,11 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
 
     const QRectF dest = computeMotionCoverDestRect(iw, ih, vw, vh, motionT, biasA, biasB, path);
     if (!dest.isValid() || dest.isEmpty()) {
+        return;
+    }
+
+    // Tiles first (shared TileLodRegistry path cache) — same as Image/Gallery.
+    if (paintSlideshowTiles(painter, path, dest, image)) {
         return;
     }
 

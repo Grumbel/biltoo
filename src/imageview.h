@@ -22,6 +22,9 @@
 #include <QGraphicsView>
 #include <QHash>
 #include <memory>
+
+namespace tilelod { class TileLodController; }
+
 #include <functional>
 #include <QVector>
 #include <QList>
@@ -297,6 +300,9 @@ public:
     QRectF computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh,
                                       qreal motionT, QPointF biasA, QPointF biasB,
                                       const QString &path) const;
+    tilelod::TileLodController *slideshowTilesForPath(const QString &path) const;
+    bool paintSlideshowTiles(QPainter *painter, const QString &path,
+                             const QRectF &dest, const QImage &underlay) const;
     void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT,
                           QPointF biasA, QPointF biasB,
                           const QString &path = QString()) const;
@@ -1913,6 +1919,9 @@ private:
     DisplaySurface::SurfaceId m_ssToSurface = DisplaySurface::kInvalidSurfaceId;
     QImage m_ssFromImage;
     QImage m_ssToImage;
+    /** Shared-path tile sessions for slideshow phase paint (TileLodRegistry). */
+    mutable std::unique_ptr<tilelod::TileLodController> m_ssFromTiles;
+    mutable std::unique_ptr<tilelod::TileLodController> m_ssToTiles;
     /** Phase buffer already has ContentXform materialize (not raw host stand-in). */
     bool m_ssFromContentApplied = false;
     bool m_ssToContentApplied = false;

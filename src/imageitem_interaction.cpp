@@ -1503,6 +1503,28 @@ void ImageItem::prepareTileLodPlan()
     // ring of cells; not a full off-screen ring (that multiplies issue work).
     const double margin = 256.0 / qMax(1e-6, dpc);
     m_tileLod->updateViewport(visSource, dpc, margin);
+    // Completions arrive off the GUI; without a wake, pump never runs until the
+    // next pan/scroll and new tiles never repaint (ImageView "stuck coarse").
+    if (m_tileLod->session()) {
+        std::shared_ptr<bool> alive = m_tileLodAlive;
+        m_tileLod->session()->set_wake([this, alive]() {
+            QTimer::singleShot(0, QCoreApplication::instance(), [this, alive]() {
+                if (!alive || !*alive || !m_tileLod) {
+                    return;
+                }
+                const int applied = m_tileLod->tick(12);
+                Q_UNUSED(applied);
+                update();
+                if (scene()) {
+                    for (QGraphicsView *v : scene()->views()) {
+                        if (v && v->viewport()) {
+                            v->viewport()->update();
+                        }
+                    }
+                }
+            });
+        });
+    }
 }
 
 void ImageItem::prepareTileLod()

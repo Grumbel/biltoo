@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1199-tile-wake-slideshow-tiles.** Tile completion wakes repaint; slideshow paints from shared path tiles.
+Prior: **1198**.
+
+### Fix
+1. **ImageView stuck coarse tiles:** `TileSession` completion wake → GUI `tick` + `update` + viewport invalidate (tiles landed in inbox but never pumped/painted until scroll).
+2. **Slideshow tiles:** phase paint tries `TileLodController` (shared `TileLodRegistry` cache) into motion dest before atlas/QImage; progress timer pumps tiles.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1199-tile-wake-slideshow-tiles.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1198-slideshow-screen-tiles.** Slideshow: screen-fit SoftDisplay only (no Full); tile pyramid warm; shared path tile cache.
 Prior: **1197**.
 
