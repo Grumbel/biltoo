@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1153-fix-paint-budget.** Fix GUI_BUDGET_MS inserted into ImageItem::paint signature.
+Prior: **1152**.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1153-fix-paint-budget.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1152-tile-coordinator.** Central TileLoadCoordinator; low-res coverage before upres.
 Prior: **1151**.
 

@@ -1561,10 +1561,9 @@ bool ImageItem::tileLodViewportCovered() const
 }
 
 void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
-             
-    GUI_BUDGET_MS("ImageItem::paint", 3);
-         QWidget *widget)
+                      QWidget *widget)
 {
+    GUI_BUDGET_MS("ImageItem::paint", 3);
     Q_UNUSED(widget);
     const QRectF crop = galleryClipLocal();
     const bool cropped = !crop.isEmpty();
