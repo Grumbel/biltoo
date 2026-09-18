@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1112-warm-open-instant.** Warm open skips Opening-N HUD; preparePaths off GUI.
+Prior: **1111**.
+
+### Problem
+"Opening 94 images…" stayed up on a warm index: `preparePaths` did
+`is_regular_file` / Store work on the GUI, and the centre HUD was always shown
+before Gallery pack.
+
+### Change
+- `preparePaths`: skip paths with valid `cachedSize`; remaining work on thread pool.
+- `finishApplyExpandedLoad` / append→Gallery: show Opening HUD only when some
+  path still lacks a durable size.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1112-warm-open-instant.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1111-archive-expand-store-toc.** Warm archive expand uses Store TOC only.
 Prior: **1110**.
 
