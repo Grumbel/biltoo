@@ -158,14 +158,23 @@ Crop Apply paints correct thumb → ladder/job installs full-path decode → cro
 “vanishes”. Root: path authority competing with id override.
 
 
-## Decode edge vs LQIP
+## Decode edge vs LQIP / tiles
 
 `filmstripDecodeEdge()` = `ceilLadderEdge(thumbSize × DPR)` floored at 128.
 
+**Product (aligned with Gallery):** LQIP underlay + **tiles**. Soft PreferCache /
+classic `loadThumbnail` encode is **removed** for filmstrip.
+
+| Step | Action |
+|------|--------|
+| Size known | layout aspect from size memo/probe |
+| LQIP in ImageCache | install underlay (cache-only; never `request_lqip`) |
+| Durable tiles known | `scheduleDisplayPixels` → PreferCache **TileSynth** |
+| Cold (no tiles) | `scheduleTilePyramid` only; surface tick retries TileSynth when known |
+
 `prepareThumbnailFromImage` **never upscales**. LQIP (≤96) must keep a small
-`ThumbDecodeEdgeRole` so the quality watchdog and visible loader continue until
-a real soft/host sample arrives. Upscaling LQIP to the target edge used to mark
-cells as settled while still blurry on tiny filmstrips.
+`ThumbDecodeEdgeRole` so the quality watchdog continues until TileSynth covers
+the strip edge. Upscaling LQIP used to mark cells settled while still blurry.
 
 
 ## Session appearance / crop overrides

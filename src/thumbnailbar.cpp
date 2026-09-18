@@ -489,15 +489,10 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                             <= DisplayQuality::kLqipMaxEdge) {
                         setThumbnailIcon(i, lqip);
                     }
-                    // Soft after layout geometry is known; delay yields to Gallery.
+                    // Tiles after layout geometry is known (LQIP may already show).
                     if (ThumtooCache::isAvailable()) {
                         const int decodeSize = filmstripDecodeEdge();
-                        const int softEdge = qMin(
-                            decodeSize, ThumtooCache::kGalleryLadderEdge);
-                        const QString pathCopy = path;
-                        QTimer::singleShot(400, this, [this, pathCopy, softEdge]() {
-                            (void)ThumtooCache::scheduleSoftPixels(pathCopy, softEdge);
-                        });
+                        scheduleFilmstripTilePixels(path, decodeSize);
                     }
                 }
                 if (any) {
@@ -1255,22 +1250,32 @@ void ThumbnailBar::setStripBackground(const QColor &color)
     }
 }
 
+void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) const
+{
+    if (path.isEmpty() || edge <= 0 || !ThumtooCache::isAvailable()) {
+        return;
+    }
+    // Warm host already covers strip edge — zero work.
+    if (ImageCache::longEdge(ImageCache::get(path)) * 10 >= edge * 9) {
+        return;
+    }
+    if (ThumtooCache::hasDurableTilesKnown(path)) {
+        // PreferCache → TileSynth when a complete scale exists (no soft encode).
+        (void)ThumtooCache::scheduleDisplayPixels(path, edge);
+        return;
+    }
+    // Cold: build durable tiles only. PreferCache without a pyramid still
+    // soft-encodes — forbidden for filmstrip (LQIP + tiles product).
+    (void)ThumtooCache::scheduleTilePyramid(path);
+}
+
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
 {
-    // Prefer a ready cache hit already large enough for the cell.
-    // On miss, decode synchronously here: filmstrip jobs already run on the
-    // thread pool. ImageCache::ensure() / loadThumbnailCached() only *schedule*
-    // a decode and often return null; combined with m_thumbLoadScheduled that
-    // left blank cells that never retried after the cache filled.
+    // Process-memory only. Soft / classic loadThumbnail encode is removed for
+    // filmstrip — sharpness is tiles (TileSynth) after LQIP underlay.
     QImage image = ImageCache::get(path, maxSize);
     if (image.isNull()) {
-        image = ImageLoader::loadThumbnail(path, maxSize);
-        if (!image.isNull()) {
-            ImageCache::put(path, image);
-        } else {
-            // Any smaller mid-flight frame is better than an empty cell.
-            image = ImageCache::get(path);
-        }
+        image = ImageCache::get(path);
     }
     if (image.isNull()) {
         return {};
@@ -1753,13 +1758,7 @@ void ThumbnailBar::filmstripSurfaceTick()
             m_thumbLoadScheduled.remove(i);
             continue;
         }
-        // Soft PreferCache plateau is terminal for soft-band filmstrip demand.
-        if (shown > DisplayQuality::kLqipMaxEdge
-            && decodeSize <= ThumtooCache::kGalleryLadderEdge) {
-            m_thumbAwaitLadder.remove(i);
-            m_thumbLoadScheduled.remove(i);
-            continue;
-        }
+        // LQIP-only underlay is not terminal — keep driving tiles until strip edge.
 
         // Session-id crop/appearance owns the cell — never paint raw host over it.
         // Path-only rows use DisplaySurface::decide below for host upgrades.
@@ -1927,9 +1926,8 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         }
     }
 
-    // Filmstrip: soft schedulePixels only — Gallery owns tiles/LQIP.
-    // Keep concurrent soft low so Gallery tile encode/issue is not starved
-    // (24 soft jobs on open competed with every visible cell's tiles).
+    // Filmstrip: LQIP underlay + tiles (TileSynth when pyramid known). Soft
+    // PreferCache encode is removed. Cap concurrent cache reads / tile drives.
     static const int kMaxConcurrentThumbLoads = []() {
         int v = 6;
         if (const char *e = std::getenv("BILTOO_FILMSTRIP_THUMB_LOADS")) {
@@ -1985,12 +1983,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             if (haveEdge >= decodeSize * 9 / 10) {
                 continue;
             }
-            // PreferCache soft plateau (e.g. 128 for req=256): do not re-queue
-            // soft forever. Only climb further when decode wants overview+.
-            if (haveEdge > DisplayQuality::kLqipMaxEdge
-                && decodeSize <= ThumtooCache::kGalleryLadderEdge) {
-                continue;
-            }
+            // LQIP underlay is not settled — still need TileSynth for strip edge.
         }
         if (inFlight >= kMaxConcurrentThumbLoads) {
             break;
@@ -2075,32 +2068,8 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                         if (!haveSize) {
                             ThumtooCache::scheduleProbe(path);
                         } else {
-                            // Delay soft so Gallery tile/LQIP work is not flooded
-                            // by filmstrip PreferCache on the same open.
-                            const int softEdge = qMin(
-                                decodeSize, ThumtooCache::kGalleryLadderEdge);
-                            const int overviewEdge = qMin(
-                                decodeSize, ThumtooCache::kBatchOverviewEdge);
-                            const bool wantOverview =
-                                decodeSize > ThumtooCache::kGalleryLadderEdge
-                                && decodeSize <= ThumtooCache::kBatchOverviewEdge;
-                            QTimer::singleShot(400, host, [guard, gen, path, softEdge,
-                                                           overviewEdge, wantOverview, i]() {
-                                ThumbnailBar *const h = guard.data();
-                                if (!h || gen != h->m_generation.load()) {
-                                    return;
-                                }
-                                if (wantOverview) {
-                                    if (!ThumtooCache::interestOwnsOverview()) {
-                                        (void)ThumtooCache::scheduleOverviewPixels(
-                                            path, overviewEdge);
-                                    }
-                                } else {
-                                    (void)ThumtooCache::scheduleSoftPixels(
-                                        path, softEdge);
-                                }
-                                Q_UNUSED(i);
-                            });
+                            // LQIP/cache underlay may already show; drive tiles.
+                            host->scheduleFilmstripTilePixels(path, decodeSize);
                         }
                     } else if (image.isNull()) {
                         host->m_thumbFailed.insert(i);
@@ -2113,7 +2082,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             // A crop may have landed while this job ran — do not clobber it.
             // Path override only protects unbound rows; bound rows use id map.
             // Always clear scheduled on the GUI thread so the row is not stuck.
-            QMetaObject::invokeMethod(bar, [guard, i, path, gen, image]() {
+            QMetaObject::invokeMethod(bar, [guard, i, path, gen, image, decodeSize]() {
                 ThumbnailBar *const host = guard.data();
                 if (!host || gen != host->m_generation.load()) {
                     return;
@@ -2136,6 +2105,11 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     return;
                 }
                 host->setThumbnailIcon(i, image);
+                const int got = ImageCache::longEdge(image);
+                if (got < (decodeSize * 9) / 10) {
+                    host->m_thumbAwaitLadder.insert(i);
+                    host->scheduleFilmstripTilePixels(path, decodeSize);
+                }
                 emit host->loadsChanged();
                 // Free slot may allow more visible rows to start.
                 host->scheduleVisibleThumbnailLoads();

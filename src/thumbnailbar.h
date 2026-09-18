@@ -264,6 +264,12 @@ private:
     int thumbSizeFromBarExtent(int extent) const;
     QImage makeThumbnail(const QString &path, int maxSize) const;
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
+    /**
+     * Filmstrip sharpness: LQIP is cache-only; PreferCache only when durable
+     * tiles are known (TileSynth). Cold path schedules tile pyramid only —
+     * never soft-ladder encode (soft underlay is removed).
+     */
+    void scheduleFilmstripTilePixels(const QString &path, int edge) const;
     /** Physical pixel edge for decode/prepare (logical thumb × devicePixelRatio). */
     int thumbDecodePixels() const;
     /** Decode ladder edge for sharp icons (≥ thumb×DPR, ≤ gallery soft max). Layout ignores this. */

@@ -2,6 +2,28 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1220-filmstrip-tiles.** Filmstrip: LQIP + tiles (TileSynth); no soft encode.
+Prior: **1219**.
+
+### Change
+- `scheduleFilmstripTilePixels`: PreferCache only when durable tiles known
+  (TileSynth); else `scheduleTilePyramid` only — never soft PreferCache encode.
+- `makeThumbnail`: process ImageCache only (no `loadThumbnail`).
+- sizeReady / weak path: drive tiles, not delayed `scheduleSoftPixels`.
+- Stop treating soft-band plateau as settled (LQIP must keep climbing via tiles).
+- Docs: FILMSTRIP_LAYOUT decode section.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1220-filmstrip-tiles.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1219-image-paint-not-gallery-lqip.** Image paint: do not treat as Gallery LQIP-only.
 Prior: **1218**.
 
