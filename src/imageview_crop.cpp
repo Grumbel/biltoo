@@ -1586,72 +1586,52 @@ void ImageView::paintCropResizeHandles(QPainter &painter, const QPolygonF &cropV
 void ImageView::paintCropRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly)
 {
     // Rotate knobs on each side (outward from edge midpoints).
-    if (cropViewPoly.size() < 4) {
+    const CropGeometry::CropFrameViewAnchors a =
+        CropGeometry::frameViewAnchors(cropViewPoly);
+    if (!a.valid) {
         return;
     }
-    const QPointF tl = cropViewPoly.at(0);
-    const QPointF tr = cropViewPoly.at(1);
-    const QPointF br = cropViewPoly.at(2);
-    const QPointF bl = cropViewPoly.at(3);
-    {
-        const QPointF centre = (tl + tr + br + bl) * 0.25;
-        const bool hot = (m_crop.hoverHandle == CropHandle::Rotate
-                          || m_crop.activeHandle == CropHandle::Rotate);
-        auto drawRotateKnob = [&](QPointF mid, QPointF edgeAlong) {
-            qreal alen = qHypot(edgeAlong.x(), edgeAlong.y());
-            if (alen > 1e-6) {
-                edgeAlong /= alen;
-            }
-            QPointF outward(-edgeAlong.y(), edgeAlong.x());
-            if (QPointF::dotProduct(outward, mid - centre) < 0) {
-                outward = -outward;
-            }
-            const QPointF knob = mid + outward * 22.0;
-            QPen stem(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
-            stem.setCosmetic(true);
-            stem.setWidthF(hot ? 1.8 : 1.3);
-            painter.setPen(stem);
-            painter.drawLine(mid, knob);
-            painter.setBrush(hot ? QColor(255, 220, 80) : QColor(255, 190, 40));
-            painter.drawEllipse(knob, hot ? 6.0 : 5.0, hot ? 6.0 : 5.0);
-            painter.setBrush(Qt::NoBrush);
-        };
-        drawRotateKnob((tl + tr) / 2.0, tr - tl);
-        drawRotateKnob((tr + br) / 2.0, br - tr);
-        drawRotateKnob((br + bl) / 2.0, bl - br);
-        drawRotateKnob((bl + tl) / 2.0, tl - bl);
-    }
-
-    }
+    const bool hot = (m_crop.hoverHandle == CropHandle::Rotate
+                      || m_crop.activeHandle == CropHandle::Rotate);
+    auto drawRotateKnob = [&](const QPointF &mid, const QPointF &knob) {
+        QPen stem(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
+        stem.setCosmetic(true);
+        stem.setWidthF(hot ? 1.8 : 1.3);
+        painter.setPen(stem);
+        painter.drawLine(mid, knob);
+        painter.setBrush(hot ? QColor(255, 220, 80) : QColor(255, 190, 40));
+        painter.drawEllipse(knob, hot ? 6.0 : 5.0, hot ? 6.0 : 5.0);
+        painter.setBrush(Qt::NoBrush);
+    };
+    drawRotateKnob(a.tm, a.rotTop);
+    drawRotateKnob(a.rm, a.rotRight);
+    drawRotateKnob(a.bm, a.rotBottom);
+    drawRotateKnob(a.lm, a.rotLeft);
+}
 
 void ImageView::paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly)
 {
     // Move grip at centre (interior of the crop starts a rubber-band, not Move).
-    if (cropViewPoly.size() < 4) {
+    const CropGeometry::CropFrameViewAnchors a =
+        CropGeometry::frameViewAnchors(cropViewPoly);
+    if (!a.valid) {
         return;
     }
-    const QPointF tl = cropViewPoly.at(0);
-    const QPointF tr = cropViewPoly.at(1);
-    const QPointF br = cropViewPoly.at(2);
-    const QPointF bl = cropViewPoly.at(3);
-    {
-        const QPointF centre = (tl + tr + br + bl) * 0.25;
-        const bool hot = (m_crop.hoverHandle == CropHandle::Move
-                          || m_crop.activeHandle == CropHandle::Move);
-        const qreal s = hot ? 10.0 : 9.0;
-        painter.setPen(QPen(hot ? QColor(255, 255, 255) : QColor(40, 30, 10), hot ? 1.8 : 1.35));
-        painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
-        painter.drawRoundedRect(QRectF(centre.x() - s, centre.y() - s, 2 * s, 2 * s), 3.0, 3.0);
-        // Crosshair to signal "move"
-        painter.setPen(QPen(QColor(40, 30, 10), 1.35));
-        painter.drawLine(QPointF(centre.x() - s + 3, centre.y()),
-                         QPointF(centre.x() + s - 3, centre.y()));
-        painter.drawLine(QPointF(centre.x(), centre.y() - s + 3),
-                         QPointF(centre.x(), centre.y() + s - 3));
-        painter.setBrush(Qt::NoBrush);
-    }
-
-    }
+    const QPointF centre = a.centre;
+    const bool hot = (m_crop.hoverHandle == CropHandle::Move
+                      || m_crop.activeHandle == CropHandle::Move);
+    const qreal s = hot ? 10.0 : 9.0;
+    painter.setPen(QPen(hot ? QColor(255, 255, 255) : QColor(40, 30, 10), hot ? 1.8 : 1.35));
+    painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
+    painter.drawRoundedRect(QRectF(centre.x() - s, centre.y() - s, 2 * s, 2 * s), 3.0, 3.0);
+    // Crosshair to signal "move"
+    painter.setPen(QPen(QColor(40, 30, 10), 1.35));
+    painter.drawLine(QPointF(centre.x() - s + 3, centre.y()),
+                     QPointF(centre.x() + s - 3, centre.y()));
+    painter.drawLine(QPointF(centre.x(), centre.y() - s + 3),
+                     QPointF(centre.x(), centre.y() + s - 3));
+    painter.setBrush(Qt::NoBrush);
+}
 
 void ImageView::drawCropTextButton(QPainter &painter, const QRect &btn, CropHandle kind,
                                    const QString &label, CropBtnRole role, bool toggled)
@@ -2101,94 +2081,17 @@ CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (!item || !m_crop.rect.isValid()) {
         return CropHandle::None;
     }
-    // Controls sit near the crop frame (checked before edge handles).
-    const QRect expandBtn = cropExpandButtonView();
-    if (expandBtn.contains(viewPos)) {
-        return CropHandle::ExpandToggle;
-    }
-    const QRect smartBtn = cropAutoButtonView();
-    if (smartBtn.contains(viewPos)) {
-        return CropHandle::Auto;
-    }
-    const QRect resetBtn = cropResetButtonView();
-    if (resetBtn.contains(viewPos)) {
-        return CropHandle::Reset;
-    }
-    const QRect cancelBtn = cropCancelButtonView();
-    if (cancelBtn.contains(viewPos)) {
-        return CropHandle::Cancel;
-    }
-    const QRect closeBtn = cropCloseButtonView();
-    if (closeBtn.contains(viewPos)) {
-        return CropHandle::Close;
-    }
+    const CropGeometry::CropButtonLayout buttons =
+        CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
     // Map rotated crop corners through item → scene → view.
     const QPolygonF localPoly = cropPolygonItemLocal();
-    auto toView = [this, item](const QPointF &local) {
-        return mapFromScene(item->mapToScene(local));
-    };
-    const QPoint tl = toView(localPoly.at(0));
-    const QPoint tr = toView(localPoly.at(1));
-    const QPoint br = toView(localPoly.at(2));
-    const QPoint bl = toView(localPoly.at(3));
-    const QPoint tm((tl.x() + tr.x()) / 2, (tl.y() + tr.y()) / 2);
-    const QPoint bm((bl.x() + br.x()) / 2, (bl.y() + br.y()) / 2);
-    const QPoint lm((tl.x() + bl.x()) / 2, (tl.y() + bl.y()) / 2);
-    const QPoint rm((tr.x() + br.x()) / 2, (tr.y() + br.y()) / 2);
-    const QPointF centre((tl.x() + tr.x() + br.x() + bl.x()) * 0.25,
-                         (tl.y() + tr.y() + br.y() + bl.y()) * 0.25);
-    auto rotateKnobAt = [&](QPointF mid, QPointF edgeAlong) -> QPoint {
-        qreal alen = qHypot(edgeAlong.x(), edgeAlong.y());
-        if (alen > 1e-6) {
-            edgeAlong /= alen;
-        }
-        QPointF outward(-edgeAlong.y(), edgeAlong.x());
-        if (QPointF::dotProduct(outward, mid - centre) < 0) {
-            outward = -outward;
-        }
-        return (mid + outward * 22.0).toPoint();
-    };
-    const QPoint rotTop = rotateKnobAt(QPointF(tm), QPointF(tr - tl));
-    const QPoint rotRight = rotateKnobAt(QPointF(rm), QPointF(br - tr));
-    const QPoint rotBottom = rotateKnobAt(QPointF(bm), QPointF(bl - br));
-    const QPoint rotLeft = rotateKnobAt(QPointF(lm), QPointF(tl - bl));
-
-    constexpr qreal kHit = 16.0;
-    auto near = [&](const QPoint &p) {
-        return QLineF(viewPos, p).length() <= kHit;
-    };
-    if (near(rotTop) || near(rotRight) || near(rotBottom) || near(rotLeft)) {
-        return CropHandle::Rotate;
+    QPolygonF viewPoly;
+    viewPoly.reserve(4);
+    for (const QPointF &local : localPoly) {
+        viewPoly << QPointF(mapFromScene(item->mapToScene(local)));
     }
-    if (near(tl)) {
-        return CropHandle::TopLeft;
-    }
-    if (near(tr)) {
-        return CropHandle::TopRight;
-    }
-    if (near(bl)) {
-        return CropHandle::BottomLeft;
-    }
-    if (near(br)) {
-        return CropHandle::BottomRight;
-    }
-    if (near(tm)) {
-        return CropHandle::Top;
-    }
-    if (near(bm)) {
-        return CropHandle::Bottom;
-    }
-    if (near(lm)) {
-        return CropHandle::Left;
-    }
-    if (near(rm)) {
-        return CropHandle::Right;
-    }
-    // Move: only the centre grip (hit ~matches painted size). Frame interior
-    // stays free so a rubber-band crop can start there (None → mouse path).
-    const QPoint moveGrip = centre.toPoint();
-    if (QLineF(viewPos, moveGrip).length() <= 12.0) {
-        return CropHandle::Move;
-    }
-    return CropHandle::None;
+    const CropGeometry::CropFrameViewAnchors anchors =
+        CropGeometry::frameViewAnchors(viewPoly);
+    return CropGeometry::hitTestCropChrome(viewPos, buttons, anchors);
 }
+

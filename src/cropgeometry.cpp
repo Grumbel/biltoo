@@ -3,6 +3,7 @@
 
 #include "cropgeometry.h"
 
+#include <QLineF>
 #include <QTransform>
 #include <QtMath>
 
@@ -217,6 +218,104 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
     L.apply = QRect(right, yGroup, kW, kH);
     L.valid = true;
     return L;
+}
+
+static QPointF rotateKnobOutward(QPointF mid, QPointF edgeAlong, const QPointF &centre,
+                                 qreal outset)
+{
+    qreal alen = qHypot(edgeAlong.x(), edgeAlong.y());
+    if (alen > 1e-6) {
+        edgeAlong /= alen;
+    }
+    QPointF outward(-edgeAlong.y(), edgeAlong.x());
+    if (QPointF::dotProduct(outward, mid - centre) < 0) {
+        outward = -outward;
+    }
+    return mid + outward * outset;
+}
+
+CropFrameViewAnchors frameViewAnchors(const QPolygonF &viewPoly, qreal rotateOutset)
+{
+    CropFrameViewAnchors a;
+    if (viewPoly.size() < 4) {
+        return a;
+    }
+    a.tl = viewPoly.at(0);
+    a.tr = viewPoly.at(1);
+    a.br = viewPoly.at(2);
+    a.bl = viewPoly.at(3);
+    a.tm = (a.tl + a.tr) * 0.5;
+    a.bm = (a.bl + a.br) * 0.5;
+    a.lm = (a.tl + a.bl) * 0.5;
+    a.rm = (a.tr + a.br) * 0.5;
+    a.centre = (a.tl + a.tr + a.br + a.bl) * 0.25;
+    a.rotTop = rotateKnobOutward(a.tm, a.tr - a.tl, a.centre, rotateOutset);
+    a.rotRight = rotateKnobOutward(a.rm, a.br - a.tr, a.centre, rotateOutset);
+    a.rotBottom = rotateKnobOutward(a.bm, a.bl - a.br, a.centre, rotateOutset);
+    a.rotLeft = rotateKnobOutward(a.lm, a.tl - a.bl, a.centre, rotateOutset);
+    a.valid = true;
+    return a;
+}
+
+CropHandle hitTestCropChrome(const QPoint &viewPos, const CropButtonLayout &buttons,
+                             const CropFrameViewAnchors &anchors,
+                             qreal handleHitPx, qreal moveHitPx)
+{
+    if (buttons.valid) {
+        if (buttons.expand.contains(viewPos)) {
+            return CropHandle::ExpandToggle;
+        }
+        if (buttons.autoBtn.contains(viewPos)) {
+            return CropHandle::Auto;
+        }
+        if (buttons.reset.contains(viewPos)) {
+            return CropHandle::Reset;
+        }
+        if (buttons.cancel.contains(viewPos)) {
+            return CropHandle::Cancel;
+        }
+        if (buttons.apply.contains(viewPos)) {
+            return CropHandle::Close;
+        }
+    }
+    if (!anchors.valid) {
+        return CropHandle::None;
+    }
+    auto nearPt = [&](const QPointF &p, qreal r) {
+        return QLineF(QPointF(viewPos), p).length() <= r;
+    };
+    if (nearPt(anchors.rotTop, handleHitPx) || nearPt(anchors.rotRight, handleHitPx)
+        || nearPt(anchors.rotBottom, handleHitPx) || nearPt(anchors.rotLeft, handleHitPx)) {
+        return CropHandle::Rotate;
+    }
+    if (nearPt(anchors.tl, handleHitPx)) {
+        return CropHandle::TopLeft;
+    }
+    if (nearPt(anchors.tr, handleHitPx)) {
+        return CropHandle::TopRight;
+    }
+    if (nearPt(anchors.bl, handleHitPx)) {
+        return CropHandle::BottomLeft;
+    }
+    if (nearPt(anchors.br, handleHitPx)) {
+        return CropHandle::BottomRight;
+    }
+    if (nearPt(anchors.tm, handleHitPx)) {
+        return CropHandle::Top;
+    }
+    if (nearPt(anchors.bm, handleHitPx)) {
+        return CropHandle::Bottom;
+    }
+    if (nearPt(anchors.lm, handleHitPx)) {
+        return CropHandle::Left;
+    }
+    if (nearPt(anchors.rm, handleHitPx)) {
+        return CropHandle::Right;
+    }
+    if (nearPt(anchors.centre, moveHitPx)) {
+        return CropHandle::Move;
+    }
+    return CropHandle::None;
 }
 
 } // namespace CropGeometry

@@ -4,13 +4,16 @@
 #ifndef CROPGEOMETRY_H
 #define CROPGEOMETRY_H
 
+#include "cropsession.h"
+
+#include <QPoint>
 #include <QPolygonF>
 #include <QRect>
 #include <QRectF>
 
 /**
- * Pure crop geometry and viewport chrome layout.
- * No ImageView / session state — safe to unit-test and share with undo helpers.
+ * Pure crop geometry and viewport chrome layout / hit-test.
+ * No ImageView state — safe to unit-test and share with paint and input.
  */
 namespace CropGeometry {
 
@@ -70,6 +73,40 @@ struct CropButtonLayout {
  * clamp into @p viewportRect. Pure layout — no mode / handle state.
  */
 CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportRect);
+
+/**
+ * Viewport-space anchors for a (possibly rotated) crop frame polygon.
+ * Corners order: top-left, top-right, bottom-right, bottom-left.
+ * Rotate knobs sit @p rotateOutset px outward from edge midpoints.
+ */
+struct CropFrameViewAnchors {
+    QPointF tl;
+    QPointF tr;
+    QPointF br;
+    QPointF bl;
+    QPointF tm;
+    QPointF bm;
+    QPointF lm;
+    QPointF rm;
+    QPointF centre;
+    QPointF rotTop;
+    QPointF rotRight;
+    QPointF rotBottom;
+    QPointF rotLeft;
+    bool valid = false;
+};
+
+/** Build anchors from a 4-point view polygon (same order as rotatedCorners). */
+CropFrameViewAnchors frameViewAnchors(const QPolygonF &viewPoly,
+                                      qreal rotateOutset = 22.0);
+
+/**
+ * Hit-test crop chrome in viewport pixels. Button rects first, then rotate
+ * knobs, corners, edges, centre move grip. Interior returns None (rubber-band).
+ */
+CropHandle hitTestCropChrome(const QPoint &viewPos, const CropButtonLayout &buttons,
+                             const CropFrameViewAnchors &anchors,
+                             qreal handleHitPx = 16.0, qreal moveHitPx = 12.0);
 
 } // namespace CropGeometry
 

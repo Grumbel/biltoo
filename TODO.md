@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1299-crop-geometry-hit-test.** Pure crop frame anchors + chrome hit-test.
+Prior: **1298**.
+
+### Change
+- `CropGeometry::CropFrameViewAnchors` + `frameViewAnchors` — corners, edge mids,
+  centre, rotate knobs (shared by paint and hit-test).
+- `CropGeometry::hitTestCropChrome` — buttons → knobs → corners → edges → move.
+- `cropHandleAt`, `paintCropRotateKnobs`, `paintCropMoveGrip` use the pure helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1299-crop-geometry-hit-test.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1298-crop-geometry-chrome-layout.** Pure crop button layout + polygon dedupe.
 Prior: **1297**.
 
