@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1216-nav-hot-materialize-light.** Nav-hot: light content bake, drop prefetch slots.
+Prior: **1215**.
+
+### Change
+- `installDisplayPixels` under Image nav-hot: clamp materialize to ≤256; never
+  `scheduleAsyncHostRematerialize` for skipped paths (settle bakes once).
+- `setSlideshowNavHot(true)`: clear `m_tilePrefetchSlots` so InFlight tiles from
+  neighbor prefetch do not compete after a long key-repeat burst.
+- Docs: IMAGE_MODE_NAV_SOFT rule 8.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1216-nav-hot-materialize-light.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1215-nav-hot-soft-only.** Image ←/→ key-repeat: no soft IPC, no tile plan/issue.
 Prior: **1214**.
 

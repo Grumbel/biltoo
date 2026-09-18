@@ -864,7 +864,13 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     SessionAppearance::PixelKind attachKind = kind;
     bool scheduleFullBake = false;
     if (wantBake) {
-        const int maxGui = ContentXform::kGuiMaterializeMaxEdge;
+        // Key-repeat: never schedule async rematerialize per skipped path —
+        // settle loadImage will bake once for the final index.
+        const bool navHot = m_slideshowNavHot && isImageMode();
+        // Nav-hot: tighter clamp so materializeDisplay stays cheap under hold.
+        const int maxGui = navHot
+            ? qMin(ContentXform::kGuiMaterializeMaxEdge, 256)
+            : ContentXform::kGuiMaterializeMaxEdge;
         const int hostEdge = ImageCache::longEdge(pixelsForDisplay);
         // Multi-MP host cannot materialize on the GUI thread. Soft stand-in
         // (clamp ≤512 + SoftPreview bake) keeps crop/orient visible now;
@@ -873,22 +879,29 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
             pixelsForDisplay = ImageCache::clampToMaxEdge(pixelsForDisplay, maxGui);
             attachKind = SessionAppearance::PixelKind::SoftPreview;
             // Only escalate to full async bake when the caller asked for FullSource.
-            scheduleFullBake = (kind == SessionAppearance::PixelKind::FullSource);
+            scheduleFullBake = !navHot
+                && (kind == SessionAppearance::PixelKind::FullSource);
         }
         const int edge = ImageCache::longEdge(pixelsForDisplay);
         if (edge <= 0) {
-            scheduleAsyncHostRematerialize(path, sid, appearance);
+            if (!navHot) {
+                scheduleAsyncHostRematerialize(path, sid, appearance);
+            }
             return;
         }
         if (edge > maxGui) {
             // Clamp failed oddly — still do not attach host under want.
-            scheduleAsyncHostRematerialize(path, sid, appearance);
+            if (!navHot) {
+                scheduleAsyncHostRematerialize(path, sid, appearance);
+            }
             return;
         }
         display = SessionAppearance::materializeDisplay(
             pixelsForDisplay, appearance, attachKind);
         if (display.isNull()) {
-            scheduleAsyncHostRematerialize(path, sid, appearance);
+            if (!navHot) {
+                scheduleAsyncHostRematerialize(path, sid, appearance);
+            }
             return;
         }
         // Soft attach is ignored while FullSource is present.

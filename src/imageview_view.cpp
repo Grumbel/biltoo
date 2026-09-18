@@ -2444,6 +2444,14 @@ void ImageView::setSlideshowNavHot(bool hot)
     m_slideshowNavHot = hot;
     // Do NOT invalidateZoomBlurQueue here — keep the previous underlay until a
     // new key's blur is ready (solid flash on every ←/→ was the bug).
+    if (hot) {
+        // Drop off-canvas prefetch sessions: their InFlight tiles compete with
+        // settle soft/climb after a long key-repeat burst.
+        m_tilePrefetchSlots.clear();
+        if (m_tilePrefetchTimer) {
+            m_tilePrefetchTimer->stop();
+        }
+    }
 }
 
 void ImageView::pumpSlideshowPreloadQueue()

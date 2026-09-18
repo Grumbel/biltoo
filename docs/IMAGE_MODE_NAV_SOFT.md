@@ -53,6 +53,9 @@ MainWindow::setCurrentIndex / goNext
 7. **Cold blank under nav-hot:** do **not** `scheduleProbe` / `scheduleSoftPixels`
    on every key — that flooded the thumtoo queue and stalled the GUI. Soft is
    requested once at settle when nav-hot clears.
+8. **Nav-hot materialize:** content bake uses a tighter clamp (≤256) and never
+   schedules async rematerialize for skipped paths. Entering nav-hot drops
+   neighbor tile-prefetch slots so InFlight work does not compete with settle.
 
 ## Failure modes (observed)
 
