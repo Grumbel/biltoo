@@ -2147,6 +2147,7 @@ void warmSessionOpenMemos(const QStringList &paths)
             }
         }
 #endif
+        // durableTilesReady fires on first positive hasDurableTiles hit.
         (void)hasDurableTiles(p);
     };
     auto workAll = [copy, workOne]() {
@@ -2174,9 +2175,12 @@ void warmSessionOpenMemos(const QStringList &paths)
             th.join();
         }
     };
+    // Never join Store warm on the GUI thread. Session-replace clears durable
+    // memos (1234) so every Open paid a full cold warm wall and froze the UI.
+    // finishApplyExpandedLoad already has a sizes_cold probe path; sizeReady /
+    // durableTilesReady drive pack as memos land.
     if (QThread::isMainThread()) {
-        std::thread th(workAll);
-        th.join();
+        QThreadPool::globalInstance()->start(workAll);
     } else {
         workAll();
     }

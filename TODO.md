@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1239-warm-memos-no-gui-join.** Open warm must not join on the GUI thread.
+Prior: **1238**.
+
+### Bug
+`warmSessionOpenMemos` started a worker and **joined it on the main thread**.
+Session-replace memo clears (1234) made every Open a full cold Store warm, so
+large archives froze the GUI until all size/LQIP/has_tile lookups finished.
+
+### Fix
+- GUI: `QThreadPool::start(workAll)` and return (no join).
+- Off-GUI callers still run warm synchronously.
+- Prefetch: stop timer before destroying `m_tilePrefetchSlots`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1239-warm-memos-no-gui-join.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1238-tile-prefetch-complete-type.** Fix incomplete TileLodController delete on prefetch clear.
 Prior: **1237**.
 

@@ -228,8 +228,10 @@ void warmDurableTilesMemo(const QStringList &paths);
 
 /**
  * Session open: fill process size memo + ImageCache LQIP + durable-tile memo
- * from the Store. Safe to call on the GUI — work runs off-thread and joins
- * before return so sizesWarm / primeGeometry / first pack see warm data.
+ * from the Store. Safe on the GUI: schedules pool work and returns immediately
+ * (never joins). sizeReady / durableTilesReady notify as memos land; the
+ * sizes_cold path in finishApplyExpandedLoad covers the first pack.
+ * Off-GUI callers still run the warm synchronously.
  * Does not open source files; Store lookups only.
  */
 void warmSessionOpenMemos(const QStringList &paths);
