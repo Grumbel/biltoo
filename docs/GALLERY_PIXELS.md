@@ -1,16 +1,13 @@
-# Gallery pixels
+# Gallery / display pixels
 
-**LQIP underlay + grid tiles.** No soft / HOST whole-frame underlay or SoftOnly jobs.
+**LQIP underlay + grid tiles.** SoftOnly / PreferCache whole-frame is not used
+when tiles can own the path.
 
-| Layer | When |
-|-------|------|
-| LQIP | Stand-in until tile plan covers; only sample installed from ImageCache |
-| Tiles | `tileLodWanted` (~32px+ on-screen) — `TileLoadCoordinator` issues |
-| Soft PreferCache / SoftOnly | **Not** used in Gallery (not for tile band, not for classic decode) |
+| Mode | Policy |
+|------|--------|
+| Gallery | LQIP + tiles; no SoftOnly job; soft want ≤ LQIP for non-tile cells |
+| Workspace | Same as Gallery for classic decode |
+| Image mode | LQIP + tiles when `tileLodWanted` or durable tiles known |
+| Slideshow | SoftOnly only on **cold** paths (no durable, no adequate cache) |
 
-## Paths
-
-- `scheduleClassicImageDecode` in Gallery: probe + LQIP preview + `scheduleGalleryDecode` / tile tick
-- Pass1: LQIP-only installs
-- Pass2 / watchdog: skip soft for `tileLodWanted`
-- `canAcceptDisplaySample`: rejects soft > LQIP when tiles own the cell
+See also `docs/TILE_LOAD_COORDINATOR.md`.

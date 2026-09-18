@@ -1390,17 +1390,27 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
     // Snapshot session appearance for the worker (crop is id-keyed, not path).
     const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
 
-    // Warm ImageCache: deliver immediately — zero PreferCache / soft encode.
+    // Warm ImageCache / durable tiles: no SoftOnly encode.
     {
         const QImage cached = ImageCache::get(path);
         const int have = ImageCache::longEdge(cached);
-        if (have > 0 && ImageCache::adequate(cached, softEdge)) {
+        if (have > 0) {
             ImageCache::put(path, cached);
             queuePreviewLoaded(guard, path, cached, gen, roleInt);
             if (ImageCache::adequate(cached, qualityEdge)) {
                 queueImageLoaded(guard, path, cached, gen, roleInt);
                 return;
             }
+        }
+        if (ThumtooCache::hasDurableTilesKnown(path)) {
+            tickPrimaryTileLod(12);
+            if (qualityEdge > softEdge) {
+                startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge,
+                                       sessionApp);
+            }
+            return;
+        }
+        if (have > 0 && ImageCache::adequate(cached, softEdge)) {
             if (qualityEdge > softEdge) {
                 startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge,
                                        sessionApp);
@@ -1409,6 +1419,7 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
         }
     }
 
+    // Cold only: soft stand-in then quality job.
     startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
     if (qualityEdge > softEdge) {
         startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge, sessionApp);
@@ -1428,8 +1439,8 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
         return;
     }
 
-    // Gallery: LQIP from ImageCache + tiles. Never SoftOnly/PreferCache job.
-    if (isGalleryMode()) {
+    // Gallery / Workspace: LQIP from ImageCache + tiles. Never SoftOnly job.
+    if (isGalleryMode() || isWorkspaceMode()) {
         ThumtooCache::scheduleProbe(path);
         const QImage cached = ImageCache::get(path);
         if (!cached.isNull()
@@ -1437,18 +1448,29 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
             const QPointer<ImageView> guard(this);
             queuePreviewLoaded(guard, path, cached, gen, static_cast<int>(role));
         }
-        scheduleGalleryDecode(path);
+        if (isGalleryMode()) {
+            scheduleGalleryDecode(path);
+        }
         tickPrimaryTileLod(12);
         Q_UNUSED(role);
         return;
     }
 
-    // Workspace / other: soft stand-in job still used for fast paint.
+    // Fallback (rare non-mode): soft stand-in — prefer cache LQIP first.
     const QPointer<ImageView> guard(this);
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
-
+    {
+        const QImage cached = ImageCache::get(path);
+        if (!cached.isNull()
+            && ImageCache::longEdge(cached) <= DisplayQuality::kLqipMaxEdge) {
+            queuePreviewLoaded(guard, path, cached, gen, roleInt);
+            tickPrimaryTileLod(8);
+            Q_UNUSED(sessionApp);
+            return;
+        }
+    }
     startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
     Q_UNUSED(gen);
 }
@@ -2686,17 +2708,23 @@ void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
     if (isCropDraftLockedPath(path)) {
         return;
     }
-    // Deep-zoom tile band: grid tiles own display; skip PreferCache/Full climb.
-    // Check Image-mode primary and any Workspace/Gallery item for this path.
+    // Tiles own display: tileLodWanted or known durable pyramid — no PreferCache.
     if (ImageItem *it = imageModeItemForPath(path)) {
-        if (it->tileLodWanted()) {
+        if (it->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path)) {
+            tickPrimaryTileLod(12);
             return;
         }
     }
     for (ImageItem *ii : m_items) {
-        if (ii && ii->path() == path && ii->tileLodWanted()) {
+        if (ii && ii->path() == path
+            && (ii->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path))) {
+            tickPrimaryTileLod(12);
             return;
         }
+    }
+    if (ThumtooCache::hasDurableTilesKnown(path)) {
+        tickPrimaryTileLod(12);
+        return;
     }
     const int edge = cappedDisplayEdgeForPath(
         path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
@@ -2810,13 +2838,16 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
     if (m_slideshowProgressActive) {
         return;
     }
-    // Tiles own the soft/Prefer/Full band once on-screen long edge exceeds one
-    // tile side — do not schedule SoftOnly/PreferCache/Full in parallel.
+    // Tiles own display once wanted or durable pyramid is known — no PreferCache.
     if (ImageItem *it = imageModeItemForPath(path)) {
-        if (it->tileLodWanted()) {
+        if (it->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path)) {
             tickPrimaryTileLod(12);
             return;
         }
+    }
+    if (ThumtooCache::hasDurableTilesKnown(path)) {
+        tickPrimaryTileLod(12);
+        return;
     }
     if (!sample.isNull() && sampleCoversNativeLogical(path, sample)) {
         return;
@@ -2824,29 +2855,19 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
 
     const int need = imageModeOnScreenNeedEdge();
     const int have = sample.isNull() ? 0 : ImageCache::longEdge(sample);
-    // Climb to on-screen need (ladder-capped), not file native. Native is
-    // requested only when the window actually needs it (zoom / large view).
+    // Cold path only (no durable tiles): climb to on-screen need, not soft-512 habit.
     int climbTo = ThumtooCache::kBatchOverviewEdge;
     if (need > 0) {
         climbTo = qMax(climbTo, need);
-    }
-    if (climbTo < ThumtooCache::kGalleryLadderEdge) {
-        climbTo = ThumtooCache::kGalleryLadderEdge;
     }
     climbTo = cappedDisplayEdgeForPath(path, climbTo);
     if (have > 0 && coversEdge(have, climbTo)) {
         return;
     }
-    // PreferCache BestAvailable → Full is PathRasterService policy (contract §4).
-    biltooLoadDbg("imageModeClimb(service) path=%s climbTo=%d have=%d need=%d",
+    biltooLoadDbg("imageModeClimb(service) path=%s climbTo=%d have=%d need=%d cold",
                   qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
-    {
-        const auto policy =
-            ThumtooCache::hasDurableTilesKnown(path)
-                ? PathRasterService::ClimbPolicy::SoftDisplay
-                : PathRasterService::ClimbPolicy::EscalateToFull;
-        m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path), policy);
-    }
+    m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path),
+                         PathRasterService::ClimbPolicy::EscalateToFull);
     // Full is async. If terminal or nothing pending and still short, host native
     // (only when no durable tiles — prepared libs use TileSynth / tile LOD).
     if (!ThumtooCache::hasDurableTilesKnown(path)

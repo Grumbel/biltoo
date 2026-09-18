@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1159-tiles-first-modes.** Workspace/Image durable skip soft; slideshow soft cold-only.
+Prior: **1158**.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1159-tiles-first-modes.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1158-gallery-no-soft-job.** Gallery classic decode: no SoftOnly job; non-tile want capped to LQIP.
 Prior: **1157**.
 
