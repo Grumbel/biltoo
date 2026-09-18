@@ -1499,7 +1499,16 @@ void ImageItem::tickTileLod(int budget)
     // Leave tile band: do not pump/issue on a stale deep-zoom viewport.
     // (Previously prepareTileLod returned early but tick still ran on m_tileLod.)
     if (!tileLodWanted()) {
+        // Gallery: restore ItemCoordinateCache after leaving tile inspection.
+        if (!m_interactive && cacheMode() == QGraphicsItem::NoCache
+            && hasDisplayPixels()) {
+            syncGalleryScrollCache();
+        }
         return;
+    }
+    // Gallery tile cells: plan changes often — keep NoCache while in the band.
+    if (!m_interactive && cacheMode() != QGraphicsItem::NoCache) {
+        setCacheMode(QGraphicsItem::NoCache);
     }
     prepareTileLod();
     if (!m_tileLod) {
@@ -1588,8 +1597,14 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->drawImage(box, img);
         };
         if (drawSoftBase && !tilesFullyCover) {
-            if (!m_source.isNull() && !m_previewPixels) {
-                const QRectF box = contentRect();
+            const QRectF box = contentRect();
+            // Gallery scroll path: prefer baked QPixmap (ItemCoordinateCache).
+            // Avoids QImage stretch every frame under QOpenGLWidget scroll.
+            if (!m_interactive && !pixmap().isNull()
+                && box.width() >= 1.0 && box.height() >= 1.0) {
+                painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+                painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
+            } else if (!m_source.isNull() && !m_previewPixels) {
                 if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0) {
                     // Avoid pixmap().toImage() every paint (full buffer copy).
                     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
@@ -1776,22 +1791,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
     }
 
-    // Gallery: selection frame only (classic multi-select). Hover is for HUD
-    // filename, not a full-tile wash — near-fullscreen packs stay usable.
+    // Gallery: selection frame is painted by ImageView::drawForeground so
+    // ItemCoordinateCache is not invalidated on every selection change / scroll.
+    // Content-only paint stays cacheable across view pan under OpenGL.
     if (!m_interactive) {
-        const bool selected = option->state & QStyle::State_Selected;
-        if (selected) {
-            painter->save();
-            painter->setOpacity(1.0);
-            QPen pen(QColor(0, 180, 255), 0);
-            pen.setCosmetic(true);
-            pen.setWidthF(4.0);
-            painter->setPen(pen);
-            painter->setBrush(Qt::NoBrush);
-            // Inset by half the stroke so the frame sits on the tile edge.
-            painter->drawRect(r.adjusted(2.0, 2.0, -2.0, -2.0));
-            painter->restore();
-        }
         return;
     }
 

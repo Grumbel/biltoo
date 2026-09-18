@@ -2496,15 +2496,8 @@ void ImageView::selectAllCanvasItems()
         }
     }
     m_scene->blockSignals(false);
-    if (isGalleryMode()) {
-        for (ImageItem *item : m_items) {
-            if (item) {
-                item->invalidateDeviceCache();
-            }
-        }
-        if (viewport()) {
-            viewport()->update();
-        }
+    if (isGalleryMode() && viewport()) {
+        viewport()->update();
     }
     if (!m_items.isEmpty()) {
         m_gallery.setSelectionAnchor(m_items.first());

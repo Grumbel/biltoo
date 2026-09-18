@@ -2,6 +2,39 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1121-gallery-scroll-item-cache.** Gallery scroll: ItemCoordinateCache + pixmap bake; selection overlay.
+Prior: **1120**.
+
+### Problem
+- Warm soft already in ImageCache, but Gallery scroll still pegged CPU.
+- Soft cells used **NoCache** (or DeviceCoordinateCache, which Qt invalidates on
+  every view pan). Each scroll frame re-ran `paint()` and **stretched QImage**
+  into the cell for every visible item.
+- `QOpenGLWidget` does not make this free: QGraphicsView still CPU-paints items;
+  GL only composites the result. Selection chrome inside item paint forced cache
+  rebuilds on every select.
+
+### Fix
+- Gallery install: bake display sample into `QPixmap`, enable
+  **`ItemCoordinateCache`** (item space → survives scrollbar pan).
+- Gallery `paint`: prefer `drawPixmap`; **no selection frame** in item paint.
+- `ImageView::paintGallerySelectionFrames` in `drawForeground` (scene space,
+  cosmetic pen).
+- Selection change: `viewport()->update()` only — do not invalidate item caches.
+- Tile-LOD Gallery cells stay **NoCache** while the tile band is active; restore
+  ItemCoordinateCache when leaving.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1121-gallery-scroll-item-cache.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1120-cold-probe-order-fill-soft.** Session-order size probes; Fill keeps placeholders + soft during gate.
 Prior: **1119**.
 

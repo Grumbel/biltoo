@@ -1238,6 +1238,8 @@ protected:
     void paintViewportOverlays(QPainter &painter);
     void paintTextRubberBandOverlay(QPainter &painter);
     void paintWorkspaceViewportChrome(QPainter &painter);
+    /** Gallery multi-select frames in scene space (not inside item paint cache). */
+    void paintGallerySelectionFrames(QPainter *painter, const QRectF &exposed) const;
     void paintSlideshowLetterboxComposite(QPainter &painter);
     void paintEmptySessionInvite(QPainter &painter);
     void paintHudPanels(QPainter &painter);

@@ -255,8 +255,19 @@ public:
      * Free-form workspace uses setInteractive(true) instead.
      */
     void setGallerySelectable(bool on);
-    /** Force DeviceCoordinateCache rebuild (selection frame, new pixels). */
+    /**
+     * Rebuild item paint cache after selection/content change.
+     * Gallery uses ItemCoordinateCache (survives view scroll); this toggles
+     * the mode so the next paint is not frozen.
+     */
     void invalidateDeviceCache();
+
+    /**
+     * Gallery scroll path: bake display sample into QPixmap and enable
+     * ItemCoordinateCache so OpenGL+scroll does not re-stretch soft every frame.
+     * No-op for interactive (Workspace) items. Tile-LOD cells stay NoCache.
+     */
+    void syncGalleryScrollCache();
 
     /**
      * Gallery Grid-Crop: visible area is a centred cell of this size in *scene*

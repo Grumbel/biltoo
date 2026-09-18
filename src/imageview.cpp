@@ -76,13 +76,9 @@ ImageView::ImageView(QWidget *parent)
                 }
                 m_gallery.setSelectionAnchor(next);
             }
-            // Gallery tiles use DeviceCoordinateCache; selection chrome is drawn
-            // in paint() and stays frozen until the cache is rebuilt.
-            for (ImageItem *item : m_items) {
-                if (item) {
-                    item->invalidateDeviceCache();
-                }
-            }
+            // Selection frames are scene-space overlays (drawForeground).
+            // Do not invalidate ItemCoordinateCache on every select — that was
+            // the old DeviceCoordinate path and defeated scroll caching.
             if (viewport()) {
                 viewport()->update();
             }

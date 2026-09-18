@@ -856,12 +856,7 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
                 m_items.at(i)->setSelected(true);
             }
             m_scene->blockSignals(false);
-            // Signals were blocked: selectionChanged did not refresh DeviceCoordinateCache.
-            for (ImageItem *item : m_items) {
-                if (item) {
-                    item->invalidateDeviceCache();
-                }
-            }
+            // Selection overlay only — no item cache rebuild.
             if (viewport()) {
                 viewport()->update();
             }
@@ -925,11 +920,10 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
             m_scene->clearSelection();
             hit->setSelected(true);
             m_scene->blockSignals(false);
-            // DeviceCoordinateCache + blocked signals: force selection chrome.
-            if (prev && prev != hit) {
-                prev->invalidateDeviceCache();
+            // Selection overlay in drawForeground; viewport update is enough.
+            if (viewport()) {
+                viewport()->update();
             }
-            hit->invalidateDeviceCache();
             emit canvasSelectionChanged();
             m_gallery.setSelectionAnchor(hit);
             if (hit->sessionId() != kInvalidSessionImageId) {

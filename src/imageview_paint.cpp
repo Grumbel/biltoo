@@ -1298,6 +1298,42 @@ bool ImageView::copySelectedText()
 }
 
 
+
+void ImageView::paintGallerySelectionFrames(QPainter *painter, const QRectF &exposed) const
+{
+    if (!painter || !m_scene) {
+        return;
+    }
+    const QList<QGraphicsItem *> selected = m_scene->selectedItems();
+    if (selected.isEmpty()) {
+        return;
+    }
+    painter->save();
+    QPen pen(QColor(0, 180, 255, 255), 0);
+    pen.setCosmetic(true);
+    pen.setWidthF(4.0);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    for (QGraphicsItem *gi : selected) {
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
+        if (!item || item->isInteractive()) {
+            continue;
+        }
+        // Same rect the content paint uses (gallery clip when Grid-Crop).
+        const QRectF local = item->displayContentRect();
+        const QPolygonF scenePoly = item->mapToScene(local);
+        const QRectF bounds = scenePoly.boundingRect();
+        if (!exposed.isNull() && !exposed.intersects(bounds)) {
+            continue;
+        }
+        // Inset ~2 local units equivalent is awkward after map; cosmetic stroke
+        // sits on the edge. drawPolygon follows rotated/sheared cells.
+        painter->drawPolygon(scenePoly);
+    }
+    painter->restore();
+}
+
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
     // Page guide outline above images so the frame stays visible when tiles
@@ -1398,8 +1434,12 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     if (!painter) {
         return;
     }
-    // Bare Gallery: selection chrome is on the items themselves — skip overlay
-    // pass (HUD/edges/slideshow) so selection does not pay for empty work.
+    // Gallery selection frames: scene-space overlay so item ItemCoordinateCache
+    // is not invalidated on select or scroll (was painted inside ImageItem::paint).
+    if (isGalleryMode()) {
+        paintGallerySelectionFrames(painter, rect);
+    }
+    // Bare Gallery: skip HUD/edges/slideshow overlay pass.
     if (isGalleryMode() && !m_hudVisible && !m_hudFlashVisible && !m_hudIdentityPulse
         && !m_slideshowPausedHud && !m_gallerySizeResolveActive
         && m_centreProgressTitle.isEmpty()

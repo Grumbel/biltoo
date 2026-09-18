@@ -161,8 +161,14 @@ void ImageItem::setSourceImageReady(const QImage &image)
     m_previewPixels = false;
     m_hFlip = false;
     m_vFlip = false;
-    setCacheMode(QGraphicsItem::NoCache);
-    setPixmap(QPixmap()); // paint path uses m_source via drawImage
+    // Gallery: bake pixmap + ItemCoordinateCache (scroll-stable under GL).
+    // Image/Workspace: keep NoCache; paint reads m_source (tiles / soft underlay).
+    if (!m_interactive) {
+        syncGalleryScrollCache();
+    } else {
+        setCacheMode(QGraphicsItem::NoCache);
+        setPixmap(QPixmap()); // paint path uses m_source via drawImage
+    }
     update();
 }
 
@@ -193,8 +199,15 @@ void ImageItem::setPreviewImage(const QImage &preview)
     m_preview = prev;
     m_previewPixels = true;
     m_source = QImage();
-    setPixmap(QPixmap());
-    setCacheMode(QGraphicsItem::NoCache);
+    // Gallery soft used to force NoCache so DeviceCoordinateCache did not freeze
+    // the empty placeholder. ItemCoordinateCache + baked pixmap survives scroll
+    // (DeviceCoordinate is invalidated on every view pan under OpenGL).
+    if (!m_interactive) {
+        syncGalleryScrollCache();
+    } else {
+        setPixmap(QPixmap());
+        setCacheMode(QGraphicsItem::NoCache);
+    }
     update();
 }
 
@@ -209,6 +222,9 @@ void ImageItem::clearDecodedPixels()
     m_preview = QImage();
     m_previewPixels = false;
     setPixmap(QPixmap());
+    if (!m_interactive) {
+        setCacheMode(QGraphicsItem::NoCache);
+    }
     clearAppliedContentXform();
     update();
 }
@@ -301,6 +317,9 @@ void ImageItem::bakeRotate90(int quarterTurns)
     }
     // Flips stay as flags or already baked; keep placement angle.
     updateDisplayedPixmap();
+    if (!m_interactive) {
+        syncGalleryScrollCache();
+    }
     applyLocalTransform();
     invalidateDeviceCache();
 }
@@ -352,6 +371,9 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
         setOffset(-s.width() / 2.0, -s.height() / 2.0);
     }
     updateDisplayedPixmap();
+    if (!m_interactive) {
+        syncGalleryScrollCache();
+    }
     applyLocalTransform();
     invalidateDeviceCache();
 }
@@ -481,15 +503,11 @@ void ImageItem::setGallerySelectable(bool on)
     }
     if (on) {
         setAcceptHoverEvents(true);
-        // Gallery: smooth scale (bilinear) so soft thumbs look less blocky when
-        // the view zoom is not 1:1. Soft tiles stay NoCache — DeviceCoordinate
-        // after soft install used to freeze the empty "⋯" placeholder until hover.
+        // Gallery: smooth scale so soft thumbs look less blocky when the view
+        // zoom is not 1:1. ItemCoordinateCache + pixmap bake survives scroll
+        // under QOpenGLWidget (DeviceCoordinateCache is invalidated on pan).
         setTransformationMode(Qt::SmoothTransformation);
-        if (m_previewPixels && !m_preview.isNull()) {
-            setCacheMode(QGraphicsItem::NoCache);
-        } else {
-            setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-        }
+        syncGalleryScrollCache();
         setFlags(ItemIsSelectable | ItemSendsGeometryChanges | ItemIsFocusable);
     } else {
         setSelected(false);
@@ -501,14 +519,43 @@ void ImageItem::setGallerySelectable(bool on)
     update();
 }
 
+void ImageItem::syncGalleryScrollCache()
+{
+    if (m_interactive) {
+        return;
+    }
+    // Tile grid cells change every completion / pan — do not freeze mid-stream.
+    if (tileLodWanted()) {
+        setCacheMode(QGraphicsItem::NoCache);
+        // Keep pixmap as soft underlay for the non-tile paint branch when useful.
+        const QImage &img = displayImage();
+        if (!img.isNull() && pixmap().isNull()) {
+            setPixmap(QPixmap::fromImage(img));
+        }
+        return;
+    }
+    const QImage &img = displayImage();
+    if (img.isNull()) {
+        setPixmap(QPixmap());
+        setCacheMode(QGraphicsItem::NoCache);
+        return;
+    }
+    // Bake once; paint draws this pixmap. ItemCoordinateCache is in item
+    // space so view scrollbar pan does not rebuild it.
+    setPixmap(QPixmap::fromImage(img));
+    setCacheMode(QGraphicsItem::ItemCoordinateCache);
+}
+
 void ImageItem::invalidateDeviceCache()
 {
-    // DeviceCoordinateCache freezes paint() output (including the Gallery
-    // selection frame). Toggle cache mode so the next paint sees current
-    // QStyle::State_Selected.
-    if (cacheMode() == QGraphicsItem::DeviceCoordinateCache) {
+    // ItemCoordinateCache / DeviceCoordinateCache freeze paint() output.
+    // Toggle mode so the next paint is not a stale raster (content change).
+    // Gallery selection frame is painted by ImageView overlay — selection
+    // alone does not need this; content/pixel installs still do.
+    const CacheMode mode = cacheMode();
+    if (mode != QGraphicsItem::NoCache) {
         setCacheMode(QGraphicsItem::NoCache);
-        setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+        setCacheMode(mode);
     }
     update();
 }
@@ -586,6 +633,11 @@ void ImageItem::setColorAdjustmentsRecord(const ColorAdjustments &adj)
 void ImageItem::updateDisplayedPixmap()
 {
     if (m_source.isNull()) {
+        // Gallery soft may only have m_preview; keep pixmap in sync for scroll cache.
+        if (!m_interactive && !m_preview.isNull()) {
+            setPixmap(QPixmap::fromImage(m_preview));
+            return;
+        }
         setPixmap(QPixmap());
         return;
     }
