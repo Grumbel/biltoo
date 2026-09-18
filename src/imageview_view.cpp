@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "viewtransform.h"
 #include "displayedgepolicy.h"
 #include "slideshowatlaspolicy.h"
 #include "slideshowmotiongeometry.h"
@@ -218,8 +219,7 @@ void ImageView::setWorkspaceBackgroundShowDefault(bool on)
 
 qreal ImageView::viewScale() const
 {
-    const QTransform t = transform();
-    return std::hypot(t.m11(), t.m12());
+    return ViewTransform::scaleFrom(transform());
 }
 
 void ImageView::refreshStatus()
@@ -343,7 +343,7 @@ void ImageView::zoomFit()
         // Fit the packed gallery into the viewport (whole pack). Sticky zoom
         // is Image-mode only — Gallery uses one-shot framing + ensureVisible.
         if (!m_items.isEmpty()) {
-            const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
+            const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), 16);
             if (bounds.isValid() && !bounds.isEmpty()) {
                 m_scene->setSceneRect(bounds);
                 fitInView(bounds, Qt::KeepAspectRatio);
@@ -356,7 +356,7 @@ void ImageView::zoomFit()
     }
     if (isWorkspaceMode()) {
         if (!m_items.isEmpty()) {
-            fitInView(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32),
+            fitInView(ViewTransform::padded(m_scene->itemsBoundingRect(), 32),
                       Qt::KeepAspectRatio);
             refreshScrollBarGeometry();
             emit statusChanged();
@@ -381,7 +381,7 @@ void ImageView::zoomFill()
     m_framing.fillMode = true;
     if (isGalleryMode()) {
         if (!m_items.isEmpty()) {
-            const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-16, -16, 16, 16);
+            const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), 16);
             if (bounds.isValid() && !bounds.isEmpty()) {
                 m_scene->setSceneRect(bounds);
                 fitInView(bounds, Qt::KeepAspectRatioByExpanding);
@@ -394,7 +394,7 @@ void ImageView::zoomFill()
     }
     if (isWorkspaceMode()) {
         if (!m_items.isEmpty()) {
-            fitInView(m_scene->itemsBoundingRect().adjusted(-32, -32, 32, 32),
+            fitInView(ViewTransform::padded(m_scene->itemsBoundingRect(), 32),
                       Qt::KeepAspectRatioByExpanding);
             refreshScrollBarGeometry();
             emit statusChanged();
