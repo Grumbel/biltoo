@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1314-opacity-shear-pure.** Pure opacity-track param and shear drag math.
+Prior: **1313**.
+
+### Change
+- `ItemFrameGeometry::trackParam` / `opacityFromTrackParam`
+- `PlacementLinear::horizontalShearFromDrag` / `verticalShearParamFromDrag`
+- ImageItem opacity slider and shear-handle paths use the pure helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1314-opacity-shear-pure.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1313-item-frame-chrome-layout.** Pure chrome column and opacity-track layout.
 Prior: **1312**.
 

@@ -74,6 +74,15 @@ void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
  */
 void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut);
 
+/**
+ * Parameter t ∈ [0, 1] along segment a→b for pointer @p p (clamped projection).
+ * Degenerate segment → 0.
+ */
+qreal trackParam(const QPointF &a, const QPointF &b, const QPointF &p);
+
+/** Map track parameter t to item opacity (5% … 100%). */
+qreal opacityFromTrackParam(qreal t);
+
 } // namespace ItemFrameGeometry
 
 #endif // ITEMFRAMEGEOMETRY_H

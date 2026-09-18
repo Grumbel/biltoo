@@ -76,6 +76,20 @@ qreal uniformScaleFactor(qreal d0, qreal d1, qreal minDist = 1.0);
 qreal axisScaleFromProjection(qreal pressScale, const QPointF &v0, const QPointF &v1,
                               const QPointF &axis);
 
+/**
+ * Horizontal shear kx from Top/Bottom shear-handle drag.
+ * @p leverY is grip local y (sign chooses delta direction); @p len0/@p len1 are
+ * projections of (pointer − anchor) onto unit local +X at press.
+ */
+qreal horizontalShearFromDrag(qreal pressShear, qreal pressScaleX, qreal leverY,
+                              qreal len0, qreal len1);
+
+/**
+ * Vertical shear parameter m for Left/Right shear-handle drag (L·V(m)).
+ * @p leverX is grip local x; @p len0/@p len1 project onto unit local +Y at press.
+ */
+qreal verticalShearParamFromDrag(qreal pressScaleY, qreal leverX, qreal len0, qreal len1);
+
 } // namespace PlacementLinear
 
 #endif // PLACEMENTLINEAR_H

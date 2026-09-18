@@ -138,4 +138,27 @@ qreal axisScaleFromProjection(qreal pressScale, const QPointF &v0, const QPointF
     return pressScale * (qAbs(len1) / qAbs(len0));
 }
 
+qreal horizontalShearFromDrag(qreal pressShear, qreal pressScaleX, qreal leverY,
+                              qreal len0, qreal len1)
+{
+    const qreal lever = qMax(1e-3, qAbs(leverY));
+    const qreal denom = qMax(1e-6, pressScaleX * lever);
+    const qreal delta = (len1 - len0) / denom;
+    if (leverY < 0.0) {
+        return pressShear - delta;
+    }
+    return pressShear + delta;
+}
+
+qreal verticalShearParamFromDrag(qreal pressScaleY, qreal leverX, qreal len0, qreal len1)
+{
+    const qreal lever = qMax(1e-3, qAbs(leverX));
+    const qreal denom = qMax(1e-6, pressScaleY * lever);
+    const qreal delta = (len1 - len0) / denom;
+    if (leverX < 0.0) {
+        return -delta; // left edge (x < 0)
+    }
+    return delta;
+}
+
 } // namespace PlacementLinear

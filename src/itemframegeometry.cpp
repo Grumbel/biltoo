@@ -128,4 +128,19 @@ void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
     }
 }
 
+qreal trackParam(const QPointF &a, const QPointF &b, const QPointF &p)
+{
+    const QPointF ab = b - a;
+    const qreal ab2 = QPointF::dotProduct(ab, ab);
+    if (ab2 <= 1e-6) {
+        return 0.0;
+    }
+    return qBound(0.0, QPointF::dotProduct(p - a, ab) / ab2, 1.0);
+}
+
+qreal opacityFromTrackParam(qreal t)
+{
+    return 0.05 + qBound(0.0, t, 1.0) * 0.95;
+}
+
 } // namespace ItemFrameGeometry

@@ -534,19 +534,12 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
             dirX /= lenX;
         }
         const qreal yLever = gripLocal.y();
-        const qreal lever = qMax(1e-3, qAbs(yLever));
         const qreal len0 = QPointF::dotProduct(m_pressScenePos - anchor, dirX);
         const qreal len1 = QPointF::dotProduct(scenePos - anchor, dirX);
         // L·H(kx): e2_new = e2 + kx·e1 ⇒ scene move of a point with local y
         // along e1 is proportional to kx · |e1| · y (≈ sx·kx·y).
-        const qreal denom = qMax(1e-6, m_pressScaleX * lever);
-        const qreal delta = (len1 - len0) / denom;
-        qreal kx = m_pressShear;
-        if (yLever < 0.0) {
-            kx = m_pressShear - delta;
-        } else {
-            kx = m_pressShear + delta;
-        }
+        const qreal kx = PlacementLinear::horizontalShearFromDrag(
+            m_pressShear, m_pressScaleX, yLever, len0, len1);
         setItemShear(kx);
     } else {
         // Left / Right: vertical local shear m via L·V(m), then decompose.
@@ -556,18 +549,11 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
             dirY /= lenY;
         }
         const qreal xLever = gripLocal.x();
-        const qreal lever = qMax(1e-3, qAbs(xLever));
         const qreal len0 = QPointF::dotProduct(m_pressScenePos - anchor, dirY);
         const qreal len1 = QPointF::dotProduct(scenePos - anchor, dirY);
         // L·V(m): e1_new = e1 + m·e2 ⇒ move along e2 ∝ m · |e2| · x (≈ sy·m·x).
-        const qreal denom = qMax(1e-6, m_pressScaleY * lever);
-        const qreal delta = (len1 - len0) / denom;
-        qreal m = 0.0;
-        if (xLever < 0.0) {
-            m = -delta; // left edge (x<0)
-        } else {
-            m = delta;
-        }
+        const qreal m = PlacementLinear::verticalShearParamFromDrag(
+            m_pressScaleY, xLever, len0, len1);
         // Compose vertical shear onto press axes: e1' = e1 + m·e2, e2' = e2.
         const QPointF e1n = e1 + m * e2;
         const QPointF e2n = e2;
@@ -628,13 +614,8 @@ void ImageItem::setOpacityFromSliderPos(const QPointF &scenePos)
     QPointF a, b;
     ItemFrameGeometry::opacityTrackView(fg, &a, &b);
     const QPointF p = sceneToViewPx(scenePos);
-    const QPointF ab = b - a;
-    const qreal ab2 = QPointF::dotProduct(ab, ab);
-    qreal tval = 0.0;
-    if (ab2 > 1e-6) {
-        tval = qBound(0.0, QPointF::dotProduct(p - a, ab) / ab2, 1.0);
-    }
-    setItemOpacity(0.05 + tval * 0.95);
+    const qreal tval = ItemFrameGeometry::trackParam(a, b, p);
+    setItemOpacity(ItemFrameGeometry::opacityFromTrackParam(tval));
 }
 
 QList<ImageItem::Handle> ImageItem::activeHandles() const
