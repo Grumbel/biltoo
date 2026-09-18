@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1109-sort-warm-cache-instant.** Warm-index sort skips HUD; gallery size no revalidate.
+Prior: **1108**.
+
+### Change
+- Sort worker: pass 1 cache-only; if no misses, apply order with **no**
+  "Reading file info…" / "Measuring images…" HUD.
+- Progress only for true misses (starts at cached/total).
+- Gallery `primeGalleryGeometryFromCache`, `probeImageSize`, size-resolve gate:
+  `cachedSize(..., false)` — no revalidate flood on open.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1109-sort-warm-cache-instant.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1108-sort-cache-no-revalidate.** Sort/file-info uses Store cache; no revalidate flood.
 Prior: **1107**.
 

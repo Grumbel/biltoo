@@ -400,7 +400,8 @@ QSize ImageView::probeImageSize(const QString &path) const
 {
     // Never open the source on the GUI thread (USB/NFS freeze). Cache-only or
     // neutral stand-in; scheduleImageSizeProbe / sizeReady supply the real size.
-    if (const QSize cached = ThumtooCache::cachedSize(path); cached.isValid()) {
+    if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
+        cached.isValid()) {
         return cached;
     }
     if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
@@ -432,8 +433,9 @@ void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
     if (path.isEmpty() || image.isNull()) {
         return;
     }
-    // Durable index is authoritative when present.
-    if (const QSize cached = ThumtooCache::cachedSize(path); isPositiveSize(cached)) {
+    // Durable index is authoritative when present (no revalidate on GUI).
+    if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
+        isPositiveSize(cached)) {
         rememberImageSize(path, cached);
         return;
     }
@@ -511,7 +513,7 @@ void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
         }
         // Native size from durable index (no probe I/O).
         if (!m_imageSizeByPath.contains(path) || isProvisionalImageSize(path)) {
-            if (const QSize cached = ThumtooCache::cachedSize(path);
+            if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
                 isPositiveSize(cached)) {
                 rememberImageSize(path, cached);
             }
@@ -657,7 +659,8 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
         if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
             continue;
         }
-        if (const QSize cached = ThumtooCache::cachedSize(path); isPositiveSize(cached)) {
+        if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
+            isPositiveSize(cached)) {
             rememberImageSize(path, cached);
             continue;
         }

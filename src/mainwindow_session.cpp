@@ -931,10 +931,8 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
     const QVector<SessionImageId> ids = m_session.ids();
 
     const bool diskMeta = (mode == SortMode::MTime || mode == SortMode::FileSize);
-    setExpandProgress(
-        0, paths.size(),
-        diskMeta ? tr("Reading file info… 0/%1").arg(paths.size())
-                 : tr("Measuring images… 0/%1").arg(paths.size()));
+    // Progress HUD is started only if the worker finds cache misses (warm index
+    // completes with no "Reading file info…" flash).
 
     const QPointer<MainWindow> guard(this);
     QThreadPool::globalInstance()->start([guard, gen, mode, paths, ids, onDone, diskMeta]() {
@@ -947,10 +945,10 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
         } else {
             sizes.reserve(paths.size());
         }
-        QElapsedTimer clock;
-        clock.start();
-        qint64 lastUi = -1000;
 
+        // Pass 1 — Store / cache only (no source I/O, no revalidate).
+        QVector<int> missIdx;
+        missIdx.reserve(paths.size());
         for (int i = 0; i < paths.size(); ++i) {
             MainWindow *const window = guard.data();
             if (!window || gen != window->m_sortGeneration) {
@@ -958,37 +956,84 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
             }
             const QString &path = paths.at(i);
             if (diskMeta) {
-                if (!mtimes.contains(path)) {
-                    // Prefer Store locator fingerprint (no source I/O). QFileInfo
-                    // only on miss — warm cache must not re-stat every path.
-                    qint64 stSize = -1;
-                    qint64 stMtimeNs = -1;
-                    if (ThumtooCache::cachedFileStat(path, &stSize, &stMtimeNs)
-                        && (stSize >= 0 || stMtimeNs >= 0)) {
-                        if (stMtimeNs >= 0) {
-                            mtimes.insert(path, stMtimeNs / 1000000); // ns → ms
-                        } else {
-                            mtimes.insert(path, 0);
-                        }
-                        fsizes.insert(path, stSize >= 0 ? stSize : 0);
-                    } else {
-                        const QFileInfo fi(path);
-                        mtimes.insert(path, fi.lastModified().toMSecsSinceEpoch());
-                        fsizes.insert(path, fi.size());
-                    }
+                qint64 stSize = -1;
+                qint64 stMtimeNs = -1;
+                if (ThumtooCache::cachedFileStat(path, &stSize, &stMtimeNs)
+                    && (stSize >= 0 || stMtimeNs >= 0)) {
+                    mtimes.insert(path, stMtimeNs >= 0 ? stMtimeNs / 1000000 : 0);
+                    fsizes.insert(path, stSize >= 0 ? stSize : 0);
+                } else {
+                    missIdx.append(i);
                 }
+            } else {
+                const QSize sz = ImageLoader::probeSize(path);
+                if (sz.isValid()) {
+                    sizes.insert(path, sz);
+                } else {
+                    missIdx.append(i);
+                }
+            }
+        }
+
+        if (missIdx.isEmpty()) {
+            const QVector<int> order = MainWindow::computeSortOrderIndices(
+                mode, paths, sizes, mtimes, fsizes);
+            QStringList newFiles;
+            QVector<SessionImageId> newIds;
+            newFiles.reserve(order.size());
+            newIds.reserve(order.size());
+            for (int i : order) {
+                newFiles.append(paths.at(i));
+                newIds.append(ids.at(i));
+            }
+            QMetaObject::invokeMethod(guard.data(), [guard, gen, newFiles, newIds, onDone]() {
+                MainWindow *const window = guard.data();
+                if (!window || gen != window->m_sortGeneration) {
+                    return;
+                }
+                window->setExpandProgressBusy(false);
+                window->applySortedSessionOrder(newFiles, newIds, onDone);
+            }, Qt::QueuedConnection);
+            return;
+        }
+
+        QElapsedTimer clock;
+        clock.start();
+        qint64 lastUi = -1000;
+        const int total = paths.size();
+        const int cached = total - missIdx.size();
+        {
+            const bool meta = diskMeta;
+            QMetaObject::invokeMethod(guard.data(), [guard, gen, total, meta, cached]() {
+                MainWindow *const host = guard.data();
+                if (!host || gen != host->m_sortGeneration) {
+                    return;
+                }
+                host->setExpandProgress(
+                    cached, total,
+                    meta ? MainWindow::tr("Reading file info… %1/%2").arg(cached).arg(total)
+                         : MainWindow::tr("Measuring images… %1/%2").arg(cached).arg(total));
+            }, Qt::QueuedConnection);
+        }
+
+        for (int mi = 0; mi < missIdx.size(); ++mi) {
+            MainWindow *const window = guard.data();
+            if (!window || gen != window->m_sortGeneration) {
+                return;
+            }
+            const int i = missIdx.at(mi);
+            const QString &path = paths.at(i);
+            if (diskMeta) {
+                const QFileInfo fi(path);
+                mtimes.insert(path, fi.lastModified().toMSecsSinceEpoch());
+                fsizes.insert(path, fi.size());
             } else if (!sizes.contains(path)) {
-                // Cache-only first (no background revalidate flood). probeSize
-                // already uses cachedSize(..., false); empty → async scheduleProbe.
                 sizes.insert(path, ImageLoader::probeSize(path));
             }
             const qint64 now = clock.elapsed();
-            // ~4 Hz max — centre progress + status used to flood the GUI
-            // while QFileInfo/probe still ran on the worker.
-            if (now - lastUi >= 250 || i + 1 == paths.size()) {
+            if (now - lastUi >= 250 || mi + 1 == missIdx.size()) {
                 lastUi = now;
-                const int done = i + 1;
-                const int total = paths.size();
+                const int done = cached + mi + 1;
                 const bool meta = diskMeta;
                 QMetaObject::invokeMethod(guard.data(), [guard, gen, done, total, meta]() {
                     MainWindow *const host = guard.data();
