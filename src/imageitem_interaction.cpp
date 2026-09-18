@@ -1465,7 +1465,15 @@ void ImageItem::prepareTileLodPlan()
     const int minScale = m_galleryCellSize.isEmpty()
         ? 0
         : ThumtooCache::durableTileMinScale(m_path);
+    const quint64 genBefore =
+        m_tileLod->session() ? m_tileLod->session()->generation() : 0;
     m_tileLod->setContentSize(native.width(), native.height(), minScale);
+    // min_scale lower (1230) bumps generation but dpc/vis may be unchanged —
+    // clear the skip cache so updateViewport re-plans at the new floor.
+    if (m_tileLod->session()
+        && m_tileLod->session()->generation() != genBefore) {
+        m_tileLodLastDpc = -1.0;
+    }
 
     const qreal dpc = tileDevicePerContent();
     QRectF visLocal = contentRect();

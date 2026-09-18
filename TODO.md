@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1231-tile-min-scale-force-replan.** Force viewport replan after min_scale generation bump.
+Prior: **1230**.
+
+### Bug
+1230 cleared progressive state on min_scale lower, but `prepareTileLodPlan`
+skipped `updateViewport` when dpc/vis were unchanged — density plan never
+rebuilt at the new floor.
+
+### Fix
+After `setContentSize`, if session generation changed, invalidate
+`m_tileLodLastDpc` so the next plan runs.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1231-tile-min-scale-force-replan.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1230-tile-min-scale-lower-reclimb.** Lowering min_scale resets progressive tile climb.
 Prior: **1229**.
 
