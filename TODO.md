@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1298-crop-geometry-chrome-layout.** Pure crop button layout + polygon dedupe.
+Prior: **1297**.
+
+### Change
+- `CropGeometry::CropButtonLayout` + `cropButtonLayout` moved from anonymous
+  namespace in `imageview_crop.cpp` (viewport chrome under the draft frame).
+- `cropPolygonItemLocal` uses `CropGeometry::rotatedCorners` (no local QTransform).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1298-crop-geometry-chrome-layout.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1297-crop-geometry-prior-expand.** Pure prior-draft expand detection.
 Prior: **1296**.
 

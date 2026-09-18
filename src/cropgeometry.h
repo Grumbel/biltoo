@@ -5,10 +5,11 @@
 #define CROPGEOMETRY_H
 
 #include <QPolygonF>
+#include <QRect>
 #include <QRectF>
 
 /**
- * Pure crop-rect geometry in item-local content space.
+ * Pure crop geometry and viewport chrome layout.
  * No ImageView / session state — safe to unit-test and share with undo helpers.
  */
 namespace CropGeometry {
@@ -50,6 +51,25 @@ bool axisAlignedOutside(const QRectF &rect, const QRectF &bounds);
 bool priorDraftNeedsExpand(const QRectF &priorInImage, const QRectF &imageBounds,
                            const QRectF &draftLocal, qreal rotationDeg,
                            const QRectF &contentRect);
+
+/**
+ * Viewport-pixel positions for crop chrome buttons under the draft frame.
+ * Expand+Auto left-aligned; Reset/Cancel/Apply right-aligned; y clears rotate knobs.
+ */
+struct CropButtonLayout {
+    QRect expand;
+    QRect autoBtn;
+    QRect reset;
+    QRect cancel;
+    QRect apply;
+    bool valid = false;
+};
+
+/**
+ * Place crop chrome buttons relative to @p cropView (viewport coords) and
+ * clamp into @p viewportRect. Pure layout — no mode / handle state.
+ */
+CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportRect);
 
 } // namespace CropGeometry
 

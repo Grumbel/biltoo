@@ -151,4 +151,72 @@ bool priorDraftNeedsExpand(const QRectF &priorInImage, const QRectF &imageBounds
     return false;
 }
 
+CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportRect)
+{
+    CropButtonLayout L;
+    if (!cropView.isValid() || !viewportRect.isValid()) {
+        return L;
+    }
+    constexpr int kW = 70;
+    constexpr int kH = 28;
+    constexpr int kGap = 6;
+    // Bottom rotate knobs sit ~22px outside the edge; clear them plus air.
+    constexpr int kOutsideGap = 32;
+    constexpr int kInsideInset = 10;
+    constexpr int kMargin = 6;
+    constexpr int kGroupGapMin = 18; // min air between left group and right group
+
+    const int rightGroupW = kW * 3 + kGap * 2;
+    const int leftGroupW = kW * 2 + kGap; // Expand + Auto
+
+    auto pickY = [&](int spanLeft, int spanW) -> int {
+        const int yOutside = qRound(cropView.bottom()) + kOutsideGap;
+        const int yInside = qRound(cropView.bottom()) - kH - kInsideInset;
+        auto fullyVisible = [&](int y) {
+            return viewportRect.contains(QRect(spanLeft, y, spanW, kH));
+        };
+        if (fullyVisible(yOutside)) {
+            return yOutside;
+        }
+        if (fullyVisible(yInside)) {
+            return yInside;
+        }
+        return qBound(viewportRect.top() + kMargin,
+                      yOutside,
+                      viewportRect.bottom() - kMargin - kH);
+    };
+
+    // Right group: align Apply to crop right edge.
+    int right = qRound(cropView.right()) - kW;
+    right = qBound(viewportRect.left() + kMargin + rightGroupW - kW,
+                   right,
+                   viewportRect.right() - kMargin - kW);
+    const int cancelX = right - kGap - kW;
+    const int resetX = cancelX - kGap - kW;
+    const int yRight = pickY(resetX, rightGroupW);
+
+    // Left: Expand + Auto, aligned to crop left edge.
+    int expandX = qRound(cropView.left());
+    expandX = qBound(viewportRect.left() + kMargin,
+                     expandX,
+                     viewportRect.right() - kMargin - leftGroupW);
+    if (expandX + leftGroupW + kGroupGapMin > resetX) {
+        expandX = qMax(viewportRect.left() + kMargin,
+                       resetX - kGroupGapMin - leftGroupW);
+    }
+    const int smartX = expandX + kW + kGap;
+    const int yLeft = pickY(expandX, leftGroupW);
+    // Prefer a shared baseline when both bands land near the same y.
+    const int yExpand = (qAbs(yLeft - yRight) <= 2) ? yRight : yLeft;
+    const int yGroup = yRight;
+
+    L.expand = QRect(expandX, yExpand, kW, kH);
+    L.autoBtn = QRect(smartX, yExpand, kW, kH);
+    L.reset = QRect(resetX, yGroup, kW, kH);
+    L.cancel = QRect(cancelX, yGroup, kW, kH);
+    L.apply = QRect(right, yGroup, kW, kH);
+    L.valid = true;
+    return L;
+}
+
 } // namespace CropGeometry
