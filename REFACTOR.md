@@ -91,6 +91,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **LayoutApplyGuard**: pack re-entrancy flag.
 - **PlacementLinear** opacity clamp/step; **StackGeometry** zLess/zGreater.
 - **ViewTransform::rubberRect**; **SlideshowProgressHud::setCycleProgress01**.
+- **GalleryPackReason** in `imageview_types.h` (LayoutDebounce-safe).
+- Slideshow bag clamp setters; **ViewTransform::atLeast1**.
 - **CropSession::locksPath / locksItem**: draft sample freeze predicates on the session bag.
 - **CropSession::isDraftLayoutGeometry**; **SlideshowProgressHud::lastPaintFp**.
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).

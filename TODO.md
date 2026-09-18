@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1329-packreason-slideshow-clamps.** GalleryPackReason types fix + slideshow/view clamps.
+Prior: **1328**.
+
+### Change
+- Move `GalleryPackReason` into `imageview_types.h` (fixes LayoutDebounce build)
+- SlideshowSettings / ProgressHud / DwellState / PhaseState clamp setters
+- `ViewTransform::atLeast1` for viewport width/height
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1329-packreason-slideshow-clamps.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1328-layout-guard-opacity-rubber.** Layout apply guard, opacity/z pure helpers, rubberRect.
 Prior: **1327**.
 
