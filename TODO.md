@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1187-unused-before.** Drop unused `before` in decode window.
+Prior: **1186**.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1187-unused-before.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1186-fix-tile-debug-compile.** Fix broken fprintf strings in tile debug.
 Prior: **1185**.
 

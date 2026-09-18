@@ -380,10 +380,8 @@ void ImageView::updateGalleryDecodeWindow()
             scheduleGalleryDecodeWindowRefresh(80);
             break;
         }
-        const int before = gallerySoftInflightCount();
         scheduleGalleryDecode(path);
-        // Tile-band schedule does not raise soft inflight — still count progress.
-        // Count every schedule attempt (tile path does not raise soft inflight).
+        // Count every attempt (tile path does not raise soft inflight).
         ++scheduled;
     }
     if (m_perfEnabled) {
