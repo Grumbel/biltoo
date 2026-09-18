@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1113-version-thumtoo.** --version and About show thumtoo version + features.
+Prior: **1112**.
+
+### Change
+- `biltoo --version` / `-v`: biltoo version, optional feature list, linked thumtoo version.
+- About dialog: thumtoo version under Biltoo title; feature list wording updated.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1113-version-thumtoo.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1112-warm-open-instant.** Warm open skips Opening-N HUD; preparePaths off GUI.
 Prior: **1111**.
 

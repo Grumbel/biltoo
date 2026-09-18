@@ -8,12 +8,16 @@
 #include "imagecache.h"
 #include "thumtoocache.h"
 #include "version.h"
+#ifdef BILTOO_HAVE_THUMTOO
+#include "thumtoo/version.hpp"
+#endif
 
 #include <QApplication>
 #include <QThreadPool>
 #include <QThread>
 #include <QGuiApplication>
 #include <QCommandLineParser>
+#include <QTextStream>
 #include <QCommandLineOption>
 #include <QDebug>
 #include <QFileInfo>
@@ -145,7 +149,6 @@ int main(int argc, char *argv[])
         QCoreApplication::translate("main",
             "Biltoo — Image, Gallery, and Workspace image viewer"));
     parser.addHelpOption();
-    parser.addVersionOption();
     parser.addPositionalArgument(
         QStringLiteral("files"),
         QCoreApplication::translate("main",
@@ -221,6 +224,35 @@ int main(int argc, char *argv[])
             "Trace thumtoo ladder/tile work to stderr and "
             "~/.cache/biltoo/thumtoo-debug.log"));
     parser.addOption(thumtooDebugOption);
+
+    // Rich --version: biltoo + optional features + linked thumtoo version.
+    {
+        const QStringList args = QCoreApplication::arguments();
+        if (args.contains(QStringLiteral("--version"))
+            || args.contains(QStringLiteral("-v"))) {
+            QTextStream out(stdout);
+            out << "biltoo " << QApplication::applicationVersion() << '\n';
+            auto line = [&](const char *name, bool on) {
+                out << "  " << name << ": " << (on ? "enabled" : "missing") << '\n';
+            };
+            line("libvips", BILTOO_FEATURE_VIPS);
+            line("libexiv2", BILTOO_FEATURE_EXIV2);
+            line("thumtoo", BILTOO_FEATURE_THUMTOO);
+            line("thumtoo archives", BILTOO_FEATURE_ARCHIVE);
+            line("libunarr (solid RAR/CBR)", BILTOO_FEATURE_THUMTOO_UNARR);
+            line("MuPDF (PDF/EPUB)", BILTOO_FEATURE_THUMTOO_MUPDF);
+            line("DjVuLibre", BILTOO_FEATURE_THUMTOO_DJVU);
+            line("libcurl (via thumtoo)", BILTOO_FEATURE_THUMTOO_CURL);
+            line("GIO", BILTOO_FEATURE_GIO);
+#if defined(BILTOO_HAVE_THUMTOO) && BILTOO_HAVE_THUMTOO
+            out << "thumtoo " << QString::fromUtf8(thumtoo::version_string().data(),
+                                                   int(thumtoo::version_string().size()))
+                << '\n';
+#endif
+            out.flush();
+            return 0;
+        }
+    }
 
     parser.process(app);
 

@@ -4,6 +4,9 @@
 #include "mainwindow_includes.h"
 #include "keyboardshortcutsdialog.h"
 #include "version.h"
+#ifdef BILTOO_HAVE_THUMTOO
+#include "thumtoo/version.hpp"
+#endif
 #include "imageitem.h"
 
 #include <QDebug>
@@ -2064,7 +2067,13 @@ void MainWindow::about()
     QMessageBox box(this);
     box.setWindowTitle(tr("About Biltoo"));
     box.setIconPixmap(QApplication::windowIcon().pixmap(64, 64));
-    box.setText(tr("<h3>Biltoo %1</h3>").arg(QApplication::applicationVersion()));
+    QString title = tr("<h3>Biltoo %1</h3>").arg(QApplication::applicationVersion());
+#if defined(BILTOO_HAVE_THUMTOO) && BILTOO_HAVE_THUMTOO
+    title += tr("<p>thumtoo %1</p>")
+                 .arg(QString::fromUtf8(thumtoo::version_string().data(),
+                                        int(thumtoo::version_string().size())));
+#endif
+    box.setText(title);
 
     // Compile-time optional libs only (no runtime user-disable yet).
     auto feat = [](bool on) {
@@ -2075,10 +2084,10 @@ void MainWindow::about()
         "<ul>"
         "<li>libvips (extra codecs, attention Pan&amp;Zoom): %1</li>"
         "<li>libexiv2 (Exif / IPTC / XMP metadata): %2</li>"
-        "<li>thumtoo (size index + ladder): %3</li>"
+        "<li>thumtoo (size index + tiles/LQIP): %3</li>"
         "<li>thumtoo archives (zip / tar / 7z / rar / …): %4</li>"
         "<li>libunarr (solid RAR / CBR extract): %5</li>"
-        "<li>MuPDF (PDF pages): %6</li>"
+        "<li>MuPDF (PDF / EPUB pages): %6</li>"
         "<li>DjVuLibre (DjVu pages): %7</li>"
         "<li>libcurl (HTTP/S fetch via thumtoo): %8</li>"
         "<li>GIO (default-application Preferences): %9</li>"
