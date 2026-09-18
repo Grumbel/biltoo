@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1237-todo-park-session-identity.** Handoff: session-identity line parked.
+Prior: **1236**.
+
+### Note
+No functional code. Session Open/archive identity stack (1233–1236) is complete
+pending runtime confirmation. Next tip needs a concrete residual report.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1237-todo-park-session-identity.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1236-session-imagecache-clear.** Session replace clears ImageCache (Gallery Open path).
 Prior: **1235**.
 
@@ -19,6 +37,13 @@ cache hits.
 ```bash
 git pull --rebase /path/to/biltoo-1236-session-imagecache-clear.bundle HEAD
 ```
+
+### Parked (no code without a new report)
+Session identity on Open/archive is covered (1233–1236):
+registry + durable/URI memos + ImageCache + prefetch + PathRaster + canvas.
+Image upres stack (1229–1232) is separate.
+Next tip needs a concrete residual (e.g. still-wrong tiles after pull, filmstrip
+stale, or climb still stuck under BILTOO_TILE_DEBUG).
 
 ---
 
