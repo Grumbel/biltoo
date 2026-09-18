@@ -57,6 +57,11 @@ void Machine::setHaveFromHost(int hostHave, int softMax)
         }
     }
     m_.have = std::max(0, hostHave);
+    // Host only holds LQIP — soft PreferCache has not truly run yet.
+    constexpr int kLqipCeiling = 96;
+    if (m_.have > 0 && m_.have <= kLqipCeiling) {
+        m_.softAttempted = false;
+    }
     if (covers(m_.have, effectiveNeed())) {
         m_.preferGaveUp = false;
         m_.displayQueued = false;
@@ -82,14 +87,21 @@ void Machine::reconcilePending(const PendingFlags &pending)
 
 void Machine::noteDelivery(int requestEdge, int got, int softMax)
 {
+    // LQIP is a stand-in only (≤96). Soft PreferCache must keep climbing.
+    constexpr int kLqipCeiling = 96;
+    // Soft progress floor: SoftOnly/Prefer soft returned a real soft rung
+    // (not LQIP). Matches GallerySoft::kSoftProgressFloor intent.
+    constexpr int kSoftProgressFloor = 128;
+
     if (got > 0) {
         m_.have = std::max(m_.have, got);
         if (requestEdge > 0) {
             m_.lastDisplayGot = std::max(m_.lastDisplayGot, got);
         }
-        // SoftOnly often returns a store rung smaller than softMax (or LQIP-ish).
-        // Mark attempted so plan() does not re-SoftOnly forever.
-        if (requestEdge <= softMax) {
+        // Soft-band delivery below softMax: mark attempted only for real soft
+        // rungs so we do not SoftOnly-loop (128 while softMax 512). LQIP alone
+        // must NOT set this — Gallery was stuck on LQIP forever.
+        if (requestEdge <= softMax && got >= kSoftProgressFloor) {
             m_.softAttempted = true;
         }
     }
@@ -97,12 +109,13 @@ void Machine::noteDelivery(int requestEdge, int got, int softMax)
     m_.softQueued = false;
     m_.fullQueued = false;
 
-    constexpr int kMinPreferPlateau = 96;
-    // Prefer plateau vs the Prefer request edge (classic soft/overview shortfall).
-    if (requestEdge > 0 && got > 0
+    // PreferCache plateau is for *display* band (request > softMax), not soft
+    // shortfalls. Soft-band got=128/LQIP used to set preferGaveUp and then
+    // plan() returned empty while !softCovered → permanent LQIP freeze.
+    if (requestEdge > softMax && got > 0
         && got * kCoverDenom < requestEdge * kCoverNumer) {
-        if (got >= kMinPreferPlateau
-            || (m_.want > softMax && got <= softMax)) {
+        if (got > kLqipCeiling
+            || (m_.want > softMax && got <= softMax && got > kLqipCeiling)) {
             m_.preferGaveUp = true;
         }
     }
@@ -204,7 +217,15 @@ Plan Machine::plan(int softMax, int overviewCap, int displayMaxEdge) const
         return p;
     }
     if (!softCovered) {
-        // Gave up PreferCache but still need soft — keep soft in plan, no Full.
+        // PreferCache display plateaued, but soft max not covered (LQIP/soft
+        // shortfall). SoftOnly is gated by softAttempted; Prefer soft-band
+        // still needs to run or Gallery freezes on LQIP.
+        if (!m_.softQueued && !m_.softAttempted) {
+            p.scheduleSoft = true;
+        } else if (!m_.displayQueued) {
+            p.scheduleDisplay = true;
+            p.displayEdge = softMax;
+        }
         return p;
     }
 

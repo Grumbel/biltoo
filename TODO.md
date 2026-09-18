@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1123-lqip-not-soft-attempted.** LQIP must not freeze soft PreferCache climb.
+Prior: **1122**.
+
+### Bug
+- `RasterClimb::noteDelivery` set `softAttempted` on any soft-band delivery,
+  including **LQIP (≤96)**.
+- Soft shortfalls also set `preferGaveUp`; `plan()` then returned **empty**
+  while soft was not covered → Gallery tiles stuck on LQIP forever.
+
+### Fix
+- `softAttempted` only when got ≥ 128 (real soft rung, not LQIP).
+- `preferGaveUp` only for **display-band** shortfalls (request > softMax).
+- When preferGaveUp but soft uncovered: still schedule soft / Prefer soft-band.
+- Host have ≤ LQIP clears softAttempted so climb can restart.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1123-lqip-not-soft-attempted.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1122-gallery-soft-not-fullsource.** Soft-band attach stays SoftPreview; Gallery can upscale.
 Prior: **1121**.
 

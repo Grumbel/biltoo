@@ -24,6 +24,7 @@ private slots:
     void escalate_resets_full_done();
     void gave_up_not_terminal_while_short();
     void soft_shortfall_does_not_reschedule();
+    void lqip_delivery_still_schedules_soft();
 };
 
 static constexpr int kSoft = 512;
@@ -200,9 +201,29 @@ void RasterClimbSmTest::soft_shortfall_does_not_reschedule()
     m.noteDelivery(/*requestEdge=*/512, /*got=*/128, kSoft);
     QVERIFY(m.state().softAttempted);
     QCOMPARE(m.state().have, 128);
+    QVERIFY(!m.state().preferGaveUp); // soft-band shortfall is not Prefer plateau
     p = m.plan(kSoft, kOverview, kDispMax);
     QVERIFY(!p.scheduleSoft);
+    // Prefer soft-band / display may still run; Full must not.
+    QVERIFY(!p.scheduleFull);
     QVERIFY(!p.forgetSoftSettled);
+}
+
+void RasterClimbSmTest::lqip_delivery_still_schedules_soft()
+{
+    // LQIP (≤96) must not freeze the soft PreferCache climb.
+    Machine m;
+    m.setWant(512, 4000, Policy::SoftDisplay, kSoft, kOverview);
+    m.setHaveFromHost(0, kSoft);
+    Plan p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(p.scheduleSoft);
+
+    m.noteDelivery(/*requestEdge=*/512, /*got=*/64, kSoft);
+    QVERIFY(!m.state().softAttempted);
+    QVERIFY(!m.state().preferGaveUp);
+    QCOMPARE(m.state().have, 64);
+    p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(p.scheduleSoft);
 }
 
 QTEST_MAIN(RasterClimbSmTest)
