@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "itemframegeometry.h"
+#include "viewtransform.h"
 
 #include <QLineF>
 #include <QtMath>
@@ -136,12 +137,12 @@ qreal trackParam(const QPointF &a, const QPointF &b, const QPointF &p)
     if (ab2 <= 1e-6) {
         return 0.0;
     }
-    return qBound(0.0, QPointF::dotProduct(p - a, ab) / ab2, 1.0);
+    return ViewTransform::clamp01(QPointF::dotProduct(p - a, ab) / ab2);
 }
 
 qreal opacityFromTrackParam(qreal t)
 {
-    return 0.05 + qBound(0.0, t, 1.0) * 0.95;
+    return 0.05 + ViewTransform::clamp01(t) * 0.95;
 }
 
 QPointF closestPointOnSegment(const QPointF &a, const QPointF &b, const QPointF &p)
