@@ -146,6 +146,8 @@ add_executable(biltoo
   src/slideshowtypes.h
   src/slideshowclocks.h
   src/slideshowclocks.cpp
+  src/zoomblurhelpers.h
+  src/zoomblurhelpers.cpp
   src/loadgeneration.h
   src/sessionloadgate.h
   src/imageview_attention.cpp

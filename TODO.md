@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1262-zoomblur-helpers.** Pure ZoomBlur slot-book helpers.
+Prior: **1261**.
+
+### Change
+- `ZoomBlur::key` / `keyCached` / `keyInFlight` / `claimFlightSlot`.
+- `pruneOutsidePair` / `clearSizedSlots` / `invalidateQueue` / `installResult`.
+- `QThreadPool` schedule and paint remain on ImageView.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1262-zoomblur-helpers.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1261-slideshow-clocks.** Pure SlideshowClocks motion integration.
 Prior: **1260**.
 

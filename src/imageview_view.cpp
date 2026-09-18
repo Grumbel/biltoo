@@ -3,6 +3,7 @@
 
 #include "imageview.h"
 #include "slideshowclocks.h"
+#include "zoomblurhelpers.h"
 #include "displayquality.h"
 #include "biltoo_thread.h"
 
@@ -49,19 +50,6 @@ int slideshowNeedEdge(int targetEdge)
     return targetEdge * kSsAdequacyNumer / kSsAdequacyDenom;
 }
 
-/** Stable ZoomBlur slot key for path + viewport size. */
-qint64 slideshowZoomBlurKey(const QString &path, int vw, int vh)
-{
-    if (path.isEmpty() || vw < 1 || vh < 1) {
-        return 0;
-    }
-    return qint64(qHash(path)) ^ (qint64(vw) << 16) ^ qint64(vh);
-}
-
-/**
- * Advance unitless motion progress with wall Δt / pathMs.
- * Clock is a rate sample only (restart each call); T ∈ [0,1] is authority.
- */
 } // namespace
 
 
@@ -1918,25 +1906,11 @@ void ImageView::pruneZoomBlurOutsidePhasePair(const QString &fromPath, const QSt
                                     : (viewport() ? viewport()->width() : 0);
     const int vh = m_ssZoomBlur.vh > 0 ? m_ssZoomBlur.vh
                                     : (viewport() ? viewport()->height() : 0);
-    const qint64 keepFrom = slideshowZoomBlurKey(fromPath, vw, vh);
-    const qint64 keepTo = slideshowZoomBlurKey(toPath, vw, vh);
-    for (int i = 0; i < 2; ++i) {
-        const qint64 k = m_ssZoomBlur.sourceKey[i];
-        if (k != 0 && k != keepFrom && k != keepTo) {
-            m_ssZoomBlur.underlay[i] = QPixmap();
-            m_ssZoomBlur.sourceKey[i] = 0;
-        }
-        // Drop in-flight markers for keys we no longer care about so slots
-        // free for the new pair (without invalidating generation).
-        const qint64 fk = m_ssZoomBlur.inFlightKey[i];
-        if (fk != 0 && fk != keepFrom && fk != keepTo
-            && m_ssZoomBlur.inFlightGen[i] == m_ssZoomBlur.generation) {
-            m_ssZoomBlur.inFlightGen[i] = 0;
-            m_ssZoomBlur.inFlightKey[i] = 0;
-        }
-    }
     // Keep lastGood across path changes — previous underlay holds until the
     // new key finishes (paintZoomBlurUnderlay draws it).
+    ZoomBlur::pruneOutsidePair(&m_ssZoomBlur,
+                               ZoomBlur::key(fromPath, vw, vh),
+                               ZoomBlur::key(toPath, vw, vh));
 }
 
 void ImageView::schedulePhaseZoomBlur(const QString &path, const QImage &image)
@@ -1945,7 +1919,7 @@ void ImageView::schedulePhaseZoomBlur(const QString &path, const QImage &image)
         return;
     }
     const QSize vs = viewport()->size();
-    const qint64 key = slideshowZoomBlurKey(path, vs.width(), vs.height());
+    const qint64 key = ZoomBlur::key(path, vs.width(), vs.height());
     if (key != 0) {
         scheduleZoomBlurBuild(image, vs.width(), vs.height(), key);
     }
@@ -2764,10 +2738,7 @@ QImage makeZoomBlurCover(const QImage &src, int vw, int vh)
 void ImageView::clearSlideshowZoomBlurSlots()
 {
     // Drop cached underlays and cancel in-flight blur jobs (pad/letterbox/viewport).
-    m_ssZoomBlur.underlay[0] = QPixmap();
-    m_ssZoomBlur.underlay[1] = QPixmap();
-    m_ssZoomBlur.sourceKey[0] = 0;
-    m_ssZoomBlur.sourceKey[1] = 0;
+    ZoomBlur::clearSizedSlots(&m_ssZoomBlur);
     m_ssZoomBlur.lastGood = QPixmap();
     m_ssZoomBlur.lastGoodKey = 0;
     invalidateZoomBlurQueue();
@@ -2775,80 +2746,29 @@ void ImageView::clearSlideshowZoomBlurSlots()
 
 void ImageView::invalidateZoomBlurQueue() const
 {
-    // Drop in-flight work so a page flip cannot leave a backlog of blur jobs.
-    ++m_ssZoomBlur.generation;
-    m_ssZoomBlur.inFlightGen[0] = m_ssZoomBlur.inFlightGen[1] = 0;
-    m_ssZoomBlur.inFlightKey[0] = m_ssZoomBlur.inFlightKey[1] = 0;
+    ZoomBlur::invalidateQueue(&m_ssZoomBlur);
 }
 
 bool ImageView::zoomBlurKeyCached(qint64 key) const
 {
-    for (int i = 0; i < 2; ++i) {
-        if (m_ssZoomBlur.sourceKey[i] == key && !m_ssZoomBlur.underlay[i].isNull()) {
-            return true;
-        }
-    }
-    return false;
+    return ZoomBlur::keyCached(m_ssZoomBlur, key);
 }
 
 bool ImageView::zoomBlurKeyInFlight(qint64 key) const
 {
-    for (int i = 0; i < 2; ++i) {
-        if (m_ssZoomBlur.inFlightGen[i] == m_ssZoomBlur.generation
-            && m_ssZoomBlur.inFlightKey[i] == key) {
-            return true;
-        }
-    }
-    return false;
+    return ZoomBlur::keyInFlight(m_ssZoomBlur, key);
 }
 
 int ImageView::claimZoomBlurFlightSlot(qint64 key) const
 {
-    // Allow up to two concurrent builds (outgoing + incoming underlay). Never
-    // cancel the other key mid-transition — that caused ZoomBlur flicker as
-    // from/to fought over a single in-flight slot every paint frame.
-    int flightSlot = -1;
-    for (int i = 0; i < 2; ++i) {
-        if (m_ssZoomBlur.inFlightKey[i] == 0
-            || m_ssZoomBlur.inFlightGen[i] != m_ssZoomBlur.generation) {
-            flightSlot = i;
-            break;
-        }
-    }
-    if (flightSlot < 0) {
-        return -1; // both slots busy with other keys; try again next frame
-    }
-    const quint64 gen = m_ssZoomBlur.generation;
-    m_ssZoomBlur.inFlightGen[flightSlot] = gen;
-    m_ssZoomBlur.inFlightKey[flightSlot] = key;
-    return flightSlot;
+    // Allow up to two concurrent builds (outgoing + incoming underlay).
+    return ZoomBlur::claimFlightSlot(&m_ssZoomBlur, key);
 }
 
 void ImageView::installZoomBlurResult(const QImage &blurred, qint64 key, quint64 gen)
 {
-    if (gen != m_ssZoomBlur.generation) {
+    if (!ZoomBlur::installResult(&m_ssZoomBlur, QPixmap::fromImage(blurred), key, gen)) {
         return; // page flipped — discard
-    }
-    int slot = -1;
-    for (int i = 0; i < 2; ++i) {
-        if (m_ssZoomBlur.sourceKey[i] == key) {
-            slot = i;
-            break;
-        }
-    }
-    if (slot < 0) {
-        slot = m_ssZoomBlur.underlay[0].isNull() ? 0 : 1;
-    }
-    m_ssZoomBlur.underlay[slot] = QPixmap::fromImage(blurred);
-    m_ssZoomBlur.sourceKey[slot] = key;
-    m_ssZoomBlur.lastGood = m_ssZoomBlur.underlay[slot];
-    m_ssZoomBlur.lastGoodKey = key;
-    for (int i = 0; i < 2; ++i) {
-        if (m_ssZoomBlur.inFlightGen[i] == gen
-            && m_ssZoomBlur.inFlightKey[i] == key) {
-            m_ssZoomBlur.inFlightGen[i] = 0;
-            m_ssZoomBlur.inFlightKey[i] = 0;
-        }
     }
     if (viewport()) {
         viewport()->update();
