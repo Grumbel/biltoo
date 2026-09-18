@@ -21,6 +21,27 @@
 #include <QUndoStack>
 
 
+
+void ImageView::scheduleGalleryStatusRefresh(int delayMs)
+{
+    if (!isGalleryMode()) {
+        emit statusChanged();
+        return;
+    }
+    if (!m_galleryStatusRefreshTimer) {
+        m_galleryStatusRefreshTimer = new QTimer(this);
+        m_galleryStatusRefreshTimer->setSingleShot(true);
+        connect(m_galleryStatusRefreshTimer, &QTimer::timeout, this, [this]() {
+            if (isGalleryMode()) {
+                updateGallerySoftProgressHud();
+                emit statusChanged();
+            }
+        });
+    }
+    m_galleryStatusRefreshTimer->setInterval(qMax(0, delayMs));
+    m_galleryStatusRefreshTimer->start();
+}
+
 void ImageView::scheduleGalleryDecodeWindowRefresh(int delayMs)
 {
     if (!isGalleryMode()) {
@@ -260,7 +281,7 @@ void ImageView::updateGalleryDecodeWindow()
         if (viewport()) {
             viewport()->update();
         }
-        emit statusChanged(); // refresh blank/LQIP/soft counts
+        scheduleGalleryStatusRefresh(100);
     }
     if (moreInstallsPending) {
         scheduleGalleryDecodeWindowRefresh(32);

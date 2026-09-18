@@ -1151,6 +1151,8 @@ public:
     int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending);
     /** Coalesce decode-window rescans (setInterest + schedule) off the hot path. */
     void scheduleGalleryDecodeWindowRefresh(int delayMs = 48);
+    /** Coalesce statusChanged during soft climb (MainWindow is not free). */
+    void scheduleGalleryStatusRefresh(int delayMs = 100);
 
 signals:
     void stickyZoomChanged();
@@ -2137,6 +2139,7 @@ private:
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
     int m_galleryRelayoutSuppressCount = 0;
     QTimer *m_galleryDecodeScrollTimer = nullptr;
+    QTimer *m_galleryStatusRefreshTimer = nullptr;
     QTimer *m_statusRefreshTimer = nullptr;
     /** Pump tile LOD while zoomed (Image mode). */
     QTimer *m_tileLodTimer = nullptr;

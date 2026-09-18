@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1133-gallery-status-debounce.** Debounce statusChanged during soft climb.
+Prior: **1132**.
+
+### Change
+- `scheduleGalleryStatusRefresh(100)` coalesces status + soft progress HUD.
+- Pass1 installs and ladderReady no longer emit status on every tile (MainWindow
+  chrome was competing with soft install on the GUI thread).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1133-gallery-status-debounce.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1132-soft-hud-no-fullviewport.** Soft progress HUD must not force FullViewportUpdate.
 Prior: **1131**.
 

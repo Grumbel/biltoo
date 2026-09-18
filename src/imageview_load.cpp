@@ -1854,7 +1854,7 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
 
     // Debounce window rescan — avoid full setInterest on every tile delivery.
     scheduleGalleryDecodeWindowRefresh(48); // was 150 — faster LQIP→soft pass1
-    emit statusChanged();
+    scheduleGalleryStatusRefresh(100);
 }
 
 
