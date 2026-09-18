@@ -100,31 +100,35 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
             continue;
         }
         const int hostEdge = ImageCache::longEdge(hostSample);
-        // Only LQIP-sized host samples.
-        if (hostEdge > DisplayQuality::kLqipMaxEdge) {
-            continue;
-        }
         const int shown = item->displayPixelLongEdge();
         if (item->hasDisplayPixels() && hostEdge <= shown) {
             continue;
         }
-        GallerySoft::InstallDecision dec;
-        dec.kind = GallerySoft::InstallKind::SoftPreview;
-        dec.meaningful = true;
+        QImage sample = hostSample;
+        int sampleEdge = hostEdge;
+        // Blank tile cells need *some* underlay; filmstrip often leaves soft in
+        // ImageCache. Downscale to LQIP max so paint accepts under tilesWanted.
+        if (sampleEdge > DisplayQuality::kLqipMaxEdge) {
+            if (item->hasDisplayPixels()) {
+                continue;
+            }
+            const int cap = DisplayQuality::kLqipMaxEdge;
+            sample = hostSample.scaled(
+                cap, cap, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            sampleEdge = ImageCache::longEdge(sample);
+            if (sample.isNull() || sampleEdge <= 0) {
+                continue;
+            }
+            ImageCache::put(path, sample); // keep LQIP-sized for next pass
+        }
         const SessionAppearance::PixelKind kind =
-            (dec.kind == GallerySoft::InstallKind::FullSource)
-                ? SessionAppearance::PixelKind::FullSource
-                : SessionAppearance::PixelKind::SoftPreview;
+            SessionAppearance::PixelKind::SoftPreview;
         const int before = shown;
         const bool hadDisplay = item->hasDisplayPixels();
-        installDisplayPixels(item, hostSample, kind, item->sessionId());
+        installDisplayPixels(item, sample, kind, item->sessionId());
         int after = item->displayPixelLongEdge();
-        // Last resort: soft host over LQIP when install policy still no-op'd.
-        if (after <= before && hadDisplay
-            && before <= DisplayQuality::kLqipMaxEdge
-            && hostEdge > before
-            && kind == SessionAppearance::PixelKind::SoftPreview) {
-            item->setPreviewImage(hostSample);
+        if (after <= before && !hadDisplay && !sample.isNull()) {
+            item->setPreviewImage(sample);
             after = item->displayPixelLongEdge();
         }
         if (after <= before && hadDisplay) {
@@ -348,10 +352,13 @@ void ImageView::updateGalleryDecodeWindow()
             st.gaveUpWant = 0;
         }
 
-        // Tile LOD band: tiles + LQIP only — never PreferCache soft schedule.
+        // Tile LOD band: still queue for scheduleGalleryDecode (probe + tile
+        // tick + LQIP install). Never PreferCache soft climb.
         if (item->tileLodWanted()) {
-            st.terminal = true;
             clearGallerySoftInflight(st);
+            if (onScreen || anyBlank) {
+                visible.append(path);
+            }
             continue;
         }
 

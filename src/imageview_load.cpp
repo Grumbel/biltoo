@@ -1686,12 +1686,50 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             }
         }
         if (anyTileWanted) {
+            // Probe mirrors LQIP into ImageCache (worker). Install if already here.
+            if (isProvisionalImageSize(path)
+                || !ThumtooCache::cachedSize(path).isValid()) {
+                scheduleImageSizeProbe(path);
+            }
+            const QImage host = ImageCache::get(path);
+            if (!host.isNull()) {
+                QImage under = host;
+                if (ImageCache::longEdge(under) > DisplayQuality::kLqipMaxEdge) {
+                    const int cap = DisplayQuality::kLqipMaxEdge;
+                    under = host.scaled(cap, cap, Qt::KeepAspectRatio,
+                                        Qt::SmoothTransformation);
+                }
+                if (!under.isNull()) {
+                    for (ImageItem *ii : m_items) {
+                        if (!ii || ii->path() != path) {
+                            continue;
+                        }
+                        if (!ii->hasDisplayPixels()
+                            || ii->displayPixelLongEdge()
+                                < ImageCache::longEdge(under)) {
+                            installDisplayPixels(
+                                ii, under,
+                                SessionAppearance::PixelKind::SoftPreview,
+                                ii->sessionId());
+                        }
+                    }
+                }
+            }
             auto sit = m_gallerySoft.find(path);
             if (sit != m_gallerySoft.end()) {
                 clearGallerySoftInflight(*sit);
-                sit->terminal = true;
-            } else {
-                m_gallerySoft[path].terminal = true;
+                // Terminal only when something is on screen (LQIP or tiles).
+                bool anyPx = false;
+                for (ImageItem *ii : m_items) {
+                    if (ii && ii->path() == path
+                        && (ii->hasDisplayPixels() || ii->tileLodActive())) {
+                        anyPx = true;
+                        break;
+                    }
+                }
+                if (anyPx) {
+                    sit->terminal = true;
+                }
             }
             tickPrimaryTileLod(12);
             return;

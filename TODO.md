@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1162-gallery-blank-fix.** Tile-band cells schedule again; LQIP underlay from cache/downscale.
+Prior: **1161**.
+
+### Bug
+Pass2 skipped scheduleGalleryDecode for tileLodWanted → no probe/tick per path.
+Pass1 rejected filmstrip soft (>96) → nothing to paint under tiles.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1162-gallery-blank-fix.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1161-durable-no-soft-schedule.** Durable → tiles not soft; LQIP ends soft climb band.
 Prior: **1160**.
 
