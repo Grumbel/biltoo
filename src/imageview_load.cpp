@@ -778,15 +778,30 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
     if (kind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
         return false;
     }
+    // Gallery tile band: LQIP underlay only — reject soft/HOST whole-frame samples.
+    if (isGalleryMode() && item->tileLodWanted()
+        && kind == SessionAppearance::PixelKind::SoftPreview
+        && incoming > DisplayQuality::kLqipMaxEdge) {
+        return false;
+    }
     if (!item->hasDisplayPixels()) {
+        // Tile cells may still accept LQIP stand-in only.
+        if (isGalleryMode() && item->tileLodWanted()
+            && kind == SessionAppearance::PixelKind::SoftPreview
+            && incoming > DisplayQuality::kLqipMaxEdge) {
+            return false;
+        }
         return true;
     }
-    // Gallery LQIP/blank stand-in: always accept a larger host soft sample.
-    // DisplaySurface decide occasionally returned None (stale settle / pending)
-    // and installDisplayPixels then no-op'd — tiles stayed on LQIP forever.
+    // Gallery LQIP stand-in: accept only larger LQIP, never soft climb.
     if (isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
         const int shown = item->displayPixelLongEdge();
-        if (shown <= DisplayQuality::kLqipMaxEdge && incoming > shown) {
+        if (item->tileLodWanted()) {
+            return false;
+        }
+        if (shown <= DisplayQuality::kLqipMaxEdge
+            && incoming > shown
+            && incoming <= DisplayQuality::kLqipMaxEdge) {
             return true;
         }
     }
@@ -1647,26 +1662,17 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    // Tile LOD owns the cell when active. Durable pyramid + tileLodWanted →
-    // skip soft (tiles paint). Durable but *no* tile LOD (small cells) must
-    // still PreferCache TileSynth underlay — 1141 early-return left blanks.
+    // Tiles + LQIP underlay only. Never PreferCache/soft whole-frame for a
+    // path that is in the tile LOD band (product: everything tiles).
     {
         bool anyTileWanted = false;
-        bool softUnderlayNeeded = false;
-        const bool durable = ThumtooCache::hasDurableTilesKnown(path);
         for (ImageItem *ii : m_items) {
-            if (!ii || ii->path() != path || !ii->tileLodWanted()) {
-                continue;
-            }
-            anyTileWanted = true;
-            if (ii->displayPixelLongEdge() <= DisplayQuality::kLqipMaxEdge) {
-                softUnderlayNeeded = true;
+            if (ii && ii->path() == path && ii->tileLodWanted()) {
+                anyTileWanted = true;
+                break;
             }
         }
-        // Tiles own *sharp* display. Soft underlay is still required while the
-        // cell is blank or LQIP-only — terminal-without-underlay left holes
-        // (SOFT/HOST overlay only on cells that got host samples; others empty).
-        if (anyTileWanted && durable && !softUnderlayNeeded) {
+        if (anyTileWanted) {
             auto sit = m_gallerySoft.find(path);
             if (sit != m_gallerySoft.end()) {
                 clearGallerySoftInflight(*sit);
@@ -1676,17 +1682,6 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             }
             tickPrimaryTileLod(12);
             return;
-        }
-        if (anyTileWanted && !softUnderlayNeeded) {
-            auto sit = m_gallerySoft.find(path);
-            if (sit != m_gallerySoft.end()) {
-                clearGallerySoftInflight(*sit);
-            }
-            tickPrimaryTileLod(12);
-            return;
-        }
-        if (anyTileWanted) {
-            tickPrimaryTileLod(12); // tiles + soft underlay while blank/LQIP
         }
     }
     // Size-first still probes in the background, but never blocks decode:

@@ -106,14 +106,12 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     p.drawRect(border / 2, border / 2, w - border, h - border);
 
     QStringList lines;
-    // Distinguish underlay size so "HOST" is not confused with tile ownership.
+    // Product: LQIP underlay + tiles. Do not stamp SOFT/HOST (removed paths).
     const int le = qMax(w, h);
     if (le <= 96) {
         lines << QStringLiteral("LQIP");
-    } else if (le <= 512) {
-        lines << QStringLiteral("SOFT");
     } else {
-        lines << QStringLiteral("HOST");
+        lines << QStringLiteral("HOST-SAMPLE"); // should not be underlay in Gallery
     }
     if (!label.isEmpty()) {
         lines << label;

@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1156-lqip-tiles-only.** Gallery: LQIP underlay + tiles; no soft/HOST underlay path.
+Prior: **1155**.
+
+### Product
+- **Tiles** own display once `tileLodWanted`.
+- **LQIP** is the only whole-frame underlay.
+- **No SOFT** PreferCache underlay / stamps for tile cells.
+- Soft schedule terminal when any item for the path is in the tile band.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1156-lqip-tiles-only.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1155-gallery-tile-threshold.** Gallery tileLodWanted at 32px screen (was 256).
 Prior: **1154**.
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "displayquality.h"
 #include "biltoo_thread.h"
 
 #include <cstdlib>
@@ -1582,24 +1583,33 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // size probe (SIZE.md); LQIP/soft/full are only textures. Always stretch
         // to the full box so a correct layout does not show a small letterboxed
         // LQIP that later "grows" when soft fills the same rect.
-        // Soft/LQIP underlay whenever the *current* viewport is not fully
-        // covered by the tile plan. Gating on hasAnyTile alone was wrong:
-        // after zoom-out, leftover fine cells left hasAnyTile true while the
-        // coarse plan still had holes → blank plate with only the debug HUD.
+        // Underlay policy: LQIP only until tiles cover. No soft/HOST whole-frame
+        // base (SOFT stamps and PreferCache underlay are gone for tile cells).
         const bool tilesWanted = tileLodWanted();
         const bool tilesFullyCover =
             tilesWanted && tileLodViewportCovered();
-        const bool drawSoftBase = !tilesFullyCover;
+        const bool drawLqipBase = !tilesFullyCover;
+
+        auto isLqipSample = [](const QImage &img) {
+            if (img.isNull()) {
+                return false;
+            }
+            return qMax(img.width(), img.height())
+                <= DisplayQuality::kLqipMaxEdge;
+        };
 
         auto drawSampleInContentRect = [&](const QImage &img) {
             const QRectF box = contentRect();
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {
                 return;
             }
+            if (tilesWanted && !isLqipSample(img)) {
+                return; // never soft/host under tiles
+            }
             painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
             painter->drawImage(box, img);
         };
-        if (drawSoftBase && !tilesFullyCover) {
+        if (drawLqipBase) {
             const QRectF box = contentRect();
             // Gallery scroll path: prefer baked QPixmap (ItemCoordinateCache).
             // Avoids QImage stretch every frame under QOpenGLWidget scroll.
@@ -1613,18 +1623,33 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 const int liveEdge = live.isNull()
                     ? 0
                     : qMax(live.width(), live.height());
-                if (!live.isNull() && liveEdge > pixEdge) {
+                if (!live.isNull() && liveEdge > pixEdge
+                    && (!tilesWanted
+                        || liveEdge <= DisplayQuality::kLqipMaxEdge)) {
                     setPixmap(QPixmap::fromImage(live));
                     if (cacheMode() == QGraphicsItem::ItemCoordinateCache) {
                         setCacheMode(QGraphicsItem::NoCache);
                         setCacheMode(QGraphicsItem::ItemCoordinateCache);
                     }
                 }
+                // Tile cells: only LQIP-sized pixmap as underlay (no soft plate).
+                if (tilesWanted
+                    && qMax(pixmap().width(), pixmap().height())
+                        > DisplayQuality::kLqipMaxEdge) {
+                    // leave underlay to LQIP branch / placeholder
+                } else {
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
                 painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
+                }
             } else if (!m_source.isNull() && !m_previewPixels) {
-                if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0) {
-                    // Avoid pixmap().toImage() every paint (full buffer copy).
+                if (tilesWanted
+                    && qMax(m_source.width(), m_source.height())
+                        > DisplayQuality::kLqipMaxEdge) {
+                    // skip soft/host underlay
+                } else if (!pixmap().isNull() && box.width() >= 1.0 && box.height() >= 1.0
+                    && (!tilesWanted
+                        || qMax(pixmap().width(), pixmap().height())
+                            <= DisplayQuality::kLqipMaxEdge)) {
                     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
                     painter->drawPixmap(box, pixmap(), QRectF(pixmap().rect()));
                 } else if (!m_source.isNull()) {
