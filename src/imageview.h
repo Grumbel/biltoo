@@ -9,6 +9,7 @@
 #include "tileneighborprefetch.h"
 #include "cropsession.h"
 #include "slideshowtypes.h"
+#include "loadgeneration.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
@@ -1224,7 +1225,7 @@ public slots:
     /** True while @p gen is still the active LoadReplace generation (pool jobs). */
     bool matchesLoadGeneration(quint64 gen) const
     {
-        return gen == m_loadGeneration.load();
+        return m_loadGen.accepts(gen);
     }
 
 protected:
@@ -1930,7 +1931,7 @@ private:
     int m_masonryColumns = 3;
     int m_gridColumns = 0;
     int m_masonryRows = 3;
-    std::atomic<quint64> m_loadGeneration{0};
+    LoadGeneration m_loadGen;
     /** Outstanding LoadAdd / gallery decode jobs per path (refcount). */
     QHash<QString, int> m_pendingWorkspacePaths;
     /** Per-path Gallery decode-window state — GallerySoftState in imageview_types.h. */

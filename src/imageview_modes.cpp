@@ -56,7 +56,7 @@ void ImageView::invalidateGalleryDecodes()
     // pool jobs are rejected in onImageLoaded.
     gallerySoftResetAll();
     m_pendingWorkspacePaths.clear();
-    ++m_loadGeneration;
+    m_loadGen.bump();
 }
 
 void ImageView::invalidateSessionLoads()
@@ -65,7 +65,7 @@ void ImageView::invalidateSessionLoads()
     // New Open / History session: cancel every in-flight decode and drop the
     // live canvas so a late soft/PreferCache for the previous session cannot
     // paint over the first image of the new set.
-    ++m_loadGeneration;
+    m_loadGen.bump();
     clearPendingLoads();
     gallerySoftResetAll();
     m_ss.rasterInflight.clear();
@@ -263,7 +263,7 @@ void ImageView::clearWorkspace()
     clearClassicPath();
     // Invalidate in-flight LoadReplace so a prior Image-mode decode cannot
     // seed the empty Workspace after this wipe (first-path unbound tile).
-    ++m_loadGeneration;
+    m_loadGen.bump();
     if (m_scene) {
         m_scene->blockSignals(true);
         m_scene->clear();

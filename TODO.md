@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1251-load-generation.** Extract LoadGeneration token from ImageView.
+Prior: **1250**.
+
+### Change
+- `LoadGeneration`: `current()` / `bump()` / `accepts(gen)`.
+- `ImageView::m_loadGen` replaces `std::atomic` member.
+- Session Open / Gallery leave continue to bump via `m_loadGen.bump()`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1251-load-generation.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1250-slideshow-phase-state.** Extract SlideshowPhaseState and slideshow enums.
 Prior: **1249**.
 

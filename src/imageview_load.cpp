@@ -1308,9 +1308,9 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     // LoadRestore pending is owned by m_pendingRestoreStates (AUDIT M27).
     // AUDIT H3a: only LoadReplace advances the generation token so workspace
     // adds cannot cancel an in-flight Image-mode navigation decode.
-    quint64 gen = m_loadGeneration.load();
+    quint64 gen = m_loadGen.current();
     if (role == LoadReplace) {
-        gen = ++m_loadGeneration;
+        gen = m_loadGen.bump();
         m_imageModeNativeDecodePaths.clear();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
@@ -1761,7 +1761,7 @@ void ImageView::applyWorkspaceLadderReady(const QString &path, int maxEdge,
     }
     Q_UNUSED(maxEdge);
     // Same soft/display install as Gallery tiles — Workspace items share paths.
-    onImagePreviewLoaded(path, image, m_loadGeneration.load(),
+    onImagePreviewLoaded(path, image, m_loadGen.current(),
                          static_cast<int>(LoadAdd));
     ensureWorkspaceQualityClimb();
 }
@@ -1866,7 +1866,7 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
         return;
     }
     m_imageModeNativeDecodePaths.insert(path);
-    const quint64 gen = m_loadGeneration.load();
+    const quint64 gen = m_loadGen.current();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
         ASSERT_NOT_GUI_THREAD();
@@ -1885,7 +1885,7 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
                     ImageCache::put(path, decoded);
                 }
                 if (host->isImageMode()) {
-                    if (gen != host->m_loadGeneration.load()) {
+                    if (gen != host->m_loadGen.current()) {
                         return;
                     }
                     if (!decoded.isNull()) {
@@ -1893,7 +1893,7 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
                     }
                 } else if (host->isWorkspaceMode() && !decoded.isNull()) {
                     host->onImagePreviewLoaded(
-                        path, decoded, host->m_loadGeneration.load(),
+                        path, decoded, host->m_loadGen.current(),
                         static_cast<int>(LoadAdd));
                 }
             },
@@ -1916,7 +1916,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
 
     // Replace navigations: drop superseded previews.
     if (role == LoadReplace) {
-        if (generation != m_loadGeneration.load() || path != classicPath()) {
+        if (generation != m_loadGen.current() || path != classicPath()) {
             return;
         }
         if (isImageMode()) {
@@ -2052,7 +2052,7 @@ bool ImageView::acceptPendingLoadAdd(const QString &path, quint64 generation)
     // Mode leave / empty Workspace bumps generation and clears pending paths.
     // Reject superseded gallery window decodes so they cannot spawn tiles on
     // Workspace after the user switched modes mid-decode.
-    if (generation != m_loadGeneration.load()) {
+    if (generation != m_loadGen.current()) {
         finishLoadAddStatus(/*refreshGalleryWindow=*/false);
         return false;
     }
@@ -2279,7 +2279,7 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
 
     // Remember size even when the pending membership was cancelled — a successful
     // decode still updates the session size cache for later layout.
-    if (generation == m_loadGeneration.load() && !image.isNull()) {
+    if (generation == m_loadGen.current() && !image.isNull()) {
         rememberSizeFromDecode(path, image);
     }
     if (!acceptPendingLoadAdd(path, generation)) {
@@ -2883,7 +2883,7 @@ void ImageView::maybeClimbImageModePixelsForView()
 
 void ImageView::completeLoadReplace(const QString &path, const QImage &image, quint64 generation)
 {
-    if (generation != m_loadGeneration.load()) {
+    if (generation != m_loadGen.current()) {
         return; // superseded by a newer navigation / open
     }
     // Stale navigation: only the current classic path may install.

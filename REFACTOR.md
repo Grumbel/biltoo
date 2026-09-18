@@ -29,7 +29,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 | 1 | **GallerySizeResolve** | `ImageView` size-gate timers/pending | Host interface; pack stays on view |
 | 2 | **SessionOpen** | `MainWindow` / `mainwindow_session` | beginReplace + prepareExpandedSession |
 | 3 | **ProcessMemos** + **SizeProbe** | `thumtoocache.cpp` | memos + serial probe FIFO extracted |
-| 4 | ImageLoadCoordinator | `imageview_load` | generation, install gates |
+| 4 | **LoadGeneration** (+ coordinator later) | `imageview_load` | generation token extracted |
 | 5 | **CropGeometry** + **CropSession** | `imageview_crop` | math + draft state bag |
 | 6 | **TileNeighborPrefetch** | prefetch slots | session-replace clear |
 | 7 | **SlideshowPhaseState** (+ presenter later) | phase buffers | pure-phase state bag |
@@ -46,6 +46,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **CropGeometry** (`cropgeometry.{h,cpp}`): pure crop-rect constrain/translate/shrink; no ImageView state.
 - **CropSession** (`cropsession.h`): draft rect, target binding, enter-stash, handles; `ImageView::m_crop`; enter/apply still on view.
 - **SlideshowPhaseState** + enums (`slideshowtypes.h`): from/to phase buffers, fade/motion clocks, atlas; settings timers still on ImageView.
+- **LoadGeneration** (`loadgeneration.h`): monotonic token for async decode accept/reject; session wipe bumps via `bump()`.
 
 
 ## Current pain (evidence)

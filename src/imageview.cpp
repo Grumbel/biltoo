@@ -229,11 +229,11 @@ ImageView::ImageView(QWidget *parent)
                 // Gallery: soft may land in ImageCache via noteDelivery while the
                 // tile still shows LQIP — mirror ladderReady install.
                 if (isGalleryMode()) {
-                    onImagePreviewLoaded(path, img, m_loadGeneration.load(),
+                    onImagePreviewLoaded(path, img, m_loadGen.current(),
                                          static_cast<int>(LoadAdd));
                 }
                 if (isWorkspaceMode()) {
-                    onImagePreviewLoaded(path, img, m_loadGeneration.load(),
+                    onImagePreviewLoaded(path, img, m_loadGen.current(),
                                          static_cast<int>(LoadAdd));
                 }
             });
@@ -378,7 +378,7 @@ ImageView::~ImageView()
     m_ss.toTiles.reset();
 
     // Invalidate any queued onImageLoaded invocations from the thread pool.
-    ++m_loadGeneration;
+    m_loadGen.bump();
 
     if (m_hudFlashTimer) {
         m_hudFlashTimer->stop();

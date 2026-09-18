@@ -656,7 +656,7 @@ void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImage
         <= ContentXform::kGuiMaterializeMaxEdge) {
         return; // GUI path already handled by tryRematerializeFromHost
     }
-    const quint64 gen = m_loadGeneration.load();
+    const quint64 gen = m_loadGen.current();
     QPointer<ImageView> guard(this);
     const WorkspaceItemState wantCopy = want;
     QThreadPool::globalInstance()->start([guard, path, sid, wantCopy, gen]() {
