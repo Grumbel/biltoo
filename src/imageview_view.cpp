@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "gallerysoftsm.h"
 #include "viewtransform.h"
 #include "displayedgepolicy.h"
 #include "slideshowatlaspolicy.h"
@@ -3256,7 +3257,7 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
         const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
         const auto it = m_gallerySoftBook.soft.constFind(item->path());
         const int have = (it != m_gallerySoftBook.soft.cend())
-            ? qMax(it->have, edge)
+            ? GallerySoft::maxHave(it->have, edge)
             : edge;
         if (need > 0 && have > 0) {
             return tr("%1 · show %2px · need %3px · have %4px")
