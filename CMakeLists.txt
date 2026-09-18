@@ -341,7 +341,15 @@ endif()
 if(BILTOO_WITH_THUMTOO AND THUMTOO_SOURCE_DIR AND EXISTS "${THUMTOO_SOURCE_DIR}/CMakeLists.txt")
   set(THUMTOO_BUILD_TESTS OFF CACHE BOOL "thumtoo tests" FORCE)
   set(THUMTOO_BUILD_TOOLS OFF CACHE BOOL "thumtoo tools" FORCE)
+  # thumtoo CMake treats PROJECT_VERSION_FULL as an explicit packaging override.
+  # Parent biltoo already set it to *our* VERSION+git — clear it for the nested
+  # configure so thumtoo reads its own tree (thumtoo ≥312 also refuses parent
+  # PROJECT_VERSION_FULL when not top-level). Restore afterward for version.h.
+  set(_biltoo_saved_project_version_full "${PROJECT_VERSION_FULL}")
+  unset(PROJECT_VERSION_FULL)
   add_subdirectory("${THUMTOO_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/thumtoo" EXCLUDE_FROM_ALL)
+  set(PROJECT_VERSION_FULL "${_biltoo_saved_project_version_full}")
+  unset(_biltoo_saved_project_version_full)
   target_link_libraries(biltoo PRIVATE thumtoo)
   target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_THUMTOO=1)
   set(BILTOO_FEATURE_THUMTOO 1)

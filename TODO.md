@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1125-thumtoo-version-isolate.** Clear PROJECT_VERSION_FULL around thumtoo add_subdirectory.
+Prior: **1124**.
+
+### Bug
+Nested thumtoo inherited biltoo `PROJECT_VERSION_FULL` → identical `--version`
+lines (same rev count + git hash for both products).
+
+### Fix
+- Unset `PROJECT_VERSION_FULL` for `add_subdirectory(thumtoo)`; restore after.
+- Pair with **thumtoo-312** (refuse parent PROJECT_VERSION_FULL when not top-level).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1125-thumtoo-version-isolate.bundle HEAD
+```
+Requires **thumtoo ≥ 312** for the library-side guard (biltoo-only fix still helps older thumtoo).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1124-rasterclimb-lqip-compile.** Fix kMinPreferPlateau after LQIP climb change.
 Prior: **1123**.
 
