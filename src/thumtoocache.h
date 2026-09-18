@@ -62,13 +62,13 @@ void shutdown();
 /**
  * Soft ladder long-edge targets (see thumtoo kMaxSoftLadderEdge = 512).
  * get_pixels / cachedLadderBytes return the largest soft level ≤ request.
- * Durable soft levels stop at kGalleryLadderEdge. Gallery display edges may be
- * higher: loadThumbnail shrink-on-decode at the on-screen ladder step (never
- * native full decode). docs/GALLERY_SOFT.md
+ * Soft band clamps at kGalleryLadderEdge (ephemeral / TileSynth). Gallery
+ * display edges may be higher: loadThumbnail shrink-on-decode at the on-screen
+ * ladder step (never native full decode). docs/GALLERY_SOFT.md
  */
 constexpr int kLadderEdges[] = {128, 256, 512, 1024, 2048, 4096, 8192};
 constexpr int kFilmstripLadderEdge = 256;
-constexpr int kGalleryLadderEdge = 512;  // durable soft max (thumtoo kMaxSoftLadderEdge)
+constexpr int kGalleryLadderEdge = 512;  // soft-band clamp (thumtoo kMaxSoftLadderEdge)
 /** FastBatch overview max (thumtoo kBatchMaxEdge) — Q1 JpegShrink / TileSynth. */
 constexpr int kBatchOverviewEdge = 1024;
 /** Highest ladder step used for display-edge snap (interim; tiles later). */
@@ -190,8 +190,7 @@ bool scheduleTilePyramid(const QString &path);
 
 /**
  * Cache-only: at least one durable tile exists for @p path (legacy or Store).
- * Used so SoftOnly filmstrip can PreferCache/TileSynth when tiles are present
- * without forcing TileSynth on cold paths (HOST_CUTOVER / SoftOnly cost).
+ * Used for tile-band paint/tick and PreferCache shortcuts when a pyramid exists.
  */
 bool hasDurableTiles(const QString &path);
 /**
@@ -201,8 +200,8 @@ bool hasDurableTiles(const QString &path);
 int durableTileMinScale(const QString &path);
 
 /**
- * Soft band schedule: SoftOnly when no tiles; PreferCache when tiles exist so
- * TileSynth can satisfy filmstrip without encoding a soft ladder.
+ * Soft band schedule: PreferCache (TileSynth when tiles exist, else ephemeral
+ * soft encode). Soft is not Store-durable — see thumtoo PIXEL_AND_ARCHIVE_POLICY.
  */
 bool scheduleSoftPixels(const QString &path, int maxEdge);
 

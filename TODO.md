@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1104-soft-prefercache-tilesynth.** Soft band always PreferCache (TileSynth).
+Prior: **1103**.
+
+### Change
+- `scheduleSoftPixels`: always `scheduleDisplayPixels` (PreferCache). SoftOnly
+  forbade TileSynth; soft is ephemeral so PreferCache is correct — TileSynth
+  when a complete scale exists, else one-shot soft encode.
+- Filmstrip / Gallery SoftDisplay / ImageLoader soft schedules inherit this.
+- Comments: kGalleryLadderEdge is soft-band clamp, not durable soft max.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1104-soft-prefercache-tilesynth.bundle HEAD
+```
+
+### Next
+- [ ] Gallery: ensure tile tick priority when cell crosses tileLodWanted mid-scroll
+- [ ] Optional: skip soft schedule entirely when tileLodWanted on the only item
+- [ ] thumtoo: optional 7z seek probe → Random
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1103-soft-ephemeral-tiles-durable.** Soft not durable; tiles+LQIP; archive access classes (docs).
 Prior: **1102**.
 

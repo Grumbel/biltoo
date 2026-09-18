@@ -50,7 +50,7 @@ Biltoo requests a **band**, not “exactly N pixels.” Edge numbers snap via
 
 | Band | API (host) | Typical long edge | Thumtoo may return |
 |------|------------|-------------------|--------------------|
-| **Soft** | `schedulePixels` | ≤ **512** (`kGalleryLadderEdge`) | Ephemeral soft or TileSynth ≤ request (**not** Store-durable) |
+| **Soft** | `scheduleSoftPixels` → PreferCache | ≤ **512** (`kGalleryLadderEdge`) | Ephemeral soft or TileSynth ≤ request (**not** Store-durable) |
 | **Overview** | `scheduleOverviewPixels` | ~**1024** (`kBatchOverviewEdge`) | jpeg_shrink / overview (not a soft level) |
 | **Display (PreferCache)** | `scheduleDisplayPixels` | ≤ **8192** (`kImageLadderEdge`, interim) | **Best available ≤ request**: soft, overview, or tile reconstruct |
 | **Full** | `scheduleFullPixels` | up to native / host max | Near-native / full decode path |

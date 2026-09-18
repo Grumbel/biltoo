@@ -1936,10 +1936,10 @@ bool scheduleSoftPixels(const QString &path, int maxEdge)
     if (!cachedSize(path).isValid()) {
         scheduleProbe(path);
     }
-    // PreferCache/TileSynth when tiles exist; SoftOnly otherwise (filmstrip cost).
-    const bool ok = hasDurableTiles(path)
-                        ? scheduleDisplayPixels(path, maxEdge)
-                        : schedulePixels(path, maxEdge);
+    // Soft is ephemeral (thumtoo PIXEL_AND_ARCHIVE_POLICY). SoftOnly forbids
+    // TileSynth, so PreferCache for every soft-band request: TileSynth when a
+    // complete scale exists, else one-shot soft encode. No durable soft store.
+    const bool ok = scheduleDisplayPixels(path, maxEdge);
 #if defined(BILTOO_HAVE_THUMTOO_LQIP)
     if (ok) {
         init();
