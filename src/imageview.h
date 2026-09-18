@@ -1625,7 +1625,6 @@ private:
     void updateCropHandleDrag(const QPoint &viewPos);
     void updateCropMoveDrag(const QPointF &local, const QRectF &cr);
     void updateCropRotateDrag(const QPointF &local, const QRectF &cr, qreal minSide);
-    QRectF cropLocalResizeRect(const QPointF &local, qreal minSide) const;
     void updateCropResizeDrag(const QPointF &local, const QRectF &cr, const QRectF &limits,
                               qreal minSide);
     void endCropHandleDrag();

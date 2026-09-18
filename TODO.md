@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1300-crop-geometry-resize-draft.** Pure crop resize-drag geometry.
+Prior: **1299**.
+
+### Change
+- `CropGeometry::resizeDraftRect` — crop-local axis resize with optional centre
+  grow (Ctrl) and square lock (Shift); maps centre through frame rotation.
+- Remove `ImageView::cropLocalResizeRect`; host only reads modifiers and clamps.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1300-crop-geometry-resize-draft.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1299-crop-geometry-hit-test.** Pure crop frame anchors + chrome hit-test.
 Prior: **1298**.
 

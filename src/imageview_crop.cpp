@@ -1851,113 +1851,18 @@ void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qre
     viewport()->update();
 }
 
-QRectF ImageView::cropLocalResizeRect(const QPointF &local, qreal minSide) const
-{
-    // Resize in crop-local axes (axis-aligned about start centre).
-    const QPointF c0 = m_crop.dragStartRect.center();
-    const qreal w0 = m_crop.dragStartRect.width();
-    const qreal h0 = m_crop.dragStartRect.height();
-    const qreal ang = m_crop.rotation;
-    const bool fromCenter =
-        QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
-    const bool forceSquare =
-        QGuiApplication::keyboardModifiers() & Qt::ShiftModifier;
-
-    auto rotateVec = [](QPointF v, qreal degrees) {
-        QTransform tr;
-        tr.rotate(degrees);
-        return tr.map(v);
-    };
-
-    const QPointF pLocal = rotateVec(local - c0, -ang);
-    qreal L = -w0 / 2.0;
-    qreal R = w0 / 2.0;
-    qreal T = -h0 / 2.0;
-    qreal B = h0 / 2.0;
-
-    const bool left = (m_crop.activeHandle == CropHandle::Left
-                       || m_crop.activeHandle == CropHandle::TopLeft
-                       || m_crop.activeHandle == CropHandle::BottomLeft);
-    const bool right = (m_crop.activeHandle == CropHandle::Right
-                        || m_crop.activeHandle == CropHandle::TopRight
-                        || m_crop.activeHandle == CropHandle::BottomRight);
-    const bool top = (m_crop.activeHandle == CropHandle::Top
-                      || m_crop.activeHandle == CropHandle::TopLeft
-                      || m_crop.activeHandle == CropHandle::TopRight);
-    const bool bottom = (m_crop.activeHandle == CropHandle::Bottom
-                         || m_crop.activeHandle == CropHandle::BottomLeft
-                         || m_crop.activeHandle == CropHandle::BottomRight);
-
-    if (fromCenter) {
-        if (left || right) {
-            const qreal half = qMax(minSide / 2.0, qAbs(pLocal.x()));
-            L = -half;
-            R = half;
-        }
-        if (top || bottom) {
-            const qreal half = qMax(minSide / 2.0, qAbs(pLocal.y()));
-            T = -half;
-            B = half;
-        }
-    } else {
-        if (left) {
-            L = qMin(pLocal.x(), R - minSide);
-        }
-        if (right) {
-            R = qMax(pLocal.x(), L + minSide);
-        }
-        if (top) {
-            T = qMin(pLocal.y(), B - minSide);
-        }
-        if (bottom) {
-            B = qMax(pLocal.y(), T + minSide);
-        }
-    }
-
-    if (forceSquare) {
-        qreal side = qMax(R - L, B - T);
-        if (fromCenter) {
-            const qreal half = side / 2.0;
-            L = -half;
-            R = half;
-            T = -half;
-            B = half;
-        } else {
-            // Grow from the fixed corner/edge toward the dragged side.
-            if (right && !left) {
-                R = L + side;
-            } else if (left && !right) {
-                L = R - side;
-            } else {
-                const qreal cx = (L + R) / 2.0;
-                L = cx - side / 2.0;
-                R = cx + side / 2.0;
-            }
-            if (bottom && !top) {
-                B = T + side;
-            } else if (top && !bottom) {
-                T = B - side;
-            } else {
-                const qreal cy = (T + B) / 2.0;
-                T = cy - side / 2.0;
-                B = cy + side / 2.0;
-            }
-        }
-    }
-
-    const QPointF cLocal((L + R) / 2.0, (T + B) / 2.0);
-    const qreal newW = R - L;
-    const qreal newH = B - T;
-    const QPointF c1 = c0 + rotateVec(cLocal, ang);
-    return QRectF(c1.x() - newW / 2.0, c1.y() - newH / 2.0, newW, newH);
-}
-
 void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, const QRectF &limits,
                                      qreal minSide)
 {
     // Resize in crop-local axes, then map the new centre through crop rotation
     // so edges stay under the grips when the frame is rotated.
-    QRectF r = cropLocalResizeRect(local, minSide);
+    const bool fromCenter =
+        QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
+    const bool forceSquare =
+        QGuiApplication::keyboardModifiers() & Qt::ShiftModifier;
+    QRectF r = CropGeometry::resizeDraftRect(
+        m_crop.activeHandle, local, m_crop.dragStartRect, m_crop.rotation, minSide,
+        fromCenter, forceSquare);
 
     if (m_crop.allowExpand) {
         r = r.intersected(limits);

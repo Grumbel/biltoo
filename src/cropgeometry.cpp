@@ -318,4 +318,96 @@ CropHandle hitTestCropChrome(const QPoint &viewPos, const CropButtonLayout &butt
     return CropHandle::None;
 }
 
+static QPointF rotateVec(QPointF v, qreal degrees)
+{
+    QTransform tr;
+    tr.rotate(degrees);
+    return tr.map(v);
+}
+
+QRectF resizeDraftRect(CropHandle handle, const QPointF &local,
+                       const QRectF &dragStartRect, qreal rotationDeg,
+                       qreal minSide, bool fromCenter, bool forceSquare)
+{
+    const QPointF c0 = dragStartRect.center();
+    const qreal w0 = dragStartRect.width();
+    const qreal h0 = dragStartRect.height();
+    const QPointF pLocal = rotateVec(local - c0, -rotationDeg);
+    qreal L = -w0 / 2.0;
+    qreal R = w0 / 2.0;
+    qreal T = -h0 / 2.0;
+    qreal B = h0 / 2.0;
+
+    const bool left = (handle == CropHandle::Left || handle == CropHandle::TopLeft
+                       || handle == CropHandle::BottomLeft);
+    const bool right = (handle == CropHandle::Right || handle == CropHandle::TopRight
+                        || handle == CropHandle::BottomRight);
+    const bool top = (handle == CropHandle::Top || handle == CropHandle::TopLeft
+                      || handle == CropHandle::TopRight);
+    const bool bottom = (handle == CropHandle::Bottom || handle == CropHandle::BottomLeft
+                         || handle == CropHandle::BottomRight);
+
+    if (fromCenter) {
+        if (left || right) {
+            const qreal half = qMax(minSide / 2.0, qAbs(pLocal.x()));
+            L = -half;
+            R = half;
+        }
+        if (top || bottom) {
+            const qreal half = qMax(minSide / 2.0, qAbs(pLocal.y()));
+            T = -half;
+            B = half;
+        }
+    } else {
+        if (left) {
+            L = qMin(pLocal.x(), R - minSide);
+        }
+        if (right) {
+            R = qMax(pLocal.x(), L + minSide);
+        }
+        if (top) {
+            T = qMin(pLocal.y(), B - minSide);
+        }
+        if (bottom) {
+            B = qMax(pLocal.y(), T + minSide);
+        }
+    }
+
+    if (forceSquare) {
+        qreal side = qMax(R - L, B - T);
+        if (fromCenter) {
+            const qreal half = side / 2.0;
+            L = -half;
+            R = half;
+            T = -half;
+            B = half;
+        } else {
+            if (right && !left) {
+                R = L + side;
+            } else if (left && !right) {
+                L = R - side;
+            } else {
+                const qreal cx = (L + R) / 2.0;
+                L = cx - side / 2.0;
+                R = cx + side / 2.0;
+            }
+            if (bottom && !top) {
+                B = T + side;
+            } else if (top && !bottom) {
+                T = B - side;
+            } else {
+                const qreal cy = (T + B) / 2.0;
+                T = cy - side / 2.0;
+                B = cy + side / 2.0;
+            }
+        }
+    }
+
+    const QPointF cLocal((L + R) / 2.0, (T + B) / 2.0);
+    const qreal newW = R - L;
+    const qreal newH = B - T;
+    const QPointF c1 = c0 + rotateVec(cLocal, rotationDeg);
+    return QRectF(c1.x() - newW / 2.0, c1.y() - newH / 2.0, newW, newH);
+}
+
 } // namespace CropGeometry

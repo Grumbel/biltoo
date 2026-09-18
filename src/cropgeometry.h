@@ -108,6 +108,17 @@ CropHandle hitTestCropChrome(const QPoint &viewPos, const CropButtonLayout &butt
                              const CropFrameViewAnchors &anchors,
                              qreal handleHitPx = 16.0, qreal moveHitPx = 12.0);
 
+/**
+ * Resize draft rect in crop-local axes, then map the new centre through
+ * @p rotationDeg so grips stay under the cursor when the frame is rotated.
+ *
+ * @p fromCenter (Ctrl) grows symmetrically; @p forceSquare (Shift) equalizes sides.
+ * Does not clamp to content — caller applies constrainToContent / expand limits.
+ */
+QRectF resizeDraftRect(CropHandle handle, const QPointF &local,
+                       const QRectF &dragStartRect, qreal rotationDeg,
+                       qreal minSide, bool fromCenter, bool forceSquare);
+
 } // namespace CropGeometry
 
 #endif // CROPGEOMETRY_H
