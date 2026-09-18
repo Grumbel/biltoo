@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1289-display-quality-tier.** Pure QualityTier classification for HUD labels.
+Prior: **1288**.
+
+### Change
+- `DisplayEdgePolicy::QualityTier` + `classifyQualityTier` (uses coversEdge for full).
+- `pixelQualityLabel` maps tier to translated strings; detail formatting stays on view.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1289-display-quality-tier.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1288-zoomblur-clear-badge.** ZoomBlur clearAllSlots + pure session badge string.
 Prior: **1287**.
 

@@ -78,4 +78,32 @@ int needEdgeFromScreenLongPx(qreal longPx, bool allowHighRes)
     return need;
 }
 
+
+QualityTier classifyQualityTier(int displayLongEdge, int nativeLongEdge,
+                                 bool hasDecodedPixels, int overviewEdge,
+                                 int galleryEdge, int filmstripEdge,
+                                 int lqipMaxEdge)
+{
+    if (displayLongEdge <= 0) {
+        return QualityTier::Loading;
+    }
+    if (hasDecodedPixels && nativeLongEdge > 0
+        && coversEdge(displayLongEdge, nativeLongEdge)) {
+        return QualityTier::FullResolution;
+    }
+    if (displayLongEdge >= overviewEdge) {
+        return QualityTier::HighQuality;
+    }
+    if (displayLongEdge >= galleryEdge) {
+        return QualityTier::Preview;
+    }
+    if (displayLongEdge >= filmstripEdge) {
+        return QualityTier::Thumbnail;
+    }
+    if (displayLongEdge <= lqipMaxEdge) {
+        return QualityTier::Placeholder;
+    }
+    return QualityTier::QuickPreview;
+}
+
 } // namespace DisplayEdgePolicy

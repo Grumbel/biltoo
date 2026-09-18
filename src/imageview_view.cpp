@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "displayedgepolicy.h"
 #include "slideshowatlaspolicy.h"
 #include "slideshowmotiongeometry.h"
 #include "slideshowclocks.h"
@@ -3235,29 +3236,36 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     // hasDecodedPixels alone is not "full": soft samples may have been installed
     // as FullSource by a mistaken PreferCache shortfall classification.
     const int edge = item->displayPixelLongEdge();
-    if (edge <= 0) {
-        return tr("Loading…");
-    }
     const QSize logical = logicalSizeForPath(item->path());
     const int native = isPositiveSize(logical) ? qMax(logical.width(), logical.height()) : 0;
-    if (item->hasDecodedPixels() && native > 0
-        && edge >= (native * 9) / 10) {
-        return tr("Full resolution");
-    }
+    using Tier = DisplayEdgePolicy::QualityTier;
+    const Tier t = DisplayEdgePolicy::classifyQualityTier(
+        edge, native, item->hasDecodedPixels(),
+        ThumtooCache::kBatchOverviewEdge, ThumtooCache::kGalleryLadderEdge,
+        ThumtooCache::kFilmstripLadderEdge, DisplayQuality::kLqipMaxEdge);
     QString tier;
-    if (item->hasDecodedPixels() && edge >= ThumtooCache::kBatchOverviewEdge) {
+    switch (t) {
+    case Tier::Loading:
+        return tr("Loading…");
+    case Tier::FullResolution:
+        return tr("Full resolution");
+    case Tier::HighQuality:
         tier = tr("High quality");
-    } else if (edge >= ThumtooCache::kBatchOverviewEdge) {
-        tier = tr("High quality");
-    } else if (edge >= ThumtooCache::kGalleryLadderEdge) {
+        break;
+    case Tier::Preview:
         tier = tr("Preview");
-    } else if (edge >= ThumtooCache::kFilmstripLadderEdge) {
+        break;
+    case Tier::Thumbnail:
         tier = tr("Thumbnail");
-    } else if (edge <= DisplayQuality::kLqipMaxEdge) {
+        break;
+    case Tier::Placeholder:
         // Internal name is LQIP — do not show that acronym to users.
         tier = tr("Placeholder");
-    } else {
+        break;
+    case Tier::QuickPreview:
+    default:
         tier = tr("Quick preview");
+        break;
     }
     if (isGalleryMode()) {
         const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
@@ -3274,7 +3282,7 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
         }
     } else if (isImageMode() && edge > 0) {
         // Image mode: show sample vs native when not yet full coverage.
-        if (native > 0 && edge < (native * 9) / 10) {
+        if (native > 0 && !DisplayEdgePolicy::coversEdge(edge, native)) {
             return tr("%1 · show %2px · native %3px")
                 .arg(tier)
                 .arg(edge)

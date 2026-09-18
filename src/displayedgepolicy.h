@@ -42,6 +42,28 @@ QImage clampSoftForCell(const QImage &pixels, int needEdge, int minEdge);
  */
 int needEdgeFromScreenLongPx(qreal longPx, bool allowHighRes);
 
+/** Coarse quality tier for HUD labels (caller translates). */
+enum class QualityTier {
+    Loading = 0,
+    Placeholder,
+    QuickPreview,
+    Thumbnail,
+    Preview,
+    HighQuality,
+    FullResolution,
+};
+
+/**
+ * Classify on-screen long edge vs known native.
+ * @p nativeLongEdge ≤ 0 means native unknown (no FullResolution).
+ * Thresholds: overview / gallery / filmstrip / LQIP max from ThumtooCache constants
+ * are passed in so this stays free of cache includes in the header.
+ */
+QualityTier classifyQualityTier(int displayLongEdge, int nativeLongEdge,
+                                 bool hasDecodedPixels, int overviewEdge,
+                                 int galleryEdge, int filmstripEdge,
+                                 int lqipMaxEdge);
+
 } // namespace DisplayEdgePolicy
 
 #endif // DISPLAYEDGEPOLICY_H

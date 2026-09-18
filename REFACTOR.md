@@ -72,7 +72,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SessionAppearance::mergeAppliedAndLiveFlags**: pure want overlay (applied xform + live flags).
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).
 - **DisplayEdgePolicy**: pure long-edge coverage, ladder native cap, sample-covers-native,
-  soft cell clamp, screen longPx → needEdge.
+  soft cell clamp, screen longPx → needEdge, QualityTier classify for HUD.
 - **SoftDisplayPolicy**: worker LQIP / host-soft underlay selection (no soft encode).
 - **EdgeNavPolicy**: pure Image-mode edge chrome hit-test + paint layout (fill/button centre).
 - **MotionScrollChrome**: saved scrollbar policies while Ken Burns underlay is active.
