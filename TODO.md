@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1200-image-nav-blank-soft.** Image mode rapid ←/→: schedule soft on blank path change; force viewport update on install.
+Prior: **1199**.
+
+### Issue
+Fast-forwarding Image mode with nothing in ImageCache cleared the prior frame and stopped at nav-hot soft-only — blank until settle; soft was never requested so settle could still show nothing.
+
+### Fix
+- On path-change with null soft: `scheduleProbe` + `scheduleSoftPixels` so ladderReady can fill mid-burst or at settle.
+- `tryInstallImageModeSample` always `viewport()->update()` on success.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1200-image-nav-blank-soft.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1199-tile-wake-slideshow-tiles.** Tile completion wakes repaint; slideshow paints from shared path tiles.
 Prior: **1198**.
 
