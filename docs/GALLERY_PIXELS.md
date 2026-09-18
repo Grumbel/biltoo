@@ -1,13 +1,13 @@
-# Gallery / display pixels
+# Display pixels (tiles + LQIP)
 
-**LQIP underlay + grid tiles.** SoftOnly / PreferCache whole-frame is not used
-when tiles can own the path.
+**LQIP underlay + grid tiles.** SoftOnly whole-frame encode is removed from the
+host soft-preview job.
 
 | Mode | Policy |
 |------|--------|
-| Gallery | LQIP + tiles; no SoftOnly job; soft want ≤ LQIP for non-tile cells |
-| Workspace | Same as Gallery for classic decode |
-| Image mode | LQIP + tiles when `tileLodWanted` or durable tiles known |
-| Slideshow | SoftOnly only on **cold** paths (no durable, no adequate cache) |
+| Gallery / Workspace | LQIP + tiles; no SoftOnly job |
+| Image mode | LQIP + tiles when durable or tileLodWanted |
+| Slideshow | LQIP seed + quality job; SoftOnly encode not used |
+| `startSoftPreviewJob` | LQIP from cache/Store only + size probe |
 
-See also `docs/TILE_LOAD_COORDINATOR.md`.
+Filmstrip still uses `scheduleSoftPixels` for small thumbs (separate path).

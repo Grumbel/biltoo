@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1160-no-softonly-job.** startSoftPreviewJob is LQIP seed only (no SoftOnly encode).
+Prior: **1159**.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1160-no-softonly-job.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1159-tiles-first-modes.** Workspace/Image durable skip soft; slideshow soft cold-only.
 Prior: **1158**.
 

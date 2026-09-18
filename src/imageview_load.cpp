@@ -139,69 +139,46 @@ void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
  * Never drop a smaller host soft when the requested edge is not ready yet —
  * that left Image mode / slideshow blank until the high-res job finished.
  */
-QImage loadSoftPreviewPixels(const QString &path, int softEdge)
+/** LQIP / existing host sample only — no SoftOnly encode, no PreferCache@512. */
+QImage loadSoftPreviewPixels(const QString &path, int /*softEdge*/)
 {
     ASSERT_NOT_GUI_THREAD();
-    // Prefer an adequate host sample; otherwise keep any smaller host soft.
-    QImage preview = ImageCache::get(path, softEdge);
-    if (preview.isNull()) {
-        preview = ImageCache::get(path);
-    }
-    if (ImageCache::adequate(preview, softEdge)) {
+    QImage preview = ImageCache::get(path);
+    if (!preview.isNull()
+        && ImageCache::longEdge(preview) <= DisplayQuality::kLqipMaxEdge) {
         return preview;
     }
-    // Durable tiles / thumtoo: PreferCache (TileSynth) only — never open the
-    // source via loadThumbnail (that schedules Soft + local decode = CPU storm).
-    if (ThumtooCache::isAvailable()) {
-        (void)ThumtooCache::scheduleDisplayPixels(path, softEdge);
-        if (preview.isNull()) {
-            preview = ThumtooCache::cachedLqipImage(path);
-            if (!preview.isNull()) {
-                ImageCache::put(path, preview);
-            }
+    if (!preview.isNull()) {
+        // Keep LQIP-sized only for underlay policy; larger samples are host cache.
+        if (ImageCache::longEdge(preview) <= DisplayQuality::kLqipMaxEdge) {
+            return preview;
         }
-        return preview;
     }
-    const QImage loaded = ImageLoader::loadThumbnail(path, softEdge);
-    if (!loaded.isNull()
-        && ImageCache::longEdge(loaded) >= ImageCache::longEdge(preview)) {
-        preview = loaded;
-    }
-    if (preview.isNull()) {
-        preview = ThumtooCache::cachedLqipImage(path);
-        if (!preview.isNull()) {
-            ImageCache::put(path, preview);
-        }
+    preview = ThumtooCache::cachedLqipImage(path);
+    if (!preview.isNull()) {
+        ImageCache::put(path, preview);
     }
     return preview;
 }
 
 /**
- * High-priority pool job: soft stand-in for rapid next/prev.
- * Generation-checked so a newer LoadReplace cancels a stale preview.
+ * LQIP seed job only (legacy name). Never SoftOnly / loadThumbnail / Prefer@soft.
  */
 void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
                          quint64 gen, int roleInt, int softEdge,
                          const WorkspaceItemState &sessionApp)
 {
-    biltooLoadDbg("softJob START path=%s edge=%d gen=%llu",
-                  qPrintable(QFileInfo(path).fileName()), softEdge,
+    biltooLoadDbg("lqipSeed START path=%s gen=%llu",
+                  qPrintable(QFileInfo(path).fileName()),
                   static_cast<unsigned long long>(gen));
+    Q_UNUSED(softEdge);
     QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, softEdge, sessionApp]() {
+        [guard, path, roleInt, gen, sessionApp]() {
             if (!guard || !guard->matchesLoadGeneration(gen)) {
-                biltooLoadDbg("softJob STALE path=%s gen=%llu",
-                              qPrintable(QFileInfo(path).fileName()),
-                              static_cast<unsigned long long>(gen));
                 return;
             }
-            // Host-raw only. GUI installDisplayPixels materializes store want
-            // once (never bake here — that double-applied crop and polluted
-            // ImageCache when the GUI put the baked sample back under path).
-            QImage preview = loadSoftPreviewPixels(path, softEdge);
-            biltooLoadDbg("softJob DONE path=%s got=%dx%d",
-                          qPrintable(QFileInfo(path).fileName()),
-                          preview.width(), preview.height());
+            ThumtooCache::scheduleProbe(path);
+            QImage preview = loadSoftPreviewPixels(path, 0);
             if (!preview.isNull() && !path.isEmpty()) {
                 ImageCache::put(path, preview);
             }
