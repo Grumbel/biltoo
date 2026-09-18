@@ -291,11 +291,11 @@ void MainWindow::createActions()
             m_imageView->setContentEditMarksVisible(on);
         }
     });
-    m_textLayer.layer.showRegionsAct = new QAction(tr("Show &Text Regions"), this);
-    m_textLayer.layer.showRegionsAct->setCheckable(true);
-    m_textLayer.layer.showRegionsAct->setStatusTip(
+    m_showTextRegionsAct = new QAction(tr("Show &Text Regions"), this);
+    m_showTextRegionsAct->setCheckable(true);
+    m_showTextRegionsAct->setStatusTip(
         tr("Debug: outline text and link regions from the document text layer (PDF/DjVu/EPUB pages)"));
-    connect(m_textLayer.layer.showRegionsAct, &QAction::toggled, this, [this](bool on) {
+    connect(m_showTextRegionsAct, &QAction::toggled, this, [this](bool on) {
         if (m_imageView) {
             m_imageView->setShowTextRegions(on);
         }
@@ -974,7 +974,7 @@ void MainWindow::createMenus()
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleHudAct);
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
-    m_viewMenu->addAction(m_textLayer.layer.showRegionsAct);
+    m_viewMenu->addAction(m_showTextRegionsAct);
     m_viewMenu->addAction(m_fullscreenAct);
     m_viewMenu->addSeparator();
     m_viewMenu->addAction(m_toggleToolBarAct);
@@ -1201,13 +1201,13 @@ void MainWindow::createToolBar()
                     return;
                 }
                 const auto mode = m_imageView->layoutMode();
-                if (mode == ImageView::LayoutMode::MasonryRows
-                    || mode == ImageView::LayoutMode::MasonryRowsFill) {
+                if (mode == LayoutMode::MasonryRows
+                    || mode == LayoutMode::MasonryRowsFill) {
                     m_imageView->setMasonryRows(count);
-                } else if (mode == ImageView::LayoutMode::Grid
-                           || mode == ImageView::LayoutMode::GridCrop
-                           || mode == ImageView::LayoutMode::Flow
-                           || mode == ImageView::LayoutMode::FlowFill) {
+                } else if (mode == LayoutMode::Grid
+                           || mode == LayoutMode::GridCrop
+                           || mode == LayoutMode::Flow
+                           || mode == LayoutMode::FlowFill) {
                     m_imageView->setGridColumns(count);
                 } else {
                     m_imageView->setMasonryColumns(count);
@@ -1707,7 +1707,7 @@ void MainWindow::populateActionHelpTexts()
         "<p>Show the in-document search bar when text search is available.</p>"));
     setHelp(m_findOnPageAct, tr(
         "<p>Find text on the current page when the document exposes searchable text.</p>"));
-    setHelp(m_textLayer.layer.showRegionsAct, tr(
+    setHelp(m_showTextRegionsAct, tr(
         "<p>Outline detected text regions on supporting document pages.</p>"));
 
     // --- Docks ---

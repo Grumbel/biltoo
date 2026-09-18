@@ -17,9 +17,7 @@
 
 #include <memory>
 
-namespace tilelod {
-class TileLodController;
-}
+#include "tilelod/tile_lod_controller.hpp"
 
 /**
  * Slideshow framing and transition kinds (settings + pure-phase presenter).

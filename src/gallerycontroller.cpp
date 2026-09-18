@@ -241,9 +241,9 @@ void GalleryController::returnFromImage(int layoutMode, const QString &focusPath
 
 void GalleryController::enter(int packagedLayoutInt)
 {
-    auto packagedLayout = static_cast<ImageView::LayoutMode>(packagedLayoutInt);
-    if (packagedLayout == ImageView::LayoutMode::FreeForm) {
-        packagedLayout = ImageView::LayoutMode::Masonry;
+    auto packagedLayout = static_cast<LayoutMode>(packagedLayoutInt);
+    if (packagedLayout == LayoutMode::FreeForm) {
+        packagedLayout = LayoutMode::Masonry;
     }
     // Preserve multi-select when only switching Gallery layout (not entering
     // from Image/Workspace — prepareGalleryCanvas clears selection).

@@ -310,7 +310,7 @@ private slots:
     /** DOMAIN: enter Workspace (snapshot-aware via ImageView::setViewMode). */
     void enterWorkspaceMode();
     /** DOMAIN: enter Gallery with layout L and populate from session. */
-    void enterGalleryMode(ImageView::LayoutMode layout);
+    void enterGalleryMode(LayoutMode layout);
     /** DOMAIN: show path in Image mode (session current = path). */
     void showPathInImageMode(const QString &path);
     bool isWorkspaceMode() const;
@@ -327,7 +327,7 @@ private slots:
     void updateScrollBarPolicyForMode();
     void updateMasonryCountControl();
     /** Sync exclusive layout action checks + toolbar combo icon/tooltip. */
-    void syncGalleryLayoutUi(ImageView::LayoutMode layout);
+    void syncGalleryLayoutUi(LayoutMode layout);
     void ensureMultiImageMode();
     /** Put every session image on the multi-image canvas (gallery). */
     void populateGalleryCanvas();
@@ -411,7 +411,7 @@ private:
     /** Majority of paths are PDF/EPUB/DjVu page (or pdfimage) refs. */
     static bool sessionLooksLikePagedDocument(const QStringList &paths);
     /** Flow for paged documents; otherwise last Gallery layout preference. */
-    ImageView::LayoutMode initialGalleryLayoutForOpen() const;
+    LayoutMode initialGalleryLayoutForOpen() const;
     void readSettings();
     void writeSettings();
     void rememberSessionHistory(const QStringList &paths);
@@ -642,7 +642,7 @@ private:
     bool m_thumbnailsPreferredGallery = false;
     /** Preferred Layout dock visibility when in Workspace (default off). */
     bool m_layoutPreferredInWorkspace = false;
-    ImageView::LayoutMode m_galleryReturnLayout = ImageView::LayoutMode::Masonry;
+    LayoutMode m_galleryReturnLayout = LayoutMode::Masonry;
     QAction *m_opacityResetAct = nullptr;
     QAction *m_resetScaleAct = nullptr;
     QAction *m_resetRotationAct = nullptr;

@@ -278,7 +278,7 @@ void WorkspaceController::onLeave(int nextMode)
 void WorkspaceController::enter(int previousMode)
 {
     const auto previous = static_cast<ImageView::ViewMode>(previousMode);
-    m_view->setActiveMode(ImageView::ViewMode::Workspace, ImageView::LayoutMode::FreeForm);
+    m_view->setActiveMode(ImageView::ViewMode::Workspace, LayoutMode::FreeForm);
     m_view->applyToolDragMode();
     bool keepViewTransform = false;
     if (previous == ImageView::ViewMode::Image && !m_stashedItems.isEmpty()) {

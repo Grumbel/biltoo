@@ -711,10 +711,10 @@ bool MainWindow::sessionLooksLikePagedDocument(const QStringList &paths)
     return pages * 2 >= paths.size();
 }
 
-ImageView::LayoutMode MainWindow::initialGalleryLayoutForOpen() const
+LayoutMode MainWindow::initialGalleryLayoutForOpen() const
 {
     if (sessionLooksLikePagedDocument(m_session.paths())) {
-        return ImageView::LayoutMode::Flow;
+        return LayoutMode::Flow;
     }
     return m_galleryReturnLayout;
 }
@@ -1139,9 +1139,9 @@ void MainWindow::setSortMode(SortMode mode)
         setCurrentIndex(newIndex);
 
         if (isGalleryMode()) {
-            const ImageView::LayoutMode layout = m_imageView
+            const LayoutMode layout = m_imageView
                 ? m_imageView->layoutMode()
-                : ImageView::LayoutMode::Masonry;
+                : LayoutMode::Masonry;
             populateGalleryCanvas();
             if (m_imageView) {
                 m_imageView->enterGallery(layout);
@@ -2592,7 +2592,7 @@ void MainWindow::rearmSlideshowAfterIntervalChange(int oldInterval)
     }
     // Keep pending transition indices; only clear the cycle stamp so the next
     // tick can re-bind fade math under the new interval without a cut.
-    m_ssSettings.transitionCycle = -1;
+    m_slideshowTransitionCycle = -1;
     if (m_imageView) {
         // Interval-only when already active (no progress-clock restart).
         m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
@@ -2831,7 +2831,7 @@ void MainWindow::onSlideshowUserNavigated()
     m_imageView->cancelSlideshowTransition();
     m_slideshowPendingToIndex = -1;
     m_slideshowPreloadToIdx = -1;
-    m_ssSettings.transitionCycle = -1;
+    m_slideshowTransitionCycle = -1;
     m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
     m_slideshowPausedAccumMs = 0;
 
@@ -2963,7 +2963,7 @@ void MainWindow::seekSlideshowFraction(qreal fraction)
     m_slideshowBaseIndex = 0;
     m_slideshowPosition = fraction * qreal(n);
     m_slideshowPausedAccumMs = 0;
-    m_ssSettings.transitionCycle = -1;
+    m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
     m_slideshowPreloadToIdx = -1;
     if (!m_slideshowPaused) {
@@ -3072,7 +3072,7 @@ void MainWindow::stopSlideshow()
     m_slideshowClockRunning = false;
     m_slideshowPausedAccumMs = 0;
     m_slideshowPosition = 0.0;
-    m_ssSettings.transitionCycle = -1;
+    m_slideshowTransitionCycle = -1;
     m_slideshowPendingToIndex = -1;
     m_slideshowPreloadToIdx = -1;
     if (m_slideshowTimer) {

@@ -111,7 +111,7 @@ public:
     int thumbnailPositionIndex() const;
     void setThumbnailPositionIndex(int index);
 
-    /** ImageView::LayoutMode int for Gallery (Horizontal=1 … Facing=11). */
+    /** LayoutMode int for Gallery (Horizontal=1 … Facing=11). */
     int defaultGalleryLayoutMode() const;
     void setDefaultGalleryLayoutMode(int layoutMode);
 

@@ -56,6 +56,16 @@ public:
         return !m_pendingWorkspacePaths.isEmpty();
     }
 
+    /** Sum of LoadAdd path refcounts (status / HUD). */
+    int pendingWorkspaceAddCount() const
+    {
+        int n = 0;
+        for (int c : m_pendingWorkspacePaths) {
+            n += c;
+        }
+        return n;
+    }
+
     void clearPendingWorkspacePaths() { m_pendingWorkspacePaths.clear(); }
 
     void addPendingWorkspacePath(const QString &path)

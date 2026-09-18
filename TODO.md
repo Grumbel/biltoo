@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1263-build-fix-layoutmode-renames.** Fix compile errors from prior tips.
+Prior: **1262**.
+
+### Fixes
+- `LayoutMode` moved to `imageview_types.h` (was nested in ImageView; broke LayoutPrefs).
+- `SessionLoadGate::pendingWorkspaceAddCount()` restored.
+- MainWindow: `m_slideshowTransitionCycle` / `m_showTextRegionsAct` (bad mechanical renames).
+- `slideshowtypes.h` includes complete `TileLodController` for unique_ptr delete.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1263-build-fix-layoutmode-renames.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1262-zoomblur-helpers.** Pure ZoomBlur slot-book helpers.
 Prior: **1261**.
 

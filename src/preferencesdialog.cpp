@@ -375,7 +375,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_thumbPosCombo->setToolTip(tr("Where the thumbnail strip is placed"));
 
     m_galleryLayoutCombo = new QComboBox(this);
-    // Indices match ImageView::LayoutMode (FreeForm=0 is not a Gallery layout).
+    // Indices match LayoutMode (FreeForm=0 is not a Gallery layout).
     m_galleryLayoutCombo->addItem(tr("Horizontal"), 1);
     m_galleryLayoutCombo->addItem(tr("Vertical"), 2);
     m_galleryLayoutCombo->addItem(tr("Grid"), 3);

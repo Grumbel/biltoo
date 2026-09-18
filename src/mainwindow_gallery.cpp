@@ -24,7 +24,7 @@ void MainWindow::populateGalleryCanvas()
 }
 
 
-void MainWindow::enterGalleryMode(ImageView::LayoutMode layout)
+void MainWindow::enterGalleryMode(LayoutMode layout)
 {
     // AUDIT M7a: slideshow ticks only make sense in Image mode.
     stopSlideshow();
@@ -63,7 +63,7 @@ void MainWindow::goToGalleryCurrentLayout()
     enterGalleryMode(m_galleryReturnLayout);
 }
 
-void MainWindow::syncGalleryLayoutUi(ImageView::LayoutMode layout)
+void MainWindow::syncGalleryLayoutUi(LayoutMode layout)
 {
     for (QAction *act : {m_layoutSideBySideAct, m_layoutVerticalAct, m_layoutGridAct,
                          m_layoutGridCropAct, m_layoutMasonryAct, m_layoutMasonryRowsAct,
@@ -75,37 +75,37 @@ void MainWindow::syncGalleryLayoutUi(ImageView::LayoutMode layout)
     }
     QAction *check = nullptr;
     switch (layout) {
-    case ImageView::LayoutMode::SideBySide:
+    case LayoutMode::SideBySide:
         check = m_layoutSideBySideAct;
         break;
-    case ImageView::LayoutMode::Vertical:
+    case LayoutMode::Vertical:
         check = m_layoutVerticalAct;
         break;
-    case ImageView::LayoutMode::Grid:
+    case LayoutMode::Grid:
         check = m_layoutGridAct;
         break;
-    case ImageView::LayoutMode::GridCrop:
+    case LayoutMode::GridCrop:
         check = m_layoutGridCropAct;
         break;
-    case ImageView::LayoutMode::Masonry:
+    case LayoutMode::Masonry:
         check = m_layoutMasonryAct;
         break;
-    case ImageView::LayoutMode::MasonryRows:
+    case LayoutMode::MasonryRows:
         check = m_layoutMasonryRowsAct;
         break;
-    case ImageView::LayoutMode::MasonryFill:
+    case LayoutMode::MasonryFill:
         check = m_layoutMasonryFillAct;
         break;
-    case ImageView::LayoutMode::MasonryRowsFill:
+    case LayoutMode::MasonryRowsFill:
         check = m_layoutMasonryRowsFillAct;
         break;
-    case ImageView::LayoutMode::Flow:
+    case LayoutMode::Flow:
         check = m_layoutFlowAct;
         break;
-    case ImageView::LayoutMode::FlowFill:
+    case LayoutMode::FlowFill:
         check = m_layoutFlowFillAct;
         break;
-    case ImageView::LayoutMode::Facing:
+    case LayoutMode::Facing:
         check = m_layoutFacingAct;
         break;
     default:
@@ -134,57 +134,57 @@ void MainWindow::syncGalleryLayoutUi(ImageView::LayoutMode layout)
 
 void MainWindow::setLayoutSideBySide()
 {
-    enterGalleryMode(ImageView::LayoutMode::SideBySide);
+    enterGalleryMode(LayoutMode::SideBySide);
 }
 
 void MainWindow::setLayoutVertical()
 {
-    enterGalleryMode(ImageView::LayoutMode::Vertical);
+    enterGalleryMode(LayoutMode::Vertical);
 }
 
 void MainWindow::setLayoutGrid()
 {
-    enterGalleryMode(ImageView::LayoutMode::Grid);
+    enterGalleryMode(LayoutMode::Grid);
 }
 
 void MainWindow::setLayoutGridCrop()
 {
-    enterGalleryMode(ImageView::LayoutMode::GridCrop);
+    enterGalleryMode(LayoutMode::GridCrop);
 }
 
 void MainWindow::setLayoutMasonry()
 {
-    enterGalleryMode(ImageView::LayoutMode::Masonry);
+    enterGalleryMode(LayoutMode::Masonry);
 }
 
 void MainWindow::setLayoutMasonryRows()
 {
-    enterGalleryMode(ImageView::LayoutMode::MasonryRows);
+    enterGalleryMode(LayoutMode::MasonryRows);
 }
 
 void MainWindow::setLayoutMasonryFill()
 {
-    enterGalleryMode(ImageView::LayoutMode::MasonryFill);
+    enterGalleryMode(LayoutMode::MasonryFill);
 }
 
 void MainWindow::setLayoutMasonryRowsFill()
 {
-    enterGalleryMode(ImageView::LayoutMode::MasonryRowsFill);
+    enterGalleryMode(LayoutMode::MasonryRowsFill);
 }
 
 void MainWindow::setLayoutFlow()
 {
-    enterGalleryMode(ImageView::LayoutMode::Flow);
+    enterGalleryMode(LayoutMode::Flow);
 }
 
 void MainWindow::setLayoutFlowFill()
 {
-    enterGalleryMode(ImageView::LayoutMode::FlowFill);
+    enterGalleryMode(LayoutMode::FlowFill);
 }
 
 void MainWindow::setLayoutFacing()
 {
-    enterGalleryMode(ImageView::LayoutMode::Facing);
+    enterGalleryMode(LayoutMode::Facing);
 }
 
 void MainWindow::openSessionIndexInImageMode(int sessionIndex)
@@ -283,7 +283,7 @@ void MainWindow::returnToGallery()
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
                                   ? m_session.paths().at(m_currentIndex)
                                   : QString();
-    const ImageView::LayoutMode layout = m_galleryReturnLayout;
+    const LayoutMode layout = m_galleryReturnLayout;
 
     stopSlideshow();
     if (m_backToGalleryAct) {
@@ -402,16 +402,16 @@ void MainWindow::updateMasonryCountControl()
     const auto mode = m_imageView->layoutMode();
     const bool gallery = m_imageView->isGalleryMode();
     const bool masonryCols = gallery
-        && (mode == ImageView::LayoutMode::Masonry
-            || mode == ImageView::LayoutMode::MasonryFill);
+        && (mode == LayoutMode::Masonry
+            || mode == LayoutMode::MasonryFill);
     const bool masonryRows = gallery
-        && (mode == ImageView::LayoutMode::MasonryRows
-            || mode == ImageView::LayoutMode::MasonryRowsFill);
+        && (mode == LayoutMode::MasonryRows
+            || mode == LayoutMode::MasonryRowsFill);
     const bool gridCols = gallery
-                          && (mode == ImageView::LayoutMode::Grid
-                              || mode == ImageView::LayoutMode::GridCrop
-                              || mode == ImageView::LayoutMode::Flow
-                              || mode == ImageView::LayoutMode::FlowFill);
+                          && (mode == LayoutMode::Grid
+                              || mode == LayoutMode::GridCrop
+                              || mode == LayoutMode::Flow
+                              || mode == LayoutMode::FlowFill);
     const bool show = masonryCols || masonryRows || gridCols;
     m_masonryCountAction->setVisible(show);
     if (!show || !m_masonryCountSpin) {

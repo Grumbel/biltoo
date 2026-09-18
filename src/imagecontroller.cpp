@@ -19,7 +19,7 @@ QString ImageController::takeClassicPath()
 void ImageController::enter()
 {
     // Gallery/Workspace → Image: stash already done in the matching onLeave.
-    m_view->setActiveMode(ImageView::ViewMode::Image, ImageView::LayoutMode::FreeForm);
+    m_view->setActiveMode(ImageView::ViewMode::Image, LayoutMode::FreeForm);
     m_view->stopDeferredPacking();
     m_view->prepareImageModeCanvas();
     // Prefer explicit classic path (MainWindow pins the open target before

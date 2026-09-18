@@ -25,6 +25,31 @@
 using SessionImageId = qint64;
 inline constexpr SessionImageId kInvalidSessionImageId = 0;
 
+/** Workspace / gallery packing mode (ImageView layout engine). */
+enum class LayoutMode {
+    FreeForm,
+    SideBySide, // horizontal strip (UI: "Horizontal")
+    Vertical,   // vertical strip
+    Grid,
+    /** Square cells; image scaled to cover and centre-cropped (like thumb crop). */
+    GridCrop,
+    /** Column masonry: N columns spanning the view width; variable row heights. */
+    Masonry,
+    /** Row masonry: N rows spanning the view height; variable column widths. */
+    MasonryRows,
+    /** Column masonry scaled per-column to a shared bottom edge (no dangling). */
+    MasonryFill,
+    /** Row masonry scaled per-row to a shared right edge (no dangling). */
+    MasonryRowsFill,
+    /** Session order wrap (book/comic contact sheet). */
+    Flow,
+    /** Flow with each row scaled to full layout width. */
+    FlowFill,
+    /** Two-up spreads; cover page alone, then pairs. */
+    Facing
+};
+
+
 /** True when width and height are both positive. */
 inline bool isPositiveSize(const QSize &s)
 {
