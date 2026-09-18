@@ -8,6 +8,7 @@
 #include "gallerysizeresolve.h"
 #include "tileneighborprefetch.h"
 #include "cropsession.h"
+#include "slideshowtypes.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
@@ -79,15 +80,7 @@ public:
         Checkerboard
     };
 
-    /** Slideshow advance transition (Image mode only). */
-    enum class SlideshowTransition {
-        None = 0,
-        Crossfade = 1,
-        FadeBlack = 2,
-        /** Old frame exits left; new frame enters from the right (slide projector). */
-        Slide = 3
-    };
-
+    // SlideshowTransition / Motion / Zoom / Letterbox: slideshowtypes.h
     enum class ViewMode {
         Image,
         Gallery,
@@ -347,7 +340,7 @@ public:
     void scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image);
     void finishSlideshowPhaseBufferUpgrade(const QString &path, const QImage &oriented,
                                            quint64 generation);
-    enum class SlideshowAtlasKind { From, To };
+    // SlideshowAtlasKind: slideshowtypes.h
     void requestDwellAtlasRebuild();
     void requestToPhaseAtlasRebuild();
     void requestSlideshowAtlas(SlideshowAtlasKind kind);
@@ -837,36 +830,14 @@ public:
     /** Clear residual transition overlay state (safe during pure-phase show). */
     void cancelSlideshowTransition();
 
-    /** Image motion (Ken Burns / pan-scan) during a slideshow dwell. */
-    enum class SlideshowMotion {
-        Off = 0,
-        PanZoom = 1, /**< Cover frame, slowly zoom in while panning */
-        PanScan = 2  /**< Cover frame, pan across full width/height (no zoom) */
-    };
-
     void setSlideshowMotion(SlideshowMotion mode);
     SlideshowMotion slideshowMotion() const { return m_slideshowMotion; }
     void setPanZoomFactor(qreal factor);
     qreal panZoomFactor() const { return m_panZoomFactor; }
 
-    /** Base framing for each slide (static when motion off; Ken Burns base when on). */
-    enum class SlideshowZoom {
-        Fit = 0,    /**< Letterbox — whole image visible */
-        Fill = 1,   /**< Cover — may crop */
-        Actual = 2  /**< 1:1 pixels, centred */
-    };
     void setSlideshowZoom(SlideshowZoom mode);
     SlideshowZoom slideshowZoom() const { return m_slideshowZoom; }
 
-    /**
-     * How to fill viewport regions the slide does not cover (Fit / Actual /
-     * motion frames with bars). Orthogonal to SlideshowZoom.
-     */
-    enum class SlideshowLetterboxFill {
-        AppBackground = 0, /**< Preferences canvas colour / checker */
-        Solid = 1,         /**< Dedicated slideshow pad colour */
-        ZoomBlur = 2       /**< Cover-scale + blur of current slide under sharp image */
-    };
     void setSlideshowLetterboxFill(SlideshowLetterboxFill mode);
     SlideshowLetterboxFill slideshowLetterboxFill() const { return m_slideshowLetterboxFill; }
     /** Pad colour when letterbox fill is Solid (also fallback for ZoomBlur miss). */
@@ -1899,45 +1870,14 @@ private:
     SlideshowTransition m_slideshowTransition = SlideshowTransition::Crossfade;
     int m_slideshowTransitionDurationMs = 400;
     QImage m_dwellSourceImage;
-    /** Pure-phase composite (driven every clock tick; no begin/cancel). */
-    QString m_ssFromPath;
-    QString m_ssToPath;
-    DisplaySurface::SurfaceId m_ssFromSurface = DisplaySurface::kInvalidSurfaceId;
-    DisplaySurface::SurfaceId m_ssToSurface = DisplaySurface::kInvalidSurfaceId;
-    QImage m_ssFromImage;
-    QImage m_ssToImage;
-    /** Shared-path tile sessions for slideshow phase paint (TileLodRegistry). */
-    mutable std::unique_ptr<tilelod::TileLodController> m_ssFromTiles;
-    mutable std::unique_ptr<tilelod::TileLodController> m_ssToTiles;
-    /** Phase buffer already has ContentXform materialize (not raw host stand-in). */
-    bool m_ssFromContentApplied = false;
-    bool m_ssToContentApplied = false;
-    qreal m_ssFadeT = -1.0; // <0 = dwell
-    qreal m_ssFromMotionT = 0.0;
-    qreal m_ssToMotionT = 0.0;
-    QPointF m_ssToBiasA{-1.0, -1.0};
-    QPointF m_ssToBiasB{1.0, 1.0};
-    QElapsedTimer m_ssFromMotionClock;
-    QElapsedTimer m_ssToMotionClock;
-    bool m_ssFromMotionClockRunning = false;
-    bool m_ssToMotionClockRunning = false;
+    /** Pure-phase composite (from/to buffers, clocks). */
+    SlideshowPhaseState m_ss;
     // Slideshow samples: ImageCache only (putSlideshowRaster / slideshowRaster).
-    /** Slideshow raster decode in flight (max two for look-ahead). */
-    QSet<QString> m_ssRasterInflight;
-    /** Neighbours waiting while concurrency is full. */
-    QStringList m_ssRasterPending;
     QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
     quint64 m_dwellAtlasRebuildGeneration = 0;
-    quint64 m_ssPhaseUpgradeGeneration = 0;
     qreal m_dwellAtlasScale = 0.0;
     int m_dwellAtlasVw = 0;
     int m_dwellAtlasVh = 0;
-    /** Pre-scaled atlas for slideshow to-phase / crossfade incoming slide. */
-    QPixmap m_ssToAtlas;
-    quint64 m_ssToAtlasRebuildGeneration = 0;
-    qreal m_ssToAtlasScale = 0.0;
-    int m_ssToAtlasVw = 0;
-    int m_ssToAtlasVh = 0;
     qreal m_dwellMotionT = 0.0; /**< Latest dwell progress [0,1] */
     SlideshowMotion m_slideshowMotion = SlideshowMotion::Off;
     qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */

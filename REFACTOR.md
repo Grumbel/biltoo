@@ -32,7 +32,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 | 4 | ImageLoadCoordinator | `imageview_load` | generation, install gates |
 | 5 | **CropGeometry** + **CropSession** | `imageview_crop` | math + draft state bag |
 | 6 | **TileNeighborPrefetch** | prefetch slots | session-replace clear |
-| 7 | SlideshowPresenter | phase/atlas | pure-clock rules |
+| 7 | **SlideshowPhaseState** (+ presenter later) | phase buffers | pure-phase state bag |
 
 **Rule:** new collaborator types with explicit Host or narrow public API — not more `imageview_*.cpp` slices alone.
 
@@ -45,6 +45,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **TileNeighborPrefetch** (`tileneighborprefetch.{h,cpp}`): off-canvas neighbor tile warm; `ImageView` is host; session wipe calls `clear()`.
 - **CropGeometry** (`cropgeometry.{h,cpp}`): pure crop-rect constrain/translate/shrink; no ImageView state.
 - **CropSession** (`cropsession.h`): draft rect, target binding, enter-stash, handles; `ImageView::m_crop`; enter/apply still on view.
+- **SlideshowPhaseState** + enums (`slideshowtypes.h`): from/to phase buffers, fade/motion clocks, atlas; settings timers still on ImageView.
 
 
 ## Current pain (evidence)

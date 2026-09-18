@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1250-slideshow-phase-state.** Extract SlideshowPhaseState and slideshow enums.
+Prior: **1249**.
+
+### Change
+- `slideshowtypes.h`: SlideshowTransition/Motion/Zoom/LetterboxFill/AtlasKind.
+- `SlideshowPhaseState`: dual-phase paths, rasters, tiles, fade/motion, atlas.
+- `ImageView::m_ss` replaces individual `m_ss*` members.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1250-slideshow-phase-state.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1249-crop-session.** Consolidate crop draft state into CropSession.
 Prior: **1248**.
 

@@ -161,8 +161,8 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const bool haveTo = !toSrc.isNull();
         const qreal tt = qBound(0.0, t, 1.0);
         const QString fPath = !fromPath.isEmpty() ? fromPath
-            : (!m_ssFromPath.isEmpty() ? m_ssFromPath : m_motionBiasPath);
-        const QString tPath = !toPath.isEmpty() ? toPath : m_ssToPath;
+            : (!m_ss.fromPath.isEmpty() ? m_ss.fromPath : m_motionBiasPath);
+        const QString tPath = !toPath.isEmpty() ? toPath : m_ss.toPath;
         if (haveFrom && haveTo && t >= 0.0) {
             painter.setOpacity(1.0);
             paintZoomBlurUnderlay(&painter, fromSrc, vr, blurKey(fPath));
@@ -186,31 +186,31 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
 
     // Pure-phase composite (SLIDESHOW.md): wall clock sets fadeT; we only blit.
     if (m_slideshowProgressActive
-        && (!m_ssFromImage.isNull() || !m_dwellSourceImage.isNull() || !m_ssToImage.isNull())) {
+        && (!m_ss.fromImage.isNull() || !m_dwellSourceImage.isNull() || !m_ss.toImage.isNull())) {
         const QRect vr = viewport()->rect();
         // Prefer member references (not a local QImage copy) so paintMotionCover
         // can match the dwell atlas by address as well as by path.
-        const QImage &fromImg = !m_ssFromImage.isNull() ? m_ssFromImage : m_dwellSourceImage;
-        const qreal fromT = m_ssFromMotionT;
-        const qreal toT = m_ssToMotionT;
-        if (m_ssFadeT >= 0.0 && !m_ssToImage.isNull()) {
-            const qreal t = qBound(0.0, m_ssFadeT, 1.0);
-            fillPad(vr, fromImg, m_ssToImage, t, m_ssFromPath, m_ssToPath);
+        const QImage &fromImg = !m_ss.fromImage.isNull() ? m_ss.fromImage : m_dwellSourceImage;
+        const qreal fromT = m_ss.fromMotionT;
+        const qreal toT = m_ss.toMotionT;
+        if (m_ss.fadeT >= 0.0 && !m_ss.toImage.isNull()) {
+            const qreal t = qBound(0.0, m_ss.fadeT, 1.0);
+            fillPad(vr, fromImg, m_ss.toImage, t, m_ss.fromPath, m_ss.toPath);
             if (m_slideshowTransition == SlideshowTransition::FadeBlack) {
                 // V envelope: A→black (t in [0,0.5]), then black→B (t in [0.5,1]).
                 if (t < 0.5) {
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_motionBiasA, m_motionBiasB, m_ssFromPath);
+                                         m_motionBiasA, m_motionBiasB, m_ss.fromPath);
                     }
                     painter.setOpacity(t * 2.0);
                     painter.fillRect(vr, Qt::black);
                     painter.setOpacity(1.0);
                 } else {
                     painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_ssToImage, toT,
-                                     m_ssToBiasA, m_ssToBiasB, m_ssToPath);
+                    paintMotionCover(&painter, m_ss.toImage, toT,
+                                     m_ss.toBiasA, m_ss.toBiasB, m_ss.toPath);
                     painter.setOpacity((1.0 - t) * 2.0);
                     painter.fillRect(vr, Qt::black);
                     painter.setOpacity(1.0);
@@ -226,13 +226,13 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                     painter.save();
                     painter.translate(xOld, 0);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_motionBiasA, m_motionBiasB, m_ssFromPath);
+                                     m_motionBiasA, m_motionBiasB, m_ss.fromPath);
                     painter.restore();
                 }
                 painter.save();
                 painter.translate(xNew, 0);
-                paintMotionCover(&painter, m_ssToImage, toT,
-                                 m_ssToBiasA, m_ssToBiasB, m_ssToPath);
+                paintMotionCover(&painter, m_ss.toImage, toT,
+                                 m_ss.toBiasA, m_ss.toBiasB, m_ss.toPath);
                 painter.restore();
                 painter.setClipping(false);
             } else if (m_slideshowTransition == SlideshowTransition::None) {
@@ -241,29 +241,29 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_motionBiasA, m_motionBiasB, m_ssFromPath);
+                                         m_motionBiasA, m_motionBiasB, m_ss.fromPath);
                     }
                 } else {
                     painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_ssToImage, toT,
-                                     m_ssToBiasA, m_ssToBiasB, m_ssToPath);
+                    paintMotionCover(&painter, m_ss.toImage, toT,
+                                     m_ss.toBiasA, m_ss.toBiasB, m_ss.toPath);
                 }
             } else {
                 // Crossfade: A 1→0, B 0→1; both in motion.
                 if (!fromImg.isNull()) {
                     painter.setOpacity(1.0 - t);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_motionBiasA, m_motionBiasB, m_ssFromPath);
+                                     m_motionBiasA, m_motionBiasB, m_ss.fromPath);
                 }
                 painter.setOpacity(t);
-                paintMotionCover(&painter, m_ssToImage, toT,
-                                 m_ssToBiasA, m_ssToBiasB, m_ssToPath);
+                paintMotionCover(&painter, m_ss.toImage, toT,
+                                 m_ss.toBiasA, m_ss.toBiasB, m_ss.toPath);
                 painter.setOpacity(1.0);
             }
         } else if (!fromImg.isNull()) {
-            fillPad(vr, fromImg, QImage(), -1.0, m_ssFromPath);
+            fillPad(vr, fromImg, QImage(), -1.0, m_ss.fromPath);
             paintMotionCover(&painter, fromImg, fromT,
-                             m_motionBiasA, m_motionBiasB, m_ssFromPath);
+                             m_motionBiasA, m_motionBiasB, m_ss.fromPath);
         }
         // Pure phase painted the slide. Fall through so HUD / seekbar / pause
         // cues still draw (return here used to kill the entire overlay pass).

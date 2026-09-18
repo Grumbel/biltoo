@@ -68,11 +68,11 @@ void ImageView::invalidateSessionLoads()
     ++m_loadGeneration;
     clearPendingLoads();
     gallerySoftResetAll();
-    m_ssRasterInflight.clear();
-    m_ssRasterPending.clear();
-    m_ssPhaseUpgradeGeneration++;
+    m_ss.rasterInflight.clear();
+    m_ss.rasterPending.clear();
+    m_ss.phaseUpgradeGeneration++;
     m_dwellAtlasRebuildGeneration++;
-    m_ssToAtlasRebuildGeneration++;
+    m_ss.toAtlasRebuildGeneration++;
     // Drop logical-size memory so the size-first gate re-probes (stale square
     // stand-ins must not skip resolve on the next open).
     m_imageSizeByPath.clear();

@@ -1553,7 +1553,7 @@ void MainWindow::showSlideshowSettings()
         dlg.setPadColor(m_imageView->slideshowPadColor());
         // Solid mode stores its own colour; surface current effective pad for UI.
         if (m_imageView->slideshowLetterboxFill()
-            == ImageView::SlideshowLetterboxFill::Solid) {
+            == SlideshowLetterboxFill::Solid) {
             // pad from setter path uses dedicated colour via slideshowPadColor
         }
     }
@@ -1566,20 +1566,20 @@ void MainWindow::showSlideshowSettings()
             return;
         }
         m_imageView->setSlideshowTransition(
-            static_cast<ImageView::SlideshowTransition>(dlg.transitionIndex()));
+            static_cast<SlideshowTransition>(dlg.transitionIndex()));
         // Cap already enforced by the dialog max; clamp again for safety.
         // Duration is the full transition (out + in), so cap at the interval.
         const int intervalCap = m_slideshowIntervalMs;
         m_imageView->setSlideshowTransitionDurationMs(
             qMin(dlg.transitionDurationMs(), qMax(0, intervalCap)));
         m_imageView->setSlideshowMotion(
-            static_cast<ImageView::SlideshowMotion>(dlg.motionIndex()));
+            static_cast<SlideshowMotion>(dlg.motionIndex()));
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
         m_imageView->setSlideshowZoom(
-            static_cast<ImageView::SlideshowZoom>(qBound(0, dlg.zoomIndex(), 2)));
+            static_cast<SlideshowZoom>(qBound(0, dlg.zoomIndex(), 2)));
         m_imageView->setSlideshowPadColor(dlg.padColor());
         m_imageView->setSlideshowLetterboxFill(
-            static_cast<ImageView::SlideshowLetterboxFill>(
+            static_cast<SlideshowLetterboxFill>(
                 qBound(0, dlg.letterboxFillIndex(), 2)));
         // Interval changes remap phase inside setSlideshowIntervalMs. Other live
         // settings must not re-arm the clock (that restarted the dwell at 0 and
@@ -2177,7 +2177,7 @@ void MainWindow::showPreferences()
     m_slideshowLoop = dlg.slideshowLoop();
     if (m_imageView) {
         m_imageView->setSlideshowTransition(
-            static_cast<ImageView::SlideshowTransition>(dlg.slideshowTransitionIndex()));
+            static_cast<SlideshowTransition>(dlg.slideshowTransitionIndex()));
         {
             // Full transition (out + in); cap at the interval.
             const int intervalCap = m_slideshowIntervalMs;
@@ -2185,14 +2185,14 @@ void MainWindow::showPreferences()
                 qMin(dlg.slideshowTransitionDurationMs(), qMax(0, intervalCap)));
         }
         m_imageView->setSlideshowMotion(
-            static_cast<ImageView::SlideshowMotion>(dlg.slideshowMotionIndex()));
+            static_cast<SlideshowMotion>(dlg.slideshowMotionIndex()));
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
         m_imageView->setSlideshowZoom(
-            static_cast<ImageView::SlideshowZoom>(
+            static_cast<SlideshowZoom>(
                 qBound(0, dlg.slideshowZoomIndex(), 2)));
         m_imageView->setSlideshowPadColor(dlg.slideshowPadColor());
         m_imageView->setSlideshowLetterboxFill(
-            static_cast<ImageView::SlideshowLetterboxFill>(
+            static_cast<SlideshowLetterboxFill>(
                 qBound(0, dlg.slideshowLetterboxFillIndex(), 2)));
         // If a slideshow is running, re-frame the current slide for zoom/motion.
         if (m_slideshowClockRunning) {
@@ -2933,7 +2933,7 @@ void MainWindow::readSettings()
     if (m_imageView) {
         const int transitionKind = settings.value(QStringLiteral("slideshowTransition"), 1).toInt();
         m_imageView->setSlideshowTransition(
-            static_cast<ImageView::SlideshowTransition>(qBound(0, transitionKind, 3)));
+            static_cast<SlideshowTransition>(qBound(0, transitionKind, 3)));
         {
             // Full transition (out + in); cap at the interval.
             const int intervalCap = m_slideshowIntervalMs;
@@ -2943,12 +2943,12 @@ void MainWindow::readSettings()
                 qMin(transitionMs, qMax(0, intervalCap)));
         }
         m_imageView->setSlideshowMotion(
-            static_cast<ImageView::SlideshowMotion>(
+            static_cast<SlideshowMotion>(
                 qBound(0, settings.value(QStringLiteral("slideshowMotion"), 0).toInt(), 2)));
         m_imageView->setPanZoomFactor(
             settings.value(QStringLiteral("slideshowPanZoomFactor"), 1.12).toDouble());
         m_imageView->setSlideshowZoom(
-            static_cast<ImageView::SlideshowZoom>(
+            static_cast<SlideshowZoom>(
                 qBound(0, settings.value(QStringLiteral("slideshowZoomMode"), 0).toInt(), 2)));
         const QColor pad = QColor(settings.value(QStringLiteral("slideshowPadColor"),
             m_imageView->backgroundColor().name(QColor::HexRgb)).toString());
@@ -2956,7 +2956,7 @@ void MainWindow::readSettings()
             m_imageView->setSlideshowPadColor(pad);
         }
         m_imageView->setSlideshowLetterboxFill(
-            static_cast<ImageView::SlideshowLetterboxFill>(
+            static_cast<SlideshowLetterboxFill>(
                 qBound(0, settings.value(QStringLiteral("slideshowLetterboxFill"), 0).toInt(), 2)));
     }
     const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();

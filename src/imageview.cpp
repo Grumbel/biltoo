@@ -204,7 +204,7 @@ ImageView::ImageView(QWidget *parent)
                     return;
                 }
                 if (m_slideshowProgressActive
-                    && (path == m_ssFromPath || path == m_ssToPath)) {
+                    && (path == m_ss.fromPath || path == m_ss.toPath)) {
                     onSlideshowRasterReady(path, img);
                     // SoftDisplay only at screen-fit edge (TileSynth when tiles exist).
                     if (m_pathRaster) {
@@ -374,8 +374,8 @@ ImageView::ImageView(QWidget *parent)
 ImageView::~ImageView()
 {
     // Complete type required for unique_ptr<TileLodController> (fwd-declared in header).
-    m_ssFromTiles.reset();
-    m_ssToTiles.reset();
+    m_ss.fromTiles.reset();
+    m_ss.toTiles.reset();
 
     // Invalidate any queued onImageLoaded invocations from the thread pool.
     ++m_loadGeneration;
@@ -634,11 +634,11 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
     // Slideshow paints from path→logical, not the underlay item. When the probe
     // lands for a phase path, refresh dest aspect (and atlas if needed).
     if (m_slideshowProgressActive
-        && (path == m_ssFromPath || path == m_ssToPath)) {
-        if (path == m_ssFromPath && !m_ssFromImage.isNull()) {
+        && (path == m_ss.fromPath || path == m_ss.toPath)) {
+        if (path == m_ss.fromPath && !m_ss.fromImage.isNull()) {
             requestDwellAtlasRebuild();
         }
-        if (path == m_ssToPath && !m_ssToImage.isNull()) {
+        if (path == m_ss.toPath && !m_ss.toImage.isNull()) {
             requestToPhaseAtlasRebuild();
         }
         if (viewport()) {
@@ -856,16 +856,16 @@ int ImageView::pendingDecodeCount() const
 
     // Slideshow preload queue (inflight + pending neighbours).
     if (m_slideshowProgressActive) {
-        n += m_ssRasterInflight.size() + m_ssRasterPending.size();
+        n += m_ss.rasterInflight.size() + m_ss.rasterPending.size();
         const int need = 0; // need edge checked via target below if needed
         Q_UNUSED(need);
-        if (!m_ssFromPath.isEmpty()
-            && ImageCache::longEdge(m_ssFromImage) > 0
-            && ImageCache::longEdge(m_ssFromImage)
+        if (!m_ss.fromPath.isEmpty()
+            && ImageCache::longEdge(m_ss.fromImage) > 0
+            && ImageCache::longEdge(m_ss.fromImage)
                    < (slideshowTargetEdge() * 7) / 10) {
             // Current slide still soft — count as remaining quality work once.
-            if (!m_ssRasterInflight.contains(m_ssFromPath)
-                && !m_ssRasterPending.contains(m_ssFromPath)) {
+            if (!m_ss.rasterInflight.contains(m_ss.fromPath)
+                && !m_ss.rasterPending.contains(m_ss.fromPath)) {
                 ++n;
             }
         }
