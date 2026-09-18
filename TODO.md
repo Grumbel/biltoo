@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1167-startup-gallery-decode.** Startup blank until relayout — force install + decode pulses.
+Prior: **1166**.
+
+### Bug
+Gallery open left cells blank; explicit relayout (F5/layout) showed images.
+Soft was in ImageCache after open, but first decode/install ran before viewport
+settled or DisplaySurface no-op'd — only a second `updateGalleryDecodeWindow`
+attached pixels.
+
+### Fix
+- `applyGalleryLadderReady`: force `installDisplayPixels` onto still-blank items.
+- `finishSetWorkspacePaths`: sync decode window + 0/50/200ms pulses.
+- `applyLayout(EnterGallery|Reload)`: immediate decode + short follow-up.
+- Gallery `resizeEvent`: `scheduleGalleryDecodeWindowRefresh` when viewport >1×1.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1167-startup-gallery-decode.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1166-classic-soft-fallback.** Classic loadThumbnail underlay when PreferCache empty.
 Prior: **1165**.
 

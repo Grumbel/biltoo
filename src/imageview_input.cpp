@@ -394,11 +394,13 @@ void ImageView::resizeEvent(QResizeEvent *event)
     } else if (isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
     }
-    // Gallery: never repack from resize. Thumb-strip setFiles, scrollbar
-    // policy, and splitter drags all resize this view; packing here made
-    // session delete look like an automatic layout. Pack only on explicit
-    // layout actions / F5 (applyLayout callers).
+    // Gallery: never repack from resize (session delete looked like auto-layout).
+    // Still refresh the decode window: open often packs at 0×0, soft arrives
+    // into ImageCache, and without this pulse cells stay blank until F5/relayout.
     if (isGalleryMode()) {
+        if (viewport() && viewport()->width() > 1 && viewport()->height() > 1) {
+            scheduleGalleryDecodeWindowRefresh(32);
+        }
         return;
     }
     // Dwell cover owns framing — never refit the underlay over it.

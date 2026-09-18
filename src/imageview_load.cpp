@@ -2056,6 +2056,20 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
                     image.height());
         }
         onImagePreviewLoaded(path, image, 0, static_cast<int>(LoadAdd));
+        // Startup: DisplaySurface may no-op before pack/viewport settle, leaving
+        // ImageCache warm but cells blank until an explicit relayout re-runs
+        // pass1. Force SoftPreview onto still-blank items for this path.
+        for (ImageItem *item : m_items) {
+            if (!item || item->path() != path || item->hasDisplayPixels()) {
+                continue;
+            }
+            installDisplayPixels(item, image,
+                                 SessionAppearance::PixelKind::SoftPreview,
+                                 item->sessionId());
+        }
+        if (viewport()) {
+            viewport()->update();
+        }
     } else if (const char *dbg = std::getenv("THUMTOO_DEBUG");
                dbg && dbg[0] && dbg[0] != '0') {
         fprintf(stderr, "biltoo/gallery: ladderReady EMPTY path=%s edge=%d\n",

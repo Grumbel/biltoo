@@ -688,12 +688,15 @@ void ImageView::applyLayout(GalleryPackReason reason)
             verticalScrollBar()->setValue(keptScrollV);
         }
     }
-    // Explicit column/layout changes used to call updateGalleryDecodeWindow
-    // synchronously → setInterest epoch cancel → FocusFull/Full queue thrash
-    // and multi-second stalls. Debounce interest+decode after pack.
-    if (reason == GalleryPackReason::ExplicitLayout
-        || reason == GalleryPackReason::EnterGallery) {
+    // Explicit column changes: debounce setInterest (was multi-second stalls).
+    // EnterGallery / Reload: run decode once now so startup is not blank until
+    // the 180ms timer; still schedule a short follow-up for late soft.
+    if (reason == GalleryPackReason::ExplicitLayout) {
         scheduleGalleryDecodeWindowRefresh(180);
+    } else if (reason == GalleryPackReason::EnterGallery
+               || reason == GalleryPackReason::Reload) {
+        updateGalleryDecodeWindow();
+        scheduleGalleryDecodeWindowRefresh(48);
     } else {
         updateGalleryDecodeWindow();
     }

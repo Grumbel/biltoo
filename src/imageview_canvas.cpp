@@ -130,17 +130,19 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     } else if (isGalleryMode() && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::EnterGallery);
         TtfpTrace::mark("after_applyLayout");
-        // Decode window does Store has_tile / PreferCache / setInterest — never
-        // block gallery open (BILTOO_TTFP: was ~600–700ms on warm multi-image).
-        // Pass1 LQIP/soft already installed via prime + installDisplayPixels.
-        scheduleGalleryDecodeWindowRefresh(0);
+        // Synchronous pass1/pass2 so warm ImageCache installs before first paint.
+        // (Deferred-only left cells blank until an explicit relayout.)
+        updateGalleryDecodeWindow();
         TtfpTrace::mark("after_updateGalleryDecodeWindow");
-        // First open can pack while the view is still 0×0 (dock/layout settling).
-        QTimer::singleShot(0, this, [this]() {
-            if (isGalleryMode() && !m_items.isEmpty()) {
-                updateGalleryDecodeWindow();
-            }
-        });
+        // Viewport often still 0×0 / dock settling; soft jobs land a few ms later.
+        // Pulse decode window again so ladderReady installs are not the only path.
+        for (int delay : {0, 50, 200}) {
+            QTimer::singleShot(delay, this, [this]() {
+                if (isGalleryMode() && !m_items.isEmpty()) {
+                    updateGalleryDecodeWindow();
+                }
+            });
+        }
     }
 
     validateUniqueLiveSessionIds("setWorkspacePaths");
