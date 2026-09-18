@@ -165,6 +165,9 @@ add_executable(biltoo
   src/coloradjustcommit.h
   src/viewtransform.h
   src/hudgeometry.h
+  src/textsearchpolicy.h
+  src/textsearchpolicy.cpp
+  src/canvaspatterngeometry.h
   src/galleryrelayoutsuppress.h
   src/layoutapplyguard.h
   src/imagesizebook.h

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "textsearchpolicy.h"
+#include "canvaspatterngeometry.h"
 #include "hudgeometry.h"
 #include "textlayergeometry.h"
 #include "pageguidegeometry.h"
@@ -377,44 +379,6 @@ void ImageView::paintHudPanels(QPainter &painter)
         const int viewW = viewport()->width();
         const int viewH = viewport()->height();
 
-        auto wrapLine = [&](const QString &text, const QFontMetrics &metrics, int maxTextW) {
-            QStringList out;
-            if (text.isEmpty()) {
-                return out;
-            }
-            if (metrics.horizontalAdvance(text) <= maxTextW) {
-                out << text;
-                return out;
-            }
-            const QString sep = QStringLiteral(" | ");
-            const QStringList parts = text.split(sep, Qt::KeepEmptyParts);
-            if (parts.size() <= 1) {
-                out << metrics.elidedText(text, Qt::ElideMiddle, maxTextW);
-                return out;
-            }
-            QString current;
-            for (const QString &part : parts) {
-                const QString candidate = current.isEmpty() ? part : current + sep + part;
-                if (metrics.horizontalAdvance(candidate) <= maxTextW) {
-                    current = candidate;
-                    continue;
-                }
-                if (!current.isEmpty()) {
-                    out << current;
-                }
-                if (metrics.horizontalAdvance(part) <= maxTextW) {
-                    current = part;
-                } else {
-                    out << metrics.elidedText(part, Qt::ElideMiddle, maxTextW);
-                    current.clear();
-                }
-            }
-            if (!current.isEmpty()) {
-                out << current;
-            }
-            return out;
-        };
-
         struct HudLine {
             QString text;
             bool bold = false;
@@ -432,7 +396,7 @@ void ImageView::paintHudPanels(QPainter &painter)
             int textH = 0;
             for (const HudLine &hl : lines) {
                 const QFontMetrics &m = hl.bold ? fmBold : fm;
-                for (const QString &w : wrapLine(hl.text, m, maxTextW)) {
+                for (const QString &w : HudGeometry::wrapHudLine(hl.text, m, maxTextW)) {
                     drawn.append({w, hl.bold});
                     // boundingRect undercounts some fonts; size with the same
                     // flags used for drawing and add a small safety margin.
@@ -723,12 +687,7 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
     viewScale = qMax(1e-6, viewScale);
 
     auto fillChecker = [&](const QColor &a, const QColor &b) {
-        constexpr qreal kBaseCell = 16.0;
-        constexpr qreal kMinScreenPx = 16.0;
-        qreal cell = kBaseCell;
-        while (cell * viewScale < kMinScreenPx && cell < 4096.0) {
-            cell *= 2.0;
-        }
+        const qreal cell = CanvasPatternGeometry::checkerCellScene(viewScale);
         const qreal x0 = std::floor(rect.left() / cell) * cell;
         const qreal y0 = std::floor(rect.top() / cell) * cell;
         const qreal x1 = std::ceil(rect.right() / cell) * cell;
@@ -767,11 +726,7 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
                 const QPixmap &tile = m_canvasBg.workspaceTile;
                 qreal tw = qMax(1.0, qreal(tile.width()));
                 qreal th = qMax(1.0, qreal(tile.height()));
-                constexpr qreal kMinScreenPx = 24.0;
-                qreal lod = 1.0;
-                while (tw * lod * viewScale < kMinScreenPx && lod < 64.0) {
-                    lod *= 2.0;
-                }
+                const qreal lod = CanvasPatternGeometry::tileLodFactor(tw, viewScale);
                 const qreal cellW = tw * lod;
                 const qreal cellH = th * lod;
                 const qreal x0 = std::floor(rect.left() / cellW) * cellW;
@@ -866,118 +821,9 @@ void ImageView::refreshTextLayer()
     }
 }
 
-namespace {
-
-QString normalizeForSearch(QString s)
-{
-    s = s.toLower();
-    // Collapse whitespace; keep letters/digits for light OCR tolerance.
-    QString out;
-    out.reserve(s.size());
-    bool prevSpace = false;
-    for (QChar c : s) {
-        if (c.isSpace()) {
-            if (!prevSpace && !out.isEmpty()) {
-                out.append(QLatin1Char(' '));
-                prevSpace = true;
-            }
-            continue;
-        }
-        prevSpace = false;
-        out.append(c);
-    }
-    return out.trimmed();
-}
-
-/** Alphanumeric-only form for fuzzy OCR (ignore punctuation/spaces). */
-QString alnumOnly(const QString &s)
-{
-    QString out;
-    out.reserve(s.size());
-    for (QChar c : s) {
-        if (c.isLetterOrNumber()) {
-            out.append(c.toLower());
-        }
-    }
-    return out;
-}
-
-bool regionMatchesQuery(const QString &regionText, const QString &queryNorm,
-                        const QString &queryAlnum, bool fuzzy)
-{
-    if (queryNorm.isEmpty()) {
-        return false;
-    }
-    const QString rn = normalizeForSearch(regionText);
-    if (rn.contains(queryNorm)) {
-        return true;
-    }
-    if (!fuzzy) {
-        return false;
-    }
-    // Alnum-only contains (helps OCR noise / missing spaces / punctuation).
-    if (!queryAlnum.isEmpty()) {
-        const QString ra = alnumOnly(regionText);
-        if (ra.contains(queryAlnum)) {
-            return true;
-        }
-        // Light edit distance: allow one substitution/insert/delete for queries
-        // long enough that a single OCR slip is plausible (not for 1–2 chars).
-        if (queryAlnum.size() >= 4 && ra.size() >= queryAlnum.size() - 1) {
-            const int qn = queryAlnum.size();
-            for (int i = 0; i + qn - 1 <= ra.size(); ++i) {
-                const int window = qMin(qn + 1, ra.size() - i);
-                for (int w = qMax(qn - 1, 1); w <= window; ++w) {
-                    const QString slice = ra.mid(i, w);
-                    // Hamming-ish: count mismatches with simple DP bound.
-                    int dist = 0;
-                    const int a = slice.size();
-                    const int b = qn;
-                    // Bounded Levenshtein early-out (max dist 1).
-                    if (qAbs(a - b) > 1) {
-                        continue;
-                    }
-                    if (a == b) {
-                        for (int k = 0; k < a; ++k) {
-                            if (slice.at(k) != queryAlnum.at(k)) {
-                                ++dist;
-                                if (dist > 1) {
-                                    break;
-                                }
-                            }
-                        }
-                        if (dist <= 1) {
-                            return true;
-                        }
-                    } else {
-                        // Length differs by 1: accept if one is subsequence of other.
-                        const QString &shorter = a < b ? slice : queryAlnum;
-                        const QString &longer = a < b ? queryAlnum : slice;
-                        int si = 0;
-                        for (int li = 0; li < longer.size() && si < shorter.size(); ++li) {
-                            if (longer.at(li) == shorter.at(si)) {
-                                ++si;
-                            }
-                        }
-                        if (si == shorter.size()) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return false;
-}
-
-} // namespace
-
 bool ImageView::textMatchesQuery(const QString &regionText, const QString &query, bool fuzzy)
 {
-    // Helpers live in the anonymous namespace above (same TU).
-    const QString qn = normalizeForSearch(query);
-    const QString qa = alnumOnly(query);
-    return regionMatchesQuery(regionText, qn, qa, fuzzy);
+    return TextSearchPolicy::matches(regionText, query, fuzzy);
 }
 
 void ImageView::setTextSearchFuzzy(bool on)
@@ -998,14 +844,14 @@ void ImageView::recomputeTextSearchMatches()
     if (m_textLayer.searchQuery.isEmpty() || m_textLayer.layer.regions.isEmpty()) {
         return;
     }
-    const QString qn = normalizeForSearch(m_textLayer.searchQuery);
-    const QString qa = alnumOnly(m_textLayer.searchQuery);
+    const QString qn = TextSearchPolicy::normalizeForSearch(m_textLayer.searchQuery);
+    const QString qa = TextSearchPolicy::alnumOnly(m_textLayer.searchQuery);
     for (int i = 0; i < m_textLayer.layer.regions.size(); ++i) {
         const auto &r = m_textLayer.layer.regions.at(i);
         if (r.text.isEmpty()) {
             continue;
         }
-        if (regionMatchesQuery(r.text, qn, qa, m_textLayer.searchFuzzy)) {
+        if (TextSearchPolicy::regionMatchesQuery(r.text, qn, qa, m_textLayer.searchFuzzy)) {
             m_textLayer.searchMatches.push_back(i);
         }
     }
