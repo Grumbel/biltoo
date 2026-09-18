@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1208-filmstrip-size-first.** Filmstrip never paints LQIP/soft before native size (cold wrong aspect).
+Prior: **1207**.
+
+### How sizes work
+- **Per path**, not one sequential archive walk: `scheduleProbe` → `request_size` per image (deduped).
+- `prepare_paths` is a separate bulk path for plain files.
+- Size replies often include **LQIP in the same payload** — so thumbs and sizes arrive together by design.
+
+### Fix
+- Filmstrip: no `makeThumbnail` / no icon paint until `cachedSize` is valid.
+- On `sizeReady`: `applyNativeAspect` first, then install LQIP from ImageCache, then delayed soft.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1208-filmstrip-size-first.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1207-decode-window-viewport-only.** Fix compile break; decode pass2 viewport-only (no O(n) tileLodWanted).
 Prior: **1206**.
 

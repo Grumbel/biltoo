@@ -481,8 +481,15 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     // aspect until a soft upgrade (PDF LQIP growth).
                     applyNativeAspect(it, size);
                     any = true;
-                    // Size-first: soft after layout geometry is known.
-                    // Delayed so Gallery open is not flooded with strip soft.
+                    // LQIP often arrives in the same sizeReady payload (ImageCache).
+                    // Install only *after* aspect so cells are never sample-shaped.
+                    if (const QImage lqip = ImageCache::get(path);
+                        !lqip.isNull()
+                        && ImageCache::longEdge(lqip)
+                            <= DisplayQuality::kLqipMaxEdge) {
+                        setThumbnailIcon(i, lqip);
+                    }
+                    // Soft after layout geometry is known; delay yields to Gallery.
                     if (ThumtooCache::isAvailable()) {
                         const int decodeSize = filmstripDecodeEdge();
                         const int softEdge = qMin(
@@ -1975,6 +1982,18 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         if (inFlight >= kMaxConcurrentThumbLoads) {
             break;
         }
+        // Size-first: never decode/paint thumbs until durable aspect is known.
+        // LQIP/soft samples before sizeReady forced provisional square cells and
+        // wrong filmstrip aspect on cold open.
+        if (!m_cropToSquare) {
+            const QSize known = ThumtooCache::cachedSize(path);
+            if (!(known.isValid() && known.width() > 0 && known.height() > 0)) {
+                if (ThumtooCache::isAvailable()) {
+                    ThumtooCache::scheduleProbe(path);
+                }
+                continue;
+            }
+        }
         m_thumbLoadScheduled.insert(i);
         ++inFlight;
         const QPointer<ThumbnailBar> guard(this);
@@ -2023,8 +2042,11 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                         emit host->loadsChanged();
                         return;
                     }
-                    // Paint LQIP immediately so the cell is not blank while soft loads.
-                    if (weakPlaceholder && !image.isNull()) {
+                    // Size-first: do not paint LQIP/soft until native aspect is known.
+                    const QSize known = ThumtooCache::cachedSize(path);
+                    const bool haveSize = known.isValid() && known.width() > 0
+                        && known.height() > 0;
+                    if (weakPlaceholder && !image.isNull() && haveSize) {
                         if (QListWidgetItem *it = host->item(i)) {
                             const int have =
                                 it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
@@ -2037,8 +2059,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     }
                     if (ThumtooCache::isAvailable()) {
                         host->m_thumbAwaitLadder.insert(i);
-                        const QSize known = ThumtooCache::cachedSize(path);
-                        if (!(known.isValid() && known.width() > 0 && known.height() > 0)) {
+                        if (!haveSize) {
                             ThumtooCache::scheduleProbe(path);
                         } else {
                             // Delay soft so Gallery tile/LQIP work is not flooded
