@@ -13,8 +13,9 @@ encode is **not** used in Gallery (removed).
 | **LQIP** (≤96) | Placeholder until tiles cover. Loaded from Store into ImageCache at session open (warmSessionOpenMemos). |
 | **Tiles** | Sharpness for cells with on-screen long edge > 32 px. Durable Store hits preferred; encode only when coverage missing. |
 
-Filmstrip may still schedule small thumbs on its own path; Gallery never requests
-soft PreferCache for underlay.
+Filmstrip uses the same product rule via `scheduleFilmstripTilePixels` /
+`scheduleTileSynthOrPyramid` (LQIP + TileSynth). Gallery never requests soft
+PreferCache for underlay.
 
 ## Open path
 

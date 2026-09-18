@@ -68,10 +68,10 @@ Gallery does not call `ensure`. Decode window installs LQIP and drives
 TileLoadCoordinator. Historical name `GallerySoftState` tracks decode-window
 budget only (not PreferCache soft climb).
 
-**Soft-band and Display PreferCache plans:** never soft PreferCache encode.
-Durable tiles known → `scheduleDisplayPixels` (TileSynth); else
-`scheduleTilePyramid` only. Full (`scheduleFullPixels`) remains for
-EscalateToFull after Prefer plateau.
+**Soft-band and Display PreferCache plans:** use
+`ThumtooCache::scheduleTileSynthOrPyramid` only (never bare PreferCache soft
+encode). Full (`scheduleFullPixels`) remains for EscalateToFull after Prefer
+plateau.
 
 ## Edit / crop full raster
 

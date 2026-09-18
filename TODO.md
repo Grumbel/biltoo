@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1228-docs-tiles-product.** Gallery/PathRaster docs match tiles-only helper.
+Prior: **1227**.
+
+### Change
+- GALLERY_PIXELS: filmstrip uses scheduleTileSynthOrPyramid.
+- PATH_RASTER_SERVICE: soft/display plans call scheduleTileSynthOrPyramid.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1228-docs-tiles-product.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1227-tile-synth-or-pyramid.** Central helper: scheduleTileSynthOrPyramid.
 Prior: **1226**.
 
