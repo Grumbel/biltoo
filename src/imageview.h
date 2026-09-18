@@ -1360,7 +1360,6 @@ private:
     /** Slideshow pure-phase owns viewport — coordinator must not issue tiles. */
     bool isSlideshowProgressActive() const { return m_ssHud.progressActive; }
     PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
-    QSet<QString> *tileLodPreferCancelledForCoordinator() { return &m_tileLodPreferCancelled; }
 
     /**
      * Debounce climb + tile tick after zoom (wheel/toolbar). Avoids per-notch
@@ -1857,7 +1856,6 @@ private:
     /** Off-canvas neighbor tile prefetch (session-replace clears). */
     TileNeighborPrefetch m_tileNeighborPrefetch;
     /** Paths for which PreferCache was cancelled after entering tile band. */
-    QSet<QString> m_tileLodPreferCancelled;
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
     bool m_perfEnabled = false;
     QElapsedTimer m_perfFpsClock;

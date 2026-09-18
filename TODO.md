@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1275-tile-prefer-cancelled-owner.** PreferCache cancel set owns by TileLoadCoordinator.
+Prior: **1274**.
+
+### Change
+- `TileLoadCoordinator::m_preferCancelled` + `clearPreferCancelled()`.
+- ImageView no longer holds / exposes the set; session invalidate clears it.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1275-tile-prefer-cancelled-owner.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1274-appearance-seed-attempted.** Seed-attempt set owns by SessionAppearanceStore.
 Prior: **1273**.
 

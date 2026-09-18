@@ -66,6 +66,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ImageSizeBook** (`imagesizebook.h`): path→logical size + provisional/probe sets; noteDefinitive HARD RULE.
 - **SessionBindBook** (`sessionbindbook.h`): LoadAdd PendingSessionBind queue + index/select maps.
 - **SessionAppearanceStore** seed-attempt set (`seedAttempted` / mark / clear with remove).
+- **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).
 
 
 ## Current pain (evidence)

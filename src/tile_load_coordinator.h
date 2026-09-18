@@ -6,6 +6,8 @@
 
 #include <QList>
 #include <QRectF>
+#include <QSet>
+#include <QString>
 #include <QtGlobal>
 
 class ImageItem;
@@ -35,6 +37,9 @@ public:
      */
     void tick(int globalBudget);
 
+    /** Drop PreferCache cancel marks (session Open / wipe). */
+    void clearPreferCancelled() { m_preferCancelled.clear(); }
+
 private:
     struct Cand {
         ImageItem *item = nullptr;
@@ -51,6 +56,8 @@ private:
 
     ImageView *m_view = nullptr;
     qint64 m_lastTickMs = 0;
+    /** Paths whose PreferCache climb was cancelled for tile issue this session. */
+    QSet<QString> m_preferCancelled;
 };
 
 #endif

@@ -195,7 +195,6 @@ void TileLoadCoordinator::tick(int globalBudget)
     QList<ImageItem *> issueTargets;
     issueTargets.reserve(cands.size());
     PathRasterService *pathRaster = m_view->pathRasterForCoordinator();
-    QSet<QString> *preferCancelled = m_view->tileLodPreferCancelledForCoordinator();
 
     for (const Cand &c : cands) {
         if (wall.elapsed() >= kWallMs) {
@@ -213,17 +212,17 @@ void TileLoadCoordinator::tick(int globalBudget)
         issueTargets.append(item);
     }
 
-    if (pathRaster && preferCancelled) {
+    if (pathRaster) {
         for (ImageItem *item : issueTargets) {
             if (!item) {
                 continue;
             }
             const QString path = item->path();
-            if (path.isEmpty() || preferCancelled->contains(path)) {
+            if (path.isEmpty() || m_preferCancelled.contains(path)) {
                 continue;
             }
             pathRaster->cancel(path);
-            preferCancelled->insert(path);
+            m_preferCancelled.insert(path);
             if (wall.elapsed() >= kWallMs) {
                 break;
             }

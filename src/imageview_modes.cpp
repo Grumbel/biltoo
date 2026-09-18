@@ -63,6 +63,9 @@ void ImageView::invalidateSessionLoads()
     // live canvas so a late soft/PreferCache for the previous session cannot
     // paint over the first image of the new set.
     m_loadGate.bumpGeneration();
+    if (m_tileCoordinator) {
+        m_tileCoordinator->clearPreferCancelled();
+    }
     clearPendingLoads();
     gallerySoftResetAll();
     m_ss.rasterInflight.clear();
