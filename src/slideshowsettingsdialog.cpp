@@ -62,11 +62,11 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
            "Pan and scan: pan across the image (no zoom).\n"
            "Both start from the Slideshow zoom base (Fit / Fill / 1:1)."));
 
-    m_panZoomFactorSpin = new QDoubleSpinBox(this);
-    m_panZoomFactorSpin->setRange(1.02, 1.40);
-    m_panZoomFactorSpin->setSingleStep(0.01);
-    m_panZoomFactorSpin->setDecimals(2);
-    m_panZoomFactorSpin->setToolTip(
+    m_ssSettings.panZoomFactorSpin = new QDoubleSpinBox(this);
+    m_ssSettings.panZoomFactorSpin->setRange(1.02, 1.40);
+    m_ssSettings.panZoomFactorSpin->setSingleStep(0.01);
+    m_ssSettings.panZoomFactorSpin->setDecimals(2);
+    m_ssSettings.panZoomFactorSpin->setToolTip(
         tr("Pan and zoom only: end scale relative to the Slideshow zoom base"));
 
     m_zoomCombo = new QComboBox(this);
@@ -90,7 +90,7 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
     form->addRow(tr("Transition:"), m_transitionCombo);
     form->addRow(tr("Transition duration:"), m_transitionMsSpin);
     form->addRow(tr("Dwell motion:"), m_motionCombo);
-    form->addRow(tr("Pan and zoom factor:"), m_panZoomFactorSpin);
+    form->addRow(tr("Pan and zoom factor:"), m_ssSettings.panZoomFactorSpin);
     form->addRow(tr("Slideshow zoom:"), m_zoomCombo);
 
     m_letterboxCombo = new QComboBox(this);
@@ -143,7 +143,7 @@ SlideshowSettingsDialog::SlideshowSettingsDialog(QWidget *parent)
             this, [this](double) { emitChanged(); });
     connect(m_motionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { emitChanged(); });
-    connect(m_panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_ssSettings.panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, [this](double) { emitChanged(); });
     connect(m_zoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { emitChanged(); });
@@ -284,16 +284,16 @@ void SlideshowSettingsDialog::setMotionIndex(int index)
 
 double SlideshowSettingsDialog::panZoomFactor() const
 {
-    return m_panZoomFactorSpin ? m_panZoomFactorSpin->value() : 1.12;
+    return m_ssSettings.panZoomFactorSpin ? m_ssSettings.panZoomFactorSpin->value() : 1.12;
 }
 
 void SlideshowSettingsDialog::setPanZoomFactor(double factor)
 {
-    if (!m_panZoomFactorSpin) {
+    if (!m_ssSettings.panZoomFactorSpin) {
         return;
     }
     m_blockEmit = true;
-    m_panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
+    m_ssSettings.panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
     m_blockEmit = false;
 }
 

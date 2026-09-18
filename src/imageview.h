@@ -826,22 +826,22 @@ public:
     void setSlideshowCycleProgress(qreal phase01);
 
     void setSlideshowTransition(SlideshowTransition kind);
-    SlideshowTransition slideshowTransition() const { return m_slideshowTransition; }
+    SlideshowTransition slideshowTransition() const { return m_ssSettings.transition; }
     void setSlideshowTransitionDurationMs(int ms);
-    int slideshowTransitionDurationMs() const { return m_slideshowTransitionDurationMs; }
+    int slideshowTransitionDurationMs() const { return m_ssSettings.transitionDurationMs; }
     /** Clear residual transition overlay state (safe during pure-phase show). */
     void cancelSlideshowTransition();
 
     void setSlideshowMotion(SlideshowMotion mode);
-    SlideshowMotion slideshowMotion() const { return m_slideshowMotion; }
+    SlideshowMotion slideshowMotion() const { return m_ssSettings.motion; }
     void setPanZoomFactor(qreal factor);
-    qreal panZoomFactor() const { return m_panZoomFactor; }
+    qreal panZoomFactor() const { return m_ssSettings.panZoomFactor; }
 
     void setSlideshowZoom(SlideshowZoom mode);
-    SlideshowZoom slideshowZoom() const { return m_slideshowZoom; }
+    SlideshowZoom slideshowZoom() const { return m_ssSettings.zoom; }
 
     void setSlideshowLetterboxFill(SlideshowLetterboxFill mode);
-    SlideshowLetterboxFill slideshowLetterboxFill() const { return m_slideshowLetterboxFill; }
+    SlideshowLetterboxFill slideshowLetterboxFill() const { return m_ssSettings.letterboxFill; }
     /** Pad colour when letterbox fill is Solid (also fallback for ZoomBlur miss). */
     void setSlideshowPadColor(const QColor &color);
     void cancelSlideshowMotion();
@@ -1869,23 +1869,12 @@ private:
     qreal m_slideshowCycleProgress01 = 0.0;
     bool m_slideshowCycleProgressValid = false;
     qint64 m_slideshowTimelineTotalMs = 0;
-    SlideshowTransition m_slideshowTransition = SlideshowTransition::Crossfade;
-    int m_slideshowTransitionDurationMs = 400;
-    QImage m_dwellSourceImage;
+    SlideshowSettings m_ssSettings;
     /** Pure-phase composite (from/to buffers, clocks). */
     SlideshowPhaseState m_ss;
+    /** Dwell atlas + Ken Burns camera (timer stays below). */
+    SlideshowDwellState m_ssDwell;
     // Slideshow samples: ImageCache only (putSlideshowRaster / slideshowRaster).
-    QPixmap m_dwellAtlas; /**< Pre-scaled for dwell; rebuilt on source/resize */
-    quint64 m_dwellAtlasRebuildGeneration = 0;
-    qreal m_dwellAtlasScale = 0.0;
-    int m_dwellAtlasVw = 0;
-    int m_dwellAtlasVh = 0;
-    qreal m_dwellMotionT = 0.0; /**< Latest dwell progress [0,1] */
-    SlideshowMotion m_slideshowMotion = SlideshowMotion::Off;
-    qreal m_panZoomFactor = 1.12; /**< PanZoom end/start scale */
-    SlideshowZoom m_slideshowZoom = SlideshowZoom::Fit;
-    SlideshowLetterboxFill m_slideshowLetterboxFill = SlideshowLetterboxFill::AppBackground;
-    QColor m_slideshowPadColor{42, 42, 42};
     /** Rapid keyboard nav — skip ZoomBlur work until settled. */
     bool m_slideshowNavHot = false;
     /** Two-slot ZoomBlur underlay cache (from/to during transitions). */
@@ -1904,27 +1893,10 @@ private:
     /// Up to two concurrent blur builds (from+to underlays in a transition).
     mutable quint64 m_zoomBlurInFlightGen[2] = {0, 0};
     mutable qint64 m_zoomBlurInFlightKey[2] = {0, 0};
-    bool m_slideshowMotionActive = false;
-    bool m_slideshowMotionPaused = false;
     /** Scroll policies restored when Ken Burns underlay returns. */
     Qt::ScrollBarPolicy m_motionSavedHBarPolicy = Qt::ScrollBarAsNeeded;
     Qt::ScrollBarPolicy m_motionSavedVBarPolicy = Qt::ScrollBarAsNeeded;
     bool m_motionSavedBarPolicies = false;
-
-    /** Corner/edge biases for Ken Burns paths (dwell + dual-blit). */
-    QPointF m_motionBiasA{-1.0, -1.0};
-    QPointF m_motionBiasB{1.0, 1.0};
-    bool m_motionBiasValid = false;
-    /** Path for which m_motionBiasA/B were chosen; invalidated on manual next/prev. */
-    QString m_motionBiasPath;
-    /** Last scene-space travel direction (end - start), for continuing legs. */
-    QPointF m_motionTravelDir{0.0, 1.0};
-    /** Fixed session pan sign (+1 / -1); never reverses mid-show. */
-    qreal m_motionSign = 1.0;
-    int m_motionDurationMs = 0;
-    /** Added to m_motionClock.elapsed() for motion path continuity. */
-    qint64 m_motionElapsedOffsetMs = 0;
-    QElapsedTimer m_motionClock;
     QTimer *m_motionTimer = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;

@@ -405,8 +405,8 @@ void ImageView::resizeEvent(QResizeEvent *event)
     }
     // Dwell cover owns framing — never refit the underlay over it.
     // Invalidate atlas viewport keys so the next tick rebuilds at new size.
-    if (m_slideshowMotionActive) {
-        m_dwellAtlasVw = 0;
+    if (m_ssDwell.motionActive) {
+        m_ssDwell.atlasVw = 0;
         m_zoomBlurUnderlay[0] = QPixmap();
         m_zoomBlurUnderlay[1] = QPixmap();
         m_zoomBlurSourceKey[0] = 0;
@@ -722,7 +722,7 @@ bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
 bool ImageView::tryMousePressPan(QMouseEvent *event)
 {
     // Middle-button pan in any mode; Gallery also allows Alt+left pan.
-    if (!m_slideshowMotionActive
+    if (!m_ssDwell.motionActive
         && (event->button() == Qt::MiddleButton
             || (event->button() == Qt::LeftButton
                 && ((isImageMode() && m_imageModeLeftDragPan)
@@ -738,7 +738,7 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
             return true;
         }
     }
-    if (event->button() == Qt::MiddleButton && !m_slideshowMotionActive) {
+    if (event->button() == Qt::MiddleButton && !m_ssDwell.motionActive) {
         m_panning = true;
         m_lastMousePos = event->pos();
         setCursor(Qt::ClosedHandCursor);
@@ -1119,7 +1119,7 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
         return false;
     }
     // Dwell camera owns the view transform — do not fight it with hand pan.
-    if (m_slideshowMotionActive) {
+    if (m_ssDwell.motionActive) {
         m_panning = false;
         event->accept();
         return true;

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1253-slideshow-settings-dwell.** SlideshowSettings + SlideshowDwellState.
+Prior: **1252**.
+
+### Change
+- `SlideshowSettings`: transition, duration, motion, zoom, letterbox, pad colour.
+- `SlideshowDwellState`: dwell atlas + Ken Burns path/clock fields.
+- `ImageView::m_ssSettings` / `m_ssDwell`; motion QTimer and ZoomBlur remain.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1253-slideshow-settings-dwell.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1252-session-load-gate.** SessionLoadGate owns generation + pending maps.
 Prior: **1251**.
 

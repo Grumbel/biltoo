@@ -1588,7 +1588,7 @@ void MainWindow::showSlideshowSettings()
             m_imageView->cancelSlideshowTransition();
             m_slideshowPendingToIndex = -1;
             m_slideshowPreloadToIdx = -1;
-            m_slideshowTransitionCycle = -1;
+            m_ssSettings.transitionCycle = -1;
             m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
             m_imageView->reapplySlideshowFraming();
             updateSlideshowFromClock();
@@ -1605,7 +1605,7 @@ void MainWindow::remapSlideshowPhase(int oldIntervalMs, int newIntervalMs)
     // wall time advances m_slideshowPosition — no absolute-ms remap.
     Q_UNUSED(oldIntervalMs);
     Q_UNUSED(newIntervalMs);
-    m_slideshowTransitionCycle = -1;
+    m_ssSettings.transitionCycle = -1;
     if (!m_slideshowPaused && m_slideshowClockRunning) {
         // Restart rate sample so the next tick does not apply a large dt under
         // the new interval after a long settings dialog pause.
@@ -1628,7 +1628,7 @@ void MainWindow::armSlideshowAdvanceTimer()
     m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
     m_slideshowPausedAccumMs = 0;
     m_slideshowPosition = 0.0;
-    m_slideshowTransitionCycle = -1;
+    m_ssSettings.transitionCycle = -1;
     m_slideshowPendingToIndex = -1;
     m_slideshowPreloadToIdx = -1;
     m_slideshowClock.start();
@@ -1712,7 +1712,7 @@ void MainWindow::updateSlideshowFromClock()
             m_imageView->cancelSlideshowTransition();
         }
         m_slideshowPendingToIndex = -1;
-        m_slideshowTransitionCycle = -1;
+        m_ssSettings.transitionCycle = -1;
         m_slideshowPreloadToIdx = -1;
         stopSlideshow();
         return;
@@ -1773,7 +1773,7 @@ void MainWindow::updateSlideshowFromClock()
             m_slideshowAdvancing = false;
         }
         m_slideshowPendingToIndex = -1;
-        m_slideshowTransitionCycle = -1;
+        m_ssSettings.transitionCycle = -1;
         // Non-loop last slide: end when the pure dwell finishes.
         if (!m_slideshowLoop && fromIdx >= n - 1
             && phaseT >= pureFrac && transitionMs > 0) {
@@ -1789,7 +1789,7 @@ void MainWindow::updateSlideshowFromClock()
     const qreal t =
         denom > 1e-9 ? qBound(0.0, (phaseT - pureFrac) / denom, 1.0) : 1.0;
     if (m_imageView) {
-        if (m_slideshowTransitionCycle != cycle) {
+        if (m_ssSettings.transitionCycle != cycle) {
             qCDebug(lcSlideshow).nospace()
                 << "[slideshow] phase-fade cycle=" << cycle
                 << " phaseT=" << QString::number(phaseT, 'f', 3)
@@ -1799,7 +1799,7 @@ void MainWindow::updateSlideshowFromClock()
                 << " path=" << QFileInfo(toPath).fileName();
             // New transition cycle: reset fade target so armSlideshowToPhase
             // runs cleanly (avoids stale buffers when wrapping last→first).
-            m_slideshowTransitionCycle = cycle;
+            m_ssSettings.transitionCycle = cycle;
             m_slideshowPendingToIndex = toIdx;
         }
         m_imageView->setSlideshowPhase(fromPath, toPath, t);

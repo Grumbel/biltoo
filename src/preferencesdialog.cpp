@@ -97,71 +97,71 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                           }));
     slideshowForm->addRow(QString(), m_slideshowLoopCheck);
 
-    m_slideshowTransitionCombo = new QComboBox(this);
-    m_slideshowTransitionCombo->addItem(tr("None"), 0);
-    m_slideshowTransitionCombo->addItem(tr("Crossfade"), 1);
-    m_slideshowTransitionCombo->addItem(tr("Fade through black"), 2);
-    m_slideshowTransitionCombo->addItem(tr("Slide (projector)"), 3);
-    m_slideshowTransitionCombo->setToolTip(tr("Effect used when the slideshow advances to the next image"));
+    m_ssSettings.transitionCombo = new QComboBox(this);
+    m_ssSettings.transitionCombo->addItem(tr("None"), 0);
+    m_ssSettings.transitionCombo->addItem(tr("Crossfade"), 1);
+    m_ssSettings.transitionCombo->addItem(tr("Fade through black"), 2);
+    m_ssSettings.transitionCombo->addItem(tr("Slide (projector)"), 3);
+    m_ssSettings.transitionCombo->setToolTip(tr("Effect used when the slideshow advances to the next image"));
     slideshowForm->addRow(tr("Transition:"),
-                          wrapWithReset(m_slideshowTransitionCombo, &m_resetSlideshowTransitionBtn, [this]() {
+                          wrapWithReset(m_ssSettings.transitionCombo, &m_resetSlideshowTransitionBtn, [this]() {
                               setSlideshowTransitionIndex(kDefaultSlideshowTransition);
                               updateResetButtons();
                           }));
 
-    m_slideshowTransitionMsSpin = new QDoubleSpinBox(this);
-    m_slideshowTransitionMsSpin->setRange(0.0, 3600.0);
-    m_slideshowTransitionMsSpin->setSingleStep(0.05);
-    m_slideshowTransitionMsSpin->setDecimals(3);
-    m_slideshowTransitionMsSpin->setSuffix(tr(" s"));
-    m_slideshowTransitionMsSpin->setValue(kDefaultSlideshowTransitionMs / 1000.0);
-    m_slideshowTransitionMsSpin->setToolTip(
+    m_ssSettings.transitionMsSpin = new QDoubleSpinBox(this);
+    m_ssSettings.transitionMsSpin->setRange(0.0, 3600.0);
+    m_ssSettings.transitionMsSpin->setSingleStep(0.05);
+    m_ssSettings.transitionMsSpin->setDecimals(3);
+    m_ssSettings.transitionMsSpin->setSuffix(tr(" s"));
+    m_ssSettings.transitionMsSpin->setValue(kDefaultSlideshowTransitionMs / 1000.0);
+    m_ssSettings.transitionMsSpin->setToolTip(
         tr("Full transition duration (out + in; capped to the interval; 0 = instant)"));
     slideshowForm->addRow(tr("Transition duration:"),
-                          wrapWithReset(m_slideshowTransitionMsSpin, &m_resetSlideshowTransitionMsBtn, [this]() {
+                          wrapWithReset(m_ssSettings.transitionMsSpin, &m_resetSlideshowTransitionMsBtn, [this]() {
                               setSlideshowTransitionDurationMs(kDefaultSlideshowTransitionMs);
                               updateResetButtons();
                           }));
 
-    m_slideshowMotionCombo = new QComboBox(this);
-    m_slideshowMotionCombo->addItem(tr("Off"), 0);
-    m_slideshowMotionCombo->addItem(tr("Pan and zoom"), 1);
-    m_slideshowMotionCombo->addItem(tr("Pan and scan"), 2);
-    m_slideshowMotionCombo->setToolTip(
+    m_ssSettings.motionCombo = new QComboBox(this);
+    m_ssSettings.motionCombo->addItem(tr("Off"), 0);
+    m_ssSettings.motionCombo->addItem(tr("Pan and zoom"), 1);
+    m_ssSettings.motionCombo->addItem(tr("Pan and scan"), 2);
+    m_ssSettings.motionCombo->setToolTip(
         tr("Pan and zoom: slowly zoom in while panning.\n"
            "Pan and scan: pan across the full width or height so the whole "
            "image is revealed during the dwell (no zoom)."));
     slideshowForm->addRow(tr("Dwell motion:"),
-                          wrapWithReset(m_slideshowMotionCombo, &m_resetSlideshowMotionBtn, [this]() {
+                          wrapWithReset(m_ssSettings.motionCombo, &m_resetSlideshowMotionBtn, [this]() {
                               setSlideshowMotionIndex(kDefaultSlideshowMotion);
                               updateResetButtons();
                           }));
 
-    m_panZoomFactorSpin = new QDoubleSpinBox(this);
-    m_panZoomFactorSpin->setRange(1.02, 1.40);
-    m_panZoomFactorSpin->setSingleStep(0.01);
-    m_panZoomFactorSpin->setDecimals(2);
-    m_panZoomFactorSpin->setValue(kDefaultPanZoomFactor);
-    m_panZoomFactorSpin->setToolTip(
+    m_ssSettings.panZoomFactorSpin = new QDoubleSpinBox(this);
+    m_ssSettings.panZoomFactorSpin->setRange(1.02, 1.40);
+    m_ssSettings.panZoomFactorSpin->setSingleStep(0.01);
+    m_ssSettings.panZoomFactorSpin->setDecimals(2);
+    m_ssSettings.panZoomFactorSpin->setValue(kDefaultPanZoomFactor);
+    m_ssSettings.panZoomFactorSpin->setToolTip(
         tr("Pan and zoom only: end scale relative to cover framing (1.12 = 12% closer)"));
     slideshowForm->addRow(tr("Pan and zoom factor:"),
-                          wrapWithReset(m_panZoomFactorSpin, &m_resetPanZoomFactorBtn, [this]() {
+                          wrapWithReset(m_ssSettings.panZoomFactorSpin, &m_resetPanZoomFactorBtn, [this]() {
                               setPanZoomFactor(kDefaultPanZoomFactor);
                               updateResetButtons();
                           }));
 
-    m_slideshowZoomCombo = new QComboBox(this);
-    m_slideshowZoomCombo->addItem(tr("Fit"), 0);
-    m_slideshowZoomCombo->addItem(tr("Fill"), 1);
-    m_slideshowZoomCombo->addItem(tr("1:1"), 2);
-    m_slideshowZoomCombo->setToolTip(
+    m_ssSettings.zoomCombo = new QComboBox(this);
+    m_ssSettings.zoomCombo->addItem(tr("Fit"), 0);
+    m_ssSettings.zoomCombo->addItem(tr("Fill"), 1);
+    m_ssSettings.zoomCombo->addItem(tr("1:1"), 2);
+    m_ssSettings.zoomCombo->setToolTip(
         tr("Base framing for each slide (also when dwell motion is On).\n"
            "Fit: whole image visible (letterbox).\n"
            "Fill: cover the window (may crop).\n"
            "1:1: native pixels, centred (padding if smaller than the window).\n"
            "Pan and zoom starts from this scale; pan and scan pans at this scale."));
     slideshowForm->addRow(tr("Slideshow zoom:"),
-                          wrapWithReset(m_slideshowZoomCombo, &m_resetSlideshowZoomBtn, [this]() {
+                          wrapWithReset(m_ssSettings.zoomCombo, &m_resetSlideshowZoomBtn, [this]() {
                               setSlideshowZoomIndex(kDefaultSlideshowZoom);
                               updateResetButtons();
                           }));
@@ -177,25 +177,25 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
            "Zoom and blur: cover-scaled blurred copy of the current image."));
     slideshowForm->addRow(tr("Letterbox fill:"), m_slideshowLetterboxCombo);
 
-    m_slideshowPadColorBtn = new QPushButton(this);
-    m_slideshowPadColorBtn->setToolTip(tr("Colour for Solid letterbox fill"));
-    m_slideshowPadColorBtn->setText(m_slideshowPadColor.name(QColor::HexRgb));
-    connect(m_slideshowPadColorBtn, &QPushButton::clicked, this, [this]() {
-        const QColor c = QColorDialog::getColor(m_slideshowPadColor, this, tr("Letterbox colour"));
+    m_ssSettings.padColorBtn = new QPushButton(this);
+    m_ssSettings.padColorBtn->setToolTip(tr("Colour for Solid letterbox fill"));
+    m_ssSettings.padColorBtn->setText(m_ssSettings.padColor.name(QColor::HexRgb));
+    connect(m_ssSettings.padColorBtn, &QPushButton::clicked, this, [this]() {
+        const QColor c = QColorDialog::getColor(m_ssSettings.padColor, this, tr("Letterbox colour"));
         if (c.isValid()) {
             setSlideshowPadColor(c);
         }
     });
     connect(m_slideshowLetterboxCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
-                if (m_slideshowPadColorBtn) {
-                    m_slideshowPadColorBtn->setEnabled(
+                if (m_ssSettings.padColorBtn) {
+                    m_ssSettings.padColorBtn->setEnabled(
                         m_slideshowLetterboxCombo
                         && m_slideshowLetterboxCombo->currentData().toInt() == 1);
                 }
             });
-    m_slideshowPadColorBtn->setEnabled(false);
-    slideshowForm->addRow(tr("Letterbox colour:"), m_slideshowPadColorBtn);
+    m_ssSettings.padColorBtn->setEnabled(false);
+    slideshowForm->addRow(tr("Letterbox colour:"), m_ssSettings.padColorBtn);
 
     auto *slideshowGroup = new QGroupBox(tr("Slideshow"), this);
     slideshowGroup->setLayout(slideshowForm);
@@ -571,15 +571,15 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                 syncSlideshowTransitionCap();
                 updateResetButtons();
             });
-    connect(m_slideshowTransitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_ssSettings.transitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
-    connect(m_slideshowTransitionMsSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_ssSettings.transitionMsSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, [this](double) { updateResetButtons(); });
-    connect(m_slideshowMotionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_ssSettings.motionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
-    connect(m_panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_ssSettings.panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, [this](double) { updateResetButtons(); });
-    connect(m_slideshowZoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_ssSettings.zoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
     connect(m_slideshowLoopCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
@@ -776,13 +776,13 @@ void PreferencesDialog::onRemoveArchivesAsDefault()
 
 void PreferencesDialog::syncSlideshowTransitionCap()
 {
-    if (!m_intervalSpin || !m_slideshowTransitionMsSpin) {
+    if (!m_intervalSpin || !m_ssSettings.transitionMsSpin) {
         return;
     }
     const double capSec = qMax(0.0, m_intervalSpin->value());
-    m_slideshowTransitionMsSpin->setMaximum(capSec);
-    if (m_slideshowTransitionMsSpin->value() > capSec) {
-        m_slideshowTransitionMsSpin->setValue(capSec);
+    m_ssSettings.transitionMsSpin->setMaximum(capSec);
+    if (m_ssSettings.transitionMsSpin->value() > capSec) {
+        m_ssSettings.transitionMsSpin->setValue(capSec);
     }
 }
 
@@ -1131,80 +1131,80 @@ void PreferencesDialog::setDefaultGalleryLayoutMode(int layoutMode)
 
 int PreferencesDialog::slideshowTransitionIndex() const
 {
-    return m_slideshowTransitionCombo ? m_slideshowTransitionCombo->currentData().toInt() : 1;
+    return m_ssSettings.transitionCombo ? m_ssSettings.transitionCombo->currentData().toInt() : 1;
 }
 
 void PreferencesDialog::setSlideshowTransitionIndex(int index)
 {
-    if (!m_slideshowTransitionCombo) {
+    if (!m_ssSettings.transitionCombo) {
         return;
     }
-    const int idx = m_slideshowTransitionCombo->findData(index);
+    const int idx = m_ssSettings.transitionCombo->findData(index);
     if (idx >= 0) {
-        m_slideshowTransitionCombo->setCurrentIndex(idx);
+        m_ssSettings.transitionCombo->setCurrentIndex(idx);
     }
 }
 
 int PreferencesDialog::slideshowTransitionDurationMs() const
 {
     // UI is seconds; internal API stays milliseconds.
-    return m_slideshowTransitionMsSpin
-        ? qRound(m_slideshowTransitionMsSpin->value() * 1000.0)
+    return m_ssSettings.transitionMsSpin
+        ? qRound(m_ssSettings.transitionMsSpin->value() * 1000.0)
         : 400;
 }
 
 void PreferencesDialog::setSlideshowTransitionDurationMs(int ms)
 {
-    if (!m_slideshowTransitionMsSpin) {
+    if (!m_ssSettings.transitionMsSpin) {
         return;
     }
     syncSlideshowTransitionCap();
-    const double capSec = m_slideshowTransitionMsSpin->maximum();
-    m_slideshowTransitionMsSpin->setValue(qBound(0.0, ms / 1000.0, capSec));
+    const double capSec = m_ssSettings.transitionMsSpin->maximum();
+    m_ssSettings.transitionMsSpin->setValue(qBound(0.0, ms / 1000.0, capSec));
 }
 
 
 int PreferencesDialog::slideshowMotionIndex() const
 {
-    return m_slideshowMotionCombo ? m_slideshowMotionCombo->currentData().toInt() : 0;
+    return m_ssSettings.motionCombo ? m_ssSettings.motionCombo->currentData().toInt() : 0;
 }
 
 void PreferencesDialog::setSlideshowMotionIndex(int index)
 {
-    if (!m_slideshowMotionCombo) {
+    if (!m_ssSettings.motionCombo) {
         return;
     }
-    const int idx = m_slideshowMotionCombo->findData(index);
+    const int idx = m_ssSettings.motionCombo->findData(index);
     if (idx >= 0) {
-        m_slideshowMotionCombo->setCurrentIndex(idx);
+        m_ssSettings.motionCombo->setCurrentIndex(idx);
     }
 }
 
 double PreferencesDialog::panZoomFactor() const
 {
-    return m_panZoomFactorSpin ? m_panZoomFactorSpin->value() : 1.12;
+    return m_ssSettings.panZoomFactorSpin ? m_ssSettings.panZoomFactorSpin->value() : 1.12;
 }
 
 void PreferencesDialog::setPanZoomFactor(double factor)
 {
-    if (m_panZoomFactorSpin) {
-        m_panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
+    if (m_ssSettings.panZoomFactorSpin) {
+        m_ssSettings.panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
     }
 }
 
 int PreferencesDialog::slideshowZoomIndex() const
 {
-    return m_slideshowZoomCombo ? m_slideshowZoomCombo->currentData().toInt() : 0;
+    return m_ssSettings.zoomCombo ? m_ssSettings.zoomCombo->currentData().toInt() : 0;
 }
 
 void PreferencesDialog::setSlideshowZoomIndex(int index)
 {
-    if (!m_slideshowZoomCombo) {
+    if (!m_ssSettings.zoomCombo) {
         return;
     }
-    const int idx = m_slideshowZoomCombo->findData(index);
+    const int idx = m_ssSettings.zoomCombo->findData(index);
     if (idx >= 0) {
-        m_slideshowZoomCombo->setCurrentIndex(idx);
+        m_ssSettings.zoomCombo->setCurrentIndex(idx);
     }
 }
 
@@ -1222,14 +1222,14 @@ void PreferencesDialog::setSlideshowLetterboxFillIndex(int index)
     if (idx >= 0) {
         m_slideshowLetterboxCombo->setCurrentIndex(idx);
     }
-    if (m_slideshowPadColorBtn) {
-        m_slideshowPadColorBtn->setEnabled(index == 1);
+    if (m_ssSettings.padColorBtn) {
+        m_ssSettings.padColorBtn->setEnabled(index == 1);
     }
 }
 
 QColor PreferencesDialog::slideshowPadColor() const
 {
-    return m_slideshowPadColor;
+    return m_ssSettings.padColor;
 }
 
 void PreferencesDialog::setSlideshowPadColor(const QColor &color)
@@ -1237,11 +1237,11 @@ void PreferencesDialog::setSlideshowPadColor(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_slideshowPadColor = color;
-    if (m_slideshowPadColorBtn) {
+    m_ssSettings.padColor = color;
+    if (m_ssSettings.padColorBtn) {
         const QColor fg = (color.lightness() > 140) ? QColor(Qt::black) : QColor(Qt::white);
-        m_slideshowPadColorBtn->setText(color.name(QColor::HexRgb));
-        m_slideshowPadColorBtn->setStyleSheet(
+        m_ssSettings.padColorBtn->setText(color.name(QColor::HexRgb));
+        m_ssSettings.padColorBtn->setStyleSheet(
             QStringLiteral("QPushButton { background-color: %1; color: %2; padding: 4px 10px; }")
                 .arg(color.name(QColor::HexRgb), fg.name(QColor::HexRgb)));
     }

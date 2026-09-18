@@ -9,6 +9,7 @@
 #include <QElapsedTimer>
 #include <QImage>
 #include <QPixmap>
+#include <QColor>
 #include <QPointF>
 #include <QString>
 #include <QStringList>
@@ -127,6 +128,79 @@ struct SlideshowPhaseState {
         toAtlasScale = 0.0;
         toAtlasVw = 0;
         toAtlasVh = 0;
+    }
+};
+
+
+/**
+ * User-facing slideshow preferences (transition, framing, Ken Burns mode).
+ * Owned by ImageView; MainWindow prefs dialog reads/writes via accessors.
+ */
+struct SlideshowSettings {
+    SlideshowTransition transition = SlideshowTransition::Crossfade;
+    int transitionDurationMs = 400;
+    SlideshowMotion motion = SlideshowMotion::Off;
+    qreal panZoomFactor = 1.12;
+    SlideshowZoom zoom = SlideshowZoom::Fit;
+    SlideshowLetterboxFill letterboxFill = SlideshowLetterboxFill::AppBackground;
+    QColor padColor{42, 42, 42};
+};
+
+/**
+ * Dwell atlas and Ken Burns camera path (single-slide leg).
+ * Motion QTimer stays on ImageView (QObject parent).
+ */
+struct SlideshowDwellState {
+    QImage sourceImage;
+    QPixmap atlas;
+    quint64 atlasRebuildGeneration = 0;
+    qreal atlasScale = 0.0;
+    int atlasVw = 0;
+    int atlasVh = 0;
+    qreal motionT = 0.0;
+
+    bool motionActive = false;
+    bool motionPaused = false;
+
+    QPointF biasA{-1.0, -1.0};
+    QPointF biasB{1.0, 1.0};
+    bool biasValid = false;
+    QString biasPath;
+    QPointF travelDir{0.0, 1.0};
+    qreal motionSign = 1.0;
+    int durationMs = 0;
+    qint64 elapsedOffsetMs = 0;
+    QElapsedTimer clock;
+
+    void clearAtlas()
+    {
+        atlas = {};
+        atlasRebuildGeneration = 0;
+        atlasScale = 0.0;
+        atlasVw = 0;
+        atlasVh = 0;
+        sourceImage = {};
+    }
+
+    void clearMotionPath()
+    {
+        motionActive = false;
+        motionPaused = false;
+        biasValid = false;
+        biasPath.clear();
+        biasA = {-1.0, -1.0};
+        biasB = {1.0, 1.0};
+        travelDir = {0.0, 1.0};
+        motionSign = 1.0;
+        durationMs = 0;
+        elapsedOffsetMs = 0;
+        motionT = 0.0;
+    }
+
+    void clear()
+    {
+        clearAtlas();
+        clearMotionPath();
     }
 };
 

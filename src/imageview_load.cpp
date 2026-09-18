@@ -2358,7 +2358,7 @@ void ImageView::frameImageModeReplaceItem(ImageItem *item, const QString &path)
     // Slideshow framing: when dwell motion is on, the camera sets the
     // transform (including handoff from a live transition). Applying zoom
     // framing first would centre the image then jump to motion t0.
-    if (m_slideshowProgressActive && m_slideshowMotion == SlideshowMotion::Off) {
+    if (m_slideshowProgressActive && m_ssSettings.motion == SlideshowMotion::Off) {
         applySlideshowZoomFraming(item);
     } else if (!m_slideshowProgressActive) {
         applyImageModeFraming(item);
@@ -2367,8 +2367,8 @@ void ImageView::frameImageModeReplaceItem(ImageItem *item, const QString &path)
     // Apply camera while updates are still blocked and any live hold still
     // covers the viewport — avoids a flash of identity / wrong pan pose.
     maybeStartSlideshowMotion();
-    if (m_slideshowProgressActive && m_slideshowMotion != SlideshowMotion::Off
-        && !m_slideshowMotionActive) {
+    if (m_slideshowProgressActive && m_ssSettings.motion != SlideshowMotion::Off
+        && !m_ssDwell.motionActive) {
         applySlideshowZoomFraming(item);
     }
     if (m_slideshowProgressActive) {

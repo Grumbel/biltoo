@@ -69,7 +69,7 @@ void ImageView::invalidateSessionLoads()
     m_ss.rasterInflight.clear();
     m_ss.rasterPending.clear();
     m_ss.phaseUpgradeGeneration++;
-    m_dwellAtlasRebuildGeneration++;
+    m_ssDwell.atlasRebuildGeneration++;
     m_ss.toAtlasRebuildGeneration++;
     // Drop logical-size memory so the size-first gate re-probes (stale square
     // stand-ins must not skip resolve on the next open).
