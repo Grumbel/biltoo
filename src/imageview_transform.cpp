@@ -580,7 +580,7 @@ void ImageView::duplicateSelected()
         m_items.append(copy);
         // Attach already-baked display; do not put into ImageCache.
         attachDisplaySample(copy, display, content, kind);
-        m_pendingItemAppearance.insert(copy, content);
+        m_pendingAppearance.insert(copy, content);
         if (isWorkspaceMode()) {
             copy->setItemScale(src->itemScaleX(), src->itemScaleY());
             copy->setItemShear(src->itemShear());

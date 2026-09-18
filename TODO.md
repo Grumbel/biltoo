@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1280-pending-item-appearance-book.** Extract PendingItemAppearanceBook for Duplicate staging.
+Prior: **1279**.
+
+### Change
+- `PendingItemAppearanceBook` (ImageItem* → WorkspaceItemState) with take/clear.
+- ImageView holds `m_pendingAppearance`; cleared with session wipe / bind book.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1280-pending-item-appearance-book.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1279-soft-display-policy.** Pure LQIP / host-soft underlay sample selection.
 Prior: **1278**.
 

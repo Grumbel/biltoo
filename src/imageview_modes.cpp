@@ -235,6 +235,7 @@ void ImageView::clearWorkspace()
     m_loadGate.clearPendingWorkspacePaths();
     m_loadGate.pendingRestoreStates().clear();
     m_bindBook.clear();
+    m_pendingAppearance.clear();
     gallerySoftResetAll();
     m_sizeBook.clear();
     m_gallerySoftBook.deferPopulate = false;

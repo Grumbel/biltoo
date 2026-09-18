@@ -25,6 +25,7 @@
 #include "gallerysoftbook.h"
 #include "imagesizebook.h"
 #include "pathitemstatebook.h"
+#include "pendingitemappearancebook.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
@@ -1830,7 +1831,7 @@ private:
 
     SessionBindBook m_bindBook;
     /** Content appearance staged by Duplicate until bindSelectedSessionIds. */
-    QHash<ImageItem *, WorkspaceItemState> m_pendingItemAppearance;
+    PendingItemAppearanceBook m_pendingAppearance;
     ViewportChrome m_chrome;
     /** One-shot rubber-band zoom (Z). */
     ZoomRegionGesture m_zoomRegion;

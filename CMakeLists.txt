@@ -145,6 +145,7 @@ add_executable(biltoo
   src/gallerysoftbook.h
   src/imagesizebook.h
   src/pathitemstatebook.h
+  src/pendingitemappearancebook.h
   src/slideshowtypes.h
   src/slideshowclocks.h
   src/slideshowclocks.cpp

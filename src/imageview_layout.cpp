@@ -1808,8 +1808,7 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
             }
         }
         WorkspaceItemState slot;
-        if (m_pendingItemAppearance.contains(item)) {
-            slot = m_pendingItemAppearance.take(item);
+        if (m_pendingAppearance.take(item, &slot)) {
             // Pending may carry colour grade from Duplicate before the live item
             // was fully synced — apply it so the tile and sessionAppearanceImage match.
             item->setColorAdjustments(slot.colorAdjust);
