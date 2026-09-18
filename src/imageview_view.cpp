@@ -2491,9 +2491,7 @@ namespace {
 void ImageView::clearSlideshowZoomBlurSlots()
 {
     // Drop cached underlays and cancel in-flight blur jobs (pad/letterbox/viewport).
-    ZoomBlur::clearSizedSlots(&m_ssZoomBlur);
-    m_ssZoomBlur.lastGood = QPixmap();
-    m_ssZoomBlur.lastGoodKey = 0;
+    ZoomBlur::clearAllSlots(&m_ssZoomBlur);
     invalidateZoomBlurQueue();
 }
 
@@ -3190,10 +3188,12 @@ QString ImageView::currentPath() const
 
 QString ImageView::sessionBadgeText() const
 {
-    if (m_sessionId.total > 0 && m_sessionId.index >= 0 && m_sessionId.index < m_sessionId.total) {
-        return tr("%1/%2").arg(m_sessionId.index + 1).arg(m_sessionId.total);
+    const QString ascii = sessionBadgeAscii(m_sessionId.index, m_sessionId.total);
+    if (ascii.isEmpty()) {
+        return {};
     }
-    return {};
+    // Keep tr for potential locale digit shaping; form is still index/total.
+    return tr("%1").arg(ascii);
 }
 
 QString ImageView::hudFileName() const

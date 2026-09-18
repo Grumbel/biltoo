@@ -36,6 +36,9 @@ void pruneOutsidePair(SlideshowZoomBlurState *st, qint64 keepA, qint64 keepB);
 /** Clear sized underlays; leave lastGood for paint stretch. */
 void clearSizedSlots(SlideshowZoomBlurState *st);
 
+/** Clear sized underlays and lastGood stretch fallback. */
+void clearAllSlots(SlideshowZoomBlurState *st);
+
 /** Bump generation and clear in-flight markers (cancel pending jobs). */
 void invalidateQueue(SlideshowZoomBlurState *st);
 

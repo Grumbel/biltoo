@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1288-zoomblur-clear-badge.** ZoomBlur clearAllSlots + pure session badge string.
+Prior: **1287**.
+
+### Change
+- `ZoomBlur::clearAllSlots` (sized slots + lastGood).
+- `sessionBadgeAscii(index, total)` in sessionchrome.h.
+- ImageView wrappers thin out.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1288-zoomblur-clear-badge.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1287-soft-path-have-edge.** Pure aggregate of per-path display have-edge.
 Prior: **1286**.
 

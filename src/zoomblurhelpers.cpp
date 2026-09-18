@@ -78,6 +78,16 @@ void pruneOutsidePair(SlideshowZoomBlurState *st, qint64 keepA, qint64 keepB)
     }
 }
 
+void clearAllSlots(SlideshowZoomBlurState *st)
+{
+    if (!st) {
+        return;
+    }
+    clearSizedSlots(st);
+    st->lastGood = QPixmap();
+    st->lastGoodKey = 0;
+}
+
 void clearSizedSlots(SlideshowZoomBlurState *st)
 {
     if (!st) {

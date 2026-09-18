@@ -38,4 +38,16 @@ struct SessionNavFlags {
     bool galleryReturnAvailable = false;
 };
 
+/**
+ * 1-based session index badge ("i/n") or empty when index/total invalid.
+ * Pure string form; callers translate via tr if needed.
+ */
+inline QString sessionBadgeAscii(int index, int total)
+{
+    if (total > 0 && index >= 0 && index < total) {
+        return QString::number(index + 1) + QLatin1Char('/') + QString::number(total);
+    }
+    return {};
+}
+
 #endif // SESSIONCHROME_H
