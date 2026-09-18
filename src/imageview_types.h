@@ -25,6 +25,18 @@
 using SessionImageId = qint64;
 inline constexpr SessionImageId kInvalidSessionImageId = 0;
 
+/**
+ * Why Gallery may repack. Decode and view resize are not reasons.
+ * applyLayout(reason) is the only pack entry point for Gallery.
+ */
+enum class GalleryPackReason {
+    ExplicitLayout, /**< Layout toolbar / menu while already in Gallery */
+    EnterGallery,   /**< Entering Gallery or rebuilding from session list */
+    Reload,         /**< F5 / explicit reload with relayout */
+    ContentChange,  /**< Content flip/rotate changed tile aspect for pack */
+    SessionMutate,  /**< Add/duplicate/remove that must show tiles without holes */
+};
+
 /** Workspace / gallery packing mode (ImageView layout engine). */
 enum class LayoutMode {
     FreeForm,
