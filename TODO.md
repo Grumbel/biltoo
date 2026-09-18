@@ -2,6 +2,37 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1170-stop-soft-prefercache.** Kill remaining soft PreferCache (setInterest/PathRaster).
+Prior: **1169**.
+
+### Evidence
+`thumtoo: DEBUG_OVERLAY soft 341x512 req=512` — soft PreferCache still scheduled
+despite tiles-only policy. Also GUI budget storms on scheduleGalleryDecode /
+TileLoadCoordinator.
+
+### Root causes still scheduling soft
+1. `publishGalleryInterest` set `nearEdge = kGalleryLadderEdge` (512) → setInterest PreferCache soft
+2. sizeReady revalidate called `scheduleSoftPixels`
+3. `scheduleGalleryDecode` PathRaster SoftDisplay ensure
+4. Gallery soft watchdog SoftDisplay climb
+
+### Fix
+- Interest near/spec edges = LQIP only; primary for tile warm
+- No soft on sizeReady
+- Gallery scheduleGalleryDecode never PathRaster soft
+- Watchdog / pass2: LQIP cap, no SoftDisplay ensure
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1170-stop-soft-prefercache.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1169-tiles-only-no-soft.** Gallery tiles + LQIP only; remove soft underlay.
 Prior: **1168**.
 

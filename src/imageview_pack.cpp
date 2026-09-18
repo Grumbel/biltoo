@@ -151,13 +151,14 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
 void ImageView::publishGalleryInterest(const QStringList &interestNear,
                                        const QStringList &interestRest)
 {
-    // Interest: near ≤ overview 1024; primary = tiles needing >1024 (FocusFull).
-    // A primary-only setInterest wiped near/speculative and only EnsureTiles with
-    // no host PreferCache install — merge primary into the Gallery snapshot.
-    const int softEdge = ThumtooCache::kGalleryLadderEdge;
+    // Gallery product: tiles + LQIP only. Never setInterest with soft-band
+    // nearEdge 512 (that was PreferCache soft req=512 flood in DEBUG_OVERLAY).
+    // Near/speculative edges stay at LQIP; primary carries FocusFull / tiles for
+    // on-screen need above overview.
+    const int lqipEdge = DisplayQuality::kLqipMaxEdge;
     const int ovCap = ThumtooCache::kBatchOverviewEdge;
     const int imgCap = ThumtooCache::kImageLadderEdge;
-    int nearEdge = softEdge;
+    int nearEdge = lqipEdge;
     int primEdge = 0;
     QStringList primary;
     for (const QString &p : interestNear) {
@@ -165,12 +166,21 @@ void ImageView::publishGalleryInterest(const QStringList &interestNear,
         if (it == m_gallerySoft.cend() || it->want <= 0) {
             continue;
         }
-        nearEdge = qMax(nearEdge, qMin(it->want, ovCap));
-        // FocusFull when on-screen need exceeds overview — do not wait for
-        // have >= 1024 (PreferCache plateau is often 1024 without tiles).
-        if (it->want > ovCap) {
+        // Primary when need exceeds LQIP — thumtoo EnsureTiles / FocusFull.
+        if (it->want > lqipEdge) {
             primary.append(p);
             primEdge = qMax(primEdge, qMin(it->want, imgCap));
+        }
+    }
+    if (primary.isEmpty()) {
+        // Still advertise visible paths as primary at overview so tile pyramid
+        // can warm without soft PreferCache.
+        for (const QString &p : interestNear) {
+            if (primary.size() >= 4) {
+                break;
+            }
+            primary.append(p);
+            primEdge = qMax(primEdge, ovCap);
         }
     }
     if (primary.size() > 4) {
@@ -181,7 +191,7 @@ void ImageView::publishGalleryInterest(const QStringList &interestNear,
     QStringList speculative = interestRest;
     speculative.sort();
     primary.sort();
-    (void)ThumtooCache::setInterest(near, speculative, nearEdge, softEdge,
+    (void)ThumtooCache::setInterest(near, speculative, nearEdge, lqipEdge,
                                     primary, primEdge);
 }
 
@@ -305,7 +315,8 @@ void ImageView::updateGalleryDecodeWindow()
     QSet<QString> seen;
     constexpr int kMaxSpeculative = 12;
     const int kMaxRestCandidates = kMaxIdleGalleryDecodes * 4;
-    const int softCap = ThumtooCache::kGalleryLadderEdge;
+    // Gallery: no soft-band climb — LQIP cap only (tiles own large cells).
+    const int softCap = DisplayQuality::kLqipMaxEdge;
     const int filmEdge = ThumtooCache::kFilmstripLadderEdge;
 
     for (ImageItem *item : m_items) {
@@ -911,27 +922,20 @@ void ImageView::gallerySoftWatchdogTick()
             }
             // else: leave weakSinceMs so LQIP→soft watchdog can force ensure
         } else {
-            // Durable tiles / tile LOD: never Full native from Gallery soft tick.
-            const auto pol =
-                (target > ThumtooCache::kBatchOverviewEdge
-                 && !ThumtooCache::hasDurableTilesKnown(path)
-                 && !(item && item->tileLodWanted()))
-                    ? PathRasterService::ClimbPolicy::EscalateToFull
-                    : PathRasterService::ClimbPolicy::SoftDisplay;
+            // Gallery: never SoftDisplay / PreferCache from watchdog. Tiles + LQIP only.
             if (act.type == AT::ScheduleClimb) {
                 clearGallerySoftInflight(st);
+                // Re-enter scheduleGalleryDecode for LQIP/tile path only (no soft).
+                scheduleGalleryDecode(path);
+                continue;
             }
             const bool sizeChanged =
-                applyDisplaySurfaceAction(item, act, QImage(), target, pol);
+                applyDisplaySurfaceAction(
+                    item, act, QImage(), target,
+                    PathRasterService::ClimbPolicy::SoftDisplay);
             if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
                 ++repaired;
                 Q_UNUSED(sizeChanged);
-            }
-            if (act.type == AT::ScheduleClimb) {
-                scheduleGalleryDecode(path);
-                if (m_pathRaster && m_pathRaster->isClimbPending(path)) {
-                    needWindow = true;
-                }
             }
             st.have = qMax(st.have, item->displayPixelLongEdge());
             if (item->displayPixelLongEdge() > DisplayQuality::kLqipMaxEdge) {

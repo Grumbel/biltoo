@@ -21,6 +21,8 @@ Small cells (`!tileLodWanted`): LQIP only (want capped ≤96).
 
 Warm `ImageCache` LQIP cover → zero work for underlay.
 
+`publishGalleryInterest` uses **LQIP near/spec edges only** — never soft-band 512 (that PreferCache soft was the DEBUG_OVERLAY soft req=512 flood).
+
 ### Debug overlay (`BILTOO_DEBUG_OVERLAY`)
 
 | Stamp | Meaning |

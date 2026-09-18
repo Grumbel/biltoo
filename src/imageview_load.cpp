@@ -1831,63 +1831,14 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         }
     }
 
-    if (!m_pathRaster) {
-        return;
-    }
-
-    GallerySoft::assertNotTerminalForSchedule(st);
-    GallerySoft::noteEnsureScheduled(st, want);
-
-    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
-        dbg && dbg[0] != '\0' && dbg[0] != '0') {
-        fprintf(stderr,
-                "biltoo/gallery: pathRaster ensure path need=%d have=%d\n",
-                want, have);
-    }
-
-    markGallerySoftInflight(st, want);
-    // Past overview: Full only when no durable tiles (tiles/TileSynth own
-    // prepared libraries). SoftDisplay was waiting forever on soft-only paths.
-    const auto climbPolicy =
-        (want > ThumtooCache::kBatchOverviewEdge
-         && !ThumtooCache::hasDurableTilesKnown(path))
-            ? PathRasterService::ClimbPolicy::EscalateToFull
-            : PathRasterService::ClimbPolicy::SoftDisplay;
-    m_pathRaster->ensure(path, want, logicalSizeForPath(path), climbPolicy);
-    syncGallerySoftMirrorFromPathRaster(path, st);
-
-    // Host may already hold soft while the tile still shows LQIP — install now.
-    // st.have is *shown* edge only (not ImageCache), so compare host vs have.
-    {
-        const QImage img = ImageCache::get(path);
-        const int host = ImageCache::longEdge(img);
-        if (!img.isNull() && host > have) {
-            onImagePreviewLoaded(path, img, m_loadGeneration.load(),
-                                 static_cast<int>(LoadAdd));
-            st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
-        }
-    }
-    if (coversEdge(st.have, want)) {
-        clearGallerySoftInflight(st);
-        if (st.gaveUpWant <= want) {
-            st.gaveUpWant = 0;
-        }
-        return;
-    }
-    if (m_pathRaster->isGaveUp(path)) {
-        clearGallerySoftInflight(st);
-        return;
-    }
-    if (!m_pathRaster->isClimbPending(path)) {
-        // ensure scheduled nothing (thumtoo down / already settled policy) —
-        // do not pin gallery inflight until the watchdog.
-        clearGallerySoftInflight(st);
-        return;
-    }
-    // Async: ladderReady -> applyGalleryLadderReady clears inflight via noteLadderDelivery.
+    // Gallery product: tiles + LQIP only. Never PathRaster SoftDisplay /
+    // EscalateToFull / PreferCache soft (was DEBUG_OVERLAY soft req=512 flood).
+    // Tile-band paths already returned above; non-tile cells stop at LQIP install.
+    clearGallerySoftInflight(st);
+    st.terminal = true;
 }
 
-void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
+void ImageView::onLadderReadyvoid ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
 {
     ASSERT_GUI_THREAD();
     if (path.isEmpty()) {

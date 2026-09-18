@@ -521,9 +521,9 @@ void scheduleBackgroundRevalidate(const QString &path, const std::string &uri)
             return;
         }
         // Refresh durable rows (probe worker re-reads source).
+        // Do not scheduleSoftPixels — Gallery is tiles + LQIP only; soft PreferCache
+        // was flooding DEBUG_OVERLAY soft req=512 and GUI budget.
         scheduleProbe(pathCopy);
-        // Also nudge soft-band PreferCache when size changes (TileSynth if tiles exist).
-        (void)scheduleSoftPixels(pathCopy, kGalleryLadderEdge);
     });
 }
 
