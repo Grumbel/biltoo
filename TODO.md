@@ -1,5 +1,25 @@
 # TODO / agent handoff
 
+## Status (2026-09-19)
+
+**Tip: biltoo-1345-maxaxis-groupscale-slideshow-clocks.** maxAxisScale, group scale, SlideshowClocks policy, track clamp01, pairCount.
+Prior: **1341** (upstream `d7d890a`).
+
+### Change
+- `PlacementLinear::{maxAxisScale,clampGroupScaleAxis}`
+- `ViewTransform::{safeDivisor,pairCount}`
+- `SlideshowClocks` interval/transition/enum/pathIndex clamps, pureFrac, transitionBlendT
+- ItemFrameGeometry track uses `clamp01`
+
+### Apply (bases on upstream tip 1341)
+```bash
+git pull --rebase /path/to/biltoo-1345-maxaxis-groupscale-slideshow-clocks.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-18)
 
 **Tip: biltoo-1341-climb-cropfont-materialize.** DisplayEdge climb/bind/synth, crop fonts, materialize preview.
