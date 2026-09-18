@@ -258,12 +258,21 @@ void ImageView::updateGalleryDecodeWindow()
     // ------------------------------------------------------------------
     QStringList visible;
     QStringList interestNear;
-    QStringList interestRest;
     QSet<QString> seen;
-    constexpr int kMaxSpeculative = 12;
     constexpr int kMaxNear = 24;
 
-    for (ImageItem *item : m_items) {
+    // Prefer viewport hits only — full m_items + tileLodWanted was O(n) and
+    // dominated cold decode windows on large sessions.
+    const QList<QGraphicsItem *> hit =
+        sceneVisible.isNull()
+            ? QList<QGraphicsItem *>()
+            : scene()->items(sceneVisible, Qt::IntersectsItemBoundingRect);
+    for (QGraphicsItem *gi : hit) {
+        if (wall.elapsed() >= kDecodeWindowWallMs) {
+            scheduleGalleryDecodeWindowRefresh(16);
+            break;
+        }
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
         if (!item) {
             continue;
         }
@@ -273,22 +282,17 @@ void ImageView::updateGalleryDecodeWindow()
         }
         seen.insert(path);
 
-        const QRectF tile = item->contentSceneRect();
-        const bool tileOk = !tile.isNull() && tile.isValid();
-        const bool onScreen = tileOk && tile.intersects(sceneVisible);
-        if (onScreen && interestNear.size() < kMaxNear) {
+        if (interestNear.size() < kMaxNear) {
             interestNear.append(path);
-        } else if (tileOk && interestRest.size() < kMaxSpeculative) {
-            interestRest.append(path);
         }
 
         GallerySoftState &st = m_gallerySoft[path];
         st.have = qMax(st.have, item->displayPixelLongEdge());
-        st.terminal = true; // no soft PreferCache climb
+        st.terminal = true;
         clearGallerySoftInflight(st);
 
-        // Blank cells: install LQIP (and queue pyramid only if needed).
-        if (!item->hasDisplayPixels() && (onScreen || item->tileLodWanted())) {
+        // Blank on-screen cells only — off-screen waits until scrolled in.
+        if (!item->hasDisplayPixels()) {
             visible.append(path);
         }
     }
@@ -309,7 +313,7 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     const bool lqipBusy = scheduled > 0 || moreInstallsPending;
-    publishGalleryInterest(interestNear, interestRest);
+    publishGalleryInterest(interestNear, QStringList());
     if (m_perfEnabled) {
         usInterest = phaseTimer.nsecsElapsed() / 1000;
     }
@@ -331,15 +335,15 @@ void ImageView::updateGalleryDecodeWindow()
         if (now - s_lastLogMs >= 500) {
             s_lastLogMs = now;
             std::fprintf(stderr,
-                         "biltoo/tile: lqipBusy=%d visibleSched=%d inflight=%d
-",
+                         "biltoo/tile: lqipBusy=%d visibleSched=%d inflight=%d\n",
                          lqipBusy ? 1 : 0, scheduled, gallerySoftInflightCount());
             std::fflush(stderr);
         }
     }
 
-    // Re-arm promptly while cells still need LQIP install or tile coverage.
-    if (scheduled > 0 || moreInstallsPending || tileWanted > tileCovered) {
+    // Re-arm while LQIP installs or schedules remain; tile coverage continues
+    // via TileLoadCoordinator re-arm / completion wake.
+    if (scheduled > 0 || moreInstallsPending) {
         scheduleGalleryDecodeWindowRefresh(16);
     }
     updateGallerySoftProgressHud();

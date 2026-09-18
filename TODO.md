@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1207-decode-window-viewport-only.** Fix compile break; decode pass2 viewport-only (no O(n) tileLodWanted).
+Prior: **1206**.
+
+### Fix
+- Repair broken `tileWanted`/`tileCovered` re-arm and fprintf string from 1206 census removal.
+- Pass 2 iterates `scene()->items(sceneVisible)` only; blank on-screen cells get LQIP schedule.
+- Wall check inside the hit loop.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1207-decode-window-viewport-only.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1206-probe-dedupe-decode-wall.** Dedupe size probes; wall-budget Gallery decode window.
 Prior: **1205**.
 
