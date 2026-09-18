@@ -66,42 +66,16 @@ public:
     /**
      * True when install/ladder must not replace the draft sample for @p path.
      * Uses draftPath and targetItem path; does not walk the scene by session id.
+     * Defined in cropsession.cpp (needs complete ImageItem).
      */
-    bool locksPath(const QString &path) const
-    {
-        if (!draftSampleFrozen || path.isEmpty()) {
-            return false;
-        }
-        if (!draftPath.isEmpty() && path == draftPath) {
-            return true;
-        }
-        if (targetItem && targetItem->path() == path) {
-            return true;
-        }
-        return false;
-    }
+    bool locksPath(const QString &path) const;
 
     /**
      * True when @p item is the draft subject (pointer, session id, or path).
      * Host may still lock via targetId → other item path lookup.
+     * Defined in cropsession.cpp (needs complete ImageItem).
      */
-    bool locksItem(const ImageItem *item) const
-    {
-        if (!draftSampleFrozen || !item) {
-            return false;
-        }
-        if (targetItem && item == targetItem) {
-            return true;
-        }
-        if (targetId != kInvalidSessionImageId
-            && item->sessionId() == targetId) {
-            return true;
-        }
-        if (!item->path().isEmpty() && locksPath(item->path())) {
-            return true;
-        }
-        return false;
-    }
+    bool locksItem(const ImageItem *item) const;
 
     /**
      * Pure draft layout gate: crop mode active but no applied/session crop yet.

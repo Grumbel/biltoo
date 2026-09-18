@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1296-crop-session-locks-cpp.** Move CropSession locksPath/locksItem out of header.
+Prior: **1295**.
+
+### Change
+- `CropSession::locksPath` / `locksItem` defined in `cropsession.cpp` so the
+  header only forward-declares `ImageItem` (fixes incomplete-type build break
+  when cropsession.h is included before imageitem.h).
+- CMakeLists: add `src/cropsession.cpp`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1296-crop-session-locks-cpp.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1295-attention-draft-live-mods.** Attention draft bind + pure live content-mod flags.
 Prior: **1294**.
 
