@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "hudgeometry.h"
 #include "textlayergeometry.h"
 #include "pageguidegeometry.h"
 #include "edgenavpolicy.h"
@@ -449,22 +450,14 @@ void ImageView::paintHudPanels(QPainter &painter)
             if (drawn.size() > 1) {
                 textH += lineGap * (drawn.size() - 1);
             }
-            textW = qMin(textW, maxTextW);
-            const int bgW = qMin(maxBgW, textW + 2 * pad);
-            const int bgH = textH + 2 * pad;
-            int x;
-            int y;
-            if (centre) {
-                x = (viewW - bgW) / 2;
-                y = (viewH - bgH) / 2;
-            } else {
-                x = fromRight ? (viewW - margin - bgW) : anchorX;
-                y = fromBottom ? (viewH - margin - bgH) : anchorY;
-            }
-            // Keep fully on-screen
-            x = qBound(margin, x, viewW - margin - bgW);
-            y = qBound(margin, y, viewH - margin - bgH);
-            const QRect bg(x, y, bgW, bgH);
+            const HudGeometry::PanelBox box = HudGeometry::placePanel(
+                viewW, viewH, textW, textH, margin, pad, anchorX, anchorY,
+                fromRight, fromBottom, centre);
+            const int bgW = box.bgW;
+            const int bgH = box.bgH;
+            const int x = box.x;
+            const int y = box.y;
+            const QRect bg = HudGeometry::panelRect(box);
             painter.setPen(Qt::NoPen);
             QColor panel = m_hudPrefs.panelColor;
             if (!panel.isValid() || panel.alpha() == 0) {

@@ -164,6 +164,7 @@ add_executable(biltoo
   src/selectiongeometry.h
   src/coloradjustcommit.h
   src/viewtransform.h
+  src/hudgeometry.h
   src/galleryrelayoutsuppress.h
   src/layoutapplyguard.h
   src/imagesizebook.h
