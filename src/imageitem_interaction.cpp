@@ -1580,9 +1580,15 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // Gallery product: LQIP underlay only until tiles cover. Never soft/HOST
         // whole-frame under tileLodWanted cells.
         const bool tilesWanted = tileLodWanted();
+        const bool tilesLive = tilesWanted && tileLodActive();
         const bool tilesFullyCover =
             tilesWanted && tileLodViewportCovered();
+        // LQIP base until exact target coverage; keep under live coarse tiles too.
         const bool drawLqipBase = !tilesFullyCover;
+        // Live tiles must not sit under a frozen ItemCoordinateCache pixmap.
+        if (tilesLive && cacheMode() != QGraphicsItem::NoCache) {
+            setCacheMode(QGraphicsItem::NoCache);
+        }
 
         auto isLqipSample = [](const QImage &img) {
             if (img.isNull()) {

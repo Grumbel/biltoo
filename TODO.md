@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1181-tile-cancel-wire.** Thumtoo tile cancel + live-tile NoCache.
+Prior: **1180**.
+
+### Changes
+- `ThumtooCache::cancelTilesForPath` → `Client::cancel_uri`
+- `TileLodRegistry` passes `CancelFn` into `ThumtooTileSource` so
+  `cancel_obsolete` drops queued EnsureTiles on pan/zoom
+- Paint: force `NoCache` while `tileLodActive()` so ItemCoordinateCache cannot
+  freeze LQIP over live tiles
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1181-tile-cancel-wire.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1180-tile-service-central.** Tile service via coordinator + unstick LQIP.
 Prior: **1179**.
 

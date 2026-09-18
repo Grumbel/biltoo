@@ -1658,6 +1658,34 @@ int cancelPendingThumtooWork()
 #endif
 }
 
+int cancelTilesForPath(const QString &path)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+#if defined(THUMTOO_API_INTEREST_EPOCH) && THUMTOO_API_INTEREST_EPOCH
+    if (path.isEmpty()) {
+        return 0;
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return 0;
+    }
+    std::lock_guard lock(g_mu);
+    thumtoo::Client *c = clientUnlocked();
+    if (!c) {
+        return 0;
+    }
+    return static_cast<int>(c->cancel_uri(uri));
+#else
+    Q_UNUSED(path);
+    return 0;
+#endif
+#else
+    Q_UNUSED(path);
+    return 0;
+#endif
+}
+
 quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpeculative,
                     int nearEdge, int speculativeEdge,
                     const QStringList &pathsPrimary, int primaryEdge)

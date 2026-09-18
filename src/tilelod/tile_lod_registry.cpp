@@ -23,6 +23,16 @@ ThumtooTileSource::FetchFn makeFetch(QString path)
   };
 }
 
+ThumtooTileSource::CancelFn makeCancel(QString path)
+{
+  return [path](std::string const& /*uri*/,
+                std::vector<ThumtooTileSource::TileCoord> const& /*coords*/) {
+    // thumtoo cancel_uri drops all queued EnsureTiles for the path (not
+    // per-coord). Good enough for pan/zoom obsolete work.
+    (void)ThumtooCache::cancelTilesForPath(path);
+  };
+}
+
 }  // namespace
 
 TileLodRegistry& TileLodRegistry::instance()
@@ -47,7 +57,7 @@ std::shared_ptr<SharedPathTiles> TileLodRegistry::acquire(QString const& path)
   shared->path = path;
   shared->cache = std::make_shared<TileMemoryCache>();
   shared->source = std::make_shared<ThumtooTileSource>(
-      std::string{"path"}, makeFetch(path));
+      std::string{"path"}, makeFetch(path), makeCancel(path));
   shared->refcount = 1;
   m_by_path.emplace(key, shared);
   return shared;

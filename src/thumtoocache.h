@@ -172,6 +172,8 @@ void forgetPixelsSettled(const QString &path, int maxEdge);
 quint64 bumpInterestEpoch();
 /** Drop all queued thumtoo jobs (pixels/size/tiles); in-flight may still finish. */
 int cancelPendingThumtooWork();
+/** Drop queued EnsureTiles jobs for this path (thumtoo cancel_uri). */
+int cancelTilesForPath(const QString &path);
 
 /**
  * Replace thumtoo interest snapshot (cancels stale work, schedules overview).
