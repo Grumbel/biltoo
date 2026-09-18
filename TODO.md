@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1291-crop-session-lock.** CropSession owns draft sample lock predicates.
+Prior: **1290**.
+
+### Change
+- `CropSession::locksPath` / `locksItem` (draftSampleFrozen + draftPath/target).
+- ImageView wrappers add host-only targetId → live item path resolution.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1291-crop-session-lock.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1290-appearance-without-crop.** Pure withoutCrop for orient-only appearance.
 Prior: **1289**.
 

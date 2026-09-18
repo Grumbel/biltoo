@@ -354,17 +354,12 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
 
 bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 {
-    if (!m_crop.draftSampleFrozen || !item) {
-        return false;
-    }
-    if (m_crop.targetItem && item == m_crop.targetItem) {
+    if (m_crop.locksItem(item)) {
         return true;
     }
-    if (m_crop.targetId != kInvalidSessionImageId
-        && item->sessionId() == m_crop.targetId) {
-        return true;
-    }
-    if (!item->path().isEmpty() && isCropDraftLockedPath(item->path())) {
+    // Host-only: targetId may refer to another live item with the same path.
+    if (item && m_crop.draftSampleFrozen && !item->path().isEmpty()
+        && isCropDraftLockedPath(item->path())) {
         return true;
     }
     return false;
@@ -372,15 +367,13 @@ bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 
 bool ImageView::isCropDraftLockedPath(const QString &path) const
 {
-    if (!m_crop.draftSampleFrozen || path.isEmpty()) {
-        return false;
+    if (m_crop.locksPath(path)) {
+        return true;
     }
     // Prefer the path captured at lock time — survives item pointer churn.
-    if (!m_crop.draftPath.isEmpty() && path == m_crop.draftPath) {
-        return true;
-    }
-    if (m_crop.targetItem && m_crop.targetItem->path() == path) {
-        return true;
+    // Host resolves targetId → current item path when draftPath is empty.
+    if (!m_crop.draftSampleFrozen || path.isEmpty()) {
+        return false;
     }
     if (m_crop.targetId != kInvalidSessionImageId) {
         if (ImageItem *byId = findItemBySessionId(m_crop.targetId)) {
