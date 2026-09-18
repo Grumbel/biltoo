@@ -244,8 +244,7 @@ void ImageView::clearWorkspace()
     m_tileNeighborPrefetch.clear();
     tilelod::TileLodRegistry::instance().invalidateAll();
     ThumtooCache::clearSessionReplaceMemos();
-    m_pathOrder.clear();
-    m_sessionIdOrder.clear();
+    m_pathOrderBook.clear();
     // Path-keyed placement is legacy for unbound tiles only; drop it so a
     // project load cannot inherit stale poses from a previous session.
     m_itemStateBook.clear();

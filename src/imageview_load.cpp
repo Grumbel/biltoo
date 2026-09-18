@@ -226,13 +226,7 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
 
 int ImageView::pathOrderOccurrences(const QString &path) const
 {
-    int n = 0;
-    for (const QString &p : m_pathOrder) {
-        if (p == path) {
-            ++n;
-        }
-    }
-    return n;
+    return m_pathOrderBook.countPathOccurrences(path);
 }
 
 WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
@@ -2197,8 +2191,8 @@ void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
         return;
     }
     if (m_layout.mode != LayoutMode::FreeForm) {
-        if (!m_pathOrder.isEmpty()) {
-            reorderItemsByPaths(m_pathOrder);
+        if (!m_pathOrderBook.paths.isEmpty()) {
+            reorderItemsByPaths(m_pathOrderBook.paths);
         }
         if (!(isGalleryMode() && m_galleryRelayoutSuppressCount > 0)) {
             if (sizeChanged) {

@@ -112,7 +112,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
 {
     TtfpTrace::mark("finishSetWorkspacePaths");
     // Keep canvas order aligned with session/sort order (not async load order).
-    reorderItemsByPaths(m_pathOrder);
+    reorderItemsByPaths(m_pathOrderBook.paths);
 
     if (haveIds) {
         rebindWorkspaceSession(paths, sessionIds);
@@ -184,15 +184,10 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // --- Remove tiles that are not part of the new session -------------------
     destroyDoomedWorkspaceItems(collectDoomedWorkspaceItems(paths, sessionIds));
 
-    m_pathOrder = paths;
-    m_sessionIdOrder = sessionIds;
+    m_pathOrderBook.paths = paths;
+    m_pathOrderBook.ids = sessionIds;
     // Align lengths: missing ids stay invalid (unbound rows).
-    while (m_sessionIdOrder.size() < m_pathOrder.size()) {
-        m_sessionIdOrder.append(kInvalidSessionImageId);
-    }
-    while (m_sessionIdOrder.size() > m_pathOrder.size()) {
-        m_sessionIdOrder.removeLast();
-    }
+    m_pathOrderBook.syncIdLength();
 
     // Gallery size-first: probe all unknown sizes before creating tiles so the
     // first pack never uses 1024² stand-ins (first cell stuck square until reload).
@@ -460,19 +455,19 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
         // (filmstrip row only, wrong thumb until appearance emit).
         if (sessionId != kInvalidSessionImageId) {
             bool alreadyOrdered = false;
-            for (SessionImageId id : m_sessionIdOrder) {
+            for (SessionImageId id : m_pathOrderBook.ids) {
                 if (id == sessionId) {
                     alreadyOrdered = true;
                     break;
                 }
             }
             if (!alreadyOrdered) {
-                m_pathOrder.append(path);
-                m_sessionIdOrder.append(sessionId);
+                m_pathOrderBook.paths.append(path);
+                m_pathOrderBook.ids.append(sessionId);
             }
         } else {
-            m_pathOrder.append(path);
-            m_sessionIdOrder.append(kInvalidSessionImageId);
+            m_pathOrderBook.paths.append(path);
+            m_pathOrderBook.ids.append(kInvalidSessionImageId);
         }
     }
     scheduleImageLoad(path, LoadAdd);
@@ -546,20 +541,20 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     // Path alone cannot express "two tiles, same file".
     if (sessionId != kInvalidSessionImageId) {
         bool alreadyOrdered = false;
-        for (SessionImageId id : m_sessionIdOrder) {
+        for (SessionImageId id : m_pathOrderBook.ids) {
             if (id == sessionId) {
                 alreadyOrdered = true;
                 break;
             }
         }
         if (!alreadyOrdered) {
-            m_pathOrder.append(path);
-            m_sessionIdOrder.append(sessionId);
+            m_pathOrderBook.paths.append(path);
+            m_pathOrderBook.ids.append(sessionId);
         }
     } else {
         // Unbound place: still need a decode slot beyond existing path matches.
-        m_pathOrder.append(path);
-        m_sessionIdOrder.append(kInvalidSessionImageId);
+        m_pathOrderBook.paths.append(path);
+        m_pathOrderBook.ids.append(kInvalidSessionImageId);
     }
     // Legacy path-keyed pos kept as fallback when a bind is missing.
     m_loadGate.pendingScenePos().insert(path, scenePos);
@@ -890,17 +885,17 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
 
 void ImageView::ensureGalleryPlaceholders()
 {
-    if (!isGalleryMode() || m_pathOrder.isEmpty()) {
+    if (!isGalleryMode() || m_pathOrderBook.paths.isEmpty()) {
         return;
     }
     // Only clear defer-populate. Keep size-resolve active so fill layouts still
     // wait for finishGallerySizeResolve to pack (soft may install meanwhile).
     m_gallerySoftBook.deferPopulate = false;
     QSet<ImageItem *> claimed;
-    for (int i = 0; i < m_pathOrder.size(); ++i) {
-        const QString &path = m_pathOrder.at(i);
-        const SessionImageId sid = (i < m_sessionIdOrder.size())
-            ? m_sessionIdOrder.at(i)
+    for (int i = 0; i < m_pathOrderBook.paths.size(); ++i) {
+        const QString &path = m_pathOrderBook.paths.at(i);
+        const SessionImageId sid = (i < m_pathOrderBook.ids.size())
+            ? m_pathOrderBook.ids.at(i)
             : kInvalidSessionImageId;
 
         ImageItem *existing = nullptr;
@@ -964,5 +959,5 @@ void ImageView::ensureGalleryPlaceholders()
             claimed.insert(ph);
         }
     }
-    reorderItemsByPaths(m_pathOrder);
+    reorderItemsByPaths(m_pathOrderBook.paths);
 }

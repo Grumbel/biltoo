@@ -30,6 +30,7 @@
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
 #include "sessionbindbook.h"
+#include "sessionpathorder.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
@@ -371,12 +372,14 @@ public:
     /** Fit / Fill / 1:1 framing for a slideshow slide (motion off). */
     void applySlideshowZoomFraming(ImageItem *item);
     /** Controller host: session path order used for Gallery packing. */
-    QStringList &pathOrder() { return m_pathOrder; }
-    const QStringList &pathOrder() const { return m_pathOrder; }
+    QStringList &pathOrder() { return m_pathOrderBook.paths; }
+    const QStringList &pathOrder() const { return m_pathOrderBook.paths; }
     /** How many times @a path appears in session path order (duplicate tiles). */
     int pathOrderOccurrences(const QString &path) const;
-    QVector<SessionImageId> &sessionIdOrder() { return m_sessionIdOrder; }
-    const QVector<SessionImageId> &sessionIdOrder() const { return m_sessionIdOrder; }
+    QVector<SessionImageId> &sessionIdOrder() { return m_pathOrderBook.ids; }
+    const QVector<SessionImageId> &sessionIdOrder() const { return m_pathOrderBook.ids; }
+    SessionPathOrder &pathOrderBook() { return m_pathOrderBook; }
+    const SessionPathOrder &pathOrderBook() const { return m_pathOrderBook; }
     /** Controller host: disable Image-mode fit/fill when restoring free-form. */
     void clearFitFillModes();
     /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */
@@ -1751,9 +1754,8 @@ private:
     /** Packaged-layout size gate (timers + pending); canvas finish via Host. */
     GallerySizeResolve m_gallerySizeResolve;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
-    QStringList m_pathOrder;
-    /** Parallel to m_pathOrder when known — SessionImageId per row (IDENTITY). */
-    QVector<SessionImageId> m_sessionIdOrder;
+    /** Session path list + parallel SessionImageId order (IDENTITY). */
+    SessionPathOrder m_pathOrderBook;
 
     QUndoStack *m_undoStack = nullptr;
     bool m_preserveUndoOnDestroy = false;

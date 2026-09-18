@@ -67,6 +67,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **PathItemStateBook** (`pathitemstatebook.h`): path-keyed WorkspaceItemState (placement / unbound).
 - **PendingItemAppearanceBook**: Duplicate→bind staged content appearance (ImageItem* keys).
 - **SessionBindBook** (`sessionbindbook.h`): LoadAdd PendingSessionBind queue + index/select maps.
+- **SessionPathOrder** (`sessionpathorder.h`): session path list + parallel SessionImageId order.
 - **SessionAppearanceStore** seed-attempt set (`seedAttempted` / mark / clear with remove).
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).
 - **DisplayEdgePolicy**: pure long-edge coverage, ladder native cap, sample-covers-native,

@@ -160,6 +160,7 @@ add_executable(biltoo
   src/loadgeneration.h
   src/sessionloadgate.h
   src/sessionbindbook.h
+  src/sessionpathorder.h
   src/displayedgepolicy.h
   src/displayedgepolicy.cpp
   src/softdisplaypolicy.h

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1282-session-path-order.** Extract SessionPathOrder for path list + parallel ids.
+Prior: **1281**.
+
+### Change
+- `SessionPathOrder` (paths, ids, syncIdLength, countPathOccurrences, clear).
+- ImageView holds `m_pathOrderBook`; pathOrder()/sessionIdOrder() accessors unchanged in spirit.
+- pathOrderOccurrences delegates to the bag.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1282-session-path-order.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1281-gallery-soft-book-api.** GallerySoftBook helpers + pure gallery LQIP accept gates.
 Prior: **1280**.
 

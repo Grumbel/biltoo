@@ -1598,10 +1598,10 @@ void ImageView::prunePathOrdersAfterSessionRemove(const QStringList &removedPath
         }
     }
     // Preserve prior order for unbound path slots still live.
-    for (int i = 0; i < m_pathOrder.size(); ++i) {
-        const QString &path = m_pathOrder.at(i);
-        const SessionImageId sid = (i < m_sessionIdOrder.size())
-            ? m_sessionIdOrder.at(i) : kInvalidSessionImageId;
+    for (int i = 0; i < m_pathOrderBook.paths.size(); ++i) {
+        const QString &path = m_pathOrderBook.paths.at(i);
+        const SessionImageId sid = (i < m_pathOrderBook.ids.size())
+            ? m_pathOrderBook.ids.at(i) : kInvalidSessionImageId;
         if (sid != kInvalidSessionImageId) {
             continue; // already taken from live bound tiles
         }
@@ -1611,8 +1611,8 @@ void ImageView::prunePathOrdersAfterSessionRemove(const QStringList &removedPath
             unboundBudget[path] -= 1;
         }
     }
-    m_pathOrder = prunedPaths;
-    m_sessionIdOrder = prunedIds;
+    m_pathOrderBook.paths = prunedPaths;
+    m_pathOrderBook.ids = prunedIds;
 }
 
 void ImageView::restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,

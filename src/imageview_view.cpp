@@ -1771,9 +1771,9 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
         return kInvalidSessionImageId;
     }
     // Prefer ordered session row (slideshow / gallery path list).
-    for (int i = 0; i < m_pathOrder.size() && i < m_sessionIdOrder.size(); ++i) {
-        if (m_pathOrder.at(i) == path) {
-            const SessionImageId id = m_sessionIdOrder.at(i);
+    for (int i = 0; i < m_pathOrderBook.paths.size() && i < m_pathOrderBook.ids.size(); ++i) {
+        if (m_pathOrderBook.paths.at(i) == path) {
+            const SessionImageId id = m_pathOrderBook.ids.at(i);
             if (id != kInvalidSessionImageId) {
                 return id;
             }
