@@ -1670,8 +1670,11 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
             (path == m_ssFromPath) ? ImageCache::longEdge(m_ssFromImage)
                                    : ImageCache::longEdge(m_ssToImage);
         if (phaseHave < need || incoming < need) {
-            m_pathRaster->ensure(path, target, logicalSizeForPath(path),
-                                 PathRasterService::ClimbPolicy::EscalateToFull);
+            const auto policy =
+                ThumtooCache::hasDurableTiles(path)
+                    ? PathRasterService::ClimbPolicy::SoftDisplay
+                    : PathRasterService::ClimbPolicy::EscalateToFull;
+            m_pathRaster->ensure(path, target, logicalSizeForPath(path), policy);
         }
     }
 }
@@ -1746,9 +1749,12 @@ void ImageView::slideshowPhaseSurfaceTick()
             return;
         }
         if (act.type == AT::ScheduleClimb && m_pathRaster) {
+            const auto policy =
+                ThumtooCache::hasDurableTiles(path)
+                    ? PathRasterService::ClimbPolicy::SoftDisplay
+                    : PathRasterService::ClimbPolicy::EscalateToFull;
             m_pathRaster->ensure(
-                path, target, logicalSizeForPath(path),
-                PathRasterService::ClimbPolicy::EscalateToFull);
+                path, target, logicalSizeForPath(path), policy);
         }
     };
     drivePhase(&m_ssFromSurface, m_ssFromPath, ImageCache::longEdge(m_ssFromImage));

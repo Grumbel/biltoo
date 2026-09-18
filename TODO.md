@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1144-durable-no-full-native.** Durable tiles: SoftDisplay everywhere; no Full/native storm.
+Prior: **1143**.
+
+### Problem
+Many PathRaster / DisplaySurface call sites still forced `EscalateToFull` or
+host native decode even when the Store had a durable tile pyramid — slideshow
+phase ticks, gallery soft repair, workspace zoom climb, image-mode quality.
+
+### Fix
+- Prefer **SoftDisplay** whenever `hasDurableTiles(path)`.
+- Gallery repair / stuck-LQIP watchdog: no Full on durable or tileLodWanted.
+- Workspace / image-mode climb: SoftDisplay on durable; native decode only when
+  **no** durable tiles.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1144-durable-no-full-native.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1143-gallery-blank-durable.** Fix blank gallery cells when durable tiles skip soft.
 Prior: **1142**.
 

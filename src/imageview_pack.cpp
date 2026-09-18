@@ -931,8 +931,11 @@ void ImageView::gallerySoftWatchdogTick()
             }
             // else: leave weakSinceMs so LQIP→soft watchdog can force ensure
         } else {
+            // Durable tiles / tile LOD: never Full native from Gallery soft tick.
             const auto pol =
-                (target > ThumtooCache::kBatchOverviewEdge)
+                (target > ThumtooCache::kBatchOverviewEdge
+                 && !ThumtooCache::hasDurableTiles(path)
+                 && !(item && item->tileLodWanted()))
                     ? PathRasterService::ClimbPolicy::EscalateToFull
                     : PathRasterService::ClimbPolicy::SoftDisplay;
             if (act.type == AT::ScheduleClimb) {
@@ -973,7 +976,9 @@ void ImageView::gallerySoftWatchdogTick()
                         path, ThumtooCache::kGalleryLadderEdge);
                     m_pathRaster->clearPreferGaveUp(path);
                     const auto pol =
-                        (target > ThumtooCache::kBatchOverviewEdge)
+                        (target > ThumtooCache::kBatchOverviewEdge
+                         && !ThumtooCache::hasDurableTiles(path)
+                         && !(item && item->tileLodWanted()))
                             ? PathRasterService::ClimbPolicy::EscalateToFull
                             : PathRasterService::ClimbPolicy::SoftDisplay;
                     m_pathRaster->ensure(path, target, logicalSizeForPath(path), pol);
