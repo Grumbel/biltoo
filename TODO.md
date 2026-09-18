@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1219-image-paint-not-gallery-lqip.** Image paint: do not treat as Gallery LQIP-only.
+Prior: **1218**.
+
+### Bug
+1218 keyed Gallery “LQIP-only under tiles” on `!m_interactive`. Image-mode items
+also use `setInteractive(false)`, so filmstrip thumbs (>96) were still suppressed
+while nav-hot skipped tile paint → blank despite a full filmstrip.
+
+### Fix
+- Detect Gallery underlay policy via non-empty `galleryCellSize` (packed cells).
+- Docs: IMAGE_MODE_NAV_SOFT rule 5 note.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1219-image-paint-not-gallery-lqip.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1218-image-underlay-lqip-tiles.** Image ←/→: paint host underlay; soft encode gone.
 Prior: **1217**.
 
@@ -13,12 +36,9 @@ ImageCache host >96 was suppressed while nav-hot skipped tile paint → blank.
 Blank path also still called `scheduleSoftPixels` (contradicts product).
 
 ### Fix
-- Image/Workspace (`m_interactive`): draw any in-process host underlay until
-  tiles fully cover. Gallery stays LQIP-only under tiles.
-- Image blank path: sized/provisional placeholder; size probe only when not
-  nav-hot; **no** `scheduleSoftPixels`.
-- Rewrite `IMAGE_MODE_NAV_SOFT.md`: placeholder → cache LQIP/host → tiles;
-  LQIP is free side-effect of tile work only; size probe is geometry only.
+- Intended Image underlay paint + no soft encode on blank (see 1219 for the
+  interactive-flag follow-up).
+- Rewrite `IMAGE_MODE_NAV_SOFT.md`: placeholder → cache LQIP/host → tiles.
 
 ### Apply
 ```bash

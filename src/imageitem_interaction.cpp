@@ -1677,12 +1677,13 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 <= DisplayQuality::kLqipMaxEdge;
         };
 
-        // Gallery: underlay is LQIP-only under tileLodWanted (soft PreferCache
-        // removed — GALLERY_PIXELS.md). Image/Workspace (interactive): any
-        // in-process host (LQIP, filmstrip thumb, prior sample) may underlay
-        // until tiles fully cover — otherwise nav-hot (no tile paint) + a
-        // >96 host left a blank frame while ImageCache was hot.
-        const bool galleryLqipOnlyUnderTiles = tilesWanted && !m_interactive;
+        // Gallery packed cells (non-empty galleryCellSize): LQIP-only under
+        // tileLodWanted (soft PreferCache removed — GALLERY_PIXELS.md).
+        // Image mode also uses m_interactive=false, so do NOT key off that —
+        // filmstrip thumbs (>96) must underlay when tiles are wanted but not
+        // yet painted (nav-hot skips tile paint).
+        const bool galleryLqipOnlyUnderTiles =
+            tilesWanted && !m_galleryCellSize.isEmpty();
         auto drawSampleInContentRect = [&](const QImage &img) {
             const QRectF box = contentRect();
             if (img.isNull() || box.width() < 1.0 || box.height() < 1.0) {

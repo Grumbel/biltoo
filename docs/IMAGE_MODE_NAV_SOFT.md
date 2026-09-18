@@ -64,9 +64,11 @@ MainWindow::setCurrentIndex / goNext
    - else sized placeholder (size memo known) or provisional placeholder;
    - **never** generate LQIP or soft ladder to fill the blank during the burst.
 4. **Layout without pixels is OK.** Wrong path’s pixels under a new contentRect is not.
-5. **Image mode paint underlay:** while tiles do not fully cover, interactive
-   Image/Workspace may draw any in-process host (including filmstrip >96).
-   Gallery remains **LQIP-only** under `tileLodWanted` (soft removed).
+5. **Image mode paint underlay:** while tiles do not fully cover, Image/Workspace
+   may draw any in-process host (including filmstrip >96). Gallery remains
+   **LQIP-only** under `tileLodWanted` (soft removed). Detect Gallery by
+   non-empty `galleryCellSize` — **not** `m_interactive` (Image items also use
+   `setInteractive(false)`).
 6. **Settle (~80ms quiet):** size probe if needed; tile issue for current path.
    No `scheduleSoftPixels` for Image underlay.
 7. **Cold blank under nav-hot:** no `scheduleProbe` / soft encode per key (queue
