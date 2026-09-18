@@ -982,13 +982,17 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                 return {};
             }
         }
-        // True miss: soft ladder (≤ soft max); overview when display is larger.
-        ThumtooCache::scheduleSoftPixels(
-            path, qMin(maxEdge, ThumtooCache::kGalleryLadderEdge));
-        if (maxEdge > ThumtooCache::kGalleryLadderEdge
-            && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
-            ThumtooCache::scheduleOverviewPixels(
-                path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
+        // True miss: durable → tile pyramid; else soft band + optional overview.
+        if (ThumtooCache::hasDurableTilesKnown(path)) {
+            (void)ThumtooCache::scheduleTilePyramid(path);
+        } else {
+            ThumtooCache::scheduleSoftPixels(
+                path, qMin(maxEdge, ThumtooCache::kGalleryLadderEdge));
+            if (maxEdge > ThumtooCache::kGalleryLadderEdge
+                && maxEdge <= ThumtooCache::kBatchOverviewEdge) {
+                ThumtooCache::scheduleOverviewPixels(
+                    path, qMin(maxEdge, ThumtooCache::kBatchOverviewEdge));
+            }
         }
     }
 

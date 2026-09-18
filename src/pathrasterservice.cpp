@@ -261,12 +261,19 @@ void PathRasterService::pump(const QString &path, Entry &entry)
     accepted.fullEdge = plan.fullEdge;
 
     if (plan.scheduleSoft) {
-        const int edge = plan.softEdge > 0 ? plan.softEdge
-                                           : ThumtooCache::kGalleryLadderEdge;
-        // Soft band → scheduleSoftPixels (PreferCache / TileSynth / ephemeral soft).
-        if (ThumtooCache::scheduleSoftPixels(path, edge)
-            || ThumtooCache::isPixelsPending(path, edge)) {
-            accepted.scheduleSoft = true;
+        // Durable pyramid: tiles own sharpness — never soft-band PreferCache.
+        if (ThumtooCache::hasDurableTilesKnown(path)) {
+            if (ThumtooCache::scheduleTilePyramid(path)) {
+                accepted.scheduleTiles = true;
+            }
+        } else {
+            const int edge = plan.softEdge > 0 ? plan.softEdge
+                                               : ThumtooCache::kGalleryLadderEdge;
+            // Cold only: PreferCache soft band (TileSynth if any scale exists).
+            if (ThumtooCache::scheduleSoftPixels(path, edge)
+                || ThumtooCache::isPixelsPending(path, edge)) {
+                accepted.scheduleSoft = true;
+            }
         }
     }
     if (plan.scheduleDisplay) {

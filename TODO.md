@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1161-durable-no-soft-schedule.** Durable → tiles not soft; LQIP ends soft climb band.
+Prior: **1160**.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1161-durable-no-soft-schedule.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1160-no-softonly-job.** startSoftPreviewJob is LQIP seed only (no SoftOnly encode).
 Prior: **1159**.
 

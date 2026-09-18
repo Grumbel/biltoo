@@ -57,10 +57,11 @@ void Machine::setHaveFromHost(int hostHave, int softMax)
         }
     }
     m_.have = std::max(0, hostHave);
-    // Host only holds LQIP — soft PreferCache has not truly run yet.
+    // LQIP is the only whole-frame underlay — counts as soft band done so we
+    // do not PreferCache SoftOnly-loop on ≤96 forever.
     constexpr int kLqipCeiling = 96;
     if (m_.have > 0 && m_.have <= kLqipCeiling) {
-        m_.softAttempted = false;
+        m_.softAttempted = true;
     } else if (m_.have > kLqipCeiling && m_.have < softMax) {
         // Mid soft already in host (e.g. SoftOnly 100): Prefer soft next, not
         // another SoftOnly cycle that re-delivers the same rung.
