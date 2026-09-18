@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1334-rubber-chebyshev-canvas-textlayer.** ViewTransform rubber/chebyshev, canvas checker, text layer gate.
+Prior: **1333**.
+
+### Change
+- `ViewTransform::{significantRubber,chebyshev,sanitizeViewScale}`
+- `ContentXform::invAxisScale`
+- `CanvasBackground::{useChecker,checkerAlt}`
+- `TextLayerSession::needsLayer`
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1334-rubber-chebyshev-canvas-textlayer.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1333-textsearch-canvaspattern-wrap.** TextSearchPolicy, canvas pattern geometry, HUD wrap.
 Prior: **1332**.
 

@@ -321,3 +321,4 @@ part of early-phase exit criteria).
 - **ViewFraming** aspectMode + sticky pan pure; **ViewTransform::unitFraction**; **SlideshowClocks::progress01**.
 - **HudGeometry** placePanel; **LayoutPrefs** clamps; cover scale + roundedSizeAtLeast1; sanitizeDwellDurationMs.
 - **TextSearchPolicy**; **CanvasPatternGeometry**; **HudGeometry::wrapHudLine**.
+- **ViewTransform** significantRubber/chebyshev/sanitizeViewScale; **ContentXform::invAxisScale**; **CanvasBackground** checker; **TextLayerSession::needsLayer**.
