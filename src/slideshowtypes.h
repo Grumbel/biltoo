@@ -265,6 +265,8 @@ struct SlideshowProgressHud {
     bool cycleProgressValid = false;
     qint64 timelineTotalMs = 0;
     bool navHot = false;
+    /** Last [slideshow-paint] fingerprint; skip duplicate debug logs. */
+    QString lastPaintFp;
 
     void clearProgress()
     {
@@ -276,6 +278,7 @@ struct SlideshowProgressHud {
         cycleProgress01 = 0.0;
         cycleProgressValid = false;
         timelineTotalMs = 0;
+        lastPaintFp.clear();
     }
 };
 

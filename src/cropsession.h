@@ -103,6 +103,17 @@ public:
         return false;
     }
 
+    /**
+     * Pure draft layout gate: crop mode active but no applied/session crop yet.
+     * After Apply, mode may still be true while crop pixels are attached —
+     * that is not draft geometry (must not force orient-only layoutSize).
+     */
+    static bool isDraftLayoutGeometry(bool cropModeActive, bool appliedHasCrop,
+                                      bool sessionHasCrop)
+    {
+        return cropModeActive && !appliedHasCrop && !sessionHasCrop;
+    }
+
     /** Drop handle/rubber/drag interaction only. */
     void clearInteraction()
     {

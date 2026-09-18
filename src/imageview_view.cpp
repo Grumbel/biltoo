@@ -763,7 +763,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssDwell.motionSign = 1.0;
         m_ssHud.timelineElapsedMs = 0;
         m_ssHud.timelineTotalMs = 0;
-        m_lastSlideshowPaintFp.clear();
+        m_ssHud.lastPaintFp.clear();
         m_ss.fromPath.clear();
         m_ss.toPath.clear();
         unbindSlideshowPhaseSurface(&m_ss.fromSurface);
@@ -3125,10 +3125,10 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     // orient-only layout on top of crop pixels → stretch into the pre-crop
     // contentRect. Only pure draft (no applied crop, no session crop on the
     // item) is draft geometry.
-    const bool cropDraft =
-        m_crop.mode
-        && !(item->hasAppliedContentXform() && item->appliedContentXform().hasCrop)
-        && !item->sessionHasCrop();
+    const bool cropDraft = CropSession::isDraftLayoutGeometry(
+        m_crop.mode,
+        item->hasAppliedContentXform() && item->appliedContentXform().hasCrop,
+        item->sessionHasCrop());
     if (!path.isEmpty() && !item->sessionHasCrop() && !cropDraft) {
         const QSize fileNative = ensureLogicalSizeForPath(path);
         if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1

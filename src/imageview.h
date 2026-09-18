@@ -1783,8 +1783,6 @@ private:
     /** Persistent slideshow-paused cue (top-left); not cleared by flash timer. */
     QElapsedTimer m_lastSlideshowCenterClick;
     QTimer *m_hudFlashTimer = nullptr;
-    /** Last [slideshow-paint] fingerprint (size/mode); skip duplicate logs. */
-    QString m_lastSlideshowPaintFp;
     QTimer *m_slideshowProgressTimer = nullptr;
     SlideshowProgressHud m_ssHud;
     SlideshowSettings m_ssSettings;

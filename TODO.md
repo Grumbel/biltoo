@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1292-crop-draft-layout-paint-fp.** Pure draft layout gate + paint fp on ss HUD.
+Prior: **1291**.
+
+### Change
+- `CropSession::isDraftLayoutGeometry` (mode + no applied/session crop).
+- `SlideshowProgressHud::lastPaintFp` (was ImageView member); cleared with progress.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1292-crop-draft-layout-paint-fp.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1291-crop-session-lock.** CropSession owns draft sample lock predicates.
 Prior: **1290**.
 

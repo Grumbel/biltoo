@@ -72,6 +72,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SessionAppearance::mergeAppliedAndLiveFlags**: pure want overlay (applied xform + live flags).
 - **SessionAppearance::withoutCrop**: orient-only state (crop fields cleared).
 - **CropSession::locksPath / locksItem**: draft sample freeze predicates on the session bag.
+- **CropSession::isDraftLayoutGeometry**; **SlideshowProgressHud::lastPaintFp**.
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).
 - **DisplayEdgePolicy**: pure long-edge coverage, ladder native cap, sample-covers-native,
   soft cell clamp, screen longPx → needEdge, QualityTier classify for HUD.
