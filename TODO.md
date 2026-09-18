@@ -2,6 +2,28 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1266-build-fix-dialog-thumtoo-rename.** Fix compile fallout from extraction tips.
+Prior: **1265**.
+
+### Fixes
+- PreferencesDialog / SlideshowSettingsDialog / LayoutPanel: undo mistaken
+  `m_ssSettings` / `m_canvasBg` / `m_hudPrefs` / `m_layout` widget renames
+  (those bags are ImageView state, not dialog widget holders).
+- thumtoocache.cpp: remove nested anonymous namespace + unterminated
+  `#ifdef BILTOO_HAVE_THUMTOO` that swallowed public API into `{anonymous}`;
+  forward-declare `qimageFromLqipBlob` before first use.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1266-build-fix-dialog-thumtoo-rename.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1265-slideshow-phase-policy.** Pure phase-buffer upgrade policy.
 Prior: **1264**.
 

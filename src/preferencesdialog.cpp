@@ -97,71 +97,71 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                           }));
     slideshowForm->addRow(QString(), m_slideshowLoopCheck);
 
-    m_ssSettings.transitionCombo = new QComboBox(this);
-    m_ssSettings.transitionCombo->addItem(tr("None"), 0);
-    m_ssSettings.transitionCombo->addItem(tr("Crossfade"), 1);
-    m_ssSettings.transitionCombo->addItem(tr("Fade through black"), 2);
-    m_ssSettings.transitionCombo->addItem(tr("Slide (projector)"), 3);
-    m_ssSettings.transitionCombo->setToolTip(tr("Effect used when the slideshow advances to the next image"));
+    m_slideshowTransitionCombo = new QComboBox(this);
+    m_slideshowTransitionCombo->addItem(tr("None"), 0);
+    m_slideshowTransitionCombo->addItem(tr("Crossfade"), 1);
+    m_slideshowTransitionCombo->addItem(tr("Fade through black"), 2);
+    m_slideshowTransitionCombo->addItem(tr("Slide (projector)"), 3);
+    m_slideshowTransitionCombo->setToolTip(tr("Effect used when the slideshow advances to the next image"));
     slideshowForm->addRow(tr("Transition:"),
-                          wrapWithReset(m_ssSettings.transitionCombo, &m_resetSlideshowTransitionBtn, [this]() {
+                          wrapWithReset(m_slideshowTransitionCombo, &m_resetSlideshowTransitionBtn, [this]() {
                               setSlideshowTransitionIndex(kDefaultSlideshowTransition);
                               updateResetButtons();
                           }));
 
-    m_ssSettings.transitionMsSpin = new QDoubleSpinBox(this);
-    m_ssSettings.transitionMsSpin->setRange(0.0, 3600.0);
-    m_ssSettings.transitionMsSpin->setSingleStep(0.05);
-    m_ssSettings.transitionMsSpin->setDecimals(3);
-    m_ssSettings.transitionMsSpin->setSuffix(tr(" s"));
-    m_ssSettings.transitionMsSpin->setValue(kDefaultSlideshowTransitionMs / 1000.0);
-    m_ssSettings.transitionMsSpin->setToolTip(
+    m_slideshowTransitionMsSpin = new QDoubleSpinBox(this);
+    m_slideshowTransitionMsSpin->setRange(0.0, 3600.0);
+    m_slideshowTransitionMsSpin->setSingleStep(0.05);
+    m_slideshowTransitionMsSpin->setDecimals(3);
+    m_slideshowTransitionMsSpin->setSuffix(tr(" s"));
+    m_slideshowTransitionMsSpin->setValue(kDefaultSlideshowTransitionMs / 1000.0);
+    m_slideshowTransitionMsSpin->setToolTip(
         tr("Full transition duration (out + in; capped to the interval; 0 = instant)"));
     slideshowForm->addRow(tr("Transition duration:"),
-                          wrapWithReset(m_ssSettings.transitionMsSpin, &m_resetSlideshowTransitionMsBtn, [this]() {
+                          wrapWithReset(m_slideshowTransitionMsSpin, &m_resetSlideshowTransitionMsBtn, [this]() {
                               setSlideshowTransitionDurationMs(kDefaultSlideshowTransitionMs);
                               updateResetButtons();
                           }));
 
-    m_ssSettings.motionCombo = new QComboBox(this);
-    m_ssSettings.motionCombo->addItem(tr("Off"), 0);
-    m_ssSettings.motionCombo->addItem(tr("Pan and zoom"), 1);
-    m_ssSettings.motionCombo->addItem(tr("Pan and scan"), 2);
-    m_ssSettings.motionCombo->setToolTip(
+    m_slideshowMotionCombo = new QComboBox(this);
+    m_slideshowMotionCombo->addItem(tr("Off"), 0);
+    m_slideshowMotionCombo->addItem(tr("Pan and zoom"), 1);
+    m_slideshowMotionCombo->addItem(tr("Pan and scan"), 2);
+    m_slideshowMotionCombo->setToolTip(
         tr("Pan and zoom: slowly zoom in while panning.\n"
            "Pan and scan: pan across the full width or height so the whole "
            "image is revealed during the dwell (no zoom)."));
     slideshowForm->addRow(tr("Dwell motion:"),
-                          wrapWithReset(m_ssSettings.motionCombo, &m_resetSlideshowMotionBtn, [this]() {
+                          wrapWithReset(m_slideshowMotionCombo, &m_resetSlideshowMotionBtn, [this]() {
                               setSlideshowMotionIndex(kDefaultSlideshowMotion);
                               updateResetButtons();
                           }));
 
-    m_ssSettings.panZoomFactorSpin = new QDoubleSpinBox(this);
-    m_ssSettings.panZoomFactorSpin->setRange(1.02, 1.40);
-    m_ssSettings.panZoomFactorSpin->setSingleStep(0.01);
-    m_ssSettings.panZoomFactorSpin->setDecimals(2);
-    m_ssSettings.panZoomFactorSpin->setValue(kDefaultPanZoomFactor);
-    m_ssSettings.panZoomFactorSpin->setToolTip(
+    m_panZoomFactorSpin = new QDoubleSpinBox(this);
+    m_panZoomFactorSpin->setRange(1.02, 1.40);
+    m_panZoomFactorSpin->setSingleStep(0.01);
+    m_panZoomFactorSpin->setDecimals(2);
+    m_panZoomFactorSpin->setValue(kDefaultPanZoomFactor);
+    m_panZoomFactorSpin->setToolTip(
         tr("Pan and zoom only: end scale relative to cover framing (1.12 = 12% closer)"));
     slideshowForm->addRow(tr("Pan and zoom factor:"),
-                          wrapWithReset(m_ssSettings.panZoomFactorSpin, &m_resetPanZoomFactorBtn, [this]() {
+                          wrapWithReset(m_panZoomFactorSpin, &m_resetPanZoomFactorBtn, [this]() {
                               setPanZoomFactor(kDefaultPanZoomFactor);
                               updateResetButtons();
                           }));
 
-    m_ssSettings.zoomCombo = new QComboBox(this);
-    m_ssSettings.zoomCombo->addItem(tr("Fit"), 0);
-    m_ssSettings.zoomCombo->addItem(tr("Fill"), 1);
-    m_ssSettings.zoomCombo->addItem(tr("1:1"), 2);
-    m_ssSettings.zoomCombo->setToolTip(
+    m_slideshowZoomCombo = new QComboBox(this);
+    m_slideshowZoomCombo->addItem(tr("Fit"), 0);
+    m_slideshowZoomCombo->addItem(tr("Fill"), 1);
+    m_slideshowZoomCombo->addItem(tr("1:1"), 2);
+    m_slideshowZoomCombo->setToolTip(
         tr("Base framing for each slide (also when dwell motion is On).\n"
            "Fit: whole image visible (letterbox).\n"
            "Fill: cover the window (may crop).\n"
            "1:1: native pixels, centred (padding if smaller than the window).\n"
            "Pan and zoom starts from this scale; pan and scan pans at this scale."));
     slideshowForm->addRow(tr("Slideshow zoom:"),
-                          wrapWithReset(m_ssSettings.zoomCombo, &m_resetSlideshowZoomBtn, [this]() {
+                          wrapWithReset(m_slideshowZoomCombo, &m_resetSlideshowZoomBtn, [this]() {
                               setSlideshowZoomIndex(kDefaultSlideshowZoom);
                               updateResetButtons();
                           }));
@@ -177,25 +177,25 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
            "Zoom and blur: cover-scaled blurred copy of the current image."));
     slideshowForm->addRow(tr("Letterbox fill:"), m_slideshowLetterboxCombo);
 
-    m_ssSettings.padColorBtn = new QPushButton(this);
-    m_ssSettings.padColorBtn->setToolTip(tr("Colour for Solid letterbox fill"));
-    m_ssSettings.padColorBtn->setText(m_ssSettings.padColor.name(QColor::HexRgb));
-    connect(m_ssSettings.padColorBtn, &QPushButton::clicked, this, [this]() {
-        const QColor c = QColorDialog::getColor(m_ssSettings.padColor, this, tr("Letterbox colour"));
+    m_slideshowPadColorBtn = new QPushButton(this);
+    m_slideshowPadColorBtn->setToolTip(tr("Colour for Solid letterbox fill"));
+    m_slideshowPadColorBtn->setText(m_slideshowPadColor.name(QColor::HexRgb));
+    connect(m_slideshowPadColorBtn, &QPushButton::clicked, this, [this]() {
+        const QColor c = QColorDialog::getColor(m_slideshowPadColor, this, tr("Letterbox colour"));
         if (c.isValid()) {
             setSlideshowPadColor(c);
         }
     });
     connect(m_slideshowLetterboxCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
-                if (m_ssSettings.padColorBtn) {
-                    m_ssSettings.padColorBtn->setEnabled(
+                if (m_slideshowPadColorBtn) {
+                    m_slideshowPadColorBtn->setEnabled(
                         m_slideshowLetterboxCombo
                         && m_slideshowLetterboxCombo->currentData().toInt() == 1);
                 }
             });
-    m_ssSettings.padColorBtn->setEnabled(false);
-    slideshowForm->addRow(tr("Letterbox colour:"), m_ssSettings.padColorBtn);
+    m_slideshowPadColorBtn->setEnabled(false);
+    slideshowForm->addRow(tr("Letterbox colour:"), m_slideshowPadColorBtn);
 
     auto *slideshowGroup = new QGroupBox(tr("Slideshow"), this);
     slideshowGroup->setLayout(slideshowForm);
@@ -240,32 +240,32 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_imageModePanCheck->setToolTip(
         tr("Drag with the left button to pan in Image mode"));
 
-    m_canvasBg.patternCombo = new QComboBox(this);
-    m_canvasBg.patternCombo->addItem(tr("Solid"), 0);
-    m_canvasBg.patternCombo->addItem(tr("Checkerboard"), 1);
-    m_canvasBg.patternCombo->setToolTip(tr("Canvas background fill style"));
+    m_bgPatternCombo = new QComboBox(this);
+    m_bgPatternCombo->addItem(tr("Solid"), 0);
+    m_bgPatternCombo->addItem(tr("Checkerboard"), 1);
+    m_bgPatternCombo->setToolTip(tr("Canvas background fill style"));
 
-    m_canvasBg.colorBtn = new QPushButton(this);
-    m_canvasBg.colorBtn->setToolTip(tr("Primary background colour"));
-    m_canvasBg.colorBtn->setMinimumWidth(80);
-    connect(m_canvasBg.colorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColor);
+    m_bgColorBtn = new QPushButton(this);
+    m_bgColorBtn->setToolTip(tr("Primary background colour"));
+    m_bgColorBtn->setMinimumWidth(80);
+    connect(m_bgColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColor);
 
-    m_canvasBg.colorAltBtn = new QPushButton(this);
-    m_canvasBg.colorAltBtn->setToolTip(tr("Secondary colour for checkerboard pattern"));
-    m_canvasBg.colorAltBtn->setMinimumWidth(80);
-    connect(m_canvasBg.colorAltBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColorAlt);
+    m_bgColorAltBtn = new QPushButton(this);
+    m_bgColorAltBtn->setToolTip(tr("Secondary colour for checkerboard pattern"));
+    m_bgColorAltBtn->setMinimumWidth(80);
+    connect(m_bgColorAltBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseBackgroundColorAlt);
 
-    m_canvasBg.checkerWorkspaceOnlyCheck = new QCheckBox(
+    m_bgCheckerWorkspaceOnlyCheck = new QCheckBox(
         tr("Checkerboard only in Workspace mode"), this);
-    m_canvasBg.checkerWorkspaceOnlyCheck->setChecked(true);
-    m_canvasBg.checkerWorkspaceOnlyCheck->setToolTip(
+    m_bgCheckerWorkspaceOnlyCheck->setChecked(true);
+    m_bgCheckerWorkspaceOnlyCheck->setToolTip(
         tr("Use the checkerboard only on the Workspace canvas"));
 
-    connect(m_canvasBg.patternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_bgPatternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateBackgroundControlsEnabled(); });
 
-    updateColorButton(m_canvasBg.colorBtn, m_canvasBg.color);
-    updateColorButton(m_canvasBg.colorAltBtn, m_canvasBg.colorAlt);
+    updateColorButton(m_bgColorBtn, m_bgColor);
+    updateColorButton(m_bgColorAltBtn, m_bgColorAlt);
     updateBackgroundControlsEnabled();
 
     auto *viewForm = new QFormLayout;
@@ -278,22 +278,22 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                           updateResetButtons();
                       }));
     viewForm->addRow(tr("Background pattern:"),
-                      wrapWithReset(m_canvasBg.patternCombo, &m_resetBgPatternBtn, [this]() {
+                      wrapWithReset(m_bgPatternCombo, &m_resetBgPatternBtn, [this]() {
                           setBackgroundPatternIndex(kDefaultBgPatternIndex);
                           updateResetButtons();
                       }));
     viewForm->addRow(tr("Background colour:"),
-                      wrapWithReset(m_canvasBg.colorBtn, &m_resetBgColorBtn, [this]() {
+                      wrapWithReset(m_bgColorBtn, &m_resetBgColorBtn, [this]() {
                           setBackgroundColor(kDefaultBgColor);
                           updateResetButtons();
                       }));
     viewForm->addRow(tr("Checker colour:"),
-                      wrapWithReset(m_canvasBg.colorAltBtn, &m_resetBgColorAltBtn, [this]() {
+                      wrapWithReset(m_bgColorAltBtn, &m_resetBgColorAltBtn, [this]() {
                           setBackgroundColorAlt(kDefaultBgColorAlt);
                           updateResetButtons();
                       }));
     viewForm->addRow(QString(),
-                      wrapWithReset(m_canvasBg.checkerWorkspaceOnlyCheck, &m_resetCheckerWsBtn, [this]() {
+                      wrapWithReset(m_bgCheckerWorkspaceOnlyCheck, &m_resetCheckerWsBtn, [this]() {
                           setCheckerboardWorkspaceOnly(kDefaultCheckerWorkspaceOnly);
                           updateResetButtons();
                       }));
@@ -308,18 +308,18 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     m_hudFontSpin->setSuffix(tr(" pt"));
     m_hudFontSpin->setToolTip(tr("Point size of the on-image HUD text"));
 
-    m_hudPrefs.textColorBtn = new QPushButton(this);
-    m_hudPrefs.textColorBtn->setMinimumWidth(80);
-    m_hudPrefs.textColorBtn->setToolTip(tr("HUD text colour"));
-    connect(m_hudPrefs.textColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudTextColor);
+    m_hudTextColorBtn = new QPushButton(this);
+    m_hudTextColorBtn->setMinimumWidth(80);
+    m_hudTextColorBtn->setToolTip(tr("HUD text colour"));
+    connect(m_hudTextColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudTextColor);
 
-    m_hudPrefs.panelColorBtn = new QPushButton(this);
-    m_hudPrefs.panelColorBtn->setMinimumWidth(80);
-    m_hudPrefs.panelColorBtn->setToolTip(tr("HUD panel background colour (supports alpha)"));
-    connect(m_hudPrefs.panelColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudPanelColor);
+    m_hudPanelColorBtn = new QPushButton(this);
+    m_hudPanelColorBtn->setMinimumWidth(80);
+    m_hudPanelColorBtn->setToolTip(tr("HUD panel background colour (supports alpha)"));
+    connect(m_hudPanelColorBtn, &QPushButton::clicked, this, &PreferencesDialog::chooseHudPanelColor);
 
-    updateColorButton(m_hudPrefs.textColorBtn, m_hudPrefs.textColor);
-    updateColorButton(m_hudPrefs.panelColorBtn, m_hudPrefs.panelColor);
+    updateColorButton(m_hudTextColorBtn, m_hudTextColor);
+    updateColorButton(m_hudPanelColorBtn, m_hudPanelColor);
 
     auto *hudForm = new QFormLayout;
     hudForm->setContentsMargins(0, 0, 0, 0);
@@ -331,12 +331,12 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                          updateResetButtons();
                      }));
     hudForm->addRow(tr("Text colour:"),
-                     wrapWithReset(m_hudPrefs.textColorBtn, &m_resetHudTextBtn, [this]() {
+                     wrapWithReset(m_hudTextColorBtn, &m_resetHudTextBtn, [this]() {
                          setHudTextColor(kDefaultHudTextColor);
                          updateResetButtons();
                      }));
     hudForm->addRow(tr("Panel colour:"),
-                     wrapWithReset(m_hudPrefs.panelColorBtn, &m_resetHudPanelBtn, [this]() {
+                     wrapWithReset(m_hudPanelColorBtn, &m_resetHudPanelBtn, [this]() {
                          setHudPanelColor(kDefaultHudPanelColor);
                          updateResetButtons();
                      }));
@@ -571,15 +571,15 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
                 syncSlideshowTransitionCap();
                 updateResetButtons();
             });
-    connect(m_ssSettings.transitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_slideshowTransitionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
-    connect(m_ssSettings.transitionMsSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_slideshowTransitionMsSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, [this](double) { updateResetButtons(); });
-    connect(m_ssSettings.motionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_slideshowMotionCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
-    connect(m_ssSettings.panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_panZoomFactorSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, [this](double) { updateResetButtons(); });
-    connect(m_ssSettings.zoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_slideshowZoomCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
     connect(m_slideshowLoopCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
@@ -591,9 +591,9 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
             this, [this](bool) { updateResetButtons(); });
     connect(m_imageModePanCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
-    connect(m_canvasBg.patternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_bgPatternCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { updateResetButtons(); });
-    connect(m_canvasBg.checkerWorkspaceOnlyCheck, &QCheckBox::toggled,
+    connect(m_bgCheckerWorkspaceOnlyCheck, &QCheckBox::toggled,
             this, [this](bool) { updateResetButtons(); });
     connect(m_hudFontSpin, QOverload<int>::of(&QSpinBox::valueChanged),
             this, [this](int) { updateResetButtons(); });
@@ -776,13 +776,13 @@ void PreferencesDialog::onRemoveArchivesAsDefault()
 
 void PreferencesDialog::syncSlideshowTransitionCap()
 {
-    if (!m_intervalSpin || !m_ssSettings.transitionMsSpin) {
+    if (!m_intervalSpin || !m_slideshowTransitionMsSpin) {
         return;
     }
     const double capSec = qMax(0.0, m_intervalSpin->value());
-    m_ssSettings.transitionMsSpin->setMaximum(capSec);
-    if (m_ssSettings.transitionMsSpin->value() > capSec) {
-        m_ssSettings.transitionMsSpin->setValue(capSec);
+    m_slideshowTransitionMsSpin->setMaximum(capSec);
+    if (m_slideshowTransitionMsSpin->value() > capSec) {
+        m_slideshowTransitionMsSpin->setValue(capSec);
     }
 }
 
@@ -855,7 +855,7 @@ void PreferencesDialog::setImageModeLeftDragPan(bool on)
 
 QColor PreferencesDialog::backgroundColor() const
 {
-    return m_canvasBg.color;
+    return m_bgColor;
 }
 
 void PreferencesDialog::setBackgroundColor(const QColor &color)
@@ -863,13 +863,13 @@ void PreferencesDialog::setBackgroundColor(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_canvasBg.color = color;
-    updateColorButton(m_canvasBg.colorBtn, m_canvasBg.color);
+    m_bgColor = color;
+    updateColorButton(m_bgColorBtn, m_bgColor);
 }
 
 QColor PreferencesDialog::backgroundColorAlt() const
 {
-    return m_canvasBg.colorAlt;
+    return m_bgColorAlt;
 }
 
 void PreferencesDialog::setBackgroundColorAlt(const QColor &color)
@@ -877,36 +877,36 @@ void PreferencesDialog::setBackgroundColorAlt(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_canvasBg.colorAlt = color;
-    updateColorButton(m_canvasBg.colorAltBtn, m_canvasBg.colorAlt);
+    m_bgColorAlt = color;
+    updateColorButton(m_bgColorAltBtn, m_bgColorAlt);
 }
 
 int PreferencesDialog::backgroundPatternIndex() const
 {
-    return m_canvasBg.patternCombo ? m_canvasBg.patternCombo->currentData().toInt() : 0;
+    return m_bgPatternCombo ? m_bgPatternCombo->currentData().toInt() : 0;
 }
 
 void PreferencesDialog::setBackgroundPatternIndex(int index)
 {
-    if (!m_canvasBg.patternCombo) {
+    if (!m_bgPatternCombo) {
         return;
     }
-    const int i = m_canvasBg.patternCombo->findData(index);
+    const int i = m_bgPatternCombo->findData(index);
     if (i >= 0) {
-        m_canvasBg.patternCombo->setCurrentIndex(i);
+        m_bgPatternCombo->setCurrentIndex(i);
     }
     updateBackgroundControlsEnabled();
 }
 
 bool PreferencesDialog::checkerboardWorkspaceOnly() const
 {
-    return m_canvasBg.checkerWorkspaceOnlyCheck && m_canvasBg.checkerWorkspaceOnlyCheck->isChecked();
+    return m_bgCheckerWorkspaceOnlyCheck && m_bgCheckerWorkspaceOnlyCheck->isChecked();
 }
 
 void PreferencesDialog::setCheckerboardWorkspaceOnly(bool on)
 {
-    if (m_canvasBg.checkerWorkspaceOnlyCheck) {
-        m_canvasBg.checkerWorkspaceOnlyCheck->setChecked(on);
+    if (m_bgCheckerWorkspaceOnlyCheck) {
+        m_bgCheckerWorkspaceOnlyCheck->setChecked(on);
     }
 }
 
@@ -951,7 +951,7 @@ void PreferencesDialog::setHudFontPointSize(int pt)
 
 QColor PreferencesDialog::hudTextColor() const
 {
-    return m_hudPrefs.textColor;
+    return m_hudTextColor;
 }
 
 void PreferencesDialog::setHudTextColor(const QColor &color)
@@ -959,13 +959,13 @@ void PreferencesDialog::setHudTextColor(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_hudPrefs.textColor = color;
-    updateColorButton(m_hudPrefs.textColorBtn, m_hudPrefs.textColor);
+    m_hudTextColor = color;
+    updateColorButton(m_hudTextColorBtn, m_hudTextColor);
 }
 
 QColor PreferencesDialog::hudPanelColor() const
 {
-    return m_hudPrefs.panelColor;
+    return m_hudPanelColor;
 }
 
 void PreferencesDialog::setHudPanelColor(const QColor &color)
@@ -973,13 +973,13 @@ void PreferencesDialog::setHudPanelColor(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_hudPrefs.panelColor = color;
-    updateColorButton(m_hudPrefs.panelColorBtn, m_hudPrefs.panelColor);
+    m_hudPanelColor = color;
+    updateColorButton(m_hudPanelColorBtn, m_hudPanelColor);
 }
 
 void PreferencesDialog::chooseHudTextColor()
 {
-    const QColor c = QColorDialog::getColor(m_hudPrefs.textColor, this, tr("HUD text colour"));
+    const QColor c = QColorDialog::getColor(m_hudTextColor, this, tr("HUD text colour"));
     if (c.isValid()) {
         setHudTextColor(c);
         updateResetButtons();
@@ -988,7 +988,7 @@ void PreferencesDialog::chooseHudTextColor()
 
 void PreferencesDialog::chooseHudPanelColor()
 {
-    const QColor c = QColorDialog::getColor(m_hudPrefs.panelColor, this, tr("HUD panel colour"),
+    const QColor c = QColorDialog::getColor(m_hudPanelColor, this, tr("HUD panel colour"),
                                             QColorDialog::ShowAlphaChannel);
     if (c.isValid()) {
         setHudPanelColor(c);
@@ -998,7 +998,7 @@ void PreferencesDialog::chooseHudPanelColor()
 
 void PreferencesDialog::chooseBackgroundColor()
 {
-    const QColor c = QColorDialog::getColor(m_canvasBg.color, this, tr("Background colour"));
+    const QColor c = QColorDialog::getColor(m_bgColor, this, tr("Background colour"));
     if (c.isValid()) {
         setBackgroundColor(c);
         updateResetButtons();
@@ -1007,7 +1007,7 @@ void PreferencesDialog::chooseBackgroundColor()
 
 void PreferencesDialog::chooseBackgroundColorAlt()
 {
-    const QColor c = QColorDialog::getColor(m_canvasBg.colorAlt, this, tr("Checker colour"));
+    const QColor c = QColorDialog::getColor(m_bgColorAlt, this, tr("Checker colour"));
     if (c.isValid()) {
         setBackgroundColorAlt(c);
         updateResetButtons();
@@ -1017,11 +1017,11 @@ void PreferencesDialog::chooseBackgroundColorAlt()
 void PreferencesDialog::updateBackgroundControlsEnabled()
 {
     const bool checker = backgroundPatternIndex() == 1;
-    if (m_canvasBg.colorAltBtn) {
-        m_canvasBg.colorAltBtn->setEnabled(checker);
+    if (m_bgColorAltBtn) {
+        m_bgColorAltBtn->setEnabled(checker);
     }
-    if (m_canvasBg.checkerWorkspaceOnlyCheck) {
-        m_canvasBg.checkerWorkspaceOnlyCheck->setEnabled(checker);
+    if (m_bgCheckerWorkspaceOnlyCheck) {
+        m_bgCheckerWorkspaceOnlyCheck->setEnabled(checker);
     }
 }
 
@@ -1131,80 +1131,80 @@ void PreferencesDialog::setDefaultGalleryLayoutMode(int layoutMode)
 
 int PreferencesDialog::slideshowTransitionIndex() const
 {
-    return m_ssSettings.transitionCombo ? m_ssSettings.transitionCombo->currentData().toInt() : 1;
+    return m_slideshowTransitionCombo ? m_slideshowTransitionCombo->currentData().toInt() : 1;
 }
 
 void PreferencesDialog::setSlideshowTransitionIndex(int index)
 {
-    if (!m_ssSettings.transitionCombo) {
+    if (!m_slideshowTransitionCombo) {
         return;
     }
-    const int idx = m_ssSettings.transitionCombo->findData(index);
+    const int idx = m_slideshowTransitionCombo->findData(index);
     if (idx >= 0) {
-        m_ssSettings.transitionCombo->setCurrentIndex(idx);
+        m_slideshowTransitionCombo->setCurrentIndex(idx);
     }
 }
 
 int PreferencesDialog::slideshowTransitionDurationMs() const
 {
     // UI is seconds; internal API stays milliseconds.
-    return m_ssSettings.transitionMsSpin
-        ? qRound(m_ssSettings.transitionMsSpin->value() * 1000.0)
+    return m_slideshowTransitionMsSpin
+        ? qRound(m_slideshowTransitionMsSpin->value() * 1000.0)
         : 400;
 }
 
 void PreferencesDialog::setSlideshowTransitionDurationMs(int ms)
 {
-    if (!m_ssSettings.transitionMsSpin) {
+    if (!m_slideshowTransitionMsSpin) {
         return;
     }
     syncSlideshowTransitionCap();
-    const double capSec = m_ssSettings.transitionMsSpin->maximum();
-    m_ssSettings.transitionMsSpin->setValue(qBound(0.0, ms / 1000.0, capSec));
+    const double capSec = m_slideshowTransitionMsSpin->maximum();
+    m_slideshowTransitionMsSpin->setValue(qBound(0.0, ms / 1000.0, capSec));
 }
 
 
 int PreferencesDialog::slideshowMotionIndex() const
 {
-    return m_ssSettings.motionCombo ? m_ssSettings.motionCombo->currentData().toInt() : 0;
+    return m_slideshowMotionCombo ? m_slideshowMotionCombo->currentData().toInt() : 0;
 }
 
 void PreferencesDialog::setSlideshowMotionIndex(int index)
 {
-    if (!m_ssSettings.motionCombo) {
+    if (!m_slideshowMotionCombo) {
         return;
     }
-    const int idx = m_ssSettings.motionCombo->findData(index);
+    const int idx = m_slideshowMotionCombo->findData(index);
     if (idx >= 0) {
-        m_ssSettings.motionCombo->setCurrentIndex(idx);
+        m_slideshowMotionCombo->setCurrentIndex(idx);
     }
 }
 
 double PreferencesDialog::panZoomFactor() const
 {
-    return m_ssSettings.panZoomFactorSpin ? m_ssSettings.panZoomFactorSpin->value() : 1.12;
+    return m_panZoomFactorSpin ? m_panZoomFactorSpin->value() : 1.12;
 }
 
 void PreferencesDialog::setPanZoomFactor(double factor)
 {
-    if (m_ssSettings.panZoomFactorSpin) {
-        m_ssSettings.panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
+    if (m_panZoomFactorSpin) {
+        m_panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
     }
 }
 
 int PreferencesDialog::slideshowZoomIndex() const
 {
-    return m_ssSettings.zoomCombo ? m_ssSettings.zoomCombo->currentData().toInt() : 0;
+    return m_slideshowZoomCombo ? m_slideshowZoomCombo->currentData().toInt() : 0;
 }
 
 void PreferencesDialog::setSlideshowZoomIndex(int index)
 {
-    if (!m_ssSettings.zoomCombo) {
+    if (!m_slideshowZoomCombo) {
         return;
     }
-    const int idx = m_ssSettings.zoomCombo->findData(index);
+    const int idx = m_slideshowZoomCombo->findData(index);
     if (idx >= 0) {
-        m_ssSettings.zoomCombo->setCurrentIndex(idx);
+        m_slideshowZoomCombo->setCurrentIndex(idx);
     }
 }
 
@@ -1222,14 +1222,14 @@ void PreferencesDialog::setSlideshowLetterboxFillIndex(int index)
     if (idx >= 0) {
         m_slideshowLetterboxCombo->setCurrentIndex(idx);
     }
-    if (m_ssSettings.padColorBtn) {
-        m_ssSettings.padColorBtn->setEnabled(index == 1);
+    if (m_slideshowPadColorBtn) {
+        m_slideshowPadColorBtn->setEnabled(index == 1);
     }
 }
 
 QColor PreferencesDialog::slideshowPadColor() const
 {
-    return m_ssSettings.padColor;
+    return m_slideshowPadColor;
 }
 
 void PreferencesDialog::setSlideshowPadColor(const QColor &color)
@@ -1237,11 +1237,11 @@ void PreferencesDialog::setSlideshowPadColor(const QColor &color)
     if (!color.isValid()) {
         return;
     }
-    m_ssSettings.padColor = color;
-    if (m_ssSettings.padColorBtn) {
+    m_slideshowPadColor = color;
+    if (m_slideshowPadColorBtn) {
         const QColor fg = (color.lightness() > 140) ? QColor(Qt::black) : QColor(Qt::white);
-        m_ssSettings.padColorBtn->setText(color.name(QColor::HexRgb));
-        m_ssSettings.padColorBtn->setStyleSheet(
+        m_slideshowPadColorBtn->setText(color.name(QColor::HexRgb));
+        m_slideshowPadColorBtn->setStyleSheet(
             QStringLiteral("QPushButton { background-color: %1; color: %2; padding: 4px 10px; }")
                 .arg(color.name(QColor::HexRgb), fg.name(QColor::HexRgb)));
     }

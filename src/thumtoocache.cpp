@@ -744,6 +744,10 @@ void noteCachedSize(const QString &path, const QSize &size)
     ProcessMemos::instance().noteSize(path, size);
 }
 
+#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_LQIP)
+QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob);
+#endif
+
 void requestSizeAsync(const QString &path,
                       std::function<void(bool ok, const QSize &size, const QImage &lqip)> callback)
 {
@@ -1010,9 +1014,6 @@ bool isUnsupported(const QString &path)
 #endif
     return false;
 }
-
-#ifdef BILTOO_HAVE_THUMTOO
-namespace {
 
 QByteArray cachedLadderBytes(const QString &path, int maxEdge)
 {
