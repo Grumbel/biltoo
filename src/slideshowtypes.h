@@ -274,6 +274,12 @@ struct SlideshowProgressHud {
     /** Last [slideshow-paint] fingerprint; skip duplicate debug logs. */
     QString lastPaintFp;
 
+    void setCycleProgress01(qreal phase01)
+    {
+        cycleProgress01 = qBound(0.0, phase01, 1.0);
+        cycleProgressValid = true;
+    }
+
     void clearProgress()
     {
         progressActive = false;

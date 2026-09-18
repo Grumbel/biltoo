@@ -838,7 +838,7 @@ void ImageView::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
 
 void ImageView::setSlideshowCycleProgress(qreal phase01)
 {
-    m_ssHud.cycleProgress01 = qBound(0.0, phase01, 1.0);
+    m_ssHud.setCycleProgress01(phase01);
     m_ssHud.cycleProgressValid = true;
 }
 
