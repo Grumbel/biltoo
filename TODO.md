@@ -2,6 +2,28 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1137-soft-mid-rung-attempted.** SoftOnly 97–127 marks softAttempted; Prefer soft runs.
+Prior: **1136**.
+
+### Bug
+- `softAttempted` required `got >= 128`. SoftOnly delivering 97–127 never set it →
+  SoftOnly looped and Prefer soft at 512 never ran.
+
+### Fix
+- Any soft-band delivery with `got > 96` sets `softAttempted`.
+- Unit test for mid-rung 100 → Prefer display at softMax.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1137-soft-mid-rung-attempted.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1136-paint-pixmap-selfheal.** Paint rebakes pixmap when displayImage is larger.
 Prior: **1135**.
 

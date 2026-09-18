@@ -89,19 +89,15 @@ void Machine::noteDelivery(int requestEdge, int got, int softMax)
 {
     // LQIP is a stand-in only (≤96). Soft PreferCache must keep climbing.
     constexpr int kLqipCeiling = 96;
-    // Soft progress floor: SoftOnly/Prefer soft returned a real soft rung
-    // (not LQIP). Matches GallerySoft::kSoftProgressFloor intent.
-    constexpr int kSoftProgressFloor = 128;
-
     if (got > 0) {
         m_.have = std::max(m_.have, got);
         if (requestEdge > 0) {
             m_.lastDisplayGot = std::max(m_.lastDisplayGot, got);
         }
-        // Soft-band delivery below softMax: mark attempted only for real soft
-        // rungs so we do not SoftOnly-loop (128 while softMax 512). LQIP alone
-        // must NOT set this — Gallery was stuck on LQIP forever.
-        if (requestEdge <= softMax && got >= kSoftProgressFloor) {
+        // Soft-band delivery below softMax: any sample above LQIP counts as
+        // soft attempted so SoftOnly does not loop on 97–127 while Prefer soft
+        // at softMax never runs. LQIP (≤96) must NOT set this.
+        if (requestEdge <= softMax && got > kLqipCeiling) {
             m_.softAttempted = true;
         }
     }

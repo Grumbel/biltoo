@@ -24,6 +24,7 @@ private slots:
     void escalate_resets_full_done();
     void gave_up_not_terminal_while_short();
     void soft_shortfall_does_not_reschedule();
+    void soft_mid_rung_marks_attempted();
     void lqip_delivery_still_schedules_soft();
 };
 
@@ -207,6 +208,21 @@ void RasterClimbSmTest::soft_shortfall_does_not_reschedule()
     // Prefer soft-band / display may still run; Full must not.
     QVERIFY(!p.scheduleFull);
     QVERIFY(!p.forgetSoftSettled);
+}
+
+void RasterClimbSmTest::soft_mid_rung_marks_attempted()
+{
+    // SoftOnly returned 100 (above LQIP, below old 128 floor): softAttempted
+    // so Prefer soft at softMax runs instead of SoftOnly forever.
+    Machine m;
+    m.setWant(512, 4000, Policy::SoftDisplay, kSoft, kOverview);
+    m.noteDelivery(/*requestEdge=*/256, /*got=*/100, kSoft);
+    QVERIFY(m.state().softAttempted);
+    QVERIFY(!m.state().preferGaveUp);
+    const Plan p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(!p.scheduleSoft);
+    QVERIFY(p.scheduleDisplay);
+    QCOMPARE(p.displayEdge, kSoft);
 }
 
 void RasterClimbSmTest::lqip_delivery_still_schedules_soft()
