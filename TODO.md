@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1131-soft-progress-hud.** Centre “Improving previews…” while LQIP remains; faster scroll refresh.
+Prior: **1130**.
+
+### Change
+- Centre HUD while ≥10% of Gallery tiles are blank/LQIP: counts LQIP / blank / soft+.
+- Clears when soft coverage is good (does not clobber size-resolve / Opening).
+- Gallery scrollbar decode-window debounce **48ms** (was 150ms).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1131-soft-progress-hud.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1130-lqip-not-gaveup-block.** LQIP must not be blocked by PreferCache give-up.
 Prior: **1129**.
 

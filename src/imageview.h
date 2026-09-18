@@ -1527,6 +1527,8 @@ private:
     void clearGallerySoftInflight(GallerySoftState &soft);
     /** Recover stalled soft installs (cache hit not painted / inflight stuck). */
     void gallerySoftWatchdogTick();
+    /** Centre HUD while Gallery soft replaces LQIP (not size-resolve). */
+    void updateGallerySoftProgressHud();
     /** Slideshow phase buffers only: DisplaySurface::decide while transition live. */
     void slideshowPhaseSurfaceTick();
     void bindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id, const QString &path);
