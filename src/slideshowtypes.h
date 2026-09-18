@@ -72,6 +72,8 @@ struct SlideshowPhaseState {
     bool toContentApplied = false;
     /** <0 = dwell; [0,1] = transition blend. */
     qreal fadeT = -1.0;
+
+    void setFadeBlend(qreal t) { fadeT = qBound(0.0, t, 1.0); }
     qreal fromMotionT = 0.0;
     qreal toMotionT = 0.0;
     QPointF toBiasA{-1.0, -1.0};
@@ -148,6 +150,11 @@ struct SlideshowSettings {
     {
         panZoomFactor = qBound(1.02, factor, 1.5);
     }
+
+    void setTransitionDurationMs(int ms)
+    {
+        transitionDurationMs = qMax(0, ms);
+    }
 };
 
 /**
@@ -176,6 +183,8 @@ struct SlideshowDwellState {
     int atlasVw = 0;
     int atlasVh = 0;
     qreal motionT = 0.0;
+
+    void setMotionT(qreal t) { motionT = qBound(0.0, t, 1.0); }
 
     bool motionActive = false;
     bool motionPaused = false;
@@ -278,6 +287,11 @@ struct SlideshowProgressHud {
     {
         cycleProgress01 = qBound(0.0, phase01, 1.0);
         cycleProgressValid = true;
+    }
+
+    void setProgressIntervalMs(int ms)
+    {
+        progressIntervalMs = qMax(0, ms);
     }
 
     void clearProgress()

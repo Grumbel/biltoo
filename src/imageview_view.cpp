@@ -723,7 +723,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     // interval. Do not restart the progress clock or clear phase buffers —
     // that produced HUD and paint blips on every [/] or settings change.
     if (active && m_ssHud.progressActive) {
-        m_ssHud.progressIntervalMs = qMax(0, intervalMs);
+        m_ssHud.setProgressIntervalMs(intervalMs);
         if (m_ssHud.progressIntervalMs > 0 && m_slideshowProgressTimer
             && !m_ssHud.progressClockPaused) {
             m_slideshowProgressTimer->start();
@@ -737,7 +737,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     }
 
     m_ssHud.progressActive = active;
-    m_ssHud.progressIntervalMs = active ? qMax(0, intervalMs) : 0;
+    m_ssHud.setProgressIntervalMs(active ? intervalMs : 0);
     if (active) {
         // Pure phase owns the viewport — never flash the underlay item.
         hideSlideshowUnderlay();
@@ -856,7 +856,7 @@ void ImageView::setSlideshowTransition(SlideshowTransition kind)
 
 void ImageView::setSlideshowTransitionDurationMs(int ms)
 {
-    m_ssSettings.transitionDurationMs = qMax(0, ms);
+    m_ssSettings.setTransitionDurationMs(ms);
 }
 
 QPixmap ImageView::captureSlideshowFrame() const
@@ -866,8 +866,8 @@ QPixmap ImageView::captureSlideshowFrame() const
     if (!viewport()) {
         return {};
     }
-    const int vw = qMax(1, viewport()->width());
-    const int vh = qMax(1, viewport()->height());
+    const int vw = ViewTransform::atLeast1(viewport()->width());
+    const int vh = ViewTransform::atLeast1(viewport()->height());
     const qreal dpr = viewport()->devicePixelRatioF();
     QPixmap pm(QSize(vw, vh) * dpr);
     pm.setDevicePixelRatio(dpr);
@@ -967,8 +967,8 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
         return;
     }
     // Scale from logical size when known; contentRect only for scene mid-point.
-    const qreal vw = qreal(qMax(1, viewport()->width()));
-    const qreal vh = qreal(qMax(1, viewport()->height()));
+    const qreal vw = qreal(ViewTransform::atLeast1(viewport()->width()));
+    const qreal vh = qreal(ViewTransform::atLeast1(viewport()->height()));
     const QPointF mid = item->mapToScene(content.center());
 
     if (!isPositiveSize(logical)) {
@@ -1055,7 +1055,7 @@ void ImageView::setSlideshowMotionPaused(bool paused)
                 if (d > 0) {
                     const qreal t = qreal(m_ssDwell.elapsedOffsetMs + d)
                         / qreal(m_ssDwell.durationMs);
-                    m_ssDwell.motionT = qBound(0.0, t, 1.0);
+                    m_ssDwell.setMotionT(t);
                     m_ssDwell.elapsedOffsetMs =
                         qint64(m_ssDwell.motionT * qreal(m_ssDwell.durationMs));
                 }
@@ -2717,8 +2717,8 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     if (!painter || image.isNull() || !viewport()) {
         return;
     }
-    const int vw = qMax(1, viewport()->width());
-    const int vh = qMax(1, viewport()->height());
+    const int vw = ViewTransform::atLeast1(viewport()->width());
+    const int vh = ViewTransform::atLeast1(viewport()->height());
 
     const QSize logical = resolveMotionLogicalSize(path);
     const qreal iw = qreal(logical.width());
@@ -2780,8 +2780,8 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
     if (image.isNull() || !viewport()) {
         return {};
     }
-    const int vw = qMax(1, viewport()->width());
-    const int vh = qMax(1, viewport()->height());
+    const int vw = ViewTransform::atLeast1(viewport()->width());
+    const int vh = ViewTransform::atLeast1(viewport()->height());
     QImage out(vw, vh, QImage::Format_ARGB32_Premultiplied);
     out.fill(slideshowPadColor());
     QPainter painter(&out);
@@ -2813,7 +2813,7 @@ void ImageView::maybeStartSlideshowMotion()
         return;
     }
     // Continue from the dwell sample if soft-handoff already set one.
-    const qreal initial = qBound(0.0, m_ssDwell.motionT, 1.0);
+    const qreal initial = qBound(0.0, m_ssDwell.motionT, 1.0); // already clamped on set
     startSlideshowMotion(duration, initial);
 }
 
