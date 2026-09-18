@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1332-hud-layoutprefs-cover.** HudGeometry, LayoutPrefs clamps, cover scale, crop size.
+Prior: **1331**.
+
+### Change
+- `LayoutPrefs` setGridColumns / setMasonryColumns / setMasonryRows
+- `HudGeometry::{placePanel,panelRect}` — pure HUD box placement
+- `SlideshowClocks::sanitizeDwellDurationMs`
+- `SlideshowMotionGeometry::{coverDevicePixelScale,coverAxisScaleX/Y}`
+- `ContentXform::roundedSizeAtLeast1`
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1332-hud-layoutprefs-cover.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1331-framing-unitfraction-progress.** ViewFraming sticky/aspect, unitFraction, progress01.
 Prior: **1330**.
 
