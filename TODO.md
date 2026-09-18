@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1217-nav-hot-no-surface-climb.** Nav-hot: no DisplaySurface climb / async bake.
+Prior: **1216**.
+
+### Bug
+`tryInstallImageModeSample` → `driveImageFocusSurface` → `evaluate()` →
+`ScheduleClimb` called `pathRaster->ensure` directly, bypassing
+`requestEscalateClimb`'s nav-hot guard. Soft ladder deliveries during a
+key-repeat burst still started PreferCache climbs for skipped paths.
+
+### Fix
+- `driveImageFocusSurface` returns early while nav-hot.
+- `applyDisplaySurfaceAction`: ScheduleClimb / ScheduleAsyncMaterialize no-op
+  under Image nav-hot.
+- Docs: IMAGE_MODE_NAV_SOFT rule 9.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1217-nav-hot-no-surface-climb.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1216-nav-hot-materialize-light.** Nav-hot: light content bake, drop prefetch slots.
 Prior: **1215**.
 

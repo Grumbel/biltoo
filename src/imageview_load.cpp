@@ -666,6 +666,10 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
         if (isGalleryMode() || !m_pathRaster) {
             return false;
         }
+        // Image key-repeat: never ensure per skipped path (IMAGE_MODE_NAV_SOFT).
+        if (m_slideshowNavHot && isImageMode()) {
+            return false;
+        }
         const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : fallbackNeedEdge;
         if (need > 0) {
             m_pathRaster->ensure(path, need, logicalSizeForPath(path), climbPolicy);
@@ -674,6 +678,9 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
     }
     if (act.type == AT::ScheduleAsyncMaterialize) {
         if (isGalleryMode()) {
+            return false;
+        }
+        if (m_slideshowNavHot && isImageMode()) {
             return false;
         }
         scheduleAsyncHostRematerialize(
@@ -2641,6 +2648,7 @@ bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &ima
     const SessionAppearance::PixelKind kind = pixelKindForImageModeSample(path, image);
     const bool ok = tryInstallImageModeSampleBaked(path, image, kind);
     // Decide soft→async / climb from the new host edge (event-driven).
+    // Nav-hot: install only — driveImageFocusSurface is a no-op while hot.
     driveImageFocusSurface();
     if (ok && viewport()) {
         viewport()->update();
@@ -3122,6 +3130,12 @@ void ImageView::syncImageFocusSurfaceState()
 void ImageView::driveImageFocusSurface()
 {
     if (!isImageMode() || m_slideshowProgressActive) {
+        return;
+    }
+    // Key-repeat: install soft only. evaluate() → ScheduleClimb / async bake
+    // would pathRaster->ensure every skipped path (bypassed requestEscalateClimb
+    // nav-hot guard). Settle loadImage drives the surface once.
+    if (m_slideshowNavHot) {
         return;
     }
     syncImageFocusSurfaceState();

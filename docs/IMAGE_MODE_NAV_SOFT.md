@@ -56,6 +56,10 @@ MainWindow::setCurrentIndex / goNext
 8. **Nav-hot materialize:** content bake uses a tighter clamp (≤256) and never
    schedules async rematerialize for skipped paths. Entering nav-hot drops
    neighbor tile-prefetch slots so InFlight work does not compete with settle.
+9. **`driveImageFocusSurface` / DisplaySurface actions:** no-op under nav-hot.
+   `evaluate()` → `ScheduleClimb` used to call `pathRaster->ensure` directly and
+   bypass the PreferCache climb nav-hot guard (ladderReady / tryInstall still
+   drove the surface on every soft delivery).
 
 ## Failure modes (observed)
 
