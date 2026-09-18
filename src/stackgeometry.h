@@ -60,6 +60,17 @@ inline int lowerTargetIndex(int seedIndex, int layerCount)
     return seedIndex - 1;
 }
 
+/** Strict z order (no pointer tie-break). */
+inline bool zGreater(qreal a, qreal b)
+{
+    return !qFuzzyCompare(a, b) && a > b;
+}
+
+inline bool zLess(qreal a, qreal b)
+{
+    return !qFuzzyCompare(a, b) && a < b;
+}
+
 } // namespace StackGeometry
 
 #endif // STACKGEOMETRY_H

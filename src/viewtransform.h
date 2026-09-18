@@ -4,6 +4,8 @@
 #ifndef VIEWTRANSFORM_H
 #define VIEWTRANSFORM_H
 
+#include <QPoint>
+#include <QRect>
 #include <QRectF>
 #include <QTransform>
 #include <QtMath>
@@ -27,6 +29,12 @@ inline QRectF padded(const QRectF &bounds, qreal pad)
         return bounds;
     }
     return bounds.adjusted(-pad, -pad, pad, pad);
+}
+
+/** Axis-aligned rubber from two viewport points. */
+inline QRect rubberRect(const QPoint &a, const QPoint &b)
+{
+    return QRect(a, b).normalized();
 }
 
 } // namespace ViewTransform
