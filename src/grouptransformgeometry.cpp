@@ -152,4 +152,36 @@ ScaleFactors scaleFactorsFromDrag(const QPointF &scenePos, const QRectF &boundsS
     return out;
 }
 
+bool rotationDeltaFromDrag(const QPointF &centre, const QPointF &pressScene,
+                           const QPointF &scenePos, bool snap15, bool snap45,
+                           qreal *deltaOut)
+{
+    if (!deltaOut) {
+        return false;
+    }
+    const QPointF v0 = pressScene - centre;
+    const QPointF v1 = scenePos - centre;
+    if (QLineF(QPointF(0, 0), v0).length() < 1e-3) {
+        return false;
+    }
+    qreal delta = qRadiansToDegrees(qAtan2(v1.y(), v1.x()) - qAtan2(v0.y(), v0.x()));
+    if (snap15) {
+        delta = qRound(delta / 15.0) * 15.0;
+    } else if (snap45) {
+        delta = qRound(delta / 45.0) * 45.0;
+    }
+    *deltaOut = delta;
+    return true;
+}
+
+QPointF orbitPoint(const QPointF &centre, const QPointF &pos, qreal deltaDeg)
+{
+    const qreal rad = qDegreesToRadians(deltaDeg);
+    const qreal c = qCos(rad);
+    const qreal s = qSin(rad);
+    const QPointF rel = pos - centre;
+    return QPointF(centre.x() + rel.x() * c - rel.y() * s,
+                   centre.y() + rel.x() * s + rel.y() * c);
+}
+
 } // namespace GroupTransformGeometry

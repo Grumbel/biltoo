@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1308-group-transform-rotate.** Pure group rotate delta and orbit.
+Prior: **1307**.
+
+### Change
+- `GroupTransformGeometry::rotationDeltaFromDrag` — atan2 delta, Shift 15° /
+  Ctrl 45° snap
+- `orbitPoint` — rotate a scene point about a centre
+- `updateGroupRotate` uses the pure helpers; item apply stays on host.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1308-group-transform-rotate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1307-group-transform-geometry.** Pure group scale hit-test and factors.
 Prior: **1306**.
 

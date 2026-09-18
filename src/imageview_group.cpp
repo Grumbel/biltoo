@@ -149,21 +149,12 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
     const QPointF centre = m_groupXform.centerStart;
     // Angle from group centre to pointer; seed from first press stored in
     // m_groupXform.pressScenePos when the drag starts (set in mouse path).
-    const QPointF v0 = m_groupXform.pressScenePos - centre;
-    const QPointF v1 = scenePos - centre;
-    if (QLineF(QPointF(0, 0), v0).length() < 1e-3) {
+    qreal delta = 0.0;
+    if (!GroupTransformGeometry::rotationDeltaFromDrag(
+            centre, m_groupXform.pressScenePos, scenePos,
+            mods & Qt::ShiftModifier, mods & Qt::ControlModifier, &delta)) {
         return;
     }
-    qreal delta = qRadiansToDegrees(qAtan2(v1.y(), v1.x()) - qAtan2(v0.y(), v0.x()));
-    // Match single-item / crop rotate: Shift → 15°, Ctrl → 45° (incl. 90°).
-    if (mods & Qt::ShiftModifier) {
-        delta = qRound(delta / 15.0) * 15.0;
-    } else if (mods & Qt::ControlModifier) {
-        delta = qRound(delta / 45.0) * 45.0;
-    }
-    const qreal rad = qDegreesToRadians(delta);
-    const qreal c = qCos(rad);
-    const qreal s = qSin(rad);
 
     for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
         ImageItem *item = m_groupXform.dragItems.at(i);
@@ -172,9 +163,7 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
             continue;
         }
         // Orbit position around group centre; add the same delta to placement angle.
-        const QPointF rel = st.pos - centre;
-        const QPointF newPos(centre.x() + rel.x() * c - rel.y() * s,
-                             centre.y() + rel.x() * s + rel.y() * c);
+        const QPointF newPos = GroupTransformGeometry::orbitPoint(centre, st.pos, delta);
         if (!qIsFinite(newPos.x()) || !qIsFinite(newPos.y())) {
             continue;
         }

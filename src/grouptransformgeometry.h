@@ -58,6 +58,17 @@ struct ScaleFactors {
 ScaleFactors scaleFactorsFromDrag(const QPointF &scenePos, const QRectF &boundsStart,
                                   int handle, bool shift);
 
+/**
+ * Group rotate delta (degrees) from press pointer to current about @p centre.
+ * Shift → 15° snap; else Ctrl → 45°. Returns false if press radius is tiny.
+ */
+bool rotationDeltaFromDrag(const QPointF &centre, const QPointF &pressScene,
+                           const QPointF &scenePos, bool snap15, bool snap45,
+                           qreal *deltaOut);
+
+/** Rotate @p pos about @p centre by @p deltaDeg (scene plane). */
+QPointF orbitPoint(const QPointF &centre, const QPointF &pos, qreal deltaDeg);
+
 } // namespace GroupTransformGeometry
 
 #endif // GROUPTRANSFORMGEOMETRY_H
