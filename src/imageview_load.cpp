@@ -393,7 +393,7 @@ void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
     // Fresh session: allow seed again for new ids (old set cleared on invalidate).
     const int n = qMin(paths.size(), ids.size());
     for (int i = 0; i < n; ++i) {
-        m_appearanceSeedAttempted.remove(ids.at(i));
+        m_appearance.clearSeedAttempted(ids.at(i));
     }
     // Small sessions: fine on GUI (few stats). Large sessions: locatorId +
     // appearance SQLite used to run O(n) on the GUI during open and freeze the
@@ -462,10 +462,10 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
     }
     // One attempt per session id — archive/miss paths must not re-hit locatorId
     // on every paint via wantAppearanceForItem.
-    if (m_appearanceSeedAttempted.contains(sid)) {
+    if (m_appearance.seedAttempted(sid)) {
         return;
     }
-    m_appearanceSeedAttempted.insert(sid);
+    m_appearance.markSeedAttempted(sid);
     ThumtooCache::StoredContentAppearance stored;
     if (!ThumtooCache::loadContentAppearance(path, &stored)) {
         return;
@@ -479,7 +479,7 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
 void ImageView::markAppearanceSeedAttempted(SessionImageId sid)
 {
     if (sid != kInvalidSessionImageId) {
-        m_appearanceSeedAttempted.insert(sid);
+        m_appearance.markSeedAttempted(sid);
     }
 }
 
@@ -491,7 +491,7 @@ void ImageView::applyStoredContentAppearanceSeed(SessionImageId sid, const QStri
     }
     // Worker path may not have marked attempted yet; mark here so paint does not
     // re-drive locatorId via wantAppearanceForItem.
-    m_appearanceSeedAttempted.insert(sid);
+    m_appearance.markSeedAttempted(sid);
     if (m_appearance.contains(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.

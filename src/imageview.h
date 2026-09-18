@@ -1735,7 +1735,6 @@ private:
     /** Content appearance by stable session-image id (Phase 2 store). */
     SessionAppearanceStore m_appearance;
     /** Session ids we already tried to seed from path XDG (success or miss). */
-    QSet<SessionImageId> m_appearanceSeedAttempted;
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */
     /**

@@ -315,10 +315,31 @@ void SessionAppearanceStore::remove(SessionImageId id)
 {
     if (id != kInvalidSessionImageId) {
         m_byId.remove(id);
+        m_seedAttempted.remove(id);
     }
 }
 
 void SessionAppearanceStore::clear()
 {
     m_byId.clear();
+    m_seedAttempted.clear();
+}
+
+bool SessionAppearanceStore::seedAttempted(SessionImageId id) const
+{
+    return id != kInvalidSessionImageId && m_seedAttempted.contains(id);
+}
+
+void SessionAppearanceStore::markSeedAttempted(SessionImageId id)
+{
+    if (id != kInvalidSessionImageId) {
+        m_seedAttempted.insert(id);
+    }
+}
+
+void SessionAppearanceStore::clearSeedAttempted(SessionImageId id)
+{
+    if (id != kInvalidSessionImageId) {
+        m_seedAttempted.remove(id);
+    }
 }

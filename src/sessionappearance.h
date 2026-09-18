@@ -9,6 +9,7 @@
 #include "contentxform.h"
 
 #include <QHash>
+#include <QSet>
 #include <QImage>
 #include <QRect>
 #include <QSize>
@@ -174,8 +175,17 @@ public:
     int size() const { return m_byId.size(); }
     bool isEmpty() const { return m_byId.isEmpty(); }
 
+    /**
+     * Durable XDG seed attempts (once per session id). Prevents archive/miss
+     * paths from re-hitting locatorId on every paint.
+     */
+    bool seedAttempted(SessionImageId id) const;
+    void markSeedAttempted(SessionImageId id);
+    void clearSeedAttempted(SessionImageId id);
+
 private:
     QHash<SessionImageId, WorkspaceItemState> m_byId;
+    QSet<SessionImageId> m_seedAttempted;
 };
 
 #endif // SESSIONAPPEARANCE_H

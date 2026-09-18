@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1274-appearance-seed-attempted.** Seed-attempt set owns by SessionAppearanceStore.
+Prior: **1273**.
+
+### Change
+- `SessionAppearanceStore::seedAttempted` / `markSeedAttempted` / `clearSeedAttempted`.
+- `clear()` / `remove(id)` also drop seed marks.
+- ImageView no longer holds `m_appearanceSeedAttempted`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1274-appearance-seed-attempted.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1273-session-bind-book.** Extract SessionBindBook for LoadAdd pending binds.
 Prior: **1272**.
 

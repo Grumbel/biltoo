@@ -65,6 +65,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SessionLoadGate** (`sessionloadgate.h`): generation + pending LoadAdd/LoadRestore/scene maps; `clearPending` / `bumpGeneration`.
 - **ImageSizeBook** (`imagesizebook.h`): path→logical size + provisional/probe sets; noteDefinitive HARD RULE.
 - **SessionBindBook** (`sessionbindbook.h`): LoadAdd PendingSessionBind queue + index/select maps.
+- **SessionAppearanceStore** seed-attempt set (`seedAttempted` / mark / clear with remove).
 
 
 ## Current pain (evidence)
