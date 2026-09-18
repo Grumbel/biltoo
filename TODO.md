@@ -2,6 +2,35 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1105-gallery-tile-budget-on-band.** Gallery tile issue budget 12 when tileLodWanted.
+Prior: **1104**.
+
+### Change
+- `scheduleGalleryDecode`: if any item for path `tileLodWanted`, clear gallery
+  soft inflight for that path and `tickPrimaryTileLod(12)` (was 6) — frees soft
+  concurrency and prioritizes tiles.
+- `updateGalleryDecodeWindow`: tile tick budget 12 when any item wants tiles,
+  else 6.
+- `ladderReady` tile wake: budget 12 when path has a tileLodWanted item.
+
+PathRaster cancel-on-enter-tile-band remains once-per-path via
+`m_tileLodPreferCancelled` inside `tickPrimaryTileLod`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1105-gallery-tile-budget-on-band.bundle HEAD
+```
+
+### Next
+- [ ] Optional: skip soft schedule entirely for paths with only tileLodWanted items (already skip in pass 2)
+- [ ] thumtoo: optional 7z seek probe → Random
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1104-soft-prefercache-tilesynth.** Soft band always PreferCache (TileSynth).
 Prior: **1103**.
 

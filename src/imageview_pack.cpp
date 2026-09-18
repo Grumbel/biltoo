@@ -340,7 +340,16 @@ void ImageView::updateGalleryDecodeWindow()
 
     scheduleIdleGalleryDecodes(rest);
     // Deep-zoom inspection: grid tiles for oversized on-screen cells.
-    tickPrimaryTileLod(6);
+    // Stronger issue budget when any cell is already in the tile band so
+    // mid-scroll zoom does not starve tile fetches behind soft concurrency.
+    int tileBudget = 6;
+    for (ImageItem *ii : m_items) {
+        if (ii && ii->tileLodWanted()) {
+            tileBudget = 12;
+            break;
+        }
+    }
+    tickPrimaryTileLod(tileBudget);
     if (m_perfEnabled && decodeWinTimer.isValid()) {
         m_perfLastDecodeWindowUs = decodeWinTimer.nsecsElapsed() / 1000;
         m_perfMaxDecodeWindowUs =

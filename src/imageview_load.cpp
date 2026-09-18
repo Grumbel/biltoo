@@ -1576,10 +1576,17 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
-    // Tiles own the cell — no SoftOnly/PreferCache HOST climb in parallel.
+    // Tiles own the cell — no soft/PreferCache HOST climb in parallel.
     for (ImageItem *ii : m_items) {
         if (ii && ii->path() == path && ii->tileLodWanted()) {
-            tickPrimaryTileLod(6);
+            // Drop soft inflight accounting so gallery concurrency budget is
+            // not held by a climb we no longer want; tickPrimaryTileLod cancels
+            // PathRaster once per path via m_tileLodPreferCancelled.
+            auto sit = m_gallerySoft.find(path);
+            if (sit != m_gallerySoft.end()) {
+                clearGallerySoftInflight(*sit);
+            }
+            tickPrimaryTileLod(12);
             return;
         }
     }
@@ -1707,7 +1714,7 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
     if (isImageMode() || isWorkspaceMode() || isGalleryMode()) {
         for (ImageItem *ii : m_items) {
             if (ii && ii->path() == path && ii->tileLodWanted()) {
-                tickPrimaryTileLod(6);
+                tickPrimaryTileLod(12);
                 break;
             }
         }
