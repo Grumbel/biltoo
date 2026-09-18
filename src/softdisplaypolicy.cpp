@@ -37,4 +37,17 @@ QImage lqipOrCachedSoft(const QString &path)
     return {};
 }
 
+
+bool gallerySoftWithinLqipBand(int incomingEdge, int lqipMaxEdge)
+{
+    return incomingEdge > 0 && incomingEdge <= lqipMaxEdge;
+}
+
+bool galleryAcceptsLqipUpgrade(int shownEdge, int incomingEdge, int lqipMaxEdge)
+{
+    return shownEdge <= lqipMaxEdge
+        && incomingEdge > shownEdge
+        && incomingEdge <= lqipMaxEdge;
+}
+
 } // namespace SoftDisplayPolicy

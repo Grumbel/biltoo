@@ -21,6 +21,17 @@ namespace SoftDisplayPolicy {
  */
 QImage lqipOrCachedSoft(const QString &path);
 
+/**
+ * Gallery SoftPreview install gates (LQIP underlay only).
+ * @return false when incoming is above the LQIP band (reject whole-frame soft).
+ */
+bool gallerySoftWithinLqipBand(int incomingEdge, int lqipMaxEdge);
+
+/**
+ * True when a larger LQIP may replace the shown underlay (never soft climb).
+ */
+bool galleryAcceptsLqipUpgrade(int shownEdge, int incomingEdge, int lqipMaxEdge);
+
 } // namespace SoftDisplayPolicy
 
 #endif // SOFTDISPLAYPOLICY_H

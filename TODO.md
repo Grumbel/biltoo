@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1281-gallery-soft-book-api.** GallerySoftBook helpers + pure gallery LQIP accept gates.
+Prior: **1280**.
+
+### Change
+- `GallerySoftBook::resetPath` / native-decode mark/has/clear.
+- `SoftDisplayPolicy::gallerySoftWithinLqipBand` / `galleryAcceptsLqipUpgrade`.
+- ImageView soft reset and canAcceptDisplaySample use the helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1281-gallery-soft-book-api.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1280-pending-item-appearance-book.** Extract PendingItemAppearanceBook for Duplicate staging.
 Prior: **1279**.
 

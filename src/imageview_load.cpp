@@ -726,21 +726,17 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
     }
     // Gallery: LQIP underlay only (≤kLqipMaxEdge). Never soft/HOST whole-frame.
     if (isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview
-        && incoming > DisplayQuality::kLqipMaxEdge) {
+        && !SoftDisplayPolicy::gallerySoftWithinLqipBand(
+               incoming, DisplayQuality::kLqipMaxEdge)) {
         return false;
     }
     if (!item->hasDisplayPixels()) {
         return true; // blank: LQIP-sized SoftPreview only (gated above)
     }
     if (isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
-        const int shown = item->displayPixelLongEdge();
         // Only larger LQIP; never soft climb.
-        if (shown <= DisplayQuality::kLqipMaxEdge
-            && incoming > shown
-            && incoming <= DisplayQuality::kLqipMaxEdge) {
-            return true;
-        }
-        return false;
+        return SoftDisplayPolicy::galleryAcceptsLqipUpgrade(
+            item->displayPixelLongEdge(), incoming, DisplayQuality::kLqipMaxEdge);
     }
     DisplaySurface::State ds = displaySurfaceStateForItem(item, incoming, false);
     if (isCropDraftLockedItem(item) || isCropDraftLockedPath(item->path())) {
@@ -1261,7 +1257,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     quint64 gen = m_loadGate.generation();
     if (role == LoadReplace) {
         gen = m_loadGate.bumpGeneration();
-        m_gallerySoftBook.imageModeNativeDecodePaths.clear();
+        m_gallerySoftBook.clearImageModeNativeDecode();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
     }
@@ -1468,7 +1464,7 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
 
 void ImageView::gallerySoftResetPath(const QString &path)
 {
-    m_gallerySoftBook.soft.remove(path);
+    m_gallerySoftBook.resetPath(path);
     if (m_pathRaster && !path.isEmpty()) {
         m_pathRaster->cancel(path);
     }
@@ -1476,7 +1472,7 @@ void ImageView::gallerySoftResetPath(const QString &path)
 
 void ImageView::gallerySoftResetAll()
 {
-    m_gallerySoftBook.soft.clear();
+    m_gallerySoftBook.clearSoft();
 }
 
 int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const
@@ -1808,10 +1804,10 @@ void ImageView::ensureWorkspaceQualityClimb()
 void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
 {
     ASSERT_GUI_THREAD();
-    if (path.isEmpty() || m_gallerySoftBook.imageModeNativeDecodePaths.contains(path)) {
+    if (path.isEmpty() || m_gallerySoftBook.hasImageModeNativeDecode(path)) {
         return;
     }
-    m_gallerySoftBook.imageModeNativeDecodePaths.insert(path);
+    m_gallerySoftBook.markImageModeNativeDecode(path);
     const quint64 gen = m_loadGate.generation();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {

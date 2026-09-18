@@ -72,6 +72,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **DisplayEdgePolicy**: pure long-edge coverage, ladder native cap, sample-covers-native,
   soft cell clamp, screen longPx → needEdge.
 - **SoftDisplayPolicy**: worker LQIP / host-soft underlay selection (no soft encode).
+- **GallerySoftBook** path reset + native-decode set API; SoftDisplayPolicy gallery LQIP gates.
 
 
 ## Current pain (evidence)

@@ -21,6 +21,27 @@ struct GallerySoftBook {
 
     void clearSoft() { soft.clear(); }
 
+    void resetPath(const QString &path)
+    {
+        if (!path.isEmpty()) {
+            soft.remove(path);
+        }
+    }
+
+    bool hasImageModeNativeDecode(const QString &path) const
+    {
+        return !path.isEmpty() && imageModeNativeDecodePaths.contains(path);
+    }
+
+    void markImageModeNativeDecode(const QString &path)
+    {
+        if (!path.isEmpty()) {
+            imageModeNativeDecodePaths.insert(path);
+        }
+    }
+
+    void clearImageModeNativeDecode() { imageModeNativeDecodePaths.clear(); }
+
     void clear()
     {
         soft.clear();
