@@ -8,10 +8,42 @@
 
 /**
  * Pure viewport-space geometry of a (possibly rotated) content frame:
- * corners, edge mids, unit edge directions, and outward normals.
- * Used by ImageItem chrome layout / hit-test. No item or view state.
+ * corners, edge mids, unit edge directions, outward normals, and chrome
+ * column / opacity-track layout. No item or view state.
  */
 namespace ItemFrameGeometry {
+
+/** Scale/rotate markers in viewport px (grow on hover). */
+constexpr qreal kHandleScreenPx = 16.0;
+/** Content-edit marks (crop/orient/grade) in viewport px. */
+constexpr qreal kContentEditMarkScreenPx = 20.0;
+/** Free-rotate handle distance from edge (viewport px). */
+constexpr qreal kRotateOffsetPx = 36.0;
+/** Chrome button diameter (viewport px). */
+constexpr qreal kChromeBtnScreenPx = 34.0;
+/** Chrome button hit radius (viewport px). */
+constexpr qreal kChromeHitScreenPx = 28.0;
+/** Outside offset from visual right edge to button column centre. */
+constexpr qreal kChromeOutsidePx = 18.0;
+/** Gap within a chrome button group. */
+constexpr qreal kChromeBtnGapPx = 14.0;
+/** Min air from chrome group edge to rotate knob. */
+constexpr qreal kChromeClearPx = 16.0;
+/** Extra gap between upper/lower chrome groups (rotate lives here). */
+constexpr qreal kChromeGroupGapPx = 22.0;
+constexpr int kChromeUpperCount = 4; // flip / flip / 90°CCW / 90°CW
+constexpr int kChromeLowerCount = 5; // raise / lower / 1:1 / 0° / shear
+constexpr int kChromeCount = kChromeUpperCount + kChromeLowerCount;
+/** Opacity track length along the edge (viewport px). */
+constexpr qreal kSliderWidthPx = 100.0;
+/** Opacity track thickness (viewport px). */
+constexpr qreal kSliderHeightPx = 10.0;
+/** Outside offset from visual left edge to opacity track centre-line. */
+constexpr qreal kSliderOutsidePx = 18.0;
+/** Min air between opacity track and left scale/rotate clearance. */
+constexpr qreal kSliderClearPx = 16.0;
+/** Skip detailed chrome when frame diagonal is below this (viewport px). */
+constexpr qreal kMinFrameDiagPx = 16.0;
 
 struct FrameViewGeom {
     QPointF tl, tr, br, bl, center;
@@ -29,6 +61,18 @@ QPointF unitOr(const QPointF &v, const QPointF &fallback = QPointF(1, 0));
  */
 FrameViewGeom makeFrameViewGeom(const QPointF &tl, const QPointF &tr,
                                 const QPointF &br, const QPointF &bl);
+
+/**
+ * Two chrome groups outside the rotated right edge, split around the free-
+ * rotate knob. outCenters[0..3] upper (flip/90°), [4..8] lower (raise/reset).
+ */
+void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount]);
+
+/**
+ * Vertical opacity track outside the left edge. a = bottom (5%), b = top (100%).
+ * Track length is always kSliderWidthPx; may extend past the frame when cramped.
+ */
+void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut);
 
 } // namespace ItemFrameGeometry
 

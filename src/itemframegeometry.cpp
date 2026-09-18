@@ -44,4 +44,88 @@ FrameViewGeom makeFrameViewGeom(const QPointF &tl, const QPointF &tr,
     return g;
 }
 
+void chromeCentersView(const FrameViewGeom &g, QPointF outCenters[kChromeCount])
+{
+    const qreal btn = kChromeBtnScreenPx;
+    const qreal step = btn + kChromeBtnGapPx;
+    const qreal colOffset = kChromeOutsidePx + btn * 0.5;
+    const QPointF colBase = g.tr + g.outRight * colOffset;
+    const QPointF along = g.dirRight; // top → bottom along the right edge
+
+    const QPointF rotR = g.midRight + g.outRight * kRotateOffsetPx;
+    const qreal rotClear = kHandleScreenPx * 0.5 + kChromeClearPx + btn * 0.5;
+    auto distAlong = [&](const QPointF &p) {
+        return QPointF::dotProduct(p - colBase, along);
+    };
+    const qreal rotAlong = distAlong(rotR);
+    const qreal lateral = qAbs(colOffset - kRotateOffsetPx);
+    const qreal needAlongClear = qMax(0.0, rotClear - lateral);
+
+    // Reserved band around the free-rotate knob.
+    const qreal upperLastAlong = rotAlong - needAlongClear - kChromeGroupGapPx * 0.5;
+    const qreal lowerFirstAlong = rotAlong + needAlongClear + kChromeGroupGapPx * 0.5;
+
+    // Upper group: prefer flush with the top-right corner when it fits above
+    // the reserved band; otherwise pack against the band from above.
+    const qreal preferTop = btn * 0.5 + 4.0;
+    qreal firstUpper = preferTop;
+    if (preferTop + (kChromeUpperCount - 1) * step > upperLastAlong) {
+        firstUpper = upperLastAlong - (kChromeUpperCount - 1) * step;
+    }
+
+    // Lower group: prefer flush with the bottom-right corner when it fits below
+    // the reserved band; otherwise pack against the band from below.
+    const qreal edgeLen = distAlong(g.br + g.outRight * colOffset);
+    const qreal preferBottomFirst =
+        edgeLen - ((kChromeLowerCount - 1) * step + btn * 0.5 + 4.0);
+    qreal firstLower = preferBottomFirst;
+    if (preferBottomFirst < lowerFirstAlong) {
+        firstLower = lowerFirstAlong;
+    }
+
+    for (int i = 0; i < kChromeUpperCount; ++i) {
+        outCenters[i] = colBase + along * (firstUpper + i * step);
+    }
+    for (int i = 0; i < kChromeLowerCount; ++i) {
+        outCenters[kChromeUpperCount + i] = colBase + along * (firstLower + i * step);
+    }
+}
+
+void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut)
+{
+    // a = bottom end (opacity 5%), b = top end (opacity 100%).
+    // Track length is always kSliderWidthPx (never shrinks).
+    const QPointF alongUp = g.dirLeft; // bl → tl
+    const qreal outDist = kSliderOutsidePx + kSliderHeightPx * 0.5;
+    const qreal trackLen = kSliderWidthPx;
+    const qreal cornerMargin = kHandleScreenPx * 0.6;
+
+    auto projFromBl = [&](const QPointF &p) {
+        return QPointF::dotProduct(p - g.bl, alongUp);
+    };
+
+    const QPointF rotL = g.midLeft + g.outLeft * kRotateOffsetPx;
+    const qreal rotAlong = projFromBl(rotL);
+    const qreal needClear = kHandleScreenPx * 0.5 + kSliderClearPx;
+    const qreal maxTop = rotAlong - needClear;
+
+    // Prefer bottom-anchored (clear of corner scale handle).
+    qreal aAlong = cornerMargin;
+    qreal bAlong = aAlong + trackLen;
+    if (bAlong > maxTop) {
+        // Not enough free space under the rotate knob: pin top to maxTop,
+        // keep full track length (extends below the frame if needed).
+        bAlong = maxTop;
+        aAlong = bAlong - trackLen;
+    }
+
+    const QPointF origin = g.bl + g.outLeft * outDist;
+    if (aOut) {
+        *aOut = origin + alongUp * aAlong;
+    }
+    if (bOut) {
+        *bOut = origin + alongUp * bAlong;
+    }
+}
+
 } // namespace ItemFrameGeometry

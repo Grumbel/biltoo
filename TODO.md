@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1313-item-frame-chrome-layout.** Pure chrome column and opacity-track layout.
+Prior: **1312**.
+
+### Change
+- `ItemFrameGeometry::chromeCentersView` — upper/lower chrome centres about rotate knob
+- `opacityTrackView` — left-edge opacity track endpoints
+- Shared viewport layout constants (`kChrome*`, `kSlider*`, `kHandleScreenPx`, …)
+- ImageItem paint/hit paths call the pure layout helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1313-item-frame-chrome-layout.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1312-item-frame-geometry.** Pure rotated-frame view geometry.
 Prior: **1311**.
 
