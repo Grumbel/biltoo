@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1241-probe-memo-sizeReady.** Probe FIFO memo-hits must emit sizeReady.
+Prior: **1240**.
+
+### Bug
+Async `warmSessionOpenMemos` (1239) fills `g_sizeMemo` while Gallery size probes
+sit in the serial FIFO. `pumpProbeSerial` skipped those entries without
+`sizeReady`, so `m_gallerySizeResolvePending` never cleared and the HUD stayed
+on "Resolving sizes…" until the 45s safety timer.
+
+### Fix
+- Memo-hit dequeues emit `sizeReady` with the cached size.
+- `scheduleProbe` early-return on valid memo also emits `sizeReady`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1241-probe-memo-sizeReady.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1240-tile-lod-timer-interval.** Drop duplicated-branches ternary on tile LOD re-arm.
 Prior: **1239**.
 

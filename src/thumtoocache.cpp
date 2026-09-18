@@ -32,6 +32,8 @@
 #include <QSet>
 #include <QDebug>
 #include <QThreadPool>
+#include <QVector>
+#include <QPair>
 
 #include <chrono>
 #include <cstdlib>
@@ -1005,6 +1007,11 @@ void finishProbeSerialSlot(const QString &pathCopy, const thumtoo::SizeReply &re
 void pumpProbeSerial()
 {
     QString next;
+    // Memo hits: still emit sizeReady so Gallery size-resolve pending clears.
+    // Async warmSessionOpenMemos can fill g_sizeMemo while probes sit in the
+    // FIFO; skipping without a signal left "Resolving sizes…" stuck until the
+    // 45s safety timer.
+    QVector<QPair<QString, QSize>> memoHits;
     {
         std::lock_guard lock(g_mu);
         if (g_probeSerialInflight) {
@@ -1014,15 +1021,22 @@ void pumpProbeSerial()
             const QString p = g_probeSerialFifo.takeFirst();
             if (g_sizeMemo.contains(p) && g_sizeMemo.value(p).isValid()) {
                 g_probeQueued.remove(p);
+                memoHits.append(qMakePair(p, g_sizeMemo.value(p)));
                 continue;
             }
             next = p;
             g_probeSerialInflight = true;
             break;
         }
-        if (next.isEmpty()) {
+        if (next.isEmpty() && memoHits.isEmpty()) {
             return;
         }
+    }
+    for (const auto &hit : memoHits) {
+        emit bridge()->sizeReady(hit.first, hit.second);
+    }
+    if (next.isEmpty()) {
+        return;
     }
     init();
     const QString pathCopy = next;
@@ -1073,8 +1087,11 @@ void scheduleProbe(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    // Already have size in process memo — no Store round-trip.
-    if (cachedSize(path, /*scheduleRevalidate=*/false).isValid()) {
+    // Already have size in process memo — no Store round-trip, but still notify
+    // so Gallery size-resolve pending is not left waiting forever.
+    if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
+        memo.isValid()) {
+        emit bridge()->sizeReady(path, memo);
         return;
     }
     {
