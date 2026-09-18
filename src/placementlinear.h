@@ -57,6 +57,18 @@ inline void clampScaleXY(qreal *sx, qreal *sy,
     }
 }
 
+/** Workspace item opacity drawn on the pixmap (chrome stays opaque). */
+inline qreal clampOpacity(qreal opacity, qreal lo = 0.05, qreal hi = 1.0)
+{
+    return qBound(lo, opacity, hi);
+}
+
+inline qreal opacityAfterStep(qreal opacity, qreal delta,
+                              qreal lo = 0.05, qreal hi = 1.0)
+{
+    return clampOpacity(opacity + delta, lo, hi);
+}
+
 
 /** Snap @p degrees to the nearest multiple of @p stepDegrees. */
 qreal snapDegrees(qreal degrees, qreal stepDegrees);

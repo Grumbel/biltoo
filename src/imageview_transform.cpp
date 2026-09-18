@@ -40,8 +40,11 @@ QList<ImageItem *> overlappingStack(ImageItem *item, const QList<ImageItem *> &a
         }
     }
     std::sort(layer.begin(), layer.end(), [](ImageItem *a, ImageItem *b) {
-        if (!qFuzzyCompare(a->stackZ(), b->stackZ())) {
-            return a->stackZ() < b->stackZ();
+        if (StackGeometry::zLess(a->stackZ(), b->stackZ())) {
+            return true;
+        }
+        if (StackGeometry::zGreater(a->stackZ(), b->stackZ())) {
+            return false;
         }
         return a < b;
     });
@@ -318,7 +321,10 @@ void ImageView::raiseSelected()
         return;
     }
     std::sort(sel.begin(), sel.end(),
-              [](ImageItem *a, ImageItem *b) { return a->stackZ() > b->stackZ(); });
+              [](ImageItem *a, ImageItem *b) {
+                  return StackGeometry::zGreater(a->stackZ(), b->stackZ())
+                      || (qFuzzyCompare(a->stackZ(), b->stackZ()) && a > b);
+              });
     for (ImageItem *item : sel) {
         raiseItem(item);
     }
@@ -342,7 +348,10 @@ void ImageView::lowerSelected()
         return;
     }
     std::sort(sel.begin(), sel.end(),
-              [](ImageItem *a, ImageItem *b) { return a->stackZ() < b->stackZ(); });
+              [](ImageItem *a, ImageItem *b) {
+                  return StackGeometry::zLess(a->stackZ(), b->stackZ())
+                      || (qFuzzyCompare(a->stackZ(), b->stackZ()) && a < b);
+              });
     for (ImageItem *item : sel) {
         lowerItem(item);
     }
@@ -355,7 +364,7 @@ void ImageView::opacityUp()
     }
     if (ImageItem *item = targetItem()) {
         const WorkspaceItemState before = captureState(item);
-        item->setItemOpacity(item->itemOpacity() + 0.1);
+        item->setItemOpacity(PlacementLinear::opacityAfterStep(item->itemOpacity(), 0.1));
         pushItemGeometryCommand(tr("Opacity"), item, before, captureState(item));
         emit statusChanged();
     }
@@ -368,7 +377,7 @@ void ImageView::opacityDown()
     }
     if (ImageItem *item = targetItem()) {
         const WorkspaceItemState before = captureState(item);
-        item->setItemOpacity(item->itemOpacity() - 0.1);
+        item->setItemOpacity(PlacementLinear::opacityAfterStep(item->itemOpacity(), -0.1));
         pushItemGeometryCommand(tr("Opacity"), item, before, captureState(item));
         emit statusChanged();
     }

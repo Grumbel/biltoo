@@ -402,7 +402,7 @@ void ImageItem::rotateBy(qreal degrees)
 
 void ImageItem::setItemOpacity(qreal opacity)
 {
-    m_opacity = qBound(0.05, opacity, 1.0);
+    m_opacity = PlacementLinear::clampOpacity(opacity);
     // Keep QGraphicsItem opacity at 1 so handles/chrome stay solid; the
     // pixmap is drawn with m_opacity in paint().
     setOpacity(1.0);
