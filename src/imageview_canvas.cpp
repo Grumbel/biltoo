@@ -130,7 +130,10 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     } else if (isGalleryMode() && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::EnterGallery);
         TtfpTrace::mark("after_applyLayout");
-        updateGalleryDecodeWindow();
+        // Decode window does Store has_tile / PreferCache / setInterest — never
+        // block gallery open (BILTOO_TTFP: was ~600–700ms on warm multi-image).
+        // Pass1 LQIP/soft already installed via prime + installDisplayPixels.
+        scheduleGalleryDecodeWindowRefresh(0);
         TtfpTrace::mark("after_updateGalleryDecodeWindow");
         // First open can pack while the view is still 0×0 (dock/layout settling).
         QTimer::singleShot(0, this, [this]() {

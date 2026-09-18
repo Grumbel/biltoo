@@ -1974,7 +1974,18 @@ void ImageView::focusSessionPath(const QString &path)
     m_scene->clearSelection();
     item->setSelected(true);
     if (isGalleryMode()) {
-        ensureVisible(item, 48, 48);
+        // Open/TTFP: first index is often already in view after pack — ensureVisible
+        // on a large scene was hundreds of ms for no visual change.
+        bool needScroll = true;
+        if (viewport()) {
+            const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
+            if (vis.isValid() && item->sceneBoundingRect().intersects(vis)) {
+                needScroll = false;
+            }
+        }
+        if (needScroll) {
+            ensureVisible(item, 48, 48);
+        }
         // Keyboard focus: show filename in the HUD like mouse hover.
         if (m_gallery.hoverPath() != path) {
             m_gallery.setHoverPath(path);

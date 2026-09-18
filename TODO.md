@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1145-ttfp-decode-window.** Gallery open: defer decode window; no has_tile on GUI.
+Prior: **1144**.
+
+### Problem
+BILTOO_TTFP: `after_updateGalleryDecodeWindow` ~682ms and `after_setCurrentIndex`
+~312ms on warm multi-image open. First pixels were fine (~31ms); open still blocked
+on Store `has_tile` and `ensureVisible` for the first index.
+
+### Fix
+- Defer `updateGalleryDecodeWindow` via `scheduleGalleryDecodeWindowRefresh(0)`.
+- `focusSessionPath`: skip `ensureVisible` when item already intersects viewport.
+- `hasDurableTilesKnown` + `warmDurableTilesMemo` (worker) so Gallery pass2 does
+  not serialize SQLite has_tile on the GUI.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1145-ttfp-decode-window.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1144-durable-no-full-native.** Durable tiles: SoftDisplay everywhere; no Full/native storm.
 Prior: **1143**.
 

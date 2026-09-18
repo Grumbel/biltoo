@@ -204,6 +204,16 @@ bool scheduleTilePyramid(const QString &path);
  */
 bool hasDurableTiles(const QString &path);
 /**
+ * Memo only: true if hasDurableTiles already discovered yes; false if unknown
+ * or negative. Never opens the Store — safe on GUI hot paths.
+ */
+bool hasDurableTilesKnown(const QString &path);
+/**
+ * Background: discover durable tiles for @p paths into the process memo so
+ * Gallery decode does not pay has_tile on the GUI thread at open.
+ */
+void warmDurableTilesMemo(const QStringList &paths);
+/**
  * Finest durable pyramid scale for path (0 = full res). 0 if unknown / none.
  * Populates via hasDurableTiles discovery; process-memoized with positive hits.
  */

@@ -366,8 +366,9 @@ void ImageView::updateGalleryDecodeWindow()
         // for TileSynth underlay — skipping soft left cells blank (1141 bug).
         if (item->tileLodWanted()) {
             const int shown = item->displayPixelLongEdge();
+            // Known durable only — never has_tile on GUI for unknown paths.
             if (shown > DisplayQuality::kLqipMaxEdge
-                || ThumtooCache::hasDurableTiles(path)) {
+                || ThumtooCache::hasDurableTilesKnown(path)) {
                 continue;
             }
             // Cold tileLodWanted + LQIP/blank: soft underlay while first tiles encode.
@@ -934,7 +935,7 @@ void ImageView::gallerySoftWatchdogTick()
             // Durable tiles / tile LOD: never Full native from Gallery soft tick.
             const auto pol =
                 (target > ThumtooCache::kBatchOverviewEdge
-                 && !ThumtooCache::hasDurableTiles(path)
+                 && !ThumtooCache::hasDurableTilesKnown(path)
                  && !(item && item->tileLodWanted()))
                     ? PathRasterService::ClimbPolicy::EscalateToFull
                     : PathRasterService::ClimbPolicy::SoftDisplay;
@@ -977,7 +978,7 @@ void ImageView::gallerySoftWatchdogTick()
                     m_pathRaster->clearPreferGaveUp(path);
                     const auto pol =
                         (target > ThumtooCache::kBatchOverviewEdge
-                         && !ThumtooCache::hasDurableTiles(path)
+                         && !ThumtooCache::hasDurableTilesKnown(path)
                          && !(item && item->tileLodWanted()))
                             ? PathRasterService::ClimbPolicy::EscalateToFull
                             : PathRasterService::ClimbPolicy::SoftDisplay;

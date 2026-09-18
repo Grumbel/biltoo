@@ -1908,6 +1908,42 @@ bool hasDurableTiles(const QString &path)
 #endif
 }
 
+bool hasDurableTilesKnown(const QString &path)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty()) {
+        return false;
+    }
+    std::lock_guard lock(g_mu);
+    return g_durableTilesYes.contains(path);
+#else
+    Q_UNUSED(path);
+    return false;
+#endif
+}
+
+void warmDurableTilesMemo(const QStringList &paths)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (paths.isEmpty()) {
+        return;
+    }
+    // Fill positive/negative memos off the GUI so updateGalleryDecodeWindow does
+    // not serialize has_tile SQLite on every tileLodWanted cell at open.
+    const QStringList copy = paths;
+    QThreadPool::globalInstance()->start([copy]() {
+        ASSERT_NOT_GUI_THREAD();
+        for (const QString &p : copy) {
+            if (!p.isEmpty()) {
+                (void)hasDurableTiles(p);
+            }
+        }
+    });
+#else
+    Q_UNUSED(paths);
+#endif
+}
+
 int durableTileMinScale(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO

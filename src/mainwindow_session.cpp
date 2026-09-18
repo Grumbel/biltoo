@@ -1341,6 +1341,8 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
     };
 
     TtfpTrace::mark(sizesWarm ? "sizes_warm" : "sizes_cold");
+    // Prefill has_tile memo off GUI before deferred Gallery decode window.
+    ThumtooCache::warmDurableTilesMemo(m_session.paths());
     if (m_session.paths().size() > 1) {
         if (!sizesWarm) {
             setExpandProgress(
