@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1202-tilelod-complete-type.** Fix incomplete type for `unique_ptr<TileLodController>` in ImageView.
+Prior: **1201**.
+
+### Fix
+- Include `tilelod/tile_lod_controller.hpp` in `imageview.cpp`.
+- Reset `m_ssFromTiles` / `m_ssToTiles` in `~ImageView` (complete type for `unique_ptr` dtor).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1202-tilelod-complete-type.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1201-image-nav-blank-soft-code.** Code for rapid Image nav blank (1200 was docs-only by mistake).
 Prior: **1200**.
 

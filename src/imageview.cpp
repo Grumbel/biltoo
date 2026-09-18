@@ -15,6 +15,7 @@
 #include "imagecache.h"
 #include "thumtoocache.h"
 #include "tile_load_coordinator.h"
+#include "tilelod/tile_lod_controller.hpp"
 #include "sessionappearance.h"
 
 #include <QUndoCommand>
@@ -370,6 +371,10 @@ ImageView::ImageView(QWidget *parent)
 
 ImageView::~ImageView()
 {
+    // Complete type required for unique_ptr<TileLodController> (fwd-declared in header).
+    m_ssFromTiles.reset();
+    m_ssToTiles.reset();
+
     // Invalidate any queued onImageLoaded invocations from the thread pool.
     ++m_loadGeneration;
 
