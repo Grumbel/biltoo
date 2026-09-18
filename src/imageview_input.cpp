@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "selectiongeometry.h"
 #include "placementlinear.h"
 #include "attentiongeometry.h"
 #include "edgenavpolicy.h"
@@ -198,18 +199,14 @@ void ImageView::dropEvent(QDropEvent *event)
 
 QRectF ImageView::selectionSceneBounds(const QList<ImageItem *> &items) const
 {
-    QRectF bounds;
+    QVector<QRectF> rects;
+    rects.reserve(items.size());
     for (ImageItem *item : items) {
-        if (!item) {
-            continue;
+        if (item) {
+            rects.append(item->contentSceneRect());
         }
-        const QRectF r = item->contentSceneRect();
-        if (!r.isValid() || r.isEmpty()) {
-            continue;
-        }
-        bounds = bounds.isValid() ? bounds.united(r) : r;
     }
-    return bounds;
+    return SelectionGeometry::unionContentAabbs(rects);
 }
 
 
