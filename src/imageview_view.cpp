@@ -299,7 +299,7 @@ void ImageView::zoomViewBy(qreal factor)
     // Gallery already debounced interest; Image/Workspace match that pattern
     // so continuous zoom does not issue tile work every notch.
     if (isGalleryMode()) {
-        scheduleGalleryDecodeWindowRefresh(120);
+        scheduleGalleryDecodeWindowRefresh(80);
     } else {
         scheduleTileLodAfterInteraction(50);
     }

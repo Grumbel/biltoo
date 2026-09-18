@@ -1689,7 +1689,9 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                 || !ThumtooCache::cachedSize(path).isValid()) {
                 scheduleImageSizeProbe(path);
             }
-            // LQIP underlay only (≤kLqipMaxEdge). Downscale host soft if present.
+            // LQIP underlay only — never scale soft on the GUI (scroll storm).
+            // Tick is owned by updateGalleryDecodeWindow once per pass, not
+            // once per path (was N× TileLoadCoordinator::tick → 100–400ms).
             {
                 QImage host = ImageCache::get(path);
                 if (host.isNull()) {
@@ -1698,47 +1700,31 @@ void ImageView::scheduleGalleryDecode(const QString &path)
                         ImageCache::put(path, host);
                     }
                 }
-                if (!host.isNull()) {
-                    if (ImageCache::longEdge(host) > DisplayQuality::kLqipMaxEdge) {
-                        const int cap = DisplayQuality::kLqipMaxEdge;
-                        host = host.scaled(cap, cap, Qt::KeepAspectRatio,
-                                           Qt::SmoothTransformation);
-                    }
-                    if (!host.isNull()) {
-                        for (ImageItem *ii : m_items) {
-                            if (!ii || ii->path() != path) {
-                                continue;
-                            }
-                            if (!ii->hasDisplayPixels()
-                                || ii->displayPixelLongEdge()
-                                    < ImageCache::longEdge(host)) {
-                                installDisplayPixels(
-                                    ii, host,
-                                    SessionAppearance::PixelKind::SoftPreview,
-                                    ii->sessionId());
-                            }
+                if (!host.isNull()
+                    && ImageCache::longEdge(host)
+                        <= DisplayQuality::kLqipMaxEdge) {
+                    for (ImageItem *ii : m_items) {
+                        if (!ii || ii->path() != path) {
+                            continue;
+                        }
+                        if (!ii->hasDisplayPixels()
+                            || ii->displayPixelLongEdge()
+                                < ImageCache::longEdge(host)) {
+                            installDisplayPixels(
+                                ii, host,
+                                SessionAppearance::PixelKind::SoftPreview,
+                                ii->sessionId());
                         }
                     }
                 }
             }
             (void)ThumtooCache::scheduleTilePyramid(path);
-            tickPrimaryTileLod(12);
             auto sit = m_gallerySoft.find(path);
             if (sit != m_gallerySoft.end()) {
                 clearGallerySoftInflight(*sit);
-                bool anyPx = false;
-                for (ImageItem *ii : m_items) {
-                    if (ii && ii->path() == path
-                        && (ii->hasDisplayPixels() || ii->tileLodActive())) {
-                        anyPx = true;
-                        break;
-                    }
-                }
-                if (anyPx) {
-                    sit->terminal = true;
-                }
+                sit->terminal = true; // tiles own the path; no soft climb
             }
-            return; // never PathRaster soft climb for tile band
+            return;
         }
     }
     // Size-first still probes in the background, but never blocks decode:

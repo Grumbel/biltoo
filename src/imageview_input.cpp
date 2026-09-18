@@ -292,7 +292,7 @@ bool ImageView::tryWheelGalleryZoom(QWheelEvent *event)
     // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
     // each wheel notch used to rescan all tiles + setInterest + repaint
     // every high-res soft, freezing the UI while zooming out.
-    scheduleGalleryDecodeWindowRefresh(120);
+    scheduleGalleryDecodeWindowRefresh(80);
     refreshStatus();
     event->accept();
     return true;

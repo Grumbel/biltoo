@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1172-scroll-tile-tick-once.** Scroll perf: one tile tick per decode window.
+Prior: **1171**.
+
+### Problems
+- Scroll: `scheduleGalleryDecode` called `tickPrimaryTileLod(12)` per visible path
+  → N× full `TileLoadCoordinator::tick` (100–400ms) + GUI_BUDGET storms.
+- `setInterest` nearEdge LQIP 96 still PreferCache soft (`soft req=96`).
+- Cells stuck on LQIP while GUI was busy not issuing tiles.
+
+### Fix
+- Tile tick only at end of `updateGalleryDecodeWindow` (not per path).
+- No GUI soft→LQIP scale in `scheduleGalleryDecode`.
+- Gallery interest: **primary only**, empty near/spec (no soft PreferCache).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1172-scroll-tile-tick-once.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1171-fix-onLadderReady-typo.** Compile fix: mangled onLadderReady signature.
 Prior: **1170**.
 

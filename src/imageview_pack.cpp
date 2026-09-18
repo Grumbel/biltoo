@@ -151,47 +151,27 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
 void ImageView::publishGalleryInterest(const QStringList &interestNear,
                                        const QStringList &interestRest)
 {
-    // Gallery product: tiles + LQIP only. Never setInterest with soft-band
-    // nearEdge 512 (that was PreferCache soft req=512 flood in DEBUG_OVERLAY).
-    // Near/speculative edges stay at LQIP; primary carries FocusFull / tiles for
-    // on-screen need above overview.
-    const int lqipEdge = DisplayQuality::kLqipMaxEdge;
+    // Gallery product: tiles only. Do not setInterest near/spec with any soft
+    // edge (even LQIP 96 caused PreferCache soft req=96 DEBUG_OVERLAY). Primary
+    // only — thumtoo FocusFull / EnsureTiles for visible paths.
+    Q_UNUSED(interestRest);
     const int ovCap = ThumtooCache::kBatchOverviewEdge;
     const int imgCap = ThumtooCache::kImageLadderEdge;
-    int nearEdge = lqipEdge;
-    int primEdge = 0;
+    int primEdge = ovCap;
     QStringList primary;
     for (const QString &p : interestNear) {
-        const auto it = m_gallerySoft.constFind(p);
-        if (it == m_gallerySoft.cend() || it->want <= 0) {
-            continue;
+        if (primary.size() >= 6) {
+            break;
         }
-        // Primary when need exceeds LQIP — thumtoo EnsureTiles / FocusFull.
-        if (it->want > lqipEdge) {
-            primary.append(p);
+        const auto it = m_gallerySoft.constFind(p);
+        if (it != m_gallerySoft.cend() && it->want > 0) {
             primEdge = qMax(primEdge, qMin(it->want, imgCap));
         }
+        primary.append(p);
     }
-    if (primary.isEmpty()) {
-        // Still advertise visible paths as primary at overview so tile pyramid
-        // can warm without soft PreferCache.
-        for (const QString &p : interestNear) {
-            if (primary.size() >= 4) {
-                break;
-            }
-            primary.append(p);
-            primEdge = qMax(primEdge, ovCap);
-        }
-    }
-    if (primary.size() > 4) {
-        primary = primary.mid(0, 4);
-    }
-    QStringList near = interestNear;
-    near.sort();
-    QStringList speculative = interestRest;
-    speculative.sort();
     primary.sort();
-    (void)ThumtooCache::setInterest(near, speculative, nearEdge, lqipEdge,
+    // Empty near/spec — no soft PreferCache from interest.
+    (void)ThumtooCache::setInterest(QStringList{}, QStringList{}, 0, 0,
                                     primary, primEdge);
 }
 
