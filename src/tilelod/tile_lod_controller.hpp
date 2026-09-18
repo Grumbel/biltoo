@@ -16,8 +16,12 @@
 namespace tilelod {
 
 /**
- * Host glue for one ImageItem: shared path cache + private viewport session.
- * Call from GUI thread: setPath, setContentSize, updateViewport, tick, paint.
+ * Host glue for one ImageItem: bind to process-wide path cache + private
+ * viewport session. Call from GUI thread: setPath, setContentSize,
+ * updateViewport, tick, paint.
+ *
+ * setPath / destroy release registry interest only; Succeeded tiles for the
+ * path stay in TileLodRegistry until global LRU eviction (see TILE_LOD.md).
  */
 class TileLodController {
 public:

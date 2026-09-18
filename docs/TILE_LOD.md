@@ -27,7 +27,8 @@ Related: [thumtoo TILES.md](../../thumtoo/TILES.md) (encode model), Galapix
 ## Non-goals (first cut)
 
 - Changing thumtoo tile schema or encode path.
-- Process-wide shared tile RAM across apps (per-image session first).
+- Process-wide shared tile RAM **across apps** (host process retains paths; see
+  global path retention).
 - Animating pop-in inside the core (host may fade).
 - Porting Galapix `Surface` / global static budgets / job stack.
 
@@ -318,6 +319,36 @@ parents** are protected (draw-plan stand-ins); older Succeeded tiles are
 evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 
 
+## Global path retention (biltoo-1212)
+
+`TileLodRegistry` is the process-wide path-keyed RAM home for tiles:
+
+| Layer | Scope | Lifetime |
+|-------|--------|----------|
+| **thumtoo Store** | Durable on disk | Independent of host |
+| **`SharedPathTiles` + `TileMemoryCache`** | Per path, process-wide | Survives last controller `release` until global LRU eviction |
+| **`TileSession`** | Per `ImageItem` (viewport, generation, in-flight) | Item path change / destroy |
+| **`TileLodController`** | Glue on the item | `setPath` / suppress |
+
+**Rules:**
+
+1. **Pixels live in the global path cache**, not on the `ImageItem`. Switching
+   image or mode must not drop Succeeded tiles for a path still inside the budget.
+2. **`TileSession` stays per view surface** — cheap to create/destroy on ←/→.
+3. **`release` drops interest only** — refcount → 0 does **not** erase the entry
+   when the cache still holds Succeeded (or InFlight) tiles. Empty idle shells
+   are dropped immediately.
+4. **Global budget** (~**384 MiB** default of Succeeded payload across all paths):
+   when over budget, oldest **zero-ref** path entries are dropped whole. Active
+   paths rely on per-session `trim_to_budget` (128 MiB).
+5. **Paint identity by path** — draw only from `cache[item->path()]`; re-acquire
+   after A→B→A rebinds the same retained entry.
+6. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
+
+Nav-hot / suppress remains optional request-budget polish, not the mechanism that
+keeps identity correct across path switches.
+
+
 ## Scale hold (biltoo-1095)
 
 Adjacent-step hold applies only when **zooming in** (finer scale). **Zoom-out**
@@ -363,6 +394,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Qt-free planner / session / draw plan | Done |
 | Thumtoo source + Image / Workspace / Gallery | Done |
 | Shared path RAM cache + 128 MiB budget | Done |
+| Global path retention + 384 MiB LRU (1212) | Done |
 | Parent protect + parent prefetch | Done |
 | HiDPI, scale hold, coverage heartbeat | Done |
 | ContentXform axis-aligned map | Done |

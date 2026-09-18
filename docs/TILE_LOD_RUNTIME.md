@@ -32,6 +32,9 @@ not claimed (`tileLodWanted` requires `hasDurableTiles`).
 7. PreferCache whole-frame climb should **not** run while in the tile band (`m_tileLodPreferCancelled`).
 8. **Failed cells** (missing pyramid levels) — no continuous re-request spam on a stable viewport; a plan change (pan/zoom) may retry.
 9. **Zoom out** below soft max — tile requests stop; PreferCache may resume.
+10. **A→B→A path switch** (Image ←/→) — tiles for A remain in the global path cache
+    after leaving A; returning to A should paint from RAM without a full rebuild
+    (until global 384 MiB LRU eviction of idle paths).
 
 ## Workspace
 

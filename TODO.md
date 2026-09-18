@@ -2,6 +2,43 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1212-tile-ram-global-retain.** Path tile RAM survives controller release (A→B→A keeps tiles).
+Prior: **1211**.
+
+### Problem
+`TileLodRegistry::release` destroyed the path entry at refcount 0. Image ←/→
+`setPath` → unbind → release dropped Succeeded tiles; returning to a path
+rebuilt from thumtoo / cold.
+
+### Fix
+- `release` drops interest only; zero-ref entries with Succeeded/InFlight tiles
+  stay until global LRU eviction.
+- Empty idle shells (no tiles, no in-flight) still erased immediately.
+- Process-wide budget ~**384 MiB** of Succeeded payload; trim drops oldest
+  zero-ref paths whole. Active paths keep per-session 128 MiB trim.
+- `invalidate(path)` for forced wipe.
+- Docs: TILE_LOD.md global path retention; TILE_LOD_RUNTIME A→B→A check.
+
+### Non-goals (this tip)
+- Neighbor prefetch ±1.
+- Stripping nav-hot / crop suppress (still valid request-budget polish).
+- Merging soft/ImageCache into tile RAM.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1212-tile-ram-global-retain.bundle HEAD
+```
+
+### Next
+- Optional: neighbor prefetch into global cache under small budget.
+- Revisit nav-hot tile suppress once retention is verified in practice.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1211-prefercache-settle-terminal.** Stop soft PreferCache re-request loops (DEBUG_OVERLAY soft 128 for req=256).
 Prior: **1210**.
 

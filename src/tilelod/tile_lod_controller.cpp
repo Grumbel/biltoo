@@ -27,6 +27,9 @@ bool TileLodController::shouldUseTiles(double devicePerContent, int contentLongE
 
 void TileLodController::unbind()
 {
+  // Destroy the per-item session first (viewport / generation / inbox).
+  // release() only drops registry interest; Succeeded tiles stay in the
+  // path entry until global LRU eviction.
   m_session.reset();
   if (m_shared) {
     QString const p = m_shared->path;
@@ -55,6 +58,7 @@ void TileLodController::setPath(QString path)
   if (m_path.isEmpty()) {
     return;
   }
+  // Re-acquire may return a zero-ref retained entry with tiles still warm.
   m_shared = TileLodRegistry::instance().acquire(m_path);
   bindSession();
 }
