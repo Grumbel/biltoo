@@ -135,6 +135,14 @@ qreal rotationFromDrag(const QPointF &local, const QPointF &centre,
                        qreal rotateStartRotation, qreal rotateStartAngle,
                        bool snap15, bool snap45);
 
+/**
+ * Axis-aligned rubber-band draft from press @p origin to @p local.
+ * @p forceSquare (Shift) equalizes sides from origin; @p fromCenter (Ctrl)
+ * grows about origin (square when both). Does not clamp to content.
+ */
+QRectF rubberBandRect(const QPointF &origin, const QPointF &local,
+                      bool forceSquare, bool fromCenter);
+
 } // namespace CropGeometry
 
 #endif // CROPGEOMETRY_H

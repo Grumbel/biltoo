@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1302-crop-geometry-rubber-band.** Pure crop rubber-band rect geometry.
+Prior: **1301**.
+
+### Change
+- `CropGeometry::rubberBandRect` — origin→local axis-aligned draft; Shift square,
+  Ctrl from-centre (both → square about origin).
+- `updateCropRubberBand` only reads modifiers and clamps to content / min side.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1302-crop-geometry-rubber-band.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1301-crop-geometry-rotation-drag.** Pure crop rotate-drag angle math.
 Prior: **1300**.
 

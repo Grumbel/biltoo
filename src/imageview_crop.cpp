@@ -1925,29 +1925,10 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
     const QRectF cr = item->contentRect();
-    const QPointF origin = m_crop.rubberOriginLocal;
-    QRectF r = QRectF(origin, local).normalized();
-    if (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) {
-        const qreal side = qMax(qAbs(local.x() - origin.x()), qAbs(local.y() - origin.y()));
-        const qreal dx = (local.x() >= origin.x()) ? side : -side;
-        const qreal dy = (local.y() >= origin.y()) ? side : -side;
-        r = QRectF(origin, origin + QPointF(dx, dy)).normalized();
-    }
-    if (QGuiApplication::keyboardModifiers() & Qt::ControlModifier) {
-        // Expand about the press point (centre of the new rect).
-        const QPointF c = origin;
-        const qreal halfW = qMax(2.0, qAbs(local.x() - c.x()));
-        const qreal halfH = qMax(2.0, qAbs(local.y() - c.y()));
-        if (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier) {
-            const qreal half = qMax(halfW, halfH);
-            r = QRectF(c - QPointF(half, half), QSizeF(2 * half, 2 * half));
-        } else {
-            r = QRectF(c - QPointF(halfW, halfH), QSizeF(2 * halfW, 2 * halfH));
-        }
-    }
-    if (!m_crop.allowExpand) {
-        r = r.intersected(cr);
-    }
+    const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
+    QRectF r = CropGeometry::rubberBandRect(
+        m_crop.rubberOriginLocal, local,
+        mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
     if (r.width() < 1.0) {
         r.setWidth(1.0);
     }

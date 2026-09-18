@@ -443,4 +443,26 @@ qreal rotationFromDrag(const QPointF &local, const QPointF &centre,
     return snapRotationDeg(raw, snap15, snap45);
 }
 
+QRectF rubberBandRect(const QPointF &origin, const QPointF &local,
+                      bool forceSquare, bool fromCenter)
+{
+    if (fromCenter) {
+        const QPointF c = origin;
+        const qreal halfW = qMax(2.0, qAbs(local.x() - c.x()));
+        const qreal halfH = qMax(2.0, qAbs(local.y() - c.y()));
+        if (forceSquare) {
+            const qreal half = qMax(halfW, halfH);
+            return QRectF(c - QPointF(half, half), QSizeF(2 * half, 2 * half));
+        }
+        return QRectF(c - QPointF(halfW, halfH), QSizeF(2 * halfW, 2 * halfH));
+    }
+    if (forceSquare) {
+        const qreal side = qMax(qAbs(local.x() - origin.x()), qAbs(local.y() - origin.y()));
+        const qreal dx = (local.x() >= origin.x()) ? side : -side;
+        const qreal dy = (local.y() >= origin.y()) ? side : -side;
+        return QRectF(origin, origin + QPointF(dx, dy)).normalized();
+    }
+    return QRectF(origin, local).normalized();
+}
+
 } // namespace CropGeometry
