@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1318-text-layer-geometry.** Pure text-region rubber select geometry.
+Prior: **1317**.
+
+### Change
+- `TextLayerGeometry` (`textlayergeometry.{h,cpp}`): `indicesIntersecting`,
+  `sortReadingOrder`
+- `finishTextRubberBand` maps regions → image rects, then uses pure select/sort.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1318-text-layer-geometry.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1317-content-anchor-point.** Pure scale/shear opposite-anchor points.
 Prior: **1316**.
 

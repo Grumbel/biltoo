@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "textlayergeometry.h"
 #include "pageguidegeometry.h"
 #include "edgenavpolicy.h"
 #include <QElapsedTimer>
@@ -1242,29 +1243,18 @@ void ImageView::finishTextRubberBand()
         viewport()->update();
         return;
     }
+    QVector<QRectF> regionRects(m_textLayer.layer.regions.size());
     for (int i = 0; i < m_textLayer.layer.regions.size(); ++i) {
         const auto &r = m_textLayer.layer.regions.at(i);
         if (r.text.isEmpty() && r.role != ThumtooCache::TextRegion::Role::Link) {
             continue;
         }
-        const QRectF img = textRegionImageRect(r);
-        if (img.isEmpty()) {
-            continue;
-        }
-        if (img.intersects(imgRubber)) {
-            m_textLayer.selectedRegions.push_back(i);
-        }
+        regionRects[i] = textRegionImageRect(r);
     }
+    m_textLayer.selectedRegions =
+        TextLayerGeometry::indicesIntersecting(regionRects, imgRubber);
     // Reading order: top-to-bottom, then left-to-right by image rect.
-    std::sort(m_textLayer.selectedRegions.begin(), m_textLayer.selectedRegions.end(),
-              [&](int a, int b) {
-                  const QRectF ra = textRegionImageRect(m_textLayer.layer.regions.at(a));
-                  const QRectF rb = textRegionImageRect(m_textLayer.layer.regions.at(b));
-                  if (qAbs(ra.top() - rb.top()) > 4.0) {
-                      return ra.top() < rb.top();
-                  }
-                  return ra.left() < rb.left();
-              });
+    TextLayerGeometry::sortReadingOrder(&m_textLayer.selectedRegions, regionRects);
     viewport()->update();
 }
 

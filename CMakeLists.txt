@@ -142,6 +142,8 @@ add_executable(biltoo
   src/iteminteractsession.h
   src/itemframegeometry.cpp
   src/itemframegeometry.h
+  src/textlayergeometry.cpp
+  src/textlayergeometry.h
   src/hudflash.h
   src/viewframing.h
   src/textlayersession.h

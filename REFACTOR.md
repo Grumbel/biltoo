@@ -77,6 +77,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **PageGuideGeometry** (`pageguidegeometry.{h,cpp}`): pure 8-handle anchors, hit-test, resize-from-handle.
 - **GroupTransformGeometry** (`grouptransformgeometry.{h,cpp}`): pure group scale/rotate handle hit-test, scale factors, rotate delta + orbit.
 - **ItemFrameGeometry** (`itemframegeometry.{h,cpp}`): pure rotated-frame view geom + chrome column / opacity-track layout constants.
+- **TextLayerGeometry** (`textlayergeometry.{h,cpp}`): pure text-region intersect + reading-order sort.
 - **CropSession::locksPath / locksItem**: draft sample freeze predicates on the session bag.
 - **CropSession::isDraftLayoutGeometry**; **SlideshowProgressHud::lastPaintFp**.
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).
