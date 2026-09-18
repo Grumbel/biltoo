@@ -206,11 +206,6 @@ constexpr int kMaxPixelScheduleAttempts = 4;
 /** Process memo of ContentStatus::Unsupported (get_meta is SQLite — never on GUI). */
 QSet<QString> g_unsupportedYes;
 QSet<QString> g_unsupportedNo;
-/** Paths queued or in-flight for size probe (dedupe). */
-QSet<QString> g_probeQueued;
-/** FIFO order for size probes — whole session/archive sequential, not parallel. */
-QStringList g_probeSerialFifo;
-bool g_probeSerialInflight = false;
 /**
  * Negative durable-tile memo TTL (ProcessMemos). Short so mid-session
  * prepare/FocusFull can still flip true after a miss.
@@ -749,6 +744,67 @@ void noteCachedSize(const QString &path, const QSize &size)
     ProcessMemos::instance().noteSize(path, size);
 }
 
+void requestSizeAsync(const QString &path,
+                      std::function<void(bool ok, const QSize &size, const QImage &lqip)> callback)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (!callback) {
+        return;
+    }
+    if (path.isEmpty()) {
+        callback(false, QSize(), QImage());
+        return;
+    }
+    auto run = [path, callback]() {
+        ASSERT_NOT_GUI_THREAD();
+        if (isUnsupported(path)) {
+            callback(false, QSize(), QImage());
+            return;
+        }
+        init();
+        const std::string uri = toThumtooUri(path);
+        if (uri.empty()) {
+            callback(false, QSize(), QImage());
+            return;
+        }
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (!c) {
+            callback(false, QSize(), QImage());
+            return;
+        }
+        c->request_size(uri, [callback](std::string, thumtoo::SizeReply reply) {
+            if (!reply.size) {
+                callback(false, QSize(), QImage());
+                return;
+            }
+            const QSize sz(reply.size->width, reply.size->height);
+            QImage lqip;
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+            if (reply.lqip && !reply.lqip->empty()) {
+                lqip = qimageFromLqipBlob(*reply.lqip);
+            }
+#endif
+            callback(true, sz, lqip);
+        });
+    };
+    if (QThread::isMainThread()) {
+        QThreadPool::globalInstance()->start(run);
+    } else {
+        run();
+    }
+#else
+    Q_UNUSED(path);
+    if (callback) {
+        callback(false, QSize(), QImage());
+    }
+#endif
+}
+
+
 QSize cachedSize(const QString &path, bool scheduleRevalidate)
 {
 #ifdef BILTOO_HAVE_THUMTOO
@@ -957,141 +1013,6 @@ bool isUnsupported(const QString &path)
 
 #ifdef BILTOO_HAVE_THUMTOO
 namespace {
-
-void pumpProbeSerial();
-
-void finishProbeSerialSlot(const QString &pathCopy, const thumtoo::SizeReply &reply)
-{
-    {
-        std::lock_guard lock(g_mu);
-        g_probeQueued.remove(pathCopy);
-        g_probeSerialInflight = false;
-    }
-    if (!reply.size) {
-        emit bridge()->sizeReady(pathCopy, QSize());
-        pumpProbeSerial();
-        return;
-    }
-#if defined(BILTOO_HAVE_THUMTOO_LQIP)
-    if (reply.lqip && !reply.lqip->empty() && !ImageCache::has(pathCopy)) {
-        const QImage lqip = qimageFromLqipBlob(*reply.lqip);
-        if (!lqip.isNull()) {
-            ImageCache::put(pathCopy, lqip);
-        }
-    }
-#endif
-    {
-        const QSize sz(reply.size->width, reply.size->height);
-        noteCachedSize(pathCopy, sz);
-        emit bridge()->sizeReady(pathCopy, sz);
-    }
-    pumpProbeSerial();
-}
-
-void pumpProbeSerial()
-{
-    QString next;
-    // Memo hits: still emit sizeReady so Gallery size-resolve pending clears.
-    // Async warmSessionOpenMemos can fill ProcessMemos size while probes sit in the
-    // FIFO; skipping without a signal left "Resolving sizes…" stuck until the
-    // 45s safety timer.
-    QVector<QPair<QString, QSize>> memoHits;
-    {
-        std::lock_guard lock(g_mu);
-        if (g_probeSerialInflight) {
-            return;
-        }
-        while (!g_probeSerialFifo.isEmpty()) {
-            const QString p = g_probeSerialFifo.takeFirst();
-            const QSize memoSz = ProcessMemos::instance().size(p);
-            if (memoSz.isValid()) {
-                g_probeQueued.remove(p);
-                memoHits.append(qMakePair(p, memoSz));
-                continue;
-            }
-            next = p;
-            g_probeSerialInflight = true;
-            break;
-        }
-        if (next.isEmpty() && memoHits.isEmpty()) {
-            return;
-        }
-    }
-    for (const auto &hit : memoHits) {
-        emit bridge()->sizeReady(hit.first, hit.second);
-    }
-    if (next.isEmpty()) {
-        return;
-    }
-    init();
-    const QString pathCopy = next;
-    QThreadPool::globalInstance()->start([pathCopy]() {
-        ASSERT_NOT_GUI_THREAD();
-        auto fail = [&pathCopy]() {
-            {
-                std::lock_guard lock(g_mu);
-                g_probeQueued.remove(pathCopy);
-                g_probeSerialInflight = false;
-            }
-            emit bridge()->sizeReady(pathCopy, QSize());
-            pumpProbeSerial();
-        };
-        if (isUnsupported(pathCopy)) {
-            fail();
-            return;
-        }
-        const std::string uri = toThumtooUri(pathCopy);
-        if (uri.empty()) {
-            fail();
-            return;
-        }
-        thumtoo::Client *c = nullptr;
-        {
-            std::lock_guard lock(g_mu);
-            c = clientUnlocked();
-        }
-        if (!c) {
-            fail();
-            return;
-        }
-        if (thumtooDebugEnabled()) {
-            thumtooDbg("scheduleProbe(serial) path=%s", qPrintable(pathCopy));
-        }
-        c->request_size(uri, [pathCopy](std::string, thumtoo::SizeReply reply) {
-            finishProbeSerialSlot(pathCopy, reply);
-        });
-    });
-}
-
-} // namespace
-#endif // BILTOO_HAVE_THUMTOO
-
-void scheduleProbe(const QString &path)
-{
-#ifdef BILTOO_HAVE_THUMTOO
-    if (path.isEmpty()) {
-        return;
-    }
-    // Already have size in process memo — no Store round-trip, but still notify
-    // so Gallery size-resolve pending is not left waiting forever.
-    if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
-        memo.isValid()) {
-        emit bridge()->sizeReady(path, memo);
-        return;
-    }
-    {
-        std::lock_guard lock(g_mu);
-        if (g_probeQueued.contains(path)) {
-            return;
-        }
-        g_probeQueued.insert(path);
-        g_probeSerialFifo.append(path);
-    }
-    pumpProbeSerial();
-#else
-    Q_UNUSED(path);
-#endif
-}
 
 QByteArray cachedLadderBytes(const QString &path, int maxEdge)
 {

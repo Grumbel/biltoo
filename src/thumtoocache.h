@@ -131,9 +131,17 @@ QImage cachedLqipImage(const QString &path);
 bool isUnsupported(const QString &path);
 
 /**
- * Schedule a background size probe (and ladder) when missing.
+ * One Store size lookup on a worker (or sync when already off-GUI).
+ * Callback runs on the completion thread — marshal to GUI if needed.
+ * @p lqip may be null when LQIP is unavailable or already cached elsewhere.
+ */
+void requestSizeAsync(const QString &path,
+                      std::function<void(bool ok, const QSize &size, const QImage &lqip)> callback);
+
+/**
+ * Schedule a background size probe into the serial FIFO when missing.
  * Does not block; does not drain the queue on the GUI thread.
- * No-op when isUnsupported(path).
+ * Emits Bridge::sizeReady (including process-memo hits). No-op when unsupported.
  */
 void scheduleProbe(const QString &path);
 

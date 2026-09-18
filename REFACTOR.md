@@ -28,7 +28,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 |------:|---------|------|-------|
 | 1 | **GallerySizeResolve** | `ImageView` size-gate timers/pending | Host interface; pack stays on view |
 | 2 | **SessionOpen** | `MainWindow` / `mainwindow_session` | beginReplace + prepareExpandedSession |
-| 3 | **ProcessMemos** (+ SizeProbe later) | `thumtoocache.cpp` | size + durable memos extracted |
+| 3 | **ProcessMemos** + **SizeProbe** | `thumtoocache.cpp` | memos + serial probe FIFO extracted |
 | 4 | ImageLoadCoordinator | `imageview_load` | generation, install gates |
 | 5 | CropSession | `imageview_crop` | draft + apply/undo |
 | 6 | TilePrefetchHost | prefetch slots | session-replace clear |
@@ -40,7 +40,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 
 - **GallerySizeResolve** (`gallerysizeresolve.{h,cpp}`): pending set, 45s safety timer, 50ms memo-sweep progress; `ImageView` implements `GallerySizeResolveHost` for size map / probes / pack-on-complete.
 - **SessionOpen** (`sessionopen.{h,cpp}`): `beginReplace` (invalidate + clear filmstrip), `prepareExpandedSession` (second invalidate, appearance seed, stash drop, memo warm, sizesWarm), shared by Open and append chrome.
-- **ProcessMemos** (`thumtoo_process_memos.{h,cpp}`): process size memo + durable-tile yes/no/min_scale; session-replace clears durable only; size probe FIFO still in `thumtoocache.cpp` (next tip).
+- **ProcessMemos** (`thumtoo_process_memos.{h,cpp}`): process size memo + durable-tile yes/no/min_scale; session-replace clears durable only.
+- **SizeProbe** (`thumtoo_size_probe.cpp`): serial FIFO `scheduleProbe`; Store I/O via `requestSizeAsync`; memo hits still emit `sizeReady`.
 
 
 ## Current pain (evidence)

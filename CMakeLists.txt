@@ -164,6 +164,7 @@ add_executable(biltoo
   src/thumtoocache.h
   src/thumtoo_process_memos.cpp
   src/thumtoo_process_memos.h
+  src/thumtoo_size_probe.cpp
   src/archivepath.cpp
   src/archivepath.h
   src/pagepath.cpp

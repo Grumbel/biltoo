@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1246-size-probe-extract.** Extract serial size-probe FIFO from ThumtooCache.
+Prior: **1245**.
+
+### Change
+- `requestSizeAsync` — one Store size lookup (worker); used by the probe machine.
+- `thumtoo_size_probe.cpp` — serial FIFO, memo-hit `sizeReady`, `scheduleProbe`.
+- Probe no longer shares `g_mu` with the client for queue state (own `QMutex`).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1246-size-probe-extract.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1245-process-memos.** Extract ThumtooCache ProcessMemos (size + durable).
 Prior: **1244**.
 
