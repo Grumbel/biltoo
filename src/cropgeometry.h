@@ -143,6 +143,19 @@ qreal rotationFromDrag(const QPointF &local, const QPointF &centre,
 QRectF rubberBandRect(const QPointF &origin, const QPointF &local,
                       bool forceSquare, bool fromCenter);
 
+/**
+ * Integer pixel crop in content-local space: round local top-left minus
+ * @p offset, width/height at least 1.
+ */
+QRect integerCropFromLocal(const QRectF &local, const QPointF &offset);
+
+/**
+ * Map a content-local integer crop through item H/V flip into unflipped
+ * source pixel space (same convention as crop bake).
+ */
+QRect flipAwareSourceCrop(const QRect &disp, int imageW, int imageH,
+                          bool hFlip, bool vFlip);
+
 } // namespace CropGeometry
 
 #endif // CROPGEOMETRY_H

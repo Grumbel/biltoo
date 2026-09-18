@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1319-crop-integer-source.** Pure integer crop + flip-aware source rect.
+Prior: **1318**.
+
+### Change
+- `CropGeometry::integerCropFromLocal` — round local crop minus offset, min 1px
+- `flipAwareSourceCrop` — map through item H/V flip into unflipped source space
+- `recordSessionCrop` / session capture use the pure helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1319-crop-integer-source.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1318-text-layer-geometry.** Pure text-region rubber select geometry.
 Prior: **1317**.
 

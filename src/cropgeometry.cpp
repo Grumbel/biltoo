@@ -465,4 +465,29 @@ QRectF rubberBandRect(const QPointF &origin, const QPointF &local,
     return QRectF(origin, local).normalized();
 }
 
+QRect integerCropFromLocal(const QRectF &local, const QPointF &offset)
+{
+    const int dx = qRound(local.left() - offset.x());
+    const int dy = qRound(local.top() - offset.y());
+    const int dw = qMax(1, qRound(local.width()));
+    const int dh = qMax(1, qRound(local.height()));
+    return QRect(dx, dy, dw, dh);
+}
+
+QRect flipAwareSourceCrop(const QRect &disp, int imageW, int imageH,
+                          bool hFlip, bool vFlip)
+{
+    int dx = disp.x();
+    int dy = disp.y();
+    const int dw = disp.width();
+    const int dh = disp.height();
+    if (hFlip) {
+        dx = imageW - dx - dw;
+    }
+    if (vFlip) {
+        dy = imageH - dy - dh;
+    }
+    return QRect(dx, dy, dw, dh);
+}
+
 } // namespace CropGeometry

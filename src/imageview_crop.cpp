@@ -925,21 +925,13 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     }
     const QPointF off = item->offset();
     // Crop mode always edits the full on-disk image — store absolute source rect.
-    int dx = qRound(local.left() - off.x());
-    int dy = qRound(local.top() - off.y());
-    int dw = qMax(1, qRound(local.width()));
-    int dh = qMax(1, qRound(local.height()));
     // Map through active flips so cropRect is in unflipped source space
     // (cropToLocalRect bakes flips into pixels and clears the flags).
     const int iw = item->imageSize().width();
     const int ih = item->imageSize().height();
-    if (item->itemHFlip()) {
-        dx = iw - dx - dw;
-    }
-    if (item->itemVFlip()) {
-        dy = ih - dy - dh;
-    }
-    const QRect disp(dx, dy, dw, dh);
+    const QRect disp = CropGeometry::flipAwareSourceCrop(
+        CropGeometry::integerCropFromLocal(local, off), iw, ih,
+        item->itemHFlip(), item->itemVFlip());
 
     // cropSourceSize must be the post-orient full-frame size the draft was
     // edited in — file-native layoutSize without crop — not a soft sample or
@@ -1150,10 +1142,9 @@ bool ImageView::applyCropCommit(ImageItem *item)
         if (!st.hasCrop) {
             st = captureState(item);
             st.hasCrop = true;
-            st.cropRect = QRect(qRound(m_crop.rect.left() - item->offset().x()),
-                                qRound(m_crop.rect.top() - item->offset().y()),
-                                qMax(1, qRound(cropW)),
-                                qMax(1, qRound(cropH)));
+            st.cropRect = CropGeometry::integerCropFromLocal(
+                QRectF(m_crop.rect.left(), m_crop.rect.top(), cropW, cropH),
+                item->offset());
             st.cropSourceSize = item->imageSize();
             st.cropRotation = m_crop.rotation;
             if (sid != kInvalidSessionImageId) {
