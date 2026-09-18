@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1163-tiles-coarse-first.** Tile issue always coarsest→finest for instant refine.
+Prior: **1162**.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1163-tiles-coarse-first.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1162-gallery-blank-fix.** Tile-band cells schedule again; LQIP underlay from cache/downscale.
 Prior: **1161**.
 

@@ -242,13 +242,15 @@ int TileSession::issue_requests(int budget)
     return 0;
   }
 
-  // Visible keys missing or failed (retry failed lightly by re-request).
+  // Progressive retrieval: always issue coarsest needed tiles first, then
+  // refine toward the exact visible scale. Display is instant (overview) and
+  // sharpens as finer cells land. scale 0 = full-res (expensive) is last.
   struct Scored {
     TileKey key;
     double dist2 = 0;
   };
-  std::vector<Scored> missing;
-  missing.reserve(m_visible_keys.size());
+  std::vector<Scored> missing_exact;
+  missing_exact.reserve(m_visible_keys.size());
 
   double const cx = m_viewport.content_rect.x + m_viewport.content_rect.w * 0.5;
   double const cy = m_viewport.content_rect.y + m_viewport.content_rect.h * 0.5;
@@ -259,9 +261,6 @@ int TileSession::issue_requests(int budget)
               e->state == TileState::InFlight)) {
       continue;
     }
-    // Same plan generation already failed — do not re-hammer the source
-    // every 33ms. A plan change (visible keys / target scale) bumps
-    // generation and allows retry.
     if (e && e->state == TileState::Failed && e->generation == m_generation) {
       continue;
     }
@@ -270,104 +269,79 @@ int TileSession::issue_requests(int budget)
     double const ty = cr.y + cr.h * 0.5;
     double const dx = tx - cx;
     double const dy = ty - cy;
-    missing.push_back({key, dx * dx + dy * dy});
+    missing_exact.push_back({key, dx * dx + dy * dy});
   }
 
-  std::sort(missing.begin(), missing.end(),
-            [](Scored const& a, Scored const& b) { return a.dist2 < b.dist2; });
+  // Candidate set = exact missing + parent chain up to max_scale.
+  struct Cand {
+    TileKey key;
+    int scale = 0;   // higher = coarser (issue first)
+    double dist2 = 0;
+  };
+  std::vector<Cand> cands;
+  cands.reserve(missing_exact.size() * 4);
+  std::set<TileKey> seen;
 
-  std::vector<TileKey> batch;
-  batch.reserve(static_cast<size_t>(budget));
-  std::uint64_t const gen = m_generation;
-  std::set<TileKey> queued;
-
-  auto enqueue = [&](TileKey const& key) -> bool {
-    if (static_cast<int>(batch.size()) >= budget) {
-      return false;
-    }
-    if (!queued.insert(key).second) {
-      return true;
+  auto add_cand = [&](TileKey const& key, double dist2) {
+    if (!seen.insert(key).second) {
+      return;
     }
     CacheEntry const* e = m_cache->find(key);
     if (e && (e->state == TileState::Succeeded ||
               e->state == TileState::InFlight)) {
-      return true;
+      return;
     }
     if (e && e->state == TileState::Failed && e->generation == m_generation) {
-      return true;
+      return;
     }
-    m_cache->set_in_flight(key, gen);
-    batch.push_back(key);
-    return true;
+    cands.push_back({key, key.scale, dist2});
   };
 
-  // Cold path (no Succeeded tiles yet): prefer coarser parents first.
-  // thumtoo build_tile_cell for scale>0 uses vips_jpegload shrink (DCT) on
-  // JPEG sources; scale 0 still full-decodes the source. Exact-first on a cold
-  // pyramid therefore spent the issue budget on the most expensive cells and
-  // felt like "doing far more work than needed".
-  bool const cold = !has_any_succeeded_tile();
-
-  auto enqueue_parents = [&](int steps) {
-    for (Scored const& s : missing) {
-      if (static_cast<int>(batch.size()) >= budget) {
-        break;
-      }
-      if (steps < 1 || s.key.scale + steps > m_max_scale) {
-        continue;
-      }
-      TileKey const pk = parent_key(s.key, steps);
-      enqueue(pk);
+  for (Scored const& s : missing_exact) {
+    add_cand(s.key, s.dist2);
+    for (int d = 1; s.key.scale + d <= m_max_scale; ++d) {
+      add_cand(parent_key(s.key, d), s.dist2);
     }
-  };
+  }
 
-  // scale 0 = full-res decode in thumtoo (no DCT shrink). Do not issue exact
-  // scale-0 cells until at least one coarser Succeeded tile exists, so the first
-  // paint wave stays on jpeg_shrink parents. Exception: single-level pyramids.
-  auto may_issue_exact = [&](TileKey const& key) -> bool {
+  // Coarser scale first; among same scale, centre of viewport first.
+  std::sort(cands.begin(), cands.end(), [](Cand const& a, Cand const& b) {
+    if (a.scale != b.scale) {
+      return a.scale > b.scale;
+    }
+    return a.dist2 < b.dist2;
+  });
+
+  // scale 0 = full-res decode. Do not issue until some coarser tile exists
+  // (single-level pyramids excepted).
+  auto may_issue = [&](TileKey const& key) -> bool {
     if (key.scale > 0 || m_max_scale <= 0) {
       return true;
     }
     return has_succeeded_scale_ge(1);
   };
 
-  if (cold) {
-    enqueue_parents(1);
-    if (static_cast<int>(batch.size()) < budget) {
-      enqueue_parents(2);
+  std::vector<TileKey> batch;
+  batch.reserve(static_cast<size_t>(budget));
+  std::uint64_t const gen = m_generation;
+
+  for (Cand const& c : cands) {
+    if (static_cast<int>(batch.size()) >= budget) {
+      break;
     }
-    for (Scored const& s : missing) {
-      if (static_cast<int>(batch.size()) >= budget) {
-        break;
-      }
-      if (!may_issue_exact(s.key)) {
-        continue;
-      }
-      enqueue(s.key);
+    if (!may_issue(c.key)) {
+      continue;
     }
-  } else {
-    // Warm: exact first (centre-first), then one-level parents as stand-ins.
-    // Still gate scale-0 until a coarser tile landed (zoom-in from soft-only).
-    for (Scored const& s : missing) {
-      if (static_cast<int>(batch.size()) >= budget) {
-        break;
-      }
-      if (!may_issue_exact(s.key)) {
-        continue;
-      }
-      enqueue(s.key);
+    CacheEntry const* e = m_cache->find(c.key);
+    if (e && (e->state == TileState::Succeeded ||
+              e->state == TileState::InFlight)) {
+      continue;
     }
-    if (static_cast<int>(batch.size()) < budget) {
-      enqueue_parents(1);
+    if (e && e->state == TileState::Failed && e->generation == m_generation) {
+      continue;
     }
-    // If scale-0 was gated, fill remaining budget with parents again.
-    if (static_cast<int>(batch.size()) < budget && !has_succeeded_scale_ge(1)
-        && m_max_scale > 0) {
-      enqueue_parents(1);
-      if (static_cast<int>(batch.size()) < budget) {
-        enqueue_parents(2);
-      }
-    }
+    m_cache->set_in_flight(c.key, gen);
+    batch.push_back(c.key);
   }
 
   if (batch.empty()) {

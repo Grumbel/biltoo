@@ -22,3 +22,9 @@ Off-screen speculative tile issue is not done here; soft/idle policy is separate
 
 - ImageItem must not start PreferCache/tile storms on its own for global policy
 - Paint path must not issue requests (plan + draw only)
+
+## Issue order (TileSession)
+
+Always **coarsest → finest**: parent scales before exact target. Scale 0
+(full-res) only after at least one coarser tile has succeeded. Display is
+instant overview, then progressive refinement.
