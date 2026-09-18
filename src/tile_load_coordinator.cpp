@@ -160,10 +160,9 @@ void TileLoadCoordinator::tick(int globalBudget)
     QElapsedTimer wall;
     wall.start();
     // Gallery overview: many small cells need coarse tiles quickly. Image-mode
-    // deep zoom keeps a tight wall so pan stays responsive.
+    // focus needs a longer wall so progressive climb is not starved at 4 keys.
     const bool gallery = m_view->isGalleryMode();
-    // Image deep zoom needs enough wall to fill outer keys, not only center.
-    const qint64 kWallMs = gallery ? 12 : 8;
+    const qint64 kWallMs = gallery ? 12 : 16;
 
     QRectF sceneVis;
     if (m_view->scene()) {
@@ -179,8 +178,8 @@ void TileLoadCoordinator::tick(int globalBudget)
     sortByPolicy(cands);
 
     // Prefer draining cells with zero tiles first (stuck LQIP / blank).
-    // Gallery: issue many overview cells per tick; Image: keep tight.
-    const int kMaxTargets = gallery ? 16 : 4;
+    // Gallery: many overview cells; Image: few items but each needs many keys.
+    const int kMaxTargets = gallery ? 16 : 2;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }
@@ -284,10 +283,10 @@ void TileLoadCoordinator::tick(int globalBudget)
         if (!item) {
             continue;
         }
-        // Gallery overview cells often need only 1–4 coarse keys; allow more
-        // keys when budget remains so one tick covers a full cell.
+        // Gallery: small overview cells. Image: spend most of the budget on the
+        // focus item so progressive scale climb is not starved at 4 keys/tick.
         const int left = n - i;
-        const int perCellCap = gallery ? 8 : 4;
+        const int perCellCap = gallery ? 8 : 24;
         const int share = remaining > 0
             ? qMin(perCellCap, qMax(1, remaining / left))
             : 0;

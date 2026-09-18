@@ -2927,11 +2927,12 @@ void ImageView::tickPrimaryTileLod(int budget)
         m_tileLodTimer = new QTimer(this);
         m_tileLodTimer->setSingleShot(true);
         connect(m_tileLodTimer, &QTimer::timeout, this, [this]() {
-            tickPrimaryTileLod(isGalleryMode() ? 48 : 16);
+            // Image focus: higher budget so density climb is not starved.
+            tickPrimaryTileLod(isGalleryMode() ? 48 : 32);
         });
     }
     if (!m_tileLodTimer->isActive()) {
-        m_tileLodTimer->start(isGalleryMode() ? 16 : 24);
+        m_tileLodTimer->start(isGalleryMode() ? 16 : 16);
     }
 }
 

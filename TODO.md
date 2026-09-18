@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1232-image-tile-issue-budget.** Image mode issues more tile keys per tick for upres climb.
+Prior: **1231**.
+
+### Change
+- TileLoadCoordinator Image: wall 16ms, per-cell cap 24 (was 4), max targets 2.
+- tickPrimary re-arm: budget 32 every 16ms (was 16/24ms).
+
+Large Image views stayed on coarse tiles for a long time because each tick only
+queued a handful of keys while progressive scale walked down.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1232-image-tile-issue-budget.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1231-tile-min-scale-force-replan.** Force viewport replan after min_scale generation bump.
 Prior: **1230**.
 
