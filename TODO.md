@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1210-size-first-serial.** Sequential size probes for whole session; gate tiles/filmstrip until sizes resolve.
+Prior: **1209**.
+
+### Policy
+- Size is first: `scheduleProbe` is a **FIFO serial** queue (one `request_size` at a time).
+- Cold packaged Gallery: no parallel `preparePaths` / filmstrip soft / tile ticks until `gallerySizeResolveFinished`.
+- Thumtoo prefers EnsureTiles over ProbeSize in the worker queue — so host must not issue tiles until sizes settle.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1210-size-first-serial.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1209-gallery-pending-inflight-cleanup.** pendingDecodeCount blanks-only; drop dead soft inflight helpers.
 Prior: **1208**.
 

@@ -206,8 +206,11 @@ QHash<QString, QSize> g_sizeMemo;
 /** Process memo of ContentStatus::Unsupported (get_meta is SQLite — never on GUI). */
 QSet<QString> g_unsupportedYes;
 QSet<QString> g_unsupportedNo;
-/** Paths with an in-flight size probe (dedupe ThreadPool storm on Gallery open). */
+/** Paths queued or in-flight for size probe (dedupe). */
 QSet<QString> g_probeQueued;
+/** FIFO order for size probes — whole session/archive sequential, not parallel. */
+QStringList g_probeSerialFifo;
+bool g_probeSerialInflight = false;
 /**
  * Negative memo: path → earliest msecs-since-epoch to re-query Store.
  * tileLodWanted/paint called hasDurableTiles every frame; uncached misses
@@ -963,34 +966,73 @@ bool isUnsupported(const QString &path)
     return false;
 }
 
-void scheduleProbe(const QString &path)
-{
 #ifdef BILTOO_HAVE_THUMTOO
-    if (path.isEmpty()) {
-        return;
-    }
-    // Already have size in process memo — no Store round-trip.
-    if (cachedSize(path, /*scheduleRevalidate=*/false).isValid()) {
-        return;
-    }
+namespace {
+
+void pumpProbeSerial();
+
+void finishProbeSerialSlot(const QString &pathCopy, const thumtoo::SizeReply &reply)
+{
     {
         std::lock_guard lock(g_mu);
-        if (g_probeQueued.contains(path)) {
+        g_probeQueued.remove(pathCopy);
+        g_probeSerialInflight = false;
+    }
+    if (!reply.size) {
+        emit bridge()->sizeReady(pathCopy, QSize());
+        pumpProbeSerial();
+        return;
+    }
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+    if (reply.lqip && !reply.lqip->empty() && !ImageCache::has(pathCopy)) {
+        const QImage lqip = qimageFromLqipBlob(*reply.lqip);
+        if (!lqip.isNull()) {
+            ImageCache::put(pathCopy, lqip);
+        }
+    }
+#endif
+    {
+        const QSize sz(reply.size->width, reply.size->height);
+        noteCachedSize(pathCopy, sz);
+        emit bridge()->sizeReady(pathCopy, sz);
+    }
+    pumpProbeSerial();
+}
+
+void pumpProbeSerial()
+{
+    QString next;
+    {
+        std::lock_guard lock(g_mu);
+        if (g_probeSerialInflight) {
             return;
         }
-        g_probeQueued.insert(path);
+        while (!g_probeSerialFifo.isEmpty()) {
+            const QString p = g_probeSerialFifo.takeFirst();
+            if (g_sizeMemo.contains(p) && g_sizeMemo.value(p).isValid()) {
+                g_probeQueued.remove(p);
+                continue;
+            }
+            next = p;
+            g_probeSerialInflight = true;
+            break;
+        }
+        if (next.isEmpty()) {
+            return;
+        }
     }
     init();
-    const QString pathCopy = path;
+    const QString pathCopy = next;
     QThreadPool::globalInstance()->start([pathCopy]() {
         ASSERT_NOT_GUI_THREAD();
-        auto finishQueued = [&pathCopy]() {
-            std::lock_guard lock(g_mu);
-            g_probeQueued.remove(pathCopy);
-        };
-        auto fail = [&pathCopy, &finishQueued]() {
-            finishQueued();
+        auto fail = [&pathCopy]() {
+            {
+                std::lock_guard lock(g_mu);
+                g_probeQueued.remove(pathCopy);
+                g_probeSerialInflight = false;
+            }
             emit bridge()->sizeReady(pathCopy, QSize());
+            pumpProbeSerial();
         };
         if (isUnsupported(pathCopy)) {
             fail();
@@ -1011,36 +1053,36 @@ void scheduleProbe(const QString &path)
             return;
         }
         if (thumtooDebugEnabled()) {
-            thumtooDbg("scheduleProbe path=%s", qPrintable(pathCopy));
+            thumtooDbg("scheduleProbe(serial) path=%s", qPrintable(pathCopy));
         }
         c->request_size(uri, [pathCopy](std::string, thumtoo::SizeReply reply) {
-            {
-                std::lock_guard lock(g_mu);
-                g_probeQueued.remove(pathCopy);
-            }
-            // Always emit so the host clears m_sizeProbeScheduled and can
-            // advance Gallery size-resolve (failed size must not stick forever).
-            if (!reply.size) {
-                emit bridge()->sizeReady(pathCopy, QSize());
-                return;
-            }
-            // Size probe carries cache-only LQIP when already backfilled so the
-            // first open can show a placeholder before soft/full arrive.
-#if defined(BILTOO_HAVE_THUMTOO_LQIP)
-            if (reply.lqip && !reply.lqip->empty() && !ImageCache::has(pathCopy)) {
-                const QImage lqip = qimageFromLqipBlob(*reply.lqip);
-                if (!lqip.isNull()) {
-                    ImageCache::put(pathCopy, lqip);
-                }
-            }
-#endif
-            {
-                const QSize sz(reply.size->width, reply.size->height);
-                noteCachedSize(pathCopy, sz);
-                emit bridge()->sizeReady(pathCopy, sz);
-            }
+            finishProbeSerialSlot(pathCopy, reply);
         });
     });
+}
+
+} // namespace
+#endif // BILTOO_HAVE_THUMTOO
+
+void scheduleProbe(const QString &path)
+{
+#ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty()) {
+        return;
+    }
+    // Already have size in process memo — no Store round-trip.
+    if (cachedSize(path, /*scheduleRevalidate=*/false).isValid()) {
+        return;
+    }
+    {
+        std::lock_guard lock(g_mu);
+        if (g_probeQueued.contains(path)) {
+            return;
+        }
+        g_probeQueued.insert(path);
+        g_probeSerialFifo.append(path);
+    }
+    pumpProbeSerial();
 #else
     Q_UNUSED(path);
 #endif

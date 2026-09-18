@@ -140,6 +140,11 @@ void TileLoadCoordinator::tick(int globalBudget)
     if (m_view->isSlideshowProgressActive()) {
         return;
     }
+    // Size probes first: do not compete with EnsureTiles while Gallery is still
+    // resolving the session (thumtoo prefers tiles over ProbeSize in the queue).
+    if (m_view->gallerySizeResolveActive()) {
+        return;
+    }
 
     // Coalesce scroll storms — multiple decode-window refreshes per frame.
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();

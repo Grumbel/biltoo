@@ -1574,7 +1574,11 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     st.terminal = true; // no soft climb ever
     st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
-    if (anyTileWanted) {
+    if (anyTileWanted && !gallerySizeResolveActive()) {
+        // Size must be known before pyramid encode (expensive). Wait for resolve.
+        if (!ThumtooCache::cachedSize(path).isValid()) {
+            return;
+        }
         // Only encode a pyramid when Store has no durable coverage yet.
         if (!st.tilesPyramidQueued) {
             st.tilesPyramidQueued = true;

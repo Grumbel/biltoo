@@ -834,6 +834,7 @@ void ImageView::finishGallerySizeResolve()
         viewport()->update();
     }
     emit statusChanged();
+    emit gallerySizeResolveFinished();
 }
 
 void ImageView::cancelGallerySizeResolve()
@@ -856,6 +857,7 @@ void ImageView::cancelGallerySizeResolve()
         if (m_centreProgressTitle.startsWith(tr("Resolving sizes"))) {
             clearCentreProgress();
         }
+        emit gallerySizeResolveFinished();
     }
 }
 

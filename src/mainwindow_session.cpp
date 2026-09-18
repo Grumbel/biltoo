@@ -1363,19 +1363,44 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
                 0, m_session.paths().size(),
                 tr("Opening %n image(s)…", "", m_session.paths().size()));
         }
-        // Always pack Gallery before filmstrip. Filmstrip was installed first on
-        // cold opens and competed for thumtoo workers / CPU with Gallery tiles.
+        // Always pack Gallery before filmstrip. Size probes are sequential and
+        // must finish before filmstrip soft / tile pyramids compete on workers.
         enterGalleryMode(initialGalleryLayoutForOpen());
         TtfpTrace::mark("after_enterGalleryMode");
         setCurrentIndex(idx, /*ensureGalleryVisible=*/true);
         TtfpTrace::mark("after_setCurrentIndex");
-        // Warm: filmstrip next tick (LQIP already in ImageCache). Cold: short
-        // delay so Gallery LQIP + first tile ticks own the worker pool first.
-        QTimer::singleShot(sizesWarm ? 0 : 200, this, installFilmstrip);
-        // Background size probes for plain-file misses only (warm paths skipped).
-        ThumtooCache::preparePaths(m_session.paths());
-        ThumtooCache::warmUris(m_session.paths());
-        TtfpTrace::mark("after_preparePaths");
+        if (sizesWarm) {
+            QTimer::singleShot(0, this, installFilmstrip);
+            ThumtooCache::preparePaths(m_session.paths());
+            ThumtooCache::warmUris(m_session.paths());
+            TtfpTrace::mark("after_preparePaths");
+        } else {
+            // Cold: serial scheduleProbe (FIFO). preparePaths would flood parallel
+            // ProbeSize and race EnsureTiles (thumtoo prefers tiles over sizes).
+            const bool resolving =
+                m_imageView && m_imageView->gallerySizeResolveActive();
+            if (resolving && m_thumbnailBar) {
+                m_thumbnailBar->setVisibleLoadsSuspended(true);
+            }
+            if (resolving && m_imageView) {
+                connect(m_imageView, &ImageView::gallerySizeResolveFinished, this,
+                        [this, installFilmstrip]() {
+                            if (m_thumbnailBar) {
+                                m_thumbnailBar->setVisibleLoadsSuspended(false);
+                            }
+                            installFilmstrip();
+                            ThumtooCache::preparePaths(m_session.paths());
+                            ThumtooCache::warmUris(m_session.paths());
+                        },
+                        static_cast<Qt::ConnectionType>(Qt::SingleShotConnection));
+            } else {
+                // FreeForm / no size-gate: still serial probes, but allow strip.
+                QTimer::singleShot(0, this, installFilmstrip);
+                ThumtooCache::preparePaths(m_session.paths());
+                ThumtooCache::warmUris(m_session.paths());
+            }
+            TtfpTrace::mark("sizes_cold_serial_probes");
+        }
     } else {
         installFilmstrip();
         ThumtooCache::preparePaths(m_session.paths());

@@ -215,6 +215,20 @@ void ImageView::updateGalleryDecodeWindow()
     if (!isGalleryMode() || m_items.isEmpty()) {
         return;
     }
+    // While sizes are still sequential, only allow blank LQIP installs from cache
+    // — no tile ticks / pyramid (workers stay on ProbeSize).
+    if (gallerySizeResolveActive()) {
+        constexpr int kMaxInstallsDuringSizeResolve = 16;
+        bool more = false;
+        const int n = galleryInstallHostSoftOntoBlanks(kMaxInstallsDuringSizeResolve, &more);
+        if (n > 0 && viewport()) {
+            viewport()->update();
+        }
+        if (more) {
+            scheduleGalleryDecodeWindowRefresh(32);
+        }
+        return;
+    }
     // Wall budget: cold open was stacking install + schedule + tile tick past
     // GUI_BUDGET. Slice work and re-arm instead of one multi-hundred-ms pass.
     QElapsedTimer wall;
