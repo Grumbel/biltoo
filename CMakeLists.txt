@@ -159,6 +159,10 @@ add_executable(biltoo
   src/sessionchrome.h
   src/gallerysoftbook.h
   src/perfstats.h
+  src/layoutdebounce.h
+  src/gallerypackfit.h
+  src/selectiongeometry.h
+  src/coloradjustcommit.h
   src/imagesizebook.h
   src/pathitemstatebook.h
   src/pendingitemappearancebook.h

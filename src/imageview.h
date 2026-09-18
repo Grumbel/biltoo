@@ -24,6 +24,8 @@
 #include "sessionchrome.h"
 #include "gallerysoftbook.h"
 #include "perfstats.h"
+#include "coloradjustcommit.h"
+#include "layoutdebounce.h"
 #include "imagesizebook.h"
 #include "pathitemstatebook.h"
 #include "pendingitemappearancebook.h"
@@ -1864,11 +1866,10 @@ private:
 
     QTimer *m_gallerySoftWatchdog = nullptr;
     QTimer *m_layoutDebounceTimer = nullptr;
-    GalleryPackReason m_debouncedPackReason = GalleryPackReason::ContentChange;
+    LayoutDebounce m_layoutDebounce;
     /** Debounce colour-slider durable write + filmstrip (see setTargetColorAdjustments). */
     QTimer *m_colorAdjustCommitTimer = nullptr;
-    SessionImageId m_colorAdjustCommitSid = kInvalidSessionImageId;
-    QString m_colorAdjustCommitPath;
+    ColorAdjustCommit m_colorAdjustCommit;
 };
 
 #endif // IMAGEVIEW_H

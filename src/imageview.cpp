@@ -260,7 +260,7 @@ ImageView::ImageView(QWidget *parent)
     m_layoutDebounceTimer->setInterval(48);
     connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
         if (isGalleryMode() && m_layout.mode != LayoutMode::FreeForm) {
-            applyLayout(m_debouncedPackReason);
+            applyLayout(m_layoutDebounce.reason);
         }
     });
     // Colour sliders fire every tick — durable SQLite + filmstrip bake are deferred.
@@ -788,7 +788,7 @@ void ImageView::clearCentreProgress()
 
 void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
 {
-    m_debouncedPackReason = reason;
+    m_layoutDebounce.arm(reason);
     if (!m_layoutDebounceTimer) {
         applyLayout(reason);
         return;
