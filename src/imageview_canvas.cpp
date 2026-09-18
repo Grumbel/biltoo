@@ -176,7 +176,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // first pack never uses 1024² stand-ins (first cell stuck square until reload).
     if (isGalleryMode() && !paths.isEmpty()
         && startGallerySizeResolveIfNeeded(paths)) {
-        TtfpTrace::mark("gallery_size_resolve_started");
+        // Fill layouts only — Grid/masonry already returned false and will
+        // create placeholders below with provisional sizes.
+        TtfpTrace::mark("gallery_size_resolve_defer_populate");
         m_galleryDeferPopulate = true;
         // Drop any leftover Image/Gallery tiles so nothing paints at random
         // poses while probes run (D&D / mode switch residue).

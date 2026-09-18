@@ -1500,11 +1500,15 @@ private:
     void scheduleImageSizeProbe(const QString &path);
     void applyProbedImageSize(const QString &path, const QSize &size);
     /**
-     * Gallery open size-first gate: schedule probes for every path still missing
-     * a definitive size; return true if pack must wait. HUD shows progress until
-     * finishGallerySizeResolve packs once.
+     * Gallery open size probes: schedule probes for paths still missing a
+     * definitive size. Returns true only when the current layout must defer
+     * populate until all sizes settle (Fill / FlowFill). Grid and ordinary
+     * masonry pack immediately with provisional sizes; probes still run and
+     * sizeReady debounces a repack.
      */
     bool startGallerySizeResolveIfNeeded(const QStringList &paths);
+    /** True when pack needs every aspect before the first layout (Fill modes). */
+    static bool layoutDefersPopulateUntilSizes(LayoutMode mode);
     void noteGallerySizeProbeSettled(const QString &path);
     void finishGallerySizeResolve();
     void clearGalleryGaveUpIfClimbable(GallerySoftState &st, int have, int want);

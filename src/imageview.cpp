@@ -639,6 +639,22 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
     }
 }
 
+
+bool ImageView::layoutDefersPopulateUntilSizes(LayoutMode mode)
+{
+    // Fill modes equalize column/row ends using every aspect — a late size
+    // changes the whole scale. FlowFill scales each completed row to width.
+    // Everything else can place with provisional sizes and refine on sizeReady.
+    switch (mode) {
+    case LayoutMode::MasonryFill:
+    case LayoutMode::MasonryRowsFill:
+    case LayoutMode::FlowFill:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
 {
     if (m_gallerySizeResolveTimer) {
@@ -646,8 +662,7 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
     }
     m_gallerySizeResolvePending.clear();
     m_gallerySizeResolveTotal = 0;
-    // Suppress intermediate packs while seeding definitive sizes from cache.
-    m_gallerySizeResolveActive = true;
+    m_gallerySizeResolveActive = false;
 
     for (const QString &path : paths) {
         if (path.isEmpty()) {
@@ -669,15 +684,25 @@ bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
 
     m_gallerySizeResolveTotal = m_gallerySizeResolvePending.size();
     if (m_gallerySizeResolvePending.isEmpty()) {
-        m_gallerySizeResolveActive = false;
         return false;
     }
 
-    // Copy keys — schedule must not iterate a set we mutate.
+    // Always schedule probes; only Fill/FlowFill block populate + decode window.
     const QList<QString> need = m_gallerySizeResolvePending.values();
     for (const QString &path : need) {
         scheduleImageSizeProbe(path);
     }
+
+    if (!layoutDefersPopulateUntilSizes(m_layoutMode)) {
+        // Grid / masonry / flow / …: pack with provisional sizes now. sizeReady
+        // updates intrinsic size and requestDebouncedGalleryPack. Soft/LQIP can
+        // install without waiting for member N.
+        m_gallerySizeResolvePending.clear();
+        m_gallerySizeResolveTotal = 0;
+        return false;
+    }
+
+    m_gallerySizeResolveActive = true;
     // Safety: never block Gallery forever if a probe hangs.
     if (!m_gallerySizeResolveTimer) {
         m_gallerySizeResolveTimer = new QTimer(this);

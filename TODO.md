@@ -2,6 +2,28 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1119-layout-aware-size-gate.** Only Fill/FlowFill defer Gallery populate on cold sizes.
+Prior: **1118**.
+
+### Policy
+| Layout | Cold missing sizes |
+|--------|--------------------|
+| Grid, GridCrop, Masonry, MasonryRows, Flow, SideBySide, Vertical, Facing | Pack **now** with provisional sizes; probes in background; sizeReady → debounced repack + LQIP/soft |
+| MasonryFill, MasonryRowsFill, FlowFill | **Defer** populate until all sizes settle (global equalize) |
+
+Probes always scheduled. Decode window no longer blocked for Grid/masonry cold.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1119-layout-aware-size-gate.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1118-appearance-by-locator-id.** Appearance keyed by thumtoo locator.id (biltoo DB).
 Prior: **1117**.
 

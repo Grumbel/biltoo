@@ -99,3 +99,9 @@ placeholder `installDisplayPixels` (appearance seed). Fixed in tip **1116**
 Appearance rows live in biltoo state DB, keyed by **thumtoo locator.id**.
 No content checksums. Open cost is URI → find_locator (Store), not file hashing.
 
+
+## Layout-aware size gate (cold)
+
+`layoutDefersPopulateUntilSizes`: only **MasonryFill / MasonryRowsFill / FlowFill**
+wait for all sizes before populate. **Grid** and ordinary masonry pack with
+provisional sizes immediately; probes still run; `sizeReady` debounces repack.
