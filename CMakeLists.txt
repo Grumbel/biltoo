@@ -158,6 +158,8 @@ add_executable(biltoo
   src/loadgeneration.h
   src/sessionloadgate.h
   src/sessionbindbook.h
+  src/displayedgepolicy.h
+  src/displayedgepolicy.cpp
   src/imageview_attention.cpp
   src/imageview_load.cpp
   src/tile_load_coordinator.cpp

@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1276-display-edge-policy.** Pure coversEdge / cappedDisplayEdge / sampleCoversNative.
+Prior: **1275**.
+
+### Change
+- `DisplayEdgePolicy::coversEdge` (9/10), `cappedDisplayEdge`, `sampleCoversNative`.
+- ImageView wrappers resolve native from size book then call pure policy.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1276-display-edge-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1275-tile-prefer-cancelled-owner.** PreferCache cancel set owns by TileLoadCoordinator.
 Prior: **1274**.
 

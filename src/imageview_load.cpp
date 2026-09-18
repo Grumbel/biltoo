@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "displayedgepolicy.h"
 #include "ttfp_trace.h"
 
 #include <algorithm>
@@ -66,16 +67,6 @@ void biltooLoadDbg(const char *fmt, ...)
     vfprintf(stderr, fmt, ap);
     va_end(ap);
     fputc('\n', stderr);
-}
-
-/** ~90% of target long edge counts as delivered (matches soft/overview stops). */
-constexpr int kCoverNumer = 9;
-constexpr int kCoverDenom = 10;
-
-bool coversEdge(int haveLongEdge, int targetEdge)
-{
-    return targetEdge <= 0
-        || haveLongEdge >= (targetEdge * kCoverNumer) / kCoverDenom;
 }
 
 /**
@@ -691,8 +682,8 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
         // when on-screen need is still above host (Workspace zoom-in).
         const int need = fallbackNeedEdge > 0 ? fallbackNeedEdge : 0;
         if (m_pathRaster && need > 0
-            && !coversEdge(item->displayPixelLongEdge(), need)
-            && !coversEdge(ImageCache::longEdge(ImageCache::get(path)), need)) {
+            && !DisplayEdgePolicy::coversEdge(item->displayPixelLongEdge(), need)
+            && !DisplayEdgePolicy::coversEdge(ImageCache::longEdge(ImageCache::get(path)), need)) {
             m_pathRaster->ensure(path, need, logicalSizeForPath(path), climbPolicy);
         }
         return false;
@@ -1812,7 +1803,7 @@ void ImageView::ensureWorkspaceQualityClimb()
         // Always measure need after the current view transform (zoom/pan).
         const int needEdge = itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
         const int have = ii->displayPixelLongEdge();
-        if (needEdge > 0 && have > 0 && coversEdge(have, needEdge)) {
+        if (needEdge > 0 && have > 0 && DisplayEdgePolicy::coversEdge(have, needEdge)) {
             continue;
         }
         const bool pending = m_pathRaster->isClimbPending(path);
@@ -1834,7 +1825,7 @@ void ImageView::ensureWorkspaceQualityClimb()
         // Decide may return None while still short (stale settle / Full shortfall).
         // Force PathRaster escalate so Soft→Prefer→Full continues on zoom-in.
         if (act.type == DisplaySurface::ActionType::None
-            && needEdge > 0 && !coversEdge(have, needEdge) && !pending) {
+            && needEdge > 0 && !DisplayEdgePolicy::coversEdge(have, needEdge) && !pending) {
             act.type = DisplaySurface::ActionType::ScheduleClimb;
             act.climbNeedEdge = needEdge;
         }
@@ -1845,7 +1836,7 @@ void ImageView::ensureWorkspaceQualityClimb()
                     : PathRasterService::ClimbPolicy::EscalateToFull;
             (void)applyDisplaySurfaceAction(ii, act, QImage(), needEdge, pol);
         }
-        if (!coversEdge(ii->displayPixelLongEdge(), needEdge)
+        if (!DisplayEdgePolicy::coversEdge(ii->displayPixelLongEdge(), needEdge)
             && (m_pathRaster->isGaveUp(path)
                 || (!m_pathRaster->isClimbPending(path)
                     && act.type == DisplaySurface::ActionType::ScheduleClimb))) {
@@ -2523,27 +2514,12 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
 
 int ImageView::cappedDisplayEdgeForPath(const QString &path, int wantEdge) const
 {
-    // Ladder steps are discrete (…1024, 2048). Never request past the known
-    // native long edge — PreferCache cannot invent pixels, and the HUD must
-    // not claim "→2048" for a 1920×1080 photo.
-    int edge = wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge;
-    edge = qMin(edge, ThumtooCache::kImageLadderEdge);
+    int nativeLong = 0;
     const QSize logical = logicalSizeForPath(path);
     if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
-        const int native = qMax(logical.width(), logical.height());
-        if (native > 0) {
-            edge = qMin(edge, native);
-        }
+        nativeLong = qMax(logical.width(), logical.height());
     }
-    // Snap up only within the remaining budget (ceil then clamp to native again).
-    edge = ThumtooCache::ceilLadderEdge(edge);
-    if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
-        const int native = qMax(logical.width(), logical.height());
-        if (native > 0) {
-            edge = qMin(edge, native);
-        }
-    }
-    return qMax(1, edge);
+    return DisplayEdgePolicy::cappedDisplayEdge(wantEdge, nativeLong);
 }
 
 QImage ImageView::fullRasterForEdit(const QString &path) const
@@ -2563,22 +2539,17 @@ QImage ImageView::fullRasterForEdit(const QString &path) const
 
 bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const
 {
-    // Soft and overview (≤1024) are never final for Image/Workspace high-res.
-    // Provisional / unknown native: only ≥ kImageLadderEdge (2048) is enough.
-    // Known native: ~90% of true long edge.
     const int incoming = ImageCache::longEdge(image);
-    if (incoming <= 0) {
-        return false;
-    }
-    if (incoming <= ThumtooCache::kBatchOverviewEdge) {
-        return false;
-    }
+    int nativeLong = 0;
+    bool nativeKnown = false;
     const QSize logical = logicalSizeForPath(path);
-    if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
-        return incoming >= ThumtooCache::kImageLadderEdge;
+    if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
+        nativeLong = qMax(logical.width(), logical.height());
+        nativeKnown = nativeLong > 0;
     }
-    const int native = qMax(logical.width(), logical.height());
-    return coversEdge(incoming, native);
+    return DisplayEdgePolicy::sampleCoversNative(
+        incoming, nativeLong, nativeKnown, ThumtooCache::kBatchOverviewEdge,
+        ThumtooCache::kImageLadderEdge);
 }
 
 void ImageView::noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
@@ -2623,7 +2594,7 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
         climbTo = qMax(climbTo, need);
     }
     climbTo = cappedDisplayEdgeForPath(path, climbTo);
-    if (have > 0 && coversEdge(have, climbTo)) {
+    if (have > 0 && DisplayEdgePolicy::coversEdge(have, climbTo)) {
         return;
     }
     biltooLoadDbg("imageModeClimb(service) path=%s climbTo=%d have=%d need=%d cold",
@@ -2633,7 +2604,7 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
     // Full is async. If terminal or nothing pending and still short, host native
     // (only when no durable tiles — prepared libs use TileSynth / tile LOD).
     if (!ThumtooCache::hasDurableTilesKnown(path)
-        && !coversEdge(m_pathRaster->haveEdge(path), climbTo)
+        && !DisplayEdgePolicy::coversEdge(m_pathRaster->haveEdge(path), climbTo)
         && (m_pathRaster->isGaveUp(path) || !m_pathRaster->isClimbPending(path))) {
         scheduleImageModeNativeDecodeOnce(path);
     }
@@ -2862,7 +2833,7 @@ void ImageView::maybeClimbImageModePixelsForView()
         // after soft lands; PreferCache waits for that.
         return;
     }
-    if (need <= 0 || coversEdge(have, need)) {
+    if (need <= 0 || DisplayEdgePolicy::coversEdge(have, need)) {
         return;
     }
 
