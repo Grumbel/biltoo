@@ -56,6 +56,13 @@ qreal cardinalRotationOrZero(qreal degrees);
 qreal placementRotationFromDrag(qreal startRotation, qreal startAngleDeg,
                                 qreal currentAngleDeg, bool snap90, bool snap45);
 
+/**
+ * Free-rotate handle style: Shift → 15°, else Ctrl → 45° (item chrome / crop / group).
+ * Prefer snap15 when both modifiers are set.
+ */
+qreal freeRotationFromDrag(qreal startRotation, qreal startAngleDeg,
+                           qreal currentAngleDeg, bool snap15, bool snap45);
+
 } // namespace PlacementLinear
 
 #endif // PLACEMENTLINEAR_H

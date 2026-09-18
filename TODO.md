@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1310-placement-free-rotation.** Pure item-handle free-rotate via PlacementLinear.
+Prior: **1309**.
+
+### Change
+- `PlacementLinear::freeRotationFromDrag` — Shift → 15°, else Ctrl → 45°
+- `ImageItem::updateHandleInteraction` rotate path uses `angleAbout` + freeRotationFromDrag.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1310-placement-free-rotation.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1309-placement-linear-rotation.** Pure placement angle and snap helpers.
 Prior: **1308**.
 

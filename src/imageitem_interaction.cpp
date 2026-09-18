@@ -2449,18 +2449,11 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
         setOpacityFromSliderPos(scenePos);
     } else if (isRotateHandle(m_activeHandle)) {
         const QPointF itemCentre = this->scenePos();
-        const QPointF v0 = m_pressScenePos - itemCentre;
-        const QPointF v1 = scenePos - itemCentre;
-        const qreal a0 = qAtan2(v0.y(), v0.x());
-        const qreal a1 = qAtan2(v1.y(), v1.x());
-        const qreal deltaDeg = qRadiansToDegrees(a1 - a0);
-        qreal angle = m_pressRotation + deltaDeg;
         // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
-        if (mods & Qt::ShiftModifier) {
-            angle = qRound(angle / 15.0) * 15.0;
-        } else if (mods & Qt::ControlModifier) {
-            angle = qRound(angle / 45.0) * 45.0;
-        }
+        const qreal a0 = PlacementLinear::angleAbout(itemCentre, m_pressScenePos);
+        const qreal a1 = PlacementLinear::angleAbout(itemCentre, scenePos);
+        const qreal angle = PlacementLinear::freeRotationFromDrag(
+            m_pressRotation, a0, a1, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
         setItemRotation(angle);
     } else if (isScaleHandle(m_activeHandle)) {
         applyScaleHandleDrag(scenePos, mods);

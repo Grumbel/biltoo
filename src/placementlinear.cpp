@@ -106,4 +106,16 @@ qreal placementRotationFromDrag(qreal startRotation, qreal startAngleDeg,
     return rot;
 }
 
+qreal freeRotationFromDrag(qreal startRotation, qreal startAngleDeg,
+                           qreal currentAngleDeg, bool snap15, bool snap45)
+{
+    qreal rot = startRotation + (currentAngleDeg - startAngleDeg);
+    if (snap15) {
+        rot = snapDegrees(rot, 15.0);
+    } else if (snap45) {
+        rot = snapDegrees(rot, 45.0);
+    }
+    return rot;
+}
+
 } // namespace PlacementLinear
