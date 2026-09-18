@@ -2,6 +2,20 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1158-gallery-no-soft-job.** Gallery classic decode: no SoftOnly job; non-tile want capped to LQIP.
+Prior: **1157**.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1158-gallery-no-soft-job.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1157-gallery-no-soft-schedule.** Pass1 LQIP-only; pass2/watchdog skip tile soft.
 Prior: **1156**.
 

@@ -1422,14 +1422,28 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
     // No SoftOnly encode and no PreferCache/Full climb in parallel with tiles.
     if (isImageMode() && !m_slideshowProgressActive && !m_slideshowNavHot
         && role == LoadReplace) {
-        // Size probe so tileNativeSize / layout can resolve (no soft encode).
         ThumtooCache::scheduleProbe(path);
         tickPrimaryTileLod(12);
         Q_UNUSED(gen);
         return;
     }
 
-    // Slideshow / non–Image-mode: soft stand-in job still used for fast paint.
+    // Gallery: LQIP from ImageCache + tiles. Never SoftOnly/PreferCache job.
+    if (isGalleryMode()) {
+        ThumtooCache::scheduleProbe(path);
+        const QImage cached = ImageCache::get(path);
+        if (!cached.isNull()
+            && ImageCache::longEdge(cached) <= DisplayQuality::kLqipMaxEdge) {
+            const QPointer<ImageView> guard(this);
+            queuePreviewLoaded(guard, path, cached, gen, static_cast<int>(role));
+        }
+        scheduleGalleryDecode(path);
+        tickPrimaryTileLod(12);
+        Q_UNUSED(role);
+        return;
+    }
+
+    // Workspace / other: soft stand-in job still used for fast paint.
     const QPointer<ImageView> guard(this);
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
@@ -1739,6 +1753,10 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     }
     if (gallerySoftScheduleBlocked(st, have, want)) {
         return;
+    }
+    // Non-tile Gallery cells: LQIP only — no soft climb to 512.
+    if (isGalleryMode() && want > DisplayQuality::kLqipMaxEdge) {
+        want = DisplayQuality::kLqipMaxEdge;
     }
     if (!st.needsSoftSchedule(want, /*anyBlank=*/have <= 0, /*anyFull=*/false)) {
         return;
