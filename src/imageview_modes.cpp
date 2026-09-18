@@ -21,7 +21,7 @@ void ImageView::stopDeferredPacking()
     if (m_layoutDebounceTimer) {
         m_layoutDebounceTimer->stop();
     }
-    m_applyingLayout = false;
+    m_layoutApply.clear();
 }
 
 void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)

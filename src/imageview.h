@@ -27,6 +27,7 @@
 #include "coloradjustcommit.h"
 #include "layoutdebounce.h"
 #include "galleryrelayoutsuppress.h"
+#include "layoutapplyguard.h"
 #include "imagesizebook.h"
 #include "pathitemstatebook.h"
 #include "pendingitemappearancebook.h"
@@ -1849,7 +1850,7 @@ private:
     /** Multi-select group scale/rotate gesture (Workspace). */
     GroupTransformSession m_groupXform;
 
-    bool m_applyingLayout = false;
+    LayoutApplyGuard m_layoutApply;
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
     GalleryRelayoutSuppress m_galleryRelayoutSuppress;
     QTimer *m_galleryDecodeScrollTimer = nullptr;

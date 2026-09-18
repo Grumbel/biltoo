@@ -165,6 +165,7 @@ add_executable(biltoo
   src/coloradjustcommit.h
   src/viewtransform.h
   src/galleryrelayoutsuppress.h
+  src/layoutapplyguard.h
   src/imagesizebook.h
   src/pathitemstatebook.h
   src/pendingitemappearancebook.h

@@ -3,6 +3,7 @@
 
 #include "displayquality.h"
 #include "imageview.h"
+#include "viewtransform.h"
 #include <cstdio>
 #include <cstdlib>
 #include "biltoo_thread.h"
@@ -510,7 +511,7 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
 void ImageView::applyLayout(GalleryPackReason reason)
 {
     ASSERT_GUI_THREAD();
-    if (m_applyingLayout) {
+    if (m_layoutApply.active()) {
         return;
     }
     // Size-first open: do not pack on provisional stand-ins while probes run.
@@ -553,7 +554,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     const int keptScrollV =
         (preserveView && verticalScrollBar()) ? verticalScrollBar()->value() : -1;
 
-    m_applyingLayout = true;
+    m_layoutApply.begin();
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     resetTransform();
@@ -565,7 +566,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     // first bar appear, shrink the viewport, and leave the fitted axis slightly
     // oversized (dual bars). AlwaysOn only for this critical section; policy is
     // restored after sceneRect is set so Zoom Fit/Fill can hide unused bars.
-    // m_applyingLayout is already true — resizeEvent will not re-enter pack.
+    // m_layoutApply is already active — resizeEvent will not re-enter pack.
     const auto savedHBar = horizontalScrollBarPolicy();
     const auto savedVBar = verticalScrollBarPolicy();
     if (savedHBar != Qt::ScrollBarAlwaysOn || savedVBar != Qt::ScrollBarAlwaysOn) {
@@ -592,13 +593,13 @@ void ImageView::applyLayout(GalleryPackReason reason)
         m_itemStateBook.byPath.insert(item->path(), captureState(item));
     });
 
-    const QRectF bounds = m_scene->itemsBoundingRect().adjusted(-margin, -margin, margin, margin);
+    const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), margin);
     if (m_scene->sceneRect() != bounds) {
         m_scene->setSceneRect(bounds);
     }
     // Restore caller policy (AsNeeded/Off). With overshoot correction the packed
     // fitted axis should not need a bar; AsNeeded can hide it. Still under
-    // m_applyingLayout so a policy-driven resize does not repack.
+    // m_layoutApply so a policy-driven resize does not repack.
     if (horizontalScrollBarPolicy() != savedHBar) {
         setHorizontalScrollBarPolicy(savedHBar);
     }
@@ -608,7 +609,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     m_framing.fitMode = true;
     // Keep the guard until after statusChanged so slots cannot re-enter layout.
     emit statusChanged();
-    m_applyingLayout = false;
+    m_layoutApply.clear();
     // Re-apply scroll after centerOn(0,0) above when returning from Image.
     applyPendingGalleryRestore();
     if (preserveView) {

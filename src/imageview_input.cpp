@@ -3,6 +3,7 @@
 
 #include "imageview.h"
 #include "selectiongeometry.h"
+#include "viewtransform.h"
 #include "placementlinear.h"
 #include "attentiongeometry.h"
 #include "edgenavpolicy.h"
@@ -384,7 +385,7 @@ void ImageView::wheelEvent(QWheelEvent *event)
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
-    if (m_applyingLayout) {
+    if (m_layoutApply.active()) {
         return;
     }
     if (isImageMode() && !m_ssHud.progressActive) {
@@ -1000,7 +1001,7 @@ bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
     if (!m_textLayer.rubberbanding || !(event->buttons() & Qt::LeftButton)) {
         return false;
     }
-    m_textLayer.rubberRect = QRect(m_textLayer.rubberOrigin, event->pos()).normalized();
+    m_textLayer.rubberRect = ViewTransform::rubberRect(m_textLayer.rubberOrigin, event->pos());
     viewport()->update();
     event->accept();
     return true;
@@ -1053,7 +1054,7 @@ bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
         return false;
     }
     if (m_attention.rubberbanding) {
-        m_attention.rubberRect = QRect(m_attention.rubberOrigin, event->pos()).normalized();
+        m_attention.rubberRect = ViewTransform::rubberRect(m_attention.rubberOrigin, event->pos());
         viewport()->update();
         event->accept();
         return true;
@@ -1224,7 +1225,7 @@ bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
     if (!m_zoomRegion.dragging || !m_zoomRegion.rubberBand) {
         return false;
     }
-    m_zoomRegion.rubberBand->setGeometry(QRect(m_zoomRegion.origin, event->pos()).normalized());
+    m_zoomRegion.rubberBand->setGeometry(ViewTransform::rubberRect(m_zoomRegion.origin, event->pos()));
     event->accept();
     return true;
 }
@@ -1572,7 +1573,7 @@ bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
     if (!m_textLayer.rubberbanding || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_textLayer.rubberRect = QRect(m_textLayer.rubberOrigin, event->pos()).normalized();
+    m_textLayer.rubberRect = ViewTransform::rubberRect(m_textLayer.rubberOrigin, event->pos());
     finishTextRubberBand();
     unsetCursor();
     event->accept();
@@ -1637,7 +1638,7 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
     if (!m_zoomRegion.dragging) {
         return false;
     }
-    const QRect viewRect = QRect(m_zoomRegion.origin, event->pos()).normalized();
+    const QRect viewRect = ViewTransform::rubberRect(m_zoomRegion.origin, event->pos());
     m_zoomRegion.dragging = false;
     if (m_zoomRegion.rubberBand) {
         m_zoomRegion.rubberBand->hide();
