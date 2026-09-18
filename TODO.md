@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1305-attention-geometry-selection.** Pure attention selection set ops.
+Prior: **1304**.
+
+### Change
+- `AttentionGeometry::indicesInViewRect` — rubber-band hit indices in view space
+- `mergeSelection` — Shift-additive vs replace
+- `toggleSelectionIndex` — Shift/Ctrl handle click
+- Attention press/release paths use the pure helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1305-attention-geometry-selection.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1304-attention-geometry-norm-ops.** Pure attention norm clamp/map/translate.
 Prior: **1303**.
 

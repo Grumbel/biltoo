@@ -457,11 +457,8 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
     // already selected so multi-drag keeps the set).
     if (hit >= 0) {
         if (shift || ctrl) {
-            if (m_attention.selected.contains(hit)) {
-                m_attention.selected.removeAll(hit);
-            } else {
-                m_attention.selected.append(hit);
-            }
+            m_attention.selected =
+                AttentionGeometry::toggleSelectionIndex(m_attention.selected, hit);
         } else if (!m_attention.selected.contains(hit)) {
             m_attention.selected = {hit};
         }
@@ -1596,25 +1593,17 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
         m_attention.rubberbanding = false;
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()) {
-            const QRect band = m_attention.rubberRect.normalized();
             const QVector<QPointF> pts = attentionPointsForTarget();
+            QVector<QPointF> viewPts;
+            viewPts.reserve(pts.size());
+            for (const QPointF &n : pts) {
+                viewPts.append(attentionViewPos(item, n));
+            }
+            const QVector<int> hit = AttentionGeometry::indicesInViewRect(
+                viewPts, m_attention.rubberRect);
             const bool shift = event->modifiers() & Qt::ShiftModifier;
-            QVector<int> hit;
-            for (int i = 0; i < pts.size(); ++i) {
-                const QPointF v = attentionViewPos(item, pts.at(i));
-                if (band.contains(v.toPoint())) {
-                    hit.append(i);
-                }
-            }
-            if (shift) {
-                for (int i : hit) {
-                    if (!m_attention.selected.contains(i)) {
-                        m_attention.selected.append(i);
-                    }
-                }
-            } else {
-                m_attention.selected = hit;
-            }
+            m_attention.selected = AttentionGeometry::mergeSelection(
+                m_attention.selected, hit, shift);
         }
         m_attention.rubberRect = QRect();
         viewport()->update();

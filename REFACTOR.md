@@ -73,7 +73,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SessionAppearance::withoutCrop**: orient-only state (crop fields cleared).
 - **SessionAppearance::clearedContentOps**: drop bake ops; keep colour grade / pose.
 - **AttentionSession::hasDraftFor**; **SessionAppearance::liveItemHasContentMods**.
-- **AttentionGeometry** (`attentiongeometry.{h,cpp}`): pure norm↔local, clamp, translate-selected, handle hit-test.
+- **AttentionGeometry** (`attentiongeometry.{h,cpp}`): pure norm↔local, clamp, translate-selected, handle hit-test, selection set ops.
 - **CropSession::locksPath / locksItem**: draft sample freeze predicates on the session bag.
 - **CropSession::isDraftLayoutGeometry**; **SlideshowProgressHud::lastPaintFp**.
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).

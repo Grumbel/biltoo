@@ -6,6 +6,7 @@
 
 #include <QPoint>
 #include <QPointF>
+#include <QRect>
 #include <QRectF>
 #include <QVector>
 
@@ -50,6 +51,21 @@ QVector<QPointF> translateSelectedNorms(const QVector<QPointF> &startPts,
  * Index 0 uses kPrimaryScreenPx; others kHandleScreenPx. Returns -1 if none.
  */
 int handleIndexAt(const QPoint &viewPos, const QVector<QPointF> &viewPts);
+
+/** Indices of @p viewPts whose integer view position lies inside @p band. */
+QVector<int> indicesInViewRect(const QVector<QPointF> &viewPts, const QRect &band);
+
+/**
+ * Rubber-band / multi-select merge: @p additive (Shift) unions @p hit into
+ * @p current without duplicates; otherwise returns @p hit alone.
+ */
+QVector<int> mergeSelection(const QVector<int> &current, const QVector<int> &hit,
+                            bool additive);
+
+/**
+ * Toggle membership of @p index in @p selected (Shift/Ctrl click on a handle).
+ */
+QVector<int> toggleSelectionIndex(const QVector<int> &selected, int index);
 
 } // namespace AttentionGeometry
 

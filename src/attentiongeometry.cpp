@@ -80,4 +80,42 @@ int handleIndexAt(const QPoint &viewPos, const QVector<QPointF> &viewPts)
     return best;
 }
 
+QVector<int> indicesInViewRect(const QVector<QPointF> &viewPts, const QRect &band)
+{
+    QVector<int> hit;
+    const QRect b = band.normalized();
+    for (int i = 0; i < viewPts.size(); ++i) {
+        if (b.contains(viewPts.at(i).toPoint())) {
+            hit.append(i);
+        }
+    }
+    return hit;
+}
+
+QVector<int> mergeSelection(const QVector<int> &current, const QVector<int> &hit,
+                            bool additive)
+{
+    if (!additive) {
+        return hit;
+    }
+    QVector<int> out = current;
+    for (int i : hit) {
+        if (!out.contains(i)) {
+            out.append(i);
+        }
+    }
+    return out;
+}
+
+QVector<int> toggleSelectionIndex(const QVector<int> &selected, int index)
+{
+    QVector<int> out = selected;
+    if (out.contains(index)) {
+        out.removeAll(index);
+    } else {
+        out.append(index);
+    }
+    return out;
+}
+
 } // namespace AttentionGeometry
