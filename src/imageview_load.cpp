@@ -2732,6 +2732,8 @@ void ImageView::prefetchTilesForPaths(const QStringList &paths, int budgetPerPat
     }
     // Overview density only — do not deep-zoom prefetch (wastes budget).
     constexpr double kPrefetchMaxDpc = 0.25;
+    // Enough pumps for async completions (~1s at 33ms) without hanging forever.
+    constexpr int kPrefetchMaxTicks = 30;
     QWidget *vp = viewport();
     const qreal dpr = vp ? vp->devicePixelRatioF() : 1.0;
     const int vpW = vp ? vp->width() : 0;
@@ -2750,6 +2752,19 @@ void ImageView::prefetchTilesForPaths(const QStringList &paths, int budgetPerPat
             }
         }
         if (onCanvas) {
+            continue;
+        }
+        // Already prefetching this path — refresh tick budget only.
+        bool existing = false;
+        for (TilePrefetchSlot &slot : m_tilePrefetchSlots) {
+            if (slot.path == path) {
+                slot.ticksLeft = kPrefetchMaxTicks;
+                slot.budgetPerTick = budgetPerPath;
+                existing = true;
+                break;
+            }
+        }
+        if (existing) {
             continue;
         }
         const QSize sz = logicalSizeForPath(path);
@@ -2771,12 +2786,86 @@ void ImageView::prefetchTilesForPaths(const QStringList &paths, int budgetPerPat
         if (!(dpc > 0.0)) {
             continue;
         }
-        // Stack controller: acquire → issue overview tiles → release (retain).
-        tilelod::TileLodController ctl;
-        ctl.setPath(path);
-        ctl.setContentSize(sz.width(), sz.height());
-        ctl.updateViewport(QRectF(0.0, 0.0, sz.width(), sz.height()), dpc);
-        (void)ctl.tick(budgetPerPath);
+        TilePrefetchSlot slot;
+        slot.path = path;
+        slot.controller = std::make_unique<tilelod::TileLodController>();
+        slot.controller->setPath(path);
+        slot.controller->setContentSize(sz.width(), sz.height());
+        slot.controller->updateViewport(QRectF(0.0, 0.0, sz.width(), sz.height()),
+                                        dpc);
+        slot.ticksLeft = kPrefetchMaxTicks;
+        slot.budgetPerTick = budgetPerPath;
+        // First issue now; completions land on later timer pumps.
+        (void)slot.controller->tick(slot.budgetPerTick);
+        m_tilePrefetchSlots.push_back(std::move(slot));
+    }
+
+    if (m_tilePrefetchSlots.empty()) {
+        return;
+    }
+    if (!m_tilePrefetchTimer) {
+        m_tilePrefetchTimer = new QTimer(this);
+        m_tilePrefetchTimer->setInterval(33);
+        connect(m_tilePrefetchTimer, &QTimer::timeout, this,
+                &ImageView::tickTilePrefetch);
+    }
+    if (!m_tilePrefetchTimer->isActive()) {
+        m_tilePrefetchTimer->start();
+    }
+}
+
+void ImageView::tickTilePrefetch()
+{
+    ASSERT_GUI_THREAD();
+    if (m_tilePrefetchSlots.empty()) {
+        if (m_tilePrefetchTimer) {
+            m_tilePrefetchTimer->stop();
+        }
+        return;
+    }
+    // Pause issue while the user is still flipping; keep slots so settle can resume.
+    if (m_slideshowNavHot) {
+        return;
+    }
+
+    for (auto it = m_tilePrefetchSlots.begin(); it != m_tilePrefetchSlots.end();) {
+        // Live item took ownership — drop prefetch session (shared cache kept).
+        bool onCanvas = false;
+        for (ImageItem *ii : m_items) {
+            if (ii && ii->path() == it->path) {
+                onCanvas = true;
+                break;
+            }
+        }
+        if (onCanvas || !it->controller) {
+            it = m_tilePrefetchSlots.erase(it);
+            continue;
+        }
+        (void)it->controller->tick(it->budgetPerTick);
+        --it->ticksLeft;
+        // Prefer full overview coverage; hard-cap ticks so we never hang.
+        // Do not stop on the first Succeeded tile — that would cancel remaining
+        // InFlight keys in the session dtor and leave a sparse warm cache.
+        bool done = it->controller->viewportFullyCovered() || it->ticksLeft <= 0;
+        if (!done && it->controller->session()) {
+            auto const snap = it->controller->session()->debug_snapshot();
+            // Settled overview with no in-flight work (may include Failed cells).
+            if (snap.in_flight == 0 && snap.visible > 0
+                && snap.exact_succeeded + snap.cache_succeeded > 0
+                && !it->controller->session()->request_scale_holding()) {
+                done = true;
+            }
+        }
+        if (done) {
+            // Controller dtor releases registry interest; Succeeded tiles stay.
+            it = m_tilePrefetchSlots.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    if (m_tilePrefetchSlots.empty() && m_tilePrefetchTimer) {
+        m_tilePrefetchTimer->stop();
     }
 }
 

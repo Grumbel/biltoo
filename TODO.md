@@ -2,6 +2,33 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1214-tile-prefetch-pump.** Keep neighbor prefetch controllers alive until tiles land.
+Prior: **1213**.
+
+### Bug
+Stack `TileLodController` in 1213 issued requests then destroyed the session:
+`~TileSession` cancelled InFlight and dropped completions — **zero tiles retained**.
+
+### Fix
+- `TilePrefetchSlot` + 33 ms timer: pump until overview covered / idle / 30 ticks.
+- Pause issue while nav-hot; drop slot when path becomes on-canvas.
+- Stop only on full coverage or settled snapshot — not first Succeeded (would
+  cancel remaining InFlight in the dtor).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1214-tile-prefetch-pump.bundle HEAD
+```
+
+### Next
+- Revisit nav-hot tile suppress once retention + real prefetch verified in use.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1213-tile-neighbor-prefetch.** Image-mode ±1 overview tiles into global path RAM on settle.
 Prior: **1212**.
 

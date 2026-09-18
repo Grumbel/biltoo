@@ -22,6 +22,7 @@
 #include <QGraphicsView>
 #include <QHash>
 #include <memory>
+#include <vector>
 
 namespace tilelod { class TileLodController; }
 
@@ -279,8 +280,9 @@ public:
     bool slideshowNavHot() const { return m_slideshowNavHot; }
     /**
      * Warm overview tiles into the process-wide path registry for off-canvas
-     * paths (Image-mode ±1 neighbors after nav settle). Temporary controller
-     * issues a small budget then releases; registry retention keeps tiles.
+     * paths (Image-mode ±1 neighbors after nav settle). Controllers stay alive
+     * and are pumped on a short timer until coverage or a tick budget expires;
+     * release then leaves Succeeded tiles in the registry (1212 retain).
      * No-op while nav-hot; schedules tile pyramid when durable unknown.
      */
     void prefetchTilesForPaths(const QStringList &paths, int budgetPerPath = 4);
@@ -2160,6 +2162,20 @@ private:
     QTimer *m_tileLodTimer = nullptr;
     /** Single-shot: coalesce zoom notches before climb/tick. */
     QTimer *m_tileLodZoomDebounce = nullptr;
+    /**
+     * Off-canvas neighbor tile prefetch: keep controllers alive so source
+     * completions can pump into the shared path cache (stack controllers
+     * cancelled InFlight on destroy and dropped tiles).
+     */
+    struct TilePrefetchSlot {
+        QString path;
+        std::unique_ptr<tilelod::TileLodController> controller;
+        int ticksLeft = 0;
+        int budgetPerTick = 4;
+    };
+    std::vector<TilePrefetchSlot> m_tilePrefetchSlots;
+    QTimer *m_tilePrefetchTimer = nullptr;
+    void tickTilePrefetch();
     /** Paths for which PreferCache was cancelled after entering tile band. */
     QSet<QString> m_tileLodPreferCancelled;
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
