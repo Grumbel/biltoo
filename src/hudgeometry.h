@@ -4,7 +4,9 @@
 #ifndef HUDGEOMETRY_H
 #define HUDGEOMETRY_H
 
+#include <QFontMetrics>
 #include <QRect>
+#include <QStringList>
 #include <QtGlobal>
 
 /**
@@ -50,6 +52,50 @@ inline PanelBox placePanel(int viewW, int viewH, int textW, int textH,
 inline QRect panelRect(const PanelBox &box)
 {
     return QRect(box.x, box.y, box.bgW, box.bgH);
+}
+
+/**
+ * Split HUD lines on " | " when the full string exceeds @p maxTextW;
+ * otherwise elide middle. Pure except for QFontMetrics measurement.
+ */
+inline QStringList wrapHudLine(const QString &text, const QFontMetrics &metrics,
+                               int maxTextW)
+{
+    QStringList out;
+    if (text.isEmpty()) {
+        return out;
+    }
+    if (metrics.horizontalAdvance(text) <= maxTextW) {
+        out << text;
+        return out;
+    }
+    const QString sep = QStringLiteral(" | ");
+    const QStringList parts = text.split(sep, Qt::KeepEmptyParts);
+    if (parts.size() <= 1) {
+        out << metrics.elidedText(text, Qt::ElideMiddle, maxTextW);
+        return out;
+    }
+    QString current;
+    for (const QString &part : parts) {
+        const QString candidate = current.isEmpty() ? part : current + sep + part;
+        if (metrics.horizontalAdvance(candidate) <= maxTextW) {
+            current = candidate;
+            continue;
+        }
+        if (!current.isEmpty()) {
+            out << current;
+        }
+        if (metrics.horizontalAdvance(part) <= maxTextW) {
+            current = part;
+        } else {
+            out << metrics.elidedText(part, Qt::ElideMiddle, maxTextW);
+            current.clear();
+        }
+    }
+    if (!current.isEmpty()) {
+        out << current;
+    }
+    return out;
 }
 
 } // namespace HudGeometry
