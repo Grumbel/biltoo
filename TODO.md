@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1284-edge-nav-policy.** Pure Image-mode edge chrome zone geometry.
+Prior: **1283**.
+
+### Change
+- `EdgeNavPolicy::zoneWidth` / `zoneHeight` / `zoneAt`.
+- ImageView gates Image/crop/attention mode then maps Zone → EdgeZone.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1284-edge-nav-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1283-appearance-merge-applied-live.** Pure merge of applied/live flags into appearance want.
 Prior: **1282**.
 

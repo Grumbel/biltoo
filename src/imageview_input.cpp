@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "edgenavpolicy.h"
 #include "pagepath.h"
 #include "gallerylayout.h"
 #include "imageitem.h"
@@ -43,12 +44,12 @@
 
 int ImageView::edgeZoneWidth() const
 {
-    return qMax(48, static_cast<int>(width() * 0.12));
+    return EdgeNavPolicy::zoneWidth(width());
 }
 
 int ImageView::edgeZoneHeight() const
 {
-    return qMax(40, static_cast<int>(height() * 0.10));
+    return EdgeNavPolicy::zoneHeight(height());
 }
 
 ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
@@ -61,22 +62,20 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
     if (m_crop.mode || m_attention.mode) {
         return EdgeZone::None;
     }
-    // Top strip: back to Gallery or Workspace (when Image was opened from there).
-    // Takes priority over left/right so the upper corners still return.
-    if (m_sessionNav.galleryReturnAvailable && viewPos.y() < edgeZoneHeight()) {
+    const EdgeNavPolicy::Zone z = EdgeNavPolicy::zoneAt(
+        viewPos, width(), height(), m_sessionNav.galleryReturnAvailable,
+        m_sessionNav.imageModeNavEnabled);
+    switch (z) {
+    case EdgeNavPolicy::Zone::Previous:
+        return EdgeZone::Previous;
+    case EdgeNavPolicy::Zone::Next:
+        return EdgeZone::Next;
+    case EdgeNavPolicy::Zone::GalleryReturn:
         return EdgeZone::GalleryReturn;
-    }
-    if (!m_sessionNav.imageModeNavEnabled) {
+    case EdgeNavPolicy::Zone::None:
+    default:
         return EdgeZone::None;
     }
-    const int zone = edgeZoneWidth();
-    if (viewPos.x() < zone) {
-        return EdgeZone::Previous;
-    }
-    if (viewPos.x() > width() - zone) {
-        return EdgeZone::Next;
-    }
-    return EdgeZone::None;
 }
 
 void ImageView::updateHoverEdge(const QPoint &viewPos)

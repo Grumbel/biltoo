@@ -163,6 +163,8 @@ add_executable(biltoo
   src/sessionpathorder.h
   src/displayedgepolicy.h
   src/displayedgepolicy.cpp
+  src/edgenavpolicy.h
+  src/edgenavpolicy.cpp
   src/softdisplaypolicy.h
   src/softdisplaypolicy.cpp
   src/imageview_attention.cpp
