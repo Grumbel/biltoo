@@ -143,6 +143,7 @@ add_executable(biltoo
   src/hudappearance.h
   src/sessionchrome.h
   src/gallerysoftbook.h
+  src/imagesizebook.h
   src/slideshowtypes.h
   src/slideshowclocks.h
   src/slideshowclocks.cpp

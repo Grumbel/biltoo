@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1267-image-size-book.** Extract ImageSizeBook path→size bag.
+Prior: **1266**.
+
+### Change
+- `ImageSizeBook`: byPath / provisionalPaths / probeScheduled + pure helpers
+  (`noteDefinitive`, `hasDefinitive`, `markProvisional`, probe schedule flags).
+- ImageView holds `m_sizeBook`; remember/probe/clear call the bag.
+- HARD RULE (no soft/ladder shrink of known size) lives in `noteDefinitive`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1267-image-size-book.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1266-build-fix-dialog-thumtoo-rename.** Fix compile fallout from extraction tips.
 Prior: **1265**.
 

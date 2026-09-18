@@ -23,6 +23,7 @@
 #include "hudappearance.h"
 #include "sessionchrome.h"
 #include "gallerysoftbook.h"
+#include "imagesizebook.h"
 #include "slideshowtypes.h"
 #include "loadgeneration.h"
 #include "sessionloadgate.h"
@@ -237,7 +238,7 @@ public:
     int slideshowTargetEdge() const;
     /**
      * Logical image size for @a path (never soft-raster dimensions).
-     * Lookup only: m_imageSizeByPath, then thumtoo cache. Empty if unknown.
+     * Lookup only: m_sizeBook, then thumtoo cache. Empty if unknown.
      * Slideshow and Image-mode framing share this.
      */
     QSize logicalSizeForPath(const QString &path) const override;
@@ -292,7 +293,7 @@ public:
     /** Draw Ken Burns / pan-scan using a pre-scaled atlas (cheap per-frame blit). */
     /**
      * Draw Ken Burns / pan-scan. Camera geometry uses the path's *logical*
-     * image size (m_imageSizeByPath / thumtoo cache), never the raster's pixel
+     * image size (m_sizeBook / thumtoo cache), never the raster's pixel
      * dimensions — soft placeholders are sampling only.
      */
     QSize resolveMotionLogicalSize(const QString &path) const;
@@ -1480,7 +1481,7 @@ private:
      */
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
     /**
-     * Cache-only pass before Gallery pack: fill m_imageSizeByPath from
+     * Cache-only pass before Gallery pack: fill m_sizeBook from
      * ThumtooCache::cachedSize and ImageCache from LQIP when present.
      * Does not schedule ladder encode or source I/O.
      */
@@ -1748,14 +1749,10 @@ private:
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */
     /**
-     * Path → native pixel size (from probe or full decode). Dimensions are a
-     * property of the file contents; safe to key by path (not SessionImageId).
+     * Path → native pixel size + provisional / probe-scheduled sets.
+     * Dimensions are a property of the file; safe to key by path (not id).
      */
-    QHash<QString, QSize> m_imageSizeByPath;
-    /** Paths whose layout size is still a stand-in (probe/full decode pending). */
-    QSet<QString> m_provisionalSizePaths;
-    /** Paths with an in-flight async size probe. */
-    QSet<QString> m_sizeProbeScheduled;
+    ImageSizeBook m_sizeBook;
     /** Centre HUD progress (expand / size resolve / sort). */
     CentreProgress m_centreProgress;
     /** Gallery open: wait for sizes before creating scene tiles. */

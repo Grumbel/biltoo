@@ -73,9 +73,7 @@ void ImageView::invalidateSessionLoads()
     m_ss.toAtlasRebuildGeneration++;
     // Drop logical-size memory so the size-first gate re-probes (stale square
     // stand-ins must not skip resolve on the next open).
-    m_imageSizeByPath.clear();
-    m_provisionalSizePaths.clear();
-    m_sizeProbeScheduled.clear();
+    m_sizeBook.clear();
     cancelGallerySizeResolve();
     if (isImageMode()) {
         clearLiveCanvas();
@@ -238,9 +236,7 @@ void ImageView::clearWorkspace()
     m_pendingSessionIndexByPath.clear();
     m_pendingSelectSessionIds.clear();
     gallerySoftResetAll();
-    m_imageSizeByPath.clear();
-    m_sizeProbeScheduled.clear();
-    m_provisionalSizePaths.clear();
+    m_sizeBook.clear();
     m_gallerySoftBook.deferPopulate = false;
     cancelGallerySizeResolve();
     ImageCache::clear();

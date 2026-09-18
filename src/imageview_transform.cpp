@@ -868,8 +868,8 @@ int ImageView::resetContentAppearanceForTargets()
         {
             QSize native = ThumtooCache::cachedSize(path);
             if (!native.isValid() || native.width() < 1 || native.height() < 1) {
-                const auto it = m_imageSizeByPath.constFind(path);
-                if (it != m_imageSizeByPath.cend()) {
+                const auto it = m_sizeBook.byPath.constFind(path);
+                if (it != m_sizeBook.byPath.cend()) {
                     native = it.value();
                 }
             }

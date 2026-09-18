@@ -2328,8 +2328,8 @@ QSize ImageView::logicalSizeForPath(const QString &path) const
     if (path.isEmpty()) {
         return {};
     }
-    const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend() && isPositiveSize(*it)) {
+    const auto it = m_sizeBook.byPath.constFind(path);
+    if (it != m_sizeBook.byPath.cend() && isPositiveSize(*it)) {
         return *it;
     }
     const QSize cached = ThumtooCache::cachedSize(path);

@@ -132,11 +132,11 @@ ImageView::ImageView(QWidget *parent)
                 if (path.isEmpty()) {
                     return;
                 }
-                m_sizeProbeScheduled.remove(path);
+                m_sizeBook.clearProbeScheduled(path);
                 const bool valid = size.isValid() && size.width() > 0 && size.height() > 0;
                 if (valid) {
                     // Prefer a size already learned from a full decode.
-                    if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
+                    if (m_sizeBook.hasDefinitive(path)) {
                         // Still try LQIP if tiles are blank (probe may have written LQIP).
                     } else {
                         rememberImageSize(path, size);
@@ -427,19 +427,10 @@ QSize ImageView::probeImageSize(const QString &path) const
 
 void ImageView::rememberImageSize(const QString &path, const QSize &size)
 {
-    if (path.isEmpty() || !isPositiveSize(size)) {
+    // HARD RULE lives in ImageSizeBook::noteDefinitive (SIZE.md identity).
+    if (!m_sizeBook.noteDefinitive(path, size)) {
         return;
     }
-    // HARD RULE: logical size is identity. Soft / ladder sample dimensions must
-    // never replace a known larger size (that made 512px "become" the image).
-    const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend() && isPositiveSize(*it)
-        && !isProvisionalImageSize(path)
-        && isMuchSmallerArea(size, *it)) {
-        return;
-    }
-    m_imageSizeByPath.insert(path, size);
-    m_provisionalSizePaths.remove(path);
     ThumtooCache::noteCachedSize(path, size);
 }
 
@@ -455,7 +446,7 @@ void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
         return;
     }
     // Already have a definitive logical size — leave samples alone.
-    if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
+    if (m_sizeBook.hasDefinitive(path)) {
         return;
     }
     // Ladder / soft samples are not native identity. Probe for the real size;
@@ -471,7 +462,7 @@ void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
 
 bool ImageView::isProvisionalImageSize(const QString &path) const
 {
-    return !path.isEmpty() && m_provisionalSizePaths.contains(path);
+    return m_sizeBook.isProvisional(path);
 }
 
 QSize ImageView::imageSizeForPath(const QString &path)
@@ -481,21 +472,20 @@ QSize ImageView::imageSizeForPath(const QString &path)
     }
     const QSize known = logicalSizeForPath(path);
     if (isPositiveSize(known)) {
-        if (!m_imageSizeByPath.contains(path)) {
+        if (!m_sizeBook.byPath.contains(path)) {
             rememberImageSize(path, known); // install thumtoo hit into map
         }
         return known;
     }
     // Archives / multipage / embedded PDF: async probe; neutral stand-in.
     scheduleImageSizeProbe(path);
-    m_provisionalSizePaths.insert(path);
     QSize standIn(1000, 1000);
     if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
         || PagePath::isPdfImageRef(path)) {
         // Square is only a last resort until soft aspect or probe arrives.
         standIn = QSize(kProvisionalLayoutLongEdge, kProvisionalLayoutLongEdge);
     }
-    m_imageSizeByPath.insert(path, standIn);
+    m_sizeBook.markProvisional(path, standIn);
     return standIn;
 }
 
@@ -512,8 +502,8 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
     if (!path.isEmpty()) {
         scheduleImageSizeProbe(path);
     }
-    const auto it = m_imageSizeByPath.constFind(path);
-    if (it != m_imageSizeByPath.cend() && isPositiveSize(*it)) {
+    const auto it = m_sizeBook.byPath.constFind(path);
+    if (it != m_sizeBook.byPath.cend() && isPositiveSize(*it)) {
         return *it;
     }
     return imageSizeForPath(path);
@@ -527,7 +517,7 @@ void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
         if (path.isEmpty()) {
             continue;
         }
-        if (!m_imageSizeByPath.contains(path) || isProvisionalImageSize(path)) {
+        if (!m_sizeBook.hasDefinitive(path)) {
             if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
                 isPositiveSize(cached)) {
                 rememberImageSize(path, cached);
@@ -543,11 +533,11 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    if (m_sizeProbeScheduled.contains(path)) {
+    if (m_sizeBook.isProbeScheduled(path)) {
         return;
     }
     // Definitive size already known — provisional stand-ins must still probe.
-    if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
+    if (m_sizeBook.hasDefinitive(path)) {
         return;
     }
     // Never isUnsupported on the GUI (Store get_meta). scheduleProbe / worker
@@ -555,12 +545,12 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
     // Prefer thumtoo: scheduleProbe only; Bridge::sizeReady applies the size.
     // No thread-pool Qt/vips/extract size read when the durable client is up.
     if (ThumtooCache::isAvailable()) {
-        m_sizeProbeScheduled.insert(path);
+        m_sizeBook.markProbeScheduled(path);
         ThumtooCache::scheduleProbe(path);
         return;
     }
     // Builds without thumtoo: native size probe on a worker.
-    m_sizeProbeScheduled.insert(path);
+    m_sizeBook.markProbeScheduled(path);
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path]() {
         QSize s = ImageLoader::probeSize(path);
@@ -579,10 +569,9 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
             if (!host) {
                 return;
             }
-            host->m_sizeProbeScheduled.remove(path);
+            host->m_sizeBook.clearProbeScheduled(path);
             // Prefer a size already learned from a full decode — not provisional.
-            if (host->m_imageSizeByPath.contains(path)
-                && !host->isProvisionalImageSize(path)) {
+            if (host->m_sizeBook.hasDefinitive(path)) {
                 return;
             }
             host->rememberImageSize(path, s);
@@ -678,7 +667,7 @@ void ImageView::cancelGallerySizeResolve()
 
 bool ImageView::hasDefinitiveHostSize(const QString &path) const
 {
-    return m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path);
+    return m_sizeBook.hasDefinitive(path);
 }
 
 void ImageView::adoptResolvedSize(const QString &path, const QSize &size)

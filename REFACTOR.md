@@ -59,6 +59,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **HudAppearance** / **SessionIdentity** / **GallerySoftBook**: HUD prefs, session index/id, gallery soft map.
 - **LoadGeneration** (`loadgeneration.h`): monotonic token for async decode accept/reject.
 - **SessionLoadGate** (`sessionloadgate.h`): generation + pending LoadAdd/LoadRestore/scene maps; `clearPending` / `bumpGeneration`.
+- **ImageSizeBook** (`imagesizebook.h`): path→logical size + provisional/probe sets; noteDefinitive HARD RULE.
 
 
 ## Current pain (evidence)
