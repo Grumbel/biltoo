@@ -2032,10 +2032,11 @@ void warmSessionOpenMemos(const QStringList &paths)
         ASSERT_NOT_GUI_THREAD();
         init();
         for (const QString &p : copy) {
-            if (p.isEmpty() || isUnsupported(p)) {
+            if (p.isEmpty()) {
                 continue;
             }
-            // Size into process memo (cachedSize on worker hits Store).
+            // No isUnsupported here — that is an extra get_meta per path.
+            // Missing size/LQIP is a normal empty result for unsupported.
             (void)cachedSize(p, /*scheduleRevalidate=*/false);
 #if defined(BILTOO_HAVE_THUMTOO_LQIP)
             // LQIP into ImageCache so GUI install never needs Store get_lqip.

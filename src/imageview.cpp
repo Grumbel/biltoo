@@ -539,10 +539,8 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
     if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
         return;
     }
-    // Durable cache will never handle this locator — do not spin probes.
-    if (ThumtooCache::isUnsupported(path)) {
-        return;
-    }
+    // Never isUnsupported on the GUI (Store get_meta). scheduleProbe / worker
+    // skips unsupported locators.
     // Prefer thumtoo: scheduleProbe only; Bridge::sizeReady applies the size.
     // No thread-pool Qt/vips/extract size read when the durable client is up.
     if (ThumtooCache::isAvailable()) {

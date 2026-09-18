@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1195-warm-no-meta-probe.** Faster warm memos; no GUI isUnsupported on size probe.
+Prior: **1194**.
+
+### Change
+- `warmSessionOpenMemos`: no per-path `isUnsupported` (extra get_meta).
+- `scheduleImageSizeProbe`: no GUI `isUnsupported`.
+- Decode-window comments: LQIP + tiles only.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1195-warm-no-meta-probe.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1194-filmstrip-yield-gallery.** Filmstrip soft yields to Gallery; preparePaths no GUI get_meta.
 Prior: **1193**.
 

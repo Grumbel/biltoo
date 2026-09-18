@@ -205,13 +205,12 @@ void ImageView::updateGalleryDecodeWindow()
         decodeWinTimer.start();
     }
     // -------------------------------------------------------------------------
-    // Gallery soft-thumb window (viewport inspection)
+    // Gallery decode window (viewport inspection)
     //
-    // Pass 1 — ImageCache soft onto blank tiles (budgeted).
-    // Pass 2 — candidates via GallerySoftState::needsSoftSchedule + want edge;
-    //          scheduleGalleryDecode → LQIP install (+ tiles via coordinator).
-    // Pixels: ImageCache / ImageItem. Policy: GallerySoftState + PathRasterService.
-    // Image mode full decode is separate.
+    // Pass 1 — ImageCache LQIP onto blank cells (budgeted).
+    // Pass 2 — scheduleGalleryDecode for blanks (LQIP install + tile pyramid if
+    //          durable coverage missing). Tiles issued by TileLoadCoordinator.
+    // Soft PreferCache is not used.
     // -------------------------------------------------------------------------
     if (!isGalleryMode() || m_items.isEmpty()) {
         return;
