@@ -1838,10 +1838,12 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
     if (it != m_gallerySoft.end()) {
         it.value().noteLadderDelivery(edge, got, ThumtooCache::kFilmstripLadderEdge);
         syncGallerySoftMirrorFromPathRaster(path, it.value());
+        // Shown edge after onImagePreviewLoaded above — not host request edge.
+        it.value().have = qMax(it.value().have, galleryHaveEdgeFromItems(path, nullptr));
     }
 
     // Debounce window rescan — avoid full setInterest on every tile delivery.
-    scheduleGalleryDecodeWindowRefresh(150);
+    scheduleGalleryDecodeWindowRefresh(48); // was 150 — faster LQIP→soft pass1
     emit statusChanged();
 }
 

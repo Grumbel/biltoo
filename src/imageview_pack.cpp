@@ -50,7 +50,22 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
     }
     int installed = 0;
     const int softMax = ThumtooCache::kGalleryLadderEdge;
+    // Prefer LQIP/blank tiles so soft host replaces stand-ins before polishing
+    // already-soft cells (budget used to be eaten by random order).
+    QList<ImageItem *> ordered;
+    ordered.reserve(m_items.size());
     for (ImageItem *item : m_items) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        const int e = item->displayPixelLongEdge();
+        if (!item->hasDisplayPixels() || e <= DisplayQuality::kLqipMaxEdge) {
+            ordered.prepend(item);
+        } else {
+            ordered.append(item);
+        }
+    }
+    for (ImageItem *item : ordered) {
         if (!item || item->path().isEmpty()) {
             continue;
         }
@@ -61,9 +76,9 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
             break;
         }
         const QString &path = item->path();
-        if (isProvisionalImageSize(path)) {
-            continue;
-        }
+        // Soft/LQIP install must not wait on definitive size — provisional
+        // geometry is layout-only; blocking here left archive/PDF cells on LQIP
+        // until probe finished (or forever if probe stalled).
         const QImage hostSample = ImageCache::get(path);
         if (hostSample.isNull()) {
             continue;

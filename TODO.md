@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1129-provisional-lqip-priority.** Soft install while size provisional; LQIP first.
+Prior: **1128**.
+
+### Bug
+- Pass1 skipped **provisional** sizes → archive/PDF cells never got host soft from
+  ImageCache until size probe finished (or stalled forever on LQIP).
+- Install budget walked items in arbitrary order — soft cells ate the budget
+  before LQIP upgrades.
+
+### Fix
+- Pass1 installs soft regardless of provisional size (layout-only concern).
+- Prefer blank/LQIP items in the install order.
+- ladderReady refreshes have from items; decode-window refresh 48ms (was 150).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1129-provisional-lqip-priority.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1128-lqip-canaccept-force.** Gallery LQIP always accepts larger soft host.
 Prior: **1127**.
 
