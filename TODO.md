@@ -2,6 +2,32 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1164-gallery-blank-soft-underlay.** Soft underlay for blank tile-band cells.
+Prior: **1163**.
+
+### Bug
+After SOFT path removal, Gallery tile-band cells rejected soft install/paint and
+only accepted LQIP. LQIP is free-data-only (often absent) → permanent blank until
+tiles land (and if tiles lagged, forever blank).
+
+### Fix
+- Paint: soft underlay allowed until `tileLodActive`; LQIP-only once tiles paint.
+- `canAcceptDisplaySample`: blank cells accept SoftPreview of any edge.
+- `scheduleGalleryDecode`: blank tile-band falls through to PreferCache soft;
+  install host/LQIP; tick tiles in parallel.
+- Pass1: `cachedLqipImage` fallback; soft host install for blanks.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1164-gallery-blank-soft-underlay.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1163-tiles-coarse-first.** Tile issue always coarsest→finest for instant refine.
 Prior: **1162**.
 

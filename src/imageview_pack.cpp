@@ -95,7 +95,13 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
             break;
         }
         const QString &path = item->path();
-        const QImage hostSample = ImageCache::get(path);
+        QImage hostSample = ImageCache::get(path);
+        if (hostSample.isNull()) {
+            hostSample = ThumtooCache::cachedLqipImage(path);
+            if (!hostSample.isNull()) {
+                ImageCache::put(path, hostSample);
+            }
+        }
         if (hostSample.isNull()) {
             continue;
         }
@@ -106,20 +112,17 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         }
         QImage sample = hostSample;
         int sampleEdge = hostEdge;
-        // Blank tile cells need *some* underlay; filmstrip often leaves soft in
-        // ImageCache. Downscale to LQIP max so paint accepts under tilesWanted.
+        // Blank cells: soft host is valid underlay until tiles paint. Once the
+        // cell has pixels and tiles are active, only LQIP-sized upgrades.
         if (sampleEdge > DisplayQuality::kLqipMaxEdge) {
-            if (item->hasDisplayPixels()) {
+            if (item->hasDisplayPixels() && item->tileLodActive()) {
                 continue;
             }
-            const int cap = DisplayQuality::kLqipMaxEdge;
-            sample = hostSample.scaled(
-                cap, cap, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            sampleEdge = ImageCache::longEdge(sample);
-            if (sample.isNull() || sampleEdge <= 0) {
+            if (item->hasDisplayPixels()
+                && item->displayPixelLongEdge() >= sampleEdge) {
                 continue;
             }
-            ImageCache::put(path, sample); // keep LQIP-sized for next pass
+            // keep soft-sized sample for blank underlay
         }
         const SessionAppearance::PixelKind kind =
             SessionAppearance::PixelKind::SoftPreview;

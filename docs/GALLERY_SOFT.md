@@ -7,10 +7,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Tiles-first (product)
 
-When **tileLodWanted** and a durable pyramid exists, Gallery must not schedule
-soft PreferCache — tiles own the cell. Small cells (`!tileLodWanted`) still use
-PreferCache **TileSynth** underlay so blanks do not appear. Soft encode is only
-for cold paths without tiles.
+When **tileLodWanted** and the cell already shows pixels (or tiles are active),
+Gallery does not PreferCache-climb soft — tiles own sharpness. **Blank** tile-band
+cells still get PreferCache soft underlay in parallel with tile LOD until
+something is painted (LQIP is free-data-only and often missing after soft-path
+removal). Once tiles paint, underlay stays LQIP-sized only.
+
+Small cells (`!tileLodWanted`) use PreferCache / LQIP only (no soft climb to 512).
 
 Warm `ImageCache` cover of the soft edge → zero PreferCache work.
 
