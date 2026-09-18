@@ -172,22 +172,22 @@ struct WorkspaceItemState {
 };
 
 /**
- * Per-path Gallery prioritization mirror (host side).
+ * Per-path Gallery decode-window bookkeeping (host side).
  *
- * Climb authority is PathRasterService (docs/THUMTOO_HOST_CONTRACT.md).
- * This struct only answers: "should the decode window spend a concurrency
- * slot on this path?" — visibility want, blank tiles, inflight budget.
+ * Gallery underlay is LQIP only; sharpness is tiles (docs/GALLERY_PIXELS.md).
+ * PathRaster PreferCache soft climb is not used. This struct only answers:
+ * "should the decode window spend a concurrency slot on this path?" —
+ * visibility, blank cells, inflight budget, tile-pyramid-queued.
  *
- * have       — mirror of ImageCache / tile / PathRaster have (not climb owner)
- * want       — last on-screen ladder need from decode-window pass
- * inflight   — gallery concurrency token (0 = idle); at most one per path
- * gaveUpWant — mirror of PathRaster PreferCache plateau (synced from service)
+ * have       — best installed long edge (LQIP / host sample) for this path
+ * want       — last on-screen need from decode-window pass
+ * inflight   — concurrency token (0 = idle); at most one per path
+ * gaveUpWant — unused for Gallery soft climb (historical field)
  * failed     — permanent hard failure for this path
  */
 struct GallerySoftState : GallerySoft::State {
     /**
      * Record a ladder delivery for concurrency bookkeeping only.
-     * PreferCache plateau stays with PathRasterService / gaveUpWant sync.
      */
     void noteLadderDelivery(int requestEdge, int gotEdge, int softFloor)
     {

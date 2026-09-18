@@ -197,7 +197,7 @@ have ← deliveries into ImageCache only (upward-only)
 PreferCache plateau is normal; raising want clears the plateau latch
 EscalateToFull (ImageFocus / slideshow): Full only **after** Prefer plateau
   (same-plan Soft+Prefer+Full starved intermediate UI updates)
-SoftDisplay (Gallery / filmstrip): soft band unless escalated
+SoftDisplay (filmstrip / Workspace non-focus / Slideshow): soft band, no Full
 ```
 
 Crop does **not** change the host want formula: decode enough of the **full
@@ -292,7 +292,7 @@ or the host already covers the (capped) need / native floor.
 | Linear crop estimate | AABB ratio; free-rot usable detail can differ slightly |
 | Frozen draft | No progress until Apply/Cancel |
 | Terminal PathRaster give-up | May stop short of native |
-| Gallery SoftDisplay | Soft-band optimal for overview, not 1:1 Image |
+| Gallery LQIP+tiles | Placeholder LQIP; sharpness from tile pyramid |
 
 **Monotonicity:** ImageCache host edge only moves up. Display edge moves up when
 materialize runs from a better host. There is no legal cycle that permanently

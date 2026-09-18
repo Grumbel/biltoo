@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1203-docs-gallery-lqip-tiles.** Docs + type comments: Gallery is LQIP+tiles, not SoftDisplay.
+Prior: **1202**.
+
+### Cleanup
+- THUMTOO_HOST_CONTRACT, PATH_RASTER_SERVICE, TTFP, DISPLAY_SURFACE, RESOLUTION_STATE_MACHINE, ENVIRONMENT: Gallery no longer SoftDisplay/PreferCache underlay.
+- `GallerySoftState` comments: decode-window bookkeeping only.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1203-docs-gallery-lqip-tiles.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1202-tilelod-complete-type.** Fix incomplete type for `unique_ptr<TileLodController>` in ImageView.
 Prior: **1201**.
 

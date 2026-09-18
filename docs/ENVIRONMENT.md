@@ -45,7 +45,7 @@ PreferCache may synthesize from tiles (`TileSynth`).
 | **`THUMTOO_STORE_ONLY`** | **Ignored** (≥262 / ≥272). Client is always Store-only. |
 | **`THUMTOO_STORE_ROOT`** | Default **on**: Store at cache root; see thumtoo HOST_CUTOVER. |
 
-Filmstrip/Gallery soft: biltoo ≥1007 `scheduleSoftPixels` — PreferCache when
+Filmstrip soft: biltoo ≥1007 `scheduleSoftPixels` — PreferCache when
 `hasDurableTiles`, else SoftOnly. With **thumtoo ≥ 280**, that path is fully
 Store-backed (page LQIP, no legacy soft levels).
 
@@ -55,7 +55,7 @@ Store-backed (page LQIP, no legacy soft levels).
 | Variable | Default | Range | Effect |
 |----------|---------|-------|--------|
 | **`BILTOO_THUMTOO_PIXEL_JOBS`** | 8 | 1–16 | Max concurrent thumtoo `request_pixels` jobs (soft/ladder band). |
-| **`BILTOO_GALLERY_DECODE_CONCURRENCY`** | (compile-time `kMaxConcurrentGalleryDecodes`) | 1–32 | Concurrent Gallery soft-decode workers. |
+| **`BILTOO_GALLERY_DECODE_CONCURRENCY`** | (compile-time `kMaxConcurrentGalleryDecodes`) | 1–32 | Concurrent Gallery decode-window LQIP installs (historical name). |
 | **`BILTOO_FILMSTRIP_THUMB_LOADS`** | 24 | 1–64 | Concurrent filmstrip thumbnail load jobs (separate from thumtoo pixel jobs). |
 
 ---

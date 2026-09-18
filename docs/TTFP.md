@@ -70,12 +70,12 @@ Assumptions: local SSD, 94 prepared archive members, LQIP in Store.
 | primeGeometry + LQIP decode | 10–80 ms | 0 if no LQIP |
 | create 94 items + pack | 20–100 ms | same |
 | first LQIP install | <5 ms after pack | — |
-| first soft PreferCache | — | 50–300 ms / image |
+| first tile (overview) | cache hit <5 ms | encode 100 ms–seconds |
 | first tile (zoom) | cache hit <5 ms | encode 100 ms–seconds |
 
 **TTFP (warm, LQIP present)** should be dominated by **GUI item create + pack**, not I/O.
 
-**TTFP (warm, no LQIP)** waits on PreferCache / TileSynth worker after schedule.
+**TTFP (warm, no LQIP)** waits on first tile (or blank placeholder until tiles land).
 
 **TTFP (cold)** waits on probe + extract + decode.
 

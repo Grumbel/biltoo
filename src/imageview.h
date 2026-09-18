@@ -2006,7 +2006,7 @@ private:
     std::atomic<quint64> m_loadGeneration{0};
     /** Outstanding LoadAdd / gallery decode jobs per path (refcount). */
     QHash<QString, int> m_pendingWorkspacePaths;
-    /** Per-path soft/display policy — GallerySoftState in imageview_types.h. */
+    /** Per-path Gallery decode-window state — GallerySoftState in imageview_types.h. */
     QHash<QString, GallerySoftState> m_gallerySoft;
     /** Paths that already started host ImageLoader::load for Image-mode HQ. */
     QSet<QString> m_imageModeNativeDecodePaths;

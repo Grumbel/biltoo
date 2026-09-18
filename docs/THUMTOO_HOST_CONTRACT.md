@@ -98,29 +98,37 @@ request and still fail slideshow need if want was 2048 and only 1024 exists.
 
 ```text
 enum class ClimbPolicy {
-  SoftDisplay,    // Gallery: Soft → PreferCache; plateau is terminal for this want
-  EscalateToFull, // Image mode + Slideshow: Soft → PreferCache → Full once
+  SoftDisplay,    // Soft → PreferCache/TileSynth ≤ overview; no Full native
+  EscalateToFull, // Soft → PreferCache → Full once (Image mode cold path)
 };
 ```
 
-### SoftDisplay (Gallery)
+### SoftDisplay
+
+Used by **filmstrip**, **Workspace** (non-focus), and **Slideshow** (screen-fit).
 
 1. Soft if `have == 0`
-2. PreferCache (effectively ≤1024 overview/TileSynth) until Met or BestAvailable
-3. On BestAvailable while `want` > overview (~1024): **one Full** for that path
-   (PreferCache cannot deliver 2048). Gallery only `ensure`s a bounded visible set
-4. Avoid `setInterest` on every column pack — debounce decode-window/interest
+2. PreferCache / TileSynth until Met or BestAvailable (overview band)
+3. Plateau is terminal for this want — **no Full native**
 
-### EscalateToFull (Image mode, Slideshow)
+### Gallery (no PathRaster soft climb)
+
+Gallery does **not** call `PathRasterService::ensure` for underlay. Pixels:
+
+- **LQIP** placeholder (ImageCache / Store)
+- **Tiles** via TileLoadCoordinator + shared `TileLodRegistry` path cache
+
+See [GALLERY_PIXELS.md](GALLERY_PIXELS.md). Soft PreferCache underlay is removed
+([GALLERY_SOFT.md](GALLERY_SOFT.md)).
+
+### EscalateToFull (Image mode, cold)
 
 1. Soft if `have == 0`
-2. PreferCache (≤1024 effective) until Met or BestAvailable
-3. On BestAvailable while `want` > overview: **one Full** (required for >1024)
-4. Optional FocusFull if Full fails to queue
-5. Full exhausted → terminal for this want (raise want clears latches)
+2. PreferCache until Met or BestAvailable
+3. On BestAvailable while `want` > overview: **one Full** when no durable tiles
+4. When durable tiles exist, Image mode uses **tiles** instead of Full
 
-Raising `want` past `lastDisplayWant` clears the PreferCache plateau latch so a
-higher band can be requested (gallery zoom, Image zoom).
+Slideshow uses SoftDisplay only (screen-fit edge), never EscalateToFull.
 
 ---
 
@@ -128,11 +136,11 @@ higher band can be requested (gallery zoom, Image zoom).
 
 | Consumer | Target / need | Climb policy |
 |----------|---------------|--------------|
-| **Gallery** | On-screen cell long edge (ladder-snapped) | SoftDisplay |
+| **Gallery** | *(not PathRaster)* | LQIP + tiles only |
 | **Image mode** | Viewport × DPR (capped), then native if still short | EscalateToFull |
 | **Slideshow** | `ladder(viewport × DPR × motionHeadroom)` capped at kImageLadderEdge; **need** ≈ 70% of target | EscalateToFull |
 
-Gallery **`GallerySoftState`** is prioritization only (concurrency, blank tiles,
+Gallery **`GallerySoftState`** is decode-window bookkeeping only (concurrency, blank tiles,
 on-screen want). PreferCache plateau is mirrored from PathRasterService — not
 decided in `noteLadderDelivery`.
 
@@ -185,7 +193,7 @@ without documenting it here.
 |---------|------------|------------------|
 | Slideshow soft forever, want 2048, have 1024 | PreferCache BestAvailable; no Full escalate | EscalateToFull policy on ensure |
 | `preload-ensure` log storm | Clock called ensure every tick | Once-per-toIdx gate + quiet early-out when pending/adequate/plateau handled |
-| Gallery dual scrollbars / soft stuck | Separate issues; SoftDisplay + raise-want on zoom | Do not Full-escalate gallery |
+| Gallery dual scrollbars / blank cells | LQIP install + tile coordinator budget | Do not reintroduce PreferCache soft |
 | Full request loops | Shortfall not settled | Thumtoo settle + host one-shot Full flag |
 
 ---

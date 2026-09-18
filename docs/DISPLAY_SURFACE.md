@@ -70,7 +70,7 @@ only place that joins **path climb**, **appearance want**, and **surface need**.
 | Kind | Consumer | Typical need edge | Climb policy |
 |------|----------|-------------------|--------------|
 | `ImageFocus` | Image mode primary item | viewport long edge (capped native) | EscalateToFull |
-| `GalleryTile` | Gallery `ImageItem` | cell / pack target | SoftDisplay |
+| `GalleryTile` | Gallery `ImageItem` | cell / pack target | LQIP + tiles (no SoftDisplay climb) |
 | `FilmstripCell` | ThumbnailBar row | strip thumb size | SoftDisplay |
 | `WorkspaceItem` | Workspace free item | on-screen footprint / focus | SoftDisplay; Escalate when focused |
 | `SlideshowPhase` | from/to phase buffers | slideshow target edge | EscalateToFull |
@@ -203,7 +203,7 @@ want still equals the scheduled want.
 
 ### GalleryTile
 
-- Bind per tile; decode window sets needs; SoftDisplay climb.
+- Bind per tile; decode window installs LQIP; tiles via coordinator.
 - Pack/watchdog must **not** InstallHostBetter from ImageCache on a timer.
   Blank recovery: re-`setNeed` / ensure with cooldown, or wait for
   `noteHostImproved`.

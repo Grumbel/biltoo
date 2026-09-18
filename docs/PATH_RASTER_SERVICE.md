@@ -59,13 +59,14 @@ invalidateAll()           — session switch
 
 | Consumer | ensure policy | Install |
 |----------|---------------|---------|
-| Gallery | SoftDisplay | `ladderReady` → `applyGalleryLadderReady` |
-| Image mode | EscalateToFull | `rasterImproved` / `tryInstall` |
-| Slideshow | EscalateToFull | `rasterImproved` → phase buffers |
+| Gallery | *(none — LQIP + tiles)* | `applyGalleryLadderReady` accepts LQIP only |
+| Image mode | EscalateToFull (cold) / tiles when durable | `rasterImproved` / `tryInstall` |
+| Slideshow | SoftDisplay (screen-fit) | phase buffers + optional tile paint |
+| Filmstrip | SoftDisplay | strip thumbs |
 
-Gallery keeps `GallerySoftState` as a **prioritization mirror** (want, inflight
-budget, blank tiles). `syncGallerySoftMirrorFromPathRaster` copies have/gaveUp
-from this service. Decode-window scheduling calls `ensure(..., SoftDisplay)` only.
+Gallery does not call `ensure`. Decode window installs LQIP and drives
+TileLoadCoordinator. Historical name `GallerySoftState` tracks decode-window
+budget only (not PreferCache soft climb).
 
 ## Edit / crop full raster
 
