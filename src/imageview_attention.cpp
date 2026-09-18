@@ -65,11 +65,7 @@ QPointF ImageView::attentionNormForTarget() const
 
 void ImageView::setAttentionPointsForTarget(const QVector<QPointF> &pts)
 {
-    QVector<QPointF> clamped;
-    clamped.reserve(pts.size());
-    for (const QPointF &p : pts) {
-        clamped.append(QPointF(qBound(0.0, p.x(), 1.0), qBound(0.0, p.y(), 1.0)));
-    }
+    const QVector<QPointF> clamped = AttentionGeometry::clampNormPoints(pts);
     SessionImageId sid = attentionSessionId();
     ImageItem *item = targetItem();
     if (item && sid != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
@@ -102,7 +98,7 @@ void ImageView::setAttentionPointsForTarget(const QVector<QPointF> &pts)
 void ImageView::setAttentionNormForTarget(const QPointF &norm)
 {
     QVector<QPointF> pts = attentionPointsForTarget();
-    const QPointF clamped(qBound(0.0, norm.x(), 1.0), qBound(0.0, norm.y(), 1.0));
+    const QPointF clamped = AttentionGeometry::clampNorm(norm);
     if (pts.isEmpty()) {
         pts.append(clamped);
     } else {

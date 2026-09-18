@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1304-attention-geometry-norm-ops.** Pure attention norm clamp/map/translate.
+Prior: **1303**.
+
+### Change
+- `AttentionGeometry::clampNorm` / `clampNormPoints`
+- `normFromLocal` / `normDeltaFromLocalDelta` / `translateSelectedNorms`
+- Attention set/drag/insert paths use the pure helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1304-attention-geometry-norm-ops.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1303-attention-geometry-hit-test.** Pure attention handle hit-test.
 Prior: **1302**.
 

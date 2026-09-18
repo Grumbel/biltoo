@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "attentiongeometry.h"
 #include "edgenavpolicy.h"
 #include "pagepath.h"
 #include "gallerylayout.h"
@@ -479,11 +480,10 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
     const QPointF local = item->mapFromScene(scene);
     const QRectF cr = item->contentRect();
     if (ctrl && cr.contains(local)) {
-        const qreal nx = qBound(0.0, (local.x() - cr.left()) / qMax(1e-6, cr.width()), 1.0);
-        const qreal ny = qBound(0.0, (local.y() - cr.top()) / qMax(1e-6, cr.height()), 1.0);
+        const QPointF n = AttentionGeometry::normFromLocal(local, cr);
         const QVector<QPointF> before = attentionPointsForTarget();
         QVector<QPointF> pts = before;
-        pts.append(QPointF(nx, ny));
+        pts.append(n);
         setAttentionPointsForTarget(pts);
         m_attention.selected = {int(pts.size() - 1)};
         m_attention.dragging = true;
@@ -1074,16 +1074,10 @@ bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
             const QPointF local0 = item->mapFromScene(scene0);
             const QPointF local1 = item->mapFromScene(scene1);
             const QRectF cr = item->contentRect();
-            const qreal dx = (local1.x() - local0.x()) / qMax(1e-6, cr.width());
-            const qreal dy = (local1.y() - local0.y()) / qMax(1e-6, cr.height());
-            QVector<QPointF> pts = m_attention.dragStartPts;
-            for (int idx : m_attention.selected) {
-                if (idx < 0 || idx >= pts.size()) {
-                    continue;
-                }
-                pts[idx] = QPointF(qBound(0.0, pts[idx].x() + dx, 1.0),
-                                   qBound(0.0, pts[idx].y() + dy, 1.0));
-            }
+            const QPointF dNorm = AttentionGeometry::normDeltaFromLocalDelta(
+                local1 - local0, cr);
+            const QVector<QPointF> pts = AttentionGeometry::translateSelectedNorms(
+                m_attention.dragStartPts, m_attention.selected, dNorm);
             setAttentionPointsForTarget(pts);
         }
         event->accept();

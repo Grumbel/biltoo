@@ -4,6 +4,7 @@
 #include "attentiongeometry.h"
 
 #include <QLineF>
+#include <QtMath>
 
 namespace AttentionGeometry {
 
@@ -14,6 +15,54 @@ QPointF localFromNorm(const QPointF &norm, const QRectF &contentRect)
     }
     return QPointF(contentRect.left() + norm.x() * contentRect.width(),
                    contentRect.top() + norm.y() * contentRect.height());
+}
+
+QPointF clampNorm(const QPointF &norm)
+{
+    return QPointF(qBound(0.0, norm.x(), 1.0), qBound(0.0, norm.y(), 1.0));
+}
+
+QVector<QPointF> clampNormPoints(const QVector<QPointF> &pts)
+{
+    QVector<QPointF> out;
+    out.reserve(pts.size());
+    for (const QPointF &p : pts) {
+        out.append(clampNorm(p));
+    }
+    return out;
+}
+
+QPointF normFromLocal(const QPointF &local, const QRectF &contentRect)
+{
+    if (contentRect.isEmpty()) {
+        return {};
+    }
+    const qreal nx = (local.x() - contentRect.left()) / qMax(1e-6, contentRect.width());
+    const qreal ny = (local.y() - contentRect.top()) / qMax(1e-6, contentRect.height());
+    return clampNorm(QPointF(nx, ny));
+}
+
+QPointF normDeltaFromLocalDelta(const QPointF &localDelta, const QRectF &contentRect)
+{
+    if (contentRect.isEmpty()) {
+        return {};
+    }
+    return QPointF(localDelta.x() / qMax(1e-6, contentRect.width()),
+                   localDelta.y() / qMax(1e-6, contentRect.height()));
+}
+
+QVector<QPointF> translateSelectedNorms(const QVector<QPointF> &startPts,
+                                        const QVector<int> &selected,
+                                        const QPointF &dNorm)
+{
+    QVector<QPointF> pts = startPts;
+    for (int idx : selected) {
+        if (idx < 0 || idx >= pts.size()) {
+            continue;
+        }
+        pts[idx] = clampNorm(pts[idx] + dNorm);
+    }
+    return pts;
 }
 
 int handleIndexAt(const QPoint &viewPos, const QVector<QPointF> &viewPts)
