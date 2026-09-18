@@ -19,6 +19,15 @@ inline int pathDurationMs(int progressIntervalMs, int transitionDurationMs)
     return qMax(250, ms);
 }
 
+/** Elapsed / duration clamped to [0,1]; 0 when duration is non-positive. */
+inline qreal progress01(qint64 elapsedMs, int durationMs)
+{
+    if (durationMs <= 0) {
+        return 0.0;
+    }
+    return qBound(0.0, qreal(elapsedMs) / qreal(durationMs), 1.0);
+}
+
 /**
  * Integrate wall Δt into motion T ∈ [0,1].
  * Clocks only measure Δt; pathMs changes alter rate, not remapped progress.
