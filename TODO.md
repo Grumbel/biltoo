@@ -2,6 +2,29 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1238-tile-prefetch-complete-type.** Fix incomplete TileLodController delete on prefetch clear.
+Prior: **1237**.
+
+### Bug
+`m_tilePrefetchSlots.clear()` in `imageview_modes.cpp` (session wipe / clearWorkspace)
+destroys `std::unique_ptr<tilelod::TileLodController>` while the controller type is
+only forward-declared in that TU. GCC rejects `sizeof` on the incomplete type.
+
+### Fix
+Include `tilelod/tile_lod_controller.hpp` in `imageview_modes.cpp` (same as
+`imageview.cpp`, `imageview_load.cpp`, `imageview_view.cpp`).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1238-tile-prefetch-complete-type.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1237-todo-park-session-identity.** Handoff: session-identity line parked.
 Prior: **1236**.
 

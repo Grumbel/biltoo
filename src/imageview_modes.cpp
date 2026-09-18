@@ -8,6 +8,7 @@
 #include "imageloader.h"
 #include "thumtoocache.h"
 #include "tilelod/tile_lod_registry.hpp"
+#include "tilelod/tile_lod_controller.hpp"
 
 #include <QScrollBar>
 #include <QUndoStack>
