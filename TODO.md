@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1138-host-mid-soft-prefer.** Host mid-soft marks softAttempted; Prefer soft not SoftOnly.
+Prior: **1137**.
+
+### Bug
+- `setHaveFromHost(100)` left `softAttempted` false → SoftOnly rescheduled forever
+  when ImageCache already held a mid soft sample.
+
+### Fix
+- Host have in (96, softMax) sets `softAttempted` so plan schedules Prefer soft.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1138-host-mid-soft-prefer.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1137-soft-mid-rung-attempted.** SoftOnly 97–127 marks softAttempted; Prefer soft runs.
 Prior: **1136**.
 

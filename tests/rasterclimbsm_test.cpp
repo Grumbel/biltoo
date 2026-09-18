@@ -25,6 +25,7 @@ private slots:
     void gave_up_not_terminal_while_short();
     void soft_shortfall_does_not_reschedule();
     void soft_mid_rung_marks_attempted();
+    void host_mid_soft_skips_softonly();
     void lqip_delivery_still_schedules_soft();
 };
 
@@ -208,6 +209,19 @@ void RasterClimbSmTest::soft_shortfall_does_not_reschedule()
     // Prefer soft-band / display may still run; Full must not.
     QVERIFY(!p.scheduleFull);
     QVERIFY(!p.forgetSoftSettled);
+}
+
+void RasterClimbSmTest::host_mid_soft_skips_softonly()
+{
+    // ImageCache already has mid soft (100): SoftOnly must not loop.
+    Machine m;
+    m.setWant(512, 4000, Policy::SoftDisplay, kSoft, kOverview);
+    m.setHaveFromHost(100, kSoft);
+    QVERIFY(m.state().softAttempted);
+    const Plan p = m.plan(kSoft, kOverview, kDispMax);
+    QVERIFY(!p.scheduleSoft);
+    QVERIFY(p.scheduleDisplay);
+    QCOMPARE(p.displayEdge, kSoft);
 }
 
 void RasterClimbSmTest::soft_mid_rung_marks_attempted()

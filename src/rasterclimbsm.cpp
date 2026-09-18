@@ -61,6 +61,10 @@ void Machine::setHaveFromHost(int hostHave, int softMax)
     constexpr int kLqipCeiling = 96;
     if (m_.have > 0 && m_.have <= kLqipCeiling) {
         m_.softAttempted = false;
+    } else if (m_.have > kLqipCeiling && m_.have < softMax) {
+        // Mid soft already in host (e.g. SoftOnly 100): Prefer soft next, not
+        // another SoftOnly cycle that re-delivers the same rung.
+        m_.softAttempted = true;
     }
     if (covers(m_.have, effectiveNeed())) {
         m_.preferGaveUp = false;
