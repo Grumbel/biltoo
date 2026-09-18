@@ -519,7 +519,7 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
         return;
     }
     const int maxGui = ContentXform::kGuiMaterializeMaxEdge;
-    int edge = qMax(raw.width(), raw.height());
+    int edge = ContentXform::longEdge(raw.size());
     QImage host = raw;
     SessionAppearance::PixelKind bakeKind = item->hasDecodedPixels()
         ? SessionAppearance::PixelKind::FullSource
@@ -528,7 +528,7 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
     if (edge > maxGui) {
         // Soft stand-in now (crop/orient visible); full bake async.
         host = ImageCache::clampToMaxEdge(raw, maxGui);
-        edge = qMax(host.width(), host.height());
+        edge = ContentXform::longEdge(host.size());
         bakeKind = SessionAppearance::PixelKind::SoftPreview;
         scheduleFull = true;
     }
@@ -589,7 +589,7 @@ bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemSta
     if (host.isNull()) {
         return false;
     }
-    if (qMax(host.width(), host.height()) > ContentXform::kGuiMaterializeMaxEdge) {
+    if (ContentXform::longEdge(host.size()) > ContentXform::kGuiMaterializeMaxEdge) {
         return false;
     }
     // Prefer SoftPreview when the live item is soft-only so setPreviewImage
@@ -653,7 +653,7 @@ void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImage
     if (hostProbe.isNull()) {
         return;
     }
-    if (qMax(hostProbe.width(), hostProbe.height())
+    if (ContentXform::longEdge(hostProbe.size())
         <= ContentXform::kGuiMaterializeMaxEdge) {
         return; // GUI path already handled by tryRematerializeFromHost
     }
@@ -789,7 +789,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         bool gotDisplay = false;
         if (!host.isNull()) {
             QImage soft = host;
-            if (qMax(host.width(), host.height())
+            if (ContentXform::longEdge(host.size())
                 > ContentXform::kGuiMaterializeMaxEdge) {
                 soft = ImageCache::clampToMaxEdge(
                     host, ContentXform::kGuiMaterializeMaxEdge);
@@ -2440,7 +2440,7 @@ QImage ImageView::blockingExportDisplayForItem(const ImageItem *item) const
         if (!needLoad) {
             const QSize cached = ThumtooCache::cachedSize(path);
             if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
-                const int native = qMax(cached.width(), cached.height());
+                const int native = ContentXform::longEdge(cached.size());
                 if (hostEdge * 10 < native * 9) {
                     needLoad = true;
                 }
