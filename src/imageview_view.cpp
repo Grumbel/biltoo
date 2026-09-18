@@ -4,6 +4,7 @@
 #include "imageview.h"
 #include "slideshowclocks.h"
 #include "zoomblurhelpers.h"
+#include "slideshowphasepolicy.h"
 #include "displayquality.h"
 #include "biltoo_thread.h"
 
@@ -1300,31 +1301,16 @@ bool ImageView::phaseBufferWantsSample(const QString &path, int sampleEdge) cons
     if (sampleEdge <= 0 || path.isEmpty()) {
         return false;
     }
-    // Sharper sample always. Same-edge still wanted when ContentXform is pending:
-    // arm uses unoriented stand-ins; orient does not grow long-edge for flip-only
-    // (and often not for 90° either), so a strict `>` left slideshow ignoring
-    // all rotation/flip appearance work.
-    auto wants = [&](const QString &phasePath, const QImage &phaseImg,
-                     bool contentApplied) -> bool {
-        if (path != phasePath) {
-            return false;
-        }
-        const int have = ImageCache::longEdge(phaseImg);
-        if (sampleEdge > have) {
-            return true;
-        }
-        if (sampleEdge < have) {
-            return false;
-        }
-        if (contentApplied) {
-            return false;
-        }
-        WorkspaceItemState app;
-        return snapshotSlideshowContentAppearance(path, &app)
-            && SessionAppearance::hasContentAppearance(app);
-    };
-    return wants(m_ss.fromPath, m_ss.fromImage, m_ss.fromContentApplied)
-        || wants(m_ss.toPath, m_ss.toImage, m_ss.toContentApplied);
+    // Appearance presence is resolved on the GUI; pure size policy is shared.
+    WorkspaceItemState app;
+    const bool pendingContent = snapshotSlideshowContentAppearance(path, &app)
+        && SessionAppearance::hasContentAppearance(app);
+    return SlideshowPhasePolicy::bufferWantsSample(
+               m_ss.fromPath, m_ss.fromImage, m_ss.fromContentApplied, path,
+               sampleEdge, pendingContent)
+        || SlideshowPhasePolicy::bufferWantsSample(
+               m_ss.toPath, m_ss.toImage, m_ss.toContentApplied, path,
+               sampleEdge, pendingContent);
 }
 
 bool ImageView::snapshotSlideshowContentAppearance(const QString &path,

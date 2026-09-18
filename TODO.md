@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1265-slideshow-phase-policy.** Pure phase-buffer upgrade policy.
+Prior: **1264**.
+
+### Change
+- `SlideshowPhasePolicy::bufferWantsSample` — long-edge / same-edge + pending ContentXform.
+- `ImageView::phaseBufferWantsSample` resolves appearance then calls policy.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1265-slideshow-phase-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1264-zoomblur-make-cover.** Move makeZoomBlurCover → ZoomBlur::makeCover.
 Prior: **1263**.
 
