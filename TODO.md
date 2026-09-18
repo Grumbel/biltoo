@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1149-visible-idle-only.** Instant rules: no Store I/O on GUI; speculative only when idle.
+Prior: **1148**.
+
+### Rules enforced
+- GUI: ImageCache + hasDurableTilesKnown only (no has_tile / get_lqip).
+- hasDurableTiles: ASSERT_NOT_GUI_THREAD; durableTileMinScale memo-only.
+- cachedLqipImage: no-op on main thread.
+- Gallery: speculative interest + idle soft only when visible soft is settled.
+- scheduleGalleryDecode: ImageCache covers want → install + terminal, no PreferCache.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1149-visible-idle-only.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1148-gallery-soft-terminal.** Gallery soft terminal + ensure caps; stop soft storms.
 Prior: **1147**.
 

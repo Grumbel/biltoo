@@ -100,14 +100,9 @@ int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePendi
         // Soft/LQIP install must not wait on definitive size — provisional
         // geometry is layout-only; blocking here left archive/PDF cells on LQIP
         // until probe finished (or forever if probe stalled).
-        QImage hostSample = ImageCache::get(path);
-        if (hostSample.isNull()) {
-            // Store LQIP not yet mirrored into ImageCache (size probe pending).
-            hostSample = ThumtooCache::cachedLqipImage(path);
-            if (!hostSample.isNull()) {
-                ImageCache::put(path, hostSample);
-            }
-        }
+        // ImageCache only on GUI — never Store get_lqip here (size probe
+        // already mirrors LQIP into ImageCache on the worker).
+        const QImage hostSample = ImageCache::get(path);
         if (hostSample.isNull()) {
             continue;
         }
@@ -195,9 +190,13 @@ void ImageView::publishGalleryInterest(const QStringList &interestNear,
 
 void ImageView::scheduleIdleGalleryDecodes(const QStringList &rest)
 {
-    const int freeSlots =
-        galleryDecodeConcurrency() - gallerySoftInflightCount();
-    if (freeSlots <= 0 || rest.isEmpty()) {
+    // Speculative off-screen soft only when the visible set is settled.
+    // Competing with on-screen PreferCache is the 5–10s Gallery settle storm.
+    if (rest.isEmpty() || gallerySoftInflightCount() > 0) {
+        return;
+    }
+    const int freeSlots = galleryDecodeConcurrency();
+    if (freeSlots <= 0) {
         return;
     }
     const int idleBudget = qMin(freeSlots, kMaxIdleGalleryDecodes);
@@ -404,12 +403,18 @@ void ImageView::updateGalleryDecodeWindow()
         phaseTimer.restart();
     }
 
-    publishGalleryInterest(interestNear, interestRest);
+    // Speculative interest only when visible soft is idle — otherwise thumtoo
+    // spends PreferCache/tiles on off-screen paths while on-screen still climbs.
+    const bool visibleBusy = gallerySoftInflightCount() > 0 || !visible.isEmpty();
+    publishGalleryInterest(interestNear,
+                           visibleBusy ? QStringList{} : interestRest);
     if (m_perfEnabled) {
         usInterest = phaseTimer.nsecsElapsed() / 1000;
     }
 
-    scheduleIdleGalleryDecodes(rest);
+    if (!visibleBusy) {
+        scheduleIdleGalleryDecodes(rest);
+    }
     // Deep-zoom inspection: grid tiles for oversized on-screen cells.
     // Stronger issue budget when any cell is already in the tile band so
     // mid-scroll zoom does not starve tile fetches behind soft concurrency.

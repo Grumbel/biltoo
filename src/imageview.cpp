@@ -209,7 +209,7 @@ ImageView::ImageView(QWidget *parent)
                         const int need = target * 7 / 10;
                         if (longEdge > 0 && longEdge < need) {
                             const auto policy =
-                                ThumtooCache::hasDurableTiles(path)
+                                ThumtooCache::hasDurableTilesKnown(path)
                                     ? PathRasterService::ClimbPolicy::SoftDisplay
                                     : PathRasterService::ClimbPolicy::EscalateToFull;
                             m_pathRaster->ensure(

@@ -22,6 +22,8 @@
 #include <QFont>
 #include <QUrl>
 #include <QFile>
+#include <QThread>
+#include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QHash>
 #include <QDateTime>
@@ -840,6 +842,10 @@ QImage cachedLqipImage(const QString &path)
 {
 #if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_LQIP)
     if (path.isEmpty()) {
+        return {};
+    }
+    // Store get_lqip is I/O — GUI must use ImageCache (size probe mirrors LQIP).
+    if (QThread::isMainThread()) {
         return {};
     }
     init();
@@ -1836,6 +1842,8 @@ bool scheduleTilePyramid(const QString &path)
 bool hasDurableTiles(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO
+    // Store has_tile — must not run on the GUI (use hasDurableTilesKnown there).
+    ASSERT_NOT_GUI_THREAD();
     if (path.isEmpty() || isUnsupported(path)) {
         return false;
     }
@@ -1947,20 +1955,15 @@ void warmDurableTilesMemo(const QStringList &paths)
 int durableTileMinScale(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO
-    if (path.isEmpty() || isUnsupported(path)) {
-        return 0;
-    }
-    {
-        std::lock_guard lock(g_mu);
-        if (g_durableTilesYes.contains(path)) {
-            return g_durableTileMinScale.value(path, 0);
-        }
-    }
-    // Discover (and memoize) via hasDurableTiles.
-    if (!hasDurableTiles(path)) {
+    // Memo only — discovery is warmDurableTilesMemo / hasDurableTiles on workers.
+    // Paint path calls this on the GUI; must never has_tile here.
+    if (path.isEmpty()) {
         return 0;
     }
     std::lock_guard lock(g_mu);
+    if (!g_durableTilesYes.contains(path)) {
+        return 0;
+    }
     return g_durableTileMinScale.value(path, 0);
 #else
     Q_UNUSED(path);

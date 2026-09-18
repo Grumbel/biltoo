@@ -1671,7 +1671,7 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
                                    : ImageCache::longEdge(m_ssToImage);
         if (phaseHave < need || incoming < need) {
             const auto policy =
-                ThumtooCache::hasDurableTiles(path)
+                ThumtooCache::hasDurableTilesKnown(path)
                     ? PathRasterService::ClimbPolicy::SoftDisplay
                     : PathRasterService::ClimbPolicy::EscalateToFull;
             m_pathRaster->ensure(path, target, logicalSizeForPath(path), policy);
@@ -1750,7 +1750,7 @@ void ImageView::slideshowPhaseSurfaceTick()
         }
         if (act.type == AT::ScheduleClimb && m_pathRaster) {
             const auto policy =
-                ThumtooCache::hasDurableTiles(path)
+                ThumtooCache::hasDurableTilesKnown(path)
                     ? PathRasterService::ClimbPolicy::SoftDisplay
                     : PathRasterService::ClimbPolicy::EscalateToFull;
             m_pathRaster->ensure(
@@ -1840,7 +1840,7 @@ QImage ImageView::slideshowSoftPlaceholder(const QString &path)
         // (TileSynth), never Full native during slideshow.
         if (m_pathRaster) {
             const auto policy =
-                ThumtooCache::hasDurableTiles(path)
+                ThumtooCache::hasDurableTilesKnown(path)
                     ? PathRasterService::ClimbPolicy::SoftDisplay
                     : PathRasterService::ClimbPolicy::EscalateToFull;
             m_pathRaster->ensure(path, edge, logicalSizeForPath(path), policy);
@@ -2530,7 +2530,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
     // Soft → PreferCache; Full only when no durable tiles (slideshow paints
     // whole-frame samples — TileSynth is enough on prepared libraries).
     const auto policy =
-        ThumtooCache::hasDurableTiles(path)
+        ThumtooCache::hasDurableTilesKnown(path)
             ? PathRasterService::ClimbPolicy::SoftDisplay
             : PathRasterService::ClimbPolicy::EscalateToFull;
     m_pathRaster->ensure(path, targetEdge, native, policy);

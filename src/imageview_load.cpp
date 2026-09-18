@@ -1651,7 +1651,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     {
         bool anyTileWanted = false;
         bool softUnderlayNeeded = false;
-        const bool durable = ThumtooCache::hasDurableTiles(path);
+        const bool durable = ThumtooCache::hasDurableTilesKnown(path);
         for (ImageItem *ii : m_items) {
             if (!ii || ii->path() != path || !ii->tileLodWanted()) {
                 continue;
@@ -1729,6 +1729,24 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         return;
     }
 
+    // Warm host: install only — never PreferCache when ImageCache covers want.
+    {
+        const QImage host = ImageCache::get(path);
+        const int hostEdge = ImageCache::longEdge(host);
+        if (!host.isNull() && coversEdge(hostEdge, want)) {
+            if (hostEdge > have) {
+                onImagePreviewLoaded(path, host, m_loadGeneration.load(),
+                                     static_cast<int>(LoadAdd));
+                st.have = qMax(st.have, galleryHaveEdgeFromItems(path, nullptr));
+            }
+            clearGallerySoftInflight(st);
+            if (coversEdge(st.have, want) || coversEdge(hostEdge, want)) {
+                st.terminal = true;
+            }
+            return;
+        }
+    }
+
     if (!m_pathRaster) {
         return;
     }
@@ -1748,7 +1766,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
     // prepared libraries). SoftDisplay was waiting forever on soft-only paths.
     const auto climbPolicy =
         (want > ThumtooCache::kBatchOverviewEdge
-         && !ThumtooCache::hasDurableTiles(path))
+         && !ThumtooCache::hasDurableTilesKnown(path))
             ? PathRasterService::ClimbPolicy::EscalateToFull
             : PathRasterService::ClimbPolicy::SoftDisplay;
     m_pathRaster->ensure(path, want, logicalSizeForPath(path), climbPolicy);
@@ -2011,7 +2029,7 @@ void ImageView::ensureWorkspaceQualityClimb()
         }
         {
             const auto pol =
-                ThumtooCache::hasDurableTiles(path)
+                ThumtooCache::hasDurableTilesKnown(path)
                     ? PathRasterService::ClimbPolicy::SoftDisplay
                     : PathRasterService::ClimbPolicy::EscalateToFull;
             (void)applyDisplaySurfaceAction(ii, act, QImage(), needEdge, pol);
@@ -2021,7 +2039,7 @@ void ImageView::ensureWorkspaceQualityClimb()
                 || (!m_pathRaster->isClimbPending(path)
                     && act.type == DisplaySurface::ActionType::ScheduleClimb))) {
             // PreferCache plateau short of need — native only when no durable tiles.
-            if (!ThumtooCache::hasDurableTiles(path)
+            if (!ThumtooCache::hasDurableTilesKnown(path)
                 && (m_pathRaster->isGaveUp(path)
                     || !m_pathRaster->isClimbPending(path))) {
                 scheduleImageModeNativeDecodeOnce(path);
@@ -2118,7 +2136,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
                 ? m_displaySurfaces.evaluate(sid)
                 : DisplaySurface::decide(ds);
         const auto pol =
-            (isWorkspaceMode() && !ThumtooCache::hasDurableTiles(path))
+            (isWorkspaceMode() && !ThumtooCache::hasDurableTilesKnown(path))
                 ? PathRasterService::ClimbPolicy::EscalateToFull
                 : PathRasterService::ClimbPolicy::SoftDisplay;
         if (applyDisplaySurfaceAction(item, act, image, ds.needEdge, pol)) {
@@ -2644,7 +2662,7 @@ void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
     // Slideshow + durable tiles: SoftDisplay (PreferCache/TileSynth) only —
     // EscalateToFull native decode is the CPU storm on prepared libraries.
     const auto policy =
-        (m_slideshowProgressActive && ThumtooCache::hasDurableTiles(path))
+        (m_slideshowProgressActive && ThumtooCache::hasDurableTilesKnown(path))
             ? PathRasterService::ClimbPolicy::SoftDisplay
             : PathRasterService::ClimbPolicy::EscalateToFull;
     biltooLoadDbg("escalateClimb(service) path=%s edge=%d policy=%d",
@@ -2783,14 +2801,14 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
                   qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
     {
         const auto policy =
-            ThumtooCache::hasDurableTiles(path)
+            ThumtooCache::hasDurableTilesKnown(path)
                 ? PathRasterService::ClimbPolicy::SoftDisplay
                 : PathRasterService::ClimbPolicy::EscalateToFull;
         m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path), policy);
     }
     // Full is async. If terminal or nothing pending and still short, host native
     // (only when no durable tiles — prepared libs use TileSynth / tile LOD).
-    if (!ThumtooCache::hasDurableTiles(path)
+    if (!ThumtooCache::hasDurableTilesKnown(path)
         && !coversEdge(m_pathRaster->haveEdge(path), climbTo)
         && (m_pathRaster->isGaveUp(path) || !m_pathRaster->isClimbPending(path))) {
         scheduleImageModeNativeDecodeOnce(path);
@@ -3358,7 +3376,7 @@ void ImageView::driveImageFocusSurface()
     Q_UNUSED(sid);
     {
         const auto pol =
-            ThumtooCache::hasDurableTiles(path)
+            ThumtooCache::hasDurableTilesKnown(path)
                 ? PathRasterService::ClimbPolicy::SoftDisplay
                 : PathRasterService::ClimbPolicy::EscalateToFull;
         (void)applyDisplaySurfaceAction(
