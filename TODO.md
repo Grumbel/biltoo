@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1309-placement-linear-rotation.** Pure placement angle and snap helpers.
+Prior: **1308**.
+
+### Change
+- `PlacementLinear::angleAbout` / `snapDegrees` / `cardinalRotationOrZero` /
+  `placementRotationFromDrag`
+- `ImageView::angleAt` / `cardinalRotationOrZero` delegate; workspace free-rotate
+  uses `placementRotationFromDrag`.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1309-placement-linear-rotation.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1308-group-transform-rotate.** Pure group rotate delta and orbit.
 Prior: **1307**.
 

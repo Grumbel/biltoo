@@ -4,6 +4,7 @@
 #include "placementlinear.h"
 
 #include <QtMath>
+#include <cmath>
 
 namespace PlacementLinear {
 
@@ -68,6 +69,41 @@ void unitAxes(qreal scaleX, qreal scaleY, qreal shear, qreal rotationDeg,
     if (e2) {
         *e2 = L.map(QPointF(0.0, 1.0));
     }
+}
+
+qreal angleAbout(const QPointF &centre, const QPointF &scenePos)
+{
+    return qRadiansToDegrees(qAtan2(scenePos.y() - centre.y(), scenePos.x() - centre.x()));
+}
+
+qreal snapDegrees(qreal degrees, qreal stepDegrees)
+{
+    if (stepDegrees <= 0.0) {
+        return degrees;
+    }
+    return qRound(degrees / stepDegrees) * stepDegrees;
+}
+
+qreal cardinalRotationOrZero(qreal degrees)
+{
+    const qreal n = std::fmod(std::fmod(degrees, 360.0) + 360.0, 360.0);
+    qreal snapped = snapDegrees(n, 90.0);
+    if (snapped >= 360.0) {
+        snapped = 0.0;
+    }
+    return snapped;
+}
+
+qreal placementRotationFromDrag(qreal startRotation, qreal startAngleDeg,
+                                qreal currentAngleDeg, bool snap90, bool snap45)
+{
+    qreal rot = startRotation + (currentAngleDeg - startAngleDeg);
+    if (snap90) {
+        rot = snapDegrees(rot, 90.0);
+    } else if (snap45) {
+        rot = snapDegrees(rot, 45.0);
+    }
+    return rot;
 }
 
 } // namespace PlacementLinear

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "placementlinear.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
 #include "sessionappearance.h"
@@ -694,20 +695,17 @@ void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &it
 
 qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
 {
-    const QPointF c = item->scenePos();
-    return qRadiansToDegrees(std::atan2(scenePos.y() - c.y(), scenePos.x() - c.x()));
+    if (!item) {
+        return 0.0;
+    }
+    return PlacementLinear::angleAbout(item->scenePos(), scenePos);
 }
 
 qreal ImageView::cardinalRotationOrZero(qreal degrees)
 {
     // Image mode: always nearest 90° content orientation. Free Workspace tilt
     // (residual off the cardinal) is discarded — never shown as an arbitrary angle.
-    const qreal n = std::fmod(std::fmod(degrees, 360.0) + 360.0, 360.0);
-    qreal snapped = qRound(n / 90.0) * 90.0;
-    if (snapped >= 360.0) {
-        snapped = 0.0;
-    }
-    return snapped;
+    return PlacementLinear::cardinalRotationOrZero(degrees);
 }
 
 void ImageView::removeCanvasSessionIds(const QList<SessionImageId> &ids)

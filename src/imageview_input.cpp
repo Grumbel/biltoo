@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "placementlinear.h"
 #include "attentiongeometry.h"
 #include "edgenavpolicy.h"
 #include "pagepath.h"
@@ -1300,14 +1301,11 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
     }
     const QPointF scenePos = mapToScene(event->pos());
     const qreal angle = angleAt(scenePos, m_itemInteract.rotateItem);
-    const qreal delta = angle - m_itemInteract.rotateStartAngle;
-    qreal rot = m_itemInteract.rotateItemStart + delta;
-    if (event->modifiers() & Qt::ControlModifier) {
-        rot = qRound(rot / 90.0) * 90.0;
-    } else if (event->modifiers() & Qt::ShiftModifier) {
-        // Shift is held to start free-rotate; Ctrl snaps 90°, Shift alone 45°.
-        rot = qRound(rot / 45.0) * 45.0;
-    }
+    // Shift is held to start free-rotate; Ctrl snaps 90°, Shift alone 45°.
+    const qreal rot = PlacementLinear::placementRotationFromDrag(
+        m_itemInteract.rotateItemStart, m_itemInteract.rotateStartAngle, angle,
+        event->modifiers() & Qt::ControlModifier,
+        event->modifiers() & Qt::ShiftModifier);
     m_itemInteract.rotateItem->setItemRotation(rot);
     m_framing.fitMode = false;
     emit statusChanged();

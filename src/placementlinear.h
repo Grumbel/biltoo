@@ -37,6 +37,25 @@ bool decomposeAxes(const QPointF &e1, const QPointF &e2,
 void unitAxes(qreal scaleX, qreal scaleY, qreal shear, qreal rotationDeg,
               QPointF *e1, QPointF *e2);
 
+/** Angle in degrees from @p centre to @p scenePos (atan2). */
+qreal angleAbout(const QPointF &centre, const QPointF &scenePos);
+
+/** Snap @p degrees to the nearest multiple of @p stepDegrees. */
+qreal snapDegrees(qreal degrees, qreal stepDegrees);
+
+/**
+ * Image-mode content orientation: nearest 90° in [0, 360). Free residual is
+ * discarded (never shown as an arbitrary angle).
+ */
+qreal cardinalRotationOrZero(qreal degrees);
+
+/**
+ * Live placement rotation from pointer drag about item centre.
+ * Ctrl → 90° snap; else Shift → 45° (workspace free-rotate holds Shift to start).
+ */
+qreal placementRotationFromDrag(qreal startRotation, qreal startAngleDeg,
+                                qreal currentAngleDeg, bool snap90, bool snap45);
+
 } // namespace PlacementLinear
 
 #endif // PLACEMENTLINEAR_H
