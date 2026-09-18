@@ -3,6 +3,7 @@
 
 #include "imageitem.h"
 #include "itemframegeometry.h"
+#include "itemhandlepolicy.h"
 #include "displayquality.h"
 #include "biltoo_thread.h"
 
@@ -342,41 +343,32 @@ void ImageItem::updateHandleLayout()
 
 bool ImageItem::isChromeHandle(Handle h) const
 {
-    return h == Handle::FlipH || h == Handle::FlipV
-        || h == Handle::Rotate90CCW || h == Handle::Rotate90CW
-        || h == Handle::Raise || h == Handle::Lower
-        || h == Handle::ResetScale || h == Handle::ResetRotation
-        || h == Handle::ResetShear
-        || h == Handle::OpacitySlider;
+    return ItemHandlePolicy::isChromeHandle(h);
 }
 
 bool ImageItem::isRotateHandle(Handle h) const
 {
-    return h == Handle::RotateTop || h == Handle::RotateRight
-        || h == Handle::RotateBottom || h == Handle::RotateLeft;
+    return ItemHandlePolicy::isRotateHandle(h);
 }
 
 bool ImageItem::isCornerScaleHandle(Handle h) const
 {
-    return h == Handle::ScaleTopLeft || h == Handle::ScaleTopRight
-        || h == Handle::ScaleBottomLeft || h == Handle::ScaleBottomRight;
+    return ItemHandlePolicy::isCornerScaleHandle(h);
 }
 
 bool ImageItem::isEdgeScaleHandle(Handle h) const
 {
-    return h == Handle::ScaleTop || h == Handle::ScaleRight
-        || h == Handle::ScaleBottom || h == Handle::ScaleLeft;
+    return ItemHandlePolicy::isEdgeScaleHandle(h);
 }
 
 bool ImageItem::isScaleHandle(Handle h) const
 {
-    return isCornerScaleHandle(h) || isEdgeScaleHandle(h);
+    return ItemHandlePolicy::isScaleHandle(h);
 }
 
 bool ImageItem::isShearHandle(Handle h) const
 {
-    return h == Handle::ShearTop || h == Handle::ShearBottom
-        || h == Handle::ShearLeft || h == Handle::ShearRight;
+    return ItemHandlePolicy::isShearHandle(h);
 }
 
 QPointF ImageItem::scaleAnchorLocal(Handle h) const
@@ -647,8 +639,7 @@ QList<ImageItem::Handle> ImageItem::activeHandles() const
 
 bool ImageItem::isUprightChromeHandle(Handle h) const
 {
-    // Raise/Lower glyphs stay screen-upright so "up" always means raise.
-    return h == Handle::Raise || h == Handle::Lower;
+    return ItemHandlePolicy::isUprightChromeHandle(h);
 }
 
 qreal ImageItem::handleDistanceScreenPx(Handle h, const QPointF &itemPos) const
@@ -1856,10 +1847,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     const QPointF &midRight = fg.midRight;
     const QPointF &midBottom = fg.midBottom;
     const QPointF &midLeft = fg.midLeft;
-    const QPointF &outTop = fg.outTop;
-    const QPointF &outRight = fg.outRight;
-    const QPointF &outBottom = fg.outBottom;
-    const QPointF &outLeft = fg.outLeft;
+    // Outward normals: rotateHandlePoints / opacity track use fg.out* directly.
 
     painter->save();
     painter->setOpacity(1.0);

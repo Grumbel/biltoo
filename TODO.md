@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1320-item-handle-policy.** Pure handle classification + paint warning fix.
+Prior: **1319**.
+
+### Change
+- `ItemHandlePolicy` (`itemhandlepolicy.{h,cpp}`): pure isChrome/Rotate/Scale/Shear/
+  Upright predicates on `ImageItem::Handle`
+- ImageItem methods are thin wrappers
+- Drop unused `out*` aliases in `paintInteractionChrome` (fixes -Wunused-variable)
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1320-item-handle-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1319-crop-integer-source.** Pure integer crop + flip-aware source rect.
 Prior: **1318**.
 
