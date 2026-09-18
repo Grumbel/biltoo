@@ -1934,24 +1934,10 @@ bool scheduleSoftPixels(const QString &path, int maxEdge)
     // Soft is ephemeral (thumtoo PIXEL_AND_ARCHIVE_POLICY). SoftOnly forbids
     // TileSynth, so PreferCache for every soft-band request: TileSynth when a
     // complete scale exists, else one-shot soft encode. No durable soft store.
-    const bool ok = scheduleDisplayPixels(path, maxEdge);
-#if defined(BILTOO_HAVE_THUMTOO_LQIP)
-    if (ok) {
-        init();
-        thumtoo::Client *c = nullptr;
-        {
-            std::lock_guard lock(g_mu);
-            c = clientUnlocked();
-        }
-        if (c) {
-            const std::string uri = toThumtooUri(path);
-            if (!uri.empty() && !c->get_lqip(uri)) {
-                c->request_lqip(uri);
-            }
-        }
-    }
-#endif
-    return ok;
+    // Soft is ephemeral. Do **not** call request_lqip here: LQIP must never be
+    // generated standalone (thumtoo PIXEL_AND_ARCHIVE_POLICY §1.1). It is filled
+    // opportunistically when tiles/soft encode already hold free raster data.
+    return scheduleDisplayPixels(path, maxEdge);
 #else
     Q_UNUSED(path);
     Q_UNUSED(maxEdge);

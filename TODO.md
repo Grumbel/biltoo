@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1140-no-standalone-lqip.** Do not request standalone LQIP generation.
+Prior: **1139** (or 1138 if unused-gallery-prev not applied).
+
+### Policy
+LQIP is low utility and must **never** be generated on its own (thumtoo
+`PIXEL_AND_ARCHIVE_POLICY` §1.1). It is filled only opportunistically when tiles
+(or soft encode) already hold free raster data.
+
+### Fix
+- Remove `request_lqip` from `scheduleSoftPixels` (was forcing EnsureLqip jobs
+  that could full-decode the source).
+- Document host rule in `docs/THUMTOO_HOST_CONTRACT.md`.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1140-no-standalone-lqip.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1138-host-mid-soft-prefer.** Host mid-soft marks softAttempted; Prefer soft not SoftOnly.
 Prior: **1137**.
 
