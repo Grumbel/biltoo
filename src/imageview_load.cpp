@@ -1642,6 +1642,7 @@ void ImageView::clearGallerySoftInflight(GallerySoftState &soft)
 void ImageView::scheduleGalleryDecode(const QString &path)
 {
     ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("scheduleGalleryDecode", 2);
     if (!isGalleryMode() || path.isEmpty()) {
         return;
     }
@@ -2947,6 +2948,7 @@ void ImageView::scheduleTileLodAfterInteraction(int delayMs)
 
 void ImageView::tickPrimaryTileLod(int budget)
 {
+    GUI_BUDGET_MS("tickPrimaryTileLod", 3);
     if (m_slideshowProgressActive) {
         return;
     }

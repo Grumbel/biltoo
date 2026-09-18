@@ -2,6 +2,27 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1151-gui-budget.** GUI time budgets + size memo (no Store get_size on main thread).
+Prior: **1150**.
+
+### Rules
+- `GUI_BUDGET` / `GUI_BUDGET_MS` — assert + log if main-thread section exceeds budget.
+- Applied to: updateGalleryDecodeWindow (4ms), scheduleGalleryDecode (2ms),
+  PathRaster ensure (2ms), tickPrimaryTileLod (3ms), ImageItem::paint (3ms).
+- `cachedSize` on GUI: process `g_sizeMemo` only; Store get_size is worker-only.
+- `noteCachedSize` from probes / rememberImageSize.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1151-gui-budget.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1150-no-blank-terminal.** Never terminal soft while Gallery tile is blank; soft underlay under tiles.
 Prior: **1149**.
 

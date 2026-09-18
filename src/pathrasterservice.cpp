@@ -57,6 +57,7 @@ void PathRasterService::ensure(const QString &path, int wantEdge,
                                const QSize &knownNative, ClimbPolicy policy)
 {
     ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("PathRasterService::ensure", 2);
     if (path.isEmpty()) {
         return;
     }

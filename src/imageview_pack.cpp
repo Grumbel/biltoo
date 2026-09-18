@@ -246,6 +246,7 @@ GalleryLayout::Mode ImageView::galleryLayoutModeFromViewMode() const
 void ImageView::updateGalleryDecodeWindow()
 {
     ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("updateGalleryDecodeWindow", 4);
     QElapsedTimer decodeWinTimer;
     if (m_perfEnabled) {
         decodeWinTimer.start();

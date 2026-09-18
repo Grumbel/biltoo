@@ -200,6 +200,8 @@ QSet<QString> g_pixelsSettled;
 QSet<QString> g_durableTilesYes;
 /** Finest available scale for paths in g_durableTilesYes (default 0). */
 QHash<QString, int> g_durableTileMinScale;
+/** Process memo of durable sizes — GUI must not call Store get_size. */
+QHash<QString, QSize> g_sizeMemo;
 /**
  * Negative memo: path → earliest msecs-since-epoch to re-query Store.
  * tileLodWanted/paint called hasDurableTiles every frame; uncached misses
@@ -736,9 +738,33 @@ bool debugTracingEnabled()
     return thumtooDebugEnabled();
 }
 
+void noteCachedSize(const QString &path, const QSize &size)
+{
+    if (path.isEmpty() || !size.isValid() || size.width() <= 0 || size.height() <= 0) {
+        return;
+    }
+    std::lock_guard lock(g_mu);
+    g_sizeMemo.insert(path, size);
+}
+
 QSize cachedSize(const QString &path, bool scheduleRevalidate)
 {
 #ifdef BILTOO_HAVE_THUMTOO
+    if (path.isEmpty()) {
+        return {};
+    }
+    {
+        std::lock_guard lock(g_mu);
+        const auto it = g_sizeMemo.constFind(path);
+        if (it != g_sizeMemo.cend()) {
+            return it.value();
+        }
+    }
+    // GUI: memo only — Store get_size is SQLite I/O (sizes_warm was ~12ms of this).
+    if (QThread::isMainThread()) {
+        return {};
+    }
+    ASSERT_NOT_GUI_THREAD();
     init();
     const std::string uri = toThumtooUri(path);
     if (uri.empty()) {
@@ -753,10 +779,12 @@ QSize cachedSize(const QString &path, bool scheduleRevalidate)
         return {};
     }
     if (auto sz = c->get_size(uri)) {
+        const QSize out(sz->width, sz->height);
+        noteCachedSize(path, out);
         if (scheduleRevalidate) {
             scheduleBackgroundRevalidate(path, uri);
         }
-        return QSize(sz->width, sz->height);
+        return out;
     }
 #else
     Q_UNUSED(path);
@@ -952,8 +980,11 @@ void scheduleProbe(const QString &path)
                 }
             }
 #endif
-            emit bridge()->sizeReady(
-                pathCopy, QSize(reply.size->width, reply.size->height));
+            {
+                const QSize sz(reply.size->width, reply.size->height);
+                noteCachedSize(pathCopy, sz);
+                emit bridge()->sizeReady(pathCopy, sz);
+            }
         });
     });
 #else

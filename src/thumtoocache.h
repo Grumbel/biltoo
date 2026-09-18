@@ -108,6 +108,8 @@ inline int prevLadderEdge(int edge)
  *   paint/layout/sort. Pass true only for intentional freshness checks.
  */
 QSize cachedSize(const QString &path, bool scheduleRevalidate = false);
+/** Process memo only — workers/sizeReady call this; GUI must not Store-query. */
+void noteCachedSize(const QString &path, const QSize &size);
 
 /**
  * Cache-only file size and mtime from the Store locator (no source I/O).

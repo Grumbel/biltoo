@@ -427,6 +427,7 @@ void ImageView::rememberImageSize(const QString &path, const QSize &size)
     }
     m_imageSizeByPath.insert(path, size);
     m_provisionalSizePaths.remove(path);
+    ThumtooCache::noteCachedSize(path, size);
 }
 
 void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
