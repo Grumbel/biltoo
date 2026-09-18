@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1316-paint-chrome-frame-geom.** Paint chrome shares FrameViewGeom helpers.
+Prior: **1315**.
+
+### Change
+- `paintInteractionChrome` builds one `FrameViewGeom` (same as `handleAt`)
+- Uses `rotateHandlePoints`, `shearHandlePoints`, `unitOr` for corners/edges
+- Nested chrome/opacity blocks reuse the outer `fg` (no second makeFrameViewGeom)
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1316-paint-chrome-frame-geom.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1315-handle-at-frame-geom.** Pure handleAt segment/rotate/shear points.
 Prior: **1314**.
 

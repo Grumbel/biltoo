@@ -1840,33 +1840,20 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     const QPointF bl = toView(localRect.bottomLeft());
     const QPointF centerV = toView(localRect.center());
 
-    auto norm = [](QPointF v) -> QPointF {
-        const qreal len = qHypot(v.x(), v.y());
-        if (len > 1e-6) {
-            return v / len;
-        }
-        return QPointF(1, 0);
-    };
-    // Unit edge directions (view space) and outward normals (away from centre).
-    const QPointF dirTop = norm(tr - tl);
-    const QPointF dirRight = norm(br - tr);
-    const QPointF dirBottom = norm(bl - br);
-    const QPointF dirLeft = norm(tl - bl);
-    auto outward = [&](const QPointF &mid, const QPointF &along) -> QPointF {
-        QPointF n(-along.y(), along.x());
-        if (QPointF::dotProduct(n, mid - centerV) < 0) {
-            n = -n;
-        }
-        return n;
-    };
-    const QPointF midTop = (tl + tr) * 0.5;
-    const QPointF midRight = (tr + br) * 0.5;
-    const QPointF midBottom = (br + bl) * 0.5;
-    const QPointF midLeft = (bl + tl) * 0.5;
-    const QPointF outTop = outward(midTop, dirTop);
-    const QPointF outRight = outward(midRight, dirRight);
-    const QPointF outBottom = outward(midBottom, dirBottom);
-    const QPointF outLeft = outward(midLeft, dirLeft);
+    const ItemFrameGeometry::FrameViewGeom fg =
+        ItemFrameGeometry::makeFrameViewGeom(tl, tr, br, bl);
+    const QPointF &dirTop = fg.dirTop;
+    const QPointF &dirRight = fg.dirRight;
+    const QPointF &dirBottom = fg.dirBottom;
+    const QPointF &dirLeft = fg.dirLeft;
+    const QPointF &midTop = fg.midTop;
+    const QPointF &midRight = fg.midRight;
+    const QPointF &midBottom = fg.midBottom;
+    const QPointF &midLeft = fg.midLeft;
+    const QPointF &outTop = fg.outTop;
+    const QPointF &outRight = fg.outRight;
+    const QPointF &outBottom = fg.outBottom;
+    const QPointF &outLeft = fg.outLeft;
 
     painter->save();
     painter->setOpacity(1.0);
@@ -1898,8 +1885,9 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
 
     // Rotate stems + knobs: constant viewport-pixel offset along outward normal
     // of each edge (HANDLES.md). Never derive from local / sx.
-    auto drawRotate = [&](Handle h, const QPointF &edgeMid, const QPointF &outN) {
-        const QPointF c = edgeMid + outN * ItemFrameGeometry::kRotateOffsetPx;
+    QPointF rotPts[4];
+    ItemFrameGeometry::rotateHandlePoints(fg, rotPts);
+    auto drawRotate = [&](Handle h, const QPointF &edgeMid, const QPointF &c) {
         const bool hot = (m_hoverHandle == h || m_activeHandle == h);
         QPen stem(QColor(0, 160, 255), 0);
         stem.setCosmetic(true);
@@ -1914,10 +1902,10 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         painter->setPen(hp);
         painter->drawEllipse(c, rad, rad);
     };
-    drawRotate(Handle::RotateTop, midTop, outTop);
-    drawRotate(Handle::RotateRight, midRight, outRight);
-    drawRotate(Handle::RotateBottom, midBottom, outBottom);
-    drawRotate(Handle::RotateLeft, midLeft, outLeft);
+    drawRotate(Handle::RotateTop, midTop, rotPts[0]);
+    drawRotate(Handle::RotateRight, midRight, rotPts[1]);
+    drawRotate(Handle::RotateBottom, midBottom, rotPts[2]);
+    drawRotate(Handle::RotateLeft, midLeft, rotPts[3]);
 
     if (m_scaleHandlesEnabled) {
         // Corner L-brackets: arms along the two adjacent edges in *view* space.
@@ -1938,8 +1926,8 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             // the elbow is a smooth fillet. Stroke weight matches edge scale bars.
             const bool hot = (m_hoverHandle == co.h || m_activeHandle == co.h);
             const QPointF c = co.corner;
-            const QPointF d1 = norm(co.alongA);
-            const QPointF d2 = norm(co.alongB);
+            const QPointF d1 = ItemFrameGeometry::unitOr(co.alongA);
+            const QPointF d2 = ItemFrameGeometry::unitOr(co.alongB);
             const qreal arm = hs * (hot ? 1.7 : 1.35);
             // Match edge-bar thickness (hs * ~0.30–0.48), not a hairline.
             const qreal thick = hs * (hot ? 0.48 : 0.36);
@@ -1982,7 +1970,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         };
         for (const EdgeBar &ed : edges) {
             const bool hot = (m_hoverHandle == ed.h || m_activeHandle == ed.h);
-            const QPointF along = norm(ed.along);
+            const QPointF along = ItemFrameGeometry::unitOr(ed.along);
             const QPointF perp(-along.y(), along.x());
             const qreal len = hs * (hot ? 2.4 : 1.7);
             const qreal thick = hs * (hot ? 0.48 : 0.30);
@@ -2003,16 +1991,17 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         }
 
         // Shear grips: small diamonds on all four edges (offset from mid).
-        const qreal shearAlong = hs * 2.2;
+        QPointF shearPts[4];
+        ItemFrameGeometry::shearHandlePoints(fg, shearPts, hs * 2.2);
         struct ShearD {
             Handle h;
             QPointF c;
         };
         const ShearD shears[] = {
-            {Handle::ShearTop, midTop - dirTop * shearAlong},
-            {Handle::ShearBottom, midBottom + dirBottom * shearAlong},
-            {Handle::ShearLeft, midLeft - dirLeft * shearAlong},
-            {Handle::ShearRight, midRight + dirRight * shearAlong},
+            {Handle::ShearTop, shearPts[0]},
+            {Handle::ShearBottom, shearPts[1]},
+            {Handle::ShearLeft, shearPts[2]},
+            {Handle::ShearRight, shearPts[3]},
         };
         for (const ShearD &sh : shears) {
             const bool hot = (m_hoverHandle == sh.h || m_activeHandle == sh.h);
@@ -2035,7 +2024,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     // Chrome buttons: top-right *outside*. Adaptive — stack shifts upward when
     // split upper/lower groups around the right rotate knob (see chromeCentersView).
     {
-        const ItemFrameGeometry::FrameViewGeom fg = ItemFrameGeometry::makeFrameViewGeom(tl, tr, br, bl);
+        // fg already built for this paint call
         QPointF centers[ItemFrameGeometry::kChromeCount];
         ItemFrameGeometry::chromeCentersView(fg, centers);
 
@@ -2130,7 +2119,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     // Opacity: left *outside*, vertical. Bottom end = 5%, top end = 100%.
     // Clears the left scale bar and rotate knob (see opacityTrackView).
     {
-        const ItemFrameGeometry::FrameViewGeom fg = ItemFrameGeometry::makeFrameViewGeom(tl, tr, br, bl);
+        // fg already built for this paint call
         QPointF a, b;
         ItemFrameGeometry::opacityTrackView(fg, &a, &b);
         const QPointF ab = b - a;
