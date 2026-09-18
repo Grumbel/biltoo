@@ -237,6 +237,8 @@ bool isPixelsInflight(const QString &path, int maxEdge);
  * preview request pixels on demand so large archives are not all extracted up
  * front. Skips paths marked Unsupported in the durable cache.
  */
+/** Size-probe plain files missing from the durable index. Skips warm hits and
+ *  compound refs; runs off the GUI thread. */
 void preparePaths(const QStringList &paths);
 
 /**

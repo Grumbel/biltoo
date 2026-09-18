@@ -1314,15 +1314,27 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         idx = 0;
     }
 
-    // Multi-file: show centre progress before Gallery size-resolve so a fast
-    // ThumtooCache::preparePaths cannot fill sizes and skip the HUD entirely.
+    // Multi-file: centre progress only when sizes are still unknown. A warm
+    // index must not flash "Opening N images…" while Gallery packs from cache.
     if (m_session.paths().size() > 1) {
-        setExpandProgress(
-            0, m_session.paths().size(),
-            tr("Opening %n image(s)…", "", m_session.paths().size()));
+        bool sizesWarm = true;
+        for (const QString &path : m_session.paths()) {
+            if (path.isEmpty()) {
+                continue;
+            }
+            if (!ThumtooCache::cachedSize(path).isValid()) {
+                sizesWarm = false;
+                break;
+            }
+        }
+        if (!sizesWarm) {
+            setExpandProgress(
+                0, m_session.paths().size(),
+                tr("Opening %n image(s)…", "", m_session.paths().size()));
+        }
         enterGalleryMode(initialGalleryLayoutForOpen());
         setCurrentIndex(idx, /*ensureGalleryVisible=*/true);
-        // Warm after size-resolve has registered pending probes + HUD.
+        // Background size probes for plain-file misses only (warm paths skipped).
         ThumtooCache::preparePaths(m_session.paths());
         ThumtooCache::warmUris(m_session.paths());
     } else {
@@ -1451,9 +1463,21 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
         ThumtooCache::warmUris(m_session.paths());
     } else if (m_session.paths().size() > 1) {
         // Multi-image after append in Image mode — Gallery + size-first like Open.
-        setExpandProgress(
-            0, m_session.paths().size(),
-            tr("Opening %n image(s)…", "", m_session.paths().size()));
+        bool sizesWarm = true;
+        for (const QString &path : m_session.paths()) {
+            if (path.isEmpty()) {
+                continue;
+            }
+            if (!ThumtooCache::cachedSize(path).isValid()) {
+                sizesWarm = false;
+                break;
+            }
+        }
+        if (!sizesWarm) {
+            setExpandProgress(
+                0, m_session.paths().size(),
+                tr("Opening %n image(s)…", "", m_session.paths().size()));
+        }
         enterGalleryMode(initialGalleryLayoutForOpen());
         setCurrentIndex(newIndex, /*ensureGalleryVisible=*/true);
         updateNavigationActions();

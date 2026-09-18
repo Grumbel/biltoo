@@ -1961,62 +1961,72 @@ void preparePaths(const QStringList &paths)
     if (paths.isEmpty()) {
         return;
     }
-    init();
-    thumtoo::Client *c = nullptr;
-    {
-        std::lock_guard lock(g_mu);
-        c = clientUnlocked();
-    }
-    if (!c) {
-        return;
-    }
-    std::vector<std::filesystem::path> fsPaths;
-    fsPaths.reserve(size_t(paths.size()));
-    // Keep path strings for callbacks (prepare_paths only returns URIs).
-    QStringList plainPaths;
+    // Filter on the caller thread (cheap, no source I/O): skip unsupported,
+    // compound refs, and paths that already have a durable size. Then run the
+    // remaining prepare_paths work off the GUI — is_regular_file + get_meta used
+    // to block "Opening N images…" for every warm open.
+    QStringList need;
+    need.reserve(paths.size());
     for (const QString &p : paths) {
-        if (isUnsupported(p)) {
+        if (p.isEmpty() || isUnsupported(p)) {
             continue;
         }
         if (ArchivePath::isArchiveRef(p) || PagePath::isPageRef(p)
             || PagePath::isPdfImageRef(p) || PagePath::isPdfImagesCollection(p)) {
-            // Skip containers / embedded leaves: probing every page/member on
-            // open floods the worker; per-tile scheduleProbe handles leaves.
+            // Leaves: Gallery/filmstrip scheduleProbe; do not expand containers.
             continue;
         }
-        // Do not QFileInfo::exists() here — that is O(n) disk stats on the GUI
-        // for every plain path at session open (GUI_THREAD_AUDIT G2). Missing
-        // files simply miss in the durable index / sizeReady path.
-        fsPaths.emplace_back(absPathStd(p));
-        plainPaths.append(p);
+        if (cachedSize(p).isValid()) {
+            continue;
+        }
+        need.append(p);
     }
-    if (fsPaths.empty()) {
+    if (need.isEmpty()) {
         return;
     }
-    // Size probes only; do not encode ladders for the whole session here.
-    c->prepare_paths(fsPaths, [plainPaths](std::string uri, thumtoo::SizeReply reply) {
-        QString path;
-        for (const QString &p : plainPaths) {
-            if (toThumtooUri(p) == uri) {
-                path = p;
-                break;
+    QThreadPool::globalInstance()->start([need]() {
+        init();
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (!c) {
+            return;
+        }
+        std::vector<std::filesystem::path> fsPaths;
+        fsPaths.reserve(size_t(need.size()));
+        QStringList plainPaths;
+        plainPaths.reserve(need.size());
+        for (const QString &p : need) {
+            // Worker may still hit is_regular_file inside prepare_paths.
+            fsPaths.emplace_back(absPathStd(p));
+            plainPaths.append(p);
+        }
+        if (fsPaths.empty()) {
+            return;
+        }
+        c->prepare_paths(fsPaths, [plainPaths](std::string uri, thumtoo::SizeReply reply) {
+            QString path;
+            for (const QString &p : plainPaths) {
+                if (toThumtooUri(p) == uri) {
+                    path = p;
+                    break;
+                }
             }
-        }
-        if (path.isEmpty()) {
-            return;
-        }
-        if (!reply.size) {
-            return;
-        }
+            if (path.isEmpty() || !reply.size) {
+                return;
+            }
 #if defined(BILTOO_HAVE_THUMTOO_LQIP)
-        if (reply.lqip && !reply.lqip->empty() && !ImageCache::has(path)) {
-            const QImage lqip = qimageFromLqipBlob(*reply.lqip);
-            if (!lqip.isNull()) {
-                ImageCache::put(path, lqip);
+            if (reply.lqip && !reply.lqip->empty() && !ImageCache::has(path)) {
+                const QImage lqip = qimageFromLqipBlob(*reply.lqip);
+                if (!lqip.isNull()) {
+                    ImageCache::put(path, lqip);
+                }
             }
-        }
 #endif
-        emit bridge()->sizeReady(path, QSize(reply.size->width, reply.size->height));
+            emit bridge()->sizeReady(path, QSize(reply.size->width, reply.size->height));
+        });
     });
 #else
     Q_UNUSED(paths);
