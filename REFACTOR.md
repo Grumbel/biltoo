@@ -30,7 +30,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 | 2 | **SessionOpen** | `MainWindow` / `mainwindow_session` | beginReplace + prepareExpandedSession |
 | 3 | **ProcessMemos** + **SizeProbe** | `thumtoocache.cpp` | memos + serial probe FIFO extracted |
 | 4 | ImageLoadCoordinator | `imageview_load` | generation, install gates |
-| 5 | CropSession | `imageview_crop` | draft + apply/undo |
+| 5 | **CropGeometry** (+ CropSession later) | `imageview_crop` | pure rect math extracted |
 | 6 | **TileNeighborPrefetch** | prefetch slots | session-replace clear |
 | 7 | SlideshowPresenter | phase/atlas | pure-clock rules |
 
@@ -43,6 +43,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ProcessMemos** (`thumtoo_process_memos.{h,cpp}`): process size memo + durable-tile yes/no/min_scale; session-replace clears durable only.
 - **SizeProbe** (`thumtoo_size_probe.cpp`): serial FIFO `scheduleProbe`; Store I/O via `requestSizeAsync`; memo hits still emit `sizeReady`.
 - **TileNeighborPrefetch** (`tileneighborprefetch.{h,cpp}`): off-canvas neighbor tile warm; `ImageView` is host; session wipe calls `clear()`.
+- **CropGeometry** (`cropgeometry.{h,cpp}`): pure crop-rect constrain/translate/shrink; no ImageView state.
 
 
 ## Current pain (evidence)

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1248-crop-geometry.** Extract pure CropGeometry from imageview_crop.
+Prior: **1247**.
+
+### Change
+- `CropGeometry` namespace: rotated corners, cornersInside, translateInside,
+  shrinkInside, constrainToContent.
+- `imageview_crop.cpp` uses CropGeometry; UI button layout stays local.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1248-crop-geometry.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1247-tile-neighbor-prefetch.** Extract TileNeighborPrefetch from ImageView.
 Prior: **1246**.
 

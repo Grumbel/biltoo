@@ -5,6 +5,7 @@
 // draft, clear FullSource before soft crop attach, filmstrip bake emit).
 
 #include "imageview.h"
+#include "cropgeometry.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
 #include "sessionappearance.h"
@@ -142,132 +143,6 @@ ImageItem *ImageView::cropTargetItem() const
 }
 
 
-namespace {
-
-QPolygonF rotatedCropCorners(const QRectF &rect, qreal degrees)
-{
-    const QPointF c = rect.center();
-    QTransform tr;
-    tr.translate(c.x(), c.y());
-    tr.rotate(degrees);
-    tr.translate(-c.x(), -c.y());
-    QPolygonF poly;
-    poly << rect.topLeft() << rect.topRight() << rect.bottomRight() << rect.bottomLeft();
-    return tr.map(poly);
-}
-
-bool pointInsideBounds(const QPointF &p, const QRectF &bounds)
-{
-    return p.x() >= bounds.left() && p.x() <= bounds.right()
-        && p.y() >= bounds.top() && p.y() <= bounds.bottom();
-}
-
-bool cropCornersInside(const QRectF &rect, qreal degrees, const QRectF &bounds)
-{
-    const QPolygonF poly = rotatedCropCorners(rect, degrees);
-    for (const QPointF &pt : poly) {
-        if (!pointInsideBounds(pt, bounds)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-QRectF translateCropInside(QRectF rect, qreal degrees, const QRectF &bounds)
-{
-    for (int pass = 0; pass < 6; ++pass) {
-        const QPolygonF poly = rotatedCropCorners(rect, degrees);
-        qreal dx = 0.0;
-        qreal dy = 0.0;
-        for (const QPointF &pt : poly) {
-            if (pt.x() < bounds.left()) {
-                dx = qMax(dx, bounds.left() - pt.x());
-            } else if (pt.x() > bounds.right()) {
-                dx = qMin(dx, bounds.right() - pt.x());
-            }
-            if (pt.y() < bounds.top()) {
-                dy = qMax(dy, bounds.top() - pt.y());
-            } else if (pt.y() > bounds.bottom()) {
-                dy = qMin(dy, bounds.bottom() - pt.y());
-            }
-        }
-        if (qFuzzyIsNull(dx) && qFuzzyIsNull(dy)) {
-            break;
-        }
-        rect.translate(dx, dy);
-    }
-    return rect;
-}
-
-QRectF shrinkCropInside(QRectF rect, qreal degrees, const QRectF &bounds, qreal minSide)
-{
-    if (cropCornersInside(rect, degrees, bounds)) {
-        return rect;
-    }
-    const QPointF c = rect.center();
-    qreal lo = 0.0;
-    qreal hi = 1.0;
-    QRectF best(c.x() - minSide / 2.0, c.y() - minSide / 2.0, minSide, minSide);
-    for (int i = 0; i < 18; ++i) {
-        const qreal mid = (lo + hi) * 0.5;
-        QRectF r(0, 0, rect.width() * mid, rect.height() * mid);
-        r.moveCenter(c);
-        if (r.width() < minSide || r.height() < minSide) {
-            hi = mid;
-            continue;
-        }
-        if (cropCornersInside(r, degrees, bounds)) {
-            best = r;
-            lo = mid;
-        } else {
-            hi = mid;
-        }
-    }
-    return best;
-}
-
-QRectF constrainCropToContent(QRectF rect, qreal degrees, const QRectF &bounds,
-                              qreal minSide)
-{
-    rect = rect.normalized();
-    if (rect.width() < minSide) {
-        rect.setWidth(minSide);
-    }
-    if (rect.height() < minSide) {
-        rect.setHeight(minSide);
-    }
-    if (qAbs(degrees) < 0.05) {
-        rect = rect.intersected(bounds);
-        if (rect.width() < minSide) {
-            rect.setWidth(minSide);
-        }
-        if (rect.height() < minSide) {
-            rect.setHeight(minSide);
-        }
-        if (rect.right() > bounds.right()) {
-            rect.moveRight(bounds.right());
-        }
-        if (rect.bottom() > bounds.bottom()) {
-            rect.moveBottom(bounds.bottom());
-        }
-        if (rect.left() < bounds.left()) {
-            rect.moveLeft(bounds.left());
-        }
-        if (rect.top() < bounds.top()) {
-            rect.moveTop(bounds.top());
-        }
-        return rect;
-    }
-    rect = translateCropInside(rect, degrees, bounds);
-    if (!cropCornersInside(rect, degrees, bounds)) {
-        rect = shrinkCropInside(rect, degrees, bounds, minSide);
-        rect = translateCropInside(rect, degrees, bounds);
-    }
-    return rect;
-}
-
-} // namespace
-
 void ImageView::ensureCropRectValid()
 {
     ImageItem *item = cropTargetItem();
@@ -290,7 +165,7 @@ void ImageView::ensureCropRectValid()
         }
         return;
     }
-    m_cropRect = constrainCropToContent(m_cropRect, m_cropRotation, cr, 1.0);
+    m_cropRect = CropGeometry::constrainToContent(m_cropRect, m_cropRotation, cr, 1.0);
 }
 
 void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
@@ -718,7 +593,7 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
                 || prior.bottom() > bounds.bottom();
             const bool rotatedOutside =
                 qAbs(m_cropRotation) > 0.05
-                && !cropCornersInside(m_cropRect, m_cropRotation, cr);
+                && !CropGeometry::cornersInside(m_cropRect, m_cropRotation, cr);
             if (aabbOutside || rotatedOutside) {
                 m_cropAllowExpand = true;
             }
@@ -2076,7 +1951,7 @@ void ImageView::updateCropMoveDrag(const QPointF &local, const QRectF &cr)
         // size at the image edge). Only slide so corners stay inside — same as
         // the rotated-frame path via translateCropInside.
         r = r.normalized();
-        r = translateCropInside(r, m_cropRotation, cr);
+        r = CropGeometry::translateInside(r, m_cropRotation, cr);
     }
     m_cropRect = r;
     viewport()->update();
@@ -2102,7 +1977,7 @@ void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qre
         m_cropRotation = qRound(m_cropRotation / 45.0) * 45.0;
     }
     if (!m_cropAllowExpand) {
-        m_cropRect = constrainCropToContent(m_cropDragStartRect, m_cropRotation, cr,
+        m_cropRect = CropGeometry::constrainToContent(m_cropDragStartRect, m_cropRotation, cr,
                                             minSide);
     }
     viewport()->update();
@@ -2226,7 +2101,7 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
         }
         m_cropRect = r;
     } else {
-        m_cropRect = constrainCropToContent(r, m_cropRotation, cr, minSide);
+        m_cropRect = CropGeometry::constrainToContent(r, m_cropRotation, cr, minSide);
     }
     viewport()->update();
 }
