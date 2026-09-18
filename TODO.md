@@ -2,6 +2,24 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1269-slideshow-edge-policy.** Pure headroom / target / need edge + params.
+Prior: **1268**.
+
+### Change
+- `SlideshowAtlasPolicy::motionHeadroom` / `needEdge` / `targetLongEdge` / `makeParams`.
+- ImageView wrappers pass settings + viewport; file-local needEdge constants removed.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1269-slideshow-edge-policy.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1268-slideshow-atlas-policy.** Pure dwell/phase atlas coverage policy.
 Prior: **1267**.
 
