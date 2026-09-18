@@ -2,6 +2,26 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1242-size-resolve-memo-sweep.** Progress tick settles pending from size memo.
+Prior: **1241**.
+
+### Change
+While "Resolving sizes…" is active, each 50 ms progress tick sweeps
+`m_gallerySizeResolvePending` against `ThumtooCache::cachedSize` / host map so
+async warm (or a missed `sizeReady`) cannot leave the HUD stuck when sizes are
+already known.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1242-size-resolve-memo-sweep.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1241-probe-memo-sizeReady.** Probe FIFO memo-hits must emit sizeReady.
 Prior: **1240**.
 

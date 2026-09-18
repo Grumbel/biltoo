@@ -760,6 +760,30 @@ void ImageView::updateGallerySizeResolveProgressHud()
     if (!m_gallerySizeResolveActive || m_gallerySizeResolveTotal <= 0) {
         return;
     }
+    // Defense: async warm can fill the process size memo without a probe
+    // callback (or sizeReady can be missed). Sweep pending against the memo
+    // every progress tick so "Resolving sizes…" cannot stick while sizes exist.
+    const QList<QString> pending = m_gallerySizeResolvePending.values();
+    for (const QString &path : pending) {
+        if (path.isEmpty()) {
+            continue;
+        }
+        if (m_imageSizeByPath.contains(path) && !isProvisionalImageSize(path)) {
+            m_gallerySizeResolvePending.remove(path);
+            continue;
+        }
+        const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
+        if (!isPositiveSize(cached)) {
+            continue;
+        }
+        rememberImageSize(path, cached);
+        applyProbedImageSize(path, cached);
+        m_gallerySizeResolvePending.remove(path);
+    }
+    if (m_gallerySizeResolvePending.isEmpty()) {
+        finishGallerySizeResolve();
+        return;
+    }
     const int done = qMax(0, m_gallerySizeResolveTotal
                           - m_gallerySizeResolvePending.size());
     setCentreProgress(tr("Resolving sizes…"),
