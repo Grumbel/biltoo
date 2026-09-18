@@ -432,8 +432,7 @@ bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
     }
     m_ssHud.seekDragging = true;
     m_ssHud.seekbarVisible = true;
-    const qreal f = qBound(
-        0.0, qreal(event->pos().x()) / qreal(qMax(1, viewport()->width())), 1.0);
+    const qreal f = ViewTransform::unitFraction(event->pos().x(), viewport()->width());
     emit slideshowSeekRequested(f);
     event->accept();
     return true;
@@ -1324,7 +1323,7 @@ void ImageView::updateMouseMoveSlideshowSeek(QMouseEvent *event)
         viewport()->update();
     }
     if (m_ssHud.seekDragging && h > 0 && viewport()->width() > 0) {
-        const qreal f = qBound(0.0, qreal(event->pos().x()) / qreal(viewport()->width()), 1.0);
+        const qreal f = ViewTransform::unitFraction(event->pos().x(), viewport()->width());
         emit slideshowSeekRequested(f);
     }
 }

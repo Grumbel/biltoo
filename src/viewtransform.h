@@ -32,6 +32,17 @@ inline QSize atLeast1(const QSize &s)
 
 inline int atLeast1(int v) { return qMax(1, v); }
 
+/** Position / span clamped to [0,1]. */
+inline qreal unitFraction(int pos, int span)
+{
+    return qBound(0.0, qreal(pos) / qreal(atLeast1(span)), 1.0);
+}
+
+inline qreal unitFraction(qreal pos, qreal span)
+{
+    return qBound(0.0, pos / qMax(qreal(1e-9), span), 1.0);
+}
+
 /** Expand @p bounds by @p pad on each side (empty stays empty). */
 inline QRectF padded(const QRectF &bounds, qreal pad)
 {
