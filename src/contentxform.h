@@ -11,6 +11,7 @@
 #include <QRectF>
 #include <QSize>
 #include <QSizeF>
+#include <QtGlobal>
 
 /**
  * Pure content transform + layout helpers (no ImageItem / GUI).
@@ -28,6 +29,28 @@
  * cropSourceSize stay in the new post-orient space.
  */
 namespace ContentXform {
+
+/** Width/height ratio; height treated as at least 1. */
+inline qreal aspectRatio(const QSize &s)
+{
+    return double(s.width()) / double(qMax(1, s.height()));
+}
+
+/** True when relative aspect differs by more than @p eps. */
+inline bool aspectChanged(const QSize &a, const QSize &b, qreal eps = 0.02)
+{
+    return qAbs(aspectRatio(a) - aspectRatio(b)) > eps;
+}
+
+/** View scale factor so @p after keeps @p before on-screen width (same aspect). */
+inline qreal footprintScaleFactor(const QSize &before, const QSize &after)
+{
+    if (before.width() < 1 || after.width() < 1) {
+        return 1.0;
+    }
+    return qreal(before.width()) / qreal(after.width());
+}
+
 
 /** Max long edge for materializeDisplay on the GUI thread (matches SessionAppearance). */
 inline constexpr int kGuiMaterializeMaxEdge = 512;
