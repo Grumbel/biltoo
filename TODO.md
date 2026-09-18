@@ -2,6 +2,28 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1205-gui-no-get-meta.** Cold Gallery GUI stalls: isUnsupported memo; no get_meta on GUI; drop O(n) tile census.
+Prior: **1204**.
+
+### Cause
+`scheduleTilePyramid` called `isUnsupported()` → Store `get_meta` on the GUI for every blank/tile cell. Stacked N× SQLite → `TileLoadCoordinator::tick` / `updateGalleryDecodeWindow` at 100–1400 ms.
+
+### Fix
+- `isUnsupported`: process memo; GUI returns memo only (never `get_meta`).
+- `scheduleTilePyramid`: unsupported check only on worker.
+- Decode window: remove full `m_items` `tileLodWanted` census before tick.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1205-gui-no-get-meta.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1204-dead-gallery-soft-helpers.** Remove unused Gallery soft-climb helpers after LQIP+tiles.
 Prior: **1203**.
 

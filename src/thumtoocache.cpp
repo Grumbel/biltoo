@@ -203,6 +203,9 @@ QSet<QString> g_durableTilesYes;
 QHash<QString, int> g_durableTileMinScale;
 /** Process memo of durable sizes — GUI must not call Store get_size. */
 QHash<QString, QSize> g_sizeMemo;
+/** Process memo of ContentStatus::Unsupported (get_meta is SQLite — never on GUI). */
+QSet<QString> g_unsupportedYes;
+QSet<QString> g_unsupportedNo;
 /**
  * Negative memo: path → earliest msecs-since-epoch to re-query Store.
  * tileLodWanted/paint called hasDurableTiles every frame; uncached misses
@@ -908,9 +911,26 @@ bool isUnsupported(const QString &path)
     if (path.isEmpty()) {
         return false;
     }
+    {
+        std::lock_guard lock(g_mu);
+        if (g_unsupportedYes.contains(path)) {
+            return true;
+        }
+        if (g_unsupportedNo.contains(path)) {
+            return false;
+        }
+    }
+    // GUI: memo only — get_meta is SQLite I/O (Gallery open was N×get_meta via
+    // scheduleTilePyramid/isUnsupported and blew GUI_BUDGET by hundreds of ms).
+    if (QThread::isMainThread()) {
+        return false;
+    }
+    ASSERT_NOT_GUI_THREAD();
     init();
     const std::string uri = toThumtooUri(path);
     if (uri.empty()) {
+        std::lock_guard lock(g_mu);
+        g_unsupportedNo.insert(path);
         return false;
     }
     thumtoo::Client *c = nullptr;
@@ -922,7 +942,18 @@ bool isUnsupported(const QString &path)
         return false;
     }
     if (auto meta = c->get_meta(uri)) {
-        return meta->status == thumtoo::ContentStatus::Unsupported;
+        const bool bad = meta->status == thumtoo::ContentStatus::Unsupported;
+        std::lock_guard lock(g_mu);
+        if (bad) {
+            g_unsupportedYes.insert(path);
+        } else {
+            g_unsupportedNo.insert(path);
+        }
+        return bad;
+    }
+    {
+        std::lock_guard lock(g_mu);
+        g_unsupportedNo.insert(path);
     }
 #else
     Q_UNUSED(path);
@@ -1865,7 +1896,7 @@ quint64 setPrimaryInterest(const QString &path, int edge)
 bool scheduleTilePyramid(const QString &path)
 {
 #ifdef BILTOO_HAVE_THUMTOO
-    if (path.isEmpty() || isUnsupported(path)) {
+    if (path.isEmpty()) {
         return false;
     }
     // Memo hit: pyramid already on Store — never re-encode (Gallery open was
@@ -1873,10 +1904,14 @@ bool scheduleTilePyramid(const QString &path)
     if (hasDurableTilesKnown(path)) {
         return false;
     }
+    // Never isUnsupported on the GUI (get_meta). Worker filters unsupported.
     init();
     const QString pathCopy = path;
     QThreadPool::globalInstance()->start([pathCopy]() {
         ASSERT_NOT_GUI_THREAD();
+        if (isUnsupported(pathCopy)) {
+            return;
+        }
         // Discover once; skip encode when coverage already exists.
         if (hasDurableTiles(pathCopy)) {
             return;

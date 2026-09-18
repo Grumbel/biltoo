@@ -312,49 +312,22 @@ void ImageView::updateGalleryDecodeWindow()
     }
 
     // Tile issue: one coordinator tick per decode window (not per path).
-    // Gallery overview needs a large budget so many coarse cells fill quickly.
+    // Do not census tileLodWanted() over all m_items — that was O(n) per refresh
+    // and stacked with scheduleTilePyramid get_meta on cold open.
     int tileBudget = isGalleryMode() ? 48 : 8;
-    int tileWanted = 0;
-    int tileLive = 0;
-    int tileCovered = 0;
-    for (ImageItem *ii : m_items) {
-        if (!ii || !ii->tileLodWanted()) {
-            continue;
-        }
-        ++tileWanted;
-        if (ii->tileLodActive()) {
-            ++tileLive;
-        }
-        if (ii->tileLodViewportCovered()) {
-            ++tileCovered;
-        }
-    }
     tickPrimaryTileLod(tileBudget);
 
-    // Rate-limited tile debug (BILTOO_TILE_DEBUG=1).
+    // Rate-limited tile debug (BILTOO_TILE_DEBUG=1) — sample viewport hits only.
     if (const char *td = std::getenv("BILTOO_TILE_DEBUG");
-        td && td[0] && td[0] != '0' && tileWanted > 0) {
+        td && td[0] && td[0] != '0') {
         static qint64 s_lastLogMs = 0;
         const qint64 now = QDateTime::currentMSecsSinceEpoch();
         if (now - s_lastLogMs >= 500) {
             s_lastLogMs = now;
             std::fprintf(stderr,
-                         "biltoo/tile: wanted=%d live=%d covered=%d lqipBusy=%d "
-                         "visibleSched=%d inflight=%d\n",
-                         tileWanted, tileLive, tileCovered, lqipBusy ? 1 : 0,
-                         scheduled, gallerySoftInflightCount());
-            int samples = 0;
-            for (ImageItem *ii : m_items) {
-                if (!ii || !ii->tileLodWanted() || samples >= 3) {
-                    continue;
-                }
-                if (ii->tileLodViewportCovered()) {
-                    continue;
-                }
-                std::fprintf(stderr, "  %s\n",
-                             qPrintable(ii->tileLodDebugLine()));
-                ++samples;
-            }
+                         "biltoo/tile: lqipBusy=%d visibleSched=%d inflight=%d
+",
+                         lqipBusy ? 1 : 0, scheduled, gallerySoftInflightCount());
             std::fflush(stderr);
         }
     }
