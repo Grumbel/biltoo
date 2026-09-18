@@ -71,6 +71,14 @@ inline qreal invAxisScale(qreal cropExtent, int sourceExtent)
 
 /** Max long edge for materializeDisplay on the GUI thread (matches SessionAppearance). */
 inline constexpr int kGuiMaterializeMaxEdge = 512;
+inline constexpr int kGuiMaterializePreviewEdge = 256;
+
+/** Cap used when materializing a GUI preview sample. */
+inline int materializePreviewEdge()
+{
+    return qMin(kGuiMaterializeMaxEdge, kGuiMaterializePreviewEdge);
+}
+
 
 struct Value {
     int quarterTurns = 0; // normalized 0..3
