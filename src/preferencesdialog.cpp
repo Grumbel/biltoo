@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "preferencesdialog.h"
+#include "slideshowtypes.h"
 #include "defaultapps.h"
 #include "icons.h"
 
@@ -945,7 +946,7 @@ int PreferencesDialog::hudFontPointSize() const
 void PreferencesDialog::setHudFontPointSize(int pt)
 {
     if (m_hudFontSpin) {
-        m_hudFontSpin->setValue(qBound(8, pt, 48));
+        m_hudFontSpin->setValue(qBound(8, pt, 48));  // HudAppearance::effectiveFontPointSize range
     }
 }
 
@@ -1188,7 +1189,7 @@ double PreferencesDialog::panZoomFactor() const
 void PreferencesDialog::setPanZoomFactor(double factor)
 {
     if (m_panZoomFactorSpin) {
-        m_panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
+        m_panZoomFactorSpin->setValue(SlideshowSettings::clampPanZoomFactor(factor));
     }
 }
 

@@ -146,9 +146,14 @@ struct SlideshowSettings {
     SlideshowLetterboxFill letterboxFill = SlideshowLetterboxFill::AppBackground;
     QColor padColor{42, 42, 42};
 
+    static qreal clampPanZoomFactor(qreal factor)
+    {
+        return qBound(1.02, factor, 1.5);
+    }
+
     void setPanZoomFactor(qreal factor)
     {
-        panZoomFactor = qBound(1.02, factor, 1.5);
+        panZoomFactor = clampPanZoomFactor(factor);
     }
 
     void setTransitionDurationMs(int ms)
