@@ -3,20 +3,15 @@
 
 #include "imageview.h"
 
+#include "attentiongeometry.h"
 #include "imageitem.h"
 #include "imageloader.h"
 
 #include <QCursor>
-#include <QLineF>
 #include <QPainter>
 #include <QSet>
 #include <QUndoCommand>
 #include <algorithm>
-
-namespace {
-constexpr qreal kHandleScreenPx = 12.0;
-constexpr qreal kPrimaryScreenPx = 15.0;
-}
 
 SessionImageId ImageView::attentionSessionId() const
 {
@@ -33,15 +28,10 @@ SessionImageId ImageView::attentionSessionId() const
 
 QPointF ImageView::attentionViewPos(ImageItem *item, const QPointF &norm) const
 {
-    if (!item) {
+    if (!item || item->contentRect().isEmpty()) {
         return {};
     }
-    const QRectF cr = item->contentRect();
-    if (cr.isEmpty()) {
-        return {};
-    }
-    const QPointF local(cr.left() + norm.x() * cr.width(),
-                        cr.top() + norm.y() * cr.height());
+    const QPointF local = AttentionGeometry::localFromNorm(norm, item->contentRect());
     return mapFromScene(item->mapToScene(local));
 }
 
@@ -264,18 +254,12 @@ int ImageView::attentionHandleIndexAt(const QPoint &viewPos) const
         return -1;
     }
     const QVector<QPointF> pts = attentionPointsForTarget();
-    int best = -1;
-    qreal bestDist = kHandleScreenPx + 1.0;
-    for (int i = 0; i < pts.size(); ++i) {
-        const QPointF v = attentionViewPos(item, pts.at(i));
-        const qreal d = QLineF(v, QPointF(viewPos)).length();
-        const qreal lim = (i == 0) ? kPrimaryScreenPx : kHandleScreenPx;
-        if (d <= lim && d < bestDist) {
-            bestDist = d;
-            best = i;
-        }
+    QVector<QPointF> viewPts;
+    viewPts.reserve(pts.size());
+    for (const QPointF &n : pts) {
+        viewPts.append(attentionViewPos(item, n));
     }
-    return best;
+    return AttentionGeometry::handleIndexAt(viewPos, viewPts);
 }
 
 bool ImageView::attentionHandleAt(const QPoint &viewPos) const
@@ -341,7 +325,8 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
         const QPointF view = attentionViewPos(item, pts.at(i));
         const bool isPrimary = (i == 0);
         const bool isSel = selected.contains(i);
-        const qreal r = isPrimary ? kPrimaryScreenPx : kHandleScreenPx;
+        const qreal r = isPrimary ? AttentionGeometry::kPrimaryScreenPx
+                                  : AttentionGeometry::kHandleScreenPx;
         const QColor ring = isSel ? QColor(80, 180, 255)
                                   : (isPrimary ? QColor(255, 220, 60)
                                                : QColor(255, 255, 255));

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1303-attention-geometry-hit-test.** Pure attention handle hit-test.
+Prior: **1302**.
+
+### Change
+- `AttentionGeometry` (`attentiongeometry.{h,cpp}`): `localFromNorm`,
+  `handleIndexAt`, shared `kHandleScreenPx` / `kPrimaryScreenPx`.
+- `attentionHandleIndexAt` / `attentionViewPos` / paint radii use the pure helpers.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1303-attention-geometry-hit-test.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1302-crop-geometry-rubber-band.** Pure crop rubber-band rect geometry.
 Prior: **1301**.
 

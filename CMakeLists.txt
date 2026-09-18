@@ -130,6 +130,8 @@ add_executable(biltoo
   src/cropsession.cpp
   src/cropsession.h
   src/attentionsession.h
+  src/attentiongeometry.cpp
+  src/attentiongeometry.h
   src/centreprogress.h
   src/grouptransformsession.h
   src/pageguidesession.h
