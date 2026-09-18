@@ -108,7 +108,8 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         qreal nk = st.shear;
         qreal nrot = st.rotation;
         if (PlacementLinear::decomposeAxes(e1, e2, &nx, &ny, &nk, &nrot)) {
-            item->setItemScale(qBound(0.01, nx, 50.0), qBound(0.01, ny, 50.0));
+            PlacementLinear::clampScaleXY(&nx, &ny);
+            item->setItemScale(nx, ny);
             item->setItemShear(nk);
             item->setItemRotation(nrot);
         }

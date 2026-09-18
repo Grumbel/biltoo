@@ -7,6 +7,7 @@
 #include <QPointF>
 #include <QRectF>
 #include <QTransform>
+#include <QtGlobal>
 
 /**
  * Workspace linear pose helpers: R(θ)·H(k)·S(sx,sy) with
@@ -43,6 +44,19 @@ qreal angleAbout(const QPointF &centre, const QPointF &scenePos);
 
 /** Bring @p degrees into [0, 360). */
 qreal normalizeDegrees(qreal degrees);
+
+/** Clamp placement scale axes to a safe interactive range. */
+inline void clampScaleXY(qreal *sx, qreal *sy,
+                         qreal lo = 0.01, qreal hi = 50.0)
+{
+    if (sx) {
+        *sx = qBound(lo, *sx, hi);
+    }
+    if (sy) {
+        *sy = qBound(lo, *sy, hi);
+    }
+}
+
 
 /** Snap @p degrees to the nearest multiple of @p stepDegrees. */
 qreal snapDegrees(qreal degrees, qreal stepDegrees);
