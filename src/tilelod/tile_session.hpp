@@ -142,6 +142,7 @@ private:
 
   // Debounce adjacent scale steps during continuous zoom (Galapix lesson).
   bool m_have_stable_scale = false;
+  bool m_reached_desired = false;  // false until cold climb hits desired
   int m_stable_scale = 0;
   int m_pending_scale = 0;
   std::chrono::steady_clock::time_point m_pending_since{};

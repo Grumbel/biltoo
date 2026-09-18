@@ -64,6 +64,7 @@ void TileSession::set_content_size(int width, int height, int min_scale)
   m_target_scale = m_max_scale;
   m_desired_scale = m_max_scale;
   m_have_stable_scale = false;
+  m_reached_desired = false;
   m_draw_plan_dirty = true;
 }
 
@@ -71,7 +72,6 @@ void TileSession::set_content_size(int width, int height, int min_scale)
 int TileSession::stable_request_scale(int desired_scale)
 {
   using clock = std::chrono::steady_clock;
-  // Clamp desired into [min, max].
   if (desired_scale < m_min_scale) {
     desired_scale = m_min_scale;
   }
@@ -82,47 +82,54 @@ int TileSession::stable_request_scale(int desired_scale)
 
   if (!m_have_stable_scale) {
     m_have_stable_scale = true;
-    // Cold: always open at coarsest so the first paint is a cheap overview.
-    m_stable_scale = m_max_scale;
+    // Cold: coarsest first. Warm shared cache: open at density target.
+    if (has_any_succeeded_tile()) {
+      m_stable_scale = desired_scale;
+      m_reached_desired = true;
+    } else {
+      m_stable_scale = m_max_scale;
+      m_reached_desired = (m_stable_scale == desired_scale);
+    }
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
     return m_stable_scale;
   }
 
-  // Zoom out (desired coarser = higher scale number): jump immediately.
+  // Zoom out (coarser): commit immediately. Leaves progressive mode.
   if (desired_scale > m_stable_scale) {
     m_stable_scale = desired_scale;
+    m_reached_desired = true;
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
     return m_stable_scale;
   }
 
-  // Progressive climb toward a finer desired (lower scale number).
-  // Step at most one level per call, and only when the *current* plan's
-  // visible keys at the held scale have all settled (Succeeded or Failed).
-  // Do not step on "any tile at scale anywhere in the shared cache" — that
-  // raced ahead of coverage and also skipped levels.
-  if (m_stable_scale > desired_scale) {
+  // Cold progressive climb toward desired — only until first arrival at desired.
+  // Must not run after zoom-out/in or adjacent hold is destroyed.
+  if (!m_reached_desired && m_stable_scale > desired_scale) {
     m_pending_scale = desired_scale;
     if (visible_keys_settled()) {
       m_stable_scale = m_stable_scale - 1;
       m_pending_since = clock::now();
     }
+    if (m_stable_scale <= desired_scale) {
+      m_stable_scale = desired_scale;
+      m_reached_desired = true;
+    }
     return m_stable_scale;
   }
 
-  // At desired (or finer hold from prior): adjacent zoom-in debounce.
   if (desired_scale == m_stable_scale) {
+    m_reached_desired = true;
     m_pending_scale = desired_scale;
     return m_stable_scale;
   }
-  // desired < stable should have been handled above; remaining is zoom-in
-  // from a previous hold where stable was finer? Treat as approach to desired.
+
+  // Steady state: adjacent zoom-in debounce (Galapix lesson).
   int const delta = m_stable_scale - desired_scale;
   if (delta > 1) {
-    // Large jump toward finer: still progressive one step if climbing up from
-    // coarse; if somehow stable is finer than desired, snap out already done.
     m_stable_scale = desired_scale;
+    m_reached_desired = true;
     m_pending_scale = desired_scale;
     m_pending_since = clock::now();
     return m_stable_scale;
@@ -134,6 +141,7 @@ int TileSession::stable_request_scale(int desired_scale)
   }
   if (clock::now() - m_pending_since >= kScaleHold) {
     m_stable_scale = desired_scale;
+    m_reached_desired = true;
     return m_stable_scale;
   }
   return m_stable_scale;
@@ -150,6 +158,7 @@ bool TileSession::visible_keys_settled() const
   if (m_visible_keys.empty()) {
     return false;
   }
+  bool any_success = false;
   for (TileKey const& key : m_visible_keys) {
     CacheEntry const* e = m_cache->find(key);
     if (!e) {
@@ -158,9 +167,12 @@ bool TileSession::visible_keys_settled() const
     if (e->state == TileState::InFlight) {
       return false;
     }
-    // Succeeded or Failed: settled (Failed must not block climb forever).
+    if (e->state == TileState::Succeeded && e->bitmap.valid()) {
+      any_success = true;
+    }
   }
-  return true;
+  // Require at least one success — all-Failed must not climb (spam finer scales).
+  return any_success;
 }
 
 bool TileSession::advance_progressive_scale()
@@ -168,7 +180,8 @@ bool TileSession::advance_progressive_scale()
   if (!m_have_stable_scale || m_content_w <= 0) {
     return false;
   }
-  if (m_stable_scale <= m_desired_scale) {
+  // Only during cold progressive climb — not after zoom settle.
+  if (m_reached_desired || m_stable_scale <= m_desired_scale) {
     return false;
   }
   if (!visible_keys_settled()) {
@@ -176,6 +189,10 @@ bool TileSession::advance_progressive_scale()
   }
   int const prev = m_stable_scale;
   m_stable_scale = m_stable_scale - 1;
+  if (m_stable_scale <= m_desired_scale) {
+    m_stable_scale = m_desired_scale;
+    m_reached_desired = true;
+  }
 
   // Re-plan at the new held scale with the current viewport.
   PlannerInput in;
@@ -214,6 +231,7 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
 
   // Desired scale from density, then hold adjacent steps during continuous zoom.
   PlannerOutput const ideal = plan_visible_tiles(in);
+  int const prev_desired = m_desired_scale;
   m_desired_scale = ideal.target_scale;
   int const held = stable_request_scale(m_desired_scale);
   in.viewport = vp;
@@ -227,13 +245,12 @@ void TileSession::set_viewport(Viewport const& vp, double margin_content)
   PlannerOutput const out = plan_visible_tiles(in);
   int const prev_target = m_target_scale;
 
-  // Only bump generation when the *plan* changes. Host calls set_viewport every
-  // paint/tick with a stable viewport; bumping every time made Failed.generation
-  // never match m_generation, so failed cells were re-requested every 33ms
-  // (biltoo-1042 no-spam was ineffective on the real host path).
+  // Bump generation when the plan changes, or when density intent changes so
+  // Failed keys can be retried after a zoom (no-spam still holds for stable plan).
   bool const plan_changed =
       out.target_scale != m_target_scale || out.visible_keys != m_visible_keys;
-  if (plan_changed) {
+  bool const desired_changed = (m_desired_scale != prev_desired);
+  if (plan_changed || desired_changed) {
     ++m_generation;
   }
 

@@ -2,6 +2,34 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1177-tile-progressive-harden.** Progressive LOD hardened + unit tests green.
+Prior: **1176**.
+
+### Investigation findings
+1. Progressive climb ran on every set_viewport and **destroyed adjacent zoom-in hold**.
+2. Climb stopped at target_scale==desired without filling exact keys (draw used parents).
+3. All-Failed must not climb (spam); density change must bump generation to retry Failed.
+4. Fake test `complete_all_requested` re-completed stale keys with new callbacks.
+
+### Fixes
+- `m_reached_desired`: cold climb only until first hit of desired; then zoom debounce only
+- `visible_keys_settled`: all keys settled **and** ≥1 Succeeded
+- set_viewport: bump generation when `desired_scale` changes (Failed retry on zoom)
+- Warm shared cache: open at desired, not max_scale
+- Tests: `climb_to_scale` until `coverage().fully_covered()`; Fake complete clears batch
+- `biltoo-tilelod-test`: **all passed**
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1177-tile-progressive-harden.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1176-tile-progressive-rewrite.** Rewrite progressive tile scale/issue.
 Prior: **1175**.
 
