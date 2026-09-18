@@ -2,6 +2,23 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1196-parallel-warm-memos.** Parallel warmSessionOpenMemos (4 workers) for large sessions.
+Prior: **1195**.
+
+### Change
+- `warmSessionOpenMemos` fans out size/LQIP/durable-tile Store lookups across 4 threads when N > 8.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1196-parallel-warm-memos.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1195-warm-no-meta-probe.** Faster warm memos; no GUI isUnsupported on size probe.
 Prior: **1194**.
 

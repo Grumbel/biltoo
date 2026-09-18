@@ -2028,34 +2028,52 @@ void warmSessionOpenMemos(const QStringList &paths)
         return;
     }
     const QStringList copy = paths;
-    auto work = [copy]() {
+    auto workOne = [](const QString &p) {
+        if (p.isEmpty()) {
+            return;
+        }
+        // Missing size/LQIP is a normal empty result for unsupported.
+        (void)cachedSize(p, /*scheduleRevalidate=*/false);
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+        if (!ImageCache::has(p)) {
+            const QImage lqip = cachedLqipImage(p);
+            if (!lqip.isNull()) {
+                ImageCache::put(p, lqip);
+            }
+        }
+#endif
+        (void)hasDurableTiles(p);
+    };
+    auto workAll = [copy, workOne]() {
         ASSERT_NOT_GUI_THREAD();
         init();
-        for (const QString &p : copy) {
-            if (p.isEmpty()) {
-                continue;
+        // Parallel Store lookups — sequential warm was O(n) wall on large sessions.
+        constexpr int kWorkers = 4;
+        const int n = copy.size();
+        if (n <= 8) {
+            for (const QString &p : copy) {
+                workOne(p);
             }
-            // No isUnsupported here — that is an extra get_meta per path.
-            // Missing size/LQIP is a normal empty result for unsupported.
-            (void)cachedSize(p, /*scheduleRevalidate=*/false);
-#if defined(BILTOO_HAVE_THUMTOO_LQIP)
-            // LQIP into ImageCache so GUI install never needs Store get_lqip.
-            if (!ImageCache::has(p)) {
-                const QImage lqip = cachedLqipImage(p);
-                if (!lqip.isNull()) {
-                    ImageCache::put(p, lqip);
+            return;
+        }
+        std::vector<std::thread> threads;
+        threads.reserve(size_t(kWorkers));
+        for (int w = 0; w < kWorkers; ++w) {
+            threads.emplace_back([&, w]() {
+                for (int i = w; i < n; i += kWorkers) {
+                    workOne(copy.at(i));
                 }
-            }
-#endif
-            (void)hasDurableTiles(p);
+            });
+        }
+        for (std::thread &th : threads) {
+            th.join();
         }
     };
     if (QThread::isMainThread()) {
-        // Open path needs memos before sizesWarm / pack — join a worker.
-        std::thread th(work);
+        std::thread th(workAll);
         th.join();
     } else {
-        work();
+        workAll();
     }
 #else
     Q_UNUSED(paths);
