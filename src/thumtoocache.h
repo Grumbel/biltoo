@@ -394,7 +394,12 @@ struct StoredContentAppearance {
     bool isIdentity() const;
 };
 
-/** sha256:<hex> for a regular local file path; empty if unavailable / non-file. */
+/**
+ * Stable appearance key for @p path (sha256:<hex> form for AppearanceStore).
+ * Default: path + size + mtime (+ page/member) — no file-byte checksum.
+ * Set BILTOO_CONTENT_HASH=1 for optional full-file SHA-256 (cached; recomputed
+ * only when size/mtime change). Empty if path cannot be identified.
+ */
 QString contentIdForPath(const QString &path);
 
 /** Load durable content appearance for path's content id (if any). */

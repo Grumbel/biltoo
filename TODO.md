@@ -2,6 +2,28 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1117-path-identity-default.** Appearance keys path+size+mtime by default; content hash optional.
+Prior: **1116**.
+
+### Policy
+- **Default:** no file-byte checksums. `pathContentId` = SHA-256 of
+  `path|size|mtime|page|member` (metadata only). Rows follow path identity /
+  Store identity, not content hash.
+- **Optional:** `BILTOO_CONTENT_HASH=1` → full-file SHA-256 of outer path,
+  cached by size/mtime (rehash only when those change); page/member fold stays
+  cheap.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1117-path-identity-default.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1116-pathcontentid-outer-cache.** Hash outer archive/PDF once for all members.
 Prior: **1115**.
 

@@ -93,3 +93,9 @@ re-run `thumtoo-prepare --lqip --tiles …`.
 Cause: `pathContentId` hashed the outer archive **once per member** during
 placeholder `installDisplayPixels` (appearance seed). Fixed in tip **1116**
 (outer-file hash cache).
+
+## Appearance keys (path identity)
+
+Default `pathContentId` never reads file bytes — key is path+size+mtime
+(+ page/member). Optional `BILTOO_CONTENT_HASH=1` enables full-file SHA-256,
+cached until size/mtime change.
