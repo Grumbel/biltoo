@@ -2,6 +2,30 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1132-soft-hud-no-fullviewport.** Soft progress HUD must not force FullViewportUpdate.
+Prior: **1131**.
+
+### Bug
+- `setCentreProgress` always switched to **FullViewportUpdate**.
+- During “Improving previews…” Gallery re-painted all items every frame and
+  defeated ItemCoordinateCache scroll savings (high CPU while soft climbed).
+
+### Fix
+- FullViewportUpdate only when the scene has **no items** (empty centre panel).
+- Gallery keeps **BoundingRectViewportUpdate**; `viewport()->update()` still
+  refreshes the overlay.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1132-soft-hud-no-fullviewport.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1131-soft-progress-hud.** Centre “Improving previews…” while LQIP remains; faster scroll refresh.
 Prior: **1130**.
 

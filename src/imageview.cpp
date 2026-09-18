@@ -864,8 +864,13 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
     }
     m_centreProgressTitle = title;
     m_centreProgressDetail = detail;
-    // Need full viewport updates so the overlay repaints on an empty scene.
-    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    // Empty scene needs FullViewportUpdate or the centre panel never paints.
+    // Gallery with tiles must keep BoundingRectViewportUpdate — FullViewport
+    // during “Improving previews…” re-painted every item every frame and
+    // undid ItemCoordinateCache scroll savings.
+    if (m_items.isEmpty()) {
+        setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    }
     if (viewport()) {
         viewport()->update();
     }
