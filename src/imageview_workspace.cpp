@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "workspacegeometry.h"
 #include "imageitem.h"
 
 #include <QScrollBar>
@@ -69,8 +70,8 @@ void ImageView::updateWorkspaceSceneRect()
     }
     // Viewport in scene coordinates — ensure room to pan around content.
     const QRectF viewScene = mapToScene(viewport()->rect()).boundingRect();
-    const qreal mx = qMax(96.0, viewScene.width() * 0.35);
-    const qreal my = qMax(96.0, viewScene.height() * 0.35);
+    const qreal mx = WorkspaceGeometry::sceneMargin(viewScene.width());
+    const qreal my = WorkspaceGeometry::sceneMargin(viewScene.height());
     if (!bounds.isValid() || bounds.isEmpty()) {
         bounds = viewScene.adjusted(-mx, -my, mx, my);
     } else {
@@ -98,12 +99,9 @@ QPointF ImageView::findEmptyPlacement(const QSizeF &itemSize) const
     }
 
     // Cap the collision footprint so huge images still leave room nearby
-    const qreal maxEdge = qMax(120.0, qMin(viewRect.width(), viewRect.height()) * 0.45);
-    const qreal longest = qMax(size.width(), size.height());
-    if (longest > maxEdge) {
-        const qreal f = maxEdge / longest;
-        size = QSizeF(size.width() * f, size.height() * f);
-    }
+    const qreal maxEdge = WorkspaceGeometry::placementMaxEdge(
+        viewRect.width(), viewRect.height());
+    size = WorkspaceGeometry::cappedFootprint(size, maxEdge);
 
     const qreal gap = 32.0;
     auto overlaps = [&](const QPointF &centre) {
