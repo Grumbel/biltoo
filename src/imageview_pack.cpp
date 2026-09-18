@@ -412,11 +412,11 @@ void ImageView::setLayoutMode(LayoutMode mode)
 
 void ImageView::setGridColumns(int columns)
 {
-    const int clamped = qMax(0, columns); // 0 = automatic
-    if (clamped == m_layout.gridColumns) {
+    const int before = m_layout.gridColumns;
+    m_layout.setGridColumns(columns);
+    if (m_layout.gridColumns == before) {
         return;
     }
-    m_layout.gridColumns = clamped;
     if (isGalleryMode()
         && (m_layout.mode == LayoutMode::Grid || m_layout.mode == LayoutMode::GridCrop
             || m_layout.mode == LayoutMode::Flow || m_layout.mode == LayoutMode::FlowFill
@@ -427,11 +427,11 @@ void ImageView::setGridColumns(int columns)
 
 void ImageView::setMasonryColumns(int columns)
 {
-    const int clamped = qBound(1, columns, 32);
-    if (clamped == m_layout.masonryColumns) {
+    const int before = m_layout.masonryColumns;
+    m_layout.setMasonryColumns(columns);
+    if (m_layout.masonryColumns == before) {
         return;
     }
-    m_layout.masonryColumns = clamped;
     if ((m_layout.mode == LayoutMode::Masonry || m_layout.mode == LayoutMode::MasonryFill)
         && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
@@ -440,11 +440,11 @@ void ImageView::setMasonryColumns(int columns)
 
 void ImageView::setMasonryRows(int rows)
 {
-    const int clamped = qBound(1, rows, 32);
-    if (clamped == m_layout.masonryRows) {
+    const int before = m_layout.masonryRows;
+    m_layout.setMasonryRows(rows);
+    if (m_layout.masonryRows == before) {
         return;
     }
-    m_layout.masonryRows = clamped;
     if ((m_layout.mode == LayoutMode::MasonryRows || m_layout.mode == LayoutMode::MasonryRowsFill)
         && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
