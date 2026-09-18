@@ -80,6 +80,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **TextLayerGeometry** (`textlayergeometry.{h,cpp}`): pure text-region intersect + reading-order sort.
 - **ItemHandlePolicy** (`itemhandlepolicy.{h,cpp}`): pure ImageItem::Handle classification predicates.
 - **StackGeometry** (`stackgeometry.{h,cpp}`): pure scene content-overlap + raise/lower z-step math.
+- **PerfStats** (`perfstats.h`): BILTOO_PERF paint/FPS + decode-window timings bag.
 - **CropSession::locksPath / locksItem**: draft sample freeze predicates on the session bag.
 - **CropSession::isDraftLayoutGeometry**; **SlideshowProgressHud::lastPaintFp**.
 - **TileLoadCoordinator** owns PreferCache cancel-for-tiles set (`clearPreferCancelled` on session invalidate).

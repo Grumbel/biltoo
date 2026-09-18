@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1325-perf-stats.** Extract PerfStats paint/decode timing bag.
+Prior: **1324**.
+
+### Change
+- `PerfStats` (`perfstats.h`): enabled, FPS clock, paint/decode-window µs
+- `enableFromEnv`, `notePaintUs`, `noteDecodeWindowUs`
+- ImageView holds `m_perf`; paintEvent + Gallery decode window use the bag
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1325-perf-stats.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1324-stack-z-step.** Pure raise/lower z-step math in StackGeometry.
 Prior: **1323**.
 

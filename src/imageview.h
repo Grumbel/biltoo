@@ -23,6 +23,7 @@
 #include "hudappearance.h"
 #include "sessionchrome.h"
 #include "gallerysoftbook.h"
+#include "perfstats.h"
 #include "imagesizebook.h"
 #include "pathitemstatebook.h"
 #include "pendingitemappearancebook.h"
@@ -1859,14 +1860,7 @@ private:
     TileNeighborPrefetch m_tileNeighborPrefetch;
     /** Paths for which PreferCache was cancelled after entering tile band. */
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
-    bool m_perfEnabled = false;
-    QElapsedTimer m_perfFpsClock;
-    int m_perfFrameCount = 0;
-    qreal m_perfFps = 0.0;
-    qint64 m_perfLastPaintUs = 0;
-    qint64 m_perfLastDecodeWindowUs = 0;
-    qint64 m_perfMaxDecodeWindowUs = 0;
-    int m_perfDecodeWindowRuns = 0;
+    PerfStats m_perf;
 
     QTimer *m_gallerySoftWatchdog = nullptr;
     QTimer *m_layoutDebounceTimer = nullptr;

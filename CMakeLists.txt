@@ -158,6 +158,7 @@ add_executable(biltoo
   src/hudappearance.h
   src/sessionchrome.h
   src/gallerysoftbook.h
+  src/perfstats.h
   src/imagesizebook.h
   src/pathitemstatebook.h
   src/pendingitemappearancebook.h

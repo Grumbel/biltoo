@@ -252,15 +252,7 @@ ImageView::ImageView(QWidget *parent)
         }
     });
 
-        {
-        const char *p = std::getenv("BILTOO_PERF");
-        const char *d = std::getenv("THUMTOO_DEBUG");
-        m_perfEnabled = (p && p[0] && p[0] != '0')
-            || (d && d[0] && d[0] != '0');
-        if (m_perfEnabled) {
-            m_perfFpsClock.start();
-        }
-    }
+    m_perf.enableFromEnv();
     m_hudFlashTimer = new QTimer(this);
     m_hudFlashTimer->setSingleShot(true);
     m_layoutDebounceTimer = new QTimer(this);

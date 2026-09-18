@@ -523,13 +523,13 @@ void ImageView::paintHudPanels(QPainter &painter)
             if (!ssPrefetchLine.isEmpty()) {
                 topLeft.append({ssPrefetchLine, false});
             }
-            if (m_perfEnabled) {
+            if (m_perf.enabled) {
                 topLeft.append({
                     tr("FPS %1 · paint %2 ms · decode-win %3 ms (max %4)")
-                        .arg(m_perfFps, 0, 'f', 1)
-                        .arg(m_perfLastPaintUs / 1000.0, 0, 'f', 1)
-                        .arg(m_perfLastDecodeWindowUs / 1000.0, 0, 'f', 1)
-                        .arg(m_perfMaxDecodeWindowUs / 1000.0, 0, 'f', 1),
+                        .arg(m_perf.fps, 0, 'f', 1)
+                        .arg(m_perf.lastPaintUs / 1000.0, 0, 'f', 1)
+                        .arg(m_perf.lastDecodeWindowUs / 1000.0, 0, 'f', 1)
+                        .arg(m_perf.maxDecodeWindowUs / 1000.0, 0, 'f', 1),
                     false});
             }
             ImageItem *focus = targetItem();
@@ -711,23 +711,14 @@ void ImageView::paintViewportOverlays(QPainter &painter)
 void ImageView::paintEvent(QPaintEvent *event)
 {
     // All overlays are drawn in drawForeground (single GL-safe paint path).
-    if (!m_perfEnabled) {
+    if (!m_perf.enabled) {
         QGraphicsView::paintEvent(event);
         return;
     }
     QElapsedTimer t;
     t.start();
     QGraphicsView::paintEvent(event);
-    m_perfLastPaintUs = t.nsecsElapsed() / 1000;
-    ++m_perfFrameCount;
-    if (!m_perfFpsClock.isValid()) {
-        m_perfFpsClock.start();
-    } else if (m_perfFpsClock.elapsed() >= 500) {
-        const qint64 ms = m_perfFpsClock.elapsed();
-        m_perfFps = (ms > 0) ? (m_perfFrameCount * 1000.0 / qreal(ms)) : 0.0;
-        m_perfFrameCount = 0;
-        m_perfFpsClock.restart();
-    }
+    m_perf.notePaintUs(t.nsecsElapsed() / 1000);
 }
 
 void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
