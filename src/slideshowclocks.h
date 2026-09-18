@@ -34,6 +34,59 @@ inline int sanitizeDwellDurationMs(int durationMs, int fallbackMs = 3000)
     return durationMs < 250 ? fallbackMs : durationMs;
 }
 
+inline int clampIntervalMs(int intervalMs)
+{
+    return intervalMs <= 0 ? 1 : intervalMs;
+}
+
+inline int clampTransitionMs(int transitionMs, int intervalMs)
+{
+    return qBound(0, transitionMs, qMax(0, intervalMs));
+}
+
+inline int clampZoomIndex(int index)
+{
+    return qBound(0, index, 2);
+}
+
+inline int clampMotionIndex(int index)
+{
+    return qBound(0, index, 2);
+}
+
+inline int clampTransitionKind(int kind)
+{
+    return qBound(0, kind, 3);
+}
+
+inline int clampLetterboxFillIndex(int index)
+{
+    return qBound(0, index, 2);
+}
+
+/** Session path index in [0, pathCount-1]; 0 when empty. */
+inline int clampPathIndex(int index, int pathCount)
+{
+    if (pathCount <= 0) {
+        return 0;
+    }
+    return qBound(0, index, pathCount - 1);
+}
+
+inline qreal pureFrac(int pureMs, int intervalMs)
+{
+    return intervalMs > 0 ? qreal(pureMs) / qreal(intervalMs) : 1.0;
+}
+
+inline qreal transitionBlendT(qreal phaseT, qreal pureFrac)
+{
+    const qreal denom = 1.0 - pureFrac;
+    if (denom <= 1e-9) {
+        return 1.0;
+    }
+    return qBound(0.0, (phaseT - pureFrac) / denom, 1.0);
+}
+
 /**
  * Integrate wall Δt into motion T ∈ [0,1].
  * Clocks only measure Δt; pathMs changes alter rate, not remapped progress.

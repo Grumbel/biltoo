@@ -1571,16 +1571,16 @@ void MainWindow::showSlideshowSettings()
         // Duration is the full transition (out + in), so cap at the interval.
         const int intervalCap = m_slideshowIntervalMs;
         m_imageView->setSlideshowTransitionDurationMs(
-            qMin(dlg.transitionDurationMs(), qMax(0, intervalCap)));
+            SlideshowClocks::clampTransitionMs(dlg.transitionDurationMs(), intervalCap));
         m_imageView->setSlideshowMotion(
             static_cast<SlideshowMotion>(dlg.motionIndex()));
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
         m_imageView->setSlideshowZoom(
-            static_cast<SlideshowZoom>(qBound(0, dlg.zoomIndex(), 2)));
+            static_cast<SlideshowZoom>(SlideshowClocks::clampZoomIndex(dlg.zoomIndex())));
         m_imageView->setSlideshowPadColor(dlg.padColor());
         m_imageView->setSlideshowLetterboxFill(
             static_cast<SlideshowLetterboxFill>(
-                qBound(0, dlg.letterboxFillIndex(), 2)));
+                SlideshowClocks::clampLetterboxFillIndex(dlg.letterboxFillIndex())));
         // Interval changes remap phase inside setSlideshowIntervalMs. Other live
         // settings must not re-arm the clock (that restarted the dwell at 0 and
         // felt like a long pause on the current image).
@@ -1625,7 +1625,8 @@ void MainWindow::armSlideshowAdvanceTimer()
         return;
     }
 
-    m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
+    m_slideshowBaseIndex = SlideshowClocks::clampPathIndex(
+        m_currentIndex, m_session.paths().size());
     m_slideshowPausedAccumMs = 0;
     m_slideshowPosition = 0.0;
     m_slideshowTransitionCycle = -1;
@@ -1668,15 +1669,11 @@ void MainWindow::updateSlideshowFromClock()
         return;
     }
 
-    int intervalMs = m_slideshowIntervalMs;
-    if (intervalMs <= 0) {
-        intervalMs = 1;
-    }
+    const int intervalMs = SlideshowClocks::clampIntervalMs(m_slideshowIntervalMs);
     int transitionMs = m_imageView ? m_imageView->slideshowTransitionDurationMs() : 0;
-    transitionMs = qBound(0, transitionMs, intervalMs);
+    transitionMs = SlideshowClocks::clampTransitionMs(transitionMs, intervalMs);
     const int pureMs = intervalMs - transitionMs;
-    const qreal pureFrac =
-        (intervalMs > 0) ? qreal(pureMs) / qreal(intervalMs) : 1.0;
+    const qreal pureFrac = SlideshowClocks::pureFrac(pureMs, intervalMs);
 
     // Integrate wall time into unitless position (rate = 1/interval).
     qint64 wallDelta = 0;
@@ -1720,7 +1717,7 @@ void MainWindow::updateSlideshowFromClock()
 
     const int fromIdx = m_slideshowLoop
                             ? int(absFrom % n)
-                            : int(qBound(qint64(0), absFrom, qint64(n - 1)));
+                            : SlideshowClocks::clampPathIndex(int(absFrom), n);
     // Single-image or non-loop last slide: never crossfade into a wrap target.
     const bool allowTransition =
         (n > 1) && (m_slideshowLoop || fromIdx < n - 1);
@@ -1785,9 +1782,7 @@ void MainWindow::updateSlideshowFromClock()
         return;
     }
 
-    const qreal denom = 1.0 - pureFrac;
-    const qreal t =
-        denom > 1e-9 ? qBound(0.0, (phaseT - pureFrac) / denom, 1.0) : 1.0;
+    const qreal t = SlideshowClocks::transitionBlendT(phaseT, pureFrac);
     if (m_imageView) {
         if (m_slideshowTransitionCycle != cycle) {
             qCDebug(lcSlideshow).nospace()
@@ -2182,18 +2177,18 @@ void MainWindow::showPreferences()
             // Full transition (out + in); cap at the interval.
             const int intervalCap = m_slideshowIntervalMs;
             m_imageView->setSlideshowTransitionDurationMs(
-                qMin(dlg.slideshowTransitionDurationMs(), qMax(0, intervalCap)));
+                SlideshowClocks::clampTransitionMs(dlg.slideshowTransitionDurationMs(), intervalCap));
         }
         m_imageView->setSlideshowMotion(
             static_cast<SlideshowMotion>(dlg.slideshowMotionIndex()));
         m_imageView->setPanZoomFactor(dlg.panZoomFactor());
         m_imageView->setSlideshowZoom(
             static_cast<SlideshowZoom>(
-                qBound(0, dlg.slideshowZoomIndex(), 2)));
+                SlideshowClocks::clampZoomIndex(dlg.slideshowZoomIndex())));
         m_imageView->setSlideshowPadColor(dlg.slideshowPadColor());
         m_imageView->setSlideshowLetterboxFill(
             static_cast<SlideshowLetterboxFill>(
-                qBound(0, dlg.slideshowLetterboxFillIndex(), 2)));
+                SlideshowClocks::clampLetterboxFillIndex(dlg.slideshowLetterboxFillIndex())));
         // If a slideshow is running, re-frame the current slide for zoom/motion.
         if (m_slideshowClockRunning) {
             m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
@@ -2933,23 +2928,25 @@ void MainWindow::readSettings()
     if (m_imageView) {
         const int transitionKind = settings.value(QStringLiteral("slideshowTransition"), 1).toInt();
         m_imageView->setSlideshowTransition(
-            static_cast<SlideshowTransition>(qBound(0, transitionKind, 3)));
+            static_cast<SlideshowTransition>(SlideshowClocks::clampTransitionKind(transitionKind)));
         {
             // Full transition (out + in); cap at the interval.
             const int intervalCap = m_slideshowIntervalMs;
             const int transitionMs =
                 settings.value(QStringLiteral("slideshowTransitionDurationMs"), 400).toInt();
             m_imageView->setSlideshowTransitionDurationMs(
-                qMin(transitionMs, qMax(0, intervalCap)));
+                SlideshowClocks::clampTransitionMs(transitionMs, intervalCap));
         }
         m_imageView->setSlideshowMotion(
             static_cast<SlideshowMotion>(
-                qBound(0, settings.value(QStringLiteral("slideshowMotion"), 0).toInt(), 2)));
+                SlideshowClocks::clampMotionIndex(
+                    settings.value(QStringLiteral("slideshowMotion"), 0).toInt())));
         m_imageView->setPanZoomFactor(
             settings.value(QStringLiteral("slideshowPanZoomFactor"), 1.12).toDouble());
         m_imageView->setSlideshowZoom(
             static_cast<SlideshowZoom>(
-                qBound(0, settings.value(QStringLiteral("slideshowZoomMode"), 0).toInt(), 2)));
+                SlideshowClocks::clampZoomIndex(
+                    settings.value(QStringLiteral("slideshowZoomMode"), 0).toInt())));
         const QColor pad = QColor(settings.value(QStringLiteral("slideshowPadColor"),
             m_imageView->backgroundColor().name(QColor::HexRgb)).toString());
         if (pad.isValid()) {
@@ -2957,7 +2954,8 @@ void MainWindow::readSettings()
         }
         m_imageView->setSlideshowLetterboxFill(
             static_cast<SlideshowLetterboxFill>(
-                qBound(0, settings.value(QStringLiteral("slideshowLetterboxFill"), 0).toInt(), 2)));
+                SlideshowClocks::clampLetterboxFillIndex(
+                    settings.value(QStringLiteral("slideshowLetterboxFill"), 0).toInt())));
     }
     const int masonryCols = settings.value(QStringLiteral("masonryColumns"), 3).toInt();
     const int gridCols = settings.value(QStringLiteral("gridColumns"), 0).toInt();
@@ -2982,7 +2980,7 @@ void MainWindow::readSettings()
         const int kind =
             settings.value(QStringLiteral("stickyZoomKind"), 0).toInt();
         m_imageView->setStickyZoomKind(
-            static_cast<StickyZoomKind>(qBound(0, kind, 2)));
+            static_cast<StickyZoomKind>(SlideshowClocks::clampZoomIndex(kind)));
         m_imageView->setStickyZoomEnabled(sticky);
         syncZoomModeChecks();
     }
