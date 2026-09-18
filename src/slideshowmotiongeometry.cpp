@@ -118,4 +118,72 @@ QRectF coverDestRect(SlideshowMotion motion, qreal baseScale, qreal panZoomFacto
     return QRectF(destX, destY, dw, dh);
 }
 
+BiasPath geometricBiasPath(uint seed)
+{
+    static const QPointF kBias[8] = {
+        QPointF(-1.0, -1.0), QPointF(1.0, -1.0),
+        QPointF(-1.0, 1.0), QPointF(1.0, 1.0),
+        QPointF(-1.0, 0.0), QPointF(1.0, 0.0),
+        QPointF(0.0, -1.0), QPointF(0.0, 1.0),
+    };
+    BiasPath path;
+    path.a = kBias[seed % 8];
+    path.b = kBias[(seed / 8 + 3) % 8];
+    if (qFuzzyCompare(path.a.x(), path.b.x()) && qFuzzyCompare(path.a.y(), path.b.y())) {
+        path.b = kBias[(seed + 5) % 8];
+    }
+    if (qAbs(path.a.x() - path.b.x()) < 0.1 && qAbs(path.a.y() - path.b.y()) < 0.1) {
+        path.b = kBias[(seed + 7) % 8];
+    }
+    path.travelDir = path.b - path.a;
+    path.motionSign = (path.travelDir.y() >= 0.0) ? 1.0 : -1.0;
+    return path;
+}
+
+bool attentionBiasPath(const QPointF &att01, uint seed, BiasPath *out)
+{
+    if (!out) {
+        return false;
+    }
+    // Map normalized focus to bias space [-1, 1] (same as corner table).
+    QPointF subject((att01.x() - 0.5) * 2.0, (att01.y() - 0.5) * 2.0);
+    subject.setX(qBound(-1.0, subject.x(), 1.0));
+    subject.setY(qBound(-1.0, subject.y(), 1.0));
+    // Near-centre attention still needs travel — fall through to geometry.
+    if (qAbs(subject.x()) <= 0.12 && qAbs(subject.y()) <= 0.12) {
+        return false;
+    }
+    // Subject must sit mid-path: start/end of the dwell are largely
+    // hidden by the transition, so endpoint focus is invisible.
+    // Travel along the subject↔opposite axis, centred on the subject.
+    const QPointF travel = QPointF(subject.x() * 0.55, subject.y() * 0.55);
+    BiasPath path;
+    if (seed & 1u) {
+        path.a = subject - travel;
+        path.b = subject + travel;
+    } else {
+        path.a = subject + travel;
+        path.b = subject - travel;
+    }
+    path.a.setX(qBound(-1.0, path.a.x(), 1.0));
+    path.a.setY(qBound(-1.0, path.a.y(), 1.0));
+    path.b.setX(qBound(-1.0, path.b.x(), 1.0));
+    path.b.setY(qBound(-1.0, path.b.y(), 1.0));
+    path.travelDir = path.b - path.a;
+    path.motionSign = (path.travelDir.y() >= 0.0) ? 1.0 : -1.0;
+    *out = path;
+    return true;
+}
+
+bool aspectMismatch(qreal atlasW, qreal atlasH, qreal imageW, qreal imageH,
+                    qreal threshold)
+{
+    if (atlasW <= 0.0 || atlasH <= 0.0 || imageW <= 0.0 || imageH <= 0.0) {
+        return false;
+    }
+    const qreal aAsp = atlasW / atlasH;
+    const qreal iAsp = imageW / imageH;
+    return qAbs(aAsp - iAsp) > threshold;
+}
+
 } // namespace SlideshowMotionGeometry
