@@ -11,6 +11,7 @@
 #include "tilelod/tile_session.hpp"
 
 #include <QDateTime>
+#include <QFileInfo>
 #include <QElapsedTimer>
 #include <QGraphicsScene>
 #include <QSet>
@@ -246,6 +247,14 @@ void TileLoadCoordinator::tick(int globalBudget)
                     "wall=%lldms\n",
                     cands.size(), zero, issueTargets.size(), globalBudget,
                     static_cast<long long>(wall.elapsed()));
+            int samples = 0;
+            for (ImageItem *item : issueTargets) {
+                if (!item || samples >= 4) {
+                    break;
+                }
+                fprintf(stderr, "  %s\n", qPrintable(item->tileLodDebugLine()));
+                ++samples;
+            }
             fflush(stderr);
         }
     }

@@ -2,6 +2,40 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1185-tile-debug-snapshot.** Richer BILTOO_TILE_DEBUG diagnostics.
+Prior: **1184**.
+
+### Debug (BILTOO_TILE_DEBUG=1)
+Every ~500ms:
+
+```text
+biltoo/tile: wanted=N live=M covered=K softBusy=0 visibleSched=… inflight=…
+  name.jpg tgt=1 des=0 max=4 vis=2 exact=0 inflight=1 cacheOk=1 hold=1 reached=0 gen=3 disp=96
+biltoo/tile-coord: cands=… zeroTile=… issue=… budget=… wall=…ms
+  …
+```
+
+Field meanings:
+- **tgt/des/max** — request / density-desired / pyramid max scale
+- **vis/exact/inflight** — visible keys at tgt / succeeded exact / in flight
+- **cacheOk** — any Succeeded in shared cache
+- **hold** — progressive climb still holding (des != tgt)
+- **reached** — cold climb finished
+- **disp** — displayPixelLongEdge (LQIP ~96)
+
+Also enables tile-plan colour overlay (same as ImageCache debug overlay).
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1185-tile-debug-snapshot.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1184-gallery-decode-spin.** Stop 100% CPU decode-window spin; keep LQIP.
 Prior: **1183**.
 

@@ -438,10 +438,20 @@ void ImageView::updateGalleryDecodeWindow()
             s_lastLogMs = now;
             fprintf(stderr,
                     "biltoo/tile: wanted=%d live=%d covered=%d softBusy=%d "
-                    "visibleSched=%d inflight=%d
-",
+                    "visibleSched=%d inflight=%d\n",
                     tileWanted, tileLive, tileCovered, softBusy ? 1 : 0,
                     scheduled, gallerySoftInflightCount());
+            int samples = 0;
+            for (ImageItem *ii : m_items) {
+                if (!ii || !ii->tileLodWanted() || samples >= 3) {
+                    continue;
+                }
+                if (ii->tileLodViewportCovered()) {
+                    continue;
+                }
+                fprintf(stderr, "  %s\n", qPrintable(ii->tileLodDebugLine()));
+                ++samples;
+            }
             fflush(stderr);
         }
     }

@@ -552,4 +552,28 @@ TileSession::Coverage TileSession::coverage() const
   return c;
 }
 
+TileSession::DebugSnapshot TileSession::debug_snapshot() const
+{
+  DebugSnapshot s;
+  s.target_scale = m_target_scale;
+  s.desired_scale = m_desired_scale;
+  s.min_scale = m_min_scale;
+  s.max_scale = m_max_scale;
+  s.holding = request_scale_holding();
+  s.reached_desired = m_reached_desired;
+  s.generation = m_generation;
+  Coverage const c = coverage();
+  s.visible = c.visible;
+  s.exact_succeeded = c.exact_succeeded;
+  s.in_flight = c.in_flight;
+  for (auto const& [k, e] : m_cache->map()) {
+    (void)k;
+    if (e.state == TileState::Succeeded && e.bitmap.valid()) {
+      ++s.cache_succeeded;
+    }
+  }
+  return s;
+}
+
+
 }  // namespace tilelod

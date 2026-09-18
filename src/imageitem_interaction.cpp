@@ -24,6 +24,7 @@
 #include <QGraphicsView>
 #include <QLineF>
 #include <QMetaObject>
+#include <QFileInfo>
 #include <QFont>
 #include <QFontMetrics>
 #include <QPainter>
@@ -1578,6 +1579,38 @@ bool ImageItem::tileLodActive() const
 bool ImageItem::tileLodViewportCovered() const
 {
     return m_tileLod && m_tileLod->viewportFullyCovered();
+}
+
+QString ImageItem::tileLodDebugLine() const
+{
+    const QString name = QFileInfo(m_path).fileName();
+    if (!tileLodWanted()) {
+        return QStringLiteral("%1 wanted=0 disp=%2")
+            .arg(name)
+            .arg(displayPixelLongEdge());
+    }
+    if (!m_tileLod || !m_tileLod->session()) {
+        return QStringLiteral("%1 wanted=1 session=0 disp=%2")
+            .arg(name)
+            .arg(displayPixelLongEdge());
+    }
+    const tilelod::TileSession::DebugSnapshot s =
+        m_tileLod->session()->debug_snapshot();
+    return QStringLiteral(
+               "%1 tgt=%2 des=%3 max=%4 vis=%5 exact=%6 inflight=%7 "
+               "cacheOk=%8 hold=%9 reached=%10 gen=%11 disp=%12")
+        .arg(name)
+        .arg(s.target_scale)
+        .arg(s.desired_scale)
+        .arg(s.max_scale)
+        .arg(s.visible)
+        .arg(s.exact_succeeded)
+        .arg(s.in_flight)
+        .arg(s.cache_succeeded)
+        .arg(s.holding ? 1 : 0)
+        .arg(s.reached_desired ? 1 : 0)
+        .arg(static_cast<qulonglong>(s.generation))
+        .arg(displayPixelLongEdge());
 }
 
 void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,

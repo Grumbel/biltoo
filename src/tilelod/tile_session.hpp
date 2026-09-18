@@ -101,6 +101,22 @@ public:
   };
   Coverage coverage() const;
 
+  /** Lightweight snapshot for BILTOO_TILE_DEBUG host logs. */
+  struct DebugSnapshot {
+    int target_scale = 0;
+    int desired_scale = 0;
+    int min_scale = 0;
+    int max_scale = 0;
+    int visible = 0;
+    int exact_succeeded = 0;
+    int in_flight = 0;
+    int cache_succeeded = 0;
+    bool holding = false;
+    bool reached_desired = false;
+    std::uint64_t generation = 0;
+  };
+  DebugSnapshot debug_snapshot() const;
+
   void set_byte_budget(std::size_t bytes) { m_byte_budget = bytes; }
   std::size_t byte_budget() const { return m_byte_budget; }
 

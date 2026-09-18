@@ -351,6 +351,8 @@ public:
     bool tileLodActive() const;
     /** All exact visible tiles present and scale hold settled. */
     bool tileLodViewportCovered() const;
+    /** One-line BILTOO_TILE_DEBUG sample (empty if no session). */
+    QString tileLodDebugLine() const;
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
