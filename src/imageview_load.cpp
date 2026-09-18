@@ -1114,9 +1114,10 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                     item->setIntrinsicSize(sz);
                     syncImageModeSceneRect(item);
                 }
-                // Fast ←/→ with empty ImageCache: request soft so ladderReady can
-                // fill during the burst or at settle (otherwise permanent blank).
-                if (ThumtooCache::isAvailable()) {
+                // Nav-hot: no thumtoo IPC (IMAGE_MODE_NAV_SOFT.md). Queue flood
+                // of probe+soft on every auto-repeat was a major ←/→ stall.
+                // Settle loadImage (nav-hot cleared) schedules soft/climb once.
+                if (!m_slideshowNavHot && ThumtooCache::isAvailable()) {
                     ThumtooCache::scheduleProbe(path);
                     (void)ThumtooCache::scheduleSoftPixels(
                         path, ThumtooCache::kGalleryLadderEdge);
@@ -1124,8 +1125,11 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 if (viewport()) {
                     viewport()->update();
                 }
-                biltooLoadDbg("pendingTile DEFER blank path=%s (cleared prior, soft scheduled)",
-                              qPrintable(QFileInfo(path).fileName()));
+                biltooLoadDbg(
+                    m_slideshowNavHot
+                        ? "pendingTile DEFER blank path=%s (nav-hot, no soft IPC)"
+                        : "pendingTile DEFER blank path=%s (cleared prior, soft scheduled)",
+                    qPrintable(QFileInfo(path).fileName()));
             } else {
                 biltooLoadDbg("pendingTile DEFER empty soft path=%s keep prior frame",
                               qPrintable(QFileInfo(path).fileName()));
@@ -2872,6 +2876,10 @@ void ImageView::tickTilePrefetch()
 void ImageView::tickPrimaryTileLod(int budget)
 {
     ASSERT_GUI_THREAD();
+    // Key-repeat: do not plan/issue tiles — soft underlay only until settle.
+    if (m_slideshowNavHot) {
+        return;
+    }
     if (!m_tileCoordinator) {
         m_tileCoordinator = std::make_unique<TileLoadCoordinator>(this);
     }

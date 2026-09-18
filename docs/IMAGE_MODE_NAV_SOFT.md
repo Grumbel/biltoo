@@ -39,7 +39,7 @@ MainWindow::setCurrentIndex / goNext
 ### Rules
 
 1. **Key-repeat (nav hot):** only in-process soft swap + layout. No thumtoo IPC,
-   no PreferCache, no classic full decode.
+   no PreferCache, no classic full decode, **no tile plan/issue/paint**.
 2. **Path change:** always clear **display** pixels (`hasDisplayPixels`), not only
    full (`hasDecodedPixels`). Leaving prior soft makes `canAcceptDisplaySample`
    reject a smaller LQIP for the next path.
@@ -50,13 +50,17 @@ MainWindow::setCurrentIndex / goNext
    Stashed Gallery soft may already be content-baked → attach display-ready only
    (no put, no second materialize).
 6. **Settle (~80ms quiet):** one PreferCache/full climb for the **current** path only.
+7. **Cold blank under nav-hot:** do **not** `scheduleProbe` / `scheduleSoftPixels`
+   on every key — that flooded the thumtoo queue and stalled the GUI. Soft is
+   requested once at settle when nav-hot clears.
 
 ## Failure modes (observed)
 
 | Symptom | Cause |
 |---------|--------|
 | Blank on every ←/→ while Gallery shows soft | Prior soft not cleared (`hasDecodedPixels` only); `canAccept` rejects next LQIP |
-| Stall under key-repeat | Sync `cachedLqipImage` / escalate under nav-hot |
+| Stall under key-repeat | Soft IPC / tile plan under nav-hot; sync materialize of large hosts |
+| Skip frames while holding ←/→ | Sync `repaint()` every key (use `update()` when nav-hot) |
 | Stretch / wrong aspect | `drawImage(contentRect, sample)` with aspect mismatch (paint letterboxes when >3%) |
 | Soft never in ImageCache | SoftPreview host put skipped when `wantBake` (fixed: SoftPreview always seeds raw) |
 

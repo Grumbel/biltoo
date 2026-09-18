@@ -2,6 +2,31 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1215-nav-hot-soft-only.** Image ←/→ key-repeat: no soft IPC, no tile plan/issue.
+Prior: **1214**.
+
+### Problem
+Quick skip through Image mode stalled the GUI / skipped frames. Cold blank path
+queued `scheduleProbe` + `scheduleSoftPixels` on every auto-repeat; tile
+coordinator and paint still planned tiles while nav-hot.
+
+### Fix
+- Nav-hot blank: layout only — soft IPC deferred to settle `loadImage`.
+- `tickPrimaryTileLod` / `TileLoadCoordinator::tick` no-op while nav-hot.
+- ImageItem paint: skip `prepareTileLodPlan` + tile draw while nav-hot (soft underlay).
+- Docs: IMAGE_MODE_NAV_SOFT rules 1/7.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1215-nav-hot-soft-only.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1214-tile-prefetch-pump.** Keep neighbor prefetch controllers alive until tiles land.
 Prior: **1213**.
 

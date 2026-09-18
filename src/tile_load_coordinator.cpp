@@ -140,6 +140,10 @@ void TileLoadCoordinator::tick(int globalBudget)
     if (m_view->isSlideshowProgressActive()) {
         return;
     }
+    // Image ←/→ key-repeat: soft swap only; tile plan/issue stalls the GUI.
+    if (m_view->slideshowNavHot()) {
+        return;
+    }
     // Size probes first: do not compete with EnsureTiles while Gallery is still
     // resolving the session (thumtoo prefers tiles over ProbeSize in the queue).
     if (m_view->gallerySizeResolveActive()) {

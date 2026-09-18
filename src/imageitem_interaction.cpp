@@ -1759,7 +1759,14 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         // Refresh *plan* here so zoom-out does not keep painting scale-0 cells
         // until the debounced tick runs. Requests stay on tick only (cheap
         // set_viewport; cancel only when plan_changed).
-        if (tileLodWanted()) {
+        // Nav-hot: skip plan + tile paint — soft underlay only (IMAGE_MODE_NAV_SOFT).
+        bool navHot = false;
+        if (scene() && !scene()->views().isEmpty()) {
+            if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
+                navHot = iv->slideshowNavHot();
+            }
+        }
+        if (tileLodWanted() && !navHot) {
             prepareTileLodPlan();
             if (m_tileLod && m_tileLod->session()) {
                 const QImage under = hasDecodedPixels() ? m_source
