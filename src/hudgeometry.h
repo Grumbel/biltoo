@@ -15,6 +15,16 @@
  */
 namespace HudGeometry {
 
+inline int maxPanelBgW(int viewW, int margin)
+{
+    return qMax(40, viewW - 2 * margin);
+}
+
+inline int maxPanelTextW(int maxBgW, int pad)
+{
+    return qMax(20, maxBgW - 2 * pad);
+}
+
 struct PanelBox {
     int x = 0;
     int y = 0;

@@ -390,8 +390,8 @@ void ImageView::paintHudPanels(QPainter &painter)
             if (lines.isEmpty()) {
                 return;
             }
-            const int maxBgW = qMax(40, viewW - 2 * margin);
-            const int maxTextW = qMax(20, maxBgW - 2 * pad);
+            const int maxBgW = HudGeometry::maxPanelBgW(viewW, margin);
+            const int maxTextW = HudGeometry::maxPanelTextW(maxBgW, pad);
             QList<HudLine> drawn;
             int textW = 0;
             int textH = 0;
