@@ -151,6 +151,8 @@ add_executable(biltoo
   src/slideshowphasepolicy.cpp
   src/slideshowatlaspolicy.h
   src/slideshowatlaspolicy.cpp
+  src/slideshowmotiongeometry.h
+  src/slideshowmotiongeometry.cpp
   src/zoomblurhelpers.h
   src/zoomblurhelpers.cpp
   src/loadgeneration.h

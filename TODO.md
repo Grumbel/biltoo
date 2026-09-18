@@ -2,6 +2,25 @@
 
 ## Status (2026-09-18)
 
+**Tip: biltoo-1271-slideshow-motion-geometry.** Pure Ken Burns / PanScan cover dest rect.
+Prior: **1270**.
+
+### Change
+- `SlideshowMotionGeometry::coverDestRect` — PanScan travel, PanZoom s0→s1 + bias path,
+  static cover overflow bias (was `ImageView::computeMotionCoverDestRect` body).
+- ImageView computes base scale + passes settings / dwellBiasValid / path seed.
+
+### Apply
+```bash
+git pull --rebase /path/to/biltoo-1271-slideshow-motion-geometry.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-18)
+
 **Tip: biltoo-1270-slideshow-orient-zoom-policy.** Oriented upgrade + Fit/Fill/Actual base scale.
 Prior: **1269**.
 
