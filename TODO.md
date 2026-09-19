@@ -2,6 +2,36 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1580-tile-crop-map-paint.** Fix cropped tile paint: skip outside cells, UV-clip edges, session crop in tileContentXform.
+Prior: **1579**.
+
+### Problem
+After Apply crop, deep-zoom tiles showed outside-crop cells in the wrong place
+and edge cells looked stretched/squished.
+
+### Cause
+- Empty `mapSourceRectToDisplay` fell back to full **source** dest in crop-sized
+  local space (spill + wrong scale).
+- Clipped dest kept full tile UV → stretch at crop edges.
+- `tileContentXform()` set `hasCrop` without `cropRect` when only session crop.
+
+### Change
+- Axis-aligned + free-rot: empty map → skip command (zero dest), no source fallback
+- Axis-aligned partial cells: scale `src_uv` with clipped dest ratio
+- `tileContentXform`: copy `m_sessionCropRect` when no applied xform
+- `docs/TILE_LOD.md` crop paint rules
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1580-tile-crop-map-paint.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1579-crop-docs-tu-map.** Docs: crop TU map + entry points after 1573–1578 inlining.
 Prior: **1578**.
 

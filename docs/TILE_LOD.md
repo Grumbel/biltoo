@@ -288,6 +288,14 @@ thumtoo grid tiles are keyed in **source** pixel space. Item layout is
 viewport and draw destinations. Free-rotated crop uses the materializeDisplay centre/rotate window; maps return
 the AABB of transformed corners for viewport request and draw destinations.
 
+**Crop paint rules (1580):**
+- `ImageItem::tileContentXform()` must carry `cropRect` (applied xform or
+  session crop) — `hasCrop` alone is not enough for maps.
+- Axis-aligned draw: map each cell source→oriented→crop-local; **skip** cells
+  outside the crop (empty dest). Do **not** fall back to raw source coords.
+- Partial edge cells: scale `src_uv` by the same ratio as the clipped dest so
+  `drawImage` does not stretch the full tile into a smaller window.
+
 
 ## PreferCache vs tiles (biltoo-1035)
 

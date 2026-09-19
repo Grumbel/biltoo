@@ -1022,10 +1022,13 @@ ContentXform::Value ImageItem::tileContentXform() const
     ContentXform::Value x;
     x.hFlip = m_contentHFlip;
     x.vFlip = m_contentVFlip;
-    x.hasCrop = m_sessionHasCrop;
-    // Session crop rect is not stored on the item for all paths; applied
-    // xform is preferred. Without applied crop geometry, crop flag alone
-    // cannot map — treat as no crop for tile planning.
+    // Session crop alone must carry geometry — hasCrop without cropRect made
+    // mapDisplay/mapSource treat the item as uncropped, so tiles planned/drew
+    // the full native frame into the crop-sized contentRect (squish + spill).
+    if (m_sessionHasCrop && !m_sessionCropRect.isEmpty()) {
+        x.hasCrop = true;
+        x.cropRect = m_sessionCropRect;
+    }
     return x;
 }
 
@@ -1592,8 +1595,11 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                                       cmd.dst_content.w, cmd.dst_content.h);
                         QRectF ori = ContentXform::mapSourceRectToOriented(
                             srcBox, native, x);
+                        // Outside / unmappable: skip (never fall back to source
+                        // coords — those land in crop-sized local space wrong).
                         if (ori.isEmpty()) {
-                            ori = srcBox;
+                            cmd.dst_content = {0.0, 0.0, 0.0, 0.0};
+                            continue;
                         }
                         cmd.dst_content = {ori.x(), ori.y(), ori.width(), ori.height()};
                     }
@@ -1613,20 +1619,48 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     args.resolve = resolve;
                     tilelod::paint_draw_plan(painter, args);
 
-                if (tilePlanDebugOverlayEnabled()) {
-                    paintTilePlanDebugOverlay(painter, m_tileLod->session(), plan,
-                                             contentRect());
-                }
+                    if (tilePlanDebugOverlayEnabled()) {
+                        paintTilePlanDebugOverlay(painter, m_tileLod->session(), plan,
+                                                 contentRect());
+                    }
 
                     painter->restore();
                 } else {
                     for (tilelod::DrawCommand &cmd : plan.commands) {
                         QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
                                       cmd.dst_content.w, cmd.dst_content.h);
-                        QRectF disp = ContentXform::mapSourceRectToDisplay(
+                        QRectF oriented = ContentXform::mapSourceRectToOriented(
                             srcBox, native, x);
-                        if (disp.isEmpty()) {
-                            disp = srcBox;
+                        if (oriented.isEmpty()) {
+                            cmd.dst_content = {0.0, 0.0, 0.0, 0.0};
+                            continue;
+                        }
+                        QRectF disp = oriented;
+                        if (x.hasCrop && !x.cropRect.isEmpty()) {
+                            const QRect contentCrop = x.cropRect.normalized();
+                            const QRectF local = oriented.translated(
+                                -contentCrop.x(), -contentCrop.y());
+                            const QRectF cropLocal(0.0, 0.0, contentCrop.width(),
+                                                   contentCrop.height());
+                            disp = local.intersected(cropLocal);
+                            if (disp.isEmpty() || local.width() < 1e-6
+                                || local.height() < 1e-6) {
+                                // Tile outside the crop window — do not paint.
+                                cmd.dst_content = {0.0, 0.0, 0.0, 0.0};
+                                continue;
+                            }
+                            // Partial edge cells: crop UV with the same ratio so
+                            // drawImage does not stretch the full tile into the
+                            // clipped dest (edge squish).
+                            const qreal u0 =
+                                (disp.left() - local.left()) / local.width();
+                            const qreal v0 =
+                                (disp.top() - local.top()) / local.height();
+                            const qreal uw = disp.width() / local.width();
+                            const qreal vh = disp.height() / local.height();
+                            cmd.src_uv = {cmd.src_uv.x + u0 * cmd.src_uv.w,
+                                          cmd.src_uv.y + v0 * cmd.src_uv.h,
+                                          uw * cmd.src_uv.w, vh * cmd.src_uv.h};
                         }
                         cmd.dst_content = {disp.x() + off.x(), disp.y() + off.y(),
                                            disp.width(), disp.height()};
@@ -1646,11 +1680,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     tilelod::paint_draw_plan(painter, args);
                     (void)under;
 
-                if (tilePlanDebugOverlayEnabled()) {
-                    paintTilePlanDebugOverlay(painter, m_tileLod->session(), plan,
-                                             contentRect());
-                }
-
+                    if (tilePlanDebugOverlayEnabled()) {
+                        paintTilePlanDebugOverlay(painter, m_tileLod->session(), plan,
+                                                 contentRect());
+                    }
                 }
             }
         }
