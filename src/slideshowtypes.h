@@ -354,6 +354,15 @@ struct SlideshowSettings {
         return true;
     }
 
+    bool isMotionOff() const { return motion == SlideshowMotion::Off; }
+
+    bool isZoomBlurLetterbox() const
+    {
+        return letterboxFill == SlideshowLetterboxFill::ZoomBlur;
+    }
+
+    bool isZoomFill() const { return zoom == SlideshowZoom::Fill; }
+
     bool setZoom(SlideshowZoom mode)
     {
         if (zoom == mode) {
@@ -405,6 +414,14 @@ struct SlideshowDwellState {
         motionActive = on;
         return true;
     }
+
+    bool isMotionActive() const { return motionActive; }
+
+    bool isMotionPaused() const { return motionPaused; }
+
+    bool hasSourceImage() const { return !sourceImage.isNull(); }
+
+    bool hasAtlas() const { return !atlas.isNull(); }
 
     /** @return true when motion-paused flag changed. */
     bool setMotionPaused(bool on)

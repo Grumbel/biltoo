@@ -792,7 +792,7 @@ QPixmap ImageView::captureSlideshowFrame() const
     QPainter painter(&pm);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-    if (m_ssDwell.motionActive && !m_ssDwell.sourceImage.isNull()) {
+    if (m_ssDwell.isMotionActive() && m_ssDwell.hasSourceImage()) {
         paintMotionCover(&painter, m_ssDwell.sourceImage, m_ssDwell.motionT,
                          m_ssDwell.biasA, m_ssDwell.biasB, m_ss.fromPath);
     } else if (ImageItem *item = targetItem()) {
@@ -931,7 +931,7 @@ void ImageView::reapplySlideshowFraming()
     if (!item || item->boundingRect().isEmpty()) {
         return;
     }
-    if (m_ssSettings.motion != SlideshowMotion::Off) {
+    if (!m_ssSettings.isMotionOff()) {
         int duration = m_ssHud.progressIntervalMs;
         if (duration < 250) {
             duration = 3000;
@@ -939,7 +939,7 @@ void ImageView::reapplySlideshowFraming()
         // Already in motion (typical interval edit): retarget duration and keep
         // normalized progress + dwell atlas. startSlideshowMotion cancels first
         // and clears the atlas — that is the speed-change flash.
-        if (m_ssDwell.motionActive) {
+        if (m_ssDwell.isMotionActive()) {
             retargetSlideshowMotionDuration(duration);
         } else {
             startSlideshowMotion(duration);
@@ -956,11 +956,11 @@ void ImageView::reapplySlideshowFraming()
 
 void ImageView::setSlideshowMotionPaused(bool paused)
 {
-    if (paused == m_ssDwell.motionPaused) {
+    if (paused == m_ssDwell.isMotionPaused()) {
         return;
     }
     if (paused) {
-        if (m_ssDwell.motionActive && m_motionTimer && m_motionTimer->isActive()) {
+        if (m_ssDwell.isMotionActive() && m_motionTimer && m_motionTimer->isActive()) {
             // Fold wall into unitless dwell progress, then freeze.
             if (m_ssDwell.durationMs > 0 && m_ssDwell.clock.isValid()) {
                 const qint64 d = m_ssDwell.clock.elapsed();
@@ -998,7 +998,7 @@ void ImageView::setSlideshowMotionPaused(bool paused)
     if (m_ss.toMotionClockRunning) {
         m_ss.toMotionClock.start();
     }
-    if (m_ssDwell.motionActive && m_motionTimer && m_ssDwell.durationMs > 0) {
+    if (m_ssDwell.isMotionActive() && m_motionTimer && m_ssDwell.durationMs > 0) {
         m_ssDwell.clock.restart();
         m_motionTimer->start();
     }
@@ -1030,7 +1030,7 @@ void ImageView::setSlideshowPausedHud(bool on)
 
 void ImageView::cancelSlideshowMotion()
 {
-    const bool wasMotion = m_ssDwell.motionActive;
+    const bool wasMotion = m_ssDwell.isMotionActive();
     m_ssDwell.setMotionActive(false);
     m_ssDwell.setMotionPaused(false);
     {
@@ -1233,7 +1233,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         ImageCache::stampDebugOverlayIfEnabled(&m_ss.fromImage, path);
         m_ssDwell.setSourceImage(m_ss.fromImage);
         // Orient may swap aspect — drop atlas built from the unoriented sample.
-        if (!m_ssDwell.atlas.isNull() && m_ssDwell.atlas.height() > 0
+        if (m_ssDwell.hasAtlas() && m_ssDwell.atlas.height() > 0
             && oriented.height() > 0) {
             if (SlideshowMotionGeometry::aspectMismatch(
                     qreal(m_ssDwell.atlas.width()), qreal(m_ssDwell.atlas.height()),
@@ -1244,7 +1244,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         }
         const DwellAtlasParams params = dwellAtlasParams();
         const bool needAtlas =
-            m_ssDwell.atlas.isNull()
+            !m_ssDwell.hasAtlas()
             || incoming >= need
             || incoming > ThumtooCache::kGalleryLadderEdge
             || !SlideshowAtlasPolicy::coversSource(
@@ -1883,7 +1883,7 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
     // sample. Fresh arm (contentApplied false) or aspect mismatch: drop atlas
     // so paintMotionCover blits the live sample without stretch for a frame.
     const bool keepAtlas = m_ss.fromContentApplied
-        && !m_ssDwell.atlas.isNull()
+        && m_ssDwell.hasAtlas()
         && SlideshowAtlasPolicy::coversSource(
                m_ssDwell.atlas, m_ssDwell.atlasScale, m_ssDwell.atlasVw,
                m_ssDwell.atlasVh, dwellAtlasParams(), m_ss.fromImage);
@@ -1910,14 +1910,14 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
 
 void ImageView::armSlideshowMotionClock(int pathMs)
 {
-    if (m_ssSettings.motion == SlideshowMotion::Off || pathMs < 250) {
+    if (m_ssSettings.isMotionOff() || pathMs < 250) {
         return;
     }
     ensureSlideshowMotionTimer();
     m_ssDwell.setMotionActive(true);
     m_ssDwell.setDurationMs(pathMs);
     // While paused, arm motion state but do not run the timer.
-    if (!m_ssDwell.motionPaused) {
+    if (!m_ssDwell.isMotionPaused()) {
         m_motionTimer->start();
     }
 }
@@ -2018,7 +2018,7 @@ void ImageView::warmZoomBlurForCurrentPhase()
 {
     // Skip while user is key-repeating — builds fight soft decode.
     if (!viewport() || m_ssHud.isNavHot()
-        || m_ssSettings.letterboxFill != SlideshowLetterboxFill::ZoomBlur) {
+        || !m_ssSettings.isZoomBlurLetterbox()) {
         return;
     }
     const QSize vs = viewport()->size();
@@ -2592,11 +2592,11 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     // Prefer pre-scaled atlases matched by path (not QImage address — pure-phase
     // paint may pass temporaries). From/dwell → m_ssDwell.atlas; to → m_ss.toAtlas.
     const QPixmap *atlas = nullptr;
-    if (!path.isEmpty() && path == m_ss.fromPath && !m_ssDwell.atlas.isNull()) {
+    if (!path.isEmpty() && path == m_ss.fromPath && m_ssDwell.hasAtlas()) {
         atlas = &m_ssDwell.atlas;
     } else if (!path.isEmpty() && path == m_ss.toPath && !m_ss.toAtlas.isNull()) {
         atlas = &m_ss.toAtlas;
-    } else if (path.isEmpty() && !m_ssDwell.atlas.isNull()
+    } else if (path.isEmpty() && m_ssDwell.hasAtlas()
                && (&image == &m_ssDwell.sourceImage || &image == &m_ss.fromImage)) {
         atlas = &m_ssDwell.atlas;
     }
@@ -2652,12 +2652,12 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
 
 void ImageView::maybeStartSlideshowMotion()
 {
-    if (m_ssSettings.motion == SlideshowMotion::Off || !m_ssHud.isProgressActive()
+    if (m_ssSettings.isMotionOff() || !m_ssHud.isProgressActive()
         || !isImageMode()) {
         return;
     }
     // Already running — do not restart from 0.
-    if (m_ssDwell.motionActive) {
+    if (m_ssDwell.isMotionActive()) {
         return;
     }
     int duration = m_ssHud.progressIntervalMs;
@@ -2743,7 +2743,7 @@ void ImageView::freezeScrollbarsForMotion()
 
 void ImageView::resetItemPlacementForMotion(ImageItem *item)
 {
-    m_framing.setFitFillFlags(false, m_ssSettings.zoom == SlideshowZoom::Fill);
+    m_framing.setFitFillFlags(false, m_ssSettings.isZoomFill());
     item->setItemShear(0.0);
     item->setItemRotation(0.0);
     item->setItemScale(1.0);
@@ -2773,14 +2773,14 @@ void ImageView::retargetSlideshowMotionDuration(int durationMs)
 {
     // Interval change while Ken Burns is running: keep atlas, biases, and
     // normalized progress; only the path duration changes.
-    if (!m_ssDwell.motionActive || m_ssSettings.motion == SlideshowMotion::Off) {
+    if (!m_ssDwell.isMotionActive() || m_ssSettings.isMotionOff()) {
         return;
     }
     durationMs = SlideshowClocks::sanitizeDwellDurationMs(durationMs);
     qreal progress = 0.0;
     if (m_ssDwell.durationMs > 0) {
         qint64 elapsed = m_ssDwell.elapsedOffsetMs;
-        if (m_ssDwell.clock.isValid() && !m_ssDwell.motionPaused) {
+        if (m_ssDwell.clock.isValid() && !m_ssDwell.isMotionPaused()) {
             elapsed += m_ssDwell.clock.elapsed();
         }
         progress = SlideshowClocks::progress01(elapsed, m_ssDwell.durationMs);
@@ -2789,7 +2789,7 @@ void ImageView::retargetSlideshowMotionDuration(int durationMs)
         durationMs, m_ssSettings.transitionDurationMs));
     m_ssDwell.setElapsedOffsetMs(qint64(progress * qreal(m_ssDwell.durationMs)));
     m_ssDwell.clock.start();
-    if (m_motionTimer && !m_ssDwell.motionPaused) {
+    if (m_motionTimer && !m_ssDwell.isMotionPaused()) {
         m_motionTimer->start();
     }
 }
@@ -2797,7 +2797,7 @@ void ImageView::retargetSlideshowMotionDuration(int durationMs)
 void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
 {
     cancelSlideshowMotion();
-    if (m_ssSettings.motion == SlideshowMotion::Off || !isImageMode()
+    if (m_ssSettings.isMotionOff() || !isImageMode()
         || durationMs < 250 || !viewport()) {
         return;
     }
@@ -2850,7 +2850,7 @@ void ImageView::tickSlideshowDwellMotionClock()
 
 void ImageView::tickSlideshowMotion()
 {
-    if (!m_ssDwell.motionActive) {
+    if (!m_ssDwell.isMotionActive()) {
         if (m_motionTimer) {
             m_motionTimer->stop();
         }
@@ -2884,7 +2884,7 @@ void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
     const bool beforeOk = before.isValid() && before.width() > 1 && before.height() > 1;
     const bool aspectShifted = !beforeOk || ContentXform::aspectChanged(before, after);
     if (aspectShifted) {
-        if (m_ssHud.isProgressActive() && m_ssSettings.motion == SlideshowMotion::Off) {
+        if (m_ssHud.isProgressActive() && m_ssSettings.isMotionOff()) {
             applySlideshowZoomFraming(item);
         } else if (!m_ssHud.isProgressActive()) {
             // Sticky Fill/1:1: reframe + restore pan (fitItem alone recentres).
