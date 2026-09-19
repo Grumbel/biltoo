@@ -2,6 +2,22 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1591-on-origin-master.** Clean stack on origin/master (a697f7a): edge-nav code + content blur + canvas docs.
+Prior origin: **a697f7a** (docs-only 1588).
+
+### Commits (apply on origin/master)
+1. Edge nav half-ellipse **implementation** (was missing on a697f7a)
+2. View Background **Content blur**
+3. Canvas background design doc + ZoomBlur miss fallback
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1591-on-origin-master.bundle HEAD
+```
+Requires current **origin/master** (`a697f7a`).
+
+---
+
 **Tip: biltoo-1590-canvas-bg-docs-blur-fallback.** Canvas background design doc; ZoomBlur miss uses canvas primary outside slideshow.
 Prior: **1589**.
 
