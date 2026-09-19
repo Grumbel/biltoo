@@ -28,6 +28,25 @@ TileLoadCoordinator::TileLoadCoordinator(ImageView *view)
 {
 }
 
+TileLoadCoordinator::Cand
+TileLoadCoordinator::makeCand(ImageItem *ii, bool inView, qreal screenLong)
+{
+    Cand c;
+    c.item = ii;
+    c.inView = inView;
+    c.hasAnyTile = ii && (ii->tileLodActive() || ii->tileLodHasPathRam());
+    c.fullyCovered = ii && ii->tileLodViewportCovered();
+    c.screenLong = screenLong;
+    if (!c.hasAnyTile) {
+        c.coveragePriority = kPriorityZeroTile;
+    } else if (!c.fullyCovered) {
+        c.coveragePriority = kPriorityIncomplete;
+    } else {
+        c.coveragePriority = kPriorityCovered;
+    }
+    return c;
+}
+
 QList<TileLoadCoordinator::Cand>
 TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
 {
@@ -80,41 +99,17 @@ TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
             if (!ii->tileLodWanted()) {
                 continue;
             }
-            Cand c;
-            c.item = ii;
-            c.inView = true;
-            c.hasAnyTile = ii->tileLodActive() || ii->tileLodHasPathRam();
-            c.fullyCovered = ii->tileLodViewportCovered();
-            c.screenLong = screenLong;
-            if (!c.hasAnyTile) {
-                c.coveragePriority = 1000;
-            } else if (!c.fullyCovered) {
-                c.coveragePriority = 500;
-            } else {
-                c.coveragePriority = 0;
-            }
-            cands.append(c);
+            cands.append(makeCand(ii, true, screenLong));
             continue;
         }
         // Image / Workspace: keep existing gate.
         if (!ii->tileLodWanted()) {
             continue;
         }
-        Cand c;
-        c.item = ii;
-        c.inView = true;
-        c.hasAnyTile = ii->tileLodActive() || ii->tileLodHasPathRam();
-        c.fullyCovered = ii->tileLodViewportCovered();
         const QRectF br = ii->sceneBoundingRect();
-        c.screenLong = qMax(br.width(), br.height()) * viewScale * dpr;
-        if (!c.hasAnyTile) {
-            c.coveragePriority = 1000;
-        } else if (!c.fullyCovered) {
-            c.coveragePriority = 500;
-        } else {
-            c.coveragePriority = 0;
-        }
-        cands.append(c);
+        const qreal screenLong =
+            qMax(br.width(), br.height()) * viewScale * dpr;
+        cands.append(makeCand(ii, true, screenLong));
     }
     return cands;
 }

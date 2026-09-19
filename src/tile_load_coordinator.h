@@ -31,6 +31,10 @@ class TileLoadCoordinator
 public:
     /** Default tile requests per GUI tick (slideshow warm / primary climb). */
     static constexpr int kDefaultTickBudget = 16;
+    /** Collect sort keys: higher coveragePriority is issued first. */
+    static constexpr int kPriorityZeroTile = 1000;
+    static constexpr int kPriorityIncomplete = 500;
+    static constexpr int kPriorityCovered = 0;
 
     explicit TileLoadCoordinator(ImageView *view);
 
@@ -55,6 +59,7 @@ private:
     };
 
     QList<Cand> collectCandidates(const QRectF &sceneVis) const;
+    static Cand makeCand(ImageItem *ii, bool inView, qreal screenLong);
     static void sortByPolicy(QList<Cand> &cands);
 
     ImageView *m_view = nullptr;
