@@ -119,6 +119,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **CanvasBackground::setCheckerWorkspaceOnly**; modes Fit/Fill via ViewFraming.
 - **Tool** in imageview_types; **ToolPolicy** cursor/rubber-band; **LayoutDebounce::kIntervalMs**.
 - **ViewTransform::kFreeformScenePad**; **SlideshowProgressHud** paused/nav transitions.
+- **ViewportChrome** left-pan/mouse-info; interaction clear via session bags; **ColorAdjustCommit::kIntervalMs**.
+- **SlideshowDwellState** motion flags; **CropSession::setMode**; **PageGuide** visibility + DPI.
 
 
 ## Current pain (evidence)

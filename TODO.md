@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1383-chrome-interact-color-dwell-pageguide.** Bag transitions on tip 1382.
+Prior: **1382**.
+
+### Change
+1. `ViewportChrome::{setImageModeLeftDragPan,clearMouseInfo}`
+2. `clearInteractionState` → `ItemInteractSession::clear` + `GroupTransformSession::clear`
+3. `ColorAdjustCommit::kIntervalMs`
+4. `SlideshowDwellState::{setMotionActive,setMotionPaused}`
+5. `CropSession::setMode` reports change
+6. `PageGuideSession::setVisible` reports change; `PageGuideGeometry::{kDefaultDpi,pixelsPerMm}`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1383-chrome-interact-color-dwell-pageguide.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1383).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1382-toolpolicy-debounce-freepad-sshud.** Pure helpers on tip 1381.
 Prior: **1381**.
 
