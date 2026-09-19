@@ -2,6 +2,21 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1509-crop-session-id.** cropRecordSessionId for appearance keys.
+Prior: **1508**. Commits 1509a–1509b (+ docs).
+
+### Apply (on tip **1500**)
+```bash
+git pull --ff-only /path/to/biltoo-1509-crop-session-id.bundle HEAD
+```
+Includes **1501–1509**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1508-crop-install-keep.** canKeepDisplayForCropEnter; clearItemFreePlacementForCropDraft.
 Prior: **1507**. Commits 1508a–1508b (+ docs).
 
