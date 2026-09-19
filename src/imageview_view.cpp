@@ -794,7 +794,7 @@ QPixmap ImageView::captureSlideshowFrame() const
 
     if (m_ssDwell.isMotionActive() && m_ssDwell.hasSourceImage()) {
         paintMotionCover(&painter, m_ssDwell.sourceImage, m_ssDwell.motionT,
-                         m_ssDwell.biasA, m_ssDwell.biasB, m_ss.fromPath);
+                         m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
     } else if (ImageItem *item = targetItem()) {
         // Still frame: draw source (or displayed pixmap) with cover/fit framing.
         const QImage src = item->hasDecodedPixels() ? item->sourceImage()
@@ -962,7 +962,7 @@ void ImageView::setSlideshowMotionPaused(bool paused)
     if (paused) {
         if (m_ssDwell.isMotionActive() && m_motionTimer && m_motionTimer->isActive()) {
             // Fold wall into unitless dwell progress, then freeze.
-            if (m_ssDwell.durationMs > 0 && m_ssDwell.clock.isValid()) {
+            if (m_ssDwell.hasDuration() && m_ssDwell.clock.isValid()) {
                 const qint64 d = m_ssDwell.clock.elapsed();
                 if (d > 0) {
                     const qreal t = qreal(m_ssDwell.elapsedOffsetMs + d)
@@ -998,7 +998,7 @@ void ImageView::setSlideshowMotionPaused(bool paused)
     if (m_ss.isToMotionClockRunning()) {
         m_ss.toMotionClock.start();
     }
-    if (m_ssDwell.isMotionActive() && m_motionTimer && m_ssDwell.durationMs > 0) {
+    if (m_ssDwell.isMotionActive() && m_motionTimer && m_ssDwell.hasDuration()) {
         m_ssDwell.clock.restart();
         m_motionTimer->start();
     }
@@ -1759,15 +1759,15 @@ void ImageView::captureMotionBiasesForPath(const QString &path, const QImage &im
     if (!outA || !outB) {
         return;
     }
-    const QPointF saveA = m_ssDwell.biasA;
-    const QPointF saveB = m_ssDwell.biasB;
-    const QPointF saveDir = m_ssDwell.travelDir;
-    const qreal saveSign = m_ssDwell.motionSign;
+    const QPointF saveA = m_ssDwell.biasAPoint();
+    const QPointF saveB = m_ssDwell.biasBPoint();
+    const QPointF saveDir = m_ssDwell.travelDirPoint();
+    const qreal saveSign = m_ssDwell.motionSignValue();
     const bool saveV = m_ssDwell.hasBias();
     m_ssDwell.clearBias();
     pickInterestingMotionBiases(qHash(path), image);
-    *outA = m_ssDwell.biasA;
-    *outB = m_ssDwell.biasB;
+    *outA = m_ssDwell.biasAPoint();
+    *outB = m_ssDwell.biasBPoint();
     if (saveV) {
         m_ssDwell.applyBias(saveA, saveB, saveDir, saveSign);
     } else {
@@ -1801,7 +1801,7 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
         // Oriented path when to-phase missing (slideshowPixelsForPath materializes).
         m_ss.setFromImage(slideshowPixelsForPath(fromPath), true);
     }
-    m_ssDwell.applyBias(m_ss.toBiasA, m_ss.toBiasB, m_ssDwell.travelDir, m_ssDwell.motionSign);
+    m_ssDwell.applyBias(m_ss.toBiasA, m_ss.toBiasB, m_ssDwell.travelDirPoint(), m_ssDwell.motionSignValue());
     m_ssDwell.setBiasPath(fromPath);
     m_ss.promoteFromMotionFromTo();
     m_ssDwell.setMotionT(m_ss.fromMotionT);
@@ -2645,7 +2645,7 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
     } else if (m_ss.hasFromPath()) {
         path = m_ss.fromPath;
     }
-    paintMotionCover(&painter, image, motionT, m_ssDwell.biasA, m_ssDwell.biasB, path);
+    paintMotionCover(&painter, image, motionT, m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), path);
     painter.end();
     return QPixmap::fromImage(out);
 }
@@ -2778,7 +2778,7 @@ void ImageView::retargetSlideshowMotionDuration(int durationMs)
     }
     durationMs = SlideshowClocks::sanitizeDwellDurationMs(durationMs);
     qreal progress = 0.0;
-    if (m_ssDwell.durationMs > 0) {
+    if (m_ssDwell.hasDuration()) {
         qint64 elapsed = m_ssDwell.elapsedOffsetMs;
         if (m_ssDwell.clock.isValid() && !m_ssDwell.isMotionPaused()) {
             elapsed += m_ssDwell.clock.elapsed();
@@ -2824,7 +2824,7 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     initialProgress = ViewTransform::clamp01(initialProgress); // [0,1]
     m_ssDwell.clock.start();
     m_ssDwell.setMotionT(ViewTransform::clamp01(initialProgress));
-    m_ssDwell.setElapsedOffsetMs((m_ssDwell.durationMs > 0)
+    m_ssDwell.setElapsedOffsetMs((m_ssDwell.hasDuration())
         ? qint64(m_ssDwell.motionT * qreal(m_ssDwell.durationMs))
         : 0);
     m_motionTimer->start();

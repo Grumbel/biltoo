@@ -459,6 +459,16 @@ struct SlideshowDwellState {
 
     bool hasBias() const { return biasValid; }
 
+    bool hasDuration() const { return durationMs > 0; }
+
+    const QPointF &biasAPoint() const { return biasA; }
+
+    const QPointF &biasBPoint() const { return biasB; }
+
+    const QPointF &travelDirPoint() const { return travelDir; }
+
+    qreal motionSignValue() const { return motionSign; }
+
     bool hasSourceImage() const { return !sourceImage.isNull(); }
 
     bool hasAtlas() const { return !atlas.isNull(); }

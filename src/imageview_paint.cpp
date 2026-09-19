@@ -219,7 +219,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_ssDwell.biasA, m_ssDwell.biasB, m_ss.fromPath);
+                                         m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
                     }
                     painter.setOpacity(t * 2.0);
                     painter.fillRect(vr, Qt::black);
@@ -243,7 +243,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                     painter.save();
                     painter.translate(xOld, 0);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_ssDwell.biasA, m_ssDwell.biasB, m_ss.fromPath);
+                                     m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
                     painter.restore();
                 }
                 painter.save();
@@ -258,7 +258,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_ssDwell.biasA, m_ssDwell.biasB, m_ss.fromPath);
+                                         m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
                     }
                 } else {
                     painter.setOpacity(1.0);
@@ -270,7 +270,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                 if (!fromImg.isNull()) {
                     painter.setOpacity(1.0 - t);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_ssDwell.biasA, m_ssDwell.biasB, m_ss.fromPath);
+                                     m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
                 }
                 painter.setOpacity(t);
                 paintMotionCover(&painter, m_ss.toImage, toT,
@@ -280,7 +280,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         } else if (!fromImg.isNull()) {
             fillPad(vr, fromImg, QImage(), -1.0, m_ss.fromPath);
             paintMotionCover(&painter, fromImg, fromT,
-                             m_ssDwell.biasA, m_ssDwell.biasB, m_ss.fromPath);
+                             m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
         }
         // Pure phase painted the slide. Fall through so HUD / seekbar / pause
         // cues still draw (return here used to kill the entire overlay pass).
