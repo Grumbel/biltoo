@@ -310,20 +310,6 @@ void ImageView::commitCropApplyBake(ImageItem *item, const QImage &display,
 }
 
 
-void ImageView::logApplyCropDebug(ImageItem *item, const QString &path, const QImage &host,
-                                  bool hostFromCache, const QImage &display,
-                                  qreal cropW, qreal cropH, qreal footW, qreal footH) const
-{
-    if (!item) {
-        return;
-    }
-    CropDebug::applyCrop(path, host.width(), host.height(), hostFromCache,
-                         display.width(), display.height(), cropW, cropH, footW, footH,
-                         item->imageSize().width(), item->imageSize().height());
-}
-
-
-
 bool ImageView::bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cropH,
                                           qreal footW, qreal footH,
                                           const QPointF &cropSceneCenter)

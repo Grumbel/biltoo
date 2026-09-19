@@ -1650,8 +1650,6 @@ private:
      * Map item-local draft rect to source pixel rect of the *current* pixmap,
      * then compose into original on-disk coordinates in @p state.
      */
-    void logRecordCropDebug(const QSize &cropBasis, const QSize &imageSize,
-                            const QRect &disp) const;
     void writeRecordedCropState(ImageItem *item, SessionImageId sid,
                                 const WorkspaceItemState *orientApp,
                                 const CropSession::RecordGeometry &rec,

@@ -193,14 +193,6 @@ void ImageView::rememberCropEnterSizes(const QString &path, const QImage &full)
 }
 
 
-void ImageView::logKeepEnterDisplay(ImageItem *item, const QString &path) const
-{
-    if (!item) {
-        return;
-    }
-    CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);
-}
-
 void ImageView::installKeepEnterDisplay(ImageItem *item, const WorkspaceItemState &contentOnly,
                                         const ContentXform::Value &wantX, const QString &path)
 {
@@ -210,29 +202,6 @@ void ImageView::installKeepEnterDisplay(ImageItem *item, const WorkspaceItemStat
     CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);
 }
 
-
-void ImageView::logDraftEnterBegin(ImageItem *item, const QString &path,
-                                   const CropSession::EnterInstallSample &sample,
-                                   const QImage &full) const
-{
-    if (!item) {
-        return;
-    }
-    CropDebug::draftEnterBegin(path, item->imageSize().width(), item->imageSize().height(),
-                               item->hasDecodedPixels(), sample.hadPriorCrop,
-                               ImageCache::longEdge(full));
-}
-
-void ImageView::logDraftEnterDone(ImageItem *item, const CropSession::EnterInstallSample &sample,
-                                  const WorkspaceItemState &contentOnly) const
-{
-    if (!item) {
-        return;
-    }
-    CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
-                              sample.display.width(), sample.display.height(),
-                              item->sessionHasCrop(), contentOnly.contentQuarterTurns);
-}
 
 void ImageView::installDraftEnterDisplay(ImageItem *item,
                                          const CropSession::EnterInstallSample &sample,
