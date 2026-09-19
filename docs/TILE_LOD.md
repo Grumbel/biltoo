@@ -364,7 +364,7 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
 keeps identity correct.
 
-**Global path RAM tip history (1400–1444):**
+**Global path RAM tip history (1400–1447):**
 
 | Range | Summary |
 |-------|---------|
@@ -383,17 +383,20 @@ keeps identity correct.
 | **1436–1438** | Completion touches path LRU; env override debug log; rule renumber |
 | **1439–1441** | `invalidateTilePathRam`; reloadFromDisk purges path RAM + prefetch |
 | **1442–1444** | In-place shared invalidate; `purgeTilePathRam` for multi-item paths |
+| **1445–1447** | Session replace: dropAllTileLodSessions + invalidateAll clears holders |
 
 ### Session / archive replace (biltoo-1233 / 1234)
 
 Retention is **within one Open session only**. On `invalidateSessionLoads` /
 `clearWorkspace` (new file list, new archive):
 
-1. `TileLodRegistry::invalidateAll()` — drop every path entry (sources + RAM).
-2. Clear ImageView tile prefetch slots.
-3. `ThumtooCache::clearSessionReplaceMemos()` — durable-tile yes/no, min_scale,
+1. Drop tile sessions on live **and stashed** items (`dropAllTileLodSessions`).
+2. `TileLodRegistry::invalidateAll()` — cancel/clear every path cache, then drop
+   map entries (stale holders must not keep Succeeded tiles).
+3. Clear ImageView tile prefetch slots.
+4. `ThumtooCache::clearSessionReplaceMemos()` — durable-tile yes/no, min_scale,
    URI map (size process memo stays; `warmSessionOpenMemos` refills).
-4. `ImageCache::clear()` — path-keyed LQIP / soft underlays from the previous
+5. `ImageCache::clear()` — path-keyed LQIP / soft underlays from the previous
    path set (Gallery Open used to skip this; only Workspace `clearWorkspace`
    cleared it).
 

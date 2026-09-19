@@ -42,6 +42,9 @@ not claimed (`tileLodWanted` requires `hasDurableTiles`).
     land** (when durable pyramid is known); stepping to a neighbor should show
     coarse tiles sooner than a cold path. Already-warm neighbors (≥4 Succeeded
     in path RAM) skip issue. Optional env: `BILTOO_TILE_RAM_MIB`, `BILTOO_TILE_MAX_IDLE`.
+12. **Reload** — `purgeTilePathRam` must clear grid paint for the path; after
+    reload, tiles rebuild (no pre-reload cells). Workspace: two items same path
+    both clear.
 
 ## Workspace
 

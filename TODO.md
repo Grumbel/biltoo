@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1447-session-replace-drop-all-tile-sessions.** Stash-safe session replace.
+Prior: **1444**. Commits 1445–1447.
+
+### Commits
+1. **1445** `invalidateAll` cancel/clear every path cache before map clear
+2. **1446** `dropAllTileLodSessions` (live + stashes); wire into invalidateSessionLoads / clearWorkspace
+3. **1447** TILE_LOD session-replace steps; runtime Reload check
+
+### Apply
+```bash
+git pull /path/to/biltoo-1447-session-replace-drop-all-tile-sessions.bundle HEAD
+```
+Requires tip **1444**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1444-invalidate-shared-purge-path.** In-place invalidate; purgeTilePathRam.
 Prior: **1441**. Commits 1442–1444.
 
