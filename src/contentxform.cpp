@@ -157,7 +157,7 @@ static bool sameOrientationClass(const QSize &a, const QSize &b)
     return (a.width() > a.height()) == (b.width() > b.height());
 }
 
-static QRect scaleCropRectLocal(const QRect &crop, const QSize &recorded, const QSize &live)
+QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live)
 {
     if (crop.isEmpty() || live.width() < 1 || live.height() < 1) {
         return {};
@@ -207,7 +207,7 @@ QSize layoutSize(const QSize &native, const Value &x)
     }
 
     if (basis != oriented) {
-        crop = scaleCropRectLocal(crop, basis, oriented);
+        crop = scaleCropRect(crop, basis, oriented);
     }
     if (crop.width() < 1 || crop.height() < 1) {
         return oriented;

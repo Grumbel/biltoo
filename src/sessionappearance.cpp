@@ -3,6 +3,7 @@
 
 #include "sessionappearance.h"
 #include "contentxform.h"
+#include "viewtransform.h"
 #include "biltoo_thread.h"
 #include "coloradjust.h"
 
@@ -16,18 +17,7 @@ namespace SessionAppearance {
 
 QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live)
 {
-    if (crop.isEmpty() || live.width() < 1 || live.height() < 1) {
-        return {};
-    }
-    if (!recorded.isValid() || recorded.width() < 1 || recorded.height() < 1
-        || recorded == live) {
-        return crop;
-    }
-    return QRect(
-        qRound(crop.x() * double(live.width()) / double(recorded.width())),
-        qRound(crop.y() * double(live.height()) / double(recorded.height())),
-        qMax(1, qRound(crop.width() * double(live.width()) / double(recorded.width()))),
-        qMax(1, qRound(crop.height() * double(live.height()) / double(recorded.height()))));
+    return ContentXform::scaleCropRect(crop, recorded, live);
 }
 
 static void normalizeCropRotation(qreal &degrees)
@@ -228,8 +218,8 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
                     out = out.copy(srcRect);
                 }
             } else {
-                const int dw = qMax(1, crop.width());
-                const int dh = qMax(1, crop.height());
+                const int dw = ViewTransform::atLeast1(crop.width());
+                const int dh = ViewTransform::atLeast1(crop.height());
                 QImage::Format fmt = out.format();
                 if (fmt == QImage::Format_Invalid) {
                     fmt = QImage::Format_ARGB32_Premultiplied;

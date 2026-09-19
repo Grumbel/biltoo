@@ -138,6 +138,12 @@ bool equal(const Value &a, const Value &b);
  * One step of +1 (CCW in QTransform / image Y-down):
  *   (x, y, w, h) on (W, H) → (H - y - h, x, h, w) on (H, W)
  */
+/**
+ * Scale an axis-aligned crop rect from @p recorded source size to @p live size.
+ * Empty if inputs invalid; identity when recorded == live.
+ */
+QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live);
+
 QRect mapCropRectThroughContentRotate90(QRect crop, QSize &space, int quarterTurns);
 
 /**
