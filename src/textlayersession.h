@@ -5,6 +5,7 @@
 #define TEXTLAYERSESSION_H
 
 #include "thumtoocache.h"
+#include "viewtransform.h"
 
 #include <QPoint>
 #include <QRect>
@@ -55,7 +56,7 @@ struct TextLayerSession {
     /** Update rubber rect from origin to @p pos. */
     void updateRubber(const QPoint &pos)
     {
-        rubberRect = QRect(rubberOrigin, pos).normalized();
+        rubberRect = ViewTransform::rubberRect(rubberOrigin, pos);
     }
 
     /** End rubber-band gesture (keeps selectedRegions). */
