@@ -860,6 +860,22 @@ void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
     rematerializeItemContent(item, *app);
 }
 
+
+SessionImageId ImageView::cropRecordSessionId(const ImageItem *item) const
+{
+    if (!item) {
+        return kInvalidSessionImageId;
+    }
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && m_crop.hasTargetId()) {
+        sid = m_crop.targetIdValue();
+    }
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_sessionId.currentIdValue();
+    }
+    return sid;
+}
+
 void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 {
     if (!item) {
@@ -890,13 +906,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
             && !isProvisionalImageSize(path)) {
             WorkspaceItemState orientOnly;
             // Prefer appearance turns when present.
-            SessionImageId sidR = item->sessionId();
-            if (sidR == kInvalidSessionImageId && m_crop.hasTargetId()) {
-                sidR = m_crop.targetIdValue();
-            }
-            if (sidR == kInvalidSessionImageId && isImageMode()) {
-                sidR = m_sessionId.currentIdValue();
-            }
+            const SessionImageId sidR = cropRecordSessionId(item);
             if (sidR != kInvalidSessionImageId) {
                 if (const WorkspaceItemState *it = m_appearance.get(sidR)) {
                     orientOnly.contentQuarterTurns = it->contentQuarterTurns;
@@ -919,13 +929,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     WorkspaceItemState s = captureState(item);
     // Appearance is keyed by SessionImageId only. Prefer the locked crop target
     // id; never invent one from the navigation cursor while other tiles exist.
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId && m_crop.hasTargetId()) {
-        sid = m_crop.targetIdValue();
-    }
-    if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_sessionId.currentIdValue();
-    }
+    const SessionImageId sid = cropRecordSessionId(item);
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             // Keep content transforms from the session-image store.
