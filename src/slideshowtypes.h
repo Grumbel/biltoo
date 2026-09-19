@@ -199,6 +199,26 @@ struct SlideshowPhaseState {
 
     bool isToMotionClockRunning() const { return toMotionClockRunning; }
 
+    qreal fromMotionTValue() const { return fromMotionT; }
+
+    qreal toMotionTValue() const { return toMotionT; }
+
+    qreal &fromMotionTRef() { return fromMotionT; }
+
+    qreal &toMotionTRef() { return toMotionT; }
+
+    const QString &fromPathRef() const { return fromPath; }
+
+    const QString &toPathRef() const { return toPath; }
+
+    const QImage &fromImageRef() const { return fromImage; }
+
+    const QImage &toImageRef() const { return toImage; }
+
+    QImage &fromImageMutable() { return fromImage; }
+
+    QImage &toImageMutable() { return toImage; }
+
     bool isFromPath(const QString &path) const
     {
         return !path.isEmpty() && path == fromPath;
@@ -408,6 +428,22 @@ struct SlideshowSettings {
     }
 
     bool isZoomFill() const { return zoom == SlideshowZoom::Fill; }
+
+    SlideshowZoom currentZoom() const { return zoom; }
+
+    SlideshowMotion currentMotion() const { return motion; }
+
+    SlideshowTransition currentTransition() const { return transition; }
+
+    qreal currentPanZoomFactor() const { return panZoomFactor; }
+
+    int transitionDuration() const { return transitionDurationMs; }
+
+    bool isFadeBlack() const { return transition == SlideshowTransition::FadeBlack; }
+
+    bool isSlideTransition() const { return transition == SlideshowTransition::Slide; }
+
+    bool isNoneTransition() const { return transition == SlideshowTransition::None; }
 
     bool setZoom(SlideshowZoom mode)
     {
@@ -737,6 +773,22 @@ struct SlideshowProgressHud {
     bool isSeekDragging() const { return seekDragging; }
 
     bool isSeekbarVisible() const { return seekbarVisible; }
+
+    int progressInterval() const { return progressIntervalMs; }
+
+    bool hasProgressInterval() const { return progressIntervalMs > 0; }
+
+    qint64 progressBase() const { return progressBaseMs; }
+
+    qint64 timelineElapsed() const { return timelineElapsedMs; }
+
+    qint64 timelineTotal() const { return timelineTotalMs; }
+
+    bool hasTimelineTotal() const { return timelineTotalMs > 0; }
+
+    qreal cycleProgress() const { return cycleProgress01; }
+
+    bool isCycleProgressValid() const { return cycleProgressValid; }
 
     bool setSeekbarVisible(bool on)
     {

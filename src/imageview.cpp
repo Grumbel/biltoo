@@ -287,7 +287,7 @@ ImageView::ImageView(QWidget *parent)
             if (viewport()) {
                 viewport()->update();
             }
-        } else if (m_hudPrefs.isVisible() && m_ssHud.progressIntervalMs > 0) {
+        } else if (m_hudPrefs.isVisible() && m_ssHud.hasProgressInterval()) {
             if (viewport()) {
                 viewport()->update();
             }
@@ -837,12 +837,12 @@ int ImageView::pendingDecodeCount() const
         const int need = 0; // need edge checked via target below if needed
         Q_UNUSED(need);
         if (m_ss.hasFromPath()
-            && ImageCache::longEdge(m_ss.fromImage) > 0
-            && ImageCache::longEdge(m_ss.fromImage)
+            && ImageCache::longEdge(m_ss.fromImageRef()) > 0
+            && ImageCache::longEdge(m_ss.fromImageRef())
                    < (slideshowTargetEdge() * 7) / 10) {
             // Current slide still soft — count as remaining quality work once.
-            if (!m_ss.rasterInflightContains(m_ss.fromPath)
-                && !m_ss.rasterPendingContains(m_ss.fromPath)) {
+            if (!m_ss.rasterInflightContains(m_ss.fromPathRef())
+                && !m_ss.rasterPendingContains(m_ss.fromPathRef())) {
                 ++n;
             }
         }

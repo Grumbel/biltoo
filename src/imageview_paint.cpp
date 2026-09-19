@@ -178,8 +178,8 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const bool haveTo = !toSrc.isNull();
         const qreal tt = ViewTransform::clamp01(t);
         const QString fPath = !fromPath.isEmpty() ? fromPath
-            : (m_ss.hasFromPath() ? m_ss.fromPath : m_ssDwell.biasPath);
-        const QString tPath = !toPath.isEmpty() ? toPath : m_ss.toPath;
+            : (m_ss.hasFromPath() ? m_ss.fromPathRef() : m_ssDwell.biasPath);
+        const QString tPath = !toPath.isEmpty() ? toPath : m_ss.toPathRef();
         if (haveFrom && haveTo && t >= 0.0) {
             painter.setOpacity(1.0);
             paintZoomBlurUnderlay(&painter, fromSrc, vr, blurKey(fPath));
@@ -207,32 +207,32 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const QRect vr = viewport()->rect();
         // Prefer member references (not a local QImage copy) so paintMotionCover
         // can match the dwell atlas by address as well as by path.
-        const QImage &fromImg = m_ss.hasFromImage() ? m_ss.fromImage : m_ssDwell.sourceImage;
-        const qreal fromT = m_ss.fromMotionT;
-        const qreal toT = m_ss.toMotionT;
+        const QImage &fromImg = m_ss.hasFromImage() ? m_ss.fromImageRef() : m_ssDwell.sourceImage;
+        const qreal fromT = m_ss.fromMotionTValue();
+        const qreal toT = m_ss.toMotionTValue();
         if (m_ss.inTransition() && m_ss.hasToImage()) {
             const qreal t = m_ss.clampedFadeT();
-            fillPad(vr, fromImg, m_ss.toImage, t, m_ss.fromPath, m_ss.toPath);
-            if (m_ssSettings.transition == SlideshowTransition::FadeBlack) {
+            fillPad(vr, fromImg, m_ss.toImageRef(), t, m_ss.fromPathRef(), m_ss.toPathRef());
+            if (m_ssSettings.isFadeBlack()) {
                 // V envelope: A→black (t in [0,0.5]), then black→B (t in [0.5,1]).
                 if (t < 0.5) {
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
+                                         m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
                     }
                     painter.setOpacity(t * 2.0);
                     painter.fillRect(vr, Qt::black);
                     painter.setOpacity(1.0);
                 } else {
                     painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_ss.toImage, toT,
-                                     m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPath);
+                    paintMotionCover(&painter, m_ss.toImageRef(), toT,
+                                     m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPathRef());
                     painter.setOpacity((1.0 - t) * 2.0);
                     painter.fillRect(vr, Qt::black);
                     painter.setOpacity(1.0);
                 }
-            } else if (m_ssSettings.transition == SlideshowTransition::Slide) {
+            } else if (m_ssSettings.isSlideTransition()) {
                 // Projector: A exits left, B enters from the right; both in motion.
                 const int w = vr.width();
                 const int xOld = int(qRound(-t * w));
@@ -243,44 +243,44 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                     painter.save();
                     painter.translate(xOld, 0);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
+                                     m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
                     painter.restore();
                 }
                 painter.save();
                 painter.translate(xNew, 0);
-                paintMotionCover(&painter, m_ss.toImage, toT,
-                                 m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPath);
+                paintMotionCover(&painter, m_ss.toImageRef(), toT,
+                                 m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPathRef());
                 painter.restore();
                 painter.setClipping(false);
-            } else if (m_ssSettings.transition == SlideshowTransition::None) {
+            } else if (m_ssSettings.isNoneTransition()) {
                 // Hard cut at the end of the transition window (no blend).
                 if (t < 1.0 - 1e-6) {
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
+                                         m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
                     }
                 } else {
                     painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_ss.toImage, toT,
-                                     m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPath);
+                    paintMotionCover(&painter, m_ss.toImageRef(), toT,
+                                     m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPathRef());
                 }
             } else {
                 // Crossfade: A 1→0, B 0→1; both in motion.
                 if (!fromImg.isNull()) {
                     painter.setOpacity(1.0 - t);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
+                                     m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
                 }
                 painter.setOpacity(t);
-                paintMotionCover(&painter, m_ss.toImage, toT,
-                                 m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPath);
+                paintMotionCover(&painter, m_ss.toImageRef(), toT,
+                                 m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPathRef());
                 painter.setOpacity(1.0);
             }
         } else if (!fromImg.isNull()) {
-            fillPad(vr, fromImg, QImage(), -1.0, m_ss.fromPath);
+            fillPad(vr, fromImg, QImage(), -1.0, m_ss.fromPathRef());
             paintMotionCover(&painter, fromImg, fromT,
-                             m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPath);
+                             m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
         }
         // Pure phase painted the slide. Fall through so HUD / seekbar / pause
         // cues still draw (return here used to kill the entire overlay pass).
@@ -535,18 +535,18 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
         const int viewH = viewport()->height();
         if (viewW > 0 && viewH > 0) {
             qreal fraction = 0.0;
-            if (m_ssHud.timelineTotalMs > 0) {
-                fraction = qreal(m_ssHud.timelineElapsedMs)
-                    / qreal(m_ssHud.timelineTotalMs);
-            } else if (m_ssHud.cycleProgressValid) {
-                fraction = m_ssHud.cycleProgress01;
-            } else if (m_ssHud.progressIntervalMs > 0) {
-                qint64 elapsed = m_ssHud.progressBaseMs;
+            if (m_ssHud.timelineTotal() > 0) {
+                fraction = qreal(m_ssHud.timelineElapsed())
+                    / qreal(m_ssHud.timelineTotal());
+            } else if (m_ssHud.isCycleProgressValid()) {
+                fraction = m_ssHud.cycleProgress();
+            } else if (m_ssHud.hasProgressInterval()) {
+                qint64 elapsed = m_ssHud.progressBase();
                 if (!m_ssHud.progressClockPaused
                     && m_ssHud.progressElapsed.isValid()) {
                     elapsed += m_ssHud.progressElapsed.elapsed();
                 }
-                fraction = qreal(elapsed) / qreal(m_ssHud.progressIntervalMs);
+                fraction = qreal(elapsed) / qreal(m_ssHud.progressInterval());
             }
             fraction = ViewTransform::clamp01(fraction);
 
@@ -566,13 +566,13 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                 painter.drawRect(0, viewH - barH, barW, barH);
             }
 
-            if (m_ssHud.timelineTotalMs > 0) {
-                const qint64 remain = m_ssHud.timelineTotalMs
-                    - m_ssHud.timelineElapsedMs;
+            if (m_ssHud.timelineTotal() > 0) {
+                const qint64 remain = m_ssHud.timelineTotal()
+                    - m_ssHud.timelineElapsed();
                 const QString timeLine =
                     QStringLiteral("%1 / %2   −%3")
-                        .arg(SlideshowClocks::formatClockMs(m_ssHud.timelineElapsedMs),
-                             SlideshowClocks::formatClockMs(m_ssHud.timelineTotalMs),
+                        .arg(SlideshowClocks::formatClockMs(m_ssHud.timelineElapsed()),
+                             SlideshowClocks::formatClockMs(m_ssHud.timelineTotal()),
                              SlideshowClocks::formatClockMs(remain));
 
                 QFont f = painter.font();
@@ -725,7 +725,7 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
     paintCanvasBackground(painter, rect, transform().m11());
 
     // Page guide paper (under images): plain white sheet in scene units.
-    if (m_pageGuide.visible && isWorkspaceMode()) {
+    if (m_pageGuide.isVisible() && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();
         if (page.intersects(rect)) {
             painter->save();
@@ -1121,7 +1121,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
     // Page guide outline above images so the frame stays visible when tiles
     // cover the white sheet (scene coordinates).
-    if (m_pageGuide.visible && isWorkspaceMode()) {
+    if (m_pageGuide.isVisible() && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();
         if (page.intersects(rect)) {
             painter->save();
