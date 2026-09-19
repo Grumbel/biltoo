@@ -125,7 +125,7 @@ struct SlideshowPhaseState {
         setFromMotionT(toMotionT);
     }
 
-    tilelod::TileLodController *ensureFromTiles()
+    tilelod::TileLodController *ensureFromTiles() const
     {
         if (!fromTiles) {
             fromTiles = std::make_unique<tilelod::TileLodController>();
@@ -133,7 +133,7 @@ struct SlideshowPhaseState {
         return fromTiles.get();
     }
 
-    tilelod::TileLodController *ensureToTiles()
+    tilelod::TileLodController *ensureToTiles() const
     {
         if (!toTiles) {
             toTiles = std::make_unique<tilelod::TileLodController>();
