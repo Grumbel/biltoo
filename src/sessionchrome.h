@@ -32,13 +32,26 @@ struct SessionIdentity {
         lastLoadError.clear();
     }
 
-    void setPosition(int idx, int tot)
+    /** @return true when index or total changed. */
+    bool setPosition(int idx, int tot)
     {
+        if (index == idx && total == tot) {
+            return false;
+        }
         index = idx;
         total = tot;
+        return true;
     }
 
-    void setCurrentId(SessionImageId id) { currentId = id; }
+    /** @return true when current id changed. */
+    bool setCurrentId(SessionImageId id)
+    {
+        if (currentId == id) {
+            return false;
+        }
+        currentId = id;
+        return true;
+    }
 
     void setLastLoadError(const QString &err) { lastLoadError = err; }
 

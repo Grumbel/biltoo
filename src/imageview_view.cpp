@@ -564,8 +564,7 @@ void ImageView::setImageModeLeftDragPan(bool on)
 
 void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
 {
-    const bool changed = (m_sessionId.index != index || m_sessionId.total != total);
-    m_sessionId.setPosition(index, total);
+    const bool changed = m_sessionId.setPosition(index, total);
     // Pulse only when the session cursor actually moves (user Next/Prev, etc.).
     // Do not pulse on every statusChanged while total > 0 (AUDIT H7).
     // Slideshow auto-advance passes pulseIdentity=false.
