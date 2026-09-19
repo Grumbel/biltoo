@@ -2,6 +2,21 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1588-edge-nav-half-ellipse.** Edge nav markers as centred ~80% half-ellipses (clear top/bottom chrome).
+Prior: **1587**.
+
+### Change
+- `EdgeNavPolicy`: `kEdgeSpanFrac=0.80`; L/R and top hit+fill rects centred on the edge
+- Smaller top strip (`kZoneHeightFrac=0.08`, floor 32); button radius 20
+- Paint: half-ellipse lobes instead of full-height/width rectangular strips
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1588-edge-nav-half-ellipse.bundle HEAD
+```
+
+---
+
 **Tip: biltoo-1587-hard-reload-set-iter-warn.** Avoid GCC -Wnull-dereference on QSet iterator in hardReloadFromDisk.
 Prior: **1586**.
 
