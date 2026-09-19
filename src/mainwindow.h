@@ -264,6 +264,8 @@ private slots:
     void cutWorkspaceItems();
     void pasteWorkspaceItems();
     void editWorkspaceBackground();
+    /** Session Gallery/Image canvas background (not Preferences, not project). */
+    void editViewBackground();
     void workspaceBackgroundDefault(bool checked);
     void syncWorkspaceBackgroundActions();
     void updatePasteActionEnabled();
@@ -656,6 +658,7 @@ private:
     QAction *m_pasteWorkspaceAct = nullptr;
     QAction *m_workspaceBackgroundAct = nullptr;
     QAction *m_workspaceBgDefaultAct = nullptr;
+    QAction *m_viewBackgroundAct = nullptr;
     QAction *m_saveProjectAct = nullptr;
     QAction *m_saveProjectAsAct = nullptr;
     QAction *m_openProjectAct = nullptr;

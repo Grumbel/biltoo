@@ -821,6 +821,14 @@ public:
     bool workspaceBackgroundShowDefault() const { return m_canvasBg.isWorkspaceShowDefault(); }
 
     /**
+     * Session Gallery / Image canvas override (not Preferences, not project).
+     * AppDefault follows Preferences materials. Shared across Gallery and Image.
+     */
+    void setViewBackground(const WorkspaceBackground &bg);
+    WorkspaceBackground viewBackground() const { return m_canvasBg.viewRef(); }
+    void clearViewBackground(); /**< AppDefault */
+
+    /**
      * Session position for status line and HUD (index/total, 1-based display).
      * Pass total <= 1 or index < 0 to hide the prefix.
      * @p pulseIdentity briefly shows filename/badge without a pinned HUD (H);

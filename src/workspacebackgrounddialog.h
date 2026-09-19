@@ -53,6 +53,12 @@ public:
     void setBackground(const WorkspaceBackground &bg);
     WorkspaceBackground background() const;
 
+    /**
+     * Title and AppDefault wording.
+     * @p forProject  true = Workspace project; false = session Gallery/Image.
+     */
+    void setCanvasContext(bool forProject);
+
     /** Colours used when mode is AppDefault (from Preferences). */
     void setAppDefaultColors(const QColor &color, const QColor &colorAlt, bool checker);
 

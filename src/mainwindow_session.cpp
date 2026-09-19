@@ -4503,6 +4503,7 @@ void MainWindow::editWorkspaceBackground()
     }
     const WorkspaceBackground before = m_imageView->workspaceBackground();
     WorkspaceBackgroundDialog dlg(this);
+    dlg.setCanvasContext(/*forProject=*/true);
     dlg.setAppDefaultColors(
         m_imageView->backgroundColor(),
         m_imageView->backgroundColorAlt(),
@@ -4544,6 +4545,52 @@ void MainWindow::editWorkspaceBackground()
         case WorkspaceBackgroundMode::AppDefault:
         default:
             msg = tr("Workspace background: application default");
+            break;
+        }
+        statusBar()->showMessage(msg, 2500);
+    }
+}
+
+void MainWindow::editViewBackground()
+{
+    if (!m_imageView) {
+        return;
+    }
+    const WorkspaceBackground before = m_imageView->viewBackground();
+    WorkspaceBackgroundDialog dlg(this);
+    dlg.setCanvasContext(/*forProject=*/false);
+    dlg.setAppDefaultColors(
+        m_imageView->backgroundColor(),
+        m_imageView->backgroundColorAlt(),
+        m_imageView->backgroundPattern() == BackgroundPattern::Checkerboard);
+    dlg.setBackground(before);
+    connect(&dlg, &WorkspaceBackgroundDialog::backgroundChanged, this,
+            [this](const WorkspaceBackground &bg) {
+                if (m_imageView) {
+                    m_imageView->setViewBackground(bg);
+                }
+            });
+    if (dlg.exec() != QDialog::Accepted) {
+        m_imageView->setViewBackground(before);
+        return;
+    }
+    const WorkspaceBackground after = dlg.background();
+    m_imageView->setViewBackground(after);
+    if (statusBar()) {
+        QString msg;
+        switch (after.mode) {
+        case WorkspaceBackgroundMode::Solid:
+            msg = tr("View background: solid");
+            break;
+        case WorkspaceBackgroundMode::Checkerboard:
+            msg = tr("View background: checkerboard");
+            break;
+        case WorkspaceBackgroundMode::ImageTile:
+            msg = tr("View background: image pattern");
+            break;
+        case WorkspaceBackgroundMode::AppDefault:
+        default:
+            msg = tr("View background: Preferences default");
             break;
         }
         statusBar()->showMessage(msg, 2500);

@@ -16,7 +16,8 @@ enum class BackgroundPattern {
 };
 
 /**
- * Viewport / workspace background colours, pattern, and optional image tile.
+ * Viewport canvas materials: Preferences defaults, Workspace project override,
+ * and session View override (Gallery / Image on-the-fly).
  */
 struct CanvasBackground {
     QColor color{42, 42, 42};
@@ -28,11 +29,24 @@ struct CanvasBackground {
     bool workspaceShowDefault = false;
     QPixmap workspaceTile;
     QString workspaceTilePath;
+    /**
+     * Session-only override for Gallery / Image (not Preferences, not project).
+     * AppDefault → Preferences materials. Cleared only by the user.
+     */
+    WorkspaceBackground view;
+    QPixmap viewTile;
+    QString viewTilePath;
 
     void clearWorkspaceTile()
     {
         workspaceTile = {};
         workspaceTilePath.clear();
+    }
+
+    void clearViewTile()
+    {
+        viewTile = {};
+        viewTilePath.clear();
     }
 
     const QColor &primaryColor() const { return color; }
@@ -49,6 +63,10 @@ struct CanvasBackground {
 
     bool isWorkspaceAppDefault() const { return workspace.isAppDefault(); }
 
+    const WorkspaceBackground &viewRef() const { return view; }
+
+    bool isViewAppDefault() const { return view.isAppDefault(); }
+
     BackgroundPattern currentPattern() const { return pattern; }
 
     bool isCheckerWorkspaceOnly() const { return checkerWorkspaceOnly; }
@@ -58,10 +76,21 @@ struct CanvasBackground {
         return workspaceTilePath == path;
     }
 
+    bool viewTilePathMatches(const QString &path) const
+    {
+        return viewTilePath == path;
+    }
+
     void setWorkspaceTile(const QPixmap &px, const QString &path)
     {
         workspaceTile = px;
         workspaceTilePath = path;
+    }
+
+    void setViewTile(const QPixmap &px, const QString &path)
+    {
+        viewTile = px;
+        viewTilePath = path;
     }
 
     /** @return true when the primary canvas colour changed. */
@@ -128,6 +157,25 @@ struct CanvasBackground {
         workspace = bg;
         if (tilePathChanged) {
             clearWorkspaceTile();
+        }
+        return true;
+    }
+
+    /**
+     * Session Gallery/Image canvas override (not written to Preferences or project).
+     * @return false when @p bg matches the current override (no-op).
+     */
+    bool setView(const WorkspaceBackground &bg)
+    {
+        if (view.matches(bg)) {
+            return false;
+        }
+        const bool tilePathChanged =
+            bg.mode != WorkspaceBackgroundMode::ImageTile
+            || bg.imagePath != viewTilePath;
+        view = bg;
+        if (tilePathChanged) {
+            clearViewTile();
         }
         return true;
     }

@@ -220,6 +220,32 @@ WorkspaceBackgroundDialog::WorkspaceBackgroundDialog(QWidget *parent)
     updatePreview();
 }
 
+void WorkspaceBackgroundDialog::setCanvasContext(bool forProject)
+{
+    if (forProject) {
+        setWindowTitle(tr("Workspace Background"));
+        if (m_modeCombo) {
+            const int i = m_modeCombo->findData(int(WorkspaceBackgroundMode::AppDefault));
+            if (i >= 0) {
+                m_modeCombo->setItemText(i, tr("Application default"));
+            }
+            m_modeCombo->setToolTip(
+                tr("Application default uses Preferences and is not stored in the project."));
+        }
+    } else {
+        setWindowTitle(tr("View Background"));
+        if (m_modeCombo) {
+            const int i = m_modeCombo->findData(int(WorkspaceBackgroundMode::AppDefault));
+            if (i >= 0) {
+                m_modeCombo->setItemText(i, tr("Preferences default"));
+            }
+            m_modeCombo->setToolTip(
+                tr("Preferences default uses the app Background settings. "
+                   "Other choices apply for this session only (Gallery and Image)."));
+        }
+    }
+}
+
 void WorkspaceBackgroundDialog::setBackground(const WorkspaceBackground &bg)
 {
     m_blockPreviewEmit = true;

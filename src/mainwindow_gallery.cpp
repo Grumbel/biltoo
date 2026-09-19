@@ -644,6 +644,13 @@ void MainWindow::updateWorkspaceActionVisibility()
     if (m_workspaceToolBar) {
         m_workspaceToolBar->setVisible(workspace && !isFullScreen());
     }
+    // Session Gallery/Image canvas materials (Preferences remain the default).
+    if (m_viewBackgroundAct) {
+        const bool viewBg = m_imageView
+            && (m_imageView->isGalleryMode() || m_imageView->isImageMode());
+        m_viewBackgroundAct->setVisible(true);
+        m_viewBackgroundAct->setEnabled(viewBg);
+    }
     updateThumbnailBarForMode();
     updateLayoutPanelForMode();
     updateScrollBarPolicyForMode();

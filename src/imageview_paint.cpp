@@ -669,12 +669,38 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
         }
     };
 
-    const bool wsOverride = isWorkspaceMode()
-        && !m_canvasBg.isWorkspaceAppDefault()
-        && !m_canvasBg.isWorkspaceShowDefault();
+    auto fillImageTile = [&](QPixmap &tileCache, const QString &path,
+                             auto storeTile) {
+        if (tileCache.isNull() && !path.isEmpty()) {
+            QPixmap px(path);
+            if (!px.isNull()) {
+                storeTile(px, path);
+            }
+        }
+        if (tileCache.isNull()) {
+            painter->fillRect(rect, m_canvasBg.primaryColor());
+            return;
+        }
+        const QPixmap &tile = tileCache;
+        qreal tw = qreal(ViewTransform::atLeast1(tile.width()));
+        qreal th = qreal(ViewTransform::atLeast1(tile.height()));
+        const qreal lod = CanvasPatternGeometry::tileLodFactor(tw, viewScale);
+        const qreal cellW = tw * lod;
+        const qreal cellH = th * lod;
+        const qreal x0 = std::floor(rect.left() / cellW) * cellW;
+        const qreal y0 = std::floor(rect.top() / cellH) * cellH;
+        const qreal x1 = std::ceil(rect.right() / cellW) * cellW;
+        const qreal y1 = std::ceil(rect.bottom() / cellH) * cellH;
+        for (qreal y = y0; y < y1; y += cellH) {
+            for (qreal x = x0; x < x1; x += cellW) {
+                painter->drawPixmap(QRectF(x, y, cellW, cellH), tile,
+                                    QRectF(0, 0, tw, th));
+            }
+        }
+    };
 
-    if (wsOverride) {
-        const WorkspaceBackground &wb = m_canvasBg.workspaceRef();
+    auto paintMaterial = [&](const WorkspaceBackground &wb, QPixmap &tileCache,
+                             auto storeTile) {
         if (wb.mode == WorkspaceBackgroundMode::Solid) {
             painter->fillRect(rect, wb.color.isValid() ? wb.color : m_canvasBg.primaryColor());
         } else if (wb.mode == WorkspaceBackgroundMode::Checkerboard) {
@@ -682,35 +708,28 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             const QColor b = wb.colorAlt.isValid() ? wb.colorAlt : a.lighter(120);
             fillChecker(a, b);
         } else if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
-            if (m_canvasBg.workspaceTilePixmap().isNull() && !wb.imagePath.isEmpty()) {
-                QPixmap px(wb.imagePath);
-                if (!px.isNull()) {
-                    m_canvasBg.setWorkspaceTile(px, wb.imagePath);
-                }
-            }
-            if (!m_canvasBg.workspaceTilePixmap().isNull()) {
-                const QPixmap &tile = m_canvasBg.workspaceTilePixmap();
-                qreal tw = qreal(ViewTransform::atLeast1(tile.width()));
-                qreal th = qreal(ViewTransform::atLeast1(tile.height()));
-                const qreal lod = CanvasPatternGeometry::tileLodFactor(tw, viewScale);
-                const qreal cellW = tw * lod;
-                const qreal cellH = th * lod;
-                const qreal x0 = std::floor(rect.left() / cellW) * cellW;
-                const qreal y0 = std::floor(rect.top() / cellH) * cellH;
-                const qreal x1 = std::ceil(rect.right() / cellW) * cellW;
-                const qreal y1 = std::ceil(rect.bottom() / cellH) * cellH;
-                for (qreal y = y0; y < y1; y += cellH) {
-                    for (qreal x = x0; x < x1; x += cellW) {
-                        painter->drawPixmap(QRectF(x, y, cellW, cellH), tile,
-                                            QRectF(0, 0, tw, th));
-                    }
-                }
-            } else {
-                painter->fillRect(rect, m_canvasBg.primaryColor());
-            }
+            fillImageTile(tileCache, wb.imagePath, storeTile);
         } else {
             painter->fillRect(rect, m_canvasBg.primaryColor());
         }
+    };
+
+    const bool wsOverride = isWorkspaceMode()
+        && !m_canvasBg.isWorkspaceAppDefault()
+        && !m_canvasBg.isWorkspaceShowDefault();
+    const bool viewOverride =
+        (isGalleryMode() || isImageMode()) && !m_canvasBg.isViewAppDefault();
+
+    if (wsOverride) {
+        paintMaterial(m_canvasBg.workspaceRef(), m_canvasBg.workspaceTile,
+                      [this](const QPixmap &px, const QString &path) {
+                          m_canvasBg.setWorkspaceTile(px, path);
+                      });
+    } else if (viewOverride) {
+        paintMaterial(m_canvasBg.viewRef(), m_canvasBg.viewTile,
+                      [this](const QPixmap &px, const QString &path) {
+                          m_canvasBg.setViewTile(px, path);
+                      });
     } else {
         if (!m_canvasBg.useChecker(isWorkspaceMode())) {
             painter->fillRect(rect, m_canvasBg.primaryColor());

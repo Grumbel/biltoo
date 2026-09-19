@@ -194,6 +194,30 @@ void ImageView::setWorkspaceBackgroundShowDefault(bool on)
     }
 }
 
+void ImageView::setViewBackground(const WorkspaceBackground &bg)
+{
+    if (!m_canvasBg.setView(bg)) {
+        return;
+    }
+    if (bg.mode == WorkspaceBackgroundMode::ImageTile && !bg.imagePath.isEmpty()) {
+        if (!m_canvasBg.viewTilePathMatches(bg.imagePath)) {
+            QPixmap px(bg.imagePath);
+            if (!px.isNull()) {
+                m_canvasBg.setViewTile(px, bg.imagePath);
+            }
+        }
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void ImageView::clearViewBackground()
+{
+    WorkspaceBackground def;
+    setViewBackground(def);
+}
+
 qreal ImageView::viewScale() const
 {
     return ViewTransform::scaleFrom(transform());

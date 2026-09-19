@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1586-view-background.** Session Gallery/Image view background toolbar + unified canvas materials paint.
+Prior: **1585**.
+
+### Change
+- `CanvasBackground::view` — session override (Solid / Checker / ImageTile / AppDefault)
+- `paintCanvasBackground` — shared material paint for Workspace project + View session
+- Toolbar / View menu: **View Background…** (enabled in Gallery and Image)
+- Preferences remain app defaults; Workspace Background remains project-owned
+- Dialog `setCanvasContext` for project vs session wording
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1586-view-background.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1585-hard-reload-clear-size.** Hard reload clears process size memo and re-probes size after Store purge.
 Prior: **1584**.
 

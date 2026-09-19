@@ -122,6 +122,12 @@ void MainWindow::createActions()
         tr("Workspace: show a paper-sized frame to arrange images for printing"));
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
 
+    m_viewBackgroundAct = new QAction(tr("View &Background…"), this);
+    m_viewBackgroundAct->setIcon(resourceIcon(QStringLiteral("workspace-background")));
+    m_viewBackgroundAct->setStatusTip(
+        tr("Session canvas background for Gallery and Image (not Preferences)"));
+    connect(m_viewBackgroundAct, &QAction::triggered, this, &MainWindow::editViewBackground);
+
     m_workspaceBackgroundAct = new QAction(tr("Workspace &Background…"), this);
     m_workspaceBackgroundAct->setIcon(resourceIcon(QStringLiteral("workspace-background")));
     m_workspaceBackgroundAct->setStatusTip(
@@ -983,6 +989,7 @@ void MainWindow::createMenus()
     zoomMenu->addAction(m_zoomFillAct);
     zoomMenu->addAction(m_zoomRegionAct);
     m_viewMenu->addSeparator();
+    m_viewMenu->addAction(m_viewBackgroundAct);
     m_viewMenu->addAction(m_toggleHudAct);
     m_viewMenu->addAction(m_toggleContentEditMarksAct);
     m_viewMenu->addAction(m_showTextRegionsAct);
@@ -1161,6 +1168,7 @@ void MainWindow::createToolBar()
     m_toolBar->addAction(m_flipHAct);
     m_toolBar->addAction(m_flipVAct);
     m_toolBar->addAction(m_cropAct);
+    m_toolBar->addAction(m_viewBackgroundAct);
     // Attention Point stays under Image menu (specialized; not main-bar).
     m_toolBar->addSeparator();
     // Gallery layout combo: main button = Go to Gallery (current layout icon);
@@ -1838,6 +1846,10 @@ void MainWindow::populateActionHelpTexts()
         "print/PDF, not the definition of the Workspace).</p>"));
     setHelp(m_fitPageGuideAct, tr(
         "<p>Size/position the page guide to fit the current content bounds.</p>"));
+    setHelp(m_viewBackgroundAct, tr(
+        "<p>Session canvas background for <b>Gallery</b> and <b>Image</b>: solid, "
+        "checker, image pattern, or Preferences default. Not stored in Preferences "
+        "or the project — applies until you change it or quit.</p>"));
     setHelp(m_workspaceBackgroundAct, tr(
         "<p>Choose Workspace background: solid, checker, image tile, or app default. "
         "Stored in the project when you save.</p>"));
