@@ -180,7 +180,7 @@ void ImageView::updateGalleryDecodeWindow()
     ASSERT_GUI_THREAD();
     GUI_BUDGET_MS("updateGalleryDecodeWindow", 4);
     QElapsedTimer decodeWinTimer;
-    if (m_perf.enabled) {
+    if (m_perf.isEnabled()) {
         decodeWinTimer.start();
     }
     // -------------------------------------------------------------------------
@@ -226,7 +226,7 @@ void ImageView::updateGalleryDecodeWindow()
 
     constexpr int kMaxInstallsPerDecodeWindow = GallerySoft::kMaxInstallsPerDecodeWindow;
     bool moreInstallsPending = false;
-    if (m_perf.enabled) {
+    if (m_perf.isEnabled()) {
         phaseTimer.start();
     }
     const int hostInstalled =
@@ -241,7 +241,7 @@ void ImageView::updateGalleryDecodeWindow()
     if (moreInstallsPending) {
         scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);
     }
-    if (m_perf.enabled) {
+    if (m_perf.isEnabled()) {
         usPass1 = phaseTimer.nsecsElapsed() / 1000;
         phaseTimer.restart();
     }
@@ -293,13 +293,13 @@ void ImageView::updateGalleryDecodeWindow()
         scheduleGalleryDecode(path);
         ++scheduled;
     }
-    if (m_perf.enabled) {
+    if (m_perf.isEnabled()) {
         usPass2 = phaseTimer.nsecsElapsed() / 1000;
         phaseTimer.restart();
     }
 
     const bool lqipBusy = scheduled > 0 || moreInstallsPending;
-    if (m_perf.enabled) {
+    if (m_perf.isEnabled()) {
         usInterest = phaseTimer.nsecsElapsed() / 1000;
     }
 
@@ -332,15 +332,15 @@ void ImageView::updateGalleryDecodeWindow()
         scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
     }
     updateGallerySoftProgressHud();
-    if (m_perf.enabled && decodeWinTimer.isValid()) {
+    if (m_perf.isEnabled() && decodeWinTimer.isValid()) {
         m_perf.noteDecodeWindowUs(decodeWinTimer.nsecsElapsed() / 1000);
         if (m_perf.lastDecodeWindowSlow()) {
             fprintf(stderr,
                     "biltoo/perf: updateGalleryDecodeWindow %.1f ms "
                     "(max %.1f ms runs=%d items=%d "
                     "pass1=%.1f pass2=%.1f interest=%.1f install=%d)\n",
-                    m_perf.lastDecodeWindowUs / 1000.0,
-                    m_perf.maxDecodeWindowUs / 1000.0, m_perf.decodeWindowRuns,
+                    m_perf.lastDecodeWindowUsValue() / 1000.0,
+                    m_perf.maxDecodeWindowUsValue() / 1000.0, m_perf.decodeWindowRuns,
                     static_cast<int>(m_items.size()),
                     usPass1 / 1000.0, usPass2 / 1000.0, usInterest / 1000.0,
                     hostInstalled);
