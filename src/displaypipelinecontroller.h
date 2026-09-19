@@ -23,6 +23,8 @@ class TileLoadCoordinator;
  *
  * Owns load generation gate, display surfaces, focus surface id, tile LOD
  * timers, PreferCache climbs, sample install, and surface drive/bind (Tier 5b).
+ * Implementation split: displaypipelinecontroller.cpp (climbs/surface/install),
+ * _load.cpp (schedule/LoadAdd/gallery), _item.cpp (create/seed/want/frame).
  * SIZE.md soft-vs-logical rules stay with ImageSizeBook.
  */
 class DisplayPipelineController

@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1649-split-display-pipeline-controller.** Split DisplayPipelineController TUs.
+Prior: **1648**.
+
+### Change
+- Split `displaypipelinecontroller.cpp` (~2.9k) into:
+  - `displaypipelinecontroller.cpp` — PreferCache climbs, surface, install (~1.5k)
+  - `displaypipelinecontroller_load.cpp` — schedule / LoadAdd / gallery soft (~0.8k)
+  - `displaypipelinecontroller_item.cpp` — create / seed / want / frame / loadImage (~0.7k)
+- CMakeLists lists all three sources
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1649-split-display-pipeline-controller.bundle HEAD
+```
+
+### Next
+- Compile fix if any ODR/include gap between split TUs
+- Path-order dual-write audit
+- Further Tier 6 work as recorded in REFACTOR.md
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1648-drop-display-pipeline-friend.** Tier 5c: remove DisplayPipelineController friend.
 Prior: **1647**.
 

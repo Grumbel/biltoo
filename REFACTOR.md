@@ -746,7 +746,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - Tier 5a: **done** (biltoo-1610) — `DisplayPipelineController` owns loadGate,
   displaySurfaces, imageFocusSurface, tileCoordinator, tile LOD timers.
   Methods stay on ImageView; soft provider + neighbor prefetch remain on view.
-- Tier 5b: **exit size met** (biltoo-1646); Tier 5c: **friend DisplayPipelineController removed** (biltoo-1648) — host accessors + public host methods.
+- Tier 5b: **exit size met** (biltoo-1646); Tier 5c: **friend removed** (biltoo-1648); controller split into core/load/item TUs (biltoo-1649).
 - Tier 6a: **done** (biltoo-1612) — crop/attention mouse try* handlers on
   controllers; ImageView input is thin dispatch for those modes.
 - Tier 6b: **done** (biltoo-1613) — crop/attention release+key; slideshow seek

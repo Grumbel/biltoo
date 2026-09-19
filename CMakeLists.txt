@@ -120,6 +120,8 @@ add_executable(biltoo
   src/hudmodel.cpp
   src/hudmodel.h
   src/displaypipelinecontroller.cpp
+  src/displaypipelinecontroller_load.cpp
+  src/displaypipelinecontroller_item.cpp
   src/displaypipelinecontroller.h
   src/gallerycontroller.h
   src/gallerysizeresolve.cpp
