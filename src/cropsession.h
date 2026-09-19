@@ -65,6 +65,22 @@ public:
     bool locksPath(const QString &path) const;
 
     /**
+     * Path lock including host-resolved bound item path when draftPath is empty.
+     * @p boundItemPath from cropSessionBoundItem()->path().
+     */
+    bool locksResolvedPath(const QString &path, const QString &boundItemPath) const
+    {
+        if (locksPath(path) || isDraftSampleFrozenForPath(path)) {
+            return true;
+        }
+        if (!isDraftSampleFrozen() || path.isEmpty()) {
+            return false;
+        }
+        return !boundItemPath.isEmpty() && boundItemPath == path;
+    }
+
+
+    /**
      * True when @p item is the draft subject (pointer, session id, or path).
      * Host may still lock via targetId → other item path lookup.
      * Defined in cropsession.cpp (needs complete ImageItem).

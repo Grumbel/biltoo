@@ -279,21 +279,11 @@ bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 
 bool ImageView::isCropDraftLockedPath(const QString &path) const
 {
-    if (m_crop.locksPath(path) || m_crop.isDraftSampleFrozenForPath(path)) {
-        return true;
+    QString boundPath;
+    if (ImageItem *bound = cropSessionBoundItem()) {
+        boundPath = bound->path();
     }
-    // Host resolves targetId → current item path when draftPath is empty.
-    if (!m_crop.isDraftSampleFrozen() || path.isEmpty()) {
-        return false;
-    }
-    if (m_crop.hasTargetId()) {
-        if (ImageItem *byId = findItemBySessionId(m_crop.targetIdValue())) {
-            if (byId->path() == path) {
-                return true;
-            }
-        }
-    }
-    return false;
+    return m_crop.locksResolvedPath(path, boundPath);
 }
 
 void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
