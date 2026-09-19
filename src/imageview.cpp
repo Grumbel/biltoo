@@ -259,8 +259,10 @@ ImageView::ImageView(QWidget *parent)
     m_layoutDebounceTimer->setSingleShot(true);
     m_layoutDebounceTimer->setInterval(48);
     connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
-        if (isGalleryMode() && m_layout.mode != LayoutMode::FreeForm) {
-            applyLayout(m_layoutDebounce.reason);
+        GalleryPackReason reason = GalleryPackReason::ContentChange;
+        if (isGalleryMode() && m_layout.mode != LayoutMode::FreeForm
+            && m_layoutDebounce.take(&reason)) {
+            applyLayout(reason);
         }
     });
     // Colour sliders fire every tick — durable SQLite + filmstrip bake are deferred.

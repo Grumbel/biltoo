@@ -12,8 +12,28 @@
  */
 struct LayoutDebounce {
     GalleryPackReason reason = GalleryPackReason::ContentChange;
+    bool pending = false;
 
-    void arm(GalleryPackReason r) { reason = r; }
+    void arm(GalleryPackReason r)
+    {
+        reason = r;
+        pending = true;
+    }
+
+    /** Take armed reason and clear pending; false if nothing armed. */
+    bool take(GalleryPackReason *out)
+    {
+        if (!pending) {
+            return false;
+        }
+        if (out) {
+            *out = reason;
+        }
+        pending = false;
+        return true;
+    }
+
+    void clear() { pending = false; }
 };
 
 #endif // LAYOUTDEBOUNCE_H
