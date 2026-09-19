@@ -705,6 +705,18 @@ public:
      * Enter applies pixel crop; Esc / toggle off cancels.
      */
     void setCropMode(bool on);
+    void notifyCropModeEntered();
+    void beginCropEnterSession(ImageItem *item);
+    bool handleNullEnterFullRaster(const QString &path, bool hadCrop);
+    bool resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
+                                  WorkspaceItemState *st, SessionImageId *sid);
+    void captureApplyDraftMetrics(ImageItem *item, qreal *cropW, qreal *cropH,
+                                  qreal *footW, qreal *footH, QPointF *sceneCenter);
+    bool materializeApplyBake(const QImage &host, bool hostFromCache,
+                              const WorkspaceItemState &st,
+                              CropSession::ApplyBakeResult *baked);
+    void finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
+                                  const QString &path, const QImage &display);
     bool enterCropModeFromUi();
     /**
      * Best host raster for crop / content bake / Workspace restore.
@@ -1632,6 +1644,7 @@ private:
     bool cropAllowExpand() const { return m_crop.isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
+    void paintCropFrameDecorations(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropChromeButtons(QPainter &painter);
     void paintCropOverlay(QPainter &painter);
     void paintAttentionOverlay(QPainter &painter);
@@ -1697,6 +1710,11 @@ private:
     void finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspaceAnchorScene);
     void cancelPathRasterForCrop(const QString &path);
     void rememberCropEnterSizes(const QString &path, const QImage &full);
+    void installKeepEnterDisplay(ImageItem *item, const WorkspaceItemState &contentOnly,
+                                 const ContentXform::Value &wantX, const QString &path);
+    void installDraftEnterDisplay(ImageItem *item,
+                                  const CropSession::EnterInstallSample &sample,
+                                  const QImage &full, const QString &path);
     void installFullImageForCrop(ImageItem *item, const QImage &full,
                                  const WorkspaceItemState *app, bool haveApp,
                                  bool unorientedSource);

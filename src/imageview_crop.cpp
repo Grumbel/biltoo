@@ -165,6 +165,88 @@ void ImageView::finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspa
     updateWorkspaceSceneRect();
 }
 
+
+void ImageView::notifyCropModeEntered()
+{
+    flashHud(tr("Crop mode"),
+             tr("Apply commits · Esc cancels"));
+    emit cropModeChanged(true);
+    emit statusChanged();
+}
+
+void ImageView::beginCropEnterSession(ImageItem *item)
+{
+    beginCropEnterSession(item);
+}
+
+bool ImageView::handleNullEnterFullRaster(const QString &path, bool hadCrop)
+{
+    if (CropSession::shouldRequestFullOnNullEnter(hadCrop, path)) {
+        requestCropFullRaster(path);
+        m_crop.setAwaitingFull(path);
+        flashHud(tr("Crop"), tr("Loading full image…"));
+    }
+    flashHud(tr("Crop"), tr("Image not cached yet — try again"));
+    return false;
+}
+
+bool ImageView::resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
+                                         WorkspaceItemState *st, SessionImageId *sid)
+{
+    if (!item || !host || !hostFromCache || !st || !sid) {
+        return false;
+    }
+    const QString path = item->path();
+    *host = CropSession::pickApplyHost(item, path, hostFromCache);
+    const CropSession::ApplyHostStatus hostSt =
+        CropSession::classifyApplyHost(*host, *hostFromCache, item);
+    if (flashApplyHostFailure(hostSt)) {
+        return false;
+    }
+    *sid = cropRecordSessionId(item);
+    ensureApplyCropState(item, *sid, st);
+    return true;
+}
+
+void ImageView::captureApplyDraftMetrics(ImageItem *item, qreal *cropW, qreal *cropH,
+                                         qreal *footW, qreal *footH, QPointF *sceneCenter)
+{
+    qreal sx0 = 0.0;
+    qreal sy0 = 0.0;
+    CropSession::itemScalePair(item, &sx0, &sy0);
+    m_crop.draftFootprint(sx0, sy0, cropW, cropH, footW, footH);
+    if (sceneCenter) {
+        *sceneCenter = item->mapToScene(m_crop.draftCenterLocal());
+    }
+}
+
+bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
+                                     const WorkspaceItemState &st,
+                                     CropSession::ApplyBakeResult *baked)
+{
+    if (!baked) {
+        return false;
+    }
+    *baked = CropSession::materializeApplyDisplay(host, hostFromCache, st);
+    if (!baked->ok()) {
+        flashHud(tr("Crop"), tr("Crop bake failed"));
+        return false;
+    }
+    return true;
+}
+
+void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
+                                         const QString &path, const QImage &display)
+{
+    commitItemSessionEdit(item);
+    emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
+    pushCropAppearanceUndo(item, tr("Crop"));
+    flashHud(tr("Cropped"),
+             QStringLiteral("%1×%2")
+                 .arg(item->imageSize().width())
+                 .arg(item->imageSize().height()));
+}
+
 bool ImageView::enterCropModeFromUi()
 {
     // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
@@ -206,11 +288,7 @@ bool ImageView::enterCropModeFromUi()
         if (isWorkspaceMode()) {
             finishWorkspaceCropEnter(item, workspaceAnchorScene);
         }
-        // Mode already active (activateModeAfterDraft in prepare).
-        flashHud(tr("Crop mode"),
-                 tr("Apply commits · Esc cancels"));
-        emit cropModeChanged(true);
-        emit statusChanged();
+        notifyCropModeEntered();
     }
     return true;
 }
@@ -298,6 +376,56 @@ void ImageView::rememberCropEnterSizes(const QString &path, const QImage &full)
     }
 }
 
+
+void ImageView::installKeepEnterDisplay(ImageItem *item, const WorkspaceItemState &contentOnly,
+                                        const ContentXform::Value &wantX, const QString &path)
+{
+    CropSession::applyKeepEnterFlags(item, contentOnly, wantX);
+    applyContentLayoutSize(item, contentOnly);
+    m_crop.markShowingFullImage();
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
+        qWarning().noquote()
+            << QStringLiteral("[crop] enter-full KEEP display edge=%1 path=%2")
+                   .arg(item->displayPixelLongEdge())
+                   .arg(path);
+    }
+}
+
+void ImageView::installDraftEnterDisplay(ImageItem *item,
+                                         const CropSession::EnterInstallSample &sample,
+                                         const QImage &full, const QString &path)
+{
+    CropSession::clearItemFreePlacementForDraft(item);
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
+        qWarning().noquote()
+            << QStringLiteral(
+                   "[crop] enter-full path=%1 imageSize=%2x%3 hasDecoded=%4 "
+                   "appliedCrop=%5 hostEdge=%6")
+                   .arg(path)
+                   .arg(item->imageSize().width()).arg(item->imageSize().height())
+                   .arg(item->hasDecodedPixels() ? 1 : 0)
+                   .arg(sample.hadPriorCrop ? 1 : 0)
+                   .arg(ImageCache::longEdge(full));
+    }
+    CropSession::clearItemPixelsForDraftReinstall(item);
+    const WorkspaceItemState &contentOnly = sample.contentOnly;
+    const ContentXform::Value &wantX = sample.wantX;
+    attachDisplaySample(item, sample.display, contentOnly, sample.kind);
+    applyContentLayoutSize(item, contentOnly);
+    CropSession::applyEnterDraftFlags(item, wantX);
+    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
+        qWarning().noquote()
+            << QStringLiteral(
+                   "[crop] enter-full done imageSize=%1x%2 display=%3x%4 "
+                   "appliedCrop=%5 contentTurns=%6")
+                   .arg(item->imageSize().width()).arg(item->imageSize().height())
+                   .arg(sample.display.width()).arg(sample.display.height())
+                   .arg(item->sessionHasCrop() ? 1 : 0)
+                   .arg(contentOnly.contentQuarterTurns);
+    }
+    m_crop.markShowingFullImage();
+}
+
 void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                                         const WorkspaceItemState *app, bool haveApp,
                                         bool unorientedSource)
@@ -326,52 +454,10 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
     if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
                                             sample.needGeomBake)) {
-        CropSession::applyKeepEnterFlags(item, contentOnly, wantX);
-        applyContentLayoutSize(item, contentOnly);
-        m_crop.markShowingFullImage();
-        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
-            qWarning().noquote()
-                << QStringLiteral("[crop] enter-full KEEP display edge=%1 path=%2")
-                       .arg(item->displayPixelLongEdge())
-                       .arg(path);
-        }
+        installKeepEnterDisplay(item, contentOnly, wantX, path);
         return;
     }
-
-    CropSession::clearItemFreePlacementForDraft(item);
-    // Drop prior crop bake so SoftPreview full-frame stand-in is accepted.
-    // Otherwise hasDecodedPixels() rejects soft install and the draft stays
-    // on the already-cropped pixmap (second crop cannot see the original).
-    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
-        qWarning().noquote()
-            << QStringLiteral(
-                   "[crop] enter-full path=%1 imageSize=%2x%3 hasDecoded=%4 "
-                   "appliedCrop=%5 hostEdge=%6")
-                   .arg(path)
-                   .arg(item->imageSize().width()).arg(item->imageSize().height())
-                   .arg(item->hasDecodedPixels() ? 1 : 0)
-                   .arg(sample.hadPriorCrop ? 1 : 0)
-                   .arg(ImageCache::longEdge(full));
-    }
-    CropSession::clearItemPixelsForDraftReinstall(item);
-
-    // Interactive crop draft: orient-only full frame (never prior crop bake).
-    attachDisplaySample(item, sample.display, contentOnly, sample.kind);
-    // Geometry: file-native orient size only (never soft pixels, never crop box).
-    applyContentLayoutSize(item, contentOnly);
-    CropSession::applyEnterDraftFlags(item, wantX);
-
-    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
-        qWarning().noquote()
-            << QStringLiteral(
-                   "[crop] enter-full done imageSize=%1x%2 display=%3x%4 "
-                   "appliedCrop=%5 contentTurns=%6")
-                   .arg(item->imageSize().width()).arg(item->imageSize().height())
-                   .arg(sample.display.width()).arg(sample.display.height())
-                   .arg(item->sessionHasCrop() ? 1 : 0)
-                   .arg(contentOnly.contentQuarterTurns);
-    }
-    m_crop.markShowingFullImage();
+    installDraftEnterDisplay(item, sample, full, path);
 }
 
 void ImageView::activateCropModeAfterInstall(ImageItem *item)
@@ -401,14 +487,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     const QImage &full = enter.image;
     const bool unorientedSource = enter.unoriented;
     if (full.isNull()) {
-        // Prior crop and no host: force a load; do not enter on the bake.
-        if (CropSession::shouldRequestFullOnNullEnter(hadCrop, path)) {
-            requestCropFullRaster(path);
-            m_crop.setAwaitingFull(path);
-            flashHud(tr("Crop"), tr("Loading full image…"));
-        }
-        flashHud(tr("Crop"), tr("Image not cached yet — try again"));
-        return false;
+        return handleNullEnterFullRaster(path, hadCrop);
     }
 
     // Workspace: lock scene footprint before intrinsic changes on install.
@@ -807,8 +886,7 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
         WorkspaceItemState m_afterSt;
     };
     WorkspaceItemState afterSt = captureState(item);
-    afterSt.hasCrop = item->sessionHasCrop();
-    afterSt.cropRect = item->sessionCropRect();
+    CropSession::fillSessionCropFromItem(&afterSt, item);
     // captureState pulls cropRotation from appearance
     // (recordSessionCrop + commitItemSessionEdit).
     m_undoStack->push(new CropCommand(
@@ -940,33 +1018,24 @@ bool ImageView::applyCropCommit(ImageItem *item)
         //   footH = m_crop.rect.height() * itemScaleY
         // After Apply we set intrinsic to (cropW, cropH) in the *same* content
         // units and keep the same scale → scene size unchanged.
-        qreal sx0 = 0.0;
-        qreal sy0 = 0.0;
-        CropSession::itemScalePair(item, &sx0, &sy0);
         qreal cropW = 0.0;
         qreal cropH = 0.0;
         qreal footW = 0.0;
         qreal footH = 0.0;
-        m_crop.draftFootprint(sx0, sy0, &cropW, &cropH, &footW, &footH);
-        const QPointF cropSceneCenter = item->mapToScene(m_crop.draftCenterLocal());
+        QPointF cropSceneCenter;
+        captureApplyDraftMetrics(item, &cropW, &cropH, &footW, &footH, &cropSceneCenter);
 
         const QString path = item->path();
         bool hostFromCache = false;
-        QImage host = CropSession::pickApplyHost(item, path, &hostFromCache);
-        const CropSession::ApplyHostStatus hostSt =
-            CropSession::classifyApplyHost(host, hostFromCache, item);
-        if (flashApplyHostFailure(hostSt)) {
+        QImage host;
+        WorkspaceItemState st;
+        SessionImageId sid = kInvalidSessionImageId;
+        if (!resolveApplyHostAndState(item, &host, &hostFromCache, &st, &sid)) {
             return false;
         }
 
-        WorkspaceItemState st;
-        const SessionImageId sid = cropRecordSessionId(item);
-        ensureApplyCropState(item, sid, &st);
-
-        const CropSession::ApplyBakeResult baked =
-            CropSession::materializeApplyDisplay(host, hostFromCache, st);
-        if (!baked.ok()) {
-            flashHud(tr("Crop"), tr("Crop bake failed"));
+        CropSession::ApplyBakeResult baked;
+        if (!materializeApplyBake(host, hostFromCache, st, &baked)) {
             return false;
         }
         const QImage &display = baked.display;
@@ -1011,13 +1080,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         finishCropApplyLayout(item);
         // paintHold restores viewport updates on scope exit
 
-        commitItemSessionEdit(item);
-        emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
-        pushCropAppearanceUndo(item, tr("Crop"));
-        flashHud(tr("Cropped"),
-                 QStringLiteral("%1×%2")
-                     .arg(item->imageSize().width())
-                     .arg(item->imageSize().height()));
+        finalizeCropApplySuccess(item, sid, path, display);
         return isWorkspaceMode();
     }
 
@@ -1147,22 +1210,9 @@ void ImageView::paintCropChromeButtons(QPainter &painter)
              CropGeometry::CropBtnRole::Commit);
 }
 
-void ImageView::paintCropOverlay(QPainter &painter)
+
+void ImageView::paintCropFrameDecorations(QPainter &painter, const QPolygonF &cropViewPoly)
 {
-    if (!m_crop.active()) {
-        return;
-    }
-    ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.hasValidRect()) {
-        return;
-    }
-    ensureCropRectValid();
-    const QPolygonF cropViewPoly = cropPolygonView();
-    const QRect cropView = cropViewPoly.boundingRect().toRect().normalized();
-
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-
     if (viewport()) {
         CropGeometry::paintDimOutside(painter, viewport()->rect(), cropViewPoly);
     }
@@ -1179,7 +1229,24 @@ void ImageView::paintCropOverlay(QPainter &painter)
                           || m_crop.currentActiveHandle() == CropHandle::Move);
         CropGeometry::paintMoveGrip(painter, cropViewPoly, hot);
     }
+}
 
+void ImageView::paintCropOverlay(QPainter &painter)
+{
+    if (!m_crop.active()) {
+        return;
+    }
+    ImageItem *item = cropTargetItem();
+    if (!item || !m_crop.hasValidRect()) {
+        return;
+    }
+    ensureCropRectValid();
+    const QPolygonF cropViewPoly = cropPolygonView();
+    const QRect cropView = cropViewPoly.boundingRect().toRect().normalized();
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    paintCropFrameDecorations(painter, cropViewPoly);
     paintCropChromeButtons(painter);
     {
         const QSize cropSz = m_crop.draftPixelSize();
