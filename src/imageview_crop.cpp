@@ -42,6 +42,21 @@ CropGeometry::CropButtonLayout cropChromeButtons(bool cropActive, const QRectF &
 
 } // namespace
 
+int fullRasterScheduleEdge(const QString &path)
+{
+    int edge = 8192;
+    if (path.isEmpty()) {
+        return edge;
+    }
+    const QSize native = ThumtooCache::cachedSize(path);
+    if (native.isValid() && native.width() > 0 && native.height() > 0) {
+        edge = ContentXform::clampLongEdge(ContentXform::longEdge(native),
+                                          ImageCache::kDisplayMaxEdge);
+    }
+    return edge;
+}
+
+
 /** Prefer ImageCache; fall back to item display only when not a prior crop bake. */
 QImage pickCropApplyHost(ImageItem *item, const QString &path, bool *fromCache)
 {
@@ -514,12 +529,7 @@ void ImageView::requestCropFullRaster(const QString &path)
     // Always try scheduleFullPixels (API macros only defined in TUs that
     // include thumtoo/client.hpp — not this file).
     if (ThumtooCache::isAvailable()) {
-        int edge = 8192;
-        const QSize native = ThumtooCache::cachedSize(path);
-        if (native.isValid() && native.width() > 0 && native.height() > 0) {
-            edge = ContentXform::clampLongEdge(ContentXform::longEdge(native),
-                                           ImageCache::kDisplayMaxEdge);
-        }
+        const int edge = fullRasterScheduleEdge(path);
         if (ThumtooCache::scheduleFullPixels(path, edge)) {
             return;
         }
