@@ -73,9 +73,24 @@ struct SlideshowPhaseState {
     /** <0 = dwell; [0,1] = transition blend. */
     qreal fadeT = -1.0;
 
-    void setFadeBlend(qreal t) { fadeT = qBound(0.0, t, 1.0); }
+    /**
+     * Transition blend in [0,1], or negative for dwell.
+     * Negative values become dwell (fadeT < 0); non-negative are clamped to [0,1].
+     */
+    void setFadeBlend(qreal t)
+    {
+        fadeT = (t < 0.0) ? -1.0 : qBound(0.0, t, 1.0);
+    }
+
+    /** End transition; dwell until next fade starts. */
+    void beginDwell() { fadeT = -1.0; }
+
     qreal fromMotionT = 0.0;
     qreal toMotionT = 0.0;
+
+    void setFromMotionT(qreal t) { fromMotionT = qBound(0.0, t, 1.0); }
+
+    void setToMotionT(qreal t) { toMotionT = qBound(0.0, t, 1.0); }
     QPointF toBiasA{-1.0, -1.0};
     QPointF toBiasB{1.0, 1.0};
     QElapsedTimer fromMotionClock;

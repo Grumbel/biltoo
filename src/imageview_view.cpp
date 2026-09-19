@@ -714,9 +714,9 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ss.toImage = QImage();
         m_ss.fromContentApplied = false;
         m_ss.toContentApplied = false;
-        m_ss.fadeT = -1.0;
-        m_ss.fromMotionT = 0.0;
-        m_ss.toMotionT = 0.0;
+        m_ss.beginDwell();
+        m_ss.setFromMotionT(0.0);
+        m_ss.setToMotionT(0.0);
         m_ss.fromMotionClockRunning = false;
         m_ss.toMotionClockRunning = false;
         // Rasters live in ImageCache — do not clear the host map on stop.
@@ -1854,7 +1854,7 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
     m_ssDwell.biasPath = fromPath;
     m_ss.fromMotionClock = m_ss.toMotionClock;
     m_ss.fromMotionClockRunning = true;
-    m_ss.fromMotionT = m_ss.toMotionT;
+    m_ss.setFromMotionT(m_ss.toMotionT);
     m_ssDwell.motionT = m_ss.fromMotionT;
     // Keep the to-atlas as the from/dwell atlas — clearing it forced multi-MP
     // drawImage every frame until rebuild (visible frame drops on promote).
@@ -1913,7 +1913,7 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     }
     m_ss.fromMotionClock.start();
     m_ss.fromMotionClockRunning = true;
-    m_ss.fromMotionT = 0.0;
+    m_ss.setFromMotionT(0.0);
     m_ssDwell.motionT = 0.0;
 }
 
@@ -2017,7 +2017,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         m_ss.toAtlasVw = 0;
         m_ss.toAtlasVh = 0;
         m_ss.toMotionClockRunning = false;
-        m_ss.toMotionT = 0.0;
+        m_ss.setToMotionT(0.0);
         return;
     }
     m_ss.toPath = toPath;
@@ -2054,7 +2054,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     captureMotionBiasesForPath(toPath, m_ss.toImage, &m_ss.toBiasA, &m_ss.toBiasB);
     m_ss.toMotionClock.start();
     m_ss.toMotionClockRunning = true;
-    m_ss.toMotionT = 0.0;
+    m_ss.setToMotionT(0.0);
     if (!m_ss.toImage.isNull()) {
         schedulePhaseZoomBlur(toPath, m_ss.toImage);
     }
@@ -2113,7 +2113,7 @@ bool ImageView::applySlideshowFadeProgressOnly(qreal fadeT)
     if (qFuzzyCompare(fadeT, m_ss.fadeT) || (fadeT < 0.0 && m_ss.fadeT < 0.0)) {
         return false;
     }
-    m_ss.fadeT = fadeT;
+    m_ss.setFadeBlend(fadeT);
     if (viewport()) {
         viewport()->update();
     }
@@ -2157,7 +2157,7 @@ void ImageView::setSlideshowPhase(const QString &fromPath, const QString &toPath
         armSlideshowToPhase(toPath);
     }
     updateSlideshowPhaseMotionProgress(pathMs);
-    m_ss.fadeT = fadeT;
+    m_ss.setFadeBlend(fadeT);
 
     if (const char *dbg = std::getenv("BILTOO_DEBUG_SLIDESHOW");
         (dbg && dbg[0] && dbg[0] != '0')
