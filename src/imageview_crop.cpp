@@ -135,50 +135,22 @@ void ImageView::requestCropViewportUpdate()
     }
 }
 
-void ImageView::notifyCropViewportStatus()
-{
-    requestCropViewportUpdate();
-    emit statusChanged();
-}
-
-void ImageView::notifyCropModeLeftChrome()
-{
-    emit cropModeChanged(false);
-    emit statusChanged();
-    if (viewport()) {
-        viewport()->unsetCursor();
-        viewport()->update();
-    }
-}
-
-QImage ImageView::pickAutoCropSourcePixels(ImageItem *item) const
-{
-    return CropSession::pickAutoCropSourcePixels(item);
-}
-
-bool ImageView::runPaddedAutoTrim(ImageItem *item, const QImage &src)
-{
-    if (!item || src.isNull()) {
-        return false;
-    }
-    ensureCropRectValid();
-    return m_crop.tryPaddedAutoTrim(item->contentRect(), src);
-}
-
 void ImageView::applyAutoCrop()
 {
     ImageItem *item = cropTargetItem();
     if (!item || !m_crop.active()) {
         return;
     }
-    const QImage src = pickAutoCropSourcePixels(item);
+    const QImage src = CropSession::pickAutoCropSourcePixels(item);
     if (src.isNull()) {
         return;
     }
-    if (!runPaddedAutoTrim(item, src)) {
+    ensureCropRectValid();
+    if (!m_crop.tryPaddedAutoTrim(item->contentRect(), src)) {
         return;
     }
-    notifyCropViewportStatus();
+    requestCropViewportUpdate();
+    emit statusChanged();
 }
 
 void ImageView::flashCropHud(const CropFlash::Hud &hud)

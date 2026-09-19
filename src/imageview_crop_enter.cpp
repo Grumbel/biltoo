@@ -14,40 +14,6 @@
 #include "contentxform.h"
 #include "placementlinear.h"
 
-void ImageView::beginCropEnterSession(ImageItem *item)
-{
-    if (!item) {
-        return;
-    }
-    QImage enterSrc = CropSession::pickEnterSnapshotPixels(item);
-    WorkspaceItemState enterSt = captureState(item);
-    CropSession::seedEnterCropFlags(&enterSt, item);
-    m_crop.beginEnterSession(item, enterSrc, enterSt,
-                             !enterSrc.isNull() || item->hasDisplayPixels());
-    cancelPathRasterForCrop(m_crop.draftPathRef());
-}
-
-
-ImageItem *ImageView::resolveCropEnterTarget()
-{
-    // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
-    if (isGalleryMode()) {
-        return nullptr;
-    }
-    // Image or Workspace: one explicit subject only.
-    if (!hasSingleCropTarget()) {
-        flashCropHud(CropFlash::needSingleTarget());
-        return nullptr;
-    }
-    ImageItem *item = cropTargetItem();
-    if (!item || !item->hasDisplayPixels()) {
-        flashCropHud(CropFlash::noImage());
-        return nullptr;
-    }
-    return item;
-}
-
-
 bool ImageView::completeCropEnterUnderHold(ImageItem *item,
                                            const QPointF &workspaceAnchorScene)
 {
@@ -88,14 +54,31 @@ bool ImageView::completeCropEnterUnderHold(ImageItem *item,
 
 bool ImageView::enterCropModeFromUi()
 {
-    ImageItem *item = resolveCropEnterTarget();
-    if (!item) {
+    // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
+    if (isGalleryMode()) {
+        return false;
+    }
+    // Image or Workspace: one explicit subject only.
+    if (!hasSingleCropTarget()) {
+        flashCropHud(CropFlash::needSingleTarget());
+        return false;
+    }
+    ImageItem *item = cropTargetItem();
+    if (!item || !item->hasDisplayPixels()) {
+        flashCropHud(CropFlash::noImage());
         return false;
     }
     cancelZoomRegion();
     // Lock identity + enter snapshot + unrotate placement (IDENTITY.md).
     // m_crop.active() stays false until after the first draft attach.
-    beginCropEnterSession(item);
+    {
+        QImage enterSrc = CropSession::pickEnterSnapshotPixels(item);
+        WorkspaceItemState enterSt = captureState(item);
+        CropSession::seedEnterCropFlags(&enterSt, item);
+        m_crop.beginEnterSession(item, enterSrc, enterSt,
+                                 !enterSrc.isNull() || item->hasDisplayPixels());
+        cancelPathRasterForCrop(m_crop.draftPathRef());
+    }
     // Workspace: displayed image centre so the crop frame can stay fixed.
     const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
     return completeCropEnterUnderHold(item, workspaceAnchorScene);

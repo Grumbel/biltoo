@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1574-crop-inline-leave-auto-enter.** Inline leave clear/chrome, auto-trim helpers, enter resolve/begin.
+Prior: **1573**.
+
+### Change
+- `notifyCropModeLeftChrome` + `clearCropModeState` → body of `leaveCropModeInternal`
+- `pickAutoCropSourcePixels` / `runPaddedAutoTrim` / `notifyCropViewportStatus` → body of `applyAutoCrop`
+- `resolveCropEnterTarget` + `beginCropEnterSession` → body of `enterCropModeFromUi`
+- Kept: `requestCropViewportUpdate` (input drag path), `completeCropEnterUnderHold`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1574-crop-inline-leave-auto-enter.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1573-crop-inline-layout-preserve-commit.** Inline leave-layout finishers, workspace centre preserve, crop-frame align, non-full commit.
 Prior: **1572**.
 

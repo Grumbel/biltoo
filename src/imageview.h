@@ -710,10 +710,8 @@ public:
      * Enter applies pixel crop; Esc / toggle off cancels.
      */
     void setCropMode(bool on);
-    void beginCropEnterSession(ImageItem *item);
     bool resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
                                   WorkspaceItemState *st, SessionImageId *sid);
-    ImageItem *resolveCropEnterTarget();
     bool completeCropEnterUnderHold(ImageItem *item,
                                     const QPointF &workspaceAnchorScene);
     bool enterCropModeFromUi();
@@ -746,9 +744,6 @@ public:
     void applyCrop();
     /** Shrink draft to non-background content (margin trim). */
     void requestCropViewportUpdate();
-    void notifyCropViewportStatus();
-    QImage pickAutoCropSourcePixels(ImageItem *item) const;
-    bool runPaddedAutoTrim(ImageItem *item, const QImage &src);
     void applyAutoCrop();
     /** Discard the draft and leave crop mode. */
     void cancelCrop();
@@ -1724,8 +1719,6 @@ private:
                                    qreal footW, qreal footH,
                                    const QPointF &cropSceneCenter);
     bool applyCropCommit(ImageItem *item);
-    void notifyCropModeLeftChrome();
-    void clearCropModeState();
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace
      * angles map to 0°.

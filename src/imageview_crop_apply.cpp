@@ -207,31 +207,6 @@ bool ImageView::applyCropCommit(ImageItem *item)
 }
 
 
-void ImageView::clearCropModeState()
-{
-    // Stop PreferCache before releasing tile LOD / clearing draft identity.
-    QString subjectPath = m_crop.draftPathRef();
-    if (subjectPath.isEmpty()) {
-        if (ImageItem *bound = cropSessionBoundItem()) {
-            subjectPath = bound->path();
-        }
-    }
-    cancelPathRasterForCrop(subjectPath);
-    m_crop.releaseAllTileLod(cropSessionBoundItem());
-    QString pendingPath;
-    SessionImageId pendingSid = kInvalidSessionImageId;
-    WorkspaceItemState pendingWant;
-    const bool pendingFull =
-        m_crop.takePendingFullRematerialize(&pendingPath, &pendingSid, &pendingWant);
-    m_crop.clear();
-    notifyCropModeLeftChrome();
-    // Apply may have queued a full bake while freeze was still on.
-    if (pendingFull && !pendingPath.isEmpty()) {
-        scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
-    }
-}
-
-
 void ImageView::leaveCropModeInternal(bool apply)
 {
     if (!m_crop.active()) {
@@ -252,5 +227,29 @@ void ImageView::leaveCropModeInternal(bool apply)
         }
     }
     m_crop.finishLeave(item, preserveCropFrameRotation);
-    clearCropModeState();
+    // Stop PreferCache before releasing tile LOD / clearing draft identity.
+    QString subjectPath = m_crop.draftPathRef();
+    if (subjectPath.isEmpty()) {
+        if (ImageItem *bound = cropSessionBoundItem()) {
+            subjectPath = bound->path();
+        }
+    }
+    cancelPathRasterForCrop(subjectPath);
+    m_crop.releaseAllTileLod(cropSessionBoundItem());
+    QString pendingPath;
+    SessionImageId pendingSid = kInvalidSessionImageId;
+    WorkspaceItemState pendingWant;
+    const bool pendingFull =
+        m_crop.takePendingFullRematerialize(&pendingPath, &pendingSid, &pendingWant);
+    m_crop.clear();
+    emit cropModeChanged(false);
+    emit statusChanged();
+    if (viewport()) {
+        viewport()->unsetCursor();
+        viewport()->update();
+    }
+    // Apply may have queued a full bake while freeze was still on.
+    if (pendingFull && !pendingPath.isEmpty()) {
+        scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
+    }
 }
