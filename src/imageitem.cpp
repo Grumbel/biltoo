@@ -78,7 +78,7 @@ void ImageItem::setPath(const QString &path)
     tilelod::TileLodRegistry::instance().touch(m_path);
 }
 
-void ImageItem::invalidateTilePathRam()
+void ImageItem::dropTileLodSession()
 {
     if (m_tileLodAlive) {
         *m_tileLodAlive = false;
@@ -90,6 +90,11 @@ void ImageItem::invalidateTilePathRam()
     m_tileLodLastDpc = -1.0;
     m_tileLodLastVisSource = QRectF();
     clearTileGradedCache();
+}
+
+void ImageItem::invalidateTilePathRam()
+{
+    dropTileLodSession();
     if (!m_path.isEmpty()) {
         tilelod::TileLodRegistry::instance().invalidate(m_path);
     }

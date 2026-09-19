@@ -78,9 +78,11 @@ public:
 
     QString path() const { return m_path; }
     void setPath(const QString &path);
+    /** Drop the per-item tile session only (registry entry may stay shared). */
+    void dropTileLodSession();
     /**
-     * Drop the per-item tile session and purge this path from TileLodRegistry.
-     * Use on Reload / file-replaced so retained RAM cannot paint stale tiles.
+     * Drop the per-item session and purge this path from TileLodRegistry.
+     * Prefer ImageView::purgeTilePathRam when multiple items may share the path.
      */
     void invalidateTilePathRam();
     /**
