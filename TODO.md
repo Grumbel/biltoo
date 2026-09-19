@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1441-reload-invalidate-tile-path-ram.** Reload purges global path tiles.
+Prior: **1438**. Commits 1439–1441.
+
+### Commits
+1. **1439** `ImageItem::invalidateTilePathRam` (session drop + registry purge)
+2. **1440** `reloadFromDisk` uses it + `dropTilePrefetchPath` (Image + Gallery/Workspace)
+3. **1441** TILE_LOD rule note for Reload
+
+### Apply
+```bash
+git pull /path/to/biltoo-1441-reload-invalidate-tile-path-ram.bundle HEAD
+```
+Requires tip **1438**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1438-tile-completion-lru-env-log.** Completion touches path LRU; env override debug.
 Prior: **1435**. Commits 1436–1438.
 

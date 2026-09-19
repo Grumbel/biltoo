@@ -349,6 +349,8 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 7. **Paint identity by path** — draw only from `cache[item->path()]`; re-acquire
    after A→B→A rebinds the same retained entry.
 8. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
+   **Reload** (`ImageItem::invalidateTilePathRam`) drops the item session and
+   purges the path so disk changes cannot leave stale grid cells in RAM.
 9. **Neighbor prefetch (1213 / 1214):** on Image-mode nav settle,
    `prefetchTilesForPaths` binds a short-lived `TileLodController` per ±1 path
    and **pumps it on a 33 ms timer** until overview coverage / idle / tick cap
@@ -360,7 +362,7 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
 keeps identity correct.
 
-**Global path RAM tip history (1400–1438):**
+**Global path RAM tip history (1400–1441):**
 
 | Range | Summary |
 |-------|---------|
@@ -377,6 +379,7 @@ keeps identity correct.
 | **1430–1431** | Drop coordinator `friend`; public accessors; pathRam priority docs |
 | **1432–1435** | Trim debug log; `dropTilePrefetchPath`; destroyCanvasItem wire; PERFORMANCE |
 | **1436–1438** | Completion touches path LRU; env override debug log; rule renumber |
+| **1439–1441** | `invalidateTilePathRam`; reloadFromDisk purges path RAM + prefetch |
 
 ### Session / archive replace (biltoo-1233 / 1234)
 
@@ -449,6 +452,7 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Env budget overrides; prefetch eviction (1425–1427) | Done |
 | Trim debug / drop prefetch (1432–1435) | Done |
 | Completion touches path LRU (1436) | Done |
+| Reload purges path RAM (1439–1441) | Done |
 | Parent protect + parent prefetch | Done |
 | HiDPI, scale hold, coverage heartbeat | Done |
 | ContentXform axis-aligned map | Done |
