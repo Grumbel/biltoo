@@ -44,7 +44,7 @@ bool decomposeAxes(const QPointF &e1, const QPointF &e2,
     }
     *scaleX = qAbs(sx);
     *scaleY = qAbs(sy);
-    *shear = qBound(-5.0, k, 5.0);
+    *shear = clampShear(k);
     *rotationDeg = rot;
     return true;
 }

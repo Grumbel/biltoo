@@ -5,6 +5,7 @@
 #define SLIDESHOWMOTIONGEOMETRY_H
 
 #include "slideshowtypes.h"
+#include "viewtransform.h"
 
 #include <QPointF>
 #include <QRectF>
@@ -60,8 +61,8 @@ bool aspectMismatch(qreal atlasW, qreal atlasH, qreal imageW, qreal imageH,
 /** Uniform cover scale: max(dest/native) per axis (Full content into dest). */
 inline qreal coverDevicePixelScale(const QSizeF &dest, const QSize &native)
 {
-    return qMax(dest.width() / qMax(1.0, qreal(native.width())),
-                dest.height() / qMax(1.0, qreal(native.height())));
+    return ViewTransform::coverScale(dest.width(), dest.height(),
+                                     qreal(native.width()), qreal(native.height()));
 }
 
 inline qreal coverAxisScaleX(const QSizeF &dest, const QSize &native)
