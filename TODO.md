@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1561-crop-debug-inline-finish.** Finish 1560: dead log* bodies/decls removed.
+Prior: **1560**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1561-crop-debug-inline-finish.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1560-crop-debug-inline.** Call CropDebug directly; drop log* ImageView wrappers.
 Prior: **1559**.
 
