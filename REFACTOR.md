@@ -217,6 +217,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ViewFraming** sticky kind/scale; **ViewportChrome** mouse/pan accessors;
   **SlideshowPhaseState** toBias; **CropSession** currentRect/rotation;
   **GroupTransformSession** geometry accessors.
+- **SlideshowPhaseState** path/image/motion-T; **ProgressHud**/Settings value
+  accessors; **PageGuideSession** visibility/geometry; **ItemInteractSession**
+  item/start-state accessors.
 
 
 ## Current pain (evidence)

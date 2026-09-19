@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1473-phase-hud-settings-pageguide-interact.** Phase, HUD, Settings, PageGuide, ItemInteract.
+Prior: **1472**. Commits 1473a–1473d (+ docs).
+
+### Commits
+1. **SlideshowPhaseState** path/image/motion-T accessors
+2. **ProgressHud** / **Settings** value accessors
+3. **PageGuideSession** visibility and geometry accessors
+4. **ItemInteractSession** item and start-state accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled. Crop enter/apply
+still on view (larger ownership extraction).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1473-phase-hud-settings-pageguide-interact.bundle HEAD
+```
+Requires tip **1472**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1472-framing-chrome-phase-crop-group.** Framing, chrome, phase bias, crop, group.
 Prior: **1471**. Commits 1472a–1472e (+ docs).
 
