@@ -438,6 +438,12 @@ public:
     void applyItemModeFlags(ImageItem *item);
     /** Gallery stash restore: bake session crop/orient onto the tile if needed. */
     void rematerializeGalleryItemFromStore(ImageItem *item);
+    /**
+     * Controller host: budgeted tile pump/issue for viewport items.
+     * Gallery restore uses this so Image-mode path RAM paints without waiting
+     * for the decode-window timer.
+     */
+    void tickPrimaryTileLod(int budget = 8);
     /** @deprecated Path is not identity; prefer findItemBySessionId. */
     ImageItem *findItemByPath(const QString &path) const;
     /**
@@ -1364,8 +1370,6 @@ private:
                                                              const QImage &image) const;
     ImageItem *imageModeItemForPath(const QString &path) const;
     void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
-    /** Image-mode tile LOD: viewport + budgeted requests (not from paint). */
-    void tickPrimaryTileLod(int budget = 8);
     /** Slideshow pure-phase owns viewport — coordinator must not issue tiles. */
     bool isSlideshowProgressActive() const { return m_ssHud.progressActive; }
     PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
