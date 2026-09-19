@@ -2020,7 +2020,7 @@ void ImageView::destroyCanvasItem(ImageItem *item)
         m_groupXform.scaleDrag = false;
         m_groupXform.rotateDrag = false;
         m_groupXform.handle = -1;
-        m_groupXform.hoverHandle = -1;
+        m_groupXform.clearHover();
         m_groupXform.dragItems.clear();
         m_groupXform.dragStartStates.clear();
     }

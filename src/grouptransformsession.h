@@ -35,7 +35,15 @@ public:
 
     bool active() const { return scaleDrag || rotateDrag; }
 
-    void setHoverHandle(int h) { hoverHandle = h; }
+    /** @return true when hover handle index changed. */
+    bool setHoverHandle(int h)
+    {
+        if (hoverHandle == h) {
+            return false;
+        }
+        hoverHandle = h;
+        return true;
+    }
 
     void clearHover() { hoverHandle = -1; }
 

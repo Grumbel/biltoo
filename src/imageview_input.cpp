@@ -1209,8 +1209,7 @@ bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
     if (isWorkspaceMode() && m_pageGuide.visible && m_pageGuide.selected
         && !(event->buttons() & Qt::LeftButton)) {
         const int ph = pageGuideHandleAt(event->pos());
-        if (ph != m_pageGuide.hoverHandle) {
-            m_pageGuide.setHoverHandle(ph);
+        if (m_pageGuide.setHoverHandle(ph)) {
             viewport()->update();
         }
         if (ph >= 0) {
@@ -1322,9 +1321,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                 }
             }
             const int gh = groupHandleAt(event->pos(), candidates);
-            const bool groupHoverChanged = (gh != m_groupXform.hoverHandle);
-            if (groupHoverChanged) {
-                m_groupXform.setHoverHandle(gh);
+            if (m_groupXform.setHoverHandle(gh)) {
                 viewport()->update();
             }
             if (gh >= 0) {
