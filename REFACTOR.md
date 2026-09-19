@@ -698,7 +698,11 @@ the stop line when Tier 4 lands.
   `imageview*`; declarations live in `imageview_private_methods.inc` +
   `imageview_private_rest.inc` included from `private:`. Metrics: `imageview.h`
   993 lines; public methods 259; no new `friend`.
-- Tier 1: _pending_
+- Tier 1a: **done** (biltoo-1597) — `SlideshowController` owns phase/dwell/HUD/
+  settings/ZoomBlur/motion-scroll/timers (`m_ss*` no longer ImageView members).
+  ImageView keeps behaviour methods; they access state via `m_slideshow.*()`.
+  Tier 1b (method move + Host surface, `imageview_view.cpp` ≤900) still open.
+- Tier 1: _in progress_ (1a state ownership landed)
 - Tier 2: _pending_
 - Tier 3: _pending_
 - Tier 4: _pending_

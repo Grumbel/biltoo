@@ -387,7 +387,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
     if (m_layoutApply.active()) {
         return;
     }
-    if (isImageMode() && !m_ssHud.isProgressActive()) {
+    if (isImageMode() && !m_slideshow.hud().isProgressActive()) {
         maybeClimbImageModePixelsForView();
     } else if (isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
@@ -403,9 +403,9 @@ void ImageView::resizeEvent(QResizeEvent *event)
     }
     // Dwell cover owns framing — never refit the underlay over it.
     // Invalidate atlas viewport keys so the next tick rebuilds at new size.
-    if (m_ssDwell.isMotionActive()) {
-        m_ssDwell.invalidateAtlasViewport();
-        m_ssZoomBlur.clearUnderlays();
+    if (m_slideshow.dwell().isMotionActive()) {
+        m_slideshow.dwell().invalidateAtlasViewport();
+        m_slideshow.zoomBlur().clearUnderlays();
         if (viewport()) {
             viewport()->update();
         }
@@ -422,11 +422,11 @@ bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
     if (event->button() != Qt::LeftButton || !viewport()) {
         return false;
     }
-    if (!m_ssHud.isSeekHit(event->pos().y(), viewport()->height())) {
+    if (!m_slideshow.hud().isSeekHit(event->pos().y(), viewport()->height())) {
         return false;
     }
-    m_ssHud.setSeekDragging(true);
-    m_ssHud.setSeekbarVisible(true);
+    m_slideshow.hud().setSeekDragging(true);
+    m_slideshow.hud().setSeekbarVisible(true);
     const qreal f = ViewTransform::unitFraction(event->pos().x(), viewport()->width());
     emit slideshowSeekRequested(f);
     event->accept();
@@ -669,15 +669,15 @@ bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
     }
     // Slideshow: centre click pauses / resumes. Edges stay navigation above.
     // Ignore the second press of a double-click so we do not toggle twice.
-    if ((m_ssHud.isProgressActive() || m_ssHud.isPausedHud())
+    if ((m_slideshow.hud().isProgressActive() || m_slideshow.hud().isPausedHud())
         && zone == EdgeZone::None) {
-        if (m_lastSlideshowCenterClick.isValid()
-            && m_lastSlideshowCenterClick.elapsed()
+        if (m_slideshow.lastCenterClick().isValid()
+            && m_slideshow.lastCenterClick().elapsed()
                 < QApplication::doubleClickInterval()) {
             event->accept();
             return true;
         }
-        m_lastSlideshowCenterClick.start();
+        m_slideshow.lastCenterClick().start();
         emit slideshowTogglePauseRequested();
         event->accept();
         return true;
@@ -688,7 +688,7 @@ bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
 bool ImageView::tryMousePressPan(QMouseEvent *event)
 {
     // Middle-button pan in any mode; Gallery also allows Alt+left pan.
-    if (!m_ssDwell.isMotionActive()
+    if (!m_slideshow.dwell().isMotionActive()
         && (event->button() == Qt::MiddleButton
             || (event->button() == Qt::LeftButton
                 && ((isImageMode() && m_chrome.isImageModeLeftDragPan())
@@ -703,7 +703,7 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
             return true;
         }
     }
-    if (event->button() == Qt::MiddleButton && !m_ssDwell.isMotionActive()) {
+    if (event->button() == Qt::MiddleButton && !m_slideshow.dwell().isMotionActive()) {
         m_chrome.beginPan(event->pos());
         setCursor(Qt::ClosedHandCursor);
         event->accept();
@@ -1071,7 +1071,7 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
         return false;
     }
     // Dwell camera owns the view transform — do not fight it with hand pan.
-    if (m_ssDwell.isMotionActive()) {
+    if (m_slideshow.dwell().isMotionActive()) {
         m_chrome.endPan();
         event->accept();
         return true;
@@ -1274,16 +1274,16 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
 
 void ImageView::updateMouseMoveSlideshowSeek(QMouseEvent *event)
 {
-    if (!m_ssHud.isProgressActive() || !viewport()) {
+    if (!m_slideshow.hud().isProgressActive() || !viewport()) {
         return;
     }
     const int h = viewport()->height();
-    const bool nearBottom = m_ssHud.isSeekHit(event->pos().y(), h);
-    if (nearBottom != m_ssHud.isSeekbarVisible() && !m_ssHud.isSeekDragging()) {
-        m_ssHud.setSeekbarVisible(nearBottom);
+    const bool nearBottom = m_slideshow.hud().isSeekHit(event->pos().y(), h);
+    if (nearBottom != m_slideshow.hud().isSeekbarVisible() && !m_slideshow.hud().isSeekDragging()) {
+        m_slideshow.hud().setSeekbarVisible(nearBottom);
         viewport()->update();
     }
-    if (m_ssHud.isSeekDragging() && h > 0 && viewport()->width() > 0) {
+    if (m_slideshow.hud().isSeekDragging() && h > 0 && viewport()->width() > 0) {
         const qreal f = ViewTransform::unitFraction(event->pos().x(), viewport()->width());
         emit slideshowSeekRequested(f);
     }
@@ -1510,10 +1510,10 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
 
 bool ImageView::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
 {
-    if (!m_ssHud.isSeekDragging() || event->button() != Qt::LeftButton) {
+    if (!m_slideshow.hud().isSeekDragging() || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_ssHud.setSeekDragging(false);
+    m_slideshow.hud().setSeekDragging(false);
     event->accept();
     if (viewport()) {
         viewport()->update();

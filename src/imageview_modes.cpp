@@ -69,10 +69,10 @@ void ImageView::invalidateSessionLoads()
     }
     clearPendingLoads();
     gallerySoftResetAll();
-    m_ss.clearRasterQueues();
-    m_ss.bumpPhaseUpgradeGeneration();
-    m_ssDwell.bumpAtlasRebuildGeneration();
-    m_ss.bumpToAtlasRebuildGeneration();
+    m_slideshow.phase().clearRasterQueues();
+    m_slideshow.phase().bumpPhaseUpgradeGeneration();
+    m_slideshow.dwell().bumpAtlasRebuildGeneration();
+    m_slideshow.phase().bumpToAtlasRebuildGeneration();
     // Drop logical-size memory so the size-first gate re-probes (stale square
     // stand-ins must not skip resolve on the next open).
     m_sizeBook.clear();

@@ -202,7 +202,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                        const QImage &toSrc = QImage(), qreal t = -1.0,
                        const QString &fromPath = QString(),
                        const QString &toPath = QString()) {
-        if (!m_ssSettings.isZoomBlurLetterbox()) {
+        if (!m_slideshow.settings().isZoomBlurLetterbox()) {
             painter.fillRect(vr, slideshowPadColor());
             return;
         }
@@ -210,8 +210,8 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const bool haveTo = !toSrc.isNull();
         const qreal tt = ViewTransform::clamp01(t);
         const QString fPath = !fromPath.isEmpty() ? fromPath
-            : (m_ss.hasFromPath() ? m_ss.fromPathRef() : m_ssDwell.biasPathRef());
-        const QString tPath = !toPath.isEmpty() ? toPath : m_ss.toPathRef();
+            : (m_slideshow.phase().hasFromPath() ? m_slideshow.phase().fromPathRef() : m_slideshow.dwell().biasPathRef());
+        const QString tPath = !toPath.isEmpty() ? toPath : m_slideshow.phase().toPathRef();
         if (haveFrom && haveTo && t >= 0.0) {
             painter.setOpacity(1.0);
             paintZoomBlurUnderlay(&painter, fromSrc, vr, blurKey(fPath));
@@ -234,37 +234,37 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
     };
 
     // Pure-phase composite (SLIDESHOW.md): wall clock sets fadeT; we only blit.
-    if (m_ssHud.isProgressActive()
-        && (m_ss.hasFromImage() || m_ssDwell.hasSourceImage() || m_ss.hasToImage())) {
+    if (m_slideshow.hud().isProgressActive()
+        && (m_slideshow.phase().hasFromImage() || m_slideshow.dwell().hasSourceImage() || m_slideshow.phase().hasToImage())) {
         const QRect vr = viewport()->rect();
         // Prefer member references (not a local QImage copy) so paintMotionCover
         // can match the dwell atlas by address as well as by path.
-        const QImage &fromImg = m_ss.hasFromImage() ? m_ss.fromImageRef() : m_ssDwell.sourceImageRef();
-        const qreal fromT = m_ss.fromMotionTValue();
-        const qreal toT = m_ss.toMotionTValue();
-        if (m_ss.inTransition() && m_ss.hasToImage()) {
-            const qreal t = m_ss.clampedFadeT();
-            fillPad(vr, fromImg, m_ss.toImageRef(), t, m_ss.fromPathRef(), m_ss.toPathRef());
-            if (m_ssSettings.isFadeBlack()) {
+        const QImage &fromImg = m_slideshow.phase().hasFromImage() ? m_slideshow.phase().fromImageRef() : m_slideshow.dwell().sourceImageRef();
+        const qreal fromT = m_slideshow.phase().fromMotionTValue();
+        const qreal toT = m_slideshow.phase().toMotionTValue();
+        if (m_slideshow.phase().inTransition() && m_slideshow.phase().hasToImage()) {
+            const qreal t = m_slideshow.phase().clampedFadeT();
+            fillPad(vr, fromImg, m_slideshow.phase().toImageRef(), t, m_slideshow.phase().fromPathRef(), m_slideshow.phase().toPathRef());
+            if (m_slideshow.settings().isFadeBlack()) {
                 // V envelope: A→black (t in [0,0.5]), then black→B (t in [0.5,1]).
                 if (t < 0.5) {
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
+                                         m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
                     }
                     painter.setOpacity(t * 2.0);
                     painter.fillRect(vr, Qt::black);
                     painter.setOpacity(1.0);
                 } else {
                     painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_ss.toImageRef(), toT,
-                                     m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPathRef());
+                    paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
+                                     m_slideshow.phase().toBiasAPoint(), m_slideshow.phase().toBiasBPoint(), m_slideshow.phase().toPathRef());
                     painter.setOpacity((1.0 - t) * 2.0);
                     painter.fillRect(vr, Qt::black);
                     painter.setOpacity(1.0);
                 }
-            } else if (m_ssSettings.isSlideTransition()) {
+            } else if (m_slideshow.settings().isSlideTransition()) {
                 // Projector: A exits left, B enters from the right; both in motion.
                 const int w = vr.width();
                 const int xOld = int(qRound(-t * w));
@@ -275,44 +275,44 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                     painter.save();
                     painter.translate(xOld, 0);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
+                                     m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
                     painter.restore();
                 }
                 painter.save();
                 painter.translate(xNew, 0);
-                paintMotionCover(&painter, m_ss.toImageRef(), toT,
-                                 m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPathRef());
+                paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
+                                 m_slideshow.phase().toBiasAPoint(), m_slideshow.phase().toBiasBPoint(), m_slideshow.phase().toPathRef());
                 painter.restore();
                 painter.setClipping(false);
-            } else if (m_ssSettings.isNoneTransition()) {
+            } else if (m_slideshow.settings().isNoneTransition()) {
                 // Hard cut at the end of the transition window (no blend).
                 if (t < 1.0 - 1e-6) {
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
                         paintMotionCover(&painter, fromImg, fromT,
-                                         m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
+                                         m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
                     }
                 } else {
                     painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_ss.toImageRef(), toT,
-                                     m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPathRef());
+                    paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
+                                     m_slideshow.phase().toBiasAPoint(), m_slideshow.phase().toBiasBPoint(), m_slideshow.phase().toPathRef());
                 }
             } else {
                 // Crossfade: A 1→0, B 0→1; both in motion.
                 if (!fromImg.isNull()) {
                     painter.setOpacity(1.0 - t);
                     paintMotionCover(&painter, fromImg, fromT,
-                                     m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
+                                     m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
                 }
                 painter.setOpacity(t);
-                paintMotionCover(&painter, m_ss.toImageRef(), toT,
-                                 m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPathRef());
+                paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
+                                 m_slideshow.phase().toBiasAPoint(), m_slideshow.phase().toBiasBPoint(), m_slideshow.phase().toPathRef());
                 painter.setOpacity(1.0);
             }
         } else if (!fromImg.isNull()) {
-            fillPad(vr, fromImg, QImage(), -1.0, m_ss.fromPathRef());
+            fillPad(vr, fromImg, QImage(), -1.0, m_slideshow.phase().fromPathRef());
             paintMotionCover(&painter, fromImg, fromT,
-                             m_ssDwell.biasAPoint(), m_ssDwell.biasBPoint(), m_ss.fromPathRef());
+                             m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
         }
         // Pure phase painted the slide. Fall through so HUD / seekbar / pause
         // cues still draw (return here used to kill the entire overlay pass).
@@ -395,7 +395,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     // chip during slideshow or normal Image browsing.
     const QString loadingLine = m_hudPrefs.isVisible() ? loadingStatusHudLine() : QString();
     if (m_crop.active() || m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_hudFlash.isIdentityPulse()
-        || m_ssHud.isPausedHud() || gallerySizeResolveActive()
+        || m_slideshow.hud().isPausedHud() || gallerySizeResolveActive()
         || !m_centreProgress.titleRef().isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
@@ -467,7 +467,7 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("Crop mode"), true},
                        {tr("Handles · Reset · Apply · Esc"), false}},
                       margin, margin, false, false);
-        } else if (m_ssHud.isPausedHud()) {
+        } else if (m_slideshow.hud().isPausedHud()) {
             drawPanel({{tr("❚❚  Paused"), true},
                        {tr("Space: resume · Esc: leave"), false}},
                       margin, margin, false, false);
@@ -561,24 +561,24 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
     // Slideshow timeline (extended HUD only): video-player style progress bar
     // plus elapsed / total and remaining. Driven by setSlideshowTimeline from
     // the host clock. Falls back to per-interval dwell line if no timeline.
-    if (m_ssHud.isProgressActive()
-        && (m_hudPrefs.isVisible() || m_ssHud.isSeekbarVisible() || m_ssHud.isSeekDragging())) {
+    if (m_slideshow.hud().isProgressActive()
+        && (m_hudPrefs.isVisible() || m_slideshow.hud().isSeekbarVisible() || m_slideshow.hud().isSeekDragging())) {
         const int viewW = viewport()->width();
         const int viewH = viewport()->height();
         if (viewW > 0 && viewH > 0) {
             qreal fraction = 0.0;
-            if (m_ssHud.timelineTotal() > 0) {
-                fraction = qreal(m_ssHud.timelineElapsed())
-                    / qreal(m_ssHud.timelineTotal());
-            } else if (m_ssHud.isCycleProgressValid()) {
-                fraction = m_ssHud.cycleProgress();
-            } else if (m_ssHud.hasProgressInterval()) {
-                qint64 elapsed = m_ssHud.progressBase();
-                if (!m_ssHud.isProgressClockPaused()
-                    && m_ssHud.isProgressElapsedValid()) {
-                    elapsed += m_ssHud.progressElapsedMs();
+            if (m_slideshow.hud().timelineTotal() > 0) {
+                fraction = qreal(m_slideshow.hud().timelineElapsed())
+                    / qreal(m_slideshow.hud().timelineTotal());
+            } else if (m_slideshow.hud().isCycleProgressValid()) {
+                fraction = m_slideshow.hud().cycleProgress();
+            } else if (m_slideshow.hud().hasProgressInterval()) {
+                qint64 elapsed = m_slideshow.hud().progressBase();
+                if (!m_slideshow.hud().isProgressClockPaused()
+                    && m_slideshow.hud().isProgressElapsedValid()) {
+                    elapsed += m_slideshow.hud().progressElapsedMs();
                 }
-                fraction = qreal(elapsed) / qreal(m_ssHud.progressInterval());
+                fraction = qreal(elapsed) / qreal(m_slideshow.hud().progressInterval());
             }
             fraction = ViewTransform::clamp01(fraction);
 
@@ -590,7 +590,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
             painter.setBrush(track);
             // Thin dwell/session line when HUD pinned; thicker mpv seekbar when
             // the cursor is in the bottom hover zone.
-            const int barH = HudGeometry::progressBarHeight(m_ssHud.isSeekbarVisible());
+            const int barH = HudGeometry::progressBarHeight(m_slideshow.hud().isSeekbarVisible());
             painter.drawRect(0, viewH - barH, viewW, barH);
             if (fraction > 0.0) {
                 const int barW = HudGeometry::progressFillWidth(fraction, viewW);
@@ -598,13 +598,13 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                 painter.drawRect(0, viewH - barH, barW, barH);
             }
 
-            if (m_ssHud.timelineTotal() > 0) {
-                const qint64 remain = m_ssHud.timelineTotal()
-                    - m_ssHud.timelineElapsed();
+            if (m_slideshow.hud().timelineTotal() > 0) {
+                const qint64 remain = m_slideshow.hud().timelineTotal()
+                    - m_slideshow.hud().timelineElapsed();
                 const QString timeLine =
                     QStringLiteral("%1 / %2   −%3")
-                        .arg(SlideshowClocks::formatClockMs(m_ssHud.timelineElapsed()),
-                             SlideshowClocks::formatClockMs(m_ssHud.timelineTotal()),
+                        .arg(SlideshowClocks::formatClockMs(m_slideshow.hud().timelineElapsed()),
+                             SlideshowClocks::formatClockMs(m_slideshow.hud().timelineTotal()),
                              SlideshowClocks::formatClockMs(remain));
 
                 QFont f = painter.font();
@@ -1307,10 +1307,10 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
     if (isGalleryMode() && !m_hudPrefs.isVisible() && !m_hudFlash.isVisible() && !m_hudFlash.isIdentityPulse()
-        && !m_ssHud.isPausedHud() && !gallerySizeResolveActive()
+        && !m_slideshow.hud().isPausedHud() && !gallerySizeResolveActive()
         && m_centreProgress.titleRef().isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_crop.active()
-        && !m_ssDwell.isMotionActive() 
+        && !m_slideshow.dwell().isMotionActive() 
         ) {
         return;
     }

@@ -42,6 +42,7 @@
 #include "coloradjust.h"
 #include "sessionappearance.h"
 #include "gallerycontroller.h"
+#include "slideshowcontroller.h"
 #include "workspacecontroller.h"
 #include "imagecontroller.h"
 #include "pathrasterservice.h"
@@ -220,9 +221,9 @@ public:
      * atlas work until settle; previous underlay is kept until replacement.
      */
     void setSlideshowNavHot(bool hot);
-    bool slideshowNavHot() const { return m_ssHud.isNavHot(); }
+    bool slideshowNavHot() const { return m_slideshow.hud().isNavHot(); }
     /** Slideshow pure-phase owns viewport — tile coordinator must not issue. */
-    bool isSlideshowProgressActive() const { return m_ssHud.isProgressActive(); }
+    bool isSlideshowProgressActive() const { return m_slideshow.hud().isProgressActive(); }
     /** PathRasterService for PreferCache cancel when tiles issue (coordinator). */
     PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
     /** Crop draft owns the live sample — no ladder/install/rematerialize. */
@@ -614,22 +615,22 @@ public:
     void setSlideshowCycleProgress(qreal phase01);
 
     void setSlideshowTransition(SlideshowTransition kind);
-    SlideshowTransition slideshowTransition() const { return m_ssSettings.currentTransition(); }
+    SlideshowTransition slideshowTransition() const { return m_slideshow.settings().currentTransition(); }
     void setSlideshowTransitionDurationMs(int ms);
-    int slideshowTransitionDurationMs() const { return m_ssSettings.transitionDuration(); }
+    int slideshowTransitionDurationMs() const { return m_slideshow.settings().transitionDuration(); }
     /** Clear residual transition overlay state (safe during pure-phase show). */
     void cancelSlideshowTransition();
 
     void setSlideshowMotion(SlideshowMotion mode);
-    SlideshowMotion slideshowMotion() const { return m_ssSettings.currentMotion(); }
+    SlideshowMotion slideshowMotion() const { return m_slideshow.settings().currentMotion(); }
     void setPanZoomFactor(qreal factor);
-    qreal panZoomFactor() const { return m_ssSettings.currentPanZoomFactor(); }
+    qreal panZoomFactor() const { return m_slideshow.settings().currentPanZoomFactor(); }
 
     void setSlideshowZoom(SlideshowZoom mode);
-    SlideshowZoom slideshowZoom() const { return m_ssSettings.currentZoom(); }
+    SlideshowZoom slideshowZoom() const { return m_slideshow.settings().currentZoom(); }
 
     void setSlideshowLetterboxFill(SlideshowLetterboxFill mode);
-    SlideshowLetterboxFill slideshowLetterboxFill() const { return m_ssSettings.currentLetterboxFill(); }
+    SlideshowLetterboxFill slideshowLetterboxFill() const { return m_slideshow.settings().currentLetterboxFill(); }
     /** Pad colour when letterbox fill is Solid (also fallback for ZoomBlur miss). */
     void setSlideshowPadColor(const QColor &color);
     void cancelSlideshowMotion();

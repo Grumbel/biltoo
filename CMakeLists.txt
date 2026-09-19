@@ -111,6 +111,8 @@ add_executable(biltoo
   src/imageview_layout.cpp
   src/imageview_gallery.cpp
   src/gallerycontroller.cpp
+  src/slideshowcontroller.cpp
+  src/slideshowcontroller.h
   src/gallerycontroller.h
   src/gallerysizeresolve.cpp
   src/gallerysizeresolve.h

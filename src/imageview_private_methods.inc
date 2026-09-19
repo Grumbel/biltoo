@@ -388,7 +388,7 @@
 
     int sessionTotal() const { return m_sessionId.currentTotal(); }
 
-    bool slideshowPausedHud() const { return m_ssHud.isPausedHud(); }
+    bool slideshowPausedHud() const { return m_slideshow.hud().isPausedHud(); }
 
     /** Start dwell image-blit Ken Burns if enabled and slideshow is active. */
     void maybeStartSlideshowMotion();

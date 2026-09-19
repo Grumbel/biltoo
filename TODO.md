@@ -2,6 +2,35 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1597-phase6-tier1a-slideshow-state.** Phase 6 Tier 1a: SlideshowController owns slideshow state; ImageView methods use m_slideshow accessors.
+Prior: **1596**.
+
+### Change
+- New `SlideshowController` (`src/slideshowcontroller.{h,cpp}`) — owns
+  `SlideshowPhaseState`, dwell, HUD, settings, ZoomBlur, MotionScrollChrome,
+  motion/progress timers, centre-click clock
+- `ImageView::m_slideshow` (constructed with `this`, same pattern as Gallery)
+- All former `m_ss*` / `m_motionTimer` / `m_slideshowProgressTimer` references
+  rewritten to `m_slideshow.phase()` / `.dwell()` / `.hud()` / …
+- Behaviour methods remain on ImageView (Tier 1b will move them + Host surface)
+
+### Not yet (Tier 1b)
+- Move orchestration methods onto SlideshowController
+- `SlideshowHost` narrow surface
+- `imageview_view.cpp` under 900 lines
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1597-phase6-tier1a-slideshow-state.bundle HEAD
+```
+Requires tip **1596**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1596-phase6-tier0-header-closure.** Phase 6 Tier 0: privatize ImageView methods with no external refs; shrink header via private includes.
 Prior: **1595** (on origin/master through Phase 6 plan commit).
 

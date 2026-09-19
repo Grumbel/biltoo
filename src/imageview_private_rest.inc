@@ -388,6 +388,8 @@
     QGraphicsScene *m_scene = nullptr;
     /** Gallery-mode collaborator (stash, viewport snapshot, transitions). */
     GalleryController m_gallery;
+    /** Phase 6 Tier 1: slideshow state (phase/dwell/HUD/settings/ZoomBlur/motion). */
+    SlideshowController m_slideshow;
     /** Workspace-mode collaborator (stash, free-form snapshot, transitions). */
     WorkspaceController m_workspace;
     /** Image-mode collaborator (enter transition). */
@@ -446,21 +448,7 @@
     SessionIdentity m_sessionId;
     HudFlash m_hudFlash;
     /** Persistent slideshow-paused cue (top-left); not cleared by flash timer. */
-    QElapsedTimer m_lastSlideshowCenterClick;
     QTimer *m_hudFlashTimer = nullptr;
-    QTimer *m_slideshowProgressTimer = nullptr;
-    SlideshowProgressHud m_ssHud;
-    SlideshowSettings m_ssSettings;
-    /** Pure-phase composite (from/to buffers, clocks). */
-    SlideshowPhaseState m_ss;
-    /** Dwell atlas + Ken Burns camera (timer stays below). */
-    SlideshowDwellState m_ssDwell;
-    // Slideshow samples: ImageCache only (putSlideshowRaster / slideshowRaster).
-    /** ZoomBlur letterbox underlay cache (two slots). */
-    mutable SlideshowZoomBlurState m_ssZoomBlur;
-    /** Scroll policies restored when Ken Burns underlay returns. */
-    MotionScrollChrome m_motionScroll;
-    QTimer *m_motionTimer = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutPrefs m_layout;
