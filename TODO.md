@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1616-fix-crop-host-calls.** CropController: m_view-> for ImageView helpers; promote host methods needed without friend.
+Prior: **1615**.
+
+### Change
+- Prefix `primaryItem`, `applyLayout`, `fit`/`workspace` helpers, appearance restore, etc. with `m_view->`
+- Public host: `cancelZoomRegion`, `scheduleAsyncHostRematerialize`, `loadSessionAppearance`, `restoreSessionCropAppearance`, `updateMouseInfo`, `currentFitAspectMode`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1616-fix-crop-host-calls.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1615-phase6-tier4-char-expand.** Expand SessionDocument/Appearance characterization (crop materialize, dual-model orphan, reorder-by-id).
 Prior: **1614**.
 

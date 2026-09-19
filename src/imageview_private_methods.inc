@@ -239,8 +239,6 @@
 
     void restoreStickyPanAnchor(ImageItem *item);
 
-    void cancelZoomRegion();
-
     bool zoomRegionArmed() const { return m_zoomRegion.isArmed(); }
 
     /** Current view-level scale factor (workspace zoom). */

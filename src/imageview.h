@@ -295,6 +295,16 @@ public:
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);
 
+
+    // --- Crop host extras (controller needs without friend) ---
+    void cancelZoomRegion();
+    void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
+                                        const WorkspaceItemState &want);
+    bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
+    void restoreSessionCropAppearance(ImageItem *item);
+    void updateMouseInfo(const QPoint &viewPos);
+    Qt::AspectRatioMode currentFitAspectMode() const;
+
     // --- Slideshow host (Phase 6: replaces friend SlideshowController) ---
     SessionAppearanceStore &hostAppearance() { return m_appearance; }
     const SessionAppearanceStore &hostAppearance() const { return m_appearance; }

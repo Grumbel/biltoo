@@ -75,9 +75,9 @@ ImageItem *CropController::cropTargetItem() const
         }
     }
     // Image mode only: sole canvas item. Gallery/Workspace need an explicit
-    // single selection (hasSingleCropTarget) — never primaryItem() fan-out.
+    // single selection (hasSingleCropTarget) — never m_view->primaryItem() fan-out.
     if (m_view->isImageMode()) {
-        return primaryItem();
+        return m_view->primaryItem();
     }
     return nullptr;
 }
@@ -114,16 +114,16 @@ void CropController::fitImageOrUpdateWorkspace(ImageItem *item)
     }
     if (m_view->isImageMode()) {
         m_view->hostFraming().armFit();
-        m_view->fitItem(item, currentFitAspectMode());
+        m_view->fitItem(item, m_view->currentFitAspectMode());
     } else if (m_view->isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
+        m_view->updateWorkspaceSceneRect();
     }
 }
 
 void CropController::relayoutAfterCropLeave(ImageItem *item)
 {
     if (m_view->isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
+        m_view->applyLayout(GalleryPackReason::ContentChange);
     } else {
         fitImageOrUpdateWorkspace(item);
     }
@@ -297,7 +297,7 @@ bool CropController::applyCropCommit(ImageItem *item)
         }
         SessionImageId sid = cropRecordSessionId(item);
         WorkspaceItemState st;
-        loadSessionAppearance(sid, &st);
+        m_view->loadSessionAppearance(sid, &st);
         if (!st.hasCrop) {
             st = m_view->captureState(item);
             session().seedApplyCropState(&st, item->offset(), item->imageSize());
@@ -369,7 +369,7 @@ void CropController::leaveCropModeInternal(bool apply)
         if (apply) {
             preserveCropFrameRotation = applyCropCommit(item);
         } else if (session().isShowingFullImage()) {
-            restoreSessionCropAppearance(item);
+            m_view->restoreSessionCropAppearance(item);
             if (m_view->isWorkspaceMode() && session().isEnterValid()) {
                 session().restoreEnterPlacementPose(item);
             }
@@ -399,7 +399,7 @@ void CropController::leaveCropModeInternal(bool apply)
     }
     // Apply may have queued a full bake while freeze was still on.
     if (pendingFull && !pendingPath.isEmpty()) {
-        scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
+        m_view->scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
     }
 }
 
@@ -426,7 +426,7 @@ bool CropController::enterCropModeFromUi()
         flashCropHud(CropFlash::noImage());
         return false;
     }
-    cancelZoomRegion();
+    m_view->cancelZoomRegion();
     // Lock identity + enter snapshot + unrotate placement (IDENTITY.md).
     // session().active() stays false until after the first draft attach.
     {
@@ -463,7 +463,7 @@ bool CropController::enterCropModeFromUi()
                 PlacementLinear::scenePosDeltaToAlign(
                     item->mapToScene(session().draftCenterLocal()), workspaceAnchorScene));
         }
-        updateWorkspaceSceneRect();
+        m_view->updateWorkspaceSceneRect();
     }
     flashCropHud(CropFlash::modeEntered());
     emit m_view->cropModeChanged(true);
@@ -1023,7 +1023,7 @@ bool CropController::tryMouseMoveCropHover(QMouseEvent *event)
             QToolTip::hideText();
         }
     }
-    updateMouseInfo(event->pos());
+    m_view->updateMouseInfo(event->pos());
     event->accept();
     return true;
 }

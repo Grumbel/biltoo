@@ -91,9 +91,6 @@
      * stretch oriented pixels into the pre-orient box.
      */
     void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want);
-    /** Worker materialize when host is multi-MP; attach on GUI if gen/want still match. */
-    void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
-                                        const WorkspaceItemState &want);
     void finishAsyncHostRematerialize(const QString &path, SessionImageId sid,
                                       const WorkspaceItemState &want, const QImage &display);
     void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
@@ -301,12 +298,9 @@
      * so the region can grow. Returns false if the image cannot be prepared.
      */
     bool prepareCropModeFullImage(ImageItem *item);
-    bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     void cancelPathRasterForCrop(const QString &path);
     /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
     void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
-    void restoreSessionCropAppearance(ImageItem *item);
-    void updateMouseInfo(const QPoint &viewPos);
     /**
      * After logical size change on the Image-mode target: keep on-screen framing
      * when aspect is stable (soft→full / probe magnitude). Refit only if aspect
@@ -320,7 +314,6 @@
      * asymmetric pan when the image is fitted. No-op outside Image mode.
      */
     void syncImageModeSceneRect(ImageItem *item);
-    Qt::AspectRatioMode currentFitAspectMode() const;
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
     void rememberItemState(ImageItem *item);
