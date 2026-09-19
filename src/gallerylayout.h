@@ -50,9 +50,12 @@ enum class Mode {
 };
 
 struct Params {
+    static constexpr qreal kDefaultMargin = 16.0;
+    static constexpr qreal kDefaultGap = 12.0;
+
     Mode mode = Mode::Masonry;
-    qreal margin = 16.0;
-    qreal gap = 12.0;
+    qreal margin = kDefaultMargin;
+    qreal gap = kDefaultGap;
     qreal availW = 800.0;
     qreal availH = 600.0;
     int masonryColumns = 3;
