@@ -29,13 +29,26 @@ struct ZoomRegionGesture {
         origin = {};
     }
 
-    void arm() { armed = true; }
-
-    void disarm()
+    /** @return true when armed flag changed to true. */
+    bool arm()
     {
+        if (armed) {
+            return false;
+        }
+        armed = true;
+        return true;
+    }
+
+    /** @return true when was armed. */
+    bool disarm()
+    {
+        if (!armed && !dragging) {
+            return false;
+        }
         armed = false;
         clearDrag();
         // rubberBand lifetime stays with ImageView
+        return true;
     }
 
     void beginDrag(const QPoint &pos)
