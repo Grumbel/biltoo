@@ -3122,9 +3122,9 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     }
     if (isGalleryMode()) {
         const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-        const auto it = m_gallerySoftBook.soft.constFind(item->path());
-        const int have = (it != m_gallerySoftBook.soft.cend())
-            ? GallerySoft::maxHave(it->have, edge)
+        const GallerySoftState *st = m_gallerySoftBook.get(item->path());
+        const int have = st
+            ? GallerySoft::maxHave(st->have, edge)
             : edge;
         if (need > 0 && have > 0) {
             return tr("%1 · show %2px · need %3px · have %4px")
@@ -3218,9 +3218,10 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
             } else {
                 ++better;
             }
-            const auto sit = m_gallerySoftBook.soft.constFind(ii->path());
-            if (sit != m_gallerySoftBook.soft.cend() && sit->inflight > 0) {
-                ++climb;
+            if (const GallerySoftState *sit = m_gallerySoftBook.get(ii->path())) {
+                if (sit->inflight > 0) {
+                    ++climb;
+                }
             }
         }
         // Pipeline mix is debug-only — never put "LQIP" in the status bar.

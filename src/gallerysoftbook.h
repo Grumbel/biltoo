@@ -21,6 +21,33 @@ struct GallerySoftBook {
 
     void clearSoft() { soft.clear(); }
 
+    /** Mutable soft state for @p path (creates empty entry if missing). */
+    GallerySoftState &state(const QString &path) { return soft[path]; }
+
+    const GallerySoftState *get(const QString &path) const
+    {
+        if (path.isEmpty()) {
+            return nullptr;
+        }
+        const auto it = soft.constFind(path);
+        if (it == soft.cend()) {
+            return nullptr;
+        }
+        return &(*it);
+    }
+
+    GallerySoftState *find(const QString &path)
+    {
+        if (path.isEmpty()) {
+            return nullptr;
+        }
+        const auto it = soft.find(path);
+        if (it == soft.end()) {
+            return nullptr;
+        }
+        return &(*it);
+    }
+
     /** @return true when defer-populate flag changed. */
     bool setDeferPopulate(bool on)
     {
