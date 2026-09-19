@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1624-phase6-tier4b-bind-appearance.** Phase 6 Tier 4b partial: ImageView binds to SessionDocument appearance.
+Prior: **1623**.
+
+### Change
+- `ImageView::bindSessionAppearance(SessionAppearanceStore *)`
+- `appearance()` / `hostAppearance()` use bound store when set
+- MainWindow binds `&m_session.appearance()` after creating the view
+- `SessionDocument::clear()` clears appearance slots
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1624-phase6-tier4b-bind-appearance.bundle HEAD
+```
+
+### Next
+- Delete view-owned fallback when always bound
+- Remove `m_pathOrderBook` in favor of SessionDocument paths/ids
+- Tier 5b PreferCache
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1623-phase6-tier4a-doc-appearance.** Phase 6 Tier 4a: SessionDocument owns SessionAppearanceStore (additive).
 Prior: **1622** (compile green).
 

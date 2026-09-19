@@ -372,7 +372,9 @@
      */
     /** Per-session-image appearance, keyed by stable SessionImageId. */
     /** Content appearance by stable session-image id (Phase 2 store). */
-    SessionAppearanceStore m_appearance;
+    SessionAppearanceStore m_appearanceOwned;
+    /** Non-owning; when set, appearance() uses document store (Tier 4b). */
+    SessionAppearanceStore *m_appearanceBound = nullptr;
     /** Session ids we already tried to seed from path XDG (success or miss). */
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */

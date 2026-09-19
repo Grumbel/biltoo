@@ -739,7 +739,9 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
   Full offscreen ImageView open→Gallery→crop harness still open.
 - Tier 4a: **done** (biltoo-1623) — `SessionDocument` owns a `SessionAppearanceStore`
   (additive; ImageView still has live store). Char test covers doc-keyed crop.
-- Tier 4b: _pending_ — single owner, delete view `m_pathOrderBook` / dual store.
+- Tier 4b: **partial** (biltoo-1624) — `bindSessionAppearance` to document store;
+  MainWindow binds at construct; `SessionDocument::clear` clears appearance.
+  View keeps fallback owned store when unbound. `m_pathOrderBook` still on view.
 - Tier 5a: **done** (biltoo-1610) — `DisplayPipelineController` owns loadGate,
   displaySurfaces, imageFocusSurface, tileCoordinator, tile LOD timers.
   Methods stay on ImageView; soft provider + neighbor prefetch remain on view.

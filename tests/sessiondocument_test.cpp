@@ -139,10 +139,10 @@ void SessionDocumentTest::appearance_on_document()
     doc.appearance().set(id, st);
     QVERIFY(doc.appearance().contains(id));
     QCOMPARE(doc.appearance().get(id)->cropRect, QRect(2, 3, 40, 50));
-    // Path list clear does not yet couple appearance (Tier 4b).
+    // Tier 4b: clear() drops path list and appearance together.
     doc.clear();
     QVERIFY(doc.isEmpty());
-    QVERIFY(doc.appearance().contains(id));
+    QVERIFY(!doc.appearance().contains(id));
 }
 
 QTEST_MAIN(SessionDocumentTest)

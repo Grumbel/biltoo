@@ -185,7 +185,7 @@
     /**
      * Same as path-only overload, but binds each path to the parallel
      * @p sessionIds entry (stable SessionImageId). Gallery/Workspace loads
-     * then apply per-id crop/flip/rotate from m_appearance.
+     * then apply per-id crop/flip/rotate from appearance().
      */
     QList<ImageItem *> collectDoomedWorkspaceItems(const QStringList &paths,
                                                    const QVector<SessionImageId> &sessionIds) const;

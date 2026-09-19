@@ -546,7 +546,7 @@ void ImageView::duplicateSelected()
 
         WorkspaceItemState content;
         if (src->sessionId() != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = m_appearance.get(src->sessionId())) {
+            if (const WorkspaceItemState *app = appearance().get(src->sessionId())) {
                 content = *app;
             }
         }
@@ -620,7 +620,7 @@ QList<WorkspaceItemState> ImageView::captureSelectedWorkspaceClipboard() const
         s.sessionId = item->sessionId();
         // Prefer store for content meta not fully on the item (cropRotation, …).
         if (item->sessionId() != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = m_appearance.get(item->sessionId())) {
+            if (const WorkspaceItemState *app = appearance().get(item->sessionId())) {
                 s.cropRotation = app->cropRotation;
                 s.cropSourceSize = app->cropSourceSize;
                 s.contentQuarterTurns = app->contentQuarterTurns;
@@ -787,7 +787,7 @@ bool ImageView::targetHasContentAppearance() const
             sid = m_sessionId.currentIdValue();
         }
         if (sid != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+            if (const WorkspaceItemState *app = appearance().get(sid)) {
                 if (SessionAppearance::hasContentAppearance(*app)) {
                     return true;
                 }
@@ -827,11 +827,11 @@ int ImageView::resetContentAppearanceForTargets()
         // 2) Clear session appearance content fields (keep placement).
         if (sid != kInvalidSessionImageId) {
             WorkspaceItemState slot = SessionAppearance::clearedContentOps(
-                m_appearance.value(sid));
+                appearance().value(sid));
             slot.sessionId = sid;
             slot.path = path;
             // Keep color grade / pose if present.
-            m_appearance.set(sid, slot);
+            appearance().set(sid, slot);
         }
         // Path map still holds content turns from prior bake/pack; captureState
         // re-merges turns==0 from m_itemStateBook.byPath and can resurrect orientation.

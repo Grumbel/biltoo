@@ -30,7 +30,7 @@ const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
         // Seed orient/flip/grade from path XDG when the id slot is still empty
         // (restart / first bind). Crop is never seeded from path (IDENTITY).
         seedSessionAppearanceFromState(sid, item->path());
-        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
+        if (const WorkspaceItemState *it = appearance().get(sid)) {
             return it;
         }
         // Bound with no durable content after seed = full frame.
@@ -91,7 +91,7 @@ void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
         return;
     }
     if (sid != kInvalidSessionImageId) {
-        m_appearance.set(sid, s);
+        appearance().set(sid, s);
     } else {
         // Unbound only: path map is the sole store.
         m_itemStateBook.set(item->path(), s);
@@ -103,7 +103,7 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
     if (!st || sid == kInvalidSessionImageId) {
         return false;
     }
-    if (const WorkspaceItemState *it = m_appearance.get(sid)) {
+    if (const WorkspaceItemState *it = appearance().get(sid)) {
         *st = *it;
         return true;
     }

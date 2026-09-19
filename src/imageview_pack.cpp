@@ -861,7 +861,7 @@ bool ImageView::layoutWorkspaceItems(const GalleryLayout::Params &userParams,
             continue;
         }
         if (item->sessionId() != kInvalidSessionImageId) {
-            m_appearance.set(item->sessionId(), captureState(item));
+            appearance().set(item->sessionId(), captureState(item));
         }
         m_itemStateBook.set(item->path(), captureState(item));
     }

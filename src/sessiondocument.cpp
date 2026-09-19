@@ -54,6 +54,7 @@ void SessionDocument::clear()
 {
     m_paths.clear();
     m_ids.clear();
+    m_appearance.clear();
     // Do not reset m_nextId — removed ids must never be recycled (IDENTITY.md).
 }
 

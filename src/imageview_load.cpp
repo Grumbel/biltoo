@@ -245,7 +245,7 @@ WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
     // would bake the navigated image's crop into every newly decoded tile.
     if (m_sessionId.hasCurrentId()) {
         seedSessionAppearanceFromState(m_sessionId.currentIdValue(), path);
-        if (const WorkspaceItemState *sit = m_appearance.get(m_sessionId.currentIdValue())) {
+        if (const WorkspaceItemState *sit = appearance().get(m_sessionId.currentIdValue())) {
             return *sit;
         }
         // Bound session image with no appearance entry = full frame, no path fallback.
@@ -269,7 +269,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
     WorkspaceItemState app;
     if (applyStoredSessionCrop && isImageMode()) {
         // Always attempt seed from path XDG when bound. The old gate
-        // !(haveId && !m_appearance.get(id)) *skipped* seed when the slot was
+        // !(haveId && !appearance().get(id)) *skipped* seed when the slot was
         // empty — which is exactly when durable rotate/flip must be loaded
         // after restart. appearanceForNewImageModeItem seeds then returns
         // identity only if XDG has nothing.
@@ -340,7 +340,7 @@ void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
     // Fresh session: allow seed again for new ids (old set cleared on invalidate).
     const int n = ViewTransform::pairCount(paths.size(), ids.size());
     for (int i = 0; i < n; ++i) {
-        m_appearance.clearSeedAttempted(ids.at(i));
+        appearance().clearSeedAttempted(ids.at(i));
     }
     // Small sessions: fine on GUI (few stats). Large sessions: locatorId +
     // appearance SQLite used to run O(n) on the GUI during open and freeze the
@@ -409,10 +409,10 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
     }
     // One attempt per session id — archive/miss paths must not re-hit locatorId
     // on every paint via wantAppearanceForItem.
-    if (m_appearance.seedAttempted(sid)) {
+    if (appearance().seedAttempted(sid)) {
         return;
     }
-    m_appearance.markSeedAttempted(sid);
+    appearance().markSeedAttempted(sid);
     ThumtooCache::StoredContentAppearance stored;
     if (!ThumtooCache::loadContentAppearance(path, &stored)) {
         return;
@@ -426,7 +426,7 @@ void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString
 void ImageView::markAppearanceSeedAttempted(SessionImageId sid)
 {
     if (sid != kInvalidSessionImageId) {
-        m_appearance.markSeedAttempted(sid);
+        appearance().markSeedAttempted(sid);
     }
 }
 
@@ -438,11 +438,11 @@ void ImageView::applyStoredContentAppearanceSeed(SessionImageId sid, const QStri
     }
     // Worker path may not have marked attempted yet; mark here so paint does not
     // re-drive locatorId via wantAppearanceForItem.
-    m_appearance.markSeedAttempted(sid);
-    if (m_appearance.contains(sid)) {
+    appearance().markSeedAttempted(sid);
+    if (appearance().contains(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.
-        if (const WorkspaceItemState *cur = m_appearance.get(sid)) {
+        if (const WorkspaceItemState *cur = appearance().get(sid)) {
             if (SessionAppearance::hasContentAppearance(*cur)) {
                 return;
             }
@@ -462,7 +462,7 @@ void ImageView::applyStoredContentAppearanceSeed(SessionImageId sid, const QStri
             stored.gradeBrightness, stored.gradeContrast, stored.gradeSaturation,
             stored.gradeHue, stored.gradeGamma, stored.gradeInvert);
     }
-    m_appearance.set(sid, seed);
+    appearance().set(sid, seed);
 }
 
 void ImageView::installDisplayPreservingView(ImageItem *item, const QImage &pixels,
@@ -497,7 +497,7 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
         id = m_sessionId.currentIdValue();
     }
     if (id != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = m_appearance.get(id)) {
+        if (const WorkspaceItemState *app = appearance().get(id)) {
             appearance = *app;
         }
         // Cold open / ←→: id slot often empty until first seed. Path XDG holds
@@ -508,7 +508,7 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
             && !item->path().isEmpty()) {
             const_cast<ImageView *>(this)->seedSessionAppearanceFromState(
                 id, item->path());
-            if (const WorkspaceItemState *app = m_appearance.get(id)) {
+            if (const WorkspaceItemState *app = appearance().get(id)) {
                 appearance = *app;
             }
         }
@@ -962,7 +962,7 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
 
     WorkspaceItemState want;
     if (m_sessionId.hasCurrentId()) {
-        if (const WorkspaceItemState *st = m_appearance.get(m_sessionId.currentIdValue())) {
+        if (const WorkspaceItemState *st = appearance().get(m_sessionId.currentIdValue())) {
             want = *st;
         }
     }
@@ -1918,7 +1918,7 @@ void ImageView::completeLoadRestore(const QString &path, const QImage &image)
     WorkspaceItemState app = state;
     if (state.sessionId != kInvalidSessionImageId) {
         item->setSessionId(state.sessionId);
-        if (const WorkspaceItemState *it = m_appearance.get(state.sessionId)) {
+        if (const WorkspaceItemState *it = appearance().get(state.sessionId)) {
             app = *it;
             // Keep placement from the snapshot.
             app.pos = state.pos;
@@ -2084,8 +2084,8 @@ void ImageView::claimUnboundItemsForPendingBinds(const QString &path, const QIma
                              bound.id != kInvalidSessionImageId
                                  ? bound.id
                                  : existing->sessionId());
-        if (bound.id != kInvalidSessionImageId && m_appearance.get(bound.id)) {
-            applyState(existing, *m_appearance.get(bound.id));
+        if (bound.id != kInvalidSessionImageId && appearance().get(bound.id)) {
+            applyState(existing, *appearance().get(bound.id));
         }
         // Explicit drop position wins over restored gallery/workspace pose.
         applyPendingBindScenePos(existing, bound);

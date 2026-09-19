@@ -260,8 +260,23 @@ public:
     /** Controller host: Image/Gallery soft reset to fit, not fill. */
     void enableFitMode();
     /** Controller host: session appearance store (id-keyed). */
-    SessionAppearanceStore &appearance() { return m_appearance; }
-    const SessionAppearanceStore &appearance() const { return m_appearance; }
+    /**
+     * Session appearance (id-keyed). When bound to SessionDocument (Tier 4b),
+     * this is the document store; otherwise a view-owned fallback.
+     */
+    SessionAppearanceStore &appearance()
+    {
+        return m_appearanceBound ? *m_appearanceBound : m_appearanceOwned;
+    }
+    const SessionAppearanceStore &appearance() const
+    {
+        return m_appearanceBound ? *m_appearanceBound : m_appearanceOwned;
+    }
+    /** Point at SessionDocument::appearance(); nullptr restores view-owned store. */
+    void bindSessionAppearance(SessionAppearanceStore *store)
+    {
+        m_appearanceBound = store;
+    }
     /** Controller host: path-keyed placement / unbound appearance cache. */
     void setItemStateForPath(const QString &path, const WorkspaceItemState &state)
     {
@@ -306,8 +321,8 @@ public:
     Qt::AspectRatioMode currentFitAspectMode() const;
 
     // --- Slideshow host (Phase 6: replaces friend SlideshowController) ---
-    SessionAppearanceStore &hostAppearance() { return m_appearance; }
-    const SessionAppearanceStore &hostAppearance() const { return m_appearance; }
+    SessionAppearanceStore &hostAppearance() { return appearance(); }
+    const SessionAppearanceStore &hostAppearance() const { return appearance(); }
     ViewFraming &hostFraming() { return m_framing; }
     const ViewFraming &hostFraming() const { return m_framing; }
     CanvasBackground &hostCanvasBg() { return m_canvasBg; }

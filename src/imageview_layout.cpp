@@ -104,7 +104,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = m_appearance.get(sid)) {
+        if (const WorkspaceItemState *app = appearance().get(sid)) {
             s.cropRotation = app->cropRotation;
             s.cropSourceSize = app->cropSourceSize;
             // Appearance store is sole content-orient authority for bound ids
@@ -221,7 +221,7 @@ void ImageView::rememberItemState(ImageItem *item)
         slot.sessionId = item->sessionId();
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
-        m_appearance.set(item->sessionId(), slot);
+        appearance().set(item->sessionId(), slot);
         return;
     }
     m_itemStateBook.set(item->path(), captureState(item));
@@ -271,7 +271,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
     const WorkspaceItemState *app = nullptr;
     WorkspaceItemState fallback;
     if (sid != kInvalidSessionImageId) {
-        app = m_appearance.get(sid);
+        app = appearance().get(sid);
     }
     if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
         if (const WorkspaceItemState *st = m_itemStateBook.get(path)) {
@@ -315,12 +315,12 @@ WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
     if (id == kInvalidSessionImageId) {
         return {};
     }
-    return m_appearance.value(id);
+    return appearance().value(id);
 }
 
 bool ImageView::hasSessionAppearance(SessionImageId id) const
 {
-    return id != kInvalidSessionImageId && m_appearance.contains(id);
+    return id != kInvalidSessionImageId && appearance().contains(id);
 }
 
 void ImageView::setSessionAppearance(SessionImageId id, const WorkspaceItemState &state)
@@ -328,7 +328,7 @@ void ImageView::setSessionAppearance(SessionImageId id, const WorkspaceItemState
     if (id == kInvalidSessionImageId) {
         return;
     }
-    m_appearance.set(id, state);
+    appearance().set(id, state);
 }
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
@@ -356,7 +356,7 @@ WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) con
         return beforeSt;
     }
     if (sid0 != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = m_appearance.get(sid0)) {
+        if (const WorkspaceItemState *it = appearance().get(sid0)) {
             beforeSt.contentQuarterTurns =
                 ContentXform::normalizeQuarterTurns(it->contentQuarterTurns);
             beforeSt.contentHFlip = it->contentHFlip;
@@ -382,7 +382,7 @@ WorkspaceItemState ImageView::appearanceCropMapForEdit(ImageItem *item,
     Q_UNUSED(item);
     WorkspaceItemState cropMap = fallback;
     if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
+        if (const WorkspaceItemState *it = appearance().get(sid)) {
             cropMap = *it;
         }
     }
@@ -560,7 +560,7 @@ void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
     if (sid == kInvalidSessionImageId) {
         return;
     }
-    const WorkspaceItemState *st = m_appearance.get(sid);
+    const WorkspaceItemState *st = appearance().get(sid);
     if (!st || !SessionAppearance::hasContentAppearance(*st)) {
         return;
     }
@@ -714,7 +714,7 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     const ContentXform::Value wantX = ContentXform::Value::fromState(want);
     // Discard stale worker result if the store moved on for this session id.
     if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *cur = m_appearance.get(sid)) {
+        if (const WorkspaceItemState *cur = appearance().get(sid)) {
             if (!ContentXform::equal(ContentXform::Value::fromState(*cur), wantX)) {
                 return;
             }
@@ -824,7 +824,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.contentQuarterTurns = turns;
         if (sid != kInvalidSessionImageId) {
             // Preserve placement fields from previous appearance when present.
-            if (const WorkspaceItemState *prev = m_appearance.get(sid)) {
+            if (const WorkspaceItemState *prev = appearance().get(sid)) {
                 s.pos = prev->pos;
                 s.scale = prev->scale;
                 s.scaleY = prev->scaleY;
@@ -836,7 +836,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
                 s.vFlip = prev->vFlip;
                 s.sessionIndex = prev->sessionIndex;
             }
-            m_appearance.set(sid, s);
+            appearance().set(sid, s);
             persistDurableContentAppearance(item, s, "bakeRotate");
         }
         // Keep path map content fields in sync so pack afterEach cannot leave
@@ -949,7 +949,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         s.contentHFlip = h;
         s.contentVFlip = v;
         s.contentQuarterTurns = cropMap.contentQuarterTurns;
-        m_appearance.set(sid, s);
+        appearance().set(sid, s);
         persistDurableContentAppearance(item, s, "bakeFlip");
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);
@@ -1026,7 +1026,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
                 slot.cropRotation = x.cropRotation;
             }
         }
-        m_appearance.set(sid, slot);
+        appearance().set(sid, slot);
         contentSlot = slot;
         haveContentSlot = true;
     } else {
@@ -1150,7 +1150,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
             // as install (layout + applied + chrome) — do not put into ImageCache.
             WorkspaceItemState want;
             if (sessionId != kInvalidSessionImageId) {
-                if (const WorkspaceItemState *st = m_appearance.get(sessionId)) {
+                if (const WorkspaceItemState *st = appearance().get(sessionId)) {
                     want = *st;
                 }
             }
@@ -1163,7 +1163,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
                 : SessionAppearance::PixelKind::SoftPreview;
             attachDisplaySample(other, baked, want, kind);
         } else if (sessionId != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *st = m_appearance.get(sessionId)) {
+            if (const WorkspaceItemState *st = appearance().get(sessionId)) {
                 applyContentLayoutSize(other, *st);
             }
         }
@@ -1182,7 +1182,7 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
     if (sessionId == kInvalidSessionImageId) {
         return;
     }
-    const WorkspaceItemState *st = m_appearance.get(sessionId);
+    const WorkspaceItemState *st = appearance().get(sessionId);
     if (!st) {
         return;
     }
@@ -1237,8 +1237,8 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
         if (!appearance.isNull()) {
             emit sessionAppearanceChanged(sid, item->path(), appearance);
             if (item->sessionHasCrop()
-                || (m_appearance.contains(sid)
-                    && m_appearance.value(sid).hasCrop)) {
+                || (appearance().contains(sid)
+                    && appearance().value(sid).hasCrop)) {
                 emit sessionCropApplied(sid, item->path(), appearance, /*hasCrop=*/true);
             }
         }
@@ -1494,9 +1494,9 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
         return;
     }
     if (haveBound && bound.id != kInvalidSessionImageId
-        && m_appearance.get(bound.id)) {
+        && appearance().get(bound.id)) {
         // Thumbnail membership toggle: restore last Workspace pose.
-        applyState(item, *m_appearance.get(bound.id));
+        applyState(item, *appearance().get(bound.id));
         return;
     }
     QPointF pos;
@@ -1644,7 +1644,7 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     if (sessionId == kInvalidSessionImageId) {
         return;
     }
-    m_appearance.remove(sessionId);
+    appearance().remove(sessionId);
 
     // Capture view before any item is destroyed — Qt may shrink sceneRect
     // while removeItem runs, which zeroes scrollbar ranges mid-loop.
@@ -1826,7 +1826,7 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         slot.sessionId = id;
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
-        m_appearance.set(id, slot);
+        appearance().set(id, slot);
         // Drive ThumbnailBar per-id override (cropped/rotated/graded pixels).
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
@@ -1846,7 +1846,7 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
     // Prefer the session store; fall back to a live donor tile so drop-duplicate
     // from a graded filmstrip row still carries crop / bakes / colour grade.
     WorkspaceItemState dst;
-    if (const WorkspaceItemState *src = m_appearance.get(fromId)) {
+    if (const WorkspaceItemState *src = appearance().get(fromId)) {
         dst = *src;
     } else {
         ImageItem *donor = findItemBySessionId(fromId);
@@ -1869,7 +1869,7 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
     dst.rotation = 0.0;
     dst.opacity = 1.0;
     dst.z = 0.0;
-    m_appearance.set(toId, dst);
+    appearance().set(toId, dst);
 
     ImageItem *donor = findItemBySessionId(fromId);
     if (!donor && isImageMode()) {
@@ -2645,8 +2645,8 @@ void ImageView::flushColorAdjustCommit()
         item = m_items.first();
     }
     WorkspaceItemState want;
-    if (sid != kInvalidSessionImageId && m_appearance.contains(sid)) {
-        want = m_appearance.value(sid);
+    if (sid != kInvalidSessionImageId && appearance().contains(sid)) {
+        want = appearance().value(sid);
     } else if (item) {
         want = captureState(item);
         want.colorAdjust = item->colorAdjustments();
@@ -2692,14 +2692,14 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     if (sid == kInvalidSessionImageId && isImageMode()) {
         sid = m_sessionId.currentIdValue();
     }
-    WorkspaceItemState slot = (sid != kInvalidSessionImageId && m_appearance.contains(sid))
-        ? m_appearance.value(sid)
+    WorkspaceItemState slot = (sid != kInvalidSessionImageId && appearance().contains(sid))
+        ? appearance().value(sid)
         : captureState(item);
     if (sid != kInvalidSessionImageId) {
         slot.sessionId = sid;
         slot.path = item->path();
         slot.colorAdjust = adj;
-        m_appearance.set(sid, slot);
+        appearance().set(sid, slot);
     } else {
         slot.colorAdjust = adj;
     }
