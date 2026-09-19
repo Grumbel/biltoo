@@ -110,6 +110,18 @@ EnterFullRaster pickEnterFullRaster(ImageItem *item, const QString &path, bool h
 }
 
 
+
+void clearItemFreePlacementForCropDraft(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    item->setItemRotation(0.0);
+    item->setItemShear(0.0);
+    item->setItemHFlip(false);
+    item->setItemVFlip(false);
+}
+
 bool canKeepDisplayForCropEnter(const ImageItem *item, const ContentXform::Value &wantX,
                                 const WorkspaceItemState &contentOnly, bool hadPriorCrop,
                                 bool needGeomBake)
@@ -374,10 +386,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     // Full-frame already on the item (no crop bake): keep those pixels.
     // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
     if (canKeepDisplayForCropEnter(item, wantX, contentOnly, hadPriorCrop, needGeomBake)) {
-        item->setItemRotation(0.0);
-        item->setItemShear(0.0);
-        item->setItemHFlip(false);
-        item->setItemVFlip(false);
+        clearItemFreePlacementForCropDraft(item);
         item->setSessionCrop(false, QRect());
         item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
         item->setAppliedContentXform(wantX);
@@ -392,10 +401,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
         return;
     }
 
-    item->setItemRotation(0.0);
-    item->setItemShear(0.0);
-    item->setItemHFlip(false);
-    item->setItemVFlip(false);
+    clearItemFreePlacementForCropDraft(item);
     // Drop prior crop bake so SoftPreview full-frame stand-in is accepted.
     // Otherwise hasDecodedPixels() rejects soft install and the draft stays
     // on the already-cropped pixmap (second crop cannot see the original).
