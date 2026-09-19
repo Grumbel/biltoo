@@ -1672,6 +1672,7 @@ private:
     bool cropAllowExpand() const { return m_crop.isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
+    void paintCropRotateAndMoveGrips(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropFrameDecorations(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropChromeButtons(QPainter &painter);
     void paintCropSizeBadge(QPainter &painter, const QRect &cropView);

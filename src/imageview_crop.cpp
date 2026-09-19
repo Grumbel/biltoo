@@ -1452,6 +1452,17 @@ void ImageView::paintCropChromeButtons(QPainter &painter)
 }
 
 
+
+void ImageView::paintCropRotateAndMoveGrips(QPainter &painter, const QPolygonF &cropViewPoly)
+{
+    const bool rotateHot = (m_crop.currentHoverHandle() == CropHandle::Rotate
+                            || m_crop.currentActiveHandle() == CropHandle::Rotate);
+    CropGeometry::paintRotateKnobs(painter, cropViewPoly, rotateHot);
+    const bool moveHot = (m_crop.currentHoverHandle() == CropHandle::Move
+                          || m_crop.currentActiveHandle() == CropHandle::Move);
+    CropGeometry::paintMoveGrip(painter, cropViewPoly, moveHot);
+}
+
 void ImageView::paintCropFrameDecorations(QPainter &painter, const QPolygonF &cropViewPoly)
 {
     if (viewport()) {
@@ -1460,16 +1471,7 @@ void ImageView::paintCropFrameDecorations(QPainter &painter, const QPolygonF &cr
     CropGeometry::paintFrame(painter, cropViewPoly);
     CropGeometry::paintResizeHandles(painter, cropViewPoly,
         [this](CropHandle h) { return m_crop.isHandleHot(h); });
-    {
-        const bool hot = (m_crop.currentHoverHandle() == CropHandle::Rotate
-                          || m_crop.currentActiveHandle() == CropHandle::Rotate);
-        CropGeometry::paintRotateKnobs(painter, cropViewPoly, hot);
-    }
-    {
-        const bool hot = (m_crop.currentHoverHandle() == CropHandle::Move
-                          || m_crop.currentActiveHandle() == CropHandle::Move);
-        CropGeometry::paintMoveGrip(painter, cropViewPoly, hot);
-    }
+    paintCropRotateAndMoveGrips(painter, cropViewPoly);
 }
 
 void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
