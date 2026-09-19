@@ -254,9 +254,25 @@ struct SlideshowDwellState {
     bool motionActive = false;
     bool motionPaused = false;
 
-    void setMotionActive(bool on) { motionActive = on; }
+    /** @return true when motion-active flag changed. */
+    bool setMotionActive(bool on)
+    {
+        if (motionActive == on) {
+            return false;
+        }
+        motionActive = on;
+        return true;
+    }
 
-    void setMotionPaused(bool on) { motionPaused = on; }
+    /** @return true when motion-paused flag changed. */
+    bool setMotionPaused(bool on)
+    {
+        if (motionPaused == on) {
+            return false;
+        }
+        motionPaused = on;
+        return true;
+    }
 
     QPointF biasA{-1.0, -1.0};
     QPointF biasB{1.0, 1.0};

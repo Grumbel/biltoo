@@ -1010,13 +1010,13 @@ void ImageView::setSlideshowMotionPaused(bool paused)
                 m_ssDwell.motionT = m_ss.fromMotionT;
             }
         }
-        m_ssDwell.motionPaused = true;
+        m_ssDwell.setMotionPaused(true);
         if (viewport()) {
             viewport()->update();
         }
         return;
     }
-    m_ssDwell.motionPaused = false;
+    m_ssDwell.setMotionPaused(false);
     if (m_ss.fromMotionClockRunning) {
         m_ss.fromMotionClock.start();
     }
@@ -1975,7 +1975,7 @@ void ImageView::armSlideshowMotionClock(int pathMs)
         return;
     }
     ensureSlideshowMotionTimer();
-    m_ssDwell.motionActive = true;
+    m_ssDwell.setMotionActive(true);
     m_ssDwell.durationMs = pathMs;
     // While paused, arm motion state but do not run the timer.
     if (!m_ssDwell.motionPaused) {
@@ -2897,7 +2897,7 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     // Biases + slideshow zoom are read by renderMotionCoverPixmap.
 
     ensureSlideshowMotionTimer();
-    m_ssDwell.motionActive = true;
+    m_ssDwell.setMotionActive(true);
     // Path lasts longer than the dwell interval so that when the slideshow
     // advances (and crossfade runs), from-progress is still < 1 and keeps
     // lerping. Previously duration==interval → progress clamped at 1 for the
