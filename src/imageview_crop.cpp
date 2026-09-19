@@ -577,14 +577,22 @@ void ImageView::activateCropModeAfterInstall(ImageItem *item)
 }
 
 
+
+QRectF ImageView::captureItemContentSceneRect(ImageItem *item) const
+{
+    if (!item) {
+        return {};
+    }
+    // Workspace: lock scene footprint before intrinsic changes on install.
+    return item->mapRectToScene(item->contentRect());
+}
+
 void ImageView::installAndActivateCropEnter(ImageItem *item, const QImage &full,
                                             const WorkspaceItemState *app, bool haveApp,
                                             bool unorientedSource)
 {
-    // Workspace: lock scene footprint before intrinsic changes on install.
-    const QRectF beforeScene = item->mapRectToScene(item->contentRect());
+    const QRectF beforeScene = captureItemContentSceneRect(item);
     installFullImageForCrop(item, full, app, haveApp, unorientedSource);
-    // Workspace: keep centre so the draft does not jump (scale is placement-only).
     preserveWorkspaceItemCenter(item, beforeScene.center(),
                                 beforeScene.width(), beforeScene.height());
     m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),

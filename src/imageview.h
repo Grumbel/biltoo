@@ -1773,6 +1773,7 @@ private:
      * so the region can grow. Returns false if the image cannot be prepared.
      */
     void activateCropModeAfterInstall(ImageItem *item);
+    QRectF captureItemContentSceneRect(ImageItem *item) const;
     void installAndActivateCropEnter(ImageItem *item, const QImage &full,
                                      const WorkspaceItemState *app, bool haveApp,
                                      bool unorientedSource);
