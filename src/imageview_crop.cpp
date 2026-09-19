@@ -66,21 +66,25 @@ QImage pickCropApplyHost(ImageItem *item, const QString &path, bool *fromCache)
 }
 
 
+ImageItem *ImageView::cropSessionBoundItem() const
+{
+    // Bound subject for the active crop session (IDENTITY.md).
+    if (m_crop.target()) {
+        return m_crop.target();
+    }
+    if (m_crop.hasTargetId()) {
+        return findItemBySessionId(m_crop.targetIdValue());
+    }
+    return nullptr;
+}
+
 ImageItem *ImageView::cropTargetItem() const
 {
     // Crop session is bound to one subject for its entire lifetime. Never
     // re-resolve via selection or primaryItem() — that applied the draft to
     // unrelated tiles when selection changed mid-crop (IDENTITY.md).
     if (m_crop.active()) {
-        if (m_crop.target()) {
-            return m_crop.target();
-        }
-        if (m_crop.hasTargetId()) {
-            if (ImageItem *byId = findItemBySessionId(m_crop.targetIdValue())) {
-                return byId;
-            }
-        }
-        return nullptr;
+        return cropSessionBoundItem();
     }
     if (ImageItem *t = targetItem()) {
         // Soft ladder tiles have preview/source with m_previewPixels; pixmap is
@@ -1247,8 +1251,8 @@ void ImageView::clearCropModeState()
 {
     // Unsuppress LOD before binding is cleared.
     m_crop.releaseTargetTileLod();
-    if (!m_crop.target() && m_crop.hasTargetId()) {
-        if (ImageItem *byId = findItemBySessionId(m_crop.targetIdValue())) {
+    if (!m_crop.target()) {
+        if (ImageItem *byId = cropSessionBoundItem()) {
             byId->setTileLodSuppressed(false);
         }
     }

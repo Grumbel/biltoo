@@ -1615,6 +1615,7 @@ private:
 
     // CropHandle is defined in cropsession.h
     ImageItem *cropTargetItem() const;
+    ImageItem *cropSessionBoundItem() const;
     void ensureCropRectValid();
     QRectF cropRectItemLocal() const { return m_crop.currentRect(); }
     qreal cropRotation() const { return m_crop.currentRotation(); }
