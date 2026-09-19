@@ -158,6 +158,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ItemInteractSession::dropIfItem**; move release via endMove.
 - **GroupTransformSession::nullDragItemAt**; destroy via endDrag.
 - **AttentionSession::clearDraft** on session-id change; **ViewportChrome::clearMouseInfo**.
+- **SlideshowProgressHud** seek/progress/timeline transitions; **SlideshowDwellState**
+  applyBias / clearAtlasPixmap / setAtlas / setSourceImage / duration helpers;
+  **SlideshowZoomBlurState** clearUnderlays / setViewportSize.
 
 
 ## Current pain (evidence)

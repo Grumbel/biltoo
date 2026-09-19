@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1452-slideshow-bag-progress-dwell-zoomblur.** Slideshow HUD/dwell transitions.
+Prior: **1451**. Commits 1452a–1452c (+ docs).
+
+### Commits
+1. **SlideshowDwellState** / **SlideshowProgressHud** / **SlideshowZoomBlurState** helpers
+2. Seek HUD press/move/release + leave + resize via bag transitions
+3. Progress active/pause/timeline; bias apply/clear; atlas set/clear; zoom-blur viewport
+
+### Note
+Continues bag-transition series. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1452-slideshow-bag-progress-dwell-zoomblur.bundle HEAD
+```
+Requires tip **1451**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1451-bag-transition-text-crop-interact-group.** Residual bag field writes.
 Prior: **1450**. Commits 1451a–1451e (+ docs).
 
