@@ -54,7 +54,8 @@ void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPer
         // Threshold: ≥4 Succeeded tiles (~overview coverage at low dpc).
         {
             auto& reg = tilelod::TileLodRegistry::instance();
-            if (reg.path_succeeded_count(path) >= kPrefetchWarmSucceededMin) {
+            if (reg.path_succeeded_count(path)
+                >= tilelod::TileLodRegistry::kWarmSucceededMin) {
                 reg.touch(path);
                 continue;
             }
@@ -100,6 +101,10 @@ void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPer
         slot.ticksLeft = kPrefetchMaxTicks;
         slot.budgetPerTick = budgetPerPath;
         (void)slot.controller->tick(slot.budgetPerTick);
+        // Bound concurrent off-canvas controllers (global RAM still retains).
+        while (static_cast<int>(m_slots.size()) >= kPrefetchMaxSlots) {
+            m_slots.erase(m_slots.begin());
+        }
         m_slots.push_back(std::move(slot));
     }
 
