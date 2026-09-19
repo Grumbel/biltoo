@@ -18,21 +18,6 @@ QPointF localFromNorm(const QPointF &norm, const QRectF &contentRect)
                    contentRect.top() + norm.y() * contentRect.height());
 }
 
-QPointF clampNorm(const QPointF &norm)
-{
-    return QPointF(ViewTransform::clamp01(norm.x()), ViewTransform::clamp01(norm.y()));
-}
-
-QVector<QPointF> clampNormPoints(const QVector<QPointF> &pts)
-{
-    QVector<QPointF> out;
-    out.reserve(pts.size());
-    for (const QPointF &p : pts) {
-        out.append(clampNorm(p));
-    }
-    return out;
-}
-
 QPointF normFromLocal(const QPointF &local, const QRectF &contentRect)
 {
     if (contentRect.isEmpty()) {

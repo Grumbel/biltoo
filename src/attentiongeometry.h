@@ -29,10 +29,21 @@ QPointF localFromNorm(const QPointF &norm, const QRectF &contentRect);
 QPointF normFromLocal(const QPointF &local, const QRectF &contentRect);
 
 /** Clamp a single normalized point into [0, 1]². */
-QPointF clampNorm(const QPointF &norm);
+inline QPointF clampNorm(const QPointF &norm)
+{
+    return QPointF(qBound(0.0, norm.x(), 1.0), qBound(0.0, norm.y(), 1.0));
+}
 
 /** Clamp every point in @p pts into [0, 1]². */
-QVector<QPointF> clampNormPoints(const QVector<QPointF> &pts);
+inline QVector<QPointF> clampNormPoints(const QVector<QPointF> &pts)
+{
+    QVector<QPointF> out;
+    out.reserve(pts.size());
+    for (const QPointF &p : pts) {
+        out.append(clampNorm(p));
+    }
+    return out;
+}
 
 /**
  * Convert a content-local delta into normalized delta (divide by content size).
