@@ -68,7 +68,19 @@ std::size_t TileLodRegistry::total_approx_bytes_locked() const
 
 void TileLodRegistry::trim_idle_locked()
 {
-  if (total_approx_bytes_locked() <= m_global_budget) {
+  auto idle_count = [this]() {
+    std::size_t n = 0;
+    for (auto const& [key, shared] : m_by_path) {
+      (void)key;
+      if (shared && shared->refcount == 0) {
+        ++n;
+      }
+    }
+    return n;
+  };
+  const bool over_bytes = total_approx_bytes_locked() > m_global_budget;
+  const bool over_count = idle_count() > m_max_idle_paths;
+  if (!over_bytes && !over_count) {
     return;
   }
   // Candidates: zero-ref paths, oldest last_used first.
@@ -84,7 +96,10 @@ void TileLodRegistry::trim_idle_locked()
             [](auto const& a, auto const& b) { return a.first < b.first; });
   for (auto const& [lu, key] : idle) {
     (void)lu;
-    if (total_approx_bytes_locked() <= m_global_budget) {
+    const bool still_over_bytes =
+        total_approx_bytes_locked() > m_global_budget;
+    const bool still_over_count = idle_count() > m_max_idle_paths;
+    if (!still_over_bytes && !still_over_count) {
       break;
     }
     // Dropping the entry destroys ThumtooTileSource (epoch bump) and the

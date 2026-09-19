@@ -114,21 +114,31 @@ public:
   void set_global_budget_bytes(std::size_t bytes);
   std::size_t global_budget_bytes() const;
 
+  /**
+   * Cap on zero-ref path entries retained for LRU (in addition to the byte
+   * budget). Long Image ←/→ sessions otherwise accumulate many small overview
+   * caches under the byte cap. Default 64.
+   */
+  void set_max_idle_paths(std::size_t n);
+  std::size_t max_idle_paths() const;
+
   static constexpr std::size_t kDefaultGlobalBudgetBytes =
       384ull * 1024ull * 1024ull;
+  static constexpr std::size_t kDefaultMaxIdlePaths = 64;
 
 private:
   TileLodRegistry() = default;
 
   void touch_locked(SharedPathTiles& entry);
   std::size_t total_approx_bytes_locked() const;
-  /** Drop zero-ref paths (oldest last_used first) until under budget. */
+  /** Drop zero-ref paths (oldest last_used first) until under byte + count caps. */
   void trim_idle_locked();
 
   mutable std::mutex m_mu;
   std::unordered_map<std::string, std::shared_ptr<SharedPathTiles>> m_by_path;
   std::uint64_t m_clock = 0;
   std::size_t m_global_budget = kDefaultGlobalBudgetBytes;
+  std::size_t m_max_idle_paths = kDefaultMaxIdlePaths;
 };
 
 }  // namespace tilelod
