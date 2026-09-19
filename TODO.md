@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1411-tile-ram-o1-warm-prefetch-debug.** O(1) succeeded count; warm prefetch; LRU touch; debug.
+Prior: **1405**. Commits 1406–1411.
+
+### Commits
+1. **1406** O(1) `TileMemoryCache::succeeded_count` (counter)
+2. **1407** `path_succeeded_count` / `idle_path_count` on registry
+3. **1408** Prefetch skip only when ≥4 retained Succeeded tiles
+4. **1409** `ImageItem::setPath` touches registry LRU
+5. **1410** `has_any_succeeded_tile` → `has_succeeded`; tile-coord registry stats
+6. **1411** Tests for counter integrity (overwrite / fail / trim)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1411-tile-ram-o1-warm-prefetch-debug.bundle HEAD
+```
+Requires tip **1405**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1405-tile-ram-query-prefetch-replan.** Global tile RAM: queries, prefetch skip, replan.
 Prior: **1400** (path identity). Commits 1401–1405.
 

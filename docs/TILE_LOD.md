@@ -361,6 +361,11 @@ retained path cache without acquire. Neighbor prefetch skips warm paths (LRU tou
 only). `hasRetainedTiles` + prepare lastDpc reset make A→B→A paint retained cells on
 the first frame after rebind.
 
+**biltoo-1406–1411:** O(1) succeeded tile counter; `path_succeeded_count` /
+`idle_path_count`; neighbor prefetch skips only overview-warm paths (≥4 tiles);
+`setPath` touches registry LRU; `BILTOO_TILE_DEBUG` logs registry pressure.
+
+
 
 
 ### Session / archive replace (biltoo-1233 / 1234)
