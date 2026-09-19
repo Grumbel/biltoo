@@ -52,6 +52,26 @@ public:
         draftSessionId = kInvalidSessionImageId;
     }
 
+    void setDraft(const QVector<QPointF> &pts, SessionImageId sid)
+    {
+        draftPts = pts;
+        draftValid = true;
+        draftSessionId = sid;
+    }
+
+    void enterMode()
+    {
+        mode = true;
+        clearInteraction();
+    }
+
+    void leaveMode()
+    {
+        mode = false;
+        clearInteraction();
+        // Draft may be kept for re-entry; callers clear explicitly if needed.
+    }
+
     void clear()
     {
         mode = false;

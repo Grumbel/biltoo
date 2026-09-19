@@ -71,9 +71,7 @@ void ImageView::setAttentionPointsForTarget(const QVector<QPointF> &pts)
     if (item && sid != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
         item->setSessionId(sid);
     }
-    m_attention.draftPts = clamped;
-    m_attention.draftValid = true;
-    m_attention.draftSessionId = sid;
+    m_attention.setDraft(clamped, sid);
 
     QVector<int> kept;
     for (int i : m_attention.selected) {
@@ -113,11 +111,11 @@ void ImageView::ensureAttentionPoint()
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_appearance.get(sid)) {
             if (!st->attentionPoints.isEmpty() || st->hasAttention) {
-                m_attention.draftPts = !st->attentionPoints.isEmpty()
-                    ? st->attentionPoints
-                    : QVector<QPointF>{st->attentionNorm};
-                m_attention.draftValid = true;
-                m_attention.draftSessionId = sid;
+                m_attention.setDraft(
+                    !st->attentionPoints.isEmpty()
+                        ? st->attentionPoints
+                        : QVector<QPointF>{st->attentionNorm},
+                    sid);
                 return;
             }
         }
@@ -215,8 +213,7 @@ void ImageView::setAttentionMode(bool on)
         if (isCropMode()) {
             cancelCrop();
         }
-        m_attention.mode = true;
-        m_attention.clearInteraction();
+        m_attention.enterMode();
         if (m_hoverEdge != EdgeZone::None) {
             m_hoverEdge = EdgeZone::None;
         }
@@ -225,8 +222,7 @@ void ImageView::setAttentionMode(bool on)
             viewport()->setCursor(Qt::CrossCursor);
         }
     } else {
-        m_attention.mode = false;
-        m_attention.clearInteraction();
+        m_attention.leaveMode();
         if (viewport()) {
             viewport()->unsetCursor();
         }
