@@ -1675,11 +1675,13 @@ private:
     void beginCropRubberBand(const QPoint &viewPos);
     void updateCropRubberBand(const QPoint &viewPos);
     void endCropRubberBand();
+    bool finalizeCropLeaveItem(ImageItem *item, bool apply);
     void leaveCropModeInternal(bool apply);
     /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
     void scheduleCropFullRasterFromPool(const QString &path);
     void requestCropFullRaster(const QString &path);
     /** Upgrade crop source when native full arrives for m_crop.awaitingFullPath. */
+    void acceptCropFullRasterReady(const QString &path, const QImage &image);
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
     void attachCropApplyDisplay(ImageItem *item, const QImage &display,

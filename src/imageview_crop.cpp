@@ -586,6 +586,16 @@ void ImageView::requestCropFullRaster(const QString &path)
     scheduleCropFullRasterFromPool(path);
 }
 
+
+void ImageView::acceptCropFullRasterReady(const QString &path, const QImage &image)
+{
+    if (!path.isEmpty() && !image.isNull()) {
+        ImageCache::put(path, image);
+    }
+    m_crop.clearAwaitingFull();
+    flashHud(tr("Crop"), tr("Full image ready"));
+}
+
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
 {
     ImageItem *item = m_crop.target();
@@ -599,16 +609,8 @@ void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &im
     if (!m_crop.shouldAcceptFullRasterUpgrade(path, image, item, covers)) {
         return;
     }
-
-    // Cache the native raster for Apply accuracy, but do not reinstall onto the
-    // live crop item. Swapping multi-MP pixels mid-draft made crop feel like it
-    // "loads full first" and stalled interaction; draft stays on the sample
-    // that was present at enter. applyCropCommit prefers cache when ready.
-    if (!path.isEmpty()) {
-        ImageCache::put(path, image);
-    }
-    m_crop.clearAwaitingFull();
-    flashHud(tr("Crop"), tr("Full image ready"));
+    // Cache for Apply accuracy; do not reinstall mid-draft (stalls interaction).
+    acceptCropFullRasterReady(path, image);
 }
 
 void ImageView::restoreSessionCropAppearance(ImageItem *item)
@@ -1195,21 +1197,30 @@ void ImageView::clearCropModeState()
     flushPendingFullRematerialize(pendingFull, pendingPath, pendingSid, pendingWant);
 }
 
+
+bool ImageView::finalizeCropLeaveItem(ImageItem *item, bool apply)
+{
+    if (!item) {
+        return false;
+    }
+    if (apply) {
+        return applyCropCommit(item);
+    }
+    if (m_crop.isShowingFullImage()) {
+        cancelCropShowingFullImage(item);
+    }
+    return false;
+}
+
 void ImageView::leaveCropModeInternal(bool apply)
 {
     if (!m_crop.active()) {
         return;
     }
     ImageItem *item = cropTargetItem();
-    // When a Workspace crop is committed, placement rotation follows the crop
-    // frame angle (straightened pixels + matching pose). Cancel / full-frame
-    // restore the pre-crop placement instead.
-    bool preserveCropFrameRotation = false;
-    if (apply && item) {
-        preserveCropFrameRotation = applyCropCommit(item);
-    } else if (item && m_crop.isShowingFullImage()) {
-        cancelCropShowingFullImage(item);
-    }
+    // Workspace commit keeps crop-frame placement rotation; cancel/full-frame
+    // restore the pre-crop pose via finishLeave.
+    const bool preserveCropFrameRotation = finalizeCropLeaveItem(item, apply);
     m_crop.finishLeave(item, preserveCropFrameRotation);
     clearCropModeState();
 }
