@@ -1348,75 +1348,6 @@ QRect ImageView::cropCloseButtonView() const
 
 
 
-void ImageView::paintCropDimOutside(QPainter &painter, const QPolygonF &cropViewPoly)
-{
-    if (!viewport()) {
-        return;
-    }
-    CropGeometry::paintDimOutside(painter, viewport()->rect(), cropViewPoly);
-}
-
-void ImageView::paintCropFrame(QPainter &painter, const QPolygonF &cropViewPoly)
-{
-    CropGeometry::paintFrame(painter, cropViewPoly);
-}
-
-void ImageView::paintCropResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly)
-{
-    CropGeometry::paintResizeHandles(painter, cropViewPoly,
-        [this](CropHandle h) { return m_crop.isHandleHot(h); });
-}
-
-void ImageView::paintCropRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly)
-{
-    const bool hot = (m_crop.currentHoverHandle() == CropHandle::Rotate
-                      || m_crop.currentActiveHandle() == CropHandle::Rotate);
-    CropGeometry::paintRotateKnobs(painter, cropViewPoly, hot);
-}
-
-void ImageView::paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly)
-{
-    const bool hot = (m_crop.currentHoverHandle() == CropHandle::Move
-                      || m_crop.currentActiveHandle() == CropHandle::Move);
-    CropGeometry::paintMoveGrip(painter, cropViewPoly, hot);
-}
-
-void ImageView::drawCropTextButton(QPainter &painter, const QRect &btn, CropHandle kind,
-                                   const QString &label, CropGeometry::CropBtnRole role, bool toggled)
-{
-    CropGeometry::paintTextButton(painter, btn, m_crop.currentHoverHandle() == kind, label,
-                                  role, toggled);
-}
-
-void ImageView::paintCropActionButtons(QPainter &painter)
-{
-    // Controls: outside below crop when possible, inside if off-screen.
-    // Same design language as Workspace chrome (HANDLES.md):
-    //   toggle  = rounded square / stronger on-state
-    //   action  = dark + accent ring
-    //   neutral = grey (Cancel)
-    //   commit  = filled accent (Apply)
-    // Local QPoint names must not hide QObject::tr — use ImageView::tr.
-    drawCropTextButton(painter, cropExpandButtonView(), CropHandle::ExpandToggle,
-                       ImageView::tr("Expand"), CropGeometry::CropBtnRole::Toggle, m_crop.isAllowExpand());
-    drawCropTextButton(painter, cropAutoButtonView(), CropHandle::Auto, ImageView::tr("Auto"),
-                       CropGeometry::CropBtnRole::Action);
-    drawCropTextButton(painter, cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"),
-                       CropGeometry::CropBtnRole::Action);
-    drawCropTextButton(painter, cropCancelButtonView(), CropHandle::Cancel, ImageView::tr("Cancel"),
-                       CropGeometry::CropBtnRole::Neutral);
-    drawCropTextButton(painter, cropCloseButtonView(), CropHandle::Close, ImageView::tr("Apply"),
-                       CropGeometry::CropBtnRole::Commit);
-}
-
-
-
-void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
-{
-    const QSize cropSz = m_crop.draftPixelSize();
-    CropGeometry::paintSizeBadge(painter, cropView, cropSz.width(), cropSz.height());
-}
-
 void ImageView::paintCropOverlay(QPainter &painter)
 {
     if (!m_crop.active()) {
@@ -1433,13 +1364,51 @@ void ImageView::paintCropOverlay(QPainter &painter)
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    paintCropDimOutside(painter, cropViewPoly);
-    paintCropFrame(painter, cropViewPoly);
-    paintCropResizeHandles(painter, cropViewPoly);
-    paintCropRotateKnobs(painter, cropViewPoly);
-    paintCropMoveGrip(painter, cropViewPoly);
-    paintCropActionButtons(painter);
-    paintCropSizeBadge(painter, cropView);
+    if (viewport()) {
+        CropGeometry::paintDimOutside(painter, viewport()->rect(), cropViewPoly);
+    }
+    CropGeometry::paintFrame(painter, cropViewPoly);
+    CropGeometry::paintResizeHandles(painter, cropViewPoly,
+        [this](CropHandle h) { return m_crop.isHandleHot(h); });
+    {
+        const bool hot = (m_crop.currentHoverHandle() == CropHandle::Rotate
+                          || m_crop.currentActiveHandle() == CropHandle::Rotate);
+        CropGeometry::paintRotateKnobs(painter, cropViewPoly, hot);
+    }
+    {
+        const bool hot = (m_crop.currentHoverHandle() == CropHandle::Move
+                          || m_crop.currentActiveHandle() == CropHandle::Move);
+        CropGeometry::paintMoveGrip(painter, cropViewPoly, hot);
+    }
+
+    // Controls: outside below crop when possible, inside if off-screen.
+    // Same design language as Workspace chrome (HANDLES.md):
+    //   toggle  = rounded square / stronger on-state
+    //   action  = dark + accent ring
+    //   neutral = grey (Cancel)
+    //   commit  = filled accent (Apply)
+    // Local QPoint names must not hide QObject::tr — use ImageView::tr.
+    const auto paintBtn = [this, &painter](const QRect &btn, CropHandle kind,
+                                           const QString &label,
+                                           CropGeometry::CropBtnRole role, bool toggled = false) {
+        CropGeometry::paintTextButton(painter, btn, m_crop.currentHoverHandle() == kind, label,
+                                      role, toggled);
+    };
+    paintBtn(cropExpandButtonView(), CropHandle::ExpandToggle,
+             ImageView::tr("Expand"), CropGeometry::CropBtnRole::Toggle, m_crop.isAllowExpand());
+    paintBtn(cropAutoButtonView(), CropHandle::Auto, ImageView::tr("Auto"),
+             CropGeometry::CropBtnRole::Action);
+    paintBtn(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"),
+             CropGeometry::CropBtnRole::Action);
+    paintBtn(cropCancelButtonView(), CropHandle::Cancel, ImageView::tr("Cancel"),
+             CropGeometry::CropBtnRole::Neutral);
+    paintBtn(cropCloseButtonView(), CropHandle::Close, ImageView::tr("Apply"),
+             CropGeometry::CropBtnRole::Commit);
+
+    {
+        const QSize cropSz = m_crop.draftPixelSize();
+        CropGeometry::paintSizeBadge(painter, cropView, cropSz.width(), cropSz.height());
+    }
 
     painter.restore();
 }
