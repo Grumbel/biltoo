@@ -98,9 +98,9 @@ void ImageView::setBackgroundColor(const QColor &color)
 
 QColor ImageView::slideshowPadColor() const
 {
-    if (m_ssSettings.letterboxFill == SlideshowLetterboxFill::Solid
-        && m_ssSettings.padColor.isValid()) {
-        return m_ssSettings.padColor;
+    if (m_ssSettings.isSolidLetterbox()
+        && m_ssSettings.padColorRef().isValid()) {
+        return m_ssSettings.padColorRef();
     }
     if (m_canvasBg.primaryColor().isValid()) {
         return m_canvasBg.primaryColor();
@@ -109,7 +109,7 @@ QColor ImageView::slideshowPadColor() const
     if (b.style() != Qt::NoBrush && b.color().isValid()) {
         return b.color();
     }
-    return m_ssSettings.padColor.isValid() ? m_ssSettings.padColor : QColor(42, 42, 42);
+    return m_ssSettings.padColorRef().isValid() ? m_ssSettings.padColorRef() : QColor(42, 42, 42);
 }
 
 void ImageView::setSlideshowPadColor(const QColor &color)

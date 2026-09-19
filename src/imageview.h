@@ -197,7 +197,7 @@ public:
     void clearCentreProgress();
     bool hasCentreProgress() const { return m_centreProgress.active(); }
     bool gallerySizeResolveActive() const { return m_gallerySizeResolve.active(); }
-    /** Controller host: set m_viewMode + m_layout.mode and refresh viewport. */
+    /** Controller host: set m_viewMode + m_layout.currentMode() and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
     /** Controller host: classic path owned by ImageController. */
     QString classicPath() const { return m_image.classicPath(); }
@@ -511,7 +511,7 @@ public:
     void fitPageGuideToContent(qreal marginPx = 16.0);
     /** Scene rectangle of the page guide (printer: centred; fit-content: content AABB). */
     QRectF pageGuideSceneRect() const;
-    bool pageGuideSelected() const { return m_pageGuide.selected; }
+    bool pageGuideSelected() const { return m_pageGuide.isSelected(); }
     void setPageGuideSelected(bool on);
     /** Scene pixels per millimetre for the page guide (layout scale). */
     static qreal pageGuidePxPerMm();
@@ -754,7 +754,7 @@ public:
      * Returns number of matching regions on the current page.
      */
     int setTextSearchQuery(const QString &query);
-    QString textSearchQuery() const { return m_textLayer.searchQuery; }
+    QString textSearchQuery() const { return m_textLayer.searchQueryRef(); }
     int textSearchMatchCount() const { return m_textLayer.matchCount(); }
     bool hasTextLayer() const;
     int textLayerRegionCount() const;
@@ -772,7 +772,7 @@ public:
     bool copySelectedText();
     void clearTextSelection();
     /** Non-empty while the pointer is over a link region. */
-    QString linkHoverTip() const { return m_textLayer.linkHoverTip; }
+    QString linkHoverTip() const { return m_textLayer.linkHoverTipRef(); }
 
     bool imageModeLeftDragPan() const { return m_chrome.isImageModeLeftDragPan(); }
 
@@ -796,7 +796,7 @@ public:
      * preference colours/pattern (technical default) instead of a custom look.
      */
     void setWorkspaceBackground(const WorkspaceBackground &bg);
-    WorkspaceBackground workspaceBackground() const { return m_canvasBg.workspace; }
+    WorkspaceBackground workspaceBackground() const { return m_canvasBg.workspaceRef(); }
     void clearWorkspaceBackground(); /**< AppDefault */
     /**
      * Temporary view of the Preferences / technical background without changing
@@ -804,7 +804,7 @@ public:
      * toolbar toggle.
      */
     void setWorkspaceBackgroundShowDefault(bool on);
-    bool workspaceBackgroundShowDefault() const { return m_canvasBg.workspaceShowDefault; }
+    bool workspaceBackgroundShowDefault() const { return m_canvasBg.workspaceRef()ShowDefault; }
 
     /**
      * Session position for status line and HUD (index/total, 1-based display).
@@ -814,15 +814,15 @@ public:
      */
     void setSessionPosition(int index, int total, bool pulseIdentity = true);
     void setCurrentSessionId(SessionImageId id);
-    SessionImageId currentSessionId() const { return m_sessionId.currentId; }
+    SessionImageId currentSessionId() const { return m_sessionId.currentIdValue(); }
     /** Select canvas item for @p path; ensure visible in Gallery. */
     void focusSessionPath(const QString &path);
-    int sessionIndex() const { return m_sessionId.index; }
-    int sessionTotal() const { return m_sessionId.total; }
+    int sessionIndex() const { return m_sessionId.currentIndex(); }
+    int sessionTotal() const { return m_sessionId.currentTotal(); }
 
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
-    bool hudVisible() const { return m_hudPrefs.visible; }
+    bool hudVisible() const { return m_hudPrefs.isVisible(); }
     /** Corner marks for crop / orient / grade (default on). */
     void setContentEditMarksVisible(bool on);
     /** Seed orient/flip/grade from path XDG for each session id (open/restart). */
@@ -830,11 +830,11 @@ public:
                                          const QVector<SessionImageId> &ids);
     bool contentEditMarksVisible() const;
     void setHudFontPointSize(int pt);
-    int hudFontPointSize() const { return m_hudPrefs.fontPointSize; }
+    int hudFontPointSize() const { return m_hudPrefs.fontPointSizeValue(); }
     void setHudTextColor(const QColor &color);
-    QColor hudTextColor() const { return m_hudPrefs.textColor; }
+    QColor hudTextColor() const { return m_hudPrefs.textColorRef(); }
     void setHudPanelColor(const QColor &color);
-    QColor hudPanelColor() const { return m_hudPrefs.panelColor; }
+    QColor hudPanelColor() const { return m_hudPrefs.panelColorRef(); }
 
     /**
      * Brief top-left HUD action (slideshow, fit mode, …).
@@ -859,9 +859,9 @@ public:
     void setSlideshowCycleProgress(qreal phase01);
 
     void setSlideshowTransition(SlideshowTransition kind);
-    SlideshowTransition slideshowTransition() const { return m_ssSettings.transition; }
+    SlideshowTransition slideshowTransition() const { return m_ssSettings.currentTransition(); }
     void setSlideshowTransitionDurationMs(int ms);
-    int slideshowTransitionDurationMs() const { return m_ssSettings.transitionDuration(); }
+    int slideshowTransitionDurationMs() const { return m_ssSettings.currentTransition()Duration(); }
     /** Clear residual transition overlay state (safe during pure-phase show). */
     void cancelSlideshowTransition();
 
@@ -874,7 +874,7 @@ public:
     SlideshowZoom slideshowZoom() const { return m_ssSettings.currentZoom(); }
 
     void setSlideshowLetterboxFill(SlideshowLetterboxFill mode);
-    SlideshowLetterboxFill slideshowLetterboxFill() const { return m_ssSettings.letterboxFill; }
+    SlideshowLetterboxFill slideshowLetterboxFill() const { return m_ssSettings.currentLetterboxFill(); }
     /** Pad colour when letterbox fill is Solid (also fallback for ZoomBlur miss). */
     void setSlideshowPadColor(const QColor &color);
     void cancelSlideshowMotion();
@@ -940,7 +940,7 @@ public:
     SessionImageId sessionIdForPath(const QString &path) const;
     /**
      * Apply path-keyed content appearance (flip / quarter-turns / grade) to
-     * unbaked disk pixels for slideshow paint. Never use m_sessionId.currentId —
+     * unbaked disk pixels for slideshow paint. Never use m_sessionId.currentIdValue() —
      * that is the *dwell* image during a live transition to another path.
      */
     QImage orientSlideshowImage(const QImage &raw, const QString &path) const;
@@ -992,7 +992,7 @@ public:
 
 
     void setLayoutMode(LayoutMode mode);
-    LayoutMode layoutMode() const { return m_layout.mode; }
+    LayoutMode layoutMode() const { return m_layout.currentMode(); }
     GalleryLayout::Mode galleryLayoutModeFromViewMode() const;
     void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);
     /**
@@ -1030,14 +1030,14 @@ public:
 
     /** Number of columns for LayoutMode::Masonry (images scale to fit column width). */
     void setMasonryColumns(int columns);
-    int masonryColumns() const { return m_layout.masonryColumns; }
+    int masonryColumns() const { return m_layout.masonryColumnsValue(); }
     /** Grid / GridCrop columns; 0 = automatic. */
     void setGridColumns(int columns);
-    int gridColumns() const { return m_layout.gridColumns; }
+    int gridColumns() const { return m_layout.gridColumnsValue(); }
 
     /** Number of rows for LayoutMode::MasonryRows (images scale to fit row height). */
     void setMasonryRows(int rows);
-    int masonryRows() const { return m_layout.masonryRows; }
+    int masonryRows() const { return m_layout.masonryRowsValue(); }
 
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
@@ -1148,7 +1148,7 @@ public:
     /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */
     QString sessionBadgeText() const;
     /** Path of the last failed Image-mode decode (empty if none). */
-    QString lastLoadError() const { return m_sessionId.lastLoadError; }
+    QString lastLoadError() const { return m_sessionId.lastLoadErrorRef(); }
     /** Basename of the current/target image for the bottom HUD. */
     QString hudFileName() const;
     ImageMouseInfo mouseInfo() const { return m_chrome.currentMouseInfo(); }
@@ -1616,8 +1616,8 @@ private:
     // CropHandle is defined in cropsession.h
     ImageItem *cropTargetItem() const;
     void ensureCropRectValid();
-    QRectF cropRectItemLocal() const { return m_crop.rect; }
-    qreal cropRotation() const { return m_crop.rotation; }
+    QRectF cropRectItemLocal() const { return m_crop.currentRect(); }
+    qreal cropRotation() const { return m_crop.currentRotation(); }
     /** Crop corners in item-local space (rotation about rect centre). */
     QPolygonF cropPolygonItemLocal() const;
     QRectF cropRectView() const;
@@ -1627,7 +1627,7 @@ private:
     QRect cropResetButtonView() const;
     QRect cropCancelButtonView() const;
     QRect cropCloseButtonView() const;
-    bool cropAllowExpand() const { return m_crop.allowExpand; }
+    bool cropAllowExpand() const { return m_crop.isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
     void paintCropDimOutside(QPainter &painter, const QPolygonF &cropViewPoly);

@@ -465,6 +465,17 @@ struct SlideshowSettings {
 
     bool isNoneTransition() const { return transition == SlideshowTransition::None; }
 
+    bool isSolidLetterbox() const
+    {
+        return letterboxFill == SlideshowLetterboxFill::Solid;
+    }
+
+    SlideshowLetterboxFill currentLetterboxFill() const { return letterboxFill; }
+
+    const QColor &padColorRef() const { return padColor; }
+
+    bool hasPadColor() const { return padColor.isValid(); }
+
     bool setZoom(SlideshowZoom mode)
     {
         if (zoom == mode) {
