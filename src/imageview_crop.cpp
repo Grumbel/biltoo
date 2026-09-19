@@ -82,6 +82,33 @@ QImage pickCropApplyHost(ImageItem *item, const QString &path, bool *fromCache)
 }
 
 
+
+struct EnterFullRaster {
+    QImage image;
+    bool unoriented = false;
+};
+
+/** Prefer unoriented ImageCache; fall back to item sample only when no prior crop. */
+EnterFullRaster pickEnterFullRaster(ImageItem *item, const QString &path, bool hadPriorCrop)
+{
+    EnterFullRaster out;
+    if (!path.isEmpty()) {
+        out.image = ImageCache::get(path);
+        if (!out.image.isNull()) {
+            out.unoriented = true;
+            return out;
+        }
+    }
+    if (!hadPriorCrop && item) {
+        out.image = item->sourceImage();
+        if (out.image.isNull()) {
+            out.image = item->previewImage();
+        }
+        out.unoriented = false;
+    }
+    return out;
+}
+
 ImageItem *ImageView::cropSessionBoundItem() const
 {
     // Bound subject for the active crop session (IDENTITY.md).
@@ -460,17 +487,9 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     // Unoriented ImageCache host preferred. Never use item display as the crop
     // base when a prior crop exists — that bake is already cropped, so a second
     // crop would edit the wrong frame and shrink further.
-    QImage full = path.isEmpty() ? QImage() : ImageCache::get(path);
-    bool hostOk = !full.isNull();
-    bool unorientedSource = hostOk;
-
-    if (!hostOk && !hadCrop) {
-        full = item->sourceImage();
-        if (full.isNull()) {
-            full = item->previewImage();
-        }
-        unorientedSource = false;
-    }
+    const EnterFullRaster enter = pickEnterFullRaster(item, path, hadCrop);
+    const QImage &full = enter.image;
+    const bool unorientedSource = enter.unoriented;
     if (full.isNull()) {
         // Prior crop and no host: force a load; do not enter on the bake.
         if (hadCrop && !path.isEmpty()) {
