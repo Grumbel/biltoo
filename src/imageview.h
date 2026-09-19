@@ -715,6 +715,7 @@ public:
     bool materializeApplyBake(const QImage &host, bool hostFromCache,
                               const WorkspaceItemState &st,
                               CropSession::ApplyBakeResult *baked);
+    void finalizeCropResetSuccess(ImageItem *item);
     void finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
                                   const QString &path, const QImage &display);
     bool enterCropModeFromUi();

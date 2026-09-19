@@ -235,6 +235,17 @@ bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
     return true;
 }
 
+void ImageView::finalizeCropResetSuccess(ImageItem *item)
+{
+    commitItemSessionEdit(item);
+    emitCropApplyAppearance(cropRecordSessionId(item), item->path(), item, QImage(),
+                            /*hasCrop=*/false);
+    if (m_crop.shouldPushResetUndo(item->sourceImage().size())) {
+        pushCropAppearanceUndo(item, tr("Crop reset"));
+    }
+    flashHud(tr("Crop reset"), tr("Full image"));
+}
+
 void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
                                          const QString &path, const QImage &display)
 {
@@ -1094,13 +1105,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
     } else {
         fitImageOrUpdateWorkspace(item);
     }
-    commitItemSessionEdit(item);
-    emitCropApplyAppearance(cropRecordSessionId(item), item->path(), item, QImage(),
-                            /*hasCrop=*/false);
-    if (m_crop.shouldPushResetUndo(item->sourceImage().size())) {
-        pushCropAppearanceUndo(item, tr("Crop reset"));
-    }
-    flashHud(tr("Crop reset"), tr("Full image"));
+    finalizeCropResetSuccess(item);
     return false;
 }
 
