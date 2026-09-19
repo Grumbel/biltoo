@@ -55,6 +55,38 @@ struct ViewFraming {
         return QPointF(itemBounds.left() + stickyPanNormX * itemBounds.width(),
                        itemBounds.top() + stickyPanNormY * itemBounds.height());
     }
+
+    void clearFitFill()
+    {
+        fitMode = false;
+        fillMode = false;
+    }
+
+    void setFitOnly()
+    {
+        fitMode = true;
+        fillMode = false;
+    }
+
+    void setFillMode()
+    {
+        fitMode = true;
+        fillMode = true;
+    }
+
+    void setStickyZoomEnabled(bool on) { stickyZoomEnabled = on; }
+
+    void setStickyZoomKind(StickyZoomKind kind) { stickyZoomKind = kind; }
+
+    void clearStickyPan() { haveStickyPanAnchor = false; }
+
+    void clearPreservedViewScale() { havePreservedViewScale = false; }
+
+    void setPreservedViewScale(qreal sx)
+    {
+        preservedViewScale = sx;
+        havePreservedViewScale = true;
+    }
 };
 
 #endif // VIEWFRAMING_H
