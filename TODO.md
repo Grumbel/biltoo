@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1355-view-contain-cover-chrome-pad.** ViewTransform contain/cover/
+floorScale; ItemFrame selected chrome pad helpers.
+Prior: **1354**.
+
+### Change
+- `ViewTransform::{containScale,coverScale,floorScale}`
+- GalleryLayout contain/cover forward; atlas `zoomBaseScale`; ImageItem scale floors
+- `ItemFrameGeometry::{selectedChromePad,maxChromeOffset}`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1355**)
+```bash
+git pull /path/to/biltoo-1355-view-contain-cover-chrome-pad.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1354-attention-fix-edgenav-overview.** Fix AttentionGeometry
 header; attention detect/trim clamps; EdgeNav zone constants; overview edge.
 Prior: **1353**.
