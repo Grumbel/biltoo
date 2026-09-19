@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1520-crop-session-apply-store.** Apply host/state/store helpers and activate after install.
+Prior: **1519**. Commits 1520a–1520c (+ docs).
+
+### Commits
+1. flashApplyHostFailure, ensureApplyCropState, storeCropAppearance, cropRecordFileNative;
+   mergeOrientFromAppearance, itemScalePair
+2. finishCropApplyLayout, markShowingFullImage
+3. activateCropModeAfterInstall
+
+### Note
+Still on ImageView: PathRaster ownership, attachDisplaySample, appearance undo,
+enter UI orchestration, applyCropCommit host/bake framing.
+
+### Apply (on tip **1519** / `e287186`)
+```bash
+git pull --ff-only /path/to/biltoo-1520-crop-session-apply-store.bundle HEAD
+```
+Includes **1520**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1519-crop-session-hold.** ViewportUpdateHold, loadSessionAppearance, attachCropApplyDisplay.
 Prior: **1516** (upstream `46af49c`). Commits 1519a–1519d (+ docs).
 
