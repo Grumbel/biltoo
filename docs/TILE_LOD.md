@@ -341,10 +341,13 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 4. **Global budget** (~**384 MiB** default of Succeeded payload across all paths):
    when over budget, oldest **zero-ref** path entries are dropped whole. Active
    paths rely on per-session `trim_to_budget` (128 MiB).
-5. **Paint identity by path** — draw only from `cache[item->path()]`; re-acquire
+5. **Max idle paths** (default **64**): long ←/→ sessions can keep many small
+   overview caches under the byte cap; excess zero-ref paths are dropped oldest
+   first (same order as byte trim).
+6. **Paint identity by path** — draw only from `cache[item->path()]`; re-acquire
    after A→B→A rebinds the same retained entry.
-6. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
-7. **Neighbor prefetch (1213 / 1214):** on Image-mode nav settle,
+7. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
+8. **Neighbor prefetch (1213 / 1214):** on Image-mode nav settle,
    `prefetchTilesForPaths` binds a short-lived `TileLodController` per ±1 path
    and **pumps it on a 33 ms timer** until overview coverage / idle / tick cap.
    Stack controllers (issue-once then destroy) cancelled InFlight and dropped
@@ -364,6 +367,9 @@ the first frame after rebind.
 **biltoo-1406–1411:** O(1) succeeded tile counter; `path_succeeded_count` /
 `idle_path_count`; neighbor prefetch skips only overview-warm paths (≥4 tiles);
 `setPath` touches registry LRU; `BILTOO_TILE_DEBUG` logs registry pressure.
+
+**biltoo-1416–1418:** Max idle path cap (64); `pathRam` in item debug lines;
+Gallery restore ticks warm path RAM after Image mode.
 
 **biltoo-1412–1415:** O(1) `approx_bytes`; named `kPrefetchWarmSucceededMin`;
 `tileLodHasPathRam` for coordinator priority and immediate tick after Image ←/→

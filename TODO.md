@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1418-tile-idle-cap-pathram-debug-gallery.** Max idle paths; pathRam debug; Gallery restore tick.
+Prior: **1415**. Commits 1416–1418.
+
+### Commits
+1. **1416** `TileLodRegistry` max idle path cap (default 64) + byte trim
+2. **1417** `tileLodDebugLine` includes `pathRam=K`
+3. **1418** Gallery restore from Image: `tickPrimaryTileLod(16)` for warm path RAM
+
+### Docs
+- TILE_LOD.md rule 5 (max idle paths)
+- ENVIRONMENT.md `BILTOO_TILE_DEBUG` row
+
+### Apply
+```bash
+git pull /path/to/biltoo-1418-tile-idle-cap-pathram-debug-gallery.bundle HEAD
+```
+Requires tip **1415**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1415-tile-path-ram-priority-o1-bytes.** Path-RAM priority; O(1) bytes; warm const.
 Prior: **1411**. Commits 1412–1415.
 
