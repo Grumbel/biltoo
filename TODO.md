@@ -2,6 +2,21 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1506-crop-lock-leave.** locksResolvedPath; finishLeave.
+Prior: **1505**. Commits 1506a–1506b (+ docs).
+
+### Apply (on tip **1500**)
+```bash
+git pull --ff-only /path/to/biltoo-1506-crop-lock-leave.bundle HEAD
+```
+Includes **1501–1506**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1505-crop-enter-abort.** fullRasterScheduleEdge; abortEnterRestoringPlacement.
 Prior: **1504**. Commits 1505a–1505b (+ docs).
 
