@@ -169,8 +169,7 @@ void ImageView::setWorkspaceBackground(const WorkspaceBackground &bg)
         if (m_canvasBg.workspaceTilePath != bg.imagePath) {
             QPixmap px(bg.imagePath);
             if (!px.isNull()) {
-                m_canvasBg.workspaceTile = px;
-                m_canvasBg.workspaceTilePath = bg.imagePath;
+                m_canvasBg.setWorkspaceTile(px, bg.imagePath);
             }
         }
     }
@@ -2136,9 +2135,9 @@ QSize ImageView::logicalSizeForPath(const QString &path) const
     if (path.isEmpty()) {
         return {};
     }
-    const auto it = m_sizeBook.byPath.constFind(path);
-    if (it != m_sizeBook.byPath.cend() && isPositiveSize(*it)) {
-        return *it;
+    const QSize known = m_sizeBook.known(path);
+    if (!known.isEmpty()) {
+        return known;
     }
     const QSize cached = ThumtooCache::cachedSize(path);
     if (isPositiveSize(cached)) {

@@ -35,6 +35,12 @@ struct CanvasBackground {
         workspaceTilePath.clear();
     }
 
+    void setWorkspaceTile(const QPixmap &px, const QString &path)
+    {
+        workspaceTile = px;
+        workspaceTilePath = path;
+    }
+
     /** @return true when the primary canvas colour changed. */
     bool setColor(const QColor &c)
     {

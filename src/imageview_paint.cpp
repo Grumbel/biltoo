@@ -685,8 +685,7 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             if (m_canvasBg.workspaceTile.isNull() && !wb.imagePath.isEmpty()) {
                 QPixmap px(wb.imagePath);
                 if (!px.isNull()) {
-                    m_canvasBg.workspaceTile = px;
-                    m_canvasBg.workspaceTilePath = wb.imagePath;
+                    m_canvasBg.setWorkspaceTile(px, wb.imagePath);
                 }
             }
             if (!m_canvasBg.workspaceTile.isNull()) {
@@ -919,9 +918,9 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
     const QString path = classicPath();
     QSize sourceSize = ThumtooCache::cachedSize(path);
     if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
-        const auto it = m_sizeBook.byPath.constFind(path);
-        if (it != m_sizeBook.byPath.cend()) {
-            sourceSize = it.value();
+        const QSize known = m_sizeBook.known(path);
+        if (!known.isEmpty()) {
+            sourceSize = known;
         }
     }
     if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
