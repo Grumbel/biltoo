@@ -2,6 +2,17 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1593-edge-nav-radial.** Edge nav lobes use scaled QRadialGradient (soft ellipse falloff).
+Prior: **1592**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1593-edge-nav-radial.bundle HEAD
+```
+Requires origin/master `a697f7a` (full stack) or tip **1592**.
+
+---
+
 **Tip: biltoo-1592-projectfile-contentblur-switch.** Project save handles ContentBlur (session-only → default).
 Prior: **1591** (on origin/master a697f7a).
 

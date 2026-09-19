@@ -22,6 +22,7 @@
 #include "imageitem.h"
 
 #include <QPainter>
+#include <QRadialGradient>
 #include <QPainterPath>
 #include <QPaintEvent>
 #include <QStyleOptionGraphicsItem>
@@ -73,36 +74,51 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
         painter.strokePath(chevron, pen);
     };
 
-    // Half-ellipse underlay: ~80% of the edge (layout.fillRect), bulging inward.
+    // Soft radial lobe (~80% of the edge via layout.fillRect). QRadialGradient
+    // in a scaled unit circle gives a smooth elliptical falloff without hard
+    // linear strips.
     {
-        QPainterPath lobe;
         const QRectF fr = layout.fillRect;
+        const QColor core(0, 0, 0, 110);
+        const QColor mid(0, 0, 0, 55);
+        const QColor edge(0, 0, 0, 0);
+
+        auto paintRadialLobe = [&](QPointF centre, qreal rx, qreal ry,
+                                   const QRectF &clip) {
+            if (rx < 1.0 || ry < 1.0 || clip.isEmpty()) {
+                return;
+            }
+            painter.save();
+            painter.setClipRect(clip);
+            painter.translate(centre);
+            painter.scale(rx, ry);
+            QRadialGradient g(QPointF(0, 0), 1.0);
+            g.setColorAt(0.00, core);
+            g.setColorAt(0.45, mid);
+            g.setColorAt(1.00, edge);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(g);
+            // Unit circle; scale maps it to the ellipse.
+            painter.drawEllipse(QRectF(-1.0, -1.0, 2.0, 2.0));
+            painter.restore();
+        };
+
         if (zone == EdgeNavPolicy::Zone::GalleryReturn) {
-            // Full ellipse centred on the top edge; only the lower half is visible.
-            lobe.addEllipse(QRectF(fr.left(), -fr.height(), fr.width(), fr.height() * 2.0));
+            // Centre on top edge mid; only lower half visible via clip.
+            paintRadialLobe(QPointF(fr.center().x(), fr.top()),
+                            fr.width() * 0.5, fr.height(),
+                            fr);
         } else if (zone == EdgeNavPolicy::Zone::Previous) {
-            lobe.addEllipse(QRectF(-fr.width(), fr.top(), fr.width() * 2.0, fr.height()));
+            // Centre on left edge mid; only right half of the ellipse shows.
+            paintRadialLobe(QPointF(fr.left(), fr.center().y()),
+                            fr.width(), fr.height() * 0.5,
+                            fr);
         } else {
-            lobe.addEllipse(QRectF(fr.left(), fr.top(), fr.width() * 2.0, fr.height()));
+            // Next: centre on right edge mid.
+            paintRadialLobe(QPointF(fr.right(), fr.center().y()),
+                            fr.width(), fr.height() * 0.5,
+                            fr);
         }
-        QLinearGradient grad;
-        if (zone == EdgeNavPolicy::Zone::GalleryReturn) {
-            grad = QLinearGradient(0, 0, 0, fr.height());
-            grad.setColorAt(0.0, QColor(0, 0, 0, 90));
-            grad.setColorAt(1.0, QColor(0, 0, 0, 0));
-        } else if (zone == EdgeNavPolicy::Zone::Previous) {
-            grad = QLinearGradient(fr.left(), 0, fr.right(), 0);
-            grad.setColorAt(0.0, QColor(0, 0, 0, 90));
-            grad.setColorAt(1.0, QColor(0, 0, 0, 0));
-        } else {
-            grad = QLinearGradient(fr.left(), 0, fr.right(), 0);
-            grad.setColorAt(0.0, QColor(0, 0, 0, 0));
-            grad.setColorAt(1.0, QColor(0, 0, 0, 90));
-        }
-        painter.save();
-        painter.setClipRect(fr);
-        painter.fillPath(lobe, grad);
-        painter.restore();
     }
 
     const int cx = layout.buttonCenter.x();
