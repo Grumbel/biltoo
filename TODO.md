@@ -2,6 +2,32 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1468-phase-identity-nav-crop-layout.** Phase atlas, identity, nav, crop, layout.
+Prior: **1467**. Commits 1468a–1468e (+ docs).
+
+### Commits
+1. **SlideshowPhaseState** hasToAtlas / clampedFadeT / inTransition gates
+2. **SessionIdentity** hasCurrentId / hasLastLoadError
+3. **ImageView** isNavEdge for hover chrome
+4. **CropSession** isRubberbanding / isShowingFullImage / isAllowExpand
+5. **LayoutPrefs** currentMode for mode reads
+
+### Note
+Continues bag encapsulation. Path RAM remains settled. Crop enter/apply
+still on view (larger ownership extraction).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1468-phase-identity-nav-crop-layout.bundle HEAD
+```
+Requires tip **1467**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1467-crop-canvas-group-attention.** Crop, Canvas, Group, Attention helpers.
 Prior: **1466**. Commits 1467a–1467d (+ docs).
 
