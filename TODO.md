@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1354-attention-fix-edgenav-overview.** Fix AttentionGeometry
+header; attention detect/trim clamps; EdgeNav zone constants; overview edge.
+Prior: **1353**.
+
+### Change
+- **Fix:** restore `toggleSelectionIndex` declaration (broken mid-line in 1351)
+- `AttentionGeometry::{clampMaxPoints,smartcropEdge,normFromPixel,clampColorThreshold,clampNoisePercent}`
+- `DisplayQuality::kOverviewMaxEdge`; EdgeNavPolicy zone floor/frac constants
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1354**)
+```bash
+git pull /path/to/biltoo-1354-attention-fix-edgenav-overview.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1353-clock-format-aspect-size.** formatClockMs, heightForAspectWidth,
 roundedSize QSizeF, nonNegMs(qint64).
 Prior: **1352**.

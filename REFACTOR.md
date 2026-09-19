@@ -331,3 +331,4 @@ part of early-phase exit criteria).
 - **ItemFrameGeometry** chrome/placeholder fonts; **AttentionGeometry::clampHintPointSize**; **ImageCache::rgbaCostKiB**; **ViewTransform** pointAlong / clampedProgress.
 - **GalleryLayout** pack cell/scale helpers; **SlideshowMotionGeometry** bias/panZoom clamps; **SlideshowAtlasPolicy::clampPanZoomHeadroom**.
 - **SlideshowClocks::formatClockMs**; **ContentXform** heightForAspectWidth / roundedSize(QSizeF); **ViewTransform::nonNegMs(qint64)**.
+- **Fix AttentionGeometry** header; detect/trim clamps; **DisplayQuality::kOverviewMaxEdge**; **EdgeNavPolicy** zone constants.
