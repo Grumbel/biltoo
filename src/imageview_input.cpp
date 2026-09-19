@@ -451,8 +451,8 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
     if (hit >= 0) {
         if (shift || ctrl) {
             m_attention.setSelected(
-                AttentionGeometry::toggleSelectionIndex(m_attention.selected, hit));
-        } else if (!m_attention.selected.contains(hit)) {
+                AttentionGeometry::toggleSelectionIndex(m_attention.selectedMutable(), hit));
+        } else if (!m_attention.selectedMutable().contains(hit)) {
             m_attention.setSelected({hit});
         }
         const QVector<QPointF> startPts = attentionPointsForTarget();
@@ -1028,9 +1028,9 @@ bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()
             && m_attention.hasSelection()
-            && m_attention.dragStartPts.size() == attentionPointsForTarget().size()) {
+            && m_attention.dragStartPtsRef().size() == attentionPointsForTarget().size()) {
             // Translate selected points by view-delta mapped through content.
-            const QPointF scene0 = mapToScene(m_attention.dragOriginView);
+            const QPointF scene0 = mapToScene(m_attention.dragOriginViewRef());
             const QPointF scene1 = mapToScene(event->pos());
             const QPointF local0 = item->mapFromScene(scene0);
             const QPointF local1 = item->mapFromScene(scene1);
@@ -1038,7 +1038,7 @@ bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
             const QPointF dNorm = AttentionGeometry::normDeltaFromLocalDelta(
                 local1 - local0, cr);
             const QVector<QPointF> pts = AttentionGeometry::translateSelectedNorms(
-                m_attention.dragStartPts, m_attention.selected, dNorm);
+                m_attention.dragStartPtsRef(), m_attention.selectedMutable(), dNorm);
             setAttentionPointsForTarget(pts);
         }
         event->accept();
@@ -1550,10 +1550,10 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
                 viewPts.append(attentionViewPos(item, n));
             }
             const QVector<int> hit = AttentionGeometry::indicesInViewRect(
-                viewPts, m_attention.rubberRect);
+                viewPts, m_attention.rubberRectRef());
             const bool shift = event->modifiers() & Qt::ShiftModifier;
             m_attention.setSelected(AttentionGeometry::mergeSelection(
-                m_attention.selected, hit, shift));
+                m_attention.selectedMutable(), hit, shift));
         }
         m_attention.endRubber();
         viewport()->update();
@@ -1629,7 +1629,7 @@ bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
         m_undoStack->beginMacro(m_groupXform.isRotateDrag() ? tr("Rotate selection")
                                                   : tr("Scale selection"));
         for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
-            ImageItem *item = m_groupXform.dragItems.at(i);
+            ImageItem *item = m_groupXform.dragItemAt(i);
             if (!item || i >= m_groupXform.dragStartStates.size()) {
                 continue;
             }
@@ -1739,9 +1739,9 @@ bool ImageView::tryKeyPressAttention(QKeyEvent *event)
     }
     if (event->key() == Qt::Key_A && (event->modifiers() & Qt::ControlModifier)) {
         const int n = attentionPointsForTarget().size();
-        m_attention.selected.clear();
+        m_attention.selectedMutable().clear();
         for (int i = 0; i < n; ++i) {
-            m_attention.selected.append(i);
+            m_attention.selectedMutable().append(i);
         }
         if (viewport()) {
             viewport()->update();

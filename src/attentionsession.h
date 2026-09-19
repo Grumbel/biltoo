@@ -32,6 +32,18 @@ public:
 
     bool isDraftValid() const { return draftValid; }
 
+    const QVector<int> &selectedRef() const { return selected; }
+
+    QVector<int> &selectedMutable() { return selected; }
+
+    const QPoint &dragOriginViewRef() const { return dragOriginView; }
+
+    const QRect &rubberRectRef() const { return rubberRect; }
+
+    const QVector<QPointF> &dragStartPtsRef() const { return dragStartPts; }
+
+    const QVector<QPointF> &draftPtsRef() const { return draftPts; }
+
     /** True when mode is on and draft points are bound to @p sid. */
     bool hasDraftFor(SessionImageId sid) const
     {
