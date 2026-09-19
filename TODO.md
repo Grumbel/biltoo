@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1481-fix-accessor-compile.** Fix CropSession/ViewFraming/ImageView broken accessors.
+Prior: **1480**.
+
+### Fixes
+- Drop non-existent stashedPlacementPos/Scale accessors
+- hasStickyPan → haveStickyPanAnchor; stickyPanNormPoint from X/Y
+- workspaceBackgroundShowDefault → isWorkspaceShowDefault()
+- slideshowTransitionDurationMs → transitionDuration()
+
+### Apply
+```bash
+git pull /path/to/biltoo-1481-fix-accessor-compile.bundle HEAD
+```
+Requires tip **1480**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1480-crop-enter-accessors.** CropSession draft/enter/await/hover accessors.
 Prior: **1479**. Commits 1480a–1480d (+ docs).
 

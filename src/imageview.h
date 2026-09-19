@@ -804,7 +804,7 @@ public:
      * toolbar toggle.
      */
     void setWorkspaceBackgroundShowDefault(bool on);
-    bool workspaceBackgroundShowDefault() const { return m_canvasBg.workspaceRef()ShowDefault; }
+    bool workspaceBackgroundShowDefault() const { return m_canvasBg.isWorkspaceShowDefault(); }
 
     /**
      * Session position for status line and HUD (index/total, 1-based display).
@@ -861,7 +861,7 @@ public:
     void setSlideshowTransition(SlideshowTransition kind);
     SlideshowTransition slideshowTransition() const { return m_ssSettings.currentTransition(); }
     void setSlideshowTransitionDurationMs(int ms);
-    int slideshowTransitionDurationMs() const { return m_ssSettings.currentTransition()Duration(); }
+    int slideshowTransitionDurationMs() const { return m_ssSettings.transitionDuration(); }
     /** Clear residual transition overlay state (safe during pure-phase show). */
     void cancelSlideshowTransition();
 

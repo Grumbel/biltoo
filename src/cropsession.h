@@ -348,9 +348,7 @@ public:
 
     qreal stashedPlacementShearValue() const { return stashedPlacementShear; }
 
-    QPointF stashedPlacementPos() const { return stashedPlacementPos; }
-
-    qreal stashedPlacementScale() const { return stashedPlacementScale; }
+    // Placement stash is rotation/shear only (see stashPlacement).
 
     bool isEnterValid() const { return enterValid; }
 
