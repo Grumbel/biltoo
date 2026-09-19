@@ -37,7 +37,14 @@ struct HudFlash {
         identityPulse = true;
     }
 
-    void setIdentityPulse(bool on) { identityPulse = on; }
+    bool setIdentityPulse(bool on)
+    {
+        if (identityPulse == on) {
+            return false;
+        }
+        identityPulse = on;
+        return true;
+    }
 
     void setPausedLabel(const QString &label)
     {
