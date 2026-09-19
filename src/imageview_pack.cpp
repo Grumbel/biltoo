@@ -260,7 +260,7 @@ void ImageView::updateGalleryDecodeWindow()
         if (viewport()) {
             viewport()->update();
         }
-        scheduleGalleryStatusRefresh(100);
+        scheduleGalleryStatusRefresh(GallerySoft::kStatusRefreshMs);
     }
     if (moreInstallsPending) {
         scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);

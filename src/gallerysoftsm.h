@@ -40,6 +40,10 @@ constexpr int kMaxInstallsDuringSizeResolve = 16;
 constexpr qint64 kDecodeWindowWallMs = 6;
 /** Re-arm delay when more installs remain (ms). */
 constexpr int kDecodeWindowRearmMs = 32;
+/** Soft-state watchdog tick (ms). */
+constexpr int kWatchdogIntervalMs = 1000;
+/** Gallery status-line refresh after host soft install (ms). */
+constexpr int kStatusRefreshMs = 100;
 
 inline int maxHave(int a, int b)
 {

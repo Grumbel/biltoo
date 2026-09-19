@@ -278,7 +278,7 @@ ImageView::ImageView(QWidget *parent)
     });
 
     m_slideshowProgressTimer = new QTimer(this);
-    m_slideshowProgressTimer->setInterval(33); // ~30 Hz; cheap 1px redraw
+    m_slideshowProgressTimer->setInterval(SlideshowProgressHud::kProgressTickMs); // ~30 Hz
     connect(m_slideshowProgressTimer, &QTimer::timeout, this, [this]() {
         if (m_ssHud.progressActive) {
             // Pump shared path tiles for phase slides (paint uses TileLodController).
@@ -348,7 +348,7 @@ ImageView::ImageView(QWidget *parent)
     // Recover Gallery tiles that received soft pixels but never repainted
     // (DeviceCoordinateCache + BoundingRectViewportUpdate stalls).
     m_gallerySoftWatchdog = new QTimer(this);
-    m_gallerySoftWatchdog->setInterval(1000);
+    m_gallerySoftWatchdog->setInterval(GallerySoft::kWatchdogIntervalMs);
     connect(m_gallerySoftWatchdog, &QTimer::timeout, this, [this]() {
         if (isGalleryMode()) {
             gallerySoftWatchdogTick();
