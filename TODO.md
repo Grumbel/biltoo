@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1583-hard-reload-purge-uri.** Hard reload uses purge_uri for archive/page paths (members were left by purge_path).
+Prior: **1582**.
+
+### Cause
+Archive session paths (`…//archive:member`) are Store-keyed by `archive_uri`, not
+filesystem `outer_path`. `Client::purge_path` only matched plain files, so member
+tiles stayed in the durable DB.
+
+### Change
+- `purgePathDurable`: `toThumtooUri` + `Client::purge_uri`; plain files still
+  `purge_path` as a fallback
+- Drop process URI cache entry + archive member LRU for the path
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1583-hard-reload-purge-uri.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1582-hard-reload-purge-store.** Shift+F5 also forgets durable thumtoo Store tiles (Client::purge_path).
 Prior: **1581**.
 

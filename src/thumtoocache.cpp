@@ -290,6 +290,22 @@ QByteArray memberLruGet(const QString &key)
     return it->second.first;
 }
 
+void memberLruRemove(const QString &key)
+{
+    if (key.isEmpty()) {
+        return;
+    }
+    const std::string k = key.toStdString();
+    std::lock_guard lock(g_memberLru.mu);
+    auto it = g_memberLru.map.find(k);
+    if (it == g_memberLru.map.end()) {
+        return;
+    }
+    g_memberLru.totalBytes -= it->second.first.size();
+    g_memberLru.order.erase(it->second.second);
+    g_memberLru.map.erase(it);
+}
+
 // Coalesce concurrent extracts for one archive container.
 struct ArchiveExtractBatch {
     std::mutex mu;
@@ -1721,6 +1737,7 @@ void purgePathDurable(const QString &path, std::function<void(qint64 tilesDelete
     }
     // Process memos must not claim durable coverage after Store forget.
     ProcessMemos::instance().clearDurablePath(path);
+    memberLruRemove(path);
     (void)cancelTilesForPath(path);
 #ifdef BILTOO_HAVE_THUMTOO
 #if defined(THUMTOO_API_PURGE_URI) && THUMTOO_API_PURGE_URI
@@ -1730,21 +1747,37 @@ void purgePathDurable(const QString &path, std::function<void(qint64 tilesDelete
     QThreadPool::globalInstance()->start([pathCopy, doneCopy]() {
         ASSERT_NOT_GUI_THREAD();
         qint64 tiles = 0;
+        // Drop cached URI so a later resolve is not tied to a purged locator.
+        {
+            std::lock_guard lock(g_uriMu);
+            g_uriBySessionPath.erase(pathCopy.toStdString());
+        }
         thumtoo::Client *c = nullptr;
         {
             std::lock_guard lock(g_mu);
             c = clientUnlocked();
         }
         if (c) {
-            // Forget locators + tile/level blobs for this outer path (and
-            // file:/// URI). Leaves the source file; next decode is cold.
-            const auto stats = c->purge_path(
-                std::filesystem::path(pathCopy.toStdString()), /*dry_run=*/false);
-            tiles = stats.tiles_deleted;
-            thumtooDbg("purgePathDurable path=%s tiles=%lld levels=%lld",
-                       qPrintable(QFileInfo(pathCopy).fileName()),
-                       static_cast<long long>(stats.tiles_deleted),
-                       static_cast<long long>(stats.levels_deleted));
+            // Archive / page / PDF-image session paths are Store-keyed by URI
+            // (archive_uri, pdf_page_uri, …), not by a filesystem path.
+            // purge_path only matches plain file outer_path — members stayed.
+            const std::string uri = toThumtooUri(pathCopy);
+            if (!uri.empty()) {
+                const auto st = c->purge_uri(uri, /*dry_run=*/false);
+                tiles += st.tiles_deleted;
+                thumtooDbg("purgePathDurable uri=%s tiles=%lld levels=%lld",
+                           uri.c_str(),
+                           static_cast<long long>(st.tiles_deleted),
+                           static_cast<long long>(st.levels_deleted));
+            }
+            // Plain files: also purge_path so outer_path locators without a
+            // resolved URI still go cold.
+            if (!ArchivePath::isArchiveRef(pathCopy) && !PagePath::isPageRef(pathCopy)
+                && !PagePath::isPdfImageRef(pathCopy)) {
+                const auto st2 = c->purge_path(
+                    std::filesystem::path(pathCopy.toStdString()), /*dry_run=*/false);
+                tiles += st2.tiles_deleted;
+            }
         }
         if (!doneCopy) {
             return;
