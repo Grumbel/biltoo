@@ -33,6 +33,18 @@ struct TextLayerSession {
         return showRegions || !searchQuery.isEmpty();
     }
 
+    int regionCount() const { return layer.regions.size(); }
+
+    bool hasRegions() const { return !layer.regions.isEmpty(); }
+
+    const QVector<ThumtooCache::TextRegion> &regions() const { return layer.regions; }
+
+    const ThumtooCache::TextRegion &regionAt(int i) const { return layer.regions.at(i); }
+
+    bool pageBoundsValid() const { return layer.pageBounds.isValid(); }
+
+    const QRectF &pageBounds() const { return layer.pageBounds; }
+
     void clearSearch()
     {
         searchQuery.clear();
