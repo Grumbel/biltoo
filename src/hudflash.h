@@ -64,6 +64,12 @@ struct HudFlash {
     bool isIdentityPulse() const { return identityPulse; }
 
     bool hasAction() const { return !action.isEmpty(); }
+
+    const QString &actionText() const { return action; }
+
+    const QString &detailText() const { return detail; }
+
+    bool hasDetail() const { return !detail.isEmpty(); }
 };
 
 #endif // HUDFLASH_H

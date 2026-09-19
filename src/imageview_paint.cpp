@@ -455,9 +455,9 @@ void ImageView::paintHudPanels(QPainter &painter)
                        {tr("%1 / %2").arg(done).arg(m_gallerySizeResolve.total()), false}},
                       0, 0, false, false, true);
         } else if (m_hudFlash.isVisible() && m_hudFlash.hasAction()) {
-            QString actionLine = m_hudFlash.action;
-            if (!m_hudFlash.detail.isEmpty()) {
-                actionLine += QLatin1Char(' ') + m_hudFlash.detail;
+            QString actionLine = m_hudFlash.actionText();
+            if (m_hudFlash.hasDetail()) {
+                actionLine += QLatin1Char(' ') + m_hudFlash.detailText();
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
         } else if (m_hudPrefs.isVisible() || m_hudFlash.isIdentityPulse()) {
@@ -670,11 +670,11 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
     };
 
     const bool wsOverride = isWorkspaceMode()
-        && !m_canvasBg.workspace.isAppDefault()
+        && !m_canvasBg.isWorkspaceAppDefault()
         && !m_canvasBg.isWorkspaceShowDefault();
 
     if (wsOverride) {
-        const WorkspaceBackground &wb = m_canvasBg.workspace;
+        const WorkspaceBackground &wb = m_canvasBg.workspaceRef();
         if (wb.mode == WorkspaceBackgroundMode::Solid) {
             painter->fillRect(rect, wb.color.isValid() ? wb.color : m_canvasBg.primaryColor());
         } else if (wb.mode == WorkspaceBackgroundMode::Checkerboard) {
