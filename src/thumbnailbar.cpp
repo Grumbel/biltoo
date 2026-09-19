@@ -78,9 +78,7 @@ int ThumbnailDelegate::cellPad() const
 
 int ThumbnailDelegate::flowPad() const
 {
-    // Flow-axis pad per side (between images). Fixed half of cellPad so
-    // adjacent cells contribute ~cellPad of empty space, independent of aspect.
-    return 4;
+    return FilmstripGeometry::flowPadFromCellPad(cellPad());
 }
 
 int ThumbnailDelegate::labelBandHeightForFont(const QFont &font)

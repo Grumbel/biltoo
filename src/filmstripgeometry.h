@@ -32,6 +32,12 @@ inline int cellPadFromThumbAlt(int thumbSize)
     return qBound(1, thumbSize / 16, 6);
 }
 
+/** Flow-axis pad per side so adjacent cells contribute ~cellPad gap. */
+inline int flowPadFromCellPad(int cellPad)
+{
+    return qMax(1, cellPad / 2);
+}
+
 /** Clamp logical thumb size to product range. */
 inline int clampThumbSize(int pixels, int minPx = 48, int maxPx = 1024)
 {
