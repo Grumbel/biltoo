@@ -281,3 +281,10 @@ void CropSession::applyRubberBand(const QPointF &local, const QRectF &contentRec
     }
     setRect(isAllowExpand() ? r : r.intersected(contentRect));
 }
+
+void CropSession::resetDraftToContent(const QRectF &contentRect)
+{
+    setRect(contentRect);
+    setRotation(0.0);
+    ensureRectValid(contentRect);
+}

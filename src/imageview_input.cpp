@@ -507,9 +507,7 @@ bool ImageView::tryMousePressCrop(QMouseEvent *event)
     if (h == CropHandle::Reset) {
         // Expand draft to the full image; Apply commits a cleared session crop.
         if (ImageItem *item = cropTargetItem()) {
-            m_crop.setRect(item->contentRect());
-            m_crop.setRotation(0.0);
-            ensureCropRectValid();
+            m_crop.resetDraftToContent(item->contentRect());
             viewport()->update();
         }
         event->accept();

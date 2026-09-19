@@ -336,6 +336,10 @@ public:
      */
     void ensureRectValid(const QRectF &contentRect);
 
+    /** Expand draft to full content (Reset chrome); clears rotation. */
+    void resetDraftToContent(const QRectF &contentRect);
+
+
     /**
      * Map a source-pixel trim rect into content space and set as axis-aligned draft.
      * Clears expand and rotation. Caller must ensureRectValid afterward if needed.
