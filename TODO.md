@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1526-crop-session-apply-pool.** Bundle docs recovery + Apply pool/bake helpers.
+Prior: **1524** (`b6a9d2e` / origin/master). Commits 1526a–1526b (+ docs).
+
+### Commits
+1. AGENTS.md: failure modes table, recovery checklists, pre-flight BASE
+2. scheduleCropFullRasterFromPool, commitCropApplyBake, logApplyCropDebug
+
+### Apply (on tip **1524** / `b6a9d2e` / upstream master)
+```bash
+git pull --ff-only /path/to/biltoo-1526-crop-session-apply-pool.bundle HEAD
+```
+`git bundle verify` must require `b6a9d2e`.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1524-crop-session-enter-fix.** Fix beginCropEnterSession; enter/prepare helpers.
 Prior: **1523** (`3272d1e`). Commits 1524a–1524b (+ docs).
 
