@@ -1027,7 +1027,7 @@ bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
     if (m_attention.isDragging()) {
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()
-            && !m_attention.selected.isEmpty()
+            && m_attention.hasSelection()
             && m_attention.dragStartPts.size() == attentionPointsForTarget().size()) {
             // Translate selected points by view-delta mapped through content.
             const QPointF scene0 = mapToScene(m_attention.dragOriginView);

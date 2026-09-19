@@ -261,7 +261,7 @@ bool ImageView::attentionHandleAt(const QPoint &viewPos) const
 
 void ImageView::attentionDeleteSelected()
 {
-    if (m_attention.selected.isEmpty()) {
+    if (!m_attention.hasSelection()) {
         return;
     }
     QVector<QPointF> pts = attentionPointsForTarget();
