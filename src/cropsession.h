@@ -225,7 +225,15 @@ public:
 
     void clearAwaitingFull() { awaitingFullPath.clear(); }
 
-    void setAwaitingFull(const QString &path) { awaitingFullPath = path; }
+    /** @return true when the awaiting-full path changed. */
+    bool setAwaitingFull(const QString &path)
+    {
+        if (awaitingFullPath == path) {
+            return false;
+        }
+        awaitingFullPath = path;
+        return true;
+    }
 
     /** @return true when the flag changed. */
     bool setShowingFullImage(bool on)
@@ -249,7 +257,15 @@ public:
 
     void setRotation(qreal deg) { rotation = deg; }
 
-    void setRect(const QRectF &r) { rect = r; }
+    /** @return true when the draft rect changed. */
+    bool setRect(const QRectF &r)
+    {
+        if (rect == r) {
+            return false;
+        }
+        rect = r;
+        return true;
+    }
 
     /** @return true when crop mode flag changed. */
     bool setMode(bool on)
