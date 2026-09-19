@@ -386,7 +386,7 @@ keeps identity correct.
 | **1445–1447** | Session replace: dropAllTileLodSessions + invalidateAll clears holders |
 | **1448–1449** | Last release clears residual InFlight; settled-scope docs |
 
-### Global path RAM — settled scope (1400–1447)
+### Global path RAM — settled scope (1400–1449)
 
 **In scope and landed:** process-wide path retention, identity guards, O(1)
 queries, warm prefetch, idle/byte caps, env overrides, Reload/session-replace
