@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1490-crop-activate-drag.** activateModeAfterDraft, draftFootprint, beginHandleDrag rotate, isGeometryHandle.
+Prior: **1489**. Commits 1490a–1490c (+ docs).
+
+### Commits
+1. **CropSession** activateModeAfterDraft + draftFootprint
+2. **CropSession** beginHandleDrag seeds rotate start
+3. **CropSession** isGeometryHandle
+
+### Apply
+```bash
+git pull /path/to/biltoo-1490-crop-activate-drag.bundle HEAD
+```
+Requires tip **1489** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1489-crop-rubber-reset.** Rubber-band, Reset chrome, draftCenterLocal on CropSession.
 Prior: **1488**. Commits 1489a–1489c (+ docs).
 
