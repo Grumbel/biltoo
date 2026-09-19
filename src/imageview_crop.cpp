@@ -70,14 +70,9 @@ ImageItem *ImageView::cropSessionBoundItem() const
     return nullptr;
 }
 
-ImageItem *ImageView::cropTargetItem() const
+
+ImageItem *ImageView::resolveInactiveCropTarget() const
 {
-    // Crop session is bound to one subject for its entire lifetime. Never
-    // re-resolve via selection or primaryItem() — that applied the draft to
-    // unrelated tiles when selection changed mid-crop (IDENTITY.md).
-    if (m_crop.active()) {
-        return cropSessionBoundItem();
-    }
     if (ImageItem *t = targetItem()) {
         // Soft ladder tiles have preview/source with m_previewPixels; pixmap is
         // often empty (paint uses m_source). hasDecodedPixels() alone was
@@ -92,6 +87,17 @@ ImageItem *ImageView::cropTargetItem() const
         return primaryItem();
     }
     return nullptr;
+}
+
+ImageItem *ImageView::cropTargetItem() const
+{
+    // Crop session is bound to one subject for its entire lifetime. Never
+    // re-resolve via selection or primaryItem() — that applied the draft to
+    // unrelated tiles when selection changed mid-crop (IDENTITY.md).
+    if (m_crop.active()) {
+        return cropSessionBoundItem();
+    }
+    return resolveInactiveCropTarget();
 }
 
 

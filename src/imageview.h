@@ -1655,6 +1655,7 @@ private:
     void recordSessionCrop(ImageItem *item, const QRectF &localCrop);
 
     // CropHandle is defined in cropsession.h
+    ImageItem *resolveInactiveCropTarget() const;
     ImageItem *cropTargetItem() const;
     ImageItem *cropSessionBoundItem() const;
     SessionImageId cropRecordSessionId(const ImageItem *item) const;
