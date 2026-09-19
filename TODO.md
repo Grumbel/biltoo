@@ -2,6 +2,21 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1508-crop-install-keep.** canKeepDisplayForCropEnter; clearItemFreePlacementForCropDraft.
+Prior: **1507**. Commits 1508a–1508b (+ docs).
+
+### Apply (on tip **1500**)
+```bash
+git pull --ff-only /path/to/biltoo-1508-crop-install-keep.bundle HEAD
+```
+Includes **1501–1508**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1507-crop-enter-host.** pickEnterFullRaster for crop enter host selection.
 Prior: **1506**. Commits 1507a (+ docs).
 
