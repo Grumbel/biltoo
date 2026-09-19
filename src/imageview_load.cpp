@@ -2868,7 +2868,7 @@ bool ImageView::loadImage(const QString &path)
     setClassicPath(path);
     clearTextSelection();
     m_textLayer.clearLinkHoverTip();
-    if (m_textLayer.showRegions || !m_textLayer.searchQuery.isEmpty()) {
+    if (m_textLayer.showsRegions() || m_textLayer.hasSearchQuery()) {
         refreshTextLayer();
     }
     m_sessionId.clearLastLoadError();

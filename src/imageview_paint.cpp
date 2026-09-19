@@ -772,7 +772,7 @@ void ImageView::refreshTextLayer()
         layer = ThumtooCache::ensurePageTextLayer(path);
     }
     m_textLayer.setLayerContent(layer, path);
-    if (!m_textLayer.searchQuery.isEmpty()) {
+    if (m_textLayer.hasSearchQuery()) {
         recomputeTextSearchMatches();
     }
 }
@@ -787,7 +787,7 @@ void ImageView::setTextSearchFuzzy(bool on)
     if (!m_textLayer.setSearchFuzzy(on)) {
         return;
     }
-    if (!m_textLayer.searchQuery.isEmpty()) {
+    if (m_textLayer.hasSearchQuery()) {
         recomputeTextSearchMatches();
         viewport()->update();
     }
@@ -796,7 +796,7 @@ void ImageView::setTextSearchFuzzy(bool on)
 void ImageView::recomputeTextSearchMatches()
 {
     m_textLayer.clearSearchMatches();
-    if (m_textLayer.searchQuery.isEmpty() || !m_textLayer.hasRegions()) {
+    if (!m_textLayer.hasSearchQuery() || !m_textLayer.hasRegions()) {
         return;
     }
     const QString qn = TextSearchPolicy::normalizeForSearch(m_textLayer.searchQuery);
@@ -806,7 +806,7 @@ void ImageView::recomputeTextSearchMatches()
         if (r.text.isEmpty()) {
             continue;
         }
-        if (TextSearchPolicy::regionMatchesQuery(r.text, qn, qa, m_textLayer.searchFuzzy)) {
+        if (TextSearchPolicy::regionMatchesQuery(r.text, qn, qa, m_textLayer.isSearchFuzzy())) {
             m_textLayer.addSearchMatch(i);
         }
     }
@@ -819,9 +819,9 @@ int ImageView::setTextSearchQuery(const QString &query)
         return m_textLayer.searchMatches.size();
     }
     m_textLayer.setSearchQuery(trimmed);
-    if (m_textLayer.searchQuery.isEmpty()) {
+    if (!m_textLayer.hasSearchQuery()) {
         m_textLayer.clearSearchMatches();
-        if (!m_textLayer.showRegions) {
+        if (!m_textLayer.showsRegions()) {
             m_textLayer.resetLayerContent();
         }
         viewport()->update();
@@ -1003,7 +1003,7 @@ void ImageView::finishTextRubberBand()
     }
     // Ensure text layer (refreshTextLayer skips when neither search nor outlines).
     if (!m_textLayer.hasRegions() || m_textLayer.layerPath != classicPath()) {
-        const bool hadShow = m_textLayer.showRegions;
+        const bool hadShow = m_textLayer.showsRegions();
         m_textLayer.setShowRegions(true);
         refreshTextLayer();
         m_textLayer.setShowRegions(hadShow);
@@ -1059,7 +1059,7 @@ QString ImageView::selectedText() const
 
 void ImageView::clearTextSelection()
 {
-    if (m_textLayer.selectedRegions.isEmpty() && !m_textLayer.isRubberbanding()) {
+    if (!m_textLayer.hasSelection() && !m_textLayer.isRubberbanding()) {
         return;
     }
     m_textLayer.clearSelection();
@@ -1145,13 +1145,13 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 
     // Text search highlights + optional region outlines (Image mode page docs).
     if (isImageMode() && m_textLayer.hasRegions()
-        && (m_textLayer.showRegions || !m_textLayer.searchMatches.isEmpty())) {
+        && (m_textLayer.showsRegions() || m_textLayer.hasSearchMatches())) {
         if (ImageItem *item = primaryItem()) {
             const QSize sz = item->imageSize();
             if (sz.width() > 0 && sz.height() > 0 && m_textLayer.pageBoundsValid()) {
                 painter->save();
                 // Search hits: filled yellow first (under outlines / selection).
-                if (!m_textLayer.searchMatches.isEmpty()) {
+                if (m_textLayer.hasSearchMatches()) {
                     painter->setPen(Qt::NoPen);
                     painter->setBrush(QColor(255, 220, 40, 110));
                     for (int idxMatch : m_textLayer.searchMatches) {
@@ -1168,7 +1168,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                     }
                 }
                 // Rubber-band text selection (cyan).
-                if (!m_textLayer.selectedRegions.isEmpty()) {
+                if (m_textLayer.hasSelection()) {
                     painter->setPen(Qt::NoPen);
                     painter->setBrush(QColor(60, 160, 255, 100));
                     for (int idxSel : m_textLayer.selectedRegions) {
@@ -1184,7 +1184,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                         painter->drawPolygon(item->mapToScene(local));
                     }
                 }
-                if (m_textLayer.showRegions) {
+                if (m_textLayer.showsRegions()) {
                     painter->setBrush(Qt::NoBrush);
                     for (const ThumtooCache::TextRegion &r : m_textLayer.regions()) {
                         const QRectF img = textRegionImageRect(r);

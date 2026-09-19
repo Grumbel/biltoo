@@ -35,6 +35,14 @@ struct TextLayerSession {
 
     bool isRubberbanding() const { return rubberbanding; }
 
+    bool showsRegions() const { return showRegions; }
+
+    bool isSearchFuzzy() const { return searchFuzzy; }
+
+    bool hasSearchQuery() const { return !searchQuery.isEmpty(); }
+
+    bool hasLinkHoverTip() const { return !linkHoverTip.isEmpty(); }
+
     int regionCount() const { return layer.regions.size(); }
 
     bool hasRegions() const { return !layer.regions.isEmpty(); }
@@ -61,7 +69,11 @@ struct TextLayerSession {
 
     int matchCount() const { return searchMatches.size(); }
 
+    bool hasSearchMatches() const { return !searchMatches.isEmpty(); }
+
     int selectionCount() const { return selectedRegions.size(); }
+
+    bool hasSelection() const { return !selectedRegions.isEmpty(); }
 
     void clearSelection()
     {

@@ -745,7 +745,7 @@ public:
 
     /** Debug: paint text/link region rects for page documents (Image mode). */
     void setShowTextRegions(bool on);
-    bool showTextRegions() const { return m_textLayer.showRegions; }
+    bool showTextRegions() const { return m_textLayer.showsRegions(); }
     void refreshTextLayer();
 
     /**
@@ -760,7 +760,7 @@ public:
     int textLayerRegionCount() const;
     /** Soft match for OCR noise (alnum-only + light edit distance). Default on. */
     void setTextSearchFuzzy(bool on);
-    bool textSearchFuzzy() const { return m_textLayer.searchFuzzy; }
+    bool textSearchFuzzy() const { return m_textLayer.isSearchFuzzy(); }
     /** True if @p regionText matches @p query under the same rules as Find. */
     static bool textMatchesQuery(const QString &regionText, const QString &query, bool fuzzy);
 
