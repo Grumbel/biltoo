@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1466-nav-dwell-layout-phase.** SessionNav, Dwell, Layout, Phase.
+Prior: **1465**. Commits 1466a–1466d (+ docs).
+
+### Commits
+1. **SessionNavFlags** isImageModeNavEnabled / isGalleryReturnAvailable
+2. **SlideshowDwell** / **Settings** motion and letterbox accessors
+3. **LayoutPrefs** isFreeForm
+4. **SlideshowPhaseState** path and image accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1466-nav-dwell-layout-phase.bundle HEAD
+```
+Requires tip **1465**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1465-hud-soft-framing-bools.** ProgressHud, Soft, Framing, HUD bools.
 Prior: **1464**. Commits 1465a–1465d (+ docs).
 

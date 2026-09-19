@@ -196,6 +196,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowProgressHud** progress/nav/paused/seek bool accessors;
   **GallerySoftBook** isDeferPopulate; **ViewFraming** fit/fill/sticky accessors;
   **HudFlash** / **HudAppearance** visibility accessors.
+- **SessionNavFlags** nav bool accessors; **SlideshowDwell**/Settings motion
+  accessors; **LayoutPrefs** isFreeForm; **SlideshowPhaseState** path/image
+  accessors.
 
 
 ## Current pain (evidence)
