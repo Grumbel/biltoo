@@ -24,6 +24,14 @@ struct SessionPathOrder {
         ids.clear();
     }
 
+    /** Replace order and align id vector length (invalid ids when growing). */
+    void setOrder(const QStringList &newPaths, const QVector<SessionImageId> &newIds)
+    {
+        paths = newPaths;
+        ids = newIds;
+        syncIdLength();
+    }
+
     bool isEmpty() const { return paths.isEmpty(); }
 
     int size() const { return paths.size(); }

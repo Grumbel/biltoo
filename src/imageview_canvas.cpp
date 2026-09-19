@@ -184,10 +184,8 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // --- Remove tiles that are not part of the new session -------------------
     destroyDoomedWorkspaceItems(collectDoomedWorkspaceItems(paths, sessionIds));
 
-    m_pathOrderBook.paths = paths;
-    m_pathOrderBook.ids = sessionIds;
     // Align lengths: missing ids stay invalid (unbound rows).
-    m_pathOrderBook.syncIdLength();
+    m_pathOrderBook.setOrder(paths, sessionIds);
 
     // Gallery size-first: probe all unknown sizes before creating tiles so the
     // first pack never uses 1024² stand-ins (first cell stuck square until reload).

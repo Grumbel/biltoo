@@ -1613,8 +1613,7 @@ void ImageView::prunePathOrdersAfterSessionRemove(const QStringList &removedPath
             unboundBudget[path] -= 1;
         }
     }
-    m_pathOrderBook.paths = prunedPaths;
-    m_pathOrderBook.ids = prunedIds;
+    m_pathOrderBook.setOrder(prunedPaths, prunedIds);
 }
 
 void ImageView::restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,
@@ -1955,7 +1954,7 @@ void ImageView::focusSessionPath(const QString &path)
             }
         }
         if (needScroll) {
-            ensureVisible(item, 48, 48);
+            ensureVisible(item, ViewTransform::kEnsureVisibleMargin, ViewTransform::kEnsureVisibleMargin);
         }
         // Keyboard focus: show filename in the HUD like mouse hover.
         if (m_gallery.hoverPath() != path) {
@@ -1975,7 +1974,7 @@ void ImageView::revealGalleryPath(const QString &path)
         return;
     }
     // Do not clearSelection — preserves Ctrl/Shift/rubber-band multi-select.
-    ensureVisible(item, 48, 48);
+    ensureVisible(item, ViewTransform::kEnsureVisibleMargin, ViewTransform::kEnsureVisibleMargin);
     if (m_gallery.hoverPath() != path) {
         m_gallery.setHoverPath(path);
         viewport()->update();
