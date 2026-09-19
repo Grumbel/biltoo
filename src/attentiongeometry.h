@@ -66,14 +66,40 @@ QVector<int> mergeSelection(const QVector<int> &current, const QVector<int> &hit
 /**
  * Toggle membership of @p index in @p selected (Shift/Ctrl click on a handle).
  */
-QVector<int> toggleSelectionIndex(const QVector<int> &sel
+QVector<int> toggleSelectionIndex(const QVector<int> &selected, int index);
+
 /** Mode-hint overlay point size (base + 1, floor 10). */
 inline int clampHintPointSize(int basePt)
 {
     return qMax(10, basePt + 1);
 }
 
-ected, int index);
+/** Detect / UI max attention points (1…16). */
+inline int clampMaxPoints(int maxPoints)
+{
+    return qBound(1, maxPoints, 16);
+}
+
+/** Smartcrop edge from image size (VIPS attention probe). */
+inline int smartcropEdge(int width, int height)
+{
+    const int shortEdge = qMin(width, height);
+    return qBound(8, shortEdge / 3, shortEdge);
+}
+
+/** Pixel → normalized attention from VIPS attention_x/y. */
+inline QPointF normFromPixel(int attentionX, int attentionY, int width, int height)
+{
+    if (width < 1 || height < 1) {
+        return QPointF(0.5, 0.5);
+    }
+    return QPointF(qBound(0.0, qreal(attentionX) / qreal(width), 1.0),
+                   qBound(0.0, qreal(attentionY) / qreal(height), 1.0));
+}
+
+/** Auto-trim thresholds. */
+inline int clampColorThreshold(int v) { return qBound(0, v, 255); }
+inline int clampNoisePercent(int v) { return qBound(0, v, 50); }
 
 } // namespace AttentionGeometry
 

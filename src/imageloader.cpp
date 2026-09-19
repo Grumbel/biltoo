@@ -10,6 +10,7 @@
 
 #include "biltoo_thread.h"
 #include "imageloader.h"
+#include "attentiongeometry.h"
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "archivepath.h"
@@ -571,7 +572,7 @@ static bool attentionPointVipsPeak(const QImage &image, QPointF *normalizedOut)
     if (!in) {
         return false;
     }
-    const int cropEdge = qBound(8, qMin(width, height) / 3, qMin(width, height));
+    const int cropEdge = AttentionGeometry::smartcropEdge(width, height);
     VipsImage *out = nullptr;
     int attentionX = 0;
     int attentionY = 0;
@@ -584,8 +585,7 @@ static bool attentionPointVipsPeak(const QImage &image, QPointF *normalizedOut)
         g_object_unref(in);
         return false;
     }
-    *normalizedOut = QPointF(qBound(0.0, qreal(attentionX) / qreal(width), 1.0),
-                             qBound(0.0, qreal(attentionY) / qreal(height), 1.0));
+    *normalizedOut = AttentionGeometry::normFromPixel(attentionX, attentionY, width, height);
     g_object_unref(out);
     g_object_unref(in);
     return true;
@@ -597,7 +597,7 @@ bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut, int m
     if (!normalizedOut || image.isNull() || image.width() < 8 || image.height() < 8) {
         return false;
     }
-    maxPoints = qBound(1, maxPoints, 16);
+    maxPoints = AttentionGeometry::clampMaxPoints(maxPoints);
     normalizedOut->clear();
 
     constexpr int kMaxEdge = 256;
@@ -721,8 +721,8 @@ bool autoTrimRect(const QImage &image, const QRect &searchWithin, QRect *trimmed
     if (area.width() < 2 || area.height() < 2) {
         return false;
     }
-    colorThreshold = qBound(0, colorThreshold, 255);
-    noisePercent = qBound(0, noisePercent, 50);
+    colorThreshold = AttentionGeometry::clampColorThreshold(colorThreshold);
+    noisePercent = AttentionGeometry::clampNoisePercent(noisePercent);
 
     QImage src = image;
     if (src.format() != QImage::Format_RGB32
