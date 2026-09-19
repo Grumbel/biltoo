@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1510-crop-paint-inline.** Fold paint wrappers into paintCropOverlay.
+Prior: **1509**. Commits 1510a (+ docs).
+
+### Commits
+1. Inline paintCrop* / drawCropTextButton into paintCropOverlay; drop ImageView wrappers
+
+### Note
+Still on ImageView: installFullImageForCrop, applyCropCommit bake, PathRaster.
+
+### Apply (on tip **1500**)
+```bash
+git pull --ff-only /path/to/biltoo-1510-crop-paint-inline.bundle HEAD
+```
+Includes **1501–1510**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1509-crop-session-id.** cropRecordSessionId for appearance keys.
 Prior: **1508**. Commits 1509a–1509b (+ docs).
 
