@@ -41,6 +41,31 @@ CropGeometry::CropButtonLayout cropChromeButtons(const ImageView *view)
 
 } // namespace
 
+/** Prefer ImageCache; fall back to item display only when not a prior crop bake. */
+QImage pickCropApplyHost(ImageItem *item, const QString &path, bool *fromCache)
+{
+    QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+    if (fromCache) {
+        *fromCache = !host.isNull();
+    }
+    if (!host.isNull()) {
+        return host;
+    }
+    if (item && item->hasAppliedContentXform()
+        && item->appliedContentXform().hasCrop) {
+        return {};
+    }
+    if (!item) {
+        return {};
+    }
+    host = item->sourceImage();
+    if (host.isNull()) {
+        host = item->previewImage();
+    }
+    return host;
+}
+
+
 ImageItem *ImageView::cropTargetItem() const
 {
     // Crop session is bound to one subject for its entire lifetime. Never
@@ -1014,24 +1039,15 @@ bool ImageView::applyCropCommit(ImageItem *item)
         const QPointF cropSceneCenter = item->mapToScene(m_crop.draftCenterLocal());
 
         const QString path = item->path();
-        QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-        const bool hostFromCache = !host.isNull();
-        if (!hostFromCache) {
-            // Draft must be orient-only full frame. If the item already holds a
-            // crop bake (second Apply without cache), refuse — cropping the bake
-            // double-crops and shrinks Workspace tiles.
-            if (item->hasAppliedContentXform()
+        bool hostFromCache = false;
+        QImage host = pickCropApplyHost(item, path, &hostFromCache);
+        if (host.isNull()) {
+            if (!hostFromCache && item->hasAppliedContentXform()
                 && item->appliedContentXform().hasCrop) {
                 flashHud(tr("Crop"), tr("Full image not ready — try again"));
-                return false;
+            } else {
+                flashHud(tr("Crop"), tr("No pixels to crop"));
             }
-            host = item->sourceImage();
-            if (host.isNull()) {
-                host = item->previewImage();
-            }
-        }
-        if (host.isNull()) {
-            flashHud(tr("Crop"), tr("No pixels to crop"));
             return false;
         }
 
