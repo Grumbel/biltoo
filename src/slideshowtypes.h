@@ -859,6 +859,16 @@ struct SlideshowProgressHud {
 
     bool isProgressClockPaused() const { return progressClockPaused; }
 
+    bool isProgressElapsedValid() const { return progressElapsed.isValid(); }
+
+    qint64 progressElapsedMs() const
+    {
+        return progressElapsed.isValid() ? progressElapsed.elapsed() : 0;
+    }
+
+    void startProgressElapsed() { progressElapsed.start(); }
+
+
     bool setSeekbarVisible(bool on)
     {
         if (seekbarVisible == on) {

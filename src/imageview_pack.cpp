@@ -340,7 +340,7 @@ void ImageView::updateGalleryDecodeWindow()
                     "(max %.1f ms runs=%d items=%d "
                     "pass1=%.1f pass2=%.1f interest=%.1f install=%d)\n",
                     m_perf.lastDecodeWindowUsValue() / 1000.0,
-                    m_perf.maxDecodeWindowUsValue() / 1000.0, m_perf.decodeWindowRuns,
+                    m_perf.maxDecodeWindowUsValue() / 1000.0, m_perf.decodeWindowRunsValue(),
                     static_cast<int>(m_items.size()),
                     usPass1 / 1000.0, usPass2 / 1000.0, usInterest / 1000.0,
                     hostInstalled);

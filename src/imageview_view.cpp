@@ -452,7 +452,7 @@ void ImageView::captureStickyPanAnchor(ImageItem *item)
 
 void ImageView::restoreStickyPanAnchor(ImageItem *item)
 {
-    if (!m_framing.haveStickyPanAnchor || !item || !m_scene || !viewport()) {
+    if (!m_framing.hasStickyPan() || !item || !m_scene || !viewport()) {
         return;
     }
     if (!m_items.contains(item) || item->scene() != m_scene) {
@@ -710,7 +710,7 @@ void ImageView::setSlideshowProgressPaused(bool paused)
         return;
     }
     if (paused) {
-        if (m_ssHud.progressElapsed.isValid()) {
+        if (m_ssHud.isProgressElapsedValid()) {
             m_ssHud.accumulateProgressBaseFromElapsed();
         }
         m_ssHud.setProgressClockPaused(true);
@@ -719,7 +719,7 @@ void ImageView::setSlideshowProgressPaused(bool paused)
         }
     } else {
         m_ssHud.setProgressClockPaused(false);
-        m_ssHud.progressElapsed.start();
+        m_ssHud.startProgressElapsed();
         if (m_ssHud.isProgressActive() && m_ssHud.hasProgressInterval()
             && m_slideshowProgressTimer) {
             m_slideshowProgressTimer->start();
@@ -733,7 +733,7 @@ void ImageView::setSlideshowProgressPaused(bool paused)
 void ImageView::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
 {
     if (totalMs <= 0) {
-        if (m_ssHud.timelineTotalMs == 0) {
+        if (!m_ssHud.hasTimelineTotal()) {
             return;
         }
         m_ssHud.clearTimeline();

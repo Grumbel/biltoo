@@ -543,8 +543,8 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
             } else if (m_ssHud.hasProgressInterval()) {
                 qint64 elapsed = m_ssHud.progressBase();
                 if (!m_ssHud.isProgressClockPaused()
-                    && m_ssHud.progressElapsed.isValid()) {
-                    elapsed += m_ssHud.progressElapsed.elapsed();
+                    && m_ssHud.isProgressElapsedValid()) {
+                    elapsed += m_ssHud.progressElapsedMs();
                 }
                 fraction = qreal(elapsed) / qreal(m_ssHud.progressInterval());
             }
@@ -715,7 +715,7 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
         if (!m_canvasBg.useChecker(isWorkspaceMode())) {
             painter->fillRect(rect, m_canvasBg.primaryColor());
         } else {
-            fillChecker(m_canvasBg.color, m_canvasBg.checkerAlt());
+            fillChecker(m_canvasBg.primaryColor(), m_canvasBg.checkerAlt());
         }
     }
 }
@@ -839,7 +839,7 @@ int ImageView::setTextSearchQuery(const QString &query)
 
 bool ImageView::hasTextLayer() const
 {
-    return m_textLayer.hasRegions() && m_textLayer.layerPath == classicPath();
+    return m_textLayer.hasRegions() && m_textLayer.layerPathRef() == classicPath();
 }
 
 int ImageView::textLayerRegionCount() const
@@ -983,10 +983,10 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
 QRectF ImageView::textRubberBandImageRect() const
 {
     ImageItem *item = primaryItem();
-    if (!item || m_textLayer.rubberRect.isEmpty()) {
+    if (!item || !m_textLayer.hasRubberRect()) {
         return {};
     }
-    const QRectF sceneRect = mapToScene(m_textLayer.rubberRect).boundingRect();
+    const QRectF sceneRect = mapToScene(m_textLayer.rubberRectRef()).boundingRect();
     // Map scene corners to item local, then subtract offset → image pixels.
     const QRectF local = item->mapFromScene(sceneRect).boundingRect();
     return local.translated(-item->offset());
@@ -994,7 +994,7 @@ QRectF ImageView::textRubberBandImageRect() const
 
 void ImageView::finishTextRubberBand()
 {
-    const QRect viewRect = m_textLayer.rubberRect.normalized();
+    const QRect viewRect = m_textLayer.rubberRectRef().normalized();
     m_textLayer.endRubber();
     m_textLayer.clearSelectedRegions();
     if (viewRect.width() < 4 || viewRect.height() < 4) {

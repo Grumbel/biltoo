@@ -29,6 +29,8 @@ struct PerfStats {
     qint64 lastDecodeWindowUsValue() const { return lastDecodeWindowUs; }
 
     qint64 maxDecodeWindowUsValue() const { return maxDecodeWindowUs; }
+
+    int decodeWindowRunsValue() const { return decodeWindowRuns; }
     QElapsedTimer fpsClock;
     int frameCount = 0;
     qreal fps = 0.0;
