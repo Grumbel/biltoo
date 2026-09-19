@@ -250,15 +250,15 @@ void TileLoadCoordinator::tick(int globalBudget)
                     ++zero;
                 }
             }
-            auto& reg = tilelod::TileLodRegistry::instance();
+            const QString regLine =
+                tilelod::TileLodRegistry::instance().debug_summary();
             std::fprintf(stderr,
                          "biltoo/tile-coord: cands=%d zeroTile=%d issue=%d "
-                         "budget=%d wall=%lldms regPaths=%zu idle=%zu ramMiB=%.1f\n",
+                         "budget=%d wall=%lldms %s\n",
                          static_cast<int>(cands.size()), zero,
                          static_cast<int>(issueTargets.size()), globalBudget,
                          static_cast<long long>(wall.elapsed()),
-                         reg.path_count(), reg.idle_path_count(),
-                         reg.total_approx_bytes() / (1024.0 * 1024.0));
+                         qPrintable(regLine));
             int samples = 0;
             for (ImageItem *item : issueTargets) {
                 if (!item || samples >= 4) {
