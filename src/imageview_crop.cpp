@@ -1,30 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Crop targets, draft locks, workspace align helpers, auto-trim.
-// Enter → imageview_crop_enter; Apply → crop_apply; Full → crop_raster.
+// Crop targets, workspace align helpers, auto-trim, viewport notify.
+// Enter → imageview_crop_enter; Apply → crop_apply; Full → crop_raster;
+// paint → crop_paint; input → crop_input.
 
 #include "imageview.h"
-#include "croppathraster.h"
-#include "viewportupdatehold.h"
-#include "cropflash.h"
-#include "cropdebug.h"
-#include "cropgeometry.h"
 #include "placementlinear.h"
-#include "imagecache.h"
-#include "thumtoocache.h"
-#include "sessionappearance.h"
-#include "contentxform.h"
-
-#include <QGuiApplication>
 #include "imageitem.h"
-#include "imageloader.h"
-#include "sessionappearance.h"
-#include "contentxform.h"
-
-#include <QPainter>
-#include <QtMath>
-#include <QTransform>
 
 ImageItem *ImageView::cropSessionBoundItem() const
 {
@@ -60,19 +43,19 @@ ImageItem *ImageView::resolveInactiveCropTarget() const
 ImageItem *ImageView::cropTargetItem() const
 {
     // Crop session is bound to one subject for its entire lifetime. Never
-    // re-resolve via selection or primaryItem() — that applied the draft to
-    // unrelated tiles when selection changed mid-crop (IDENTITY.md).
-    if (m_crop.active()) {
-        return cropSessionBoundItem();
+    // retarget from selection while the draft is active.
+    if (m_crop.active() || m_crop.isEnterValid()) {
+        if (ImageItem *bound = cropSessionBoundItem()) {
+            return bound;
+        }
     }
     return resolveInactiveCropTarget();
 }
 
 
 void ImageView::preserveWorkspaceItemCenter(ImageItem *item, const QPointF &center0,
-                                               qreal footW0, qreal footH0)
+                                            qreal footW0, qreal footH0)
 {
-    // Do not rescale full frame into the previous crop footprint.
     if (!item || !isWorkspaceMode() || footW0 <= 1.0 || footH0 <= 1.0) {
         return;
     }

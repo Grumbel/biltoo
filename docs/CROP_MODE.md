@@ -141,3 +141,19 @@ Apply filmstrip: `cropApply=1 img=<cropW>x<cropH>` (not full-frame size).
   `needsRematerialize` crop→full.
 - `tests/sessionappearance_crop_test.cpp` — `scaleCropRect`, materialize crop
   output size vs full frame.
+
+## Source layout (ImageView crop TUs)
+
+| File | Responsibility |
+|------|----------------|
+| `imageview_crop.cpp` | Targets, workspace align, auto-trim, viewport notify |
+| `imageview_crop_enter.cpp` | Enter session, full-frame draft install, locks, PathRaster cancel |
+| `imageview_crop_apply.cpp` | Apply bake/record, leave, undo push |
+| `imageview_crop_raster.cpp` | Full raster (thumtoo / pool) |
+| `imageview_crop_paint.cpp` | Overlay chrome paint |
+| `imageview_crop_input.cpp` | Handle drag, rubber-band, hit-test |
+| `imageview_appearance.cpp` | Session appearance load/store/restore / Apply-undo |
+| `cropsession.*` / `cropgeometry.*` | Pure policy and geometry |
+| `cropappearancecommand.*` | QUndoCommand for Apply |
+| `croppathraster.h` / `cropflash.h` / `cropdebug.h` | PathRaster suspend, HUD copy, debug logs |
+

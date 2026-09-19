@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1558-crop-module-docs.** Slim crop.cpp includes; document crop TU map in CROP_MODE.md.
+Prior: **1557**.
+
+### Change
+- `imageview_crop.cpp` includes only what targets/align/auto-trim need
+- `docs/CROP_MODE.md` — Source layout table for all crop TUs
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1558-crop-module-docs.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1557-crop-enter-tu.** Crop enter pipeline in imageview_crop_enter.cpp.
 Prior: **1556**.
 
