@@ -779,10 +779,10 @@ void ImageView::applyAutoCrop()
     const qreal sx = qreal(src.width()) / cr.width();
     const qreal sy = qreal(src.height()) / cr.height();
     QRect search(
-        int(qFloor((m_crop.rect.left() - cr.left()) * sx)),
-        int(qFloor((m_crop.rect.top() - cr.top()) * sy)),
-        int(qCeil(m_crop.rect.width() * sx)),
-        int(qCeil(m_crop.rect.height() * sy)));
+        int(qFloor((m_crop.currentRect().left() - cr.left()) * sx)),
+        int(qFloor((m_crop.currentRect().top() - cr.top()) * sy)),
+        int(qCeil(m_crop.currentRect().width() * sx)),
+        int(qCeil(m_crop.currentRect().height() * sy)));
     search = search.intersected(QRect(0, 0, src.width(), src.height()));
 
     QRect trimmed;
@@ -1066,10 +1066,10 @@ bool ImageView::applyCropCommit(ImageItem *item)
     const QRectF full = item->contentRect();
     const bool fullFrame =
         !m_crop.hasValidRect()
-        || (qAbs(m_crop.rect.left() - full.left()) < 0.5
-            && qAbs(m_crop.rect.top() - full.top()) < 0.5
-            && qAbs(m_crop.rect.width() - full.width()) < 0.5
-            && qAbs(m_crop.rect.height() - full.height()) < 0.5);
+        || (qAbs(m_crop.currentRect().left() - full.left()) < 0.5
+            && qAbs(m_crop.currentRect().top() - full.top()) < 0.5
+            && qAbs(m_crop.currentRect().width() - full.width()) < 0.5
+            && qAbs(m_crop.currentRect().height() - full.height()) < 0.5);
     // Record content-space crop while the draft frame is still valid.
     recordSessionCrop(item, m_crop.currentRect().isValid() ? m_crop.currentRect() : full);
     if (!fullFrame) {
@@ -1083,8 +1083,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // units and keep the same scale → scene size unchanged.
         const qreal sx0 = item->itemScaleX();
         const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
-        const qreal cropW = m_crop.rect.width();
-        const qreal cropH = m_crop.rect.height();
+        const qreal cropW = m_crop.currentRect().width();
+        const qreal cropH = m_crop.currentRect().height();
         const qreal footW = cropW * sx0;
         const qreal footH = cropH * sy0;
         const QPointF cropSceneCenter = item->mapToScene(m_crop.currentRect().center());
@@ -1127,7 +1127,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
             st = captureState(item);
             st.hasCrop = true;
             st.cropRect = CropGeometry::integerCropFromLocal(
-                QRectF(m_crop.rect.left(), m_crop.rect.top(), cropW, cropH),
+                QRectF(m_crop.currentRect().left(), m_crop.currentRect().top(), cropW, cropH),
                 item->offset());
             st.cropSourceSize = item->imageSize();
             st.cropRotation = m_crop.currentRotation();
@@ -1223,7 +1223,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         }
 
         if (isWorkspaceMode()) {
-            item->setItemRotation(m_crop.rotation);
+            item->setItemRotation(m_crop.currentRotation());
             updateWorkspaceSceneRect();
         } else if (isImageMode()) {
             m_framing.armFit();
@@ -1365,7 +1365,7 @@ void ImageView::leaveCropModeInternal(bool apply)
 
 QPolygonF ImageView::cropPolygonItemLocal() const
 {
-    return CropGeometry::rotatedCorners(m_crop.rect.normalized(), m_crop.rotation);
+    return CropGeometry::rotatedCorners(m_crop.currentRect().normalized(), m_crop.currentRotation());
 }
 
 QRectF ImageView::cropRectView() const
@@ -1678,7 +1678,7 @@ void ImageView::paintCropActionButtons(QPainter &painter)
 void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
 {
     // Crop size in image pixels (same coordinate space as the draft rect).
-    const QSize cropSz = ContentXform::roundedSizeAtLeast1(m_crop.rect.width(), m_crop.rect.height());
+    const QSize cropSz = ContentXform::roundedSizeAtLeast1(m_crop.currentRect().width(), m_crop.currentRect().height());
     const int cropW = cropSz.width();
     const int cropH = cropSz.height();
     const QString sizeLabel = QStringLiteral("%1×%2").arg(cropW).arg(cropH);
@@ -1754,10 +1754,10 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
         return;
     }
     const QPointF startLocal = item->mapFromScene(mapToScene(viewPos));
-    m_crop.beginHandleDrag(h, m_crop.rect, startLocal);
+    m_crop.beginHandleDrag(h, m_crop.currentRect(), startLocal);
     if (h == CropHandle::Rotate) {
         m_crop.setRotateStart(
-            m_crop.rotation,
+            m_crop.currentRotation(),
             PlacementLinear::angleAbout(m_crop.currentRect().center(), startLocal));
     }
 }
@@ -1771,7 +1771,7 @@ void ImageView::updateCropMoveDrag(const QPointF &local, const QRectF &cr)
         // size at the image edge). Only slide so corners stay inside — same as
         // the rotated-frame path via translateCropInside.
         r = r.normalized();
-        r = CropGeometry::translateInside(r, m_crop.rotation, cr);
+        r = CropGeometry::translateInside(r, m_crop.currentRotation(), cr);
     }
     m_crop.setRect(r);
     viewport()->update();
@@ -1785,7 +1785,7 @@ void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qre
         local, m_crop.dragStartRect.center(), m_crop.rotateStartRotation,
         m_crop.rotateStartAngle, mods & Qt::ShiftModifier, mods & Qt::ControlModifier));
     if (!m_crop.isAllowExpand()) {
-        m_crop.setRect(CropGeometry::constrainToContent(m_crop.dragStartRect, m_crop.rotation, cr,
+        m_crop.setRect(CropGeometry::constrainToContent(m_crop.dragStartRect, m_crop.currentRotation(), cr,
                                             minSide));
     }
     viewport()->update();
@@ -1801,7 +1801,7 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
     const bool forceSquare =
         QGuiApplication::keyboardModifiers() & Qt::ShiftModifier;
     QRectF r = CropGeometry::resizeDraftRect(
-        m_crop.activeHandle, local, m_crop.dragStartRect, m_crop.rotation, minSide,
+        m_crop.activeHandle, local, m_crop.dragStartRect, m_crop.currentRotation(), minSide,
         fromCenter, forceSquare);
 
     if (m_crop.isAllowExpand()) {
@@ -1814,7 +1814,7 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
         }
         m_crop.setRect(r);
     } else {
-        m_crop.setRect(CropGeometry::constrainToContent(r, m_crop.rotation, cr, minSide));
+        m_crop.setRect(CropGeometry::constrainToContent(r, m_crop.currentRotation(), cr, minSide));
     }
     viewport()->update();
 }
