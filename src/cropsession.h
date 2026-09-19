@@ -102,7 +102,15 @@ public:
         rotateStartRotation = 0.0;
     }
 
-    void setHoverHandle(CropHandle h) { hoverHandle = h; }
+    /** @return true when hover handle changed. */
+    bool setHoverHandle(CropHandle h)
+    {
+        if (hoverHandle == h) {
+            return false;
+        }
+        hoverHandle = h;
+        return true;
+    }
 
     void beginHandleDrag(CropHandle h, const QRectF &startRect, const QPointF &startLocal)
     {
