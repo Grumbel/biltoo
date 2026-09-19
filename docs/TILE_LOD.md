@@ -364,7 +364,7 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
 keeps identity correct.
 
-**Global path RAM tip history (1400–1449):**
+**Global path RAM tip history (1400–1450):**
 
 | Range | Summary |
 |-------|---------|
@@ -385,6 +385,7 @@ keeps identity correct.
 | **1442–1444** | In-place shared invalidate; `purgeTilePathRam` for multi-item paths |
 | **1445–1447** | Session replace: dropAllTileLodSessions + invalidateAll clears holders |
 | **1448–1449** | Last release clears residual InFlight; settled-scope docs |
+| **1450** | Settled-scope range docs through 1449 |
 
 ### Global path RAM — settled scope (1400–1449)
 

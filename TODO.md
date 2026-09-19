@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1450-path-ram-settled-range-docs.** Path RAM settled range through 1449.
+Prior: **1449**. Commit 1450 (docs only).
+
+### Path RAM
+**Settled.** No further global path-RAM commits planned without an explicit
+design choice among the documented non-goals (interest-only prefetch, nav-hot
+live sessions, cross-process host RAM).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1450-path-ram-settled-range-docs.bundle HEAD
+```
+Requires tip **1449**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1449-release-clear-inflight-settled-docs.** Residual InFlight clear; path RAM settled scope.
 Prior: **1447**. Commits 1448–1449.
 
