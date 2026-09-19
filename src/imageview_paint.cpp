@@ -690,8 +690,8 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             }
             if (!m_canvasBg.workspaceTile.isNull()) {
                 const QPixmap &tile = m_canvasBg.workspaceTile;
-                qreal tw = qMax(1.0, qreal(tile.width()));
-                qreal th = qMax(1.0, qreal(tile.height()));
+                qreal tw = qreal(ViewTransform::atLeast1(tile.width()));
+                qreal th = qreal(ViewTransform::atLeast1(tile.height()));
                 const qreal lod = CanvasPatternGeometry::tileLodFactor(tw, viewScale);
                 const qreal cellW = tw * lod;
                 const qreal cellH = th * lod;
