@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1629-path-order-accessors.** Encapsulate view path-order reads behind accessors.
+Prior: **1628**.
+
+### Change
+- Private accessors: `pathOrderIsEmpty/Size/Paths/Ids/PathAt/IdAt`
+- All former direct `m_pathOrderBook` reads in cpp use the accessors
+- Mutations still only via `pathOrderClear/SetOrder/AppendRow`
+- Member remains; next step can swap backing store without touching call sites
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1629-path-order-accessors.bundle HEAD
+```
+
+### Next
+- Swap accessors to SessionDocument where Gallery-local empty-book semantics allow
+- Delete `m_pathOrderBook` / `SessionPathOrder` when no longer needed
+- Tier 5b PreferCache
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1628-path-order-doc-reads.** Prefer SessionDocument for membership; stop dual-write.
 Prior: **1627**.
 

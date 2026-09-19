@@ -1597,9 +1597,9 @@ void ImageView::prunePathOrdersAfterSessionRemove(const QStringList &removedPath
         }
     }
     // Preserve prior order for unbound path slots still live.
-    for (int i = 0; i < m_pathOrderBook.size(); ++i) {
-        const QString &path = m_pathOrderBook.pathAt(i);
-        const SessionImageId sid = m_pathOrderBook.idAt(i);
+    for (int i = 0; i < pathOrderSize(); ++i) {
+        const QString &path = pathOrderPathAt(i);
+        const SessionImageId sid = pathOrderIdAt(i);
         if (sid != kInvalidSessionImageId) {
             continue; // already taken from live bound tiles
         }

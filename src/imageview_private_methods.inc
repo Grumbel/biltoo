@@ -116,13 +116,21 @@
     /** How many times @a path appears in session path order (duplicate tiles). */
     int pathOrderOccurrences(const QString &path) const;
 
-    const QVector<SessionImageId> &sessionIdOrder() const { return m_pathOrderBook.idList(); }
-
     /**
      * View-local path order (Gallery pack / LoadAdd multiplicity).
-     * SessionDocument remains MainWindow-owned — do not clear/append the
-     * document here (Gallery leave clears the book without wiping the session).
+     * All reads go through these accessors so Tier 4 can swap the backing store.
+     * SessionDocument remains MainWindow-owned — mutations never clear/append it
+     * (Gallery leave clears the book without wiping the session).
      */
+    bool pathOrderIsEmpty() const { return m_pathOrderBook.isEmpty(); }
+    int pathOrderSize() const { return m_pathOrderBook.size(); }
+    const QStringList &pathOrderPaths() const { return m_pathOrderBook.pathList(); }
+    const QVector<SessionImageId> &pathOrderIds() const { return m_pathOrderBook.idList(); }
+    QString pathOrderPathAt(int index) const { return m_pathOrderBook.pathAt(index); }
+    SessionImageId pathOrderIdAt(int index) const { return m_pathOrderBook.idAt(index); }
+
+    const QVector<SessionImageId> &sessionIdOrder() const { return pathOrderIds(); }
+
     void pathOrderClear()
     {
         m_pathOrderBook.clear();

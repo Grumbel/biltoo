@@ -2169,8 +2169,8 @@ void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
         return;
     }
     if (!m_layout.isFreeForm()) {
-        if (!m_pathOrderBook.isEmpty()) {
-            reorderItemsByPaths(m_pathOrderBook.pathList());
+        if (!pathOrderIsEmpty()) {
+            reorderItemsByPaths(pathOrderPaths());
         }
         if (!(isGalleryMode() && m_galleryRelayoutSuppress.active())) {
             if (sizeChanged) {

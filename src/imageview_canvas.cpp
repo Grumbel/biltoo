@@ -112,7 +112,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
 {
     TtfpTrace::mark("finishSetWorkspacePaths");
     // Keep canvas order aligned with session/sort order (not async load order).
-    reorderItemsByPaths(m_pathOrderBook.pathList());
+    reorderItemsByPaths(pathOrderPaths());
 
     if (haveIds) {
         rebindWorkspaceSession(paths, sessionIds);
@@ -453,7 +453,7 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
         // (filmstrip row only, wrong thumb until appearance emit).
         if (sessionId != kInvalidSessionImageId) {
             bool alreadyOrdered = false;
-            for (SessionImageId id : m_pathOrderBook.idList()) {
+            for (SessionImageId id : pathOrderIds()) {
                 if (id == sessionId) {
                     alreadyOrdered = true;
                     break;
@@ -537,7 +537,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     // Path alone cannot express "two tiles, same file".
     if (sessionId != kInvalidSessionImageId) {
         bool alreadyOrdered = false;
-        for (SessionImageId id : m_pathOrderBook.idList()) {
+        for (SessionImageId id : pathOrderIds()) {
             if (id == sessionId) {
                 alreadyOrdered = true;
                 break;
@@ -879,16 +879,16 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
 
 void ImageView::ensureGalleryPlaceholders()
 {
-    if (!isGalleryMode() || m_pathOrderBook.isEmpty()) {
+    if (!isGalleryMode() || pathOrderIsEmpty()) {
         return;
     }
     // Only clear defer-populate. Keep size-resolve active so fill layouts still
     // wait for finishGallerySizeResolve to pack (soft may install meanwhile).
     m_gallerySoftBook.setDeferPopulate(false);
     QSet<ImageItem *> claimed;
-    for (int i = 0; i < m_pathOrderBook.size(); ++i) {
-        const QString &path = m_pathOrderBook.pathAt(i);
-        const SessionImageId sid = m_pathOrderBook.idAt(i);
+    for (int i = 0; i < pathOrderSize(); ++i) {
+        const QString &path = pathOrderPathAt(i);
+        const SessionImageId sid = pathOrderIdAt(i);
 
         ImageItem *existing = nullptr;
         if (sid != kInvalidSessionImageId) {
@@ -951,5 +951,5 @@ void ImageView::ensureGalleryPlaceholders()
             claimed.insert(ph);
         }
     }
-    reorderItemsByPaths(m_pathOrderBook.pathList());
+    reorderItemsByPaths(pathOrderPaths());
 }

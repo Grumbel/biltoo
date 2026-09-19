@@ -681,7 +681,7 @@ void ImageView::scheduleSizeProbe(const QString &path)
 
 QStringList ImageView::sizeResolvePathOrder() const
 {
-    return m_pathOrderBook.pathList();
+    return pathOrderPaths();
 }
 
 bool ImageView::sizeResolveLayoutDefersPopulate() const
@@ -724,7 +724,7 @@ void ImageView::onSizeResolveGateComplete()
             }
         }
         // Safety: size-resolve used to refuse createPlaceholder → empty canvas.
-        if (isGalleryMode() && m_items.isEmpty() && !m_pathOrderBook.isEmpty()) {
+        if (isGalleryMode() && m_items.isEmpty() && !pathOrderIsEmpty()) {
             ensureGalleryPlaceholders();
         }
     }
