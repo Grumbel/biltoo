@@ -700,12 +700,10 @@ the stop line when Tier 4 lands.
   993 lines; public methods 259; no new `friend`.
 - Tier 1a: **done** (biltoo-1597) — state ownership on `SlideshowController`.
 - Tier 1b: **done** (biltoo-1598) — 95 orchestration methods moved to
-  `SlideshowController` (QObject + friend of ImageView for private host access).
-  ImageView public slideshow API is thin forwards. `imageview_view.cpp` 853 lines
-  (status/HUD temporarily in `imageview_status.cpp` pending Tier 3 HudModel).
-  Narrow `SlideshowHost` (replace friend) still open as 1c / follow-up.
+  `SlideshowController` (QObject). ImageView public slideshow API is thin
+  forwards. Host accessors replaced friend (1605). HudModel in Tier 3.
 - Tier 1: **done** for exit metrics (view.cpp ≤900, no m_ss* on ImageView);
-  Host-surface cleanup remains (`friend SlideshowController`).
+  Host surface landed in biltoo-1605 (no friend).
 - Tier 2a: **done** (biltoo-1600) — `CropController` / `AttentionController` own
   `CropSession` / `AttentionSession`; removed unused `friend CropAppearanceCommand`
   (`applyCropAppearance` is already public). Method move + empty friend list = 2b.

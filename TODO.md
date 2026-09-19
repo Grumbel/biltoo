@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1609-fix-crop-flashHud.** CropController::flashCropHud uses m_view->flashHud; REFACTOR progress log cleanup.
+Prior: **1608**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1609-fix-crop-flashHud.bundle HEAD
+```
+
+### Phase 6 remaining
+- Full ImageView characterization harness (Tier 4 gate)
+- Tier 4: Appearance into SessionDocument
+- Tier 5: DisplayPipeline
+- Tier 6: Input router cleanup
+- Header metrics: imageview.h still ~1050 lines / ~209 public methods (targets <400 / <150)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1608-phase6-tier4-char-tests.** Phase 6 Tier 4 prerequisite: SessionDocument + SessionAppearanceStore characterization tests.
 Prior: **1607**.
 
