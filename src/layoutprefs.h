@@ -20,9 +20,17 @@ struct LayoutPrefs {
     /** 0 = automatic for grid/flow. */
     void setGridColumns(int columns) { gridColumns = qMax(0, columns); }
 
-    void setMasonryColumns(int columns) { masonryColumns = qBound(1, columns, 32); }
+    static constexpr int kMaxMasonryBands = 32;
 
-    void setMasonryRows(int rows) { masonryRows = qBound(1, rows, 32); }
+    void setMasonryColumns(int columns)
+    {
+        masonryColumns = qBound(1, columns, kMaxMasonryBands);
+    }
+
+    void setMasonryRows(int rows)
+    {
+        masonryRows = qBound(1, rows, kMaxMasonryBands);
+    }
 };
 
 #endif // LAYOUTPREFS_H
