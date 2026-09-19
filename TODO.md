@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1524-crop-session-enter-fix.** Fix beginCropEnterSession; enter/prepare helpers.
+Prior: **1523** (`3272d1e`). Commits 1524a–1524b (+ docs).
+
+### Commits
+1. Fix beginCropEnterSession infinite recursion; abortCropEnterFailed; finishCropResetLayout
+2. resolveCropEnterTarget; installAndActivateCropEnter
+
+### Apply (on tip **1523** / `3272d1e`)
+```bash
+git pull --ff-only /path/to/biltoo-1524-crop-session-enter-fix.bundle HEAD
+```
+Requires tip **1523**. Bundle: `BASE=3272d1e..HEAD`.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1523-crop-session-enter-apply.** Enter/Apply helpers on upstream tip 1520.
 Prior: **1520** (`824440a` / origin/master). Commits 1523a (+ docs + bundle rules).
 
