@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1351-chrome-attention-cost-progress.** ItemFrame chrome fonts,
+attention hint size, rgbaCostKiB, pointAlong, clampedProgress.
+Prior: **1350**.
+
+### Change
+- `ItemFrameGeometry` placeholder inset/ellipsis, content-edit + chrome glyph sizes
+- Opacity track knob: `ViewTransform::pointAlong`
+- `AttentionGeometry::clampHintPointSize`
+- `ImageCache::rgbaCostKiB`
+- `ViewTransform::clampedProgress` for status bar
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1351**)
+```bash
+git pull /path/to/biltoo-1351-chrome-attention-cost-progress.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1350-grade-filmstrip-overlay-stamp.** ColorAdjustments clamps,
 FilmstripGeometry, overlay font, debug stamp pure helpers.
 Prior: **1349**.
