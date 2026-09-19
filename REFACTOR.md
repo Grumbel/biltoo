@@ -132,6 +132,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **CanvasBackground::setPattern**; **CentreProgress::set**; **PathItemStateBook::take**; **ImageMouseInfo::clear**.
 - **GalleryPackFit::modeFromLayoutMode**; **GalleryController::clearChrome**; **SessionAppearanceStore::take**.
 - **HudFlash::setIdentityPulse** reports change.
+- **WorkspaceNavGeometry** int key overload; **GalleryController** focus/hover path transitions.
+- **ColorAdjustments::matches**; **layoutIsGridFamily** / **layoutNeedsAllSizes**.
 
 
 ## Current pain (evidence)

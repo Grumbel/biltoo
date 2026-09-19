@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1390-nav-key-gallery-paths-color-layoutpred.** Compile fix + helpers
+on tip 1389.
+Prior: **1389**.
+
+### Change
+1. Fix: `WorkspaceNavGeometry::scoreRelative` accepts `QKeyEvent::key()` int
+2. `GalleryController::{setFocusPath,setHoverPath}` report change
+3. `ColorAdjustments::matches`
+4. `layoutIsGridFamily` / `layoutNeedsAllSizes`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1390-nav-key-gallery-paths-color-layoutpred.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1390).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1389-mode-map-gallery-chrome-appearance-take-hudpulse.** Pure
 helpers on tip 1388.
 Prior: **1388**.
