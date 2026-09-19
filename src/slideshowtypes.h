@@ -214,6 +214,10 @@ struct SlideshowPhaseState {
         return isFromPath(path) || isToPath(path);
     }
 
+    bool hasFromPath() const { return !fromPath.isEmpty(); }
+
+    bool hasToPath() const { return !toPath.isEmpty(); }
+
     void clearToImage()
     {
         toImage = {};
@@ -452,6 +456,8 @@ struct SlideshowDwellState {
     bool isMotionActive() const { return motionActive; }
 
     bool isMotionPaused() const { return motionPaused; }
+
+    bool hasBias() const { return biasValid; }
 
     bool hasSourceImage() const { return !sourceImage.isNull(); }
 

@@ -1763,7 +1763,7 @@ void ImageView::captureMotionBiasesForPath(const QString &path, const QImage &im
     const QPointF saveB = m_ssDwell.biasB;
     const QPointF saveDir = m_ssDwell.travelDir;
     const qreal saveSign = m_ssDwell.motionSign;
-    const bool saveV = m_ssDwell.biasValid;
+    const bool saveV = m_ssDwell.hasBias();
     m_ssDwell.clearBias();
     pickInterestingMotionBiases(qHash(path), image);
     *outA = m_ssDwell.biasA;
@@ -2490,7 +2490,7 @@ QRectF ImageView::computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh,
     const qreal base = slideshowZoomBaseScale(logical, vw, vh);
     return SlideshowMotionGeometry::coverDestRect(
         m_ssSettings.motion, base, m_ssSettings.panZoomFactor, iw, ih, vw, vh,
-        motionT, biasA, biasB, m_ssDwell.biasValid, path);
+        motionT, biasA, biasB, m_ssDwell.hasBias(), path);
 }
 
 
@@ -2642,7 +2642,7 @@ QPixmap ImageView::renderMotionCoverPixmap(const QImage &image, qreal motionT,
     QString path;
     if (pathHash != 0 && qHash(m_ss.toPath) == pathHash) {
         path = m_ss.toPath;
-    } else if (!m_ss.fromPath.isEmpty()) {
+    } else if (m_ss.hasFromPath()) {
         path = m_ss.fromPath;
     }
     paintMotionCover(&painter, image, motionT, m_ssDwell.biasA, m_ssDwell.biasB, path);
@@ -2757,10 +2757,10 @@ void ImageView::armMotionBiasForPath(ImageItem *item, const QString &path)
     // Biases are per-image. Manual next/prev (and any LoadReplace) must not keep
     // the previous slide's A/B — that made the first post-nav transition glitch.
     // Live handoff installs to-path biases + path before calling here.
-    if (m_ssDwell.biasValid && m_ssDwell.biasPath != path) {
+    if (m_ssDwell.hasBias() && m_ssDwell.biasPath != path) {
         m_ssDwell.clearBias();
     }
-    if (!m_ssDwell.biasValid) {
+    if (!m_ssDwell.hasBias()) {
         const QImage src = item ? item->sourceImage() : QImage();
         pickInterestingMotionBiases(qHash(path), src);
         m_ssDwell.setBiasPath(path);

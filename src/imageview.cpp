@@ -836,7 +836,7 @@ int ImageView::pendingDecodeCount() const
         n += m_ss.rasterQueueCount();
         const int need = 0; // need edge checked via target below if needed
         Q_UNUSED(need);
-        if (!m_ss.fromPath.isEmpty()
+        if (m_ss.hasFromPath()
             && ImageCache::longEdge(m_ss.fromImage) > 0
             && ImageCache::longEdge(m_ss.fromImage)
                    < (slideshowTargetEdge() * 7) / 10) {
