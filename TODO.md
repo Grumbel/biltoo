@@ -2,6 +2,33 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1608-phase6-tier4-char-tests.** Phase 6 Tier 4 prerequisite: SessionDocument + SessionAppearanceStore characterization tests.
+Prior: **1607**.
+
+### Change
+- `tests/sessiondocument_test.cpp` — path/id alignment, never-reuse ids, duplicate paths
+- `tests/sessionappearance_test.cpp` — id-keyed crop state independent of path
+- CMake: `biltoo-sessiondocument-test`, `biltoo-sessionappearance-test`
+
+### Not yet
+- Full offscreen ImageView open → Gallery → crop → Image harness (REFACTOR Rules)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1608-phase6-tier4-char-tests.bundle HEAD
+```
+
+### Next
+- Expand ImageView characterization harness when link strategy allows
+- Or rebuild/fix crop/attention compile issues
+- Tier 4 Appearance into SessionDocument once tests green and ImageView covered
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1607-phase6-tier2b-crop-controller.** Phase 6 Tier 2b: crop orchestration on CropController; ImageView thin forwards.
 Prior: **1606**.
 

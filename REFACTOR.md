@@ -713,6 +713,9 @@ the stop line when Tier 4 lands.
 - Tier 2b attention: **done** (biltoo-1606) — methods on `AttentionController`.
 - Tier 2b crop: **done** (biltoo-1607) — methods on `CropController`.
 - Tier 3: **done** (biltoo-1604) — `HudModel` pure formatters + `tests/hudmodel_test.cpp`.
-- Tier 4: _pending_
+- Tier 4 prerequisite: **started** (biltoo-1608) — `sessiondocument_test` +
+  `sessionappearance_test` lock id-keyed appearance and path/id identity.
+  Full offscreen ImageView open→Gallery→crop harness still open.
+- Tier 4: _pending_ (needs fuller ImageView characterization before move)
 - Tier 5: _pending_
 - Tier 6: _pending_
