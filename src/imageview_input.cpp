@@ -95,7 +95,7 @@ bool ImageView::setHoverEdge(EdgeZone zone)
     if (m_hoverEdge == EdgeZone::Previous || m_hoverEdge == EdgeZone::Next
         || m_hoverEdge == EdgeZone::GalleryReturn) {
         setCursor(Qt::PointingHandCursor);
-    } else if (!m_chrome.panning && !m_itemInteract.isRotating()) {
+    } else if (!m_chrome.isPanning() && !m_itemInteract.isRotating()) {
         setCursor(ToolPolicy::cursorFor(m_tool));
     }
     if (viewport()) {
@@ -967,7 +967,7 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
 {
-    if (!m_textLayer.rubberbanding || !(event->buttons() & Qt::LeftButton)) {
+    if (!m_textLayer.isRubberbanding() || !(event->buttons() & Qt::LeftButton)) {
         return false;
     }
     m_textLayer.updateRubber(event->pos());
@@ -979,8 +979,8 @@ bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
 void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
-    if (isImageMode() && !m_crop.active() && !m_attention.active() && !m_textLayer.rubberbanding
-        && !m_chrome.panning && event->buttons() == Qt::NoButton
+    if (isImageMode() && !m_crop.active() && !m_attention.active() && !m_textLayer.isRubberbanding()
+        && !m_chrome.isPanning() && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(classicPath())) {
         if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
             const ThumtooCache::PageTextLayer cached =
@@ -1071,7 +1071,7 @@ bool ImageView::tryMouseMoveCropDrag(QMouseEvent *event)
 
 bool ImageView::tryMouseMovePan(QMouseEvent *event)
 {
-    if (!m_chrome.panning) {
+    if (!m_chrome.isPanning()) {
         return false;
     }
     // Dwell camera owns the view transform — do not fight it with hand pan.
@@ -1298,7 +1298,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
     if (isWorkspaceMode() && m_tool == Tool::Select && !m_itemInteract.isHandleDragging()
-        && !m_groupXform.scaleDrag && !m_groupXform.rotateDrag && !m_chrome.panning) {
+        && !m_groupXform.scaleDrag && !m_groupXform.rotateDrag && !m_chrome.isPanning()) {
         const QPointF scenePos = mapToScene(event->pos());
         QList<ImageItem *> candidates;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
@@ -1349,7 +1349,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                         : tr("Scale selection");
                     QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
                 }
-            } else if (!m_chrome.panning) {
+            } else if (!m_chrome.isPanning()) {
                 viewport()->unsetCursor();
                 if (groupHoverChanged) {
                     QToolTip::hideText();
@@ -1428,7 +1428,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                         QToolTip::hideText();
                     }
                 }
-            } else if (!m_chrome.panning && !m_itemInteract.isHandleDragging()) {
+            } else if (!m_chrome.isPanning() && !m_itemInteract.isHandleDragging()) {
                 viewport()->unsetCursor();
                 if (hoverChanged) {
                     QToolTip::hideText();
@@ -1527,7 +1527,7 @@ bool ImageView::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
 {
-    if (!m_textLayer.rubberbanding || event->button() != Qt::LeftButton) {
+    if (!m_textLayer.isRubberbanding() || event->button() != Qt::LeftButton) {
         return false;
     }
     m_textLayer.updateRubber(event->pos());
@@ -1682,7 +1682,7 @@ bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
 
 bool ImageView::tryMouseReleasePan(QMouseEvent *event)
 {
-    if (!m_chrome.panning
+    if (!m_chrome.isPanning()
         || (event->button() != Qt::MiddleButton && event->button() != Qt::LeftButton)) {
         return false;
     }

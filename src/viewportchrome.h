@@ -38,6 +38,8 @@ struct ViewportChrome {
 
     void endPan() { panning = false; }
 
+    bool isPanning() const { return panning; }
+
     void updatePanPos(const QPoint &pos) { lastMousePos = pos; }
 
     /** @return true when mouse readout changed. */

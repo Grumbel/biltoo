@@ -335,8 +335,8 @@ ImageView::ImageView(QWidget *parent)
             : GallerySoft::kDecodeWindowImageMs);
         // Image/Workspace deep zoom: timer may be stopped after coverage;
         // scrollbar drag (or pan setValue) must re-issue visible cells.
-        // Hand pan already ticks; skip when m_chrome.panning to avoid double work.
-        if (!m_chrome.panning && !isGalleryMode()) {
+        // Hand pan already ticks; skip when m_chrome.isPanning() to avoid double work.
+        if (!m_chrome.isPanning() && !isGalleryMode()) {
             tickPrimaryTileLod(4);
         }
     });
@@ -345,7 +345,7 @@ ImageView::ImageView(QWidget *parent)
         scheduleGalleryDecodeWindowRefresh(isGalleryMode()
             ? GallerySoft::kDecodeWindowSettleMs
             : GallerySoft::kDecodeWindowImageMs);
-        if (!m_chrome.panning && !isGalleryMode()) {
+        if (!m_chrome.isPanning() && !isGalleryMode()) {
             tickPrimaryTileLod(4);
         }
     });
