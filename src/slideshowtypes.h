@@ -166,14 +166,26 @@ struct SlideshowSettings {
         return qBound(1.02, factor, 1.5);
     }
 
-    void setPanZoomFactor(qreal factor)
+    /** @return true when the clamped pan-zoom factor changed. */
+    bool setPanZoomFactor(qreal factor)
     {
-        panZoomFactor = clampPanZoomFactor(factor);
+        const qreal next = clampPanZoomFactor(factor);
+        if (qFuzzyCompare(panZoomFactor, next)) {
+            return false;
+        }
+        panZoomFactor = next;
+        return true;
     }
 
-    void setTransitionDurationMs(int ms)
+    /** @return true when transition duration changed. */
+    bool setTransitionDurationMs(int ms)
     {
-        transitionDurationMs = qMax(0, ms);
+        const int next = qMax(0, ms);
+        if (transitionDurationMs == next) {
+            return false;
+        }
+        transitionDurationMs = next;
+        return true;
     }
 
     bool setPadColor(const QColor &c)
