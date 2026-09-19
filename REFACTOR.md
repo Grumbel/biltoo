@@ -229,6 +229,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   ZoomBlur/dwell generation; **PerfStats** enabled/timing accessors.
 - **CropSession** enter/stash/hover accessors; **GallerySoftState**
   tilesPyramidQueued; **ViewFraming** sticky pan; **LayoutPrefs** columns.
+- **Fix** TextLayer/phase SurfaceId types; **AttentionSession** selected/
+  rubber/drag; **CentreProgress** title/detail accessors.
 
 
 ## Current pain (evidence)

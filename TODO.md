@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1478-fix-types-attention-centre.** Fix types; Attention; CentreProgress.
+Prior: **1477**. Commits 1478a–1478d (+ docs).
+
+### Commits
+1. **Fix** TextLayerSession layerRef type; phase SurfaceId refs; drop pageBoundsRef
+2. **AttentionSession** selected, rubber, and drag accessors
+3. **CentreProgress** title and detail accessors
+4. Route CentreProgress call sites
+
+### Note
+Compile-fix tip. Bag micro-accessors largely complete. Crop enter/apply
+logic still on ImageView. Path RAM settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1478-fix-types-attention-centre.bundle HEAD
+```
+Requires tip **1477**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1477-crop-enter-soft-layout.** Crop enter/stash, soft tiles, framing/layout.
 Prior: **1476**. Commits 1477a–1477c (+ docs).
 
