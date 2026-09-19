@@ -1181,6 +1181,11 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 viewport()->repaint();
             }
         }
+        // Retained path RAM: bind session and paint tiles without waiting for
+        // the next coordinator timer (A→B→A should show tiles on this frame).
+        if (!m_ssHud.navHot && item->tileLodHasPathRam()) {
+            item->tickTileLod(8);
+        }
         biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d painted=%s",
                       qPrintable(QFileInfo(path).fileName()),
                       pixels.width(), pixels.height(), didFit,
