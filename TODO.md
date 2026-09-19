@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1471-fix-crop-alt-attention-dwell.** Fix CropHandle/altColor; Attention; Dwell.
+Prior: **1470**. Commits 1471a–1471c (+ docs).
+
+### Commits
+1. **Fix** CropSession isHandleHot(CropHandle); CanvasBackground altColor
+2. **AttentionSession** selection emptiness via hasSelection
+3. **SlideshowDwellState** bias and duration accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled. Crop enter/apply
+still on view (larger ownership extraction).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1471-fix-crop-alt-attention-dwell.bundle HEAD
+```
+Requires tip **1470**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1470-group-phase-crop-text.** Group, phase path, crop handle, text layer.
 Prior: **1469**. Commits 1470a–1470d (+ docs).
 

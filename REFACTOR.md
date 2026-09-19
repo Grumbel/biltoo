@@ -211,6 +211,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **GroupTransformSession** handle-hot/presence; phase hasFromPath/hasToPath;
   dwell hasBias; **CropSession** handle-drag/hover; **TextLayerSession**
   show/search/selection accessors.
+- **Fix** isHandleHot(CropHandle) and CanvasBackground altColor;
+  **AttentionSession** hasSelection gates; **SlideshowDwellState** bias/
+  duration accessors.
 
 
 ## Current pain (evidence)
