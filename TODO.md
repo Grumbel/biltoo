@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1487-crop-session-more.** Auto-crop search, stash rotation seed, enter pose restore.
+Prior: **1486**. Commits 1487a–1487b (+ docs).
+
+### Commits
+1. **CropSession** sourceSearchRectFromDraft + seedRotationFromStashedPlacement
+2. **CropSession** restoreEnterPlacementPose
+
+### Apply
+```bash
+git pull /path/to/biltoo-1487-crop-session-more.bundle HEAD
+```
+Requires tip **1486** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1486-crophandle-include.** Fix include cycle; CropHandle own header.
 Prior: **1485**. Commits 1486a–1486b (+ docs).
 
