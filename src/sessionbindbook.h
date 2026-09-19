@@ -54,6 +54,14 @@ struct SessionBindBook {
         return true;
     }
 
+    /** Take and clear select-on-create session ids. */
+    QSet<SessionImageId> takeSelectIds()
+    {
+        QSet<SessionImageId> out = selectIds;
+        selectIds.clear();
+        return out;
+    }
+
     bool hasBindForPath(const QString &path) const
     {
         if (path.isEmpty()) {
