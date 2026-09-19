@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1364-estimated-edge-unit-residuals.** clampEstimatedEdge,
+clampUnit, residual nonNeg/atLeast1 wiring.
+Prior: **1363**.
+
+### Change
+- `ContentXform::clampEstimatedEdge` for post-crop long-edge projection
+- `ColorAdjustments::clampUnit` for HSV saturation
+- Residual nonNeg/atLeast1: filmstrip virtual range, ZoomBlur centre crop,
+  ImageItem hole count, ImageLoader peak norm denom
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1364**)
+```bash
+git pull /path/to/biltoo-1364-estimated-edge-unit-residuals.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1363-zoomblur-worksize-nonneg.** ZoomBlur::workSize;
 ViewTransform::nonNeg(int) wired to progress/margins/budget.
 Prior: **1362**.
