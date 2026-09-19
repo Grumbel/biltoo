@@ -74,9 +74,25 @@ struct ViewFraming {
         fillMode = true;
     }
 
-    void setStickyZoomEnabled(bool on) { stickyZoomEnabled = on; }
+    /** @return true when sticky-zoom enabled flag changed. */
+    bool setStickyZoomEnabled(bool on)
+    {
+        if (stickyZoomEnabled == on) {
+            return false;
+        }
+        stickyZoomEnabled = on;
+        return true;
+    }
 
-    void setStickyZoomKind(StickyZoomKind kind) { stickyZoomKind = kind; }
+    /** @return true when sticky kind changed. */
+    bool setStickyZoomKind(StickyZoomKind kind)
+    {
+        if (stickyZoomKind == kind) {
+            return false;
+        }
+        stickyZoomKind = kind;
+        return true;
+    }
 
     /** Infer sticky kind from current fit/fill flags (1:1 is separate). */
     static StickyZoomKind kindFromFitFill(bool fitMode, bool fillMode)

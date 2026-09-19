@@ -401,20 +401,18 @@ void ImageView::armZoomRegion()
 
 void ImageView::setStickyZoomEnabled(bool on)
 {
-    if (m_framing.stickyZoomEnabled == on) {
+    if (!m_framing.setStickyZoomEnabled(on)) {
         return;
     }
-    m_framing.setStickyZoomEnabled(on);
     emit stickyZoomChanged();
     emit statusChanged();
 }
 
 void ImageView::releaseStickyZoom()
 {
-    if (!m_framing.stickyZoomEnabled) {
+    if (!m_framing.setStickyZoomEnabled(false)) {
         return;
     }
-    m_framing.setStickyZoomEnabled(false);
     emit stickyZoomChanged();
     emit statusChanged();
 }
