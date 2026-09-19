@@ -399,11 +399,8 @@ void ImageView::resizeEvent(QResizeEvent *event)
     // Dwell cover owns framing — never refit the underlay over it.
     // Invalidate atlas viewport keys so the next tick rebuilds at new size.
     if (m_ssDwell.motionActive) {
-        m_ssDwell.atlasVw = 0;
-        m_ssZoomBlur.underlay[0] = QPixmap();
-        m_ssZoomBlur.underlay[1] = QPixmap();
-        m_ssZoomBlur.sourceKey[0] = 0;
-        m_ssZoomBlur.sourceKey[1] = 0;
+        m_ssDwell.invalidateAtlasViewport();
+        m_ssZoomBlur.clearUnderlays();
         if (viewport()) {
             viewport()->update();
         }
@@ -423,8 +420,8 @@ bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
     if (!m_ssHud.isSeekHit(event->pos().y(), viewport()->height())) {
         return false;
     }
-    m_ssHud.seekDragging = true;
-    m_ssHud.seekbarVisible = true;
+    m_ssHud.setSeekDragging(true);
+    m_ssHud.setSeekbarVisible(true);
     const qreal f = ViewTransform::unitFraction(event->pos().x(), viewport()->width());
     emit slideshowSeekRequested(f);
     event->accept();
@@ -1282,7 +1279,7 @@ void ImageView::updateMouseMoveSlideshowSeek(QMouseEvent *event)
     const int h = viewport()->height();
     const bool nearBottom = h > 0 && y >= h - 48;
     if (nearBottom != m_ssHud.seekbarVisible && !m_ssHud.seekDragging) {
-        m_ssHud.seekbarVisible = nearBottom;
+        m_ssHud.setSeekbarVisible(nearBottom);
         viewport()->update();
     }
     if (m_ssHud.seekDragging && h > 0 && viewport()->width() > 0) {
@@ -1515,7 +1512,7 @@ bool ImageView::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
     if (!m_ssHud.seekDragging || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_ssHud.seekDragging = false;
+    m_ssHud.setSeekDragging(false);
     event->accept();
     if (viewport()) {
         viewport()->update();

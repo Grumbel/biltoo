@@ -1069,7 +1069,7 @@ void ImageView::leaveEvent(QEvent *event)
         viewport()->update();
     }
     if (m_ssHud.seekbarVisible && !m_ssHud.seekDragging) {
-        m_ssHud.seekbarVisible = false;
+        m_ssHud.setSeekbarVisible(false);
         if (viewport()) {
             viewport()->update();
         }
