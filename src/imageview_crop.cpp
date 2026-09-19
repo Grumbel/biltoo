@@ -256,15 +256,11 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
 
 bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 {
-    if (m_crop.locksItem(item)) {
-        return true;
+    if (!item) {
+        return false;
     }
-    // Host-only: targetId may refer to another live item with the same path.
-    if (item && m_crop.isDraftSampleFrozen() && !item->path().isEmpty()
-        && isCropDraftLockedPath(item->path())) {
-        return true;
-    }
-    return false;
+    // Pointer/id lock on CropSession, then path lock (draftPath / targetId resolve).
+    return m_crop.locksItem(item) || isCropDraftLockedPath(item->path());
 }
 
 bool ImageView::isCropDraftLockedPath(const QString &path) const
