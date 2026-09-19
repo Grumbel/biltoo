@@ -93,6 +93,18 @@ inline bool layoutIsGridFamily(LayoutMode mode)
     return mode == LayoutMode::Grid || mode == LayoutMode::GridCrop;
 }
 
+/** Flow / FlowFill pack family. */
+inline bool layoutIsFlowFamily(LayoutMode mode)
+{
+    return mode == LayoutMode::Flow || mode == LayoutMode::FlowFill;
+}
+
+/** Masonry column family (vertical bands, not rows). */
+inline bool layoutIsMasonryColumns(LayoutMode mode)
+{
+    return mode == LayoutMode::Masonry || mode == LayoutMode::MasonryFill;
+}
+
 /** Fill-mode pack that needs global sizes before first pack. */
 inline bool layoutNeedsAllSizes(LayoutMode mode)
 {

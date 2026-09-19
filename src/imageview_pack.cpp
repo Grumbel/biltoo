@@ -397,7 +397,7 @@ void ImageView::setGridColumns(int columns)
     }
     if (isGalleryMode()
         && (layoutIsGridFamily(m_layout.mode)
-            || m_layout.mode == LayoutMode::Flow || m_layout.mode == LayoutMode::FlowFill
+            || layoutIsFlowFamily(m_layout.mode)
             || m_layout.mode == LayoutMode::Facing)) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
@@ -410,7 +410,7 @@ void ImageView::setMasonryColumns(int columns)
     if (m_layout.masonryColumns == before) {
         return;
     }
-    if ((m_layout.mode == LayoutMode::Masonry || m_layout.mode == LayoutMode::MasonryFill)
+    if ((layoutIsMasonryColumns(m_layout.mode))
         && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
