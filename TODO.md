@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1367-text-pageguide-session.** TextLayer rubber and PageGuide
+resize/hover owned by session bags.
+Prior: **1366**.
+
+### Change
+- `TextLayerSession::{beginRubber,updateRubber,endRubber}`
+- `PageGuideSession::{beginResize,endResize,setHoverHandle}`
+- ImageView input/layout/paint paths call session transitions
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1367**)
+```bash
+git pull /path/to/biltoo-1367-text-pageguide-session.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1366-handle-points-attention-rubber.** Shared axis-aligned
 handles; AttentionSession rubber ownership.
 Prior: **1365**.

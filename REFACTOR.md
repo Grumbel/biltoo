@@ -344,3 +344,4 @@ part of early-phase exit criteria).
 - **ContentXform::clampEstimatedEdge**; **ColorAdjustments::clampUnit**; residual nonNeg/atLeast1.
 - **FilmstripGeometry** virtualOverscan/seedVirtualRange; DisplayEdge/ImageCache atLeast1.
 - **ViewTransform** axisAlignedHandlePoints; **AttentionSession** rubber begin/update/end.
+- **TextLayerSession** rubber transitions; **PageGuideSession** resize/hover transitions.
