@@ -698,7 +698,7 @@ void ImageView::onSizeResolveGateComplete()
     }
     // Create tiles only now — sizes are definitive (or timed out with stand-in).
     if (m_gallerySoftBook.deferPopulate) {
-        m_gallerySoftBook.deferPopulate = false;
+        m_gallerySoftBook.setDeferPopulate(false);
         ensureGalleryPlaceholders();
     } else {
         for (ImageItem *item : m_items) {
@@ -735,7 +735,7 @@ void ImageView::onSizeResolveGateComplete()
 
 void ImageView::onSizeResolveGateCancelled()
 {
-    m_gallerySoftBook.deferPopulate = false;
+    m_gallerySoftBook.setDeferPopulate(false);
     if (isGalleryMode() && m_centreProgress.title.isEmpty()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }

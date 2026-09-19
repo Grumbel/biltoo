@@ -195,9 +195,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         && startGallerySizeResolveIfNeeded(paths)) {
         // Probes in flight — pack once in finishGallerySizeResolve with real sizes.
         TtfpTrace::mark("gallery_size_resolve_await_sizes");
-        m_gallerySoftBook.deferPopulate = true;
+        m_gallerySoftBook.setDeferPopulate(true);
     } else {
-        m_gallerySoftBook.deferPopulate = false;
+        m_gallerySoftBook.setDeferPopulate(false);
     }
 
     // Gallery always virtualizes: placeholders + soft/full ladder. The old
@@ -890,7 +890,7 @@ void ImageView::ensureGalleryPlaceholders()
     }
     // Only clear defer-populate. Keep size-resolve active so fill layouts still
     // wait for finishGallerySizeResolve to pack (soft may install meanwhile).
-    m_gallerySoftBook.deferPopulate = false;
+    m_gallerySoftBook.setDeferPopulate(false);
     QSet<ImageItem *> claimed;
     for (int i = 0; i < m_pathOrderBook.paths.size(); ++i) {
         const QString &path = m_pathOrderBook.paths.at(i);

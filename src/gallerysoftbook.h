@@ -21,6 +21,8 @@ struct GallerySoftBook {
 
     void clearSoft() { soft.clear(); }
 
+    void setDeferPopulate(bool on) { deferPopulate = on; }
+
     void resetPath(const QString &path)
     {
         if (!path.isEmpty()) {
