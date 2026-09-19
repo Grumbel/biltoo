@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1611-fix-thumbnailbar-surfaces.** ThumbnailBar::m_displaySurfaces restored (false positive from Tier 5a rewrite).
+Prior: **1610** DisplayPipelineController state ownership.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1611-fix-thumbnailbar-surfaces.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1610-phase6-tier5a-display-pipeline.** Phase 6 Tier 5a: DisplayPipelineController owns load/surface/tile state.
 Prior: **1609**.
 
