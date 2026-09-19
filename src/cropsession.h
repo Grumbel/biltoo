@@ -342,6 +342,13 @@ public:
     /** Expand draft to full content (Reset chrome); clears rotation. */
     void resetDraftToContent(const QRectF &contentRect);
 
+    /**
+     * Clamp @p local to content when expand is off; normalize.
+     * @return empty if result is too small.
+     */
+    QRectF clampLocalCrop(const QRectF &local, const QRectF &contentRect) const;
+
+
 
     /**
      * Map a source-pixel trim rect into content space and set as axis-aligned draft.

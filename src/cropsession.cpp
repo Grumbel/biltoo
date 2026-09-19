@@ -300,3 +300,15 @@ void CropSession::beginHandleDrag(CropHandle h, const QRectF &startRect, const Q
                        PlacementLinear::angleAbout(startRect.center(), startLocal));
     }
 }
+
+QRectF CropSession::clampLocalCrop(const QRectF &local, const QRectF &contentRect) const
+{
+    QRectF r = local.normalized();
+    if (!isAllowExpand()) {
+        r = r.intersected(contentRect);
+    }
+    if (r.width() < 1.0 || r.height() < 1.0) {
+        return {};
+    }
+    return r;
+}

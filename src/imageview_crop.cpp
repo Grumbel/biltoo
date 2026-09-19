@@ -857,11 +857,8 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         return;
     }
     const QRectF cr = item->contentRect();
-    QRectF local = localCrop.normalized();
-    if (!m_crop.isAllowExpand()) {
-        local = local.intersected(cr);
-    }
-    if (local.width() < 1.0 || local.height() < 1.0) {
+    const QRectF local = m_crop.clampLocalCrop(localCrop, cr);
+    if (local.isEmpty()) {
         return;
     }
     const QPointF off = item->offset();
