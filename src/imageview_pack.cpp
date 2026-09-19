@@ -172,7 +172,7 @@ void ImageView::scheduleIdleGalleryDecodes(const QStringList &rest)
 
 GalleryLayout::Mode ImageView::galleryLayoutModeFromViewMode() const
 {
-    return GalleryPackFit::modeFromLayoutMode(m_layout.mode);
+    return GalleryPackFit::modeFromLayoutMode(m_layout.currentMode());
 }
 
 void ImageView::updateGalleryDecodeWindow()
@@ -397,9 +397,9 @@ void ImageView::setGridColumns(int columns)
         return;
     }
     if (isGalleryMode()
-        && (layoutIsGridFamily(m_layout.mode)
-            || layoutIsFlowFamily(m_layout.mode)
-            || m_layout.mode == LayoutMode::Facing)) {
+        && (layoutIsGridFamily(m_layout.currentMode())
+            || layoutIsFlowFamily(m_layout.currentMode())
+            || m_layout.currentMode() == LayoutMode::Facing)) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
 }
@@ -411,7 +411,7 @@ void ImageView::setMasonryColumns(int columns)
     if (m_layout.masonryColumns == before) {
         return;
     }
-    if ((layoutIsMasonryColumns(m_layout.mode))
+    if ((layoutIsMasonryColumns(m_layout.currentMode()))
         && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
@@ -424,7 +424,7 @@ void ImageView::setMasonryRows(int rows)
     if (m_layout.masonryRows == before) {
         return;
     }
-    if ((m_layout.mode == LayoutMode::MasonryRows || m_layout.mode == LayoutMode::MasonryRowsFill)
+    if ((m_layout.currentMode() == LayoutMode::MasonryRows || m_layout.currentMode() == LayoutMode::MasonryRowsFill)
         && !m_items.isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }

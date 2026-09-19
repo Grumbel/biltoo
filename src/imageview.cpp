@@ -682,7 +682,7 @@ QStringList ImageView::sizeResolvePathOrder() const
 
 bool ImageView::sizeResolveLayoutDefersPopulate() const
 {
-    return layoutDefersPopulateUntilSizes(m_layout.mode);
+    return layoutDefersPopulateUntilSizes(m_layout.currentMode());
 }
 
 void ImageView::setSizeResolveProgress(const QString &title, const QString &detail)

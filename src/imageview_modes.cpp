@@ -326,7 +326,7 @@ void ImageView::setViewMode(ViewMode mode)
     // Gallery — sole entry is GalleryController::enter (also used by enterGallery).
     // setViewMode(Gallery) is not used by MainWindow; keep a safe path that
     // restores stash and packs rather than a second divergent implementation.
-    LayoutMode layout = m_layout.mode;
+    LayoutMode layout = m_layout.currentMode();
     if (layout == LayoutMode::FreeForm) {
         layout = LayoutMode::Masonry;
     }
