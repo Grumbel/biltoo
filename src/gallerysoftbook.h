@@ -21,7 +21,15 @@ struct GallerySoftBook {
 
     void clearSoft() { soft.clear(); }
 
-    void setDeferPopulate(bool on) { deferPopulate = on; }
+    /** @return true when defer-populate flag changed. */
+    bool setDeferPopulate(bool on)
+    {
+        if (deferPopulate == on) {
+            return false;
+        }
+        deferPopulate = on;
+        return true;
+    }
 
     void resetPath(const QString &path)
     {
