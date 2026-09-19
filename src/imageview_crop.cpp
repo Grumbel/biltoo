@@ -858,9 +858,7 @@ void ImageView::requestCropViewportUpdate()
 
 void ImageView::notifyCropViewportStatus()
 {
-    if (viewport()) {
-        viewport()->update();
-    }
+    requestCropViewportUpdate();
     emit statusChanged();
 }
 
