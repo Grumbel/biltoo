@@ -29,13 +29,6 @@ void ImageView::finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspa
 }
 
 
-void ImageView::notifyCropModeEntered()
-{
-    flashCropHud(CropFlash::modeEntered());
-    emit cropModeChanged(true);
-    emit statusChanged();
-}
-
 void ImageView::abortCropEnterFailed(ImageItem *item)
 {
     // prepare may have set mode for fitItem then failed — restore placement
@@ -61,17 +54,6 @@ void ImageView::beginCropEnterSession(ImageItem *item)
 }
 
 
-bool ImageView::handleNullEnterFullRaster(const QString &path, bool hadCrop)
-{
-    if (CropSession::shouldRequestFullOnNullEnter(hadCrop, path)) {
-        requestCropFullRaster(path);
-        m_crop.setAwaitingFull(path);
-        flashCropHud(CropFlash::loadingFull());
-    }
-    flashCropHud(CropFlash::notCached());
-    return false;
-}
-
 ImageItem *ImageView::resolveCropEnterTarget()
 {
     // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
@@ -92,16 +74,6 @@ ImageItem *ImageView::resolveCropEnterTarget()
 }
 
 
-QPointF ImageView::workspaceAnchorSceneForItem(ImageItem *item) const
-{
-    if (!item) {
-        return {};
-    }
-    // Workspace: displayed image centre so the crop frame can stay fixed.
-    return item->mapToScene(QPointF(0.0, 0.0));
-}
-
-
 bool ImageView::completeCropEnterUnderHold(ImageItem *item,
                                            const QPointF &workspaceAnchorScene)
 {
@@ -114,7 +86,9 @@ bool ImageView::completeCropEnterUnderHold(ImageItem *item,
     if (isWorkspaceMode()) {
         finishWorkspaceCropEnter(item, workspaceAnchorScene);
     }
-    notifyCropModeEntered();
+    flashCropHud(CropFlash::modeEntered());
+    emit cropModeChanged(true);
+    emit statusChanged();
     return true;
 }
 
@@ -128,7 +102,8 @@ bool ImageView::enterCropModeFromUi()
     // Lock identity + enter snapshot + unrotate placement (IDENTITY.md).
     // m_crop.active() stays false until after the first draft attach.
     beginCropEnterSession(item);
-    const QPointF workspaceAnchorScene = workspaceAnchorSceneForItem(item);
+    // Workspace: displayed image centre so the crop frame can stay fixed.
+    const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
     return completeCropEnterUnderHold(item, workspaceAnchorScene);
 }
 
@@ -189,16 +164,6 @@ void ImageView::installDraftEnterDisplay(ImageItem *item,
     m_crop.markShowingFullImage();
 }
 
-void ImageView::prepareEnterInstallHost(const QString &path, const QImage &full,
-                                        bool unorientedSource)
-{
-    cancelPathRasterForCrop(path);
-    rememberCropEnterSizes(path, full);
-    CropSession::maybePutUnorientedHostCache(
-        path, full, unorientedSource, sampleCoversNativeLogical(path, full));
-}
-
-
 void ImageView::installEnterSampleDisplay(ImageItem *item,
                                           const CropSession::EnterInstallSample &sample,
                                           const QImage &full, const QString &path)
@@ -223,7 +188,10 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
         return;
     }
     const QString path = item->path();
-    prepareEnterInstallHost(path, full, unorientedSource);
+    cancelPathRasterForCrop(path);
+    rememberCropEnterSizes(path, full);
+    CropSession::maybePutUnorientedHostCache(
+        path, full, unorientedSource, sampleCoversNativeLogical(path, full));
     const CropSession::EnterInstallSample sample =
         CropSession::prepareEnterInstallSample(full, unorientedSource, app, haveApp);
     installEnterSampleDisplay(item, sample, full, path);
@@ -262,7 +230,12 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     // base when a prior crop exists — that bake is already cropped.
     CropSession::EnterFullRaster enter = CropSession::pickEnterFullRaster(item, path, hadCrop);
     if (enter.image.isNull()) {
-        handleNullEnterFullRaster(path, hadCrop);
+        if (CropSession::shouldRequestFullOnNullEnter(hadCrop, path)) {
+            requestCropFullRaster(path);
+            m_crop.setAwaitingFull(path);
+            flashCropHud(CropFlash::loadingFull());
+        }
+        flashCropHud(CropFlash::notCached());
         return false;
     }
     installAndActivateCropEnter(item, enter.image, haveApp ? &app : nullptr, haveApp,

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1571-crop-inline-flush-bake-notify.** Inline flush/bake/flash + enter notify/anchor/null/host helpers.
+Prior: **1570**.
+
+### Change
+- `flushPendingFullRematerialize` → body of `clearCropModeState`
+- `materializeApplyBake` → body of `bakeAndCommitNonFullApply`
+- `flashApplyHostFailure` → body of `resolveApplyHostAndState`
+- `applyCropCommitFullFrame` → body of `applyCropCommit`
+- `notifyCropModeEntered` → body of `completeCropEnterUnderHold`
+- `workspaceAnchorSceneForItem` → body of `enterCropModeFromUi`
+- `handleNullEnterFullRaster` → body of `prepareCropModeFullImage`
+- `prepareEnterInstallHost` → body of `installFullImageForCrop`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1571-crop-inline-flush-bake-notify.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1570-crop-apply-inline-more.** Inline writeRecord/metrics/leaveItem into apply path.
 Prior: **1569**.
 

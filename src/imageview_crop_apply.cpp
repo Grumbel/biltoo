@@ -23,26 +23,12 @@ bool ImageView::resolveApplyHostAndState(ImageItem *item, QImage *host, bool *ho
     *host = CropSession::pickApplyHost(item, path, hostFromCache);
     const CropSession::ApplyHostStatus hostSt =
         CropSession::classifyApplyHost(*host, *hostFromCache, item);
-    if (flashApplyHostFailure(hostSt)) {
+    if (hostSt != CropSession::ApplyHostStatus::Ok) {
+        flashCropHud(CropFlash::applyHostStatus(hostSt));
         return false;
     }
     *sid = cropRecordSessionId(item);
     ensureApplyCropState(item, *sid, st);
-    return true;
-}
-
-bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
-                                     const WorkspaceItemState &st,
-                                     CropSession::ApplyBakeResult *baked)
-{
-    if (!baked) {
-        return false;
-    }
-    *baked = CropSession::materializeApplyDisplay(host, hostFromCache, st);
-    if (!baked->ok()) {
-        flashCropHud(CropFlash::bakeFailed());
-        return false;
-    }
     return true;
 }
 
@@ -158,15 +144,6 @@ void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
 }
 
 
-bool ImageView::flashApplyHostFailure(CropSession::ApplyHostStatus hostSt)
-{
-    if (hostSt == CropSession::ApplyHostStatus::Ok) {
-        return false;
-    }
-    flashCropHud(CropFlash::applyHostStatus(hostSt));
-    return true;
-}
-
 void ImageView::ensureApplyCropState(ImageItem *item, SessionImageId sid,
                                      WorkspaceItemState *st)
 {
@@ -214,8 +191,10 @@ bool ImageView::bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cr
         return false;
     }
 
-    CropSession::ApplyBakeResult baked;
-    if (!materializeApplyBake(host, hostFromCache, st, &baked)) {
+    CropSession::ApplyBakeResult baked =
+        CropSession::materializeApplyDisplay(host, hostFromCache, st);
+    if (!baked.ok()) {
+        flashCropHud(CropFlash::bakeFailed());
         return false;
     }
     CropDebug::applyCrop(path, host.width(), host.height(), hostFromCache,
@@ -247,14 +226,6 @@ bool ImageView::applyCropCommitNonFullFrame(ImageItem *item)
 }
 
 
-bool ImageView::applyCropCommitFullFrame(ImageItem *item)
-{
-    // Reset / full frame: keep full pixels; clear session crop metadata.
-    finishCropResetLayout(item);
-    finalizeCropResetSuccess(item);
-    return false;
-}
-
 bool ImageView::applyCropCommit(ImageItem *item)
 {
     // Returns true when Workspace placement rotation should keep the crop-frame
@@ -265,7 +236,10 @@ bool ImageView::applyCropCommit(ImageItem *item)
     if (!m_crop.isFullFrameDraft(full)) {
         return applyCropCommitNonFullFrame(item);
     }
-    return applyCropCommitFullFrame(item);
+    // Reset / full frame: keep full pixels; clear session crop metadata.
+    finishCropResetLayout(item);
+    finalizeCropResetSuccess(item);
+    return false;
 }
 
 void ImageView::cancelCropShowingFullImage(ImageItem *item)
@@ -273,17 +247,6 @@ void ImageView::cancelCropShowingFullImage(ImageItem *item)
     restoreSessionCropAppearance(item);
     if (isWorkspaceMode() && m_crop.isEnterValid()) {
         m_crop.restoreEnterPlacementPose(item);
-    }
-}
-
-
-void ImageView::flushPendingFullRematerialize(bool pendingFull, const QString &pendingPath,
-                                              SessionImageId pendingSid,
-                                              const WorkspaceItemState &pendingWant)
-{
-    // Apply may have queued a full bake while freeze was still on.
-    if (pendingFull && !pendingPath.isEmpty()) {
-        scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
     }
 }
 
@@ -306,7 +269,10 @@ void ImageView::clearCropModeState()
         m_crop.takePendingFullRematerialize(&pendingPath, &pendingSid, &pendingWant);
     m_crop.clear();
     notifyCropModeLeftChrome();
-    flushPendingFullRematerialize(pendingFull, pendingPath, pendingSid, pendingWant);
+    // Apply may have queued a full bake while freeze was still on.
+    if (pendingFull && !pendingPath.isEmpty()) {
+        scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
+    }
 }
 
 

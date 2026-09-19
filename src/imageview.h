@@ -710,20 +710,14 @@ public:
      * Enter applies pixel crop; Esc / toggle off cancels.
      */
     void setCropMode(bool on);
-    void notifyCropModeEntered();
     void abortCropEnterFailed(ImageItem *item);
     void beginCropEnterSession(ImageItem *item);
-    bool handleNullEnterFullRaster(const QString &path, bool hadCrop);
     bool resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
                                   WorkspaceItemState *st, SessionImageId *sid);
-    bool materializeApplyBake(const QImage &host, bool hostFromCache,
-                              const WorkspaceItemState &st,
-                              CropSession::ApplyBakeResult *baked);
     void finalizeCropResetSuccess(ImageItem *item);
     void finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
                                   const QString &path, const QImage &display);
     ImageItem *resolveCropEnterTarget();
-    QPointF workspaceAnchorSceneForItem(ImageItem *item) const;
     bool completeCropEnterUnderHold(ImageItem *item,
                                     const QPointF &workspaceAnchorScene);
     bool enterCropModeFromUi();
@@ -1730,7 +1724,6 @@ private:
     void relayoutAfterCropLeave(ImageItem *item);
     void finishCropResetLayout(ImageItem *item);
     void finishCropApplyLayout(ImageItem *item);
-    bool flashApplyHostFailure(CropSession::ApplyHostStatus hostSt);
     void flashCropHud(const CropFlash::Hud &hud);
     void ensureApplyCropState(ImageItem *item, SessionImageId sid,
                               WorkspaceItemState *st);
@@ -1746,12 +1739,8 @@ private:
                                    qreal footW, qreal footH,
                                    const QPointF &cropSceneCenter);
     bool applyCropCommitNonFullFrame(ImageItem *item);
-    bool applyCropCommitFullFrame(ImageItem *item);
     bool applyCropCommit(ImageItem *item);
     void cancelCropShowingFullImage(ImageItem *item);
-    void flushPendingFullRematerialize(bool pendingFull, const QString &pendingPath,
-                                       SessionImageId pendingSid,
-                                       const WorkspaceItemState &pendingWant);
     void notifyCropModeLeftChrome();
     void clearCropModeState();
     /**
@@ -1777,8 +1766,6 @@ private:
     void installDraftEnterDisplay(ImageItem *item,
                                   const CropSession::EnterInstallSample &sample,
                                   const QImage &full, const QString &path);
-    void prepareEnterInstallHost(const QString &path, const QImage &full,
-                                bool unorientedSource);
     void installEnterSampleDisplay(ImageItem *item,
                                    const CropSession::EnterInstallSample &sample,
                                    const QImage &full, const QString &path);
