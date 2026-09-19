@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "cropgeometry.h"
+#include "contentxform.h"
 
 #include <QLineF>
 #include <QTransform>
@@ -469,9 +470,8 @@ QRect integerCropFromLocal(const QRectF &local, const QPointF &offset)
 {
     const int dx = qRound(local.left() - offset.x());
     const int dy = qRound(local.top() - offset.y());
-    const int dw = qMax(1, qRound(local.width()));
-    const int dh = qMax(1, qRound(local.height()));
-    return QRect(dx, dy, dw, dh);
+    const QSize sz = ContentXform::roundedSizeAtLeast1(local.width(), local.height());
+    return QRect(dx, dy, sz.width(), sz.height());
 }
 
 QRect flipAwareSourceCrop(const QRect &disp, int imageW, int imageH,

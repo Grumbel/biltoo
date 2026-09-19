@@ -166,11 +166,14 @@ static QRect scaleCropRectLocal(const QRect &crop, const QSize &recorded, const 
         || recorded == live) {
         return crop;
     }
+    const QSize sz = roundedSizeAtLeast1(
+        crop.width() * double(live.width()) / double(recorded.width()),
+        crop.height() * double(live.height()) / double(recorded.height()));
     return QRect(
         qRound(crop.x() * double(live.width()) / double(recorded.width())),
         qRound(crop.y() * double(live.height()) / double(recorded.height())),
-        qMax(1, qRound(crop.width() * double(live.width()) / double(recorded.width()))),
-        qMax(1, qRound(crop.height() * double(live.height()) / double(recorded.height()))));
+        sz.width(),
+        sz.height());
 }
 
 QSize layoutSize(const QSize &native, const Value &x)

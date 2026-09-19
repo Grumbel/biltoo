@@ -74,6 +74,25 @@ inline QSize roundedSizeAtLeast1(qreal w, qreal h)
     return QSize(qMax(1, qRound(w)), qMax(1, qRound(h)));
 }
 
+inline QSize roundedSizeAtLeast1(const QSizeF &s)
+{
+    return roundedSizeAtLeast1(s.width(), s.height());
+}
+
+/** Height for export width keeping aspect (min 1); zero/invalid aspect → 1. */
+inline int heightForAspectWidth(int width, qreal aspectW, qreal aspectH)
+{
+    if (width < 1 || aspectW <= 1e-9) {
+        return 1;
+    }
+    return qMax(1, qRound(qreal(width) * (aspectH / aspectW)));
+}
+
+inline int heightForAspectWidth(int width, const QSizeF &aspect)
+{
+    return heightForAspectWidth(width, aspect.width(), aspect.height());
+}
+
 /** Map scale from crop extent to source pixel extent (min source 1). */
 inline qreal invAxisScale(qreal cropExtent, int sourceExtent)
 {

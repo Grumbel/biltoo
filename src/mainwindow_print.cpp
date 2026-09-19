@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "contentxform.h"
 #include "mainwindow.h"
 #include "imageview.h"
 
@@ -311,7 +312,7 @@ void MainWindow::exportPng()
             return;
         }
         const int w = widthSpin->value();
-        const int h = qMax(1, qRound(w * (source.height() / source.width())));
+        const int h = ContentXform::heightForAspectWidth(w, source.width(), source.height());
         heightLabel->setText(tr("%1 px").arg(h));
     };
     QObject::connect(widthSpin, QOverload<int>::of(&QSpinBox::valueChanged), &dlg, updateHeight);
@@ -342,7 +343,7 @@ void MainWindow::exportPng()
     }
 
     const int w = widthSpin->value();
-    const int h = qMax(1, qRound(w * (source.height() / source.width())));
+    const int h = ContentXform::heightForAspectWidth(w, source.width(), source.height());
     const QImage img = m_imageView->renderExportImage(QSize(w, h), source,
                                                       transparentCheck->isChecked());
     if (img.isNull()) {

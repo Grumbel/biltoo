@@ -52,6 +52,11 @@ inline int nonNegMs(int delayMs)
     return qMax(0, delayMs);
 }
 
+inline qint64 nonNegMs(qint64 ms)
+{
+    return ms < 0 ? qint64(0) : ms;
+}
+
 constexpr qreal kWheelZoomStep = 1.25;
 inline qreal wheelZoomFactor(int angleDeltaY)
 {
