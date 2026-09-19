@@ -275,6 +275,13 @@ public:
      */
     void setSlideshowNavHot(bool hot);
     bool slideshowNavHot() const { return m_ssHud.navHot; }
+    /** Slideshow pure-phase owns viewport — tile coordinator must not issue. */
+    bool isSlideshowProgressActive() const { return m_ssHud.progressActive; }
+    /** PathRasterService for PreferCache cancel when tiles issue (coordinator). */
+    PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
+    /** Crop draft owns the live sample — no ladder/install/rematerialize. */
+    bool isCropDraftLockedItem(const ImageItem *item) const;
+    bool isCropDraftLockedPath(const QString &path) const;
     /**
      * Warm overview tiles into the process-wide path registry for off-canvas
      * paths (Image-mode ±1 neighbors after nav settle). Controllers stay alive
@@ -1333,7 +1340,6 @@ protected:
     bool viewportEvent(QEvent *event) override;
 
 private:
-    friend class TileLoadCoordinator;
     enum LoadRole {
         LoadReplace = 0,
         LoadAdd = 1,
@@ -1370,10 +1376,6 @@ private:
                                                              const QImage &image) const;
     ImageItem *imageModeItemForPath(const QString &path) const;
     void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
-    /** Slideshow pure-phase owns viewport — coordinator must not issue tiles. */
-    bool isSlideshowProgressActive() const { return m_ssHud.progressActive; }
-    PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
-
     /**
      * Debounce climb + tile tick after zoom (wheel/toolbar). Avoids per-notch
      * set_viewport/issue_requests on the GUI thread during continuous zoom.
@@ -1660,9 +1662,6 @@ private:
     void installFullImageForCrop(ImageItem *item, const QImage &full,
                                  const WorkspaceItemState *app, bool haveApp,
                                  bool unorientedSource);
-    /** Crop draft owns the live sample — no ladder/install/rematerialize. */
-    bool isCropDraftLockedItem(const ImageItem *item) const;
-    bool isCropDraftLockedPath(const QString &path) const;
     void initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
                                          bool haveApp);
     /** Workspace: shift item so crop-frame centre maps to @p sceneAnchor. */
