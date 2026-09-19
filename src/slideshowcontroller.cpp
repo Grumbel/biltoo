@@ -1110,7 +1110,7 @@ SessionImageId SlideshowController::sessionIdForPath(const QString &path) const
     }
     // Image-mode slideshow: current session cursor when path matches.
     if (m_view->m_sessionId.hasCurrentId()) {
-        if (ImageItem *it = findItemBySessionId(m_view->m_sessionId.currentIdValue())) {
+        if (ImageItem *it = m_view->findItemBySessionId(m_view->m_sessionId.currentIdValue())) {
             if (it->path() == path) {
                 return m_view->m_sessionId.currentIdValue();
             }

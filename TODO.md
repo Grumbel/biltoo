@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1602-fix-slideshow-findItem.** SlideshowController: m_view->findItemBySessionId in sessionIdForPath.
+Prior: **1601**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1602-fix-slideshow-findItem.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1601-fix-slideshow-controller-compile.** Fix SlideshowController compile errors after Tier 1b method move.
 Prior: **1600**.
 
