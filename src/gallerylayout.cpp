@@ -31,12 +31,7 @@ QSizeF layoutSize(const ImageItem *item)
     if (!item || ns.isEmpty()) {
         return ns;
     }
-    // Snap-ish: treat near-90 / near-270 as swapped axes (Gallery uses ±90 steps).
-    qreal r = std::fmod(std::abs(item->itemRotation()), 360.0);
-    if (r > 180.0) {
-        r = 360.0 - r;
-    }
-    if (r > 45.0 && r < 135.0) {
+    if (axesSwapForItemRotation(item->itemRotation())) {
         return QSizeF(ns.height(), ns.width());
     }
     return ns;

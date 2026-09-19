@@ -5,6 +5,7 @@
 #define GALLERYLAYOUT_H
 
 #include <QList>
+#include <cmath>
 #include "viewtransform.h"
 #include <functional>
 
@@ -15,6 +16,19 @@ class ImageItem;
  * Mutates item scale, position, and optional crop cell size.
  */
 namespace GalleryLayout {
+
+/**
+ * True when item rotation is nearer ±90°/±270° than axis-aligned — pack
+ * aspect uses swapped native axes (Gallery ±90 content steps).
+ */
+inline bool axesSwapForItemRotation(qreal rotationDeg)
+{
+    qreal r = std::fmod(std::abs(rotationDeg), 360.0);
+    if (r > 180.0) {
+        r = 360.0 - r;
+    }
+    return r > 45.0 && r < 135.0;
+}
 
 enum class Mode {
     SideBySide,
