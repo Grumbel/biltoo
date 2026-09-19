@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1590-canvas-bg-docs-blur-fallback.** Canvas background design doc; ZoomBlur miss uses canvas primary outside slideshow.
+Prior: **1589**.
+
+### Note
+Tip **1588** was briefly published docs-only; amended commit **0414c09** has the
+edge-nav code and is included in **1589+** full-stack bundles.
+
+### Change
+- `docs/CANVAS_BACKGROUND.md` — Preferences / View / Workspace layers
+- `paintZoomBlurUnderlay` miss: canvas primary when not slideshow ZoomBlur letterbox
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1590-canvas-bg-docs-blur-fallback.bundle HEAD
+```
+
+---
+
 **Tip: biltoo-1589-view-content-blur.** View Background: Content blur mode for Image (ZoomBlur underlay).
 Prior: **1588**.
 

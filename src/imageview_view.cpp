@@ -2484,7 +2484,12 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
         painter->drawPixmap(viewportRect, m_ssZoomBlur.lastGoodPixmap());
         return;
     }
-    painter->fillRect(viewportRect, slideshowPadColor());
+    // Slideshow letterbox uses the dedicated pad colour; Image View content-blur
+    // falls back to the Preferences / canvas primary colour.
+    const QColor pad = m_ssSettings.isZoomBlurLetterbox()
+        ? slideshowPadColor()
+        : m_canvasBg.primaryColor();
+    painter->fillRect(viewportRect, pad.isValid() ? pad : QColor(42, 42, 42));
 }
 
 QSize ImageView::resolveMotionLogicalSize(const QString &path) const
