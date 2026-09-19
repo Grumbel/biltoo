@@ -11,6 +11,7 @@
 #include "biltoo_thread.h"
 #include "imageloader.h"
 #include "attentiongeometry.h"
+#include "viewtransform.h"
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "archivepath.h"
@@ -620,10 +621,10 @@ bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut, int m
             int sum = 0;
             int n = 0;
             for (int dy = -kR; dy <= kR; ++dy) {
-                const int yy = qBound(0, y + dy, h - 1);
+                const int yy = ViewTransform::clampPixel(y + dy, h);
                 const uchar *r2 = src.constScanLine(yy);
                 for (int dx = -kR; dx <= kR; ++dx) {
-                    const int xx = qBound(0, x + dx, w - 1);
+                    const int xx = ViewTransform::clampPixel(x + dx, w);
                     sum += r2[xx];
                     ++n;
                 }
@@ -637,8 +638,8 @@ bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut, int m
     {
         QPointF vipsPt;
         if (attentionPointVipsPeak(image, &vipsPt)) {
-            const int px = qBound(0, int(vipsPt.x() * (w - 1)), w - 1);
-            const int py = qBound(0, int(vipsPt.y() * (h - 1)), h - 1);
+            const int px = ViewTransform::clampPixel(int(vipsPt.x() * (w - 1)), w);
+            const int py = ViewTransform::clampPixel(int(vipsPt.y() * (h - 1)), h);
             score[py * w + px] = qMax(score[py * w + px], 255.0f);
         }
     }
@@ -677,8 +678,9 @@ bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut, int m
         if (normalizedOut->size() >= maxPoints) {
             break;
         }
-        const QPointF n(qreal(pk.x) / qreal(qMax(1, w - 1)),
-                        qreal(pk.y) / qreal(qMax(1, h - 1)));
+        const QPointF n = AttentionGeometry::clampNorm(QPointF(
+            qreal(pk.x) / qreal(qMax(1, w - 1)),
+            qreal(pk.y) / qreal(qMax(1, h - 1))));
         bool near = false;
         for (const QPointF &ex : *normalizedOut) {
             if (QLineF(ex, n).length() < 0.08) {

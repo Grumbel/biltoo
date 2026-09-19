@@ -163,6 +163,25 @@ inline qreal floorScale(qreal s, qreal floor = 0.01)
     return qMax(floor, s);
 }
 
+
+/** Clamp integer index into [0, count-1]; 0 when count ≤ 0. */
+inline int clampIndex(int index, int count)
+{
+    if (count <= 0) {
+        return 0;
+    }
+    return qBound(0, index, count - 1);
+}
+
+/** Clamp pixel coordinate into [0, extent-1]. */
+inline int clampPixel(int coord, int extent)
+{
+    if (extent <= 0) {
+        return 0;
+    }
+    return qBound(0, coord, extent - 1);
+}
+
 } // namespace ViewTransform
 
 #endif // VIEWTRANSFORM_H

@@ -8,6 +8,8 @@
 #include <QString>
 #include <utility>
 
+#include "displayquality.h"
+
 /**
  * Pure soft / LQIP underlay sample selection for worker threads.
  * Gallery is tiles-only: never PreferCache soft encode or loadThumbnail here.
@@ -28,10 +30,21 @@ QImage lqipOrCachedSoft(const QString &path);
  */
 bool gallerySoftWithinLqipBand(int incomingEdge, int lqipMaxEdge);
 
+/** Overload using DisplayQuality::kLqipMaxEdge. */
+inline bool gallerySoftWithinLqipBand(int incomingEdge)
+{
+    return gallerySoftWithinLqipBand(incomingEdge, DisplayQuality::kLqipMaxEdge);
+}
+
 /**
  * True when a larger LQIP may replace the shown underlay (never soft climb).
  */
 bool galleryAcceptsLqipUpgrade(int shownEdge, int incomingEdge, int lqipMaxEdge);
+
+inline bool galleryAcceptsLqipUpgrade(int shownEdge, int incomingEdge)
+{
+    return galleryAcceptsLqipUpgrade(shownEdge, incomingEdge, DisplayQuality::kLqipMaxEdge);
+}
 
 /** Aggregate max display long edge and whether any sample is FullSource. */
 struct PathHaveEdge {
