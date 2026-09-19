@@ -68,6 +68,25 @@ enum class LayoutMode {
     Facing
 };
 
+/** True when layout packs tiles (not free-form Workspace arrangement). */
+inline bool layoutIsPackaged(LayoutMode mode)
+{
+    return mode != LayoutMode::FreeForm;
+}
+
+/** Height-fitted pack modes (side-by-side / row masonry family). */
+inline bool layoutIsHeightFitted(LayoutMode mode)
+{
+    switch (mode) {
+    case LayoutMode::SideBySide:
+    case LayoutMode::MasonryRows:
+    case LayoutMode::MasonryRowsFill:
+        return true;
+    default:
+        return false;
+    }
+}
+
 
 /** True when width and height are both positive. */
 inline bool isPositiveSize(const QSize &s)
