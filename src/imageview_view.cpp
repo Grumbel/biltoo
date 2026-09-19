@@ -573,7 +573,7 @@ void ImageView::cancelZoomRegion()
 
 void ImageView::setImageModeLeftDragPan(bool on)
 {
-    m_chrome.imageModeLeftDragPan = on;
+    m_chrome.setImageModeLeftDragPan(on);
 }
 
 void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
@@ -1073,8 +1073,8 @@ void ImageView::setSlideshowPausedHud(bool on)
 void ImageView::cancelSlideshowMotion()
 {
     const bool wasMotion = m_ssDwell.motionActive;
-    m_ssDwell.motionActive = false;
-    m_ssDwell.motionPaused = false;
+    m_ssDwell.setMotionActive(false);
+    m_ssDwell.setMotionPaused(false);
     {
         Qt::ScrollBarPolicy h = Qt::ScrollBarAsNeeded;
         Qt::ScrollBarPolicy v = Qt::ScrollBarAsNeeded;

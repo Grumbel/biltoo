@@ -42,7 +42,18 @@ struct ViewportChrome {
 
     void setMouseInfo(const ImageMouseInfo &info) { mouseInfo = info; }
 
+    void clearMouseInfo() { mouseInfo = {}; }
+
     void setHoverViewPos(const QPoint &pos) { lastHoverViewPos = pos; }
+
+    bool setImageModeLeftDragPan(bool on)
+    {
+        if (imageModeLeftDragPan == on) {
+            return false;
+        }
+        imageModeLeftDragPan = on;
+        return true;
+    }
 };
 
 #endif // VIEWPORTCHROME_H
