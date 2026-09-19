@@ -137,8 +137,13 @@ void TileNeighborPrefetch::tick()
         return;
     }
 
+    auto& reg = tilelod::TileLodRegistry::instance();
     for (auto it = m_slots.begin(); it != m_slots.end();) {
         if ((m_host && m_host->pathOnLiveCanvas(it->path)) || !it->controller) {
+            // Live canvas took over — prefer this path under global LRU.
+            if (!it->path.isEmpty()) {
+                reg.touch(it->path);
+            }
             it = m_slots.erase(it);
             continue;
         }
@@ -154,6 +159,9 @@ void TileNeighborPrefetch::tick()
             }
         }
         if (done) {
+            if (!it->path.isEmpty()) {
+                reg.touch(it->path);
+            }
             it = m_slots.erase(it);
         } else {
             ++it;
