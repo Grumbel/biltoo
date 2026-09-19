@@ -102,6 +102,18 @@ int CropSession::fullRasterScheduleEdge(const QString &path)
     return edge;
 }
 
+bool CropSession::tryScheduleThumtooFullRaster(const QString &path)
+{
+    if (path.isEmpty() || !ThumtooCache::isAvailable()) {
+        return false;
+    }
+    const int edge = fullRasterScheduleEdge(path);
+    if (ThumtooCache::scheduleFullPixels(path, edge)) {
+        return true;
+    }
+    return ThumtooCache::isPixelsPending(path, edge);
+}
+
 CropSession::ApplyBakeResult CropSession::materializeApplyDisplay(const QImage &host,
                                                                   bool hostFromCache,
                                                                   WorkspaceItemState st)

@@ -642,15 +642,9 @@ void ImageView::requestCropFullRaster(const QString &path)
     }
     // Soft/PreferCache must not race Full encode for the crop subject.
     cancelPathRasterForCrop(path);
-    // Prefer thumtoo scheduleFullPixels; fall back to pool ImageLoader::load.
-    if (ThumtooCache::isAvailable()) {
-        const int edge = CropSession::fullRasterScheduleEdge(path);
-        if (ThumtooCache::scheduleFullPixels(path, edge)) {
-            return;
-        }
-        if (ThumtooCache::isPixelsPending(path, edge)) {
-            return;
-        }
+    // Prefer thumtoo Full; fall back to pool ImageLoader::load.
+    if (CropSession::tryScheduleThumtooFullRaster(path)) {
+        return;
     }
     scheduleCropFullRasterFromPool(path);
 }
@@ -1114,31 +1108,6 @@ void ImageView::ensureApplyCropState(ImageItem *item, SessionImageId sid,
         }
     }
 }
-
-void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
-                                    const WorkspaceItemState &s)
-{
-    if (!item) {
-        return;
-    }
-    if (sid != kInvalidSessionImageId) {
-        m_appearance.set(sid, s);
-    } else {
-        // Unbound only: path map is the sole store.
-        m_itemStateBook.set(item->path(), s);
-    }
-}
-
-QSize ImageView::cropRecordFileNative(const QString &path) const
-{
-    QSize fileNative = logicalSizeForPath(path);
-    if (!isPositiveSize(fileNative) || fileNative.width() <= 1
-        || isProvisionalImageSize(path)) {
-        return {};
-    }
-    return fileNative;
-}
-
 
 void ImageView::commitCropApplyBake(ImageItem *item, const QImage &display,
                                     const WorkspaceItemState &st, bool multiMp,

@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1549-crop-full-raster-store-impl.** Bodies for 1548: tryScheduleThumtooFullRaster + appearance store move.
+Prior: **1548**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1549-crop-full-raster-store-impl.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1548-crop-full-raster-store.** Thumtoo Full schedule on CropSession; appearance store in appearance TU.
 Prior: **1547**.
 

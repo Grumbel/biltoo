@@ -84,3 +84,28 @@ void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
     // Caller just installed full on-disk pixels; do not load again.
     rematerializeItemContent(item, *app);
 }
+
+void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
+                                    const WorkspaceItemState &s)
+{
+    if (!item) {
+        return;
+    }
+    if (sid != kInvalidSessionImageId) {
+        m_appearance.set(sid, s);
+    } else {
+        // Unbound only: path map is the sole store.
+        m_itemStateBook.set(item->path(), s);
+    }
+}
+
+QSize ImageView::cropRecordFileNative(const QString &path) const
+{
+    QSize fileNative = logicalSizeForPath(path);
+    if (!isPositiveSize(fileNative) || fileNative.width() <= 1
+        || isProvisionalImageSize(path)) {
+        return {};
+    }
+    return fileNative;
+}
+
