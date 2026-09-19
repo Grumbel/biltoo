@@ -710,7 +710,7 @@ the stop line when Tier 4 lands.
   `CropSession` / `AttentionSession`; removed unused `friend CropAppearanceCommand`
   (`applyCropAppearance` is already public). Method move + empty friend list = 2b.
 - Tier 2: _in progress_ (2a state ownership)
-- Tier 3: _pending_
+- Tier 3: **done** (biltoo-1604) — `HudModel` pure formatters + `tests/hudmodel_test.cpp`.
 - Tier 4: _pending_
 - Tier 5: _pending_
 - Tier 6: _pending_

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1604-phase6-tier3-hudmodel.** Phase 6 Tier 3: HudModel pure status/HUD formatters + unit test.
+Prior: **1603**.
+
+### Change
+- `src/hudmodel.h/.cpp` — pure `qualityTiersLabel`, `qualityLabelDetail`, `sessionBadge`, `emptyCanvasStatus`, `multiItemHeader`
+- ImageView / SlideshowController gather snapshot and call HudModel
+- `tests/hudmodel_test.cpp` — quality-tier + session-badge coverage
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1604-phase6-tier3-hudmodel.bundle HEAD
+```
+
+### Next
+- Rebuild: fix any remaining SlideshowController compile issues from Tier 1b
+- Tier 2b crop/attention method move; empty friend list
+- Tier 4 Appearance into SessionDocument (needs characterization tests)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1603-fix-controller-init-order.** ImageView: declare m_cropCtrl/m_attentionCtrl before m_workspace (match ctor; silence -Wreorder).
 Prior: **1602** (includes m_view->findItemBySessionId).
 

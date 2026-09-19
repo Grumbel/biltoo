@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <QFileInfo>
 #include "biltoo_logging.h"
+#include "hudmodel.h"
 #include "imageloader.h"
 
 
@@ -2348,10 +2349,6 @@ void SlideshowController::tickSlideshowMotion()
 
 QString SlideshowController::sessionBadgeText() const
 {
-    const QString ascii = sessionBadgeAscii(m_view->m_sessionId.currentIndex(), m_view->m_sessionId.currentTotal());
-    if (ascii.isEmpty()) {
-        return {};
-    }
-    // Keep tr for potential locale digit shaping; form is still index/total.
-    return tr("%1").arg(ascii);
+    return HudModel::sessionBadge(
+        m_view->m_sessionId.currentIndex(), m_view->m_sessionId.currentTotal());
 }

@@ -9,6 +9,7 @@
 #include "pathrasterservice.h"
 #include "archivepath.h"
 #include "pagepath.h"
+#include "hudmodel.h"
 
 #include <QFileInfo>
 #include <QFontMetrics>
@@ -165,53 +166,15 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
         edge, native, item->hasDecodedPixels(),
         ThumtooCache::kBatchOverviewEdge, ThumtooCache::kGalleryLadderEdge,
         ThumtooCache::kFilmstripLadderEdge, DisplayQuality::kLqipMaxEdge);
-    QString tier;
-    switch (t) {
-    case Tier::Loading:
-        return tr("Loading…");
-    case Tier::FullResolution:
-        return tr("Full resolution");
-    case Tier::HighQuality:
-        tier = tr("High quality");
-        break;
-    case Tier::Preview:
-        tier = tr("Preview");
-        break;
-    case Tier::Thumbnail:
-        tier = tr("Thumbnail");
-        break;
-    case Tier::Placeholder:
-        // Internal name is LQIP — do not show that acronym to users.
-        tier = tr("Placeholder");
-        break;
-    case Tier::QuickPreview:
-    default:
-        tier = tr("Quick preview");
-        break;
-    }
+    int galleryNeed = 0;
+    int galleryHave = 0;
     if (isGalleryMode()) {
-        const int need = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        galleryNeed = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
         const GallerySoftState *st = m_gallerySoftBook.get(item->path());
-        const int have = st
-            ? GallerySoft::maxHave(st->have, edge)
-            : edge;
-        if (need > 0 && have > 0) {
-            return tr("%1 · show %2px · need %3px · have %4px")
-                .arg(tier)
-                .arg(edge)
-                .arg(need)
-                .arg(have);
-        }
-    } else if (isImageMode() && edge > 0) {
-        // Image mode: show sample vs native when not yet full coverage.
-        if (native > 0 && !DisplayEdgePolicy::coversEdge(edge, native)) {
-            return tr("%1 · show %2px · native %3px")
-                .arg(tier)
-                .arg(edge)
-                .arg(native);
-        }
+        galleryHave = st ? GallerySoft::maxHave(st->have, edge) : edge;
     }
-    return tier;
+    return HudModel::qualityLabelDetail(
+        t, edge, native, isGalleryMode(), isImageMode(), galleryNeed, galleryHave);
 }
 
 void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
@@ -237,29 +200,19 @@ void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
 
 QString ImageView::statusTextEmpty() const
 {
-    if (m_sessionId.hasLastLoadError()) {
-        return tr("Failed to load “%1”").arg(PagePath::displayName(m_sessionId.lastLoadErrorRef()));
-    }
-    if (hasClassicPath() && isImageMode()) {
-        return tr("Loading…");
-    }
-    if (isGalleryMode()) {
-        return tr("Gallery — no images");
-    }
-    if (isWorkspaceMode()) {
-        return tr("Workspace — drop images or use Open");
-    }
-    return tr("Ready");
+    const QString errName = m_sessionId.hasLastLoadError()
+        ? PagePath::displayName(m_sessionId.lastLoadErrorRef())
+        : QString();
+    return HudModel::emptyCanvasStatus(
+        m_sessionId.hasLastLoadError(), errName,
+        hasClassicPath(), isImageMode(), isGalleryMode(), isWorkspaceMode());
 }
 
 QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
                                        int edge, const QSize &native) const
 {
-    const QString modeLabel = isGalleryMode() ? tr("Gallery") : tr("Workspace");
-    QString text = tr("%1 · %2 images · Zoom %3%")
-                       .arg(modeLabel)
-                       .arg(m_items.size())
-                       .arg(qRound(viewScale() * 100));
+    QString text = HudModel::multiItemHeader(
+        isGalleryMode(), m_items.size(), qRound(viewScale() * 100));
     if (!quality.isEmpty()) {
         if (edge > 0) {
             text += tr(" · %1 (%2px)").arg(quality).arg(edge);

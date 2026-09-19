@@ -117,6 +117,8 @@ add_executable(biltoo
   src/cropcontroller.h
   src/attentioncontroller.cpp
   src/attentioncontroller.h
+  src/hudmodel.cpp
+  src/hudmodel.h
   src/gallerycontroller.h
   src/gallerysizeresolve.cpp
   src/gallerysizeresolve.h
@@ -577,6 +579,15 @@ if(Qt6Test_FOUND)
   target_include_directories(biltoo-gallerysoftsm-test PRIVATE src)
   target_link_libraries(biltoo-gallerysoftsm-test PRIVATE Qt6::Core Qt6::Test)
   add_test(NAME gallerysoftsm COMMAND biltoo-gallerysoftsm-test)
+
+  add_executable(biltoo-hudmodel-test
+    tests/hudmodel_test.cpp
+    src/hudmodel.cpp
+    src/displayedgepolicy.cpp
+  )
+  target_include_directories(biltoo-hudmodel-test PRIVATE src)
+  target_link_libraries(biltoo-hudmodel-test PRIVATE Qt6::Core Qt6::Test)
+  add_test(NAME hudmodel COMMAND biltoo-hudmodel-test)
 
   add_executable(biltoo-contentxform-test
     tests/contentxform_test.cpp
