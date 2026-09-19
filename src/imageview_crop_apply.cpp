@@ -118,29 +118,19 @@ void ImageView::writeRecordedCropState(ImageItem *item, SessionImageId sid,
 }
 
 
-bool ImageView::computeSessionCropRecord(ImageItem *item, const QRectF &localCrop,
-                                         CropSession::RecordGeometry *rec) const
-{
-    if (!item || !rec) {
-        return false;
-    }
-    // Crop mode always edits the full on-disk image — store absolute source rect.
-    // Map through active flips so cropRect is in unflipped source space
-    // (cropToLocalRect bakes flips into pixels and clears the flags).
-    *rec = m_crop.computeRecordGeometry(
-        localCrop, item->contentRect(), item->offset(),
-        item->imageSize().width(), item->imageSize().height(),
-        item->itemHFlip(), item->itemVFlip());
-    return rec->valid();
-}
-
 void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 {
     if (!item) {
         return;
     }
-    CropSession::RecordGeometry rec;
-    if (!computeSessionCropRecord(item, localCrop, &rec)) {
+    // Crop mode always edits the full on-disk image — store absolute source rect.
+    // Map through active flips so cropRect is in unflipped source space
+    // (cropToLocalRect bakes flips into pixels and clears the flags).
+    CropSession::RecordGeometry rec = m_crop.computeRecordGeometry(
+        localCrop, item->contentRect(), item->offset(),
+        item->imageSize().width(), item->imageSize().height(),
+        item->itemHFlip(), item->itemVFlip());
+    if (!rec.valid()) {
         return;
     }
     const SessionImageId sid = cropRecordSessionId(item);
@@ -325,16 +315,6 @@ void ImageView::flushPendingFullRematerialize(bool pendingFull, const QString &p
     }
 }
 
-
-void ImageView::notifyCropModeLeftChrome()
-{
-    emit cropModeChanged(false);
-    emit statusChanged();
-    if (viewport()) {
-        viewport()->unsetCursor();
-        viewport()->update();
-    }
-}
 
 void ImageView::clearCropModeState()
 {

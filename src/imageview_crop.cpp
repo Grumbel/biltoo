@@ -182,6 +182,16 @@ void ImageView::notifyCropViewportStatus()
     emit statusChanged();
 }
 
+void ImageView::notifyCropModeLeftChrome()
+{
+    emit cropModeChanged(false);
+    emit statusChanged();
+    if (viewport()) {
+        viewport()->unsetCursor();
+        viewport()->update();
+    }
+}
+
 QImage ImageView::pickAutoCropSourcePixels(ImageItem *item) const
 {
     return CropSession::pickAutoCropSourcePixels(item);

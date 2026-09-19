@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1567-crop-record-inline-chrome.** Inline computeSessionCropRecord; leave chrome notify in shared crop.
+Prior: **1566**.
+
+### Change
+- `recordSessionCrop` inlines `computeRecordGeometry` (drop `computeSessionCropRecord`)
+- `notifyCropModeLeftChrome` → `imageview_crop.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1567-crop-record-inline-chrome.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1566-crop-leave-layout-shared.** relayoutAfterCropLeave / finish*Layout in shared crop TU.
 Prior: **1565**.
 
