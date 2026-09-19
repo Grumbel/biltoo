@@ -175,8 +175,7 @@ bool ImageView::enterCropModeFromUi()
         alignCropFrameCenterToScene(item, workspaceAnchorScene);
         updateWorkspaceSceneRect();
     }
-    // m_crop.active() already true (set in prepare after full-frame install).
-    m_crop.clearInteraction();
+    // Mode already active (activateModeAfterDraft in prepare).
     flashHud(tr("Crop mode"),
              tr("Apply commits · Esc cancels"));
     emit cropModeChanged(true);
@@ -475,8 +474,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     initCropRectFromPriorAppearance(item, app, haveApp);
 
     // Crop chrome + fitItem only after pixels and contentRect match the draft.
-    // m_crop.active() true before fitItem so layout uses orient-only full size.
-    m_crop.setMode(true);
+    m_crop.activateModeAfterDraft();
     if (isImageMode()) {
         m_framing.armFit();
         fitItem(item, currentFitAspectMode());
@@ -995,10 +993,11 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // units and keep the same scale → scene size unchanged.
         const qreal sx0 = item->itemScaleX();
         const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
-        const qreal cropW = m_crop.currentRect().width();
-        const qreal cropH = m_crop.currentRect().height();
-        const qreal footW = cropW * sx0;
-        const qreal footH = cropH * sy0;
+        qreal cropW = 0.0;
+        qreal cropH = 0.0;
+        qreal footW = 0.0;
+        qreal footH = 0.0;
+        m_crop.draftFootprint(sx0, sy0, &cropW, &cropH, &footW, &footH);
         const QPointF cropSceneCenter = item->mapToScene(m_crop.draftCenterLocal());
 
         const QString path = item->path();

@@ -378,6 +378,27 @@ public:
 
     QPointF draftCenterLocal() const { return rect.center(); }
 
+    /** Scene footprint of the draft at placement scales (Workspace Apply). */
+    void draftFootprint(qreal itemScaleX, qreal itemScaleY,
+                        qreal *cropW, qreal *cropH, qreal *footW, qreal *footH) const
+    {
+        const qreal w = currentRect().width();
+        const qreal h = currentRect().height();
+        if (cropW) {
+            *cropW = w;
+        }
+        if (cropH) {
+            *cropH = h;
+        }
+        if (footW) {
+            *footW = w * itemScaleX;
+        }
+        if (footH) {
+            *footH = h * (itemScaleY > 0.0 ? itemScaleY : itemScaleX);
+        }
+    }
+
+
 
     qreal currentRotation() const { return rotation; }
 
@@ -466,6 +487,16 @@ public:
     bool hasTargetId() const { return targetId != kInvalidSessionImageId; }
 
     ImageItem *target() const { return targetItem; }
+
+    /**
+     * Full-frame draft is on the item: turn mode on and clear interaction.
+     * Called after prepareCropModeFullImage succeeds.
+     */
+    void activateModeAfterDraft()
+    {
+        mode = true;
+        clearInteraction();
+    }
 
     /** @return true when crop mode flag changed. */
     bool setMode(bool on)
