@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1636-shared-load-dbg.** Share biltooLoadDbg for DisplayPipelineController.
+Prior: **1635**.
+
+### Change
+- Move `biltooLoadDbg` (+ env gate) from `imageview_load.cpp` into `biltoo_logging`
+- Fixes compile: controller used `biltooLoadDbg` without a declaration
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1636-shared-load-dbg.bundle HEAD
+```
+
+### Next
+- Move `driveImageFocusSurface` / surface bind helpers
+- Host accessors to replace friend when surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1635-ladder-ready-controller.** Tier 5b: move ladder-ready handlers.
 Prior: **1634**.
 

@@ -11,4 +11,14 @@ Q_DECLARE_LOGGING_CATEGORY(lcSlideshow)
 /** Enable or mute biltoo.* debug categories (call once from main for --debug). */
 void configureBiltooDebugLogging(bool verbose);
 
+/**
+ * Timestamped load/PreferCache debug (THUMTOO_DEBUG / BILTOO_LOAD_DEBUG /
+ * BILTOO_THUMTOO_DEBUG). Shared by imageview_load and DisplayPipelineController.
+ */
+void biltooLoadDbg(const char *fmt, ...)
+#if defined(__GNUC__) || defined(__clang__)
+    __attribute__((format(printf, 1, 2)))
+#endif
+    ;
+
 #endif // BILTOO_LOGGING_H

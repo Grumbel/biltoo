@@ -26,6 +26,7 @@
 #include "thumtoo/client.hpp"
 #endif
 #include "biltoo_thread.h"
+#include "biltoo_logging.h"
 #include "tile_load_coordinator.h"
 #include "tilelod/tile_lod_controller.hpp"
 
@@ -44,35 +45,6 @@
 #include <cstdlib>
 
 namespace {
-
-/** Timestamped load debug (THUMTOO_DEBUG or BILTOO_LOAD_DEBUG). */
-bool biltooLoadDebugEnabled()
-{
-    static const bool on = []() {
-        auto env = [](const char *k) {
-            const char *e = std::getenv(k);
-            return e && e[0] && e[0] != '0';
-        };
-        return env("THUMTOO_DEBUG") || env("BILTOO_LOAD_DEBUG")
-            || env("BILTOO_THUMTOO_DEBUG");
-    }();
-    return on;
-}
-
-void biltooLoadDbg(const char *fmt, ...)
-{
-    if (!biltooLoadDebugEnabled()) {
-        return;
-    }
-    const qint64 ms = QDateTime::currentMSecsSinceEpoch();
-    fprintf(stderr, "biltoo/load t=%lld gui=%d ", static_cast<long long>(ms),
-            QThread::isMainThread() ? 1 : 0);
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    fputc('\n', stderr);
-}
 
 /**
  * Worker-side: bake durable content appearance and clamp for display install.
