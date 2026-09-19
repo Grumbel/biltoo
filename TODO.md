@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1484-crop-session-geometry.** Crop rect ensure/init/polygon + placement restore on CropSession.
+Prior: **1483**. Commits 1484a–1484b (+ docs).
+
+### Commits
+1. **CropSession** ensureRectValid, polygonLocal, initRectFromPriorAppearance
+2. **CropSession** restoreStashedPlacement (leave/abort)
+
+### Note
+First structural ownership moves: geometry policy off ImageView. Enter/apply
+pixel bake and PathRaster still on ImageView.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1484-crop-session-geometry.bundle HEAD
+```
+Requires tip **1483** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1483-hud-crop-accessors.** Perf/ssHud elapsed; Crop full-frame; lock simplify.
 Prior: **1482**. Commits 1483a–1483d (+ docs).
 
