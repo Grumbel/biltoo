@@ -351,3 +351,4 @@ part of early-phase exit criteria).
 - **AttentionSession** point-drag/selection; **PageGuideSession** visibility/page; group press pos.
 - **ItemInteractSession** move/handle/rotate; Crop setRect/setRotation; TextLayer layer content.
 - **ViewportChrome** pan/pointer transitions; Crop residual draft seeds.
+- **Fix nonNeg(qint64)** for qsizetype; **TextLayerSession** setSearchQuery; **HudFlash** show/pulse.

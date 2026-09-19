@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1374-nonneg-qint64-hudflash.** Fix nonNeg qsizetype ambiguity;
+TextLayer search query; HudFlash transitions.
+Prior: **1373**.
+
+### Change
+- `ViewTransform::nonNeg(qint64)` — fixes ambiguous `nonNeg(qsizetype)` build error
+- Gallery size progress / layout gap use explicit qint64 counts
+- `TextLayerSession::setSearchQuery`
+- `HudFlash::{show,setIdentityPulse,setPausedLabel,clearAction}`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1374**)
+```bash
+git pull /path/to/biltoo-1374-nonneg-qint64-hudflash.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1373-viewport-pan-crop-seeds.** ViewportChrome pan transitions;
 CropSession residual draft seeds.
 Prior: **1372**.
