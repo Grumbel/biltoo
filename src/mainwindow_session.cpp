@@ -1857,7 +1857,7 @@ void MainWindow::selectIndexAfterSessionRemove(const QString &currentPath, const
         newIndex = m_session.paths().indexOf(currentPath);
     }
     if (newIndex < 0) {
-        newIndex = qBound(0, sorted.first(), m_session.paths().size() - 1);
+        newIndex = ViewTransform::clampIndex(sorted.first(), m_session.paths().size());
     }
 
     if (isWorkspaceMode()) {
@@ -1939,7 +1939,7 @@ void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entrie
         if (e.id != kInvalidSessionImageId && m_session.indexOfId(e.id) >= 0) {
             continue;
         }
-        const int idx = qBound(0, e.index, m_session.size());
+        const int idx = ViewTransform::clampInsertIndex(e.index, m_session.size());
         m_session.insert(idx, e.path, e.id);
         if (m_imageView && e.hasAppearance && e.id != kInvalidSessionImageId) {
             m_imageView->setSessionAppearance(e.id, e.appearance);
@@ -2834,14 +2834,14 @@ void MainWindow::onSlideshowUserNavigated()
     m_slideshowPendingToIndex = -1;
     m_slideshowPreloadToIdx = -1;
     m_slideshowTransitionCycle = -1;
-    m_slideshowBaseIndex = qBound(0, m_currentIndex, m_session.paths().size() - 1);
+    m_slideshowBaseIndex = ViewTransform::clampIndex(m_currentIndex, m_session.paths().size());
     m_slideshowPausedAccumMs = 0;
 
     // Always publish HUD position for this index. While playing, arm()/tick
     // also write the timeline; while paused the tick does not run, so without
     // this the clock stayed frozen on ←/→.
     const int n = m_session.paths().size();
-    const int intervalMs = qMax(1, m_slideshowIntervalMs);
+    const int intervalMs = ViewTransform::atLeast1(m_slideshowIntervalMs);
     if (n > 0) {
         const qint64 totalMs = qint64(n) * qint64(intervalMs);
         const qint64 at = qint64(m_slideshowBaseIndex) * qint64(intervalMs);
