@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1398-facing-fitfill-croprot-selectids.** Pure helpers on tip 1397.
+Prior: **1397**.
+
+### Change
+1. `layoutIsFacing` / `layoutIsSideBySide`
+2. `ViewFraming::{clearFitFill,setFitOnly,setFillMode}` report change
+3. `CropSession::setRotation` reports change
+4. `SessionBindBook::takeSelectIds`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1398-facing-fitfill-croprot-selectids.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1398).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1397-grouphover-mouseinfo-croprect-pathorder.** Compile fix + bag
 transitions on tip 1396.
 Prior: **1396**.
