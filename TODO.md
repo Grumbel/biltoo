@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1463-zoomblur-group-text-crop.** ZoomBlur, Group, TextLayer, Crop active.
+Prior: **1462**. Commits 1463a–1463d (+ docs).
+
+### Commits
+1. **SlideshowZoomBlurState** findCachedSlot / underlayAt / lastGood accessors
+2. **GroupTransformSession** drag list accessors
+3. **TextLayerSession** matchCount / selectionCount
+4. **CropSession** mode checks via active()
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1463-zoomblur-group-text-crop.bundle HEAD
+```
+Requires tip **1462**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1462-loadgate-textlayer-zoom.** LoadGate digs, TextLayer, ZoomRegion.
 Prior: **1461**. Commits 1462a–1462c (+ docs).
 

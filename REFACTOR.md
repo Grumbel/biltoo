@@ -186,6 +186,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   pathOrder clear/set for controllers.
 - Drop ImageView pathOrderBook/itemStates digs; LoadGate map refs private;
   **TextLayerSession** region accessors; **ZoomRegionGesture** hideRubber/isActive.
+- **SlideshowZoomBlurState** slot/lastGood accessors; **GroupTransformSession**
+  drag list accessors; **TextLayerSession** matchCount/selectionCount;
+  **CropSession** mode checks via active().
 
 
 ## Current pain (evidence)
