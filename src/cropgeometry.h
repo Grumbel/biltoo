@@ -191,6 +191,10 @@ QRect integerCropFromLocal(const QRectF &local, const QPointF &offset);
 QRect flipAwareSourceCrop(const QRect &disp, int imageW, int imageH,
                           bool hFlip, bool vFlip);
 
+/** Expand @p r by @p pad on each side, then intersect with [0,0)×size. */
+QRect paddedIntersectedRect(const QRect &r, const QSize &bounds, int pad);
+
+
 /** Dim viewport outside the crop polygon (view coordinates). */
 void paintDimOutside(QPainter &painter, const QRect &viewportRect,
                      const QPolygonF &cropViewPoly);

@@ -735,4 +735,11 @@ void paintSizeBadge(QPainter &painter, const QRect &cropView, int cropW, int cro
     painter.drawText(labelBg, Qt::AlignCenter, sizeLabel);
 }
 
+
+QRect paddedIntersectedRect(const QRect &r, const QSize &bounds, int pad)
+{
+    QRect out = r.adjusted(-pad, -pad, pad, pad);
+    return out.intersected(QRect(0, 0, bounds.width(), bounds.height()));
+}
+
 } // namespace CropGeometry

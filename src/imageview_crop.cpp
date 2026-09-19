@@ -755,9 +755,7 @@ void ImageView::applyAutoCrop()
         return;
     }
     // Small pad so text glyphs are not tight against the frame.
-    constexpr int kPad = 2;
-    trimmed.adjust(-kPad, -kPad, kPad, kPad);
-    trimmed = trimmed.intersected(QRect(0, 0, src.width(), src.height()));
+    trimmed = CropGeometry::paddedIntersectedRect(trimmed, src.size(), 2);
     if (!trimmed.isValid() || trimmed.isEmpty()) {
         return;
     }
