@@ -308,6 +308,12 @@ public:
 
     bool hasValidRect() const { return rect.isValid() && !rect.isEmpty(); }
 
+    QRectF normalizedRect() const { return rect.normalized(); }
+
+    const QRectF &currentRect() const { return rect; }
+
+    qreal currentRotation() const { return rotation; }
+
     bool hasTargetId() const { return targetId != kInvalidSessionImageId; }
 
     ImageItem *target() const { return targetItem; }

@@ -73,9 +73,9 @@ void ImageView::ensureCropRectValid()
         m_crop.setRotation(0.0);
         return;
     }
-    m_crop.setRect(m_crop.rect.normalized());
+    m_crop.setRect(m_crop.normalizedRect());
     if (m_crop.isAllowExpand()) {
-        QRectF r = m_crop.rect;
+        QRectF r = m_crop.currentRect();
         if (r.width() < 1.0) {
             r.setWidth(1.0);
         }
@@ -85,7 +85,7 @@ void ImageView::ensureCropRectValid()
         m_crop.setRect(r);
         return;
     }
-    m_crop.setRect(CropGeometry::constrainToContent(m_crop.rect, m_crop.rotation, cr, 1.0));
+    m_crop.setRect(CropGeometry::constrainToContent(m_crop.currentRect(), m_crop.currentRotation(), cr, 1.0));
 }
 
 void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
@@ -93,7 +93,7 @@ void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &scen
     if (!item || !m_crop.hasValidRect()) {
         return;
     }
-    const QPointF current = item->mapToScene(m_crop.rect.center());
+    const QPointF current = item->mapToScene(m_crop.currentRect().center());
     if (!qIsFinite(current.x()) || !qIsFinite(current.y())
         || !qIsFinite(sceneAnchor.x()) || !qIsFinite(sceneAnchor.y())) {
         return;
@@ -479,7 +479,7 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
             // rotated-corner overflow so ensureCropRectValid does not translate
             // a previously applied rotated draft to a new centre.
             if (CropGeometry::priorDraftNeedsExpand(
-                    QRectF(prior), QRectF(bounds), m_crop.rect, m_crop.rotation, cr)) {
+                    QRectF(prior), QRectF(bounds), m_crop.currentRect(), m_crop.currentRotation(), cr)) {
                 m_crop.setAllowExpand(true);
             }
         } else {
@@ -988,7 +988,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         s.hasCrop = true;
         s.cropRect = disp;
         s.cropSourceSize = cropBasis;
-        s.cropRotation = m_crop.rotation;
+        s.cropRotation = m_crop.currentRotation();
         if (cropBasis != QSize(iw, ih)
             && qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
             qWarning().noquote()
@@ -1071,7 +1071,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
             && qAbs(m_crop.rect.width() - full.width()) < 0.5
             && qAbs(m_crop.rect.height() - full.height()) < 0.5);
     // Record content-space crop while the draft frame is still valid.
-    recordSessionCrop(item, m_crop.rect.isValid() ? m_crop.rect : full);
+    recordSessionCrop(item, m_crop.currentRect().isValid() ? m_crop.currentRect() : full);
     if (!fullFrame) {
         // --- Workspace footprint math (verify) ---
         // During crop mode the item is axis-aligned (placement rotation stashed).
@@ -1087,7 +1087,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         const qreal cropH = m_crop.rect.height();
         const qreal footW = cropW * sx0;
         const qreal footH = cropH * sy0;
-        const QPointF cropSceneCenter = item->mapToScene(m_crop.rect.center());
+        const QPointF cropSceneCenter = item->mapToScene(m_crop.currentRect().center());
 
         const QString path = item->path();
         QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
@@ -1130,7 +1130,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
                 QRectF(m_crop.rect.left(), m_crop.rect.top(), cropW, cropH),
                 item->offset());
             st.cropSourceSize = item->imageSize();
-            st.cropRotation = m_crop.rotation;
+            st.cropRotation = m_crop.currentRotation();
             if (sid != kInvalidSessionImageId) {
                 m_appearance.set(sid, st);
             }
@@ -1758,7 +1758,7 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
     if (h == CropHandle::Rotate) {
         m_crop.setRotateStart(
             m_crop.rotation,
-            PlacementLinear::angleAbout(m_crop.rect.center(), startLocal));
+            PlacementLinear::angleAbout(m_crop.currentRect().center(), startLocal));
     }
 }
 
