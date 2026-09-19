@@ -23,6 +23,13 @@ struct DirectionScore {
 };
 
 /** Score candidate relative to origin for @p key (Left/Right/Up/Down). */
+inline DirectionScore scoreRelative(int key, const QPointF &origin,
+                                    const QPointF &candidate)
+{
+    return scoreRelative(static_cast<Qt::Key>(key), origin, candidate);
+}
+
+/** Score candidate relative to origin for @p key (Left/Right/Up/Down). */
 inline DirectionScore scoreRelative(Qt::Key key, const QPointF &origin,
                                     const QPointF &candidate)
 {

@@ -1909,7 +1909,8 @@ bool ImageView::tryKeyPressGallery(QKeyEvent *event)
             continue;
         }
         const QPointF c = cand->sceneBoundingRect().center();
-        const auto scored = WorkspaceNavGeometry::scoreRelative(key, origin, c);
+        const auto scored = WorkspaceNavGeometry::scoreRelative(
+            static_cast<Qt::Key>(key), origin, c);
         if (!scored.inDirection) {
             continue;
         }
