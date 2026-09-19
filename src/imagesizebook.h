@@ -33,6 +33,11 @@ struct ImageSizeBook {
         probeScheduled.clear();
     }
 
+    bool contains(const QString &path) const
+    {
+        return !path.isEmpty() && byPath.contains(path);
+    }
+
     bool isProvisional(const QString &path) const
     {
         return !path.isEmpty() && provisionalPaths.contains(path);

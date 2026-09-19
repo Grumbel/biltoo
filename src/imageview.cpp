@@ -468,7 +468,7 @@ QSize ImageView::imageSizeForPath(const QString &path)
     }
     const QSize known = logicalSizeForPath(path);
     if (isPositiveSize(known)) {
-        if (!m_sizeBook.byPath.contains(path)) {
+        if (!m_sizeBook.contains(path)) {
             rememberImageSize(path, known); // install thumtoo hit into map
         }
         return known;
@@ -496,9 +496,9 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
     if (!path.isEmpty()) {
         scheduleImageSizeProbe(path);
     }
-    const auto it = m_sizeBook.byPath.constFind(path);
-    if (it != m_sizeBook.byPath.cend() && isPositiveSize(*it)) {
-        return *it;
+    const QSize known = m_sizeBook.known(path);
+    if (!known.isEmpty()) {
+        return known;
     }
     return imageSizeForPath(path);
 }
