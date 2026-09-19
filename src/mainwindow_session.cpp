@@ -3,6 +3,7 @@
 
 #include "mainwindow_includes.h"
 #include "slideshowclocks.h"
+#include "viewtransform.h"
 #include <QtMath>
 #include <random>
 #include <algorithm>
@@ -2609,7 +2610,7 @@ void MainWindow::setSlideshowIntervalMs(int ms)
 {
     // 0 ms = as fast as the event loop allows; upper bound keeps UI usable.
     const int oldInterval = m_slideshowIntervalMs;
-    m_slideshowIntervalMs = qBound(0, ms, 3600000); // match UI max 3600s
+    m_slideshowIntervalMs = SlideshowClocks::clampStoredIntervalMs(ms); // 0…3600s
     // Transition duration is the full effect (out + in); may use the whole interval.
     clampSlideshowTransitionToInterval();
     rearmSlideshowAfterIntervalChange(oldInterval);
@@ -2954,7 +2955,7 @@ void MainWindow::seekSlideshowFraction(qreal fraction)
     if (!isSlideshowSession() || m_session.paths().isEmpty()) {
         return;
     }
-    fraction = qBound(0.0, fraction, 1.0);
+    fraction = ViewTransform::clamp01(fraction);
     const int n = m_session.paths().size();
     int intervalMs = m_slideshowIntervalMs;
     if (intervalMs <= 0) {

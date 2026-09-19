@@ -56,9 +56,16 @@ inline int sanitizeDwellDurationMs(int durationMs, int fallbackMs = 3000)
     return durationMs < 250 ? fallbackMs : durationMs;
 }
 
+/** For rate math: treat non-positive as 1 ms (never divide by zero). */
 inline int clampIntervalMs(int intervalMs)
 {
     return intervalMs <= 0 ? 1 : intervalMs;
+}
+
+/** Stored dwell interval: 0 = as-fast-as-possible; UI max 3600 s. */
+inline int clampStoredIntervalMs(int ms, int maxMs = 3600000)
+{
+    return qBound(0, ms, maxMs);
 }
 
 inline int clampTransitionMs(int transitionMs, int intervalMs)
