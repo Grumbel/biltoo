@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1638-install-display-pixels-controller.** Tier 5b: move installDisplayPixels.
+Prior: **1637**.
+
+### Change
+- DisplayPipelineController owns:
+  - `canAcceptDisplaySample`
+  - `installDisplayPixels`
+- ImageView thin-forwards
+- `imageview_load.cpp` ~2190 lines
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1638-install-display-pixels-controller.bundle HEAD
+```
+
+### Next
+- LoadAdd / LoadReplace / pending-tile paths
+- Host accessors to replace friend when surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1637-display-surface-controller.** Tier 5b: move display-surface drive/bind.
 Prior: **1636**.
 

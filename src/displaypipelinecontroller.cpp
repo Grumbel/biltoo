@@ -12,6 +12,7 @@
 #include "thumtoocache.h"
 #include "gallerysoftsm.h"
 #include "displayquality.h"
+#include "softdisplaypolicy.h"
 #include "biltoo_thread.h"
 
 #include "imageloader.h"
@@ -837,4 +838,182 @@ void DisplayPipelineController::syncItemDisplaySurface(ImageItem *item, int host
     displaySurfaces().setAttached(id, ds.attachedKind, ds.haveDisplayEdge,
                                   ds.applied);
 }
+
+bool DisplayPipelineController::canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
+                                       SessionAppearance::PixelKind kind) const
+{
+    if (!item || pixels.isNull()) {
+        return false;
+    }
+    const int incoming = ImageCache::longEdge(pixels);
+    if (incoming <= 0) {
+        return false;
+    }
+    // Soft must not demote FullSource (also enforced by decide Soft path).
+    if (kind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
+        return false;
+    }
+    // Gallery: LQIP underlay only (≤kLqipMaxEdge). Never soft/HOST whole-frame.
+    if (m_view->isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview
+        && !SoftDisplayPolicy::gallerySoftWithinLqipBand(
+               incoming, DisplayQuality::kLqipMaxEdge)) {
+        return false;
+    }
+    if (!item->hasDisplayPixels()) {
+        return true; // blank: LQIP-sized SoftPreview only (gated above)
+    }
+    if (m_view->isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
+        // Only larger LQIP; never soft climb.
+        return SoftDisplayPolicy::galleryAcceptsLqipUpgrade(
+            item->displayPixelLongEdge(), incoming, DisplayQuality::kLqipMaxEdge);
+    }
+    DisplaySurface::State ds = displaySurfaceStateForItem(item, incoming, false);
+    if (m_view->isCropDraftLockedItem(item) || m_view->isCropDraftLockedPath(item->path())) {
+        ds.frozen = true;
+    }
+    const DisplaySurface::Action act = DisplaySurface::decide(ds);
+    using AT = DisplaySurface::ActionType;
+    if (act.type == AT::None) {
+        return false;
+    }
+    if (kind == SessionAppearance::PixelKind::SoftPreview) {
+        return act.type == AT::AttachSoft
+            || act.type == AT::ScheduleAsyncMaterialize;
+    }
+    // FullSource: accept when decide wants full attach or async full bake.
+    return act.type == AT::AttachFull
+        || act.type == AT::ScheduleAsyncMaterialize
+        || act.type == AT::AttachSoft;
+}
+
+void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QImage &pixels,
+                                     SessionAppearance::PixelKind kind,
+                                     SessionImageId sid)
+{
+    if (!item) {
+        return;
+    }
+    const QString path = item->path();
+    // Crop draft owns the live sample — ladder/async must not replace it
+    // (store want still has crop → wrong bake; soft↔full thrash).
+    if (m_view->isCropDraftLockedItem(item) || m_view->isCropDraftLockedPath(path)) {
+        return;
+    }
+    if (!canAcceptDisplaySample(item, pixels, kind)) {
+        return;
+    }
+    if (!pixels.isNull()) {
+        TtfpTrace::noteFirstPixels("installDisplayPixels");
+    }
+    const QSize layoutBefore = item->imageSize();
+
+    // Resolve session id (Image-mode soft path often passes invalid sid).
+    if (sid == kInvalidSessionImageId) {
+        if (item->sessionId() != kInvalidSessionImageId) {
+            sid = item->sessionId();
+        } else if (m_view->isImageMode() && m_sessionId.hasCurrentId()) {
+            sid = m_sessionId.currentIdValue();
+        }
+    }
+    seedSessionAppearanceFromState(sid, path);
+
+    // Absolute want xform (session store / path map / live flags).
+    const WorkspaceItemState appearance = m_view->wantAppearanceForItem(item, sid);
+
+    // Host cache is unoriented. Every ladder/decode sample that enters here is
+    // host-raw (Gallery, Image, Workspace). Display-ready stash soft never
+    // enters this function — pendingTile attaches it via attachDisplaySample.
+    //
+    // Invariant: for session-bound tiles, attach only materializeDisplay(host,
+    // store want). Never attach host under a content want. Never set applied
+    // xform unless the attached pixels match that bake.
+    const bool wantBake =
+        SessionAppearance::hasContentAppearance(appearance)
+        || !appearance.colorAdjust.isIdentity();
+    if (!path.isEmpty()) {
+        // Incoming is always unoriented host — keep ImageCache pure.
+        ImageCache::put(path, pixels);
+    }
+
+    // raw → optional gallery soft clamp → materializeDisplay → attach.
+    QImage pixelsForDisplay = pixels;
+    if (m_view->isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
+        pixelsForDisplay = DisplayEdgePolicy::clampSoftForCell(
+            pixels,
+            galleryDisplayEdgeForItem(item, /*allowHighRes=*/true),
+            ThumtooCache::kFilmstripLadderEdge);
+    }
+    QImage display = pixelsForDisplay;
+    SessionAppearance::PixelKind attachKind = kind;
+    bool scheduleFullBake = false;
+    if (wantBake) {
+        // Key-repeat: never schedule async rematerialize per skipped path —
+        // settle loadImage will bake once for the final index.
+        const bool navHot = m_view->m_slideshow.hud().isNavHot() && m_view->isImageMode();
+        // Nav-hot: tighter clamp so materializeDisplay stays cheap under hold.
+        const int maxGui = navHot
+            ? ContentXform::materializePreviewEdge()
+            : ContentXform::kGuiMaterializeMaxEdge;
+        const int hostEdge = ImageCache::longEdge(pixelsForDisplay);
+        // Multi-MP host cannot materialize on the GUI thread. Soft stand-in
+        // (clamp ≤512 + SoftPreview bake) keeps crop/orient visible now;
+        // full-resolution bake is scheduled async. Never attach raw host.
+        if (hostEdge > maxGui) {
+            pixelsForDisplay = ImageCache::clampToMaxEdge(pixelsForDisplay, maxGui);
+            attachKind = SessionAppearance::PixelKind::SoftPreview;
+            // Only escalate to full async bake when the caller asked for FullSource.
+            scheduleFullBake = !navHot
+                && (kind == SessionAppearance::PixelKind::FullSource);
+        }
+        const int edge = ImageCache::longEdge(pixelsForDisplay);
+        if (edge <= 0) {
+            if (!navHot) {
+                m_view->scheduleAsyncHostRematerialize(path, sid, appearance);
+            }
+            return;
+        }
+        if (edge > maxGui) {
+            // Clamp failed oddly — still do not attach host under want.
+            if (!navHot) {
+                m_view->scheduleAsyncHostRematerialize(path, sid, appearance);
+            }
+            return;
+        }
+        display = SessionAppearance::materializeDisplay(
+            pixelsForDisplay, appearance, attachKind);
+        if (display.isNull()) {
+            if (!navHot) {
+                m_view->scheduleAsyncHostRematerialize(path, sid, appearance);
+            }
+            return;
+        }
+        // Soft attach is ignored while FullSource is present.
+        if (attachKind == SessionAppearance::PixelKind::SoftPreview
+            && item->hasDecodedPixels()) {
+            item->clearDecodedPixels();
+        }
+    }
+    const QSize sizeBeforeAttach = item->imageSize();
+    m_view->attachDisplaySample(item, display, appearance, attachKind);
+    if (scheduleFullBake) {
+        m_view->scheduleAsyncHostRematerialize(path, sid, appearance);
+    }
+    // Soft→layout may change aspect; keep Image view scale continuous.
+    if (m_view->isImageMode() && item == m_view->targetItem()
+        && sizeBeforeAttach != item->imageSize()
+        && sizeBeforeAttach.width() > 1 && sizeBeforeAttach.height() > 1) {
+        m_view->preserveImageViewOnLogicalSizeChange(item, sizeBeforeAttach, item->imageSize());
+    } else if (m_view->isImageMode() && m_view->m_scene && m_view->m_items.size() == 1) {
+        m_view->m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    }
+
+    // Do NOT emit sessionAppearanceChanged from decode/install (filmstrip is
+    // selection-coupled). Soft ladder upgrades must not rewrite the strip.
+
+    // Gallery reflow only when layout geometry actually changed.
+    if (m_view->isGalleryMode() && item->imageSize() != layoutBefore) {
+        m_view->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+    }
+}
+
 

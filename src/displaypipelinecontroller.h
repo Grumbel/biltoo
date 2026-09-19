@@ -21,8 +21,8 @@ class TileLoadCoordinator;
  * Display / load pipeline collaborator for ImageView (Phase 6 Tier 5a).
  *
  * Owns load generation gate, display surfaces, focus surface id, tile LOD
- * timers and coordinator. PreferCache climb methods remain on ImageView until
- * Tier 5b; SIZE.md soft-vs-logical rules stay with ImageSizeBook.
+ * timers, PreferCache climbs, sample install, and surface drive/bind (Tier 5b).
+ * SIZE.md soft-vs-logical rules stay with ImageSizeBook.
  */
 class DisplayPipelineController
 {
@@ -87,6 +87,11 @@ public:
     void unregisterItemDisplaySurface(ImageItem *item);
     void syncItemDisplaySurface(ImageItem *item, int hostLongEdge = -1,
                                 bool climbPending = false);
+    bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
+                                SessionAppearance::PixelKind kind) const;
+    void installDisplayPixels(ImageItem *item, const QImage &pixels,
+                              SessionAppearance::PixelKind kind,
+                              SessionImageId sid);
 
 private:
     ImageView *m_view = nullptr; // not owned
