@@ -69,11 +69,11 @@ void ImageView::ensureCropRectValid()
     }
     const QRectF cr = item->contentRect();
     if (!m_crop.rect.isValid() || m_crop.rect.isEmpty()) {
-        m_crop.rect = cr;
-        m_crop.rotation = 0.0;
+        m_crop.setRect(cr);
+        m_crop.setRotation(0.0);
         return;
     }
-    m_crop.rect = m_crop.rect.normalized();
+    m_crop.setRect(m_crop.rect.normalized());
     if (m_crop.allowExpand) {
         if (m_crop.rect.width() < 1.0) {
             m_crop.rect.setWidth(1.0);
@@ -83,7 +83,7 @@ void ImageView::ensureCropRectValid()
         }
         return;
     }
-    m_crop.rect = CropGeometry::constrainToContent(m_crop.rect, m_crop.rotation, cr, 1.0);
+    m_crop.setRect(CropGeometry::constrainToContent(m_crop.rect, m_crop.rotation, cr, 1.0));
 }
 
 void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
@@ -487,12 +487,12 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
                 m_crop.setAllowExpand(true);
             }
         } else {
-            m_crop.rect = cr;
-            m_crop.rotation = 0.0;
+            m_crop.setRect(cr);
+            m_crop.setRotation(0.0);
         }
     } else {
-        m_crop.rect = cr;
-        m_crop.rotation = 0.0;
+        m_crop.setRect(cr);
+        m_crop.setRotation(0.0);
     }
     ensureCropRectValid();
 }
@@ -1779,7 +1779,7 @@ void ImageView::updateCropMoveDrag(const QPointF &local, const QRectF &cr)
         r = r.normalized();
         r = CropGeometry::translateInside(r, m_crop.rotation, cr);
     }
-    m_crop.rect = r;
+    m_crop.setRect(r);
     viewport()->update();
 }
 
@@ -1787,12 +1787,12 @@ void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qre
 {
     // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
     const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
-    m_crop.rotation = CropGeometry::rotationFromDrag(
+    m_crop.setRotation(CropGeometry::rotationFromDrag(
         local, m_crop.dragStartRect.center(), m_crop.rotateStartRotation,
-        m_crop.rotateStartAngle, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
+        m_crop.rotateStartAngle, mods & Qt::ShiftModifier, mods & Qt::ControlModifier));
     if (!m_crop.allowExpand) {
-        m_crop.rect = CropGeometry::constrainToContent(m_crop.dragStartRect, m_crop.rotation, cr,
-                                            minSide);
+        m_crop.setRect(CropGeometry::constrainToContent(m_crop.dragStartRect, m_crop.rotation, cr,
+                                            minSide));
     }
     viewport()->update();
 }
@@ -1818,9 +1818,9 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
         if (r.height() < minSide) {
             r.setHeight(minSide);
         }
-        m_crop.rect = r;
+        m_crop.setRect(r);
     } else {
-        m_crop.rect = CropGeometry::constrainToContent(r, m_crop.rotation, cr, minSide);
+        m_crop.setRect(CropGeometry::constrainToContent(r, m_crop.rotation, cr, minSide));
     }
     viewport()->update();
 }
@@ -1869,8 +1869,8 @@ void ImageView::beginCropRubberBand(const QPoint &viewPos)
         return;
     }
     m_crop.beginRubber(local);
-    m_crop.rect = QRectF(local, QSizeF(0, 0));
-    m_crop.rotation = 0.0; // new rubber-band is axis-aligned
+    m_crop.setRect(QRectF(local, QSizeF(0, 0)));
+    m_crop.setRotation(0.0); // new rubber-band is axis-aligned
     viewport()->update();
 }
 
@@ -1892,7 +1892,7 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
     if (r.height() < 1.0) {
         r.setHeight(1.0);
     }
-    m_crop.rect = m_crop.allowExpand ? r : r.intersected(cr);
+    m_crop.setRect(m_crop.allowExpand ? r : r.intersected(cr));
     viewport()->update();
 }
 
