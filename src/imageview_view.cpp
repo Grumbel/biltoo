@@ -475,7 +475,7 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         // restore viewport centre in image-normalized coords (prev/next compare).
         // Always restore *after* setSceneRect/refreshScrollBarGeometry — those
         // often reset QAbstractScrollArea scroll position.
-        switch (m_framing.stickyZoomKind) {
+        switch (m_framing.currentStickyZoomKind()) {
         case StickyZoomKind::Fill:
             m_framing.setFillMode();
             fitItem(item, Qt::KeepAspectRatioByExpanding);
@@ -494,7 +494,7 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         }
         syncImageModeSceneRect(item);
         refreshScrollBarGeometry();
-        if (m_framing.stickyZoomKind != StickyZoomKind::Fit) {
+        if (!m_framing.isStickyFit()) {
             restoreStickyPanAnchor(item);
             // Scroll ranges often settle after this returns — restore again.
             // QPointer so a destroy mid-navigation cancels the callback safely.
@@ -519,7 +519,7 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         m_framing.clearFitFill();
         item->setItemScale(1.0);
         resetTransform();
-        scale(m_framing.preservedViewScale, m_framing.preservedViewScale);
+        scale(m_framing.currentPreservedViewScale(), m_framing.currentPreservedViewScale());
         syncImageModeSceneRect(item);
         refreshScrollBarGeometry();
         restoreStickyPanAnchor(item);
@@ -1801,7 +1801,7 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
         // Oriented path when to-phase missing (slideshowPixelsForPath materializes).
         m_ss.setFromImage(slideshowPixelsForPath(fromPath), true);
     }
-    m_ssDwell.applyBias(m_ss.toBiasA, m_ss.toBiasB, m_ssDwell.travelDirPoint(), m_ssDwell.motionSignValue());
+    m_ssDwell.applyBias(m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ssDwell.travelDirPoint(), m_ssDwell.motionSignValue());
     m_ssDwell.setBiasPath(fromPath);
     m_ss.promoteFromMotionFromTo();
     m_ssDwell.setMotionT(m_ss.fromMotionT);
@@ -1982,7 +1982,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         || ImageCache::longEdge(m_ss.toImage) < SlideshowAtlasPolicy::needEdge(slideshowTargetEdge())) {
         preloadSlideshowImage(toPath);
     }
-    captureMotionBiasesForPath(toPath, m_ss.toImage, &m_ss.toBiasA, &m_ss.toBiasB);
+    captureMotionBiasesForPath(toPath, m_ss.toImage, &m_ss.toBiasARef(), &m_ss.toBiasBRef());
     m_ss.startToMotionClock();
     m_ss.setToMotionT(0.0);
     if (m_ss.hasToImage()) {

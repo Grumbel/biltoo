@@ -668,7 +668,7 @@ public:
     void captureStickyZoomFromCurrentFraming();
     bool stickyZoomEnabled() const { return m_framing.isStickyZoomEnabled(); }
     void setStickyZoomKind(StickyZoomKind kind);
-    StickyZoomKind stickyZoomKind() const { return m_framing.stickyZoomKind; }
+    StickyZoomKind stickyZoomKind() const { return m_framing.currentStickyZoomKind(); }
     /** Image-mode framing after soft/full install (honours sticky zoom). */
     void applyImageModeFraming(ImageItem *item);
     /** Best-effort: remember viewport centre in image-normalized coords. */
@@ -774,7 +774,7 @@ public:
     /** Non-empty while the pointer is over a link region. */
     QString linkHoverTip() const { return m_textLayer.linkHoverTip; }
 
-    bool imageModeLeftDragPan() const { return m_chrome.imageModeLeftDragPan; }
+    bool imageModeLeftDragPan() const { return m_chrome.isImageModeLeftDragPan(); }
 
     void setBackgroundColor(const QColor &color);
     QColor backgroundColor() const { return m_canvasBg.primaryColor(); }
@@ -1151,7 +1151,7 @@ public:
     QString lastLoadError() const { return m_sessionId.lastLoadError; }
     /** Basename of the current/target image for the bottom HUD. */
     QString hudFileName() const;
-    ImageMouseInfo mouseInfo() const { return m_chrome.mouseInfo; }
+    ImageMouseInfo mouseInfo() const { return m_chrome.currentMouseInfo(); }
     QString currentPath() const;
     QSize imageSize() const;
     int itemCount() const;

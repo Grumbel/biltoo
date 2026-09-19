@@ -2298,7 +2298,7 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
         if (m_items.first()->path() != path) {
             captureStickyPanAnchor(m_items.first());
         } else if (m_framing.isStickyZoomEnabled()
-                   && m_framing.stickyZoomKind != StickyZoomKind::Fit) {
+                   && !m_framing.isStickyFit()) {
             // Same path rebuild: keep looking where we are now.
             captureStickyPanAnchor(m_items.first());
         }

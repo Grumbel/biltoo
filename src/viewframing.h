@@ -46,6 +46,12 @@ struct ViewFraming {
 
     bool hasPreservedViewScale() const { return havePreservedViewScale; }
 
+    StickyZoomKind currentStickyZoomKind() const { return stickyZoomKind; }
+
+    bool isStickyFit() const { return stickyZoomKind == StickyZoomKind::Fit; }
+
+    qreal currentPreservedViewScale() const { return preservedViewScale; }
+
     /** Capture sticky pan as norms of @p sceneCentre within @p itemBounds. */
     void setStickyPanFromScene(const QPointF &sceneCentre, const QRectF &itemBounds)
     {
