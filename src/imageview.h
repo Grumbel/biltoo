@@ -229,6 +229,38 @@ public:
     bool isSlideshowProgressActive() const { return m_slideshow.hud().isProgressActive(); }
     /** PathRasterService for PreferCache cancel when tiles issue (coordinator). */
     PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
+    /** Display pipeline host: PreferCache / load path raster service. */
+    PathRasterService *hostPathRaster() { return m_pathRaster; }
+    const PathRasterService *hostPathRaster() const { return m_pathRaster; }
+    /** Display pipeline host: slideshow controller (nav-hot, rasters, hud). */
+    SlideshowController &hostSlideshow() { return m_slideshow; }
+    const SlideshowController &hostSlideshow() const { return m_slideshow; }
+    /** Display pipeline host: gallery soft SM book. */
+    GallerySoftBook &hostGallerySoftBook() { return m_gallerySoftBook; }
+    const GallerySoftBook &hostGallerySoftBook() const { return m_gallerySoftBook; }
+    /** Display pipeline host: pending session binds. */
+    SessionBindBook &hostBindBook() { return m_bindBook; }
+    const SessionBindBook &hostBindBook() const { return m_bindBook; }
+    /** Display pipeline host: layout prefs (free-form check). */
+    LayoutPrefs &hostLayout() { return m_layout; }
+    const LayoutPrefs &hostLayout() const { return m_layout; }
+    /** Display pipeline host: gallery relayout suppress guard. */
+    GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() { return m_galleryRelayoutSuppress; }
+    const GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() const
+    {
+        return m_galleryRelayoutSuppress;
+    }
+    /** Display pipeline host: gallery controller (stashed items). */
+    GalleryController &hostGallery() { return m_gallery; }
+    const GalleryController &hostGallery() const { return m_gallery; }
+    /** Display pipeline host: crop controller (draft freeze). */
+    CropController &hostCrop() { return m_cropCtrl; }
+    const CropController &hostCrop() const { return m_cropCtrl; }
+    /** Display pipeline host: text layer (loadImage side effects). */
+    TextLayerSession &hostTextLayer() { return m_textLayer; }
+    const TextLayerSession &hostTextLayer() const { return m_textLayer; }
+    /** Display pipeline host: filmstrip soft provider for image-mode pending. */
+    ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
     /**
      * PathRaster / soft-job GUI escalate: PreferCache climb when soft is inadequate.
      * Public so queued lambdas (QPointer) can invoke it (not private closure access).

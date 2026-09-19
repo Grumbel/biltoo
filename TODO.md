@@ -2,6 +2,35 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1647-display-pipeline-host-accessors.** Host surface for DisplayPipelineController.
+Prior: **1646**.
+
+### Change
+- ImageView host accessors for display pipeline:
+  - `hostPathRaster` / `hostSlideshow` / `hostGallerySoftBook` / `hostBindBook`
+  - `hostLayout` / `hostGalleryRelayoutSuppress` / `hostGallery` / `hostCrop` / `hostTextLayer`
+  - `hostImageModeSoftProvider`
+- Reuse existing: `liveItems`, `canvasScene`, `hostSessionId`, `hostFraming`, `hostItemStateBook`
+- DisplayPipelineController uses host accessors only (no `m_view->m_*`)
+- **`friend class DisplayPipelineController` still present** for private methods
+  (`applyItemModeFlags`, `prepareImageModeCanvas`, …)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1647-display-pipeline-host-accessors.bundle HEAD
+```
+
+### Next
+- Promote remaining private methods the controller needs to public/host API
+- Remove `friend class DisplayPipelineController`
+- Optional: split displaypipelinecontroller.cpp
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1646-load-remainder-controller.** Tier 5b: move remaining load helpers; exit size target.
 Prior: **1645**.
 

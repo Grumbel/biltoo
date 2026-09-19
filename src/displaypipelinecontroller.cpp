@@ -193,11 +193,11 @@ DisplayPipelineController::DisplayPipelineController(ImageView *view)
 void DisplayPipelineController::ensureWorkspaceQualityClimb()
 {
     ASSERT_GUI_THREAD();
-    if (!m_view->isWorkspaceMode() || !m_view->m_pathRaster || !m_view->m_scene) {
+    if (!m_view->isWorkspaceMode() || !m_view->hostPathRaster() || !m_view->canvasScene()) {
         return;
     }
     QList<ImageItem *> targets;
-    for (QGraphicsItem *gi : m_view->m_scene->selectedItems()) {
+    for (QGraphicsItem *gi : m_view->canvasScene()->selectedItems()) {
         if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
             targets.append(ii);
         }
@@ -205,7 +205,7 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
     if (targets.isEmpty()) {
         // No selection: climb all on-canvas items (bounded).
         int n = 0;
-        for (ImageItem *ii : m_view->m_items) {
+        for (ImageItem *ii : m_view->liveItems()) {
             if (!ii || ii->path().isEmpty()) {
                 continue;
             }
@@ -239,7 +239,7 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
         if (needEdge > 0 && have > 0 && DisplayEdgePolicy::coversEdge(have, needEdge)) {
             continue;
         }
-        const bool pending = m_view->m_pathRaster->isClimbPending(path);
+        const bool pending = m_view->hostPathRaster()->isClimbPending(path);
         syncItemDisplaySurface(ii, -1, pending);
         const DisplaySurface::SurfaceId sid =
             static_cast<DisplaySurface::SurfaceId>(ii->displaySurfaceId());
@@ -270,13 +270,13 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
             (void)m_view->applyDisplaySurfaceAction(ii, act, QImage(), needEdge, pol);
         }
         if (!DisplayEdgePolicy::coversEdge(ii->displayPixelLongEdge(), needEdge)
-            && (m_view->m_pathRaster->isGaveUp(path)
-                || (!m_view->m_pathRaster->isClimbPending(path)
+            && (m_view->hostPathRaster()->isGaveUp(path)
+                || (!m_view->hostPathRaster()->isClimbPending(path)
                     && act.type == DisplaySurface::ActionType::ScheduleClimb))) {
             // PreferCache plateau short of need — native only when no durable tiles.
             if (!ThumtooCache::hasDurableTilesKnown(path)
-                && (m_view->m_pathRaster->isGaveUp(path)
-                    || !m_view->m_pathRaster->isClimbPending(path))) {
+                && (m_view->hostPathRaster()->isGaveUp(path)
+                    || !m_view->hostPathRaster()->isClimbPending(path))) {
                 m_view->scheduleImageModeNativeDecodeOnce(path);
             }
         }
@@ -286,10 +286,10 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
 void DisplayPipelineController::scheduleImageModeNativeDecodeOnce(const QString &path)
 {
     ASSERT_GUI_THREAD();
-    if (path.isEmpty() || m_view->m_gallerySoftBook.hasImageModeNativeDecode(path)) {
+    if (path.isEmpty() || m_view->hostGallerySoftBook().hasImageModeNativeDecode(path)) {
         return;
     }
-    m_view->m_gallerySoftBook.markImageModeNativeDecode(path);
+    m_view->hostGallerySoftBook().markImageModeNativeDecode(path);
     const quint64 gen = loadGate().generation();
     const QPointer<ImageView> guard(m_view);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
@@ -330,7 +330,7 @@ void DisplayPipelineController::scheduleImageModePreferCacheClimb(const QString 
 }
 void DisplayPipelineController::requestEscalateClimb(const QString &path, int wantEdge)
 {
-    if (!m_view->m_pathRaster || path.isEmpty() || m_view->m_slideshow.hud().isNavHot()) {
+    if (!m_view->hostPathRaster() || path.isEmpty() || m_view->hostSlideshow().hud().isNavHot()) {
         return;
     }
     if (m_view->isCropDraftLockedPath(path)) {
@@ -343,7 +343,7 @@ void DisplayPipelineController::requestEscalateClimb(const QString &path, int wa
             return;
         }
     }
-    for (ImageItem *ii : m_view->m_items) {
+    for (ImageItem *ii : m_view->liveItems()) {
         if (ii && ii->path() == path
             && (ii->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path))) {
             m_view->tickPrimaryTileLod(12);
@@ -359,30 +359,30 @@ void DisplayPipelineController::requestEscalateClimb(const QString &path, int wa
     // Slideshow + durable tiles: SoftDisplay (PreferCache/TileSynth) only —
     // EscalateToFull native decode is the CPU storm on prepared libraries.
     const auto policy =
-        (m_view->m_slideshow.hud().isProgressActive() && ThumtooCache::hasDurableTilesKnown(path))
+        (m_view->hostSlideshow().hud().isProgressActive() && ThumtooCache::hasDurableTilesKnown(path))
             ? PathRasterService::ClimbPolicy::SoftDisplay
             : PathRasterService::ClimbPolicy::EscalateToFull;
     biltooLoadDbg("escalateClimb(service) path=%s edge=%d policy=%d",
                   qPrintable(QFileInfo(path).fileName()), edge,
                   static_cast<int>(policy));
-    m_view->m_pathRaster->ensure(path, edge, m_view->logicalSizeForPath(path), policy);
+    m_view->hostPathRaster()->ensure(path, edge, m_view->logicalSizeForPath(path), policy);
 }
 void DisplayPipelineController::noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                                  const QImage &sample)
 {
-    if (m_view->m_pathRaster && !path.isEmpty()) {
-        m_view->m_pathRaster->noteDelivery(path, requestEdge, sample);
+    if (m_view->hostPathRaster() && !path.isEmpty()) {
+        m_view->hostPathRaster()->noteDelivery(path, requestEdge, sample);
     }
 }
 void DisplayPipelineController::ensureImageModeQualityClimb(const QString &path, const QImage &sample)
 {
-    if (path.isEmpty() || m_view->m_slideshow.hud().isNavHot() || !m_view->m_pathRaster) {
+    if (path.isEmpty() || m_view->hostSlideshow().hud().isNavHot() || !m_view->hostPathRaster()) {
         return;
     }
     if (m_view->isCropDraftLockedPath(path)) {
         return;
     }
-    if (m_view->m_slideshow.hud().isProgressActive()) {
+    if (m_view->hostSlideshow().hud().isProgressActive()) {
         return;
     }
     // Tiles own display once wanted or durable pyramid is known — no PreferCache.
@@ -414,13 +414,13 @@ void DisplayPipelineController::ensureImageModeQualityClimb(const QString &path,
     }
     biltooLoadDbg("imageModeClimb(service) path=%s climbTo=%d have=%d need=%d cold",
                   qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
-    m_view->m_pathRaster->ensure(path, climbTo, m_view->logicalSizeForPath(path),
+    m_view->hostPathRaster()->ensure(path, climbTo, m_view->logicalSizeForPath(path),
                          PathRasterService::ClimbPolicy::EscalateToFull);
     // Full is async. If terminal or nothing pending and still short, host native
     // (only when no durable tiles — prepared libs use TileSynth / tile LOD).
     if (!ThumtooCache::hasDurableTilesKnown(path)
-        && !DisplayEdgePolicy::coversEdge(m_view->m_pathRaster->haveEdge(path), climbTo)
-        && (m_view->m_pathRaster->isGaveUp(path) || !m_view->m_pathRaster->isClimbPending(path))) {
+        && !DisplayEdgePolicy::coversEdge(m_view->hostPathRaster()->haveEdge(path), climbTo)
+        && (m_view->hostPathRaster()->isGaveUp(path) || !m_view->hostPathRaster()->isClimbPending(path))) {
         scheduleImageModeNativeDecodeOnce(path);
     }
 }
@@ -435,8 +435,8 @@ void DisplayPipelineController::installImageModeSampleInPlace(ImageItem *item, c
     // Same rules as every other attach: accept → materialize → m_view->attachDisplaySample.
     m_view->installDisplayPixels(item, image, kind, item->sessionId() != kInvalidSessionImageId
                                              ? item->sessionId()
-                                             : m_view->m_sessionId.currentIdValue());
-    m_view->m_sessionId.clearLastLoadError();
+                                             : m_view->hostSessionId().currentIdValue());
+    m_view->hostSessionId().clearLastLoadError();
     m_view->rememberSizeFromDecode(path, image);
     if (m_view->viewport()) {
         m_view->viewport()->update();
@@ -516,7 +516,7 @@ bool DisplayPipelineController::tryInstallImageModeSampleBaked(const QString &pa
         const bool noUpgrade = incoming > 0 && painted > 0 && incoming <= painted;
         if (kind == SessionAppearance::PixelKind::SoftPreview
             || !sampleCoversNativeLogical(path, image)) {
-            if (!(noUpgrade && m_view->m_pathRaster && m_view->m_pathRaster->isGaveUp(path))) {
+            if (!(noUpgrade && m_view->hostPathRaster() && m_view->hostPathRaster()->isGaveUp(path))) {
                 ensureImageModeQualityClimb(path, image);
             } else {
                 // Terminal PreferCache/Full shortfall at same edge as painted —
@@ -552,16 +552,16 @@ void DisplayPipelineController::onLadderReady(const QString &path, int maxEdge, 
     }
     // Central climb policy + ImageCache put. Slideshow installs via
     // PathRasterService::rasterImproved (no second direct call).
-    if (m_view->m_pathRaster) {
-        m_view->m_pathRaster->noteDelivery(path, maxEdge, image);
+    if (m_view->hostPathRaster()) {
+        m_view->hostPathRaster()->noteDelivery(path, maxEdge, image);
         // PreferCache BestAvailable / Full escalate is PathRasterService policy
         // (docs/THUMTOO_HOST_CONTRACT.md). Do not recover ad-hoc here.
     } else {
         if (!image.isNull()) {
             ImageCache::put(path, image);
         }
-        if (m_view->m_slideshow.hud().isProgressActive() && !image.isNull()) {
-            m_view->m_slideshow.onSlideshowRasterReady(path, image);
+        if (m_view->hostSlideshow().hud().isProgressActive() && !image.isNull()) {
+            m_view->hostSlideshow().onSlideshowRasterReady(path, image);
         }
     }
 
@@ -569,7 +569,7 @@ void DisplayPipelineController::onLadderReady(const QString &path, int maxEdge, 
     // in flight. ladderReady used to return early for non-Gallery, so PDF /
     // page / archive PreferCache deliveries left the view stuck on the soft
     // thumbnail forever.
-    if (m_view->isImageMode() && !image.isNull() && !m_view->m_slideshow.hud().isProgressActive()) {
+    if (m_view->isImageMode() && !image.isNull() && !m_view->hostSlideshow().hud().isProgressActive()) {
         upgradeImageModeFromLadder(path, maxEdge, image);
     }
 
@@ -587,7 +587,7 @@ void DisplayPipelineController::onLadderReady(const QString &path, int maxEdge, 
     // if some on-canvas item for this path already wants tiles (avoids a full
     // tickPrimary scan on every soft delivery).
     if (m_view->isImageMode() || m_view->isWorkspaceMode() || m_view->isGalleryMode()) {
-        for (ImageItem *ii : m_view->m_items) {
+        for (ImageItem *ii : m_view->liveItems()) {
             if (ii && ii->path() == path && ii->tileLodWanted()) {
                 m_view->tickPrimaryTileLod(12);
                 break;
@@ -637,7 +637,7 @@ void DisplayPipelineController::applyGalleryLadderReady(const QString &path, int
     if (!image.isNull()
         && ImageCache::longEdge(image) <= DisplayQuality::kLqipMaxEdge) {
         ImageCache::put(path, image);
-        for (ImageItem *item : m_view->m_items) {
+        for (ImageItem *item : m_view->liveItems()) {
             if (!item || item->path() != path || item->hasDisplayPixels()) {
                 continue;
             }
@@ -650,7 +650,7 @@ void DisplayPipelineController::applyGalleryLadderReady(const QString &path, int
         }
     }
 
-    if (GallerySoftState *st = m_view->m_gallerySoftBook.find(path)) {
+    if (GallerySoftState *st = m_view->hostGallerySoftBook().find(path)) {
         st->terminal = true;
         st->have = GallerySoft::maxHave(st->have, m_view->galleryHaveEdgeFromItems(path, nullptr));
     }
@@ -681,7 +681,7 @@ void DisplayPipelineController::maybeClimbImageModePixelsForView()
     // Zoom / resize: PreferCache climbs when on-screen need exceeds painted.
     // Do not start Display@ladder while soft is still missing — that races the
     // soft 512 job and is what THUMTOO_DEBUG showed as need=2048 decoded=0.
-    if (!m_view->isImageMode() || m_view->m_slideshow.hud().isProgressActive()) {
+    if (!m_view->isImageMode() || m_view->hostSlideshow().hud().isProgressActive()) {
         return;
     }
     ImageItem *item = imageModeItemForPath(m_view->classicPath());
@@ -790,16 +790,16 @@ bool DisplayPipelineController::applyDisplaySurfaceAction(ImageItem *item,
     }
     if (act.type == AT::ScheduleClimb) {
         // Gallery never PreferCache/soft climb — LQIP + tiles only.
-        if (m_view->isGalleryMode() || !m_view->m_pathRaster) {
+        if (m_view->isGalleryMode() || !m_view->hostPathRaster()) {
             return false;
         }
         // Image key-repeat: never ensure per skipped path (IMAGE_MODE_NAV_SOFT).
-        if (m_view->m_slideshow.hud().isNavHot() && m_view->isImageMode()) {
+        if (m_view->hostSlideshow().hud().isNavHot() && m_view->isImageMode()) {
             return false;
         }
         const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : fallbackNeedEdge;
         if (need > 0) {
-            m_view->m_pathRaster->ensure(path, need, m_view->logicalSizeForPath(path), climbPolicy);
+            m_view->hostPathRaster()->ensure(path, need, m_view->logicalSizeForPath(path), climbPolicy);
         }
         return false;
     }
@@ -807,7 +807,7 @@ bool DisplayPipelineController::applyDisplaySurfaceAction(ImageItem *item,
         if (m_view->isGalleryMode()) {
             return false;
         }
-        if (m_view->m_slideshow.hud().isNavHot() && m_view->isImageMode()) {
+        if (m_view->hostSlideshow().hud().isNavHot() && m_view->isImageMode()) {
             return false;
         }
         m_view->scheduleAsyncHostRematerialize(
@@ -816,10 +816,10 @@ bool DisplayPipelineController::applyDisplaySurfaceAction(ImageItem *item,
         // Intermediate Prefer host is baking async; keep Soft→Prefer→Full climb
         // when on-screen need is still above host (Workspace zoom-in).
         const int need = fallbackNeedEdge > 0 ? fallbackNeedEdge : 0;
-        if (m_view->m_pathRaster && need > 0
+        if (m_view->hostPathRaster() && need > 0
             && !DisplayEdgePolicy::coversEdge(item->displayPixelLongEdge(), need)
             && !DisplayEdgePolicy::coversEdge(ImageCache::longEdge(ImageCache::get(path)), need)) {
-            m_view->m_pathRaster->ensure(path, need, m_view->logicalSizeForPath(path), climbPolicy);
+            m_view->hostPathRaster()->ensure(path, need, m_view->logicalSizeForPath(path), climbPolicy);
         }
         return false;
     }
@@ -851,14 +851,14 @@ bool DisplayPipelineController::applyDisplaySurfaceAction(ImageItem *item,
         } else {
             m_view->installDisplayPixels(item, host, kind, item->sessionId());
             item->update();
-            if (m_view->m_scene) {
-                m_view->m_scene->update(item->sceneBoundingRect());
+            if (m_view->canvasScene()) {
+                m_view->canvasScene()->update(item->sceneBoundingRect());
             }
         }
         const bool sizeChanged = (item->imageSize() != before);
         if (act.type == AT::AttachSoft) {
             syncItemDisplaySurface(item, ImageCache::longEdge(host),
-                m_view->m_pathRaster && m_view->m_pathRaster->isClimbPending(path));
+                m_view->hostPathRaster() && m_view->hostPathRaster()->isClimbPending(path));
             const DisplaySurface::SurfaceId sid =
                 static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
             const DisplaySurface::Action again =
@@ -871,12 +871,12 @@ bool DisplayPipelineController::applyDisplaySurfaceAction(ImageItem *item,
                 m_view->scheduleAsyncHostRematerialize(
                     path, item->sessionId(),
                     m_view->wantAppearanceForItem(item, item->sessionId()));
-            } else if (again.type == AT::ScheduleClimb && m_view->m_pathRaster
+            } else if (again.type == AT::ScheduleClimb && m_view->hostPathRaster()
                        && !m_view->isGalleryMode()) {
                 const int need = again.climbNeedEdge > 0 ? again.climbNeedEdge
                                                          : fallbackNeedEdge;
                 if (need > 0) {
-                    m_view->m_pathRaster->ensure(path, need, m_view->logicalSizeForPath(path),
+                    m_view->hostPathRaster()->ensure(path, need, m_view->logicalSizeForPath(path),
                                          climbPolicy);
                 }
             }
@@ -889,13 +889,13 @@ bool DisplayPipelineController::applyDisplaySurfaceAction(ImageItem *item,
 
 void DisplayPipelineController::driveImageFocusSurface()
 {
-    if (!m_view->isImageMode() || m_view->m_slideshow.hud().isProgressActive()) {
+    if (!m_view->isImageMode() || m_view->hostSlideshow().hud().isProgressActive()) {
         return;
     }
     // Key-repeat: install soft only. evaluate() → ScheduleClimb / async bake
     // would pathRaster->ensure every skipped path (bypassed requestEscalateClimb
     // nav-hot guard). Settle loadImage drives the surface once.
-    if (m_view->m_slideshow.hud().isNavHot()) {
+    if (m_view->hostSlideshow().hud().isNavHot()) {
         return;
     }
     m_view->syncImageFocusSurfaceState();
@@ -919,7 +919,7 @@ void DisplayPipelineController::driveImageFocusSurface()
     SessionImageId sid = b->sessionId;
     if (sid == kInvalidSessionImageId) {
         sid = item->sessionId() != kInvalidSessionImageId ? item->sessionId()
-                                                          : m_view->m_sessionId.currentIdValue();
+                                                          : m_view->hostSessionId().currentIdValue();
     }
 
     Q_UNUSED(sid);
@@ -1064,8 +1064,8 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     if (sid == kInvalidSessionImageId) {
         if (item->sessionId() != kInvalidSessionImageId) {
             sid = item->sessionId();
-        } else if (m_view->isImageMode() && m_view->m_sessionId.hasCurrentId()) {
-            sid = m_view->m_sessionId.currentIdValue();
+        } else if (m_view->isImageMode() && m_view->hostSessionId().hasCurrentId()) {
+            sid = m_view->hostSessionId().currentIdValue();
         }
     }
     m_view->seedSessionAppearanceFromState(sid, path);
@@ -1102,7 +1102,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     if (wantBake) {
         // Key-repeat: never schedule async rematerialize per skipped path —
         // settle loadImage will bake once for the final index.
-        const bool navHot = m_view->m_slideshow.hud().isNavHot() && m_view->isImageMode();
+        const bool navHot = m_view->hostSlideshow().hud().isNavHot() && m_view->isImageMode();
         // Nav-hot: tighter clamp so materializeDisplay stays cheap under hold.
         const int maxGui = navHot
             ? ContentXform::materializePreviewEdge()
@@ -1156,8 +1156,8 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
         && sizeBeforeAttach != item->imageSize()
         && sizeBeforeAttach.width() > 1 && sizeBeforeAttach.height() > 1) {
         m_view->preserveImageViewOnLogicalSizeChange(item, sizeBeforeAttach, item->imageSize());
-    } else if (m_view->isImageMode() && m_view->m_scene && m_view->m_items.size() == 1) {
-        m_view->m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    } else if (m_view->isImageMode() && m_view->canvasScene() && m_view->liveItems().size() == 1) {
+        m_view->canvasScene()->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
     }
 
     // Do NOT emit sessionAppearanceChanged from decode/install (filmstrip is
@@ -1178,7 +1178,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     // Slideshow owns the m_view->viewport with dwell/live blits. Pending tile used to
     // m_view->clearLiveCanvas + cancelSlideshowMotion after fade-end cleared the hold,
     // wiping the dwell we just armed. Underlay is hidden for the whole show.
-    if (m_view->m_slideshow.hud().isProgressActive()) {
+    if (m_view->hostSlideshow().hud().isProgressActive()) {
         return;
     }
     if (m_view->isCropDraftLockedPath(path)) {
@@ -1198,8 +1198,8 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     // contentRect — that is the wrong-pixels stretch. Layout without pixels is
     // fine (blank/placeholder at the correct aspect); only the old sample is not.
     if (pixels.isNull()) {
-        if (m_view->m_items.size() == 1) {
-            ImageItem *item = m_view->m_items.first();
+        if (m_view->liveItems().size() == 1) {
+            ImageItem *item = m_view->liveItems().first();
             const bool pathChanged = item->path() != path;
             item->setPath(path);
             m_view->bindImageModeSessionCursor(item);
@@ -1224,14 +1224,14 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
                 // Soft PreferCache encode is removed for Image underlay
                 // (LQIP + tiles only). Nav-hot: no IPC — settle loadImage probes
                 // size and issues tiles once. Do not scheduleSoftPixels here.
-                if (!m_view->m_slideshow.hud().isNavHot() && ThumtooCache::isAvailable()) {
+                if (!m_view->hostSlideshow().hud().isNavHot() && ThumtooCache::isAvailable()) {
                     ThumtooCache::scheduleProbe(path);
                 }
                 if (m_view->viewport()) {
                     m_view->viewport()->update();
                 }
                 biltooLoadDbg(
-                    m_view->m_slideshow.hud().isNavHot()
+                    m_view->hostSlideshow().hud().isNavHot()
                         ? "pendingTile DEFER blank path=%s (nav-hot, placeholder)"
                         : "pendingTile DEFER blank path=%s (placeholder, probe size)",
                     qPrintable(QFileInfo(path).fileName()));
@@ -1261,8 +1261,8 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     // Do NOT m_view->setUpdatesEnabled(false) — that defers soft paint until after the
     // whole key handler (chrome + climb schedule); user never sees the soft.
     ImageItem *item = nullptr;
-    if (m_view->m_items.size() == 1) {
-        item = m_view->m_items.first();
+    if (m_view->liveItems().size() == 1) {
+        item = m_view->liveItems().first();
     }
     if (item) {
         const QSize sizeBefore = item->imageSize();
@@ -1327,7 +1327,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             const bool needFit =
                 sizeBefore.width() <= 1
                 || ContentXform::aspectChanged(sizeBefore, targetSize);
-            if (needFit || m_view->m_framing.isStickyZoomEnabled() || m_view->m_framing.hasPreservedViewScale()) {
+            if (needFit || m_view->hostFraming().isStickyZoomEnabled() || m_view->hostFraming().hasPreservedViewScale()) {
                 // Aspect change, sticky mode, or free-zoom preserve across files.
                 m_view->resetImageModeItemPlacement(item);
                 m_view->applyImageModeFraming(item);
@@ -1340,7 +1340,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         // Key-repeat (nav hot): async update only — sync repaint every auto-repeat
         // event was the cumulative GUI freeze under held ←/→.
         if (m_view->viewport()) {
-            if (m_view->m_slideshow.hud().isNavHot()) {
+            if (m_view->hostSlideshow().hud().isNavHot()) {
                 m_view->viewport()->update();
             } else {
                 m_view->viewport()->repaint();
@@ -1348,19 +1348,19 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         }
         // Retained path RAM: bind session and paint tiles without waiting for
         // the next coordinator timer (A→B→A should show tiles on this frame).
-        if (!m_view->m_slideshow.hud().isNavHot() && item->tileLodHasPathRam()) {
+        if (!m_view->hostSlideshow().hud().isNavHot() && item->tileLodHasPathRam()) {
             item->tickTileLod(8);
         }
         biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d painted=%s",
                       qPrintable(QFileInfo(path).fileName()),
                       pixels.width(), pixels.height(), didFit,
-                      m_view->m_slideshow.hud().isNavHot() ? "async" : "sync");
+                      m_view->hostSlideshow().hud().isNavHot() ? "async" : "sync");
         return;
     }
 
     // No reusable item — still try to capture from whatever was on the canvas.
-    if (!m_view->m_items.isEmpty()) {
-        m_view->captureStickyPanAnchor(m_view->m_items.first());
+    if (!m_view->liveItems().isEmpty()) {
+        m_view->captureStickyPanAnchor(m_view->liveItems().first());
     }
     m_view->clearLiveCanvas();
     item = m_view->createPlaceholderItem(path, sz);
@@ -1370,7 +1370,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     }
     m_view->bindImageModeSessionCursor(item);
     installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
-                         m_view->m_sessionId.currentIdValue());
+                         m_view->hostSessionId().currentIdValue());
     m_view->resetImageModeItemPlacement(item);
     m_view->prepareImageModeCanvas();
     m_view->applyImageModeFraming(item);
@@ -1390,13 +1390,13 @@ void DisplayPipelineController::installImageModeReplaceItem(const QString &path,
     // so we never present a native-scale (or empty) intermediate frame.
     m_view->setUpdatesEnabled(false);
     // Preserve sticky pan across the wipe (soft→full or cold replace).
-    if (!m_view->m_items.isEmpty()) {
-        if (m_view->m_items.first()->path() != path) {
-            m_view->captureStickyPanAnchor(m_view->m_items.first());
-        } else if (m_view->m_framing.isStickyZoomEnabled()
-                   && !m_view->m_framing.isStickyFit()) {
+    if (!m_view->liveItems().isEmpty()) {
+        if (m_view->liveItems().first()->path() != path) {
+            m_view->captureStickyPanAnchor(m_view->liveItems().first());
+        } else if (m_view->hostFraming().isStickyZoomEnabled()
+                   && !m_view->hostFraming().isStickyFit()) {
             // Same path rebuild: keep looking where we are now.
-            m_view->captureStickyPanAnchor(m_view->m_items.first());
+            m_view->captureStickyPanAnchor(m_view->liveItems().first());
         }
     }
     // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
@@ -1404,7 +1404,7 @@ void DisplayPipelineController::installImageModeReplaceItem(const QString &path,
     ImageItem *item = createItemFromImage(path, image);
     if (!item) {
         m_view->setUpdatesEnabled(true);
-        m_view->m_sessionId.setLastLoadError(path);
+        m_view->hostSessionId().setLastLoadError(path);
         emit m_view->statusChanged();
         return;
     }
@@ -1445,9 +1445,9 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
             if (!tilesOwn) {
                 scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
             }
-            m_view->m_sessionId.clearLastLoadError();
+            m_view->hostSessionId().clearLastLoadError();
         } else {
-            m_view->m_sessionId.setLastLoadError(path);
+            m_view->hostSessionId().setLastLoadError(path);
         }
         emit m_view->statusChanged();
         return;
@@ -1495,19 +1495,19 @@ void DisplayPipelineController::handleLoadAddDecodeFailure(const QString &path)
         && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
         ThumtooCache::scheduleProbe(path);
         // Soft state machine will request placeholder / higher steps.
-        m_view->m_sessionId.clearLastLoadError();
+        m_view->hostSessionId().clearLastLoadError();
         finishLoadAddStatus(/*refreshGalleryWindow=*/true);
         return;
     }
     qWarning("ImageView: decode failed for %s", qPrintable(path));
     if (m_view->isGalleryMode()) {
-        GallerySoftState &st = m_view->m_gallerySoftBook.state(path);
+        GallerySoftState &st = m_view->hostGallerySoftBook().state(path);
         st.failed = true;
         st.inflight = 0;
     }
-    m_view->m_sessionId.setLastLoadError(path);
+    m_view->hostSessionId().setLastLoadError(path);
     // Surface the error on any live placeholder for this path.
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         if (item && item->path() == path && !item->hasDecodedPixels()) {
             item->setToolTip(m_view->tr("Failed to load:\n%1").arg(path));
         }
@@ -1518,7 +1518,7 @@ void DisplayPipelineController::handleLoadAddDecodeFailure(const QString &path)
 
 void DisplayPipelineController::fillStashedItemsForPath(const QString &path, const QImage &image)
 {
-    for (ImageItem *cand : m_view->m_gallery.stashedItems()) {
+    for (ImageItem *cand : m_view->hostGallery().stashedItems()) {
         if (cand && cand->path() == path && !cand->hasDecodedPixels()) {
             installDisplayPixels(cand, image,
                                  SessionAppearance::PixelKind::FullSource,
@@ -1533,12 +1533,12 @@ void DisplayPipelineController::reassertPendingBindPlacement(const QString &path
     // Drop placeholders created in placeOrMoveImageAt already sit at scenePos;
     // re-assert hasScenePos binds so nothing later drifts them, and so a bind
     // still pairs with the pre-created tile.
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         if (!item || item->path() != path) {
             continue;
         }
-        for (int bi = 0; bi < m_view->m_bindBook.bindCount(); ++bi) {
-            const PendingSessionBind &b = m_view->m_bindBook.bindAt(bi);
+        for (int bi = 0; bi < m_view->hostBindBook().bindCount(); ++bi) {
+            const PendingSessionBind &b = m_view->hostBindBook().bindAt(bi);
             if (b.path != path) {
                 continue;
             }
@@ -1576,7 +1576,7 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
     // (e.g. empty-Workspace LoadReplace seeded the first path before LoadAdd).
     // Without this, have==wanted and the bind is never applied — placement,
     // content flips, and colour grade stay at defaults on that tile.
-    for (ImageItem *existing : m_view->m_items) {
+    for (ImageItem *existing : m_view->liveItems()) {
         if (!existing || existing->path() != path) {
             continue;
         }
@@ -1607,7 +1607,7 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
         m_view->applyPendingBindScenePos(existing, bound);
         if (bound.id != kInvalidSessionImageId) {
             // Decode must not rewrite filmstrip (sessionAppearanceChanged).
-            if (m_view->m_bindBook.removeSelectId(bound.id)) {
+            if (m_view->hostBindBook().removeSelectId(bound.id)) {
                 existing->setSelected(true);
             }
         }
@@ -1621,7 +1621,7 @@ int DisplayPipelineController::fillLiveItemsWithDecodedPixels(const QString &pat
     bool sizeChanged = false;
     int have = 0;
     const int incoming = ImageCache::longEdge(image);
-    for (ImageItem *existing : m_view->m_items) {
+    for (ImageItem *existing : m_view->liveItems()) {
         if (!existing || existing->path() != path) {
             continue;
         }
@@ -1651,7 +1651,7 @@ int DisplayPipelineController::fillLiveItemsWithDecodedPixels(const QString &pat
 void DisplayPipelineController::createMissingLoadAddItems(const QString &path, const QImage &image,
                                           int have, int wanted)
 {
-    if (m_view->gallerySizeResolveActive() || m_view->m_gallerySoftBook.isDeferPopulate()) {
+    if (m_view->gallerySizeResolveActive() || m_view->hostGallerySoftBook().isDeferPopulate()) {
         return;
     }
     // Create missing occurrences (each duplicate is a normal separate tile).
@@ -1668,7 +1668,7 @@ void DisplayPipelineController::createMissingLoadAddItems(const QString &path, c
         // Decode/membership must not rewrite filmstrip; user edits emit overrides.
         if (haveBound && bound.id != kInvalidSessionImageId) {
             // Paste: select tiles as they finish decoding.
-            if (m_view->m_bindBook.removeSelectId(bound.id)) {
+            if (m_view->hostBindBook().removeSelectId(bound.id)) {
                 item->setSelected(true);
             }
         }
@@ -1679,14 +1679,14 @@ void DisplayPipelineController::createMissingLoadAddItems(const QString &path, c
 
 void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChanged)
 {
-    if (m_view->gallerySizeResolveActive() || m_view->m_gallerySoftBook.isDeferPopulate()) {
+    if (m_view->gallerySizeResolveActive() || m_view->hostGallerySoftBook().isDeferPopulate()) {
         return;
     }
-    if (!m_view->m_layout.isFreeForm()) {
+    if (!m_view->hostLayout().isFreeForm()) {
         if (!m_view->pathOrderIsEmpty()) {
             m_view->reorderItemsByPaths(m_view->pathOrderPaths());
         }
-        if (!(m_view->isGalleryMode() && m_view->m_galleryRelayoutSuppress.active())) {
+        if (!(m_view->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
             if (sizeChanged) {
                 m_view->applyLayout(GalleryPackReason::ContentChange);
             } else {
@@ -1776,7 +1776,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
     quint64 gen = loadGate().generation();
     if (role == ImageView::LoadReplace) {
         gen = loadGate().bumpGeneration();
-        m_view->m_gallerySoftBook.clearImageModeNativeDecode();
+        m_view->hostGallerySoftBook().clearImageModeNativeDecode();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
     }
@@ -1791,7 +1791,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
 
     // Slideshow owns the viewport via pure-phase buffers — never soft-install
     // or PreferCache-climb the underlay ImageItem while the show is running.
-    if (role == ImageView::LoadReplace && m_view->isImageMode() && m_view->m_slideshow.hud().isProgressActive()) {
+    if (role == ImageView::LoadReplace && m_view->isImageMode() && m_view->hostSlideshow().hud().isProgressActive()) {
         biltooLoadDbg("PATH slideshow active skip image-mode load path=%s",
                       qPrintable(QFileInfo(path).fileName()));
         return;
@@ -1803,7 +1803,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
         // Rapid ←/→: stop here. No PreferCache, no classic decode, no escalate —
         // those race the next key and stall the GUI. Settle timer (MainWindow
         // ~80ms quiet) clears nav-hot and calls loadImage again for climb.
-        if (m_view->m_slideshow.hud().isNavHot()) {
+        if (m_view->hostSlideshow().hud().isNavHot()) {
             const int edge = imageModeItemForPath(path)
                 ? imageModeItemForPath(path)->displayPixelLongEdge()
                 : 0;
@@ -1820,7 +1820,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
                     if (!m_view->isImageMode() || m_view->classicPath() != pathCopy) {
                         return;
                     }
-                    if (m_view->m_slideshow.hud().isNavHot()) {
+                    if (m_view->hostSlideshow().hud().isNavHot()) {
                         return;
                     }
                     ensureImageModeQualityClimb(pathCopy, soft);
@@ -1833,7 +1833,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
     // Image mode: do not SoftOnly/PreferCache on cold open — LQIP (if cached)
     // + tiles. Other modes still seed Soft via scheduleClassicImageDecode.
 
-    if (m_view->m_slideshow.hud().isProgressActive()) {
+    if (m_view->hostSlideshow().hud().isProgressActive()) {
         scheduleSlideshowReplaceDecode(path, gen, role);
         return;
     }
@@ -1843,7 +1843,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
 
 bool DisplayPipelineController::tryDeliverReplaceFromSlideshowRaster(const QString &path, quint64 gen)
 {
-    const QImage ready = m_view->m_slideshow.slideshowRaster(path);
+    const QImage ready = m_view->hostSlideshow().slideshowRaster(path);
     if (ready.isNull()) {
         return false;
     }
@@ -1865,7 +1865,7 @@ void DisplayPipelineController::scheduleSlideshowReplaceDecode(const QString &pa
     // stays on thumbnails forever.
     const QPointer<ImageView> guard(this);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
-    const int qualityEdge = m_view->m_slideshow.slideshowTargetEdge();
+    const int qualityEdge = m_view->hostSlideshow().slideshowTargetEdge();
     const int roleInt = static_cast<int>(role);
     // Snapshot session appearance for the worker (crop is id-keyed, not path).
     const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
@@ -1911,7 +1911,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
 {
     // Image mode: LQIP/cache underlay only if already present, then tiles.
     // No SoftOnly encode and no PreferCache/Full climb in parallel with tiles.
-    if (m_view->isImageMode() && !m_view->m_slideshow.hud().isProgressActive() && !m_view->m_slideshow.hud().isNavHot()
+    if (m_view->isImageMode() && !m_view->hostSlideshow().hud().isProgressActive() && !m_view->hostSlideshow().hud().isNavHot()
         && role == ImageView::LoadReplace) {
         ThumtooCache::scheduleProbe(path);
         tickPrimaryTileLod(12);
@@ -1959,16 +1959,16 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
 
 void DisplayPipelineController::gallerySoftResetPath(const QString &path)
 {
-    m_view->m_gallerySoftBook.resetPath(path);
-    if (m_view->m_pathRaster && !path.isEmpty()) {
-        m_view->m_pathRaster->cancel(path);
+    m_view->hostGallerySoftBook().resetPath(path);
+    if (m_view->hostPathRaster() && !path.isEmpty()) {
+        m_view->hostPathRaster()->cancel(path);
     }
 }
 
 
 void DisplayPipelineController::gallerySoftResetAll()
 {
-    m_view->m_gallerySoftBook.clearSoft();
+    m_view->hostGallerySoftBook().clearSoft();
 }
 
 
@@ -1977,7 +1977,7 @@ int DisplayPipelineController::galleryHaveEdgeFromItems(const QString &path, boo
     // Collect edges for this path, then pure aggregate (SoftDisplayPolicy).
     QVarLengthArray<int, 8> edges;
     QVarLengthArray<bool, 8> decoded;
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         if (!item || item->path() != path) {
             continue;
         }
@@ -2010,7 +2010,7 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 
     bool anyTileWanted = false;
     bool needLqip = false;
-    for (ImageItem *ii : m_view->m_items) {
+    for (ImageItem *ii : m_view->liveItems()) {
         if (!ii || ii->path() != path) {
             continue;
         }
@@ -2027,7 +2027,7 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
         const QImage host = ImageCache::get(path);
         if (!host.isNull()
             && ImageCache::longEdge(host) <= DisplayQuality::kLqipMaxEdge) {
-            for (ImageItem *ii : m_view->m_items) {
+            for (ImageItem *ii : m_view->liveItems()) {
                 if (!ii || ii->path() != path || ii->hasDisplayPixels()) {
                     continue;
                 }
@@ -2038,7 +2038,7 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
         }
     }
 
-    GallerySoftState &st = m_view->m_gallerySoftBook.state(path);
+    GallerySoftState &st = m_view->hostGallerySoftBook().state(path);
     st.terminal = true; // no soft climb ever
     st.have = GallerySoft::maxHave(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
@@ -2066,8 +2066,8 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
     ImageCache::put(path, image);
     // Soft job during slideshow must upgrade phase buffers (m_ssFrom/To), not
     // only ImageCache — otherwise crossfade stays on empty/LQIP until preload.
-    if (m_view->m_slideshow.hud().isProgressActive()) {
-        m_view->m_slideshow.onSlideshowRasterReady(path, image);
+    if (m_view->hostSlideshow().hud().isProgressActive()) {
+        m_view->hostSlideshow().onSlideshowRasterReady(path, image);
     }
 
     // Replace navigations: drop superseded previews.
@@ -2089,7 +2089,7 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
     // climb Gallery cells (filmstrip soft used SoftDisplay here).
     if (m_view->isGalleryMode()) {
         if (incoming > 0 && incoming <= DisplayQuality::kLqipMaxEdge) {
-            for (ImageItem *item : m_view->m_items) {
+            for (ImageItem *item : m_view->liveItems()) {
                 if (!item || item->path() != path || item->hasDisplayPixels()) {
                     continue;
                 }
@@ -2105,12 +2105,12 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
     }
 
     // Workspace: DisplaySurface::decide per item.
-    for (ImageItem *item : m_view->m_items) {
+    for (ImageItem *item : m_view->liveItems()) {
         if (!item || item->path() != path) {
             continue;
         }
         const bool climbPending =
-            m_view->m_pathRaster && m_view->m_pathRaster->isClimbPending(path);
+            m_view->hostPathRaster() && m_view->hostPathRaster()->isClimbPending(path);
         syncItemDisplaySurface(item, incoming, climbPending);
         DisplaySurface::State ds =
             displaySurfaceStateForItem(item, incoming, climbPending);
@@ -2193,21 +2193,21 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
     // Prefer stable session-image id appearance; path map is legacy only.
     //
     // Image mode LoadReplace: the sole canvas item is the current session
-    // image, so m_view->m_sessionId.currentIdValue() identifies it correctly.
+    // image, so m_view->hostSessionId().currentIdValue() identifies it correctly.
     //
     // Gallery / Workspace LoadAdd must not call this: each tile is bound to
-    // its own session id *after* creation. Applying m_view->m_sessionId.currentIdValue() here
+    // its own session id *after* creation. Applying m_view->hostSessionId().currentIdValue() here
     // would bake the navigated image's crop into every newly decoded tile.
-    if (m_view->m_sessionId.hasCurrentId()) {
-        seedSessionAppearanceFromState(m_view->m_sessionId.currentIdValue(), path);
-        if (const WorkspaceItemState *sit = m_view->appearance().get(m_view->m_sessionId.currentIdValue())) {
+    if (m_view->hostSessionId().hasCurrentId()) {
+        seedSessionAppearanceFromState(m_view->hostSessionId().currentIdValue(), path);
+        if (const WorkspaceItemState *sit = m_view->appearance().get(m_view->hostSessionId().currentIdValue())) {
             return *sit;
         }
         // Bound session image with no appearance entry = full frame, no path fallback.
         return {};
     }
     // Path map only when unbound (no session image id).
-    if (const WorkspaceItemState *st = m_view->m_itemStateBook.get(path)) {
+    if (const WorkspaceItemState *st = m_view->hostItemStateBook().get(path)) {
         return *st;
     }
     return {};
@@ -2229,8 +2229,8 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
         // empty — which is exactly when durable rotate/flip must be loaded
         // after restart. appearanceForNewImageModeItem seeds then returns
         // identity only if XDG has nothing.
-        if (m_view->m_sessionId.hasCurrentId()
-            || m_view->m_itemStateBook.contains(path)) {
+        if (m_view->hostSessionId().hasCurrentId()
+            || m_view->hostItemStateBook().contains(path)) {
             app = appearanceForNewImageModeItem(path);
         }
     }
@@ -2249,8 +2249,8 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
 
     auto *item = new ImageItem(path, intrinsic);
     m_view->applyItemModeFlags(item);
-    m_view->m_scene->addItem(item);
-    m_view->m_items.append(item);
+    m_view->canvasScene()->addItem(item);
+    m_view->liveItems().append(item);
     registerItemDisplaySurface(item);
 
     // @p image is host-raw. Sole materialize site is installDisplayPixels.
@@ -2264,7 +2264,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
         item->setSessionCrop(app.hasCrop, app.cropRect);
         item->setColorAdjustmentsRecord(app.colorAdjust);
         const SessionImageId sid = m_view->isImageMode()
-            ? m_view->m_sessionId.currentIdValue()
+            ? m_view->hostSessionId().currentIdValue()
             : kInvalidSessionImageId;
         const int hostEdge = ImageCache::longEdge(image);
         const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
@@ -2282,7 +2282,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
             ? SessionAppearance::PixelKind::FullSource
             : SessionAppearance::PixelKind::SoftPreview;
         const SessionImageId sid = m_view->isImageMode()
-            ? m_view->m_sessionId.currentIdValue()
+            ? m_view->hostSessionId().currentIdValue()
             : item->sessionId();
         installDisplayPixels(item, image, kind, sid);
     }
@@ -2437,7 +2437,7 @@ void DisplayPipelineController::installDisplayPreservingView(ImageItem *item, co
     if (sid == kInvalidSessionImageId) {
         sid = item->sessionId() != kInvalidSessionImageId
                   ? item->sessionId()
-                  : m_view->m_sessionId.currentIdValue();
+                  : m_view->hostSessionId().currentIdValue();
     }
     installDisplayPixels(item, pixels, kind, sid);
     preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
@@ -2456,7 +2456,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         id = item->sessionId();
     }
     if (id == kInvalidSessionImageId && m_view->isImageMode()) {
-        id = m_view->m_sessionId.currentIdValue();
+        id = m_view->hostSessionId().currentIdValue();
     }
     if (id != kInvalidSessionImageId) {
         if (const WorkspaceItemState *app = m_view->appearance().get(id)) {
@@ -2475,7 +2475,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
-        if (const WorkspaceItemState *st = m_view->m_itemStateBook.get(item->path())) {
+        if (const WorkspaceItemState *st = m_view->hostItemStateBook().get(item->path())) {
             want = *st;
         }
     }
@@ -2503,14 +2503,14 @@ ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path,
     // Defer-populate only: size-resolve for Fill layouts must still create
     // placeholders so soft can install. applyLayout stays deferred until
     // finishGallerySizeResolve. Blocking on gallerySizeResolveActive() left
-    // m_view->m_items empty until a manual relayout (and never for pure Fill open).
-    if (m_view->m_gallerySoftBook.isDeferPopulate()) {
+    // m_view->liveItems() empty until a manual relayout (and never for pure Fill open).
+    if (m_view->hostGallerySoftBook().isDeferPopulate()) {
         return nullptr;
     }
     auto *item = new ImageItem(path, intrinsicSize);
     m_view->applyItemModeFlags(item);
-    m_view->m_scene->addItem(item);
-    m_view->m_items.append(item);
+    m_view->canvasScene()->addItem(item);
+    m_view->liveItems().append(item);
     registerItemDisplaySurface(item);
     return item;
 }
@@ -2547,11 +2547,11 @@ void DisplayPipelineController::bindImageModeSessionCursor(ImageItem *item)
         return;
     }
     // Image-mode crop/flip targets the matching Workspace session slot.
-    if (m_view->m_sessionId.hasCurrentId()) {
-        item->setSessionId(m_view->m_sessionId.currentIdValue());
+    if (m_view->hostSessionId().hasCurrentId()) {
+        item->setSessionId(m_view->hostSessionId().currentIdValue());
     }
-    if (m_view->m_sessionId.currentIndex() >= 0) {
-        item->setSessionIndex(m_view->m_sessionId.currentIndex());
+    if (m_view->hostSessionId().currentIndex() >= 0) {
+        item->setSessionIndex(m_view->hostSessionId().currentIndex());
     }
 }
 
@@ -2599,12 +2599,12 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
     if (!preview.isNull()) {
         return preview;
     }
-    QImage pixels = m_view->m_slideshow.slideshowRaster(path);
+    QImage pixels = m_view->hostSlideshow().slideshowRaster(path);
     // Filmstrip often has Soft while ImageCache only has size-probe LQIP (or
     // LRU-evicted the soft). Prefer strip / shared host sample first.
-    if (pixels.isNull() && m_view->m_imageModeSoftProvider) {
+    if (pixels.isNull() && m_view->hostImageModeSoftProvider()) {
         bool ready = false;
-        pixels = m_view->m_imageModeSoftProvider(path, m_view->m_sessionId.currentIdValue(), &ready);
+        pixels = m_view->hostImageModeSoftProvider()(path, m_view->hostSessionId().currentIdValue(), &ready);
         if (!pixels.isNull()) {
             if (displayReadyOut) {
                 *displayReadyOut = ready;
@@ -2629,8 +2629,8 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
     }
 
     WorkspaceItemState want;
-    if (m_view->m_sessionId.hasCurrentId()) {
-        if (const WorkspaceItemState *st = m_view->appearance().get(m_view->m_sessionId.currentIdValue())) {
+    if (m_view->hostSessionId().hasCurrentId()) {
+        if (const WorkspaceItemState *st = m_view->appearance().get(m_view->hostSessionId().currentIdValue())) {
             want = *st;
         }
     }
@@ -2644,8 +2644,8 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         if (pixels.isNull()) {
             continue;
         }
-        const bool sameId = (m_view->m_sessionId.hasCurrentId()
-                             && cand->sessionId() == m_view->m_sessionId.currentIdValue());
+        const bool sameId = (m_view->hostSessionId().hasCurrentId()
+                             && cand->sessionId() == m_view->hostSessionId().currentIdValue());
         const bool hasApplied = cand->hasAppliedContentXform();
         const ContentXform::Value applied = hasApplied
             ? cand->appliedContentXform()
@@ -2696,7 +2696,7 @@ void DisplayPipelineController::applyLegacyPathFlipsIfNeeded(ImageItem *item, co
     }
     // Content 90°/flip/crop are materialize()'d in createItemFromImage when want is set.
     // Legacy unbaked flips only if content flags not used yet.
-    const WorkspaceItemState *st = m_view->m_itemStateBook.get(path);
+    const WorkspaceItemState *st = m_view->hostItemStateBook().get(path);
     if (!st) {
         return;
     }
@@ -2715,24 +2715,24 @@ void DisplayPipelineController::frameImageModeReplaceItem(ImageItem *item, const
     // Slideshow framing: when dwell motion is on, the camera sets the
     // transform (including handoff from a live transition). Applying zoom
     // framing first would centre the image then jump to motion t0.
-    if (m_view->m_slideshow.hud().isProgressActive() && m_view->m_slideshow.settings().isMotionOff()) {
-        m_view->m_slideshow.applySlideshowZoomFraming(item);
-    } else if (!m_view->m_slideshow.hud().isProgressActive()) {
+    if (m_view->hostSlideshow().hud().isProgressActive() && m_view->hostSlideshow().settings().isMotionOff()) {
+        m_view->hostSlideshow().applySlideshowZoomFraming(item);
+    } else if (!m_view->hostSlideshow().hud().isProgressActive()) {
         m_view->applyImageModeFraming(item);
     }
     syncImageModeSceneRect(item);
     // Apply camera while updates are still blocked and any live hold still
     // covers the viewport — avoids a flash of identity / wrong pan pose.
-    m_view->m_slideshow.maybeStartSlideshowMotion();
-    if (m_view->m_slideshow.hud().isProgressActive() && !m_view->m_slideshow.settings().isMotionOff()
-        && !m_view->m_slideshow.dwell().isMotionActive()) {
-        m_view->m_slideshow.applySlideshowZoomFraming(item);
+    m_view->hostSlideshow().maybeStartSlideshowMotion();
+    if (m_view->hostSlideshow().hud().isProgressActive() && !m_view->hostSlideshow().settings().isMotionOff()
+        && !m_view->hostSlideshow().dwell().isMotionActive()) {
+        m_view->hostSlideshow().applySlideshowZoomFraming(item);
     }
-    if (m_view->m_slideshow.hud().isProgressActive()) {
+    if (m_view->hostSlideshow().hud().isProgressActive()) {
         item->setVisible(false);
         // Paused ←/→ loads the underlay while pure phase still paints the
         // previous path — refresh dwell to this decode.
-        m_view->m_slideshow.setSlideshowPhase(path, QString(), -1.0);
+        m_view->hostSlideshow().setSlideshowPhase(path, QString(), -1.0);
     }
 }
 
@@ -2743,8 +2743,8 @@ void DisplayPipelineController::seedEmptyWorkspaceFromReplace(const QString &pat
     // genuine session navigation. Project load / membership adds schedule
     // ImageView::LoadAdd with pending binds; seeding first would leave an unbound tile
     // (default placement, no flip/grade) and steal the first path's ImageView::LoadAdd.
-    if (!m_view->m_items.isEmpty()
-        || !m_view->m_bindBook.isEmpty()
+    if (!m_view->liveItems().isEmpty()
+        || !m_view->hostBindBook().isEmpty()
         || loadGate().containsPendingWorkspacePath(path)) {
         return;
     }
@@ -2753,7 +2753,7 @@ void DisplayPipelineController::seedEmptyWorkspaceFromReplace(const QString &pat
         return;
     }
     item->setSelected(true);
-    m_view->m_framing.armFit();
+    m_view->hostFraming().armFit();
     fitItem(item, currentFitAspectMode());
     emit statusChanged();
 }
@@ -2814,8 +2814,8 @@ void DisplayPipelineController::onImageLoaded(const QString &path, const QImage 
     if (!image.isNull() && !path.isEmpty()) {
         ImageCache::put(path, image);
         // Quality/soft climb during slideshow → phase buffer + atlas upgrade.
-        if (m_view->m_slideshow.hud().isProgressActive()) {
-            m_view->m_slideshow.onSlideshowRasterReady(path, image);
+        if (m_view->hostSlideshow().hud().isProgressActive()) {
+            m_view->hostSlideshow().onSlideshowRasterReady(path, image);
         }
     }
     switch (static_cast<LoadRole>(role)) {
@@ -2837,17 +2837,17 @@ bool DisplayPipelineController::loadImage(const QString &path)
 {
     m_view->setClassicPath(path);
     m_view->clearTextSelection();
-    m_view->m_textLayer.clearLinkHoverTip();
-    if (m_view->m_textLayer.showsRegions() || m_view->m_textLayer.hasSearchQuery()) {
+    m_view->hostTextLayer().clearLinkHoverTip();
+    if (m_view->hostTextLayer().showsRegions() || m_view->hostTextLayer().hasSearchQuery()) {
         m_view->refreshTextLayer();
     }
-    m_view->m_sessionId.clearLastLoadError();
+    m_view->hostSessionId().clearLastLoadError();
 
     if (isMultiItemMode()) {
         // Session navigation while in multi-item mode does not destroy the canvas;
         // only ensure the path is available as classic fallback.
         // Still show the navigated image if the workspace is empty.
-        if (m_view->m_items.isEmpty()) {
+        if (m_view->liveItems().isEmpty()) {
             scheduleImageLoad(path, ImageView::LoadReplace);
         }
         emit statusChanged();
@@ -2903,9 +2903,9 @@ void DisplayPipelineController::syncImageFocusSurfaceState()
     }
     const QString path = item->path();
     const bool pending =
-        m_view->m_pathRaster && !path.isEmpty() && m_view->m_pathRaster->isClimbPending(path);
+        m_view->hostPathRaster() && !path.isEmpty() && m_view->hostPathRaster()->isClimbPending(path);
     syncItemDisplaySurface(item, -1, pending);
-    if (m_view->m_cropCtrl.session().isDraftSampleFrozen() && m_view->isCropDraftLockedPath(path)) {
+    if (m_view->hostCrop().session().isDraftSampleFrozen() && m_view->isCropDraftLockedPath(path)) {
         displaySurfaces().setFrozen(imageFocusSurfaceRef(), true);
     }
 }
