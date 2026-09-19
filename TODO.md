@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1483-hud-crop-accessors.** Perf/ssHud elapsed; Crop full-frame; lock simplify.
+Prior: **1482**. Commits 1483a–1483d (+ docs).
+
+### Commits
+1. **PerfStats** decodeWindowRunsValue; **SlideshowProgressHud** elapsed accessors
+2. **CropSession** isFullFrameDraft
+3. **AttentionSession** clearGesture owns gestureBefore
+4. Simplify **isCropDraftLockedItem**
+
+### Note
+No remaining bag.field digs in ImageView *.cpp (accessor surface complete for
+current bags). Next structural depth: CropSession enter/apply ownership.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1483-hud-crop-accessors.bundle HEAD
+```
+Requires tip **1482** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1482-bag-accessors.** Canvas tile, Attention gesture, TextLayer rubber, crop freeze path.
 Prior: **1481**. Commits 1482a–1482d (+ docs).
 
