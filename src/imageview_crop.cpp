@@ -436,56 +436,14 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
 }
 
 void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
-                                                bool haveApp)
+                                                 bool haveApp)
 {
-    // Start each crop session without Expand; re-enable below if the stored
-    // draft (AABB or rotated corners) extends outside the source.
-    m_crop.setAllowExpand(false);
-
-    const QRectF cr = item->contentRect();
-    const QRect priorCrop = (haveApp && app.hasCrop) ? app.cropRect : QRect();
-    const bool hadCrop = haveApp && app.hasCrop && !priorCrop.isEmpty();
-
-    if (hadCrop) {
-        const QSize sz = item->imageSize();
-        const QRect bounds(0, 0, sz.width(), sz.height());
-        // cropRect is stored in the same space as the post-content-bake image
-        // (recordSessionCrop runs with item flips cleared). Scale if the live
-        // size differs from the size at record time — same rule as applyCrop.
-        const QRect prior = SessionAppearance::scaleCropRect(
-            priorCrop.normalized(), app.cropSourceSize, sz);
-        m_crop.setRotation(haveApp ? app.cropRotation : 0.0);
-        if (prior.width() <= 1 || prior.height() <= 1) {
-            qCritical("initCropRect: prior crop scaled to %dx%d (stored %dx%d "
-                      "sourceSize %dx%d live imageSize %dx%d) — draft will be 1×1",
-                      prior.width(), prior.height(),
-                      priorCrop.width(), priorCrop.height(),
-                      app.cropSourceSize.width(), app.cropSourceSize.height(),
-                      sz.width(), sz.height());
-        }
-        if (prior.width() >= 1 && prior.height() >= 1) {
-            const QPointF off = item->offset();
-            // Do not mirror for contentHFlip/VFlip: content bake / materialize already
-            // put pixels in content-oriented space and the stored rect is in
-            // that space. Re-mirroring shifted the frame on re-entry.
-            m_crop.setRect(QRectF(prior.x() + off.x(), prior.y() + off.y(),
-                                prior.width(), prior.height()));
-            // Expand is not persisted. Detect both axis-aligned overflow and
-            // rotated-corner overflow so ensureCropRectValid does not translate
-            // a previously applied rotated draft to a new centre.
-            if (CropGeometry::priorDraftNeedsExpand(
-                    QRectF(prior), QRectF(bounds), m_crop.currentRect(), m_crop.currentRotation(), cr)) {
-                m_crop.setAllowExpand(true);
-            }
-        } else {
-            m_crop.setRect(cr);
-            m_crop.setRotation(0.0);
-        }
-    } else {
-        m_crop.setRect(cr);
-        m_crop.setRotation(0.0);
+    if (!item) {
+        return;
     }
-    ensureCropRectValid();
+    m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
+                                       item->imageSize(),
+                                       haveApp ? &app : nullptr, haveApp);
 }
 
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
@@ -1355,7 +1313,7 @@ void ImageView::leaveCropModeInternal(bool apply)
 
 QPolygonF ImageView::cropPolygonItemLocal() const
 {
-    return CropGeometry::rotatedCorners(m_crop.currentRect().normalized(), m_crop.currentRotation());
+    return m_crop.polygonLocal();
 }
 
 QRectF ImageView::cropRectView() const

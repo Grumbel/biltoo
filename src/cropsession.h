@@ -5,11 +5,13 @@
 #define CROPSESSION_H
 
 #include "imageview_types.h"
+#include "cropgeometry.h"
 // WorkspaceItemState is in imageview_types.h
 
 #include <QImage>
 #include <QPointF>
 #include <QRectF>
+#include <QPolygonF>
 #include <QString>
 #include <QtMath>
 
@@ -322,6 +324,26 @@ public:
     }
 
     bool hasValidRect() const { return rect.isValid() && !rect.isEmpty(); }
+
+    /**
+     * Normalize draft and constrain to @p contentRect (unless allowExpand).
+     * Pure geometry — host supplies contentRect from the target item.
+     */
+    void ensureRectValid(const QRectF &contentRect);
+
+    /** Draft corners in item-local content space. */
+    QPolygonF polygonLocal() const;
+
+    /**
+     * Seed draft from prior session crop appearance or full @p contentRect.
+     * @p itemOffset is ImageItem::offset(); @p imageSize is layout intrinsic.
+     */
+    void initRectFromPriorAppearance(const QRectF &contentRect,
+                                     const QPointF &itemOffset,
+                                     const QSize &imageSize,
+                                     const WorkspaceItemState *app,
+                                     bool haveApp);
+
 
     QRectF normalizedRect() const { return rect.normalized(); }
 
