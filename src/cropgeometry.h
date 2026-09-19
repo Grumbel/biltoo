@@ -4,7 +4,7 @@
 #ifndef CROPGEOMETRY_H
 #define CROPGEOMETRY_H
 
-#include "cropsession.h"
+#include "crophandle.h"
 
 #include <QPoint>
 #include <QPolygonF>
