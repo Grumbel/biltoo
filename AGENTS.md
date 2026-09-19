@@ -88,7 +88,20 @@ Agents often work in a sandbox **without** write access to the user’s real
 git remotes. The reliable handoff is a **git bundle that fast-forwards from
 the human’s current tip**.
 
+#### Pre-flight before every coding turn
+
+```bash
+git fetch origin
+git log --oneline origin/master -1
+git rev-parse origin/master   # ← only valid BASE for the next bundle
+```
+
+If TODO.md tip ≠ `origin/master`, the human tip won: **use origin/master**.
+Do not continue a sandbox branch that is not an ancestor of / equal to
+`origin/master` unless the human explicitly asked to rebuild from an older tip.
+
 #### Critical: base on upstream tip, never parallel history
+
 
 1. **Fetch what the human actually has** before starting:
    ```bash
@@ -119,6 +132,10 @@ the human’s current tip**.
 - Rebuilding 1519–1521 from an older tip while upstream already has different
   SHAs for the same work
 - Bundle requires tip X after tip X was deleted from artifacts and never pushed
+- Shipping tip N that requires tip N−1 while only shipping the N artifact
+  (human cannot apply without the missing parent)
+- Mixing two “same work, different SHAs” stacks (e.g. agent rebuild of 1519 on
+  1516 while origin already has a different 1519)
 
 **Right:**
 ```bash
@@ -127,6 +144,39 @@ git pull --ff-only /path/to/biltoo-NNN-slug.bundle HEAD
 Prerequisite SHA in `git bundle verify` must equal the human’s `HEAD`
 (or an ancestor they still have).
 
+#### Failure modes seen in tips 1519–1525 (and how to recover)
+
+| Symptom | Cause | Fix |
+|--------|--------|-----|
+| `git pull --ff-only` refuses; “diverging branches” | Bundle is a **parallel rebuild** of commits already on origin under different SHAs | `git fetch origin`; base new work on `origin/master`; discard parallel tip |
+| `Repository lacks these prerequisite commits: <sha>` | Bundle requires tip X that was never pushed and is no longer in artifacts | Rebuild stack from `origin/master` (`${BASE}..HEAD` with BASE = origin tip); one full-stack bundle |
+| Human tip has compile error fixed in a tip that does not stack | Agent fixed on parallel history | Same: reset or rebase onto origin tip, re-apply only the fix commit |
+| Artifact deleted; next tip requires it | Intermediate base not on origin | Always either (a) push intermediate tips, or (b) ship a full stack from origin tip |
+
+**Recovery checklist (agent):**
+
+```bash
+git fetch origin
+ORIGIN=$(git rev-parse origin/master)
+echo "Human tip / bundle BASE must be: $ORIGIN"
+git checkout -B tip "$ORIGIN"
+# … only NEW commits …
+git bundle create biltoo-NNN-slug.bundle ${ORIGIN}..HEAD
+git bundle verify biltoo-NNN-slug.bundle
+# verify output MUST say: The bundle requires this ref: <ORIGIN>
+```
+
+**Recovery checklist (human) when stuck on a dead-end tip:**
+
+```bash
+git fetch origin
+git log --oneline origin/master -3    # known-good tip
+# Option A — discard local agent tip and take a full-stack bundle from origin:
+git reset --hard origin/master
+git pull --ff-only /path/to/biltoo-NNN-slug.bundle HEAD
+# Option B — keep local work: cherry-pick unique commits onto origin/master
+```
+
 Apply on the human side:
 
 ```bash
@@ -134,6 +184,10 @@ cd ~/projects/biltoo
 git fetch origin && git merge --ff-only origin/master   # stay current
 git pull --ff-only /path/to/biltoo-NNN-slug.bundle HEAD
 ```
+
+**Never** leave the chat with only a tip that requires a parent SHA the human
+does not have. Prefer one bundle whose prerequisite is **exactly**
+`origin/master` (or the tip named in TODO as already integrated).
 
 thumtoo is a **separate** repo with its own sequence (`thumtoo-NNN-…`). Keep
 numbers and tips independent; note required thumtoo tip in biltoo TODO when
