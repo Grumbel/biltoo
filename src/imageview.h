@@ -9,6 +9,7 @@
 #include "tileneighborprefetch.h"
 #include "cropsession.h"
 #include "cropgeometry.h"
+#include "cropflash.h"
 #include "attentionsession.h"
 #include "centreprogress.h"
 #include "grouptransformsession.h"
@@ -712,24 +713,17 @@ public:
     void notifyCropModeEntered();
     void abortCropEnterFailed(ImageItem *item);
     void beginCropEnterSession(ImageItem *item);
-    void flashCropLoadingFullHud();
-    void flashCropNotCachedHud();
     bool handleNullEnterFullRaster(const QString &path, bool hadCrop);
     bool resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
                                   WorkspaceItemState *st, SessionImageId *sid);
     void captureApplyDraftMetrics(ImageItem *item, qreal *cropW, qreal *cropH,
                                   qreal *footW, qreal *footH, QPointF *sceneCenter);
-    void flashCropBakeFailed();
     bool materializeApplyBake(const QImage &host, bool hostFromCache,
                               const WorkspaceItemState &st,
                               CropSession::ApplyBakeResult *baked);
-    void flashCropResetHud();
-    void flashCropAppliedHud(ImageItem *item);
     void finalizeCropResetSuccess(ImageItem *item);
     void finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
                                   const QString &path, const QImage &display);
-    void flashCropNeedSingleTargetHud();
-    void flashCropNoImageHud();
     ImageItem *resolveCropEnterTarget();
     QPointF workspaceAnchorSceneForItem(ImageItem *item) const;
     bool completeCropEnterUnderHold(ImageItem *item,
@@ -1749,8 +1743,8 @@ private:
     void relayoutAfterCropLeave(ImageItem *item);
     void finishCropResetLayout(ImageItem *item);
     void finishCropApplyLayout(ImageItem *item);
-    void flashApplyHostStatusHud(CropSession::ApplyHostStatus hostSt);
     bool flashApplyHostFailure(CropSession::ApplyHostStatus hostSt);
+    void flashCropHud(const CropFlash::Hud &hud);
     void ensureApplyCropState(ImageItem *item, SessionImageId sid,
                               WorkspaceItemState *st);
     void storeCropAppearance(ImageItem *item, SessionImageId sid,

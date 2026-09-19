@@ -66,39 +66,15 @@ void ImageView::beginCropEnterSession(ImageItem *item)
 }
 
 
-void ImageView::flashCropLoadingFullHud()
-{
-    const CropFlash::Hud hud = CropFlash::loadingFull();
-    flashHud(hud.title, hud.detail);
-}
-
-void ImageView::flashCropNotCachedHud()
-{
-    const CropFlash::Hud hud = CropFlash::notCached();
-    flashHud(hud.title, hud.detail);
-}
-
 bool ImageView::handleNullEnterFullRaster(const QString &path, bool hadCrop)
 {
     if (CropSession::shouldRequestFullOnNullEnter(hadCrop, path)) {
         requestCropFullRaster(path);
         m_crop.setAwaitingFull(path);
-        flashCropLoadingFullHud();
+        flashCropHud(CropFlash::loadingFull());
     }
-    flashCropNotCachedHud();
+    flashCropHud(CropFlash::notCached());
     return false;
-}
-
-void ImageView::flashCropNeedSingleTargetHud()
-{
-    const CropFlash::Hud hud = CropFlash::needSingleTarget();
-    flashHud(hud.title, hud.detail);
-}
-
-void ImageView::flashCropNoImageHud()
-{
-    const CropFlash::Hud hud = CropFlash::noImage();
-    flashHud(hud.title, hud.detail);
 }
 
 ImageItem *ImageView::resolveCropEnterTarget()
@@ -109,12 +85,12 @@ ImageItem *ImageView::resolveCropEnterTarget()
     }
     // Image or Workspace: one explicit subject only.
     if (!hasSingleCropTarget()) {
-        flashCropNeedSingleTargetHud();
+        flashCropHud(CropFlash::needSingleTarget());
         return nullptr;
     }
     ImageItem *item = cropTargetItem();
     if (!item || !item->hasDisplayPixels()) {
-        flashCropNoImageHud();
+        flashCropHud(CropFlash::noImage());
         return nullptr;
     }
     return item;

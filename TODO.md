@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1559-crop-flash-hud.** Single flashCropHud; drop thin flashCrop* wrappers.
+Prior: **1558**.
+
+### Change
+- `ImageView::flashCropHud(CropFlash::Hud)` — one dispatcher
+- Removed `flashCropLoadingFullHud`, `NotCached`, `BakeFailed`, `Reset`, `Applied`, `NeedSingle`, `NoImage`, `flashApplyHostStatusHud`
+- Call sites use `CropFlash::*` + `flashCropHud`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1559-crop-flash-hud.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1558-crop-module-docs.** Slim crop.cpp includes; document crop TU map in CROP_MODE.md.
 Prior: **1557**.
 

@@ -6,6 +6,7 @@
 // paint → crop_paint; input → crop_input.
 
 #include "imageview.h"
+#include "cropflash.h"
 #include "placementlinear.h"
 #include "imageitem.h"
 
@@ -154,4 +155,9 @@ void ImageView::applyAutoCrop()
         return;
     }
     notifyCropViewportStatus();
+}
+
+void ImageView::flashCropHud(const CropFlash::Hud &hud)
+{
+    flashHud(hud.title, hud.detail);
 }

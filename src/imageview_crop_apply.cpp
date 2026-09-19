@@ -47,12 +47,6 @@ void ImageView::captureApplyDraftMetrics(ImageItem *item, qreal *cropW, qreal *c
     }
 }
 
-void ImageView::flashCropBakeFailed()
-{
-    const CropFlash::Hud hud = CropFlash::bakeFailed();
-    flashHud(hud.title, hud.detail);
-}
-
 bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
                                      const WorkspaceItemState &st,
                                      CropSession::ApplyBakeResult *baked)
@@ -62,24 +56,13 @@ bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
     }
     *baked = CropSession::materializeApplyDisplay(host, hostFromCache, st);
     if (!baked->ok()) {
-        flashCropBakeFailed();
+        flashCropHud(CropFlash::bakeFailed());
         return false;
     }
     return true;
 }
 
 
-void ImageView::flashCropResetHud()
-{
-    const CropFlash::Hud hud = CropFlash::reset();
-    flashHud(hud.title, hud.detail);
-}
-
-void ImageView::flashCropAppliedHud(ImageItem *item)
-{
-    if (!item) {
-        return;
-    }
     const CropFlash::Hud hud =
         CropFlash::applied(item->imageSize().width(), item->imageSize().height());
     flashHud(hud.title, hud.detail);
@@ -93,7 +76,7 @@ void ImageView::finalizeCropResetSuccess(ImageItem *item)
     if (m_crop.shouldPushResetUndo(item->sourceImage().size())) {
         pushCropAppearanceUndo(item, CropFlash::undoResetText());
     }
-    flashCropResetHud();
+    flashCropHud(CropFlash::reset());
 }
 
 void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
@@ -102,7 +85,7 @@ void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
     commitItemSessionEdit(item);
     emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
     pushCropAppearanceUndo(item, CropFlash::undoCropText());
-    flashCropAppliedHud(item);
+    flashCropHud(CropFlash::applied(item->imageSize().width(), item->imageSize().height()));
 }
 
 
@@ -290,18 +273,12 @@ void ImageView::finishCropApplyLayout(ImageItem *item)
 }
 
 
-void ImageView::flashApplyHostStatusHud(CropSession::ApplyHostStatus hostSt)
-{
-    const CropFlash::Hud hud = CropFlash::applyHostStatus(hostSt);
-    flashHud(hud.title, hud.detail);
-}
-
 bool ImageView::flashApplyHostFailure(CropSession::ApplyHostStatus hostSt)
 {
     if (hostSt == CropSession::ApplyHostStatus::Ok) {
         return false;
     }
-    flashApplyHostStatusHud(hostSt);
+    flashCropHud(CropFlash::applyHostStatus(hostSt));
     return true;
 }
 
