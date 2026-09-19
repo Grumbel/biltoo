@@ -29,6 +29,20 @@ struct ViewportChrome {
         lastMousePos = pos;
         lastHoverViewPos = pos;
     }
+
+    void beginPan(const QPoint &pos)
+    {
+        panning = true;
+        lastMousePos = pos;
+    }
+
+    void endPan() { panning = false; }
+
+    void updatePanPos(const QPoint &pos) { lastMousePos = pos; }
+
+    void setMouseInfo(const ImageMouseInfo &info) { mouseInfo = info; }
+
+    void setHoverViewPos(const QPoint &pos) { lastHoverViewPos = pos; }
 };
 
 #endif // VIEWPORTCHROME_H

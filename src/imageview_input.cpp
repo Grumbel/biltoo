@@ -270,7 +270,7 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
         || info.imagePos != m_chrome.mouseInfo.imagePos
         || info.pixelColor != m_chrome.mouseInfo.pixelColor
         || info.path != m_chrome.mouseInfo.path) {
-        m_chrome.mouseInfo = info;
+        m_chrome.setMouseInfo(info);
         emit mouseInfoChanged(m_chrome.mouseInfo);
     }
 }
@@ -706,16 +706,14 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
                     || (event->modifiers() & Qt::AltModifier))))) {
         if (!(isWorkspaceMode() && (event->modifiers() & Qt::ShiftModifier)
               && event->button() == Qt::LeftButton)) {
-            m_chrome.panning = true;
-            m_chrome.lastMousePos = event->pos();
+            m_chrome.beginPan(event->pos());
             setCursor(Qt::ClosedHandCursor);
             event->accept();
             return true;
         }
     }
     if (event->button() == Qt::MiddleButton && !m_ssDwell.motionActive) {
-        m_chrome.panning = true;
-        m_chrome.lastMousePos = event->pos();
+        m_chrome.beginPan(event->pos());
         setCursor(Qt::ClosedHandCursor);
         event->accept();
         return true;
@@ -1084,12 +1082,12 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
     }
     // Dwell camera owns the view transform — do not fight it with hand pan.
     if (m_ssDwell.motionActive) {
-        m_chrome.panning = false;
+        m_chrome.endPan();
         event->accept();
         return true;
     }
     const QPoint delta = m_chrome.panDeltaFrom(event->pos());
-    m_chrome.lastMousePos = event->pos();
+    m_chrome.updatePanPos(event->pos());
     // Grow the free-form sceneRect with the view so middle-drag is never
     // clamped against a stale zero-range scrollbar.
     if (isWorkspaceMode()) {
@@ -1475,7 +1473,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         updateHoverEdge(event->pos());
     }
 
-    m_chrome.lastHoverViewPos = event->pos();
+    m_chrome.setHoverViewPos(event->pos());
     updateMouseMoveSlideshowSeek(event);
     updateGalleryHoverAt(m_chrome.lastHoverViewPos);
     updateMouseMoveWorkspaceChromeHover(event);
@@ -1707,7 +1705,7 @@ bool ImageView::tryMouseReleasePan(QMouseEvent *event)
         || (event->button() != Qt::MiddleButton && event->button() != Qt::LeftButton)) {
         return false;
     }
-    m_chrome.panning = false;
+    m_chrome.endPan();
     restoreToolCursor();
     tickPrimaryTileLod(8);
     event->accept();
