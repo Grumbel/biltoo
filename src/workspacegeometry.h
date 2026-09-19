@@ -5,6 +5,7 @@
 #define WORKSPACEGEOMETRY_H
 
 #include <QSizeF>
+#include <QRectF>
 #include <QtGlobal>
 
 /**
@@ -23,6 +24,23 @@ inline qreal placementMaxEdge(qreal viewW, qreal viewH, qreal floorPx = 120.0,
                               qreal frac = 0.45)
 {
     return qMax(floorPx, qMin(viewW, viewH) * frac);
+}
+
+/** Pair of scene-rect halo margins from a viewport scene rect size. */
+inline QSizeF sceneMargins(const QSizeF &viewSceneSize, qreal floorPx = 96.0,
+                           qreal frac = 0.35)
+{
+    return QSizeF(sceneMargin(viewSceneSize.width(), floorPx, frac),
+                  sceneMargin(viewSceneSize.height(), floorPx, frac));
+}
+
+/** Expand @p viewScene by sceneMargin on each side. */
+inline QRectF paddedSceneRect(const QRectF &viewScene, qreal floorPx = 96.0,
+                              qreal frac = 0.35)
+{
+    const qreal mx = sceneMargin(viewScene.width(), floorPx, frac);
+    const qreal my = sceneMargin(viewScene.height(), floorPx, frac);
+    return viewScene.adjusted(-mx, -my, mx, my);
 }
 
 /** Scale @p size so its long edge ≤ @p maxEdge (identity when already small). */

@@ -70,10 +70,11 @@ void ImageView::updateWorkspaceSceneRect()
     }
     // Viewport in scene coordinates — ensure room to pan around content.
     const QRectF viewScene = mapToScene(viewport()->rect()).boundingRect();
-    const qreal mx = WorkspaceGeometry::sceneMargin(viewScene.width());
-    const qreal my = WorkspaceGeometry::sceneMargin(viewScene.height());
+    const QSizeF margins = WorkspaceGeometry::sceneMargins(viewScene.size());
+    const qreal mx = margins.width();
+    const qreal my = margins.height();
     if (!bounds.isValid() || bounds.isEmpty()) {
-        bounds = viewScene.adjusted(-mx, -my, mx, my);
+        bounds = WorkspaceGeometry::paddedSceneRect(viewScene);
     } else {
         bounds.adjust(-mx, -my, mx, my);
         // Keep a viewport-sized halo so middle-drag can always move a little.
