@@ -208,6 +208,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ZoomRegionGesture** rubber/armed helpers; privatize
   **PendingItemAppearanceBook**; **SlideshowPhaseState** contentApplied and
   motion-clock accessors.
+- **GroupTransformSession** handle-hot/presence; phase hasFromPath/hasToPath;
+  dwell hasBias; **CropSession** handle-drag/hover; **TextLayerSession**
+  show/search/selection accessors.
 
 
 ## Current pain (evidence)

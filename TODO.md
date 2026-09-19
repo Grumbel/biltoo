@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1470-group-phase-crop-text.** Group, phase path, crop handle, text layer.
+Prior: **1469**. Commits 1470a–1470d (+ docs).
+
+### Commits
+1. **GroupTransformSession** isHandleHot / hasHoverHandle / hasActiveHandle
+2. **Phase** hasFromPath/hasToPath; **Dwell** hasBias
+3. **CropSession** isHandleDragging / hasHoverHandle
+4. **TextLayerSession** show/search/selection accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled. Crop enter/apply
+still on view (larger ownership extraction).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1470-group-phase-crop-text.bundle HEAD
+```
+Requires tip **1469**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1469-zoom-pending-phase-clocks.** ZoomRegion, PendingAppearance, phase clocks.
 Prior: **1468**. Commits 1469a–1469c (+ docs).
 
