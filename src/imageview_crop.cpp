@@ -607,7 +607,7 @@ void ImageView::requestCropFullRaster(const QString &path)
 
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
 {
-    if (!m_crop.active() || path.isEmpty() || path != m_crop.awaitingFullPathRef()) {
+    if (!m_crop.active() || path.isEmpty() || !m_crop.isAwaitingFullPath(path)) {
         return;
     }
     if (image.isNull()) {
