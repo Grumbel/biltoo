@@ -57,10 +57,6 @@
      * Phase entry, fit, and framing call this before geometry.
      */
     QSize ensureLogicalSizeForPath(const QString &path);
-
-    /** @deprecated name — use ensureLogicalSizeForPath. */
-    QSize ensureSlideshowLogicalSize(const QString &path) {
-        return ensureLogicalSizeForPath(path);
     }
 
 
@@ -400,8 +396,6 @@
     QString hudFileName() const;
 
     ImageMouseInfo mouseInfo() const { return m_chrome.currentMouseInfo(); }
-
-    QString currentPath() const;
 
     /** Clear canvas selection. */
     void clearCanvasSelection();

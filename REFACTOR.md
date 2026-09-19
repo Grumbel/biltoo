@@ -709,7 +709,8 @@ the stop line when Tier 4 lands.
 - Tier 2a: **done** (biltoo-1600) — `CropController` / `AttentionController` own
   `CropSession` / `AttentionSession`; removed unused `friend CropAppearanceCommand`
   (`applyCropAppearance` is already public). Method move + empty friend list = 2b.
-- Tier 2: _in progress_ (2a state ownership)
+- Tier 2 host: **done** (biltoo-1605) — Slideshow host accessors; `friend` list empty.
+- Tier 2b: _pending_ (crop/attention method move onto controllers)
 - Tier 3: **done** (biltoo-1604) — `HudModel` pure formatters + `tests/hudmodel_test.cpp`.
 - Tier 4: _pending_
 - Tier 5: _pending_

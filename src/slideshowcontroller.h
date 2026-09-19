@@ -32,8 +32,7 @@ namespace tilelod { class TileLodController; }
  * the orchestration methods that drive them. ImageView remains the QGraphicsView
  * shell and forwards MainWindow-facing slideshow API to this controller.
  *
- * Friend of ImageView for Tier 1b pure method moves (private host access).
- * A narrow SlideshowHost surface will replace friend once the call surface stabilises.
+ * Uses ImageView Slideshow host accessors (no friend) as of biltoo-1605.
  */
 class SlideshowController : public QObject
 {

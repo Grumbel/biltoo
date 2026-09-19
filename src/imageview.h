@@ -96,7 +96,6 @@ class ImageView : public QGraphicsView,
                   private GallerySizeResolveHost,
                   private TileNeighborPrefetchHost
 {
-    friend class SlideshowController;
 
     Q_OBJECT
 public:
@@ -280,6 +279,38 @@ public:
     {
         m_loadGate.setPendingRestoreStates(states);
     }
+
+
+    // --- Slideshow host (Phase 6: replaces friend SlideshowController) ---
+    SessionAppearanceStore &hostAppearance() { return m_appearance; }
+    const SessionAppearanceStore &hostAppearance() const { return m_appearance; }
+    ViewFraming &hostFraming() { return m_framing; }
+    const ViewFraming &hostFraming() const { return m_framing; }
+    CanvasBackground &hostCanvasBg() { return m_canvasBg; }
+    const CanvasBackground &hostCanvasBg() const { return m_canvasBg; }
+    SessionIdentity &hostSessionId() { return m_sessionId; }
+    const SessionIdentity &hostSessionId() const { return m_sessionId; }
+    SessionPathOrder &hostPathOrderBook() { return m_pathOrderBook; }
+    const SessionPathOrder &hostPathOrderBook() const { return m_pathOrderBook; }
+    PathItemStateBook &hostItemStateBook() { return m_itemStateBook; }
+    const PathItemStateBook &hostItemStateBook() const { return m_itemStateBook; }
+    HudAppearance &hostHudPrefs() { return m_hudPrefs; }
+    const HudAppearance &hostHudPrefs() const { return m_hudPrefs; }
+    HudFlash &hostHudFlash() { return m_hudFlash; }
+    const HudFlash &hostHudFlash() const { return m_hudFlash; }
+    QTimer *&hostHudFlashTimer() { return m_hudFlashTimer; }
+    QTimer *hostHudFlashTimer() const { return m_hudFlashTimer; }
+    DisplaySurfaceController &hostDisplaySurfaces() { return m_displaySurfaces; }
+    const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displaySurfaces; }
+    TileNeighborPrefetch &hostTileNeighborPrefetch() { return m_tileNeighborPrefetch; }
+    const TileNeighborPrefetch &hostTileNeighborPrefetch() const { return m_tileNeighborPrefetch; }
+    /** PreferCache / soft climb edge cap (also used outside slideshow). */
+    int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
+    QSize ensureSlideshowLogicalSize(const QString &path);
+    bool isProvisionalImageSize(const QString &path) const;
+    QSize logicalSizeForPath(const QString &path) const;
+    void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
+    QString currentPath() const;
 
     // --- Controller host operations (mode controllers; prefer these over friend) ---
     /** Apply interactive/gallery/static flags for the current ViewMode. */

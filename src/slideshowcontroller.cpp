@@ -67,23 +67,23 @@ void SlideshowController::setSlideshowLetterboxFill(SlideshowLetterboxFill mode)
 
 void SlideshowController::setSessionPosition(int index, int total, bool pulseIdentity)
 {
-    const bool changed = m_view->m_sessionId.setPosition(index, total);
+    const bool changed = m_view->hostSessionId().setPosition(index, total);
     // Pulse only when the session cursor actually moves (user Next/Prev, etc.).
     // Do not pulse on every statusChanged while total > 0 (AUDIT H7).
     // Slideshow auto-advance passes pulseIdentity=false.
     if (pulseIdentity && changed) {
-        m_view->m_hudFlash.setIdentityPulse(true);
-        if (m_view->m_hudFlashTimer) {
-            m_view->m_hudFlashTimer->start(HudFlash::kIdentityPulseMs);
+        m_view->hostHudFlash().setIdentityPulse(true);
+        if (m_view->hostHudFlashTimer()) {
+            m_view->hostHudFlashTimer()->start(HudFlash::kIdentityPulseMs);
         }
     }
-    if (!(changed || m_view->m_hudPrefs.isVisible() || m_view->m_hudFlash.isVisible() || m_view->m_hudFlash.isIdentityPulse()
+    if (!(changed || m_view->hostHudPrefs().isVisible() || m_view->hostHudFlash().isVisible() || m_view->hostHudFlash().isIdentityPulse()
           || hud().isPausedHud())) {
         return;
     }
     // Gallery selection already invalidates the tile; a full m_view->viewport()->update()
     // here forced every image through the GL path and felt like lag on click.
-    if (m_view->isGalleryMode() && !m_view->m_hudPrefs.isVisible() && !m_view->m_hudFlash.isIdentityPulse()) {
+    if (m_view->isGalleryMode() && !m_view->hostHudPrefs().isVisible() && !m_view->hostHudFlash().isIdentityPulse()) {
         return;
     }
     if (m_view->viewport()) {
@@ -192,7 +192,7 @@ void SlideshowController::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
     }
     hud().setTimelineProgress(elapsedMs, totalMs);
     // Progress bar needs sub-second updates while the extended HUD is pinned.
-    if (m_view->m_hudPrefs.isVisible() && m_view->viewport()) {
+    if (m_view->hostHudPrefs().isVisible() && m_view->viewport()) {
         m_view->viewport()->update();
     }
 }
@@ -344,14 +344,14 @@ void SlideshowController::applySlideshowZoomFraming(ImageItem *item)
     qreal scale = slideshowZoomBaseScale(logical, int(vw), int(vh));
     switch (settings().currentZoom()) {
     case SlideshowZoom::Fill:
-        m_view->m_framing.setFitFillFlags(false, true);
+        m_view->hostFraming().setFitFillFlags(false, true);
         break;
     case SlideshowZoom::Actual:
-        m_view->m_framing.clearFitFill();
+        m_view->hostFraming().clearFitFill();
         break;
     case SlideshowZoom::Fit:
     default:
-        m_view->m_framing.setFitOnly();
+        m_view->hostFraming().setFitOnly();
         break;
     }
     if (scale <= 0.0 || !qIsFinite(scale)) {
@@ -471,12 +471,12 @@ void SlideshowController::setSlideshowPausedHud(bool on)
     if (on) {
         // Keep a stable action line for the permanent cue; flash timer must
         // not clear it (paint draws paused HUD independently of flash).
-        m_view->m_hudFlash.setPausedLabel(tr("❚❚  Paused"));
-        if (m_view->m_hudFlashTimer) {
-            m_view->m_hudFlashTimer->stop();
+        m_view->hostHudFlash().setPausedLabel(tr("❚❚  Paused"));
+        if (m_view->hostHudFlashTimer()) {
+            m_view->hostHudFlashTimer()->stop();
         }
-    } else if (m_view->m_hudFlash.actionText().contains(QStringLiteral("Paused"))) {
-        m_view->m_hudFlash.clearAction();
+    } else if (m_view->hostHudFlash().actionText().contains(QStringLiteral("Paused"))) {
+        m_view->hostHudFlash().clearAction();
     }
     if (m_view->viewport()) {
         m_view->viewport()->update();
@@ -534,7 +534,7 @@ void SlideshowController::restoreImageFramingAfterSlideshow()
     if (!item || item->boundingRect().isEmpty()) {
         return;
     }
-    m_view->m_framing.setFitOnly();
+    m_view->hostFraming().setFitOnly();
     m_view->fitItem(item, Qt::KeepAspectRatio);
     if (m_view->viewport()) {
         m_view->viewport()->update();
@@ -550,7 +550,7 @@ bool SlideshowController::tryApplyAttentionMotionBiases(uint seed, const QImage 
     if (ImageItem *item = m_view->targetItem()) {
         const SessionImageId sid = item->sessionId();
         if (sid != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *st = m_view->m_appearance.get(sid)) {
+            if (const WorkspaceItemState *st = m_view->hostAppearance().get(sid)) {
                 if (st->hasAttention) {
                     att01 = st->attentionNorm;
                     haveAtt = true;
@@ -644,14 +644,14 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
     *out = {};
     const SessionImageId sid = sessionIdForPath(path);
     if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = m_view->m_appearance.get(sid)) {
+        if (const WorkspaceItemState *app = m_view->hostAppearance().get(sid)) {
             if (SessionAppearance::hasContentAppearance(*app)) {
                 *out = *app;
                 return true;
             }
         }
     }
-    if (const WorkspaceItemState *st = m_view->m_itemStateBook.get(path)) {
+    if (const WorkspaceItemState *st = m_view->hostItemStateBook().get(path)) {
         if (SessionAppearance::hasContentAppearance(*st)) {
             *out = *st;
             return true;
@@ -942,7 +942,7 @@ void SlideshowController::onSlideshowRasterReady(const QString &path, const QIma
 
     // Climb while the *phase buffer* is still short of target (not only when
     // the host cache edge increases).
-    if (m_view->m_pathRaster) {
+    if (m_view->pathRasterForCoordinator()) {
         const int target = m_view->cappedDisplayEdgeForPath(path, slideshowTargetEdge());
         const int need = SlideshowAtlasPolicy::needEdge(target);
         const int phaseHave =
@@ -951,7 +951,7 @@ void SlideshowController::onSlideshowRasterReady(const QString &path, const QIma
         if (phaseHave < need || incoming < need) {
             const auto policy =
                 PathRasterService::ClimbPolicy::SoftDisplay;
-            m_view->m_pathRaster->ensure(path, target, m_view->logicalSizeForPath(path), policy);
+            m_view->pathRasterForCoordinator()->ensure(path, target, m_view->logicalSizeForPath(path), policy);
         }
     }
 }
@@ -968,7 +968,7 @@ void SlideshowController::bindSlideshowPhaseSurface(DisplaySurface::SurfaceId *i
     if (path.isEmpty()) {
         return;
     }
-    *id = m_view->m_displaySurfaces.bind(
+    *id = m_view->hostDisplaySurfaces().bind(
         DisplaySurface::Kind::SlideshowPhase, path, kInvalidSessionImageId);
 }
 
@@ -978,7 +978,7 @@ void SlideshowController::unbindSlideshowPhaseSurface(DisplaySurface::SurfaceId 
     if (!id || *id == DisplaySurface::kInvalidSurfaceId) {
         return;
     }
-    m_view->m_displaySurfaces.unbind(*id);
+    m_view->hostDisplaySurfaces().unbind(*id);
     *id = DisplaySurface::kInvalidSurfaceId;
 }
 
@@ -1004,18 +1004,18 @@ void SlideshowController::slideshowPhaseSurfaceTick()
         const int target = slideshowTargetEdge();
         const int hostEdge = DisplayQuality::hostLongEdge(path);
         const bool pending =
-            m_view->m_pathRaster && m_view->m_pathRaster->isClimbPending(path);
-        m_view->m_displaySurfaces.setNeed(*sid, target);
-        m_view->m_displaySurfaces.setHostLongEdge(*sid, hostEdge);
-        m_view->m_displaySurfaces.setClimbPending(*sid, pending);
+            m_view->pathRasterForCoordinator() && m_view->pathRasterForCoordinator()->isClimbPending(path);
+        m_view->hostDisplaySurfaces().setNeed(*sid, target);
+        m_view->hostDisplaySurfaces().setHostLongEdge(*sid, hostEdge);
+        m_view->hostDisplaySurfaces().setClimbPending(*sid, pending);
         DisplaySurface::AttachedKind ak = DisplaySurface::AttachedKind::None;
         if (shownEdge > 0) {
             ak = (shownEdge >= target)
                 ? DisplaySurface::AttachedKind::FullSource
                 : DisplaySurface::AttachedKind::SoftPreview;
         }
-        m_view->m_displaySurfaces.setAttached(*sid, ak, shownEdge, ContentXform::Value{});
-        const DisplaySurface::Action act = m_view->m_displaySurfaces.evaluate(*sid);
+        m_view->hostDisplaySurfaces().setAttached(*sid, ak, shownEdge, ContentXform::Value{});
+        const DisplaySurface::Action act = m_view->hostDisplaySurfaces().evaluate(*sid);
         using AT = DisplaySurface::ActionType;
         if (act.type == AT::None) {
             return;
@@ -1028,10 +1028,10 @@ void SlideshowController::slideshowPhaseSurfaceTick()
             }
             return;
         }
-        if (act.type == AT::ScheduleClimb && m_view->m_pathRaster) {
+        if (act.type == AT::ScheduleClimb && m_view->pathRasterForCoordinator()) {
             const auto policy =
                 PathRasterService::ClimbPolicy::SoftDisplay;
-            m_view->m_pathRaster->ensure(
+            m_view->pathRasterForCoordinator()->ensure(
                 path, target, m_view->logicalSizeForPath(path), policy);
         }
     };
@@ -1082,10 +1082,10 @@ QImage SlideshowController::slideshowSoftPlaceholder(const QString &path)
     if (soft.isNull()) {
         // LQIP/cache miss: PathRaster SoftDisplay → TileSynth or pyramid.
         // Fallback without PathRaster: same (never PreferCache soft encode).
-        if (m_view->m_pathRaster) {
+        if (m_view->pathRasterForCoordinator()) {
             const auto policy =
                 PathRasterService::ClimbPolicy::SoftDisplay;
-            m_view->m_pathRaster->ensure(path, edge, m_view->logicalSizeForPath(path), policy);
+            m_view->pathRasterForCoordinator()->ensure(path, edge, m_view->logicalSizeForPath(path), policy);
         } else if (ThumtooCache::isAvailable()) {
             (void)ThumtooCache::scheduleTileSynthOrPyramid(
                 path, ThumtooCache::kGalleryLadderEdge);
@@ -1104,20 +1104,20 @@ SessionImageId SlideshowController::sessionIdForPath(const QString &path) const
     }
     // Prefer ordered session row (slideshow / gallery path list).
     {
-        const SessionImageId ordered = m_view->m_pathOrderBook.firstIdForPath(path);
+        const SessionImageId ordered = m_view->hostPathOrderBook().firstIdForPath(path);
         if (ordered != kInvalidSessionImageId) {
             return ordered;
         }
     }
     // Image-mode slideshow: current session cursor when path matches.
-    if (m_view->m_sessionId.hasCurrentId()) {
-        if (ImageItem *it = m_view->findItemBySessionId(m_view->m_sessionId.currentIdValue())) {
+    if (m_view->hostSessionId().hasCurrentId()) {
+        if (ImageItem *it = m_view->findItemBySessionId(m_view->hostSessionId().currentIdValue())) {
             if (it->path() == path) {
-                return m_view->m_sessionId.currentIdValue();
+                return m_view->hostSessionId().currentIdValue();
             }
         }
         if (m_view->classicPath() == path || m_view->currentPath() == path) {
-            return m_view->m_sessionId.currentIdValue();
+            return m_view->hostSessionId().currentIdValue();
         }
     }
     return kInvalidSessionImageId;
@@ -1611,7 +1611,7 @@ void SlideshowController::setSlideshowNavHot(bool hot)
     if (hot) {
         // Drop off-canvas prefetch sessions: their InFlight tiles compete with
         // settle soft/climb after a long key-repeat burst.
-        m_view->m_tileNeighborPrefetch.clear();
+        m_view->hostTileNeighborPrefetch().clear();
     }
 }
 
@@ -1639,8 +1639,8 @@ void SlideshowController::finishSlideshowPreload(const QString &path, const QIma
     // Legacy pool-preload completion — climb is owned by PathRasterService.
     phase().removeRasterInflight(path);
     if (!image.isNull()) {
-        if (m_view->m_pathRaster) {
-            m_view->m_pathRaster->noteDelivery(path, 0, image);
+        if (m_view->pathRasterForCoordinator()) {
+            m_view->pathRasterForCoordinator()->noteDelivery(path, 0, image);
         } else {
             ImageCache::put(path, image);
         }
@@ -1658,7 +1658,7 @@ void SlideshowController::finishSlideshowPreload(const QString &path, const QIma
 
 void SlideshowController::preloadSlideshowImage(const QString &path)
 {
-    if (path.isEmpty() || !m_view->m_pathRaster) {
+    if (path.isEmpty() || !m_view->pathRasterForCoordinator()) {
         return;
     }
     // User key-repeat: no PathRaster EscalateToFull per visited path.
@@ -1678,14 +1678,14 @@ void SlideshowController::preloadSlideshowImage(const QString &path)
         }
         return;
     }
-    if (m_view->m_pathRaster->isClimbPending(path)) {
+    if (m_view->pathRasterForCoordinator()->isClimbPending(path)) {
         if (!cached.isNull()) {
             onSlideshowRasterReady(path, cached);
         }
         return;
     }
     // PreferCache plateau with Full already done for this want — stop.
-    if (m_view->m_pathRaster->isGaveUp(path) && !m_view->m_pathRaster->isClimbPending(path)) {
+    if (m_view->pathRasterForCoordinator()->isGaveUp(path) && !m_view->pathRasterForCoordinator()->isClimbPending(path)) {
         // SoftDisplay plateau — do not escalate to Full native.
     }
 
@@ -1696,7 +1696,7 @@ void SlideshowController::preloadSlideshowImage(const QString &path)
 
     // SoftDisplay only: PreferCache/TileSynth at screen-fit edge. Never Full
     // native whole-frame (that pulled multi-MP samples for every slide).
-    m_view->m_pathRaster->ensure(path, targetEdge, native,
+    m_view->pathRasterForCoordinator()->ensure(path, targetEdge, native,
                          PathRasterService::ClimbPolicy::SoftDisplay);
     // Warm durable tiles into the shared path TileMemoryCache (TileLodRegistry)
     // so SoftDisplay TileSynth and later Image/Gallery views reuse them.
@@ -1784,10 +1784,10 @@ void SlideshowController::hideSlideshowUnderlay()
 {
     // Hide every canvas item — new LoadReplace items default to visible and
     // were slipping past a single m_view->targetItem() hide (paint: underlayVisible=true).
-    if (!m_view->m_scene) {
+    if (!m_view->canvasScene()) {
         return;
     }
-    for (QGraphicsItem *gi : m_view->m_scene->items()) {
+    for (QGraphicsItem *gi : m_view->canvasScene()->items()) {
         if (qgraphicsitem_cast<ImageItem *>(gi)) {
             gi->setVisible(false);
         }
@@ -1919,7 +1919,7 @@ void SlideshowController::paintZoomBlurUnderlay(QPainter *painter, const QImage 
     // falls back to the Preferences / canvas primary colour.
     const QColor pad = settings().isZoomBlurLetterbox()
         ? m_view->slideshowPadColor()
-        : m_view->m_canvasBg.primaryColor();
+        : m_view->hostCanvasBg().primaryColor();
     painter->fillRect(viewportRect, pad.isValid() ? pad : QColor(42, 42, 42));
 }
 
@@ -2212,7 +2212,7 @@ void SlideshowController::freezeScrollbarsForMotion()
 
 void SlideshowController::resetItemPlacementForMotion(ImageItem *item)
 {
-    m_view->m_framing.setFitFillFlags(false, settings().isZoomFill());
+    m_view->hostFraming().setFitFillFlags(false, settings().isZoomFill());
     item->setItemShear(0.0);
     item->setItemRotation(0.0);
     item->setItemScale(1.0);
@@ -2350,5 +2350,5 @@ void SlideshowController::tickSlideshowMotion()
 QString SlideshowController::sessionBadgeText() const
 {
     return HudModel::sessionBadge(
-        m_view->m_sessionId.currentIndex(), m_view->m_sessionId.currentTotal());
+        m_view->hostSessionId().currentIndex(), m_view->hostSessionId().currentTotal());
 }

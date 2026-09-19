@@ -46,8 +46,6 @@
      * Pan still ticks immediately.
      */
     void scheduleTileLodAfterInteraction(int delayMs = 50);
-    /** PreferCache/display edge: min(want, ladder max, known native long edge). */
-    int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     void installImageModeSampleInPlace(ImageItem *item, const QString &path, const QImage &image,
                                        SessionAppearance::PixelKind kind);
     /** Install/upgrade Image-mode sample; schedules PreferCache on soft. */
@@ -154,7 +152,6 @@
      * Does not schedule ladder encode or source I/O.
      */
     void primeGalleryGeometryFromCache(const QStringList &paths);
-    bool isProvisionalImageSize(const QString &path) const;
     /** Remember native size after a successful full decode (or async probe). */
     void rememberImageSize(const QString &path, const QSize &size);
     /**
@@ -326,8 +323,6 @@
                                     SessionImageId *sidOut) const;
     void restoreSessionCropAppearance(ImageItem *item);
     void updateMouseInfo(const QPoint &viewPos);
-    /** Frame @p item in the view. Image mode: does not clear rotation/flips. */
-    void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
     /**
      * After logical size change on the Image-mode target: keep on-screen framing
      * when aspect is stable (soft→full / probe magnitude). Refit only if aspect

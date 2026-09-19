@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1605-phase6-slideshow-host.** Phase 6: Slideshow host surface; ImageView friend list empty.
+Prior: **1604**.
+
+### Change
+- Public Slideshow host accessors on ImageView (`hostAppearance`, `hostFraming`, `hostSessionId`, …)
+- Promote `cappedDisplayEdgeForPath`, `ensureSlideshowLogicalSize`, `isProvisionalImageSize`, `logicalSizeForPath`, `fitItem`, `currentPath` to public host
+- `SlideshowController` uses host APIs only — **no `friend`**
+- `git grep 'friend class' src/imageview.h` empty
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1605-phase6-slideshow-host.bundle HEAD
+```
+
+### Next
+- Tier 2b: crop/attention method extraction onto controllers
+- Tier 4: Appearance into SessionDocument (needs characterization tests)
+- Rebuild and fix any remaining compile errors
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1604-phase6-tier3-hudmodel.** Phase 6 Tier 3: HudModel pure status/HUD formatters + unit test.
 Prior: **1603**.
 
