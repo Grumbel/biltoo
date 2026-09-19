@@ -289,6 +289,10 @@ bool save(const QString &projectPath, const ProjectDocument &doc, QString *error
         case WorkspaceBackgroundMode::Solid:
             modeStr = QStringLiteral("solid");
             break;
+        case WorkspaceBackgroundMode::ContentBlur:
+            // Session View only — never a durable project field.
+            modeStr = QStringLiteral("default");
+            break;
         }
         wb.insert(QStringLiteral("mode"), modeStr);
         if (b.color.isValid()) {

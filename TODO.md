@@ -2,6 +2,16 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1592-projectfile-contentblur-switch.** Project save handles ContentBlur (session-only → default).
+Prior: **1591** (on origin/master a697f7a).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1592-projectfile-contentblur-switch.bundle HEAD
+```
+
+---
+
 **Tip: biltoo-1591-on-origin-master.** Clean stack on origin/master (a697f7a): edge-nav code + content blur + canvas docs.
 Prior origin: **a697f7a** (docs-only 1588).
 

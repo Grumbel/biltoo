@@ -17,7 +17,7 @@ Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](d
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
 Latest agent handoff: **TODO.md → biltoo-1590-canvas-bg-docs-blur-fallback**.
-Latest tip: **biltoo-1591-on-origin-master**. Next bundle number: **1592**
+Latest tip: **biltoo-1592-projectfile-contentblur-switch**. Next bundle number: **1593**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
