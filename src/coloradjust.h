@@ -59,6 +59,12 @@ struct ColorAdjustments {
         const int longEdge = qMax(1, qMax(width, height));
         return qMax(1, longEdge / qMax(1, targetSamples));
     }
+
+    /** Float channel / saturation factor into [0, 1]. */
+    static float clampUnit(float v)
+    {
+        return v < 0.f ? 0.f : (v > 1.f ? 1.f : v);
+    }
 };
 
 QImage applyColorAdjustments(const QImage &src, const ColorAdjustments &adj);

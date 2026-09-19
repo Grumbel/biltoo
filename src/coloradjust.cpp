@@ -73,7 +73,7 @@ QImage applyColorAdjustments(const QImage &src, const ColorAdjustments &adj)
                 float hh, ss, vv;
                 rgbToHsv(r, g, b, &hh, &ss, &vv);
                 hh += hueShift;
-                ss = qBound(0.f, ss * satMul, 1.f);
+                ss = ColorAdjustments::clampUnit(ss * satMul);
                 hsvToRgb(hh, ss, vv, &r, &g, &b);
             }
             if (!qFuzzyCompare(gamma, 1.f)) {

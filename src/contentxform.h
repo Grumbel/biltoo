@@ -79,6 +79,15 @@ inline QSize roundedSizeAtLeast1(const QSizeF &s)
     return roundedSizeAtLeast1(s.width(), s.height());
 }
 
+/** Clamp projected post-crop long edge into [1, hostLongEdge]. */
+inline int clampEstimatedEdge(qint64 scaled, int hostLongEdge)
+{
+    if (hostLongEdge < 1) {
+        return 1;
+    }
+    return int(qBound(1LL, scaled, qint64(hostLongEdge)));
+}
+
 /** Height for export width keeping aspect (min 1); zero/invalid aspect → 1. */
 inline int heightForAspectWidth(int width, qreal aspectW, qreal aspectH)
 {

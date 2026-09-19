@@ -261,7 +261,7 @@ int estimatedDisplayLongEdge(int hostLongEdge, const Value &want)
     const qint64 scaled =
         (qint64(hostLongEdge) * qint64(cropLong) + qint64(srcLong) / 2)
         / qint64(srcLong);
-    return int(qBound(1LL, scaled, qint64(hostLongEdge)));
+    return clampEstimatedEdge(scaled, hostLongEdge);
 }
 
 QSizeF scaleToPreserveFootprint(qreal footW, qreal footH, const QSize &logical)
