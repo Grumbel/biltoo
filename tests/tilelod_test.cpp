@@ -798,6 +798,23 @@ void test_parent_key()
 }  // namespace
 
 
+
+void test_approx_bytes_o1()
+{
+  tilelod::TileMemoryCache cache;
+  CHECK_EQ(cache.approx_bytes(), 0u);
+  auto tile = solid_tile(256, 256, 5);
+  const std::size_t per = tile.bytes.size();
+  cache.set_succeeded({0, 0, 0}, tile, 1);
+  CHECK_EQ(cache.approx_bytes(), per);
+  cache.set_succeeded({0, 1, 0}, solid_tile(256, 256, 6), 1);
+  CHECK_EQ(cache.approx_bytes(), per * 2);
+  cache.erase({0, 0, 0});
+  CHECK_EQ(cache.approx_bytes(), per);
+  cache.clear();
+  CHECK_EQ(cache.approx_bytes(), 0u);
+}
+
 void test_succeeded_count()
 {
   tilelod::TileMemoryCache cache;
@@ -868,6 +885,7 @@ int main()
   test_destroy_clears_inflight_shared();
   test_min_scale_raise_keeps_climb();
   test_parent_key();
+  test_approx_bytes_o1();
   test_succeeded_count();
   test_trim_updates_succeeded_count();
 
