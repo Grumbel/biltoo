@@ -1728,9 +1728,7 @@ void ImageView::beginCropRubberBand(const QPoint &viewPos)
     if (!item->contentRect().contains(local)) {
         return;
     }
-    m_crop.beginRubber(local);
-    m_crop.setRect(QRectF(local, QSizeF(0, 0)));
-    m_crop.setRotation(0.0); // new rubber-band is axis-aligned
+    m_crop.beginRubberDraft(local);
     viewport()->update();
 }
 
@@ -1743,16 +1741,7 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
     const QRectF cr = item->contentRect();
     const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
-    QRectF r = CropGeometry::rubberBandRect(
-        m_crop.rubberOriginLocalRef(), local,
-        mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
-    if (r.width() < 1.0) {
-        r.setWidth(1.0);
-    }
-    if (r.height() < 1.0) {
-        r.setHeight(1.0);
-    }
-    m_crop.setRect(m_crop.isAllowExpand() ? r : r.intersected(cr));
+    m_crop.applyRubberBand(local, cr, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
     viewport()->update();
 }
 

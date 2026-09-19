@@ -260,3 +260,24 @@ QRect CropSession::integerCropForOffset(const QPointF &itemOffset) const
 {
     return CropGeometry::integerCropFromLocal(currentRect(), itemOffset);
 }
+
+void CropSession::beginRubberDraft(const QPointF &originLocal)
+{
+    beginRubber(originLocal);
+    setRect(QRectF(originLocal, QSizeF(0, 0)));
+    setRotation(0.0);
+}
+
+void CropSession::applyRubberBand(const QPointF &local, const QRectF &contentRect,
+                                  bool shiftSnap, bool ctrlFromCenter)
+{
+    QRectF r = CropGeometry::rubberBandRect(
+        rubberOriginLocal, local, shiftSnap, ctrlFromCenter);
+    if (r.width() < 1.0) {
+        r.setWidth(1.0);
+    }
+    if (r.height() < 1.0) {
+        r.setHeight(1.0);
+    }
+    setRect(isAllowExpand() ? r : r.intersected(contentRect));
+}

@@ -117,6 +117,12 @@ public:
 
 
 
+    /** Start rubber-band: origin + zero-size axis-aligned draft. */
+    void beginRubberDraft(const QPointF &originLocal);
+
+    void applyRubberBand(const QPointF &local, const QRectF &contentRect,
+                         bool shiftSnap, bool ctrlFromCenter);
+
     void beginRubber(const QPointF &originLocal)
     {
         rubberBanding = true;
