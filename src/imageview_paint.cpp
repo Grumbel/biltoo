@@ -744,12 +744,12 @@ void ImageView::setShowTextRegions(bool on)
     if (m_textLayer.showRegions == on) {
         return;
     }
-    m_textLayer.showRegions = on;
+    m_textLayer.setShowRegions(on);
     if (m_textLayer.needsLayer()) {
         refreshTextLayer();
     } else {
         m_textLayer.layer = {};
-        m_textLayer.layerPath.clear();
+        m_textLayer.clearLayerPath();
         m_textLayer.searchMatches.clear();
     }
     viewport()->update();
@@ -758,7 +758,7 @@ void ImageView::setShowTextRegions(bool on)
 void ImageView::refreshTextLayer()
 {
     m_textLayer.layer = {};
-    m_textLayer.layerPath.clear();
+    m_textLayer.clearLayerPath();
     m_textLayer.searchMatches.clear();
     if (!m_textLayer.needsLayer()) {
         return;
@@ -827,7 +827,7 @@ int ImageView::setTextSearchQuery(const QString &query)
         m_textLayer.searchMatches.clear();
         if (!m_textLayer.showRegions) {
             m_textLayer.layer = {};
-            m_textLayer.layerPath.clear();
+            m_textLayer.clearLayerPath();
         }
         viewport()->update();
         return 0;
@@ -1009,9 +1009,9 @@ void ImageView::finishTextRubberBand()
     // Ensure text layer (refreshTextLayer skips when neither search nor outlines).
     if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
         const bool hadShow = m_textLayer.showRegions;
-        m_textLayer.showRegions = true;
+        m_textLayer.setShowRegions(true);
         refreshTextLayer();
-        m_textLayer.showRegions = hadShow;
+        m_textLayer.setShowRegions(hadShow);
     }
     ImageItem *item = primaryItem();
     if (!item || m_textLayer.layer.regions.isEmpty() || !m_textLayer.layer.pageBounds.isValid()) {

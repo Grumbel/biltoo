@@ -74,6 +74,20 @@ struct TextLayerSession {
         clearSelection();
         linkHoverTip.clear();
     }
+
+    void setShowRegions(bool on) { showRegions = on; }
+
+    void setLayer(const ThumtooCache::PageTextLayer &l, const QString &path)
+    {
+        layer = l;
+        layerPath = path;
+    }
+
+    void clearLayerPath() { layerPath.clear(); }
+
+    void setLinkHoverTip(const QString &tip) { linkHoverTip = tip; }
+
+    void clearLinkHoverTip() { linkHoverTip.clear(); }
 };
 
 #endif // TEXTLAYERSESSION_H

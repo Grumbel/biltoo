@@ -633,9 +633,9 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
     }
     if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
         const bool hadShow = m_textLayer.showRegions;
-        m_textLayer.showRegions = true;
+        m_textLayer.setShowRegions(true);
         refreshTextLayer();
-        m_textLayer.showRegions = hadShow;
+        m_textLayer.setShowRegions(hadShow);
     }
     int page = 0;
     QString uri;
@@ -1029,11 +1029,11 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
             setCursor(m_chrome.imageModeLeftDragPan ? Qt::OpenHandCursor : Qt::ArrowCursor);
         }
         if (tip != m_textLayer.linkHoverTip) {
-            m_textLayer.linkHoverTip = tip;
+            m_textLayer.setLinkHoverTip(tip);
             emit statusChanged();
         }
     } else if (!m_textLayer.linkHoverTip.isEmpty() && event->buttons() == Qt::NoButton) {
-        m_textLayer.linkHoverTip.clear();
+        m_textLayer.clearLinkHoverTip();
         emit statusChanged();
     }
 }
