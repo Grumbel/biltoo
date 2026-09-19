@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Session appearance apply (IDENTITY.md): resolve by SessionImageId, never
-// leak path-map crop across bound tiles. Crop-mode Apply undo stays in
-// imageview_crop.cpp (applyCropAppearance).
+// Session appearance load/store/apply (IDENTITY.md). Crop-mode Apply undo
+// stays in imageview_crop.cpp (applyCropAppearance).
 
 #include "imageview.h"
+#include "cropsession.h"
 
 #include "imageitem.h"
 #include "sessionappearance.h"
@@ -107,5 +107,79 @@ QSize ImageView::cropRecordFileNative(const QString &path) const
         return {};
     }
     return fileNative;
+}
+
+bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const
+{
+    if (!st || sid == kInvalidSessionImageId) {
+        return false;
+    }
+    if (const WorkspaceItemState *it = m_appearance.get(sid)) {
+        *st = *it;
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::loadPathBookAppearance(ImageItem *item, WorkspaceItemState *app) const
+{
+    if (!item || !app) {
+        return false;
+    }
+    if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
+        *app = *st;
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
+                                          SessionImageId *sidOut) const
+{
+    if (!item || !app) {
+        return false;
+    }
+    const SessionImageId sid = CropSession::resolveSessionIdForItem(
+        item, m_sessionId.currentIdValue());
+    if (sidOut) {
+        *sidOut = sid;
+    }
+    if (loadSessionAppearance(sid, app)) {
+        return true;
+    }
+    if (CropSession::fillAppearanceFromItemSessionCrop(app, item)) {
+        return true;
+    }
+    return loadPathBookAppearance(item, app);
+}
+
+
+void ImageView::storeAppearanceFromState(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_sessionId.currentIdValue();
+    }
+    WorkspaceItemState slot = state;
+    slot.sessionId = sid;
+    slot.path = item->path();
+    storeCropAppearance(item, sid, slot);
+}
+
+void ImageView::relayoutAfterAppearanceApply(ImageItem *item)
+{
+    if (isImageMode()) {
+        m_framing.armFit();
+        fitItem(item, currentFitAspectMode());
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
 }
 

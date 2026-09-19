@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1550-appearance-load-store.** loadSession/path/restore + storeAppearanceFromState in appearance TU.
+Prior: **1549**.
+
+### Change
+- `loadSessionAppearance`, `loadPathBookAppearance`, `loadRestoreCropAppearance`
+- `storeAppearanceFromState`, `relayoutAfterAppearanceApply`
+→ `imageview_appearance.cpp`
+
+Crop TU keeps `restoreSessionCropAppearance` (install pixels after load).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1550-appearance-load-store.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1549-crop-full-raster-store-impl.** Bodies for 1548: tryScheduleThumtooFullRaster + appearance store move.
 Prior: **1548**.
 
