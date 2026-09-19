@@ -105,6 +105,18 @@ inline bool layoutIsMasonryColumns(LayoutMode mode)
     return mode == LayoutMode::Masonry || mode == LayoutMode::MasonryFill;
 }
 
+/** Facing (book spread) pack mode. */
+inline bool layoutIsFacing(LayoutMode mode)
+{
+    return mode == LayoutMode::Facing;
+}
+
+/** Side-by-side horizontal strip. */
+inline bool layoutIsSideBySide(LayoutMode mode)
+{
+    return mode == LayoutMode::SideBySide;
+}
+
 /** Fill-mode pack that needs global sizes before first pack. */
 inline bool layoutNeedsAllSizes(LayoutMode mode)
 {
