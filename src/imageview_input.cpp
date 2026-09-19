@@ -263,11 +263,7 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
         }
     }
 
-    if (info.valid != m_chrome.mouseInfo.valid
-        || info.imagePos != m_chrome.mouseInfo.imagePos
-        || info.pixelColor != m_chrome.mouseInfo.pixelColor
-        || info.path != m_chrome.mouseInfo.path) {
-        m_chrome.setMouseInfo(info);
+    if (m_chrome.setMouseInfo(info)) {
         emit mouseInfoChanged(m_chrome.mouseInfo);
     }
 }
@@ -1319,7 +1315,8 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                 }
             }
             const int gh = groupHandleAt(event->pos(), candidates);
-            if (m_groupXform.setHoverHandle(gh)) {
+            const bool groupHoverChanged = m_groupXform.setHoverHandle(gh);
+            if (groupHoverChanged) {
                 viewport()->update();
             }
             if (gh >= 0) {
