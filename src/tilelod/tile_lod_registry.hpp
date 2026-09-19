@@ -59,7 +59,8 @@ public:
   /**
    * Drop one reference. Does **not** destroy the path entry when count hits
    * zero; idle paths are retained for LRU reuse until global budget trim.
-   * Empty idle entries (no Succeeded tiles, no InFlight) are dropped immediately.
+   * Empty idle entries (no Succeeded tiles) are dropped immediately. Residual
+   * InFlight keys are cleared on the last release.
    */
   void release(QString const& path);
 

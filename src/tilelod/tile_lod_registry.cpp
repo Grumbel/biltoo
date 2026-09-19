@@ -163,12 +163,16 @@ void TileLodRegistry::release(QString const& path)
   if (it->second->refcount > 0) {
     return;
   }
-  // Idle: keep Succeeded tiles for A→B→A; drop empty shells immediately.
+  // Idle: keep Succeeded tiles for A→B→A. Session dtor should already have
+  // erased InFlight; clear any residual so we never retain a pure-InFlight shell.
+  if (it->second->cache) {
+    for (TileKey const& key : it->second->cache->in_flight_keys()) {
+      it->second->cache->erase(key);
+    }
+  }
   bool const has_tiles =
       it->second->cache && it->second->cache->approx_bytes() > 0;
-  bool const has_inflight =
-      it->second->cache && !it->second->cache->in_flight_keys().empty();
-  if (!has_tiles && !has_inflight) {
+  if (!has_tiles) {
     m_by_path.erase(it);
     return;
   }
