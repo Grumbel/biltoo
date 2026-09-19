@@ -208,6 +208,9 @@ void paintResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly,
 void paintRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly, bool hot);
 void paintMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly, bool hot);
 
+void paintSizeBadge(QPainter &painter, const QRect &cropView, int cropW, int cropH);
+
+
 
 
 } // namespace CropGeometry

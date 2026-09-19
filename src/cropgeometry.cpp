@@ -709,4 +709,30 @@ void paintResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly,
 
     }
 
+
+void paintSizeBadge(QPainter &painter, const QRect &cropView, int cropW, int cropH)
+{
+    const QString sizeLabel = QStringLiteral("%1×%2").arg(cropW).arg(cropH);
+    QFont f = painter.font();
+    f.setPointSize(clampLabelPointSize(f.pointSize()));
+    f.setBold(true);
+    painter.setFont(f);
+    const QFontMetrics fm(f);
+    const int padX = 8;
+    const int padY = 4;
+    const int tw = fm.horizontalAdvance(sizeLabel);
+    const int th = fm.height();
+    int lx = cropView.center().x() - (tw + 2 * padX) / 2;
+    int ly = cropView.top() + 8;
+    if (ly + th + 2 * padY > cropView.bottom() - 8) {
+        ly = cropView.center().y() - (th + 2 * padY) / 2;
+    }
+    const QRect labelBg(lx, ly, tw + 2 * padX, th + 2 * padY);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, 180));
+    painter.drawRoundedRect(labelBg, 4, 4);
+    painter.setPen(QColor(255, 220, 120));
+    painter.drawText(labelBg, Qt::AlignCenter, sizeLabel);
+}
+
 } // namespace CropGeometry

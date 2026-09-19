@@ -1415,36 +1415,9 @@ void ImageView::paintCropActionButtons(QPainter &painter)
 
 void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
 {
-    // Crop size in image pixels (same coordinate space as the draft rect).
-    const QSize cropSz = ContentXform::roundedSizeAtLeast1(m_crop.currentRect().width(), m_crop.currentRect().height());
-    const int cropW = cropSz.width();
-    const int cropH = cropSz.height();
-    const QString sizeLabel = QStringLiteral("%1×%2").arg(cropW).arg(cropH);
-    {
-        QFont f = painter.font();
-        f.setPointSize(CropGeometry::clampLabelPointSize(f.pointSize()));
-        f.setBold(true);
-        painter.setFont(f);
-        const QFontMetrics fm(f);
-        const int padX = 8;
-        const int padY = 4;
-        const int tw = fm.horizontalAdvance(sizeLabel);
-        const int th = fm.height();
-        // Prefer above the crop frame; fall back inside top edge if off-screen.
-        // Always inside the crop frame so the label does not sit on the top
-        // rotate knob (outside the top edge).
-        int lx = cropView.center().x() - (tw + 2 * padX) / 2;
-        int ly = cropView.top() + 8;
-        if (ly + th + 2 * padY > cropView.bottom() - 8) {
-            ly = cropView.center().y() - (th + 2 * padY) / 2;
-        }
-        const QRect labelBg(lx, ly, tw + 2 * padX, th + 2 * padY);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(0, 0, 0, 180));
-        painter.drawRoundedRect(labelBg, 4, 4);
-        painter.setPen(QColor(255, 220, 120));
-        painter.drawText(labelBg, Qt::AlignCenter, sizeLabel);
-    }
+    const QSize cropSz = ContentXform::roundedSizeAtLeast1(
+        m_crop.currentRect().width(), m_crop.currentRect().height());
+    CropGeometry::paintSizeBadge(painter, cropView, cropSz.width(), cropSz.height());
 }
 
 void ImageView::paintCropOverlay(QPainter &painter)
