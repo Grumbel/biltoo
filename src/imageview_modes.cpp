@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "toolpolicy.h"
 #include "imagecache.h"
 #include <QDebug>
 #include "imageitem.h"
@@ -158,11 +159,9 @@ void ImageView::ensurePrimarySelection()
 
 void ImageView::applyToolDragMode()
 {
-    if (m_tool == Tool::Select) {
-        setDragMode(QGraphicsView::RubberBandDrag);
-    } else {
-        setDragMode(QGraphicsView::NoDrag);
-    }
+    setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
+                    ? QGraphicsView::RubberBandDrag
+                    : QGraphicsView::NoDrag);
 }
 
 void ImageView::clearFitFillModes()

@@ -37,6 +37,13 @@ enum class GalleryPackReason {
     SessionMutate,  /**< Add/duplicate/remove that must show tiles without holes */
 };
 
+/** Canvas interaction tool (Select rubber-band, Pan, Zoom region). */
+enum class Tool {
+    Select,
+    Pan,
+    Zoom /**< Workspace: rubber-band zoom to region */
+};
+
 /** Workspace / gallery packing mode (ImageView layout engine). */
 enum class LayoutMode {
     FreeForm,

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "toolpolicy.h"
 #include "workspacenavgeometry.h"
 #include "grouptransformgeometry.h"
 #include "selectiongeometry.h"
@@ -1483,13 +1484,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
 void ImageView::restoreToolCursor()
 {
-    if (m_tool == Tool::Pan) {
-        setCursor(Qt::OpenHandCursor);
-    } else if (m_tool == Tool::Zoom) {
-        setCursor(Qt::CrossCursor);
-    } else {
-        setCursor(Qt::ArrowCursor);
-    }
+    setCursor(ToolPolicy::cursorFor(m_tool));
 }
 
 void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState &before,

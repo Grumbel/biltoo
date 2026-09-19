@@ -97,11 +97,7 @@ class ImageView : public QGraphicsView,
 
 
 public:
-    enum class Tool {
-        Select,
-        Pan,
-        Zoom /**< Workspace: rubber-band zoom to region */
-    };
+    using Tool = ::Tool;
 
     // BackgroundPattern: canvasbackground.h
     // SlideshowTransition / Motion / Zoom / Letterbox: slideshowtypes.h

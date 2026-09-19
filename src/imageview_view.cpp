@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "toolpolicy.h"
 #include "gallerysoftsm.h"
 #include "viewtransform.h"
 #include "displayedgepolicy.h"
@@ -49,18 +50,13 @@ void ImageView::setTool(Tool tool)
         return;
     }
     m_tool = tool;
-    if (m_tool == Tool::Pan) {
-        setCursor(Qt::OpenHandCursor);
-    } else if (m_tool == Tool::Zoom) {
-        setCursor(Qt::CrossCursor);
-    } else {
-        setCursor(Qt::ArrowCursor);
-    }
+    setCursor(ToolPolicy::cursorFor(m_tool));
     // Workspace Select: rubber-band multi-select on empty drag (same as Gallery).
     // Pan / Zoom keep NoDrag (view gestures are handled in mouse handlers).
     if (isWorkspaceMode()) {
-        setDragMode(m_tool == Tool::Select ? QGraphicsView::RubberBandDrag
-                                           : QGraphicsView::NoDrag);
+        setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
+                        ? QGraphicsView::RubberBandDrag
+                        : QGraphicsView::NoDrag);
     }
     emit toolChanged(m_tool);
 }
@@ -570,13 +566,7 @@ void ImageView::cancelZoomRegion()
         m_zoomRegion.rubberBand->hide();
     }
     if (!m_chrome.panning && !m_itemInteract.rotating) {
-        if (m_tool == Tool::Pan) {
-            setCursor(Qt::OpenHandCursor);
-        } else if (m_tool == Tool::Zoom) {
-            setCursor(Qt::CrossCursor);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
+        setCursor(ToolPolicy::cursorFor(m_tool));
     }
     emit statusChanged();
 }
@@ -1062,10 +1052,9 @@ void ImageView::setSlideshowMotionPaused(bool paused)
 
 void ImageView::setSlideshowPausedHud(bool on)
 {
-    if (on == m_ssHud.pausedHud) {
+    if (!m_ssHud.setPausedHud(on)) {
         return;
     }
-    m_ssHud.pausedHud = on;
     if (on) {
         // Keep a stable action line for the permanent cue; flash timer must
         // not clear it (paint draws paused HUD independently of flash).
@@ -2261,10 +2250,9 @@ qreal ImageView::slideshowZoomBaseScale(const QSize &logical, int vw, int vh) co
 
 void ImageView::setSlideshowNavHot(bool hot)
 {
-    if (m_ssHud.navHot == hot) {
+    if (!m_ssHud.setNavHot(hot)) {
         return;
     }
-    m_ssHud.navHot = hot;
     // Do NOT invalidateZoomBlurQueue here — keep the previous underlay until a
     // new key's blur is ready (solid flash on every ←/→ was the bug).
     if (hot) {
