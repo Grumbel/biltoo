@@ -2,6 +2,21 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1504-crop-enter-ensure.** kMinDraftSidePx, ColorAdjustments::matches, ensureRectValid.
+Prior: **1503**. Commits 1504a–1504b (+ docs).
+
+### Apply (on tip 1500 or later)
+```bash
+git pull --ff-only /path/to/biltoo-1504-crop-enter-ensure.bundle HEAD
+```
+Bundle includes **1501–1504** when base is tip **1500**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1503-crop-auto-end.** paddedIntersectedRect; endHandleDragClamped.
 Prior: **1502**. Commits 1503a–1503b (+ docs).
 
