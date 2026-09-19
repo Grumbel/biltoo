@@ -364,7 +364,7 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
 keeps identity correct.
 
-**Global path RAM tip history (1400–1447):**
+**Global path RAM tip history (1400–1449):**
 
 | Range | Summary |
 |-------|---------|
@@ -384,6 +384,18 @@ keeps identity correct.
 | **1439–1441** | `invalidateTilePathRam`; reloadFromDisk purges path RAM + prefetch |
 | **1442–1444** | In-place shared invalidate; `purgeTilePathRam` for multi-item paths |
 | **1445–1447** | Session replace: dropAllTileLodSessions + invalidateAll clears holders |
+| **1448–1449** | Last release clears residual InFlight; settled-scope docs |
+
+### Global path RAM — settled scope (1400–1447)
+
+**In scope and landed:** process-wide path retention, identity guards, O(1)
+queries, warm prefetch, idle/byte caps, env overrides, Reload/session-replace
+purge, multi-item shared invalidate.
+
+**Explicit non-goals (still open if desired later):**
+- Interest-based neighbor fill **without** a short-lived `TileLodController`
+- Keeping a live session across Image ←/→ nav-hot (today: soft swap; tiles rebind on settle)
+- Cross-process or disk-backed host tile RAM beyond thumtoo Store
 
 ### Session / archive replace (biltoo-1233 / 1234)
 
@@ -459,6 +471,8 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Trim debug / drop prefetch (1432–1435) | Done |
 | Completion touches path LRU (1436) | Done |
 | Reload purges path RAM (1439–1441) | Done |
+| In-place invalidate; purgeTilePathRam (1442–1444) | Done |
+| Session replace dropAll + invalidateAll clear (1445–1447) | Done |
 | Parent protect + parent prefetch | Done |
 | HiDPI, scale hold, coverage heartbeat | Done |
 | ContentXform axis-aligned map | Done |

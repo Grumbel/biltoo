@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1449-release-clear-inflight-settled-docs.** Residual InFlight clear; path RAM settled scope.
+Prior: **1447**. Commits 1448–1449.
+
+### Commits
+1. **1448** Last `release` clears residual InFlight; retain only Succeeded payload
+2. **1449** TILE_LOD: status rows 1442–1447; **settled scope** + explicit open non-goals
+
+### Path RAM line
+Considered **settled** for current design (retain, identity, purge, session replace).
+Larger follow-ups (interest-only prefetch, nav-hot live sessions) are documented
+as non-goals until explicitly requested.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1449-release-clear-inflight-settled-docs.bundle HEAD
+```
+Requires tip **1447**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1447-session-replace-drop-all-tile-sessions.** Stash-safe session replace.
 Prior: **1444**. Commits 1445–1447.
 
