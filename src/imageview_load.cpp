@@ -2031,7 +2031,7 @@ void ImageView::reassertPendingBindPlacement(const QString &path)
         if (!item || item->path() != path) {
             continue;
         }
-        for (int bi = 0; bi < m_bindBook.binds.size(); ++bi) {
+        for (int bi = 0; bi < m_bindBook.bindCount(); ++bi) {
             const PendingSessionBind &b = m_bindBook.binds.at(bi);
             if (b.path != path) {
                 continue;
@@ -2174,7 +2174,7 @@ void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
     }
     if (m_layout.mode != LayoutMode::FreeForm) {
         if (!m_pathOrderBook.isEmpty()) {
-            reorderItemsByPaths(m_pathOrderBook.paths);
+            reorderItemsByPaths(m_pathOrderBook.pathList());
         }
         if (!(isGalleryMode() && m_galleryRelayoutSuppress.active())) {
             if (sizeChanged) {

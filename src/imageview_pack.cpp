@@ -511,7 +511,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     }
 
     if (!m_pathOrderBook.isEmpty()) {
-        reorderItemsByPaths(m_pathOrderBook.paths);
+        reorderItemsByPaths(m_pathOrderBook.pathList());
     }
 
     // Gallery overview is axis-aligned. Strip any leftover Workspace placement

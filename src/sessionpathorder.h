@@ -43,6 +43,10 @@ struct SessionPathOrder {
 
     int size() const { return paths.size(); }
 
+    const QStringList &pathList() const { return paths; }
+
+    const QVector<SessionImageId> &idList() const { return ids; }
+
     /** Pad or trim @p ids so it matches @p paths length (invalid ids when growing). */
     void syncIdLength()
     {

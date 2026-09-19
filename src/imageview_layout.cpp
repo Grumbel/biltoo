@@ -1351,7 +1351,7 @@ int ImageView::countPendingSessionBinds(const QString &path) const
 
 void ImageView::purgeSatisfiedPendingBinds(const QString &path)
 {
-    for (int bi = m_bindBook.binds.size() - 1; bi >= 0; --bi) {
+    for (int bi = m_bindBook.bindCount() - 1; bi >= 0; --bi) {
         const PendingSessionBind &b = m_bindBook.binds.at(bi);
         if (b.path != path || b.id == kInvalidSessionImageId) {
             continue;
@@ -1446,7 +1446,7 @@ bool ImageView::takePendingSessionBindForNewItem(const QString &path, ImageItem 
     if (!out || path.isEmpty() || !item) {
         return false;
     }
-    for (int bi = 0; bi < m_bindBook.binds.size(); ++bi) {
+    for (int bi = 0; bi < m_bindBook.bindCount(); ++bi) {
         if (m_bindBook.binds.at(bi).path != path) {
             continue;
         }

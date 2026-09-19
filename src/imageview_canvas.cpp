@@ -112,7 +112,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
 {
     TtfpTrace::mark("finishSetWorkspacePaths");
     // Keep canvas order aligned with session/sort order (not async load order).
-    reorderItemsByPaths(m_pathOrderBook.paths);
+    reorderItemsByPaths(m_pathOrderBook.pathList());
 
     if (haveIds) {
         rebindWorkspaceSession(paths, sessionIds);
@@ -453,7 +453,7 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
         // (filmstrip row only, wrong thumb until appearance emit).
         if (sessionId != kInvalidSessionImageId) {
             bool alreadyOrdered = false;
-            for (SessionImageId id : m_pathOrderBook.ids) {
+            for (SessionImageId id : m_pathOrderBook.idList()) {
                 if (id == sessionId) {
                     alreadyOrdered = true;
                     break;
@@ -537,7 +537,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     // Path alone cannot express "two tiles, same file".
     if (sessionId != kInvalidSessionImageId) {
         bool alreadyOrdered = false;
-        for (SessionImageId id : m_pathOrderBook.ids) {
+        for (SessionImageId id : m_pathOrderBook.idList()) {
             if (id == sessionId) {
                 alreadyOrdered = true;
                 break;
@@ -951,5 +951,5 @@ void ImageView::ensureGalleryPlaceholders()
             claimed.insert(ph);
         }
     }
-    reorderItemsByPaths(m_pathOrderBook.paths);
+    reorderItemsByPaths(m_pathOrderBook.pathList());
 }
