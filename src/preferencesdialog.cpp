@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "preferencesdialog.h"
+#include "slideshowclocks.h"
+#include "hudappearance.h"
 #include "slideshowtypes.h"
 #include "defaultapps.h"
 #include "icons.h"
@@ -789,13 +791,12 @@ void PreferencesDialog::syncSlideshowTransitionCap()
 
 int PreferencesDialog::slideshowIntervalMs() const
 {
-    return qRound(m_intervalSpin->value() * 1000.0);
+    return SlideshowClocks::secondsToMs(m_intervalSpin->value());
 }
 
 void PreferencesDialog::setSlideshowIntervalMs(int ms)
 {
-    const double seconds = qBound(0.0, ms / 1000.0, 3600.0);
-    m_intervalSpin->setValue(seconds);
+    m_intervalSpin->setValue(SlideshowClocks::msToSeconds(ms));
     syncSlideshowTransitionCap();
 }
 
@@ -946,7 +947,7 @@ int PreferencesDialog::hudFontPointSize() const
 void PreferencesDialog::setHudFontPointSize(int pt)
 {
     if (m_hudFontSpin) {
-        m_hudFontSpin->setValue(qBound(8, pt, 48));  // HudAppearance::effectiveFontPointSize range
+        m_hudFontSpin->setValue(HudAppearance::clampFontPointSize(pt));
     }
 }
 
@@ -1150,7 +1151,7 @@ int PreferencesDialog::slideshowTransitionDurationMs() const
 {
     // UI is seconds; internal API stays milliseconds.
     return m_slideshowTransitionMsSpin
-        ? qRound(m_slideshowTransitionMsSpin->value() * 1000.0)
+        ? SlideshowClocks::secondsToMs(m_slideshowTransitionMsSpin->value())
         : 400;
 }
 
@@ -1161,7 +1162,7 @@ void PreferencesDialog::setSlideshowTransitionDurationMs(int ms)
     }
     syncSlideshowTransitionCap();
     const double capSec = m_slideshowTransitionMsSpin->maximum();
-    m_slideshowTransitionMsSpin->setValue(qBound(0.0, ms / 1000.0, capSec));
+    m_slideshowTransitionMsSpin->setValue(SlideshowClocks::msToSeconds(ms, capSec));
 }
 
 

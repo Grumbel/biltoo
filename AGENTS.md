@@ -17,7 +17,7 @@ Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](d
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
 Latest agent handoff: **TODO.md → biltoo-1346-workspace-hud-panzoom-longedge**.
-Next bundle number: **1347**
+Latest tip: **biltoo-1348-clocks-sec-font-line**. Next bundle number: **1347**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

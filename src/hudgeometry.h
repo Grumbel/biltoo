@@ -123,6 +123,25 @@ inline int clampEdgePointSize(int basePt)
     return qBound(9, basePt, 16);
 }
 
+/**
+ * Grow panel text metrics by one wrapped line.
+ * Uses boundingRect flags matching drawText (AlignLeft|VCenter|TextSingleLine)
+ * plus a 2px width safety margin (some fonts under-report advance).
+ */
+inline void accumulateLineSize(int *textW, int *textH, const QFontMetrics &m,
+                               const QString &line, int maxTextW)
+{
+    if (!textW || !textH) {
+        return;
+    }
+    const QRect br = m.boundingRect(QRect(0, 0, maxTextW, 1000),
+                                    Qt::AlignLeft | Qt::AlignVCenter
+                                        | Qt::TextSingleLine,
+                                    line);
+    *textW = qMax(*textW, br.width() + 2);
+    *textH += qMax(m.height(), br.height());
+}
+
 } // namespace HudGeometry
 
 #endif // HUDGEOMETRY_H

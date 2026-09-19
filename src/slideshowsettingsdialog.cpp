@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "slideshowsettingsdialog.h"
+#include "slideshowclocks.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -183,7 +184,7 @@ void SlideshowSettingsDialog::syncTransitionCap()
 
 int SlideshowSettingsDialog::intervalMs() const
 {
-    return m_intervalSpin ? int(m_intervalSpin->value() * 1000.0 + 0.5) : 3000;
+    return m_intervalSpin ? SlideshowClocks::secondsToMs(m_intervalSpin->value()) : 3000;
 }
 
 void SlideshowSettingsDialog::setIntervalMs(int ms)
@@ -192,7 +193,7 @@ void SlideshowSettingsDialog::setIntervalMs(int ms)
         return;
     }
     m_blockEmit = true;
-    m_intervalSpin->setValue(qMax(0.0, ms / 1000.0));
+    m_intervalSpin->setValue(SlideshowClocks::msToSeconds(ms));
     m_blockEmit = false;
     syncTransitionCap();
 }
@@ -248,7 +249,8 @@ void SlideshowSettingsDialog::setTransitionIndex(int index)
 int SlideshowSettingsDialog::transitionDurationMs() const
 {
     // UI is seconds; internal API stays milliseconds.
-    return m_transitionMsSpin ? qRound(m_transitionMsSpin->value() * 1000.0) : 400;
+    return m_transitionMsSpin ? SlideshowClocks::secondsToMs(m_transitionMsSpin->value())
+                              : 400;
 }
 
 void SlideshowSettingsDialog::setTransitionDurationMs(int ms)
@@ -259,8 +261,7 @@ void SlideshowSettingsDialog::setTransitionDurationMs(int ms)
     m_blockEmit = true;
     syncTransitionCap();
     const double capSec = m_transitionMsSpin->maximum();
-    const double sec = qBound(0.0, ms / 1000.0, capSec);
-    m_transitionMsSpin->setValue(sec);
+    m_transitionMsSpin->setValue(SlideshowClocks::msToSeconds(ms, capSec));
     m_blockEmit = false;
 }
 

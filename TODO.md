@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1348-clocks-sec-font-line.** Reconstructed on upstream (tip 1347 base missing from bundle).
+
+### Bundle apply note
+Attached `biltoo-1348-clocks-sec-font-line` required prerequisite
+`4482294` (Docs: tip 1347 …) which is **not** on GitHub master. Pack deltas
+could not resolve. Changes were reconstructed from recovered commit messages:
+
+1. SlideshowClocks: `secondsToMs` / `msToSeconds` / `timelineElapsedMs`
+2. ContentXform::`clampLongEdge` (crop full-raster edge cap)
+3. HudAppearance::`clampFontPointSize`
+4. HudGeometry::`accumulateLineSize`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1348-clocks-sec-font-line.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1346-workspace-hud-panzoom-longedge.** WorkspaceGeometry, HUD panel max, panZoom clamp, layout longEdge.
 Prior: **1341** (upstream). Full stack includes 1345 work.
 

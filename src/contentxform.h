@@ -36,6 +36,18 @@ inline int longEdge(const QSize &s)
     return qMax(s.width(), s.height());
 }
 
+/** Cap a long edge for display/full-raster requests (min 1 when edge > 0). */
+inline int clampLongEdge(int edge, int maxEdge)
+{
+    if (edge <= 0) {
+        return 0;
+    }
+    if (maxEdge <= 0) {
+        return edge;
+    }
+    return qMin(edge, maxEdge);
+}
+
 inline qreal aspectRatio(const QSize &s)
 {
     return double(s.width()) / double(qMax(1, s.height()));

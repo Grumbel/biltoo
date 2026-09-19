@@ -12,6 +12,28 @@
  */
 namespace SlideshowClocks {
 
+/** UI spin (seconds) → internal milliseconds. */
+inline int secondsToMs(double sec)
+{
+    return qMax(0, qRound(sec * 1000.0));
+}
+
+/** Internal milliseconds → UI spin (seconds), clamped to @p capSec. */
+inline double msToSeconds(int ms, double capSec = 3600.0)
+{
+    return qBound(0.0, ms / 1000.0, capSec);
+}
+
+/** Timeline elapsed for unitless position in one cycle of @p intervalMs. */
+inline qint64 timelineElapsedMs(qreal position, int intervalMs, qint64 totalMs)
+{
+    if (intervalMs <= 0 || totalMs <= 0) {
+        return 0;
+    }
+    const qint64 elapsed = qint64(position * qreal(intervalMs)) % totalMs;
+    return elapsed < 0 ? 0 : elapsed;
+}
+
 /** Path length = dwell interval + transition (min 250 ms). */
 inline int pathDurationMs(int progressIntervalMs, int transitionDurationMs)
 {

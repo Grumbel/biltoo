@@ -16,12 +16,15 @@ struct HudAppearance {
     QColor textColor{255, 255, 255};
     QColor panelColor{0, 0, 0, 160};
 
+    /** Preferences / effective HUD text size (8–48 pt). */
+    static int clampFontPointSize(int pt) { return qBound(8, pt, 48); }
+
     void setFontPointSize(int pt)
     {
-        fontPointSize = qBound(8, pt, 48);
+        fontPointSize = clampFontPointSize(pt);
     }
 
-    int effectiveFontPointSize() const { return qBound(8, fontPointSize, 48); }
+    int effectiveFontPointSize() const { return clampFontPointSize(fontPointSize); }
 
     QColor effectivePanelColor() const
     {

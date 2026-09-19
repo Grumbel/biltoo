@@ -399,14 +399,7 @@ void ImageView::paintHudPanels(QPainter &painter)
                 const QFontMetrics &m = hl.bold ? fmBold : fm;
                 for (const QString &w : HudGeometry::wrapHudLine(hl.text, m, maxTextW)) {
                     drawn.append({w, hl.bold});
-                    // boundingRect undercounts some fonts; size with the same
-                    // flags used for drawing and add a small safety margin.
-                    const QRect br = m.boundingRect(QRect(0, 0, maxTextW, 1000),
-                                                    Qt::AlignLeft | Qt::AlignVCenter
-                                                        | Qt::TextSingleLine,
-                                                    w);
-                    textW = qMax(textW, br.width() + 2);
-                    textH += qMax(m.height(), br.height());
+                    HudGeometry::accumulateLineSize(&textW, &textH, m, w, maxTextW);
                 }
             }
             if (drawn.isEmpty()) {

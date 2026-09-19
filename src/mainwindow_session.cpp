@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include "slideshowclocks.h"
 #include <QtMath>
 #include <random>
 #include <algorithm>
@@ -2972,7 +2973,8 @@ void MainWindow::seekSlideshowFraction(qreal fraction)
     const int idx = int(qFloor(m_slideshowPosition)) % n;
     const qreal phaseT = m_slideshowPosition - qFloor(m_slideshowPosition);
     const qint64 totalMs = qint64(n) * qint64(intervalMs);
-    const qint64 elapsedMs = qint64(m_slideshowPosition * qreal(intervalMs)) % totalMs;
+    const qint64 elapsedMs = SlideshowClocks::timelineElapsedMs(
+        m_slideshowPosition, intervalMs, totalMs);
     if (m_imageView) {
         m_imageView->cancelSlideshowTransition();
         m_imageView->setSlideshowTimeline(elapsedMs, totalMs);
