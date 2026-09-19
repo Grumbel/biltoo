@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1389-mode-map-gallery-chrome-appearance-take-hudpulse.** Pure
+helpers on tip 1388.
+Prior: **1388**.
+
+### Change
+1. `GalleryPackFit::modeFromLayoutMode`
+2. `GalleryController::clearChrome`
+3. `SessionAppearanceStore::take`
+4. `HudFlash::setIdentityPulse` reports change
+
+### Apply
+```bash
+git pull /path/to/biltoo-1389-mode-map-gallery-chrome-appearance-take-hudpulse.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1389).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1388-pattern-centre-pathbook-mouseinfo.** Bag transitions on tip 1387.
 Prior: **1387**.
 

@@ -130,6 +130,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **GallerySoft** decode-window delay tiers; hover cursor via ToolPolicy.
 - **SlideshowZoomBlurState::bumpGeneration**; **layoutIsPackaged** / **layoutIsHeightFitted**.
 - **CanvasBackground::setPattern**; **CentreProgress::set**; **PathItemStateBook::take**; **ImageMouseInfo::clear**.
+- **GalleryPackFit::modeFromLayoutMode**; **GalleryController::clearChrome**; **SessionAppearanceStore::take**.
+- **HudFlash::setIdentityPulse** reports change.
 
 
 ## Current pain (evidence)
