@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1500-crop-handle-paint.** CropGeometry rotate/move/resize handle paint.
+Prior: **1499**. Commits 1500a–1500b (+ docs).
+
+### Commits
+1. **CropGeometry** paintRotateKnobs / paintMoveGrip
+2. **CropGeometry** paintResizeHandles (isHot callback)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1500-crop-handle-paint.bundle HEAD
+```
+Requires tip **1499** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1499-crop-btn-geometry.** CropGeometry paintTextButton + CropBtnRole.
 Prior: **1498**. Commits 1499a–1499b (+ docs).
 
