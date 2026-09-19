@@ -1281,9 +1281,8 @@ void ImageView::updateMouseMoveSlideshowSeek(QMouseEvent *event)
     if (!m_ssHud.progressActive || !viewport()) {
         return;
     }
-    const int y = event->pos().y();
     const int h = viewport()->height();
-    const bool nearBottom = h > 0 && y >= h - 48;
+    const bool nearBottom = m_ssHud.isSeekHit(event->pos().y(), h);
     if (nearBottom != m_ssHud.seekbarVisible && !m_ssHud.seekDragging) {
         m_ssHud.setSeekbarVisible(nearBottom);
         viewport()->update();
