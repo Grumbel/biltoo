@@ -382,7 +382,7 @@ void ImageView::setLayoutMode(LayoutMode mode)
         if (m_layout.mode != LayoutMode::FreeForm) {
             // Should not happen in Workspace (always FreeForm).
         }
-        m_layout.mode = LayoutMode::FreeForm;
+        m_layout.setMode(LayoutMode::FreeForm);
         for (ImageItem *item : m_items) {
             applyItemModeFlags(item);
         }
@@ -405,7 +405,7 @@ void ImageView::setLayoutMode(LayoutMode mode)
         snapshotFreeFormStates();
     }
 
-    m_layout.mode = mode;
+    m_layout.setMode(mode);
     for (ImageItem *item : m_items) {
         applyItemModeFlags(item);
     }

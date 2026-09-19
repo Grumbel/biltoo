@@ -17,6 +17,16 @@ struct LayoutPrefs {
     int gridColumns = 0;
     int masonryRows = 3;
 
+    /** @return true when the layout mode changed. */
+    bool setMode(LayoutMode m)
+    {
+        if (mode == m) {
+            return false;
+        }
+        mode = m;
+        return true;
+    }
+
     /** 0 = automatic for grid/flow. */
     void setGridColumns(int columns) { gridColumns = qMax(0, columns); }
 
