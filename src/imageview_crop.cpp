@@ -8,6 +8,7 @@
 #include "cropappearancecommand.h"
 #include "croppathraster.h"
 #include "viewportupdatehold.h"
+#include "cropflash.h"
 #include "cropgeometry.h"
 #include "placementlinear.h"
 #include "imagecache.h"
@@ -147,8 +148,8 @@ void ImageView::finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspa
 
 void ImageView::notifyCropModeEntered()
 {
-    flashHud(tr("Crop mode"),
-             tr("Apply commits · Esc cancels"));
+    const CropFlash::Hud hud = CropFlash::modeEntered();
+    flashHud(hud.title, hud.detail);
     emit cropModeChanged(true);
     emit statusChanged();
 }
@@ -161,7 +162,8 @@ void ImageView::abortCropEnterFailed(ImageItem *item)
         item->setTileLodSuppressed(false);
     }
     m_crop.abortEnterRestoringPlacement(item);
-    flashHud(tr("Crop"), tr("Could not load full image"));
+    const CropFlash::Hud hud = CropFlash::loadFailed();
+    flashHud(hud.title, hud.detail);
 }
 
 void ImageView::beginCropEnterSession(ImageItem *item)
@@ -180,12 +182,14 @@ void ImageView::beginCropEnterSession(ImageItem *item)
 
 void ImageView::flashCropLoadingFullHud()
 {
-    flashHud(tr("Crop"), tr("Loading full image…"));
+    const CropFlash::Hud hud = CropFlash::loadingFull();
+    flashHud(hud.title, hud.detail);
 }
 
 void ImageView::flashCropNotCachedHud()
 {
-    flashHud(tr("Crop"), tr("Image not cached yet — try again"));
+    const CropFlash::Hud hud = CropFlash::notCached();
+    flashHud(hud.title, hud.detail);
 }
 
 bool ImageView::handleNullEnterFullRaster(const QString &path, bool hadCrop)
@@ -231,7 +235,8 @@ void ImageView::captureApplyDraftMetrics(ImageItem *item, qreal *cropW, qreal *c
 
 void ImageView::flashCropBakeFailed()
 {
-    flashHud(tr("Crop"), tr("Crop bake failed"));
+    const CropFlash::Hud hud = CropFlash::bakeFailed();
+    flashHud(hud.title, hud.detail);
 }
 
 bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
@@ -252,7 +257,8 @@ bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
 
 void ImageView::flashCropResetHud()
 {
-    flashHud(tr("Crop reset"), tr("Full image"));
+    const CropFlash::Hud hud = CropFlash::reset();
+    flashHud(hud.title, hud.detail);
 }
 
 void ImageView::flashCropAppliedHud(ImageItem *item)
@@ -260,10 +266,9 @@ void ImageView::flashCropAppliedHud(ImageItem *item)
     if (!item) {
         return;
     }
-    flashHud(tr("Cropped"),
-             QStringLiteral("%1×%2")
-                 .arg(item->imageSize().width())
-                 .arg(item->imageSize().height()));
+    const CropFlash::Hud hud =
+        CropFlash::applied(item->imageSize().width(), item->imageSize().height());
+    flashHud(hud.title, hud.detail);
 }
 
 void ImageView::finalizeCropResetSuccess(ImageItem *item)
@@ -272,7 +277,7 @@ void ImageView::finalizeCropResetSuccess(ImageItem *item)
     emitCropApplyAppearance(cropRecordSessionId(item), item->path(), item, QImage(),
                             /*hasCrop=*/false);
     if (m_crop.shouldPushResetUndo(item->sourceImage().size())) {
-        pushCropAppearanceUndo(item, tr("Crop reset"));
+        pushCropAppearanceUndo(item, CropFlash::undoResetText());
     }
     flashCropResetHud();
 }
@@ -282,7 +287,7 @@ void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
 {
     commitItemSessionEdit(item);
     emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
-    pushCropAppearanceUndo(item, tr("Crop"));
+    pushCropAppearanceUndo(item, CropFlash::undoCropText());
     flashCropAppliedHud(item);
 }
 
@@ -290,12 +295,14 @@ void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
 
 void ImageView::flashCropNeedSingleTargetHud()
 {
-    flashHud(tr("Crop"), tr("Select a single image"));
+    const CropFlash::Hud hud = CropFlash::needSingleTarget();
+    flashHud(hud.title, hud.detail);
 }
 
 void ImageView::flashCropNoImageHud()
 {
-    flashHud(tr("Crop"), tr("No image"));
+    const CropFlash::Hud hud = CropFlash::noImage();
+    flashHud(hud.title, hud.detail);
 }
 
 ImageItem *ImageView::resolveCropEnterTarget()
@@ -668,7 +675,8 @@ void ImageView::acceptCropFullRasterReady(const QString &path, const QImage &ima
         ImageCache::put(path, image);
     }
     m_crop.clearAwaitingFull();
-    flashHud(tr("Crop"), tr("Full image ready"));
+    const CropFlash::Hud readyHud = CropFlash::fullReady();
+    flashHud(readyHud.title, readyHud.detail);
 }
 
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
@@ -1120,10 +1128,8 @@ void ImageView::finishCropApplyLayout(ImageItem *item)
 
 void ImageView::flashApplyHostStatusHud(CropSession::ApplyHostStatus hostSt)
 {
-    const QString msg = (hostSt == CropSession::ApplyHostStatus::NeedFull)
-                            ? tr("Full image not ready — try again")
-                            : tr("No pixels to crop");
-    flashHud(tr("Crop"), msg);
+    const CropFlash::Hud hud = CropFlash::applyHostStatus(hostSt);
+    flashHud(hud.title, hud.detail);
 }
 
 bool ImageView::flashApplyHostFailure(CropSession::ApplyHostStatus hostSt)

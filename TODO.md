@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1544-crop-flash.** Crop HUD copy in CropFlash; ImageView only flashHud.
+Prior: **1543**.
+
+### Change
+- `cropflash.h` — titles/details + undo strings (tr context `ImageView`).
+- All crop flash helpers and enter/leave HUD call sites use `CropFlash::*`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1544-crop-flash.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1543-crop-chrome-viewport-hold.** Shared ViewportUpdateHold; CropGeometry::chromePaintItems for chrome paint.
 Prior: **1542**.
 
