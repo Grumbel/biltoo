@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1632-workspace-quality-climb-controller.** Tier 5b: move ensureWorkspaceQualityClimb.
+Prior: **1631**.
+
+### Change
+- `DisplayPipelineController::ensureWorkspaceQualityClimb` — body from ImageView
+- `ImageView::ensureWorkspaceQualityClimb` thin-forwards to the controller
+- `friend class DisplayPipelineController` for private climb helpers (Tier 5b)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1632-workspace-quality-climb-controller.bundle HEAD
+```
+
+### Next
+- Move remaining PreferCache climbs (`scheduleImageModePreferCacheClimb`,
+  `ensureImageModeQualityClimb`, `scheduleImageModeNativeDecodeOnce`)
+- Replace friend with Host accessors when the surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1631-prefercache-edge-policy.** Pure PreferCache climb-target policy helpers.
 Prior: **1630**.
 

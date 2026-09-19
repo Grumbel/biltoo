@@ -1689,96 +1689,9 @@ void ImageView::applyWorkspaceLadderReady(const QString &path, int maxEdge,
 
 void ImageView::ensureWorkspaceQualityClimb()
 {
-    ASSERT_GUI_THREAD();
-    if (!isWorkspaceMode() || !m_pathRaster || !m_scene) {
-        return;
-    }
-    QList<ImageItem *> targets;
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            targets.append(ii);
-        }
-    }
-    if (targets.isEmpty()) {
-        // No selection: climb all on-canvas items (bounded).
-        int n = 0;
-        for (ImageItem *ii : m_items) {
-            if (!ii || ii->path().isEmpty()) {
-                continue;
-            }
-            targets.append(ii);
-            if (++n >= 8) {
-                break;
-            }
-        }
-    }
-    // Tile LOD for workspace items that need past soft max.
-    tickPrimaryTileLod(8);
-
-    for (ImageItem *ii : targets) {
-        if (!ii) {
-            continue;
-        }
-        const QString path = ii->path();
-        if (path.isEmpty()) {
-            continue;
-        }
-        if (isCropDraftLockedPath(path)) {
-            continue;
-        }
-        // Deep zoom: tiles own display; skip PreferCache whole-frame climb.
-        if (DisplayEdgePolicy::tilesOwnDisplay(ii->tileLodWanted(), false)) {
-            continue;
-        }
-        // Always measure need after the current view transform (zoom/pan).
-        const int needEdge = itemOnScreenNeedEdge(ii, /*allowHighRes=*/true);
-        const int have = ii->displayPixelLongEdge();
-        if (needEdge > 0 && have > 0 && DisplayEdgePolicy::coversEdge(have, needEdge)) {
-            continue;
-        }
-        const bool pending = m_pathRaster->isClimbPending(path);
-        syncItemDisplaySurface(ii, -1, pending);
-        const DisplaySurface::SurfaceId sid =
-            static_cast<DisplaySurface::SurfaceId>(ii->displaySurfaceId());
-        if (sid != DisplaySurface::kInvalidSurfaceId) {
-            m_displayPipeline.displaySurfaces().setNeed(sid, needEdge);
-        }
-        DisplaySurface::Action act =
-            (sid != DisplaySurface::kInvalidSurfaceId)
-                ? m_displayPipeline.displaySurfaces().evaluate(sid)
-                : DisplaySurface::decide(
-                      displaySurfaceStateForItem(ii, -1, pending));
-        if (act.type == DisplaySurface::ActionType::ScheduleClimb
-            && act.climbNeedEdge < needEdge) {
-            act.climbNeedEdge = needEdge;
-        }
-        // Decide may return None while still short (stale settle / Full shortfall).
-        // Force PathRaster escalate so Soft→Prefer→Full continues on zoom-in.
-        if (act.type == DisplaySurface::ActionType::None
-            && needEdge > 0 && !DisplayEdgePolicy::coversEdge(have, needEdge) && !pending) {
-            act.type = DisplaySurface::ActionType::ScheduleClimb;
-            act.climbNeedEdge = needEdge;
-        }
-        {
-            const auto pol =
-                ThumtooCache::hasDurableTilesKnown(path)
-                    ? PathRasterService::ClimbPolicy::SoftDisplay
-                    : PathRasterService::ClimbPolicy::EscalateToFull;
-            (void)applyDisplaySurfaceAction(ii, act, QImage(), needEdge, pol);
-        }
-        if (!DisplayEdgePolicy::coversEdge(ii->displayPixelLongEdge(), needEdge)
-            && (m_pathRaster->isGaveUp(path)
-                || (!m_pathRaster->isClimbPending(path)
-                    && act.type == DisplaySurface::ActionType::ScheduleClimb))) {
-            // PreferCache plateau short of need — native only when no durable tiles.
-            if (!ThumtooCache::hasDurableTilesKnown(path)
-                && (m_pathRaster->isGaveUp(path)
-                    || !m_pathRaster->isClimbPending(path))) {
-                scheduleImageModeNativeDecodeOnce(path);
-            }
-        }
-    }
+    m_displayPipeline.ensureWorkspaceQualityClimb();
 }
+
 
 void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
 {

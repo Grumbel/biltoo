@@ -1098,6 +1098,8 @@ protected:
     /** Forward drag/drop from the OpenGL viewport to the view handlers. */
     bool viewportEvent(QEvent *event) override;
 private:
+    // PreferCache climb bodies live on the controller (Tier 5b).
+    friend class DisplayPipelineController;
 
     // Phase 6 Tier 0: privatized methods — see REFACTOR.md / imageview_private_methods.inc
 #include "imageview_private_methods.inc"

@@ -47,6 +47,12 @@ public:
     QTimer *&tileLodZoomDebounce() { return m_tileLodZoomDebounce; }
     QTimer *tileLodZoomDebounce() const { return m_tileLodZoomDebounce; }
 
+    /**
+     * PreferCache / PathRaster quality climb for selected (or bounded) Workspace
+     * items. Body moved from ImageView (Tier 5b); ImageView thin-forwards.
+     */
+    void ensureWorkspaceQualityClimb();
+
 private:
     ImageView *m_view = nullptr; // not owned
     SessionLoadGate m_loadGate;
