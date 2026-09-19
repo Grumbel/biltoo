@@ -77,7 +77,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         qreal x = margin;
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
-            const qreal scale = availH / qMax(1.0, ns.height());
+            const qreal scale = axisFillScale(availH, ns.height());
             item->setItemScale(scale);
             item->setItemShear(0.0);
             const qreal w = ns.width() * scale;
@@ -90,7 +90,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         qreal y = margin;
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
-            const qreal scale = availW / qMax(1.0, ns.width());
+            const qreal scale = axisFillScale(availW, ns.width());
             item->setItemScale(scale);
             item->setItemShear(0.0);
             const qreal w = ns.width() * scale;
@@ -100,21 +100,18 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::Grid) {
-        const int cols = params.gridColumns > 0
-                             ? qMax(1, params.gridColumns)
-                             : qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
+        const int cols = resolvedColumns(n, params.gridColumns);
         // Width-driven square cells; vertical scroll. Fewer columns → larger tiles.
         // Previously cellH packed all rows into availH, which shrank tiles as
         // column count decreased (more rows into the same window height).
-        const qreal cellW = (availW - gap * qMax(0, cols - 1)) / cols;
+        const qreal cellW = cellAxisLength(availW, gap, cols);
         const qreal cellH = cellW;
         for (int i = 0; i < n; ++i) {
             ImageItem *item = items.at(i);
             const int col = i % cols;
             const int row = i / cols;
             const QSizeF ns = layoutSize(item);
-            const qreal scale = qMin(cellW / qMax(1.0, ns.width()),
-                                    cellH / qMax(1.0, ns.height()));
+            const qreal scale = containScale(cellW, cellH, ns.width(), ns.height());
             item->setItemScale(scale);
             item->setItemShear(0.0);
             const qreal cx = margin + col * (cellW + gap) + cellW / 2.0;
@@ -123,17 +120,14 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::GridCrop) {
-        const int cols = params.gridColumns > 0
-                             ? qMax(1, params.gridColumns)
-                             : qMax(1, static_cast<int>(std::ceil(std::sqrt(double(n)))));
-        const qreal cell = (availW - gap * qMax(0, cols - 1)) / cols;
+        const int cols = resolvedColumns(n, params.gridColumns);
+        const qreal cell = cellAxisLength(availW, gap, cols);
         for (int i = 0; i < n; ++i) {
             ImageItem *item = items.at(i);
             const int col = i % cols;
             const int row = i / cols;
             const QSizeF ns = layoutSize(item);
-            const qreal scale = qMax(cell / qMax(1.0, ns.width()),
-                                    cell / qMax(1.0, ns.height()));
+            const qreal scale = coverScale(cell, cell, ns.width(), ns.height());
             item->setItemScale(scale);
             item->setItemShear(0.0);
             item->setGalleryCellSize(QSizeF(cell, cell));
@@ -143,12 +137,12 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::Masonry) {
-        const int cols = qBound(1, params.masonryColumns, n);
-        const qreal colW = (availW - gap * qMax(0, cols - 1)) / cols;
+        const int cols = resolvedBandCount(params.masonryColumns, n);
+        const qreal colW = cellAxisLength(availW, gap, cols);
         QVector<qreal> colHeights(cols, 0.0);
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
-            const qreal scale = colW / qMax(1.0, ns.width());
+            const qreal scale = axisFillScale(colW, ns.width());
             item->setItemScale(scale);
             item->setItemShear(0.0);
             const qreal h = ns.height() * scale;
@@ -165,12 +159,12 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::MasonryRows) {
-        const int rows = qBound(1, params.masonryRows, n);
-        const qreal rowH = (availH - gap * qMax(0, rows - 1)) / rows;
+        const int rows = resolvedBandCount(params.masonryRows, n);
+        const qreal rowH = cellAxisLength(availH, gap, rows);
         QVector<qreal> rowWidths(rows, 0.0);
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
-            const qreal scale = rowH / qMax(1.0, ns.height());
+            const qreal scale = axisFillScale(rowH, ns.height());
             item->setItemScale(scale);
             item->setItemShear(0.0);
             const qreal w = ns.width() * scale;
@@ -188,8 +182,8 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         }
     } else if (params.mode == Mode::MasonryFill) {
         // Column masonry, then scale each column so heights match (clean rectangle).
-        const int cols = qBound(1, params.masonryColumns, n);
-        const qreal colW = (availW - gap * qMax(0, cols - 1)) / cols;
+        const int cols = resolvedBandCount(params.masonryColumns, n);
+        const qreal colW = cellAxisLength(availW, gap, cols);
         struct Entry {
             ImageItem *item = nullptr;
             QSizeF ns;
@@ -200,7 +194,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         QVector<qreal> colHeights(cols, 0.0);
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
-            const qreal scale = colW / qMax(1.0, ns.width());
+            const qreal scale = axisFillScale(colW, ns.width());
             const qreal h = ns.height() * scale;
             int best = 0;
             for (int c = 1; c < cols; ++c) {
@@ -243,8 +237,8 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         }
     } else if (params.mode == Mode::MasonryRowsFill) {
         // Row masonry, then scale each row so widths match (clean rectangle).
-        const int rows = qBound(1, params.masonryRows, n);
-        const qreal rowH = (availH - gap * qMax(0, rows - 1)) / rows;
+        const int rows = resolvedBandCount(params.masonryRows, n);
+        const qreal rowH = cellAxisLength(availH, gap, rows);
         struct Entry {
             ImageItem *item = nullptr;
             QSizeF ns;
@@ -255,7 +249,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         QVector<qreal> rowWidths(rows, 0.0);
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
-            const qreal scale = rowH / qMax(1.0, ns.height());
+            const qreal scale = axisFillScale(rowH, ns.height());
             const qreal w = ns.width() * scale;
             int best = 0;
             for (int r = 1; r < rows; ++r) {
@@ -297,11 +291,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     } else if (params.mode == Mode::Flow || params.mode == Mode::FlowFill) {
         // Order-preserving wrap: L→R then T→B. Width budget from columns.
         const bool fill = (params.mode == Mode::FlowFill);
-        const int cols = params.gridColumns > 0
-                             ? qMax(1, params.gridColumns)
-                             : 3;
+        const int cols = resolvedFlowColumns(params.gridColumns);
         const qreal layoutW = availW;
-        const qreal targetW = (layoutW - gap * qMax(0, cols - 1)) / qMax(1, cols);
+        const qreal targetW = cellAxisLength(layoutW, gap, cols);
 
         struct Entry {
             ImageItem *item = nullptr;
@@ -327,7 +319,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
 
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
-            const qreal scale = targetW / qMax(1.0, ns.width());
+            const qreal scale = axisFillScale(targetW, ns.width());
             const qreal w = ns.width() * scale;
             const qreal h = ns.height() * scale;
             if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
@@ -383,8 +375,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
 
         if (n >= 1) {
             const QSizeF ns = layoutSize(items.at(0));
-            const qreal scale = qMin(availW / qMax(1.0, ns.width()),
-                                    availH / qMax(1.0, ns.height()));
+            const qreal scale = containScale(availW, availH, ns.width(), ns.height());
             const QSizeF sz = placeScaled(items.at(0), scale, margin, y);
             y += sz.height() + gap;
             i = 1;
@@ -394,21 +385,21 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             ImageItem *left = items.at(i);
             ImageItem *right = (i + 1 < n) ? items.at(i + 1) : nullptr;
             const QSizeF nsL = layoutSize(left);
-            qreal scaleL = halfW / qMax(1.0, nsL.width());
+            qreal scaleL = axisFillScale(halfW, nsL.width());
             qreal scaleR = scaleL;
             if (right) {
                 const QSizeF nsR = layoutSize(right);
                 // Shared height: min of height-from-halfW for each page.
-                const qreal hFromL = nsL.height() * (halfW / qMax(1.0, nsL.width()));
-                const qreal hFromR = nsR.height() * (halfW / qMax(1.0, nsR.width()));
+                const qreal hFromL = nsL.height() * axisFillScale(halfW, nsL.width());
+                const qreal hFromR = nsR.height() * axisFillScale(halfW, nsR.width());
                 const qreal targetH = qMin(hFromL, hFromR);
-                scaleL = targetH / qMax(1.0, nsL.height());
-                scaleR = targetH / qMax(1.0, nsR.height());
+                scaleL = axisFillScale(targetH, nsL.height());
+                scaleR = axisFillScale(targetH, nsR.height());
                 if (nsL.width() * scaleL > halfW) {
-                    scaleL = halfW / qMax(1.0, nsL.width());
+                    scaleL = axisFillScale(halfW, nsL.width());
                 }
                 if (nsR.width() * scaleR > halfW) {
-                    scaleR = halfW / qMax(1.0, nsR.width());
+                    scaleR = axisFillScale(halfW, nsR.width());
                 }
             }
             const QSizeF szL = placeScaled(left, scaleL, margin, y);

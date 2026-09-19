@@ -46,6 +46,79 @@ struct Params {
     int gridColumns = 0;
 };
 
+/** Grid/Flow columns: explicit count or auto ceil(√n), always ≥ 1. */
+inline int resolvedColumns(int n, int gridColumns)
+{
+    if (gridColumns > 0) {
+        return gridColumns < 1 ? 1 : gridColumns;
+    }
+    if (n <= 0) {
+        return 1;
+    }
+    // ceil(sqrt(n)) without pulling <cmath> into every TU that includes this header.
+    int cols = 1;
+    while (cols * cols < n) {
+        ++cols;
+    }
+    return cols;
+}
+
+/** Flow/FlowFill columns: explicit or default 3 (not √n). */
+inline int resolvedFlowColumns(int gridColumns, int defaultCols = 3)
+{
+    if (gridColumns > 0) {
+        return gridColumns;
+    }
+    return defaultCols < 1 ? 1 : defaultCols;
+}
+
+/** Masonry column/row count clamped to [1, n] (n≤0 → 1). */
+inline int resolvedBandCount(int requested, int n)
+{
+    if (n <= 0) {
+        return 1;
+    }
+    if (requested < 1) {
+        return 1;
+    }
+    return requested > n ? n : requested;
+}
+
+/** Axis length of one cell when packing @p count bands into @p avail with @p gap. */
+inline qreal cellAxisLength(qreal avail, qreal gap, int count)
+{
+    const int c = count < 1 ? 1 : count;
+    const qreal gaps = gap * qreal(c > 0 ? c - 1 : 0);
+    return (avail - gaps) / qreal(c);
+}
+
+/** Scale to fit inside cell (contain). Native axes floored at 1. */
+inline qreal containScale(qreal cellW, qreal cellH, qreal nativeW, qreal nativeH)
+{
+    const qreal nw = nativeW > 1.0 ? nativeW : 1.0;
+    const qreal nh = nativeH > 1.0 ? nativeH : 1.0;
+    const qreal sx = cellW / nw;
+    const qreal sy = cellH / nh;
+    return sx < sy ? sx : sy;
+}
+
+/** Scale to cover cell (may crop). */
+inline qreal coverScale(qreal cellW, qreal cellH, qreal nativeW, qreal nativeH)
+{
+    const qreal nw = nativeW > 1.0 ? nativeW : 1.0;
+    const qreal nh = nativeH > 1.0 ? nativeH : 1.0;
+    const qreal sx = cellW / nw;
+    const qreal sy = cellH / nh;
+    return sx > sy ? sx : sy;
+}
+
+/** Scale so one axis fills @p cellAxis (width- or height-driven bands). */
+inline qreal axisFillScale(qreal cellAxis, qreal nativeAxis)
+{
+    const qreal na = nativeAxis > 1.0 ? nativeAxis : 1.0;
+    return cellAxis / na;
+}
+
 /**
  * Arrange @p items in scene coordinates. Clears gallery crop except for GridCrop.
  * @p afterEach is invoked after each item is placed (e.g. to snapshot state).
