@@ -98,95 +98,6 @@ void ImageView::setCropMode(bool on)
 }
 
 
-void ImageView::installKeepEnterDisplay(ImageItem *item, const WorkspaceItemState &contentOnly,
-                                        const ContentXform::Value &wantX, const QString &path)
-{
-    CropSession::applyKeepEnterFlags(item, contentOnly, wantX);
-    applyContentLayoutSize(item, contentOnly);
-    m_crop.markShowingFullImage();
-    CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);
-}
-
-
-void ImageView::installDraftEnterDisplay(ImageItem *item,
-                                         const CropSession::EnterInstallSample &sample,
-                                         const QImage &full, const QString &path)
-{
-    CropSession::clearItemFreePlacementForDraft(item);
-    CropDebug::draftEnterBegin(path, item->imageSize().width(), item->imageSize().height(),
-                               item->hasDecodedPixels(), sample.hadPriorCrop,
-                               ImageCache::longEdge(full));
-    CropSession::clearItemPixelsForDraftReinstall(item);
-    const WorkspaceItemState &contentOnly = sample.contentOnly;
-    const ContentXform::Value &wantX = sample.wantX;
-    attachDisplaySample(item, sample.display, contentOnly, sample.kind);
-    applyContentLayoutSize(item, contentOnly);
-    CropSession::applyEnterDraftFlags(item, wantX);
-    CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
-                              sample.display.width(), sample.display.height(),
-                              item->sessionHasCrop(), contentOnly.contentQuarterTurns);
-    m_crop.markShowingFullImage();
-}
-
-void ImageView::installEnterSampleDisplay(ImageItem *item,
-                                          const CropSession::EnterInstallSample &sample,
-                                          const QImage &full, const QString &path)
-{
-    const WorkspaceItemState &contentOnly = sample.contentOnly;
-    const ContentXform::Value &wantX = sample.wantX;
-    // Full-frame already on the item (no crop bake): keep those pixels.
-    // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
-    if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
-                                            sample.needGeomBake)) {
-        installKeepEnterDisplay(item, contentOnly, wantX, path);
-        return;
-    }
-    installDraftEnterDisplay(item, sample, full, path);
-}
-
-void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
-                                        const WorkspaceItemState *app, bool haveApp,
-                                        bool unorientedSource)
-{
-    if (!item || full.isNull()) {
-        return;
-    }
-    const QString path = item->path();
-    cancelPathRasterForCrop(path);
-    if (!full.isNull() && sampleCoversNativeLogical(path, full)) {
-        rememberSizeFromDecode(path, full);
-        QSize logical = logicalSizeForPath(path);
-        if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
-            rememberImageSize(path, full.size());
-        }
-    }
-    CropSession::maybePutUnorientedHostCache(
-        path, full, unorientedSource, sampleCoversNativeLogical(path, full));
-    const CropSession::EnterInstallSample sample =
-        CropSession::prepareEnterInstallSample(full, unorientedSource, app, haveApp);
-    installEnterSampleDisplay(item, sample, full, path);
-}
-
-void ImageView::installAndActivateCropEnter(ImageItem *item, const QImage &full,
-                                            const WorkspaceItemState *app, bool haveApp,
-                                            bool unorientedSource)
-{
-    // Workspace: lock scene footprint before intrinsic changes on install.
-    const QRectF beforeScene =
-        item ? item->mapRectToScene(item->contentRect()) : QRectF();
-    installFullImageForCrop(item, full, app, haveApp, unorientedSource);
-    if (item && isWorkspaceMode() && beforeScene.width() > 1.0
-        && beforeScene.height() > 1.0) {
-        alignItemCenterToScene(item, beforeScene.center());
-    }
-    m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
-                                       item->imageSize(), app, haveApp);
-    // Crop chrome + fitItem only after pixels and contentRect match the draft.
-    m_crop.activateModeAfterDraft();
-    fitImageOrUpdateWorkspace(item);
-    m_crop.clearAwaitingFull();
-}
-
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
 {
     if (!item) {
@@ -210,7 +121,61 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         flashCropHud(CropFlash::notCached());
         return false;
     }
-    installAndActivateCropEnter(item, enter.image, haveApp ? &app : nullptr, haveApp,
-                                enter.unoriented);
+
+    const QImage &full = enter.image;
+    const bool unorientedSource = enter.unoriented;
+    const WorkspaceItemState *appPtr = haveApp ? &app : nullptr;
+
+    // Workspace: lock scene footprint before intrinsic changes on install.
+    const QRectF beforeScene = item->mapRectToScene(item->contentRect());
+
+    // --- install full-frame draft pixels ---
+    cancelPathRasterForCrop(path);
+    if (!full.isNull() && sampleCoversNativeLogical(path, full)) {
+        rememberSizeFromDecode(path, full);
+        QSize logical = logicalSizeForPath(path);
+        if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
+            rememberImageSize(path, full.size());
+        }
+    }
+    CropSession::maybePutUnorientedHostCache(
+        path, full, unorientedSource, sampleCoversNativeLogical(path, full));
+    const CropSession::EnterInstallSample sample =
+        CropSession::prepareEnterInstallSample(full, unorientedSource, appPtr, haveApp);
+
+    const WorkspaceItemState &contentOnly = sample.contentOnly;
+    const ContentXform::Value &wantX = sample.wantX;
+    // Full-frame already on the item (no crop bake): keep those pixels.
+    // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
+    if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
+                                            sample.needGeomBake)) {
+        CropSession::applyKeepEnterFlags(item, contentOnly, wantX);
+        applyContentLayoutSize(item, contentOnly);
+        m_crop.markShowingFullImage();
+        CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);
+    } else {
+        CropSession::clearItemFreePlacementForDraft(item);
+        CropDebug::draftEnterBegin(path, item->imageSize().width(), item->imageSize().height(),
+                                   item->hasDecodedPixels(), sample.hadPriorCrop,
+                                   ImageCache::longEdge(full));
+        CropSession::clearItemPixelsForDraftReinstall(item);
+        attachDisplaySample(item, sample.display, contentOnly, sample.kind);
+        applyContentLayoutSize(item, contentOnly);
+        CropSession::applyEnterDraftFlags(item, wantX);
+        CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
+                                  sample.display.width(), sample.display.height(),
+                                  item->sessionHasCrop(), contentOnly.contentQuarterTurns);
+        m_crop.markShowingFullImage();
+    }
+
+    if (isWorkspaceMode() && beforeScene.width() > 1.0 && beforeScene.height() > 1.0) {
+        alignItemCenterToScene(item, beforeScene.center());
+    }
+    m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
+                                       item->imageSize(), appPtr, haveApp);
+    // Crop chrome + fitItem only after pixels and contentRect match the draft.
+    m_crop.activateModeAfterDraft();
+    fitImageOrUpdateWorkspace(item);
+    m_crop.clearAwaitingFull();
     return true;
 }

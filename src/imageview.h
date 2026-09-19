@@ -1728,24 +1728,9 @@ private:
      * Enter crop: show full on-disk pixels with prior crop as the draft rect
      * so the region can grow. Returns false if the image cannot be prepared.
      */
-    void installAndActivateCropEnter(ImageItem *item, const QImage &full,
-                                     const WorkspaceItemState *app, bool haveApp,
-                                     bool unorientedSource);
     bool prepareCropModeFullImage(ImageItem *item);
     bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
-    /** @p unorientedSource true when @p full is ImageCache/host raw (safe to bake). */
     void cancelPathRasterForCrop(const QString &path);
-    void installKeepEnterDisplay(ImageItem *item, const WorkspaceItemState &contentOnly,
-                                 const ContentXform::Value &wantX, const QString &path);
-    void installDraftEnterDisplay(ImageItem *item,
-                                  const CropSession::EnterInstallSample &sample,
-                                  const QImage &full, const QString &path);
-    void installEnterSampleDisplay(ImageItem *item,
-                                   const CropSession::EnterInstallSample &sample,
-                                   const QImage &full, const QString &path);
-    void installFullImageForCrop(ImageItem *item, const QImage &full,
-                                 const WorkspaceItemState *app, bool haveApp,
-                                 bool unorientedSource);
     /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
     void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /** Cancel path: put the session crop (if any) back on the live item. */

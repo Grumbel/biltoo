@@ -28,7 +28,7 @@ Preconditions: single subject, `hasDisplayPixels()`.
 
 1. Lock `m_cropTargetItem` / `m_cropTargetId` for the whole session.
 2. Snapshot enter state for Cancel (appearance + pixels if available).
-3. **Install orient-only full frame** (`installFullImageForCrop`):
+3. **Install orient-only full frame** (`prepareCropModeFullImage`):
    - Host = `ImageCache` unoriented preferred.
    - `contentOnly` = appearance with **crop cleared**.
    - `materializeDisplay(sample, contentOnly)` then `attachDisplaySample`.
@@ -50,7 +50,7 @@ Preconditions: single subject, `hasDisplayPixels()`.
    attach. All install / ladder / async rematerialize paths must key off the
    freeze (not `m_cropMode` alone). `m_cropMode` stays false until after the
    first draft attach so crop chrome does not paint on the old bake for a frame.
-   Cleared in `clearCropModeState`.
+   Cleared when leaving crop (`leaveCropModeInternal`).
 
 Gallery: does not host crop UI. Open the subject in Image mode, then enter
 (`hasDisplayPixels` is enough — soft is OK).

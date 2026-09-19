@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1575-crop-inline-enter-install-chain.** Collapse enter install helpers into prepareCropModeFullImage.
+Prior: **1574**.
+
+### Change
+- `installKeepEnterDisplay` / `installDraftEnterDisplay` / `installEnterSampleDisplay`
+  / `installFullImageForCrop` / `installAndActivateCropEnter` → body of
+  `prepareCropModeFullImage`
+- Docs: CROP_MODE.md + CONTENT_PIPELINE.md name update
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1575-crop-inline-enter-install-chain.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1574-crop-inline-leave-auto-enter.** Inline leave clear/chrome, auto-trim helpers, enter resolve/begin.
 Prior: **1573**.
 

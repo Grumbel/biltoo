@@ -130,7 +130,7 @@ filmstrip receives a full-frame override.
 
 
 Entering crop loads the full frame with content flips/turns only (no crop bake).
-`installFullImageForCrop` uses the same host rematerialize / attach path; multi-MP
+`prepareCropModeFullImage` uses the same host rematerialize / attach path; multi-MP
 falls back to incremental content bake + async pure rematerialize.
 
 Apply: record crop in session appearance under **crop target id**, materialize,
