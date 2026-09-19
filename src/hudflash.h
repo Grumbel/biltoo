@@ -23,6 +23,29 @@ struct HudFlash {
         action.clear();
         detail.clear();
     }
+
+    void show(const QString &act, const QString &det = QString())
+    {
+        action = act;
+        detail = det;
+        visible = true;
+        identityPulse = true;
+    }
+
+    void setIdentityPulse(bool on) { identityPulse = on; }
+
+    void setPausedLabel(const QString &label)
+    {
+        action = label;
+        detail.clear();
+        visible = false;
+    }
+
+    void clearAction()
+    {
+        action.clear();
+        detail.clear();
+    }
 };
 
 #endif // HUDFLASH_H

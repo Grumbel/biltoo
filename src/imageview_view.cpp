@@ -616,7 +616,7 @@ void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
     // Do not pulse on every statusChanged while total > 0 (AUDIT H7).
     // Slideshow auto-advance passes pulseIdentity=false.
     if (pulseIdentity && changed) {
-        m_hudFlash.identityPulse = true;
+        m_hudFlash.setIdentityPulse(true);
         if (m_hudFlashTimer) {
             m_hudFlashTimer->start(1000);
         }
@@ -703,10 +703,7 @@ void ImageView::setHudPanelColor(const QColor &color)
 
 void ImageView::flashHud(const QString &action, const QString &detail)
 {
-    m_hudFlash.action = action;
-    m_hudFlash.detail = detail;
-    m_hudFlash.visible = true;
-    m_hudFlash.identityPulse = true;
+    m_hudFlash.show(action, detail);
     if (m_hudFlashTimer) {
         m_hudFlashTimer->start(1000);
     }
@@ -1100,15 +1097,12 @@ void ImageView::setSlideshowPausedHud(bool on)
     if (on) {
         // Keep a stable action line for the permanent cue; flash timer must
         // not clear it (paint draws paused HUD independently of flash).
-        m_hudFlash.action = tr("❚❚  Paused");
-        m_hudFlash.detail.clear();
-        m_hudFlash.visible = false;
+        m_hudFlash.setPausedLabel(tr("❚❚  Paused"));
         if (m_hudFlashTimer) {
             m_hudFlashTimer->stop();
         }
     } else if (m_hudFlash.action.contains(QStringLiteral("Paused"))) {
-        m_hudFlash.action.clear();
-        m_hudFlash.detail.clear();
+        m_hudFlash.clearAction();
     }
     if (viewport()) {
         viewport()->update();

@@ -271,10 +271,7 @@ ImageView::ImageView(QWidget *parent)
         flushColorAdjustCommit();
     });
     connect(m_hudFlashTimer, &QTimer::timeout, this, [this]() {
-        m_hudFlash.visible = false;
-        m_hudFlash.identityPulse = false;
-        m_hudFlash.action.clear();
-        m_hudFlash.detail.clear();
+        m_hudFlash.clear();
         viewport()->update();
     });
 
