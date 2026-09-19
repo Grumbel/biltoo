@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1650-display-pipeline-jobs.** Shared load-job helpers for split controller TUs.
+Prior: **1649**.
+
+### Change
+- Extract `queuePreviewLoaded` / `queueImageLoaded` / `startSoftPreviewJob` /
+  `startDisplayQualityJob` / `loadSoftPreviewPixels` into `displaypipeline_jobs.{h,cpp}`
+- Fixes link/ODR gap: helpers lived in core TU anonymous namespace but were called from `_load.cpp`
+- CMakeLists lists the new source
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1650-display-pipeline-jobs.bundle HEAD
+```
+
+### Next
+- Path-order dual-write audit (view book stays local; document ownership is MainWindow)
+- Compile verification of split controller
+- Further Tier 6 pure extractions per REFACTOR.md
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1649-split-display-pipeline-controller.** Split DisplayPipelineController TUs.
 Prior: **1648**.
 

@@ -122,6 +122,8 @@ add_executable(biltoo
   src/displaypipelinecontroller.cpp
   src/displaypipelinecontroller_load.cpp
   src/displaypipelinecontroller_item.cpp
+  src/displaypipeline_jobs.cpp
+  src/displaypipeline_jobs.h
   src/displaypipelinecontroller.h
   src/gallerycontroller.h
   src/gallerysizeresolve.cpp

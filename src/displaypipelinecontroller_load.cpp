@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "displaypipelinecontroller.h"
+#include "displaypipeline_jobs.h"
 
 #include "tile_load_coordinator.h"
 
