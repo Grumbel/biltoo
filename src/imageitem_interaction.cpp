@@ -1392,16 +1392,19 @@ QString ImageItem::tileLodDebugLine() const
             .arg(name)
             .arg(displayPixelLongEdge());
     }
+    const int pathRam = static_cast<int>(
+        tilelod::TileLodRegistry::instance().path_succeeded_count(m_path));
     if (!m_tileLod || !m_tileLod->session()) {
-        return QStringLiteral("%1 wanted=1 session=0 disp=%2")
+        return QStringLiteral("%1 wanted=1 session=0 pathRam=%2 disp=%3")
             .arg(name)
+            .arg(pathRam)
             .arg(displayPixelLongEdge());
     }
     const tilelod::TileSession::DebugSnapshot s =
         m_tileLod->session()->debug_snapshot();
     return QStringLiteral(
                "%1 tgt=%2 des=%3 max=%4 vis=%5 exact=%6 inflight=%7 "
-               "cacheOk=%8 hold=%9 reached=%10 gen=%11 disp=%12")
+               "cacheOk=%8 hold=%9 reached=%10 gen=%11 pathRam=%12 disp=%13")
         .arg(name)
         .arg(s.target_scale)
         .arg(s.desired_scale)
@@ -1413,6 +1416,7 @@ QString ImageItem::tileLodDebugLine() const
         .arg(s.holding ? 1 : 0)
         .arg(s.reached_desired ? 1 : 0)
         .arg(static_cast<qulonglong>(s.generation))
+        .arg(pathRam)
         .arg(displayPixelLongEdge());
 }
 
