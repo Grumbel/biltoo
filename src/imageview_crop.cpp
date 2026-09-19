@@ -28,6 +28,19 @@
 #include <QPointer>
 #include <QMetaObject>
 
+namespace {
+
+CropGeometry::CropButtonLayout cropChromeButtons(const ImageView *view)
+{
+    CropGeometry::CropButtonLayout empty;
+    if (!view || !view->isCropMode() || !view->viewport()) {
+        return empty;
+    }
+    return CropGeometry::cropButtonLayout(view->cropRectView(), view->viewport()->rect());
+}
+
+} // namespace
+
 ImageItem *ImageView::cropTargetItem() const
 {
     // Crop session is bound to one subject for its entire lifetime. Never
@@ -1283,46 +1296,31 @@ QRectF ImageView::cropRectView() const
 
 QRect ImageView::cropExpandButtonView() const
 {
-    if (!m_crop.active()) {
-        return {};
-    }
-    const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
+    const CropGeometry::CropButtonLayout L = cropChromeButtons(this);
     return L.valid ? L.expand : QRect();
 }
 
 QRect ImageView::cropAutoButtonView() const
 {
-    if (!m_crop.active()) {
-        return {};
-    }
-    const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
+    const CropGeometry::CropButtonLayout L = cropChromeButtons(this);
     return L.valid ? L.autoBtn : QRect();
 }
 
 QRect ImageView::cropResetButtonView() const
 {
-    if (!m_crop.active()) {
-        return {};
-    }
-    const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
+    const CropGeometry::CropButtonLayout L = cropChromeButtons(this);
     return L.valid ? L.reset : QRect();
 }
 
 QRect ImageView::cropCancelButtonView() const
 {
-    if (!m_crop.active()) {
-        return {};
-    }
-    const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
+    const CropGeometry::CropButtonLayout L = cropChromeButtons(this);
     return L.valid ? L.cancel : QRect();
 }
 
 QRect ImageView::cropCloseButtonView() const
 {
-    if (!m_crop.active()) {
-        return {};
-    }
-    const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
+    const CropGeometry::CropButtonLayout L = cropChromeButtons(this);
     return L.valid ? L.apply : QRect();
 }
 
