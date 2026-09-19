@@ -59,6 +59,36 @@ public:
         clearDraft();
     }
 
+    /**
+ * Start rubber-band multi-select at @p origin (viewport).
+ * @p clearSelection when false keeps current selected (Shift additive).
+ */
+    void beginRubber(const QPoint &origin, bool clearSelection = true)
+    {
+        rubberbanding = true;
+        dragging = false;
+        gestureActive = false;
+        rubberOrigin = origin;
+        rubberRect = QRect(origin, QSize());
+        if (clearSelection) {
+            selected.clear();
+        }
+    }
+
+    /** Update rubber rect from origin to @p pos (viewport). */
+    void updateRubber(const QPoint &pos)
+    {
+        rubberRect = QRect(rubberOrigin, pos).normalized();
+    }
+
+    /** End rubber-band; keep selected indices. */
+    void endRubber()
+    {
+        rubberbanding = false;
+        rubberOrigin = {};
+        rubberRect = {};
+    }
+
     bool mode = false;
     bool dragging = false;
     bool rubberbanding = false;

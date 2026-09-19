@@ -491,14 +491,7 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
         return true;
     }
     // Plain / Shift click on empty: rubber-band select (additive with Shift).
-    m_attention.rubberbanding = true;
-    m_attention.dragging = false;
-    m_attention.gestureActive = false;
-    m_attention.rubberOrigin = event->pos();
-    m_attention.rubberRect = QRect(event->pos(), QSize());
-    if (!shift && !ctrl) {
-        m_attention.selected.clear();
-    }
+    m_attention.beginRubber(event->pos(), !shift && !ctrl);
     viewport()->update();
     event->accept();
     return true;
@@ -1053,7 +1046,7 @@ bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
         return false;
     }
     if (m_attention.rubberbanding) {
-        m_attention.rubberRect = ViewTransform::rubberRect(m_attention.rubberOrigin, event->pos());
+        m_attention.updateRubber(event->pos());
         viewport()->update();
         event->accept();
         return true;
@@ -1585,7 +1578,6 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
         return false;
     }
     if (m_attention.rubberbanding) {
-        m_attention.rubberbanding = false;
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()) {
             const QVector<QPointF> pts = attentionPointsForTarget();
@@ -1600,7 +1592,7 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
             m_attention.selected = AttentionGeometry::mergeSelection(
                 m_attention.selected, hit, shift);
         }
-        m_attention.rubberRect = QRect();
+        m_attention.endRubber();
         viewport()->update();
         event->accept();
         return true;
