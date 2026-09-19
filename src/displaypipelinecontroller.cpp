@@ -2056,5 +2056,135 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
     }
 }
 
+void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
+                                     int role)
+{
+    if (image.isNull()) {
+        return;
+    }
+    ImageCache::put(path, image);
+    // Soft job during slideshow must upgrade phase buffers (m_ssFrom/To), not
+    // only ImageCache — otherwise crossfade stays on empty/LQIP until preload.
+    if (m_view->m_slideshow.hud().isProgressActive()) {
+        m_view->m_slideshow.onSlideshowRasterReady(path, image);
+    }
+
+    // Replace navigations: drop superseded previews.
+    if (role == ImageView::LoadReplace) {
+        if (generation != loadGate().generation() || path != m_view->classicPath()) {
+            return;
+        }
+        if (m_view->isImageMode()) {
+            // Same install + climb policy as completeImageView::LoadReplace / ladderReady.
+            (void)tryInstallImageModeSample(path, image);
+            return;
+        }
+        // Empty multi-item canvas: fall through to per-item fill.
+    }
+
+    const int incoming = ImageCache::longEdge(image);
+
+    // Gallery: LQIP placeholder only. Soft PreferCache deliveries must not
+    // climb Gallery cells (filmstrip soft used SoftDisplay here).
+    if (m_view->isGalleryMode()) {
+        if (incoming > 0 && incoming <= DisplayQuality::kLqipMaxEdge) {
+            for (ImageItem *item : m_view->m_items) {
+                if (!item || item->path() != path || item->hasDisplayPixels()) {
+                    continue;
+                }
+                installDisplayPixels(item, image,
+                                     SessionAppearance::PixelKind::SoftPreview,
+                                     item->sessionId());
+            }
+            if (m_view->viewport()) {
+                m_view->viewport()->update();
+            }
+        }
+        return;
+    }
+
+    // Workspace: DisplaySurface::decide per item.
+    for (ImageItem *item : m_view->m_items) {
+        if (!item || item->path() != path) {
+            continue;
+        }
+        const bool climbPending =
+            m_view->m_pathRaster && m_view->m_pathRaster->isClimbPending(path);
+        syncItemDisplaySurface(item, incoming, climbPending);
+        DisplaySurface::State ds =
+            displaySurfaceStateForItem(item, incoming, climbPending);
+        const DisplaySurface::SurfaceId sid =
+            static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
+        const DisplaySurface::Action act =
+            (sid != DisplaySurface::kInvalidSurfaceId)
+                ? displaySurfaces().evaluate(sid)
+                : DisplaySurface::decide(ds);
+        const auto pol =
+            (!ThumtooCache::hasDurableTilesKnown(path))
+                ? PathRasterService::ClimbPolicy::EscalateToFull
+                : PathRasterService::ClimbPolicy::SoftDisplay;
+        (void)applyDisplaySurfaceAction(item, act, image, ds.needEdge, pol);
+    }
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    if (m_view->isWorkspaceMode()) {
+        ensureWorkspaceQualityClimb();
+    }
+}
+
+
+bool DisplayPipelineController::takePendingRestoreState(const QString &path, WorkspaceItemState *out)
+{
+    return loadGate().takePendingRestoreForPath(path, out);
+}
+
+
+void DisplayPipelineController::completeLoadRestore(const QString &path, const QImage &image)
+{
+    WorkspaceItemState state;
+    if (!takePendingRestoreState(path, &state) || image.isNull()) {
+        return;
+    }
+    // Do not apply path-keyed crop — restore uses this slot's own state
+    // (Workspace duplicates must not inherit another instance's crop).
+    ImageItem *item = m_view->createItemFromImage(path, image, /*applyStoredSessionCrop=*/false);
+    if (!item) {
+        return;
+    }
+    // Prefer live session-image appearance over the leave-mode snapshot when
+    // Image-mode edits updated m_appearance while Workspace was stashed.
+    WorkspaceItemState app = state;
+    if (state.sessionId != kInvalidSessionImageId) {
+        item->setSessionId(state.sessionId);
+        if (const WorkspaceItemState *it = appearance().get(state.sessionId)) {
+            app = *it;
+            // Keep placement from the snapshot.
+            app.pos = state.pos;
+            app.scale = state.scale;
+            app.scaleY = state.scaleY;
+            app.rotation = state.rotation;
+            app.opacity = state.opacity;
+            app.z = state.z;
+        }
+    }
+    if (state.sessionIndex >= 0) {
+        item->setSessionIndex(state.sessionIndex);
+    }
+    // Host is in ImageCache / item. Materialize store want (soft stand-in +
+    // async multi-MP). Do not bake chrome-only on multi-MP — cannot
+    // bake crop on the GUI and used to claim applied == want without pixels.
+    if (SessionAppearance::hasContentAppearance(app)
+        || !app.colorAdjust.isIdentity()) {
+        rematerializeItemContent(item, app);
+    }
+    m_view->applyState(item, app);
+    if (!m_layout.isFreeForm()
+        && !(m_view->isGalleryMode() && m_galleryRelayoutSuppress.active())) {
+        applyLayout(GalleryPackReason::SessionMutate);
+    }
+    emit m_view->statusChanged();
+    emit workspacePathsChanged();
+}
 
 

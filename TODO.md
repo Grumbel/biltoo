@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1644-preview-restore-controller.** Tier 5b: move preview/restore handlers.
+Prior: **1643**.
+
+### Change
+- DisplayPipelineController owns:
+  - `onImagePreviewLoaded`
+  - `takePendingRestoreState` / `completeLoadRestore`
+- ImageView thin-forwards
+- `imageview_load.cpp` ~1170 lines
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1644-preview-restore-controller.bundle HEAD
+```
+
+### Next
+- createItemFromImage / wantAppearance / appearance seed / edge helpers
+- Host accessors to replace friend; target load.cpp under 800 lines
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1643-schedule-gallery-controller.** Tier 5b: move scheduleImageLoad and gallery soft.
 Prior: **1642**.
 

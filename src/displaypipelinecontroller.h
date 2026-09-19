@@ -116,6 +116,10 @@ public:
     void gallerySoftResetAll();
     int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const;
     void scheduleGalleryDecode(const QString &path);
+    void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
+                              int role);
+    bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);
+    void completeLoadRestore(const QString &path, const QImage &image);
 
 private:
     ImageView *m_view = nullptr; // not owned
