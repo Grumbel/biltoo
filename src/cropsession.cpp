@@ -451,6 +451,16 @@ SessionAppearance::PixelKind CropSession::applyPixelKind(bool multiMp)
                    : SessionAppearance::PixelKind::FullSource;
 }
 
+
+void CropSession::seedEnterCropFlags(WorkspaceItemState *st, const ImageItem *item)
+{
+    if (!st || !item) {
+        return;
+    }
+    st->hasCrop = item->sessionHasCrop();
+    st->cropRect = item->sessionCropRect();
+}
+
 bool CropSession::locksPath(const QString &path) const
 {
     if (!draftSampleFrozen || path.isEmpty()) {
@@ -596,6 +606,8 @@ void CropSession::beginEnterSession(ImageItem *item, const QImage &enterSrc,
         item->setItemRotation(0.0);
         item->setItemShear(0.0);
     }
+    // Freeze tile LOD upgrades for the draft subject (cleared on leave).
+    item->setTileLodSuppressed(true);
 }
 
 void CropSession::releaseTargetTileLod()

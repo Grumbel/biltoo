@@ -118,14 +118,10 @@ bool ImageView::enterCropModeFromUi()
     // m_crop.active() stays false until after the first draft attach.
     QImage enterSrc = CropSession::pickEnterSnapshotPixels(item);
     WorkspaceItemState enterSt = captureState(item);
-    enterSt.hasCrop = item->sessionHasCrop();
-    enterSt.cropRect = item->sessionCropRect();
+    CropSession::seedEnterCropFlags(&enterSt, item);
     m_crop.beginEnterSession(item, enterSrc, enterSt,
                              !enterSrc.isNull() || item->hasDisplayPixels());
-    item->setTileLodSuppressed(true);
-    if (m_pathRaster && !m_crop.draftPathRef().isEmpty()) {
-        m_pathRaster->cancel(m_crop.draftPathRef());
-    }
+    cancelPathRasterForCrop(m_crop.draftPathRef());
     // Workspace: remember displayed image centre so the crop frame can stay fixed.
     const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
     // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
@@ -225,6 +221,25 @@ bool ImageView::isCropDraftLockedPath(const QString &path) const
     return m_crop.locksResolvedPath(path, boundPath);
 }
 
+void ImageView::cancelPathRasterForCrop(const QString &path)
+{
+    if (m_pathRaster && !path.isEmpty()) {
+        m_pathRaster->cancel(path);
+    }
+}
+
+void ImageView::rememberCropEnterSizes(const QString &path, const QImage &full)
+{
+    if (full.isNull() || !sampleCoversNativeLogical(path, full)) {
+        return;
+    }
+    rememberSizeFromDecode(path, full);
+    QSize logical = logicalSizeForPath(path);
+    if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
+        rememberImageSize(path, full.size());
+    }
+}
+
 void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                                         const WorkspaceItemState *app, bool haveApp,
                                         bool unorientedSource)
@@ -237,16 +252,8 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     // logical size.
     const QString path = item->path();
     // Freeze quality climb for this path — draft sample must not thrash.
-    if (m_pathRaster && !path.isEmpty()) {
-        m_pathRaster->cancel(path);
-    }
-    if (sampleCoversNativeLogical(path, full)) {
-        rememberSizeFromDecode(path, full);
-        QSize logical = logicalSizeForPath(path);
-        if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
-            rememberImageSize(path, full.size());
-        }
-    }
+    cancelPathRasterForCrop(path);
+    rememberCropEnterSizes(path, full);
     // Host cache is undecoded-appearance *source* only (never crop-baked display).
     CropSession::maybePutUnorientedHostCache(
         path, full, unorientedSource, sampleCoversNativeLogical(path, full));

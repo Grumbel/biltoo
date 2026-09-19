@@ -362,10 +362,14 @@ public:
 
     /**
      * Bind target, enter snapshot, and zero placement rotation for crop grips.
-     * Host still owns PathRaster cancel, tile LOD suppress, and full-frame install.
+     * Host still owns PathRaster cancel and full-frame install.
+     * Suppresses tile LOD on the bound item until leave.
      */
     void beginEnterSession(ImageItem *item, const QImage &enterSrc,
                            const WorkspaceItemState &enterSt, bool snapshotValid);
+
+    /** Copy live session crop flags from @p item into enter-state bag. */
+    static void seedEnterCropFlags(WorkspaceItemState *st, const ImageItem *item);
 
     void stashPlacement(qreal rot, qreal shear)
     {
