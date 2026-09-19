@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1427-tile-env-budget-prefetch-evict.** Env RAM/idle caps; smarter prefetch eviction.
+Prior: **1424**. Commits 1425–1427.
+
+### Commits
+1. **1425** `apply_environment_overrides` + non-zero budget floor
+2. **1426** `main` applies overrides at startup
+3. **1427** Prefetch max-slot eviction by lowest `ticksLeft`
+
+### Env
+- `BILTOO_TILE_RAM_MIB` (default 384)
+- `BILTOO_TILE_MAX_IDLE` (default 64)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1427-tile-env-budget-prefetch-evict.bundle HEAD
+```
+Requires tip **1424**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1424-tile-prefetch-slots-warm-debug.** Prefetch max slots; shared warm min; debug_summary.
 Prior: **1421**. Commits 1422–1424.
 

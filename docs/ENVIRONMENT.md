@@ -58,6 +58,8 @@ PreferCache **TileSynth** only when durable tiles are known; else
 | **`BILTOO_THUMTOO_PIXEL_JOBS`** | 8 | 1–16 | Max concurrent thumtoo `request_pixels` jobs (soft/ladder band). |
 | **`BILTOO_GALLERY_DECODE_CONCURRENCY`** | (compile-time `kMaxConcurrentGalleryDecodes`) | 1–32 | Concurrent Gallery decode-window LQIP installs (historical name). |
 | **`BILTOO_FILMSTRIP_THUMB_LOADS`** | 24 | 1–64 | Concurrent filmstrip thumbnail load jobs (separate from thumtoo pixel jobs). |
+| **`BILTOO_TILE_RAM_MIB`** | 384 | 1–1048575 | Process-wide Succeeded tile RAM budget for `TileLodRegistry` (MiB). |
+| **`BILTOO_TILE_MAX_IDLE`** | 64 | 1–99999 | Max zero-ref path entries retained for A→B→A / mode-switch reuse. |
 
 ---
 

@@ -379,6 +379,9 @@ retained RAM binds with zero applied completions; runtime A→B→A notes.
 **biltoo-1422–1424:** Shared `kWarmSucceededMin`; prefetch max 4 slots;
 `debug_summary()` for tile-coord (includes maxIdle).
 
+**biltoo-1425–1427:** `BILTOO_TILE_RAM_MIB` / `BILTOO_TILE_MAX_IDLE` env overrides;
+prefetch evicts lowest `ticksLeft` when full.
+
 **biltoo-1412–1415:** O(1) `approx_bytes`; named `kPrefetchWarmSucceededMin`;
 `tileLodHasPathRam` for coordinator priority and immediate tick after Image ←/→
 when retained tiles exist.
@@ -452,6 +455,10 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Global path retention + 384 MiB LRU (1212) | Done |
 | Path identity + retained replan (1400–1405) | Done |
 | O(1) succeeded count/bytes; warm prefetch (1406–1415) | Done |
+| Idle path cap; pathRam debug; Gallery restore tick (1416–1418) | Done |
+| Coordinator makeCand; retained zero-applied paint (1419–1421) | Done |
+| Prefetch slot cap; warm min; debug_summary (1422–1424) | Done |
+| Env budget overrides; prefetch eviction (1425–1427) | Done |
 | Parent protect + parent prefetch | Done |
 | HiDPI, scale hold, coverage heartbeat | Done |
 | ContentXform axis-aligned map | Done |
