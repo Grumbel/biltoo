@@ -4,6 +4,7 @@
 #include "imageitem.h"
 #include "cropgeometry.h"
 #include "tilelod/tile_lod_controller.hpp"
+#include "tilelod/tile_lod_registry.hpp"
 #include "displayquality.h"
 #include "imagecache.h"
 #include <QFileInfo>
@@ -73,6 +74,8 @@ void ImageItem::setPath(const QString &path)
     m_tileLodLastDpc = -1.0;
     m_tileLodLastVisSource = QRectF();
     clearTileGradedCache();
+    // Prefer this path under global LRU when the user navigates back soon.
+    tilelod::TileLodRegistry::instance().touch(m_path);
 }
 
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)
