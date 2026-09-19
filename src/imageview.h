@@ -1791,6 +1791,9 @@ private:
                                   const QImage &full, const QString &path);
     void prepareEnterInstallHost(const QString &path, const QImage &full,
                                 bool unorientedSource);
+    void installEnterSampleDisplay(ImageItem *item,
+                                   const CropSession::EnterInstallSample &sample,
+                                   const QImage &full, const QString &path);
     void installFullImageForCrop(ImageItem *item, const QImage &full,
                                  const WorkspaceItemState *app, bool haveApp,
                                  bool unorientedSource);

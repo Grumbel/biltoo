@@ -537,6 +537,23 @@ void ImageView::prepareEnterInstallHost(const QString &path, const QImage &full,
         path, full, unorientedSource, sampleCoversNativeLogical(path, full));
 }
 
+
+void ImageView::installEnterSampleDisplay(ImageItem *item,
+                                          const CropSession::EnterInstallSample &sample,
+                                          const QImage &full, const QString &path)
+{
+    const WorkspaceItemState &contentOnly = sample.contentOnly;
+    const ContentXform::Value &wantX = sample.wantX;
+    // Full-frame already on the item (no crop bake): keep those pixels.
+    // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
+    if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
+                                            sample.needGeomBake)) {
+        installKeepEnterDisplay(item, contentOnly, wantX, path);
+        return;
+    }
+    installDraftEnterDisplay(item, sample, full, path);
+}
+
 void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                                         const WorkspaceItemState *app, bool haveApp,
                                         bool unorientedSource)
@@ -548,17 +565,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     prepareEnterInstallHost(path, full, unorientedSource);
     const CropSession::EnterInstallSample sample =
         CropSession::prepareEnterInstallSample(full, unorientedSource, app, haveApp);
-    const WorkspaceItemState &contentOnly = sample.contentOnly;
-    const ContentXform::Value &wantX = sample.wantX;
-
-    // Full-frame already on the item (no crop bake): keep those pixels.
-    // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
-    if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
-                                            sample.needGeomBake)) {
-        installKeepEnterDisplay(item, contentOnly, wantX, path);
-        return;
-    }
-    installDraftEnterDisplay(item, sample, full, path);
+    installEnterSampleDisplay(item, sample, full, path);
 }
 
 void ImageView::activateCropModeAfterInstall(ImageItem *item)
