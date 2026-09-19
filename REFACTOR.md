@@ -136,6 +136,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ColorAdjustments::matches**; **layoutIsGridFamily** / **layoutNeedsAllSizes**.
 - **ViewFraming** sticky enable/kind; **GalleryController::setPendingRestore**; **ImageSizeBook::take**.
 - **ColorAdjustments::fromDurableGrade** for XDG appearance seed.
+- **GallerySoftBook::setDeferPopulate**; **SessionIdentity** position/id transitions.
+- **GroupTransformSession** / **PageGuideSession** setHoverHandle report change.
 
 
 ## Current pain (evidence)

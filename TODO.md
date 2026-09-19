@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1392-defer-sessionpos-hover-handles.** Bag transitions on tip 1391.
+Prior: **1391**.
+
+### Change
+1. `GallerySoftBook::setDeferPopulate` reports change
+2. `SessionIdentity::{setPosition,setCurrentId}` report change
+3. `GroupTransformSession::setHoverHandle` reports change
+4. `PageGuideSession::setHoverHandle` reports change
+
+### Apply
+```bash
+git pull /path/to/biltoo-1392-defer-sessionpos-hover-handles.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1392).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1391-sticky-pending-size-take-durable-grade.** Bag transitions on tip 1390.
 Prior: **1390**.
 
