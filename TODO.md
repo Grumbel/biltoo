@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1533-crop-session-enter-overlay.** Enter/HUD/overlay helpers on tip 1532.
+Prior: **1532** (`5f81846`). Full stack from origin tip **1527** (`24da05b`).
+
+### Commits
+1. logKeepEnterDisplay, logDraftEnterBegin/Done
+2. flashCropBakeFailed, flashCropResetHud, flashCropAppliedHud
+3. completeCropEnterUnderHold
+4. paintCropOverlayBody, installApplyDisplayGeometry
+5. relayoutAfterCropLeave
+
+### Apply (on tip **1527** / `24da05b` / origin/master)
+```bash
+git fetch origin && git merge --ff-only origin/master
+git pull --ff-only /path/to/biltoo-1533-crop-session-enter-overlay.bundle HEAD
+```
+Full stack from origin tip 1527. `git bundle verify` requires **`24da05b`**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1532-crop-session-drag-enter.** Drag/rubber/enter helpers on tip 1531.
 Prior: **1531** (`7cc1873`). Many small commits.
 
