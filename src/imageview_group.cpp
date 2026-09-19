@@ -41,7 +41,7 @@ bool ImageView::beginGroupScale(int handle, const QList<ImageItem *> &items)
 
 void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers mods)
 {
-    if (!m_groupXform.scaleDrag || !m_groupXform.dragListsAligned()) {
+    if (!m_groupXform.isScaleDrag() || !m_groupXform.dragListsAligned()) {
         return;
     }
     // Drop any pointers no longer on our canvas (deleted mid-drag).
@@ -123,7 +123,7 @@ void ImageView::endGroupScale()
 
 void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods)
 {
-    if (!m_groupXform.rotateDrag || !m_groupXform.dragListsAligned()) {
+    if (!m_groupXform.isRotateDrag() || !m_groupXform.dragListsAligned()) {
         return;
     }
     for (int i = m_groupXform.dragCount() - 1; i >= 0; --i) {

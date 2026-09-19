@@ -35,6 +35,10 @@ public:
 
     bool active() const { return scaleDrag || rotateDrag; }
 
+    bool isScaleDrag() const { return scaleDrag; }
+
+    bool isRotateDrag() const { return rotateDrag; }
+
     /** @return true when hover handle index changed. */
     bool setHoverHandle(int h)
     {

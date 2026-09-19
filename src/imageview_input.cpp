@@ -1020,13 +1020,13 @@ bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
     if (!m_attention.active() || !isImageMode()) {
         return false;
     }
-    if (m_attention.rubberbanding) {
+    if (m_attention.isRubberbanding()) {
         m_attention.updateRubber(event->pos());
         viewport()->update();
         event->accept();
         return true;
     }
-    if (m_attention.dragging) {
+    if (m_attention.isDragging()) {
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()
             && !m_attention.selected.isEmpty()
@@ -1235,13 +1235,13 @@ bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
 {
-    if (m_groupXform.scaleDrag) {
+    if (m_groupXform.isScaleDrag()) {
         updateGroupScale(mapToScene(event->pos()), event->modifiers());
         viewport()->update();
         event->accept();
         return true;
     }
-    if (m_groupXform.rotateDrag) {
+    if (m_groupXform.isRotateDrag()) {
         updateGroupRotate(mapToScene(event->pos()), event->modifiers());
         viewport()->update();
         event->accept();
@@ -1298,7 +1298,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
     if (isWorkspaceMode() && m_tool == Tool::Select && !m_itemInteract.isHandleDragging()
-        && !m_groupXform.scaleDrag && !m_groupXform.rotateDrag && !m_chrome.isPanning()) {
+        && !m_groupXform.isScaleDrag() && !m_groupXform.isRotateDrag() && !m_chrome.isPanning()) {
         const QPointF scenePos = mapToScene(event->pos());
         QList<ImageItem *> candidates;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
@@ -1542,7 +1542,7 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
     if (!m_attention.active() || event->button() != Qt::LeftButton) {
         return false;
     }
-    if (m_attention.rubberbanding) {
+    if (m_attention.isRubberbanding()) {
         ImageItem *item = targetItem();
         if (item && !item->contentRect().isEmpty()) {
             const QVector<QPointF> pts = attentionPointsForTarget();
@@ -1562,7 +1562,7 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
         event->accept();
         return true;
     }
-    if (m_attention.dragging) {
+    if (m_attention.isDragging()) {
         m_attention.endPointDrag();
         attentionCommitSelectionMove();
         event->accept();
@@ -1624,11 +1624,11 @@ bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
 {
-    if (!(m_groupXform.scaleDrag || m_groupXform.rotateDrag) || event->button() != Qt::LeftButton) {
+    if (!(m_groupXform.isScaleDrag() || m_groupXform.isRotateDrag()) || event->button() != Qt::LeftButton) {
         return false;
     }
     if (m_undoStack && !m_groupXform.dragItems.isEmpty()) {
-        m_undoStack->beginMacro(m_groupXform.rotateDrag ? tr("Rotate selection")
+        m_undoStack->beginMacro(m_groupXform.isRotateDrag() ? tr("Rotate selection")
                                                   : tr("Scale selection"));
         for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
             ImageItem *item = m_groupXform.dragItems.at(i);
