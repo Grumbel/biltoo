@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1444-invalidate-shared-purge-path.** In-place invalidate; purgeTilePathRam.
+Prior: **1441**. Commits 1442–1444.
+
+### Commits
+1. **1442** `TileLodRegistry::invalidate` clears cache in place when still referenced
+2. **1443** `dropTileLodSession` vs `invalidateTilePathRam`
+3. **1444** `ImageView::purgeTilePathRam`; reloadFromDisk uses it for multi-item paths
+
+### Apply
+```bash
+git pull /path/to/biltoo-1444-invalidate-shared-purge-path.bundle HEAD
+```
+Requires tip **1441**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1441-reload-invalidate-tile-path-ram.** Reload purges global path tiles.
 Prior: **1438**. Commits 1439–1441.
 

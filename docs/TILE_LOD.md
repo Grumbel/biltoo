@@ -348,9 +348,11 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
    when a path already has this many Succeeded tiles in global RAM.
 7. **Paint identity by path** — draw only from `cache[item->path()]`; re-acquire
    after A→B→A rebinds the same retained entry.
-8. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
-   **Reload** (`ImageItem::invalidateTilePathRam`) drops the item session and
-   purges the path so disk changes cannot leave stale grid cells in RAM.
+8. **`invalidate(path)`** cancels in-flight fetches and **clears the shared
+   cache in place** when other controllers still hold the entry; erases only
+   when idle. **Reload** uses `ImageView::purgeTilePathRam` (all live items for
+   the path + registry purge + prefetch drop) so disk changes cannot leave
+   stale grid cells in RAM.
 9. **Neighbor prefetch (1213 / 1214):** on Image-mode nav settle,
    `prefetchTilesForPaths` binds a short-lived `TileLodController` per ±1 path
    and **pumps it on a 33 ms timer** until overview coverage / idle / tick cap
@@ -362,7 +364,7 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
 keeps identity correct.
 
-**Global path RAM tip history (1400–1441):**
+**Global path RAM tip history (1400–1444):**
 
 | Range | Summary |
 |-------|---------|
@@ -380,6 +382,7 @@ keeps identity correct.
 | **1432–1435** | Trim debug log; `dropTilePrefetchPath`; destroyCanvasItem wire; PERFORMANCE |
 | **1436–1438** | Completion touches path LRU; env override debug log; rule renumber |
 | **1439–1441** | `invalidateTilePathRam`; reloadFromDisk purges path RAM + prefetch |
+| **1442–1444** | In-place shared invalidate; `purgeTilePathRam` for multi-item paths |
 
 ### Session / archive replace (biltoo-1233 / 1234)
 
