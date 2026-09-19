@@ -744,12 +744,6 @@ public:
     /** Discard the draft and leave crop mode. */
     void cancelCrop();
     /** Restore pixels + session crop metadata (used by crop undo/redo). */
-    void storeAppearanceFromState(ImageItem *item, const WorkspaceItemState &state);
-    void relayoutAfterAppearanceApply(ImageItem *item);
-    void applyCropAppearancePixels(ImageItem *item, const QImage &src,
-                                   const WorkspaceItemState &state);
-    void clearIdentityContentAppearance(ImageItem *item,
-                                        const WorkspaceItemState &state);
     void applyCropAppearance(ImageItem *item, const QImage &src,
                             const WorkspaceItemState &state);
 
@@ -1604,8 +1598,6 @@ private:
      * Apply stored session appearance (crop + content bakes) for @p item's
      * session id / index / unbound path. Pixels must be the full on-disk image.
      */
-    void applyStoredAppearancePixels(ImageItem *item, const WorkspaceItemState &app,
-                                     SessionImageId sid);
     const WorkspaceItemState *resolveStoredAppearance(ImageItem *item,
                                                        WorkspaceItemState *fallback,
                                                        SessionImageId *sidOut);
@@ -1632,7 +1624,6 @@ private:
     void recordSessionCrop(ImageItem *item, const QRectF &localCrop);
 
     // CropHandle is defined in cropsession.h
-    ImageItem *resolveInactiveCropTarget() const;
     ImageItem *cropTargetItem() const;
     ImageItem *cropSessionBoundItem() const;
     SessionImageId cropRecordSessionId(const ImageItem *item) const;
@@ -1649,16 +1640,6 @@ private:
     bool cropAllowExpand() const { return m_crop.isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
-    void paintCropRotateAndMoveGrips(QPainter &painter, const QPolygonF &cropViewPoly);
-    void paintCropFrameDecorations(QPainter &painter, const QPolygonF &cropViewPoly);
-    static QString cropChromeButtonLabel(CropHandle kind);
-    void paintCropChromeButton(QPainter &painter, const QRect &btn, CropHandle kind,
-                               const QString &label, CropGeometry::CropBtnRole role,
-                               bool toggled = false);
-    void paintCropChromeButtons(QPainter &painter);
-    void paintCropSizeBadge(QPainter &painter, const QRect &cropView);
-    void paintCropOverlayBody(QPainter &painter, const QPolygonF &cropViewPoly,
-                              const QRect &cropView);
     void paintCropOverlay(QPainter &painter);
     void paintAttentionOverlay(QPainter &painter);
     int attentionHandleIndexAt(const QPoint &viewPos) const;

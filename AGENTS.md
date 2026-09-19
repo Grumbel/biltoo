@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-1577-crop-inline-raster-restore-enter**.
-Latest tip: **biltoo-1577-crop-inline-raster-restore-enter**. Next bundle number: **1578**
+Latest agent handoff: **TODO.md → biltoo-1578-crop-inline-paint-appearance-target**.
+Latest tip: **biltoo-1578-crop-inline-paint-appearance-target**. Next bundle number: **1579**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

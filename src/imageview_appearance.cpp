@@ -15,22 +15,6 @@
 #include "sessionappearance.h"
 #include "thumtoocache.h"
 
-void ImageView::applyStoredAppearancePixels(ImageItem *item, const WorkspaceItemState &app,
-                                            SessionImageId sid)
-{
-    const bool needsFullSource = app.hasCrop || app.contentHFlip || app.contentVFlip
-        || app.contentQuarterTurns != 0;
-    if (needsFullSource) {
-        const QImage full = fullRasterForEdit(item->path());
-        if (!full.isNull()) {
-            installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
-                                 sid);
-            return;
-        }
-    }
-    rematerializeItemContent(item, app);
-}
-
 const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
                                                              WorkspaceItemState *fallback,
                                                              SessionImageId *sidOut)
@@ -73,7 +57,17 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     if (!app) {
         return;
     }
-    applyStoredAppearancePixels(item, *app, sid);
+    const bool needsFullSource = app->hasCrop || app->contentHFlip || app->contentVFlip
+        || app->contentQuarterTurns != 0;
+    if (needsFullSource) {
+        const QImage full = fullRasterForEdit(item->path());
+        if (!full.isNull()) {
+            installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
+                                 sid);
+            return;
+        }
+    }
+    rematerializeItemContent(item, *app);
 }
 
 void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
@@ -141,35 +135,6 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
 }
 
 
-void ImageView::storeAppearanceFromState(ImageItem *item, const WorkspaceItemState &state)
-{
-    if (!item) {
-        return;
-    }
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_sessionId.currentIdValue();
-    }
-    WorkspaceItemState slot = state;
-    slot.sessionId = sid;
-    slot.path = item->path();
-    storeCropAppearance(item, sid, slot);
-}
-
-void ImageView::relayoutAfterAppearanceApply(ImageItem *item)
-{
-    if (isImageMode()) {
-        m_framing.armFit();
-        fitItem(item, currentFitAspectMode());
-    } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    if (viewport()) {
-        viewport()->update();
-    }
-    emit statusChanged();
-}
-
 void ImageView::restoreSessionCropAppearance(ImageItem *item)
 {
     if (!item) {
@@ -200,35 +165,6 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     fitImageOrUpdateWorkspace(item);
 }
 
-void ImageView::applyCropAppearancePixels(ImageItem *item, const QImage &src,
-                                          const WorkspaceItemState &state)
-{
-    if (!item) {
-        return;
-    }
-    if (!src.isNull()) {
-        attachDisplaySample(item, src, state, SessionAppearance::PixelKind::FullSource);
-        return;
-    }
-    item->setSessionCrop(state.hasCrop, state.cropRect);
-    item->setContentHFlip(state.contentHFlip);
-    item->setContentVFlip(state.contentVFlip);
-    item->setAppliedContentXform(ContentXform::Value::fromState(state));
-}
-
-
-void ImageView::clearIdentityContentAppearance(ImageItem *item, const WorkspaceItemState &state)
-{
-    if (!item) {
-        return;
-    }
-    // Undo back to identity: commit no longer writes identity (avoids wiping
-    // good rows on noisy commits), so clear durable state explicitly.
-    if (!SessionAppearance::hasContentAppearance(state)) {
-        ThumtooCache::clearContentAppearance(item->path());
-    }
-}
-
 void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
                                     const WorkspaceItemState &state)
 {
@@ -236,16 +172,45 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
         return;
     }
     // Undo/redo after-image: pixels are already content-baked — attach only.
-    applyCropAppearancePixels(item, src, state);
+    if (!src.isNull()) {
+        attachDisplaySample(item, src, state, SessionAppearance::PixelKind::FullSource);
+    } else {
+        item->setSessionCrop(state.hasCrop, state.cropRect);
+        item->setContentHFlip(state.contentHFlip);
+        item->setContentVFlip(state.contentVFlip);
+        item->setAppliedContentXform(ContentXform::Value::fromState(state));
+    }
     applyState(item, state);
     // Seed appearance with the full state (including cropRotation) before
     // commitItemSessionEdit, which rebuilds the slot via captureState.
-    storeAppearanceFromState(item, state);
+    {
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId && isImageMode()) {
+            sid = m_sessionId.currentIdValue();
+        }
+        WorkspaceItemState slot = state;
+        slot.sessionId = sid;
+        slot.path = item->path();
+        storeCropAppearance(item, sid, slot);
+    }
     // Appearance persistence is commitItemSessionEdit → m_appearance (by id).
     // Do not write crop state into the path map for bound tiles.
     commitItemSessionEdit(item);
-    clearIdentityContentAppearance(item, state);
-    relayoutAfterAppearanceApply(item);
+    // Undo back to identity: commit no longer writes identity (avoids wiping
+    // good rows on noisy commits), so clear durable state explicitly.
+    if (!SessionAppearance::hasContentAppearance(state)) {
+        ThumtooCache::clearContentAppearance(item->path());
+    }
+    if (isImageMode()) {
+        m_framing.armFit();
+        fitItem(item, currentFitAspectMode());
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
 }
 
 void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,

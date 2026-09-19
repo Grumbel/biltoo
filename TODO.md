@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1578-crop-inline-paint-appearance-target.** Collapse paint overlay, appearance-apply, stored-pixels, inactive target.
+Prior: **1577**.
+
+### Change
+- `paintCropChromeButton` / `cropChromeButtonLabel` / `paintCropChromeButtons` /
+  `paintCropRotateAndMoveGrips` / `paintCropFrameDecorations` / `paintCropSizeBadge` /
+  `paintCropOverlayBody` → body of `paintCropOverlay`
+- `applyCropAppearancePixels` / `storeAppearanceFromState` /
+  `clearIdentityContentAppearance` / `relayoutAfterAppearanceApply` → body of
+  `applyCropAppearance`
+- `applyStoredAppearancePixels` → body of `applyStoredAppearance`
+- `resolveInactiveCropTarget` → body of `cropTargetItem`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1578-crop-inline-paint-appearance-target.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1577-crop-inline-raster-restore-enter.** Inline raster schedule/accept, restore pixel chain, enter complete, thin wrappers.
 Prior: **1576**.
 
