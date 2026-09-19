@@ -230,6 +230,15 @@ public:
     /** Apply stashed placement rotation/shear to @p item when stash is valid. */
     void restoreStashedPlacement(ImageItem *item) const;
 
+    /** After Apply/Cancel: restore placement unless commit kept crop-frame rotation. */
+    void finishLeave(ImageItem *item, bool preserveCropFrameRotation) const
+    {
+        if (item && !preserveCropFrameRotation) {
+            restoreStashedPlacement(item);
+        }
+    }
+
+
     /** Restore item pos/scale from enter-stash (Workspace cancel path). */
     void restoreEnterPlacementPose(ImageItem *item) const;
 

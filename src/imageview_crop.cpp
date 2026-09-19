@@ -1258,11 +1258,7 @@ void ImageView::leaveCropModeInternal(bool apply)
     } else if (item && m_crop.isShowingFullImage()) {
         cancelCropShowingFullImage(item);
     }
-    // Restore pre-crop placement rotation unless Apply already set it from the
-    // crop frame (Workspace non-full-frame commit).
-    if (item && !preserveCropFrameRotation) {
-        m_crop.restoreStashedPlacement(item);
-    }
+    m_crop.finishLeave(item, preserveCropFrameRotation);
     clearCropModeState();
 }
 
