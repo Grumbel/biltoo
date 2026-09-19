@@ -178,6 +178,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   state/get/find; **SessionBindBook** bindCount/bindAt/removeBindAt/takeBindAt.
 - **Fix** layoutSizeForPath bookSize binding; **SessionLoadGate** pending scene/
   restore helpers; phase/dwell atlas generation + raster queue helpers.
+- ZoomBlur clearUnderlays on resize; Workspace restore via setPendingRestoreStates /
+  itemStateForPath; drop ImageView map dig APIs; ProgressHud
+  accumulateProgressBaseFromElapsed.
 
 
 ## Current pain (evidence)

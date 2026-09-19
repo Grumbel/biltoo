@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1460-zoomblur-workspace-hud.** ZoomBlur, workspace restore, HUD clock.
+Prior: **1459**. Commits 1460a–1460d (+ docs).
+
+### Commits
+1. ZoomBlur viewport resize → clearUnderlays
+2. Workspace restore via setPendingRestoreStates / itemStateForPath
+3. Drop ImageView itemStatesByPath and pendingRestoreStates dig APIs
+4. SlideshowProgressHud accumulateProgressBaseFromElapsed
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1460-zoomblur-workspace-hud.bundle HEAD
+```
+Requires tip **1459**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1459-fix-layoutsize-loadgate-phase.** Fix layoutSize + LoadGate + phase queues.
 Prior: **1458**. Commits 1459a–1459c (+ docs).
 
