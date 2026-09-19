@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1519-crop-session-hold.** ViewportUpdateHold, loadSessionAppearance, attachCropApplyDisplay.
+Prior: **1516** (upstream `46af49c`). Commits 1519a–1519d (+ docs).
+
+### Commits
+1. Fix unused localClamped in recordSessionCrop
+2. resolveSessionIdForItem
+3. ViewportUpdateHold + loadSessionAppearance
+4. attachCropApplyDisplay
+
+### Note
+Still on ImageView: PathRaster ownership, appearance store writes, enter UI
+orchestration, applyCropCommit host/HUD/undo framing.
+
+### Apply (on tip **1516** / `46af49c` / upstream master)
+```bash
+git pull --ff-only /path/to/biltoo-1519-crop-session-hold.bundle HEAD
+```
+Includes **1519**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1516-crop-session-relayout.** Shared fit/relayout, placement restore, chrome/emit helpers.
 Prior: **1515**. Commits 1516a–1516c (+ docs).
 
