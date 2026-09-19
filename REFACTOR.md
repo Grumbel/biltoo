@@ -193,6 +193,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   isHandleHot; **ItemInteractSession** isRotating/isHandleDragging;
   **ViewportChrome** isPanning; **CropSession** isHandleHot;
   **TextLayerSession** isRubberbanding.
+- **SlideshowProgressHud** progress/nav/paused/seek bool accessors;
+  **GallerySoftBook** isDeferPopulate; **ViewFraming** fit/fill/sticky accessors;
+  **HudFlash** / **HudAppearance** visibility accessors.
 
 
 ## Current pain (evidence)

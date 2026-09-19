@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1465-hud-soft-framing-bools.** ProgressHud, Soft, Framing, HUD bools.
+Prior: **1464**. Commits 1465a–1465d (+ docs).
+
+### Commits
+1. **SlideshowProgressHud** isProgressActive / isNavHot / isPausedHud / …
+2. **GallerySoftBook** isDeferPopulate
+3. **ViewFraming** isFitMode / isFillMode / isStickyZoomEnabled / hasPreservedViewScale
+4. **HudFlash** / **HudAppearance** visibility accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1465-hud-soft-framing-bools.bundle HEAD
+```
+Requires tip **1464**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1464-attention-pageguide-interact-chrome.** Attention, PageGuide, interact, chrome.
 Prior: **1463**. Commits 1464a–1464f (+ docs).
 
