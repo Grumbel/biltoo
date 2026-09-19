@@ -2,6 +2,32 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1451-bag-transition-text-crop-interact-group.** Residual bag field writes.
+Prior: **1450**. Commits 1451a–1451e (+ docs).
+
+### Commits
+1. **TextLayerSession** setLayerContent / setRubberRect / setSelectedRegions
+2. **CropSession** min-size clamp via setRect (no in-place rect mutation)
+3. **ItemInteractSession** dropIfItem; move release uses endMove
+4. **GroupTransformSession** nullDragItemAt; destroy uses endDrag
+5. **AttentionSession** clearDraft; **ViewportChrome** clearMouseInfo
+
+### Note
+Continues the 1376–1399 bag-transition series after path-RAM settlement.
+Path RAM remains settled (no design change).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1451-bag-transition-text-crop-interact-group.bundle HEAD
+```
+Requires tip **1450**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1450-path-ram-settled-range-docs.** Path RAM settled range through 1449.
 Prior: **1449**. Commit 1450 (docs only).
 

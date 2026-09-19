@@ -153,6 +153,11 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **CropSession::setRotation**; **SessionBindBook::takeSelectIds**.
 - **PageGuideSession** setSelected fix + setPage; **SlideshowSettings** pan-zoom/duration.
 - **CropSession::clearAwaitingFull**; **layoutIsVertical**.
+- **TextLayerSession** setRubberRect / setSelectedRegions; setLayerContent for load.
+- **CropSession** expand min-size via setRect (no direct rect mutation).
+- **ItemInteractSession::dropIfItem**; move release via endMove.
+- **GroupTransformSession::nullDragItemAt**; destroy via endDrag.
+- **AttentionSession::clearDraft** on session-id change; **ViewportChrome::clearMouseInfo**.
 
 
 ## Current pain (evidence)
