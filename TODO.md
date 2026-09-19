@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1493-attention-const.** clearGesture clears dragStartPts; selectedRef.
+Prior: **1492**. Commits 1493a–1493c (+ docs).
+
+### Fixes
+- **attentionCommitSelectionMove**: no mutate via const dragStartPtsRef
+- **clearGesture** also clears dragStartPts
+- **selectedRef** for read-only selection walks
+
+### Apply
+```bash
+git pull /path/to/biltoo-1493-attention-const.bundle HEAD
+```
+Requires tip **1492** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1492-const-atlas-draft.** Fix const paintMotionCover Mutable; draftRectOr.
 Prior: **1491**. Commits 1492a–1492c (+ docs).
 
