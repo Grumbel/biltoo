@@ -190,6 +190,9 @@ public:
         hadStashedPlacement = qAbs(rot) > 0.05 || qAbs(shear) > 1e-4;
     }
 
+    /** Apply stashed placement rotation/shear to @p item when stash is valid. */
+    void restoreStashedPlacement(ImageItem *item) const;
+
     void clearPlacementStash()
     {
         stashedPlacementRotation = 0.0;

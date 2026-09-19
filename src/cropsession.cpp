@@ -108,3 +108,12 @@ void CropSession::initRectFromPriorAppearance(const QRectF &contentRect,
     }
     ensureRectValid(contentRect);
 }
+
+void CropSession::restoreStashedPlacement(ImageItem *item) const
+{
+    if (!item || !hasStashedPlacement()) {
+        return;
+    }
+    item->setItemRotation(stashedPlacementRotation);
+    item->setItemShear(stashedPlacementShear);
+}

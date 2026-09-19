@@ -178,10 +178,7 @@ bool ImageView::enterCropModeFromUi()
         // prepare may have set mode for fitItem then failed — restore placement
         // before abortEnter clears the stash.
         item->setTileLodSuppressed(false);
-        if (m_crop.hasStashedPlacement()) {
-            item->setItemRotation(m_crop.stashedPlacementRotationValue());
-            item->setItemShear(m_crop.stashedPlacementShearValue());
-        }
+        m_crop.restoreStashedPlacement(item);
         m_crop.abortEnter();
         flashHud(tr("Crop"), tr("Could not load full image"));
         return false;
@@ -1304,9 +1301,8 @@ void ImageView::leaveCropModeInternal(bool apply)
     }
     // Restore pre-crop placement rotation unless Apply already set it from the
     // crop frame (Workspace non-full-frame commit).
-    if (item && m_crop.hasStashedPlacement() && !preserveCropFrameRotation) {
-        item->setItemRotation(m_crop.stashedPlacementRotationValue());
-        item->setItemShear(m_crop.stashedPlacementShearValue());
+    if (item && !preserveCropFrameRotation) {
+        m_crop.restoreStashedPlacement(item);
     }
     clearCropModeState();
 }
