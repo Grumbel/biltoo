@@ -330,3 +330,4 @@ part of early-phase exit criteria).
 - **ColorAdjustments** grade clamps / gamma percent; **FilmstripGeometry**; **ViewTransform::overlayFontPixelSize**; **DisplayQuality** debug stamp metrics.
 - **ItemFrameGeometry** chrome/placeholder fonts; **AttentionGeometry::clampHintPointSize**; **ImageCache::rgbaCostKiB**; **ViewTransform** pointAlong / clampedProgress.
 - **GalleryLayout** pack cell/scale helpers; **SlideshowMotionGeometry** bias/panZoom clamps; **SlideshowAtlasPolicy::clampPanZoomHeadroom**.
+- **SlideshowClocks::formatClockMs**; **ContentXform** heightForAspectWidth / roundedSize(QSizeF); **ViewTransform::nonNegMs(qint64)**.

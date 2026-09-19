@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1353-clock-format-aspect-size.** formatClockMs, heightForAspectWidth,
+roundedSize QSizeF, nonNegMs(qint64).
+Prior: **1352**.
+
+### Change
+- `SlideshowClocks::formatClockMs` for HUD timeline
+- `ContentXform::{roundedSizeAtLeast1(QSizeF),heightForAspectWidth}`
+- Crop integer/scaleCrop + export PNG height wiring
+- `ViewTransform::nonNegMs(qint64)`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1353**)
+```bash
+git pull /path/to/biltoo-1353-clock-format-aspect-size.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1352-gallery-pack-motion-bias.** GalleryLayout pack cell/scale
 helpers; motion bias and panZoom/atlas headroom pure clamps.
 Prior: **1351**.
