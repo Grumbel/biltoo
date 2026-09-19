@@ -10,6 +10,7 @@
 
 #include <QImage>
 #include <QPointF>
+#include <QRect>
 #include <QRectF>
 #include <QPolygonF>
 #include <QString>
@@ -311,6 +312,16 @@ public:
      */
     void setRectFromSourcePixelTrim(const QRectF &contentRect, const QSize &srcSize,
                                     const QRect &trimmed);
+
+    /** Draft → source pixel search box (intersected with source bounds). */
+    QRect sourceSearchRectFromDraft(const QRectF &contentRect, const QSize &srcSize) const;
+
+    /**
+     * If draft rotation is near zero but placement stash has free rotation,
+     * seed draft rotation from the stash. @return true when rotation changed.
+     */
+    bool seedRotationFromStashedPlacement(qreal freeRotationEps);
+
 
 
     /** Draft corners in item-local content space. */

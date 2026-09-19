@@ -169,10 +169,7 @@ bool ImageView::enterCropModeFromUi()
         // If there was no stored crop angle but the tile was free-rotated,
         // seed the draft rotation so the frame matches the prior pose while
         // the item stays axis-aligned for editing.
-        if (m_crop.isNearZeroRotation(CropGeometry::kFreeRotationEps)
-            && qAbs(m_crop.stashedPlacementRotationValue()) > CropGeometry::kFreeRotationEps) {
-            m_crop.setRotation(m_crop.stashedPlacementRotationValue());
-            m_crop.normalizeRotation();
+        if (m_crop.seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
             ensureCropRectValid();
         }
         alignCropFrameCenterToScene(item, workspaceAnchorScene);
@@ -707,15 +704,10 @@ void ImageView::applyAutoCrop()
         return;
     }
 
-    // Draft → source pixel rect (content-local maps 1:1 for normal images).
-    const qreal sx = qreal(src.width()) / cr.width();
-    const qreal sy = qreal(src.height()) / cr.height();
-    QRect search(
-        int(qFloor((m_crop.currentRect().left() - cr.left()) * sx)),
-        int(qFloor((m_crop.currentRect().top() - cr.top()) * sy)),
-        int(qCeil(m_crop.currentRect().width() * sx)),
-        int(qCeil(m_crop.currentRect().height() * sy)));
-    search = search.intersected(QRect(0, 0, src.width(), src.height()));
+    const QRect search = m_crop.sourceSearchRectFromDraft(cr, src.size());
+    if (!search.isValid() || search.isEmpty()) {
+        return;
+    }
 
     QRect trimmed;
     if (!ImageLoader::autoTrimRect(src, search, &trimmed)) {

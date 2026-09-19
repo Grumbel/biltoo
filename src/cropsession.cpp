@@ -159,3 +159,35 @@ void CropSession::releaseTargetTileLod()
         targetItem->setTileLodSuppressed(false);
     }
 }
+
+QRect CropSession::sourceSearchRectFromDraft(const QRectF &contentRect,
+                                             const QSize &srcSize) const
+{
+    if (srcSize.width() < 1 || srcSize.height() < 1
+        || contentRect.width() < 1.0 || contentRect.height() < 1.0
+        || !hasValidRect()) {
+        return {};
+    }
+    const qreal sx = qreal(srcSize.width()) / contentRect.width();
+    const qreal sy = qreal(srcSize.height()) / contentRect.height();
+    const QRectF d = currentRect();
+    QRect search(
+        int(qFloor((d.left() - contentRect.left()) * sx)),
+        int(qFloor((d.top() - contentRect.top()) * sy)),
+        int(qCeil(d.width() * sx)),
+        int(qCeil(d.height() * sy)));
+    return search.intersected(QRect(0, 0, srcSize.width(), srcSize.height()));
+}
+
+bool CropSession::seedRotationFromStashedPlacement(qreal freeRotationEps)
+{
+    if (!isNearZeroRotation(freeRotationEps)) {
+        return false;
+    }
+    if (qAbs(stashedPlacementRotation) <= freeRotationEps) {
+        return false;
+    }
+    setRotation(stashedPlacementRotation);
+    normalizeRotation();
+    return true;
+}
