@@ -12,14 +12,7 @@ namespace GroupTransformGeometry {
 
 void scaleHandlePoints(const QRect &viewRect, QPointF out[8])
 {
-    out[0] = viewRect.topLeft();
-    out[1] = QPointF(viewRect.center().x(), viewRect.top());
-    out[2] = viewRect.topRight();
-    out[3] = QPointF(viewRect.right(), viewRect.center().y());
-    out[4] = viewRect.bottomRight();
-    out[5] = QPointF(viewRect.center().x(), viewRect.bottom());
-    out[6] = viewRect.bottomLeft();
-    out[7] = QPointF(viewRect.left(), viewRect.center().y());
+    ViewTransform::axisAlignedHandlePoints(viewRect, out);
 }
 
 void rotateHandlePoints(const QRect &viewRect, QPointF out[4], qreal offsetPx)

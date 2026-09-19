@@ -12,29 +12,12 @@ namespace PageGuideGeometry {
 
 void handlePoints(const QRect &viewRect, QPointF out[8])
 {
-    out[0] = viewRect.topLeft();
-    out[1] = QPointF(viewRect.center().x(), viewRect.top());
-    out[2] = viewRect.topRight();
-    out[3] = QPointF(viewRect.right(), viewRect.center().y());
-    out[4] = viewRect.bottomRight();
-    out[5] = QPointF(viewRect.center().x(), viewRect.bottom());
-    out[6] = viewRect.bottomLeft();
-    out[7] = QPointF(viewRect.left(), viewRect.center().y());
+    ViewTransform::axisAlignedHandlePoints(viewRect, out);
 }
 
 int handleIndexAt(const QPoint &viewPos, const QRect &viewRect, qreal hitPx)
 {
-    if (!viewRect.isValid() || viewRect.isEmpty()) {
-        return -1;
-    }
-    QPointF corners[8];
-    handlePoints(viewRect, corners);
-    for (int i = 0; i < 8; ++i) {
-        if (QLineF(QPointF(viewPos), corners[i]).length() <= hitPx) {
-            return i;
-        }
-    }
-    return -1;
+    return ViewTransform::axisAlignedHandleIndexAt(viewPos, viewRect, hitPx);
 }
 
 QRectF rectFromHandleDrag(const QPointF &scenePos, const QRectF &startRect, int handle,

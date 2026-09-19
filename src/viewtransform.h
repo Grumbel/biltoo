@@ -6,6 +6,7 @@
 
 #include <QPoint>
 #include <QPointF>
+#include <QLineF>
 #include <QSize>
 #include <QRect>
 #include <QRectF>
@@ -201,6 +202,47 @@ inline qreal nonNeg(qreal v)
 inline int nonNeg(int v)
 {
     return v < 0 ? 0 : v;
+}
+
+
+/**
+ * Eight axis-aligned scale-grip centres for a view rect (TL, T, TR, R, BR, B, BL, L).
+ * Shared by page-guide and group-transform chrome.
+ */
+inline void axisAlignedHandlePoints(const QRect &viewRect, QPointF out[8])
+{
+    out[0] = viewRect.topLeft();
+    out[1] = QPointF(viewRect.center().x(), viewRect.top());
+    out[2] = viewRect.topRight();
+    out[3] = QPointF(viewRect.right(), viewRect.center().y());
+    out[4] = viewRect.bottomRight();
+    out[5] = QPointF(viewRect.center().x(), viewRect.bottom());
+    out[6] = viewRect.bottomLeft();
+    out[7] = QPointF(viewRect.left(), viewRect.center().y());
+}
+
+/**
+ * Index of the nearest of 8 axis-aligned grips within @p hitPx, or -1.
+ * Empty/invalid rect → -1.
+ */
+inline int axisAlignedHandleIndexAt(const QPoint &viewPos, const QRect &viewRect,
+                                    qreal hitPx)
+{
+    if (!viewRect.isValid() || viewRect.isEmpty() || hitPx < 0.0) {
+        return -1;
+    }
+    QPointF pts[8];
+    axisAlignedHandlePoints(viewRect, pts);
+    int best = -1;
+    qreal bestDist = hitPx;
+    for (int i = 0; i < 8; ++i) {
+        const qreal d = QLineF(QPointF(viewPos), pts[i]).length();
+        if (d <= bestDist) {
+            bestDist = d;
+            best = i;
+        }
+    }
+    return best;
 }
 
 } // namespace ViewTransform
