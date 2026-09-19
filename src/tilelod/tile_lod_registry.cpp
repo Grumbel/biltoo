@@ -182,7 +182,26 @@ void TileLodRegistry::invalidate(QString const& path)
   }
   std::string const key = path.toStdString();
   std::lock_guard<std::mutex> lock(m_mu);
-  m_by_path.erase(key);
+  auto it = m_by_path.find(key);
+  if (it == m_by_path.end()) {
+    return;
+  }
+  // Cancel in-flight fetches and clear Succeeded tiles in place so every
+  // live controller sharing this SharedPathTiles stops painting stale cells.
+  // Erase only when idle; active holders keep the empty shell until release.
+  if (it->second) {
+    if (it->second->source) {
+      it->second->source->cancel_all();
+    }
+    if (it->second->cache) {
+      it->second->cache->clear();
+    }
+    if (it->second->refcount == 0) {
+      m_by_path.erase(it);
+    }
+  } else {
+    m_by_path.erase(it);
+  }
 }
 
 void TileLodRegistry::invalidateAll()
