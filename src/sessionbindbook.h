@@ -114,6 +114,31 @@ struct SessionBindBook {
         }
     }
 
+    bool isEmpty() const { return binds.isEmpty(); }
+
+    int bindCount() const { return binds.size(); }
+
+    void setIndexForPath(const QString &path, int index)
+    {
+        if (!path.isEmpty()) {
+            indexByPath.insert(path, index);
+        }
+    }
+
+    void removeIndexForPath(const QString &path) { indexByPath.remove(path); }
+
+    void clearSelectIds() { selectIds.clear(); }
+
+    void addSelectId(SessionImageId id)
+    {
+        if (id != kInvalidSessionImageId) {
+            selectIds.insert(id);
+        }
+    }
+
+    /** @return true when @p id was pending selection. */
+    bool removeSelectId(SessionImageId id) { return selectIds.remove(id); }
+
     void append(const PendingSessionBind &b) { binds.append(b); }
 };
 

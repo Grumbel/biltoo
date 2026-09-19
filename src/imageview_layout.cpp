@@ -1550,7 +1550,7 @@ QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
         m_loadGate.removePendingWorkspacePath(path);
         gallerySoftResetPath(path);
         m_loadGate.pendingScenePos().remove(path);
-        m_bindBook.indexByPath.remove(path);
+        m_bindBook.removeIndexForPath(path);
         // destroyCanvasItem clears selection anchor / drag pointers and
         // removes from m_items and both stashes (safe if already only in one).
         destroyCanvasItem(item);
@@ -1718,7 +1718,7 @@ void ImageView::removeWorkspaceSessionIndex(int sessionIndex)
     if (!pathStillLive) {
         m_loadGate.removePendingWorkspacePath(path);
         m_loadGate.pendingScenePos().remove(path);
-        m_bindBook.indexByPath.remove(path);
+        m_bindBook.removeIndexForPath(path);
         gallerySoftResetPath(path);
 }
     destroyCanvasItem(item);
@@ -1750,15 +1750,11 @@ void ImageView::detachCanvasSessionId(SessionImageId sessionId)
         if (!pathStillLive) {
             takePendingWorkspacePath(path);
             m_loadGate.pendingScenePos().remove(path);
-            m_bindBook.indexByPath.remove(path);
+            m_bindBook.removeIndexForPath(path);
         gallerySoftResetPath(path);
 }
         // Drop pending binds for this id only (not every same-path bind).
-        for (int i = m_bindBook.binds.size() - 1; i >= 0; --i) {
-            if (m_bindBook.binds.at(i).id == sessionId) {
-                m_bindBook.binds.removeAt(i);
-            }
-        }
+        m_bindBook.removeBindsForSessionId(sessionId);
         destroyCanvasItem(item);
     }
     if (!doomed.isEmpty()) {
@@ -1918,7 +1914,7 @@ void ImageView::removeWorkspacePathOccurrence(const QString &path, int occurrenc
         if (found == occurrence) {
             takePendingWorkspacePath(path);
             m_loadGate.pendingScenePos().remove(path);
-            m_bindBook.indexByPath.remove(path);
+            m_bindBook.removeIndexForPath(path);
         gallerySoftResetPath(path);
 destroyCanvasItem(item);
             emit statusChanged();
