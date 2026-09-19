@@ -545,7 +545,7 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos)
         qreal kx = m_pressShear;
         qreal rot = m_pressRotation;
         if (PlacementLinear::decomposeAxes(e1n, e2n, &sx, &sy, &kx, &rot)) {
-            setItemScale(qBound(0.01, sx, 50.0), qBound(0.01, sy, 50.0));
+            setItemScale(sx, sy); // clampScaleXY inside setItemScale
             setItemShear(kx);
             setItemRotation(rot);
         }
@@ -2064,7 +2064,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         const qreal thick = ItemFrameGeometry::kSliderHeightPx;
         const bool hot = (m_hoverHandle == Handle::OpacitySlider
                           || m_activeHandle == Handle::OpacitySlider);
-        const qreal tval = (m_opacity - 0.05) / 0.95;
+        const qreal tval = ItemFrameGeometry::trackParamFromOpacity(m_opacity);
         QPen trackPen(hot ? QColor(200, 180, 255) : QColor(120, 100, 160), 0);
         trackPen.setCosmetic(true);
         trackPen.setWidthF(1.15);

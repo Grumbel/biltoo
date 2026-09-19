@@ -142,7 +142,15 @@ qreal trackParam(const QPointF &a, const QPointF &b, const QPointF &p)
 
 qreal opacityFromTrackParam(qreal t)
 {
-    return 0.05 + ViewTransform::clamp01(t) * 0.95;
+    return kOpacityTrackMin + ViewTransform::clamp01(t) * kOpacityTrackSpan;
+}
+
+qreal trackParamFromOpacity(qreal opacity)
+{
+    if (kOpacityTrackSpan <= 1e-9) {
+        return 0.0;
+    }
+    return ViewTransform::clamp01((opacity - kOpacityTrackMin) / kOpacityTrackSpan);
 }
 
 QPointF closestPointOnSegment(const QPointF &a, const QPointF &b, const QPointF &p)

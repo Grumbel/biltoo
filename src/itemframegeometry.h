@@ -80,8 +80,18 @@ void opacityTrackView(const FrameViewGeom &g, QPointF *aOut, QPointF *bOut);
  */
 qreal trackParam(const QPointF &a, const QPointF &b, const QPointF &p);
 
+/** Opacity at track bottom end (matches PlacementLinear::clampOpacity lo). */
+constexpr qreal kOpacityTrackMin = 0.05;
+/** Opacity at track top end. */
+constexpr qreal kOpacityTrackMax = 1.0;
+/** Track span (max − min) for t ↔ opacity. */
+constexpr qreal kOpacityTrackSpan = kOpacityTrackMax - kOpacityTrackMin;
+
 /** Map track parameter t to item opacity (5% … 100%). */
 qreal opacityFromTrackParam(qreal t);
+
+/** Inverse of opacityFromTrackParam: opacity → t ∈ [0,1]. */
+qreal trackParamFromOpacity(qreal opacity);
 
 /** Closest point on segment a→b to @p p (uses trackParam). */
 QPointF closestPointOnSegment(const QPointF &a, const QPointF &b, const QPointF &p);
