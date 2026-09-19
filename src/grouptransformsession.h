@@ -39,6 +39,15 @@ public:
 
     bool isRotateDrag() const { return rotateDrag; }
 
+    bool isHandleHot(int id) const
+    {
+        return hoverHandle == id || handle == id;
+    }
+
+    bool hasHoverHandle() const { return hoverHandle != -1; }
+
+    bool hasActiveHandle() const { return handle != -1; }
+
     /** @return true when hover handle index changed. */
     bool setHoverHandle(int h)
     {

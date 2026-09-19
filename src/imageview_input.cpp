@@ -1054,7 +1054,7 @@ bool ImageView::tryMouseMoveCropDrag(QMouseEvent *event)
     if (!m_crop.active()) {
         return false;
     }
-    if (m_crop.activeHandle != CropHandle::None) {
+    if (m_crop.isHandleDragging()) {
         updateCropHandleDrag(event->pos());
         event->accept();
         return true;
@@ -1354,7 +1354,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                 }
             }
         } else {
-            if (m_groupXform.hoverHandle != -1) {
+            if (m_groupXform.hasHoverHandle()) {
                 m_groupXform.clearHover();
                 viewport()->update();
             }
@@ -1574,7 +1574,7 @@ bool ImageView::tryMouseReleaseCrop(QMouseEvent *event)
     if (!m_crop.active() || event->button() != Qt::LeftButton) {
         return false;
     }
-    if (m_crop.activeHandle != CropHandle::None) {
+    if (m_crop.isHandleDragging()) {
         endCropHandleDrag();
         event->accept();
         return true;

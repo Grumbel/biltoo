@@ -178,7 +178,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const bool haveTo = !toSrc.isNull();
         const qreal tt = ViewTransform::clamp01(t);
         const QString fPath = !fromPath.isEmpty() ? fromPath
-            : (!m_ss.fromPath.isEmpty() ? m_ss.fromPath : m_ssDwell.biasPath);
+            : (m_ss.hasFromPath() ? m_ss.fromPath : m_ssDwell.biasPath);
         const QString tPath = !toPath.isEmpty() ? toPath : m_ss.toPath;
         if (haveFrom && haveTo && t >= 0.0) {
             painter.setOpacity(1.0);
@@ -1280,7 +1280,7 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
         return len > 1e-6 ? v / len : QPointF(1, 0);
     };
     auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB, int id) {
-        const bool hot = (m_groupXform.hoverHandle == id || m_groupXform.handle == id);
+        const bool hot = m_groupXform.isHandleHot(id);
         const QPointF d1 = unit(alongA);
         const QPointF d2 = unit(alongB);
         const qreal hs = hot ? 12.0 : 10.0;
@@ -1309,7 +1309,7 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
         }
     };
     auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, int id) {
-        const bool hot = (m_groupXform.hoverHandle == id || m_groupXform.handle == id);
+        const bool hot = m_groupXform.isHandleHot(id);
         const QPointF a = unit(along);
         const QPointF perp(-a.y(), a.x());
         const qreal hs = hot ? 12.0 : 10.0;
@@ -1357,7 +1357,7 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
     stem.setWidthF(1.25);
     for (int i = 0; i < 4; ++i) {
         const int handleId = 8 + i;
-        const bool hot = (m_groupXform.hoverHandle == handleId || m_groupXform.handle == handleId);
+        const bool hot = m_groupXform.isHandleHot(handleId);
         painter->setPen(stem);
         painter->drawLine(edgeMid[i], rot[i]);
         const qreal rad = hot ? 7.0 : 5.0;
