@@ -6,6 +6,7 @@
 #include "thumtoocache.h"
 
 #include <QString>
+#include <QByteArray>
 
 #include <algorithm>
 #include <cstdio>
@@ -325,12 +326,14 @@ QString TileLodRegistry::debug_summary() const
 
 void TileLodRegistry::apply_environment_overrides()
 {
+  bool changed = false;
   if (const char* e = std::getenv("BILTOO_TILE_RAM_MIB");
       e && e[0]) {
     char* end = nullptr;
     const long mib = std::strtol(e, &end, 10);
     if (end != e && mib > 0 && mib < 1024 * 1024) {
       set_global_budget_bytes(static_cast<std::size_t>(mib) * 1024ull * 1024ull);
+      changed = true;
     }
   }
   if (const char* e = std::getenv("BILTOO_TILE_MAX_IDLE");
@@ -339,6 +342,15 @@ void TileLodRegistry::apply_environment_overrides()
     const long n = std::strtol(e, &end, 10);
     if (end != e && n > 0 && n < 100000) {
       set_max_idle_paths(static_cast<std::size_t>(n));
+      changed = true;
+    }
+  }
+  if (changed) {
+    if (const char* td = std::getenv("BILTOO_TILE_DEBUG");
+        td && td[0] && td[0] != '0') {
+      const QByteArray line = debug_summary().toUtf8();
+      std::fprintf(stderr, "biltoo/tile-reg: env %s\n", line.constData());
+      std::fflush(stderr);
     }
   }
 }
