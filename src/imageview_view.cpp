@@ -2436,23 +2436,17 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     // Do NOT fold source width/height — soft→full upgrades would miss the
     // cache and re-blur mid-transition (the spike after the first fix).
     const qint64 key = stableKey ^ (qint64(vw) << 16) ^ qint64(vh);
-    if (m_ssZoomBlur.vw != vw || m_ssZoomBlur.vh != vh) {
+    if (!m_ssZoomBlur.viewportMatches(vw, vh)) {
         // Viewport size change: drop sized slots; keep lastGood stretched until
         // async rebuild finishes (still better than solid flash).
         m_ssZoomBlur.clearUnderlays();
         m_ssZoomBlur.setViewportSize(vw, vh);
         invalidateZoomBlurQueue();
     }
-    int slot = -1;
-    for (int i = 0; i < 2; ++i) {
-        if (m_ssZoomBlur.sourceKey[i] == key && !m_ssZoomBlur.underlay[i].isNull()) {
-            slot = i;
-            break;
-        }
-    }
+    const int slot = m_ssZoomBlur.findCachedSlot(key);
     if (slot >= 0) {
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-        painter->drawPixmap(viewportRect, m_ssZoomBlur.underlay[slot]);
+        painter->drawPixmap(viewportRect, m_ssZoomBlur.underlayAt(slot));
         return;
     }
     // Miss: schedule build only when not in a key-repeat burst (pool pressure).
@@ -2461,9 +2455,9 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     if (!m_ssHud.navHot) {
         scheduleZoomBlurBuild(image, vw, vh, key);
     }
-    if (!m_ssZoomBlur.lastGood.isNull()) {
+    if (m_ssZoomBlur.hasLastGood()) {
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-        painter->drawPixmap(viewportRect, m_ssZoomBlur.lastGood);
+        painter->drawPixmap(viewportRect, m_ssZoomBlur.lastGoodPixmap());
         return;
     }
     painter->fillRect(viewportRect, slideshowPadColor());

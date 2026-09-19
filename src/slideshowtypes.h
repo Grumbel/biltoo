@@ -551,6 +551,25 @@ struct SlideshowZoomBlurState {
     }
 
     void bumpGeneration() { ++generation; }
+
+    /** Slot with cached underlay for @p key, or -1. */
+    int findCachedSlot(qint64 key) const
+    {
+        for (int i = 0; i < 2; ++i) {
+            if (sourceKey[i] == key && !underlay[i].isNull()) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    const QPixmap &underlayAt(int slot) const { return underlay[slot]; }
+
+    bool hasLastGood() const { return !lastGood.isNull(); }
+
+    const QPixmap &lastGoodPixmap() const { return lastGood; }
+
+    bool viewportMatches(int w, int h) const { return vw == w && vh == h; }
 };
 
 /**
