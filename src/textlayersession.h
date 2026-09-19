@@ -67,6 +67,15 @@ struct TextLayerSession {
         rubberRect = {};
     }
 
+    /** Set rubber rect for geometry mapping (does not change rubberbanding flag). */
+    void setRubberRect(const QRect &r) { rubberRect = r; }
+
+    void clearRubberRect() { rubberRect = {}; }
+
+    void setSelectedRegions(const QVector<int> &ids) { selectedRegions = ids; }
+
+    void clearSelectedRegions() { selectedRegions.clear(); }
+
     void clearLayer()
     {
         layer = {};
@@ -84,12 +93,6 @@ struct TextLayerSession {
         }
         showRegions = on;
         return true;
-    }
-
-    void setLayer(const ThumtooCache::PageTextLayer &l, const QString &path)
-    {
-        layer = l;
-        layerPath = path;
     }
 
     void clearLayerPath() { layerPath.clear(); }

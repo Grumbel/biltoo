@@ -767,12 +767,12 @@ void ImageView::refreshTextLayer()
     if (path.isEmpty() || !PagePath::isPageRef(path)) {
         return;
     }
-    m_textLayer.layerPath = path;
     // Prefer cache; ensure may do source I/O (acceptable for toggle / Find).
-    m_textLayer.layer = ThumtooCache::cachedPageTextLayer(path);
-    if (m_textLayer.layer.regions.isEmpty()) {
-        m_textLayer.layer = ThumtooCache::ensurePageTextLayer(path);
+    ThumtooCache::PageTextLayer layer = ThumtooCache::cachedPageTextLayer(path);
+    if (layer.regions.isEmpty()) {
+        layer = ThumtooCache::ensurePageTextLayer(path);
     }
+    m_textLayer.setLayerContent(layer, path);
     if (!m_textLayer.searchQuery.isEmpty()) {
         recomputeTextSearchMatches();
     }
@@ -823,8 +823,7 @@ int ImageView::setTextSearchQuery(const QString &query)
     if (m_textLayer.searchQuery.isEmpty()) {
         m_textLayer.searchMatches.clear();
         if (!m_textLayer.showRegions) {
-            m_textLayer.layer = {};
-            m_textLayer.clearLayerPath();
+            m_textLayer.resetLayerContent();
         }
         viewport()->update();
         return 0;
@@ -998,7 +997,7 @@ void ImageView::finishTextRubberBand()
 {
     const QRect viewRect = m_textLayer.rubberRect.normalized();
     m_textLayer.endRubber();
-    m_textLayer.selectedRegions.clear();
+    m_textLayer.clearSelectedRegions();
     if (viewRect.width() < 4 || viewRect.height() < 4) {
         viewport()->update();
         return;
@@ -1021,9 +1020,9 @@ void ImageView::finishTextRubberBand()
         return;
     }
     // Recompute rubber from stored origin - use viewRect mapped to image.
-    m_textLayer.rubberRect = viewRect;
+    m_textLayer.setRubberRect(viewRect);
     const QRectF imgRubber = textRubberBandImageRect();
-    m_textLayer.rubberRect = {};
+    m_textLayer.clearRubberRect();
     if (imgRubber.isEmpty()) {
         viewport()->update();
         return;
@@ -1036,10 +1035,11 @@ void ImageView::finishTextRubberBand()
         }
         regionRects[i] = textRegionImageRect(r);
     }
-    m_textLayer.selectedRegions =
+    QVector<int> selected =
         TextLayerGeometry::indicesIntersecting(regionRects, imgRubber);
     // Reading order: top-to-bottom, then left-to-right by image rect.
-    TextLayerGeometry::sortReadingOrder(&m_textLayer.selectedRegions, regionRects);
+    TextLayerGeometry::sortReadingOrder(&selected, regionRects);
+    m_textLayer.setSelectedRegions(selected);
     viewport()->update();
 }
 
