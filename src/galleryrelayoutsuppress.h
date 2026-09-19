@@ -21,6 +21,25 @@ struct GalleryRelayoutSuppress {
     }
 
     bool active() const { return count > 0; }
+
+    /** RAII: push(true) on construct, push(false) on destroy. */
+    struct Scoped {
+        GalleryRelayoutSuppress *s = nullptr;
+        explicit Scoped(GalleryRelayoutSuppress *sup) : s(sup)
+        {
+            if (s) {
+                s->push(true);
+            }
+        }
+        ~Scoped()
+        {
+            if (s) {
+                s->push(false);
+            }
+        }
+        Scoped(const Scoped &) = delete;
+        Scoped &operator=(const Scoped &) = delete;
+    };
 };
 
 #endif // GALLERYRELAYOUTSUPPRESS_H
