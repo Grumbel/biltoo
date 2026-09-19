@@ -27,6 +27,12 @@ struct CentreProgress {
         title = t;
         detail = d;
     }
+
+    /** True when title starts with @p prefix (progress clear / paint gates). */
+    bool matchesTitlePrefix(const QString &prefix) const
+    {
+        return !prefix.isEmpty() && title.startsWith(prefix);
+    }
 };
 
 #endif // CENTREPROGRESS_H

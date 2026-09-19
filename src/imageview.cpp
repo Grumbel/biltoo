@@ -687,7 +687,7 @@ void ImageView::setSizeResolveProgress(const QString &title, const QString &deta
 
 void ImageView::clearSizeResolveProgress()
 {
-    if (m_centreProgress.title.startsWith(tr("Resolving sizes"))) {
+    if (m_centreProgress.matchesTitlePrefix(tr("Resolving sizes"))) {
         clearCentreProgress();
     }
 }
