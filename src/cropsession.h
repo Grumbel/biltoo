@@ -334,6 +334,12 @@ public:
 
     qreal stashedPlacementRotationValue() const { return stashedPlacementRotation; }
 
+    qreal stashedPlacementShearValue() const { return stashedPlacementShear; }
+
+    QPointF stashedPlacementPos() const { return stashedPlacementPos; }
+
+    qreal stashedPlacementScale() const { return stashedPlacementScale; }
+
     bool isEnterValid() const { return enterValid; }
 
     const WorkspaceItemState &enterStateRef() const { return enterState; }

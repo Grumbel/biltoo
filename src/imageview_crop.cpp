@@ -180,7 +180,7 @@ bool ImageView::enterCropModeFromUi()
         item->setTileLodSuppressed(false);
         if (m_crop.hasStashedPlacement()) {
             item->setItemRotation(m_crop.stashedPlacementRotationValue());
-            item->setItemShear(m_crop.stashedPlacementShear);
+            item->setItemShear(m_crop.stashedPlacementShearValue());
         }
         m_crop.abortEnter();
         flashHud(tr("Crop"), tr("Could not load full image"));
@@ -1358,7 +1358,7 @@ void ImageView::leaveCropModeInternal(bool apply)
     // crop frame (Workspace non-full-frame commit).
     if (item && m_crop.hasStashedPlacement() && !preserveCropFrameRotation) {
         item->setItemRotation(m_crop.stashedPlacementRotationValue());
-        item->setItemShear(m_crop.stashedPlacementShear);
+        item->setItemShear(m_crop.stashedPlacementShearValue());
     }
     clearCropModeState();
 }
