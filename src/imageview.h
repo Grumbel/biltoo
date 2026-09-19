@@ -1689,6 +1689,7 @@ private:
      * Enter crop: show full on-disk pixels with prior crop as the draft rect
      * so the region can grow. Returns false if the image cannot be prepared.
      */
+    void activateCropModeAfterInstall(ImageItem *item);
     bool prepareCropModeFullImage(ImageItem *item);
     bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     bool resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const;

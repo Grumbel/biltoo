@@ -374,6 +374,14 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     m_crop.markShowingFullImage();
 }
 
+void ImageView::activateCropModeAfterInstall(ImageItem *item)
+{
+    // Crop chrome + fitItem only after pixels and contentRect match the draft.
+    m_crop.activateModeAfterDraft();
+    fitImageOrUpdateWorkspace(item);
+    m_crop.clearAwaitingFull();
+}
+
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
 {
     if (!item) {
@@ -405,21 +413,14 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
 
     // Workspace: lock scene footprint before intrinsic changes on install.
     const QRectF beforeScene = item->mapRectToScene(item->contentRect());
-    const qreal footW0 = beforeScene.width();
-    const qreal footH0 = beforeScene.height();
-    const QPointF center0 = beforeScene.center();
     installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp, unorientedSource);
     // Workspace: keep centre so the draft does not jump (scale is placement-only).
-    preserveWorkspaceItemCenter(item, center0, footW0, footH0);
+    preserveWorkspaceItemCenter(item, beforeScene.center(),
+                                beforeScene.width(), beforeScene.height());
     m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
                                        item->imageSize(),
                                        haveApp ? &app : nullptr, haveApp);
-
-    // Crop chrome + fitItem only after pixels and contentRect match the draft.
-    m_crop.activateModeAfterDraft();
-    fitImageOrUpdateWorkspace(item);
-
-    m_crop.clearAwaitingFull();
+    activateCropModeAfterInstall(item);
     return true;
 }
 
