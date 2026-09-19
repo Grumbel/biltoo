@@ -2,6 +2,33 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1475-crop-surface-hudflash-canvas.** Crop geometry, phase surface, HudFlash, canvas.
+Prior: **1474**. Commits 1475a–1475e (+ docs).
+
+### Commits
+1. Route remaining **CropSession** rect/rotation digs
+2. **SlideshowPhaseState** surface and upgrade-generation accessors
+3. **HudFlash** action and detail accessors
+4. **CanvasBackground** workspace and pattern accessors
+5. **CropSession** drag-start and active-handle accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled. Crop enter/apply
+still on view (larger ownership extraction). Remaining digs are mostly
+surface bind pointers and complex crop math that already uses accessors.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1475-crop-surface-hudflash-canvas.bundle HEAD
+```
+Requires tip **1474**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1474-dwell-atlas-textlayer.** Dwell atlas, phase atlas, TextLayer lists.
 Prior: **1473**. Commits 1474a–1474b (+ docs).
 

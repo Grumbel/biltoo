@@ -222,6 +222,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   item/start-state accessors.
 - **SlideshowDwell**/phase atlas image accessors; **TextLayerSession** query/
   path/region list accessors.
+- Remaining **CropSession** rect/rotation/drag-start digs; **Phase** surface
+  and generation accessors; **HudFlash** action/detail; **CanvasBackground**
+  workspace/pattern accessors.
 
 
 ## Current pain (evidence)
