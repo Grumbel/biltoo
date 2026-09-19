@@ -327,9 +327,9 @@ bool ImageView::tryWheelGalleryScroll(QWheelEvent *event)
 
     // Horizontal strip layouts: vertical wheel pans sideways.
     const bool preferHorizontalScroll =
-        m_layout.mode == LayoutMode::SideBySide
-        || m_layout.mode == LayoutMode::MasonryRows
-        || m_layout.mode == LayoutMode::MasonryRowsFill;
+        m_layout.currentMode() == LayoutMode::SideBySide
+        || m_layout.currentMode() == LayoutMode::MasonryRows
+        || m_layout.currentMode() == LayoutMode::MasonryRowsFill;
 
     if (preferHorizontalScroll && dx == 0 && dy != 0) {
         dx = dy;
@@ -491,8 +491,8 @@ bool ImageView::tryMousePressCrop(QMouseEvent *event)
     }
     const CropHandle h = cropHandleAt(event->pos());
     if (h == CropHandle::ExpandToggle) {
-        m_crop.setAllowExpand(!m_crop.allowExpand);
-        if (!m_crop.allowExpand) {
+        m_crop.setAllowExpand(!m_crop.isAllowExpand());
+        if (!m_crop.isAllowExpand()) {
             ensureCropRectValid(); // clamp back into the image
         }
         viewport()->update();
@@ -534,7 +534,7 @@ bool ImageView::tryMousePressCrop(QMouseEvent *event)
     if (!(event->modifiers()
           & (Qt::AltModifier | Qt::ControlModifier | Qt::ShiftModifier))) {
         beginCropRubberBand(event->pos());
-        if (m_crop.rubberBanding) {
+        if (m_crop.isRubberbanding()) {
             event->accept();
             return true;
         }
@@ -1060,7 +1060,7 @@ bool ImageView::tryMouseMoveCropDrag(QMouseEvent *event)
         event->accept();
         return true;
     }
-    if (m_crop.rubberBanding) {
+    if (m_crop.isRubberbanding()) {
         updateCropRubberBand(event->pos());
         event->accept();
         return true;
@@ -1580,7 +1580,7 @@ bool ImageView::tryMouseReleaseCrop(QMouseEvent *event)
         event->accept();
         return true;
     }
-    if (m_crop.rubberBanding) {
+    if (m_crop.isRubberbanding()) {
         endCropRubberBand();
         event->accept();
         return true;

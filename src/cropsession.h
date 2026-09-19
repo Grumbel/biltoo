@@ -140,6 +140,12 @@ public:
 
     void endRubber() { rubberBanding = false; }
 
+    bool isRubberbanding() const { return rubberBanding; }
+
+    bool isShowingFullImage() const { return showingFullImage; }
+
+    bool isAllowExpand() const { return allowExpand; }
+
 
     void bindTarget(ImageItem *item, SessionImageId sid, const QString &path)
     {

@@ -74,7 +74,7 @@ void ImageView::ensureCropRectValid()
         return;
     }
     m_crop.setRect(m_crop.rect.normalized());
-    if (m_crop.allowExpand) {
+    if (m_crop.isAllowExpand()) {
         QRectF r = m_crop.rect;
         if (r.width() < 1.0) {
             r.setWidth(1.0);
@@ -901,7 +901,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     }
     const QRectF cr = item->contentRect();
     QRectF local = localCrop.normalized();
-    if (!m_crop.allowExpand) {
+    if (!m_crop.isAllowExpand()) {
         local = local.intersected(cr);
     }
     if (local.width() < 1.0 || local.height() < 1.0) {
@@ -1351,7 +1351,7 @@ void ImageView::leaveCropModeInternal(bool apply)
     bool preserveCropFrameRotation = false;
     if (apply && item) {
         preserveCropFrameRotation = applyCropCommit(item);
-    } else if (item && m_crop.showingFullImage) {
+    } else if (item && m_crop.isShowingFullImage()) {
         cancelCropShowingFullImage(item);
     }
     // Restore pre-crop placement rotation unless Apply already set it from the
@@ -1662,7 +1662,7 @@ void ImageView::paintCropActionButtons(QPainter &painter)
     //   commit  = filled accent (Apply)
     // Local QPoint names must not hide QObject::tr — use ImageView::tr.
     drawCropTextButton(painter, cropExpandButtonView(), CropHandle::ExpandToggle,
-                       ImageView::tr("Expand"), CropBtnRole::Toggle, m_crop.allowExpand);
+                       ImageView::tr("Expand"), CropBtnRole::Toggle, m_crop.isAllowExpand());
     drawCropTextButton(painter, cropAutoButtonView(), CropHandle::Auto, ImageView::tr("Auto"),
                        CropBtnRole::Action);
     drawCropTextButton(painter, cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"),
@@ -1766,7 +1766,7 @@ void ImageView::updateCropMoveDrag(const QPointF &local, const QRectF &cr)
 {
     const QPointF delta = local - m_crop.dragStartLocal;
     QRectF r = m_crop.dragStartRect.translated(delta);
-    if (!m_crop.allowExpand) {
+    if (!m_crop.isAllowExpand()) {
         // Move must never shrink the draft (axis-aligned intersect used to clip
         // size at the image edge). Only slide so corners stay inside — same as
         // the rotated-frame path via translateCropInside.
@@ -1784,7 +1784,7 @@ void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qre
     m_crop.setRotation(CropGeometry::rotationFromDrag(
         local, m_crop.dragStartRect.center(), m_crop.rotateStartRotation,
         m_crop.rotateStartAngle, mods & Qt::ShiftModifier, mods & Qt::ControlModifier));
-    if (!m_crop.allowExpand) {
+    if (!m_crop.isAllowExpand()) {
         m_crop.setRect(CropGeometry::constrainToContent(m_crop.dragStartRect, m_crop.rotation, cr,
                                             minSide));
     }
@@ -1804,7 +1804,7 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
         m_crop.activeHandle, local, m_crop.dragStartRect, m_crop.rotation, minSide,
         fromCenter, forceSquare);
 
-    if (m_crop.allowExpand) {
+    if (m_crop.isAllowExpand()) {
         r = r.intersected(limits);
         if (r.width() < minSide) {
             r.setWidth(minSide);
@@ -1829,7 +1829,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
     const QRectF cr = item->contentRect();
-    const QRectF limits = m_crop.allowExpand
+    const QRectF limits = m_crop.isAllowExpand()
         ? cr.adjusted(-cr.width() * 4, -cr.height() * 4, cr.width() * 4, cr.height() * 4)
         : cr;
     const qreal minSide = 4.0;
@@ -1871,7 +1871,7 @@ void ImageView::beginCropRubberBand(const QPoint &viewPos)
 void ImageView::updateCropRubberBand(const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.rubberBanding) {
+    if (!item || !m_crop.isRubberbanding()) {
         return;
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
@@ -1886,7 +1886,7 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
     if (r.height() < 1.0) {
         r.setHeight(1.0);
     }
-    m_crop.setRect(m_crop.allowExpand ? r : r.intersected(cr));
+    m_crop.setRect(m_crop.isAllowExpand() ? r : r.intersected(cr));
     viewport()->update();
 }
 
