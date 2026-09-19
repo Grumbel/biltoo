@@ -2262,29 +2262,12 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
                                              const QImage &image,
                                              SessionAppearance::PixelKind kind)
 {
-    if (!item || image.isNull()) {
-        return;
-    }
-    // Same rules as every other attach: accept → materialize → attachDisplaySample.
-    installDisplayPixels(item, image, kind, item->sessionId() != kInvalidSessionImageId
-                                             ? item->sessionId()
-                                             : m_sessionId.currentIdValue());
-    m_sessionId.clearLastLoadError();
-    rememberSizeFromDecode(path, image);
-    if (viewport()) {
-        viewport()->update();
-    }
+    m_displayPipeline.installImageModeSampleInPlace(item, path, image, kind);
 }
-
 
 int ImageView::cappedDisplayEdgeForPath(const QString &path, int wantEdge) const
 {
-    int nativeLong = 0;
-    const QSize logical = logicalSizeForPath(path);
-    if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
-        nativeLong = ContentXform::longEdge(logical);
-    }
-    return DisplayEdgePolicy::cappedDisplayEdge(wantEdge, nativeLong);
+    return m_displayPipeline.cappedDisplayEdgeForPath(path, wantEdge);
 }
 
 QImage ImageView::fullRasterForEdit(const QString &path) const
@@ -2304,17 +2287,7 @@ QImage ImageView::fullRasterForEdit(const QString &path) const
 
 bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const
 {
-    const int incoming = ImageCache::longEdge(image);
-    int nativeLong = 0;
-    bool nativeKnown = false;
-    const QSize logical = logicalSizeForPath(path);
-    if (isPositiveSize(logical) && !isProvisionalImageSize(path)) {
-        nativeLong = ContentXform::longEdge(logical);
-        nativeKnown = nativeLong > 0;
-    }
-    return DisplayEdgePolicy::sampleCoversNative(
-        incoming, nativeLong, nativeKnown, ThumtooCache::kBatchOverviewEdge,
-        ThumtooCache::kImageLadderEdge);
+    return m_displayPipeline.sampleCoversNativeLogical(path, image);
 }
 
 void ImageView::noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
@@ -2332,77 +2305,13 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
 
 bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &image)
 {
-    if (!isImageMode() || path.isEmpty() || image.isNull()) {
-        return false;
-    }
-    // @p image is host-raw (soft job, ladder, quality job). Single materialize
-    // in installDisplayPixels — soft stand-in + async full when multi-MP want.
-    const SessionAppearance::PixelKind kind = pixelKindForImageModeSample(path, image);
-    const bool ok = tryInstallImageModeSampleBaked(path, image, kind);
-    // Decide soft→async / climb from the new host edge (event-driven).
-    // Nav-hot: install only — driveImageFocusSurface is a no-op while hot.
-    driveImageFocusSurface();
-    if (ok && viewport()) {
-        viewport()->update();
-    }
-    return ok;
+    return m_displayPipeline.tryInstallImageModeSample(path, image);
 }
 
 bool ImageView::tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
                                                SessionAppearance::PixelKind kind)
 {
-    // Name is historical: @p image is host-raw. installDisplayPixels materializes.
-    if (!isImageMode() || path.isEmpty() || image.isNull()) {
-        return false;
-    }
-    if (isCropDraftLockedPath(path)) {
-        return false;
-    }
-    if (ImageItem *cur = imageModeItemForPath(path)) {
-        if (canAcceptDisplaySample(cur, image, kind)) {
-            installImageModeSampleInPlace(cur, path, image, kind);
-            biltooLoadDbg("tryInstall OK path=%s kind=%d edge=%d",
-                          qPrintable(QFileInfo(path).fileName()),
-                          int(kind), ImageCache::longEdge(image));
-        } else {
-            biltooLoadDbg("tryInstall REJECT path=%s kind=%d edge=%d have=%d decoded=%d",
-                          qPrintable(QFileInfo(path).fileName()),
-                          int(kind), ImageCache::longEdge(image),
-                          cur->displayPixelLongEdge(),
-                          cur->hasDecodedPixels() ? 1 : 0);
-        }
-        // Climb while soft or short of native.
-        const int incoming = ImageCache::longEdge(image);
-        const int painted = cur->displayPixelLongEdge();
-        const bool noUpgrade = incoming > 0 && painted > 0 && incoming <= painted;
-        if (kind == SessionAppearance::PixelKind::SoftPreview
-            || !sampleCoversNativeLogical(path, image)) {
-            if (!(noUpgrade && m_pathRaster && m_pathRaster->isGaveUp(path))) {
-                ensureImageModeQualityClimb(path, image);
-            } else {
-                // Terminal PreferCache/Full shortfall at same edge as painted —
-                // still need host native when on-screen need exceeds that.
-                const int need = imageModeOnScreenNeedEdge();
-                if (need > painted) {
-                    scheduleImageModeNativeDecodeOnce(path);
-                }
-            }
-        }
-        return true;
-    }
-    // First install for this path: SoftPreview uses pending-tile path so
-    // FullSource-only createItemFromImage is not forced on a soft sample.
-    if (kind == SessionAppearance::PixelKind::SoftPreview) {
-        installImageModePendingTile(path, image);
-        ensureImageModeQualityClimb(path, image);
-        emit statusChanged();
-    } else {
-        installImageModeReplaceItem(path, image);
-        if (!sampleCoversNativeLogical(path, image)) {
-            ensureImageModeQualityClimb(path, image);
-        }
-    }
-    return true;
+    return m_displayPipeline.tryInstallImageModeSampleBaked(path, image, kind);
 }
 
 int ImageView::imageModeOnScreenNeedEdge() const

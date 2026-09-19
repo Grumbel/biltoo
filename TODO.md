@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1634-install-sample-controller.** Tier 5b: move image-mode sample install helpers.
+Prior: **1633**.
+
+### Change
+- DisplayPipelineController owns:
+  - `installImageModeSampleInPlace`
+  - `cappedDisplayEdgeForPath` / `sampleCoversNativeLogical`
+  - `tryInstallImageModeSample` / `tryInstallImageModeSampleBaked`
+- ImageView thin-forwards
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1634-install-sample-controller.bundle HEAD
+```
+
+### Next
+- Move ladder-ready / focus-surface / tile LOD from load.cpp
+- Host accessors to replace friend when surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1633-prefercache-climbs-controller.** Tier 5b: move PreferCache climb methods.
 Prior: **1632**.
 

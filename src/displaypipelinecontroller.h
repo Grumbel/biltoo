@@ -6,12 +6,14 @@
 
 #include "sessionloadgate.h"
 #include "displaysurface.h"
+#include "sessionappearance.h"
 
 #include <QTimer>
 
 #include <memory>
 
 class ImageView;
+class ImageItem;
 class TileLoadCoordinator;
 
 /**
@@ -58,6 +60,14 @@ public:
     void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                           const QImage &sample);
     void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
+    void installImageModeSampleInPlace(ImageItem *item, const QString &path,
+                                       const QImage &image,
+                                       SessionAppearance::PixelKind kind);
+    int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
+    bool sampleCoversNativeLogical(const QString &path, const QImage &image) const;
+    bool tryInstallImageModeSample(const QString &path, const QImage &image);
+    bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
+                                        SessionAppearance::PixelKind kind);
 
 private:
     ImageView *m_view = nullptr; // not owned
