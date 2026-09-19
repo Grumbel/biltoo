@@ -15,6 +15,9 @@
  */
 namespace GalleryPackFit {
 
+/** Viewport CSS overscan for gallery soft-decode window. */
+constexpr int kDecodeOverscanPx = 400;
+
 /** Usable pack axis length after margin (min @p floor). */
 inline qreal packAvailAxis(int viewportAxis, qreal margin, qreal floor = 32.0)
 {

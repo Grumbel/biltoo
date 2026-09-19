@@ -1814,7 +1814,6 @@ private:
     void gallerySoftResetAll();
     /** @deprecated Gallery always virtualizes; kept for ABI/docs only. */
     static constexpr int kGalleryVirtualThreshold = 1;
-    static constexpr int kGalleryDecodeOverscanPx = 400;
     /** Historical Gallery concurrency knob (unused after soft removal). */
     static constexpr int kMaxConcurrentGalleryDecodes = 8;
     /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
