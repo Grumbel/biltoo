@@ -127,6 +127,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **TextLayerSession** search fuzzy/query transitions.
 - **WorkspaceBackground::matches** / **CanvasBackground::setWorkspace**; **DisplayEdgePolicy::nativeLongEdge**.
 - **AttentionSession** rubber via ViewTransform::rubberRect.
+- **GallerySoft** decode-window delay tiers; hover cursor via ToolPolicy.
+- **SlideshowZoomBlurState::bumpGeneration**; **layoutIsPackaged** / **layoutIsHeightFitted**.
 
 
 ## Current pain (evidence)

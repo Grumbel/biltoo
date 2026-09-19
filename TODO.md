@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1387-decode-delays-hover-zoomblur-layoutpred.** Named delays and
+predicates on tip 1386.
+Prior: **1386**.
+
+### Change
+1. `GallerySoft` decode-window delay tiers (scroll/settle/slice/image/after-pack)
+2. `updateHoverEdge` → `ToolPolicy::cursorFor`
+3. `SlideshowZoomBlurState::bumpGeneration`
+4. `layoutIsPackaged` / `layoutIsHeightFitted`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1387-decode-delays-hover-zoomblur-layoutpred.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1387).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1386-workspace-native-attention-rubber.** Bag transitions on tip 1385.
 Prior: **1385**.
 
