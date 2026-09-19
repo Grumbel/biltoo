@@ -1824,7 +1824,7 @@ void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, con
 void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || m_crop.activeHandle == CropHandle::None) {
+    if (!item || !m_crop.isHandleDragging()) {
         return;
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));

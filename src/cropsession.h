@@ -67,6 +67,10 @@ public:
     {
         return hoverHandle == h || activeHandle == h;
     }
+
+    bool isHandleDragging() const { return activeHandle != CropHandle::None; }
+
+    bool hasHoverHandle() const { return hoverHandle != CropHandle::None; }
     bool isActive() const { return mode; }
 
     /**
