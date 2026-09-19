@@ -2,6 +2,33 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1532-crop-session-drag-enter.** Drag/rubber/enter helpers on tip 1531.
+Prior: **1531** (`7cc1873`). Many small commits.
+
+### Commits
+1. requestCropViewportUpdate
+2. cropKeyboardMods
+3. resolveCropEnterAppearance via loadRestoreCropAppearance
+4. captureCropUndoAfterState (+ workspace anchor, appearance image pick)
+5. contentLocalContains, finishCropRubberBand
+6. pickEnterFullRasterOrRequest
+7. cropHandleAt guards
+
+### Apply (on tip **1531** / `7cc1873`)
+```bash
+git fetch origin && git merge --ff-only origin/master
+# if origin still at 1527:
+git pull --ff-only /path/to/biltoo-1531-crop-session-appearance-install.bundle HEAD
+git pull --ff-only /path/to/biltoo-1532-crop-session-drag-enter.bundle HEAD
+```
+Requires **`7cc1873`**. If only origin tip 1527 is available, apply 1531 then 1532.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1531-crop-session-appearance-install.** New helpers on origin tip 1527 only.
 Prior: **1527** (`24da05b` / origin/master).
 
