@@ -32,11 +32,16 @@ public:
     bool active() const { return mode; }
 
     /** True for frame drag handles (not chrome buttons). */
+    static bool isChromeButton(CropHandle h)
+    {
+        return h == CropHandle::Reset || h == CropHandle::Close
+            || h == CropHandle::Cancel || h == CropHandle::ExpandToggle
+            || h == CropHandle::Auto;
+    }
+
     static bool isGeometryHandle(CropHandle h)
     {
-        return h != CropHandle::None && h != CropHandle::Reset && h != CropHandle::Close
-            && h != CropHandle::Cancel && h != CropHandle::ExpandToggle
-            && h != CropHandle::Auto;
+        return h != CropHandle::None && !isChromeButton(h);
     }
 
     bool isHandleHot(CropHandle h) const
