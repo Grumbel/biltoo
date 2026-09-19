@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1489-crop-rubber-reset.** Rubber-band, Reset chrome, draftCenterLocal on CropSession.
+Prior: **1488**. Commits 1489a–1489c (+ docs).
+
+### Commits
+1. **CropSession** beginRubberDraft / applyRubberBand
+2. **CropSession** resetDraftToContent
+3. **CropSession** draftCenterLocal
+
+### Apply
+```bash
+git pull /path/to/biltoo-1489-crop-rubber-reset.bundle HEAD
+```
+Requires tip **1488** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1488-crop-drag-session.** Crop drag geometry + integer crop + expand toggle on CropSession.
 Prior: **1487**. Commits 1488a–1488c (+ docs).
 
