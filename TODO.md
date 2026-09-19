@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1357-snap-margins-timeline-clock.** Group snapDegrees, clocks
+clamp01, workspace sceneMargins, HUD timeline clock placement.
+Prior: **1356**.
+
+### Change
+- GroupTransformGeometry rotation uses `PlacementLinear::snapDegrees`
+- SlideshowClocks integrate uses `ViewTransform::clamp01`
+- `WorkspaceGeometry::{sceneMargins,paddedSceneRect}`
+- `HudGeometry::placeTimelineClock` + pad/radius constants
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1357**)
+```bash
+git pull /path/to/biltoo-1357-snap-margins-timeline-clock.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1356-shear-crop-chrome-pixel-lqip.** clampShear, crop chrome
 constants, clampPixel/Index, SoftDisplay LQIP overloads, motion coverScale.
 Prior: **1355**.

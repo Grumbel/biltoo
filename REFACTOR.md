@@ -334,3 +334,4 @@ part of early-phase exit criteria).
 - **Fix AttentionGeometry** header; detect/trim clamps; **DisplayQuality::kOverviewMaxEdge**; **EdgeNavPolicy** zone constants.
 - **ViewTransform** containScale / coverScale / floorScale; **ItemFrameGeometry** selectedChromePad / maxChromeOffset.
 - **PlacementLinear** clampShear in decompose; **CropGeometry** kChrome*; **ViewTransform** clampIndex/Pixel; SoftDisplay LQIP overloads.
+- Group snapDegrees; clocks clamp01; **WorkspaceGeometry** sceneMargins/paddedSceneRect; **HudGeometry::placeTimelineClock**.
