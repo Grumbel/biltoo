@@ -32,6 +32,14 @@ constexpr int kDefaultLqipCeiling = 96;
 constexpr int kSoftProgressFloor = 128;
 /** Hard cap: soft PreferCache ensure cycles per path per want band. */
 constexpr int kMaxEnsureAttempts = 6;
+/** Host LQIP installs per decode-window tick (steady state). */
+constexpr int kMaxInstallsPerDecodeWindow = 24;
+/** Host LQIP installs while size-resolve gate is still active. */
+constexpr int kMaxInstallsDuringSizeResolve = 16;
+/** Wall-clock budget for one decode-window GUI pass (ms). */
+constexpr qint64 kDecodeWindowWallMs = 6;
+/** Re-arm delay when more installs remain (ms). */
+constexpr int kDecodeWindowRearmMs = 32;
 
 inline int maxHave(int a, int b)
 {

@@ -3,6 +3,7 @@
 
 #include "displayquality.h"
 #include "imageview.h"
+#include "layoutapplyguard.h"
 #include "gallerypackfit.h"
 #include "viewtransform.h"
 #include <cstdio>
@@ -220,14 +221,14 @@ void ImageView::updateGalleryDecodeWindow()
     // While sizes are still sequential, only allow blank LQIP installs from cache
     // — no tile ticks / pyramid (workers stay on ProbeSize).
     if (gallerySizeResolveActive()) {
-        constexpr int kMaxInstallsDuringSizeResolve = 16;
+        constexpr int kMaxInstallsDuringSizeResolve = GallerySoft::kMaxInstallsDuringSizeResolve;
         bool more = false;
         const int n = galleryInstallHostSoftOntoBlanks(kMaxInstallsDuringSizeResolve, &more);
         if (n > 0 && viewport()) {
             viewport()->update();
         }
         if (more) {
-            scheduleGalleryDecodeWindowRefresh(32);
+            scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);
         }
         return;
     }
@@ -235,7 +236,7 @@ void ImageView::updateGalleryDecodeWindow()
     // GUI_BUDGET. Slice work and re-arm instead of one multi-hundred-ms pass.
     QElapsedTimer wall;
     wall.start();
-    constexpr qint64 kDecodeWindowWallMs = 6;
+    constexpr qint64 kDecodeWindowWallMs = GallerySoft::kDecodeWindowWallMs;
 
     const QRect viewRect = viewport()->rect().adjusted(
         -GalleryPackFit::kDecodeOverscanPx, -GalleryPackFit::kDecodeOverscanPx,
@@ -247,7 +248,7 @@ void ImageView::updateGalleryDecodeWindow()
     qint64 usInterest = 0;
     QElapsedTimer phaseTimer;
 
-    constexpr int kMaxInstallsPerDecodeWindow = 24;
+    constexpr int kMaxInstallsPerDecodeWindow = GallerySoft::kMaxInstallsPerDecodeWindow;
     bool moreInstallsPending = false;
     if (m_perf.enabled) {
         phaseTimer.start();
@@ -262,7 +263,7 @@ void ImageView::updateGalleryDecodeWindow()
         scheduleGalleryStatusRefresh(100);
     }
     if (moreInstallsPending) {
-        scheduleGalleryDecodeWindowRefresh(32);
+        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);
     }
     if (m_perf.enabled) {
         usPass1 = phaseTimer.nsecsElapsed() / 1000;
@@ -555,7 +556,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     const int keptScrollV =
         (preserveView && verticalScrollBar()) ? verticalScrollBar()->value() : -1;
 
-    m_layoutApply.begin();
+    LayoutApplyGuard::Scoped layoutApplyScope(&m_layoutApply);
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     resetTransform();
@@ -575,8 +576,8 @@ void ImageView::applyLayout(GalleryPackReason reason)
         setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     }
 
-    const qreal margin = 16.0;
-    const qreal gap = 12.0;
+    const qreal margin = GalleryLayout::Params::kDefaultMargin;
+    const qreal gap = GalleryLayout::Params::kDefaultGap;
     const qreal availW = GalleryPackFit::packAvailAxis(viewport()->width(), margin);
     const qreal availH = GalleryPackFit::packAvailAxis(viewport()->height(), margin);
 
@@ -610,7 +611,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     m_framing.fitMode = true;
     // Keep the guard until after statusChanged so slots cannot re-enter layout.
     emit statusChanged();
-    m_layoutApply.clear();
+    // layoutApplyScope ends after this function returns (keeps guard through statusChanged)
     // Re-apply scroll after centerOn(0,0) above when returning from Image.
     applyPendingGalleryRestore();
     if (preserveView) {
