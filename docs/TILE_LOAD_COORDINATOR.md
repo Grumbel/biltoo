@@ -16,7 +16,13 @@
 2. On-screen **incomplete** exact coverage
 3. Fully covered cells (upres) **only when** no in-view cell still needs coverage
 
+`hasAnyTile` is true when the item has a live session with Succeeded tiles **or**
+`tileLodHasPathRam()` (process-wide `TileLodRegistry` still holds Succeeded tiles
+for the path). A→B→A and Gallery restore after Image mode are not treated as
+cold zero-tile cells.
+
 Off-screen speculative tile issue is not done here; soft/idle policy is separate.
+Neighbor overview fill is `TileNeighborPrefetch` (Image-mode nav settle).
 
 ## Non-goals
 
