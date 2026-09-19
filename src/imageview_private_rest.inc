@@ -16,8 +16,6 @@
      * path's session crop from m_itemStates. When false, @p image is used as-is
      * (Workspace duplicate: pixels already include any crop/transform bake).
      */
-    ImageItem *createItemFromImage(const QString &path, const QImage &image,
-                                   bool applyStoredSessionCrop = true);
     /** Image-mode only: content appearance for a newly created canvas item. */
     WorkspaceItemState appearanceForNewImageModeItem(const QString &path);
     /** Interactive / gallery / static flags for the current ViewMode. */
@@ -38,7 +36,6 @@
     /** SoftPreview vs FullSource from delivered sample size (not request edge). */
     SessionAppearance::PixelKind pixelKindForImageModeSample(const QString &path,
                                                              const QImage &image) const;
-    ImageItem *imageModeItemForPath(const QString &path) const;
     void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
     /**
      * Debounce climb + tile tick after zoom (wheel/toolbar). Avoids per-notch
@@ -50,8 +47,6 @@
                                        SessionAppearance::PixelKind kind);
     /** Install/upgrade Image-mode sample; schedules PreferCache on soft. */
     /** Absolute content want for @p item (session store + live flags). */
-    WorkspaceItemState wantAppearanceForItem(const ImageItem *item,
-                                             SessionImageId sid = kInvalidSessionImageId) const;
     bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
                                  SessionAppearance::PixelKind kind) const;
     /** Native host + materialize for PNG/PDF/print (off-GUI load). */
@@ -109,22 +104,18 @@
     void ensureWorkspaceQualityClimb();
     void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
     /** Fit / slideshow zoom / motion handoff after Image-mode full replace. */
-    void frameImageModeReplaceItem(ImageItem *item, const QString &path);
     /**
      * Image mode: drop the previous frame and show a loading/provisional tile
      * for @p path immediately (do not wait for the background decode).
      */
     void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
     /** Bind Image-mode item to the current session cursor (id + index). */
-    void bindImageModeSessionCursor(ImageItem *item);
     /** Neutral Image-mode pose (no Workspace free-form scale/rotation). */
-    void resetImageModeItemPlacement(ImageItem *item);
     /** Soft pixels for pending tile: explicit preview → slideshow map → ImageCache. */
     QImage resolveImageModePendingPixels(const QString &path, const QImage &preview) const;
     /** @p displayReadyOut set when soft is already content-baked (stashed Gallery tile). */
     QImage resolveImageModePendingPixels(const QString &path, const QImage &preview,
                                          bool *displayReadyOut) const;
-    ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     QSize probeImageSize(const QString &path) const;
     /**
      * Best-known native pixel size for @p path from the session cache only.
@@ -137,14 +128,12 @@
      * if still unknown, use @p previewHint aspect so fitInView fills the window
      * (neutral 1000×1000 made portrait/landscape images look letterboxed).
      */
-    QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
     /**
      * Cache-only pass before Gallery pack: fill m_sizeBook from
      * ThumtooCache::cachedSize and ImageCache from LQIP when present.
      * Does not schedule ladder encode or source I/O.
      */
     void primeGalleryGeometryFromCache(const QStringList &paths);
-    void scheduleImageSizeProbe(const QString &path);
 
     // --- GallerySizeResolveHost -------------------------------------------------
     bool hasDefinitiveHostSize(const QString &path) const override;
@@ -179,15 +168,12 @@
     /** LQIP install + tile pyramid request for a Gallery path. */
     void scheduleGalleryDecode(const QString &path);
 
-    int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut = nullptr) const;
     /** Recover blank Gallery cells that never got LQIP installed. */
     void gallerySoftWatchdogTick();
     /** Clear stale "Improving previews" centre HUD noise. */
     void updateGallerySoftProgressHud();
     /** Bind/sync ImageFocus surface (aliases primary item surface id). */
     void ensureImageFocusSurface();
-    void syncImageFocusSurfaceState();
-    void driveImageFocusSurface();
     /** Bind/unbind DisplaySurface for a canvas item (Gallery/Workspace/Image). */
     void registerItemDisplaySurface(ImageItem *item);
     void unregisterItemDisplaySurface(ImageItem *item);
@@ -206,7 +192,6 @@
     const WorkspaceItemState *resolveStoredAppearance(ImageItem *item,
                                                        WorkspaceItemState *fallback,
                                                        SessionImageId *sidOut);
-    void applyStoredAppearance(ImageItem *item);
     /**
      * After installing full on-disk pixels (soft→full), re-apply crop / content
      * flip / quarter-turn / grade from the item's session appearance without a
@@ -217,7 +202,6 @@
      * If @p sid has no m_appearance entry, load durable content-hash state for
      * @p path into the store (no-op when missing / thumtoo off).
      */
-    void seedSessionAppearanceFromState(SessionImageId sid, const QString &path);
     void applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
                                           const ThumtooCache::StoredContentAppearance &stored);
     /** Record that durable appearance was probed for @p sid (hit or miss). */
@@ -276,7 +260,6 @@
     /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
     void requestCropFullRaster(const QString &path);
     /** Upgrade crop source when native full arrives for m_cropCtrl.session().awaitingFullPath. */
-    void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
     void relayoutAfterCropLeave(ImageItem *item);
     void flashCropHud(const CropFlash::Hud &hud);
@@ -299,14 +282,11 @@
      * when aspect is stable (soft→full / probe magnitude). Refit only if aspect
      * changed or size was unknown.
      */
-    void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,
-                                              const QSize &after);
     /**
      * Image mode: keep sceneRect tight to the target item (small fixed margin).
      * Prevents leftover Workspace/Gallery/null scene rects from allowing free or
      * asymmetric pan when the image is fitted. No-op outside Image mode.
      */
-    void syncImageModeSceneRect(ImageItem *item);
     void ensureVisibleItem(ImageItem *item);
     qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
     void rememberItemState(ImageItem *item);
@@ -426,7 +406,6 @@
     ImageModeSoftProvider m_imageModeSoftProvider;
 
     PathRasterService *m_pathRaster = nullptr;
-    void gallerySoftResetPath(const QString &path);
     void gallerySoftResetAll();
     /** @deprecated Gallery always virtualizes; kept for ABI/docs only. */
     static constexpr int kGalleryVirtualThreshold = 1;
@@ -437,15 +416,6 @@
     /** Queue of workspace restores still waiting for decode (supports same path twice). */
     /** Optional scene centre for in-flight LoadAdd decodes (e.g. drops). */
     // --- LoadAdd pending-bind helpers ---
-    int countPendingSessionBinds(const QString &path) const;
-    void purgeSatisfiedPendingBinds(const QString &path);
-    bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
-    void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound);
-    bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image);
-    bool takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
-                                          PendingSessionBind *out);
-    void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
-                             bool haveBound, const PendingSessionBind &bound);
 
     SessionBindBook m_bindBook;
     /** Content appearance staged by Duplicate until bindSelectedSessionIds. */

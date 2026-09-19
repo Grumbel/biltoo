@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1648-drop-display-pipeline-friend.** Tier 5c: remove DisplayPipelineController friend.
+Prior: **1647**.
+
+### Change
+- Promote ImageView methods needed by DisplayPipelineController to public host API
+- Controller calls its own methods for pipeline-owned work (no m_view-> bounce)
+- **Removed `friend class DisplayPipelineController`**
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1648-drop-display-pipeline-friend.bundle HEAD
+```
+
+### Next
+- Optional: split displaypipelinecontroller.cpp (~3k lines)
+- Audit remaining ImageView private surface / dual-write path order
+- Compile fix if any promoted decl was incomplete
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1647-display-pipeline-host-accessors.** Host surface for DisplayPipelineController.
 Prior: **1646**.
 

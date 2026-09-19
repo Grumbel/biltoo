@@ -58,7 +58,6 @@
      */
     QSize ensureLogicalSizeForPath(const QString &path);
 
-    bool isCropDraftLockedPath(const QString &path) const;
 
     /** Drop neighbor-prefetch slot for one path (session remove). */
     void dropTilePrefetchPath(const QString &path);
@@ -114,7 +113,6 @@
 
 
     /** How many times @a path appears in session path order (duplicate tiles). */
-    int pathOrderOccurrences(const QString &path) const;
 
     /**
      * View-local path order (Gallery pack / LoadAdd multiplicity).
@@ -122,9 +120,7 @@
      * SessionDocument remains MainWindow-owned — mutations never clear/append it
      * (Gallery leave clears the book without wiping the session).
      */
-    bool pathOrderIsEmpty() const { return m_pathOrderBook.isEmpty(); }
     int pathOrderSize() const { return m_pathOrderBook.size(); }
-    const QStringList &pathOrderPaths() const { return m_pathOrderBook.pathList(); }
     const QVector<SessionImageId> &pathOrderIds() const { return m_pathOrderBook.idList(); }
     QString pathOrderPathAt(int index) const { return m_pathOrderBook.pathAt(index); }
     SessionImageId pathOrderIdAt(int index) const { return m_pathOrderBook.idAt(index); }
@@ -188,7 +184,6 @@
     // --- completeLoadReplace phases ---
     void installImageModeReplaceItem(const QString &path, const QImage &image);
 
-    void seedEmptyWorkspaceFromReplace(const QString &path, const QImage &image);
 
     bool pageGuideSelected() const { return m_pageGuide.isSelected(); }
 
@@ -256,10 +251,8 @@
     void captureStickyZoomFromCurrentFraming();
 
     /** Image-mode framing after soft/full install (honours sticky zoom). */
-    void applyImageModeFraming(ImageItem *item);
 
     /** Best-effort: remember viewport centre in image-normalized coords. */
-    void captureStickyPanAnchor(ImageItem *item);
 
     void restoreStickyPanAnchor(ImageItem *item);
 
@@ -282,12 +275,10 @@
 
     bool showTextRegions() const { return m_textLayer.showsRegions(); }
 
-    void refreshTextLayer();
 
     /** Joined text of the selection in reading order; empty if none. */
     QString selectedText() const;
 
-    void clearTextSelection();
 
     void clearViewBackground(); /**< AppDefault */
 
@@ -329,7 +320,6 @@
      * archive). Runs applyLayout after a short idle; Enter/Explicit callers
      * should still use applyLayout directly.
      */
-    void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
 
     void persistSessionAppearanceSlot(ImageItem *item);
 
@@ -436,6 +426,5 @@
     int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending);
 
     /** Coalesce statusChanged during soft climb (MainWindow is not free). */
-    void scheduleGalleryStatusRefresh(int delayMs = 100);
 
 
