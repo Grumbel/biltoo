@@ -56,13 +56,32 @@ public:
     int scrollV() const { return m_scrollV; }
 
     QString focusPath() const { return m_focusPath; }
-    void setFocusPath(const QString &path) { m_focusPath = path; }
+
+    /** @return true when focus path changed. */
+    bool setFocusPath(const QString &path)
+    {
+        if (m_focusPath == path) {
+            return false;
+        }
+        m_focusPath = path;
+        return true;
+    }
 
     ImageItem *selectionAnchor() const { return m_selectionAnchor; }
     void setSelectionAnchor(ImageItem *item) { m_selectionAnchor = item; }
 
     QString hoverPath() const { return m_hoverPath; }
-    void setHoverPath(const QString &path) { m_hoverPath = path; }
+
+    /** @return true when hover path changed. */
+    bool setHoverPath(const QString &path)
+    {
+        if (m_hoverPath == path) {
+            return false;
+        }
+        m_hoverPath = path;
+        return true;
+    }
+
     void clearHoverPath() { m_hoverPath.clear(); }
 
     /** Drop hover path and selection anchor (leave / wipe). */
