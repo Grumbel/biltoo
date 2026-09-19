@@ -53,7 +53,15 @@ struct SessionIdentity {
         return true;
     }
 
-    void setLastLoadError(const QString &err) { lastLoadError = err; }
+    /** @return true when the error string changed. */
+    bool setLastLoadError(const QString &err)
+    {
+        if (lastLoadError == err) {
+            return false;
+        }
+        lastLoadError = err;
+        return true;
+    }
 
     void clearLastLoadError() { lastLoadError.clear(); }
 };
