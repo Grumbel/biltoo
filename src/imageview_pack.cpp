@@ -450,12 +450,7 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
         }
         const QString path = classicPath();
         // Drop retained path tiles so Reload cannot paint pre-reload grid cells.
-        if (ImageItem *item = imageModeItemForPath(path)) {
-            item->invalidateTilePathRam();
-        } else {
-            tilelod::TileLodRegistry::instance().invalidate(path);
-        }
-        dropTilePrefetchPath(path);
+        purgeTilePathRam(path);
         // Force a fresh decode of the focused session image only.
         scheduleImageLoad(path, LoadReplace);
         flashHud(tr("Reload"), QFileInfo(path).fileName());
@@ -463,6 +458,7 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
     }
 
     // Gallery / Workspace: re-decode every on-canvas item in place.
+    QSet<QString> purgedPaths;
     for (ImageItem *item : m_items) {
         if (!item) {
             continue;
@@ -472,8 +468,12 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
             continue;
         }
         gallerySoftResetPath(path);
-        item->invalidateTilePathRam();
-        dropTilePrefetchPath(path);
+        if (!purgedPaths.contains(path)) {
+            purgeTilePathRam(path);
+            purgedPaths.insert(path);
+        } else {
+            item->dropTileLodSession();
+        }
         takePendingWorkspacePath(path);
         item->clearDecodedPixels();
         PendingSessionBind b;

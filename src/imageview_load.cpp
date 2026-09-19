@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "tilelod/tile_lod_registry.hpp"
 #include "gallerysoftsm.h"
 #include "viewtransform.h"
 #include "displayedgepolicy.h"
@@ -2685,6 +2686,20 @@ bool ImageView::tilePrefetchNavHot() const
 void ImageView::dropTilePrefetchPath(const QString &path)
 {
     m_tileNeighborPrefetch.dropPath(path);
+}
+
+void ImageView::purgeTilePathRam(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : m_items) {
+        if (item && item->path() == path) {
+            item->dropTileLodSession();
+        }
+    }
+    tilelod::TileLodRegistry::instance().invalidate(path);
+    dropTilePrefetchPath(path);
 }
 
 void ImageView::tickPrimaryTileLod(int budget)
