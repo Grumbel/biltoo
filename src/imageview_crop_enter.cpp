@@ -146,12 +146,6 @@ void ImageView::setCropMode(bool on)
 }
 
 
-bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const
-{
-    // Prior crop + content flags for this session image; path map only if unbound.
-    return loadRestoreCropAppearance(item, app, nullptr);
-}
-
 void ImageView::rememberCropEnterSizes(const QString &path, const QImage &full)
 {
     if (full.isNull() || !sampleCoversNativeLogical(path, full)) {
@@ -235,35 +229,22 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     installEnterSampleDisplay(item, sample, full, path);
 }
 
-void ImageView::activateCropModeAfterInstall(ImageItem *item)
-{
-    // Crop chrome + fitItem only after pixels and contentRect match the draft.
-    m_crop.activateModeAfterDraft();
-    fitImageOrUpdateWorkspace(item);
-    m_crop.clearAwaitingFull();
-}
-
-
-QRectF ImageView::captureItemContentSceneRect(ImageItem *item) const
-{
-    if (!item) {
-        return {};
-    }
-    // Workspace: lock scene footprint before intrinsic changes on install.
-    return item->mapRectToScene(item->contentRect());
-}
-
 void ImageView::installAndActivateCropEnter(ImageItem *item, const QImage &full,
                                             const WorkspaceItemState *app, bool haveApp,
                                             bool unorientedSource)
 {
-    const QRectF beforeScene = captureItemContentSceneRect(item);
+    // Workspace: lock scene footprint before intrinsic changes on install.
+    const QRectF beforeScene =
+        item ? item->mapRectToScene(item->contentRect()) : QRectF();
     installFullImageForCrop(item, full, app, haveApp, unorientedSource);
     preserveWorkspaceItemCenter(item, beforeScene.center(),
                                 beforeScene.width(), beforeScene.height());
     m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
                                        item->imageSize(), app, haveApp);
-    activateCropModeAfterInstall(item);
+    // Crop chrome + fitItem only after pixels and contentRect match the draft.
+    m_crop.activateModeAfterDraft();
+    fitImageOrUpdateWorkspace(item);
+    m_crop.clearAwaitingFull();
 }
 
 bool ImageView::pickEnterFullRasterOrRequest(ImageItem *item, const QString &path,
@@ -292,7 +273,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     m_crop.clearAwaitingFull();
 
     WorkspaceItemState app;
-    const bool haveApp = resolveCropEnterAppearance(item, &app);
+    const bool haveApp = loadRestoreCropAppearance(item, &app, nullptr);
     const bool hadCrop = CropSession::appearanceHasCrop(&app, haveApp);
     CropSession::EnterFullRaster enter;
     if (!pickEnterFullRasterOrRequest(item, path, hadCrop, &enter)) {

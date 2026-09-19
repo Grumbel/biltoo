@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1568-crop-enter-inline-thin.** Inline resolve/activate/capture into enter pipeline.
+Prior: **1567**.
+
+### Change
+- Drop `resolveCropEnterAppearance` (call `loadRestoreCropAppearance`)
+- Drop `activateCropModeAfterInstall` / `captureItemContentSceneRect` (inlined in `installAndActivateCropEnter`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1568-crop-enter-inline-thin.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1567-crop-record-inline-chrome.** Inline computeSessionCropRecord; leave chrome notify in shared crop.
 Prior: **1566**.
 
