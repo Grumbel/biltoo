@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "tocpanel.h"
+#include "viewtransform.h"
 
 #include <QLabel>
 #include <QTreeWidget>
@@ -57,7 +58,7 @@ void TocPanel::setOutline(const ThumtooCache::DocumentOutline &outline)
     // Stack of parents by level (1-based levels from thumtoo).
     QVector<QTreeWidgetItem *> stack;
     for (const ThumtooCache::OutlineItem &it : outline.items) {
-        const int level = qMax(1, it.level);
+        const int level = ViewTransform::atLeast1(it.level);
         while (stack.size() >= level) {
             stack.pop_back();
         }

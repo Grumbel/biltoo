@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "gallerylayout.h"
+#include "viewtransform.h"
 #include "gallerypackfit.h"
 #include "imageitem.h"
 
@@ -339,7 +340,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                 contentW += e.w;
                 contentH = qMax(contentH, e.h);
             }
-            contentW += gap * qMax(0, row.size() - 1);
+            contentW += gap * ViewTransform::nonNeg(row.size() - 1);
             const qreal s = (fill && contentW > 1e-6) ? (layoutW / contentW) : 1.0;
             qreal x = margin;
             qreal placedH = 0.0;

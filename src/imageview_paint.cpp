@@ -448,8 +448,8 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel(lines, 0, 0, false, false, true);
         } else if (gallerySizeResolveActive() && m_gallerySizeResolve.total() > 0) {
             // Fallback if title was cleared but gate still active.
-            const int done = qMax(0, m_gallerySizeResolve.total()
-                                  - m_gallerySizeResolve.pendingCount());
+            const int done = ViewTransform::nonNeg(
+                m_gallerySizeResolve.total() - m_gallerySizeResolve.pendingCount());
             drawPanel({{tr("Resolving sizes…"), true},
                        {tr("%1 / %2").arg(done).arg(m_gallerySizeResolve.total()), false}},
                       0, 0, false, false, true);

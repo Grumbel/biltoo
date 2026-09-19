@@ -198,6 +198,11 @@ inline qreal nonNeg(qreal v)
     return v < 0.0 ? 0.0 : v;
 }
 
+inline int nonNeg(int v)
+{
+    return v < 0 ? 0 : v;
+}
+
 } // namespace ViewTransform
 
 #endif // VIEWTRANSFORM_H

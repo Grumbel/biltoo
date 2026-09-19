@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "tile_load_coordinator.h"
+#include "viewtransform.h"
 
 #include "biltoo_thread.h"
 #include "imageitem.h"
@@ -273,7 +274,7 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
 
     const int n = issueTargets.size();
-    int remaining = qMax(0, gallery ? qMax(globalBudget, 48) : globalBudget);
+    int remaining = ViewTransform::nonNeg(gallery ? qMax(globalBudget, 48) : globalBudget);
     for (int i = 0; i < n; ++i) {
         if (wall.elapsed() >= kWallMs) {
             break;
@@ -287,7 +288,7 @@ void TileLoadCoordinator::tick(int globalBudget)
         const int left = n - i;
         const int perCellCap = gallery ? 8 : 24;
         const int share = remaining > 0
-            ? qMin(perCellCap, qMax(1, remaining / left))
+            ? qMin(perCellCap, ViewTransform::atLeast1(remaining / left))
             : 0;
         item->tickTileLod(share);
         remaining -= share;

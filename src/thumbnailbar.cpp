@@ -292,7 +292,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         const int labelInset = (orient == Qt::Horizontal) ? flow : cross;
         const QRect textRect(cell.left() + labelInset,
                              cell.bottom() - labelBand + kLabelGap,
-                             qMax(1, cell.width() - 2 * labelInset),
+                             ViewTransform::atLeast1(cell.width() - 2 * labelInset),
                              fm.height());
         const QColor textColor = selected
             ? option.palette.color(QPalette::HighlightedText)
@@ -686,13 +686,13 @@ void ThumbnailBar::updateCenteringMargins()
         const int avail = viewport()->width();
         if (bounds.width() > 0 && bounds.width() < avail) {
             marginLeft = (avail - bounds.width()) / 2 - bounds.left();
-            marginLeft = qMax(0, marginLeft);
+            marginLeft = ViewTransform::nonNeg(marginLeft);
         }
     } else {
         const int avail = viewport()->height();
         if (bounds.height() > 0 && bounds.height() < avail) {
             marginTop = (avail - bounds.height()) / 2 - bounds.top();
-            marginTop = qMax(0, marginTop);
+            marginTop = ViewTransform::nonNeg(marginTop);
         }
     }
 
@@ -745,7 +745,7 @@ void ThumbnailBar::applyThumbMetrics()
     const int cross = m_delegate ? m_delegate->cellPad() : 4;
     const int flow = m_delegate ? m_delegate->flowPad() : 2;
     // Inter-image gap = 2·flowPad + spacing ≈ cellPad (matches cross-axis margin).
-    setSpacing(qMax(0, cross - 2 * flow));
+    setSpacing(ViewTransform::nonNeg(cross - 2 * flow));
     if (m_orientation == Qt::Horizontal) {
         // Cross-axis extent = cross pads + thumbSize + label.
         setMinimumHeight(kMinThumbSize + label + 2 * cross);
