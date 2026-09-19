@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1375-zoomregion-framing-sessionid.** ZoomRegionGesture,
+ViewFraming, and SessionIdentity transitions.
+Prior: **1374**.
+
+### Change
+- `ZoomRegionGesture::{arm,disarm,beginDrag,endDrag}`
+- `ViewFraming` fit/fill/sticky/preserved-scale helpers
+- `SessionIdentity::{setPosition,setCurrentId,setLastLoadError,clearLastLoadError}`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1375**)
+```bash
+git pull /path/to/biltoo-1375-zoomregion-framing-sessionid.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1374-nonneg-qint64-hudflash.** Fix nonNeg qsizetype ambiguity;
 TextLayer search query; HudFlash transitions.
 Prior: **1373**.
