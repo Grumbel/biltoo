@@ -1663,6 +1663,10 @@ private:
     /** Upgrade crop source when native full arrives for m_crop.awaitingFullPath. */
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
+    void attachCropApplyDisplay(ImageItem *item, const QImage &display,
+                                const WorkspaceItemState &st, bool multiMp,
+                                qreal cropW, qreal cropH, const QString &path,
+                                const QPointF &cropSceneCenter);
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);

@@ -835,6 +835,22 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
         m_crop.enterStateRef(), afterSt, text));
 }
 
+void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
+                                          const WorkspaceItemState &st, bool multiMp,
+                                          qreal cropW, qreal cropH, const QString &path,
+                                          const QPointF &cropSceneCenter)
+{
+    // Clear first so the crop bake replaces full-frame pixels — otherwise canvas
+    // stretches full into the crop box and filmstrip gets img=full.
+    item->clearDecodedPixels();
+    // Geometry before pixels: empty item with crop intrinsic, then bake.
+    applyContentLayoutSize(item, st);
+    CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
+    attachDisplaySample(item, display, st, CropSession::applyPixelKind(multiMp));
+    m_crop.restoreEnterScale(item);
+    alignItemCenterToScene(item, cropSceneCenter);
+}
+
 void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                            ImageItem *item, const QImage &preferredDisplay,
                                            bool hasCrop)
@@ -947,15 +963,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // reverse). fitItem still runs under m_crop.active(); it must not treat Apply
         // as draft (see fitItem cropDraft).
         ViewportUpdateHold paintHold(viewport());
-        item->clearDecodedPixels();
-        // Geometry before pixels: empty item with crop intrinsic, then bake.
-        applyContentLayoutSize(item, st);
-        CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
-        const auto pixelKind = CropSession::applyPixelKind(multiMp);
-        attachDisplaySample(item, display, st, pixelKind);
-        // Restore enter placement scale if something else mutated it during draft.
-        m_crop.restoreEnterScale(item);
-        alignItemCenterToScene(item, cropSceneCenter);
+        attachCropApplyDisplay(item, display, st, multiMp, cropW, cropH, path,
+                               cropSceneCenter);
 
         // Multi-MP: soft stand-in now; pure full rematerialize after leave.
         // scheduleAsyncHostRematerialize is blocked while crop freeze is on —
