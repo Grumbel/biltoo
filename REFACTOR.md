@@ -205,6 +205,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowPhaseState** hasToAtlas/clampedFadeT; **SessionIdentity**
   hasCurrentId/hasLastLoadError; **ImageView** isNavEdge; **CropSession**
   rubber/full/expand accessors; **LayoutPrefs** currentMode.
+- **ZoomRegionGesture** rubber/armed helpers; privatize
+  **PendingItemAppearanceBook**; **SlideshowPhaseState** contentApplied and
+  motion-clock accessors.
 
 
 ## Current pain (evidence)

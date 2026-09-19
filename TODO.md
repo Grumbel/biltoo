@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1469-zoom-pending-phase-clocks.** ZoomRegion, PendingAppearance, phase clocks.
+Prior: **1468**. Commits 1469a–1469c (+ docs).
+
+### Commits
+1. **ZoomRegionGesture** isArmed/isDragging/hasRubberBand, showRubberAt, updateRubberTo
+2. Privatize **PendingItemAppearanceBook** map storage
+3. **SlideshowPhaseState** contentApplied and motion-clock accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled. Crop enter/apply
+still on view (larger ownership extraction).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1469-zoom-pending-phase-clocks.bundle HEAD
+```
+Requires tip **1468**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1468-phase-identity-nav-crop-layout.** Phase atlas, identity, nav, crop, layout.
 Prior: **1467**. Commits 1468a–1468e (+ docs).
 
