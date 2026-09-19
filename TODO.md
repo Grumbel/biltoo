@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1628-path-order-doc-reads.** Prefer SessionDocument for membership; stop dual-write.
+Prior: **1627**.
+
+### Change
+- **Stop dual-write** of clear/append/setOrder onto SessionDocument (MainWindow owns
+  the list; Gallery `clearPathOrder` must not wipe the session)
+- `pathOrderOccurrences` / `firstSessionIdForPath` prefer bound SessionDocument
+- Slideshow uses `firstSessionIdForPath` instead of `hostPathOrderBook().firstIdForPath`
+- View `m_pathOrderBook` remains Gallery-local order until full delete
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1628-path-order-doc-reads.bundle HEAD
+```
+
+### Next
+- Migrate remaining pathOrder reads; delete `m_pathOrderBook` when Gallery no longer needs a local copy
+- Tier 5b PreferCache
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1627-path-order-dual-write.** Tier 4 path-order: bind SessionDocument + dual-write.
 Prior: **1626**.
 

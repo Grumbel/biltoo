@@ -1105,7 +1105,7 @@ SessionImageId SlideshowController::sessionIdForPath(const QString &path) const
     }
     // Prefer ordered session row (slideshow / gallery path list).
     {
-        const SessionImageId ordered = m_view->hostPathOrderBook().firstIdForPath(path);
+        const SessionImageId ordered = m_view->firstSessionIdForPath(path);
         if (ordered != kInvalidSessionImageId) {
             return ordered;
         }

@@ -247,14 +247,14 @@ public:
 
     /** Controller host: session path order used for Gallery packing. */
     const QStringList &pathOrder() const { return m_pathOrderBook.pathList(); }
-    void clearPathOrder() { m_pathOrderBook.clear(); }
+    void clearPathOrder() { pathOrderClear(); }
     void setPathOrder(const QStringList &paths)
     {
-        m_pathOrderBook.setOrder(paths, QVector<SessionImageId>());
+        pathOrderSetOrder(paths, QVector<SessionImageId>());
     }
     void setPathOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
     {
-        m_pathOrderBook.setOrder(paths, ids);
+        pathOrderSetOrder(paths, ids);
     }
     /** Controller host: disable Image-mode fit/fill when restoring free-form. */
     void clearFitFillModes();
@@ -281,8 +281,9 @@ public:
         m_appearanceBound = store;
     }
     /**
-     * Phase 6 Tier 4 path-order: dual-write view book + document when bound.
-     * MainWindow binds the same SessionDocument that owns appearance.
+     * Phase 6 Tier 4 path-order: MainWindow binds the working SessionDocument.
+     * Membership queries (occurrences / firstId) prefer the document; the view
+     * book remains Gallery-local order until Tier 4 path-order finishes.
      */
     void bindSessionDocument(SessionDocument *doc)
     {
@@ -342,6 +343,16 @@ public:
     const SessionIdentity &hostSessionId() const { return m_sessionId; }
     SessionPathOrder &hostPathOrderBook() { return m_pathOrderBook; }
     const SessionPathOrder &hostPathOrderBook() const { return m_pathOrderBook; }
+    /**
+     * First SessionImageId for @p path: SessionDocument when bound, else view book.
+     */
+    SessionImageId firstSessionIdForPath(const QString &path) const
+    {
+        if (m_sessionDoc) {
+            return m_sessionDoc->firstIdForPath(path);
+        }
+        return m_pathOrderBook.firstIdForPath(path);
+    }
     PathItemStateBook &hostItemStateBook() { return m_itemStateBook; }
     const PathItemStateBook &hostItemStateBook() const { return m_itemStateBook; }
     HudAppearance &hostHudPrefs() { return m_hudPrefs; }

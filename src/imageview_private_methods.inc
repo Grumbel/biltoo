@@ -118,27 +118,22 @@
 
     const QVector<SessionImageId> &sessionIdOrder() const { return m_pathOrderBook.idList(); }
 
-    /** Dual-write path order to view book and SessionDocument when bound. */
+    /**
+     * View-local path order (Gallery pack / LoadAdd multiplicity).
+     * SessionDocument remains MainWindow-owned — do not clear/append the
+     * document here (Gallery leave clears the book without wiping the session).
+     */
     void pathOrderClear()
     {
         m_pathOrderBook.clear();
-        if (m_sessionDoc) {
-            m_sessionDoc->clearPaths();
-        }
     }
     void pathOrderSetOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
     {
         m_pathOrderBook.setOrder(paths, ids);
-        if (m_sessionDoc) {
-            m_sessionDoc->replaceAll(paths, ids);
-        }
     }
     void pathOrderAppendRow(const QString &path, SessionImageId id = kInvalidSessionImageId)
     {
         m_pathOrderBook.appendRow(path, id);
-        if (m_sessionDoc) {
-            m_sessionDoc->append(path, id);
-        }
     }
 
     /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */

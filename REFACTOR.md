@@ -740,7 +740,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - Tier 4a: **done** (biltoo-1623) — `SessionDocument` owns a `SessionAppearanceStore`
   (additive; ImageView still has live store). Char test covers doc-keyed crop.
 - Tier 4b: **done** (biltoo-1626) — view-owned `m_appearanceOwned` removed; `appearance()` requires `bindSessionAppearance`. `m_pathOrderBook` still on view.
-- Tier 4 path-order: **started** (biltoo-1627) — `bindSessionDocument` + dual-write mutations; book still used for reads.
+- Tier 4 path-order: **in progress** (biltoo-1628) — document for membership queries; no dual-write (Gallery clear is view-local); `m_pathOrderBook` remains.
   MainWindow binds at construct; `SessionDocument::clear` clears appearance.
   View keeps fallback owned store when unbound. `m_pathOrderBook` still on view.
 - Tier 5a: **done** (biltoo-1610) — `DisplayPipelineController` owns loadGate,

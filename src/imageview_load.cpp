@@ -230,6 +230,11 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
 
 int ImageView::pathOrderOccurrences(const QString &path) const
 {
+    // Prefer SessionDocument when bound (MainWindow working set).
+    // Fall back to the view book for Gallery-local order before populate.
+    if (m_sessionDoc) {
+        return m_sessionDoc->countPathOccurrences(path);
+    }
     return m_pathOrderBook.countPathOccurrences(path);
 }
 
