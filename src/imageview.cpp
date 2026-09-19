@@ -496,9 +496,10 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
     if (!path.isEmpty()) {
         scheduleImageSizeProbe(path);
     }
-    const QSize known = m_sizeBook.known(path);
-    if (!known.isEmpty()) {
-        return known;
+    // Provisional or definitive entry already in the book (layout needs a size).
+    const QSize bookSize = m_sizeBook.known(path);
+    if (!bookSize.isEmpty()) {
+        return bookSize;
     }
     return imageSizeForPath(path);
 }
