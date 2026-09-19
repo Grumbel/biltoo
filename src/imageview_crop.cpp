@@ -174,9 +174,28 @@ void ImageView::notifyCropModeEntered()
     emit statusChanged();
 }
 
+void ImageView::abortCropEnterFailed(ImageItem *item)
+{
+    // prepare may have set mode for fitItem then failed — restore placement
+    // before abortEnter clears the stash.
+    if (item) {
+        item->setTileLodSuppressed(false);
+    }
+    m_crop.abortEnterRestoringPlacement(item);
+    flashHud(tr("Crop"), tr("Could not load full image"));
+}
+
 void ImageView::beginCropEnterSession(ImageItem *item)
 {
-    beginCropEnterSession(item);
+    if (!item) {
+        return;
+    }
+    QImage enterSrc = CropSession::pickEnterSnapshotPixels(item);
+    WorkspaceItemState enterSt = captureState(item);
+    CropSession::seedEnterCropFlags(&enterSt, item);
+    m_crop.beginEnterSession(item, enterSrc, enterSt,
+                             !enterSrc.isNull() || item->hasDisplayPixels());
+    cancelPathRasterForCrop(m_crop.draftPathRef());
 }
 
 bool ImageView::handleNullEnterFullRaster(const QString &path, bool hadCrop)
@@ -277,23 +296,14 @@ bool ImageView::enterCropModeFromUi()
     cancelZoomRegion();
     // Lock identity + enter snapshot + unrotate placement (IDENTITY.md).
     // m_crop.active() stays false until after the first draft attach.
-    QImage enterSrc = CropSession::pickEnterSnapshotPixels(item);
-    WorkspaceItemState enterSt = captureState(item);
-    CropSession::seedEnterCropFlags(&enterSt, item);
-    m_crop.beginEnterSession(item, enterSrc, enterSt,
-                             !enterSrc.isNull() || item->hasDisplayPixels());
-    cancelPathRasterForCrop(m_crop.draftPathRef());
+    beginCropEnterSession(item);
     // Workspace: remember displayed image centre so the crop frame can stay fixed.
     const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
     // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
     {
         ViewportUpdateHold paintHold(viewport());
         if (!prepareCropModeFullImage(item)) {
-            // prepare may have set mode for fitItem then failed — restore placement
-            // before abortEnter clears the stash.
-            item->setTileLodSuppressed(false);
-            m_crop.abortEnterRestoringPlacement(item);
-            flashHud(tr("Crop"), tr("Could not load full image"));
+            abortCropEnterFailed(item);
             return false;
         }
         if (isWorkspaceMode()) {
@@ -943,6 +953,19 @@ void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
     emit sessionCropApplied(sid, path, appearance, hasCrop);
 }
 
+void ImageView::finishCropResetLayout(ImageItem *item)
+{
+    if (isWorkspaceMode() && m_crop.isEnterValid()) {
+        // Drop the enter-time crop-frame offset; restore pre-crop pose.
+        m_crop.restoreEnterPlacementPose(item);
+    }
+    if (isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
+    } else {
+        fitImageOrUpdateWorkspace(item);
+    }
+}
+
 void ImageView::finishCropApplyLayout(ImageItem *item)
 {
     if (!item) {
@@ -1058,15 +1081,14 @@ bool ImageView::applyCropCommit(ImageItem *item)
             qWarning().noquote()
                 << QStringLiteral(
                        "[crop] Apply path=%1 host=%2x%3 cache=%4 display=%5x%6 "
-                       "cropDraft=%7x%8 foot=%9x%10 scaleKeep=%11x%12 "
-                       "imageSizeBefore=%13x%14")
+                       "cropDraft=%7x%8 foot=%9x%10 "
+                       "imageSizeBefore=%11x%12")
                        .arg(path)
                        .arg(host.width()).arg(host.height())
                        .arg(hostFromCache ? 1 : 0)
                        .arg(display.width()).arg(display.height())
                        .arg(cropW).arg(cropH)
                        .arg(footW).arg(footH)
-                       .arg(sx0).arg(sy0)
                        .arg(item->imageSize().width()).arg(item->imageSize().height());
         }
 
@@ -1096,15 +1118,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
     }
 
     // Reset / full frame: keep full pixels; clear session crop metadata.
-    if (isWorkspaceMode() && m_crop.isEnterValid()) {
-        // Drop the enter-time crop-frame offset; restore pre-crop pose.
-        m_crop.restoreEnterPlacementPose(item);
-    }
-    if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
-    } else {
-        fitImageOrUpdateWorkspace(item);
-    }
+    finishCropResetLayout(item);
     finalizeCropResetSuccess(item);
     return false;
 }

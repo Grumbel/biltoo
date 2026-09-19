@@ -706,6 +706,7 @@ public:
      */
     void setCropMode(bool on);
     void notifyCropModeEntered();
+    void abortCropEnterFailed(ImageItem *item);
     void beginCropEnterSession(ImageItem *item);
     bool handleNullEnterFullRaster(const QString &path, bool hadCrop);
     bool resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
@@ -1684,6 +1685,7 @@ private:
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);
+    void finishCropResetLayout(ImageItem *item);
     void finishCropApplyLayout(ImageItem *item);
     bool flashApplyHostFailure(CropSession::ApplyHostStatus hostSt);
     void ensureApplyCropState(ImageItem *item, SessionImageId sid,
