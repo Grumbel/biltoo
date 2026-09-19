@@ -344,12 +344,12 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 5. **Max idle paths** (default **64**): long ←/→ sessions can keep many small
    overview caches under the byte cap; excess zero-ref paths are dropped oldest
    first (same order as byte trim).
-5b. **Warm threshold** (`kWarmSucceededMin` = 4): neighbor prefetch skips issue
+6. **Warm threshold** (`kWarmSucceededMin` = 4): neighbor prefetch skips issue
    when a path already has this many Succeeded tiles in global RAM.
-6. **Paint identity by path** — draw only from `cache[item->path()]`; re-acquire
+7. **Paint identity by path** — draw only from `cache[item->path()]`; re-acquire
    after A→B→A rebinds the same retained entry.
-7. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
-8. **Neighbor prefetch (1213 / 1214):** on Image-mode nav settle,
+8. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
+9. **Neighbor prefetch (1213 / 1214):** on Image-mode nav settle,
    `prefetchTilesForPaths` binds a short-lived `TileLodController` per ±1 path
    and **pumps it on a 33 ms timer** until overview coverage / idle / tick cap
    (max **4** concurrent slots; warm paths with ≥`kWarmSucceededMin` Succeeded
@@ -446,6 +446,8 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Coordinator makeCand; retained zero-applied paint (1419–1421) | Done |
 | Prefetch slot cap; warm min; debug_summary (1422–1424) | Done |
 | Env budget overrides; prefetch eviction (1425–1427) | Done |
+| Trim debug / drop prefetch (1432–1435) | Done |
+| Completion touches path LRU (1436) | Done |
 | Parent protect + parent prefetch | Done |
 | HiDPI, scale hold, coverage heartbeat | Done |
 | ContentXform axis-aligned map | Done |
