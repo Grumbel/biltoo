@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1631-prefercache-edge-policy.** Pure PreferCache climb-target policy helpers.
+Prior: **1630**.
+
+### Change
+- `DisplayEdgePolicy::climbEdgeIfNeeded` — escalate + cap; 0 if already covered
+- `DisplayEdgePolicy::tilesOwnDisplay` — skip whole-frame PreferCache when tiles own display
+- `ensureImageModeQualityClimb` / workspace climb use the pure helpers
+- Drop unused `hostPathOrderBook` host accessors
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1631-prefercache-edge-policy.bundle HEAD
+```
+
+### Next
+- Tier 5b: move PreferCache method bodies onto DisplayPipelineController (Host surface)
+- Path-order book deletion when Gallery no longer needs a local copy
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1630-path-order-occurrences-view-only.** LoadAdd multiplicity is view-book only.
 Prior: **1629**.
 

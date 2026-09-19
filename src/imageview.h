@@ -341,8 +341,6 @@ public:
     const CanvasBackground &hostCanvasBg() const { return m_canvasBg; }
     SessionIdentity &hostSessionId() { return m_sessionId; }
     const SessionIdentity &hostSessionId() const { return m_sessionId; }
-    SessionPathOrder &hostPathOrderBook() { return m_pathOrderBook; }
-    const SessionPathOrder &hostPathOrderBook() const { return m_pathOrderBook; }
     /**
      * First SessionImageId for @p path from the MainWindow SessionDocument when
      * bound (slideshow / identity). View path-order book is multiplicity only —

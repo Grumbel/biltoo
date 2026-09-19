@@ -1727,7 +1727,7 @@ void ImageView::ensureWorkspaceQualityClimb()
             continue;
         }
         // Deep zoom: tiles own display; skip PreferCache whole-frame climb.
-        if (ii->tileLodWanted()) {
+        if (DisplayEdgePolicy::tilesOwnDisplay(ii->tileLodWanted(), false)) {
             continue;
         }
         // Always measure need after the current view transform (zoom/pan).
@@ -2493,13 +2493,14 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
         return;
     }
     // Tiles own display once wanted or durable pyramid is known — no PreferCache.
+    const bool durable = ThumtooCache::hasDurableTilesKnown(path);
     if (ImageItem *it = imageModeItemForPath(path)) {
-        if (it->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path)) {
+        if (DisplayEdgePolicy::tilesOwnDisplay(it->tileLodWanted(), durable)) {
             tickPrimaryTileLod(12);
             return;
         }
     }
-    if (ThumtooCache::hasDurableTilesKnown(path)) {
+    if (durable) {
         tickPrimaryTileLod(12);
         return;
     }
@@ -2510,10 +2511,12 @@ void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &s
     const int need = imageModeOnScreenNeedEdge();
     const int have = sample.isNull() ? 0 : ImageCache::longEdge(sample);
     // Cold path only (no durable tiles): climb to on-screen need, not soft-512 habit.
-    int climbTo = DisplayEdgePolicy::escalateClimbTo(
+    const int escalated = DisplayEdgePolicy::escalateClimbTo(
         ThumtooCache::kBatchOverviewEdge, need);
-    climbTo = cappedDisplayEdgeForPath(path, climbTo);
-    if (have > 0 && DisplayEdgePolicy::coversEdge(have, climbTo)) {
+    const int climbTo = DisplayEdgePolicy::climbEdgeIfNeeded(
+        have, need, ThumtooCache::kBatchOverviewEdge,
+        cappedDisplayEdgeForPath(path, escalated));
+    if (climbTo <= 0) {
         return;
     }
     biltooLoadDbg("imageModeClimb(service) path=%s climbTo=%d have=%d need=%d cold",

@@ -43,6 +43,29 @@ inline bool coversEdge(int haveLongEdge, int targetEdge)
 }
 
 /**
+ * PreferCache climb target after escalate and optional cap.
+ * @return 0 when @p haveLongEdge already covers the target (skip climb).
+ * @p cappedMax ≤ 0 means no extra cap beyond escalate.
+ */
+inline int climbEdgeIfNeeded(int haveLongEdge, int needEdge, int baseEdge, int cappedMax)
+{
+    int climbTo = escalateClimbTo(baseEdge, needEdge);
+    if (cappedMax > 0) {
+        climbTo = qMin(climbTo, cappedMax);
+    }
+    if (haveLongEdge > 0 && coversEdge(haveLongEdge, climbTo)) {
+        return 0;
+    }
+    return climbTo;
+}
+
+/** Whole-frame PreferCache must not run when tiles own the display. */
+inline bool tilesOwnDisplay(bool tileLodWanted, bool durableTilesKnown)
+{
+    return tileLodWanted || durableTilesKnown;
+}
+
+/**
  * Cap @p wantEdge to the image ladder, then to known native long edge, with
  * ceil-ladder snap that does not exceed native again.
  * @p nativeLongEdge ≤ 0 means native unknown (no native clamp).
