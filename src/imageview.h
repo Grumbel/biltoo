@@ -319,6 +319,7 @@ public:
     TileNeighborPrefetch &hostTileNeighborPrefetch() { return m_tileNeighborPrefetch; }
     const TileNeighborPrefetch &hostTileNeighborPrefetch() const { return m_tileNeighborPrefetch; }
     EdgeZone hostHoverEdge() const { return m_hoverEdge; }
+    EdgeZone edgeZoneAt(const QPoint &viewPos) const;
     void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
     SessionLoadGate &hostLoadGate() { return m_displayPipeline.loadGate(); }
     const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }

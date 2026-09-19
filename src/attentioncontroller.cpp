@@ -10,6 +10,7 @@
 
 #include <QCursor>
 #include <QPainter>
+#include <QMouseEvent>
 #include <QSet>
 #include <QUndoCommand>
 #include <algorithm>
@@ -353,4 +354,93 @@ void AttentionController::paintAttentionOverlay(QPainter &painter)
     painter.drawText(m_view->viewport()->rect().adjusted(12, 12, -12, -12),
                      Qt::AlignTop | Qt::AlignLeft, hint);
     painter.restore();
+}
+
+// --- Tier 6 input handlers ---
+
+bool AttentionController::tryMousePressAttention(QMouseEvent *event)
+{
+    if (!session().active() || event->button() != Qt::LeftButton || !m_view->isImageMode()
+        || m_view->edgeZoneAt(event->pos()) != ImageView::EdgeZone::None) {
+        return false;
+    }
+    ImageItem *item = m_view->targetItem();
+    if (!item || item->contentRect().isEmpty()) {
+        return false;
+    }
+    const int hit = attentionHandleIndexAt(event->pos());
+    const bool shift = event->modifiers() & Qt::ShiftModifier;
+    const bool ctrl = event->modifiers() & Qt::ControlModifier;
+    // Handle hit: standard selection (Shift/Ctrl toggle; plain exclusive unless
+    // already selected so multi-drag keeps the set).
+    if (hit >= 0) {
+        if (shift || ctrl) {
+            session().setSelected(
+                AttentionGeometry::toggleSelectionIndex(session().selectedMutable(), hit));
+        } else if (!session().selectedRef().contains(hit)) {
+            session().setSelected({hit});
+        }
+        const QVector<QPointF> startPts = attentionPointsForTarget();
+        session().beginPointDrag(event->pos(), startPts, startPts);
+        m_view->viewport()->update();
+        event->accept();
+        return true;
+    }
+    // Ctrl+click empty content: insert a point (then drag to place).
+    const QPointF scene = m_view->mapToScene(event->pos());
+    const QPointF local = item->mapFromScene(scene);
+    const QRectF cr = item->contentRect();
+    if (ctrl && cr.contains(local)) {
+        const QPointF n = AttentionGeometry::normFromLocal(local, cr);
+        const QVector<QPointF> before = attentionPointsForTarget();
+        QVector<QPointF> pts = before;
+        pts.append(n);
+        setAttentionPointsForTarget(pts);
+        session().setSelected({int(pts.size() - 1)});
+        const QVector<QPointF> startPts = attentionPointsForTarget();
+        session().beginPointDrag(event->pos(), startPts, before);
+        event->accept();
+        return true;
+    }
+    // Plain / Shift click on empty: rubber-band select (additive with Shift).
+    session().beginRubber(event->pos(), !shift && !ctrl);
+    m_view->viewport()->update();
+    event->accept();
+    return true;
+}
+
+bool AttentionController::tryMouseMoveAttention(QMouseEvent *event)
+{
+    if (!session().active() || !m_view->isImageMode()) {
+        return false;
+    }
+    if (session().isRubberbanding()) {
+        session().updateRubber(event->pos());
+        m_view->viewport()->update();
+        event->accept();
+        return true;
+    }
+    if (session().isDragging()) {
+        ImageItem *item = m_view->targetItem();
+        if (item && !item->contentRect().isEmpty()
+            && session().hasSelection()
+            && session().dragStartPtsRef().size() == attentionPointsForTarget().size()) {
+            // Translate selected points by view-delta mapped through content.
+            const QPointF scene0 = m_view->mapToScene(session().dragOriginViewRef());
+            const QPointF scene1 = m_view->mapToScene(event->pos());
+            const QPointF local0 = item->mapFromScene(scene0);
+            const QPointF local1 = item->mapFromScene(scene1);
+            const QRectF cr = item->contentRect();
+            const QPointF dNorm = AttentionGeometry::normDeltaFromLocalDelta(
+                local1 - local0, cr);
+            const QVector<QPointF> pts = AttentionGeometry::translateSelectedNorms(
+                session().dragStartPtsRef(), session().selectedMutable(), dNorm);
+            setAttentionPointsForTarget(pts);
+        }
+        event->accept();
+        return true;
+    }
+    m_view->viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
+                                                          : Qt::CrossCursor);
+    return false;
 }

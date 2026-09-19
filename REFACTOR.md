@@ -719,4 +719,6 @@ the stop line when Tier 4 lands.
   displaySurfaces, imageFocusSurface, tileCoordinator, tile LOD timers.
   Methods stay on ImageView; soft provider + neighbor prefetch remain on view.
 - Tier 5b: _pending_ (method move / imageview_load.cpp shrink)
-- Tier 6: _pending_
+- Tier 6a: **done** (biltoo-1612) — crop/attention mouse try* handlers on
+  controllers; ImageView input is thin dispatch for those modes.
+- Tier 6: _in progress_ (remaining try* still on ImageView)

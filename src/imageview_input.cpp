@@ -435,109 +435,12 @@ bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
 
 bool ImageView::tryMousePressAttention(QMouseEvent *event)
 {
-    if (!m_attentionCtrl.session().active() || event->button() != Qt::LeftButton || !isImageMode()
-        || edgeZoneAt(event->pos()) != EdgeZone::None) {
-        return false;
-    }
-    ImageItem *item = targetItem();
-    if (!item || item->contentRect().isEmpty()) {
-        return false;
-    }
-    const int hit = attentionHandleIndexAt(event->pos());
-    const bool shift = event->modifiers() & Qt::ShiftModifier;
-    const bool ctrl = event->modifiers() & Qt::ControlModifier;
-    // Handle hit: standard selection (Shift/Ctrl toggle; plain exclusive unless
-    // already selected so multi-drag keeps the set).
-    if (hit >= 0) {
-        if (shift || ctrl) {
-            m_attentionCtrl.session().setSelected(
-                AttentionGeometry::toggleSelectionIndex(m_attentionCtrl.session().selectedMutable(), hit));
-        } else if (!m_attentionCtrl.session().selectedRef().contains(hit)) {
-            m_attentionCtrl.session().setSelected({hit});
-        }
-        const QVector<QPointF> startPts = attentionPointsForTarget();
-        m_attentionCtrl.session().beginPointDrag(event->pos(), startPts, startPts);
-        viewport()->update();
-        event->accept();
-        return true;
-    }
-    // Ctrl+click empty content: insert a point (then drag to place).
-    const QPointF scene = mapToScene(event->pos());
-    const QPointF local = item->mapFromScene(scene);
-    const QRectF cr = item->contentRect();
-    if (ctrl && cr.contains(local)) {
-        const QPointF n = AttentionGeometry::normFromLocal(local, cr);
-        const QVector<QPointF> before = attentionPointsForTarget();
-        QVector<QPointF> pts = before;
-        pts.append(n);
-        setAttentionPointsForTarget(pts);
-        m_attentionCtrl.session().setSelected({int(pts.size() - 1)});
-        const QVector<QPointF> startPts = attentionPointsForTarget();
-        m_attentionCtrl.session().beginPointDrag(event->pos(), startPts, before);
-        event->accept();
-        return true;
-    }
-    // Plain / Shift click on empty: rubber-band select (additive with Shift).
-    m_attentionCtrl.session().beginRubber(event->pos(), !shift && !ctrl);
-    viewport()->update();
-    event->accept();
-    return true;
+    return m_attentionCtrl.tryMousePressAttention(event);
 }
 
 bool ImageView::tryMousePressCrop(QMouseEvent *event)
 {
-    if (!m_cropCtrl.session().active() || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    const CropHandle h = cropHandleAt(event->pos());
-    if (h == CropHandle::ExpandToggle) {
-        m_cropCtrl.session().toggleAllowExpand();
-        if (!m_cropCtrl.session().isAllowExpand()) {
-            ensureCropRectValid(); // clamp back into the image
-        }
-        viewport()->update();
-        event->accept();
-        return true;
-    }
-    if (h == CropHandle::Auto) {
-        applyAutoCrop();
-        event->accept();
-        return true;
-    }
-    if (h == CropHandle::Reset) {
-        // Expand draft to the full image; Apply commits a cleared session crop.
-        if (ImageItem *item = cropTargetItem()) {
-            m_cropCtrl.session().resetDraftToContent(item->contentRect());
-            viewport()->update();
-        }
-        event->accept();
-        return true;
-    }
-    if (h == CropHandle::Cancel) {
-        cancelCrop();
-        event->accept();
-        return true;
-    }
-    if (h == CropHandle::Close) {
-        applyCrop();
-        event->accept();
-        return true;
-    }
-    if (h != CropHandle::None) {
-        beginCropHandleDrag(h, event->pos());
-        event->accept();
-        return true;
-    }
-    // Middle/Alt still pan; plain left on the image body → new rubber-band crop.
-    if (!(event->modifiers()
-          & (Qt::AltModifier | Qt::ControlModifier | Qt::ShiftModifier))) {
-        beginCropRubberBand(event->pos());
-        if (m_cropCtrl.session().isRubberbanding()) {
-            event->accept();
-            return true;
-        }
-    }
-    return false;
+    return m_cropCtrl.tryMousePressCrop(event);
 }
 
 bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
@@ -1013,56 +916,12 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
 {
-    if (!m_attentionCtrl.session().active() || !isImageMode()) {
-        return false;
-    }
-    if (m_attentionCtrl.session().isRubberbanding()) {
-        m_attentionCtrl.session().updateRubber(event->pos());
-        viewport()->update();
-        event->accept();
-        return true;
-    }
-    if (m_attentionCtrl.session().isDragging()) {
-        ImageItem *item = targetItem();
-        if (item && !item->contentRect().isEmpty()
-            && m_attentionCtrl.session().hasSelection()
-            && m_attentionCtrl.session().dragStartPtsRef().size() == attentionPointsForTarget().size()) {
-            // Translate selected points by view-delta mapped through content.
-            const QPointF scene0 = mapToScene(m_attentionCtrl.session().dragOriginViewRef());
-            const QPointF scene1 = mapToScene(event->pos());
-            const QPointF local0 = item->mapFromScene(scene0);
-            const QPointF local1 = item->mapFromScene(scene1);
-            const QRectF cr = item->contentRect();
-            const QPointF dNorm = AttentionGeometry::normDeltaFromLocalDelta(
-                local1 - local0, cr);
-            const QVector<QPointF> pts = AttentionGeometry::translateSelectedNorms(
-                m_attentionCtrl.session().dragStartPtsRef(), m_attentionCtrl.session().selectedMutable(), dNorm);
-            setAttentionPointsForTarget(pts);
-        }
-        event->accept();
-        return true;
-    }
-    viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
-                                                          : Qt::CrossCursor);
-    return false;
+    return m_attentionCtrl.tryMouseMoveAttention(event);
 }
 
 bool ImageView::tryMouseMoveCropDrag(QMouseEvent *event)
 {
-    if (!m_cropCtrl.session().active()) {
-        return false;
-    }
-    if (m_cropCtrl.session().isHandleDragging()) {
-        updateCropHandleDrag(event->pos());
-        event->accept();
-        return true;
-    }
-    if (m_cropCtrl.session().isRubberbanding()) {
-        updateCropRubberBand(event->pos());
-        event->accept();
-        return true;
-    }
-    return false;
+    return m_cropCtrl.tryMouseMoveCropDrag(event);
 }
 
 bool ImageView::tryMouseMovePan(QMouseEvent *event)
@@ -1094,92 +953,7 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveCropHover(QMouseEvent *event)
 {
-    if (!m_cropCtrl.session().active()) {
-        return false;
-    }
-    const CropHandle h = cropHandleAt(event->pos());
-    const bool cropHoverChanged = m_cropCtrl.session().setHoverHandle(h);
-    if (cropHoverChanged) {
-        viewport()->update();
-    }
-    switch (h) {
-    case CropHandle::Move:
-        viewport()->setCursor(Qt::SizeAllCursor);
-        break;
-    case CropHandle::Rotate:
-        viewport()->setCursor(Qt::ClosedHandCursor);
-        break;
-    case CropHandle::Left:
-    case CropHandle::Right:
-        viewport()->setCursor(Qt::SizeHorCursor);
-        break;
-    case CropHandle::Top:
-    case CropHandle::Bottom:
-        viewport()->setCursor(Qt::SizeVerCursor);
-        break;
-    case CropHandle::TopLeft:
-    case CropHandle::BottomRight:
-        viewport()->setCursor(Qt::SizeFDiagCursor);
-        break;
-    case CropHandle::TopRight:
-    case CropHandle::BottomLeft:
-        viewport()->setCursor(Qt::SizeBDiagCursor);
-        break;
-    case CropHandle::ExpandToggle:
-    case CropHandle::Auto:
-    case CropHandle::Reset:
-    case CropHandle::Cancel:
-    case CropHandle::Close:
-        viewport()->setCursor(Qt::PointingHandCursor);
-        break;
-    case CropHandle::None:
-        viewport()->setCursor(Qt::CrossCursor);
-        break;
-    }
-    if (cropHoverChanged) {
-        QString tip;
-        switch (h) {
-        case CropHandle::Move:
-            tip = tr("Move crop");
-            break;
-        case CropHandle::Rotate:
-            tip = tr("Rotate crop");
-            break;
-        case CropHandle::Left:
-        case CropHandle::Right:
-        case CropHandle::Top:
-        case CropHandle::Bottom:
-        case CropHandle::TopLeft:
-        case CropHandle::TopRight:
-        case CropHandle::BottomLeft:
-        case CropHandle::BottomRight:
-            tip = tr("Resize crop");
-            break;
-        case CropHandle::Auto:
-        case CropHandle::ExpandToggle:
-            tip = tr("Allow crop outside image (pad on apply)");
-            break;
-        case CropHandle::Reset:
-            tip = tr("Reset crop to full image");
-            break;
-        case CropHandle::Cancel:
-            tip = tr("Cancel crop (Esc)");
-            break;
-        case CropHandle::Close:
-            tip = tr("Apply crop (Enter)");
-            break;
-        case CropHandle::None:
-            break;
-        }
-        if (!tip.isEmpty()) {
-            QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
-        } else {
-            QToolTip::hideText();
-        }
-    }
-    updateMouseInfo(event->pos());
-    event->accept();
-    return true;
+    return m_cropCtrl.tryMouseMoveCropHover(event);
 }
 
 bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)

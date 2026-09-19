@@ -339,7 +339,6 @@
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
     /** Centre position that does not overlap existing items (viewport-aware). */
     QPointF findEmptyPlacement(const QSizeF &itemSize) const;
-    EdgeZone edgeZoneAt(const QPoint &viewPos) const;
     int edgeZoneWidth() const;
     int edgeZoneHeight() const;
     /** @return true when the hover edge zone changed. */

@@ -20,6 +20,7 @@
 class ImageView;
 class ImageItem;
 class QPainter;
+class QMouseEvent;
 
 /**
  * Crop-mode collaborator for ImageView (Phase 6 Tier 2b).
@@ -83,6 +84,10 @@ public:
     QPolygonF cropPolygonView() const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
     QPolygonF mapItemLocalPolygonToView(ImageItem *item, const QPolygonF &local) const;
+
+    bool tryMousePressCrop(QMouseEvent *event);
+    bool tryMouseMoveCropDrag(QMouseEvent *event);
+    bool tryMouseMoveCropHover(QMouseEvent *event);
 
 private:
     ImageView *m_view = nullptr; // not owned

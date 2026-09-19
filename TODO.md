@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1612-phase6-tier6a-input-dispatch.** Phase 6 Tier 6a: crop/attention mouse try* on controllers.
+Prior: **1611**.
+
+### Change
+- `CropController::tryMousePressCrop/MoveCropDrag/MoveCropHover`
+- `AttentionController::tryMousePressAttention/MoveAttention`
+- ImageView thin forwards; `edgeZoneAt` public for attention hit tests
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1612-phase6-tier6a-input-dispatch.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1611-fix-thumbnailbar-surfaces.** ThumbnailBar::m_displaySurfaces restored (false positive from Tier 5a rewrite).
 Prior: **1610** DisplayPipelineController state ownership.
 

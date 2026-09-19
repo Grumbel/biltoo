@@ -19,12 +19,14 @@
 #include "contentxform.h"
 #include <QGuiApplication>
 #include <QPainter>
+#include <QMouseEvent>
 #include "imageloader.h"
 #include <QThreadPool>
 #include <QPointer>
 #include <QMetaObject>
 
 #include <QPainter>
+#include <QMouseEvent>
 #include <QGuiApplication>
 #include <QtMath>
 
@@ -857,4 +859,169 @@ void CropController::maybeUpgradeCropFullRaster(const QString &path, const QImag
     }
     session().clearAwaitingFull();
     flashCropHud(CropFlash::fullReady());
+}
+// --- Tier 6 input handlers ---
+
+bool CropController::tryMousePressCrop(QMouseEvent *event)
+{
+    if (!session().active() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    const CropHandle h = cropHandleAt(event->pos());
+    if (h == CropHandle::ExpandToggle) {
+        session().toggleAllowExpand();
+        if (!session().isAllowExpand()) {
+            ensureCropRectValid(); // clamp back into the image
+        }
+        m_view->viewport()->update();
+        event->accept();
+        return true;
+    }
+    if (h == CropHandle::Auto) {
+        applyAutoCrop();
+        event->accept();
+        return true;
+    }
+    if (h == CropHandle::Reset) {
+        // Expand draft to the full image; Apply commits a cleared session crop.
+        if (ImageItem *item = cropTargetItem()) {
+            session().resetDraftToContent(item->contentRect());
+            m_view->viewport()->update();
+        }
+        event->accept();
+        return true;
+    }
+    if (h == CropHandle::Cancel) {
+        cancelCrop();
+        event->accept();
+        return true;
+    }
+    if (h == CropHandle::Close) {
+        applyCrop();
+        event->accept();
+        return true;
+    }
+    if (h != CropHandle::None) {
+        beginCropHandleDrag(h, event->pos());
+        event->accept();
+        return true;
+    }
+    // Middle/Alt still pan; plain left on the image body → new rubber-band crop.
+    if (!(event->modifiers()
+          & (Qt::AltModifier | Qt::ControlModifier | Qt::ShiftModifier))) {
+        beginCropRubberBand(event->pos());
+        if (session().isRubberbanding()) {
+            event->accept();
+            return true;
+        }
+    }
+    return false;
+}
+
+bool CropController::tryMouseMoveCropDrag(QMouseEvent *event)
+{
+    if (!session().active()) {
+        return false;
+    }
+    if (session().isHandleDragging()) {
+        updateCropHandleDrag(event->pos());
+        event->accept();
+        return true;
+    }
+    if (session().isRubberbanding()) {
+        updateCropRubberBand(event->pos());
+        event->accept();
+        return true;
+    }
+    return false;
+}
+
+bool CropController::tryMouseMoveCropHover(QMouseEvent *event)
+{
+    if (!session().active()) {
+        return false;
+    }
+    const CropHandle h = cropHandleAt(event->pos());
+    const bool cropHoverChanged = session().setHoverHandle(h);
+    if (cropHoverChanged) {
+        m_view->viewport()->update();
+    }
+    switch (h) {
+    case CropHandle::Move:
+        m_view->viewport()->setCursor(Qt::SizeAllCursor);
+        break;
+    case CropHandle::Rotate:
+        m_view->viewport()->setCursor(Qt::ClosedHandCursor);
+        break;
+    case CropHandle::Left:
+    case CropHandle::Right:
+        m_view->viewport()->setCursor(Qt::SizeHorCursor);
+        break;
+    case CropHandle::Top:
+    case CropHandle::Bottom:
+        m_view->viewport()->setCursor(Qt::SizeVerCursor);
+        break;
+    case CropHandle::TopLeft:
+    case CropHandle::BottomRight:
+        m_view->viewport()->setCursor(Qt::SizeFDiagCursor);
+        break;
+    case CropHandle::TopRight:
+    case CropHandle::BottomLeft:
+        m_view->viewport()->setCursor(Qt::SizeBDiagCursor);
+        break;
+    case CropHandle::ExpandToggle:
+    case CropHandle::Auto:
+    case CropHandle::Reset:
+    case CropHandle::Cancel:
+    case CropHandle::Close:
+        m_view->viewport()->setCursor(Qt::PointingHandCursor);
+        break;
+    case CropHandle::None:
+        m_view->viewport()->setCursor(Qt::CrossCursor);
+        break;
+    }
+    if (cropHoverChanged) {
+        QString tip;
+        switch (h) {
+        case CropHandle::Move:
+            tip = tr("Move crop");
+            break;
+        case CropHandle::Rotate:
+            tip = tr("Rotate crop");
+            break;
+        case CropHandle::Left:
+        case CropHandle::Right:
+        case CropHandle::Top:
+        case CropHandle::Bottom:
+        case CropHandle::TopLeft:
+        case CropHandle::TopRight:
+        case CropHandle::BottomLeft:
+        case CropHandle::BottomRight:
+            tip = tr("Resize crop");
+            break;
+        case CropHandle::Auto:
+        case CropHandle::ExpandToggle:
+            tip = tr("Allow crop outside image (pad on apply)");
+            break;
+        case CropHandle::Reset:
+            tip = tr("Reset crop to full image");
+            break;
+        case CropHandle::Cancel:
+            tip = tr("Cancel crop (Esc)");
+            break;
+        case CropHandle::Close:
+            tip = tr("Apply crop (Enter)");
+            break;
+        case CropHandle::None:
+            break;
+        }
+        if (!tip.isEmpty()) {
+            QToolTip::showText(m_view->viewport()->mapToGlobal(event->pos()), tip, m_view->viewport());
+        } else {
+            QToolTip::hideText();
+        }
+    }
+    updateMouseInfo(event->pos());
+    event->accept();
+    return true;
 }
