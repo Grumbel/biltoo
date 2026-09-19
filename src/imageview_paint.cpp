@@ -203,14 +203,14 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
 
     // Pure-phase composite (SLIDESHOW.md): wall clock sets fadeT; we only blit.
     if (m_ssHud.isProgressActive()
-        && (!m_ss.fromImage.isNull() || m_ssDwell.hasSourceImage() || !m_ss.toImage.isNull())) {
+        && (m_ss.hasFromImage() || m_ssDwell.hasSourceImage() || m_ss.hasToImage())) {
         const QRect vr = viewport()->rect();
         // Prefer member references (not a local QImage copy) so paintMotionCover
         // can match the dwell atlas by address as well as by path.
-        const QImage &fromImg = !m_ss.fromImage.isNull() ? m_ss.fromImage : m_ssDwell.sourceImage;
+        const QImage &fromImg = m_ss.hasFromImage() ? m_ss.fromImage : m_ssDwell.sourceImage;
         const qreal fromT = m_ss.fromMotionT;
         const qreal toT = m_ss.toMotionT;
-        if (m_ss.fadeT >= 0.0 && !m_ss.toImage.isNull()) {
+        if (m_ss.fadeT >= 0.0 && m_ss.hasToImage()) {
             const qreal t = ViewTransform::clamp01(m_ss.fadeT);
             fillPad(vr, fromImg, m_ss.toImage, t, m_ss.fromPath, m_ss.toPath);
             if (m_ssSettings.transition == SlideshowTransition::FadeBlack) {

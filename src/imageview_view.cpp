@@ -1225,7 +1225,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     const int incoming = ImageCache::longEdge(oriented);
     const int need = SlideshowAtlasPolicy::needEdge(slideshowTargetEdge());
     bool changed = false;
-    if (path == m_ss.fromPath
+    if (m_ss.isFromPath(path)
         && SlideshowPhasePolicy::acceptOrientedUpgrade(
                incoming, ImageCache::longEdge(m_ss.fromImage),
                m_ss.fromContentApplied)) {
@@ -1255,7 +1255,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         }
         changed = true;
     }
-    if (path == m_ss.toPath
+    if (m_ss.isToPath(path)
         && SlideshowPhasePolicy::acceptOrientedUpgrade(
                incoming, ImageCache::longEdge(m_ss.toImage),
                m_ss.toContentApplied)) {
@@ -1294,7 +1294,7 @@ void ImageView::scheduleSlideshowPhaseBufferUpgrade(const QString &path, const Q
     if (path.isEmpty() || image.isNull()) {
         return;
     }
-    if (path != m_ss.fromPath && path != m_ss.toPath) {
+    if (!m_ss.isPhasePath(path)) {
         return;
     }
     // Cheap long-edge check before pool work; clamp itself runs off-GUI.
@@ -1443,12 +1443,12 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
     // *before* this runs. Comparing incoming to the cache edge skipped every
     // upgrade and left m_ssFrom/To stuck on LQIP/soft until re-enter.
     const int hadPhase =
-        (path == m_ss.fromPath) ? ImageCache::longEdge(m_ss.fromImage)
-        : (path == m_ss.toPath)  ? ImageCache::longEdge(m_ss.toImage)
+        (m_ss.isFromPath(path)) ? ImageCache::longEdge(m_ss.fromImage)
+        : (m_ss.isToPath(path))  ? ImageCache::longEdge(m_ss.toImage)
                                  : 0;
     putSlideshowRaster(path, image);
 
-    const bool isPhasePath = (path == m_ss.fromPath || path == m_ss.toPath);
+    const bool isPhasePath = m_ss.isPhasePath(path);
     if (!isPhasePath) {
         return;
     }
@@ -1471,7 +1471,7 @@ void ImageView::onSlideshowRasterReady(const QString &path, const QImage &image)
         const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
         const int need = SlideshowAtlasPolicy::needEdge(target);
         const int phaseHave =
-            (path == m_ss.fromPath) ? ImageCache::longEdge(m_ss.fromImage)
+            (m_ss.isFromPath(path)) ? ImageCache::longEdge(m_ss.fromImage)
                                    : ImageCache::longEdge(m_ss.toImage);
         if (phaseHave < need || incoming < need) {
             const auto policy =
@@ -1795,7 +1795,7 @@ bool ImageView::shouldPromoteSlideshowToAsFrom(const QString &fromPath) const
 
 void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
 {
-    if (!m_ss.toImage.isNull()) {
+    if (m_ss.hasToImage()) {
         m_ss.setFromImage(m_ss.toImage, m_ss.toContentApplied);
     } else {
         // Oriented path when to-phase missing (slideshowPixelsForPath materializes).
@@ -1820,7 +1820,7 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     // Sync orient of multi-MP on every ←/→ dropped frames; same-edge orient must
     // still be accepted (see phaseBufferWantsSample / m_ss.fromContentApplied).
     m_ss.setFromImage(slideshowSampleUnoriented(fromPath), false);
-    if (m_ss.fromImage.isNull() && !fromPath.isEmpty()) {
+    if (!m_ss.hasFromImage() && !fromPath.isEmpty()) {
         m_ss.setFromImage(ImageCache::clampToMaxEdge(
             slideshowSoftPlaceholder(fromPath), slideshowTargetEdge()), false);
     }
@@ -1828,7 +1828,7 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     // the first paint is correct. Larger samples are clamped for this pass;
     // sharper unoriented host climbs via scheduleSlideshowPhaseBufferUpgrade
     // (must pass *host* raw — never re-materialize an oriented phase buffer).
-    if (!fromPath.isEmpty() && !m_ss.fromImage.isNull()) {
+    if (!fromPath.isEmpty() && m_ss.hasFromImage()) {
         WorkspaceItemState app;
         if (snapshotSlideshowContentAppearance(fromPath, &app)
             && SessionAppearance::hasContentAppearance(app)) {
@@ -1846,7 +1846,7 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     }
     if (!fromPath.isEmpty()) {
         (void)ensureSlideshowLogicalSize(fromPath);
-        if (m_ss.fromImage.isNull()
+        if (!m_ss.hasFromImage()
             || ImageCache::longEdge(m_ss.fromImage)
                    < SlideshowAtlasPolicy::needEdge(slideshowTargetEdge())) {
             preloadSlideshowImage(fromPath);
@@ -1863,7 +1863,7 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
 void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
 {
     m_ssDwell.setSourceImage(m_ss.fromImage);
-    if (m_ss.fromImage.isNull()) {
+    if (!m_ss.hasFromImage()) {
         return;
     }
     m_ss.bumpPhaseUpgradeGeneration(); // drop mid-slide upgrades for previous path
@@ -1957,11 +1957,11 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     bindSlideshowPhaseSurface(&m_ss.toSurface, toPath);
     (void)ensureSlideshowLogicalSize(toPath);
     m_ss.setToImage(slideshowSampleUnoriented(toPath), false);
-    if (m_ss.toImage.isNull()) {
+    if (!m_ss.hasToImage()) {
         m_ss.setToImage(ImageCache::clampToMaxEdge(
             slideshowSoftPlaceholder(toPath), slideshowTargetEdge()), false);
     }
-    if (!m_ss.toImage.isNull()) {
+    if (m_ss.hasToImage()) {
         WorkspaceItemState app;
         if (snapshotSlideshowContentAppearance(toPath, &app)
             && SessionAppearance::hasContentAppearance(app)) {
@@ -1978,20 +1978,20 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         }
     }
     // Cold to-path: kick preload immediately (do not wait for neighbour pump).
-    if (m_ss.toImage.isNull()
+    if (!m_ss.hasToImage()
         || ImageCache::longEdge(m_ss.toImage) < SlideshowAtlasPolicy::needEdge(slideshowTargetEdge())) {
         preloadSlideshowImage(toPath);
     }
     captureMotionBiasesForPath(toPath, m_ss.toImage, &m_ss.toBiasA, &m_ss.toBiasB);
     m_ss.startToMotionClock();
     m_ss.setToMotionT(0.0);
-    if (!m_ss.toImage.isNull()) {
+    if (m_ss.hasToImage()) {
         schedulePhaseZoomBlur(toPath, m_ss.toImage);
     }
     m_ss.bumpToAtlasRebuildGeneration(); // drop stale to-atlas jobs
     m_ss.clearToAtlas();
     requestToPhaseAtlasRebuild();
-    if (!m_ss.toImage.isNull()) {
+    if (m_ss.hasToImage()) {
         {
             QImage host = ImageCache::get(toPath);
             if (host.isNull()) {
@@ -2033,7 +2033,7 @@ void ImageView::warmZoomBlurForCurrentPhase()
             ^ (qint64(vs.width()) << 16) ^ qint64(vs.height());
         scheduleZoomBlurBuild(img, vs.width(), vs.height(), key);
     };
-    warm(m_ss.fromPath, m_ss.fromImage.isNull() ? m_ssDwell.sourceImage : m_ss.fromImage);
+    warm(m_ss.fromPath, !m_ss.hasFromImage() ? m_ssDwell.sourceImage : m_ss.fromImage);
     warm(m_ss.toPath, m_ss.toImage);
 }
 
@@ -2499,14 +2499,14 @@ tilelod::TileLodController *ImageView::slideshowTilesForPath(const QString &path
     if (path.isEmpty()) {
         return nullptr;
     }
-    if (path == m_ss.fromPath) {
+    if (m_ss.isFromPath(path)) {
         tilelod::TileLodController *ctrl = m_ss.ensureFromTiles();
         if (ctrl->path() != path) {
             ctrl->setPath(path);
         }
         return ctrl;
     }
-    if (path == m_ss.toPath) {
+    if (m_ss.isToPath(path)) {
         tilelod::TileLodController *ctrl = m_ss.ensureToTiles();
         if (ctrl->path() != path) {
             ctrl->setPath(path);
@@ -2592,9 +2592,9 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     // Prefer pre-scaled atlases matched by path (not QImage address — pure-phase
     // paint may pass temporaries). From/dwell → m_ssDwell.atlas; to → m_ss.toAtlas.
     const QPixmap *atlas = nullptr;
-    if (!path.isEmpty() && path == m_ss.fromPath && m_ssDwell.hasAtlas()) {
+    if (!path.isEmpty() && m_ss.isFromPath(path) && m_ssDwell.hasAtlas()) {
         atlas = &m_ssDwell.atlas;
-    } else if (!path.isEmpty() && path == m_ss.toPath && !m_ss.toAtlas.isNull()) {
+    } else if (!path.isEmpty() && m_ss.isToPath(path) && !m_ss.toAtlas.isNull()) {
         atlas = &m_ss.toAtlas;
     } else if (path.isEmpty() && m_ssDwell.hasAtlas()
                && (&image == &m_ssDwell.sourceImage || &image == &m_ss.fromImage)) {
@@ -2702,7 +2702,7 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     // Keep pure-phase buffers in sync when progress is already active (start
     // path arms phase first; motion-only path must not leave m_ssFrom empty).
     if (m_ssHud.isProgressActive() && !path.isEmpty()) {
-        if (m_ss.fromPath != path || m_ss.fromImage.isNull()) {
+        if (m_ss.fromPath != path || !m_ss.hasFromImage()) {
             m_ss.setFromPath(path);
             bindSlideshowPhaseSurface(&m_ss.fromSurface, path);
             WorkspaceItemState app2;

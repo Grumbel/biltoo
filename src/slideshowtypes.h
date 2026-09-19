@@ -180,6 +180,25 @@ struct SlideshowPhaseState {
         fromContentApplied = false;
     }
 
+    bool hasFromImage() const { return !fromImage.isNull(); }
+
+    bool hasToImage() const { return !toImage.isNull(); }
+
+    bool isFromPath(const QString &path) const
+    {
+        return !path.isEmpty() && path == fromPath;
+    }
+
+    bool isToPath(const QString &path) const
+    {
+        return !path.isEmpty() && path == toPath;
+    }
+
+    bool isPhasePath(const QString &path) const
+    {
+        return isFromPath(path) || isToPath(path);
+    }
+
     void clearToImage()
     {
         toImage = {};
