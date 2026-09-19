@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1553-crop-paint-tu.** Crop overlay paint in imageview_crop_paint.cpp.
+Prior: **1552**.
+
+### Change
+- New `imageview_crop_paint.cpp`: chrome buttons, grips, frame, size badge, overlay
+- `imageview_crop.cpp` keeps enter/leave/apply/input
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1553-crop-paint-tu.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1552-appearance-apply-undo.** Apply-undo appearance apply in appearance TU.
 Prior: **1551**.
 
