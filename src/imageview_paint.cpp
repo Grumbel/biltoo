@@ -748,8 +748,7 @@ void ImageView::setShowTextRegions(bool on)
     if (m_textLayer.needsLayer()) {
         refreshTextLayer();
     } else {
-        m_textLayer.layer = {};
-        m_textLayer.clearLayerPath();
+        m_textLayer.resetLayerContent();
         m_textLayer.searchMatches.clear();
     }
     viewport()->update();
@@ -757,8 +756,7 @@ void ImageView::setShowTextRegions(bool on)
 
 void ImageView::refreshTextLayer()
 {
-    m_textLayer.layer = {};
-    m_textLayer.clearLayerPath();
+    m_textLayer.resetLayerContent();
     m_textLayer.searchMatches.clear();
     if (!m_textLayer.needsLayer()) {
         return;
@@ -790,7 +788,7 @@ void ImageView::setTextSearchFuzzy(bool on)
     if (m_textLayer.searchFuzzy == on) {
         return;
     }
-    m_textLayer.searchFuzzy = on;
+    m_textLayer.setSearchFuzzy(on);
     if (!m_textLayer.searchQuery.isEmpty()) {
         recomputeTextSearchMatches();
         viewport()->update();

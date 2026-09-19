@@ -88,6 +88,20 @@ struct TextLayerSession {
     void setLinkHoverTip(const QString &tip) { linkHoverTip = tip; }
 
     void clearLinkHoverTip() { linkHoverTip.clear(); }
+
+    void setSearchFuzzy(bool on) { searchFuzzy = on; }
+
+    void setLayerContent(const ThumtooCache::PageTextLayer &l, const QString &path)
+    {
+        layer = l;
+        layerPath = path;
+    }
+
+    void resetLayerContent()
+    {
+        layer = {};
+        layerPath.clear();
+    }
 };
 
 #endif // TEXTLAYERSESSION_H
