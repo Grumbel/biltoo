@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "slideshowmotiongeometry.h"
+#include "viewtransform.h"
 
 #include <QHash>
 #include <QtGlobal>
@@ -13,7 +14,7 @@ QRectF coverDestRect(SlideshowMotion motion, qreal baseScale, qreal panZoomFacto
                      QPointF biasA, QPointF biasB, bool dwellBiasValid,
                      const QString &pathForSeed)
 {
-    motionT = qBound(0.0, motionT, 1.0);
+    motionT = ViewTransform::clamp01(motionT);
     if (baseScale <= 0.0 || !qIsFinite(baseScale) || iw < 1.0 || ih < 1.0
         || vw < 1 || vh < 1) {
         return QRectF();

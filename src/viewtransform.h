@@ -173,6 +173,15 @@ inline int clampIndex(int index, int count)
     return qBound(0, index, count - 1);
 }
 
+/** Clamp insert position into [0, size] (size = append). */
+inline int clampInsertIndex(int index, int size)
+{
+    if (size < 0) {
+        return 0;
+    }
+    return qBound(0, index, size);
+}
+
 /** Clamp pixel coordinate into [0, extent-1]. */
 inline int clampPixel(int coord, int extent)
 {

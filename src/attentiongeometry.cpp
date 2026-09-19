@@ -20,7 +20,7 @@ QPointF localFromNorm(const QPointF &norm, const QRectF &contentRect)
 
 QPointF clampNorm(const QPointF &norm)
 {
-    return QPointF(qBound(0.0, norm.x(), 1.0), qBound(0.0, norm.y(), 1.0));
+    return QPointF(ViewTransform::clamp01(norm.x()), ViewTransform::clamp01(norm.y()));
 }
 
 QVector<QPointF> clampNormPoints(const QVector<QPointF> &pts)

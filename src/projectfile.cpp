@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "projectfile.h"
+#include "attentiongeometry.h"
 
 #include <QCryptographicHash>
 #include <QDir>
@@ -188,15 +189,13 @@ WorkspaceItemState appearanceFromJson(const QJsonObject &o)
             for (const QJsonValue &v : a) {
                 const QJsonArray p = v.toArray();
                 if (p.size() >= 2) {
-                    s.attentionPoints.append(
-                        QPointF(qBound(0.0, p.at(0).toDouble(), 1.0),
-                                qBound(0.0, p.at(1).toDouble(), 1.0)));
+                    s.attentionPoints.append(AttentionGeometry::clampNorm(
+                        QPointF(p.at(0).toDouble(), p.at(1).toDouble())));
                 }
             }
         } else if (a.size() >= 2) {
-            s.attentionPoints.append(
-                QPointF(qBound(0.0, a.at(0).toDouble(), 1.0),
-                        qBound(0.0, a.at(1).toDouble(), 1.0)));
+            s.attentionPoints.append(AttentionGeometry::clampNorm(
+                QPointF(a.at(0).toDouble(), a.at(1).toDouble())));
         }
         s.syncAttentionPrimary();
     } else if (o.value(QStringLiteral("hasAttention")).toBool(false)) {
