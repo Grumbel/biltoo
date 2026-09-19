@@ -1963,13 +1963,14 @@ bool ImageView::tryKeyPressWorkspaceShear(QKeyEvent *event)
     if (targets.isEmpty()) {
         return false;
     }
-    const qreal step = (event->modifiers() & Qt::ShiftModifier) ? 0.1 : 0.05;
+    const qreal step = PlacementLinear::shearStepFromModifiers(
+        event->modifiers() & Qt::ShiftModifier);
     for (ImageItem *item : targets) {
         if (key == Qt::Key_0) {
             item->setItemShear(0.0);
         } else {
-            const qreal delta = (key == Qt::Key_BracketRight) ? step : -step;
-            item->setItemShear(item->itemShear() + delta);
+            item->setItemShear(PlacementLinear::shearAfterKey(
+                item->itemShear(), step, key == Qt::Key_BracketRight));
         }
         commitItemSessionEdit(item);
     }
