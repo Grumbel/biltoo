@@ -707,7 +707,6 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     if (!rec.valid()) {
         return;
     }
-    const QRectF &local = rec.localClamped;
     const QRect &disp = rec.sourceRect;
 
     // cropSourceSize must be the post-orient full-frame size the draft was
