@@ -38,6 +38,14 @@ struct ViewFraming {
         return fillMode ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio;
     }
 
+    bool isFitMode() const { return fitMode; }
+
+    bool isFillMode() const { return fillMode; }
+
+    bool isStickyZoomEnabled() const { return stickyZoomEnabled; }
+
+    bool hasPreservedViewScale() const { return havePreservedViewScale; }
+
     /** Capture sticky pan as norms of @p sceneCentre within @p itemBounds. */
     void setStickyPanFromScene(const QPointF &sceneCentre, const QRectF &itemBounds)
     {

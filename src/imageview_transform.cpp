@@ -153,7 +153,7 @@ void ImageView::flipHorizontal()
     }
     for (ImageItem *item : targets) {
         bakeItemFlip(item, true, false);
-        if (m_framing.fitMode && isImageMode()) {
+        if (m_framing.isFitMode() && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
     }
@@ -171,7 +171,7 @@ void ImageView::flipVertical()
     }
     for (ImageItem *item : targets) {
         bakeItemFlip(item, false, true);
-        if (m_framing.fitMode && isImageMode()) {
+        if (m_framing.isFitMode() && isImageMode()) {
             fitItem(item, currentFitAspectMode());
         }
     }
@@ -195,9 +195,9 @@ void ImageView::rotateContentByQuarterTurns(ImageItem *item, int quarterTurns)
     bakeItemRotate90(item, quarterTurns);
 
     if (isImageMode()) {
-        if (m_framing.fitMode) {
+        if (m_framing.isFitMode()) {
             fitItem(item, currentFitAspectMode());
-        } else if (m_framing.fillMode) {
+        } else if (m_framing.isFillMode()) {
             fitItem(item, Qt::KeepAspectRatioByExpanding);
         }
     }
@@ -895,7 +895,7 @@ int ImageView::resetContentAppearanceForTargets()
             }
         }
 
-        if (isImageMode() && m_framing.fitMode) {
+        if (isImageMode() && m_framing.isFitMode()) {
             fitItem(item, currentFitAspectMode());
         }
 
