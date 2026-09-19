@@ -65,6 +65,16 @@ ImageItem *ImageView::cropTargetItem() const
 }
 
 
+void ImageView::preserveWorkspaceItemCenter(ImageItem *item, const QPointF &center0,
+                                               qreal footW0, qreal footH0)
+{
+    // Do not rescale full frame into the previous crop footprint.
+    if (!item || !isWorkspaceMode() || footW0 <= 1.0 || footH0 <= 1.0) {
+        return;
+    }
+    alignItemCenterToScene(item, center0);
+}
+
 void ImageView::fitImageOrUpdateWorkspace(ImageItem *item)
 {
     if (!item) {
@@ -368,13 +378,8 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     const qreal footH0 = beforeScene.height();
     const QPointF center0 = beforeScene.center();
     installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp, unorientedSource);
-    // Workspace: do NOT rescale to fit full frame into the previous crop
-    // footprint. That drove item scale toward ~1% on second crop (Zoom UI)
-    // and made Apply inherit a near-zero scale. Placement scale is placement —
-    // crop only changes intrinsic. Keep centre so the draft does not jump.
-    if (isWorkspaceMode() && footW0 > 1.0 && footH0 > 1.0) {
-        alignItemCenterToScene(item, center0);
-    }
+    // Workspace: keep centre so the draft does not jump (scale is placement-only).
+    preserveWorkspaceItemCenter(item, center0, footW0, footH0);
     m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
                                        item->imageSize(),
                                        haveApp ? &app : nullptr, haveApp);
@@ -469,11 +474,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
             have = true;
         }
     }
-    if (!have && item->sessionHasCrop()) {
-        app.hasCrop = true;
-        app.cropRect = item->sessionCropRect();
-        app.contentHFlip = item->contentHFlip();
-        app.contentVFlip = item->contentVFlip();
+    if (!have && CropSession::fillAppearanceFromItemSessionCrop(&app, item)) {
         have = true;
     }
     if (!have) {
@@ -489,15 +490,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     if (!full.isNull() && !path.isEmpty()) {
         ImageCache::put(path, full);
     }
-    if (isImageMode()) {
-        item->setItemRotation(0.0);
-        item->setItemShear(0.0);
-    } else {
-        item->setItemRotation(app.rotation);
-        item->setItemShear(app.shear);
-    }
-    item->setItemHFlip(false);
-    item->setItemVFlip(false);
+    CropSession::applyItemPlacementFromState(item, app, isImageMode());
     if (!full.isNull()) {
         if (!tryRematerializeFromHost(item, app)) {
             installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
@@ -511,12 +504,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     } else {
         rematerializeItemContent(item, app);
     }
-    if (isImageMode()) {
-        m_framing.armFit();
-        fitItem(item, currentFitAspectMode());
-    } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
+    fitImageOrUpdateWorkspace(item);
 }
 
 void ImageView::toggleCropMode()

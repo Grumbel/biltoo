@@ -1618,6 +1618,8 @@ private:
     ImageItem *cropTargetItem() const;
     ImageItem *cropSessionBoundItem() const;
     SessionImageId cropRecordSessionId(const ImageItem *item) const;
+    void preserveWorkspaceItemCenter(ImageItem *item, const QPointF &center0,
+                                     qreal footW0, qreal footH0);
     void fitImageOrUpdateWorkspace(ImageItem *item);
     void ensureCropRectValid();
     QRectF cropRectItemLocal() const { return m_crop.currentRect(); }

@@ -204,6 +204,14 @@ public:
     /** End handle drag with content clamp (no-op content when empty). */
     void finishHandleDrag(const QRectF &contentRect);
 
+    /**
+     * Restore free placement from appearance, or zero it in Image mode.
+     * Always clears item H/V flip (content flips live in appearance bake).
+     */
+    static void applyItemPlacementFromState(ImageItem *item,
+                                            const WorkspaceItemState &app,
+                                            bool imageModeZeroPose);
+
     bool isHandleHot(CropHandle h) const
     {
         return hoverHandle == h || activeHandle == h;

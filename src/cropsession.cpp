@@ -489,6 +489,25 @@ void CropSession::finishHandleDrag(const QRectF &contentRect)
     }
 }
 
+
+void CropSession::applyItemPlacementFromState(ImageItem *item,
+                                              const WorkspaceItemState &app,
+                                              bool imageModeZeroPose)
+{
+    if (!item) {
+        return;
+    }
+    if (imageModeZeroPose) {
+        item->setItemRotation(0.0);
+        item->setItemShear(0.0);
+    } else {
+        item->setItemRotation(app.rotation);
+        item->setItemShear(app.shear);
+    }
+    item->setItemHFlip(false);
+    item->setItemVFlip(false);
+}
+
 bool CropSession::locksPath(const QString &path) const
 {
     if (!draftSampleFrozen || path.isEmpty()) {
