@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1391-sticky-pending-size-take-durable-grade.** Bag transitions on tip 1390.
+Prior: **1390**.
+
+### Change
+1. `ViewFraming::{setStickyZoomEnabled,setStickyZoomKind}` report change
+2. `GalleryController::setPendingRestore` reports change
+3. `ImageSizeBook::take`
+4. `ColorAdjustments::fromDurableGrade`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1391-sticky-pending-size-take-durable-grade.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1391).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1390-nav-key-gallery-paths-color-layoutpred.** Compile fix + helpers
 on tip 1389.
 Prior: **1389**.

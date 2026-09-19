@@ -134,6 +134,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **HudFlash::setIdentityPulse** reports change.
 - **WorkspaceNavGeometry** int key overload; **GalleryController** focus/hover path transitions.
 - **ColorAdjustments::matches**; **layoutIsGridFamily** / **layoutNeedsAllSizes**.
+- **ViewFraming** sticky enable/kind; **GalleryController::setPendingRestore**; **ImageSizeBook::take**.
+- **ColorAdjustments::fromDurableGrade** for XDG appearance seed.
 
 
 ## Current pain (evidence)
