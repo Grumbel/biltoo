@@ -183,6 +183,20 @@ inline qreal clampGroupScaleAxis(qreal scale, qreal lo = 0.05, qreal hi = 20.0)
     return qBound(lo, qAbs(scale), hi);
 }
 
+/**
+ * Delta to add to item scene pos so a current scene point maps to target.
+ * Returns null QPointF if any component is non-finite.
+ */
+inline QPointF scenePosDeltaToAlign(const QPointF &currentScene,
+                                    const QPointF &targetScene)
+{
+    if (!qIsFinite(currentScene.x()) || !qIsFinite(currentScene.y())
+        || !qIsFinite(targetScene.x()) || !qIsFinite(targetScene.y())) {
+        return QPointF(qQNaN(), qQNaN());
+    }
+    return targetScene - currentScene;
+}
+
 } // namespace PlacementLinear
 
 #endif // PLACEMENTLINEAR_H

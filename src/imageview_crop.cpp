@@ -136,12 +136,12 @@ void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &scen
     if (!item || !m_crop.hasValidRect()) {
         return;
     }
-    const QPointF current = item->mapToScene(m_crop.draftCenterLocal());
-    if (!qIsFinite(current.x()) || !qIsFinite(current.y())
-        || !qIsFinite(sceneAnchor.x()) || !qIsFinite(sceneAnchor.y())) {
+    const QPointF delta = PlacementLinear::scenePosDeltaToAlign(
+        item->mapToScene(m_crop.draftCenterLocal()), sceneAnchor);
+    if (!qIsFinite(delta.x()) || !qIsFinite(delta.y())) {
         return;
     }
-    item->setPos(item->pos() + (sceneAnchor - current));
+    item->setPos(item->pos() + delta);
 }
 
 void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
@@ -151,11 +151,11 @@ void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnch
     }
     // Pixmap is centred on the item origin (offset -w/2,-h/2).
     const QPointF current = item->mapToScene(QPointF(0.0, 0.0));
-    if (!qIsFinite(current.x()) || !qIsFinite(current.y())
-        || !qIsFinite(sceneAnchor.x()) || !qIsFinite(sceneAnchor.y())) {
+    const QPointF delta = PlacementLinear::scenePosDeltaToAlign(current, sceneAnchor);
+    if (!qIsFinite(delta.x()) || !qIsFinite(delta.y())) {
         return;
     }
-    item->setPos(item->pos() + (sceneAnchor - current));
+    item->setPos(item->pos() + delta);
 }
 
 bool ImageView::enterCropModeFromUi()
