@@ -44,7 +44,16 @@ public:
     const QList<ImageItem *> &stashedItems() const { return m_stashedItems; }
 
     bool pendingRestore() const { return m_pendingRestore; }
-    void setPendingRestore(bool v) { m_pendingRestore = v; }
+
+    /** @return true when the pending-restore flag changed. */
+    bool setPendingRestore(bool v)
+    {
+        if (m_pendingRestore == v) {
+            return false;
+        }
+        m_pendingRestore = v;
+        return true;
+    }
 
     bool haveViewCenter() const { return m_haveViewCenter; }
     void clearViewCenter() { m_haveViewCenter = false; }
