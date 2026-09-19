@@ -104,16 +104,6 @@ void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
     }
 }
 
-QSize ImageView::cropRecordFileNative(const QString &path) const
-{
-    QSize fileNative = logicalSizeForPath(path);
-    if (!isPositiveSize(fileNative) || fileNative.width() <= 1
-        || isProvisionalImageSize(path)) {
-        return {};
-    }
-    return fileNative;
-}
-
 bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const
 {
     if (!st || sid == kInvalidSessionImageId) {
@@ -121,18 +111,6 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
     }
     if (const WorkspaceItemState *it = m_appearance.get(sid)) {
         *st = *it;
-        return true;
-    }
-    return false;
-}
-
-bool ImageView::loadPathBookAppearance(ImageItem *item, WorkspaceItemState *app) const
-{
-    if (!item || !app) {
-        return false;
-    }
-    if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
-        *app = *st;
         return true;
     }
     return false;
@@ -155,7 +133,11 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
     if (CropSession::fillAppearanceFromItemSessionCrop(app, item)) {
         return true;
     }
-    return loadPathBookAppearance(item, app);
+    if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
+        *app = *st;
+        return true;
+    }
+    return false;
 }
 
 
@@ -188,43 +170,6 @@ void ImageView::relayoutAfterAppearanceApply(ImageItem *item)
     emit statusChanged();
 }
 
-void ImageView::rematerializeIfContentXformMismatch(ImageItem *item,
-                                                    const WorkspaceItemState &app)
-{
-    if (!item) {
-        return;
-    }
-    if (!ContentXform::equal(
-            item->hasAppliedContentXform() ? item->appliedContentXform()
-                                           : ContentXform::Value{},
-            ContentXform::Value::fromState(app))) {
-        rematerializeItemContent(item, app);
-    }
-}
-
-void ImageView::installRestoredCropPixelsFromFull(ImageItem *item, const WorkspaceItemState &app,
-                                                  SessionImageId sid, const QImage &full)
-{
-    if (!tryRematerializeFromHost(item, app)) {
-        installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
-        rematerializeIfContentXformMismatch(item, app);
-    }
-}
-
-void ImageView::installRestoredCropPixels(ImageItem *item, const WorkspaceItemState &app,
-                                          SessionImageId sid, const QImage &full)
-{
-    if (!item) {
-        return;
-    }
-    CropSession::applyItemPlacementFromState(item, app, isImageMode());
-    if (full.isNull()) {
-        rematerializeItemContent(item, app);
-        return;
-    }
-    installRestoredCropPixelsFromFull(item, app, sid, full);
-}
-
 void ImageView::restoreSessionCropAppearance(ImageItem *item)
 {
     if (!item) {
@@ -240,7 +185,18 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     if (!full.isNull() && !path.isEmpty()) {
         ImageCache::put(path, full);
     }
-    installRestoredCropPixels(item, app, sid, full);
+    CropSession::applyItemPlacementFromState(item, app, isImageMode());
+    if (full.isNull()) {
+        rematerializeItemContent(item, app);
+    } else if (!tryRematerializeFromHost(item, app)) {
+        installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
+        if (!ContentXform::equal(
+                item->hasAppliedContentXform() ? item->appliedContentXform()
+                                               : ContentXform::Value{},
+                ContentXform::Value::fromState(app))) {
+            rematerializeItemContent(item, app);
+        }
+    }
     fitImageOrUpdateWorkspace(item);
 }
 
@@ -292,20 +248,6 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     relayoutAfterAppearanceApply(item);
 }
 
-QImage ImageView::pickCropApplyAppearanceImage(ImageItem *item,
-                                               const QImage &preferredDisplay) const
-{
-    // Prefer the crop bake just materialized when provided — not displayImage(),
-    // which can still be pre-crop if soft attach was rejected.
-    if (!preferredDisplay.isNull()) {
-        return preferredDisplay;
-    }
-    if (item) {
-        return sessionAppearanceImage(item);
-    }
-    return {};
-}
-
 void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                            ImageItem *item, const QImage &preferredDisplay,
                                            bool hasCrop)
@@ -313,7 +255,12 @@ void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
     if (sid == kInvalidSessionImageId) {
         return;
     }
-    const QImage appearance = pickCropApplyAppearanceImage(item, preferredDisplay);
+    // Prefer the crop bake just materialized when provided — not displayImage(),
+    // which can still be pre-crop if soft attach was rejected.
+    QImage appearance = preferredDisplay;
+    if (appearance.isNull() && item) {
+        appearance = sessionAppearanceImage(item);
+    }
     if (appearance.isNull()) {
         return;
     }

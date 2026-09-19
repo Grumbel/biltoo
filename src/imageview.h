@@ -710,8 +710,6 @@ public:
      * Enter applies pixel crop; Esc / toggle off cancels.
      */
     void setCropMode(bool on);
-    bool completeCropEnterUnderHold(ImageItem *item,
-                                    const QPointF &workspaceAnchorScene);
     bool enterCropModeFromUi();
     /**
      * Best host raster for crop / content bake / Workspace restore.
@@ -1692,14 +1690,10 @@ private:
     /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
     void onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
                                      quint64 gen);
-    void scheduleCropFullRasterFromPool(const QString &path);
     void requestCropFullRaster(const QString &path);
     /** Upgrade crop source when native full arrives for m_crop.awaitingFullPath. */
-    void acceptCropFullRasterReady(const QString &path, const QImage &image);
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
-    QImage pickCropApplyAppearanceImage(ImageItem *item,
-                                        const QImage &preferredDisplay) const;
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);
@@ -1707,7 +1701,6 @@ private:
     void flashCropHud(const CropFlash::Hud &hud);
     void storeCropAppearance(ImageItem *item, SessionImageId sid,
                              const WorkspaceItemState &s);
-    QSize cropRecordFileNative(const QString &path) const;
     bool applyCropCommit(ImageItem *item);
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace
@@ -1724,15 +1717,8 @@ private:
     /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
     void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /** Cancel path: put the session crop (if any) back on the live item. */
-    bool loadPathBookAppearance(ImageItem *item, WorkspaceItemState *app) const;
     bool loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
                                     SessionImageId *sidOut) const;
-    void rematerializeIfContentXformMismatch(ImageItem *item,
-                                            const WorkspaceItemState &app);
-    void installRestoredCropPixelsFromFull(ImageItem *item, const WorkspaceItemState &app,
-                                           SessionImageId sid, const QImage &full);
-    void installRestoredCropPixels(ImageItem *item, const WorkspaceItemState &app,
-                                   SessionImageId sid, const QImage &full);
     void restoreSessionCropAppearance(ImageItem *item);
     void updateMouseInfo(const QPoint &viewPos);
     /** Frame @p item in the view. Image mode: does not clear rotation/flips. */

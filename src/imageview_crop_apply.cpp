@@ -52,8 +52,13 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     const SessionImageId sid = cropRecordSessionId(item);
     const WorkspaceItemState *orientApp =
         (sid != kInvalidSessionImageId) ? m_appearance.get(sid) : nullptr;
+    QSize fileNative = logicalSizeForPath(item->path());
+    if (!isPositiveSize(fileNative) || fileNative.width() <= 1
+        || isProvisionalImageSize(item->path())) {
+        fileNative = {};
+    }
     const QSize cropBasis = CropSession::cropBasisSize(
-        item->imageSize(), cropRecordFileNative(item->path()), orientApp, item);
+        item->imageSize(), fileNative, orientApp, item);
     WorkspaceItemState s = captureState(item);
     CropSession::mergeOrientFromAppearance(&s, orientApp);
     s.sessionId = sid;

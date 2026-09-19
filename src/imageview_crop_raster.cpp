@@ -27,8 +27,17 @@ void ImageView::onPoolCropFullRasterDecoded(const QString &path, const QImage &d
     maybeUpgradeCropFullRaster(path, decoded);
 }
 
-void ImageView::scheduleCropFullRasterFromPool(const QString &path)
+void ImageView::requestCropFullRaster(const QString &path)
 {
+    if (path.isEmpty()) {
+        return;
+    }
+    // Soft/PreferCache must not race Full encode for the crop subject.
+    cancelPathRasterForCrop(path);
+    // Prefer thumtoo Full; fall back to pool ImageLoader::load.
+    if (CropSession::tryScheduleThumtooFullRaster(path)) {
+        return;
+    }
     const quint64 gen = m_loadGate.generation();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
@@ -47,30 +56,6 @@ void ImageView::scheduleCropFullRasterFromPool(const QString &path)
     });
 }
 
-void ImageView::requestCropFullRaster(const QString &path)
-{
-    if (path.isEmpty()) {
-        return;
-    }
-    // Soft/PreferCache must not race Full encode for the crop subject.
-    cancelPathRasterForCrop(path);
-    // Prefer thumtoo Full; fall back to pool ImageLoader::load.
-    if (CropSession::tryScheduleThumtooFullRaster(path)) {
-        return;
-    }
-    scheduleCropFullRasterFromPool(path);
-}
-
-
-void ImageView::acceptCropFullRasterReady(const QString &path, const QImage &image)
-{
-    if (!path.isEmpty() && !image.isNull()) {
-        ImageCache::put(path, image);
-    }
-    m_crop.clearAwaitingFull();
-    flashCropHud(CropFlash::fullReady());
-}
-
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
 {
     ImageItem *item = m_crop.target();
@@ -85,7 +70,9 @@ void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &im
         return;
     }
     // Cache for Apply accuracy; do not reinstall mid-draft (stalls interaction).
-    acceptCropFullRasterReady(path, image);
+    if (!path.isEmpty() && !image.isNull()) {
+        ImageCache::put(path, image);
+    }
+    m_crop.clearAwaitingFull();
+    flashCropHud(CropFlash::fullReady());
 }
-
-

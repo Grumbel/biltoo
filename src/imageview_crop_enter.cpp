@@ -14,43 +14,6 @@
 #include "contentxform.h"
 #include "placementlinear.h"
 
-bool ImageView::completeCropEnterUnderHold(ImageItem *item,
-                                           const QPointF &workspaceAnchorScene)
-{
-    // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
-    ViewportUpdateHold paintHold(viewport());
-    if (!prepareCropModeFullImage(item)) {
-        // prepare may have set mode for fitItem then failed — restore placement
-        // before abortEnter clears the stash.
-        if (item) {
-            item->setTileLodSuppressed(false);
-        }
-        m_crop.abortEnterRestoringPlacement(item);
-        flashCropHud(CropFlash::loadFailed());
-        return false;
-    }
-    if (isWorkspaceMode()) {
-        if (item) {
-            // If there was no stored crop angle but the tile was free-rotated,
-            // seed the draft rotation so the frame matches the prior pose while
-            // the item stays axis-aligned for editing.
-            if (m_crop.seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
-                ensureCropRectValid();
-            }
-            if (m_crop.hasValidRect()) {
-                CropSession::applyScenePosDelta(
-                    item,
-                    PlacementLinear::scenePosDeltaToAlign(
-                        item->mapToScene(m_crop.draftCenterLocal()), workspaceAnchorScene));
-            }
-            updateWorkspaceSceneRect();
-        }
-    }
-    flashCropHud(CropFlash::modeEntered());
-    emit cropModeChanged(true);
-    emit statusChanged();
-    return true;
-}
 
 bool ImageView::enterCropModeFromUi()
 {
@@ -81,7 +44,36 @@ bool ImageView::enterCropModeFromUi()
     }
     // Workspace: displayed image centre so the crop frame can stay fixed.
     const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
-    return completeCropEnterUnderHold(item, workspaceAnchorScene);
+
+    // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
+    ViewportUpdateHold paintHold(viewport());
+    if (!prepareCropModeFullImage(item)) {
+        // prepare may have set mode for fitItem then failed — restore placement
+        // before abortEnter clears the stash.
+        item->setTileLodSuppressed(false);
+        m_crop.abortEnterRestoringPlacement(item);
+        flashCropHud(CropFlash::loadFailed());
+        return false;
+    }
+    if (isWorkspaceMode()) {
+        // If there was no stored crop angle but the tile was free-rotated,
+        // seed the draft rotation so the frame matches the prior pose while
+        // the item stays axis-aligned for editing.
+        if (m_crop.seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
+            ensureCropRectValid();
+        }
+        if (m_crop.hasValidRect()) {
+            CropSession::applyScenePosDelta(
+                item,
+                PlacementLinear::scenePosDeltaToAlign(
+                    item->mapToScene(m_crop.draftCenterLocal()), workspaceAnchorScene));
+        }
+        updateWorkspaceSceneRect();
+    }
+    flashCropHud(CropFlash::modeEntered());
+    emit cropModeChanged(true);
+    emit statusChanged();
+    return true;
 }
 
 void ImageView::setCropMode(bool on)
@@ -96,8 +88,6 @@ void ImageView::setCropMode(bool on)
     // Turning crop off from the toolbar commits the draft (auto-apply).
     leaveCropModeInternal(true);
 }
-
-
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
 {
     if (!item) {

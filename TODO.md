@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1577-crop-inline-raster-restore-enter.** Inline raster schedule/accept, restore pixel chain, enter complete, thin wrappers.
+Prior: **1576**.
+
+### Change
+- `scheduleCropFullRasterFromPool` → body of `requestCropFullRaster`
+- `acceptCropFullRasterReady` → body of `maybeUpgradeCropFullRaster`
+- `rematerializeIfContentXformMismatch` / `installRestoredCropPixelsFromFull` /
+  `installRestoredCropPixels` → body of `restoreSessionCropAppearance`
+- `loadPathBookAppearance` → body of `loadRestoreCropAppearance`
+- `pickCropApplyAppearanceImage` → body of `emitCropApplyAppearance`
+- `cropRecordFileNative` → body of `recordSessionCrop`
+- `completeCropEnterUnderHold` → body of `enterCropModeFromUi`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1577-crop-inline-raster-restore-enter.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1576-crop-inline-apply-bake-chain.** Collapse non-full apply host/bake/commit into applyCropCommit.
 Prior: **1575**.
 
