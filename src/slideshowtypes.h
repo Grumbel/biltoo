@@ -321,6 +321,9 @@ struct SlideshowZoomBlurState {
  * Progress QTimer stays on ImageView (QObject parent).
  */
 struct SlideshowProgressHud {
+    /** Progress bar paint tick while slideshow is running (~30 Hz). */
+    static constexpr int kProgressTickMs = 33;
+
     bool pausedHud = false;
     bool seekbarVisible = false;
     bool seekDragging = false;
