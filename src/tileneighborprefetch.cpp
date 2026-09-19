@@ -6,6 +6,7 @@
 #include "biltoo_thread.h"
 #include "thumtoocache.h"
 #include "tilelod/tile_lod_controller.hpp"
+#include "tilelod/tile_lod_registry.hpp"
 
 #include <QRectF>
 #include <QTimer>
@@ -46,6 +47,12 @@ void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPer
             continue;
         }
         if (m_host->pathOnLiveCanvas(path)) {
+            continue;
+        }
+        // Global path RAM (1212): already warm — do not open another controller
+        // or spend request budget. Live canvas rebinds the same SharedPathTiles.
+        if (tilelod::TileLodRegistry::instance().has_succeeded_tiles(path)) {
+            tilelod::TileLodRegistry::instance().touch(path);
             continue;
         }
         bool existing = false;
