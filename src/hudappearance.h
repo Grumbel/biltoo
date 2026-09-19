@@ -11,6 +11,9 @@
  * Pinned / overlay HUD visual preferences (not the transient flash).
  */
 struct HudAppearance {
+    /** Coalesce rapid statusChanged / soft-climb HUD updates (ms). */
+    static constexpr int kStatusRefreshMs = 120;
+
     bool visible = false;
     int fontPointSize = 11;
     QColor textColor{255, 255, 255};
