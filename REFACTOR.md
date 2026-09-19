@@ -123,6 +123,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowDwellState** motion flags; **CropSession::setMode**; **PageGuide** visibility + DPI.
 - **TextLayerSession::setShowRegions**; **AttentionSession::setMode**; **HudFlash** pulse/action ms.
 - **GallerySoft** watchdog/status intervals; **SlideshowProgressHud::kProgressTickMs**; canvas workspace-default.
+- **SlideshowProgressHud::kMotionTickMs**; **TileLoadCoordinator::kDefaultTickBudget**; **HudAppearance::kStatusRefreshMs**.
+- **TextLayerSession** search fuzzy/query transitions.
 
 
 ## Current pain (evidence)

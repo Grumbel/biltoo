@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1385-motion-tile-status-textsearch.** Named intervals and search
+transitions on tip 1384.
+Prior: **1384**.
+
+### Change
+1. `SlideshowProgressHud::kMotionTickMs`
+2. `TileLoadCoordinator::kDefaultTickBudget`; sceneRect pad via `GalleryLayout::Params::kDefaultMargin`
+3. `HudAppearance::kStatusRefreshMs`
+4. `TextLayerSession::{setSearchFuzzy,setSearchQuery}` report change
+
+### Apply
+```bash
+git pull /path/to/biltoo-1385-motion-tile-status-textsearch.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1385).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1384-text-attention-hudtimers-soft-ss-canvas.** Bag transitions and
 named timer intervals on tip 1383.
 Prior: **1383**.
