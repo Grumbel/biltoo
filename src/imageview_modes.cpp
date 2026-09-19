@@ -178,16 +178,8 @@ void ImageView::enableFitMode()
 
 void ImageView::clearInteractionState()
 {
-    m_itemInteract.handleDragItem = nullptr;
-    m_groupXform.scaleDrag = false;
-    m_groupXform.rotateDrag = false;
-    m_groupXform.handle = -1;
-    m_groupXform.hoverHandle = -1;
-    m_groupXform.dragItems.clear();
-    m_groupXform.dragStartStates.clear();
-    m_itemInteract.rotateItem = nullptr;
-    m_itemInteract.rotating = false;
-    m_itemInteract.dragItem = nullptr;
+    m_itemInteract.clear();
+    m_groupXform.clear();
     m_gallery.setSelectionAnchor(nullptr);
 }
 
@@ -215,7 +207,7 @@ void ImageView::clearLiveCanvas()
     m_items.clear();
     // Do not m_scene->clear() — that would delete stashed items if any were
     // still parented (they are not). Scene may hold no items; that is fine.
-    m_chrome.mouseInfo = {};
+    m_chrome.clearMouseInfo();
     emit mouseInfoChanged(m_chrome.mouseInfo);
 }
 
