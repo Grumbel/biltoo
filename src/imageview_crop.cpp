@@ -1023,7 +1023,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
     const QRectF full = item->contentRect();
     const bool fullFrame = m_crop.isFullFrameDraft(full);
     // Record content-space crop while the draft frame is still valid.
-    recordSessionCrop(item, m_crop.currentRect().isValid() ? m_crop.currentRect() : full);
+    recordSessionCrop(item, m_crop.draftRectOr(full));
     if (!fullFrame) {
         // --- Workspace footprint math (verify) ---
         // During crop mode the item is axis-aligned (placement rotation stashed).

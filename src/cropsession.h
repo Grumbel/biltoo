@@ -381,6 +381,12 @@ public:
 
     QPointF draftCenterLocal() const { return rect.center(); }
 
+    QRectF draftRectOr(const QRectF &fallback) const
+    {
+        return hasValidRect() ? currentRect() : fallback;
+    }
+
+
     /** Scene footprint of the draft at placement scales (Workspace Apply). */
     void draftFootprint(qreal itemScaleX, qreal itemScaleY,
                         qreal *cropW, qreal *cropH, qreal *footW, qreal *footH) const
