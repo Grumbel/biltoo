@@ -485,9 +485,9 @@ void ImageView::installDisplayPreservingView(ImageItem *item, const QImage &pixe
 WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
                                                       SessionImageId sid) const
 {
-    WorkspaceItemState appearance;
+    WorkspaceItemState want;
     if (!item) {
-        return appearance;
+        return want;
     }
     SessionImageId id = sid;
     if (id == kInvalidSessionImageId) {
@@ -498,34 +498,34 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
     }
     if (id != kInvalidSessionImageId) {
         if (const WorkspaceItemState *app = appearance().get(id)) {
-            appearance = *app;
+            want = *app;
         }
         // Cold open / ←→: id slot often empty until first seed. Path XDG holds
         // durable rotate/flip/grade — pull it before materialize or we paint
         // unoriented host forever.
-        if (!SessionAppearance::hasContentAppearance(appearance)
-            && appearance.colorAdjust.isIdentity()
+        if (!SessionAppearance::hasContentAppearance(want)
+            && want.colorAdjust.isIdentity()
             && !item->path().isEmpty()) {
             const_cast<ImageView *>(this)->seedSessionAppearanceFromState(
                 id, item->path());
             if (const WorkspaceItemState *app = appearance().get(id)) {
-                appearance = *app;
+                want = *app;
             }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
-            appearance = *st;
+            want = *st;
         }
     }
     const ContentXform::Value applied =
         item->hasAppliedContentXform() ? item->appliedContentXform()
                                        : ContentXform::Value{};
     SessionAppearance::mergeAppliedAndLiveFlags(
-        appearance,
+        want,
         item->hasAppliedContentXform() ? &applied : nullptr,
         item->contentHFlip(), item->contentVFlip(),
         item->sessionHasCrop(), item->sessionCropRect());
-    return appearance;
+    return want;
 }
 
 DisplaySurface::State ImageView::displaySurfaceStateForItem(const ImageItem *item,

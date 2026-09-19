@@ -1233,13 +1233,13 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
-        const QImage appearance = sessionAppearanceImage(item);
-        if (!appearance.isNull()) {
-            emit sessionAppearanceChanged(sid, item->path(), appearance);
+        const QImage appearanceImage = sessionAppearanceImage(item);
+        if (!appearanceImage.isNull()) {
+            emit sessionAppearanceChanged(sid, item->path(), appearanceImage);
             if (item->sessionHasCrop()
                 || (appearance().contains(sid)
                     && appearance().value(sid).hasCrop)) {
-                emit sessionCropApplied(sid, item->path(), appearance, /*hasCrop=*/true);
+                emit sessionCropApplied(sid, item->path(), appearanceImage, /*hasCrop=*/true);
             }
         }
     }

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1625-fix-appearance-shadow.** Fix appearance() shadowing after Tier 4b bind.
+Prior: **1624** (`fa3502c`).
+
+### Change
+- `wantAppearanceForItem`: rename local `WorkspaceItemState appearance` → `want`
+  so store accessor `appearance()` is not shadowed
+- `propagateSessionAppearanceToViews`: rename local `QImage appearance` →
+  `appearanceImage` for the same reason
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1625-fix-appearance-shadow.bundle HEAD
+```
+
+### Next
+- Continue Phase 6 (delete view-owned fallback when always bound)
+- Remove `m_pathOrderBook` in favor of SessionDocument paths/ids
+- Tier 5b PreferCache
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1624-phase6-tier4b-bind-appearance.** Phase 6 Tier 4b partial: ImageView binds to SessionDocument appearance.
 Prior: **1623**.
 
