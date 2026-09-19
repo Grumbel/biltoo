@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1485-crop-enter-ownership.** beginEnterSession, auto-crop map, releaseTargetTileLod.
+Prior: **1484**. Commits 1485a–1485c (+ docs).
+
+### Compile (re-confirm)
+If you still see `stashedPlacementPos` / `haveStickyPan` / `workspaceRef()ShowDefault` /
+`currentTransition()Duration` errors, you are **not** on this tip — those were fixed in
+**1481** and remain fixed through **1485**. Pull this bundle from `2857f19`.
+
+### Commits
+1. **CropSession** setRectFromSourcePixelTrim (auto-crop)
+2. **CropSession** beginEnterSession (bind/snapshot/unrotate)
+3. **CropSession** releaseTargetTileLod
+
+### Apply
+```bash
+git pull /path/to/biltoo-1485-crop-enter-ownership.bundle HEAD
+```
+Requires tip **1484** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1484-crop-session-geometry.** Crop rect ensure/init/polygon + placement restore on CropSession.
 Prior: **1483**. Commits 1484a–1484b (+ docs).
 
