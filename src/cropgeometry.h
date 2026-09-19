@@ -11,6 +11,7 @@
 #include <QRect>
 #include <QPainter>
 #include <QRectF>
+#include <QString>
 #include <QtGlobal>
 
 /**
@@ -18,6 +19,10 @@
  * No ImageView state — safe to unit-test and share with paint and input.
  */
 namespace CropGeometry {
+
+/** Chrome button visual role (Expand toggle, Auto/Reset, Cancel, Apply). */
+enum class CropBtnRole { Toggle, Action, Neutral, Commit };
+
 
 /** Crop chrome button size (viewport CSS px). */
 constexpr int kChromeBtnW = 70;
@@ -190,6 +195,11 @@ void paintDimOutside(QPainter &painter, const QRect &viewportRect,
 
 /** Amber crop frame outline (solid + dash). */
 void paintFrame(QPainter &painter, const QPolygonF &cropViewPoly);
+
+/** Draw a labeled crop chrome button (hover from handle hot state). */
+void paintTextButton(QPainter &painter, const QRect &btn, bool hover,
+                     const QString &label, CropBtnRole role, bool toggled = false);
+
 
 } // namespace CropGeometry
 

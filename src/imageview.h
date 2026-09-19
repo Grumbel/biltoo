@@ -8,6 +8,7 @@
 #include "gallerysizeresolve.h"
 #include "tileneighborprefetch.h"
 #include "cropsession.h"
+#include "cropgeometry.h"
 #include "attentionsession.h"
 #include "centreprogress.h"
 #include "grouptransformsession.h"
@@ -1639,7 +1640,7 @@ private:
     void paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly);
     enum class CropBtnRole { Toggle, Action, Neutral, Commit };
     void drawCropTextButton(QPainter &painter, const QRect &btn, CropHandle kind,
-                            const QString &label, CropBtnRole role, bool toggled = false);
+                            const QString &label, CropGeometry::CropBtnRole role, bool toggled = false);
     void paintCropActionButtons(QPainter &painter);
     void paintCropSizeBadge(QPainter &painter, const QRect &cropView);
     void paintAttentionOverlay(QPainter &painter);
