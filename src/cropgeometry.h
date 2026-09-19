@@ -18,6 +18,19 @@
  */
 namespace CropGeometry {
 
+/** Crop chrome button size (viewport CSS px). */
+constexpr int kChromeBtnW = 70;
+constexpr int kChromeBtnH = 28;
+constexpr int kChromeBtnGap = 6;
+/** Air below frame before buttons when placed outside. */
+constexpr int kChromeOutsideGap = 32;
+/** Inset from crop bottom when buttons fit inside. */
+constexpr int kChromeInsideInset = 10;
+/** Viewport edge margin for button clamp. */
+constexpr int kChromeMargin = 6;
+/** Min air between left (Expand/Auto) and right (Reset/Cancel/Apply) groups. */
+constexpr int kChromeGroupGapMin = 18;
+
 inline int clampLabelPointSize(int basePt)
 {
     return qMax(9, basePt);

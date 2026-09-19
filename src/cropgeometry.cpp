@@ -159,14 +159,14 @@ CropButtonLayout cropButtonLayout(const QRectF &cropView, const QRect &viewportR
     if (!cropView.isValid() || !viewportRect.isValid()) {
         return L;
     }
-    constexpr int kW = 70;
-    constexpr int kH = 28;
-    constexpr int kGap = 6;
+    constexpr int kW = kChromeBtnW;
+    constexpr int kH = kChromeBtnH;
+    constexpr int kGap = kChromeBtnGap;
     // Bottom rotate knobs sit ~22px outside the edge; clear them plus air.
-    constexpr int kOutsideGap = 32;
-    constexpr int kInsideInset = 10;
-    constexpr int kMargin = 6;
-    constexpr int kGroupGapMin = 18; // min air between left group and right group
+    constexpr int kOutsideGap = kChromeOutsideGap;
+    constexpr int kInsideInset = kChromeInsideInset;
+    constexpr int kMargin = kChromeMargin;
+    constexpr int kGroupGapMin = kChromeGroupGapMin;
 
     const int rightGroupW = kW * 3 + kGap * 2;
     const int leftGroupW = kW * 2 + kGap; // Expand + Auto
