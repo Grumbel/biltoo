@@ -111,12 +111,6 @@ SessionImageId ImageView::cropRecordSessionId(const ImageItem *item) const
 }
 
 
-void ImageView::logRecordCropDebug(const QSize &cropBasis, const QSize &imageSize,
-                                   const QRect &disp) const
-{
-    CropDebug::recordCrop(cropBasis, imageSize, disp);
-}
-
 void ImageView::writeRecordedCropState(ImageItem *item, SessionImageId sid,
                                        const WorkspaceItemState *orientApp,
                                        const CropSession::RecordGeometry &rec,
@@ -127,7 +121,7 @@ void ImageView::writeRecordedCropState(ImageItem *item, SessionImageId sid,
     s.sessionId = sid;
     s.sessionIndex = item->sessionIndex();
     m_crop.applyRecordToState(&s, rec, cropBasis);
-    logRecordCropDebug(cropBasis, item->imageSize(), disp);
+    CropDebug::recordCrop(cropBasis, item->imageSize(), disp);
     s.path = item->path();
     item->setSessionCrop(s.hasCrop, s.cropRect);
     storeCropAppearance(item, sid, s);
@@ -347,8 +341,9 @@ bool ImageView::bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cr
     if (!materializeApplyBake(host, hostFromCache, st, &baked)) {
         return false;
     }
-    logApplyCropDebug(item, path, host, hostFromCache, baked.display, cropW, cropH,
-                      footW, footH);
+    CropDebug::applyCrop(path, host.width(), host.height(), hostFromCache,
+                         baked.display.width(), baked.display.height(), cropW, cropH, footW,
+                         footH, item->imageSize().width(), item->imageSize().height());
     commitCropApplyBake(item, baked.display, st, baked.multiMp, cropW, cropH, path,
                         cropSceneCenter, hostFromCache, sid);
     return true;

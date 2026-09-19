@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1560-crop-debug-inline.** Call CropDebug directly; drop log* ImageView wrappers.
+Prior: **1559**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1560-crop-debug-inline.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1559-crop-flash-hud.** Single flashCropHud; drop thin flashCrop* wrappers.
 Prior: **1558**.
 
