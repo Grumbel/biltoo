@@ -1599,8 +1599,9 @@ void purgePathDurable(const QString &path, std::function<void(qint64 tilesDelete
         }
         return;
     }
-    // Process memos must not claim durable coverage after Store forget.
+    // Process memos must not claim durable coverage or stale size after forget.
     ProcessMemos::instance().clearDurablePath(path);
+    ProcessMemos::instance().clearSize(path);
     memberLruRemove(path);
     (void)cancelTilesForPath(path);
     init();

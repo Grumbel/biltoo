@@ -519,6 +519,7 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
             }
             flashHud(tr("Hard reload"), QFileInfo(path).fileName());
             ThumtooCache::purgePathDurable(path, [this, path](qint64 /*tiles*/) {
+                ThumtooCache::scheduleProbe(path);
                 scheduleImageLoad(path, LoadReplace);
                 emit statusChanged();
             });
@@ -589,12 +590,19 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
     const bool galleryMode = isGalleryMode();
 
     auto finish = [this, binds, doRelayout, imageMode, galleryMode, tileTotal]() {
+        QSet<QString> probed;
         for (const ReloadBind &b : binds) {
             PendingSessionBind pending;
             pending.path = b.path;
             pending.id = b.id;
             pending.index = b.index;
             m_bindBook.append(pending);
+            // Size memo was cleared with the Store purge — force a fresh probe
+            // so layout / intrinsic size do not keep a pre-purge value.
+            if (!probed.contains(b.path)) {
+                ThumtooCache::scheduleProbe(b.path);
+                probed.insert(b.path);
+            }
             if (imageMode) {
                 scheduleImageLoad(b.path, LoadReplace);
             } else if (galleryMode) {

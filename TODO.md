@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1585-hard-reload-clear-size.** Hard reload clears process size memo and re-probes size after Store purge.
+Prior: **1584**.
+
+### Cause
+After purge, layout still used `ProcessMemos` size (intentionally kept across
+session replace). That left wrong intrinsic size until a later probe.
+
+### Change
+- `ProcessMemos::clearSize` + call from `purgePathDurable`
+- `hardReloadFromDisk` finish: `scheduleProbe` per path before re-decode
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1585-hard-reload-clear-size.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1584-require-thumtoo.** Require thumtoo; strip BILTOO_HAVE_THUMTOO and THUMTOO_API_* ifdefs.
 Prior: **1583**.
 

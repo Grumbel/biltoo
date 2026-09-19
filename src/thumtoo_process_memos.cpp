@@ -33,6 +33,15 @@ void ProcessMemos::noteSize(const QString &path, const QSize &size)
     m_size.insert(path, size);
 }
 
+void ProcessMemos::clearSize(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    std::lock_guard lock(m_mu);
+    m_size.remove(path);
+}
+
 bool ProcessMemos::durableYes(const QString &path) const
 {
     if (path.isEmpty()) {

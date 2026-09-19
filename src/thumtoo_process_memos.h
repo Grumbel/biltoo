@@ -36,6 +36,8 @@ public:
     /** Empty if unknown. Does not open the Store. */
     QSize size(const QString &path) const;
     void noteSize(const QString &path, const QSize &size);
+    /** Drop process size memo (hard reload / Store purge). */
+    void clearSize(const QString &path);
 
     // --- durable tiles -------------------------------------------------------
 
@@ -52,7 +54,7 @@ public:
     void clearDurableNo(const QString &path);
     /**
      * Drop durable yes/no/min_scale for one path (hard reload / Store purge).
-     * Size memo is retained unless the caller also wants a size re-probe.
+     * Pair with clearSize() when the Store locator is forgotten.
      */
     void clearDurablePath(const QString &path);
 
