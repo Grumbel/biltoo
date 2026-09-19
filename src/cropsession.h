@@ -369,6 +369,22 @@ public:
         return enterState.scaleY > 1e-6 ? enterState.scaleY : enterScaleX();
     }
 
+    QPointF enterPos() const
+    {
+        return isEnterValid() ? enterState.pos : QPointF();
+    }
+
+    bool enterHadCrop() const
+    {
+        return isEnterValid() && enterState.hasCrop;
+    }
+
+    bool enterSourceDiffersFrom(const QSize &sz) const
+    {
+        return isEnterValid() && enterSource.size() != sz;
+    }
+
+
 
     const QPointF &rubberOriginLocalRef() const { return rubberOriginLocal; }
 
