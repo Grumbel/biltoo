@@ -1457,33 +1457,6 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
     m_crop.beginHandleDrag(h, m_crop.currentRect(), startLocal);
 }
 
-void ImageView::updateCropMoveDrag(const QPointF &local, const QRectF &cr)
-{
-    m_crop.applyMoveDrag(local, cr);
-    viewport()->update();
-}
-
-void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qreal minSide)
-{
-    // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
-    const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
-    m_crop.applyRotateDrag(local, cr, minSide, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
-    viewport()->update();
-}
-
-void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, const QRectF &limits,
-                                     qreal minSide)
-{
-    const bool fromCenter =
-        QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
-    const bool forceSquare =
-        QGuiApplication::keyboardModifiers() & Qt::ShiftModifier;
-    m_crop.applyResizeDrag(local, cr, limits, minSide, fromCenter, forceSquare);
-    viewport()->update();
-}
-
-
-
 void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
