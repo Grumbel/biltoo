@@ -34,28 +34,16 @@
     /** Controller host: if live items exist and none selected, select first. */
     void ensurePrimarySelection();
 
-    bool prepareSlideshowMotionDwell(ImageItem *item);
 
-    void freezeScrollbarsForMotion();
 
-    void resetItemPlacementForMotion(ImageItem *item);
 
-    void armMotionBiasForPath(ImageItem *item, const QString &path);
 
-    void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
 
-    /** Interval edit: keep motion progress + atlas, change duration only. */
-    void retargetSlideshowMotionDuration(int durationMs);
 
-    bool tryApplyAttentionMotionBiases(uint seed, const QImage &source);
 
-    void applyGeometricMotionBiases(uint seed);
 
-    void pickInterestingMotionBiases(uint seed, const QImage &source = QImage());
 
-    void finishSlideshowPreload(const QString &path, const QImage &image);
 
-    void pumpSlideshowPreloadQueue();
 
     /**
      * PathRaster Soft→PreferCache→Full (ClimbPolicy::EscalateToFull).
@@ -63,12 +51,6 @@
      */
     void requestEscalateClimb(const QString &path, int wantEdge = 0);
 
-    /**
-     * Slideshow decode / atlas target long-edge: viewport × DPR × motion
-     * headroom (Ken Burns can zoom past 1:1 cover), ladder-snapped, capped
-     * at kImageLadderEdge. Not native max.
-     */
-    int slideshowTargetEdge() const;
 
     /** @deprecated name — use logicalSizeForPath. */
     QSize slideshowLogicalSize(const QString &path) const {
@@ -86,8 +68,6 @@
         return ensureLogicalSizeForPath(path);
     }
 
-    /** ≥1: panZoomFactor or pan-scan margin so zoomed frames stay sharp. */
-    qreal slideshowMotionHeadroom() const;
 
     bool isCropDraftLockedPath(const QString &path) const;
 
@@ -103,133 +83,51 @@
     /** Drop tile sessions on live + stashed items (before session-wide invalidateAll). */
     void dropAllTileLodSessions();
 
-    void tickSlideshowPhaseMotionClocks();
 
-    void tickSlideshowDwellMotionClock();
 
-    void tickSlideshowMotion();
 
     /** Static centre-crop cover of @p image to the current viewport size. */
     QPixmap renderCoverPixmap(const QImage &image) const;
 
-    /**
-     * Ken Burns / pan-scan sample of @p image at motion progress @p motionT in
-     * [0, 1]. Used for dwell blit and dual-image crossfade frames.
-     */
-    QPixmap renderMotionCoverPixmap(const QImage &image, qreal motionT,
-                                    uint pathHash) const;
 
-    /** Software snapshot of the current slide (no QOpenGLWidget::grab). */
-    QPixmap captureSlideshowFrame() const;
 
-    /** Draw Ken Burns / pan-scan using a pre-scaled atlas (cheap per-frame blit). */
-    /**
-     * Draw Ken Burns / pan-scan. Camera geometry uses the path's *logical*
-     * image size (m_sizeBook / thumtoo cache), never the raster's pixel
-     * dimensions — soft placeholders are sampling only.
-     */
-    QSize resolveMotionLogicalSize(const QString &path) const;
 
-    QRectF computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh,
-                                      qreal motionT, QPointF biasA, QPointF biasB,
-                                      const QString &path) const;
 
     tilelod::TileLodController *slideshowTilesForPath(const QString &path) const;
 
-    bool paintSlideshowTiles(QPainter *painter, const QString &path,
-                             const QRectF &dest, const QImage &underlay) const;
 
-    void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT,
-                          QPointF biasA, QPointF biasB,
-                          const QString &path = QString()) const;
 
-    /**
-     * Draw cover-scaled blurred @a image into @a viewportRect (ZoomBlur fill).
-     * @a stableKey must identify the slide for the current viewport size
-     * (path hash + dimensions). Do not use QImage::constBits() — buffers are
-     * often reallocated while pixels stay the same, which forced a full CPU
-     * blur every paint and spiked transitions.
-     */
-    bool zoomBlurKeyCached(qint64 key) const;
 
-    bool zoomBlurKeyInFlight(qint64 key) const;
 
-    int claimZoomBlurFlightSlot(qint64 key) const;
 
-    void installZoomBlurResult(const QImage &blurred, qint64 key, quint64 gen);
 
-    void scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const;
 
-    void clearSlideshowZoomBlurSlots();
 
-    void invalidateZoomBlurQueue() const;
 
-    void paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
-                               const QRect &viewportRect, qint64 stableKey) const;
 
-    /**
-     * Build/refresh motion atlas: sized from viewport × motion headroom
-     * (resolution-invariant), not from source pixel dimensions.
-     */
-    bool phaseBufferWantsSample(const QString &path, int sampleEdge) const;
 
-    bool snapshotSlideshowContentAppearance(const QString &path,
-                                            WorkspaceItemState *out) const;
 
-    void scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image);
 
-    void finishSlideshowPhaseBufferUpgrade(const QString &path, const QImage &oriented,
-                                           quint64 generation);
 
-    // SlideshowAtlasKind: slideshowtypes.h
-    void requestDwellAtlasRebuild();
 
-    void requestToPhaseAtlasRebuild();
 
-    void requestSlideshowAtlas(SlideshowAtlasKind kind);
 
-    void finishSlideshowAtlas(SlideshowAtlasKind kind, quint64 generation,
-                              const QImage &scaled, qreal atlasScale,
-                              int atlasVw, int atlasVh);
 
-    void finishDwellAtlasRebuild(quint64 generation, const QImage &scaled,
-                                qreal atlasScale, int atlasVw, int atlasVh);
 
     /** Viewport × motion headroom → atlas budget (see SlideshowAtlasPolicy). */
     DwellAtlasParams dwellAtlasParams() const;
 
-    void invalidateDwellAtlasRebuilds();
 
-    void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale,
-                           int *atlasVw, int *atlasVh) const;
 
-    /** Store sample in ImageCache (upward-only long edge). */
-    void putSlideshowRaster(const QString &path, const QImage &image);
 
-    /**
-     * PreferCache / ladderReady: ImageCache put + upgrade phase buffers when
-     * the path is the current from/to pair (logical-size camera).
-     */
-    void onSlideshowRasterReady(const QString &path, const QImage &image);
 
-    /**
-     * Top-left chip while slideshow is warming target-edge rasters (queue or
-     * current phase still soft). Empty when idle / not in slideshow.
-     */
-    QString slideshowPrefetchHudLine() const;
 
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
     QString loadingStatusHudLine() const;
 
-    /** Best unoriented host sample for path (ImageCache), or null. */
-    QImage slideshowRaster(const QString &path) const;
 
-    void setSlideshowUnderlayVisible(bool visible);
 
-    void hideSlideshowUnderlay();
 
-    /** Fit / Fill / 1:1 framing for a slideshow slide (motion off). */
-    void applySlideshowZoomFraming(ImageItem *item);
 
     /** How many times @a path appears in session path order (duplicate tiles). */
     int pathOrderOccurrences(const QString &path) const;
@@ -390,71 +288,29 @@
 
     bool slideshowPausedHud() const { return m_slideshow.hud().isPausedHud(); }
 
-    /** Start dwell image-blit Ken Burns if enabled and slideshow is active. */
-    void maybeStartSlideshowMotion();
 
-    /**
-     * Dwell + transition budget for one path's Ken Burns clock (min 250ms).
-     * Used by phase arming and tickSlideshowMotion.
-     */
-    int slideshowPathDurationMs() const;
 
-    /** Pure-clock drive: fadeT<0 dwell on fromPath; else crossfade from→to at fadeT in [0,1]. */
-    bool applySlideshowFadeProgressOnly(qreal fadeT);
 
-    void updateSlideshowPhaseMotionProgress(int pathMs);
 
-    void warmZoomBlurForCurrentPhase();
 
-    /** Drop ZoomBlur slots whose key is neither from nor to path. */
-    void pruneZoomBlurOutsidePhasePair(const QString &fromPath, const QString &toPath);
 
-    /** Prefetch ZoomBlur underlay for a phase path if viewport is valid. */
-    void schedulePhaseZoomBlur(const QString &path, const QImage &image);
 
-    /**
-     * Compute Ken Burns biases for @a path without clobbering the live
-     * m_motionBias* pair used by the from-slot.
-     */
-    void captureMotionBiasesForPath(const QString &path, const QImage &image,
-                                    QPointF *outA, QPointF *outB);
 
-    /** Ensure 16ms PreciseTimer connected to tickSlideshowMotion. */
-    void ensureSlideshowMotionTimer();
 
-    /** Arm from-slot on path change (promote B or start); @a pathMs for motion. */
-    bool shouldPromoteSlideshowToAsFrom(const QString &fromPath) const;
 
-    void promoteSlideshowFromToPhase(const QString &fromPath);
 
-    void startSlideshowFromPhase(const QString &fromPath);
 
-    void prepareSlideshowFromDwell(const QString &fromPath);
 
-    void armSlideshowMotionClock(int pathMs);
 
-    void armSlideshowFromPhase(const QString &fromPath, int pathMs);
 
-    /** Arm or clear to-slot on path change. */
-    void armSlideshowToPhase(const QString &toPath);
 
-    QImage slideshowSampleUnoriented(const QString &path) const;
 
-    QImage slideshowPixelsForPath(const QString &path);
 
-    QImage slideshowFullIfReady(const QString &path) const;
 
-    QImage slideshowSoftPlaceholder(const QString &path);
 
     /** SessionImageId for a session path (path order), or invalid. */
     SessionImageId sessionIdForPath(const QString &path) const;
 
-    /**
-     * Apply path-keyed content appearance (flip / quarter-turns / grade) to
-     * unbaked disk pixels for slideshow paint. Never use m_sessionId.currentIdValue() —
-     * that is the *dwell* image during a live transition to another path.
-     */
-    QImage orientSlideshowImage(const QImage &raw, const QString &path) const;
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
@@ -552,8 +408,6 @@
     /** User-facing quality of pixels currently shown for @p item. */
     QString pixelQualityLabel(const ImageItem *item) const;
 
-    /** Session badge for the top-right HUD, e.g. "[3/12]", or empty. */
-    QString sessionBadgeText() const;
 
     /** Basename of the current/target image for the bottom HUD. */
     QString hudFileName() const;
@@ -583,8 +437,3 @@
     void scheduleGalleryStatusRefresh(int delayMs = 100);
 
 
-    /**
-     * Image→viewport scale for current slideshowZoom (Fit/Fill/Actual)
-     * given logical size and viewport. Pure function of size model.
-     */
-    qreal slideshowZoomBaseScale(const QSize &logical, int vw, int vh) const;

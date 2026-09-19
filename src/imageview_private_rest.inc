@@ -202,10 +202,6 @@
     void gallerySoftWatchdogTick();
     /** Clear stale "Improving previews" centre HUD noise. */
     void updateGallerySoftProgressHud();
-    /** Slideshow phase buffers only: DisplaySurface::decide while transition live. */
-    void slideshowPhaseSurfaceTick();
-    void bindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id, const QString &path);
-    void unbindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id);
     /** Bind/sync ImageFocus surface (aliases primary item surface id). */
     void ensureImageFocusSurface();
     void syncImageFocusSurfaceState();

@@ -359,7 +359,7 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     // Image mode and free-form Workspace: zoom the view about the cursor.
     // Do not touch selected-item geometry here — prepareGeometryChange on
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
-    cancelSlideshowMotion();
+    m_slideshow.cancelSlideshowMotion();
     releaseStickyZoom();
     m_framing.releaseFit();
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);

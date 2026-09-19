@@ -95,6 +95,7 @@ class ImageView : public QGraphicsView,
                   private TileNeighborPrefetchHost
 {
     friend class CropAppearanceCommand;
+    friend class SlideshowController;
 
     Q_OBJECT
 public:

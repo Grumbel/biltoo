@@ -931,7 +931,7 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     if (!preview.isNull()) {
         return preview;
     }
-    QImage pixels = slideshowRaster(path);
+    QImage pixels = m_slideshow.slideshowRaster(path);
     // Filmstrip often has Soft while ImageCache only has size-probe LQIP (or
     // LRU-evicted the soft). Prefer strip / shared host sample first.
     if (pixels.isNull() && m_imageModeSoftProvider) {
@@ -1298,7 +1298,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 
 bool ImageView::tryDeliverReplaceFromSlideshowRaster(const QString &path, quint64 gen)
 {
-    const QImage ready = slideshowRaster(path);
+    const QImage ready = m_slideshow.slideshowRaster(path);
     if (ready.isNull()) {
         return false;
     }
@@ -1320,7 +1320,7 @@ void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
     // stays on thumbnails forever.
     const QPointer<ImageView> guard(this);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
-    const int qualityEdge = slideshowTargetEdge();
+    const int qualityEdge = m_slideshow.slideshowTargetEdge();
     const int roleInt = static_cast<int>(role);
     // Snapshot session appearance for the worker (crop is id-keyed, not path).
     const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
@@ -1552,7 +1552,7 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
             ImageCache::put(path, image);
         }
         if (m_slideshow.hud().isProgressActive() && !image.isNull()) {
-            onSlideshowRasterReady(path, image);
+            m_slideshow.onSlideshowRasterReady(path, image);
         }
     }
 
@@ -1829,7 +1829,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
     // Soft job during slideshow must upgrade phase buffers (m_ssFrom/To), not
     // only ImageCache — otherwise crossfade stays on empty/LQIP until preload.
     if (m_slideshow.hud().isProgressActive()) {
-        onSlideshowRasterReady(path, image);
+        m_slideshow.onSlideshowRasterReady(path, image);
     }
 
     // Replace navigations: drop superseded previews.
@@ -2268,23 +2268,23 @@ void ImageView::frameImageModeReplaceItem(ImageItem *item, const QString &path)
     // transform (including handoff from a live transition). Applying zoom
     // framing first would centre the image then jump to motion t0.
     if (m_slideshow.hud().isProgressActive() && m_slideshow.settings().isMotionOff()) {
-        applySlideshowZoomFraming(item);
+        m_slideshow.applySlideshowZoomFraming(item);
     } else if (!m_slideshow.hud().isProgressActive()) {
         applyImageModeFraming(item);
     }
     syncImageModeSceneRect(item);
     // Apply camera while updates are still blocked and any live hold still
     // covers the viewport — avoids a flash of identity / wrong pan pose.
-    maybeStartSlideshowMotion();
+    m_slideshow.maybeStartSlideshowMotion();
     if (m_slideshow.hud().isProgressActive() && !m_slideshow.settings().isMotionOff()
         && !m_slideshow.dwell().isMotionActive()) {
-        applySlideshowZoomFraming(item);
+        m_slideshow.applySlideshowZoomFraming(item);
     }
     if (m_slideshow.hud().isProgressActive()) {
         item->setVisible(false);
         // Paused ←/→ loads the underlay while pure phase still paints the
         // previous path — refresh dwell to this decode.
-        setSlideshowPhase(path, QString(), -1.0);
+        m_slideshow.setSlideshowPhase(path, QString(), -1.0);
     }
 }
 
@@ -2846,7 +2846,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
         ImageCache::put(path, image);
         // Quality/soft climb during slideshow → phase buffer + atlas upgrade.
         if (m_slideshow.hud().isProgressActive()) {
-            onSlideshowRasterReady(path, image);
+            m_slideshow.onSlideshowRasterReady(path, image);
         }
     }
     switch (static_cast<LoadRole>(role)) {

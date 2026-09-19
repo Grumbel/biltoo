@@ -214,20 +214,20 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const QString tPath = !toPath.isEmpty() ? toPath : m_slideshow.phase().toPathRef();
         if (haveFrom && haveTo && t >= 0.0) {
             painter.setOpacity(1.0);
-            paintZoomBlurUnderlay(&painter, fromSrc, vr, blurKey(fPath));
+            m_slideshow.paintZoomBlurUnderlay(&painter, fromSrc, vr, blurKey(fPath));
             if (tt > 0.0) {
                 painter.setOpacity(tt);
-                paintZoomBlurUnderlay(&painter, toSrc, vr, blurKey(tPath));
+                m_slideshow.paintZoomBlurUnderlay(&painter, toSrc, vr, blurKey(tPath));
                 painter.setOpacity(1.0);
             }
             return;
         }
         if (haveFrom) {
-            paintZoomBlurUnderlay(&painter, fromSrc, vr, blurKey(fPath));
+            m_slideshow.paintZoomBlurUnderlay(&painter, fromSrc, vr, blurKey(fPath));
             return;
         }
         if (haveTo) {
-            paintZoomBlurUnderlay(&painter, toSrc, vr, blurKey(tPath));
+            m_slideshow.paintZoomBlurUnderlay(&painter, toSrc, vr, blurKey(tPath));
             return;
         }
         painter.fillRect(vr, slideshowPadColor());
@@ -250,7 +250,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                 if (t < 0.5) {
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
-                        paintMotionCover(&painter, fromImg, fromT,
+                        m_slideshow.paintMotionCover(&painter, fromImg, fromT,
                                          m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
                     }
                     painter.setOpacity(t * 2.0);
@@ -258,7 +258,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                     painter.setOpacity(1.0);
                 } else {
                     painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
+                    m_slideshow.paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
                                      m_slideshow.phase().toBiasAPoint(), m_slideshow.phase().toBiasBPoint(), m_slideshow.phase().toPathRef());
                     painter.setOpacity((1.0 - t) * 2.0);
                     painter.fillRect(vr, Qt::black);
@@ -274,13 +274,13 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                 if (!fromImg.isNull()) {
                     painter.save();
                     painter.translate(xOld, 0);
-                    paintMotionCover(&painter, fromImg, fromT,
+                    m_slideshow.paintMotionCover(&painter, fromImg, fromT,
                                      m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
                     painter.restore();
                 }
                 painter.save();
                 painter.translate(xNew, 0);
-                paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
+                m_slideshow.paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
                                  m_slideshow.phase().toBiasAPoint(), m_slideshow.phase().toBiasBPoint(), m_slideshow.phase().toPathRef());
                 painter.restore();
                 painter.setClipping(false);
@@ -289,29 +289,29 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                 if (t < 1.0 - 1e-6) {
                     if (!fromImg.isNull()) {
                         painter.setOpacity(1.0);
-                        paintMotionCover(&painter, fromImg, fromT,
+                        m_slideshow.paintMotionCover(&painter, fromImg, fromT,
                                          m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
                     }
                 } else {
                     painter.setOpacity(1.0);
-                    paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
+                    m_slideshow.paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
                                      m_slideshow.phase().toBiasAPoint(), m_slideshow.phase().toBiasBPoint(), m_slideshow.phase().toPathRef());
                 }
             } else {
                 // Crossfade: A 1→0, B 0→1; both in motion.
                 if (!fromImg.isNull()) {
                     painter.setOpacity(1.0 - t);
-                    paintMotionCover(&painter, fromImg, fromT,
+                    m_slideshow.paintMotionCover(&painter, fromImg, fromT,
                                      m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
                 }
                 painter.setOpacity(t);
-                paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
+                m_slideshow.paintMotionCover(&painter, m_slideshow.phase().toImageRef(), toT,
                                  m_slideshow.phase().toBiasAPoint(), m_slideshow.phase().toBiasBPoint(), m_slideshow.phase().toPathRef());
                 painter.setOpacity(1.0);
             }
         } else if (!fromImg.isNull()) {
             fillPad(vr, fromImg, QImage(), -1.0, m_slideshow.phase().fromPathRef());
-            paintMotionCover(&painter, fromImg, fromT,
+            m_slideshow.paintMotionCover(&painter, fromImg, fromT,
                              m_slideshow.dwell().biasAPoint(), m_slideshow.dwell().biasBPoint(), m_slideshow.phase().fromPathRef());
         }
         // Pure phase painted the slide. Fall through so HUD / seekbar / pause
@@ -390,7 +390,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     //   top-right — session index [i/n]
     //   bottom    — filename (+ technical detail when the HUD is pinned)
     // Crop mode: always show a pinned “Crop mode” cue so the tool state is clear.
-    const QString ssPrefetchLine = slideshowPrefetchHudLine();
+    const QString ssPrefetchLine = m_slideshow.slideshowPrefetchHudLine();
     // Loading · … only in the extended (pinned) HUD — not as a free-floating
     // chip during slideshow or normal Image browsing.
     const QString loadingLine = m_hudPrefs.isVisible() ? loadingStatusHudLine() : QString();
@@ -531,7 +531,7 @@ void ImageView::paintHudPanels(QPainter &painter)
         // Top-right: session index — pinned HUD or brief identity pulse after
         // user navigation. Not during pure action flashes (slideshow start, …)
         // and not on automatic slideshow advance (pulseIdentity=false).
-        const QString badge = sessionBadgeText();
+        const QString badge = m_slideshow.sessionBadgeText();
         if (!badge.isEmpty() && (m_hudPrefs.isVisible() || m_hudFlash.isIdentityPulse())) {
             drawPanel({{badge, true}}, 0, margin, true, false);
         }
@@ -767,7 +767,7 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
                 painter->resetTransform();
                 const QRect vr = viewport()->rect();
                 const qint64 key = path.isEmpty() ? qint64(0) : qint64(qHash(path));
-                paintZoomBlurUnderlay(painter, src, vr, key);
+                m_slideshow.paintZoomBlurUnderlay(painter, src, vr, key);
                 painter->restore();
             } else {
                 const QColor fill = wb.color.isValid() ? wb.color : m_canvasBg.primaryColor();

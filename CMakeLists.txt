@@ -215,6 +215,7 @@ add_executable(biltoo
   src/imageview_load.cpp
   src/tile_load_coordinator.cpp
   src/imageview_view.cpp
+  src/imageview_status.cpp
   src/imageview_transform.cpp
   src/imageview_input.cpp
   src/imageview_paint.cpp

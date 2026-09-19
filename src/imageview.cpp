@@ -207,11 +207,11 @@ ImageView::ImageView(QWidget *parent)
                 }
                 if (m_slideshow.hud().isProgressActive()
                     && m_slideshow.phase().isPhasePath(path)) {
-                    onSlideshowRasterReady(path, img);
+                    m_slideshow.onSlideshowRasterReady(path, img);
                     // SoftDisplay only at screen-fit edge (TileSynth when tiles exist).
                     if (m_pathRaster) {
                         const int target = cappedDisplayEdgeForPath(
-                            path, slideshowTargetEdge());
+                            path, m_slideshow.slideshowTargetEdge());
                         const int need = target * 7 / 10;
                         if (longEdge > 0 && longEdge < need) {
                             m_pathRaster->ensure(
@@ -362,7 +362,7 @@ ImageView::ImageView(QWidget *parent)
         // ImageFocus is event-driven only (rasterImproved / load / resize climb).
         // Slideshow phase buffers: DisplaySurface::decide while transition is live.
         if (m_slideshow.hud().isProgressActive()) {
-            slideshowPhaseSurfaceTick();
+            m_slideshow.slideshowPhaseSurfaceTick();
         }
     });
     m_gallerySoftWatchdog->start();
@@ -620,10 +620,10 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
     if (m_slideshow.hud().isProgressActive()
         && m_slideshow.phase().isPhasePath(path)) {
         if (m_slideshow.phase().isFromPath(path) && m_slideshow.phase().hasFromImage()) {
-            requestDwellAtlasRebuild();
+            m_slideshow.requestDwellAtlasRebuild();
         }
         if (m_slideshow.phase().isToPath(path) && m_slideshow.phase().hasToImage()) {
-            requestToPhaseAtlasRebuild();
+            m_slideshow.requestToPhaseAtlasRebuild();
         }
         if (viewport()) {
             viewport()->update();
@@ -840,7 +840,7 @@ int ImageView::pendingDecodeCount() const
         if (m_slideshow.phase().hasFromPath()
             && ImageCache::longEdge(m_slideshow.phase().fromImageRef()) > 0
             && ImageCache::longEdge(m_slideshow.phase().fromImageRef())
-                   < (slideshowTargetEdge() * 7) / 10) {
+                   < (m_slideshow.slideshowTargetEdge() * 7) / 10) {
             // Current slide still soft — count as remaining quality work once.
             if (!m_slideshow.phase().rasterInflightContains(m_slideshow.phase().fromPathRef())
                 && !m_slideshow.phase().rasterPendingContains(m_slideshow.phase().fromPathRef())) {

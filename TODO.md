@@ -2,6 +2,40 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1598-phase6-tier1b-slideshow-methods.** Phase 6 Tier 1b: move slideshow orchestration onto SlideshowController; imageview_view.cpp under 900 lines.
+Prior: **1597**.
+
+### Change
+- 95 methods moved `ImageView::` → `SlideshowController::` (~2.3k lines)
+- `SlideshowController` is `QObject` (timer connections); **friend** of ImageView
+  for private host access (Host surface later)
+- ImageView public slideshow API → one-line forwards to `m_slideshow`
+- Internal call sites use `m_slideshow.*`
+- Status/HUD text helpers moved to `imageview_status.cpp` (Tier 3 will absorb)
+
+### Metrics
+| Metric | Result |
+|--------|--------|
+| `imageview_view.cpp` | **853** lines (target ≤900) |
+| `m_ss*` on ImageView | **none** |
+| Slideshow methods on controller | **95** |
+
+### Follow-up
+- Replace `friend SlideshowController` with narrow `SlideshowHost`
+- Tier 3 HudModel absorbs `imageview_status.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1598-phase6-tier1b-slideshow-methods.bundle HEAD
+```
+Requires tip **1597** (or full stack from origin via this bundle).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1597-phase6-tier1a-slideshow-state.** Phase 6 Tier 1a: SlideshowController owns slideshow state; ImageView methods use m_slideshow accessors.
 Prior: **1596**.
 
