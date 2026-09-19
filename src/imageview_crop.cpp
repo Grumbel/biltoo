@@ -356,7 +356,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
         item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
         item->setAppliedContentXform(wantX);
         applyContentLayoutSize(item, contentOnly);
-        m_crop.showingFullImage = true;
+        m_crop.setShowingFullImage(true);
         if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
             qWarning().noquote()
                 << QStringLiteral("[crop] enter-full KEEP display edge=%1 path=%2")
@@ -441,7 +441,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                    .arg(item->sessionHasCrop() ? 1 : 0)
                    .arg(contentOnly.contentQuarterTurns);
     }
-    m_crop.showingFullImage = true;
+    m_crop.setShowingFullImage(true);
 }
 
 void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
@@ -449,7 +449,7 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
 {
     // Start each crop session without Expand; re-enable below if the stored
     // draft (AABB or rotated corners) extends outside the source.
-    m_crop.allowExpand = false;
+    m_crop.setAllowExpand(false);
 
     const QRectF cr = item->contentRect();
     const QRect priorCrop = (haveApp && app.hasCrop) ? app.cropRect : QRect();
@@ -484,7 +484,7 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
             // a previously applied rotated draft to a new centre.
             if (CropGeometry::priorDraftNeedsExpand(
                     QRectF(prior), QRectF(bounds), m_crop.rect, m_crop.rotation, cr)) {
-                m_crop.allowExpand = true;
+                m_crop.setAllowExpand(true);
             }
         } else {
             m_crop.rect = cr;
@@ -503,7 +503,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         return false;
     }
     const QString path = item->path();
-    m_crop.awaitingFullPath.clear();
+    m_crop.clearAwaitingFull();
 
     WorkspaceItemState app;
     const bool haveApp = resolveCropEnterAppearance(item, &app);
@@ -527,7 +527,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         // Prior crop and no host: force a load; do not enter on the bake.
         if (hadCrop && !path.isEmpty()) {
             requestCropFullRaster(path);
-            m_crop.awaitingFullPath = path;
+            m_crop.setAwaitingFull(path);
             flashHud(tr("Crop"), tr("Loading full image…"));
         }
         flashHud(tr("Crop"), tr("Image not cached yet — try again"));
@@ -551,7 +551,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
 
     // Crop chrome + fitItem only after pixels and contentRect match the draft.
     // m_crop.mode true before fitItem so layout uses orient-only full size.
-    m_crop.mode = true;
+    m_crop.setMode(true);
     if (isImageMode()) {
         m_framing.fitMode = true;
         fitItem(item, currentFitAspectMode());
@@ -559,7 +559,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         updateWorkspaceSceneRect();
     }
 
-    m_crop.awaitingFullPath.clear();
+    m_crop.clearAwaitingFull();
     return true;
 }
 
@@ -619,7 +619,7 @@ void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &im
     }
     ImageItem *item = m_crop.targetItem;
     if (!item || item->path() != path) {
-        m_crop.awaitingFullPath.clear();
+        m_crop.clearAwaitingFull();
         return;
     }
     if (!sampleCoversNativeLogical(path, image)
@@ -635,7 +635,7 @@ void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &im
     if (!path.isEmpty()) {
         ImageCache::put(path, image);
     }
-    m_crop.awaitingFullPath.clear();
+    m_crop.clearAwaitingFull();
     flashHud(tr("Crop"), tr("Full image ready"));
 }
 
@@ -808,7 +808,7 @@ void ImageView::applyAutoCrop()
                         trimmed.width() * invSx,
                         trimmed.height() * invSy);
     m_crop.rotation = 0.0;
-    m_crop.allowExpand = false;
+    m_crop.setAllowExpand(false);
     ensureCropRectValid();
     if (viewport()) {
         viewport()->update();
@@ -819,7 +819,7 @@ void ImageView::applyAutoCrop()
 void ImageView::applyCrop()
 {
     // Soft draft is valid — crop is content-space. Do not wait on multi-MP load.
-    m_crop.awaitingFullPath.clear();
+    m_crop.clearAwaitingFull();
     leaveCropModeInternal(true);
 }
 
@@ -1225,10 +1225,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // scheduleAsyncHostRematerialize is blocked while crop freeze is on —
         // queue here and flush from clearCropModeState after unfreeze.
         if (hostFromCache && multiMp) {
-            m_crop.pendingFullRematerialize = true;
-            m_crop.pendingFullRematerializePath = path;
-            m_crop.pendingFullRematerializeSid = sid;
-            m_crop.pendingFullRematerializeWant = st;
+            m_crop.queuePendingFullRematerialize(path, sid, st);
         }
 
         if (isWorkspaceMode()) {
@@ -1324,16 +1321,7 @@ void ImageView::cancelCropShowingFullImage(ImageItem *item)
 
 void ImageView::clearCropModeState()
 {
-    m_crop.hadStashedPlacement = false;
-    m_crop.stashedPlacementRotation = 0.0;
-    m_crop.stashedPlacementShear = 0.0;
-    m_crop.mode = false;
-    m_crop.draftSampleFrozen = false;
-    m_crop.draftPath.clear();
-    m_crop.showingFullImage = false;
-    m_crop.awaitingFullPath.clear();
-    m_crop.enterValid = false;
-    m_crop.enterSource = QImage();
+    // Unsuppress LOD before binding is cleared.
     if (m_crop.targetItem) {
         m_crop.targetItem->setTileLodSuppressed(false);
     } else if (m_crop.targetId != kInvalidSessionImageId) {
@@ -1341,20 +1329,13 @@ void ImageView::clearCropModeState()
             byId->setTileLodSuppressed(false);
         }
     }
-    m_crop.clearTargetBinding();
-    m_crop.rect = QRectF();
-    m_crop.clearInteraction();
-    m_crop.allowExpand = false;
-    m_crop.rotation = 0.0;
     // Apply may have queued a full bake while freeze was still on.
-    const bool pendingFull = m_crop.pendingFullRematerialize;
-    const QString pendingPath = m_crop.pendingFullRematerializePath;
-    const SessionImageId pendingSid = m_crop.pendingFullRematerializeSid;
-    const WorkspaceItemState pendingWant = m_crop.pendingFullRematerializeWant;
-    m_crop.pendingFullRematerialize = false;
-    m_crop.pendingFullRematerializePath.clear();
-    m_crop.pendingFullRematerializeSid = kInvalidSessionImageId;
-    m_crop.pendingFullRematerializeWant = WorkspaceItemState{};
+    QString pendingPath;
+    SessionImageId pendingSid = kInvalidSessionImageId;
+    WorkspaceItemState pendingWant;
+    const bool pendingFull =
+        m_crop.takePendingFullRematerialize(&pendingPath, &pendingSid, &pendingWant);
+    m_crop.clear();
     emit cropModeChanged(false);
     emit statusChanged();
     viewport()->unsetCursor();

@@ -183,30 +183,67 @@ public:
     }
 
     /**
+     * Capture pending full rematerialize and clear those fields.
+     * @return true if a bake was pending.
+     */
+    bool takePendingFullRematerialize(QString *path, SessionImageId *sid,
+                                      WorkspaceItemState *want)
+    {
+        const bool pending = pendingFullRematerialize;
+        if (path) {
+            *path = pending ? pendingFullRematerializePath : QString();
+        }
+        if (sid) {
+            *sid = pending ? pendingFullRematerializeSid : kInvalidSessionImageId;
+        }
+        if (want) {
+            *want = pending ? pendingFullRematerializeWant : WorkspaceItemState{};
+        }
+        pendingFullRematerialize = false;
+        pendingFullRematerializePath.clear();
+        pendingFullRematerializeSid = kInvalidSessionImageId;
+        pendingFullRematerializeWant = {};
+        return pending;
+    }
+
+    void queuePendingFullRematerialize(const QString &path, SessionImageId sid,
+                                       const WorkspaceItemState &want)
+    {
+        pendingFullRematerialize = true;
+        pendingFullRematerializePath = path;
+        pendingFullRematerializeSid = sid;
+        pendingFullRematerializeWant = want;
+    }
+
+    void clearAwaitingFull() { awaitingFullPath.clear(); }
+
+    void setAwaitingFull(const QString &path) { awaitingFullPath = path; }
+
+    void setShowingFullImage(bool on) { showingFullImage = on; }
+
+    void setAllowExpand(bool on) { allowExpand = on; }
+
+    void setRotation(qreal deg) { rotation = deg; }
+
+    void setRect(const QRectF &r) { rect = r; }
+
+    void setMode(bool on) { mode = on; }
+
+    /**
      * Full leave / session wipe: inactive, no target, no enter stash, no pending
      * full rematerialize. Does not touch ImageItem pixels.
      */
     void clear()
     {
         mode = false;
-        targetId = kInvalidSessionImageId;
-        targetItem = nullptr;
-        draftSampleFrozen = false;
-        draftPath.clear();
-        pendingFullRematerialize = false;
-        pendingFullRematerializePath.clear();
-        pendingFullRematerializeSid = kInvalidSessionImageId;
-        pendingFullRematerializeWant = {};
+        clearTargetBinding();
+        takePendingFullRematerialize(nullptr, nullptr, nullptr);
         allowExpand = false;
         rotation = 0.0;
         showingFullImage = false;
         awaitingFullPath.clear();
-        stashedPlacementRotation = 0.0;
-        stashedPlacementShear = 0.0;
-        hadStashedPlacement = false;
-        enterSource = {};
-        enterState = {};
-        enterValid = false;
+        clearPlacementStash();
+        clearEnterSnapshot();
         rect = {};
         clearInteraction();
     }
