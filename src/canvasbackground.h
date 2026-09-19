@@ -65,6 +65,15 @@ struct CanvasBackground {
         return true;
     }
 
+    bool setWorkspaceShowDefault(bool on)
+    {
+        if (workspaceShowDefault == on) {
+            return false;
+        }
+        workspaceShowDefault = on;
+        return true;
+    }
+
     /** App-default checker when pattern is Checkerboard (optional WS-only). */
     bool useChecker(bool isWorkspaceMode) const
     {
