@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "workspacenavgeometry.h"
 #include "grouptransformgeometry.h"
 #include "selectiongeometry.h"
 #include "viewtransform.h"
@@ -1913,47 +1914,17 @@ bool ImageView::tryKeyPressGallery(QKeyEvent *event)
     const QPointF origin = from->sceneBoundingRect().center();
     ImageItem *best = nullptr;
     qreal bestScore = 1e300;
-    constexpr qreal kEps = 1.0;
-    constexpr qreal kCrossWeight = 2.5;
     for (ImageItem *cand : m_items) {
         if (!cand || cand == from) {
             continue;
         }
         const QPointF c = cand->sceneBoundingRect().center();
-        const QPointF d = c - origin;
-        bool inDir = false;
-        qreal primary = 0.0;
-        qreal cross = 0.0;
-        switch (key) {
-        case Qt::Key_Left:
-            inDir = d.x() < -kEps;
-            primary = -d.x();
-            cross = qAbs(d.y());
-            break;
-        case Qt::Key_Right:
-            inDir = d.x() > kEps;
-            primary = d.x();
-            cross = qAbs(d.y());
-            break;
-        case Qt::Key_Up:
-            inDir = d.y() < -kEps;
-            primary = -d.y();
-            cross = qAbs(d.x());
-            break;
-        case Qt::Key_Down:
-            inDir = d.y() > kEps;
-            primary = d.y();
-            cross = qAbs(d.x());
-            break;
-        default:
-            break;
-        }
-        if (!inDir) {
+        const auto scored = WorkspaceNavGeometry::scoreRelative(key, origin, c);
+        if (!scored.inDirection) {
             continue;
         }
-        const qreal score = primary + kCrossWeight * cross;
-        if (score < bestScore) {
-            bestScore = score;
+        if (scored.score < bestScore) {
+            bestScore = scored.score;
             best = cand;
         }
     }

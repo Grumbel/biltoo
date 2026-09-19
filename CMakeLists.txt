@@ -164,6 +164,7 @@ add_executable(biltoo
   src/selectiongeometry.h
   src/coloradjustcommit.h
   src/viewtransform.h
+  src/workspacenavgeometry.h
   src/hudgeometry.h
   src/textsearchpolicy.h
   src/textsearchpolicy.cpp
