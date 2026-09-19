@@ -109,6 +109,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **WorkspaceNavGeometry::scoreRelative** for Workspace arrow-key neighbour pick.
 - **PlacementLinear** shear/opacity keyboard step helpers; **GalleryPackFit::kDecodeOverscanPx**.
 - **CentreProgress::matchesTitlePrefix**; **MotionScrollChrome::release**.
+- **ImageSizeBook** provisional stand-in helpers; **GallerySoft** decode-window budgets.
+- **LayoutApplyGuard::Scoped**; **ViewFraming::kindFromFitFill**.
 
 
 ## Current pain (evidence)

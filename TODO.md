@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1378-standin-softbudget-layoutguard-stickykind.** Pure helpers on tip 1377.
+Prior: **1377**.
+
+### Change
+1. `ImageSizeBook::{standInNeutral,standInSquare,standInForCompoundPath}`
+2. `GallerySoft::{kMaxInstallsPerDecodeWindow,kMaxInstallsDuringSizeResolve,kDecodeWindowWallMs,kDecodeWindowRearmMs}`
+3. `LayoutApplyGuard::Scoped`; pack uses `GalleryLayout::Params` default margin/gap
+4. `ViewFraming::{kindFromFitFill,syncStickyKindFromFitFill}`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1378-standin-softbudget-layoutguard-stickykind.bundle HEAD
+```
+Requires upstream **3830dda** (includes tips 1376–1378).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1377-shear-freerot-overscan-margin-progress-scroll.** Pure helpers
 and bag transitions on tip 1376.
 Prior: **1376**.
