@@ -355,7 +355,7 @@ void ImageView::setLayoutMode(LayoutMode mode)
         if (!isWorkspaceMode()) {
             return;
         }
-        if (m_layout.mode != LayoutMode::FreeForm) {
+        if (!m_layout.isFreeForm()) {
             // Should not happen in Workspace (always FreeForm).
         }
         m_layout.setMode(LayoutMode::FreeForm);
@@ -378,7 +378,7 @@ void ImageView::setLayoutMode(LayoutMode mode)
         return;
     }
 
-    if (m_layout.mode == LayoutMode::FreeForm && mode != LayoutMode::FreeForm) {
+    if (m_layout.isFreeForm() && mode != LayoutMode::FreeForm) {
         snapshotFreeFormStates();
     }
 
@@ -506,7 +506,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
         return;
     }
     // Packaged packing is Gallery-only; never rearrange Workspace free-form items.
-    if (!isGalleryMode() || m_items.isEmpty() || m_layout.mode == LayoutMode::FreeForm) {
+    if (!isGalleryMode() || m_items.isEmpty() || m_layout.isFreeForm()) {
         return;
     }
 

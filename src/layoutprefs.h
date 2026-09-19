@@ -27,6 +27,10 @@ struct LayoutPrefs {
         return true;
     }
 
+    bool isFreeForm() const { return mode == LayoutMode::FreeForm; }
+
+    LayoutMode currentMode() const { return mode; }
+
     /** 0 = automatic for grid/flow. */
     void setGridColumns(int columns) { gridColumns = qMax(0, columns); }
 

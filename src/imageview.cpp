@@ -205,7 +205,7 @@ ImageView::ImageView(QWidget *parent)
                     return;
                 }
                 if (m_ssHud.isProgressActive()
-                    && (path == m_ss.fromPath || path == m_ss.toPath)) {
+                    && m_ss.isPhasePath(path)) {
                     onSlideshowRasterReady(path, img);
                     // SoftDisplay only at screen-fit edge (TileSynth when tiles exist).
                     if (m_pathRaster) {
@@ -261,7 +261,7 @@ ImageView::ImageView(QWidget *parent)
     m_layoutDebounceTimer->setInterval(LayoutDebounce::kIntervalMs);
     connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
         GalleryPackReason reason = GalleryPackReason::ContentChange;
-        if (isGalleryMode() && m_layout.mode != LayoutMode::FreeForm
+        if (isGalleryMode() && !m_layout.isFreeForm()
             && m_layoutDebounce.take(&reason)) {
             applyLayout(reason);
         }
@@ -605,7 +605,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
             preserveImageViewOnLogicalSizeChange(item, cur, layoutSize);
         }
     }
-    if (any && isGalleryMode() && m_layout.mode != LayoutMode::FreeForm) {
+    if (any && isGalleryMode() && !m_layout.isFreeForm()) {
         // While the open-time size-resolve gate is active, pack once when all
         // probes settle — not on every sizeReady (avoids thrash + tiny cells).
         if (!gallerySizeResolveActive()) {
@@ -617,11 +617,11 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
     // Slideshow paints from path→logical, not the underlay item. When the probe
     // lands for a phase path, refresh dest aspect (and atlas if needed).
     if (m_ssHud.isProgressActive()
-        && (path == m_ss.fromPath || path == m_ss.toPath)) {
-        if (path == m_ss.fromPath && !m_ss.fromImage.isNull()) {
+        && m_ss.isPhasePath(path)) {
+        if (m_ss.isFromPath(path) && m_ss.hasFromImage()) {
             requestDwellAtlasRebuild();
         }
-        if (path == m_ss.toPath && !m_ss.toImage.isNull()) {
+        if (m_ss.isToPath(path) && m_ss.hasToImage()) {
             requestToPhaseAtlasRebuild();
         }
         if (viewport()) {
@@ -724,7 +724,7 @@ void ImageView::onSizeResolveGateComplete()
             ensureGalleryPlaceholders();
         }
     }
-    if (isGalleryMode() && !m_items.isEmpty() && m_layout.mode != LayoutMode::FreeForm) {
+    if (isGalleryMode() && !m_items.isEmpty() && !m_layout.isFreeForm()) {
         applyLayout(GalleryPackReason::EnterGallery);
         updateGalleryDecodeWindow();
         QTimer::singleShot(0, this, [this]() {
