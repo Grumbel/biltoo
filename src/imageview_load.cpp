@@ -1898,16 +1898,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
 
 bool ImageView::takePendingRestoreState(const QString &path, WorkspaceItemState *out)
 {
-    if (!out || path.isEmpty()) {
-        return false;
-    }
-    for (int i = 0; i < m_loadGate.pendingRestoreStates().size(); ++i) {
-        if (m_loadGate.pendingRestoreStates().at(i).path == path) {
-            *out = m_loadGate.pendingRestoreStates().takeAt(i);
-            return true;
-        }
-    }
-    return false;
+    return m_loadGate.takePendingRestoreForPath(path, out);
 }
 
 void ImageView::completeLoadRestore(const QString &path, const QImage &image)

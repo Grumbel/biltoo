@@ -1387,7 +1387,7 @@ void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBi
         item->setInteractive(true);
         item->setScaleHandlesEnabled(true);
     }
-    m_loadGate.pendingScenePos().remove(item->path());
+    m_loadGate.removePendingScenePos(item->path());
     rememberItemState(item);
 }
 
@@ -1499,8 +1499,8 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
         applyState(item, *m_appearance.get(bound.id));
         return;
     }
-    if (m_loadGate.pendingScenePos().contains(path)) {
-        const QPointF pos = m_loadGate.pendingScenePos().take(path);
+    QPointF pos;
+    if (m_loadGate.takePendingScenePos(path, &pos)) {
         item->setPos(pos);
         item->setItemScale(1.0);
         item->setItemRotation(0.0);
@@ -1549,7 +1549,7 @@ QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
         // call applyLayout after this session image is gone.
         m_loadGate.removePendingWorkspacePath(path);
         gallerySoftResetPath(path);
-        m_loadGate.pendingScenePos().remove(path);
+        m_loadGate.removePendingScenePos(path);
         m_bindBook.removeIndexForPath(path);
         // destroyCanvasItem clears selection anchor / drag pointers and
         // removes from m_items and both stashes (safe if already only in one).
@@ -1716,7 +1716,7 @@ void ImageView::removeWorkspaceSessionIndex(int sessionIndex)
     }
     if (!pathStillLive) {
         m_loadGate.removePendingWorkspacePath(path);
-        m_loadGate.pendingScenePos().remove(path);
+        m_loadGate.removePendingScenePos(path);
         m_bindBook.removeIndexForPath(path);
         gallerySoftResetPath(path);
 }
@@ -1748,7 +1748,7 @@ void ImageView::detachCanvasSessionId(SessionImageId sessionId)
         }
         if (!pathStillLive) {
             takePendingWorkspacePath(path);
-            m_loadGate.pendingScenePos().remove(path);
+            m_loadGate.removePendingScenePos(path);
             m_bindBook.removeIndexForPath(path);
         gallerySoftResetPath(path);
 }
@@ -1912,7 +1912,7 @@ void ImageView::removeWorkspacePathOccurrence(const QString &path, int occurrenc
         }
         if (found == occurrence) {
             takePendingWorkspacePath(path);
-            m_loadGate.pendingScenePos().remove(path);
+            m_loadGate.removePendingScenePos(path);
             m_bindBook.removeIndexForPath(path);
         gallerySoftResetPath(path);
 destroyCanvasItem(item);

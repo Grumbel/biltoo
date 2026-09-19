@@ -114,6 +114,24 @@ public:
         return m_pendingRestoreStates;
     }
 
+    int pendingRestoreCount() const { return m_pendingRestoreStates.size(); }
+
+    /** Take first pending restore whose path matches @p path. */
+    bool takePendingRestoreForPath(const QString &path, WorkspaceItemState *out)
+    {
+        if (!out || path.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < m_pendingRestoreStates.size(); ++i) {
+            if (m_pendingRestoreStates.at(i).path != path) {
+                continue;
+            }
+            *out = m_pendingRestoreStates.takeAt(i);
+            return true;
+        }
+        return false;
+    }
+
     // --- Deferred scene positions ----------------------------------------------
 
     QHash<QString, QPointF> &pendingScenePos() { return m_pendingScenePos; }
@@ -123,6 +141,37 @@ public:
     }
 
     void clearPendingScenePos() { m_pendingScenePos.clear(); }
+
+    void setPendingScenePos(const QString &path, const QPointF &pos)
+    {
+        if (!path.isEmpty()) {
+            m_pendingScenePos.insert(path, pos);
+        }
+    }
+
+    void removePendingScenePos(const QString &path) { m_pendingScenePos.remove(path); }
+
+    bool hasPendingScenePos(const QString &path) const
+    {
+        return !path.isEmpty() && m_pendingScenePos.contains(path);
+    }
+
+    /** Take deferred scene pos for @p path; false if none. */
+    bool takePendingScenePos(const QString &path, QPointF *out)
+    {
+        if (path.isEmpty()) {
+            return false;
+        }
+        const auto it = m_pendingScenePos.find(path);
+        if (it == m_pendingScenePos.end()) {
+            return false;
+        }
+        if (out) {
+            *out = it.value();
+        }
+        m_pendingScenePos.erase(it);
+        return true;
+    }
 
 private:
     LoadGeneration m_gen;
