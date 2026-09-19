@@ -277,20 +277,30 @@ void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
                  .arg(item->imageSize().height()));
 }
 
-bool ImageView::enterCropModeFromUi()
+
+ImageItem *ImageView::resolveCropEnterTarget()
 {
     // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
     if (isGalleryMode()) {
-        return false;
+        return nullptr;
     }
     // Image or Workspace: one explicit subject only.
     if (!hasSingleCropTarget()) {
         flashHud(tr("Crop"), tr("Select a single image"));
-        return false;
+        return nullptr;
     }
     ImageItem *item = cropTargetItem();
     if (!item || !item->hasDisplayPixels()) {
         flashHud(tr("Crop"), tr("No image"));
+        return nullptr;
+    }
+    return item;
+}
+
+bool ImageView::enterCropModeFromUi()
+{
+    ImageItem *item = resolveCropEnterTarget();
+    if (!item) {
         return false;
     }
     cancelZoomRegion();
@@ -489,6 +499,22 @@ void ImageView::activateCropModeAfterInstall(ImageItem *item)
     m_crop.clearAwaitingFull();
 }
 
+
+void ImageView::installAndActivateCropEnter(ImageItem *item, const QImage &full,
+                                            const WorkspaceItemState *app, bool haveApp,
+                                            bool unorientedSource)
+{
+    // Workspace: lock scene footprint before intrinsic changes on install.
+    const QRectF beforeScene = item->mapRectToScene(item->contentRect());
+    installFullImageForCrop(item, full, app, haveApp, unorientedSource);
+    // Workspace: keep centre so the draft does not jump (scale is placement-only).
+    preserveWorkspaceItemCenter(item, beforeScene.center(),
+                                beforeScene.width(), beforeScene.height());
+    m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
+                                       item->imageSize(), app, haveApp);
+    activateCropModeAfterInstall(item);
+}
+
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
 {
     if (!item) {
@@ -511,16 +537,8 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         return handleNullEnterFullRaster(path, hadCrop);
     }
 
-    // Workspace: lock scene footprint before intrinsic changes on install.
-    const QRectF beforeScene = item->mapRectToScene(item->contentRect());
-    installFullImageForCrop(item, full, haveApp ? &app : nullptr, haveApp, unorientedSource);
-    // Workspace: keep centre so the draft does not jump (scale is placement-only).
-    preserveWorkspaceItemCenter(item, beforeScene.center(),
-                                beforeScene.width(), beforeScene.height());
-    m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
-                                       item->imageSize(),
-                                       haveApp ? &app : nullptr, haveApp);
-    activateCropModeAfterInstall(item);
+    installAndActivateCropEnter(item, full, haveApp ? &app : nullptr, haveApp,
+                                unorientedSource);
     return true;
 }
 
@@ -1102,17 +1120,14 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // never composites crop pixels into the pre-crop contentRect (or the
         // reverse). fitItem still runs under m_crop.active(); it must not treat Apply
         // as draft (see fitItem cropDraft).
-        ViewportUpdateHold paintHold(viewport());
-        attachCropApplyDisplay(item, display, st, multiMp, cropW, cropH, path,
-                               cropSceneCenter);
-
-        // Multi-MP: soft stand-in now; pure full rematerialize after leave.
-        // scheduleAsyncHostRematerialize is blocked while crop freeze is on —
-        // queue here and flush from clearCropModeState after unfreeze.
-        m_crop.queueFullRematerializeIfSoft(hostFromCache, multiMp, path, sid, st);
-        finishCropApplyLayout(item);
-        // paintHold restores viewport updates on scope exit
-
+        {
+            ViewportUpdateHold paintHold(viewport());
+            attachCropApplyDisplay(item, display, st, multiMp, cropW, cropH, path,
+                                   cropSceneCenter);
+            // Multi-MP: soft stand-in now; pure full rematerialize after leave.
+            m_crop.queueFullRematerializeIfSoft(hostFromCache, multiMp, path, sid, st);
+            finishCropApplyLayout(item);
+        }
         finalizeCropApplySuccess(item, sid, path, display);
         return isWorkspaceMode();
     }

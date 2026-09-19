@@ -719,6 +719,7 @@ public:
     void finalizeCropResetSuccess(ImageItem *item);
     void finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
                                   const QString &path, const QImage &display);
+    ImageItem *resolveCropEnterTarget();
     bool enterCropModeFromUi();
     /**
      * Best host raster for crop / content bake / Workspace restore.
@@ -1706,6 +1707,9 @@ private:
      * so the region can grow. Returns false if the image cannot be prepared.
      */
     void activateCropModeAfterInstall(ImageItem *item);
+    void installAndActivateCropEnter(ImageItem *item, const QImage &full,
+                                     const WorkspaceItemState *app, bool haveApp,
+                                     bool unorientedSource);
     bool prepareCropModeFullImage(ImageItem *item);
     bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     bool resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const;
