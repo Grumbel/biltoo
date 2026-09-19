@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1552-appearance-apply-undo.** Apply-undo appearance apply in appearance TU.
+Prior: **1551**.
+
+### Change
+→ `imageview_appearance.cpp`:
+- `applyCropAppearancePixels`
+- `clearIdentityContentAppearance`
+- `applyCropAppearance` (CropAppearanceCommand redo/undo target)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1552-appearance-apply-undo.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1551-appearance-restore-pixels.** Restore appearance pixel install chain in appearance TU.
 Prior: **1550**.
 

@@ -1,17 +1,19 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Session appearance load/store/apply (IDENTITY.md). Crop-mode Apply undo
-// stays in imageview_crop.cpp (applyCropAppearance).
+// Session appearance load/store/apply + Apply-undo (IDENTITY.md).
+// Crop draft enter/leave/bake stays in imageview_crop.cpp.
 
 #include "imageview.h"
 #include "cropsession.h"
 #include "imagecache.h"
 #include "contentxform.h"
 #include "sessionappearance.h"
+#include "thumtoocache.h"
 
 #include "imageitem.h"
 #include "sessionappearance.h"
+#include "thumtoocache.h"
 
 void ImageView::applyStoredAppearancePixels(ImageItem *item, const WorkspaceItemState &app,
                                             SessionImageId sid)
@@ -240,5 +242,53 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     }
     installRestoredCropPixels(item, app, sid, full);
     fitImageOrUpdateWorkspace(item);
+}
+
+void ImageView::applyCropAppearancePixels(ImageItem *item, const QImage &src,
+                                          const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    if (!src.isNull()) {
+        attachDisplaySample(item, src, state, SessionAppearance::PixelKind::FullSource);
+        return;
+    }
+    item->setSessionCrop(state.hasCrop, state.cropRect);
+    item->setContentHFlip(state.contentHFlip);
+    item->setContentVFlip(state.contentVFlip);
+    item->setAppliedContentXform(ContentXform::Value::fromState(state));
+}
+
+
+void ImageView::clearIdentityContentAppearance(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    // Undo back to identity: commit no longer writes identity (avoids wiping
+    // good rows on noisy commits), so clear durable state explicitly.
+    if (!SessionAppearance::hasContentAppearance(state)) {
+        ThumtooCache::clearContentAppearance(item->path());
+    }
+}
+
+void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
+                                    const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    // Undo/redo after-image: pixels are already content-baked — attach only.
+    applyCropAppearancePixels(item, src, state);
+    applyState(item, state);
+    // Seed appearance with the full state (including cropRotation) before
+    // commitItemSessionEdit, which rebuilds the slot via captureState.
+    storeAppearanceFromState(item, state);
+    // Appearance persistence is commitItemSessionEdit → m_appearance (by id).
+    // Do not write crop state into the path map for bound tiles.
+    commitItemSessionEdit(item);
+    clearIdentityContentAppearance(item, state);
+    relayoutAfterAppearanceApply(item);
 }
 
