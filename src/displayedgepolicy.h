@@ -5,6 +5,7 @@
 #define DISPLAYEDGEPOLICY_H
 
 #include <QImage>
+#include <QSize>
 #include <QtGlobal>
 
 /**
@@ -40,6 +41,16 @@ bool coversEdge(int haveLongEdge, int targetEdge);
  * @p nativeLongEdge ≤ 0 means native unknown (no native clamp).
  */
 int cappedDisplayEdge(int wantEdge, int nativeLongEdge);
+
+/** Same as above; native long edge from size (0 if invalid). */
+inline int cappedDisplayEdge(int wantEdge, const QSize &knownNative)
+{
+    const int native =
+        (knownNative.isValid() && knownNative.width() > 0 && knownNative.height() > 0)
+            ? qMax(knownNative.width(), knownNative.height())
+            : 0;
+    return cappedDisplayEdge(wantEdge, native);
+}
 
 /**
  * Whether @p sampleLongEdge is enough to treat as covering native logical size.

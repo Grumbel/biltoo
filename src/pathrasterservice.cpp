@@ -4,6 +4,7 @@
 #include "pathrasterservice.h"
 
 #include "imagecache.h"
+#include "displayedgepolicy.h"
 #include "thumtoocache.h"
 #include "biltoo_thread.h"
 
@@ -22,22 +23,7 @@ RasterClimb::Policy PathRasterService::toSmPolicy(ClimbPolicy p)
 
 int PathRasterService::capWant(int want, const QSize &knownNative)
 {
-    int edge = want > 0 ? want : ThumtooCache::kImageLadderEdge;
-    edge = qMin(edge, ThumtooCache::kImageLadderEdge);
-    if (knownNative.isValid() && knownNative.width() > 0 && knownNative.height() > 0) {
-        const int native = qMax(knownNative.width(), knownNative.height());
-        if (native > 0) {
-            edge = qMin(edge, native);
-        }
-    }
-    edge = ThumtooCache::ceilLadderEdge(edge);
-    if (knownNative.isValid() && knownNative.width() > 0 && knownNative.height() > 0) {
-        const int native = qMax(knownNative.width(), knownNative.height());
-        if (native > 0) {
-            edge = qMin(edge, native);
-        }
-    }
-    return qMax(1, edge);
+    return DisplayEdgePolicy::cappedDisplayEdge(want, knownNative);
 }
 
 RasterClimb::PendingFlags PathRasterService::pendingFlagsFor(const QString &path,
