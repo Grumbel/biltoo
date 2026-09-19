@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1480-crop-enter-accessors.** CropSession draft/enter/await/hover accessors.
+Prior: **1479**. Commits 1480a–1480d (+ docs).
+
+### Commits
+1. **CropSession** draft freeze, enter source, await path, hover accessors
+2. **CropSession** isAwaitingFullPath
+3. **CropSession** enterScaleX/Y
+4. **CropSession** enterPos, enterHadCrop, enterSourceDiffersFrom
+
+### Note
+Crop enter/apply *orchestration* still on ImageView. Bag field digs for crop
+enter stash reduced.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1480-crop-enter-accessors.bundle HEAD
+```
+Requires tip **1479** (`2857f19`).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1479-settings-crop-header.** Settings letterbox, crop stash, header wrappers.
 Prior: **1478**. Commits 1479a–1479c (+ docs).
 
