@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1511-crop-session-policy.** Enter/apply pure policy + chrome layout on CropSession.
+Prior: **1510**. Commits 1511a–1511c (+ docs).
+
+### Commits
+1. Move pickEnter/Apply host, KEEP gate, free-placement clear, fullRaster edge; cropChromeLayout
+2. materializeApplyDisplay; drop initCropRect/cropPolygonItemLocal wrappers
+3. prepareEnterInstallSample for enter install bake
+
+### Note
+Still on ImageView: installFullImageForCrop orchestration, applyCropCommit attach/undo/HUD,
+PathRaster cancel, recordSessionCrop store writes.
+
+### Apply (on tip **1500**)
+```bash
+git pull --ff-only /path/to/biltoo-1511-crop-session-policy.bundle HEAD
+```
+Includes **1501–1511**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1510-crop-paint-inline.** Fold paint wrappers into paintCropOverlay.
 Prior: **1509**. Commits 1510a (+ docs).
 
