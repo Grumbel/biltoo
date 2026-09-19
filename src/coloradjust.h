@@ -29,6 +29,23 @@ struct ColorAdjustments {
             && qFuzzyCompare(gamma, o.gamma) && invert == o.invert;
     }
 
+    /**
+     * Build grade from durable XDG fields (percent gamma, 0 contrast/sat = identity 100).
+     */
+    static ColorAdjustments fromDurableGrade(int brightness, int contrast, int saturation,
+                                             int hue, int gammaPercent, bool invertFlag)
+    {
+        ColorAdjustments a;
+        a.brightness = brightness;
+        a.contrast = contrast == 0 ? 100 : contrast;
+        a.saturation = saturation == 0 ? 100 : saturation;
+        a.hue = hue;
+        a.gamma = gammaPercent <= 0 ? 1.0 : (gammaPercent / 100.0);
+        a.invert = invertFlag;
+        a.clampInPlace();
+        return a;
+    }
+
     /** Grade ranges match AdjustmentsPanel slider limits. */
     static int clampBrightness(int v) { return qBound(-100, v, 100); }
     static int clampContrast(int v) { return qBound(0, v, 200); }
