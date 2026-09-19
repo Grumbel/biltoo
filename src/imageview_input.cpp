@@ -92,8 +92,7 @@ bool ImageView::setHoverEdge(EdgeZone zone)
         return false;
     }
     m_hoverEdge = zone;
-    if (m_hoverEdge == EdgeZone::Previous || m_hoverEdge == EdgeZone::Next
-        || m_hoverEdge == EdgeZone::GalleryReturn) {
+    if (isNavEdge(m_hoverEdge)) {
         setCursor(Qt::PointingHandCursor);
     } else if (!m_chrome.isPanning() && !m_itemInteract.isRotating()) {
         setCursor(ToolPolicy::cursorFor(m_tool));

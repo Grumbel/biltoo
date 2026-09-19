@@ -116,6 +116,14 @@ public:
         GalleryReturn
     };
 
+    static bool isNavEdge(EdgeZone zone)
+    {
+        return zone == EdgeZone::Previous || zone == EdgeZone::Next
+            || zone == EdgeZone::GalleryReturn;
+    }
+
+    bool hasHoverNavEdge() const { return isNavEdge(m_hoverEdge); }
+
     /**
      * Arrangement of items. FreeForm is used only in Workspace mode.
      * Other values are Gallery layouts.
