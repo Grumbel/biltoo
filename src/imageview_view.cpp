@@ -2441,10 +2441,7 @@ void ImageView::paintZoomBlurUnderlay(QPainter *painter, const QImage &image,
     if (m_ssZoomBlur.vw != vw || m_ssZoomBlur.vh != vh) {
         // Viewport size change: drop sized slots; keep lastGood stretched until
         // async rebuild finishes (still better than solid flash).
-        m_ssZoomBlur.underlay[0] = QPixmap();
-        m_ssZoomBlur.underlay[1] = QPixmap();
-        m_ssZoomBlur.sourceKey[0] = 0;
-        m_ssZoomBlur.sourceKey[1] = 0;
+        m_ssZoomBlur.clearUnderlays();
         m_ssZoomBlur.setViewportSize(vw, vh);
         invalidateZoomBlurQueue();
     }
