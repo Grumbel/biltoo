@@ -2,6 +2,26 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1654-tile-lod-release-shadow.** Rename in-flight loop key in release().
+Prior: **1653**.
+
+### Change
+- `TileLodRegistry::release`: loop variable `tile_key` (was `key`, shadowed path key)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1654-tile-lod-release-shadow.bundle HEAD
+```
+
+### Next
+- `biltoo-build` verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1653-fix-double-m-view.** Drop accidental `m_view->m_view->`.
 Prior: **1652**.
 

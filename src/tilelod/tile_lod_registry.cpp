@@ -166,8 +166,8 @@ void TileLodRegistry::release(QString const& path)
   // Idle: keep Succeeded tiles for A→B→A. Session dtor should already have
   // erased InFlight; clear any residual so we never retain a pure-InFlight shell.
   if (it->second->cache) {
-    for (TileKey const& key : it->second->cache->in_flight_keys()) {
-      it->second->cache->erase(key);
+    for (TileKey const& tile_key : it->second->cache->in_flight_keys()) {
+      it->second->cache->erase(tile_key);
     }
   }
   bool const has_tiles =
