@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1579-crop-docs-tu-map.** Docs: crop TU map + entry points after 1573–1578 inlining.
+Prior: **1578**.
+
+### Change
+- `docs/CROP_MODE.md` — Source layout table lists main entry points; call sketch
+  for enter/apply/leave; note no separate `clearCropModeState`
+- `docs/TILE_LOD.md` — crop suppress clear via `leaveCropModeInternal`
+- `docs/CONTENT_PIPELINE.md` — enter/apply path names match current code
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1579-crop-docs-tu-map.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1578-crop-inline-paint-appearance-target.** Collapse paint overlay, appearance-apply, stored-pixels, inactive target.
 Prior: **1577**.
 

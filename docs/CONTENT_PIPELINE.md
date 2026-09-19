@@ -130,12 +130,14 @@ filmstrip receives a full-frame override.
 
 
 Entering crop loads the full frame with content flips/turns only (no crop bake).
-`prepareCropModeFullImage` uses the same host rematerialize / attach path; multi-MP
-falls back to incremental content bake + async pure rematerialize.
+`enterCropModeFromUi` → `prepareCropModeFullImage` uses the same host
+rematerialize / attach path; multi-MP falls back to incremental content bake +
+async pure rematerialize.
 
-Apply: record crop in session appearance under **crop target id**, materialize,
-set intrinsic from `layoutSize` (crop box), keep placement scale identity where
-Workspace footprint must not jump (see recent crop tips).
+Apply: `applyCropCommit` records crop in session appearance under **crop target
+id**, materializes, sets intrinsic from `layoutSize` (crop box), keeps placement
+scale identity where Workspace footprint must not jump (see crop tips
+**1573–1578**). Leave clears draft state in `leaveCropModeInternal`.
 
 ## ImageView::rematerializeItemContent
 

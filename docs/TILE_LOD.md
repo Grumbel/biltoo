@@ -906,7 +906,7 @@ climb is already blocked via `isCropDraftLockedPath`. Tile LOD now matches:
 - `ImageItem::setTileLodSuppressed(true)` on freeze → `tileLodWanted()` false,
   private `TileLodController` dropped (shared path RAM cache kept).
 - `tickPrimaryTileLod` skips locked/suppressed items.
-- Clear suppress on `clearCropModeState` and failed crop prepare.
+- Clear suppress on leave crop (`leaveCropModeInternal`) and failed crop prepare.
 
 Prevents tile requests/paint over the full-frame crop draft.
 

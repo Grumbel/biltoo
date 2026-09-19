@@ -144,16 +144,26 @@ Apply filmstrip: `cropApply=1 img=<cropW>x<cropH>` (not full-frame size).
 
 ## Source layout (ImageView crop TUs)
 
-| File | Responsibility |
-|------|----------------|
-| `imageview_crop.cpp` | Targets, locks, PathRaster cancel, align/leave layout, auto-trim |
-| `imageview_crop_enter.cpp` | Enter session, full-frame draft install |
-| `imageview_crop_apply.cpp` | Apply bake/record, leave, undo push |
-| `imageview_crop_raster.cpp` | Full raster (thumtoo / pool) |
-| `imageview_crop_paint.cpp` | Overlay chrome paint |
-| `imageview_crop_input.cpp` | Handle drag, rubber-band, hit-test |
-| `imageview_appearance.cpp` | Session appearance load/store/restore / Apply-undo |
-| `cropsession.*` / `cropgeometry.*` | Pure policy and geometry |
-| `cropappearancecommand.*` | QUndoCommand for Apply |
-| `croppathraster.h` / `cropflash.h` / `cropdebug.h` | PathRaster suspend, HUD copy, debug logs |
+After tips **1573–1578**, single-use ImageView crop helpers were folded into the
+pipeline entry points below. Prefer those names when reading or extending crop.
+
+| File | Responsibility | Main entry points |
+|------|----------------|-------------------|
+| `imageview_crop.cpp` | Targets, draft locks, PathRaster cancel, shared layout/align, auto-trim | `cropTargetItem`, `fitImageOrUpdateWorkspace`, `relayoutAfterCropLeave`, `applyAutoCrop` |
+| `imageview_crop_enter.cpp` | Enter session, full-frame draft install, mode toggle | `enterCropModeFromUi`, `setCropMode`, `prepareCropModeFullImage` |
+| `imageview_crop_apply.cpp` | Apply bake/record, leave, undo push | `applyCrop`, `cancelCrop`, `applyCropCommit`, `leaveCropModeInternal`, `recordSessionCrop` |
+| `imageview_crop_raster.cpp` | Full raster (thumtoo / pool) while draft shows provisional | `requestCropFullRaster`, `maybeUpgradeCropFullRaster`, `onPoolCropFullRasterDecoded` |
+| `imageview_crop_paint.cpp` | Overlay chrome paint | `paintCropOverlay` |
+| `imageview_crop_input.cpp` | Handle drag, rubber-band, hit-test, view mapping | `beginCropHandleDrag`, `beginCropRubberBand`, `cropHandleAt`, `cropPolygonView` |
+| `imageview_appearance.cpp` | Session appearance load/store/restore / Apply-undo | `applyCropAppearance`, `applyStoredAppearance`, `restoreSessionCropAppearance`, `emitCropApplyAppearance`, `loadRestoreCropAppearance` |
+| `cropsession.*` / `cropgeometry.*` | Pure policy and geometry (no ImageView state) | |
+| `cropappearancecommand.*` | QUndoCommand for Apply | |
+| `croppathraster.h` / `cropflash.h` / `cropdebug.h` | PathRaster suspend, HUD copy, debug logs | |
+
+**Call sketch**
+
+- Enter: `setCropMode(true)` → `enterCropModeFromUi` → `prepareCropModeFullImage`
+- Apply: `applyCrop` → `leaveCropModeInternal(true)` → `applyCropCommit`
+- Cancel: `cancelCrop` / `leaveCropModeInternal(false)` → `restoreSessionCropAppearance` when showing full
+- Leave always clears draft freeze, PathRaster suspend, and tile LOD suppress inside `leaveCropModeInternal` (no separate `clearCropModeState`)
 
