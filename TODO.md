@@ -2,6 +2,21 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1503-crop-auto-end.** paddedIntersectedRect; endHandleDragClamped.
+Prior: **1502**. Commits 1503a–1503b (+ docs).
+
+### Apply (on tip 1502)
+```bash
+git pull --ff-only /path/to/biltoo-1503-crop-auto-end.bundle HEAD
+```
+Or from tip **1500**: pull **1502** then **1503**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1502-crop-upgrade-size.** acceptsFullRasterUpgrade, draftPixelSize, isChromeButton.
 Prior: **1501**. Commits 1502a–1502b (+ docs).
 
