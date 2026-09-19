@@ -577,7 +577,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     params.mode = galleryLayoutModeFromViewMode();
 
     GalleryLayout::pack(m_items, params, [this](ImageItem *item) {
-        m_itemStateBook.byPath.insert(item->path(), captureState(item));
+        m_itemStateBook.set(item->path(), captureState(item));
     });
 
     const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), margin);
@@ -725,7 +725,7 @@ bool ImageView::layoutWorkspaceItems(const GalleryLayout::Params &userParams,
         if (item->sessionId() != kInvalidSessionImageId) {
             m_appearance.set(item->sessionId(), captureState(item));
         }
-        m_itemStateBook.byPath.insert(item->path(), captureState(item));
+        m_itemStateBook.set(item->path(), captureState(item));
     }
 
     updateWorkspaceSceneRect();

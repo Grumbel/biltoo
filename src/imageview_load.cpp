@@ -252,9 +252,8 @@ WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
         return {};
     }
     // Path map only when unbound (no session image id).
-    const auto it = m_itemStateBook.byPath.constFind(path);
-    if (it != m_itemStateBook.byPath.cend()) {
-        return *it;
+    if (const WorkspaceItemState *st = m_itemStateBook.get(path)) {
+        return *st;
     }
     return {};
 }
@@ -275,7 +274,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         // after restart. appearanceForNewImageModeItem seeds then returns
         // identity only if XDG has nothing.
         if (m_sessionId.currentId != kInvalidSessionImageId
-            || m_itemStateBook.byPath.contains(path)) {
+            || m_itemStateBook.contains(path)) {
             app = appearanceForNewImageModeItem(path);
         }
     }
@@ -514,9 +513,8 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
             }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
-        const auto it = m_itemStateBook.byPath.constFind(item->path());
-        if (it != m_itemStateBook.byPath.cend()) {
-            appearance = *it;
+        if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
+            appearance = *st;
         }
     }
     const ContentXform::Value applied =
@@ -2261,13 +2259,13 @@ void ImageView::applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &pat
     }
     // Content 90°/flip/crop are materialize()'d in createItemFromImage when want is set.
     // Legacy unbaked flips only if content flags not used yet.
-    const auto it = m_itemStateBook.byPath.constFind(path);
-    if (it == m_itemStateBook.byPath.cend()) {
+    const WorkspaceItemState *st = m_itemStateBook.get(path);
+    if (!st) {
         return;
     }
-    if (!it->contentHFlip && !it->contentVFlip) {
-        item->setItemHFlip(it->hFlip);
-        item->setItemVFlip(it->vFlip);
+    if (!st->contentHFlip && !st->contentVFlip) {
+        item->setItemHFlip(st->hFlip);
+        item->setItemVFlip(st->vFlip);
     }
 }
 

@@ -1190,10 +1190,11 @@ bool ImageView::snapshotSlideshowContentAppearance(const QString &path,
             }
         }
     }
-    const auto it = m_itemStateBook.byPath.constFind(path);
-    if (it != m_itemStateBook.byPath.cend() && SessionAppearance::hasContentAppearance(*it)) {
-        *out = *it;
-        return true;
+    if (const WorkspaceItemState *st = m_itemStateBook.get(path)) {
+        if (SessionAppearance::hasContentAppearance(*st)) {
+            *out = *st;
+            return true;
+        }
     }
     ThumtooCache::StoredContentAppearance stored;
     if (ThumtooCache::loadContentAppearance(path, &stored)
