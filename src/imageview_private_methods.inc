@@ -248,7 +248,6 @@
     void detectAttentionPoint();
 
     /** Undo/redo: replace attention points on the current attention target. */
-    void restoreAttentionPoints(const QVector<QPointF> &pts);
 
     /** Shrink draft to non-background content (margin trim). */
     void requestCropViewportUpdate();

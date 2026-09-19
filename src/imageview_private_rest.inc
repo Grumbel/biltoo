@@ -79,9 +79,6 @@
      * Sole attach: display pixels + layoutSize(native, want) + applied fingerprint.
      * @p display is already materializeDisplay output (or identity raw).
      */
-    void attachDisplaySample(ImageItem *item, const QImage &display,
-                             const WorkspaceItemState &want,
-                             SessionAppearance::PixelKind kind);
     /** Host ≤512 materialize + attach; multi-MP returns false (caller schedules). */
     bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
     /**
@@ -90,7 +87,6 @@
      * is known. After live rotate/flip, always call this so paint does not
      * stretch oriented pixels into the pre-orient box.
      */
-    void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want);
     void finishAsyncHostRematerialize(const QString &path, SessionImageId sid,
                                       const WorkspaceItemState &want, const QImage &display);
     void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
@@ -201,7 +197,6 @@
     /** Ladder step for item cell size in device pixels. */
     int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = true) const;
     int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
-    ImageItem *primaryItem() const;
     QList<ImageItem *> transformTargets() const;
     /** Apply session crop from @p state to a freshly decoded item (no-op if none). */
     /**
@@ -279,8 +274,6 @@
     void endCropRubberBand();
     void leaveCropModeInternal(bool apply);
     /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
-    void onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
-                                     quint64 gen);
     void requestCropFullRaster(const QString &path);
     /** Upgrade crop source when native full arrives for m_cropCtrl.session().awaitingFullPath. */
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);

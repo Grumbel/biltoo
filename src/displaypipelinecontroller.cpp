@@ -3,6 +3,8 @@
 
 #include "displaypipelinecontroller.h"
 
+#include "tile_load_coordinator.h"
+
 DisplayPipelineController::DisplayPipelineController(ImageView *view)
     : m_view(view)
 {

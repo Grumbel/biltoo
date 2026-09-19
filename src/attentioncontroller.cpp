@@ -11,6 +11,7 @@
 #include <QCursor>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QCoreApplication>
 #include <QKeyEvent>
 #include <QSet>
 #include <QUndoCommand>
@@ -171,7 +172,7 @@ void AttentionController::pushAttentionPointsUndo(const QVector<QPointF> &before
         QVector<QPointF> m_before;
         QVector<QPointF> m_after;
     };
-    m_view->undoStack()->push(new AttentionPointsCommand(this, before, after, text));
+    m_view->undoStack()->push(new AttentionPointsCommand(m_view, before, after, text));
 }
 
 void AttentionController::detectAttentionPoint()
@@ -191,7 +192,7 @@ void AttentionController::detectAttentionPoint()
     const QVector<QPointF> before = attentionPointsForTarget();
     setAttentionPointsForTarget(pts);
     session().selectAllIndices(pts.size());
-    pushAttentionPointsUndo(before, pts, tr("Detect attention points"));
+    pushAttentionPointsUndo(before, pts, QCoreApplication::translate("AttentionController", "Detect attention points"));
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
@@ -272,7 +273,7 @@ void AttentionController::attentionDeleteSelected()
     }
     session().clearSelected();
     setAttentionPointsForTarget(kept);
-    pushAttentionPointsUndo(before, kept, tr("Delete attention points"));
+    pushAttentionPointsUndo(before, kept, QCoreApplication::translate("AttentionController", "Delete attention points"));
 }
 
 void AttentionController::attentionCommitSelectionMove()
@@ -280,7 +281,7 @@ void AttentionController::attentionCommitSelectionMove()
     if (session().isGestureActive()) {
         const QVector<QPointF> after = attentionPointsForTarget();
         pushAttentionPointsUndo(session().gestureBeforeRef(), after,
-                                tr("Edit attention points"));
+                                QCoreApplication::translate("AttentionController", "Edit attention points"));
     }
     session().clearGesture();
 }
@@ -296,7 +297,7 @@ void AttentionController::paintAttentionOverlay(QPainter &painter)
         painter.setPen(QColor(255, 255, 255, 230));
         painter.drawText(m_view->viewport()->rect().adjusted(12, 12, -12, -12),
                          Qt::AlignTop | Qt::AlignLeft,
-                         tr("Attention mode: no image loaded"));
+                         QCoreApplication::translate("AttentionController", "Attention mode: no image loaded"));
         painter.restore();
         return;
     }
@@ -333,7 +334,7 @@ void AttentionController::paintAttentionOverlay(QPainter &painter)
         painter.setPen(QColor(255, 255, 255, 230));
         painter.drawText(QRectF(view.x() + r + 2, view.y() - 8, 28, 16),
                          Qt::AlignLeft | Qt::AlignVCenter,
-                         isPrimary ? tr("P") : QString::number(i + 1));
+                         isPrimary ? QCoreApplication::translate("AttentionController", "P") : QString::number(i + 1));
     }
 
     if (session().isRubberbanding() && !session().rubberRectRef().isEmpty()) {
@@ -347,7 +348,7 @@ void AttentionController::paintAttentionOverlay(QPainter &painter)
     painter.setFont(f);
     painter.setPen(QColor(255, 255, 255, 240));
     const QString hint =
-        tr("Attention — click: select · Shift/Ctrl+click: multi-select · drag empty: rubber-band\n"
+        QCoreApplication::translate("AttentionController", "Attention — click: select · Shift/Ctrl+click: multi-select · drag empty: rubber-band\n"
            "Ctrl+click empty: add · drag handle: move · Del: delete · Ctrl+Z: undo · Esc: exit\n"
            "%1 point(s), %2 selected  (primary “P” = Ken Burns)")
             .arg(pts.size())

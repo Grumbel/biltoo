@@ -20,6 +20,7 @@
 #include <QGuiApplication>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QToolTip>
 #include <QKeyEvent>
 #include "imageloader.h"
 #include <QThreadPool>
@@ -28,6 +29,7 @@
 
 #include <QPainter>
 #include <QMouseEvent>
+#include <QToolTip>
 #include <QKeyEvent>
 #include <QGuiApplication>
 #include <QtMath>
@@ -320,9 +322,9 @@ bool CropController::applyCropCommit(ImageItem *item)
             // stretches full into the crop box and filmstrip gets img=full.
             item->clearDecodedPixels();
             // Geometry before pixels: empty item with crop intrinsic, then bake.
-            applyContentLayoutSize(item, st);
+            m_view->applyContentLayoutSize(item, st);
             CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
-            attachDisplaySample(item, baked.display, st,
+            m_view->attachDisplaySample(item, baked.display, st,
                                 CropSession::applyPixelKind(baked.multiMp));
             session().restoreEnterScale(item);
             alignItemCenterToScene(item, cropSceneCenter);
@@ -417,7 +419,7 @@ bool CropController::enterCropModeFromUi()
         return false;
     }
     // Image or Workspace: one explicit subject only.
-    if (!hasSingleCropTarget()) {
+    if (!m_view->hasSingleCropTarget()) {
         flashCropHud(CropFlash::needSingleTarget());
         return false;
     }
@@ -535,7 +537,7 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
     if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
                                             sample.needGeomBake)) {
         CropSession::applyKeepEnterFlags(item, contentOnly, wantX);
-        applyContentLayoutSize(item, contentOnly);
+        m_view->applyContentLayoutSize(item, contentOnly);
         session().markShowingFullImage();
         CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);
     } else {
@@ -544,8 +546,8 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
                                    item->hasDecodedPixels(), sample.hadPriorCrop,
                                    ImageCache::longEdge(full));
         CropSession::clearItemPixelsForDraftReinstall(item);
-        attachDisplaySample(item, sample.display, contentOnly, sample.kind);
-        applyContentLayoutSize(item, contentOnly);
+        m_view->attachDisplaySample(item, sample.display, contentOnly, sample.kind);
+        m_view->applyContentLayoutSize(item, contentOnly);
         CropSession::applyEnterDraftFlags(item, wantX);
         CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
                                   sample.display.width(), sample.display.height(),
@@ -765,19 +767,19 @@ void CropController::paintCropOverlay(QPainter &painter)
         QString label;
         switch (chromeItem.handle) {
         case CropHandle::ExpandToggle:
-            label = tr("Expand");
+            label = CropFlash::tr("Expand");
             break;
         case CropHandle::Auto:
-            label = tr("Auto");
+            label = CropFlash::tr("Auto");
             break;
         case CropHandle::Reset:
-            label = tr("Reset");
+            label = CropFlash::tr("Reset");
             break;
         case CropHandle::Cancel:
-            label = tr("Cancel");
+            label = CropFlash::tr("Cancel");
             break;
         case CropHandle::Close:
-            label = tr("Apply");
+            label = CropFlash::tr("Apply");
             break;
         default:
             break;
@@ -986,10 +988,10 @@ bool CropController::tryMouseMoveCropHover(QMouseEvent *event)
         QString tip;
         switch (h) {
         case CropHandle::Move:
-            tip = tr("Move crop");
+            tip = CropFlash::tr("Move crop");
             break;
         case CropHandle::Rotate:
-            tip = tr("Rotate crop");
+            tip = CropFlash::tr("Rotate crop");
             break;
         case CropHandle::Left:
         case CropHandle::Right:
@@ -999,20 +1001,20 @@ bool CropController::tryMouseMoveCropHover(QMouseEvent *event)
         case CropHandle::TopRight:
         case CropHandle::BottomLeft:
         case CropHandle::BottomRight:
-            tip = tr("Resize crop");
+            tip = CropFlash::tr("Resize crop");
             break;
         case CropHandle::Auto:
         case CropHandle::ExpandToggle:
-            tip = tr("Allow crop outside image (pad on apply)");
+            tip = CropFlash::tr("Allow crop outside image (pad on apply)");
             break;
         case CropHandle::Reset:
-            tip = tr("Reset crop to full image");
+            tip = CropFlash::tr("Reset crop to full image");
             break;
         case CropHandle::Cancel:
-            tip = tr("Cancel crop (Esc)");
+            tip = CropFlash::tr("Cancel crop (Esc)");
             break;
         case CropHandle::Close:
-            tip = tr("Apply crop (Enter)");
+            tip = CropFlash::tr("Apply crop (Enter)");
             break;
         case CropHandle::None:
             break;

@@ -330,6 +330,15 @@ public:
     const TileNeighborPrefetch &hostTileNeighborPrefetch() const { return m_tileNeighborPrefetch; }
     EdgeZone hostHoverEdge() const { return m_hoverEdge; }
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
+
+    // --- Display/crop host (controller access without friend) ---
+    ImageItem *primaryItem() const;
+    void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want);
+    void onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded, quint64 gen);
+    void restoreAttentionPoints(const QVector<QPointF> &pts);
+    void attachDisplaySample(ImageItem *item, const QImage &display,
+                             const WorkspaceItemState &want,
+                             SessionAppearance::PixelKind kind);
     void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
     SessionLoadGate &hostLoadGate() { return m_displayPipeline.loadGate(); }
     const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }
