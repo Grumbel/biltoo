@@ -873,16 +873,8 @@ void ImageView::notifyCropViewportStatus()
 
 QImage ImageView::pickAutoCropSourcePixels(ImageItem *item) const
 {
-    if (!item) {
-        return {};
-    }
-    QImage src = item->sourceImage();
-    if (src.isNull()) {
-        src = item->pixmap().toImage();
-    }
-    return src;
+    return CropSession::pickAutoCropSourcePixels(item);
 }
-
 
 bool ImageView::runPaddedAutoTrim(ImageItem *item, const QImage &src)
 {
@@ -890,19 +882,7 @@ bool ImageView::runPaddedAutoTrim(ImageItem *item, const QImage &src)
         return false;
     }
     ensureCropRectValid();
-    const QRectF cr = item->contentRect();
-    if (cr.width() < 1.0 || cr.height() < 1.0) {
-        return false;
-    }
-    const QRect search = m_crop.sourceSearchRectFromDraft(cr, src.size());
-    if (!search.isValid() || search.isEmpty()) {
-        return false;
-    }
-    QRect trimmed;
-    if (!ImageLoader::autoTrimRect(src, search, &trimmed)) {
-        return false;
-    }
-    return m_crop.applyPaddedAutoTrim(cr, src.size(), trimmed);
+    return m_crop.tryPaddedAutoTrim(item->contentRect(), src);
 }
 
 void ImageView::applyAutoCrop()

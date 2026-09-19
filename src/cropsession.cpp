@@ -9,6 +9,7 @@
 #include "sessionappearance.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
+#include "imageloader.h"
 #include "coloradjust.h"
 
 CropSession::EnterFullRaster CropSession::pickEnterFullRaster(ImageItem *item,
@@ -347,6 +348,34 @@ bool CropSession::applyPaddedAutoTrim(const QRectF &contentRect, const QSize &sr
     setRectFromSourcePixelTrim(contentRect, srcSize, t);
     ensureRectValid(contentRect);
     return true;
+}
+
+QImage CropSession::pickAutoCropSourcePixels(const ImageItem *item)
+{
+    if (!item) {
+        return {};
+    }
+    QImage src = item->sourceImage();
+    if (src.isNull()) {
+        src = item->pixmap().toImage();
+    }
+    return src;
+}
+
+bool CropSession::tryPaddedAutoTrim(const QRectF &contentRect, const QImage &src, int padPx)
+{
+    if (src.isNull() || contentRect.width() < 1.0 || contentRect.height() < 1.0) {
+        return false;
+    }
+    const QRect search = sourceSearchRectFromDraft(contentRect, src.size());
+    if (!search.isValid() || search.isEmpty()) {
+        return false;
+    }
+    QRect trimmed;
+    if (!ImageLoader::autoTrimRect(src, search, &trimmed)) {
+        return false;
+    }
+    return applyPaddedAutoTrim(contentRect, src.size(), trimmed, padPx);
 }
 
 void CropSession::queueFullRematerializeIfSoft(bool hostFromCache, bool multiMp,

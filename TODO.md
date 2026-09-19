@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1547-crop-auto-trim-impl.** CropSession auto-trim implementations (completes 1546 decls).
+Prior: **1546**.
+
+### Change
+- `CropSession::pickAutoCropSourcePixels` / `tryPaddedAutoTrim` bodies
+- ImageView wrappers thin
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1547-crop-auto-trim-impl.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1546-crop-auto-trim.** Auto-trim search/trim/pad on CropSession; ImageView only ensures draft + notifies.
 Prior: **1545**.
 
