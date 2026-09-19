@@ -1638,7 +1638,6 @@ private:
     void paintCropResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly);
-    enum class CropBtnRole { Toggle, Action, Neutral, Commit };
     void drawCropTextButton(QPainter &painter, const QRect &btn, CropHandle kind,
                             const QString &label, CropGeometry::CropBtnRole role, bool toggled = false);
     void paintCropActionButtons(QPainter &painter);
