@@ -32,8 +32,8 @@ public:
   /// Drop Succeeded entries with scale < keep_min_scale (finer than keep).
   void drop_finer_than(int keep_min_scale);
 
-  /// Approximate payload bytes for Succeeded bitmaps.
-  std::size_t approx_bytes() const;
+  /// Approximate payload bytes for Succeeded bitmaps. O(1).
+  std::size_t approx_bytes() const { return m_succeeded_bytes; }
 
   /// Number of Succeeded entries (any scale). O(1).
   std::size_t succeeded_count() const { return m_succeeded_count; }
@@ -65,6 +65,7 @@ private:
 
   std::map<TileKey, CacheEntry> m_map;
   std::size_t m_succeeded_count = 0;
+  std::size_t m_succeeded_bytes = 0;
 };
 
 }  // namespace tilelod

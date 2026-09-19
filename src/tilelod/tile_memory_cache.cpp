@@ -19,16 +19,27 @@ bool is_succeeded_valid(CacheEntry const& e)
 
 void TileMemoryCache::note_leaving_succeeded(CacheEntry const& e)
 {
-  if (is_succeeded_valid(e) && m_succeeded_count > 0) {
+  if (!is_succeeded_valid(e)) {
+    return;
+  }
+  if (m_succeeded_count > 0) {
     --m_succeeded_count;
+  }
+  const std::size_t n = e.bitmap.bytes.size();
+  if (m_succeeded_bytes >= n) {
+    m_succeeded_bytes -= n;
+  } else {
+    m_succeeded_bytes = 0;
   }
 }
 
 void TileMemoryCache::note_entering_succeeded(CacheEntry const& e)
 {
-  if (is_succeeded_valid(e)) {
-    ++m_succeeded_count;
+  if (!is_succeeded_valid(e)) {
+    return;
   }
+  ++m_succeeded_count;
+  m_succeeded_bytes += e.bitmap.bytes.size();
 }
 
 CacheEntry const* TileMemoryCache::find(TileKey const& key) const
@@ -94,6 +105,7 @@ void TileMemoryCache::clear()
 {
   m_map.clear();
   m_succeeded_count = 0;
+  m_succeeded_bytes = 0;
 }
 
 void TileMemoryCache::drop_finer_than(int keep_min_scale)
@@ -109,17 +121,6 @@ void TileMemoryCache::drop_finer_than(int keep_min_scale)
   }
 }
 
-std::size_t TileMemoryCache::approx_bytes() const
-{
-  std::size_t n = 0;
-  for (auto const& [k, e] : m_map) {
-    (void)k;
-    if (e.state == TileState::Succeeded) {
-      n += e.bitmap.bytes.size();
-    }
-  }
-  return n;
-}
 
 void TileMemoryCache::touch(TileKey const& key, std::uint64_t now)
 {
