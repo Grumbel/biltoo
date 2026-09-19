@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1536-crop-session-apply-restore.** Appearance/commit/restore helpers on tip 1535.
+Prior: **1535** (`0b3e1ee`). Full stack from origin tip **1527** (`24da05b`).
+
+### Commits
+1. applyContentAppearanceAfterDecode via resolveStoredAppearance
+2. clearIdentityContentAppearance
+3. notifyCropViewportStatus via requestCropViewportUpdate
+4. captureItemContentSceneRect
+5. installRestoredCropPixelsFromFull
+6. applyCropCommitFullFrame
+
+### Apply (on tip **1527** / `24da05b` / origin/master)
+```bash
+git fetch origin && git merge --ff-only origin/master
+git pull --ff-only /path/to/biltoo-1536-crop-session-apply-restore.bundle HEAD
+```
+Full stack from origin tip 1527. `git bundle verify` requires **`24da05b`**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1535-crop-session-target-install.** Target/enter/auto/record helpers on tip 1534.
 Prior: **1534** (`66cf388`). Full stack from origin tip **1527** (`24da05b`).
 
