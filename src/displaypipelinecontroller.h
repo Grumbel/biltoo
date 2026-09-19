@@ -107,6 +107,15 @@ public:
                                    int have, int wanted);
     void applyLoadAddLayoutAfterMembership(bool sizeChanged);
     void completeLoadAdd(const QString &path, const QImage &image, quint64 generation);
+    /** @p role is ImageView::LoadRole as int (avoid circular header). */
+    void scheduleImageLoad(const QString &path, int role);
+    bool tryDeliverReplaceFromSlideshowRaster(const QString &path, quint64 gen);
+    void scheduleSlideshowReplaceDecode(const QString &path, quint64 gen, int role);
+    void scheduleClassicImageDecode(const QString &path, quint64 gen, int role);
+    void gallerySoftResetPath(const QString &path);
+    void gallerySoftResetAll();
+    int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const;
+    void scheduleGalleryDecode(const QString &path);
 
 private:
     ImageView *m_view = nullptr; // not owned

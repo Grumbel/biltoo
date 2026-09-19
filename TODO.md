@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1643-schedule-gallery-controller.** Tier 5b: move scheduleImageLoad and gallery soft.
+Prior: **1642**.
+
+### Change
+- DisplayPipelineController owns:
+  - `scheduleImageLoad` / `tryDeliverReplaceFromSlideshowRaster`
+  - `scheduleSlideshowReplaceDecode` / `scheduleClassicImageDecode`
+  - `gallerySoftResetPath` / `gallerySoftResetAll` / `galleryHaveEdgeFromItems` / `scheduleGalleryDecode`
+- Decode pool helpers (`queuePreviewLoaded`, `startDisplayQualityJob`, …) moved into controller TU
+- ImageView thin-forwards; `imageview_load.cpp` ~1280 lines
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1643-schedule-gallery-controller.bundle HEAD
+```
+
+### Next
+- Remaining load.cpp (appearance seed, createItemFromImage, onImagePreviewLoaded, restore)
+- Host accessors to replace friend; target load.cpp under 800 lines
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1642-fix-host-prefixes-loadadd.** Complete m_view qualification in controller.
 Prior: **1641**.
 

@@ -56,148 +56,6 @@ namespace {
 // install invariant). Baking in the worker + put/materialize on the GUI
 // double-applied crop and polluted ImageCache with content-baked samples.
 
-/** Queue onImagePreviewLoaded on the GUI thread; no-op if @a guard is gone. */
-void queuePreviewLoaded(const QPointer<ImageView> &guard, const QString &path,
-                        const QImage &preview, quint64 gen, int role)
-{
-    if (!guard || preview.isNull()) {
-        return;
-    }
-    QTimer::singleShot(0, guard.data(), [guard, path, preview, gen, role]() {
-        if (!guard) {
-            return;
-        }
-        guard->onImagePreviewLoaded(path, preview, gen, role);
-    });
-}
-
-/** Queue onImageLoaded on the GUI thread; no-op if @a guard is gone. */
-void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
-                      const QImage &image, quint64 gen, int role)
-{
-    if (!guard) {
-        return;
-    }
-    QTimer::singleShot(0, guard.data(), [guard, path, image, gen, role]() {
-        if (!guard) {
-            return;
-        }
-        guard->onImageLoaded(path, image, gen, role);
-    });
-}
-
-/** Worker LQIP/soft underlay — see SoftDisplayPolicy::lqipOrCachedSoft. */
-QImage loadSoftPreviewPixels(const QString &path, int /*softEdge*/)
-{
-    return SoftDisplayPolicy::lqipOrCachedSoft(path);
-}
-
-/**
- * LQIP seed job only. Never SoftOnly / loadThumbnail / PreferCache soft encode.
- * Gallery product is tiles + LQIP underlay only.
- */
-void startSoftPreviewJob(const QPointer<ImageView> &guard, const QString &path,
-                         quint64 gen, int roleInt, int softEdge,
-                         const WorkspaceItemState &sessionApp)
-{
-    biltooLoadDbg("lqipSeed START path=%s gen=%llu",
-                  qPrintable(QFileInfo(path).fileName()),
-                  static_cast<unsigned long long>(gen));
-    Q_UNUSED(softEdge);
-    QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, sessionApp]() {
-            if (!guard || !guard->matchesLoadGeneration(gen)) {
-                return;
-            }
-            ThumtooCache::scheduleProbe(path);
-            QImage preview = loadSoftPreviewPixels(path, 0);
-            if (!preview.isNull() && !path.isEmpty()) {
-                ImageCache::put(path, preview);
-            }
-            Q_UNUSED(sessionApp);
-            queuePreviewLoaded(guard, path, preview, gen, roleInt);
-        },
-        2);
-}
-
-/**
- * Low-priority pool job: PreferCache / loadThumbnail at a display edge
- * (slideshow quality climb). Schedules PreferCache on miss.
- */
-void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &path,
-                            quint64 gen, int roleInt, int qualityEdge,
-                            const WorkspaceItemState &sessionApp)
-{
-    QThreadPool::globalInstance()->start(
-        [guard, path, roleInt, gen, qualityEdge, sessionApp]() {
-            if (!guard || !guard->matchesLoadGeneration(gen)) {
-                return;
-            }
-            // Keep any host sample; do not require qualityEdge up front or a
-            // smaller soft is discarded and the UI waits on high-res only.
-            QImage image = ImageCache::get(path, qualityEdge);
-            if (image.isNull()) {
-                image = ImageCache::get(path);
-            }
-            if (!ImageCache::adequate(image, qualityEdge)) {
-                // Tiles/TileSynth only when thumtoo is up — never soft PreferCache
-                // encode. Without thumtoo, classic shrink decode as last resort.
-                if (ThumtooCache::isAvailable()) {
-                    const int edge = DisplayEdgePolicy::tileSynthEdge(
-                        qualityEdge, ThumtooCache::kBatchOverviewEdge);
-                    (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
-                } else {
-                    const QImage loaded =
-                        ImageLoader::loadThumbnail(path, qualityEdge);
-                    if (!loaded.isNull()
-                        && ImageCache::longEdge(loaded)
-                            >= ImageCache::longEdge(image)) {
-                        image = loaded;
-                    }
-                }
-            }
-            if (!guard) {
-                return;
-            }
-            if (image.isNull()) {
-                // PreferCache/Full only via PathRaster on the GUI (contract §1).
-                QMetaObject::invokeMethod(
-                    guard.data(),
-                    [guard, path, qualityEdge]() {
-                        if (guard) {
-                            guard->requestEscalateClimb(path, qualityEdge);
-                        }
-                    },
-                    Qt::QueuedConnection);
-                return;
-            }
-            // Soft stand-in still upgrades the view; climb via PathRaster on GUI.
-            if (!ImageCache::adequate(image, qualityEdge) && ThumtooCache::isAvailable()) {
-                QMetaObject::invokeMethod(
-                    guard.data(),
-                    [guard, path, qualityEdge]() {
-                        if (guard) {
-                            guard->requestEscalateClimb(path, qualityEdge);
-                        }
-                    },
-                    Qt::QueuedConnection);
-            }
-            // Host-raw only; GUI install materializes (soft stand-in + async
-            // for multi-MP). Do not bake here — same double-bake/cache pollution
-            // as the soft job.
-            if (!image.isNull() && !path.isEmpty()) {
-                ImageCache::put(path, image);
-            }
-            if (ImageCache::longEdge(image) > qualityEdge) {
-                image = image.scaled(qualityEdge, qualityEdge, Qt::KeepAspectRatio,
-                                     Qt::FastTransformation);
-            }
-            Q_UNUSED(sessionApp);
-            queueImageLoaded(guard, path, image, gen, roleInt);
-        },
-        -1);
-}
-
 } // namespace
 
 int ImageView::pathOrderOccurrences(const QString &path) const
@@ -683,196 +541,25 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
 
 void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 {
-    if (path.isEmpty()) {
-        return;
-    }
-    if (role == LoadAdd) {
-        addPendingWorkspacePath(path);
-    }
-    // LoadRestore pending is owned by m_displayPipeline.loadGate().pendingRestoreStates() (AUDIT M27).
-    // AUDIT H3a: only LoadReplace advances the generation token so workspace
-    // adds cannot cancel an in-flight Image-mode navigation decode.
-    quint64 gen = m_displayPipeline.loadGate().generation();
-    if (role == LoadReplace) {
-        gen = m_displayPipeline.loadGate().bumpGeneration();
-        m_gallerySoftBook.clearImageModeNativeDecode();
-        // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
-        // pyramid builds on archives and cancels the soft queue every ←/→.
-    }
-    // LoadReplace: do NOT emit statusChanged — MainWindow finishCurrentIndexChromeUpdate
-    // already updateStatus(); a second statusChanged re-entered updateStatus and
-    // rebuilt chrome on every ←/→ (statusText, metadata, adjustments, filmstrip pending).
-
-    // Slideshow dual-blit already decoded this path — reuse under the hold.
-    if (role == LoadReplace && tryDeliverReplaceFromSlideshowRaster(path, gen)) {
-        return;
-    }
-
-    // Slideshow owns the viewport via pure-phase buffers — never soft-install
-    // or PreferCache-climb the underlay ImageItem while the show is running.
-    if (role == LoadReplace && isImageMode() && m_slideshow.hud().isProgressActive()) {
-        biltooLoadDbg("PATH slideshow active skip image-mode load path=%s",
-                      qPrintable(QFileInfo(path).fileName()));
-        return;
-    }
-
-    // Image mode: swap best in-process soft/LQIP immediately (no IPC, no pool).
-    if (role == LoadReplace && isImageMode()) {
-        installImageModePendingTile(path);
-        // Rapid ←/→: stop here. No PreferCache, no classic decode, no escalate —
-        // those race the next key and stall the GUI. Settle timer (MainWindow
-        // ~80ms quiet) clears nav-hot and calls loadImage again for climb.
-        if (m_slideshow.hud().isNavHot()) {
-            const int edge = imageModeItemForPath(path)
-                ? imageModeItemForPath(path)->displayPixelLongEdge()
-                : 0;
-            biltooLoadDbg("PATH nav-hot soft-only path=%s edge=%d",
-                          qPrintable(QFileInfo(path).fileName()), edge);
-            return;
-        }
-        if (ImageItem *it = imageModeItemForPath(path)) {
-            if (it->displayPixelLongEdge() > 0) {
-                const QImage soft = it->displayImage();
-                const QString pathCopy = path;
-                // One frame for soft paint, then PreferCache for the settled path.
-                QTimer::singleShot(16, this, [this, pathCopy, soft]() {
-                    if (!isImageMode() || classicPath() != pathCopy) {
-                        return;
-                    }
-                    if (m_slideshow.hud().isNavHot()) {
-                        return;
-                    }
-                    ensureImageModeQualityClimb(pathCopy, soft);
-                });
-                return;
-            }
-        }
-    }
-
-    // Image mode: do not SoftOnly/PreferCache on cold open — LQIP (if cached)
-    // + tiles. Other modes still seed Soft via scheduleClassicImageDecode.
-
-    if (m_slideshow.hud().isProgressActive()) {
-        scheduleSlideshowReplaceDecode(path, gen, role);
-        return;
-    }
-    scheduleClassicImageDecode(path, gen, role);
+    m_displayPipeline.scheduleImageLoad(path, static_cast<int>(role));
 }
 
 bool ImageView::tryDeliverReplaceFromSlideshowRaster(const QString &path, quint64 gen)
 {
-    const QImage ready = m_slideshow.slideshowRaster(path);
-    if (ready.isNull()) {
-        return false;
-    }
-    const QPointer<ImageView> guard(this);
-    QMetaObject::invokeMethod(guard, "onImageLoaded", Qt::QueuedConnection,
-                              Q_ARG(QString, path),
-                              Q_ARG(QImage, ready),
-                              Q_ARG(quint64, gen),
-                              Q_ARG(int, static_cast<int>(LoadReplace)));
-    return true;
+    return m_displayPipeline.tryDeliverReplaceFromSlideshowRaster(path, gen);
 }
 
 void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
                                                LoadRole role)
 {
-    // Soft first (priority), then PreferCache at target edge (low).
-    // Key-repeat skips loadImage entirely (MainWindow debounce); this path is
-    // for settled index / auto-advance — must climb above soft max or the show
-    // stays on thumbnails forever.
-    const QPointer<ImageView> guard(this);
-    const int softEdge = ThumtooCache::kGalleryLadderEdge;
-    const int qualityEdge = m_slideshow.slideshowTargetEdge();
-    const int roleInt = static_cast<int>(role);
-    // Snapshot session appearance for the worker (crop is id-keyed, not path).
-    const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
-
-    // Warm ImageCache / durable tiles: no SoftOnly encode.
-    {
-        const QImage cached = ImageCache::get(path);
-        const int have = ImageCache::longEdge(cached);
-        if (have > 0) {
-            ImageCache::put(path, cached);
-            queuePreviewLoaded(guard, path, cached, gen, roleInt);
-            if (ImageCache::adequate(cached, qualityEdge)) {
-                queueImageLoaded(guard, path, cached, gen, roleInt);
-                return;
-            }
-        }
-        if (ThumtooCache::hasDurableTilesKnown(path)) {
-            tickPrimaryTileLod(12);
-            if (qualityEdge > softEdge) {
-                startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge,
-                                       sessionApp);
-            }
-            return;
-        }
-        if (have > 0 && ImageCache::adequate(cached, softEdge)) {
-            if (qualityEdge > softEdge) {
-                startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge,
-                                       sessionApp);
-            }
-            return;
-        }
-    }
-
-    // Cold only: soft stand-in then quality job.
-    startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
-    if (qualityEdge > softEdge) {
-        startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge, sessionApp);
-    }
+    m_displayPipeline.scheduleSlideshowReplaceDecode(path, gen, static_cast<int>(role));
 }
 
 void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
                                            LoadRole role)
 {
-    // Image mode: LQIP/cache underlay only if already present, then tiles.
-    // No SoftOnly encode and no PreferCache/Full climb in parallel with tiles.
-    if (isImageMode() && !m_slideshow.hud().isProgressActive() && !m_slideshow.hud().isNavHot()
-        && role == LoadReplace) {
-        ThumtooCache::scheduleProbe(path);
-        tickPrimaryTileLod(12);
-        Q_UNUSED(gen);
-        return;
-    }
-
-    // Gallery / Workspace: LQIP from ImageCache + tiles. Never SoftOnly job.
-    if (isGalleryMode() || isWorkspaceMode()) {
-        ThumtooCache::scheduleProbe(path);
-        const QImage cached = ImageCache::get(path);
-        if (!cached.isNull()
-            && ImageCache::longEdge(cached) <= DisplayQuality::kLqipMaxEdge) {
-            const QPointer<ImageView> guard(this);
-            queuePreviewLoaded(guard, path, cached, gen, static_cast<int>(role));
-        }
-        if (isGalleryMode()) {
-            scheduleGalleryDecode(path);
-        }
-        tickPrimaryTileLod(12);
-        Q_UNUSED(role);
-        return;
-    }
-
-    // Fallback (rare non-mode): soft stand-in — prefer cache LQIP first.
-    const QPointer<ImageView> guard(this);
-    const int roleInt = static_cast<int>(role);
-    const int softEdge = ThumtooCache::kGalleryLadderEdge;
-    const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
-    {
-        const QImage cached = ImageCache::get(path);
-        if (!cached.isNull()
-            && ImageCache::longEdge(cached) <= DisplayQuality::kLqipMaxEdge) {
-            queuePreviewLoaded(guard, path, cached, gen, roleInt);
-            tickPrimaryTileLod(8);
-            Q_UNUSED(sessionApp);
-            return;
-        }
-    }
-    startSoftPreviewJob(guard, path, gen, roleInt, softEdge, sessionApp);
-    Q_UNUSED(gen);
+    m_displayPipeline.scheduleClassicImageDecode(path, gen, static_cast<int>(role));
 }
-
 
 int ImageView::itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes) const
 {
@@ -902,101 +589,23 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
 
 void ImageView::gallerySoftResetPath(const QString &path)
 {
-    m_gallerySoftBook.resetPath(path);
-    if (m_pathRaster && !path.isEmpty()) {
-        m_pathRaster->cancel(path);
-    }
+    m_displayPipeline.gallerySoftResetPath(path);
 }
 
 void ImageView::gallerySoftResetAll()
 {
-    m_gallerySoftBook.clearSoft();
+    m_displayPipeline.gallerySoftResetAll();
 }
 
 int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const
 {
-    // Collect edges for this path, then pure aggregate (SoftDisplayPolicy).
-    QVarLengthArray<int, 8> edges;
-    QVarLengthArray<bool, 8> decoded;
-    for (ImageItem *item : m_items) {
-        if (!item || item->path() != path) {
-            continue;
-        }
-        edges.append(item->displayPixelLongEdge());
-        decoded.append(item->hasDecodedPixels());
-    }
-    const SoftDisplayPolicy::PathHaveEdge agg =
-        SoftDisplayPolicy::aggregatePathHaveEdge(
-            edges.constData(), decoded.constData(), edges.size());
-    if (anyFullOut) {
-        *anyFullOut = agg.anyFull;
-    }
-    return agg.have;
+    return m_displayPipeline.galleryHaveEdgeFromItems(path, anyFullOut);
 }
-
 
 void ImageView::scheduleGalleryDecode(const QString &path)
 {
-    ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("scheduleGalleryDecode", 2);
-    if (!isGalleryMode() || path.isEmpty()) {
-        return;
-    }
-    // Gallery: LQIP placeholder + tiles only. Soft PreferCache is removed.
-
-    if (isProvisionalImageSize(path) || !ThumtooCache::cachedSize(path).isValid()) {
-        scheduleImageSizeProbe(path);
-    }
-
-    bool anyTileWanted = false;
-    bool needLqip = false;
-    for (ImageItem *ii : m_items) {
-        if (!ii || ii->path() != path) {
-            continue;
-        }
-        if (ii->tileLodWanted()) {
-            anyTileWanted = true;
-        }
-        if (!ii->hasDisplayPixels()) {
-            needLqip = true;
-        }
-    }
-
-    if (needLqip) {
-        // ImageCache only (warmSessionOpenMemos / probe workers put LQIP there).
-        const QImage host = ImageCache::get(path);
-        if (!host.isNull()
-            && ImageCache::longEdge(host) <= DisplayQuality::kLqipMaxEdge) {
-            for (ImageItem *ii : m_items) {
-                if (!ii || ii->path() != path || ii->hasDisplayPixels()) {
-                    continue;
-                }
-                installDisplayPixels(ii, host,
-                                     SessionAppearance::PixelKind::SoftPreview,
-                                     ii->sessionId());
-            }
-        }
-    }
-
-    GallerySoftState &st = m_gallerySoftBook.state(path);
-    st.terminal = true; // no soft climb ever
-    st.have = GallerySoft::maxHave(st.have, galleryHaveEdgeFromItems(path, nullptr));
-
-    if (anyTileWanted && !gallerySizeResolveActive()) {
-        // Size must be known before pyramid encode (expensive). Wait for resolve.
-        if (!ThumtooCache::cachedSize(path).isValid()) {
-            return;
-        }
-        // Only encode a pyramid when Store has no durable coverage yet.
-        if (!st.isTilesPyramidQueued()) {
-            st.markTilesPyramidQueued();
-            if (!ThumtooCache::hasDurableTilesKnown(path)) {
-                (void)ThumtooCache::scheduleTilePyramid(path);
-            }
-        }
-    }
+    m_displayPipeline.scheduleGalleryDecode(path);
 }
-
 
 void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
 {
