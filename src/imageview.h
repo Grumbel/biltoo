@@ -282,8 +282,8 @@ public:
     }
     /**
      * Phase 6 Tier 4 path-order: MainWindow binds the working SessionDocument.
-     * Membership queries (occurrences / firstId) prefer the document; the view
-     * book remains Gallery-local order until Tier 4 path-order finishes.
+     * firstSessionIdForPath uses the document; LoadAdd multiplicity stays on the
+     * view path-order book (clearPathOrder must not consult the document).
      */
     void bindSessionDocument(SessionDocument *doc)
     {
@@ -344,7 +344,9 @@ public:
     SessionPathOrder &hostPathOrderBook() { return m_pathOrderBook; }
     const SessionPathOrder &hostPathOrderBook() const { return m_pathOrderBook; }
     /**
-     * First SessionImageId for @p path: SessionDocument when bound, else view book.
+     * First SessionImageId for @p path from the MainWindow SessionDocument when
+     * bound (slideshow / identity). View path-order book is multiplicity only —
+     * use pathOrderOccurrences for LoadAdd counts, not this.
      */
     SessionImageId firstSessionIdForPath(const QString &path) const
     {

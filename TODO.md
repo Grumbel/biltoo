@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1630-path-order-occurrences-view-only.** LoadAdd multiplicity is view-book only.
+Prior: **1629**.
+
+### Change
+- `pathOrderOccurrences` uses **only** `m_pathOrderBook` (not SessionDocument)
+- Fixes latent bug from 1628: after Gallery/Workspace `clearPathOrder`, consulting
+  the document would still count session rows and recreate tiles on a blank canvas
+- `firstSessionIdForPath` still prefers the document (slideshow identity)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1630-path-order-occurrences-view-only.bundle HEAD
+```
+
+### Next
+- Gallery-local book vs document membership remains until product can drop the book
+- Tier 5b PreferCache method move onto DisplayPipelineController
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1629-path-order-accessors.** Encapsulate view path-order reads behind accessors.
 Prior: **1628**.
 
