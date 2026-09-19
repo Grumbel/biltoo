@@ -734,17 +734,27 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
 }
 
 
+
+void ImageView::rematerializeIfContentXformMismatch(ImageItem *item,
+                                                    const WorkspaceItemState &app)
+{
+    if (!item) {
+        return;
+    }
+    if (!ContentXform::equal(
+            item->hasAppliedContentXform() ? item->appliedContentXform()
+                                           : ContentXform::Value{},
+            ContentXform::Value::fromState(app))) {
+        rematerializeItemContent(item, app);
+    }
+}
+
 void ImageView::installRestoredCropPixelsFromFull(ImageItem *item, const WorkspaceItemState &app,
                                                   SessionImageId sid, const QImage &full)
 {
     if (!tryRematerializeFromHost(item, app)) {
         installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
-        if (!ContentXform::equal(
-                item->hasAppliedContentXform() ? item->appliedContentXform()
-                                               : ContentXform::Value{},
-                ContentXform::Value::fromState(app))) {
-            rematerializeItemContent(item, app);
-        }
+        rematerializeIfContentXformMismatch(item, app);
     }
 }
 
