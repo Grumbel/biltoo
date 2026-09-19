@@ -1653,6 +1653,8 @@ private:
                                 const WorkspaceItemState *orientApp,
                                 const CropSession::RecordGeometry &rec,
                                 const QSize &cropBasis, const QRect &disp);
+    bool computeSessionCropRecord(ImageItem *item, const QRectF &localCrop,
+                                  CropSession::RecordGeometry *rec) const;
     void recordSessionCrop(ImageItem *item, const QRectF &localCrop);
 
     // CropHandle is defined in cropsession.h

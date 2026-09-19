@@ -1031,33 +1031,38 @@ void ImageView::writeRecordedCropState(ImageItem *item, SessionImageId sid,
     storeCropAppearance(item, sid, s);
 }
 
+
+bool ImageView::computeSessionCropRecord(ImageItem *item, const QRectF &localCrop,
+                                         CropSession::RecordGeometry *rec) const
+{
+    if (!item || !rec) {
+        return false;
+    }
+    // Crop mode always edits the full on-disk image — store absolute source rect.
+    // Map through active flips so cropRect is in unflipped source space
+    // (cropToLocalRect bakes flips into pixels and clears the flags).
+    *rec = m_crop.computeRecordGeometry(
+        localCrop, item->contentRect(), item->offset(),
+        item->imageSize().width(), item->imageSize().height(),
+        item->itemHFlip(), item->itemVFlip());
+    return rec->valid();
+}
+
 void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 {
     if (!item) {
         return;
     }
-    const QRectF cr = item->contentRect();
-    const int iw = item->imageSize().width();
-    const int ih = item->imageSize().height();
-    // Crop mode always edits the full on-disk image — store absolute source rect.
-    // Map through active flips so cropRect is in unflipped source space
-    // (cropToLocalRect bakes flips into pixels and clears the flags).
-    const CropSession::RecordGeometry rec = m_crop.computeRecordGeometry(
-        localCrop, cr, item->offset(), iw, ih, item->itemHFlip(), item->itemVFlip());
-    if (!rec.valid()) {
+    CropSession::RecordGeometry rec;
+    if (!computeSessionCropRecord(item, localCrop, &rec)) {
         return;
     }
-    const QRect &disp = rec.sourceRect;
-
-    // cropSourceSize must be the post-orient full-frame size the draft was
-    // edited in — file-native layoutSize without crop — not a soft sample or
-    // prior crop intrinsic (that breaks second-enter scaleCropRect).
     const SessionImageId sid = cropRecordSessionId(item);
     const WorkspaceItemState *orientApp =
         (sid != kInvalidSessionImageId) ? m_appearance.get(sid) : nullptr;
     const QSize cropBasis = CropSession::cropBasisSize(
-        QSize(iw, ih), cropRecordFileNative(item->path()), orientApp, item);
-    writeRecordedCropState(item, sid, orientApp, rec, cropBasis, disp);
+        item->imageSize(), cropRecordFileNative(item->path()), orientApp, item);
+    writeRecordedCropState(item, sid, orientApp, rec, cropBasis, rec.sourceRect);
 }
 
 
@@ -1463,6 +1468,15 @@ CropGeometry::CropButtonLayout ImageView::cropChromeLayout() const
 
 
 
+
+void ImageView::paintCropChromeButton(QPainter &painter, const QRect &btn, CropHandle kind,
+                                      const QString &label, CropGeometry::CropBtnRole role,
+                                      bool toggled)
+{
+    CropGeometry::paintTextButton(painter, btn, m_crop.currentHoverHandle() == kind, label,
+                                  role, toggled);
+}
+
 void ImageView::paintCropChromeButtons(QPainter &painter)
 {
     // Controls: outside below crop when possible, inside if off-screen.
@@ -1471,23 +1485,18 @@ void ImageView::paintCropChromeButtons(QPainter &painter)
     //   action  = dark + accent ring
     //   neutral = grey (Cancel)
     //   commit  = filled accent (Apply)
-    const auto paintBtn = [this, &painter](const QRect &btn, CropHandle kind,
-                                           const QString &label,
-                                           CropGeometry::CropBtnRole role, bool toggled = false) {
-        CropGeometry::paintTextButton(painter, btn, m_crop.currentHoverHandle() == kind, label,
-                                      role, toggled);
-    };
     const CropGeometry::CropButtonLayout chrome = cropChromeLayout();
-    paintBtn(chrome.expand, CropHandle::ExpandToggle,
-             ImageView::tr("Expand"), CropGeometry::CropBtnRole::Toggle, m_crop.isAllowExpand());
-    paintBtn(chrome.autoBtn, CropHandle::Auto, ImageView::tr("Auto"),
-             CropGeometry::CropBtnRole::Action);
-    paintBtn(chrome.reset, CropHandle::Reset, ImageView::tr("Reset"),
-             CropGeometry::CropBtnRole::Action);
-    paintBtn(chrome.cancel, CropHandle::Cancel, ImageView::tr("Cancel"),
-             CropGeometry::CropBtnRole::Neutral);
-    paintBtn(chrome.apply, CropHandle::Close, ImageView::tr("Apply"),
-             CropGeometry::CropBtnRole::Commit);
+    paintCropChromeButton(painter, chrome.expand, CropHandle::ExpandToggle,
+                          ImageView::tr("Expand"), CropGeometry::CropBtnRole::Toggle,
+                          m_crop.isAllowExpand());
+    paintCropChromeButton(painter, chrome.autoBtn, CropHandle::Auto,
+                          ImageView::tr("Auto"), CropGeometry::CropBtnRole::Action);
+    paintCropChromeButton(painter, chrome.reset, CropHandle::Reset,
+                          ImageView::tr("Reset"), CropGeometry::CropBtnRole::Action);
+    paintCropChromeButton(painter, chrome.cancel, CropHandle::Cancel,
+                          ImageView::tr("Cancel"), CropGeometry::CropBtnRole::Neutral);
+    paintCropChromeButton(painter, chrome.apply, CropHandle::Close,
+                          ImageView::tr("Apply"), CropGeometry::CropBtnRole::Commit);
 }
 
 
