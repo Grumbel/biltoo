@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1566-crop-leave-layout-shared.** relayoutAfterCropLeave / finish*Layout in shared crop TU.
+Prior: **1565**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1566-crop-leave-layout-shared.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1565-crop-includes-emit-appearance.** Trim unused crop includes; emit Apply appearance in appearance TU.
 Prior: **1564**.
 

@@ -195,36 +195,6 @@ void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
 }
 
 
-void ImageView::relayoutAfterCropLeave(ImageItem *item)
-{
-    if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
-    } else {
-        fitImageOrUpdateWorkspace(item);
-    }
-}
-
-void ImageView::finishCropResetLayout(ImageItem *item)
-{
-    if (isWorkspaceMode() && m_crop.isEnterValid()) {
-        // Drop the enter-time crop-frame offset; restore pre-crop pose.
-        m_crop.restoreEnterPlacementPose(item);
-    }
-    relayoutAfterCropLeave(item);
-}
-
-void ImageView::finishCropApplyLayout(ImageItem *item)
-{
-    if (!item) {
-        return;
-    }
-    if (isWorkspaceMode()) {
-        m_crop.applyCommitPlacementRotation(item);
-    }
-    relayoutAfterCropLeave(item);
-}
-
-
 bool ImageView::flashApplyHostFailure(CropSession::ApplyHostStatus hostSt)
 {
     if (hostSt == CropSession::ApplyHostStatus::Ok) {
