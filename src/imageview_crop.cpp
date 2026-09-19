@@ -984,20 +984,8 @@ void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
     if (!item) {
         return;
     }
-    const WorkspaceItemState *app = nullptr;
     WorkspaceItemState fallback;
-    const SessionImageId sid = item->sessionId();
-    if (sid != kInvalidSessionImageId) {
-        seedSessionAppearanceFromState(sid, item->path());
-        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
-            app = &(*it);
-        }
-    } else {
-        if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
-            fallback = *st;
-            app = &fallback;
-        }
-    }
+    const WorkspaceItemState *app = resolveStoredAppearance(item, &fallback, nullptr);
     if (!app || !SessionAppearance::hasContentAppearance(*app)) {
         return;
     }
