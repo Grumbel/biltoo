@@ -420,7 +420,7 @@ void ImageView::persistDurableContentAppearance(ImageItem *item, const Workspace
             stored.gradeSaturation = s.colorAdjust.saturation;
             stored.gradeHue = s.colorAdjust.hue;
             // Durable gamma is percent (100 = 1.0).
-            stored.gradeGamma = qMax(1, int(qRound(s.colorAdjust.gamma * 100.0)));
+            stored.gradeGamma = ColorAdjustments::gammaToPercent(s.colorAdjust.gamma);
             stored.gradeInvert = s.colorAdjust.invert;
         }
         ThumtooCache::saveContentAppearance(item->path(), stored);
@@ -1071,7 +1071,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
                 stored.gradeSaturation = contentSlot.colorAdjust.saturation;
                 stored.gradeHue = contentSlot.colorAdjust.hue;
                 stored.gradeGamma =
-                    qMax(1, int(qRound(contentSlot.colorAdjust.gamma * 100.0)));
+                    ColorAdjustments::gammaToPercent(contentSlot.colorAdjust.gamma);
                 stored.gradeInvert = contentSlot.colorAdjust.invert;
             }
             ThumtooCache::saveContentAppearance(item->path(), stored);

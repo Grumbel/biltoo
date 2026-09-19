@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "adjustmentspanel.h"
+#include "coloradjust.h"
 #include "metadatapanel.h"
 
 #include <QFormLayout>
@@ -168,7 +169,7 @@ ColorAdjustments AdjustmentsPanel::adjustments() const
     a.contrast = m_contrast ? m_contrast->value() : 100;
     a.saturation = m_saturation ? m_saturation->value() : 100;
     a.hue = m_hue ? m_hue->value() : 0;
-    a.gamma = m_gamma ? (m_gamma->value() / 100.0) : 1.0;
+    a.gamma = m_gamma ? ColorAdjustments::gammaFromPercent(m_gamma->value()) : 1.0;
     a.invert = m_invertCheck && m_invertCheck->isChecked();
     return a;
 }
@@ -180,7 +181,7 @@ void AdjustmentsPanel::setAdjustments(const ColorAdjustments &adj)
     if (m_contrast) m_contrast->setValue(adj.contrast);
     if (m_saturation) m_saturation->setValue(adj.saturation);
     if (m_hue) m_hue->setValue(adj.hue);
-    if (m_gamma) m_gamma->setValue(int(qBound(10.0, adj.gamma * 100.0, 300.0)));
+    if (m_gamma) m_gamma->setValue(ColorAdjustments::gammaToPercent(adj.gamma));
     if (m_invertCheck) m_invertCheck->setChecked(adj.invert);
     m_block = false;
 }

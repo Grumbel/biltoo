@@ -54,7 +54,7 @@ QImage applyColorAdjustments(const QImage &src, const ColorAdjustments &adj)
     const float contrast = adj.contrast / 100.f;
     const float satMul = adj.saturation / 100.f;
     const float hueShift = float(adj.hue);
-    const float gamma = float(qBound(0.10, adj.gamma, 3.0));
+    const float gamma = float(ColorAdjustments::clampGamma(adj.gamma));
     const float invGamma = 1.f / gamma;
     uchar gammaLut[256];
     for (int i = 0; i < 256; ++i)
