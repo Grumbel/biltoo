@@ -1126,11 +1126,9 @@ void startNextPixelJobsUnlocked()
                     const int got = decoded.isNull()
                                         ? 0
                                         : qMax(decoded.width(), decoded.height());
-                    const bool ok = got >= (edge * 9) / 10
-                        || (got > 0 && got >= edge / 2);
-                    if (ok) {
-                        g_pixelsSettled.insert(inflightKey);
-                    }
+                    // PreferCache completion is terminal for this request edge —
+                    // never require got >= fraction of edge (nondeterministic loops).
+                    g_pixelsSettled.insert(inflightKey);
                     g_pixelsActive = qMax(0, g_pixelsActive - 1);
                     if (source != 0) {
                         g_lastPixelSource.insert(pathCopy, source);
@@ -1145,9 +1143,10 @@ void startNextPixelJobsUnlocked()
                     }
                     if (thumtooDebugEnabled()) {
                         thumtooDbg(
-                            "request_raster DONE path=%s edge=%d ok=%d src=%d "
+                            "request_raster DONE path=%s edge=%d plateau=%d src=%d "
                             "level=%dx%d decoded=%dx%d active=%d queued=%zu",
-                            qPrintable(pathCopy), edge, ok ? 1 : 0, source, pxW,
+                            qPrintable(pathCopy), edge,
+                            (got > 0 && got < edge) ? 1 : 0, source, pxW,
                             pxH, decoded.width(), decoded.height(),
                             g_pixelsActive, g_pixelsQueue.size());
                     }
@@ -1465,7 +1464,7 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
                 thumtooDbg(
                     "scheduleOverview DONE path=%s edge=%d ok=%d src=%d decoded=%dx%d active=%d",
                     qPrintable(pathCopy), edge,
-                    (got >= (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
+                    (got > 0 && got < edge) ? 1 : 0, source, decoded.width(),
                     decoded.height(), g_pixelsActive);
                 startNextPixelJobsUnlocked();
             }
@@ -1517,7 +1516,7 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
     // still hits PreferCache/encode for a covered path is a bug.
     {
         const int have = ImageCache::longEdge(ImageCache::get(path));
-        if (have > 0 && have * 10 >= maxEdge * 9) {
+        if (have > 0 && have >= maxEdge) {
             std::lock_guard lock(g_mu);
             g_pixelsSettled.insert(inflightKey);
             thumtooDbg("scheduleDisplay SKIP path=%s edge=%d (ImageCache have=%d)",
@@ -1615,7 +1614,7 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
                         "scheduleDisplay DONE path=%s edge=%d plateau=%d src=%d "
                         "decoded=%dx%d active=%d",
                         qPrintable(pathCopy), edge,
-                        (got < (edge * 9) / 10) ? 1 : 0, source, decoded.width(),
+                        (got > 0 && got < edge) ? 1 : 0, source, decoded.width(),
                         decoded.height(), g_pixelsActive);
                     startNextPixelJobsUnlocked();
                 }
@@ -3567,7 +3566,7 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
                     "shortfall=%d active=%d fullActive=%d",
                     qPrintable(pathCopy), edge, decoded.isNull() ? 0 : 1, source,
                     decoded.width(), decoded.height(),
-                    (got > 0 && got < (edge * 9) / 10) ? 1 : 0, g_pixelsActive,
+                    (got > 0 && got < edge) ? 1 : 0, g_pixelsActive,
                     g_fullActive);
                 startNextPixelJobsUnlocked();
             }

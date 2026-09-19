@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1538-strict-edge-cover.** Replace fuzzy ~90% edge ratios with strict `have >= need` and discrete soft-plateau rules.
+Prior: **1537**.
+
+### Why
+`got >= 90% of request edge` is a fuzzy threshold that behaved as “maybe settled” and drove soft re-request loops when PreferCache plateaued (e.g. 128 for req=256).
+
+### Rules now
+1. **PreferCache completion** for `path#edge` → always **settled** (terminal).
+2. **`coversEdge` / `coversNeed`** → `have >= target` (strict).
+3. **Filmstrip soft-band** → have > LQIP and decode ≤ soft ladder → plateau terminal (no more soft).
+4. **PathRaster** → `forgetPixelsSettled` only when **want rises**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1538-strict-edge-cover.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1537-crop-session-bake-pool.** Non-full bake, path book, pool callback on tip 1536.
 Prior: **1536** (`5d718e3`). Full stack from origin tip **1527** (`24da05b`).
 

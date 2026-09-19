@@ -32,7 +32,11 @@ inline int tileSynthEdge(int qualityEdge, int overviewEdge)
     return qMin(qualityEdge, overviewEdge);
 }
 
-/** ~90% of target long edge counts as delivered (soft/overview stops). */
+/**
+ * True when have fully meets target long edge (have >= target).
+ * No fuzzy ratio — PreferCache settle is terminal per request edge elsewhere;
+ * coverage for climb/display is strict so policy stays deterministic.
+ */
 bool coversEdge(int haveLongEdge, int targetEdge);
 
 /**

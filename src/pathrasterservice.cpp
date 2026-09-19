@@ -61,18 +61,14 @@ void PathRasterService::ensure(const QString &path, int wantEdge,
               ThumtooCache::kBatchOverviewEdge);
     if (want > prevWant) {
         entry.scheduleCycles = 0;
-    }
-
-    if (policy == ClimbPolicy::EscalateToFull) {
+        // Only when product need rises: reopen PreferCache/Full for that edge.
         ThumtooCache::forgetPixelsSettled(path, want);
-        ThumtooCache::forgetPixelsSettled(path, ImageCache::kDisplayMaxEdge);
+        if (policy == ClimbPolicy::EscalateToFull) {
+            ThumtooCache::forgetPixelsSettled(path, ImageCache::kDisplayMaxEdge);
+        }
     }
 
     const int cacheEdge = ImageCache::longEdge(ImageCache::get(path));
-    if (cacheEdge < m.state().have && m.state().have > 0) {
-        ThumtooCache::forgetPixelsSettled(path, ThumtooCache::kGalleryLadderEdge);
-        ThumtooCache::forgetPixelsSettled(path, want);
-    }
     m.setHaveFromHost(cacheEdge, ThumtooCache::kGalleryLadderEdge);
 
     if (RasterClimb::covers(m.state().have, m.effectiveNeed())) {

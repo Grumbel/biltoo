@@ -1532,7 +1532,7 @@ void ImageView::slideshowPhaseSurfaceTick()
         m_displaySurfaces.setClimbPending(*sid, pending);
         DisplaySurface::AttachedKind ak = DisplaySurface::AttachedKind::None;
         if (shownEdge > 0) {
-            ak = (shownEdge >= (target * 9) / 10)
+            ak = (shownEdge >= target)
                 ? DisplaySurface::AttachedKind::FullSource
                 : DisplaySurface::AttachedKind::SoftPreview;
         }
@@ -3274,8 +3274,8 @@ QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
         return tr("Loading…");
     }
     const int need = imageModeOnScreenNeedEdge();
-    // ~90% of need (same ratio as PathRaster / DisplaySurface coversNeed).
-    if (need > 0 && have >= (need * 9) / 10) {
+    // Strict cover (DisplayEdgePolicy::coversEdge): have >= need.
+    if (need > 0 && have >= need) {
         return {};
     }
     if (sampleCoversNativeLogical(path, item->displayImage())) {

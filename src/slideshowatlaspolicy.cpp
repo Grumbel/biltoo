@@ -23,7 +23,7 @@ bool coversSource(const QPixmap &atlas, qreal atlasScale, int atlasVw, int atlas
         return false;
     }
     if (!qFuzzyCompare(atlasScale, params.keyScale) || atlasVw != params.vw
-        || atlasVh != params.vh || atlas.width() < params.longCap * 9 / 10) {
+        || atlasVh != params.vh || atlas.width() < params.longCap) {
         return false;
     }
     const int have = qMax(atlas.width(), atlas.height());
@@ -36,8 +36,8 @@ bool coversSource(const QPixmap &atlas, qreal atlasScale, int atlasVw, int atlas
     // Soft band only: keep the soft-upscaled atlas (skip 256↔512 thrash).
     // Above soft: require a rebuild so HQ replaces the soft upsample.
     // At/above longCap: atlas is adequate if it fills the budget.
-    if (srcLong >= (params.longCap * 9) / 10) {
-        return have >= (params.longCap * 9) / 10;
+    if (srcLong >= params.longCap) {
+        return have >= params.longCap;
     }
     if (srcLong <= ThumtooCache::kGalleryLadderEdge) {
         return true;

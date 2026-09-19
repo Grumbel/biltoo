@@ -452,8 +452,8 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     }
 
     // When thumtoo finishes a ladder level, upgrade filmstrip rows still short
-    // of the display edge (LQIP / soft stand-in). Fully settled icons
-    // (haveEdge ≥ ~90% of filmstripDecodeEdge) are left alone.
+    // of the display edge (LQIP / soft stand-in). Settled when haveEdge >=
+    // decodeSize, or soft plateau for soft-band demand (tier Soft, decode ≤ soft max).
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::sizeReady, this,
             [this](const QString &path, const QSize &size) {
                 if (path.isEmpty() || m_cropToSquare || !m_delegate
@@ -518,8 +518,13 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                             it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
                     }
                     // Soft stand-in still upgrades when display edge is higher.
-                    if (haveEdge >= decodeSize * 9 / 10 && !wasAwaiting) {
+                    if (haveEdge >= decodeSize && !wasAwaiting) {
                         continue;
+                    }
+                    if (haveEdge > DisplayQuality::kLqipMaxEdge
+                        && decodeSize <= ThumtooCache::kGalleryLadderEdge
+                        && !wasAwaiting) {
+                        continue; // soft PreferCache plateau terminal
                     }
                     m_thumbAwaitLadder.remove(i);
                     m_thumbLoadScheduled.remove(i);
@@ -535,7 +540,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                         }
                         QImage image = delivered;
                         if (image.isNull()
-                            || qMax(image.width(), image.height()) < (decodeSize * 9) / 10) {
+                            || qMax(image.width(), image.height()) < decodeSize) {
                             image = bar->makeThumbnail(path, decodeSize);
                         } else {
                             image = bar->prepareThumbnailFromImage(image, decodeSize);
@@ -931,8 +936,12 @@ int ThumbnailBar::pendingLoadCount() const
         }
         const int haveEdge =
             it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
-        if (haveEdge >= decodeSize * 9 / 10) {
+        if (haveEdge >= decodeSize) {
             continue;
+        }
+        if (haveEdge > DisplayQuality::kLqipMaxEdge
+            && decodeSize <= ThumtooCache::kGalleryLadderEdge) {
+            continue; // soft plateau terminal for soft-band strip
         }
         if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()
             && haveEdge > 0) {
@@ -1245,7 +1254,7 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
         return;
     }
     // Warm host already covers strip edge — zero work.
-    if (ImageCache::longEdge(ImageCache::get(path)) * 10 >= edge * 9) {
+    if (ImageCache::longEdge(ImageCache::get(path)) >= edge) {
         return;
     }
     if (ThumtooCache::hasDurableTilesKnown(path)) {
@@ -1750,7 +1759,9 @@ void ThumbnailBar::filmstripSurfaceTick()
         // Already meets filmstrip display edge — settled. Do not re-prepare
         // from host every 1.5s (that spammed setThumbnailIcon forever whenever
         // hostEdge > shown, even at target).
-        if (shown >= (decodeSize * 9) / 10) {
+        if (shown >= decodeSize
+            || (shown > DisplayQuality::kLqipMaxEdge
+                && decodeSize <= ThumtooCache::kGalleryLadderEdge)) {
             m_thumbAwaitLadder.remove(i);
             m_thumbLoadScheduled.remove(i);
             continue;
@@ -1794,7 +1805,7 @@ void ThumbnailBar::filmstripSurfaceTick()
         m_displaySurfaces.setClimbPending(sid, climbPending);
         DisplaySurface::AttachedKind ak = DisplaySurface::AttachedKind::None;
         if (shown > 0) {
-            ak = (shown >= (decodeSize * 9) / 10)
+            ak = (shown >= decodeSize)
                 ? DisplaySurface::AttachedKind::FullSource
                 : DisplaySurface::AttachedKind::SoftPreview;
         }
@@ -1813,7 +1824,9 @@ void ThumbnailBar::filmstripSurfaceTick()
                     if (newShown > shown) {
                         setThumbnailIcon(i, thumb);
                     }
-                    if (newShown >= (decodeSize * 9) / 10) {
+                    if (newShown >= decodeSize
+                        || (newShown > DisplayQuality::kLqipMaxEdge
+                            && decodeSize <= ThumtooCache::kGalleryLadderEdge)) {
                         m_thumbAwaitLadder.remove(i);
                         m_thumbLoadScheduled.remove(i);
                         continue;
@@ -1975,10 +1988,14 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
         if (QListWidgetItem *it = item(i)) {
             const int haveEdge =
                 it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
-            if (haveEdge >= decodeSize * 9 / 10) {
+            if (haveEdge >= decodeSize) {
                 continue;
             }
-            // LQIP underlay is not settled — still need TileSynth for strip edge.
+            if (haveEdge > DisplayQuality::kLqipMaxEdge
+                && decodeSize <= ThumtooCache::kGalleryLadderEdge) {
+                continue; // soft PreferCache plateau terminal
+            }
+            // LQIP underlay is not settled — still need soft/overview for strip edge.
         }
         if (inFlight >= kMaxConcurrentThumbLoads) {
             break;
@@ -2020,7 +2037,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             // LQIP / tiny host samples are placeholders only — must not settle the
             // row or we never schedule soft and the strip stays blurry forever.
             const bool weakPlaceholder =
-                !image.isNull() && gotEdge < (decodeSize * 9) / 10;
+                !image.isNull() && gotEdge < decodeSize;
             if (image.isNull() || weakPlaceholder) {
                 QMetaObject::invokeMethod(bar, [guard, i, gen, path, decodeSize, image,
                                                 gotEdge, weakPlaceholder]() {
@@ -2101,7 +2118,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 }
                 host->setThumbnailIcon(i, image);
                 const int got = ImageCache::longEdge(image);
-                if (got < (decodeSize * 9) / 10) {
+                if (got < decodeSize) {
                     host->m_thumbAwaitLadder.insert(i);
                     host->scheduleFilmstripTilePixels(path, decodeSize);
                 }

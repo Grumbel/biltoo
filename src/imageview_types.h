@@ -162,7 +162,7 @@ inline QSize scaleToLongEdge(const QSize &sample, int longEdge)
 }
 
 /**
- * True when @a incoming covers less than ~90% of @a have's area — used to
+ * True when @a incoming is a strict downgrade vs @a have (edge-only) — used to
  * reject soft/ladder sizes that would shrink a known logical size.
  */
 inline bool isMuchSmallerArea(const QSize &incoming, const QSize &have)

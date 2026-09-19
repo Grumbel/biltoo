@@ -12,15 +12,9 @@
 
 namespace DisplayEdgePolicy {
 
-namespace {
-constexpr int kCoverNumer = 9;
-constexpr int kCoverDenom = 10;
-} // namespace
-
 bool coversEdge(int haveLongEdge, int targetEdge)
 {
-    return targetEdge <= 0
-        || haveLongEdge >= (targetEdge * kCoverNumer) / kCoverDenom;
+    return targetEdge <= 0 || haveLongEdge >= targetEdge;
 }
 
 int cappedDisplayEdge(int wantEdge, int nativeLongEdge)

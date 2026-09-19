@@ -193,7 +193,7 @@ QImage loadPageRef(const QString &path, int maxEdge)
             QImage fromLadder = loadWithVipsBuffer(ladder, 0);
             if (!fromLadder.isNull()) {
                 const int ladderEdge = qMax(fromLadder.width(), fromLadder.height());
-                if (maxEdge > 0 || ladderEdge >= edge * 9 / 10) {
+                if (maxEdge > 0 || ladderEdge >= edge) {
                     return scaleToMaxEdge(fromLadder, maxEdge);
                 }
             }
@@ -201,7 +201,7 @@ QImage loadPageRef(const QString &path, int maxEdge)
             QImage qtImg;
             if (qtImg.loadFromData(ladder)) {
                 const int ladderEdge = qMax(qtImg.width(), qtImg.height());
-                if (maxEdge > 0 || ladderEdge >= edge * 9 / 10) {
+                if (maxEdge > 0 || ladderEdge >= edge) {
                     return scaleToMaxEdge(qtImg, maxEdge);
                 }
             }
@@ -942,7 +942,7 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                 // schedulePixels / ladderReady and pegged CPU). Soft ladder max
                 // is kGalleryLadderEdge; higher display edges use shrink-on-decode
                 // below, not durable soft levels that do not exist.
-                if (got < maxEdge * 9 / 10) {
+                if (got < maxEdge) {
                     // LQIP/host underlay is cache-only; climb via tiles/TileSynth.
                     const int want = qMin(maxEdge, ThumtooCache::kBatchOverviewEdge);
                     (void)ThumtooCache::scheduleTileSynthOrPyramid(path, want);
@@ -954,7 +954,7 @@ QImage loadThumbnail(const QString &path, int maxEdge)
                 // With thumtoo: always return soft stand-in and let overview /
                 // SoftOnly complete async. Never fall through to archive/page
                 // extract on the caller thread (Gallery pool / GUI).
-                if (got >= maxEdge * 9 / 10
+                if (got >= maxEdge
                     || maxEdge <= ThumtooCache::kGalleryLadderEdge
                     || ThumtooCache::isAvailable()) {
                     return decoded;

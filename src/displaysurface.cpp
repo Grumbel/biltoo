@@ -7,7 +7,7 @@ namespace DisplaySurface {
 
 namespace {
 
-/** Match ImageView coversEdge (9/10). */
+/** Strict long-edge cover (same as DisplayEdgePolicy::coversEdge). */
 bool coversNeed(int haveLongEdge, int needEdge)
 {
     if (needEdge <= 0) {
@@ -16,7 +16,7 @@ bool coversNeed(int haveLongEdge, int needEdge)
     if (haveLongEdge <= 0) {
         return false;
     }
-    return haveLongEdge >= (needEdge * 9) / 10;
+    return haveLongEdge >= needEdge;
 }
 
 } // namespace
