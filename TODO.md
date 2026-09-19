@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1555-crop-apply-tu.** Crop Apply/leave commit in imageview_crop_apply.cpp.
+Prior: **1554**.
+
+### Change
+- New `imageview_crop_apply.cpp` (~500 lines): host resolve, bake, record, undo push, leave/clear
+- `imageview_crop.cpp` (~623 lines): enter, Full raster, auto-trim, mode toggle
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1555-crop-apply-tu.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1554-crop-input-tu.** Crop input/view mapping in imageview_crop_input.cpp.
 Prior: **1553**.
 
