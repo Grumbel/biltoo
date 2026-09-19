@@ -762,6 +762,7 @@ public:
     void requestCropViewportUpdate();
     void notifyCropViewportStatus();
     QImage pickAutoCropSourcePixels(ImageItem *item) const;
+    bool runPaddedAutoTrim(ImageItem *item, const QImage &src);
     void applyAutoCrop();
     /** Discard the draft and leave crop mode. */
     void cancelCrop();

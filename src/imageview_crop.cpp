@@ -867,6 +867,28 @@ QImage ImageView::pickAutoCropSourcePixels(ImageItem *item) const
     return src;
 }
 
+
+bool ImageView::runPaddedAutoTrim(ImageItem *item, const QImage &src)
+{
+    if (!item || src.isNull()) {
+        return false;
+    }
+    ensureCropRectValid();
+    const QRectF cr = item->contentRect();
+    if (cr.width() < 1.0 || cr.height() < 1.0) {
+        return false;
+    }
+    const QRect search = m_crop.sourceSearchRectFromDraft(cr, src.size());
+    if (!search.isValid() || search.isEmpty()) {
+        return false;
+    }
+    QRect trimmed;
+    if (!ImageLoader::autoTrimRect(src, search, &trimmed)) {
+        return false;
+    }
+    return m_crop.applyPaddedAutoTrim(cr, src.size(), trimmed);
+}
+
 void ImageView::applyAutoCrop()
 {
     ImageItem *item = cropTargetItem();
@@ -877,22 +899,7 @@ void ImageView::applyAutoCrop()
     if (src.isNull()) {
         return;
     }
-    ensureCropRectValid();
-    const QRectF cr = item->contentRect();
-    if (cr.width() < 1.0 || cr.height() < 1.0) {
-        return;
-    }
-
-    const QRect search = m_crop.sourceSearchRectFromDraft(cr, src.size());
-    if (!search.isValid() || search.isEmpty()) {
-        return;
-    }
-
-    QRect trimmed;
-    if (!ImageLoader::autoTrimRect(src, search, &trimmed)) {
-        return;
-    }
-    if (!m_crop.applyPaddedAutoTrim(cr, src.size(), trimmed)) {
+    if (!runPaddedAutoTrim(item, src)) {
         return;
     }
     notifyCropViewportStatus();
