@@ -2072,8 +2072,8 @@ void ImageView::setPageGuideVisible(bool on)
     m_pageGuide.visible = on;
     if (!m_pageGuide.visible) {
         m_pageGuide.selected = false;
-        m_pageGuide.hoverHandle = -1;
-        m_pageGuide.dragHandle = -1;
+        m_pageGuide.setHoverHandle(-1);
+        m_pageGuide.clearDrag();
     }
     if (m_pageGuide.visible && !m_pageGuide.size.isValid()) {
         const qreal pxPerMm = pageGuidePxPerMm();
@@ -2217,8 +2217,8 @@ void ImageView::setPageGuideSelected(bool on)
     }
     m_pageGuide.selected = on;
     if (!on) {
-        m_pageGuide.hoverHandle = -1;
-        m_pageGuide.dragHandle = -1;
+        m_pageGuide.setHoverHandle(-1);
+        m_pageGuide.clearDrag();
     }
     viewport()->update();
 }
@@ -2246,8 +2246,7 @@ bool ImageView::beginPageGuideResize(int handle)
         return false;
     }
     m_pageGuide.selected = true;
-    m_pageGuide.dragHandle = handle;
-    m_pageGuide.dragStartRect = page;
+    m_pageGuide.beginResize(handle, page);
     return true;
 }
 
@@ -2278,7 +2277,7 @@ void ImageView::updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModif
 
 void ImageView::endPageGuideResize()
 {
-    m_pageGuide.dragHandle = -1;
+    m_pageGuide.endResize();
     viewport()->update();
 }
 

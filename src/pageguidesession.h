@@ -28,6 +28,23 @@ struct PageGuideSession {
         dragStartRect = {};
     }
 
+    /** Begin resize from handle with starting page rect in scene space. */
+    void beginResize(int handle, const QRectF &startRect)
+    {
+        dragHandle = handle;
+        dragStartRect = startRect;
+    }
+
+    void endResize()
+    {
+        clearDrag();
+    }
+
+    void setHoverHandle(int handle)
+    {
+        hoverHandle = handle;
+    }
+
     void clear()
     {
         visible = false;
