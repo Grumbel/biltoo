@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1639-pending-replace-controller.** Tier 5b: move pending-tile and LoadReplace install.
+Prior: **1638**.
+
+### Change
+- DisplayPipelineController owns:
+  - `installImageModePendingTile`
+  - `installImageModeReplaceItem`
+  - `completeLoadReplace`
+- ImageView thin-forwards
+- `imageview_load.cpp` ~1910 lines
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1639-pending-replace-controller.bundle HEAD
+```
+
+### Next
+- LoadAdd membership path / scheduleImageLoad
+- Host accessors to replace friend when surface stabilizes
+- Target: imageview_load.cpp under 800 lines (Tier 5 exit)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1638-install-display-pixels-controller.** Tier 5b: move installDisplayPixels.
 Prior: **1637**.
 

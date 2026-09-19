@@ -19,6 +19,7 @@
 #include "imagecache.h"
 #include "contentxform.h"
 #include "sessionappearance.h"
+#include "coloradjust.h"
 #include "imagesizebook.h"
 #include "biltoo_logging.h"
 
@@ -1014,6 +1015,296 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     if (m_view->isGalleryMode() && item->imageSize() != layoutBefore) {
         m_view->requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
+}
+
+void DisplayPipelineController::installImageModePendingTile(const QString &path, const QImage &preview)
+{
+
+    if (!m_view->isImageMode() || path.isEmpty()) {
+        return;
+    }
+    // Slideshow owns the viewport with dwell/live blits. Pending tile used to
+    // clearLiveCanvas + cancelSlideshowMotion after fade-end cleared the hold,
+    // wiping the dwell we just armed. Underlay is hidden for the whole show.
+    if (m_view->m_slideshow.hud().isProgressActive()) {
+        return;
+    }
+    if (isCropDraftLockedPath(path)) {
+        return;
+    }
+
+    bool displayReady = false;
+    QImage pixels = m_view->resolveImageModePendingPixels(path, preview, &displayReady);
+    biltooLoadDbg("pendingTile path=%s soft=%dx%d cache=%d displayReady=%d",
+                  qPrintable(QFileInfo(path).fileName()),
+                  pixels.width(), pixels.height(),
+                  ImageCache::has(path) ? 1 : 0, displayReady ? 1 : 0);
+
+    // Cold path: no soft/LQIP yet. Within the *same* path, keep the prior frame
+    // until soft arrives (avoids a flash on PreferCache gaps). Different path
+    // (session switch / ←→): never keep the previous file's pixels under a new
+    // contentRect — that is the wrong-pixels stretch. Layout without pixels is
+    // fine (blank/placeholder at the correct aspect); only the old sample is not.
+    if (pixels.isNull()) {
+        if (m_view->m_items.size() == 1) {
+            ImageItem *item = m_view->m_items.first();
+            const bool pathChanged = item->path() != path;
+            item->setPath(path);
+            m_view->bindImageModeSessionCursor(item);
+            if (pathChanged) {
+                // Soft OR full — hasDecodedPixels is full-only and left prior soft
+                // in place so canAccept rejected the next path's smaller LQIP.
+                if (item->hasDisplayPixels()) {
+                    item->clearDecodedPixels();
+                }
+                item->setSessionCrop(false, QRect());
+                item->setContentHFlip(false);
+                item->setContentVFlip(false);
+                item->setColorAdjustmentsRecord(ColorAdjustments{});
+                item->clearAppliedContentXform();
+                // Intrinsic from size memo/probe when known; else provisional.
+                // Paint draws a sized placeholder until LQIP (cache-only) or tiles.
+                const QSize sz = m_view->layoutSizeForPath(path, QImage());
+                if (isPositiveSize(sz)) {
+                    item->setIntrinsicSize(sz);
+                    syncImageModeSceneRect(item);
+                }
+                // Soft PreferCache encode is removed for Image underlay
+                // (LQIP + tiles only). Nav-hot: no IPC — settle loadImage probes
+                // size and issues tiles once. Do not scheduleSoftPixels here.
+                if (!m_view->m_slideshow.hud().isNavHot() && ThumtooCache::isAvailable()) {
+                    ThumtooCache::scheduleProbe(path);
+                }
+                if (m_view->viewport()) {
+                    m_view->viewport()->update();
+                }
+                biltooLoadDbg(
+                    m_view->m_slideshow.hud().isNavHot()
+                        ? "pendingTile DEFER blank path=%s (nav-hot, placeholder)"
+                        : "pendingTile DEFER blank path=%s (placeholder, probe size)",
+                    qPrintable(QFileInfo(path).fileName()));
+            } else {
+                biltooLoadDbg("pendingTile DEFER empty soft path=%s keep prior frame",
+                              qPrintable(QFileInfo(path).fileName()));
+            }
+            return;
+        }
+        // First image ever: minimal placeholder, no fit storm.
+        const QSize sz = m_view->layoutSizeForPath(path, QImage());
+        ImageItem *item = m_view->createPlaceholderItem(path, sz);
+        if (item) {
+            m_view->bindImageModeSessionCursor(item);
+            m_view->resetImageModeItemPlacement(item);
+            m_view->prepareImageModeCanvas();
+        }
+        biltooLoadDbg("pendingTile PLACEHOLDER empty soft path=%s",
+                      qPrintable(QFileInfo(path).fileName()));
+        return;
+    }
+
+    // Layout size = native when known; else preview aspect.
+    const QSize sz = m_view->layoutSizeForPath(path, pixels);
+
+    // Fast path: reuse the single Image-mode item.
+    // Do NOT m_view->setUpdatesEnabled(false) — that defers soft paint until after the
+    // whole key handler (chrome + climb schedule); user never sees the soft.
+    ImageItem *item = nullptr;
+    if (m_view->m_items.size() == 1) {
+        item = m_view->m_items.first();
+    }
+    if (item) {
+        const QSize sizeBefore = item->imageSize();
+        // Capture only when navigating to a different file — same-path soft→HQ
+        // upgrades must not replace a user pan with a stale pre-frame anchor.
+        const bool pathChanged = (item->path() != path);
+        if (pathChanged) {
+            m_view->captureStickyPanAnchor(item);
+        }
+        item->setPath(path);
+        m_view->bindImageModeSessionCursor(item);
+        // Path change: drop prior sample AND content chrome. wantAppearanceForItem
+        // merges item->sessionHasCrop / contentHFlip when the store slot is empty;
+        // leaking the previous image's crop into the new soft is the ←/→ stretch.
+        if (pathChanged) {
+            // Soft OR full. hasDecodedPixels is full-only; leaving prior soft
+            // made canAccept reject the next path's LQIP (shown edge ≥ incoming).
+            if (item->hasDisplayPixels()) {
+                item->clearDecodedPixels();
+            }
+            item->setSessionCrop(false, QRect());
+            item->setContentHFlip(false);
+            item->setContentVFlip(false);
+            item->setColorAdjustmentsRecord(ColorAdjustments{});
+            item->clearAppliedContentXform();
+        } else if (item->hasDecodedPixels()) {
+            // Same path soft→HQ: clear full so soft can attach.
+            item->clearDecodedPixels();
+        }
+        // Host-raw soft: installDisplayPixels seeds ImageCache + materializes want.
+        // Display-ready (stashed Gallery / filmstrip override) only when it still
+        // matches store want — otherwise rematerialize from host so crop/rotate
+        // in SessionAppearanceStore are not skipped (stale strip Soft looked like
+        // "edits not persistent").
+        const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
+        if (displayReady && SessionAppearance::hasContentAppearance(want)) {
+            const QImage host = ImageCache::get(path);
+            if (!host.isNull()) {
+                pixels = host;
+                displayReady = false;
+            }
+        }
+        if (displayReady) {
+            attachDisplaySample(item, pixels, want,
+                                SessionAppearance::PixelKind::SoftPreview);
+        } else {
+            installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
+                                 item->sessionId());
+        }
+
+        // Intrinsic only from definitive file size — never from soft/LQIP sz.
+        const QSize known = logicalSizeForPath(path);
+        QSize targetSize = item->imageSize();
+        if (isPositiveSize(known) && known.width() > 1 && known.height() > 1
+            && !isProvisionalImageSize(path)) {
+            targetSize = ContentXform::layoutSize(known, want);
+        }
+        int didFit = 0;
+        if (isPositiveSize(targetSize) && targetSize.width() > 1
+            && !isProvisionalImageSize(path)) {
+            item->setIntrinsicSize(targetSize);
+            const bool needFit =
+                sizeBefore.width() <= 1
+                || ContentXform::aspectChanged(sizeBefore, targetSize);
+            if (needFit || m_view->m_framing.isStickyZoomEnabled() || m_view->m_framing.hasPreservedViewScale()) {
+                // Aspect change, sticky mode, or free-zoom preserve across files.
+                m_view->resetImageModeItemPlacement(item);
+                applyImageModeFraming(item);
+                didFit = 1;
+            } else if (sizeBefore != targetSize) {
+                preserveImageViewOnLogicalSizeChange(item, sizeBefore, targetSize);
+            }
+        }
+        // Single press: sync repaint so soft is visible before PreferCache.
+        // Key-repeat (nav hot): async update only — sync repaint every auto-repeat
+        // event was the cumulative GUI freeze under held ←/→.
+        if (m_view->viewport()) {
+            if (m_view->m_slideshow.hud().isNavHot()) {
+                m_view->viewport()->update();
+            } else {
+                m_view->viewport()->repaint();
+            }
+        }
+        // Retained path RAM: bind session and paint tiles without waiting for
+        // the next coordinator timer (A→B→A should show tiles on this frame).
+        if (!m_view->m_slideshow.hud().isNavHot() && item->tileLodHasPathRam()) {
+            item->tickTileLod(8);
+        }
+        biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d painted=%s",
+                      qPrintable(QFileInfo(path).fileName()),
+                      pixels.width(), pixels.height(), didFit,
+                      m_view->m_slideshow.hud().isNavHot() ? "async" : "sync");
+        return;
+    }
+
+    // No reusable item — still try to capture from whatever was on the canvas.
+    if (!m_view->m_items.isEmpty()) {
+        m_view->captureStickyPanAnchor(m_view->m_items.first());
+    }
+    m_view->clearLiveCanvas();
+    item = m_view->createPlaceholderItem(path, sz);
+    if (!item) {
+        m_view->setUpdatesEnabled(true);
+        return;
+    }
+    m_view->bindImageModeSessionCursor(item);
+    installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
+                         m_view->m_sessionId.currentIdValue());
+    m_view->resetImageModeItemPlacement(item);
+    m_view->prepareImageModeCanvas();
+    applyImageModeFraming(item);
+    m_view->setUpdatesEnabled(true);
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    emit m_view->statusChanged();
+    biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d",
+                  qPrintable(QFileInfo(path).fileName()),
+                  pixels.width(), pixels.height());
+}
+
+void DisplayPipelineController::installImageModeReplaceItem(const QString &path, const QImage &image)
+{
+    // Suppress paints between removing the old item and fitting the new one
+    // so we never present a native-scale (or empty) intermediate frame.
+    m_view->setUpdatesEnabled(false);
+    // Preserve sticky pan across the wipe (soft→full or cold replace).
+    if (!m_view->m_items.isEmpty()) {
+        if (m_view->m_items.first()->path() != path) {
+            m_view->captureStickyPanAnchor(m_view->m_items.first());
+        } else if (m_view->m_framing.isStickyZoomEnabled()
+                   && !m_view->m_framing.isStickyFit()) {
+            // Same path rebuild: keep looking where we are now.
+            m_view->captureStickyPanAnchor(m_view->m_items.first());
+        }
+    }
+    // Keep stashed Workspace/Gallery tiles — only replace the Image-mode item.
+    m_view->clearLiveCanvas();
+    ImageItem *item = m_view->createItemFromImage(path, image);
+    if (!item) {
+        m_view->setUpdatesEnabled(true);
+        m_view->m_sessionId.setLastLoadError(path);
+        emit m_view->statusChanged();
+        return;
+    }
+    // Filmstrip overrides are not driven by decode (selection/nav).
+    // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
+    // Arbitrary Workspace rotation stays on the free-form item only.
+    // createItemFromImage materializes host × store want (install invariant).
+    m_view->bindImageModeSessionCursor(item);
+    m_view->resetImageModeItemPlacement(item);
+    m_view->applyLegacyPathFlipsIfNeeded(item, path);
+    m_view->prepareImageModeCanvas();
+    m_view->frameImageModeReplaceItem(item, path);
+    m_view->setUpdatesEnabled(true);
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    emit m_view->statusChanged();
+}
+
+void DisplayPipelineController::completeLoadReplace(const QString &path, const QImage &image, quint64 generation)
+{
+    if (generation != loadGate().generation()) {
+        return; // superseded by a newer navigation / open
+    }
+    // Stale navigation: only the current classic path may install.
+    // Empty multi-item canvas can still seed from classicPath.
+    if (path != m_view->classicPath()) {
+        return;
+    }
+    if (image.isNull()) {
+        if (ThumtooCache::isAvailable()) {
+            // Full native miss: PreferCache display ladder so onLadderReady can
+            // upgrade Image mode (soft→HQ). Skip when tiles already own zoom.
+            bool tilesOwn = false;
+            if (ImageItem *it = m_view->imageModeItemForPath(path)) {
+                tilesOwn = it->tileLodWanted();
+            }
+            if (!tilesOwn) {
+                scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
+            }
+            m_view->m_sessionId.clearLastLoadError();
+        } else {
+            m_view->m_sessionId.setLastLoadError(path);
+        }
+        emit m_view->statusChanged();
+        return;
+    }
+    if (m_view->isImageMode()) {
+        (void)tryInstallImageModeSample(path, image);
+        return;
+    }
+    m_view->seedEmptyWorkspaceFromReplace(path, image);
 }
 
 

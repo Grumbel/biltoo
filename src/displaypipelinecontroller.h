@@ -92,6 +92,9 @@ public:
     void installDisplayPixels(ImageItem *item, const QImage &pixels,
                               SessionAppearance::PixelKind kind,
                               SessionImageId sid);
+    void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
+    void installImageModeReplaceItem(const QString &path, const QImage &image);
+    void completeLoadReplace(const QString &path, const QImage &image, quint64 generation);
 
 private:
     ImageView *m_view = nullptr; // not owned
