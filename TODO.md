@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1527-crop-session-commit-leave.** Non-full Apply path, appearance store, leave finalize.
+Prior: **1526** (`1e3f03c`). Commits 1527a–1527b (+ docs).
+
+### Commits
+1. applyCropCommitNonFullFrame; storeAppearanceFromState; relayoutAfterAppearanceApply;
+   flushPendingFullRematerialize
+2. finalizeCropLeaveItem; acceptCropFullRasterReady
+
+### Apply (on tip **1526** / `1e3f03c`)
+```bash
+git pull --ff-only /path/to/biltoo-1527-crop-session-commit-leave.bundle HEAD
+```
+Requires tip **1526**. BASE=`1e3f03c`.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1526-crop-session-apply-pool.** Bundle docs recovery + Apply pool/bake helpers.
 Prior: **1524** (`b6a9d2e` / origin/master). Commits 1526a–1526b (+ docs).
 
