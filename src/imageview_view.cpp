@@ -978,10 +978,10 @@ void ImageView::setSlideshowMotionPaused(bool paused)
         const int pathMs = slideshowPathDurationMs();
         if (pathMs > 0) {
             SlideshowClocks::integrateMotionProgress01(&m_ss.fromMotionT, &m_ss.fromMotionClock,
-                                      m_ss.fromMotionClockRunning, false, pathMs);
+                                      m_ss.isFromMotionClockRunning(), false, pathMs);
             SlideshowClocks::integrateMotionProgress01(&m_ss.toMotionT, &m_ss.toMotionClock,
-                                      m_ss.toMotionClockRunning, false, pathMs);
-            if (m_ss.fromMotionClockRunning) {
+                                      m_ss.isToMotionClockRunning(), false, pathMs);
+            if (m_ss.isFromMotionClockRunning()) {
                 m_ssDwell.setMotionT(m_ss.fromMotionT);
             }
         }
@@ -992,10 +992,10 @@ void ImageView::setSlideshowMotionPaused(bool paused)
         return;
     }
     m_ssDwell.setMotionPaused(false);
-    if (m_ss.fromMotionClockRunning) {
+    if (m_ss.isFromMotionClockRunning()) {
         m_ss.fromMotionClock.start();
     }
-    if (m_ss.toMotionClockRunning) {
+    if (m_ss.isToMotionClockRunning()) {
         m_ss.toMotionClock.start();
     }
     if (m_ssDwell.isMotionActive() && m_motionTimer && m_ssDwell.durationMs > 0) {
@@ -1163,10 +1163,10 @@ bool ImageView::phaseBufferWantsSample(const QString &path, int sampleEdge) cons
     const bool pendingContent = snapshotSlideshowContentAppearance(path, &app)
         && SessionAppearance::hasContentAppearance(app);
     return SlideshowPhasePolicy::bufferWantsSample(
-               m_ss.fromPath, m_ss.fromImage, m_ss.fromContentApplied, path,
+               m_ss.fromPath, m_ss.fromImage, m_ss.isFromContentApplied(), path,
                sampleEdge, pendingContent)
         || SlideshowPhasePolicy::bufferWantsSample(
-               m_ss.toPath, m_ss.toImage, m_ss.toContentApplied, path,
+               m_ss.toPath, m_ss.toImage, m_ss.isToContentApplied(), path,
                sampleEdge, pendingContent);
 }
 
@@ -1228,7 +1228,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     if (m_ss.isFromPath(path)
         && SlideshowPhasePolicy::acceptOrientedUpgrade(
                incoming, ImageCache::longEdge(m_ss.fromImage),
-               m_ss.fromContentApplied)) {
+               m_ss.isFromContentApplied())) {
         m_ss.setFromImage(oriented, true);
         ImageCache::stampDebugOverlayIfEnabled(&m_ss.fromImage, path);
         m_ssDwell.setSourceImage(m_ss.fromImage);
@@ -1258,7 +1258,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
     if (m_ss.isToPath(path)
         && SlideshowPhasePolicy::acceptOrientedUpgrade(
                incoming, ImageCache::longEdge(m_ss.toImage),
-               m_ss.toContentApplied)) {
+               m_ss.isToContentApplied())) {
         m_ss.setToImage(oriented, true);
         ImageCache::stampDebugOverlayIfEnabled(&m_ss.toImage, path);
         if (m_ss.hasToAtlas() && m_ss.toAtlas.height() > 0
@@ -1790,13 +1790,13 @@ bool ImageView::shouldPromoteSlideshowToAsFrom(const QString &fromPath) const
 {
     // Spec: B moves through transition *and* its following interval.
     // When dwell becomes B after A+B fade, promote B's motion — do not restart at 0.
-    return !fromPath.isEmpty() && fromPath == m_ss.toPath && m_ss.toMotionClockRunning;
+    return !fromPath.isEmpty() && fromPath == m_ss.toPath && m_ss.isToMotionClockRunning();
 }
 
 void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
 {
     if (m_ss.hasToImage()) {
-        m_ss.setFromImage(m_ss.toImage, m_ss.toContentApplied);
+        m_ss.setFromImage(m_ss.toImage, m_ss.isToContentApplied());
     } else {
         // Oriented path when to-phase missing (slideshowPixelsForPath materializes).
         m_ss.setFromImage(slideshowPixelsForPath(fromPath), true);
@@ -1818,7 +1818,7 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     // Unoriented clamp only — ContentXform orient + atlas run async
     // (prepareSlideshowFromDwell → scheduleSlideshowPhaseBufferUpgrade).
     // Sync orient of multi-MP on every ←/→ dropped frames; same-edge orient must
-    // still be accepted (see phaseBufferWantsSample / m_ss.fromContentApplied).
+    // still be accepted (see phaseBufferWantsSample / m_ss.isFromContentApplied()).
     m_ss.setFromImage(slideshowSampleUnoriented(fromPath), false);
     if (!m_ss.hasFromImage() && !fromPath.isEmpty()) {
         m_ss.setFromImage(ImageCache::clampToMaxEdge(
@@ -1882,7 +1882,7 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
     // Keep atlas only when promote carried oriented continuity for the *same*
     // sample. Fresh arm (contentApplied false) or aspect mismatch: drop atlas
     // so paintMotionCover blits the live sample without stretch for a frame.
-    const bool keepAtlas = m_ss.fromContentApplied
+    const bool keepAtlas = m_ss.isFromContentApplied()
         && m_ssDwell.hasAtlas()
         && SlideshowAtlasPolicy::coversSource(
                m_ssDwell.atlas, m_ssDwell.atlasScale, m_ssDwell.atlasVw,
@@ -2861,7 +2861,7 @@ void ImageView::tickSlideshowMotion()
     }
 
     if (m_ssHud.isProgressActive()
-        && (m_ss.fromMotionClockRunning || m_ss.toMotionClockRunning)) {
+        && (m_ss.isFromMotionClockRunning() || m_ss.isToMotionClockRunning())) {
         tickSlideshowPhaseMotionClocks();
         viewport()->update();
         return;

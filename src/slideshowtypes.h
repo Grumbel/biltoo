@@ -191,6 +191,14 @@ struct SlideshowPhaseState {
 
     bool hasToImage() const { return !toImage.isNull(); }
 
+    bool isFromContentApplied() const { return fromContentApplied; }
+
+    bool isToContentApplied() const { return toContentApplied; }
+
+    bool isFromMotionClockRunning() const { return fromMotionClockRunning; }
+
+    bool isToMotionClockRunning() const { return toMotionClockRunning; }
+
     bool isFromPath(const QString &path) const
     {
         return !path.isEmpty() && path == fromPath;
