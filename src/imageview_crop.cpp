@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Crop enter/apply/leave: docs/CROP_MODE.md (SessionImageId store, full-frame
-// draft, clear FullSource before soft crop attach, filmstrip bake emit).
+// Crop enter session: docs/CROP_MODE.md. Apply/leave → imageview_crop_apply;
+// Full raster → imageview_crop_raster; paint/input in sibling TUs.
 
 #include "imageview.h"
-#include "cropappearancecommand.h"
 #include "croppathraster.h"
 #include "viewportupdatehold.h"
 #include "cropflash.h"
@@ -24,14 +23,8 @@
 #include "contentxform.h"
 
 #include <QPainter>
-#include <QPainterPath>
 #include <QtMath>
 #include <QTransform>
-#include <QUndoCommand>
-#include <QUndoStack>
-#include <QThreadPool>
-#include <QPointer>
-#include <QMetaObject>
 
 ImageItem *ImageView::cropSessionBoundItem() const
 {
@@ -495,81 +488,6 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     installAndActivateCropEnter(item, enter.image, haveApp ? &app : nullptr, haveApp,
                                 enter.unoriented);
     return true;
-}
-
-
-void ImageView::onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
-                                            quint64 gen)
-{
-    if (gen != m_loadGate.generation()) {
-        return;
-    }
-    if (!decoded.isNull()) {
-        ImageCache::put(path, decoded);
-    }
-    maybeUpgradeCropFullRaster(path, decoded);
-}
-
-void ImageView::scheduleCropFullRasterFromPool(const QString &path)
-{
-    const quint64 gen = m_loadGate.generation();
-    const QPointer<ImageView> guard(this);
-    QThreadPool::globalInstance()->start([guard, path, gen]() {
-        const QImage decoded = ImageLoader::load(path);
-        if (!guard) {
-            return;
-        }
-        QMetaObject::invokeMethod(
-            guard.data(),
-            [guard, path, decoded, gen]() {
-                if (ImageView *const host = guard.data()) {
-                    host->onPoolCropFullRasterDecoded(path, decoded, gen);
-                }
-            },
-            Qt::QueuedConnection);
-    });
-}
-
-void ImageView::requestCropFullRaster(const QString &path)
-{
-    if (path.isEmpty()) {
-        return;
-    }
-    // Soft/PreferCache must not race Full encode for the crop subject.
-    cancelPathRasterForCrop(path);
-    // Prefer thumtoo Full; fall back to pool ImageLoader::load.
-    if (CropSession::tryScheduleThumtooFullRaster(path)) {
-        return;
-    }
-    scheduleCropFullRasterFromPool(path);
-}
-
-
-void ImageView::acceptCropFullRasterReady(const QString &path, const QImage &image)
-{
-    if (!path.isEmpty() && !image.isNull()) {
-        ImageCache::put(path, image);
-    }
-    m_crop.clearAwaitingFull();
-    const CropFlash::Hud readyHud = CropFlash::fullReady();
-    flashHud(readyHud.title, readyHud.detail);
-}
-
-void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
-{
-    ImageItem *item = m_crop.target();
-    if (!item || item->path() != path) {
-        if (m_crop.acceptsFullRasterUpgrade(path)) {
-            m_crop.clearAwaitingFull();
-        }
-        return;
-    }
-    const bool covers = sampleCoversNativeLogical(path, image);
-    if (!m_crop.shouldAcceptFullRasterUpgrade(path, image, item, covers)) {
-        return;
-    }
-    // Cache for Apply accuracy; do not reinstall mid-draft (stalls interaction).
-    acceptCropFullRasterReady(path, image);
 }
 
 

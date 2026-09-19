@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1556-crop-raster-tu.** Crop Full raster load in imageview_crop_raster.cpp.
+Prior: **1555**.
+
+### Change
+- New `imageview_crop_raster.cpp`: pool decode, thumtoo schedule, accept/upgrade
+- `imageview_crop.cpp` keeps enter + targets + auto-trim
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1556-crop-raster-tu.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1555-crop-apply-tu.** Crop Apply/leave commit in imageview_crop_apply.cpp.
 Prior: **1554**.
 
