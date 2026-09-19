@@ -693,8 +693,8 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssDwell.clearBias();
         m_ssHud.clearTimeline();
         m_ssHud.clearPaintFingerprint();
-        m_ss.fromPath.clear();
-        m_ss.toPath.clear();
+        m_ss.clearFromPath();
+        m_ss.clearToPath();
         unbindSlideshowPhaseSurface(&m_ss.fromSurface);
         unbindSlideshowPhaseSurface(&m_ss.toSurface);
         m_ss.clearFromImage();
@@ -1807,7 +1807,7 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
     m_ssDwell.applyBias(m_ss.toBiasA, m_ss.toBiasB, m_ssDwell.travelDir, m_ssDwell.motionSign);
     m_ssDwell.setBiasPath(fromPath);
     m_ss.fromMotionClock = m_ss.toMotionClock;
-    m_ss.fromMotionClockRunning = true;
+    m_ss.setFromMotionClockRunning(true);
     m_ss.setFromMotionT(m_ss.toMotionT);
     m_ssDwell.setMotionT(m_ss.fromMotionT);
     // Keep the to-atlas as the from/dwell atlas — clearing it forced multi-MP
@@ -1860,8 +1860,7 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
         pickInterestingMotionBiases(qHash(fromPath), m_ss.fromImage);
         m_ssDwell.setBiasPath(fromPath);
     }
-    m_ss.fromMotionClock.start();
-    m_ss.fromMotionClockRunning = true;
+    m_ss.startFromMotionClock();
     m_ss.setFromMotionT(0.0);
     m_ssDwell.setMotionT(0.0);
 }
@@ -1931,7 +1930,7 @@ void ImageView::armSlideshowMotionClock(int pathMs)
 void ImageView::armSlideshowFromPhase(const QString &fromPath, int pathMs)
 {
     const bool promote = shouldPromoteSlideshowToAsFrom(fromPath);
-    m_ss.fromPath = fromPath;
+    m_ss.setFromPath(fromPath);
     bindSlideshowPhaseSurface(&m_ss.fromSurface, fromPath);
     if (promote) {
         promoteSlideshowFromToPhase(fromPath);
@@ -1950,16 +1949,16 @@ void ImageView::armSlideshowFromPhase(const QString &fromPath, int pathMs)
 void ImageView::armSlideshowToPhase(const QString &toPath)
 {
     if (toPath.isEmpty()) {
-        m_ss.toPath.clear();
+        m_ss.clearToPath();
         unbindSlideshowPhaseSurface(&m_ss.toSurface);
         m_ss.clearToImage();
         ++m_ss.toAtlasRebuildGeneration;
         m_ss.clearToAtlas();
-        m_ss.toMotionClockRunning = false;
+        m_ss.setToMotionClockRunning(false);
         m_ss.setToMotionT(0.0);
         return;
     }
-    m_ss.toPath = toPath;
+    m_ss.setToPath(toPath);
     bindSlideshowPhaseSurface(&m_ss.toSurface, toPath);
     (void)ensureSlideshowLogicalSize(toPath);
     m_ss.setToImage(slideshowSampleUnoriented(toPath), false);
@@ -1989,8 +1988,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         preloadSlideshowImage(toPath);
     }
     captureMotionBiasesForPath(toPath, m_ss.toImage, &m_ss.toBiasA, &m_ss.toBiasB);
-    m_ss.toMotionClock.start();
-    m_ss.toMotionClockRunning = true;
+    m_ss.startToMotionClock();
     m_ss.setToMotionT(0.0);
     if (!m_ss.toImage.isNull()) {
         schedulePhaseZoomBlur(toPath, m_ss.toImage);
@@ -2723,7 +2721,7 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     // path arms phase first; motion-only path must not leave m_ssFrom empty).
     if (m_ssHud.progressActive && !path.isEmpty()) {
         if (m_ss.fromPath != path || m_ss.fromImage.isNull()) {
-            m_ss.fromPath = path;
+            m_ss.setFromPath(path);
             bindSlideshowPhaseSurface(&m_ss.fromSurface, path);
             WorkspaceItemState app2;
             const bool applied =
