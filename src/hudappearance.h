@@ -38,6 +38,33 @@ struct HudAppearance {
     {
         return textColor.isValid() ? textColor : fallback;
     }
+
+    bool setVisible(bool on)
+    {
+        if (visible == on) {
+            return false;
+        }
+        visible = on;
+        return true;
+    }
+
+    bool setTextColor(const QColor &c)
+    {
+        if (!c.isValid() || c == textColor) {
+            return false;
+        }
+        textColor = c;
+        return true;
+    }
+
+    bool setPanelColor(const QColor &c)
+    {
+        if (!c.isValid() || c == panelColor) {
+            return false;
+        }
+        panelColor = c;
+        return true;
+    }
 };
 
 #endif // HUDAPPEARANCE_H
