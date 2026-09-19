@@ -16,6 +16,12 @@ struct CentreProgress {
 
     bool active() const { return !title.isEmpty(); }
 
+    const QString &titleRef() const { return title; }
+
+    const QString &detailRef() const { return detail; }
+
+    bool hasDetail() const { return !detail.isEmpty(); }
+
     void clear()
     {
         title.clear();
