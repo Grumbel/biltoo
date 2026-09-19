@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1381-layoutmode-fitfill-checker-debounce-suppress.** Bag transitions on tip 1380.
+Prior: **1380**.
+
+### Change
+1. `LayoutPrefs::setMode`
+2. `clearFitFillModes` / `enableFitMode` → `ViewFraming::{clearFitFill,setFitOnly}`
+3. `CanvasBackground::setCheckerWorkspaceOnly`
+4. `LayoutDebounce::{pending,take,clear}`
+5. `GalleryRelayoutSuppress::Scoped`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1381-layoutmode-fitfill-checker-debounce-suppress.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1381).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1380-ss-settings-group-softbook-hud.** Bag transitions on tip 1379.
 Prior: **1379**.
 
