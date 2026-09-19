@@ -708,6 +708,8 @@ public:
     void notifyCropModeEntered();
     void abortCropEnterFailed(ImageItem *item);
     void beginCropEnterSession(ImageItem *item);
+    void flashCropLoadingFullHud();
+    void flashCropNotCachedHud();
     bool handleNullEnterFullRaster(const QString &path, bool hadCrop);
     bool resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
                                   WorkspaceItemState *st, SessionImageId *sid);

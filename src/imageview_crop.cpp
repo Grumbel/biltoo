@@ -198,14 +198,25 @@ void ImageView::beginCropEnterSession(ImageItem *item)
     cancelPathRasterForCrop(m_crop.draftPathRef());
 }
 
+
+void ImageView::flashCropLoadingFullHud()
+{
+    flashHud(tr("Crop"), tr("Loading full image…"));
+}
+
+void ImageView::flashCropNotCachedHud()
+{
+    flashHud(tr("Crop"), tr("Image not cached yet — try again"));
+}
+
 bool ImageView::handleNullEnterFullRaster(const QString &path, bool hadCrop)
 {
     if (CropSession::shouldRequestFullOnNullEnter(hadCrop, path)) {
         requestCropFullRaster(path);
         m_crop.setAwaitingFull(path);
-        flashHud(tr("Crop"), tr("Loading full image…"));
+        flashCropLoadingFullHud();
     }
-    flashHud(tr("Crop"), tr("Image not cached yet — try again"));
+    flashCropNotCachedHud();
     return false;
 }
 
