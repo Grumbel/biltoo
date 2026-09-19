@@ -40,7 +40,18 @@ struct ViewportChrome {
 
     void updatePanPos(const QPoint &pos) { lastMousePos = pos; }
 
-    void setMouseInfo(const ImageMouseInfo &info) { mouseInfo = info; }
+    /** @return true when mouse readout changed. */
+    bool setMouseInfo(const ImageMouseInfo &info)
+    {
+        if (mouseInfo.valid == info.valid
+            && mouseInfo.imagePos == info.imagePos
+            && mouseInfo.pixelColor == info.pixelColor
+            && mouseInfo.path == info.path) {
+            return false;
+        }
+        mouseInfo = info;
+        return true;
+    }
 
     void clearMouseInfo() { mouseInfo.clear(); }
 
