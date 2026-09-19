@@ -140,6 +140,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **GroupTransformSession** / **PageGuideSession** setHoverHandle report change.
 - **CropSession::setHoverHandle**; **layoutIsFlowFamily** / **layoutIsMasonryColumns**.
 - **SlideshowPhaseState** fade/motion bag transitions.
+- **AttentionGeometry::clampNorm** header-inline (link fix); **PageGuideSession::setSelected**.
+- **CropSession::setAllowExpand** reports change.
 
 
 ## Current pain (evidence)

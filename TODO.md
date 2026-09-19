@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1394-clampnorm-page-selected-crop-expand.** Link fix + bag transitions
+on tip 1393.
+Prior: **1393**.
+
+### Change
+1. Fix: `AttentionGeometry::clampNorm` / `clampNormPoints` header-inline (link error)
+2. `PageGuideSession::setSelected` reports change
+3. `CropSession::setAllowExpand` reports change
+
+### Apply
+```bash
+git pull /path/to/biltoo-1394-clampnorm-page-selected-crop-expand.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1394).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1393-crop-hover-layout-families-phase-fade.** Bag transitions on tip 1392.
 Prior: **1392**.
 
