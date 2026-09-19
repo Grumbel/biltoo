@@ -1670,6 +1670,7 @@ private:
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);
+    void finishCropApplyLayout(ImageItem *item);
     bool flashApplyHostFailure(CropSession::ApplyHostStatus hostSt);
     void ensureApplyCropState(ImageItem *item, SessionImageId sid,
                               WorkspaceItemState *st);

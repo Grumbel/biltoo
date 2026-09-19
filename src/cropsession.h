@@ -504,6 +504,8 @@ public:
         return true;
     }
 
+    void markShowingFullImage() { setShowingFullImage(true); }
+
     /** Toggle allow-expand; @return true when the flag changed. */
     bool toggleAllowExpand()
     {

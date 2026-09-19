@@ -328,7 +328,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                                             sample.needGeomBake)) {
         CropSession::applyKeepEnterFlags(item, contentOnly, wantX);
         applyContentLayoutSize(item, contentOnly);
-        m_crop.setShowingFullImage(true);
+        m_crop.markShowingFullImage();
         if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
             qWarning().noquote()
                 << QStringLiteral("[crop] enter-full KEEP display edge=%1 path=%2")
@@ -371,7 +371,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                    .arg(item->sessionHasCrop() ? 1 : 0)
                    .arg(contentOnly.contentQuarterTurns);
     }
-    m_crop.setShowingFullImage(true);
+    m_crop.markShowingFullImage();
 }
 
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
@@ -853,6 +853,21 @@ void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
     emit sessionCropApplied(sid, path, appearance, hasCrop);
 }
 
+void ImageView::finishCropApplyLayout(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    if (isWorkspaceMode()) {
+        m_crop.applyCommitPlacementRotation(item);
+    }
+    if (isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
+    } else {
+        fitImageOrUpdateWorkspace(item);
+    }
+}
+
 bool ImageView::flashApplyHostFailure(CropSession::ApplyHostStatus hostSt)
 {
     if (hostSt == CropSession::ApplyHostStatus::Ok) {
@@ -992,19 +1007,10 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // scheduleAsyncHostRematerialize is blocked while crop freeze is on —
         // queue here and flush from clearCropModeState after unfreeze.
         m_crop.queueFullRematerializeIfSoft(hostFromCache, multiMp, path, sid, st);
-
-        if (isWorkspaceMode()) {
-            m_crop.applyCommitPlacementRotation(item);
-        }
-        if (isGalleryMode()) {
-            applyLayout(GalleryPackReason::ContentChange);
-        } else {
-            fitImageOrUpdateWorkspace(item);
-        }
+        finishCropApplyLayout(item);
         // paintHold restores viewport updates on scope exit
 
         commitItemSessionEdit(item);
-
         emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
         pushCropAppearanceUndo(item, tr("Crop"));
         flashHud(tr("Cropped"),
