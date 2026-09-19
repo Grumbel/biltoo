@@ -320,3 +320,17 @@ QRect CropSession::sourceCropFromLocal(const QRectF &local, const QPointF &itemO
         CropGeometry::integerCropFromLocal(local, itemOffset),
         imageW, imageH, hFlip, vFlip);
 }
+
+void CropSession::applyActiveHandleDrag(const QPointF &local, const QRectF &contentRect,
+                                        qreal minSide, bool shiftSnap, bool ctrlSnap)
+{
+    if (activeHandle == CropHandle::Move) {
+        applyMoveDrag(local, contentRect);
+        return;
+    }
+    if (activeHandle == CropHandle::Rotate) {
+        applyRotateDrag(local, contentRect, minSide, shiftSnap, ctrlSnap);
+        return;
+    }
+    applyResizeDrag(local, contentRect, expandLimits(contentRect), minSide, ctrlSnap, shiftSnap);
+}

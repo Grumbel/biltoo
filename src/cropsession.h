@@ -115,6 +115,11 @@ public:
     void applyResizeDrag(const QPointF &local, const QRectF &contentRect, const QRectF &limits,
                          qreal minSide, bool fromCenter, bool forceSquare);
 
+    /** Dispatch move/rotate/resize for the current active handle. */
+    void applyActiveHandleDrag(const QPointF &local, const QRectF &contentRect, qreal minSide,
+                               bool shiftSnap, bool ctrlSnap);
+
+
     /** Integer session crop rect from draft (content-local minus item offset). */
     QRect integerCropForOffset(const QPointF &itemOffset) const;
 

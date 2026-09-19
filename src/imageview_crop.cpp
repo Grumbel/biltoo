@@ -1491,19 +1491,10 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
         return;
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
-    const QRectF cr = item->contentRect();
-    const QRectF limits = m_crop.expandLimits(cr);
-    const qreal minSide = 4.0;
-
-    if (m_crop.currentActiveHandle() == CropHandle::Move) {
-        updateCropMoveDrag(local, cr);
-        return;
-    }
-    if (m_crop.currentActiveHandle() == CropHandle::Rotate) {
-        updateCropRotateDrag(local, cr, minSide);
-        return;
-    }
-    updateCropResizeDrag(local, cr, limits, minSide);
+    const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
+    m_crop.applyActiveHandleDrag(local, item->contentRect(), 4.0,
+                                 mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
+    viewport()->update();
 }
 
 void ImageView::endCropHandleDrag()
