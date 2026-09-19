@@ -1622,6 +1622,7 @@ private:
     /** Crop corners in item-local space (rotation about rect centre). */
     QPolygonF cropPolygonItemLocal() const;
     QRectF cropRectView() const;
+    QPolygonF cropPolygonView() const;
     /** Viewport rects of Reset / Apply controls above the crop frame. */
     QRect cropExpandButtonView() const;
     QRect cropAutoButtonView() const;

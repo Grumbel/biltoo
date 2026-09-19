@@ -1297,18 +1297,25 @@ QPolygonF ImageView::cropPolygonItemLocal() const
     return m_crop.polygonLocal();
 }
 
-QRectF ImageView::cropRectView() const
+
+QPolygonF ImageView::cropPolygonView() const
 {
     ImageItem *item = cropTargetItem();
     if (!item || !m_crop.hasValidRect()) {
-        return QRectF();
+        return {};
     }
     const QPolygonF local = cropPolygonItemLocal();
-    const QPolygonF poly = item->mapToScene(local);
-    QRectF sceneBounds = poly.boundingRect();
-    const QPoint tl = mapFromScene(sceneBounds.topLeft());
-    const QPoint br = mapFromScene(sceneBounds.bottomRight());
-    return QRectF(tl, br).normalized();
+    QPolygonF viewPoly;
+    viewPoly.reserve(local.size());
+    for (const QPointF &pt : local) {
+        viewPoly << QPointF(mapFromScene(item->mapToScene(pt)));
+    }
+    return viewPoly;
+}
+
+QRectF ImageView::cropRectView() const
+{
+    return cropPolygonView().boundingRect().normalized();
 }
 
 QRect ImageView::cropExpandButtonView() const
@@ -1617,15 +1624,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
         return;
     }
     ensureCropRectValid();
-    const QRectF contentScene = item->mapToScene(item->contentRect()).boundingRect();
-    const QPolygonF cropLocal = cropPolygonItemLocal();
-    const QPolygonF cropScenePoly = item->mapToScene(cropLocal);
-    QPolygonF cropViewPoly;
-    for (const QPointF &sp : cropScenePoly) {
-        cropViewPoly << mapFromScene(sp);
-    }
-    const QRect contentView = QRect(mapFromScene(contentScene.topLeft()),
-                                    mapFromScene(contentScene.bottomRight())).normalized();
+    const QPolygonF cropViewPoly = cropPolygonView();
     const QRect cropView = cropViewPoly.boundingRect().toRect().normalized();
 
     painter.save();
@@ -1639,7 +1638,6 @@ void ImageView::paintCropOverlay(QPainter &painter)
     paintCropActionButtons(painter);
     paintCropSizeBadge(painter, cropView);
 
-    Q_UNUSED(contentView);
     painter.restore();
 }
 
@@ -1755,15 +1753,8 @@ CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     const CropGeometry::CropButtonLayout buttons =
         cropChromeButtons(m_crop.active(), cropRectView(),
                           viewport() ? viewport()->rect() : QRect());
-    // Map rotated crop corners through item → scene → view.
-    const QPolygonF localPoly = cropPolygonItemLocal();
-    QPolygonF viewPoly;
-    viewPoly.reserve(4);
-    for (const QPointF &local : localPoly) {
-        viewPoly << QPointF(mapFromScene(item->mapToScene(local)));
-    }
     const CropGeometry::CropFrameViewAnchors anchors =
-        CropGeometry::frameViewAnchors(viewPoly);
+        CropGeometry::frameViewAnchors(cropPolygonView());
     return CropGeometry::hitTestCropChrome(viewPos, buttons, anchors);
 }
 
