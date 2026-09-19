@@ -2623,18 +2623,17 @@ namespace {
 /** Human-readable slideshow dwell for HUD / status line. */
 QString formatSlideshowInterval(int ms)
 {
+    const auto L = SlideshowClocks::intervalLabelParts(ms);
     if (ms <= 0) {
         return QCoreApplication::translate("MainWindow", "0 ms (max speed)");
     }
-    if (ms < 1000) {
-        return QCoreApplication::translate("MainWindow", "%1 ms").arg(ms);
+    if (L.useMs) {
+        return QCoreApplication::translate("MainWindow", "%1 ms").arg(L.wholeMs);
     }
-    const double sec = ms / 1000.0;
-    // Whole seconds when exact; one decimal otherwise.
-    if (ms % 1000 == 0) {
-        return QCoreApplication::translate("MainWindow", "%1 s").arg(ms / 1000);
+    if (L.exactSec) {
+        return QCoreApplication::translate("MainWindow", "%1 s").arg(L.wholeSec);
     }
-    return QCoreApplication::translate("MainWindow", "%1 s").arg(sec, 0, 'f', 1);
+    return QCoreApplication::translate("MainWindow", "%1 s").arg(L.sec, 0, 'f', 1);
 }
 
 } // namespace

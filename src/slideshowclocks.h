@@ -14,6 +14,33 @@
  */
 namespace SlideshowClocks {
 
+struct IntervalLabel {
+    bool useMs = false;
+    int wholeMs = 0;
+    int wholeSec = 0;
+    double sec = 0.0;
+    bool exactSec = false;
+};
+
+inline IntervalLabel intervalLabelParts(int ms)
+{
+    IntervalLabel L;
+    if (ms <= 0) {
+        L.useMs = true;
+        L.wholeMs = 0;
+        return L;
+    }
+    if (ms < 1000) {
+        L.useMs = true;
+        L.wholeMs = ms;
+        return L;
+    }
+    L.sec = ms / 1000.0;
+    L.exactSec = (ms % 1000 == 0);
+    L.wholeSec = ms / 1000;
+    return L;
+}
+
 /** UI spin (seconds) → internal milliseconds. */
 inline int secondsToMs(double sec)
 {
