@@ -72,6 +72,36 @@ public:
         // Draft may be kept for re-entry; callers clear explicitly if needed.
     }
 
+    void setSelected(const QVector<int> &sel) { selected = sel; }
+
+    /**
+     * Start dragging selected points from @p origin (viewport).
+     * @p startPts snapshot of all draft points; @p beforePts for undo (may differ
+     * when inserting a point).
+     */
+    void beginPointDrag(const QPoint &origin, const QVector<QPointF> &startPts,
+                        const QVector<QPointF> &beforePts)
+    {
+        rubberbanding = false;
+        dragging = !selected.isEmpty();
+        dragOriginView = origin;
+        dragStartPts = startPts;
+        gestureBefore = beforePts;
+        gestureActive = dragging;
+    }
+
+    void endPointDrag()
+    {
+        dragging = false;
+        // gestureActive cleared by commit path after undo is recorded.
+    }
+
+    void clearGesture()
+    {
+        gestureActive = false;
+        gestureBefore.clear();
+    }
+
     void clear()
     {
         mode = false;

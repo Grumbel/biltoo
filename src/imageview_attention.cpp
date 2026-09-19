@@ -79,7 +79,7 @@ void ImageView::setAttentionPointsForTarget(const QVector<QPointF> &pts)
             kept.append(i);
         }
     }
-    m_attention.selected = kept;
+    m_attention.setSelected(kept);
 
     if (sid != kInvalidSessionImageId) {
         WorkspaceItemState st = m_appearance.value(sid);
@@ -285,7 +285,7 @@ void ImageView::attentionCommitSelectionMove()
         pushAttentionPointsUndo(m_attention.gestureBefore, after,
                                 tr("Edit attention points"));
     }
-    m_attention.gestureActive = false;
+    m_attention.clearGesture();
     m_attention.gestureBefore.clear();
     m_attention.dragStartPts.clear();
 }

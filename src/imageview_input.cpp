@@ -455,17 +455,13 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
     // already selected so multi-drag keeps the set).
     if (hit >= 0) {
         if (shift || ctrl) {
-            m_attention.selected =
-                AttentionGeometry::toggleSelectionIndex(m_attention.selected, hit);
+            m_attention.setSelected(
+                AttentionGeometry::toggleSelectionIndex(m_attention.selected, hit));
         } else if (!m_attention.selected.contains(hit)) {
-            m_attention.selected = {hit};
+            m_attention.setSelected({hit});
         }
-        m_attention.dragging = !m_attention.selected.isEmpty();
-        m_attention.rubberbanding = false;
-        m_attention.dragOriginView = event->pos();
-        m_attention.dragStartPts = attentionPointsForTarget();
-        m_attention.gestureBefore = m_attention.dragStartPts;
-        m_attention.gestureActive = m_attention.dragging;
+        const QVector<QPointF> startPts = attentionPointsForTarget();
+        m_attention.beginPointDrag(event->pos(), startPts, startPts);
         viewport()->update();
         event->accept();
         return true;
@@ -480,13 +476,9 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
         QVector<QPointF> pts = before;
         pts.append(n);
         setAttentionPointsForTarget(pts);
-        m_attention.selected = {int(pts.size() - 1)};
-        m_attention.dragging = true;
-        m_attention.rubberbanding = false;
-        m_attention.dragOriginView = event->pos();
-        m_attention.dragStartPts = attentionPointsForTarget();
-        m_attention.gestureBefore = before;
-        m_attention.gestureActive = true;
+        m_attention.setSelected({int(pts.size() - 1)});
+        const QVector<QPointF> startPts = attentionPointsForTarget();
+        m_attention.beginPointDrag(event->pos(), startPts, before);
         event->accept();
         return true;
     }
@@ -594,7 +586,7 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
         // Multi-select: group frame only (no per-item handles).
         const int gh = groupHandleAt(event->pos(), selected);
         if (gh >= 0 && beginGroupScale(gh, selected)) {
-            m_groupXform.pressScenePos = mapToScene(event->pos());
+            m_groupXform.setPressScenePos(mapToScene(event->pos()));
             event->accept();
             return true;
         }
@@ -1587,8 +1579,8 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
             const QVector<int> hit = AttentionGeometry::indicesInViewRect(
                 viewPts, m_attention.rubberRect);
             const bool shift = event->modifiers() & Qt::ShiftModifier;
-            m_attention.selected = AttentionGeometry::mergeSelection(
-                m_attention.selected, hit, shift);
+            m_attention.setSelected(AttentionGeometry::mergeSelection(
+                m_attention.selected, hit, shift));
         }
         m_attention.endRubber();
         viewport()->update();
@@ -1596,7 +1588,7 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
         return true;
     }
     if (m_attention.dragging) {
-        m_attention.dragging = false;
+        m_attention.endPointDrag();
         attentionCommitSelectionMove();
         event->accept();
         return true;
