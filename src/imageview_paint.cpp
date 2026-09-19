@@ -999,9 +999,8 @@ QRectF ImageView::textRubberBandImageRect() const
 
 void ImageView::finishTextRubberBand()
 {
-    m_textLayer.rubberbanding = false;
     const QRect viewRect = m_textLayer.rubberRect.normalized();
-    m_textLayer.rubberRect = {};
+    m_textLayer.endRubber();
     m_textLayer.selectedRegions.clear();
     if (viewRect.width() < 4 || viewRect.height() < 4) {
         viewport()->update();
@@ -1067,9 +1066,7 @@ void ImageView::clearTextSelection()
     if (m_textLayer.selectedRegions.isEmpty() && !m_textLayer.rubberbanding) {
         return;
     }
-    m_textLayer.selectedRegions.clear();
-    m_textLayer.rubberbanding = false;
-    m_textLayer.rubberRect = {};
+    m_textLayer.clearSelection();
     viewport()->update();
 }
 

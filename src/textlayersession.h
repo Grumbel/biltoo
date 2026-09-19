@@ -40,10 +40,30 @@ struct TextLayerSession {
 
     void clearSelection()
     {
+        endRubber();
+        selectedRegions.clear();
+    }
+
+    /** Start rubber-band region select at @p origin (viewport). */
+    void beginRubber(const QPoint &origin)
+    {
+        rubberbanding = true;
+        rubberOrigin = origin;
+        rubberRect = QRect(origin, QSize());
+    }
+
+    /** Update rubber rect from origin to @p pos. */
+    void updateRubber(const QPoint &pos)
+    {
+        rubberRect = QRect(rubberOrigin, pos).normalized();
+    }
+
+    /** End rubber-band gesture (keeps selectedRegions). */
+    void endRubber()
+    {
         rubberbanding = false;
         rubberOrigin = {};
         rubberRect = {};
-        selectedRegions.clear();
     }
 
     void clearLayer()

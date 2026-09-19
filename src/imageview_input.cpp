@@ -656,9 +656,7 @@ bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
         || !PagePath::isPageRef(classicPath())) {
         return false;
     }
-    m_textLayer.rubberbanding = true;
-    m_textLayer.rubberOrigin = event->pos();
-    m_textLayer.rubberRect = QRect(event->pos(), QSize());
+    m_textLayer.beginRubber(event->pos());
     m_textLayer.selectedRegions.clear();
     setCursor(Qt::CrossCursor);
     viewport()->update();
@@ -993,7 +991,7 @@ bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
     if (!m_textLayer.rubberbanding || !(event->buttons() & Qt::LeftButton)) {
         return false;
     }
-    m_textLayer.rubberRect = ViewTransform::rubberRect(m_textLayer.rubberOrigin, event->pos());
+    m_textLayer.updateRubber(event->pos());
     viewport()->update();
     event->accept();
     return true;
@@ -1233,7 +1231,7 @@ bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
         && !(event->buttons() & Qt::LeftButton)) {
         const int ph = pageGuideHandleAt(event->pos());
         if (ph != m_pageGuide.hoverHandle) {
-            m_pageGuide.hoverHandle = ph;
+            m_pageGuide.setHoverHandle(ph);
             viewport()->update();
         }
         if (ph >= 0) {
@@ -1565,7 +1563,7 @@ bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
     if (!m_textLayer.rubberbanding || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_textLayer.rubberRect = ViewTransform::rubberRect(m_textLayer.rubberOrigin, event->pos());
+    m_textLayer.updateRubber(event->pos());
     finishTextRubberBand();
     unsetCursor();
     event->accept();
