@@ -709,6 +709,19 @@ void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &im
 }
 
 
+
+bool ImageView::loadPathBookAppearance(ImageItem *item, WorkspaceItemState *app) const
+{
+    if (!item || !app) {
+        return false;
+    }
+    if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
+        *app = *st;
+        return true;
+    }
+    return false;
+}
+
 bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
                                           SessionImageId *sidOut) const
 {
@@ -726,11 +739,7 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
     if (CropSession::fillAppearanceFromItemSessionCrop(app, item)) {
         return true;
     }
-    if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
-        *app = *st;
-        return true;
-    }
-    return false;
+    return loadPathBookAppearance(item, app);
 }
 
 

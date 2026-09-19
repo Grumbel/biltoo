@@ -1815,6 +1815,7 @@ private:
     /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
     void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /** Cancel path: put the session crop (if any) back on the live item. */
+    bool loadPathBookAppearance(ImageItem *item, WorkspaceItemState *app) const;
     bool loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
                                     SessionImageId *sidOut) const;
     void rematerializeIfContentXformMismatch(ImageItem *item,
