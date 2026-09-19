@@ -6,6 +6,7 @@
 #include "canvaspatterngeometry.h"
 #include "viewtransform.h"
 #include "hudgeometry.h"
+#include "slideshowclocks.h"
 #include "textlayergeometry.h"
 #include "pageguidegeometry.h"
 #include "edgenavpolicy.h"
@@ -565,29 +566,13 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
             }
 
             if (m_ssHud.timelineTotalMs > 0) {
-                auto fmt = [](qint64 ms) -> QString {
-                    ms = qMax(qint64(0), ms);
-                    const qint64 totalSec = ms / 1000;
-                    const int h = int(totalSec / 3600);
-                    const int m = int((totalSec % 3600) / 60);
-                    const int s = int(totalSec % 60);
-                    if (h > 0) {
-                        return QStringLiteral("%1:%2:%3")
-                            .arg(h)
-                            .arg(m, 2, 10, QLatin1Char('0'))
-                            .arg(s, 2, 10, QLatin1Char('0'));
-                    }
-                    return QStringLiteral("%1:%2")
-                        .arg(m)
-                        .arg(s, 2, 10, QLatin1Char('0'));
-                };
                 const qint64 remain = m_ssHud.timelineTotalMs
                     - m_ssHud.timelineElapsedMs;
                 const QString timeLine =
                     QStringLiteral("%1 / %2   −%3")
-                        .arg(fmt(m_ssHud.timelineElapsedMs),
-                             fmt(m_ssHud.timelineTotalMs),
-                             fmt(remain));
+                        .arg(SlideshowClocks::formatClockMs(m_ssHud.timelineElapsedMs),
+                             SlideshowClocks::formatClockMs(m_ssHud.timelineTotalMs),
+                             SlideshowClocks::formatClockMs(remain));
 
                 QFont f = painter.font();
                 f.setPointSize(m_hudPrefs.effectiveFontPointSize());

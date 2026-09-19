@@ -6,6 +6,8 @@
 
 #include "slideshowtypes.h"
 
+#include <QString>
+
 /**
  * Pure-clock integration for slideshow Ken Burns / phase motion.
  * No QObject, no viewport — ImageView owns timers and calls these on tick.
@@ -22,6 +24,30 @@ inline int secondsToMs(double sec)
 inline double msToSeconds(int ms, double capSec = 3600.0)
 {
     return qBound(0.0, ms / 1000.0, capSec);
+}
+
+/**
+ * Compact clock string for HUD: M:SS or H:MM:SS (non-negative ms).
+ * Pure formatting — no locale.
+ */
+inline QString formatClockMs(qint64 ms)
+{
+    if (ms < 0) {
+        ms = 0;
+    }
+    const qint64 totalSec = ms / 1000;
+    const int hours = int(totalSec / 3600);
+    const int minutes = int((totalSec % 3600) / 60);
+    const int seconds = int(totalSec % 60);
+    if (hours > 0) {
+        return QStringLiteral("%1:%2:%3")
+            .arg(hours)
+            .arg(minutes, 2, 10, QLatin1Char('0'))
+            .arg(seconds, 2, 10, QLatin1Char('0'));
+    }
+    return QStringLiteral("%1:%2")
+        .arg(minutes)
+        .arg(seconds, 2, 10, QLatin1Char('0'));
 }
 
 /** Timeline elapsed for unitless position in one cycle of @p intervalMs. */
