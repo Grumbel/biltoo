@@ -314,6 +314,16 @@ public:
 
     qreal currentRotation() const { return rotation; }
 
+    const QRectF &dragStartRectRef() const { return dragStartRect; }
+
+    const QPointF &dragStartLocalRef() const { return dragStartLocal; }
+
+    qreal rotateStartRotationValue() const { return rotateStartRotation; }
+
+    qreal rotateStartAngleValue() const { return rotateStartAngle; }
+
+    CropHandle currentActiveHandle() const { return activeHandle; }
+
     bool hasTargetId() const { return targetId != kInvalidSessionImageId; }
 
     ImageItem *target() const { return targetItem; }
