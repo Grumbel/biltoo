@@ -24,6 +24,10 @@ struct SessionPathOrder {
         ids.clear();
     }
 
+    bool isEmpty() const { return paths.isEmpty(); }
+
+    int size() const { return paths.size(); }
+
     /** Pad or trim @p ids so it matches @p paths length (invalid ids when growing). */
     void syncIdLength()
     {
