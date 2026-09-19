@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1363-zoomblur-worksize-nonneg.** ZoomBlur::workSize;
+ViewTransform::nonNeg(int) wired to progress/margins/budget.
+Prior: **1362**.
+
+### Change
+- `ZoomBlur::{kWorkMinEdge,kWorkMaxLongEdge,kWorkViewportDiv,workSize}`
+- `ViewTransform::nonNeg(int)`; gallery progress, TOC, tile budget, filmstrip margins, row gap
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1363**)
+```bash
+git pull /path/to/biltoo-1363-zoomblur-worksize-nonneg.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1362-interval-step-zoomblur.** SlideshowClocks interval step;
 ZoomBlur ViewTransform helpers; thread/tile floors.
 Prior: **1361**.
