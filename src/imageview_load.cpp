@@ -2681,6 +2681,12 @@ bool ImageView::tilePrefetchNavHot() const
     return m_ssHud.navHot;
 }
 
+
+void ImageView::dropTilePrefetchPath(const QString &path)
+{
+    m_tileNeighborPrefetch.dropPath(path);
+}
+
 void ImageView::tickPrimaryTileLod(int budget)
 {
     ASSERT_GUI_THREAD();

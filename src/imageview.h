@@ -290,6 +290,8 @@ public:
      * No-op while nav-hot; schedules tile pyramid when durable unknown.
      */
     void prefetchTilesForPaths(const QStringList &paths, int budgetPerPath = 4);
+    /** Drop neighbor-prefetch slot for one path (session remove). */
+    void dropTilePrefetchPath(const QString &path);
     void tickSlideshowPhaseMotionClocks();
     void tickSlideshowDwellMotionClock();
     void tickSlideshowMotion();

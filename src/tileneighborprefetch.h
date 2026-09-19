@@ -57,6 +57,8 @@ public:
 
     void prefetchPaths(const QStringList &paths, int budgetPerPath);
     void clear();
+    /** Drop a single path slot (session remove / surgical cancel). */
+    void dropPath(const QString &path);
     bool empty() const { return m_slots.empty(); }
 
 private:
