@@ -227,6 +227,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   workspace/pattern accessors.
 - **SessionIdentity** index/total/id/error; **ProgressHud** clock pause;
   ZoomBlur/dwell generation; **PerfStats** enabled/timing accessors.
+- **CropSession** enter/stash/hover accessors; **GallerySoftState**
+  tilesPyramidQueued; **ViewFraming** sticky pan; **LayoutPrefs** columns.
 
 
 ## Current pain (evidence)

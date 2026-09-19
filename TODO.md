@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1477-crop-enter-soft-layout.** Crop enter/stash, soft tiles, framing/layout.
+Prior: **1476**. Commits 1477a–1477c (+ docs).
+
+### Commits
+1. **CropSession** enter, stash, and hover accessors
+2. **GallerySoftState** tilesPyramidQueued accessors
+3. **ViewFraming** sticky pan; **LayoutPrefs** column accessors
+
+### Note
+Bag micro-accessor work is largely complete. Crop enter/apply *logic*
+still lives on ImageView (ownership extraction is a larger step). Path RAM
+settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1477-crop-enter-soft-layout.bundle HEAD
+```
+Requires tip **1476**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1476-identity-hud-zoomblur-perf.** SessionIdentity, HUD clock, ZoomBlur, Perf.
 Prior: **1475**. Commits 1476a–1476d (+ docs).
 
