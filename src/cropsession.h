@@ -165,6 +165,10 @@ public:
     /** Apply stashed placement rotation/shear to @p item when stash is valid. */
     void restoreStashedPlacement(ImageItem *item) const;
 
+    /** Restore item pos/scale from enter-stash (Workspace cancel path). */
+    void restoreEnterPlacementPose(ImageItem *item) const;
+
+
     void clearPlacementStash()
     {
         stashedPlacementRotation = 0.0;

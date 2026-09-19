@@ -1177,11 +1177,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
     } else if (isWorkspaceMode()) {
         // Drop the enter-time crop-frame offset; restore pre-crop pose.
         if (m_crop.isEnterValid()) {
-            item->setPos(m_crop.enterPos());
-            item->setItemScale(m_crop.enterScaleX(),
-                               m_crop.enterScaleY() > 0.0
-                                   ? m_crop.enterScaleY()
-                                   : m_crop.enterScaleX());
+            m_crop.restoreEnterPlacementPose(item);
         }
         updateWorkspaceSceneRect();
     } else if (isGalleryMode()) {
@@ -1217,11 +1213,7 @@ void ImageView::cancelCropShowingFullImage(ImageItem *item)
     // Esc / toggle off: put the previous session crop back on the canvas.
     restoreSessionCropAppearance(item);
     if (isWorkspaceMode() && m_crop.isEnterValid()) {
-        item->setPos(m_crop.enterPos());
-        item->setItemScale(m_crop.enterScaleX(),
-                           m_crop.enterScaleY() > 0.0
-                               ? m_crop.enterScaleY()
-                               : m_crop.enterScaleX());
+        m_crop.restoreEnterPlacementPose(item);
     }
 }
 

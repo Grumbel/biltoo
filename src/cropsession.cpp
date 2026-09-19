@@ -191,3 +191,14 @@ bool CropSession::seedRotationFromStashedPlacement(qreal freeRotationEps)
     normalizeRotation();
     return true;
 }
+
+void CropSession::restoreEnterPlacementPose(ImageItem *item) const
+{
+    if (!item || !isEnterValid()) {
+        return;
+    }
+    item->setPos(enterPos());
+    const qreal sx = enterScaleX();
+    const qreal sy = enterScaleY() > 0.0 ? enterScaleY() : sx;
+    item->setItemScale(sx, sy);
+}
