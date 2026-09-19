@@ -10,9 +10,7 @@
 #include "thumtoocache.h"
 #include "tilelod/tile_lod_registry.hpp"
 #include "version.h"
-#ifdef BILTOO_HAVE_THUMTOO
 #include "thumtoo/version.hpp"
-#endif
 
 #include <QApplication>
 #include <QThreadPool>
@@ -247,11 +245,9 @@ int main(int argc, char *argv[])
             line("DjVuLibre", BILTOO_FEATURE_THUMTOO_DJVU);
             line("libcurl (via thumtoo)", BILTOO_FEATURE_THUMTOO_CURL);
             line("GIO", BILTOO_FEATURE_GIO);
-#if defined(BILTOO_HAVE_THUMTOO) && BILTOO_HAVE_THUMTOO
             out << "thumtoo " << QString::fromUtf8(thumtoo::version_string().data(),
                                                    int(thumtoo::version_string().size()))
                 << '\n';
-#endif
             out.flush();
             return 0;
         }

@@ -83,8 +83,8 @@ project(biltoo VERSION ${_project_version_cmake} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BILTOO_WITH_THUMTOO "Build against thumtoo (Store index + tiles/soft)" ON)
-set(THUMTOO_SOURCE_DIR "" CACHE PATH "Path to thumtoo source tree (flake input)")
+# thumtoo is required (Store index, tiles, soft ladder, archive/page URIs).
+set(THUMTOO_SOURCE_DIR "" CACHE PATH "Path to thumtoo source tree (required)")
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -402,7 +402,9 @@ set(BILTOO_FEATURE_THUMTOO_DJVU 0)
 set(BILTOO_FEATURE_THUMTOO_CURL 0)
 
 if(PkgConfig_FOUND)
-  # libvips — extra codecs (HEIF/AVIF/…), autorot, smartcrop attention for Pan&Zoom
+  # libvips — host ImageLoader extras (HEIF/AVIF buffer path, autorot, attention
+  # crop). Not the Store decode path (that is thumtoo). Soft optional until
+  # those features live entirely behind thumtoo.
   pkg_check_modules(VIPS IMPORTED_TARGET vips)
   if(VIPS_FOUND)
     target_link_libraries(biltoo PRIVATE PkgConfig::VIPS)
@@ -410,7 +412,7 @@ if(PkgConfig_FOUND)
     set(BILTOO_FEATURE_VIPS 1)
   endif()
 
-  # libexiv2 — full Exif / IPTC / XMP in the Metadata panel
+  # libexiv2 — Metadata panel Exif/IPTC/XMP. Host UI only; not thumtoo Store.
   pkg_check_modules(EXIV2 IMPORTED_TARGET exiv2)
   if(EXIV2_FOUND)
     target_link_libraries(biltoo PRIVATE PkgConfig::EXIV2)
@@ -431,43 +433,41 @@ else()
   message(STATUS "PkgConfig not found — all optional native libraries disabled")
 endif()
 
-# thumtoo — Store-only size index + tiles / session soft (flake input / local source)
-if(BILTOO_WITH_THUMTOO AND THUMTOO_SOURCE_DIR AND EXISTS "${THUMTOO_SOURCE_DIR}/CMakeLists.txt")
-  set(THUMTOO_BUILD_TESTS OFF CACHE BOOL "thumtoo tests" FORCE)
-  set(THUMTOO_BUILD_TOOLS OFF CACHE BOOL "thumtoo tools" FORCE)
-  # thumtoo CMake treats PROJECT_VERSION_FULL as an explicit packaging override.
-  # Parent biltoo already set it to *our* VERSION+git — clear it for the nested
-  # configure so thumtoo reads its own tree (thumtoo ≥312 also refuses parent
-  # PROJECT_VERSION_FULL when not top-level). Restore afterward for version.h.
-  set(_biltoo_saved_project_version_full "${PROJECT_VERSION_FULL}")
-  unset(PROJECT_VERSION_FULL)
-  add_subdirectory("${THUMTOO_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/thumtoo" EXCLUDE_FROM_ALL)
-  set(PROJECT_VERSION_FULL "${_biltoo_saved_project_version_full}")
-  unset(_biltoo_saved_project_version_full)
-  target_link_libraries(biltoo PRIVATE thumtoo)
-  target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_THUMTOO=1)
-  set(BILTOO_FEATURE_THUMTOO 1)
-  # Archive containers are opened only through thumtoo (no biltoo ArchiveReader).
-  set(BILTOO_FEATURE_ARCHIVE 1)
-  # Sub-features from thumtoo (PARENT_SCOPE after add_subdirectory).
-  if(DEFINED THUMTOO_HAVE_UNARR AND THUMTOO_HAVE_UNARR)
-    set(BILTOO_FEATURE_THUMTOO_UNARR 1)
-  endif()
-  if(DEFINED THUMTOO_HAVE_MUPDF AND THUMTOO_HAVE_MUPDF)
-    set(BILTOO_FEATURE_THUMTOO_MUPDF 1)
-  endif()
-  if(DEFINED THUMTOO_HAVE_DJVU AND THUMTOO_HAVE_DJVU)
-    set(BILTOO_FEATURE_THUMTOO_DJVU 1)
-  endif()
-  if(DEFINED THUMTOO_HAVE_CURL AND THUMTOO_HAVE_CURL)
-    set(BILTOO_FEATURE_THUMTOO_CURL 1)
-  endif()
-  message(STATUS "thumtoo: enabled (${THUMTOO_SOURCE_DIR})")
-elseif(BILTOO_WITH_THUMTOO)
-  message(STATUS "thumtoo: requested but THUMTOO_SOURCE_DIR not set or missing CMakeLists.txt")
-else()
-  message(STATUS "thumtoo: disabled")
+# thumtoo — required Store index + tiles / soft / archive-page URIs
+if(NOT THUMTOO_SOURCE_DIR OR NOT EXISTS "${THUMTOO_SOURCE_DIR}/CMakeLists.txt")
+  message(FATAL_ERROR
+    "thumtoo is required. Set -DTHUMTOO_SOURCE_DIR=/path/to/thumtoo "
+    "(flake sets this via THUMTOO_SOURCE_DIR / biltoo-configure).")
 endif()
+set(THUMTOO_BUILD_TESTS OFF CACHE BOOL "thumtoo tests" FORCE)
+set(THUMTOO_BUILD_TOOLS OFF CACHE BOOL "thumtoo tools" FORCE)
+# thumtoo CMake treats PROJECT_VERSION_FULL as an explicit packaging override.
+# Parent biltoo already set it to *our* VERSION+git — clear it for the nested
+# configure so thumtoo reads its own tree (thumtoo ≥312 also refuses parent
+# PROJECT_VERSION_FULL when not top-level). Restore afterward for version.h.
+set(_biltoo_saved_project_version_full "${PROJECT_VERSION_FULL}")
+unset(PROJECT_VERSION_FULL)
+add_subdirectory("${THUMTOO_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/thumtoo" EXCLUDE_FROM_ALL)
+set(PROJECT_VERSION_FULL "${_biltoo_saved_project_version_full}")
+unset(_biltoo_saved_project_version_full)
+target_link_libraries(biltoo PRIVATE thumtoo)
+set(BILTOO_FEATURE_THUMTOO 1)
+# Archive containers are opened only through thumtoo (no biltoo ArchiveReader).
+set(BILTOO_FEATURE_ARCHIVE 1)
+# Sub-features from thumtoo (PARENT_SCOPE after add_subdirectory).
+if(DEFINED THUMTOO_HAVE_UNARR AND THUMTOO_HAVE_UNARR)
+  set(BILTOO_FEATURE_THUMTOO_UNARR 1)
+endif()
+if(DEFINED THUMTOO_HAVE_MUPDF AND THUMTOO_HAVE_MUPDF)
+  set(BILTOO_FEATURE_THUMTOO_MUPDF 1)
+endif()
+if(DEFINED THUMTOO_HAVE_DJVU AND THUMTOO_HAVE_DJVU)
+  set(BILTOO_FEATURE_THUMTOO_DJVU 1)
+endif()
+if(DEFINED THUMTOO_HAVE_CURL AND THUMTOO_HAVE_CURL)
+  set(BILTOO_FEATURE_THUMTOO_CURL 1)
+endif()
+message(STATUS "thumtoo: required (${THUMTOO_SOURCE_DIR})")
 
 # Version + feature macros: only TUs that include version.h recompile on bump.
 configure_file(

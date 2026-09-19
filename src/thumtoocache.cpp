@@ -49,7 +49,6 @@
 #include <string>
 #include <span>
 
-#ifdef BILTOO_HAVE_THUMTOO
 #include "thumtoo/archive.hpp"
 #include "thumtoo/client.hpp"
 #include "thumtoo/image.hpp"
@@ -94,7 +93,6 @@
 #include <span>
 #include <unordered_map>
 #include <vector>
-#endif
 
 
 namespace ThumtooCache {
@@ -221,7 +219,6 @@ QString g_lastInterestKey;
 std::atomic<quint64> g_interestJobGen{0};
 constexpr int kMaxPixelQueue = 96;
 
-#ifdef BILTOO_HAVE_THUMTOO
 
 std::mutex g_mu;
 std::unique_ptr<thumtoo::Client> g_client;
@@ -626,7 +623,6 @@ bool isBiltooImageMemberPath(const QString &memberPath)
     return kSuffixes.contains(suffix);
 }
 
-#endif
 
 Bridge *g_bridge = nullptr;
 
@@ -642,7 +638,6 @@ Bridge *bridge()
 
 void openClientUnlocked()
 {
-#ifdef BILTOO_HAVE_THUMTOO
     // Caller holds g_mu or is the sole opener; sets g_inited before Client::open
     // so concurrent isAvailable() waits on the lock instead of double-open.
     if (g_inited) {
@@ -658,9 +653,6 @@ void openClientUnlocked()
     } catch (...) {
         g_client.reset();
     }
-#else
-    g_inited = true;
-#endif
 }
 
 void init()
@@ -673,7 +665,6 @@ void init()
         qWarning("biltoo/thumtoo: debug traces ON");
     }
 
-#ifdef BILTOO_HAVE_THUMTOO
     {
         std::lock_guard lock(g_mu);
         if (g_inited) {
@@ -698,12 +689,10 @@ void init()
     }
     std::lock_guard lock(g_mu);
     openClientUnlocked();
-#endif
 }
 
 void shutdown()
 {
-#ifdef BILTOO_HAVE_THUMTOO
     // Abort superseded interest jobs and cancel host work *before* destroying
     // the client. aboutToQuit used to g_client.reset() while a pool thread was
     // still inside Client::set_interest → Store::find_locator (NFS/archive
@@ -716,9 +705,7 @@ void shutdown()
         g_lastInterestKey.clear();
         thumtoo::Client *c = clientUnlocked();
         if (c) {
-#if defined(THUMTOO_API_INTEREST_EPOCH) && THUMTOO_API_INTEREST_EPOCH
             (void)c->cancel_pending();
-#endif
         }
     }
     QThreadPool::globalInstance()->clear();
@@ -739,7 +726,6 @@ void shutdown()
         g_client.reset();
         g_inited = false;
     }
-#endif
 }
 
 void enableDebugTracing()
@@ -760,14 +746,13 @@ void noteCachedSize(const QString &path, const QSize &size)
     ProcessMemos::instance().noteSize(path, size);
 }
 
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_LQIP)
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
 QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob);
 #endif
 
 void requestSizeAsync(const QString &path,
                       std::function<void(bool ok, const QSize &size, const QImage &lqip)> callback)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (!callback) {
         return;
     }
@@ -816,18 +801,11 @@ void requestSizeAsync(const QString &path,
     } else {
         run();
     }
-#else
-    Q_UNUSED(path);
-    if (callback) {
-        callback(false, QSize(), QImage());
-    }
-#endif
 }
 
 
 QSize cachedSize(const QString &path, bool scheduleRevalidate)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (path.isEmpty()) {
         return {};
     }
@@ -860,10 +838,6 @@ QSize cachedSize(const QString &path, bool scheduleRevalidate)
         }
         return out;
     }
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(scheduleRevalidate);
-#endif
     return {};
 }
 
@@ -875,7 +849,6 @@ bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs)
     if (mtimeNs) {
         *mtimeNs = -1;
     }
-#ifdef BILTOO_HAVE_THUMTOO
     if (path.isEmpty()) {
         return false;
     }
@@ -908,14 +881,10 @@ bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs)
         return false;
     }
     return any;
-#else
-    Q_UNUSED(path);
-    return false;
-#endif
 }
 
 
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_LQIP)
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
 QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob)
 {
     if (blob.empty()) {
@@ -942,7 +911,7 @@ QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob)
 
 QImage cachedLqipImage(const QString &path)
 {
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_LQIP)
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
     if (path.isEmpty()) {
         return {};
     }
@@ -977,7 +946,6 @@ QImage cachedLqipImage(const QString &path)
 
 bool isUnsupported(const QString &path)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (path.isEmpty()) {
         return false;
     }
@@ -1025,15 +993,11 @@ bool isUnsupported(const QString &path)
         std::lock_guard lock(g_mu);
         g_unsupportedNo.insert(path);
     }
-#else
-    Q_UNUSED(path);
-#endif
     return false;
 }
 
 QByteArray cachedLadderBytes(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (maxEdge <= 0) {
         return {};
     }
@@ -1050,16 +1014,12 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge)
     if (!c) {
         return {};
     }
-#if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
     thumtoo::RasterRequest req;
     req.uri = uri;
     req.max_edge = maxEdge;
     req.frame_idx = 0;
     req.policy = thumtoo::RasterPolicy::PreferCache;
     auto px = c->get_raster(req);
-#else
-    auto px = c->get_pixels(uri, maxEdge);
-#endif
     if (px) {
         if (px->bytes.empty()) {
             return {};
@@ -1074,14 +1034,9 @@ QByteArray cachedLadderBytes(const QString &path, int maxEdge)
         return QByteArray(reinterpret_cast<const char *>(px->bytes.data()),
                           int(px->bytes.size()));
     }
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-#endif
     return {};
 }
 
-#ifdef BILTOO_HAVE_THUMTOO
 void startNextPixelJobsUnlocked()
 {
     thumtoo::Client *c = clientUnlocked();
@@ -1177,23 +1132,17 @@ void startNextPixelJobsUnlocked()
                 finish();
             }
         };
-#if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
         thumtoo::RasterRequest req;
         req.uri = uri;
         req.max_edge = edge;
         req.frame_idx = 0;
         req.policy = thumtoo::RasterPolicy::PreferCache;
         c->request_raster(std::move(req), std::move(onPixels));
-#else
-        c->request_pixels(uri, edge, std::move(onPixels));
-#endif
     }
 }
-#endif
 
 void forgetPixelsSettled(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (path.isEmpty() || maxEdge <= 0) {
         return;
     }
@@ -1211,26 +1160,16 @@ void forgetPixelsSettled(const QString &path, int maxEdge)
     g_pixelsSettled.remove(ovKey);
     g_pixelsSettled.remove(dispKey);
     g_pixelsSettled.remove(fullKey);
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-#endif
 }
 
 bool isPixelsInflight(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (path.isEmpty() || maxEdge <= 0) {
         return false;
     }
     const QString key = path + QLatin1Char('#') + QString::number(maxEdge);
     std::lock_guard lock(g_mu);
     return g_pixelsInflight.contains(key);
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#endif
 }
 
 
@@ -1238,17 +1177,11 @@ bool isPixelsInflight(const QString &path, int maxEdge)
 
 bool interestOwnsOverview()
 {
-#if defined(BILTOO_HAVE_THUMTOO) && defined(THUMTOO_API_SET_INTEREST) \
-    && THUMTOO_API_SET_INTEREST
     return true;
-#else
-    return false;
-#endif
 }
 
 QString queueStatsLabel()
 {
-#ifdef BILTOO_HAVE_THUMTOO
     init();
     int hostActive = 0;
     int hostInflight = 0;
@@ -1283,14 +1216,10 @@ QString queueStatsLabel()
         return QStringLiteral("decoder idle");
     }
     return parts.join(QStringLiteral(" · "));
-#else
-    return {};
-#endif
 }
 
 QString loadingBreakdownLabel()
 {
-#ifdef BILTOO_HAVE_THUMTOO
     init();
     int active = 0;
     int queued = 0;
@@ -1336,14 +1265,10 @@ QString loadingBreakdownLabel()
         return {};
     }
     return QObject::tr("Loading · %1").arg(parts.join(QStringLiteral(" · ")));
-#else
-    return {};
-#endif
 }
 
 QString lastPixelSourceLabel(const QString &path)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (path.isEmpty()) {
         return {};
     }
@@ -1366,10 +1291,6 @@ QString lastPixelSourceLabel(const QString &path)
     default:
         return {};
     }
-#else
-    Q_UNUSED(path);
-    return {};
-#endif
 }
 
 // Legacy SoftOnly entry point — PreferCache soft band (TileSynth when tiles exist).
@@ -1382,7 +1303,6 @@ bool schedulePixels(const QString &path, int maxEdge)
 
 bool isPixelsPending(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (maxEdge <= 0 || path.isEmpty()) {
         return false;
     }
@@ -1396,17 +1316,10 @@ bool isPixelsPending(const QString &path, int maxEdge)
     std::lock_guard lock(g_mu);
     return g_pixelsInflight.contains(softKey) || g_pixelsInflight.contains(ovKey)
         || g_pixelsInflight.contains(dispKey);
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#endif
 }
 
 bool scheduleOverviewPixels(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_OVERVIEW_PIXELS) && THUMTOO_API_OVERVIEW_PIXELS
     // Explicit host requests (Gallery climb past soft) must keep a callback so
     // ladderReady can install. setInterest still prefetches without a host cb;
     // both share inflight keys so we do not double-extract the same edge.
@@ -1493,32 +1406,17 @@ bool scheduleOverviewPixels(const QString &path, int maxEdge)
             finish();
         }
     };
-#if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
     thumtoo::RasterRequest req;
     req.uri = uri;
     req.max_edge = edge;
     req.frame_idx = 0;
     req.policy = thumtoo::RasterPolicy::Overview;
     c->request_raster(std::move(req), std::move(onOverview));
-#else
-    c->request_overview_pixels(uri, edge, std::move(onOverview));
-#endif
     return true;
-#else
-    // Older thumtoo: fall back to soft ladder schedule (clamped inside).
-    return schedulePixels(path, qMin(maxEdge, kGalleryLadderEdge));
-#endif
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#endif
 }
 
 bool scheduleDisplayPixels(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_REQUEST_RASTER) && THUMTOO_API_REQUEST_RASTER
     if (maxEdge <= 0 || isUnsupported(path)) {
         return false;
     }
@@ -1647,21 +1545,11 @@ bool scheduleDisplayPixels(const QString &path, int maxEdge)
         c->request_raster(std::move(req), std::move(onDisplay));
     });
     return true;
-#else
-    return scheduleOverviewPixels(path, qMin(maxEdge, kBatchOverviewEdge));
-#endif
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#endif
 }
 
 
 quint64 bumpInterestEpoch()
 {
-#ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_INTEREST_EPOCH) && THUMTOO_API_INTEREST_EPOCH
     init();
     std::lock_guard lock(g_mu);
     thumtoo::Client *c = clientUnlocked();
@@ -1671,18 +1559,10 @@ quint64 bumpInterestEpoch()
     // Drop host-side pixel queue so we do not keep dispatching stale paths.
     g_pixelsQueue.clear();
     return static_cast<quint64>(c->bump_interest_epoch());
-#else
-    return 0;
-#endif
-#else
-    return 0;
-#endif
 }
 
 int cancelPendingThumtooWork()
 {
-#ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_INTEREST_EPOCH) && THUMTOO_API_INTEREST_EPOCH
     init();
     std::lock_guard lock(g_mu);
     g_pixelsQueue.clear();
@@ -1691,18 +1571,10 @@ int cancelPendingThumtooWork()
         return 0;
     }
     return static_cast<int>(c->cancel_pending());
-#else
-    return 0;
-#endif
-#else
-    return 0;
-#endif
 }
 
 int cancelTilesForPath(const QString &path)
 {
-#ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_INTEREST_EPOCH) && THUMTOO_API_INTEREST_EPOCH
     if (path.isEmpty()) {
         return 0;
     }
@@ -1717,14 +1589,6 @@ int cancelTilesForPath(const QString &path)
         return 0;
     }
     return static_cast<int>(c->cancel_uri(uri));
-#else
-    Q_UNUSED(path);
-    return 0;
-#endif
-#else
-    Q_UNUSED(path);
-    return 0;
-#endif
 }
 
 void purgePathDurable(const QString &path, std::function<void(qint64 tilesDeleted)> done)
@@ -1739,8 +1603,6 @@ void purgePathDurable(const QString &path, std::function<void(qint64 tilesDelete
     ProcessMemos::instance().clearDurablePath(path);
     memberLruRemove(path);
     (void)cancelTilesForPath(path);
-#ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_PURGE_URI) && THUMTOO_API_PURGE_URI
     init();
     const QString pathCopy = path;
     auto doneCopy = std::move(done);
@@ -1790,24 +1652,12 @@ void purgePathDurable(const QString &path, std::function<void(qint64 tilesDelete
         QMetaObject::invokeMethod(app, [doneCopy, tiles]() { doneCopy(tiles); },
                                   Qt::QueuedConnection);
     });
-#else
-    if (done) {
-        done(0);
-    }
-#endif
-#else
-    if (done) {
-        done(0);
-    }
-#endif
 }
 
 quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpeculative,
                     int nearEdge, int speculativeEdge,
                     const QStringList &pathsPrimary, int primaryEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
     init();
     QString key;
     key.reserve(256);
@@ -1888,30 +1738,10 @@ quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpecul
         (void)c->set_interest(std::move(items));
     });
     return job;
-#else
-    Q_UNUSED(pathsNear);
-    Q_UNUSED(pathsSpeculative);
-    Q_UNUSED(nearEdge);
-    Q_UNUSED(speculativeEdge);
-    Q_UNUSED(pathsPrimary);
-    Q_UNUSED(primaryEdge);
-    return bumpInterestEpoch();
-#endif
-#else
-    Q_UNUSED(pathsNear);
-    Q_UNUSED(pathsSpeculative);
-    Q_UNUSED(nearEdge);
-    Q_UNUSED(speculativeEdge);
-    Q_UNUSED(pathsPrimary);
-    Q_UNUSED(primaryEdge);
-    return 0;
-#endif
 }
 
 quint64 setPrimaryInterest(const QString &path, int edge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_SET_INTEREST) && THUMTOO_API_SET_INTEREST
     if (path.isEmpty() || isUnsupported(path)) {
         return 0;
     }
@@ -1964,22 +1794,11 @@ quint64 setPrimaryInterest(const QString &path, int edge)
         (void)c->set_interest(std::move(items));
     });
     return job;
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(edge);
-    return bumpInterestEpoch();
-#endif
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(edge);
-    return 0;
-#endif
 }
 
 
 bool scheduleTilePyramid(const QString &path)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (path.isEmpty()) {
         return false;
     }
@@ -2018,15 +1837,10 @@ bool scheduleTilePyramid(const QString &path)
                    qPrintable(QFileInfo(pathCopy).fileName()));
     });
     return true;
-#else
-    Q_UNUSED(path);
-    return false;
-#endif
 }
 
 bool hasDurableTiles(const QString &path)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     // Store has_tile — must not run on the GUI (use hasDurableTilesKnown there).
     ASSERT_NOT_GUI_THREAD();
     if (path.isEmpty() || isUnsupported(path)) {
@@ -2085,25 +1899,15 @@ bool hasDurableTiles(const QString &path)
         memos.noteDurableNo(path, nowMs + kDurableTilesNegativeTtlMs);
     }
     return yes;
-#else
-    Q_UNUSED(path);
-    return false;
-#endif
 }
 
 bool hasDurableTilesKnown(const QString &path)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     return ProcessMemos::instance().durableYes(path);
-#else
-    Q_UNUSED(path);
-    return false;
-#endif
 }
 
 void warmDurableTilesMemo(const QStringList &paths)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (paths.isEmpty()) {
         return;
     }
@@ -2118,14 +1922,10 @@ void warmDurableTilesMemo(const QStringList &paths)
             }
         }
     });
-#else
-    Q_UNUSED(paths);
-#endif
 }
 
 void warmSessionOpenMemos(const QStringList &paths)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (paths.isEmpty()) {
         return;
     }
@@ -2181,25 +1981,19 @@ void warmSessionOpenMemos(const QStringList &paths)
     } else {
         workAll();
     }
-#else
-    Q_UNUSED(paths);
-#endif
 }
 
 void clearSessionReplaceMemos()
 {
-#ifdef BILTOO_HAVE_THUMTOO
     ProcessMemos::instance().clearSessionReplaceDurable();
     {
         std::lock_guard lock(g_uriMu);
         g_uriBySessionPath.clear();
     }
-#endif
 }
 
 int durableTileMinScale(const QString &path)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     // Memo only — discovery is warmDurableTilesMemo / hasDurableTiles on workers.
     // Paint path calls this on the GUI; must never has_tile here.
     ProcessMemos &memos = ProcessMemos::instance();
@@ -2207,15 +2001,10 @@ int durableTileMinScale(const QString &path)
         return 0;
     }
     return memos.durableMinScale(path);
-#else
-    Q_UNUSED(path);
-    return 0;
-#endif
 }
 
 bool scheduleTileSynthOrPyramid(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (path.isEmpty() || maxEdge <= 0) {
         return false;
     }
@@ -2227,31 +2016,19 @@ bool scheduleTileSynthOrPyramid(const QString &path, int maxEdge)
             || isPixelsPending(path, maxEdge);
     }
     return scheduleTilePyramid(path);
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#endif
 }
 
 bool scheduleSoftPixels(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (maxEdge <= 0) {
         return false;
     }
     // Deprecated product path — redirect to tiles/TileSynth (no soft encode).
     return scheduleTileSynthOrPyramid(path, maxEdge);
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#endif
 }
 
 void preparePaths(const QStringList &paths)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (paths.isEmpty()) {
         return;
     }
@@ -2323,14 +2100,10 @@ void preparePaths(const QStringList &paths)
             emit bridge()->sizeReady(path, QSize(reply.size->width, reply.size->height));
         });
     });
-#else
-    Q_UNUSED(paths);
-#endif
 }
 
 void warmUris(const QStringList &paths)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (paths.isEmpty()) {
         return;
     }
@@ -2345,14 +2118,10 @@ void warmUris(const QStringList &paths)
             (void)toThumtooUri(p);
         }
     });
-#else
-    Q_UNUSED(paths);
-#endif
 }
 
 QImage getTile(const QString &path, int scale, int x, int y)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     init();
     const std::string uri = toThumtooUri(path);
     if (uri.empty()) {
@@ -2376,19 +2145,11 @@ QImage getTile(const QString &path, int scale, int x, int y)
         return {};
     }
     return tilelod::tile_bitmap_to_qimage(*decoded);
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(scale);
-    Q_UNUSED(x);
-    Q_UNUSED(y);
-    return {};
-#endif
 }
 
 void requestTiles(const QString &path, const QVector<TileCoord> &coords,
                   TileBitmapCellCallback on_cell)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (!on_cell || coords.isEmpty()) {
         return;
     }
@@ -2427,25 +2188,13 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
                                             tile->width, tile->height, tile->codec,
                                             tile->bytes));
                      });
-#else
-    Q_UNUSED(path);
-    if (on_cell) {
-        for (int i = 0; i < coords.size(); ++i) {
-            on_cell(static_cast<std::size_t>(i), std::nullopt);
-        }
-    }
-#endif
 }
 
 bool isAvailable()
 {
-#ifdef BILTOO_HAVE_THUMTOO
     init();
     std::lock_guard lock(g_mu);
     return clientUnlocked() != nullptr;
-#else
-    return false;
-#endif
 }
 
 QStringList expandArchiveToImageRefs(const QString &archivePath, bool *fromStore)
@@ -2454,7 +2203,6 @@ QStringList expandArchiveToImageRefs(const QString &archivePath, bool *fromStore
     if (fromStore) {
         *fromStore = false;
     }
-#ifdef BILTOO_HAVE_THUMTOO
     if (archivePath.isEmpty()) {
         return out;
     }
@@ -2507,9 +2255,6 @@ QStringList expandArchiveToImageRefs(const QString &archivePath, bool *fromStore
             out.append(ref);
         }
     }
-#else
-    Q_UNUSED(archivePath);
-#endif
     return out;
 }
 
@@ -2517,7 +2262,7 @@ QStringList expandArchiveToImageRefs(const QString &archivePath, bool *fromStore
 QStringList expandPdfToPageRefs(const QString &pdfPath)
 {
     QStringList out;
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_PDF)
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
     if (pdfPath.isEmpty()) {
         return out;
     }
@@ -2530,11 +2275,9 @@ QStringList expandPdfToPageRefs(const QString &pdfPath)
     {
         std::lock_guard lock(g_mu);
         thumtoo::Client *c = clientUnlocked();
-#if defined(THUMTOO_API_DOCUMENT_INDEX) && THUMTOO_API_DOCUMENT_INDEX
         if (c) {
             count = c->document_page_count(abs, thumtoo::Client::DocumentKind::Pdf);
         }
-#endif
         if (!count) {
             count = thumtoo::pdf_page_count(abs);
         }
@@ -2559,7 +2302,7 @@ QStringList expandPdfToPageRefs(const QString &pdfPath)
 QStringList expandPdfToImageRefs(const QString &pdfPath)
 {
     QStringList out;
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_PDF)
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
     if (pdfPath.isEmpty()) {
         return out;
     }
@@ -2604,7 +2347,7 @@ QStringList expandPdfToImageRefs(const QString &pdfPath)
 QStringList expandEpubToPageRefs(const QString &epubPath)
 {
     QStringList out;
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_EPUB)
+#if defined(BILTOO_HAVE_THUMTOO_EPUB)
     if (epubPath.isEmpty()) {
         return out;
     }
@@ -2620,12 +2363,10 @@ QStringList expandEpubToPageRefs(const QString &epubPath)
     {
         std::lock_guard lock(g_mu);
         thumtoo::Client *c = clientUnlocked();
-#if defined(THUMTOO_API_DOCUMENT_INDEX) && THUMTOO_API_DOCUMENT_INDEX
         if (c) {
             count = c->document_page_count(abs, thumtoo::Client::DocumentKind::Epub,
                                            &layout);
         }
-#endif
     }
     if (count && *count > 0) {
         const QString layoutStr =
@@ -2682,7 +2423,7 @@ QStringList expandEpubToPageRefs(const QString &epubPath)
 QStringList expandDjvuToPageRefs(const QString &djvuPath)
 {
     QStringList out;
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_DJVU)
+#if defined(BILTOO_HAVE_THUMTOO_DJVU)
     if (djvuPath.isEmpty()) {
         return out;
     }
@@ -2695,11 +2436,9 @@ QStringList expandDjvuToPageRefs(const QString &djvuPath)
     {
         std::lock_guard lock(g_mu);
         thumtoo::Client *c = clientUnlocked();
-#if defined(THUMTOO_API_DOCUMENT_INDEX) && THUMTOO_API_DOCUMENT_INDEX
         if (c) {
             count = c->document_page_count(abs, thumtoo::Client::DocumentKind::Djvu);
         }
-#endif
         if (!count) {
             count = thumtoo::djvu_page_count(abs);
         }
@@ -2723,7 +2462,7 @@ QStringList expandDjvuToPageRefs(const QString &djvuPath)
 
 QImage rasterizePdfPage(const QString &pdfPath, int page_1based, int maxEdge)
 {
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_PDF)
+#if defined(BILTOO_HAVE_THUMTOO_PDF)
     if (pdfPath.isEmpty() || page_1based < 1) {
         return {};
     }
@@ -2752,7 +2491,6 @@ QImage rasterizePdfPage(const QString &pdfPath, int page_1based, int maxEdge)
 
 QImage rasterizePageRef(const QString &sessionPath, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (sessionPath.isEmpty()) {
         return {};
     }
@@ -2802,16 +2540,10 @@ QImage rasterizePageRef(const QString &sessionPath, int maxEdge)
 #endif
 
     return rasterizePdfPage(ref.pdfPath, ref.page, edge);
-#else
-    Q_UNUSED(sessionPath);
-    Q_UNUSED(maxEdge);
-    return {};
-#endif
 }
 
 QByteArray readArchiveMemberBytes(const QString &archiveRefPath)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (!ArchivePath::isArchiveRef(archiveRefPath)) {
         return {};
     }
@@ -2916,15 +2648,11 @@ QByteArray readArchiveMemberBytes(const QString &archiveRefPath)
         memberLruPut(cacheKey, result);
     }
     return result;
-#else
-    Q_UNUSED(archiveRefPath);
-    return {};
-#endif
 }
 
 
 
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_TEXT)
+#if defined(BILTOO_HAVE_THUMTOO_TEXT)
 
 namespace {
 
@@ -3031,7 +2759,6 @@ QRectF pageRectToImageRect(const QRectF &pageRect, const QRectF &pageBounds,
                   (nx1 - nx0) * imageSize.width(), (ny1 - ny0) * imageSize.height());
 }
 
-#ifdef BILTOO_HAVE_THUMTOO
 #if defined(BILTOO_HAVE_THUMTOO_TEXT)
 
 namespace {
@@ -3142,18 +2869,6 @@ PageTextLayer ensurePageTextLayer(const QString &)
 }
 
 #endif
-#else // no thumtoo
-
-PageTextLayer cachedPageTextLayer(const QString &)
-{
-    return {};
-}
-PageTextLayer ensurePageTextLayer(const QString &)
-{
-    return {};
-}
-
-#endif
 
 
 
@@ -3171,7 +2886,7 @@ bool StoredContentAppearance::isIdentity() const
     return true;
 }
 
-#if defined(BILTOO_HAVE_THUMTOO) && defined(BILTOO_HAVE_THUMTOO_APPEARANCE)
+#if defined(BILTOO_HAVE_THUMTOO_APPEARANCE)
 
 namespace {
 
@@ -3550,8 +3265,6 @@ void clearContentAppearance(const QString &)
 
 bool scheduleFullPixels(const QString &path, int maxEdge)
 {
-#ifdef BILTOO_HAVE_THUMTOO
-#if defined(THUMTOO_API_FULL_PIXELS) && THUMTOO_API_FULL_PIXELS
     if (path.isEmpty() || isUnsupported(path)) {
         return false;
     }
@@ -3672,16 +3385,6 @@ bool scheduleFullPixels(const QString &path, int maxEdge)
         c->request_full_pixels(uri, edge, std::move(onFull));
     });
     return true;
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#endif
-#else
-    Q_UNUSED(path);
-    Q_UNUSED(maxEdge);
-    return false;
-#endif
 }
 
 } // namespace ThumtooCache

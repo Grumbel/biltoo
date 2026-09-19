@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1584-require-thumtoo.** Require thumtoo; strip BILTOO_HAVE_THUMTOO and THUMTOO_API_* ifdefs.
+Prior: **1583**.
+
+### Change
+- CMake: `THUMTOO_SOURCE_DIR` required (`FATAL_ERROR` if missing); drop
+  `BILTOO_WITH_THUMTOO` option and `BILTOO_HAVE_THUMTOO` compile def
+- Sources: remove `#ifdef BILTOO_HAVE_THUMTOO` / `#if THUMTOO_API_*` stubs
+- Keep `__has_include` for PDF/EPUB/DjVu/LQIP/… (thumtoo optional backends)
+- Keep soft deps: VIPS (host ImageLoader), Exiv2 (Metadata panel), GIO (default apps)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1584-require-thumtoo.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1583-hard-reload-purge-uri.** Hard reload uses purge_uri for archive/page paths (members were left by purge_path).
 Prior: **1582**.
 

@@ -96,7 +96,6 @@ void pumpProbeSerial()
 
 void scheduleProbe(const QString &path)
 {
-#ifdef BILTOO_HAVE_THUMTOO
     if (path.isEmpty()) {
         return;
     }
@@ -116,9 +115,6 @@ void scheduleProbe(const QString &path)
         g_probeSerialFifo.append(path);
     }
     pumpProbeSerial();
-#else
-    Q_UNUSED(path);
-#endif
 }
 
 } // namespace ThumtooCache

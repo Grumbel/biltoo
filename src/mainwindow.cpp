@@ -4,9 +4,7 @@
 #include "mainwindow_includes.h"
 #include "keyboardshortcutsdialog.h"
 #include "version.h"
-#ifdef BILTOO_HAVE_THUMTOO
 #include "thumtoo/version.hpp"
-#endif
 #include "imageitem.h"
 #include "slideshowclocks.h"
 
@@ -2064,11 +2062,9 @@ void MainWindow::about()
     box.setWindowTitle(tr("About Biltoo"));
     box.setIconPixmap(QApplication::windowIcon().pixmap(64, 64));
     QString title = tr("<h3>Biltoo %1</h3>").arg(QApplication::applicationVersion());
-#if defined(BILTOO_HAVE_THUMTOO) && BILTOO_HAVE_THUMTOO
     title += tr("<p>thumtoo %1</p>")
                  .arg(QString::fromUtf8(thumtoo::version_string().data(),
                                         int(thumtoo::version_string().size())));
-#endif
     box.setText(title);
 
     // Compile-time optional libs only (no runtime user-disable yet).

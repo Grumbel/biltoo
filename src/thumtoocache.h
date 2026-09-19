@@ -18,7 +18,7 @@
 
 /**
  * Thin biltoo façade over thumtoo::Client (durable size index + ladder).
- * Compile-time optional: without BILTOO_HAVE_THUMTOO every call is a no-op.
+ * thumtoo is a required dependency (see CMakeLists.txt).
  */
 namespace ThumtooCache {
 
