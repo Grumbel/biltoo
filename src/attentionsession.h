@@ -5,6 +5,7 @@
 #define ATTENTIONSESSION_H
 
 #include "imageview_types.h"
+#include "viewtransform.h"
 
 #include <QPoint>
 #include <QPointF>
@@ -139,7 +140,7 @@ public:
     /** Update rubber rect from origin to @p pos (viewport). */
     void updateRubber(const QPoint &pos)
     {
-        rubberRect = QRect(rubberOrigin, pos).normalized();
+        rubberRect = ViewTransform::rubberRect(rubberOrigin, pos);
     }
 
     /** End rubber-band; keep selected indices. */
