@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1652-moc-loadrole-public.** Move LoadRole/host decls out of public slots.
+Prior: **1651**.
+
+### Change
+- `ImageView::LoadRole` and sample/seed host method declarations live in
+  ordinary `public:` (not under `public slots:`) so moc does not choke on the
+  nested enum / non-metatype `StoredContentAppearance` parameter
+- Fixes AutoMoc failure on `imageview.h`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1652-moc-loadrole-public.bundle HEAD
+```
+
+### Next
+- `biltoo-build` verification
+- Path-order dual-write audit
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1651-fix-split-controller-compile.** Fix split DisplayPipelineController compile.
 Prior: **1650**.
 
