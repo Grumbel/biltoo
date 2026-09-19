@@ -125,6 +125,11 @@ public:
   static constexpr std::size_t kDefaultGlobalBudgetBytes =
       384ull * 1024ull * 1024ull;
   static constexpr std::size_t kDefaultMaxIdlePaths = 64;
+  /** Overview-warm threshold shared with neighbor prefetch skip. */
+  static constexpr std::size_t kWarmSucceededMin = 4;
+
+  /** One-line summary for BILTOO_TILE_DEBUG (paths/idle/MiB/caps). */
+  QString debug_summary() const;
 
 private:
   TileLodRegistry() = default;

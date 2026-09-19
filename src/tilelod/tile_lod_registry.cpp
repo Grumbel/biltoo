@@ -5,6 +5,8 @@
 
 #include "thumtoocache.h"
 
+#include <QString>
+
 #include <algorithm>
 #include <vector>
 
