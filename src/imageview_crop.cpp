@@ -1071,10 +1071,9 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
         m_crop.enterStateRef(), captureCropUndoAfterState(item), text));
 }
 
-void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
-                                          const WorkspaceItemState &st, bool multiMp,
-                                          qreal cropW, qreal cropH, const QString &path,
-                                          const QPointF &cropSceneCenter)
+
+void ImageView::installApplyDisplayGeometry(ImageItem *item, const WorkspaceItemState &st,
+                                            qreal cropW, qreal cropH, const QString &path)
 {
     // Clear first so the crop bake replaces full-frame pixels — otherwise canvas
     // stretches full into the crop box and filmstrip gets img=full.
@@ -1082,6 +1081,14 @@ void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
     // Geometry before pixels: empty item with crop intrinsic, then bake.
     applyContentLayoutSize(item, st);
     CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
+}
+
+void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
+                                          const WorkspaceItemState &st, bool multiMp,
+                                          qreal cropW, qreal cropH, const QString &path,
+                                          const QPointF &cropSceneCenter)
+{
+    installApplyDisplayGeometry(item, st, cropW, cropH, path);
     attachDisplaySample(item, display, st, CropSession::applyPixelKind(multiMp));
     m_crop.restoreEnterScale(item);
     alignItemCenterToScene(item, cropSceneCenter);
@@ -1447,6 +1454,15 @@ void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
     CropGeometry::paintSizeBadge(painter, cropView, cropSz.width(), cropSz.height());
 }
 
+
+void ImageView::paintCropOverlayBody(QPainter &painter, const QPolygonF &cropViewPoly,
+                                     const QRect &cropView)
+{
+    paintCropFrameDecorations(painter, cropViewPoly);
+    paintCropChromeButtons(painter);
+    paintCropSizeBadge(painter, cropView);
+}
+
 void ImageView::paintCropOverlay(QPainter &painter)
 {
     if (!m_crop.active()) {
@@ -1462,9 +1478,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
 
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-    paintCropFrameDecorations(painter, cropViewPoly);
-    paintCropChromeButtons(painter);
-    paintCropSizeBadge(painter, cropView);
+    paintCropOverlayBody(painter, cropViewPoly, cropView);
     painter.restore();
 }
 

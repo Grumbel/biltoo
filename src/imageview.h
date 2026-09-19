@@ -1671,6 +1671,8 @@ private:
     void paintCropFrameDecorations(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropChromeButtons(QPainter &painter);
     void paintCropSizeBadge(QPainter &painter, const QRect &cropView);
+    void paintCropOverlayBody(QPainter &painter, const QPolygonF &cropViewPoly,
+                              const QRect &cropView);
     void paintCropOverlay(QPainter &painter);
     void paintAttentionOverlay(QPainter &painter);
     int attentionHandleIndexAt(const QPoint &viewPos) const;
@@ -1708,6 +1710,8 @@ private:
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     WorkspaceItemState captureCropUndoAfterState(ImageItem *item) const;
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
+    void installApplyDisplayGeometry(ImageItem *item, const WorkspaceItemState &st,
+                                     qreal cropW, qreal cropH, const QString &path);
     void attachCropApplyDisplay(ImageItem *item, const QImage &display,
                                 const WorkspaceItemState &st, bool multiMp,
                                 qreal cropW, qreal cropH, const QString &path,
