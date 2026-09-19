@@ -227,7 +227,15 @@ public:
 
     void setAwaitingFull(const QString &path) { awaitingFullPath = path; }
 
-    void setShowingFullImage(bool on) { showingFullImage = on; }
+    /** @return true when the flag changed. */
+    bool setShowingFullImage(bool on)
+    {
+        if (showingFullImage == on) {
+            return false;
+        }
+        showingFullImage = on;
+        return true;
+    }
 
     /** @return true when allow-expand flag changed. */
     bool setAllowExpand(bool on)
