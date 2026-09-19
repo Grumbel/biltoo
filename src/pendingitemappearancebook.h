@@ -14,20 +14,20 @@ class ImageItem;
  * Content appearance staged by Duplicate until bindSelectedSessionIds.
  * Keys are live ImageItem pointers (GUI-only); cleared on session wipe.
  */
-struct PendingItemAppearanceBook {
-    QHash<ImageItem *, WorkspaceItemState> byItem;
-
-    void clear() { byItem.clear(); }
+class PendingItemAppearanceBook
+{
+public:
+    void clear() { m_byItem.clear(); }
 
     bool contains(ImageItem *item) const
     {
-        return item && byItem.contains(item);
+        return item && m_byItem.contains(item);
     }
 
     void insert(ImageItem *item, const WorkspaceItemState &state)
     {
         if (item) {
-            byItem.insert(item, state);
+            m_byItem.insert(item, state);
         }
     }
 
@@ -37,14 +37,20 @@ struct PendingItemAppearanceBook {
         if (!item || !out) {
             return false;
         }
-        const auto it = byItem.constFind(item);
-        if (it == byItem.cend()) {
+        const auto it = m_byItem.find(item);
+        if (it == m_byItem.end()) {
             return false;
         }
         *out = *it;
-        byItem.erase(it);
+        m_byItem.erase(it);
         return true;
     }
+
+    int size() const { return m_byItem.size(); }
+    bool isEmpty() const { return m_byItem.isEmpty(); }
+
+private:
+    QHash<ImageItem *, WorkspaceItemState> m_byItem;
 };
 
 #endif // PENDINGITEMAPPEARANCEBOOK_H
