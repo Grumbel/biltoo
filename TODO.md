@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1537-crop-session-bake-pool.** Non-full bake, path book, pool callback on tip 1536.
+Prior: **1536** (`5d718e3`). Full stack from origin tip **1527** (`24da05b`).
+
+### Commits
+1. bakeAndCommitNonFullApply
+2. rematerializeIfContentXformMismatch
+3. loadPathBookAppearance
+4. onPoolCropFullRasterDecoded
+5. releaseItemTileLod
+
+### Apply (on tip **1527** / `24da05b` / origin/master)
+```bash
+git fetch origin && git merge --ff-only origin/master
+git pull --ff-only /path/to/biltoo-1537-crop-session-bake-pool.bundle HEAD
+```
+Full stack from origin tip 1527. `git bundle verify` requires **`24da05b`**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1536-crop-session-apply-restore.** Appearance/commit/restore helpers on tip 1535.
 Prior: **1535** (`0b3e1ee`). Full stack from origin tip **1527** (`24da05b`).
 
