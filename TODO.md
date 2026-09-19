@@ -2,6 +2,32 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1531-crop-session-appearance-install.** New helpers on origin tip 1527 only.
+Prior: **1527** (`24da05b` / origin/master).
+
+### Note
+Tip 1530 was a parallel rebuild from 1524 and **does not** stack on origin tip 1527.
+Discard 1530. This tip continues from the human’s actual tip.
+
+### Commits
+1. loadRestoreCropAppearance, installRestoredCropPixels, writeRecordedCropState,
+   applyStoredAppearancePixels, applyCropAppearancePixels, prepareEnterInstallHost,
+   restoreEnterPlacementIfWorkspace, paintCropSizeBadge, pickAutoCropSourcePixels,
+   notifyCropViewportStatus
+
+### Apply (on tip **1527** / `24da05b` / upstream master)
+```bash
+git fetch origin && git merge --ff-only origin/master
+git pull --ff-only /path/to/biltoo-1531-crop-session-appearance-install.bundle HEAD
+```
+`git bundle verify` must require **`24da05b`**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1527-crop-session-commit-leave.** Non-full Apply path, appearance store, leave finalize.
 Prior: **1526** (`1e3f03c`). Commits 1527a–1527b (+ docs).
 

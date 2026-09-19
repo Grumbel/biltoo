@@ -749,12 +749,16 @@ public:
     /** Commit the draft crop rect to pixels and leave crop mode. */
     void applyCrop();
     /** Shrink draft to non-background content (margin trim). */
+    void notifyCropViewportStatus();
+    QImage pickAutoCropSourcePixels(ImageItem *item) const;
     void applyAutoCrop();
     /** Discard the draft and leave crop mode. */
     void cancelCrop();
     /** Restore pixels + session crop metadata (used by crop undo/redo). */
     void storeAppearanceFromState(ImageItem *item, const WorkspaceItemState &state);
     void relayoutAfterAppearanceApply(ImageItem *item);
+    void applyCropAppearancePixels(ImageItem *item, const QImage &src,
+                                   const WorkspaceItemState &state);
     void applyCropAppearance(ImageItem *item, const QImage &src,
                             const WorkspaceItemState &state);
 
@@ -1609,6 +1613,8 @@ private:
      * Apply stored session appearance (crop + content bakes) for @p item's
      * session id / index / unbound path. Pixels must be the full on-disk image.
      */
+    void applyStoredAppearancePixels(ImageItem *item, const WorkspaceItemState &app,
+                                     SessionImageId sid);
     void applyStoredAppearance(ImageItem *item);
     /**
      * After installing full on-disk pixels (soft→full), re-apply crop / content
@@ -1629,6 +1635,12 @@ private:
      * Map item-local draft rect to source pixel rect of the *current* pixmap,
      * then compose into original on-disk coordinates in @p state.
      */
+    void logRecordCropDebug(const QSize &cropBasis, const QSize &imageSize,
+                            const QRect &disp) const;
+    void writeRecordedCropState(ImageItem *item, SessionImageId sid,
+                                const WorkspaceItemState *orientApp,
+                                const CropSession::RecordGeometry &rec,
+                                const QSize &cropBasis, const QRect &disp);
     void recordSessionCrop(ImageItem *item, const QRectF &localCrop);
 
     // CropHandle is defined in cropsession.h
@@ -1651,6 +1663,7 @@ private:
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
     void paintCropFrameDecorations(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropChromeButtons(QPainter &painter);
+    void paintCropSizeBadge(QPainter &painter, const QRect &cropView);
     void paintCropOverlay(QPainter &painter);
     void paintAttentionOverlay(QPainter &painter);
     int attentionHandleIndexAt(const QPoint &viewPos) const;
@@ -1709,6 +1722,7 @@ private:
                            qreal cropW, qreal cropH, qreal footW, qreal footH) const;
     bool applyCropCommitNonFullFrame(ImageItem *item);
     bool applyCropCommit(ImageItem *item);
+    void restoreEnterPlacementIfWorkspace(ImageItem *item);
     void cancelCropShowingFullImage(ImageItem *item);
     void flushPendingFullRematerialize(bool pendingFull, const QString &pendingPath,
                                        SessionImageId pendingSid,
@@ -1739,6 +1753,8 @@ private:
     void installDraftEnterDisplay(ImageItem *item,
                                   const CropSession::EnterInstallSample &sample,
                                   const QImage &full, const QString &path);
+    void prepareEnterInstallHost(const QString &path, const QImage &full,
+                                bool unorientedSource);
     void installFullImageForCrop(ImageItem *item, const QImage &full,
                                  const WorkspaceItemState *app, bool haveApp,
                                  bool unorientedSource);
@@ -1747,6 +1763,10 @@ private:
     /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
     void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /** Cancel path: put the session crop (if any) back on the live item. */
+    bool loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
+                                    SessionImageId *sidOut) const;
+    void installRestoredCropPixels(ImageItem *item, const WorkspaceItemState &app,
+                                   SessionImageId sid, const QImage &full);
     void restoreSessionCropAppearance(ImageItem *item);
     void updateMouseInfo(const QPoint &viewPos);
     /** Frame @p item in the view. Image mode: does not clear rotation/flips. */

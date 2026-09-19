@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-1527-crop-session-commit-leave**.
-Latest tip: **biltoo-1527-crop-session-commit-leave**. Next bundle number: **1528**
+Latest agent handoff: **TODO.md → biltoo-1531-crop-session-appearance-install**.
+Latest tip: **biltoo-1531-crop-session-appearance-install**. Next bundle number: **1532**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
@@ -88,7 +88,13 @@ Agents often work in a sandbox **without** write access to the user’s real
 git remotes. The reliable handoff is a **git bundle that fast-forwards from
 the human’s current tip**.
 
+#### Mandatory: one full-stack tip from origin
+
+Every bundle prerequisite MUST be `git rev-parse origin/master` after
+`git fetch origin`. Never require an artifact-only SHA.
+
 #### Pre-flight before every coding turn
+
 
 ```bash
 git fetch origin
