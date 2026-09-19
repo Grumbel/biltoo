@@ -6,6 +6,7 @@
 
 #include <QSize>
 #include <QtGlobal>
+#include "viewtransform.h"
 
 /**
  * Pure filmstrip / ThumbnailBar layout helpers (no QListView state).
@@ -48,12 +49,12 @@ inline QSize letterboxContentSize(int thumbSize, QSize aspect, bool horizontalBa
     }
     if (horizontalBar) {
         const int h = thumbSize;
-        const int w = qMax(1, int(qRound(qreal(thumbSize) * qreal(aspect.width())
+        const int w = ViewTransform::atLeast1(int(qRound(qreal(thumbSize) * qreal(aspect.width())
                                          / qreal(aspect.height()))));
         return QSize(w, h);
     }
     const int w = thumbSize;
-    const int h = qMax(1, int(qRound(qreal(thumbSize) * qreal(aspect.height())
+    const int h = ViewTransform::atLeast1(int(qRound(qreal(thumbSize) * qreal(aspect.height())
                                      / qreal(aspect.width()))));
     return QSize(w, h);
 }
@@ -69,6 +70,30 @@ inline QSize fitContentInInner(QSize contentSz, QSize inner)
 inline int cornerBadgeSize(int slotW, int slotH)
 {
     return qBound(6, qMin(slotW, slotH) / 4, 18);
+}
+
+/** Extra virtual rows/cols around the visible filmstrip window (min 16). */
+inline int virtualOverscan(int cellsAcross, int cellsDown, int floorCount = 16)
+{
+    return qMax(floorCount, cellsAcross * cellsDown * 2);
+}
+
+/** Seed window when geometry is unknown: [focus-radius, focus+radius+1). */
+inline void seedVirtualRange(int focus, int count, int radius, int *lo, int *hi)
+{
+    if (!lo || !hi) {
+        return;
+    }
+    if (count <= 0) {
+        *lo = 0;
+        *hi = 0;
+        return;
+    }
+    if (focus < 0) {
+        focus = 0;
+    }
+    *lo = focus - radius < 0 ? 0 : focus - radius;
+    *hi = focus + radius + 1 > count ? count : focus + radius + 1;
 }
 
 } // namespace FilmstripGeometry

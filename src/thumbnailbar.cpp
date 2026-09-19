@@ -1914,17 +1914,12 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             const int cell = ViewTransform::atLeast1(m_thumbSize + 8);
             const int across = ViewTransform::atLeast1(viewport()->width() / cell);
             const int down = ViewTransform::atLeast1(viewport()->height() / cell);
-            const int over = qMax(16, across * down * 2);
+            const int over = FilmstripGeometry::virtualOverscan(across, down);
             lo = ViewTransform::nonNeg(minRow - over);
             hi = qMin(n, maxRow + over + 1);
         } else {
             // No geometry yet — seed from selection or start.
-            int focus = currentRow();
-            if (focus < 0) {
-                focus = 0;
-            }
-            lo = ViewTransform::nonNeg(focus - 24);
-            hi = qMin(n, focus + 25);
+            FilmstripGeometry::seedVirtualRange(currentRow(), n, 24, &lo, &hi);
         }
     }
 
