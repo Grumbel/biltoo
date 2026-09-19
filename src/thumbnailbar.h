@@ -297,7 +297,7 @@ private:
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;
     QStringList m_files;
-    DisplaySurfaceController m_displayPipeline.displaySurfaces();
+    DisplaySurfaceController m_displaySurfaces;
     /** Parallel to m_files: surface id per row (0 = unbound). */
     QVector<DisplaySurface::SurfaceId> m_rowSurfaceIds;
     /** Session-only images (crop, …) preferred over on-disk decode for thumbs. */
