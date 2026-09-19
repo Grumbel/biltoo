@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1626-tier4b-require-bound-appearance.** Tier 4b complete: no view-owned appearance store.
+Prior: **1625**.
+
+### Change
+- Remove `m_appearanceOwned`; `appearance()` always dereferences bound store
+- `Q_ASSERT(m_appearanceBound)` — MainWindow must `bindSessionAppearance` first
+- SessionDocument is the sole SessionAppearanceStore owner
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1626-tier4b-require-bound-appearance.bundle HEAD
+```
+
+### Next
+- Delete `m_pathOrderBook` in favor of SessionDocument paths/ids
+- Tier 5b PreferCache method move
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1625-fix-appearance-shadow.** Fix appearance() shadowing after Tier 4b bind.
 Prior: **1624** (`fa3502c`).
 

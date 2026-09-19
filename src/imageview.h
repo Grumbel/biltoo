@@ -261,18 +261,20 @@ public:
     void enableFitMode();
     /** Controller host: session appearance store (id-keyed). */
     /**
-     * Session appearance (id-keyed). When bound to SessionDocument (Tier 4b),
-     * this is the document store; otherwise a view-owned fallback.
+     * Session appearance (id-keyed). Always the SessionDocument store after
+     * Phase 6 Tier 4b — call bindSessionAppearance before any appearance use.
      */
     SessionAppearanceStore &appearance()
     {
-        return m_appearanceBound ? *m_appearanceBound : m_appearanceOwned;
+        Q_ASSERT(m_appearanceBound);
+        return *m_appearanceBound;
     }
     const SessionAppearanceStore &appearance() const
     {
-        return m_appearanceBound ? *m_appearanceBound : m_appearanceOwned;
+        Q_ASSERT(m_appearanceBound);
+        return *m_appearanceBound;
     }
-    /** Point at SessionDocument::appearance(); nullptr restores view-owned store. */
+    /** Point at SessionDocument::appearance() (required before appearance()). */
     void bindSessionAppearance(SessionAppearanceStore *store)
     {
         m_appearanceBound = store;

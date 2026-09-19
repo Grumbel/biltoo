@@ -370,10 +370,10 @@
      * Per-session-slot appearance (crop / content flip / quarter turns).
      * Keyed by session index so path duplicates stay independent value copies.
      */
-    /** Per-session-image appearance, keyed by stable SessionImageId. */
-    /** Content appearance by stable session-image id (Phase 2 store). */
-    SessionAppearanceStore m_appearanceOwned;
-    /** Non-owning; when set, appearance() uses document store (Tier 4b). */
+    /**
+     * Non-owning pointer to SessionDocument::appearance() (Tier 4b).
+     * Must be set via bindSessionAppearance before appearance() is used.
+     */
     SessionAppearanceStore *m_appearanceBound = nullptr;
     /** Session ids we already tried to seed from path XDG (success or miss). */
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */

@@ -57,9 +57,8 @@ public:
     bool validateUniqueIds(const char *context = nullptr) const;
 
     /**
-     * Phase 6 Tier 4a: appearance lives on the document (target architecture).
-     * ImageView still owns a live store until Tier 4b wires a single owner;
-     * MainWindow may dual-write during the transition.
+     * Phase 6 Tier 4: sole SessionAppearanceStore for the session.
+     * ImageView binds via bindSessionAppearance; no view-owned store remains.
      */
     SessionAppearanceStore &appearance() { return m_appearance; }
     const SessionAppearanceStore &appearance() const { return m_appearance; }

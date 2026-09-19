@@ -739,7 +739,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
   Full offscreen ImageView open→Gallery→crop harness still open.
 - Tier 4a: **done** (biltoo-1623) — `SessionDocument` owns a `SessionAppearanceStore`
   (additive; ImageView still has live store). Char test covers doc-keyed crop.
-- Tier 4b: **partial** (biltoo-1624) — `bindSessionAppearance` to document store;
+- Tier 4b: **done** (biltoo-1626) — view-owned `m_appearanceOwned` removed; `appearance()` requires `bindSessionAppearance`. `m_pathOrderBook` still on view.
   MainWindow binds at construct; `SessionDocument::clear` clears appearance.
   View keeps fallback owned store when unbound. `m_pathOrderBook` still on view.
 - Tier 5a: **done** (biltoo-1610) — `DisplayPipelineController` owns loadGate,
