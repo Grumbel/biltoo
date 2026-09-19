@@ -353,21 +353,8 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
 
 bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const
 {
-    // Prior crop + content flags for *this* session image only — never path map alone.
-    const SessionImageId sid = CropSession::resolveSessionIdForItem(
-        item, m_sessionId.currentIdValue());
-    if (loadSessionAppearance(sid, app)) {
-        return true;
-    }
-    if (CropSession::fillAppearanceFromItemSessionCrop(app, item)) {
-        return true;
-    }
-    // Last resort for unbound single-instance tiles.
-    if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
-        *app = *st;
-        return true;
-    }
-    return false;
+    // Prior crop + content flags for this session image; path map only if unbound.
+    return loadRestoreCropAppearance(item, app, nullptr);
 }
 
 bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
