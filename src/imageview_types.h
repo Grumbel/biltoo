@@ -87,6 +87,25 @@ inline bool layoutIsHeightFitted(LayoutMode mode)
     }
 }
 
+/** Grid / GridCrop — no intrinsic sizes required for pack. */
+inline bool layoutIsGridFamily(LayoutMode mode)
+{
+    return mode == LayoutMode::Grid || mode == LayoutMode::GridCrop;
+}
+
+/** Fill-mode pack that needs global sizes before first pack. */
+inline bool layoutNeedsAllSizes(LayoutMode mode)
+{
+    switch (mode) {
+    case LayoutMode::MasonryFill:
+    case LayoutMode::MasonryRowsFill:
+    case LayoutMode::FlowFill:
+        return true;
+    default:
+        return false;
+    }
+}
+
 
 /** True when width and height are both positive. */
 inline bool isPositiveSize(const QSize &s)

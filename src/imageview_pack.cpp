@@ -396,7 +396,7 @@ void ImageView::setGridColumns(int columns)
         return;
     }
     if (isGalleryMode()
-        && (m_layout.mode == LayoutMode::Grid || m_layout.mode == LayoutMode::GridCrop
+        && (layoutIsGridFamily(m_layout.mode)
             || m_layout.mode == LayoutMode::Flow || m_layout.mode == LayoutMode::FlowFill
             || m_layout.mode == LayoutMode::Facing)) {
         applyLayout(GalleryPackReason::ExplicitLayout);
