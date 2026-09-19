@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1370-crop-leave-textlayer.** CropSession leave via clear/takePending;
+TextLayerSession region and tip transitions.
+Prior: **1369**.
+
+### Change
+- `CropSession::{takePendingFullRematerialize,queuePendingFullRematerialize,clear,setters}`
+- `clearCropModeState` uses `clear()` after LOD unsuppress
+- `TextLayerSession::{setShowRegions,setLinkHoverTip,clearLinkHoverTip,clearLayerPath}`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1370**)
+```bash
+git pull /path/to/biltoo-1370-crop-leave-textlayer.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1369-crop-enter-attention-mode.** CropSession enter ownership;
 AttentionSession draft and mode transitions.
 Prior: **1368**.
