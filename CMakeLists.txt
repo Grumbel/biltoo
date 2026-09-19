@@ -580,7 +580,6 @@ if(Qt6Test_FOUND)
   add_executable(biltoo-hudmodel-test
     tests/hudmodel_test.cpp
     src/hudmodel.cpp
-    src/displayedgepolicy.cpp
   )
   target_include_directories(biltoo-hudmodel-test PRIVATE src)
   target_link_libraries(biltoo-hudmodel-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)

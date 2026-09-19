@@ -2,6 +2,20 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1620-fix-hudmodel-test-link.** hudmodel test no longer links displayedgepolicy.cpp (ImageCache); QualityTier is header-only for this test.
+Prior: **1619**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1620-fix-hudmodel-test-link.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1619-fix-controller-access.** Complete TileLoadCoordinator type; promote crop/display host APIs; attention undo + tr/QToolTip.
 Prior: **1618**.
 
