@@ -33,6 +33,8 @@ struct TextLayerSession {
         return showRegions || !searchQuery.isEmpty();
     }
 
+    bool isRubberbanding() const { return rubberbanding; }
+
     int regionCount() const { return layer.regions.size(); }
 
     bool hasRegions() const { return !layer.regions.isEmpty(); }

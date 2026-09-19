@@ -114,7 +114,7 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
 
 void ImageView::paintTextRubberBandOverlay(QPainter &painter)
 {
-    if (m_textLayer.rubberbanding && !m_textLayer.rubberRect.isEmpty()) {
+    if (m_textLayer.isRubberbanding() && !m_textLayer.rubberRect.isEmpty()) {
         painter.save();
         QPen pen(QColor(40, 120, 220, 220));
         pen.setStyle(Qt::DashLine);
@@ -1059,7 +1059,7 @@ QString ImageView::selectedText() const
 
 void ImageView::clearTextSelection()
 {
-    if (m_textLayer.selectedRegions.isEmpty() && !m_textLayer.rubberbanding) {
+    if (m_textLayer.selectedRegions.isEmpty() && !m_textLayer.isRubberbanding()) {
         return;
     }
     m_textLayer.clearSelection();
