@@ -11,14 +11,20 @@
 /**
  * Pure Image-mode edge chrome geometry (prev / next / gallery return).
  * Callers still gate mode (Image vs crop/attention) before consulting this.
+ *
+ * Left/right and top markers are half-ellipses covering about 80% of the edge
+ * (centred), so top/bottom chrome (slideshow status, HUD) is not covered.
  */
 namespace EdgeNavPolicy {
 
 constexpr int kZoneWidthFloor = 48;
 constexpr qreal kZoneWidthFrac = 0.12;
-constexpr int kZoneHeightFloor = 40;
-constexpr qreal kZoneHeightFrac = 0.10;
-constexpr int kDefaultButtonRadius = 22;
+/** Top return strip — slightly shorter than left/right depth. */
+constexpr int kZoneHeightFloor = 32;
+constexpr qreal kZoneHeightFrac = 0.08;
+/** Fraction of the long edge the marker spans (centred). */
+constexpr qreal kEdgeSpanFrac = 0.80;
+constexpr int kDefaultButtonRadius = 20;
 constexpr int kDefaultMargin = 10;
 
 enum class Zone {
@@ -28,11 +34,14 @@ enum class Zone {
     GalleryReturn,
 };
 
-/** Left/right hit strip width from viewport width. */
+/** Left/right hit strip depth from viewport width. */
 int zoneWidth(int viewportWidth);
 
-/** Top return strip height from viewport height. */
+/** Top return strip depth from viewport height. */
 int zoneHeight(int viewportHeight);
+
+/** Centred span along the edge (80% of height for L/R, of width for top). */
+int edgeSpanAlong(int edgeLength);
 
 /**
  * Hit-test @p viewPos in viewport CSS pixels.
@@ -49,9 +58,8 @@ struct ChromeLayout {
 };
 
 /**
- * Layout for paint: gradient strip and button centre in viewport coords.
+ * Layout for paint: half-ellipse bounding rect and button centre in viewport coords.
  * @p zoneW / @p zoneH from zoneWidth / zoneHeight.
- * Button radius is caller-owned (paint uses 22); margin is 10.
  */
 ChromeLayout chromeLayout(Zone zone, const QRect &viewport, int zoneW, int zoneH,
                           int buttonRadius = kDefaultButtonRadius, int margin = kDefaultMargin);

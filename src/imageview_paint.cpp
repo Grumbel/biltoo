@@ -59,7 +59,7 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
     }
 
     painter.setRenderHint(QPainter::Antialiasing, true);
-    const int r = 22;
+    const int r = EdgeNavPolicy::kDefaultButtonRadius;
 
     auto drawChevronButton = [&](int cx, int cy, auto buildChevron) {
         painter.setPen(Qt::NoPen);
@@ -73,21 +73,37 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
         painter.strokePath(chevron, pen);
     };
 
-    QLinearGradient grad;
-    if (zone == EdgeNavPolicy::Zone::GalleryReturn) {
-        grad = QLinearGradient(0, 0, 0, layout.fillRect.height());
-        grad.setColorAt(0.0, QColor(0, 0, 0, 90));
-        grad.setColorAt(1.0, QColor(0, 0, 0, 0));
-    } else if (zone == EdgeNavPolicy::Zone::Previous) {
-        grad = QLinearGradient(0, 0, layout.fillRect.width(), 0);
-        grad.setColorAt(0.0, QColor(0, 0, 0, 90));
-        grad.setColorAt(1.0, QColor(0, 0, 0, 0));
-    } else {
-        grad = QLinearGradient(layout.fillRect.left(), 0, layout.fillRect.right(), 0);
-        grad.setColorAt(0.0, QColor(0, 0, 0, 0));
-        grad.setColorAt(1.0, QColor(0, 0, 0, 90));
+    // Half-ellipse underlay: ~80% of the edge (layout.fillRect), bulging inward.
+    {
+        QPainterPath lobe;
+        const QRectF fr = layout.fillRect;
+        if (zone == EdgeNavPolicy::Zone::GalleryReturn) {
+            // Full ellipse centred on the top edge; only the lower half is visible.
+            lobe.addEllipse(QRectF(fr.left(), -fr.height(), fr.width(), fr.height() * 2.0));
+        } else if (zone == EdgeNavPolicy::Zone::Previous) {
+            lobe.addEllipse(QRectF(-fr.width(), fr.top(), fr.width() * 2.0, fr.height()));
+        } else {
+            lobe.addEllipse(QRectF(fr.left(), fr.top(), fr.width() * 2.0, fr.height()));
+        }
+        QLinearGradient grad;
+        if (zone == EdgeNavPolicy::Zone::GalleryReturn) {
+            grad = QLinearGradient(0, 0, 0, fr.height());
+            grad.setColorAt(0.0, QColor(0, 0, 0, 90));
+            grad.setColorAt(1.0, QColor(0, 0, 0, 0));
+        } else if (zone == EdgeNavPolicy::Zone::Previous) {
+            grad = QLinearGradient(fr.left(), 0, fr.right(), 0);
+            grad.setColorAt(0.0, QColor(0, 0, 0, 90));
+            grad.setColorAt(1.0, QColor(0, 0, 0, 0));
+        } else {
+            grad = QLinearGradient(fr.left(), 0, fr.right(), 0);
+            grad.setColorAt(0.0, QColor(0, 0, 0, 0));
+            grad.setColorAt(1.0, QColor(0, 0, 0, 90));
+        }
+        painter.save();
+        painter.setClipRect(fr);
+        painter.fillPath(lobe, grad);
+        painter.restore();
     }
-    painter.fillRect(layout.fillRect, grad);
 
     const int cx = layout.buttonCenter.x();
     const int cy = layout.buttonCenter.y();
