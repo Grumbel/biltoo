@@ -146,8 +146,8 @@ Apply filmstrip: `cropApply=1 img=<cropW>x<cropH>` (not full-frame size).
 
 | File | Responsibility |
 |------|----------------|
-| `imageview_crop.cpp` | Targets, workspace align, auto-trim, viewport notify |
-| `imageview_crop_enter.cpp` | Enter session, full-frame draft install, locks, PathRaster cancel |
+| `imageview_crop.cpp` | Targets, draft locks, PathRaster cancel, align, auto-trim |
+| `imageview_crop_enter.cpp` | Enter session, full-frame draft install |
 | `imageview_crop_apply.cpp` | Apply bake/record, leave, undo push |
 | `imageview_crop_raster.cpp` | Full raster (thumtoo / pool) |
 | `imageview_crop_paint.cpp` | Overlay chrome paint |

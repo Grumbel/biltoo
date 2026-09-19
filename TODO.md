@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1564-crop-locks-shared.** Draft locks + PathRaster cancel live in imageview_crop.cpp.
+Prior: **1563**.
+
+### Change
+- `isCropDraftLockedItem` / `isCropDraftLockedPath` / `cancelPathRasterForCrop` moved from enter TU to shared crop TU
+- Used by load/layout/tile coordinator and enter/apply/raster
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1564-crop-locks-shared.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1563-crop-raster-imageitem-include.** Fix incomplete ImageItem in crop_raster TU.
 Prior: **1562**.
 

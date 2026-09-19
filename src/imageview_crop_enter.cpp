@@ -155,29 +155,6 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
     return loadRestoreCropAppearance(item, app, nullptr);
 }
 
-bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
-{
-    if (!item) {
-        return false;
-    }
-    // Pointer/id lock on CropSession, then path lock (draftPath / targetId resolve).
-    return m_crop.locksItem(item) || isCropDraftLockedPath(item->path());
-}
-
-bool ImageView::isCropDraftLockedPath(const QString &path) const
-{
-    QString boundPath;
-    if (ImageItem *bound = cropSessionBoundItem()) {
-        boundPath = bound->path();
-    }
-    return m_crop.locksResolvedPath(path, boundPath);
-}
-
-void ImageView::cancelPathRasterForCrop(const QString &path)
-{
-    CropPathRaster::suspend(m_pathRaster, path);
-}
-
 void ImageView::rememberCropEnterSizes(const QString &path, const QImage &full)
 {
     if (full.isNull() || !sampleCoversNativeLogical(path, full)) {

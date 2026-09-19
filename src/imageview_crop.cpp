@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Crop targets, workspace align helpers, auto-trim, viewport notify.
-// Enter → imageview_crop_enter; Apply → crop_apply; Full → crop_raster;
+// Crop targets, draft locks, PathRaster cancel, align, auto-trim, viewport.
+// Enter → crop_enter; Apply → crop_apply; Full → crop_raster;
 // paint → crop_paint; input → crop_input.
 
 #include "imageview.h"
+#include "croppathraster.h"
 #include "cropflash.h"
 #include "placementlinear.h"
 #include "imageitem.h"
@@ -53,6 +54,30 @@ ImageItem *ImageView::cropTargetItem() const
     return resolveInactiveCropTarget();
 }
 
+
+
+bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
+{
+    if (!item) {
+        return false;
+    }
+    // Pointer/id lock on CropSession, then path lock (draftPath / targetId resolve).
+    return m_crop.locksItem(item) || isCropDraftLockedPath(item->path());
+}
+
+bool ImageView::isCropDraftLockedPath(const QString &path) const
+{
+    QString boundPath;
+    if (ImageItem *bound = cropSessionBoundItem()) {
+        boundPath = bound->path();
+    }
+    return m_crop.locksResolvedPath(path, boundPath);
+}
+
+void ImageView::cancelPathRasterForCrop(const QString &path)
+{
+    CropPathRaster::suspend(m_pathRaster, path);
+}
 
 void ImageView::preserveWorkspaceItemCenter(ImageItem *item, const QPointF &center0,
                                             qreal footW0, qreal footH0)
