@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1551-appearance-restore-pixels.** Restore appearance pixel install chain in appearance TU.
+Prior: **1550**.
+
+### Change
+→ `imageview_appearance.cpp`:
+- `rematerializeIfContentXformMismatch`
+- `installRestoredCropPixelsFromFull` / `installRestoredCropPixels`
+- `restoreSessionCropAppearance`
+
+Crop cancel still calls `restoreSessionCropAppearance`; body lives with appearance load.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1551-appearance-restore-pixels.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1550-appearance-load-store.** loadSession/path/restore + storeAppearanceFromState in appearance TU.
 Prior: **1549**.
 

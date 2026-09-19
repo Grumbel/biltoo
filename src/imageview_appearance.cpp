@@ -6,6 +6,9 @@
 
 #include "imageview.h"
 #include "cropsession.h"
+#include "imagecache.h"
+#include "contentxform.h"
+#include "sessionappearance.h"
 
 #include "imageitem.h"
 #include "sessionappearance.h"
@@ -181,5 +184,61 @@ void ImageView::relayoutAfterAppearanceApply(ImageItem *item)
         viewport()->update();
     }
     emit statusChanged();
+}
+
+void ImageView::rematerializeIfContentXformMismatch(ImageItem *item,
+                                                    const WorkspaceItemState &app)
+{
+    if (!item) {
+        return;
+    }
+    if (!ContentXform::equal(
+            item->hasAppliedContentXform() ? item->appliedContentXform()
+                                           : ContentXform::Value{},
+            ContentXform::Value::fromState(app))) {
+        rematerializeItemContent(item, app);
+    }
+}
+
+void ImageView::installRestoredCropPixelsFromFull(ImageItem *item, const WorkspaceItemState &app,
+                                                  SessionImageId sid, const QImage &full)
+{
+    if (!tryRematerializeFromHost(item, app)) {
+        installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
+        rematerializeIfContentXformMismatch(item, app);
+    }
+}
+
+void ImageView::installRestoredCropPixels(ImageItem *item, const WorkspaceItemState &app,
+                                          SessionImageId sid, const QImage &full)
+{
+    if (!item) {
+        return;
+    }
+    CropSession::applyItemPlacementFromState(item, app, isImageMode());
+    if (full.isNull()) {
+        rematerializeItemContent(item, app);
+        return;
+    }
+    installRestoredCropPixelsFromFull(item, app, sid, full);
+}
+
+void ImageView::restoreSessionCropAppearance(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    WorkspaceItemState app;
+    SessionImageId sid = kInvalidSessionImageId;
+    if (!loadRestoreCropAppearance(item, &app, &sid)) {
+        return;
+    }
+    const QString path = item->path();
+    const QImage full = fullRasterForEdit(path);
+    if (!full.isNull() && !path.isEmpty()) {
+        ImageCache::put(path, full);
+    }
+    installRestoredCropPixels(item, app, sid, full);
+    fitImageOrUpdateWorkspace(item);
 }
 
