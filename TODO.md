@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1563-crop-raster-imageitem-include.** Fix incomplete ImageItem in crop_raster TU.
+Prior: **1562**.
+
+### Change
+- `imageview_crop_raster.cpp` includes `imageitem.h` (maybeUpgrade uses `item->path()`)
+
+### Note
+Apply orphan (`CropFlash::applied` outside function) was already removed in **1562**.
+If you still see apply.cpp:67 errors, ensure 1562 is applied before 1563.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1563-crop-raster-imageitem-include.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1562-crop-flash-unify.** All crop HUD via flashCropHud; drop orphan applied flash body.
 Prior: **1561**.
 

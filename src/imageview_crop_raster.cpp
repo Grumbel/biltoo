@@ -5,6 +5,7 @@
 // PathRaster suspend before request so PreferCache cannot race Full.
 
 #include "imageview.h"
+#include "imageitem.h"
 #include "croppathraster.h"
 #include "cropflash.h"
 #include "imagecache.h"
