@@ -10,6 +10,7 @@
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
 #include "tilelod/tile_session.hpp"
+#include "tilelod/tile_lod_registry.hpp"
 
 #include <QDateTime>
 #include <QFileInfo>
@@ -254,12 +255,15 @@ void TileLoadCoordinator::tick(int globalBudget)
                     ++zero;
                 }
             }
+            auto& reg = tilelod::TileLodRegistry::instance();
             std::fprintf(stderr,
                          "biltoo/tile-coord: cands=%d zeroTile=%d issue=%d "
-                         "budget=%d wall=%lldms\n",
+                         "budget=%d wall=%lldms regPaths=%zu idle=%zu ramMiB=%.1f\n",
                          static_cast<int>(cands.size()), zero,
                          static_cast<int>(issueTargets.size()), globalBudget,
-                         static_cast<long long>(wall.elapsed()));
+                         static_cast<long long>(wall.elapsed()),
+                         reg.path_count(), reg.idle_path_count(),
+                         reg.total_approx_bytes() / (1024.0 * 1024.0));
             int samples = 0;
             for (ImageItem *item : issueTargets) {
                 if (!item || samples >= 4) {
