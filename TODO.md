@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1492-const-atlas-draft.** Fix const paintMotionCover Mutable; draftRectOr.
+Prior: **1491**. Commits 1492a–1492c (+ docs).
+
+### Fixes
+- **paintMotionCover** (const): atlasRef / sourceImageRef / fromImageRef
+- **requestSlideshowAtlas**: read via Ref (no need for Mutable on read path)
+- **CropSession::draftRectOr** for Apply recordSessionCrop
+
+### Apply
+```bash
+git pull /path/to/biltoo-1492-const-atlas-draft.bundle HEAD
+```
+Requires tip **1491** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1491-crop-host-bound.** Chrome buttons helper, Apply host pick, cropSessionBoundItem.
 Prior: **1490**. Commits 1491a–1491c (+ docs).
 
