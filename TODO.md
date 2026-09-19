@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1570-crop-apply-inline-more.** Inline writeRecord/metrics/leaveItem into apply path.
+Prior: **1569**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1570-crop-apply-inline-more.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1569-crop-inline-apply-enter-thin.** Inline more single-use apply/enter helpers.
 Prior: **1568**.
 

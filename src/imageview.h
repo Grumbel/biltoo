@@ -716,8 +716,6 @@ public:
     bool handleNullEnterFullRaster(const QString &path, bool hadCrop);
     bool resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
                                   WorkspaceItemState *st, SessionImageId *sid);
-    void captureApplyDraftMetrics(ImageItem *item, qreal *cropW, qreal *cropH,
-                                  qreal *footW, qreal *footH, QPointF *sceneCenter);
     bool materializeApplyBake(const QImage &host, bool hostFromCache,
                               const WorkspaceItemState &st,
                               CropSession::ApplyBakeResult *baked);
@@ -1650,10 +1648,6 @@ private:
      * Map item-local draft rect to source pixel rect of the *current* pixmap,
      * then compose into original on-disk coordinates in @p state.
      */
-    void writeRecordedCropState(ImageItem *item, SessionImageId sid,
-                                const WorkspaceItemState *orientApp,
-                                const CropSession::RecordGeometry &rec,
-                                const QSize &cropBasis, const QRect &disp);
     void recordSessionCrop(ImageItem *item, const QRectF &localCrop);
 
     // CropHandle is defined in cropsession.h
@@ -1713,7 +1707,6 @@ private:
     void beginCropRubberBand(const QPoint &viewPos);
     void updateCropRubberBand(const QPoint &viewPos);
     void endCropRubberBand();
-    bool finalizeCropLeaveItem(ImageItem *item, bool apply);
     void leaveCropModeInternal(bool apply);
     /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
     void onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,

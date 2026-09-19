@@ -31,18 +31,6 @@ bool ImageView::resolveApplyHostAndState(ImageItem *item, QImage *host, bool *ho
     return true;
 }
 
-void ImageView::captureApplyDraftMetrics(ImageItem *item, qreal *cropW, qreal *cropH,
-                                         qreal *footW, qreal *footH, QPointF *sceneCenter)
-{
-    qreal sx0 = 0.0;
-    qreal sy0 = 0.0;
-    CropSession::itemScalePair(item, &sx0, &sy0);
-    m_crop.draftFootprint(sx0, sy0, cropW, cropH, footW, footH);
-    if (sceneCenter) {
-        *sceneCenter = item->mapToScene(m_crop.draftCenterLocal());
-    }
-}
-
 bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
                                      const WorkspaceItemState &st,
                                      CropSession::ApplyBakeResult *baked)
@@ -101,23 +89,6 @@ SessionImageId ImageView::cropRecordSessionId(const ImageItem *item) const
 }
 
 
-void ImageView::writeRecordedCropState(ImageItem *item, SessionImageId sid,
-                                       const WorkspaceItemState *orientApp,
-                                       const CropSession::RecordGeometry &rec,
-                                       const QSize &cropBasis, const QRect &disp)
-{
-    WorkspaceItemState s = captureState(item);
-    CropSession::mergeOrientFromAppearance(&s, orientApp);
-    s.sessionId = sid;
-    s.sessionIndex = item->sessionIndex();
-    m_crop.applyRecordToState(&s, rec, cropBasis);
-    CropDebug::recordCrop(cropBasis, item->imageSize(), disp);
-    s.path = item->path();
-    item->setSessionCrop(s.hasCrop, s.cropRect);
-    storeCropAppearance(item, sid, s);
-}
-
-
 void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 {
     if (!item) {
@@ -138,7 +109,15 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         (sid != kInvalidSessionImageId) ? m_appearance.get(sid) : nullptr;
     const QSize cropBasis = CropSession::cropBasisSize(
         item->imageSize(), cropRecordFileNative(item->path()), orientApp, item);
-    writeRecordedCropState(item, sid, orientApp, rec, cropBasis, rec.sourceRect);
+    WorkspaceItemState s = captureState(item);
+    CropSession::mergeOrientFromAppearance(&s, orientApp);
+    s.sessionId = sid;
+    s.sessionIndex = item->sessionIndex();
+    m_crop.applyRecordToState(&s, rec, cropBasis);
+    CropDebug::recordCrop(cropBasis, item->imageSize(), rec.sourceRect);
+    s.path = item->path();
+    item->setSessionCrop(s.hasCrop, s.cropRect);
+    storeCropAppearance(item, sid, s);
 }
 
 
@@ -256,7 +235,11 @@ bool ImageView::applyCropCommitNonFullFrame(ImageItem *item)
     qreal footW = 0.0;
     qreal footH = 0.0;
     QPointF cropSceneCenter;
-    captureApplyDraftMetrics(item, &cropW, &cropH, &footW, &footH, &cropSceneCenter);
+    qreal sx0 = 0.0;
+    qreal sy0 = 0.0;
+    CropSession::itemScalePair(item, &sx0, &sy0);
+    m_crop.draftFootprint(sx0, sy0, &cropW, &cropH, &footW, &footH);
+    cropSceneCenter = item->mapToScene(m_crop.draftCenterLocal());
     if (!bakeAndCommitNonFullApply(item, cropW, cropH, footW, footH, cropSceneCenter)) {
         return false;
     }
@@ -327,20 +310,6 @@ void ImageView::clearCropModeState()
 }
 
 
-bool ImageView::finalizeCropLeaveItem(ImageItem *item, bool apply)
-{
-    if (!item) {
-        return false;
-    }
-    if (apply) {
-        return applyCropCommit(item);
-    }
-    if (m_crop.isShowingFullImage()) {
-        cancelCropShowingFullImage(item);
-    }
-    return false;
-}
-
 void ImageView::leaveCropModeInternal(bool apply)
 {
     if (!m_crop.active()) {
@@ -349,7 +318,14 @@ void ImageView::leaveCropModeInternal(bool apply)
     ImageItem *item = cropTargetItem();
     // Workspace commit keeps crop-frame placement rotation; cancel/full-frame
     // restore the pre-crop pose via finishLeave.
-    const bool preserveCropFrameRotation = finalizeCropLeaveItem(item, apply);
+    bool preserveCropFrameRotation = false;
+    if (item) {
+        if (apply) {
+            preserveCropFrameRotation = applyCropCommit(item);
+        } else if (m_crop.isShowingFullImage()) {
+            cancelCropShowingFullImage(item);
+        }
+    }
     m_crop.finishLeave(item, preserveCropFrameRotation);
     clearCropModeState();
 }
