@@ -74,6 +74,27 @@ struct CanvasBackground {
         return true;
     }
 
+    /**
+     * Install a durable workspace background override.
+     * Clears temporary "show default" and drops tile pixmap when path/mode change.
+     * @return false when @p bg matches the current override (no-op).
+     */
+    bool setWorkspace(const WorkspaceBackground &bg)
+    {
+        if (workspace.matches(bg)) {
+            return false;
+        }
+        workspaceShowDefault = false;
+        const bool tilePathChanged =
+            bg.mode != WorkspaceBackgroundMode::ImageTile
+            || bg.imagePath != workspaceTilePath;
+        workspace = bg;
+        if (tilePathChanged) {
+            clearWorkspaceTile();
+        }
+        return true;
+    }
+
     /** App-default checker when pattern is Checkerboard (optional WS-only). */
     bool useChecker(bool isWorkspaceMode) const
     {
