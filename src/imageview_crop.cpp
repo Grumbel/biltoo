@@ -260,7 +260,7 @@ bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
         return true;
     }
     // Host-only: targetId may refer to another live item with the same path.
-    if (item && m_crop.draftSampleFrozen && !item->path().isEmpty()
+    if (item && m_crop.isDraftSampleFrozen() && !item->path().isEmpty()
         && isCropDraftLockedPath(item->path())) {
         return true;
     }
@@ -274,7 +274,7 @@ bool ImageView::isCropDraftLockedPath(const QString &path) const
     }
     // Prefer the path captured at lock time — survives item pointer churn.
     // Host resolves targetId → current item path when draftPath is empty.
-    if (!m_crop.draftSampleFrozen || path.isEmpty()) {
+    if (!m_crop.isDraftSampleFrozen() || path.isEmpty()) {
         return false;
     }
     if (m_crop.hasTargetId()) {
@@ -607,7 +607,7 @@ void ImageView::requestCropFullRaster(const QString &path)
 
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
 {
-    if (!m_crop.active() || path.isEmpty() || path != m_crop.awaitingFullPath) {
+    if (!m_crop.active() || path.isEmpty() || path != m_crop.awaitingFullPathRef()) {
         return;
     }
     if (image.isNull()) {
@@ -1053,7 +1053,7 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
     // captureState pulls cropRotation from appearance
     // (recordSessionCrop + commitItemSessionEdit).
     m_undoStack->push(new CropCommand(
-        this, item, m_crop.enterSource, item->sourceImage().copy(),
+        this, item, m_crop.enterSourceRef(), item->sourceImage().copy(),
         m_crop.enterStateRef(), afterSt, text));
 }
 
@@ -1293,7 +1293,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
     }
     if (m_crop.isEnterValid()
         && (m_crop.enterStateRef().hasCrop
-            || m_crop.enterSource.size() != item->sourceImage().size())) {
+            || m_crop.enterSourceRef().size() != item->sourceImage().size())) {
         pushCropAppearanceUndo(item, tr("Crop reset"));
     }
     flashHud(tr("Crop reset"), tr("Full image"));
@@ -1544,7 +1544,7 @@ void ImageView::paintCropRotateKnobs(QPainter &painter, const QPolygonF &cropVie
     if (!a.valid) {
         return;
     }
-    const bool hot = (m_crop.hoverHandle == CropHandle::Rotate
+    const bool hot = (m_crop.currentHoverHandle() == CropHandle::Rotate
                       || m_crop.currentActiveHandle() == CropHandle::Rotate);
     auto drawRotateKnob = [&](const QPointF &mid, const QPointF &knob) {
         QPen stem(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
@@ -1571,7 +1571,7 @@ void ImageView::paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPo
         return;
     }
     const QPointF centre = a.centre;
-    const bool hot = (m_crop.hoverHandle == CropHandle::Move
+    const bool hot = (m_crop.currentHoverHandle() == CropHandle::Move
                       || m_crop.currentActiveHandle() == CropHandle::Move);
     const qreal s = hot ? 10.0 : 9.0;
     painter.setPen(QPen(hot ? QColor(255, 255, 255) : QColor(40, 30, 10), hot ? 1.8 : 1.35));
@@ -1592,7 +1592,7 @@ void ImageView::drawCropTextButton(QPainter &painter, const QRect &btn, CropHand
     if (!btn.isValid()) {
         return;
     }
-    const bool hover = (m_crop.hoverHandle == kind);
+    const bool hover = (m_crop.currentHoverHandle() == kind);
     const qreal radius = (role == CropBtnRole::Toggle) ? 6.0 : 11.0; // square vs pill
     QColor fill(50, 50, 50, 230);
     QColor border(255, 190, 40);

@@ -326,6 +326,18 @@ public:
 
     CropHandle currentHoverHandle() const { return hoverHandle; }
 
+    bool isDraftSampleFrozen() const { return draftSampleFrozen; }
+
+    const QImage &enterSourceRef() const { return enterSource; }
+
+    const QString &awaitingFullPathRef() const { return awaitingFullPath; }
+
+    bool isAwaitingFullPath(const QString &path) const
+    {
+        return !path.isEmpty() && awaitingFullPath == path;
+    }
+
+
     const QString &draftPathRef() const { return draftPath; }
 
     SessionImageId targetIdValue() const { return targetId; }
