@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1456-canvas-pathorder-sizebook-margins.** Canvas tile, path order, size book, margins.
+Prior: **1455**. Commits 1456a–1456e (+ docs).
+
+### Commits
+1. **CanvasBackground** setWorkspaceTile
+2. **SessionPathOrder** setOrder
+3. Slideshow seekbar via ProgressHud isSeekHit
+4. **ViewTransform** kEnsureVisibleMargin
+5. **ImageSizeBook** known/contains (no byPath digs)
+
+### Note
+Continues bag-transition / encapsulation series. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1456-canvas-pathorder-sizebook-margins.bundle HEAD
+```
+Requires tip **1455**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1455-layout-phase-hover-loadgate.** Layout, phase raster, hover, load gate.
 Prior: **1454**. Commits 1455a–1455d (+ docs).
 

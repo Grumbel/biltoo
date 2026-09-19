@@ -169,6 +169,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **LayoutPrefs** setMode in setActiveMode; **SlideshowPhaseState** clearRasterQueues /
   bumpPhaseUpgradeGeneration; **ImageView** setHoverEdge / clearHoverEdge;
   clearWorkspace via loadGate clearPending + GallerySoftBook setDeferPopulate.
+- **CanvasBackground** setWorkspaceTile; **SessionPathOrder** setOrder;
+  **ImageSizeBook** known/contains; **ViewTransform** kEnsureVisibleMargin;
+  seekbar near-edge via ProgressHud isSeekHit.
 
 
 ## Current pain (evidence)
