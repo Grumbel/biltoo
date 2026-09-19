@@ -358,7 +358,7 @@ void ImageView::updateGalleryDecodeWindow()
     updateGallerySoftProgressHud();
     if (m_perf.enabled && decodeWinTimer.isValid()) {
         m_perf.noteDecodeWindowUs(decodeWinTimer.nsecsElapsed() / 1000);
-        if (m_perf.lastDecodeWindowUs > 4000) {
+        if (m_perf.lastDecodeWindowSlow()) {
             fprintf(stderr,
                     "biltoo/perf: updateGalleryDecodeWindow %.1f ms "
                     "(max %.1f ms runs=%d items=%d "

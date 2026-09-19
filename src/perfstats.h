@@ -15,6 +15,9 @@
  * QElapsedTimer is process-local; no ImageView dependency.
  */
 struct PerfStats {
+    /** Log decode-window when last pass exceeds this (µs). */
+    static constexpr qint64 kWarnDecodeWindowUs = 4000;
+
     bool enabled = false;
     QElapsedTimer fpsClock;
     int frameCount = 0;
@@ -56,6 +59,11 @@ struct PerfStats {
         lastDecodeWindowUs = us;
         maxDecodeWindowUs = qMax(maxDecodeWindowUs, lastDecodeWindowUs);
         ++decodeWindowRuns;
+    }
+
+    bool lastDecodeWindowSlow() const
+    {
+        return lastDecodeWindowUs > kWarnDecodeWindowUs;
     }
 
     /**
