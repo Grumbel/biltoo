@@ -3,6 +3,7 @@
 
 #include "displayquality.h"
 #include "imageview.h"
+#include "tilelod/tile_lod_registry.hpp"
 #include "layoutapplyguard.h"
 #include "gallerypackfit.h"
 #include "viewtransform.h"
@@ -447,9 +448,17 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
         if (!hasClassicPath()) {
             return;
         }
+        const QString path = classicPath();
+        // Drop retained path tiles so Reload cannot paint pre-reload grid cells.
+        if (ImageItem *item = imageModeItemForPath(path)) {
+            item->invalidateTilePathRam();
+        } else {
+            tilelod::TileLodRegistry::instance().invalidate(path);
+        }
+        dropTilePrefetchPath(path);
         // Force a fresh decode of the focused session image only.
-        scheduleImageLoad(classicPath(), LoadReplace);
-        flashHud(tr("Reload"), QFileInfo(classicPath()).fileName());
+        scheduleImageLoad(path, LoadReplace);
+        flashHud(tr("Reload"), QFileInfo(path).fileName());
         return;
     }
 
@@ -463,8 +472,8 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
             continue;
         }
         gallerySoftResetPath(path);
-        
-        
+        item->invalidateTilePathRam();
+        dropTilePrefetchPath(path);
         takePendingWorkspacePath(path);
         item->clearDecodedPixels();
         PendingSessionBind b;
