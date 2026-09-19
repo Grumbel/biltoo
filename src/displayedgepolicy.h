@@ -42,14 +42,19 @@ bool coversEdge(int haveLongEdge, int targetEdge);
  */
 int cappedDisplayEdge(int wantEdge, int nativeLongEdge);
 
+/** Native long edge from size; 0 if invalid. */
+inline int nativeLongEdge(const QSize &knownNative)
+{
+    if (!knownNative.isValid() || knownNative.width() <= 0 || knownNative.height() <= 0) {
+        return 0;
+    }
+    return qMax(knownNative.width(), knownNative.height());
+}
+
 /** Same as above; native long edge from size (0 if invalid). */
 inline int cappedDisplayEdge(int wantEdge, const QSize &knownNative)
 {
-    const int native =
-        (knownNative.isValid() && knownNative.width() > 0 && knownNative.height() > 0)
-            ? qMax(knownNative.width(), knownNative.height())
-            : 0;
-    return cappedDisplayEdge(wantEdge, native);
+    return cappedDisplayEdge(wantEdge, nativeLongEdge(knownNative));
 }
 
 /**

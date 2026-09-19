@@ -48,15 +48,9 @@ void PathRasterService::ensure(const QString &path, int wantEdge,
         return;
     }
     const int want = capWant(wantEdge, knownNative);
-    int native = 0;
-    if (knownNative.isValid() && knownNative.width() > 0 && knownNative.height() > 0) {
-        native = qMax(knownNative.width(), knownNative.height());
-    }
+    int native = DisplayEdgePolicy::nativeLongEdge(knownNative);
     if (native <= 0) {
-        const QSize c = ThumtooCache::cachedSize(path);
-        if (c.isValid()) {
-            native = qMax(c.width(), c.height());
-        }
+        native = DisplayEdgePolicy::nativeLongEdge(ThumtooCache::cachedSize(path));
     }
 
     Entry &entry = m_state[path];
