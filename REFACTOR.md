@@ -333,3 +333,4 @@ part of early-phase exit criteria).
 - **SlideshowClocks::formatClockMs**; **ContentXform** heightForAspectWidth / roundedSize(QSizeF); **ViewTransform::nonNegMs(qint64)**.
 - **Fix AttentionGeometry** header; detect/trim clamps; **DisplayQuality::kOverviewMaxEdge**; **EdgeNavPolicy** zone constants.
 - **ViewTransform** containScale / coverScale / floorScale; **ItemFrameGeometry** selectedChromePad / maxChromeOffset.
+- **PlacementLinear** clampShear in decompose; **CropGeometry** kChrome*; **ViewTransform** clampIndex/Pixel; SoftDisplay LQIP overloads.

@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1356-shear-crop-chrome-pixel-lqip.** clampShear, crop chrome
+constants, clampPixel/Index, SoftDisplay LQIP overloads, motion coverScale.
+Prior: **1355**.
+
+### Change
+- PlacementLinear decompose uses `clampShear`
+- `SlideshowMotionGeometry::coverDevicePixelScale` → `ViewTransform::coverScale`
+- `CropGeometry` kChrome* layout constants in header
+- `ViewTransform::{clampIndex,clampPixel}`; ImageLoader attention detect
+- `SoftDisplayPolicy` LQIP overloads defaulting to `kLqipMaxEdge`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1356**)
+```bash
+git pull /path/to/biltoo-1356-shear-crop-chrome-pixel-lqip.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1355-view-contain-cover-chrome-pad.** ViewTransform contain/cover/
 floorScale; ItemFrame selected chrome pad helpers.
 Prior: **1354**.
