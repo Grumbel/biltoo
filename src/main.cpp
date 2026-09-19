@@ -8,6 +8,7 @@
 #include "imageloader.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
+#include "tilelod/tile_lod_registry.hpp"
 #include "version.h"
 #ifdef BILTOO_HAVE_THUMTOO
 #include "thumtoo/version.hpp"
@@ -72,6 +73,7 @@ int main(int argc, char *argv[])
     }
 
     QApplication app(argc, argv);
+    tilelod::TileLodRegistry::instance().apply_environment_overrides();
     // Leave headroom for the GUI thread under tile/soft background load.
     {
         const int ideal = QThread::idealThreadCount();
