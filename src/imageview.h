@@ -749,6 +749,7 @@ public:
     /** Commit the draft crop rect to pixels and leave crop mode. */
     void applyCrop();
     /** Shrink draft to non-background content (margin trim). */
+    void requestCropViewportUpdate();
     void notifyCropViewportStatus();
     QImage pickAutoCropSourcePixels(ImageItem *item) const;
     void applyAutoCrop();

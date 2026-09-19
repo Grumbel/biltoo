@@ -752,6 +752,13 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     relayoutAfterAppearanceApply(item);
 }
 
+void ImageView::requestCropViewportUpdate()
+{
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
 void ImageView::notifyCropViewportStatus()
 {
     if (viewport()) {
@@ -1419,14 +1426,14 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
     m_crop.applyActiveHandleDrag(itemLocalFromView(item, viewPos), item->contentRect(),
                                  CropSession::kMinDraftSidePx,
                                  mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
-    viewport()->update();
+    requestCropViewportUpdate();
 }
 
 void ImageView::endCropHandleDrag()
 {
     ImageItem *item = cropTargetItem();
     m_crop.finishHandleDrag(item ? item->contentRect() : QRectF());
-    viewport()->update();
+    requestCropViewportUpdate();
 }
 
 void ImageView::beginCropRubberBand(const QPoint &viewPos)
@@ -1440,7 +1447,7 @@ void ImageView::beginCropRubberBand(const QPoint &viewPos)
         return;
     }
     m_crop.beginRubberDraft(local);
-    viewport()->update();
+    requestCropViewportUpdate();
 }
 
 void ImageView::updateCropRubberBand(const QPoint &viewPos)
@@ -1453,7 +1460,7 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
     const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
     m_crop.applyRubberBand(itemLocalFromView(item, viewPos), cr,
                            mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
-    viewport()->update();
+    requestCropViewportUpdate();
 }
 
 void ImageView::endCropRubberBand()
@@ -1463,7 +1470,7 @@ void ImageView::endCropRubberBand()
     } else {
         m_crop.endRubber();
     }
-    viewport()->update();
+    requestCropViewportUpdate();
 }
 
 CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
