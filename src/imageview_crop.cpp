@@ -809,6 +809,28 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
         m_crop.enterStateRef(), afterSt, text));
 }
 
+void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
+                                           ImageItem *item, const QImage &preferredDisplay,
+                                           bool hasCrop)
+{
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    // Prefer the crop bake just materialized when provided — not displayImage(),
+    // which can still be pre-crop if soft attach was rejected.
+    QImage appearance = preferredDisplay;
+    if (appearance.isNull() && item) {
+        appearance = sessionAppearanceImage(item);
+    }
+    if (appearance.isNull()) {
+        return;
+    }
+    if (hasCrop) {
+        emit sessionAppearanceChanged(sid, path, appearance);
+    }
+    emit sessionCropApplied(sid, path, appearance, hasCrop);
+}
+
 bool ImageView::applyCropCommit(ImageItem *item)
 {
     // Returns true when Workspace placement rotation should keep the crop-frame
@@ -936,18 +958,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
 
         commitItemSessionEdit(item);
 
-        if (sid != kInvalidSessionImageId) {
-            // Prefer the crop bake we just materialized — not displayImage(), which
-            // can still be pre-crop if soft attach was rejected.
-            QImage appearance = display;
-            if (appearance.isNull()) {
-                appearance = sessionAppearanceImage(item);
-            }
-            if (!appearance.isNull()) {
-                emit sessionAppearanceChanged(sid, path, appearance);
-                emit sessionCropApplied(sid, path, appearance, /*hasCrop=*/true);
-            }
-        }
+        emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
         pushCropAppearanceUndo(item, tr("Crop"));
         flashHud(tr("Cropped"),
                  QStringLiteral("%1×%2")
@@ -967,16 +978,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
         fitImageOrUpdateWorkspace(item);
     }
     commitItemSessionEdit(item);
-    {
-        const SessionImageId sid = cropRecordSessionId(item);
-        if (sid != kInvalidSessionImageId) {
-            QImage appearance = sessionAppearanceImage(item);
-            if (!appearance.isNull()) {
-                // fromCropApply path on filmstrip: clear crop sticky + badge.
-                emit sessionCropApplied(sid, item->path(), appearance, /*hasCrop=*/false);
-            }
-        }
-    }
+    emitCropApplyAppearance(cropRecordSessionId(item), item->path(), item, QImage(),
+                            /*hasCrop=*/false);
     if (m_crop.shouldPushResetUndo(item->sourceImage().size())) {
         pushCropAppearanceUndo(item, tr("Crop reset"));
     }
@@ -1063,6 +1066,33 @@ CropGeometry::CropButtonLayout ImageView::cropChromeLayout() const
 
 
 
+void ImageView::paintCropChromeButtons(QPainter &painter)
+{
+    // Controls: outside below crop when possible, inside if off-screen.
+    // Same design language as Workspace chrome (HANDLES.md):
+    //   toggle  = rounded square / stronger on-state
+    //   action  = dark + accent ring
+    //   neutral = grey (Cancel)
+    //   commit  = filled accent (Apply)
+    const auto paintBtn = [this, &painter](const QRect &btn, CropHandle kind,
+                                           const QString &label,
+                                           CropGeometry::CropBtnRole role, bool toggled = false) {
+        CropGeometry::paintTextButton(painter, btn, m_crop.currentHoverHandle() == kind, label,
+                                      role, toggled);
+    };
+    const CropGeometry::CropButtonLayout chrome = cropChromeLayout();
+    paintBtn(chrome.expand, CropHandle::ExpandToggle,
+             ImageView::tr("Expand"), CropGeometry::CropBtnRole::Toggle, m_crop.isAllowExpand());
+    paintBtn(chrome.autoBtn, CropHandle::Auto, ImageView::tr("Auto"),
+             CropGeometry::CropBtnRole::Action);
+    paintBtn(chrome.reset, CropHandle::Reset, ImageView::tr("Reset"),
+             CropGeometry::CropBtnRole::Action);
+    paintBtn(chrome.cancel, CropHandle::Cancel, ImageView::tr("Cancel"),
+             CropGeometry::CropBtnRole::Neutral);
+    paintBtn(chrome.apply, CropHandle::Close, ImageView::tr("Apply"),
+             CropGeometry::CropBtnRole::Commit);
+}
+
 void ImageView::paintCropOverlay(QPainter &painter)
 {
     if (!m_crop.active()) {
@@ -1096,31 +1126,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
         CropGeometry::paintMoveGrip(painter, cropViewPoly, hot);
     }
 
-    // Controls: outside below crop when possible, inside if off-screen.
-    // Same design language as Workspace chrome (HANDLES.md):
-    //   toggle  = rounded square / stronger on-state
-    //   action  = dark + accent ring
-    //   neutral = grey (Cancel)
-    //   commit  = filled accent (Apply)
-    // Local QPoint names must not hide QObject::tr — use ImageView::tr.
-    const auto paintBtn = [this, &painter](const QRect &btn, CropHandle kind,
-                                           const QString &label,
-                                           CropGeometry::CropBtnRole role, bool toggled = false) {
-        CropGeometry::paintTextButton(painter, btn, m_crop.currentHoverHandle() == kind, label,
-                                      role, toggled);
-    };
-    const CropGeometry::CropButtonLayout chrome = cropChromeLayout();
-    paintBtn(chrome.expand, CropHandle::ExpandToggle,
-             ImageView::tr("Expand"), CropGeometry::CropBtnRole::Toggle, m_crop.isAllowExpand());
-    paintBtn(chrome.autoBtn, CropHandle::Auto, ImageView::tr("Auto"),
-             CropGeometry::CropBtnRole::Action);
-    paintBtn(chrome.reset, CropHandle::Reset, ImageView::tr("Reset"),
-             CropGeometry::CropBtnRole::Action);
-    paintBtn(chrome.cancel, CropHandle::Cancel, ImageView::tr("Cancel"),
-             CropGeometry::CropBtnRole::Neutral);
-    paintBtn(chrome.apply, CropHandle::Close, ImageView::tr("Apply"),
-             CropGeometry::CropBtnRole::Commit);
-
+    paintCropChromeButtons(painter);
     {
         const QSize cropSz = m_crop.draftPixelSize();
         CropGeometry::paintSizeBadge(painter, cropView, cropSz.width(), cropSz.height());

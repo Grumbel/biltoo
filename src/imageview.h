@@ -1632,6 +1632,7 @@ private:
     bool cropAllowExpand() const { return m_crop.isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
+    void paintCropChromeButtons(QPainter &painter);
     void paintCropOverlay(QPainter &painter);
     void paintAttentionOverlay(QPainter &painter);
     int attentionHandleIndexAt(const QPoint &viewPos) const;
@@ -1662,6 +1663,9 @@ private:
     /** Upgrade crop source when native full arrives for m_crop.awaitingFullPath. */
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
+    void emitCropApplyAppearance(SessionImageId sid, const QString &path,
+                                 ImageItem *item, const QImage &preferredDisplay,
+                                 bool hasCrop);
     bool applyCropCommit(ImageItem *item);
     void cancelCropShowingFullImage(ImageItem *item);
     void clearCropModeState();
