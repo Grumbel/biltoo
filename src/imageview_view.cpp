@@ -2593,12 +2593,12 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     // paint may pass temporaries). From/dwell → m_ssDwell.atlasRef(); to → m_ss.toAtlasRef().
     const QPixmap *atlas = nullptr;
     if (!path.isEmpty() && m_ss.isFromPath(path) && m_ssDwell.hasAtlas()) {
-        atlas = &m_ssDwell.atlasMutable();
+        atlas = &m_ssDwell.atlasRef();
     } else if (!path.isEmpty() && m_ss.isToPath(path) && m_ss.hasToAtlas()) {
-        atlas = &m_ss.toAtlasMutable();
+        atlas = &m_ss.toAtlasRef();
     } else if (path.isEmpty() && m_ssDwell.hasAtlas()
-               && (&image == &m_ssDwell.sourceImageMutable() || &image == &m_ss.fromImageMutable())) {
-        atlas = &m_ssDwell.atlasMutable();
+               && (&image == &m_ssDwell.sourceImageRef() || &image == &m_ss.fromImageRef())) {
+        atlas = &m_ssDwell.atlasRef();
     }
 
     // Stale atlas after ContentXform orient (aspect swap) stretches into dest.
