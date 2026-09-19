@@ -15,6 +15,25 @@ struct LayoutApplyGuard {
     void end() { applying = false; }
     bool active() const { return applying; }
     void clear() { applying = false; }
+
+    /** RAII: begin on construct, end on destroy. */
+    struct Scoped {
+        LayoutApplyGuard *g = nullptr;
+        explicit Scoped(LayoutApplyGuard *guard) : g(guard)
+        {
+            if (g) {
+                g->begin();
+            }
+        }
+        ~Scoped()
+        {
+            if (g) {
+                g->end();
+            }
+        }
+        Scoped(const Scoped &) = delete;
+        Scoped &operator=(const Scoped &) = delete;
+    };
 };
 
 #endif // LAYOUTAPPLYGUARD_H
