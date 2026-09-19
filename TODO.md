@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1435-tile-trim-log-drop-prefetch.** Trim debug; dropTilePrefetchPath; PERFORMANCE.
+Prior: **1431**. Commits 1432–1435.
+
+### Commits
+1. **1432** `BILTOO_TILE_DEBUG` logs registry idle path trim
+2. **1433** `TileNeighborPrefetch::dropPath` + `ImageView::dropTilePrefetchPath`
+3. **1434** `destroyCanvasItem` drops prefetch when path leaves live canvas
+4. **1435** PERFORMANCE.md global path tile RAM note
+
+### Apply
+```bash
+git pull /path/to/biltoo-1435-tile-trim-log-drop-prefetch.bundle HEAD
+```
+Requires tip **1431**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1431-coord-public-accessors-pathram-docs.** Drop coordinator friend; pathRam priority docs.
 Prior: **1429**. Commits 1430–1431.
 
