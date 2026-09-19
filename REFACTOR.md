@@ -161,6 +161,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowProgressHud** seek/progress/timeline transitions; **SlideshowDwellState**
   applyBias / clearAtlasPixmap / setAtlas / setSourceImage / duration helpers;
   **SlideshowZoomBlurState** clearUnderlays / setViewportSize.
+- **ViewFraming** setFitFillFlags / armFit / releaseFit; residual fit/fill routed.
+- **SlideshowPhaseState** setFromImage/setToImage / clearToAtlas / stopMotionClocks.
 
 
 ## Current pain (evidence)

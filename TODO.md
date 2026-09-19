@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1453-framing-phase-bag-transitions.** ViewFraming + SlideshowPhaseState.
+Prior: **1452**. Commits 1453a–1453d (+ docs).
+
+### Commits
+1. **ViewFraming** setFitFillFlags / armFit / releaseFit
+2. Residual fit/fill call sites (pack, modes, crop, input, load, group)
+3. **SlideshowPhaseState** setFromImage/setToImage / clearToAtlas / stopMotionClocks
+4. View sticky/slideshow framing + phase buffer/atlas via bag helpers
+
+### Note
+Continues bag-transition series. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1453-framing-phase-bag-transitions.bundle HEAD
+```
+Requires tip **1452**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1452-slideshow-bag-progress-dwell-zoomblur.** Slideshow HUD/dwell transitions.
 Prior: **1451**. Commits 1452a–1452c (+ docs).
 
