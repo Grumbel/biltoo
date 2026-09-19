@@ -74,6 +74,8 @@ public:
 
     void setSelected(const QVector<int> &sel) { selected = sel; }
 
+    void clearSelected() { selected.clear(); }
+
     /**
      * Start dragging selected points from @p origin (viewport).
      * @p startPts snapshot of all draft points; @p beforePts for undo (may differ

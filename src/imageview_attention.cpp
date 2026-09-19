@@ -126,7 +126,7 @@ void ImageView::ensureAttentionPoint()
 void ImageView::restoreAttentionPoints(const QVector<QPointF> &pts)
 {
     setAttentionPointsForTarget(pts);
-    m_attention.selected.clear();
+    m_attention.clearSelected();
     for (int i = 0; i < pts.size(); ++i) {
         m_attention.selected.append(i);
     }
@@ -189,7 +189,7 @@ void ImageView::detectAttentionPoint()
         pts.append(QPointF(0.5, 0.5));
     }
     const QVector<QPointF> before = attentionPointsForTarget();
-    m_attention.selected.clear();
+    m_attention.clearSelected();
     setAttentionPointsForTarget(pts);
     for (int i = 0; i < pts.size(); ++i) {
         m_attention.selected.append(i);
@@ -273,7 +273,7 @@ void ImageView::attentionDeleteSelected()
             kept.append(pts.at(i));
         }
     }
-    m_attention.selected.clear();
+    m_attention.clearSelected();
     setAttentionPointsForTarget(kept);
     pushAttentionPointsUndo(before, kept, tr("Delete attention points"));
 }
