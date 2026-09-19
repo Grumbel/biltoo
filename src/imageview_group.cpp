@@ -41,13 +41,12 @@ bool ImageView::beginGroupScale(int handle, const QList<ImageItem *> &items)
 
 void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers mods)
 {
-    if (!m_groupXform.scaleDrag || m_groupXform.dragItems.isEmpty()
-        || m_groupXform.dragStartStates.size() != m_groupXform.dragItems.size()) {
+    if (!m_groupXform.scaleDrag || !m_groupXform.dragListsAligned()) {
         return;
     }
     // Drop any pointers no longer on our canvas (deleted mid-drag).
-    for (int i = m_groupXform.dragItems.size() - 1; i >= 0; --i) {
-        ImageItem *item = m_groupXform.dragItems.at(i);
+    for (int i = m_groupXform.dragCount() - 1; i >= 0; --i) {
+        ImageItem *item = m_groupXform.dragItemAt(i);
         if (!item || !m_items.contains(item) || item->scene() != m_scene) {
             m_groupXform.nullDragItemAt(i);
         }
@@ -70,9 +69,9 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
 
     const bool anisotropic = qAbs(sx - sy) > 1e-6;
 
-    for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
-        ImageItem *item = m_groupXform.dragItems.at(i);
-        const WorkspaceItemState &st = m_groupXform.dragStartStates.at(i);
+    for (int i = 0; i < m_groupXform.dragCount(); ++i) {
+        ImageItem *item = m_groupXform.dragItemAt(i);
+        const WorkspaceItemState &st = m_groupXform.dragStartStateAt(i);
         if (!item || !m_items.contains(item)) {
             continue;
         }
@@ -124,12 +123,11 @@ void ImageView::endGroupScale()
 
 void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods)
 {
-    if (!m_groupXform.rotateDrag || m_groupXform.dragItems.isEmpty()
-        || m_groupXform.dragStartStates.size() != m_groupXform.dragItems.size()) {
+    if (!m_groupXform.rotateDrag || !m_groupXform.dragListsAligned()) {
         return;
     }
-    for (int i = m_groupXform.dragItems.size() - 1; i >= 0; --i) {
-        ImageItem *item = m_groupXform.dragItems.at(i);
+    for (int i = m_groupXform.dragCount() - 1; i >= 0; --i) {
+        ImageItem *item = m_groupXform.dragItemAt(i);
         if (!item || !m_items.contains(item) || item->scene() != m_scene) {
             m_groupXform.nullDragItemAt(i);
         }
@@ -149,9 +147,9 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
         return;
     }
 
-    for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
-        ImageItem *item = m_groupXform.dragItems.at(i);
-        const WorkspaceItemState &st = m_groupXform.dragStartStates.at(i);
+    for (int i = 0; i < m_groupXform.dragCount(); ++i) {
+        ImageItem *item = m_groupXform.dragItemAt(i);
+        const WorkspaceItemState &st = m_groupXform.dragStartStateAt(i);
         if (!item || !m_items.contains(item)) {
             continue;
         }

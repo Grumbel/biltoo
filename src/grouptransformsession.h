@@ -92,6 +92,25 @@ public:
             && dragStartStates.size() == dragItems.size();
     }
 
+    int dragCount() const { return dragItems.size(); }
+
+    ImageItem *dragItemAt(int i) const
+    {
+        return (i >= 0 && i < dragItems.size()) ? dragItems.at(i) : nullptr;
+    }
+
+    void setDragItemAt(int i, ImageItem *item)
+    {
+        if (i >= 0 && i < dragItems.size()) {
+            dragItems[i] = item;
+        }
+    }
+
+    const WorkspaceItemState &dragStartStateAt(int i) const
+    {
+        return dragStartStates.at(i);
+    }
+
     /** Drop active scale/rotate drag (also clears hover). */
     void endDrag()
     {
