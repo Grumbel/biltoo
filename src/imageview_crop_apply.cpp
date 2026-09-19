@@ -62,12 +62,6 @@ bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
     return true;
 }
 
-
-    const CropFlash::Hud hud =
-        CropFlash::applied(item->imageSize().width(), item->imageSize().height());
-    flashHud(hud.title, hud.detail);
-}
-
 void ImageView::finalizeCropResetSuccess(ImageItem *item)
 {
     commitItemSessionEdit(item);

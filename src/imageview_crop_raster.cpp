@@ -67,8 +67,7 @@ void ImageView::acceptCropFullRasterReady(const QString &path, const QImage &ima
         ImageCache::put(path, image);
     }
     m_crop.clearAwaitingFull();
-    const CropFlash::Hud readyHud = CropFlash::fullReady();
-    flashHud(readyHud.title, readyHud.detail);
+    flashCropHud(CropFlash::fullReady());
 }
 
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)

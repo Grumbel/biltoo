@@ -34,8 +34,7 @@ void ImageView::finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspa
 
 void ImageView::notifyCropModeEntered()
 {
-    const CropFlash::Hud hud = CropFlash::modeEntered();
-    flashHud(hud.title, hud.detail);
+    flashCropHud(CropFlash::modeEntered());
     emit cropModeChanged(true);
     emit statusChanged();
 }
@@ -48,8 +47,7 @@ void ImageView::abortCropEnterFailed(ImageItem *item)
         item->setTileLodSuppressed(false);
     }
     m_crop.abortEnterRestoringPlacement(item);
-    const CropFlash::Hud hud = CropFlash::loadFailed();
-    flashHud(hud.title, hud.detail);
+    flashCropHud(CropFlash::loadFailed());
 }
 
 void ImageView::beginCropEnterSession(ImageItem *item)

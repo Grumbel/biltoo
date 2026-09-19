@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1562-crop-flash-unify.** All crop HUD via flashCropHud; drop orphan applied flash body.
+Prior: **1561**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1562-crop-flash-unify.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1561-crop-debug-inline-finish.** Finish 1560: dead log* bodies/decls removed.
 Prior: **1560**.
 
