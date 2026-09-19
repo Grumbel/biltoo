@@ -1718,6 +1718,8 @@ private:
     bool finalizeCropLeaveItem(ImageItem *item, bool apply);
     void leaveCropModeInternal(bool apply);
     /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
+    void onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
+                                     quint64 gen);
     void scheduleCropFullRasterFromPool(const QString &path);
     void requestCropFullRaster(const QString &path);
     /** Upgrade crop source when native full arrives for m_crop.awaitingFullPath. */

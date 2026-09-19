@@ -637,6 +637,19 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     return true;
 }
 
+
+void ImageView::onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
+                                            quint64 gen)
+{
+    if (gen != m_loadGate.generation()) {
+        return;
+    }
+    if (!decoded.isNull()) {
+        ImageCache::put(path, decoded);
+    }
+    maybeUpgradeCropFullRaster(path, decoded);
+}
+
 void ImageView::scheduleCropFullRasterFromPool(const QString &path)
 {
     const quint64 gen = m_loadGate.generation();
@@ -650,13 +663,7 @@ void ImageView::scheduleCropFullRasterFromPool(const QString &path)
             guard.data(),
             [guard, path, decoded, gen]() {
                 if (ImageView *const host = guard.data()) {
-                    if (gen != host->m_loadGate.generation()) {
-                        return;
-                    }
-                    if (!decoded.isNull()) {
-                        ImageCache::put(path, decoded);
-                    }
-                    host->maybeUpgradeCropFullRaster(path, decoded);
+                    host->onPoolCropFullRasterDecoded(path, decoded, gen);
                 }
             },
             Qt::QueuedConnection);
