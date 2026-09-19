@@ -225,6 +225,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - Remaining **CropSession** rect/rotation/drag-start digs; **Phase** surface
   and generation accessors; **HudFlash** action/detail; **CanvasBackground**
   workspace/pattern accessors.
+- **SessionIdentity** index/total/id/error; **ProgressHud** clock pause;
+  ZoomBlur/dwell generation; **PerfStats** enabled/timing accessors.
 
 
 ## Current pain (evidence)

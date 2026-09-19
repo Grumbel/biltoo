@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1476-identity-hud-zoomblur-perf.** SessionIdentity, HUD clock, ZoomBlur, Perf.
+Prior: **1475**. Commits 1476a–1476d (+ docs).
+
+### Commits
+1. **SessionIdentity** index, total, id, and error accessors
+2. **ProgressHud** isProgressClockPaused; ZoomBlur and dwell generation
+3. **PerfStats** enabled and timing accessors
+4. Route PerfStats call sites through accessors
+
+### Note
+Bag micro-accessor work is largely complete. Remaining depth is structural
+(CropSession enter/apply ownership, complex bind matching). Path RAM settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1476-identity-hud-zoomblur-perf.bundle HEAD
+```
+Requires tip **1475**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1475-crop-surface-hudflash-canvas.** Crop geometry, phase surface, HudFlash, canvas.
 Prior: **1474**. Commits 1475a–1475e (+ docs).
 
