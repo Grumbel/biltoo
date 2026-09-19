@@ -5,6 +5,7 @@
 #define GALLERYPACKFIT_H
 
 #include "gallerylayout.h"
+#include "imageview_types.h"
 
 #include <QRectF>
 #include <QtGlobal>
@@ -14,6 +15,38 @@
  * force dual scrollbars on the fitted axis (see GalleryLayout::pack).
  */
 namespace GalleryPackFit {
+
+/** Map ImageView LayoutMode to GalleryLayout pack mode (FreeForm → Masonry). */
+inline GalleryLayout::Mode modeFromLayoutMode(LayoutMode mode)
+{
+    switch (mode) {
+    case LayoutMode::SideBySide:
+        return GalleryLayout::Mode::SideBySide;
+    case LayoutMode::Vertical:
+        return GalleryLayout::Mode::Vertical;
+    case LayoutMode::Grid:
+        return GalleryLayout::Mode::Grid;
+    case LayoutMode::GridCrop:
+        return GalleryLayout::Mode::GridCrop;
+    case LayoutMode::Masonry:
+        return GalleryLayout::Mode::Masonry;
+    case LayoutMode::MasonryRows:
+        return GalleryLayout::Mode::MasonryRows;
+    case LayoutMode::MasonryFill:
+        return GalleryLayout::Mode::MasonryFill;
+    case LayoutMode::MasonryRowsFill:
+        return GalleryLayout::Mode::MasonryRowsFill;
+    case LayoutMode::Flow:
+        return GalleryLayout::Mode::Flow;
+    case LayoutMode::FlowFill:
+        return GalleryLayout::Mode::FlowFill;
+    case LayoutMode::Facing:
+        return GalleryLayout::Mode::Facing;
+    case LayoutMode::FreeForm:
+    default:
+        return GalleryLayout::Mode::Masonry;
+    }
+}
 
 /** Viewport CSS overscan for gallery soft-decode window. */
 constexpr int kDecodeOverscanPx = 400;

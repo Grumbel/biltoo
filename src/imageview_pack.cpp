@@ -171,32 +171,7 @@ void ImageView::scheduleIdleGalleryDecodes(const QStringList &rest)
 
 GalleryLayout::Mode ImageView::galleryLayoutModeFromViewMode() const
 {
-    switch (m_layout.mode) {
-    case LayoutMode::SideBySide:
-        return GalleryLayout::Mode::SideBySide;
-    case LayoutMode::Vertical:
-        return GalleryLayout::Mode::Vertical;
-    case LayoutMode::Grid:
-        return GalleryLayout::Mode::Grid;
-    case LayoutMode::GridCrop:
-        return GalleryLayout::Mode::GridCrop;
-    case LayoutMode::Masonry:
-        return GalleryLayout::Mode::Masonry;
-    case LayoutMode::MasonryRows:
-        return GalleryLayout::Mode::MasonryRows;
-    case LayoutMode::MasonryFill:
-        return GalleryLayout::Mode::MasonryFill;
-    case LayoutMode::MasonryRowsFill:
-        return GalleryLayout::Mode::MasonryRowsFill;
-    case LayoutMode::Flow:
-        return GalleryLayout::Mode::Flow;
-    case LayoutMode::FlowFill:
-        return GalleryLayout::Mode::FlowFill;
-    case LayoutMode::Facing:
-        return GalleryLayout::Mode::Facing;
-    default:
-        return GalleryLayout::Mode::Masonry;
-    }
+    return GalleryPackFit::modeFromLayoutMode(m_layout.mode);
 }
 
 void ImageView::updateGalleryDecodeWindow()
