@@ -337,7 +337,6 @@ public:
     int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     QSize ensureSlideshowLogicalSize(const QString &path);
     bool isProvisionalImageSize(const QString &path) const;
-    QSize logicalSizeForPath(const QString &path) const;
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
     QString currentPath() const;
 

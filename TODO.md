@@ -2,6 +2,20 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1618-fix-imageview-private-brace.** Fix stray `}` in imageview_private_methods.inc that closed ImageView class early; drop duplicate logicalSizeForPath.
+Prior: **1617**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1618-fix-imageview-private-brace.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1617-fix-test-qt-gui.** Phase 6 tests: link Qt6::Gui for hudmodel and sessiondocument (QImage/QColor).
 Prior: **1616**.
 

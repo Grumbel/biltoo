@@ -57,8 +57,6 @@
      * Phase entry, fit, and framing call this before geometry.
      */
     QSize ensureLogicalSizeForPath(const QString &path);
-    }
-
 
     bool isCropDraftLockedPath(const QString &path) const;
 
