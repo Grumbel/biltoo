@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1373-viewport-pan-crop-seeds.** ViewportChrome pan transitions;
+CropSession residual draft seeds.
+Prior: **1372**.
+
+### Change
+- `ViewportChrome::{beginPan,endPan,updatePanPos,setMouseInfo,setHoverViewPos}`
+- Crop appearance/autocrop/stashed-rotation seeds via setRect/setRotation
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1373**)
+```bash
+git pull /path/to/biltoo-1373-viewport-pan-crop-seeds.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1372-item-interact-crop-text.** ItemInteractSession transitions;
 Crop draft setters; TextLayer layer content.
 Prior: **1371**.

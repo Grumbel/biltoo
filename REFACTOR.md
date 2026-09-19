@@ -350,3 +350,4 @@ part of early-phase exit criteria).
 - **CropSession** leave via clear/takePending; **TextLayerSession** showRegions/link tip.
 - **AttentionSession** point-drag/selection; **PageGuideSession** visibility/page; group press pos.
 - **ItemInteractSession** move/handle/rotate; Crop setRect/setRotation; TextLayer layer content.
+- **ViewportChrome** pan/pointer transitions; Crop residual draft seeds.
