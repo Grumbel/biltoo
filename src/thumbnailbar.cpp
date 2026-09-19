@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thumbnailbar.h"
+#include "viewtransform.h"
 #include "filmstripgeometry.h"
 #include "displayquality.h"
 #include "displaysurface.h"
@@ -973,7 +974,7 @@ int ThumbnailBar::thumbDecodePixels() const
 {
     // Decode at device pixels so HiDPI does not show a half-size centered icon.
     const qreal dpr = qMax<qreal>(1.0, devicePixelRatioF());
-    return qMax(1, qRound(m_thumbSize * dpr));
+    return ViewTransform::atLeast1(qRound(m_thumbSize * dpr));
 }
 
 int ThumbnailBar::filmstripDecodeEdge() const
@@ -1910,9 +1911,9 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             // Extra overscan in index space (~half a screen of cells).
             // Letterbox cells are often wider than thumbSize; under-counting
             // across left off-screen neighbours unloaded until scroll.
-            const int cell = qMax(1, m_thumbSize + 8);
-            const int across = qMax(1, viewport()->width() / cell);
-            const int down = qMax(1, viewport()->height() / cell);
+            const int cell = ViewTransform::atLeast1(m_thumbSize + 8);
+            const int across = ViewTransform::atLeast1(viewport()->width() / cell);
+            const int down = ViewTransform::atLeast1(viewport()->height() / cell);
             const int over = qMax(16, across * down * 2);
             lo = qMax(0, minRow - over);
             hi = qMin(n, maxRow + over + 1);

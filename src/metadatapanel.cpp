@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "metadatapanel.h"
+#include "viewtransform.h"
 #include "archivepath.h"
 #include "pagepath.h"
 #include "imageloader.h"
@@ -240,7 +241,7 @@ void ImageHistogramWidget::setFromImage(const QImage &image)
             ++m_r[r];
             ++m_g[g];
             ++m_b[b];
-            ++m_luma[qBound(0, yv, 255)];
+            ++m_luma[ViewTransform::clampPixel(yv, 256)];
         }
     }
     m_peak = 1;
