@@ -1674,6 +1674,7 @@ private:
     bool prepareCropModeFullImage(ImageItem *item);
     bool resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const;
     /** @p unorientedSource true when @p full is ImageCache/host raw (safe to bake). */
+    void finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspaceAnchorScene);
     void cancelPathRasterForCrop(const QString &path);
     void rememberCropEnterSizes(const QString &path, const QImage &full);
     void installFullImageForCrop(ImageItem *item, const QImage &full,

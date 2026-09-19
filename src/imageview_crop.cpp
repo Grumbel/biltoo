@@ -140,14 +140,7 @@ bool ImageView::enterCropModeFromUi()
         return false;
     }
     if (isWorkspaceMode()) {
-        // If there was no stored crop angle but the tile was free-rotated,
-        // seed the draft rotation so the frame matches the prior pose while
-        // the item stays axis-aligned for editing.
-        if (m_crop.seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
-            ensureCropRectValid();
-        }
-        alignCropFrameCenterToScene(item, workspaceAnchorScene);
-        updateWorkspaceSceneRect();
+        finishWorkspaceCropEnter(item, workspaceAnchorScene);
     }
     // Mode already active (activateModeAfterDraft in prepare).
     flashHud(tr("Crop mode"),
