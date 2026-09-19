@@ -167,14 +167,12 @@ void ImageView::applyToolDragMode()
 
 void ImageView::clearFitFillModes()
 {
-    m_framing.fitMode = false;
-    m_framing.fillMode = false;
+    m_framing.clearFitFill();
 }
 
 void ImageView::enableFitMode()
 {
-    m_framing.fitMode = true;
-    m_framing.fillMode = false;
+    m_framing.setFitOnly();
 }
 
 
