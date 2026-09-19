@@ -1647,9 +1647,7 @@ void ImageView::paintCropOverlay(QPainter &painter)
 void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || h == CropHandle::None || h == CropHandle::Reset || h == CropHandle::Close
-        || h == CropHandle::Cancel || h == CropHandle::ExpandToggle
-        || h == CropHandle::Auto) {
+    if (!item || !CropSession::isGeometryHandle(h)) {
         return;
     }
     const QPointF startLocal = item->mapFromScene(mapToScene(viewPos));

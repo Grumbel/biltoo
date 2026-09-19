@@ -30,6 +30,14 @@ class CropSession
 public:
     bool active() const { return mode; }
 
+    /** True for frame drag handles (not chrome buttons). */
+    static bool isGeometryHandle(CropHandle h)
+    {
+        return h != CropHandle::None && h != CropHandle::Reset && h != CropHandle::Close
+            && h != CropHandle::Cancel && h != CropHandle::ExpandToggle
+            && h != CropHandle::Auto;
+    }
+
     bool isHandleHot(CropHandle h) const
     {
         return hoverHandle == h || activeHandle == h;
