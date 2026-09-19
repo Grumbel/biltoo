@@ -746,7 +746,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - Tier 5a: **done** (biltoo-1610) — `DisplayPipelineController` owns loadGate,
   displaySurfaces, imageFocusSurface, tileCoordinator, tile LOD timers.
   Methods stay on ImageView; soft provider + neighbor prefetch remain on view.
-- Tier 5b: **in progress** (biltoo-1632) — `ensureWorkspaceQualityClimb` on DisplayPipelineController; more PreferCache moves pending.
+- Tier 5b: **in progress** (biltoo-1633) — PreferCache climb methods on DisplayPipelineController; install/ladder still on ImageView.
 - Tier 6a: **done** (biltoo-1612) — crop/attention mouse try* handlers on
   controllers; ImageView input is thin dispatch for those modes.
 - Tier 6b: **done** (biltoo-1613) — crop/attention release+key; slideshow seek

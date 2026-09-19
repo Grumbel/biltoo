@@ -1695,45 +1695,9 @@ void ImageView::ensureWorkspaceQualityClimb()
 
 void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
 {
-    ASSERT_GUI_THREAD();
-    if (path.isEmpty() || m_gallerySoftBook.hasImageModeNativeDecode(path)) {
-        return;
-    }
-    m_gallerySoftBook.markImageModeNativeDecode(path);
-    const quint64 gen = m_displayPipeline.loadGate().generation();
-    const QPointer<ImageView> guard(this);
-    QThreadPool::globalInstance()->start([guard, path, gen]() {
-        ASSERT_NOT_GUI_THREAD();
-        const QImage decoded = ImageLoader::load(path);
-        if (!guard) {
-            return;
-        }
-        QMetaObject::invokeMethod(
-            guard.data(),
-            [guard, path, decoded, gen]() {
-                ImageView *const host = guard.data();
-                if (!host) {
-                    return;
-                }
-                if (!decoded.isNull()) {
-                    ImageCache::put(path, decoded);
-                }
-                if (host->isImageMode()) {
-                    if (gen != host->m_displayPipeline.loadGate().generation()) {
-                        return;
-                    }
-                    if (!decoded.isNull()) {
-                        (void)host->tryInstallImageModeSample(path, decoded);
-                    }
-                } else if (host->isWorkspaceMode() && !decoded.isNull()) {
-                    host->onImagePreviewLoaded(
-                        path, decoded, host->m_displayPipeline.loadGate().generation(),
-                        static_cast<int>(LoadAdd));
-                }
-            },
-            Qt::QueuedConnection);
-    });
+    m_displayPipeline.scheduleImageModeNativeDecodeOnce(path);
 }
+
 
 void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
                                      int role)
@@ -2284,48 +2248,15 @@ ImageItem *ImageView::imageModeItemForPath(const QString &path) const
 
 void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantEdge)
 {
-    requestEscalateClimb(path, wantEdge);
+    m_displayPipeline.scheduleImageModePreferCacheClimb(path, wantEdge);
 }
+
 
 void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
 {
-    if (!m_pathRaster || path.isEmpty() || m_slideshow.hud().isNavHot()) {
-        return;
-    }
-    if (isCropDraftLockedPath(path)) {
-        return;
-    }
-    // Tiles own display: tileLodWanted or known durable pyramid — no PreferCache.
-    if (ImageItem *it = imageModeItemForPath(path)) {
-        if (it->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path)) {
-            tickPrimaryTileLod(12);
-            return;
-        }
-    }
-    for (ImageItem *ii : m_items) {
-        if (ii && ii->path() == path
-            && (ii->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path))) {
-            tickPrimaryTileLod(12);
-            return;
-        }
-    }
-    if (ThumtooCache::hasDurableTilesKnown(path)) {
-        tickPrimaryTileLod(12);
-        return;
-    }
-    const int edge = cappedDisplayEdgeForPath(
-        path, wantEdge > 0 ? wantEdge : ThumtooCache::kImageLadderEdge);
-    // Slideshow + durable tiles: SoftDisplay (PreferCache/TileSynth) only —
-    // EscalateToFull native decode is the CPU storm on prepared libraries.
-    const auto policy =
-        (m_slideshow.hud().isProgressActive() && ThumtooCache::hasDurableTilesKnown(path))
-            ? PathRasterService::ClimbPolicy::SoftDisplay
-            : PathRasterService::ClimbPolicy::EscalateToFull;
-    biltooLoadDbg("escalateClimb(service) path=%s edge=%d policy=%d",
-                  qPrintable(QFileInfo(path).fileName()), edge,
-                  static_cast<int>(policy));
-    m_pathRaster->ensure(path, edge, logicalSizeForPath(path), policy);
+    m_displayPipeline.requestEscalateClimb(path, wantEdge);
 }
+
 
 void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &path,
                                              const QImage &image,
@@ -2389,61 +2320,15 @@ bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &ima
 void ImageView::noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                                  const QImage &sample)
 {
-    if (m_pathRaster && !path.isEmpty()) {
-        m_pathRaster->noteDelivery(path, requestEdge, sample);
-    }
+    m_displayPipeline.noteImageModePreferCacheDelivery(path, requestEdge, sample);
 }
+
 
 void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &sample)
 {
-    if (path.isEmpty() || m_slideshow.hud().isNavHot() || !m_pathRaster) {
-        return;
-    }
-    if (isCropDraftLockedPath(path)) {
-        return;
-    }
-    if (m_slideshow.hud().isProgressActive()) {
-        return;
-    }
-    // Tiles own display once wanted or durable pyramid is known — no PreferCache.
-    const bool durable = ThumtooCache::hasDurableTilesKnown(path);
-    if (ImageItem *it = imageModeItemForPath(path)) {
-        if (DisplayEdgePolicy::tilesOwnDisplay(it->tileLodWanted(), durable)) {
-            tickPrimaryTileLod(12);
-            return;
-        }
-    }
-    if (durable) {
-        tickPrimaryTileLod(12);
-        return;
-    }
-    if (!sample.isNull() && sampleCoversNativeLogical(path, sample)) {
-        return;
-    }
-
-    const int need = imageModeOnScreenNeedEdge();
-    const int have = sample.isNull() ? 0 : ImageCache::longEdge(sample);
-    // Cold path only (no durable tiles): climb to on-screen need, not soft-512 habit.
-    const int escalated = DisplayEdgePolicy::escalateClimbTo(
-        ThumtooCache::kBatchOverviewEdge, need);
-    const int climbTo = DisplayEdgePolicy::climbEdgeIfNeeded(
-        have, need, ThumtooCache::kBatchOverviewEdge,
-        cappedDisplayEdgeForPath(path, escalated));
-    if (climbTo <= 0) {
-        return;
-    }
-    biltooLoadDbg("imageModeClimb(service) path=%s climbTo=%d have=%d need=%d cold",
-                  qPrintable(QFileInfo(path).fileName()), climbTo, have, need);
-    m_pathRaster->ensure(path, climbTo, logicalSizeForPath(path),
-                         PathRasterService::ClimbPolicy::EscalateToFull);
-    // Full is async. If terminal or nothing pending and still short, host native
-    // (only when no durable tiles — prepared libs use TileSynth / tile LOD).
-    if (!ThumtooCache::hasDurableTilesKnown(path)
-        && !DisplayEdgePolicy::coversEdge(m_pathRaster->haveEdge(path), climbTo)
-        && (m_pathRaster->isGaveUp(path) || !m_pathRaster->isClimbPending(path))) {
-        scheduleImageModeNativeDecodeOnce(path);
-    }
+    m_displayPipeline.ensureImageModeQualityClimb(path, sample);
 }
+
 
 bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &image)
 {

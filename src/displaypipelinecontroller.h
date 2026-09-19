@@ -52,6 +52,12 @@ public:
      * items. Body moved from ImageView (Tier 5b); ImageView thin-forwards.
      */
     void ensureWorkspaceQualityClimb();
+    void scheduleImageModeNativeDecodeOnce(const QString &path);
+    void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
+    void requestEscalateClimb(const QString &path, int wantEdge);
+    void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
+                                          const QImage &sample);
+    void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
 
 private:
     ImageView *m_view = nullptr; // not owned

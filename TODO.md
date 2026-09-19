@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1633-prefercache-climbs-controller.** Tier 5b: move PreferCache climb methods.
+Prior: **1632**.
+
+### Change
+- DisplayPipelineController owns:
+  - `scheduleImageModeNativeDecodeOnce`
+  - `scheduleImageModePreferCacheClimb` / `requestEscalateClimb`
+  - `noteImageModePreferCacheDelivery`
+  - `ensureImageModeQualityClimb`
+- ImageView methods thin-forward (call sites unchanged)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1633-prefercache-climbs-controller.bundle HEAD
+```
+
+### Next
+- More load.cpp shrink (install/ladder/tile LOD)
+- Replace friend with Host accessors when surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1632-workspace-quality-climb-controller.** Tier 5b: move ensureWorkspaceQualityClimb.
 Prior: **1631**.
 
