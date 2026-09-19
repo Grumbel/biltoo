@@ -235,6 +235,15 @@ public:
         clearInteraction();
     }
 
+    /** Restore placement stash on item then abort enter (failed prepare). */
+    void abortEnterRestoringPlacement(ImageItem *item)
+    {
+        if (item) {
+            restoreStashedPlacement(item);
+        }
+        abortEnter();
+    }
+
     /**
      * Capture pending full rematerialize and clear those fields.
      * @return true if a bake was pending.

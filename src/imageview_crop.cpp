@@ -200,8 +200,7 @@ bool ImageView::enterCropModeFromUi()
         // prepare may have set mode for fitItem then failed — restore placement
         // before abortEnter clears the stash.
         item->setTileLodSuppressed(false);
-        m_crop.restoreStashedPlacement(item);
-        m_crop.abortEnter();
+        m_crop.abortEnterRestoringPlacement(item);
         flashHud(tr("Crop"), tr("Could not load full image"));
         return false;
     }
