@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thumbnailbar.h"
+#include "filmstripgeometry.h"
 #include "displayquality.h"
 #include "displaysurface.h"
 #include "archivepath.h"
@@ -122,16 +123,8 @@ QSize ThumbnailDelegate::letterboxContentSize(QSize aspect) const
     if (const auto *bar = qobject_cast<const ThumbnailBar *>(parent())) {
         orient = bar->barOrientation();
     }
-    if (orient == Qt::Horizontal) {
-        const int h = m_thumbSize;
-        const int w = qMax(1, int(qRound(qreal(m_thumbSize) * qreal(aspect.width())
-                                         / qreal(aspect.height()))));
-        return QSize(w, h);
-    }
-    const int w = m_thumbSize;
-    const int h = qMax(1, int(qRound(qreal(m_thumbSize) * qreal(aspect.height())
-                                     / qreal(aspect.width()))));
-    return QSize(w, h);
+    return FilmstripGeometry::letterboxContentSize(m_thumbSize, aspect,
+                                                     orient == Qt::Horizontal);
 }
 
 QSize ThumbnailDelegate::cellSizeForContent(const QFont &font, QSize contentAspect) const
@@ -259,8 +252,9 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         // re-letterbox into inner (that added aspect-dependent side gaps when
         // option.rect was wider than the content, e.g. IconMode iconSize floor).
         const QSize contentSz = logicalContentSize(index);
-        const int cw = qBound(1, contentSz.width(), inner.width());
-        const int ch = qBound(1, contentSz.height(), inner.height());
+        const QSize fitted = FilmstripGeometry::fitContentInInner(contentSz, inner.size());
+        const int cw = fitted.width();
+        const int ch = fitted.height();
         contentRect = QRect(
             inner.x() + (inner.width() - cw) / 2,
             inner.y() + (inner.height() - ch) / 2,
@@ -282,7 +276,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         painter->drawRect(slot.adjusted(0, 0, -1, -1));
         const ThumbnailBar *bar = qobject_cast<const ThumbnailBar *>(parent());
         if (bar && bar->isRowLoading(index.row())) {
-            const int s = qBound(6, qMin(slot.width(), slot.height()) / 4, 18);
+            const int s = FilmstripGeometry::cornerBadgeSize(slot.width(), slot.height());
             const QRect pip(slot.center().x() - s / 2,
                             slot.center().y() - s / 2, s, s);
             painter->setPen(Qt::NoPen);
@@ -321,7 +315,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         }
     }
     if (bar && bar->isOnCanvas(index.row()) && contentRect.width() > 8) {
-            const int fold = qBound(10, contentRect.width() / 4, 28);
+            const int fold = FilmstripGeometry::membershipFoldPx(contentRect.width());
             const QPoint topRight(contentRect.right() + 1, contentRect.top());
             const QPoint left(topRight.x() - fold, topRight.y());
             const QPoint bottom(topRight.x(), topRight.y() + fold);
@@ -356,7 +350,7 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     // Content crop: yellow dog-ear on the bottom-right (mirrors Workspace blue
     // fold on the top-right).
     if (bar && bar->isSessionCropped(index.row()) && contentRect.width() > 8) {
-        const int fold = qBound(10, contentRect.width() / 4, 28);
+        const int fold = FilmstripGeometry::membershipFoldPx(contentRect.width());
         const QPoint bottomRight(contentRect.right() + 1, contentRect.bottom() + 1);
         const QPoint left(bottomRight.x() - fold, bottomRight.y());
         const QPoint top(bottomRight.x(), bottomRight.y() - fold);
@@ -616,7 +610,7 @@ int ThumbnailBar::labelBandHeight() const
 int ThumbnailBar::extentForThumbSize(int thumbSize)
 {
     // Approximate for callers without a live widget (default app font).
-    const int pad = qBound(1, thumbSize / 20, 6);
+    const int pad = FilmstripGeometry::cellPadFromThumb(thumbSize);
     return 2 * pad + thumbSize
         + ThumbnailDelegate::labelBandHeightForFont(QApplication::font());
 }
@@ -627,8 +621,8 @@ int ThumbnailBar::thumbSizeForExtent(int extent)
     // Inverse of extentForThumbSize with pad ≈ thumb/16 — iterate a step.
     int thumb = extent - label;
     for (int i = 0; i < 3; ++i) {
-        const int pad = qBound(1, thumb / 20, 6);
-        thumb = qBound(kMinThumbSize, extent - label - 2 * pad, kMaxThumbSize);
+        const int pad = FilmstripGeometry::cellPadFromThumb(thumb);
+        thumb = FilmstripGeometry::clampThumbSize(extent - label - 2 * pad, kMinThumbSize, kMaxThumbSize);
     }
     return thumb;
 }
@@ -637,15 +631,11 @@ int ThumbnailBar::thumbSizeFromBarExtent(int extent) const
 {
     if (m_orientation == Qt::Horizontal) {
         // extent is bar height = cell height = pads + thumb + labelBand
-        const int pad = m_delegate ? m_delegate->cellPad() : qBound(1, m_thumbSize / 16, 6);
-        return qBound(kMinThumbSize,
-                     extent - labelBandHeight() - 2 * pad,
-                     kMaxThumbSize);
+        const int pad = m_delegate ? m_delegate->cellPad() : FilmstripGeometry::cellPadFromThumbAlt(m_thumbSize);
+        return FilmstripGeometry::clampThumbSize(extent - labelBandHeight() - 2 * pad, kMinThumbSize, kMaxThumbSize);
     }
     // Vertical bar: extent is bar width ≈ cell width = thumb + 2*pad
-    return qBound(kMinThumbSize,
-                 extent - 2 * (m_delegate ? m_delegate->cellPad() : 4),
-                 kMaxThumbSize);
+    return FilmstripGeometry::clampThumbSize(extent - 2 * (m_delegate ? m_delegate->cellPad() : 4), kMinThumbSize, kMaxThumbSize);
 }
 
 void ThumbnailBar::applyOrientation()
@@ -794,7 +784,7 @@ QSize ThumbnailBar::minimumSizeHint() const
 
 void ThumbnailBar::setThumbSize(int pixels)
 {
-    const int clamped = qBound(kMinThumbSize, pixels, kMaxThumbSize);
+    const int clamped = FilmstripGeometry::clampThumbSize(pixels, kMinThumbSize, kMaxThumbSize);
     if (clamped == m_thumbSize) {
         return;
     }
