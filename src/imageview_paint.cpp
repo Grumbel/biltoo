@@ -178,7 +178,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const bool haveTo = !toSrc.isNull();
         const qreal tt = ViewTransform::clamp01(t);
         const QString fPath = !fromPath.isEmpty() ? fromPath
-            : (m_ss.hasFromPath() ? m_ss.fromPathRef() : m_ssDwell.biasPath);
+            : (m_ss.hasFromPath() ? m_ss.fromPathRef() : m_ssDwell.biasPathRef());
         const QString tPath = !toPath.isEmpty() ? toPath : m_ss.toPathRef();
         if (haveFrom && haveTo && t >= 0.0) {
             painter.setOpacity(1.0);
@@ -207,7 +207,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const QRect vr = viewport()->rect();
         // Prefer member references (not a local QImage copy) so paintMotionCover
         // can match the dwell atlas by address as well as by path.
-        const QImage &fromImg = m_ss.hasFromImage() ? m_ss.fromImageRef() : m_ssDwell.sourceImage;
+        const QImage &fromImg = m_ss.hasFromImage() ? m_ss.fromImageRef() : m_ssDwell.sourceImageRef();
         const qreal fromT = m_ss.fromMotionTValue();
         const qreal toT = m_ss.toMotionTValue();
         if (m_ss.inTransition() && m_ss.hasToImage()) {
@@ -799,8 +799,8 @@ void ImageView::recomputeTextSearchMatches()
     if (!m_textLayer.hasSearchQuery() || !m_textLayer.hasRegions()) {
         return;
     }
-    const QString qn = TextSearchPolicy::normalizeForSearch(m_textLayer.searchQuery);
-    const QString qa = TextSearchPolicy::alnumOnly(m_textLayer.searchQuery);
+    const QString qn = TextSearchPolicy::normalizeForSearch(m_textLayer.searchQueryRef());
+    const QString qa = TextSearchPolicy::alnumOnly(m_textLayer.searchQueryRef());
     for (int i = 0; i < m_textLayer.regionCount(); ++i) {
         const auto &r = m_textLayer.regionAt(i);
         if (r.text.isEmpty()) {
@@ -816,7 +816,7 @@ int ImageView::setTextSearchQuery(const QString &query)
 {
     const QString trimmed = query.trimmed();
     if (m_textLayer.searchQuery == trimmed && m_textLayer.hasRegions()) {
-        return m_textLayer.searchMatches.size();
+        return m_textLayer.searchMatchesRef().size();
     }
     m_textLayer.setSearchQuery(trimmed);
     if (!m_textLayer.hasSearchQuery()) {
@@ -828,13 +828,13 @@ int ImageView::setTextSearchQuery(const QString &query)
         return 0;
     }
     // Ensure layer is loaded for the current page.
-    if (!m_textLayer.hasRegions() || m_textLayer.layerPath != classicPath()) {
+    if (!m_textLayer.hasRegions() || m_textLayer.layerPathRef() != classicPath()) {
         refreshTextLayer();
     } else {
         recomputeTextSearchMatches();
     }
     viewport()->update();
-    return m_textLayer.searchMatches.size();
+    return m_textLayer.searchMatchesRef().size();
 }
 
 bool ImageView::hasTextLayer() const
@@ -866,7 +866,7 @@ bool ImageView::hitTextLinkAt(const QPoint &viewPos, int *pageOut, QString *uriO
     if (!item || item->contentRect().isEmpty()) {
         return false;
     }
-    if (!m_textLayer.hasRegions() || m_textLayer.layerPath != classicPath()) {
+    if (!m_textLayer.hasRegions() || m_textLayer.layerPathRef() != classicPath()) {
         return false;
     }
     const QSize sz = item->imageSize();
@@ -968,7 +968,7 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
 
     const bool pageYUp = pageYUpForTextLayer();
     const QRectF inSource = ThumtooCache::pageRectToImageRect(
-        region.bbox, m_textLayer.pageBounds(), sourceSize, pageYUp);
+        region.bbox, m_textLayer.pageBoundsRef(), sourceSize, pageYUp);
     if (inSource.isEmpty()) {
         return {};
     }
@@ -1002,7 +1002,7 @@ void ImageView::finishTextRubberBand()
         return;
     }
     // Ensure text layer (refreshTextLayer skips when neither search nor outlines).
-    if (!m_textLayer.hasRegions() || m_textLayer.layerPath != classicPath()) {
+    if (!m_textLayer.hasRegions() || m_textLayer.layerPathRef() != classicPath()) {
         const bool hadShow = m_textLayer.showsRegions();
         m_textLayer.setShowRegions(true);
         refreshTextLayer();
@@ -1045,7 +1045,7 @@ void ImageView::finishTextRubberBand()
 QString ImageView::selectedText() const
 {
     QStringList lines;
-    for (int idx : m_textLayer.selectedRegions) {
+    for (int idx : m_textLayer.selectedRegionsRef()) {
         if (idx < 0 || idx >= m_textLayer.regionCount()) {
             continue;
         }
@@ -1154,7 +1154,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                 if (m_textLayer.hasSearchMatches()) {
                     painter->setPen(Qt::NoPen);
                     painter->setBrush(QColor(255, 220, 40, 110));
-                    for (int idxMatch : m_textLayer.searchMatches) {
+                    for (int idxMatch : m_textLayer.searchMatchesRef()) {
                         if (idxMatch < 0 || idxMatch >= m_textLayer.regionCount()) {
                             continue;
                         }
@@ -1171,7 +1171,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
                 if (m_textLayer.hasSelection()) {
                     painter->setPen(Qt::NoPen);
                     painter->setBrush(QColor(60, 160, 255, 100));
-                    for (int idxSel : m_textLayer.selectedRegions) {
+                    for (int idxSel : m_textLayer.selectedRegionsRef()) {
                         if (idxSel < 0 || idxSel >= m_textLayer.regionCount()) {
                             continue;
                         }

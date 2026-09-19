@@ -164,6 +164,16 @@ struct SlideshowPhaseState {
 
     bool hasToAtlas() const { return !toAtlas.isNull(); }
 
+    const QPixmap &toAtlasRef() const { return toAtlas; }
+
+    QPixmap &toAtlasMutable() { return toAtlas; }
+
+    qreal toAtlasScaleValue() const { return toAtlasScale; }
+
+    int toAtlasVwValue() const { return toAtlasVw; }
+
+    int toAtlasVhValue() const { return toAtlasVh; }
+
     qreal clampedFadeT() const
     {
         return fadeT < 0.0 ? 0.0 : qBound(0.0, fadeT, 1.0);
@@ -516,6 +526,34 @@ struct SlideshowDwellState {
     bool hasSourceImage() const { return !sourceImage.isNull(); }
 
     bool hasAtlas() const { return !atlas.isNull(); }
+
+    const QImage &sourceImageRef() const { return sourceImage; }
+
+    QImage &sourceImageMutable() { return sourceImage; }
+
+    const QPixmap &atlasRef() const { return atlas; }
+
+    QPixmap &atlasMutable() { return atlas; }
+
+    qreal atlasScaleValue() const { return atlasScale; }
+
+    int atlasVwValue() const { return atlasVw; }
+
+    int atlasVhValue() const { return atlasVh; }
+
+    qreal motionTValue() const { return motionT; }
+
+    bool isClockValid() const { return clock.isValid(); }
+
+    qint64 clockElapsed() const { return clock.elapsed(); }
+
+    void restartClock() { clock.restart(); }
+
+    int durationMsValue() const { return durationMs; }
+
+    qint64 elapsedOffsetMsValue() const { return elapsedOffsetMs; }
+
+    const QString &biasPathRef() const { return biasPath; }
 
     /** @return true when motion-paused flag changed. */
     bool setMotionPaused(bool on)
