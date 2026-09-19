@@ -444,13 +444,7 @@ void ImageView::releaseStickyZoom()
 
 void ImageView::captureStickyZoomFromCurrentFraming()
 {
-    if (!m_framing.fitMode && !m_framing.fillMode) {
-        m_framing.setStickyZoomKind(StickyZoomKind::Actual);
-    } else if (m_framing.fillMode) {
-        m_framing.setStickyZoomKind(StickyZoomKind::Fill);
-    } else {
-        m_framing.setStickyZoomKind(StickyZoomKind::Fit);
-    }
+    m_framing.syncStickyKindFromFitFill();
 }
 
 void ImageView::setStickyZoomKind(StickyZoomKind kind)

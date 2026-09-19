@@ -78,6 +78,23 @@ struct ViewFraming {
 
     void setStickyZoomKind(StickyZoomKind kind) { stickyZoomKind = kind; }
 
+    /** Infer sticky kind from current fit/fill flags (1:1 is separate). */
+    static StickyZoomKind kindFromFitFill(bool fitMode, bool fillMode)
+    {
+        if (fillMode) {
+            return StickyZoomKind::Fill;
+        }
+        if (fitMode) {
+            return StickyZoomKind::Fit;
+        }
+        return StickyZoomKind::Actual;
+    }
+
+    void syncStickyKindFromFitFill()
+    {
+        stickyZoomKind = kindFromFitFill(fitMode, fillMode);
+    }
+
     void clearStickyPan() { haveStickyPanAnchor = false; }
 
     void clearPreservedViewScale() { havePreservedViewScale = false; }
