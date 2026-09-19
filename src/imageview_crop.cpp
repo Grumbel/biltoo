@@ -404,18 +404,60 @@ void ImageView::rememberCropEnterSizes(const QString &path, const QImage &full)
 }
 
 
+
+void ImageView::logKeepEnterDisplay(ImageItem *item, const QString &path) const
+{
+    if (!qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP") || !item) {
+        return;
+    }
+    qWarning().noquote()
+        << QStringLiteral("[crop] enter-full KEEP display edge=%1 path=%2")
+               .arg(item->displayPixelLongEdge())
+               .arg(path);
+}
+
 void ImageView::installKeepEnterDisplay(ImageItem *item, const WorkspaceItemState &contentOnly,
                                         const ContentXform::Value &wantX, const QString &path)
 {
     CropSession::applyKeepEnterFlags(item, contentOnly, wantX);
     applyContentLayoutSize(item, contentOnly);
     m_crop.markShowingFullImage();
-    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
-        qWarning().noquote()
-            << QStringLiteral("[crop] enter-full KEEP display edge=%1 path=%2")
-                   .arg(item->displayPixelLongEdge())
-                   .arg(path);
+    logKeepEnterDisplay(item, path);
+}
+
+
+void ImageView::logDraftEnterBegin(ImageItem *item, const QString &path,
+                                   const CropSession::EnterInstallSample &sample,
+                                   const QImage &full) const
+{
+    if (!qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP") || !item) {
+        return;
     }
+    qWarning().noquote()
+        << QStringLiteral(
+               "[crop] enter-full path=%1 imageSize=%2x%3 hasDecoded=%4 "
+               "appliedCrop=%5 hostEdge=%6")
+               .arg(path)
+               .arg(item->imageSize().width()).arg(item->imageSize().height())
+               .arg(item->hasDecodedPixels() ? 1 : 0)
+               .arg(sample.hadPriorCrop ? 1 : 0)
+               .arg(ImageCache::longEdge(full));
+}
+
+void ImageView::logDraftEnterDone(ImageItem *item, const CropSession::EnterInstallSample &sample,
+                                  const WorkspaceItemState &contentOnly) const
+{
+    if (!qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP") || !item) {
+        return;
+    }
+    qWarning().noquote()
+        << QStringLiteral(
+               "[crop] enter-full done imageSize=%1x%2 display=%3x%4 "
+               "appliedCrop=%5 contentTurns=%6")
+               .arg(item->imageSize().width()).arg(item->imageSize().height())
+               .arg(sample.display.width()).arg(sample.display.height())
+               .arg(item->sessionHasCrop() ? 1 : 0)
+               .arg(contentOnly.contentQuarterTurns);
 }
 
 void ImageView::installDraftEnterDisplay(ImageItem *item,
@@ -423,33 +465,14 @@ void ImageView::installDraftEnterDisplay(ImageItem *item,
                                          const QImage &full, const QString &path)
 {
     CropSession::clearItemFreePlacementForDraft(item);
-    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
-        qWarning().noquote()
-            << QStringLiteral(
-                   "[crop] enter-full path=%1 imageSize=%2x%3 hasDecoded=%4 "
-                   "appliedCrop=%5 hostEdge=%6")
-                   .arg(path)
-                   .arg(item->imageSize().width()).arg(item->imageSize().height())
-                   .arg(item->hasDecodedPixels() ? 1 : 0)
-                   .arg(sample.hadPriorCrop ? 1 : 0)
-                   .arg(ImageCache::longEdge(full));
-    }
+    logDraftEnterBegin(item, path, sample, full);
     CropSession::clearItemPixelsForDraftReinstall(item);
     const WorkspaceItemState &contentOnly = sample.contentOnly;
     const ContentXform::Value &wantX = sample.wantX;
     attachDisplaySample(item, sample.display, contentOnly, sample.kind);
     applyContentLayoutSize(item, contentOnly);
     CropSession::applyEnterDraftFlags(item, wantX);
-    if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
-        qWarning().noquote()
-            << QStringLiteral(
-                   "[crop] enter-full done imageSize=%1x%2 display=%3x%4 "
-                   "appliedCrop=%5 contentTurns=%6")
-                   .arg(item->imageSize().width()).arg(item->imageSize().height())
-                   .arg(sample.display.width()).arg(sample.display.height())
-                   .arg(item->sessionHasCrop() ? 1 : 0)
-                   .arg(contentOnly.contentQuarterTurns);
-    }
+    logDraftEnterDone(item, sample, contentOnly);
     m_crop.markShowingFullImage();
 }
 

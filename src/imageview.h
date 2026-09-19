@@ -1759,6 +1759,12 @@ private:
     void finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspaceAnchorScene);
     void cancelPathRasterForCrop(const QString &path);
     void rememberCropEnterSizes(const QString &path, const QImage &full);
+    void logKeepEnterDisplay(ImageItem *item, const QString &path) const;
+    void logDraftEnterBegin(ImageItem *item, const QString &path,
+                            const CropSession::EnterInstallSample &sample,
+                            const QImage &full) const;
+    void logDraftEnterDone(ImageItem *item, const CropSession::EnterInstallSample &sample,
+                           const WorkspaceItemState &contentOnly) const;
     void installKeepEnterDisplay(ImageItem *item, const WorkspaceItemState &contentOnly,
                                  const ContentXform::Value &wantX, const QString &path);
     void installDraftEnterDisplay(ImageItem *item,
