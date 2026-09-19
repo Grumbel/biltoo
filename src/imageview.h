@@ -771,6 +771,8 @@ public:
     void relayoutAfterAppearanceApply(ImageItem *item);
     void applyCropAppearancePixels(ImageItem *item, const QImage &src,
                                    const WorkspaceItemState &state);
+    void clearIdentityContentAppearance(ImageItem *item,
+                                        const WorkspaceItemState &state);
     void applyCropAppearance(ImageItem *item, const QImage &src,
                             const WorkspaceItemState &state);
 

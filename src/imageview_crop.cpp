@@ -817,6 +817,19 @@ void ImageView::applyCropAppearancePixels(ImageItem *item, const QImage &src,
     item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }
 
+
+void ImageView::clearIdentityContentAppearance(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    // Undo back to identity: commit no longer writes identity (avoids wiping
+    // good rows on noisy commits), so clear durable state explicitly.
+    if (!SessionAppearance::hasContentAppearance(state)) {
+        ThumtooCache::clearContentAppearance(item->path());
+    }
+}
+
 void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
                                     const WorkspaceItemState &state)
 {
@@ -832,11 +845,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     // Appearance persistence is commitItemSessionEdit → m_appearance (by id).
     // Do not write crop state into the path map for bound tiles.
     commitItemSessionEdit(item);
-    // Undo back to identity: commit no longer writes identity (avoids wiping
-    // good rows on noisy commits), so clear durable state explicitly.
-    if (!SessionAppearance::hasContentAppearance(state)) {
-        ThumtooCache::clearContentAppearance(item->path());
-    }
+    clearIdentityContentAppearance(item, state);
     relayoutAfterAppearanceApply(item);
 }
 
