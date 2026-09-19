@@ -202,7 +202,9 @@ enum class WorkspaceBackgroundMode {
     AppDefault = 0, /**< Preferences / built-in default — not stored as override */
     Solid = 1,
     Checkerboard = 2,
-    ImageTile = 3 /**< Tiled image pattern */
+    ImageTile = 3, /**< Tiled image pattern */
+    /** Cover-scale blur of the current image (Image mode view override only). */
+    ContentBlur = 4
 };
 
 struct WorkspaceBackground {

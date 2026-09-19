@@ -2,6 +2,21 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1589-view-content-blur.** View Background: Content blur mode for Image (ZoomBlur underlay).
+Prior: **1588**.
+
+### Change
+- `WorkspaceBackgroundMode::ContentBlur` — session View only (hidden in Workspace dialog)
+- `paintCanvasBackground`: Image mode paints ZoomBlur underlay in viewport space
+- Gallery falls back to solid; dialog preview shows a stand-in
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1589-view-content-blur.bundle HEAD
+```
+
+---
+
 **Tip: biltoo-1588-edge-nav-half-ellipse.** Edge nav markers as centred ~80% half-ellipses (clear top/bottom chrome).
 Prior: **1587**.
 

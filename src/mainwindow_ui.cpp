@@ -1848,8 +1848,9 @@ void MainWindow::populateActionHelpTexts()
         "<p>Size/position the page guide to fit the current content bounds.</p>"));
     setHelp(m_viewBackgroundAct, tr(
         "<p>Session canvas background for <b>Gallery</b> and <b>Image</b>: solid, "
-        "checker, image pattern, or Preferences default. Not stored in Preferences "
-        "or the project — applies until you change it or quit.</p>"));
+        "checker, image pattern, Preferences default, or <b>content blur</b> "
+        "(Image mode: blurred cover of the current image in letterbox margins). "
+        "Not stored in Preferences or the project.</p>"));
     setHelp(m_workspaceBackgroundAct, tr(
         "<p>Choose Workspace background: solid, checker, image tile, or app default. "
         "Stored in the project when you save.</p>"));

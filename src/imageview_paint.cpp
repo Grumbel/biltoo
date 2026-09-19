@@ -725,6 +725,37 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             fillChecker(a, b);
         } else if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
             fillImageTile(tileCache, wb.imagePath, storeTile);
+        } else if (wb.mode == WorkspaceBackgroundMode::ContentBlur) {
+            // Image mode: cover-scale blur under the sharp item (viewport space).
+            // Gallery has no single subject — fall back to solid.
+            QImage src;
+            QString path;
+            if (isImageMode()) {
+                ImageItem *item = primaryItem();
+                if (!item && hasClassicPath()) {
+                    item = findItemByPath(classicPath());
+                }
+                if (item) {
+                    src = item->displayImage();
+                    if (src.isNull()) {
+                        src = item->sourceImage();
+                    }
+                    path = item->path();
+                }
+                if (path.isEmpty() && hasClassicPath()) {
+                    path = classicPath();
+                }
+            }
+            if (!src.isNull() && viewport()) {
+                painter->save();
+                painter->resetTransform();
+                const QRect vr = viewport()->rect();
+                const qint64 key = path.isEmpty() ? qint64(0) : qint64(qHash(path));
+                paintZoomBlurUnderlay(painter, src, vr, key);
+                painter->restore();
+            } else {
+                painter->fillRect(rect, m_canvasBg.primaryColor());
+            }
         } else {
             painter->fillRect(rect, m_canvasBg.primaryColor());
         }

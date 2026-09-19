@@ -145,6 +145,7 @@ WorkspaceBackgroundDialog::WorkspaceBackgroundDialog(QWidget *parent)
     m_modeCombo->addItem(tr("Solid colour"), int(WorkspaceBackgroundMode::Solid));
     m_modeCombo->addItem(tr("Checkerboard"), int(WorkspaceBackgroundMode::Checkerboard));
     m_modeCombo->addItem(tr("Image pattern"), int(WorkspaceBackgroundMode::ImageTile));
+    m_modeCombo->addItem(tr("Content blur"), int(WorkspaceBackgroundMode::ContentBlur));
     m_modeCombo->setToolTip(
         tr("Application default uses Preferences and is not stored in the project."));
     form->addRow(tr("Mode:"),
@@ -231,6 +232,11 @@ void WorkspaceBackgroundDialog::setCanvasContext(bool forProject)
             }
             m_modeCombo->setToolTip(
                 tr("Application default uses Preferences and is not stored in the project."));
+            // Content blur is Image-view only — hide from project Workspace dialog.
+            const int blur = m_modeCombo->findData(int(WorkspaceBackgroundMode::ContentBlur));
+            if (blur >= 0) {
+                m_modeCombo->removeItem(blur);
+            }
         }
     } else {
         setWindowTitle(tr("View Background"));
@@ -239,9 +245,13 @@ void WorkspaceBackgroundDialog::setCanvasContext(bool forProject)
             if (i >= 0) {
                 m_modeCombo->setItemText(i, tr("Preferences default"));
             }
+            if (m_modeCombo->findData(int(WorkspaceBackgroundMode::ContentBlur)) < 0) {
+                m_modeCombo->addItem(tr("Content blur"), int(WorkspaceBackgroundMode::ContentBlur));
+            }
             m_modeCombo->setToolTip(
                 tr("Preferences default uses the app Background settings. "
-                   "Other choices apply for this session only (Gallery and Image)."));
+                   "Other choices apply for this session only (Gallery and Image). "
+                   "Content blur fills letterbox margins with a blurred copy of the image."));
         }
     }
 }

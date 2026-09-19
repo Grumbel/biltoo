@@ -4588,6 +4588,9 @@ void MainWindow::editViewBackground()
         case WorkspaceBackgroundMode::ImageTile:
             msg = tr("View background: image pattern");
             break;
+        case WorkspaceBackgroundMode::ContentBlur:
+            msg = tr("View background: content blur");
+            break;
         case WorkspaceBackgroundMode::AppDefault:
         default:
             msg = tr("View background: Preferences default");
