@@ -138,6 +138,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ColorAdjustments::fromDurableGrade** for XDG appearance seed.
 - **GallerySoftBook::setDeferPopulate**; **SessionIdentity** position/id transitions.
 - **GroupTransformSession** / **PageGuideSession** setHoverHandle report change.
+- **CropSession::setHoverHandle**; **layoutIsFlowFamily** / **layoutIsMasonryColumns**.
+- **SlideshowPhaseState** fade/motion bag transitions.
 
 
 ## Current pain (evidence)

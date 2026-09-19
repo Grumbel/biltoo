@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1393-crop-hover-layout-families-phase-fade.** Bag transitions on tip 1392.
+Prior: **1392**.
+
+### Change
+1. `CropSession::setHoverHandle` reports change
+2. `layoutIsFlowFamily` / `layoutIsMasonryColumns`
+3. `SlideshowPhaseState::{setFadeBlend,beginDwell,setFromMotionT,setToMotionT}`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1393-crop-hover-layout-families-phase-fade.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1393).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1392-defer-sessionpos-hover-handles.** Bag transitions on tip 1391.
 Prior: **1391**.
 
