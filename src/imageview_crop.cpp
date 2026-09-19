@@ -1416,16 +1416,29 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
     m_crop.beginHandleDrag(h, m_crop.currentRect(), itemLocalFromView(item, viewPos));
 }
 
+
+void ImageView::cropKeyboardMods(bool *shiftHeld, bool *ctrlHeld)
+{
+    const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
+    if (shiftHeld) {
+        *shiftHeld = mods & Qt::ShiftModifier;
+    }
+    if (ctrlHeld) {
+        *ctrlHeld = mods & Qt::ControlModifier;
+    }
+}
+
 void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
     if (!item || !m_crop.isHandleDragging()) {
         return;
     }
-    const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
+    bool shiftHeld = false;
+    bool ctrlHeld = false;
+    cropKeyboardMods(&shiftHeld, &ctrlHeld);
     m_crop.applyActiveHandleDrag(itemLocalFromView(item, viewPos), item->contentRect(),
-                                 CropSession::kMinDraftSidePx,
-                                 mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
+                                 CropSession::kMinDraftSidePx, shiftHeld, ctrlHeld);
     requestCropViewportUpdate();
 }
 
@@ -1457,9 +1470,10 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
         return;
     }
     const QRectF cr = item->contentRect();
-    const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
-    m_crop.applyRubberBand(itemLocalFromView(item, viewPos), cr,
-                           mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
+    bool shiftHeld = false;
+    bool ctrlHeld = false;
+    cropKeyboardMods(&shiftHeld, &ctrlHeld);
+    m_crop.applyRubberBand(itemLocalFromView(item, viewPos), cr, shiftHeld, ctrlHeld);
     requestCropViewportUpdate();
 }
 

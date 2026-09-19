@@ -1683,6 +1683,7 @@ private:
                                  const QVector<QPointF> &after,
                                  const QString &text);
     QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
+    static void cropKeyboardMods(bool *shiftHeld, bool *ctrlHeld);
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
     void updateCropHandleDrag(const QPoint &viewPos);
     void endCropHandleDrag();
