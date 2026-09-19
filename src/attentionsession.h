@@ -59,16 +59,25 @@ public:
         draftSessionId = sid;
     }
 
+    /** @return true when mode flag changed (interaction cleared on change). */
+    bool setMode(bool on)
+    {
+        if (mode == on) {
+            return false;
+        }
+        mode = on;
+        clearInteraction();
+        return true;
+    }
+
     void enterMode()
     {
-        mode = true;
-        clearInteraction();
+        setMode(true);
     }
 
     void leaveMode()
     {
-        mode = false;
-        clearInteraction();
+        setMode(false);
         // Draft may be kept for re-entry; callers clear explicitly if needed.
     }
 
