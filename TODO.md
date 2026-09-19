@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1461-ensuretiles-const-book-private.** ensureTiles const + book privacy.
+Prior: **1460**. Commits 1461a–1461b (+ docs).
+
+### Commits
+1. **Fix** ensureFromTiles/ensureToTiles const (mutable tile controllers)
+2. Privatize PathItemStateBook, GallerySoftBook, ImageSizeBook, SessionBindBook,
+   SessionPathOrder maps; pathOrder clear/set accessors for controllers
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1461-ensuretiles-const-book-private.bundle HEAD
+```
+Requires tip **1460**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1460-zoomblur-workspace-hud.** ZoomBlur, workspace restore, HUD clock.
 Prior: **1459**. Commits 1460a–1460d (+ docs).
 

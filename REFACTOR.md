@@ -181,6 +181,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - ZoomBlur clearUnderlays on resize; Workspace restore via setPendingRestoreStates /
   itemStateForPath; drop ImageView map dig APIs; ProgressHud
   accumulateProgressBaseFromElapsed.
+- **Fix** ensureFromTiles/ensureToTiles const; privatize PathItemStateBook /
+  GallerySoftBook / ImageSizeBook / SessionBindBook / SessionPathOrder storage;
+  pathOrder clear/set for controllers.
 
 
 ## Current pain (evidence)
