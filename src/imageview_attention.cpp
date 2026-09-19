@@ -215,7 +215,7 @@ void ImageView::setAttentionMode(bool on)
         }
         m_attention.enterMode();
         if (m_hoverEdge != EdgeZone::None) {
-            m_hoverEdge = EdgeZone::None;
+            clearHoverEdge();
         }
         ensureAttentionPoint();
         if (viewport()) {

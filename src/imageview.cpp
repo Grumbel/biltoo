@@ -1061,7 +1061,7 @@ void ImageView::leaveEvent(QEvent *event)
         emit mouseInfoChanged(m_chrome.mouseInfo);
     }
     if (m_hoverEdge != EdgeZone::None) {
-        m_hoverEdge = EdgeZone::None;
+        clearHoverEdge();
         viewport()->update();
     }
     if (!m_gallery.hoverPath().isEmpty()) {

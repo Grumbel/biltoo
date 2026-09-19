@@ -1717,6 +1717,9 @@ private:
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
     int edgeZoneWidth() const;
     int edgeZoneHeight() const;
+    /** @return true when the hover edge zone changed. */
+    bool setHoverEdge(EdgeZone zone);
+    void clearHoverEdge() { (void)setHoverEdge(EdgeZone::None); }
     void updateHoverEdge(const QPoint &viewPos);
     void drawEdgeAffordances(QPainter &painter);
     QRectF selectionSceneBounds(const QList<ImageItem *> &items) const;

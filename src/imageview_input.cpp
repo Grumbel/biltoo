@@ -86,11 +86,10 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
     }
 }
 
-void ImageView::updateHoverEdge(const QPoint &viewPos)
+bool ImageView::setHoverEdge(EdgeZone zone)
 {
-    const EdgeZone zone = edgeZoneAt(viewPos);
     if (zone == m_hoverEdge) {
-        return;
+        return false;
     }
     m_hoverEdge = zone;
     if (m_hoverEdge == EdgeZone::Previous || m_hoverEdge == EdgeZone::Next
@@ -99,7 +98,15 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
     } else if (!m_chrome.panning && !m_itemInteract.rotating) {
         setCursor(ToolPolicy::cursorFor(m_tool));
     }
-    viewport()->update();
+    if (viewport()) {
+        viewport()->update();
+    }
+    return true;
+}
+
+void ImageView::updateHoverEdge(const QPoint &viewPos)
+{
+    (void)setHoverEdge(edgeZoneAt(viewPos));
 }
 
 
