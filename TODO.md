@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1499-crop-btn-geometry.** CropGeometry paintTextButton + CropBtnRole.
+Prior: **1498**. Commits 1499a–1499b (+ docs).
+
+### Commits
+1. **CropGeometry::paintTextButton** and **CropBtnRole**
+2. Remove duplicate ImageView::CropBtnRole
+
+### Apply
+```bash
+git pull /path/to/biltoo-1499-crop-btn-geometry.bundle HEAD
+```
+Requires tip **1498** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1498-crop-view-align.** cropPolygonView; scenePosDeltaToAlign.
 Prior: **1497**. Commits 1498a–1498b (+ docs).
 
