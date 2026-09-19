@@ -1,5 +1,19 @@
 # TODO / agent handoff
 
+## Status (2026-09-20)
+
+**Tip: biltoo-1617-fix-test-qt-gui.** Phase 6 tests: link Qt6::Gui for hudmodel and sessiondocument (QImage/QColor).
+Prior: **1616**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1617-fix-test-qt-gui.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-19)
 
 **Tip: biltoo-1616-fix-crop-host-calls.** CropController: m_view-> for ImageView helpers; promote host methods needed without friend.

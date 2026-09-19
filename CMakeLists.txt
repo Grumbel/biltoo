@@ -583,7 +583,7 @@ if(Qt6Test_FOUND)
     src/displayedgepolicy.cpp
   )
   target_include_directories(biltoo-hudmodel-test PRIVATE src)
-  target_link_libraries(biltoo-hudmodel-test PRIVATE Qt6::Core Qt6::Test)
+  target_link_libraries(biltoo-hudmodel-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME hudmodel COMMAND biltoo-hudmodel-test)
 
   add_executable(biltoo-sessiondocument-test
@@ -591,7 +591,7 @@ if(Qt6Test_FOUND)
     src/sessiondocument.cpp
   )
   target_include_directories(biltoo-sessiondocument-test PRIVATE src)
-  target_link_libraries(biltoo-sessiondocument-test PRIVATE Qt6::Core Qt6::Test)
+  target_link_libraries(biltoo-sessiondocument-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME sessiondocument COMMAND biltoo-sessiondocument-test)
 
   add_executable(biltoo-sessionappearance-test
