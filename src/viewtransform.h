@@ -60,6 +60,8 @@ inline qint64 nonNegMs(qint64 ms)
 }
 
 constexpr qreal kWheelZoomStep = 1.25;
+/** Default margin for QGraphicsView::ensureVisible (session focus). */
+constexpr int kEnsureVisibleMargin = 48;
 inline qreal wheelZoomFactor(int angleDeltaY)
 {
     return angleDeltaY > 0 ? kWheelZoomStep : (1.0 / kWheelZoomStep);
