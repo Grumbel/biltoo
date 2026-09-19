@@ -1473,7 +1473,7 @@ void ImageView::paintCropResizeHandles(QPainter &painter, const QPolygonF &cropV
     const qreal hs = 14.0;
     auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB,
                           CropHandle h) {
-        const bool hot = (m_crop.hoverHandle == h || m_crop.activeHandle == h);
+        const bool hot = m_crop.isHandleHot(h);
         auto unit = [](QPointF v) {
             const qreal len = qHypot(v.x(), v.y());
             return len > 1e-6 ? v / len : QPointF(1, 0);
@@ -1511,7 +1511,7 @@ void ImageView::paintCropResizeHandles(QPainter &painter, const QPolygonF &cropV
     drawCorner(br, bl - br, tr - br, CropHandle::BottomRight);
 
     auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, CropHandle h) {
-        const bool hot = (m_crop.hoverHandle == h || m_crop.activeHandle == h);
+        const bool hot = m_crop.isHandleHot(h);
         auto unit = [](QPointF v) {
             const qreal len = qHypot(v.x(), v.y());
             return len > 1e-6 ? v / len : QPointF(1, 0);

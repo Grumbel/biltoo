@@ -62,6 +62,11 @@ class CropSession
 {
 public:
     bool active() const { return mode; }
+
+    bool isHandleHot(int h) const
+    {
+        return hoverHandle == h || activeHandle == h;
+    }
     bool isActive() const { return mode; }
 
     /**
