@@ -83,7 +83,7 @@ TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
             Cand c;
             c.item = ii;
             c.inView = true;
-            c.hasAnyTile = ii->tileLodActive();
+            c.hasAnyTile = ii->tileLodActive() || ii->tileLodHasPathRam();
             c.fullyCovered = ii->tileLodViewportCovered();
             c.screenLong = screenLong;
             if (!c.hasAnyTile) {
@@ -103,7 +103,7 @@ TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
         Cand c;
         c.item = ii;
         c.inView = true;
-        c.hasAnyTile = ii->tileLodActive();
+        c.hasAnyTile = ii->tileLodActive() || ii->tileLodHasPathRam();
         c.fullyCovered = ii->tileLodViewportCovered();
         const QRectF br = ii->sceneBoundingRect();
         c.screenLong = qMax(br.width(), br.height()) * viewScale * dpr;

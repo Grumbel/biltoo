@@ -349,6 +349,8 @@ public:
     bool tileLodSuppressed() const { return m_tileLodSuppressed; }
     /** True when at least one grid tile has arrived. */
     bool tileLodActive() const;
+    /** Succeeded tiles in global path RAM (registry), even without a controller. */
+    bool tileLodHasPathRam() const;
     /** All exact visible tiles present and scale hold settled. */
     bool tileLodViewportCovered() const;
     /** One-line BILTOO_TILE_DEBUG sample (empty if no session). */

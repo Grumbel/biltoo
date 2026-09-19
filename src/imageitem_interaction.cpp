@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cmath>
 #include "tilelod/tile_lod_controller.hpp"
+#include "tilelod/tile_lod_registry.hpp"
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "contentxform.h"
@@ -1365,6 +1366,17 @@ void ImageItem::tickTileLod(int budget)
 bool ImageItem::tileLodActive() const
 {
     return m_tileLod && m_tileLod->enabled() && m_tileLod->hasAnyTile();
+}
+
+bool ImageItem::tileLodHasPathRam() const
+{
+    if (m_path.isEmpty()) {
+        return false;
+    }
+    if (m_tileLod && m_tileLod->hasRetainedTiles()) {
+        return true;
+    }
+    return tilelod::TileLodRegistry::instance().has_succeeded_tiles(m_path);
 }
 
 bool ImageItem::tileLodViewportCovered() const
