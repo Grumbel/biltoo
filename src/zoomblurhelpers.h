@@ -7,6 +7,7 @@
 #include "slideshowtypes.h"
 
 #include <QString>
+#include <QtGlobal>
 #include <QImage>
 
 /**
@@ -14,6 +15,31 @@
  * Async build scheduling stays on ImageView.
  */
 namespace ZoomBlur {
+
+/** Minimum edge for the low-res blur workspace. */
+constexpr int kWorkMinEdge = 8;
+/** Cap long edge of the blur workspace (CPU budget). */
+constexpr int kWorkMaxLongEdge = 128;
+/** Viewport divisor for initial work size (vw/16, vh/16). */
+constexpr int kWorkViewportDiv = 16;
+
+/** Low-res work size for cover-blur underlay (min edge, max long edge). */
+inline void workSize(int vw, int vh, int *workW, int *workH)
+{
+    if (!workW || !workH) {
+        return;
+    }
+    int w = qMax(kWorkMinEdge, vw / kWorkViewportDiv);
+    int h = qMax(kWorkMinEdge, vh / kWorkViewportDiv);
+    const int longEdge = qMax(w, h);
+    if (longEdge > kWorkMaxLongEdge) {
+        const qreal s = qreal(kWorkMaxLongEdge) / qreal(longEdge);
+        w = qMax(kWorkMinEdge, int(w * s));
+        h = qMax(kWorkMinEdge, int(h * s));
+    }
+    *workW = w;
+    *workH = h;
+}
 
 /** Stable slot key for path + viewport size. Empty path or non-positive size → 0. */
 qint64 key(const QString &path, int vw, int vh);

@@ -150,15 +150,9 @@ QImage makeCover(const QImage &src, int vw, int vh)
         return {};
     }
     // ~1/16 of the viewport, hard-capped — soft background, not a second slide.
-    constexpr int kMaxLongEdge = 128;
-    int workW = qMax(8, vw / 16);
-    int workH = qMax(8, vh / 16);
-    const int longEdge = qMax(workW, workH);
-    if (longEdge > kMaxLongEdge) {
-        const qreal s = qreal(kMaxLongEdge) / qreal(longEdge);
-        workW = qMax(8, int(workW * s));
-        workH = qMax(8, int(workH * s));
-    }
+    int workW = 0;
+    int workH = 0;
+    workSize(vw, vh, &workW, &workH);
     const qreal cover = ViewTransform::coverScale(qreal(workW), qreal(workH), iw, ih);
     const int sw = ViewTransform::atLeast1(int(std::ceil(iw * cover)));
     const int sh = ViewTransform::atLeast1(int(std::ceil(ih * cover)));
