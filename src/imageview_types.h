@@ -135,6 +135,14 @@ struct ImageMouseInfo {
     QPoint imagePos;
     QColor pixelColor;
     QString path;
+
+    void clear()
+    {
+        valid = false;
+        imagePos = {};
+        pixelColor = {};
+        path.clear();
+    }
 };
 
 /**

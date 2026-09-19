@@ -42,7 +42,7 @@ struct ViewportChrome {
 
     void setMouseInfo(const ImageMouseInfo &info) { mouseInfo = info; }
 
-    void clearMouseInfo() { mouseInfo = {}; }
+    void clearMouseInfo() { mouseInfo.clear(); }
 
     void setHoverViewPos(const QPoint &pos) { lastHoverViewPos = pos; }
 
