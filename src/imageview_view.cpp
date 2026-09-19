@@ -1268,7 +1268,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
             if (SlideshowMotionGeometry::aspectMismatch(
                     qreal(m_ss.toAtlas.width()), qreal(m_ss.toAtlas.height()),
                     qreal(oriented.width()), qreal(oriented.height()))) {
-                ++m_ss.toAtlasRebuildGeneration;
+                m_ss.bumpToAtlasRebuildGeneration();
                 m_ss.clearToAtlas();
             }
         }
@@ -1396,8 +1396,8 @@ void ImageView::requestSlideshowAtlas(SlideshowAtlasKind kind)
     }
 
     const quint64 gen = (kind == SlideshowAtlasKind::From)
-                            ? ++m_ssDwell.atlasRebuildGeneration
-                            : ++m_ss.toAtlasRebuildGeneration;
+                            ? m_ssDwell.bumpAtlasRebuildGeneration()
+                            : m_ss.bumpToAtlasRebuildGeneration();
     const QImage src = *source;
     const int longCap = params.longCap;
     const qreal keyScale = params.keyScale;
@@ -1949,7 +1949,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         m_ss.clearToPath();
         unbindSlideshowPhaseSurface(&m_ss.toSurface);
         m_ss.clearToImage();
-        ++m_ss.toAtlasRebuildGeneration;
+        m_ss.bumpToAtlasRebuildGeneration();
         m_ss.clearToAtlas();
         m_ss.setToMotionClockRunning(false);
         m_ss.setToMotionT(0.0);
@@ -1990,7 +1990,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     if (!m_ss.toImage.isNull()) {
         schedulePhaseZoomBlur(toPath, m_ss.toImage);
     }
-    ++m_ss.toAtlasRebuildGeneration; // drop stale to-atlas jobs
+    m_ss.bumpToAtlasRebuildGeneration(); // drop stale to-atlas jobs
     m_ss.clearToAtlas();
     requestToPhaseAtlasRebuild();
     if (!m_ss.toImage.isNull()) {
@@ -2183,9 +2183,9 @@ void ImageView::pumpSlideshowPreloadQueue()
 {
     // Start at most one pending path now that an inflight slot freed.
     const int needEdge = SlideshowAtlasPolicy::needEdge(slideshowTargetEdge());
-    while (!m_ss.rasterPending.isEmpty()) {
-        const QString next = m_ss.rasterPending.takeFirst();
-        if (m_ss.rasterInflight.contains(next)) {
+    QString next;
+    while (m_ss.takeNextRasterPending(&next)) {
+        if (m_ss.rasterInflightContains(next)) {
             continue;
         }
         if (ImageCache::adequate(slideshowRaster(next), needEdge)) {
@@ -2199,7 +2199,7 @@ void ImageView::pumpSlideshowPreloadQueue()
 void ImageView::finishSlideshowPreload(const QString &path, const QImage &image)
 {
     // Legacy pool-preload completion — climb is owned by PathRasterService.
-    m_ss.rasterInflight.remove(path);
+    m_ss.removeRasterInflight(path);
     if (!image.isNull()) {
         if (m_pathRaster) {
             m_pathRaster->noteDelivery(path, 0, image);
@@ -2286,7 +2286,7 @@ DwellAtlasParams ImageView::dwellAtlasParams() const
 
 void ImageView::invalidateDwellAtlasRebuilds()
 {
-    ++m_ssDwell.atlasRebuildGeneration;
+    m_ssDwell.bumpAtlasRebuildGeneration();
 }
 
 void ImageView::ensureMotionAtlas(const QImage &image, QPixmap *atlas,

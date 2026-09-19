@@ -370,8 +370,7 @@ ImageView::ImageView(QWidget *parent)
 ImageView::~ImageView()
 {
     // Complete type required for unique_ptr<TileLodController> (fwd-declared in header).
-    m_ss.fromTiles.reset();
-    m_ss.toTiles.reset();
+    m_ss.clearTiles();
 
     // Invalidate any queued onImageLoaded invocations from the thread pool.
     m_loadGate.bumpGeneration();
@@ -834,7 +833,7 @@ int ImageView::pendingDecodeCount() const
 
     // Slideshow preload queue (inflight + pending neighbours).
     if (m_ssHud.progressActive) {
-        n += m_ss.rasterInflight.size() + m_ss.rasterPending.size();
+        n += m_ss.rasterQueueCount();
         const int need = 0; // need edge checked via target below if needed
         Q_UNUSED(need);
         if (!m_ss.fromPath.isEmpty()
@@ -842,8 +841,8 @@ int ImageView::pendingDecodeCount() const
             && ImageCache::longEdge(m_ss.fromImage)
                    < (slideshowTargetEdge() * 7) / 10) {
             // Current slide still soft — count as remaining quality work once.
-            if (!m_ss.rasterInflight.contains(m_ss.fromPath)
-                && !m_ss.rasterPending.contains(m_ss.fromPath)) {
+            if (!m_ss.rasterInflightContains(m_ss.fromPath)
+                && !m_ss.rasterPendingContains(m_ss.fromPath)) {
                 ++n;
             }
         }

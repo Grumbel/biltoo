@@ -206,6 +206,9 @@ struct SlideshowPhaseState {
         toAtlasVh = 0;
     }
 
+    /** Bump to-atlas rebuild generation. @return new generation. */
+    quint64 bumpToAtlasRebuildGeneration() { return ++toAtlasRebuildGeneration; }
+
     void stopMotionClocks()
     {
         fromMotionClockRunning = false;
@@ -218,6 +221,32 @@ struct SlideshowPhaseState {
     {
         rasterInflight.clear();
         rasterPending.clear();
+    }
+
+    bool rasterInflightContains(const QString &path) const
+    {
+        return rasterInflight.contains(path);
+    }
+
+    bool rasterPendingContains(const QString &path) const
+    {
+        return rasterPending.contains(path);
+    }
+
+    void removeRasterInflight(const QString &path) { rasterInflight.remove(path); }
+
+    int rasterQueueCount() const
+    {
+        return rasterInflight.size() + rasterPending.size();
+    }
+
+    bool takeNextRasterPending(QString *out)
+    {
+        if (!out || rasterPending.isEmpty()) {
+            return false;
+        }
+        *out = rasterPending.takeFirst();
+        return true;
     }
 
     /** Bump generation so in-flight phase upgrades no-op. @return new generation. */
@@ -430,6 +459,9 @@ struct SlideshowDwellState {
             atlasRebuildGeneration = gen;
         }
     }
+
+    /** Bump dwell atlas rebuild generation. @return new generation. */
+    quint64 bumpAtlasRebuildGeneration() { return ++atlasRebuildGeneration; }
 
     void setSourceImage(const QImage &img) { sourceImage = img; }
 
