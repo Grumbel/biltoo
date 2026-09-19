@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1395-hud-font-linktip-zoom-arm.** Bag transitions on tip 1394.
+Prior: **1394**.
+
+### Change
+1. `HudAppearance::setFontPointSize` reports change
+2. `TextLayerSession::setLinkHoverTip` reports change
+3. `ZoomRegionGesture::{arm,disarm}` report change
+
+### Apply
+```bash
+git pull /path/to/biltoo-1395-hud-font-linktip-zoom-arm.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1395).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1394-clampnorm-page-selected-crop-expand.** Link fix + bag transitions
 on tip 1393.
 Prior: **1393**.

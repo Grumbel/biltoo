@@ -142,6 +142,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowPhaseState** fade/motion bag transitions.
 - **AttentionGeometry::clampNorm** header-inline (link fix); **PageGuideSession::setSelected**.
 - **CropSession::setAllowExpand** reports change.
+- **HudAppearance::setFontPointSize**; **TextLayerSession::setLinkHoverTip**.
+- **ZoomRegionGesture** arm/disarm report change.
 
 
 ## Current pain (evidence)
