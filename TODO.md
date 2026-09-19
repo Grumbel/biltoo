@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1421-tile-coord-cand-retained-paint.** Coordinator makeCand; retained zero-applied paint.
+Prior: **1418**. Commits 1419–1421.
+
+### Commits
+1. **1419** `TileLoadCoordinator::makeCand` + `kPriorityZeroTile/Incomplete/Covered`
+2. **1420** `tickTileLod` forces `update()` when retained path RAM binds with applied=0
+3. **1421** TILE_LOD_RUNTIME A→B→A: idle-path cap + `pathRam` debug note
+
+### Apply
+```bash
+git pull /path/to/biltoo-1421-tile-coord-cand-retained-paint.bundle HEAD
+```
+Requires tip **1418**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1418-tile-idle-cap-pathram-debug-gallery.** Max idle paths; pathRam debug; Gallery restore tick.
 Prior: **1415**. Commits 1416–1418.
 

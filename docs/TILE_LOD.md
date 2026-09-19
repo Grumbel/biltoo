@@ -371,6 +371,9 @@ the first frame after rebind.
 **biltoo-1416–1418:** Max idle path cap (64); `pathRam` in item debug lines;
 Gallery restore ticks warm path RAM after Image mode.
 
+**biltoo-1419–1421:** Coordinator `makeCand` + named priorities; force paint when
+retained RAM binds with zero applied completions; runtime A→B→A notes.
+
 **biltoo-1412–1415:** O(1) `approx_bytes`; named `kPrefetchWarmSucceededMin`;
 `tileLodHasPathRam` for coordinator priority and immediate tick after Image ←/→
 when retained tiles exist.
