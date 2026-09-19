@@ -69,7 +69,7 @@ void ImageView::setImageModeNavigationEnabled(bool on)
         return;
     }
     if (!on && m_hoverEdge != EdgeZone::GalleryReturn) {
-        m_hoverEdge = EdgeZone::None;
+        clearHoverEdge();
     }
     viewport()->update();
 }
@@ -80,7 +80,7 @@ void ImageView::setGalleryReturnAvailable(bool on)
         return;
     }
     if (!on && m_hoverEdge == EdgeZone::GalleryReturn) {
-        m_hoverEdge = EdgeZone::None;
+        clearHoverEdge();
     }
     viewport()->update();
 }
@@ -702,8 +702,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ss.beginDwell();
         m_ss.stopMotionClocks();
         // Rasters live in ImageCache — do not clear the host map on stop.
-        m_ss.rasterInflight.clear();
-        m_ss.rasterPending.clear();
+        m_ss.clearRasterQueues();
     }
     viewport()->update();
 }
@@ -1310,7 +1309,7 @@ void ImageView::scheduleSlideshowPhaseBufferUpgrade(const QString &path, const Q
 
     WorkspaceItemState appState;
     const bool hasApp = snapshotSlideshowContentAppearance(path, &appState);
-    const quint64 gen = ++m_ss.phaseUpgradeGeneration;
+    const quint64 gen = m_ss.bumpPhaseUpgradeGeneration();
     const QPointer<ImageView> guard(this);
     const QString pathCopy = path;
     const QImage raw = image;
@@ -1869,7 +1868,7 @@ void ImageView::prepareSlideshowFromDwell(const QString &fromPath)
     if (m_ss.fromImage.isNull()) {
         return;
     }
-    ++m_ss.phaseUpgradeGeneration; // drop mid-slide upgrades for previous path
+    m_ss.bumpPhaseUpgradeGeneration(); // drop mid-slide upgrades for previous path
 
     // Rapid user ←/→ (nav hot): phase buffer already holds soft/best cache.
     // Do not schedule atlas rebuild, zoom-blur, PreferCache, or phase-buffer

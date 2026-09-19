@@ -214,6 +214,15 @@ struct SlideshowPhaseState {
         setToMotionT(0.0);
     }
 
+    void clearRasterQueues()
+    {
+        rasterInflight.clear();
+        rasterPending.clear();
+    }
+
+    /** Bump generation so in-flight phase upgrades no-op. @return new generation. */
+    quint64 bumpPhaseUpgradeGeneration() { return ++phaseUpgradeGeneration; }
+
     void clearTiles()
     {
         fromTiles.reset();
@@ -233,8 +242,7 @@ struct SlideshowPhaseState {
         stopMotionClocks();
         toBiasA = {-1.0, -1.0};
         toBiasB = {1.0, 1.0};
-        rasterInflight.clear();
-        rasterPending.clear();
+        clearRasterQueues();
         phaseUpgradeGeneration = 0;
         clearToAtlas();
     }
