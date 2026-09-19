@@ -25,6 +25,22 @@ struct MotionScrollChrome {
             saved = true;
         }
     }
+
+    /** Return saved policies and clear; no-op if never captured. */
+    bool release(Qt::ScrollBarPolicy *h, Qt::ScrollBarPolicy *v)
+    {
+        if (!saved) {
+            return false;
+        }
+        if (h) {
+            *h = savedH;
+        }
+        if (v) {
+            *v = savedV;
+        }
+        clear();
+        return true;
+    }
 };
 
 #endif // MOTIONSCROLLCHROME_H
