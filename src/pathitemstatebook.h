@@ -46,6 +46,21 @@ struct PathItemStateBook {
     }
 
     void remove(const QString &path) { byPath.remove(path); }
+
+    /** Take state for @p path; false if none. */
+    bool take(const QString &path, WorkspaceItemState *out)
+    {
+        if (path.isEmpty() || !out) {
+            return false;
+        }
+        const auto it = byPath.find(path);
+        if (it == byPath.end()) {
+            return false;
+        }
+        *out = *it;
+        byPath.erase(it);
+        return true;
+    }
 };
 
 #endif // PATHITEMSTATEBOOK_H
