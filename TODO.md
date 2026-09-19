@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1386-workspace-native-attention-rubber.** Bag transitions on tip 1385.
+Prior: **1385**.
+
+### Change
+1. `WorkspaceBackground::matches`; `CanvasBackground::setWorkspace`
+2. `DisplayEdgePolicy::nativeLongEdge` (PathRaster ensure)
+3. `AttentionSession` rubber via `ViewTransform::rubberRect`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1386-workspace-native-attention-rubber.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1386).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1385-motion-tile-status-textsearch.** Named intervals and search
 transitions on tip 1384.
 Prior: **1384**.

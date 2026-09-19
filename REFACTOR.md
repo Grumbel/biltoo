@@ -125,6 +125,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **GallerySoft** watchdog/status intervals; **SlideshowProgressHud::kProgressTickMs**; canvas workspace-default.
 - **SlideshowProgressHud::kMotionTickMs**; **TileLoadCoordinator::kDefaultTickBudget**; **HudAppearance::kStatusRefreshMs**.
 - **TextLayerSession** search fuzzy/query transitions.
+- **WorkspaceBackground::matches** / **CanvasBackground::setWorkspace**; **DisplayEdgePolicy::nativeLongEdge**.
+- **AttentionSession** rubber via ViewTransform::rubberRect.
 
 
 ## Current pain (evidence)
