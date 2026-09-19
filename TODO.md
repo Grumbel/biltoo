@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1380-ss-settings-group-softbook-hud.** Bag transitions on tip 1379.
+Prior: **1379**.
+
+### Change
+1. `SlideshowSettings::{setPadColor,setLetterboxFill,setTransition,setMotion,setZoom}`
+2. `GroupTransformSession::{pruneNullItems,dragListsAligned}`
+3. `GallerySoftBook::setDeferPopulate`
+4. `HudAppearance::{setVisible,setTextColor,setPanelColor}`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1380-ss-settings-group-softbook-hud.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1380).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1379-navflags-text-perf-attention-canvasbg.** Bag transitions on tip 1378.
 Prior: **1378**.
 

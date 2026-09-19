@@ -113,6 +113,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **LayoutApplyGuard::Scoped**; **ViewFraming::kindFromFitFill**.
 - **SessionNavFlags** nav transitions; **TextLayerSession** rubberRect; **PerfStats** slow threshold.
 - **AttentionSession::clearSelected**; **CanvasBackground** colour/pattern setters.
+- **SlideshowSettings** preference transitions; **GroupTransformSession** pruneNullItems.
+- **GallerySoftBook::setDeferPopulate**; **HudAppearance** visible/colour setters.
 
 
 ## Current pain (evidence)
