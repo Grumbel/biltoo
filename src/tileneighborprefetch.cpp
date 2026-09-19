@@ -102,8 +102,15 @@ void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPer
         slot.budgetPerTick = budgetPerPath;
         (void)slot.controller->tick(slot.budgetPerTick);
         // Bound concurrent off-canvas controllers (global RAM still retains).
+        // Evict the slot closest to completion timeout (lowest ticksLeft).
         while (static_cast<int>(m_slots.size()) >= kPrefetchMaxSlots) {
-            m_slots.erase(m_slots.begin());
+            auto worst = m_slots.begin();
+            for (auto it = m_slots.begin(); it != m_slots.end(); ++it) {
+                if (it->ticksLeft < worst->ticksLeft) {
+                    worst = it;
+                }
+            }
+            m_slots.erase(worst);
         }
         m_slots.push_back(std::move(slot));
     }
