@@ -115,6 +115,23 @@ struct ImageSizeBook {
     {
         return !path.isEmpty() && probeScheduled.contains(path);
     }
+
+    /** Take known size for @p path; false if absent. Clears provisional flag. */
+    bool take(const QString &path, QSize *out)
+    {
+        if (path.isEmpty() || !out) {
+            return false;
+        }
+        const auto it = byPath.find(path);
+        if (it == byPath.end()) {
+            return false;
+        }
+        *out = *it;
+        byPath.erase(it);
+        provisionalPaths.remove(path);
+        probeScheduled.remove(path);
+        return true;
+    }
 };
 
 #endif // IMAGESIZEBOOK_H
