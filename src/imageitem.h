@@ -79,6 +79,11 @@ public:
     QString path() const { return m_path; }
     void setPath(const QString &path);
     /**
+     * Drop the per-item tile session and purge this path from TileLodRegistry.
+     * Use on Reload / file-replaced so retained RAM cannot paint stale tiles.
+     */
+    void invalidateTilePathRam();
+    /**
      * Stable session-image id (0 = unbound). Survives session insert/delete;
      * list index does not. Identity for appearance and Workspace association.
      */

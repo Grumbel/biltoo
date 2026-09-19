@@ -78,6 +78,23 @@ void ImageItem::setPath(const QString &path)
     tilelod::TileLodRegistry::instance().touch(m_path);
 }
 
+void ImageItem::invalidateTilePathRam()
+{
+    if (m_tileLodAlive) {
+        *m_tileLodAlive = false;
+    }
+    m_tileLodAlive = std::make_shared<bool>(true);
+    m_tileLod.reset();
+    m_tileLodLastUpdateGen = 0;
+    m_tileLodRepaintQueued = false;
+    m_tileLodLastDpc = -1.0;
+    m_tileLodLastVisSource = QRectF();
+    clearTileGradedCache();
+    if (!m_path.isEmpty()) {
+        tilelod::TileLodRegistry::instance().invalidate(m_path);
+    }
+}
+
 ImageItem::ImageItem(const QString &path, const QImage &image, QGraphicsItem *parent)
     : QGraphicsPixmapItem(parent)
     , m_path(path)
