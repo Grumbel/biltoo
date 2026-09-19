@@ -1057,7 +1057,7 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 void ImageView::leaveEvent(QEvent *event)
 {
     if (m_chrome.mouseInfo.valid) {
-        m_chrome.mouseInfo = {};
+        m_chrome.clearMouseInfo();
         emit mouseInfoChanged(m_chrome.mouseInfo);
     }
     if (m_hoverEdge != EdgeZone::None) {
