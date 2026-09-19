@@ -97,6 +97,10 @@ int TileLodController::tick(int requestBudget)
     return 0;
   }
   int const applied = m_session->pump();
+  // Completions keep the path preferred under global idle/byte LRU.
+  if (applied > 0 && !m_path.isEmpty()) {
+    TileLodRegistry::instance().touch(m_path);
+  }
   m_session->issue_requests(requestBudget);
   return applied;
 }
