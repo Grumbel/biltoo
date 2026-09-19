@@ -93,6 +93,9 @@ void GalleryController::restoreStashedItems()
         m_view->rematerializeGalleryItemFromStore(item);
     }
     m_view->reorderItemsByPaths(m_view->pathOrder());
+    // Image-mode navigation may have filled global path RAM; bind/paint without
+    // waiting for the next decode-window timer.
+    m_view->tickPrimaryTileLod(16);
 }
 
 void GalleryController::snapshotViewport()
