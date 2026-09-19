@@ -614,7 +614,7 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
         || !PagePath::isPageRef(classicPath())) {
         return false;
     }
-    if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
+    if (!m_textLayer.hasLayerRegions() || m_textLayer.layerPathRef() != classicPath()) {
         const bool hadShow = m_textLayer.showsRegions();
         m_textLayer.setShowRegions(true);
         refreshTextLayer();
@@ -640,7 +640,7 @@ bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
         return false;
     }
     m_textLayer.beginRubber(event->pos());
-    m_textLayer.selectedRegions.clear();
+    m_textLayer.clearSelectedRegions();
     setCursor(Qt::CrossCursor);
     viewport()->update();
     event->accept();
@@ -980,7 +980,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
     if (isImageMode() && !m_crop.active() && !m_attention.active() && !m_textLayer.isRubberbanding()
         && !m_chrome.isPanning() && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(classicPath())) {
-        if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
+        if (!m_textLayer.hasLayerRegions() || m_textLayer.layerPathRef() != classicPath()) {
             const ThumtooCache::PageTextLayer cached =
                 ThumtooCache::cachedPageTextLayer(classicPath());
             if (!cached.regions.isEmpty()) {

@@ -43,6 +43,20 @@ struct TextLayerSession {
 
     bool hasLinkHoverTip() const { return !linkHoverTip.isEmpty(); }
 
+    const QString &searchQueryRef() const { return searchQuery; }
+
+    const QString &layerPathRef() const { return layerPath; }
+
+    const QRectF &pageBoundsRef() const { return pageBounds; }
+
+    const QVector<int> &searchMatchesRef() const { return searchMatches; }
+
+    const QVector<int> &selectedRegionsRef() const { return selectedRegions; }
+
+    const TextLayer &layerRef() const { return layer; }
+
+    bool hasLayerRegions() const { return !layer.regions.isEmpty(); }
+
     int regionCount() const { return layer.regions.size(); }
 
     bool hasRegions() const { return !layer.regions.isEmpty(); }
