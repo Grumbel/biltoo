@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1467-crop-canvas-group-attention.** Crop, Canvas, Group, Attention helpers.
+Prior: **1466**. Commits 1467a–1467d (+ docs).
+
+### Commits
+1. **CropSession** hasValidRect / hasTargetId / target / normalizeRotation / isNearZeroRotation
+2. **CanvasBackground** primaryColor / workspace tile accessors
+3. **GroupTransformSession** isScaleDrag / isRotateDrag
+4. **AttentionSession** gesture boolean accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled. Crop enter/apply
+still on view (larger ownership extraction).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1467-crop-canvas-group-attention.bundle HEAD
+```
+Requires tip **1466**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1466-nav-dwell-layout-phase.** SessionNav, Dwell, Layout, Phase.
 Prior: **1465**. Commits 1466a–1466d (+ docs).
 

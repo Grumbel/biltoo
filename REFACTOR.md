@@ -199,6 +199,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SessionNavFlags** nav bool accessors; **SlideshowDwell**/Settings motion
   accessors; **LayoutPrefs** isFreeForm; **SlideshowPhaseState** path/image
   accessors.
+- **CropSession** rect/target/rotation helpers; **CanvasBackground** color/tile
+  accessors; **GroupTransformSession** isScaleDrag/isRotateDrag;
+  **AttentionSession** gesture boolean accessors.
 
 
 ## Current pain (evidence)
