@@ -1754,6 +1754,9 @@ private:
     void logApplyCropDebug(ImageItem *item, const QString &path, const QImage &host,
                            bool hostFromCache, const QImage &display,
                            qreal cropW, qreal cropH, qreal footW, qreal footH) const;
+    bool bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cropH,
+                                   qreal footW, qreal footH,
+                                   const QPointF &cropSceneCenter);
     bool applyCropCommitNonFullFrame(ImageItem *item);
     bool applyCropCommitFullFrame(ImageItem *item);
     bool applyCropCommit(ImageItem *item);

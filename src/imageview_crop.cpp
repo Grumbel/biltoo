@@ -1327,17 +1327,11 @@ void ImageView::logApplyCropDebug(ImageItem *item, const QString &path, const QI
 }
 
 
-bool ImageView::applyCropCommitNonFullFrame(ImageItem *item)
-{
-    // Workspace footprint: draft selection scene size stays constant after Apply
-    // (intrinsic becomes cropW×cropH at the same placement scale).
-    qreal cropW = 0.0;
-    qreal cropH = 0.0;
-    qreal footW = 0.0;
-    qreal footH = 0.0;
-    QPointF cropSceneCenter;
-    captureApplyDraftMetrics(item, &cropW, &cropH, &footW, &footH, &cropSceneCenter);
 
+bool ImageView::bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cropH,
+                                          qreal footW, qreal footH,
+                                          const QPointF &cropSceneCenter)
+{
     const QString path = item->path();
     bool hostFromCache = false;
     QImage host;
@@ -1355,6 +1349,22 @@ bool ImageView::applyCropCommitNonFullFrame(ImageItem *item)
                       footW, footH);
     commitCropApplyBake(item, baked.display, st, baked.multiMp, cropW, cropH, path,
                         cropSceneCenter, hostFromCache, sid);
+    return true;
+}
+
+bool ImageView::applyCropCommitNonFullFrame(ImageItem *item)
+{
+    // Workspace footprint: draft selection scene size stays constant after Apply
+    // (intrinsic becomes cropW×cropH at the same placement scale).
+    qreal cropW = 0.0;
+    qreal cropH = 0.0;
+    qreal footW = 0.0;
+    qreal footH = 0.0;
+    QPointF cropSceneCenter;
+    captureApplyDraftMetrics(item, &cropW, &cropH, &footW, &footH, &cropSceneCenter);
+    if (!bakeAndCommitNonFullApply(item, cropW, cropH, footW, footH, cropSceneCenter)) {
+        return false;
+    }
     return isWorkspaceMode();
 }
 
