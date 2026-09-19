@@ -238,7 +238,7 @@ QRectF ImageItem::boundingRect() const
         // the selected item on screen, fighting free-form pan/zoom. Chrome is
         // painted in viewport space; hit-testing is view-owned.
         const qreal content = qMax(r.width(), r.height());
-        const qreal pad = qMin(96.0, qMax(32.0, content * 0.12));
+        const qreal pad = ItemFrameGeometry::selectedChromePad(content);
         r.adjust(-pad, -pad, pad, pad);
     }
     return r;
@@ -291,7 +291,7 @@ qreal ImageItem::screenScale() const
     }
     qreal sMax = 1.0, sMin = 1.0;
     PlacementLinear::singularValues2x2(t.m11(), t.m12(), t.m21(), t.m22(), &sMax, &sMin);
-    return qMax(0.01, sMax);
+    return ViewTransform::floorScale(sMax);
 }
 
 qreal ImageItem::deviceScaleMin() const
@@ -644,7 +644,7 @@ QPointF ImageItem::handleCenter(Handle h) const
     const qreal cx = r.center().x();
     const qreal cy = r.center().y();
     const qreal content = qMax(r.width(), r.height());
-    const qreal maxOff = qMax(40.0, content * 0.75);
+    const qreal maxOff = ItemFrameGeometry::maxChromeOffset(content);
 
     auto axisScreenPerLocal = [this](const QPointF &localAxis) -> qreal {
         const QPointF o = localToViewPx(QPointF(0, 0));
@@ -1152,7 +1152,7 @@ bool ImageItem::tileLodWanted() const
             qreal sMax = 1.0;
             qreal sMin = 1.0;
             PlacementLinear::singularValues2x2(vt.m11(), vt.m12(), vt.m21(), vt.m22(), &sMax, &sMin);
-            viewScale = qMax(0.01, sMax);
+            viewScale = ViewTransform::floorScale(sMax);
             if (QWidget *vp = view->viewport()) {
                 dpr = vp->devicePixelRatioF();
             }
@@ -1628,7 +1628,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     // Content-edit marks (View → Show content edit marks). Fixed ~20px on screen
     // (not fraction of tile — Gallery was tiny, tight crops were huge).
     if (contentEditMarksVisible() && r.width() > 4.0 && r.height() > 4.0) {
-        const qreal fold = ItemFrameGeometry::kContentEditMarkScreenPx / qMax(0.01, screenScale());
+        const qreal fold = ItemFrameGeometry::kContentEditMarkScreenPx / ViewTransform::floorScale(screenScale());
 
         auto drawCornerFold = [&](const QPointF &corner, const QPointF &alongX,
                                   const QPointF &alongY, const QColor &face,

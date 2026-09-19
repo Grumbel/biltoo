@@ -5,6 +5,7 @@
 #define GALLERYLAYOUT_H
 
 #include <QList>
+#include "viewtransform.h"
 #include <functional>
 
 class ImageItem;
@@ -95,21 +96,13 @@ inline qreal cellAxisLength(qreal avail, qreal gap, int count)
 /** Scale to fit inside cell (contain). Native axes floored at 1. */
 inline qreal containScale(qreal cellW, qreal cellH, qreal nativeW, qreal nativeH)
 {
-    const qreal nw = nativeW > 1.0 ? nativeW : 1.0;
-    const qreal nh = nativeH > 1.0 ? nativeH : 1.0;
-    const qreal sx = cellW / nw;
-    const qreal sy = cellH / nh;
-    return sx < sy ? sx : sy;
+    return ViewTransform::containScale(cellW, cellH, nativeW, nativeH);
 }
 
 /** Scale to cover cell (may crop). */
 inline qreal coverScale(qreal cellW, qreal cellH, qreal nativeW, qreal nativeH)
 {
-    const qreal nw = nativeW > 1.0 ? nativeW : 1.0;
-    const qreal nh = nativeH > 1.0 ? nativeH : 1.0;
-    const qreal sx = cellW / nw;
-    const qreal sy = cellH / nh;
-    return sx > sy ? sx : sy;
+    return ViewTransform::coverScale(cellW, cellH, nativeW, nativeH);
 }
 
 /** Scale so one axis fills @p cellAxis (width- or height-driven bands). */

@@ -136,6 +136,33 @@ inline int clampedProgress(int current, int total)
     return qBound(0, current, total);
 }
 
+
+/** Scale to fit content inside box (contain / Fit). Axes floored at 1. */
+inline qreal containScale(qreal boxW, qreal boxH, qreal contentW, qreal contentH)
+{
+    const qreal cw = contentW > 1.0 ? contentW : 1.0;
+    const qreal ch = contentH > 1.0 ? contentH : 1.0;
+    const qreal sx = boxW / cw;
+    const qreal sy = boxH / ch;
+    return sx < sy ? sx : sy;
+}
+
+/** Scale to cover box (may crop / Fill). */
+inline qreal coverScale(qreal boxW, qreal boxH, qreal contentW, qreal contentH)
+{
+    const qreal cw = contentW > 1.0 ? contentW : 1.0;
+    const qreal ch = contentH > 1.0 ? contentH : 1.0;
+    const qreal sx = boxW / cw;
+    const qreal sy = boxH / ch;
+    return sx > sy ? sx : sy;
+}
+
+/** Floor interactive view/item scale so matrices stay invertible. */
+inline qreal floorScale(qreal s, qreal floor = 0.01)
+{
+    return qMax(floor, s);
+}
+
 } // namespace ViewTransform
 
 #endif // VIEWTRANSFORM_H

@@ -104,12 +104,12 @@ qreal zoomBaseScale(SlideshowZoom zoom, const QSize &logical, int vw, int vh)
     const qreal h = qreal(ViewTransform::atLeast1(vh));
     switch (zoom) {
     case SlideshowZoom::Fill:
-        return qMax(w / iw, h / ih);
+        return ViewTransform::coverScale(w, h, iw, ih);
     case SlideshowZoom::Actual:
         return 1.0;
     case SlideshowZoom::Fit:
     default:
-        return qMin(w / iw, h / ih);
+        return ViewTransform::containScale(w, h, iw, ih);
     }
 }
 
