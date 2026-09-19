@@ -388,7 +388,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
     if (m_layoutApply.active()) {
         return;
     }
-    if (isImageMode() && !m_ssHud.progressActive) {
+    if (isImageMode() && !m_ssHud.isProgressActive()) {
         maybeClimbImageModePixelsForView();
     } else if (isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
@@ -412,7 +412,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
         }
         return;
     }
-    if (m_framing.fitMode && m_items.size() == 1) {
+    if (m_framing.isFitMode() && m_items.size() == 1) {
         fitItem(m_items.first(), currentFitAspectMode());
     }
 }
@@ -673,7 +673,7 @@ bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
     }
     // Slideshow: centre click pauses / resumes. Edges stay navigation above.
     // Ignore the second press of a double-click so we do not toggle twice.
-    if ((m_ssHud.progressActive || m_ssHud.pausedHud)
+    if ((m_ssHud.isProgressActive() || m_ssHud.isPausedHud())
         && zone == EdgeZone::None) {
         if (m_lastSlideshowCenterClick.isValid()
             && m_lastSlideshowCenterClick.elapsed()
@@ -1278,16 +1278,16 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
 
 void ImageView::updateMouseMoveSlideshowSeek(QMouseEvent *event)
 {
-    if (!m_ssHud.progressActive || !viewport()) {
+    if (!m_ssHud.isProgressActive() || !viewport()) {
         return;
     }
     const int h = viewport()->height();
     const bool nearBottom = m_ssHud.isSeekHit(event->pos().y(), h);
-    if (nearBottom != m_ssHud.seekbarVisible && !m_ssHud.seekDragging) {
+    if (nearBottom != m_ssHud.isSeekbarVisible() && !m_ssHud.isSeekDragging()) {
         m_ssHud.setSeekbarVisible(nearBottom);
         viewport()->update();
     }
-    if (m_ssHud.seekDragging && h > 0 && viewport()->width() > 0) {
+    if (m_ssHud.isSeekDragging() && h > 0 && viewport()->width() > 0) {
         const qreal f = ViewTransform::unitFraction(event->pos().x(), viewport()->width());
         emit slideshowSeekRequested(f);
     }
@@ -1514,7 +1514,7 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
 
 bool ImageView::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
 {
-    if (!m_ssHud.seekDragging || event->button() != Qt::LeftButton) {
+    if (!m_ssHud.isSeekDragging() || event->button() != Qt::LeftButton) {
         return false;
     }
     m_ssHud.setSeekDragging(false);

@@ -204,7 +204,7 @@ ImageView::ImageView(QWidget *parent)
                 if (img.isNull()) {
                     return;
                 }
-                if (m_ssHud.progressActive
+                if (m_ssHud.isProgressActive()
                     && (path == m_ss.fromPath || path == m_ss.toPath)) {
                     onSlideshowRasterReady(path, img);
                     // SoftDisplay only at screen-fit edge (TileSynth when tiles exist).
@@ -220,7 +220,7 @@ ImageView::ImageView(QWidget *parent)
                     }
                     return;
                 }
-                if (isImageMode() && !m_ssHud.progressActive
+                if (isImageMode() && !m_ssHud.isProgressActive()
                     && path == classicPath()) {
                     // Event-driven ImageFocus: DisplaySurface::decide (not a
                     // quality watchdog). Soft→full via Attach* / async / climb.
@@ -248,7 +248,7 @@ ImageView::ImageView(QWidget *parent)
             });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
-        if (m_hudPrefs.visible || m_hudFlash.visible || m_ssHud.pausedHud) {
+        if (m_hudPrefs.visible || m_hudFlash.visible || m_ssHud.isPausedHud()) {
             viewport()->update();
         }
     });
@@ -281,7 +281,7 @@ ImageView::ImageView(QWidget *parent)
     m_slideshowProgressTimer = new QTimer(this);
     m_slideshowProgressTimer->setInterval(SlideshowProgressHud::kProgressTickMs); // ~30 Hz
     connect(m_slideshowProgressTimer, &QTimer::timeout, this, [this]() {
-        if (m_ssHud.progressActive) {
+        if (m_ssHud.isProgressActive()) {
             // Pump shared path tiles for phase slides (paint uses TileLodController).
             tickPrimaryTileLod(8);
             if (viewport()) {
@@ -360,7 +360,7 @@ ImageView::ImageView(QWidget *parent)
         }
         // ImageFocus is event-driven only (rasterImproved / load / resize climb).
         // Slideshow phase buffers: DisplaySurface::decide while transition is live.
-        if (m_ssHud.progressActive) {
+        if (m_ssHud.isProgressActive()) {
             slideshowPhaseSurfaceTick();
         }
     });
@@ -616,7 +616,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
     }
     // Slideshow paints from path→logical, not the underlay item. When the probe
     // lands for a phase path, refresh dest aspect (and atlas if needed).
-    if (m_ssHud.progressActive
+    if (m_ssHud.isProgressActive()
         && (path == m_ss.fromPath || path == m_ss.toPath)) {
         if (path == m_ss.fromPath && !m_ss.fromImage.isNull()) {
             requestDwellAtlasRebuild();
@@ -704,7 +704,7 @@ void ImageView::onSizeResolveGateComplete()
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
     // Create tiles only now — sizes are definitive (or timed out with stand-in).
-    if (m_gallerySoftBook.deferPopulate) {
+    if (m_gallerySoftBook.isDeferPopulate()) {
         m_gallerySoftBook.setDeferPopulate(false);
         ensureGalleryPlaceholders();
     } else {
@@ -832,7 +832,7 @@ int ImageView::pendingDecodeCount() const
     }
 
     // Slideshow preload queue (inflight + pending neighbours).
-    if (m_ssHud.progressActive) {
+    if (m_ssHud.isProgressActive()) {
         n += m_ss.rasterQueueCount();
         const int need = 0; // need edge checked via target below if needed
         Q_UNUSED(need);
@@ -1068,7 +1068,7 @@ void ImageView::leaveEvent(QEvent *event)
         m_gallery.clearHoverPath();
         viewport()->update();
     }
-    if (m_ssHud.seekbarVisible && !m_ssHud.seekDragging) {
+    if (m_ssHud.isSeekbarVisible() && !m_ssHud.isSeekDragging()) {
         m_ssHud.setSeekbarVisible(false);
         if (viewport()) {
             viewport()->update();

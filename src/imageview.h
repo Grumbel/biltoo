@@ -274,9 +274,9 @@ public:
      * atlas work until settle; previous underlay is kept until replacement.
      */
     void setSlideshowNavHot(bool hot);
-    bool slideshowNavHot() const { return m_ssHud.navHot; }
+    bool slideshowNavHot() const { return m_ssHud.isNavHot(); }
     /** Slideshow pure-phase owns viewport — tile coordinator must not issue. */
-    bool isSlideshowProgressActive() const { return m_ssHud.progressActive; }
+    bool isSlideshowProgressActive() const { return m_ssHud.isProgressActive(); }
     /** PathRasterService for PreferCache cancel when tiles issue (coordinator). */
     PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
     /** Crop draft owns the live sample — no ladder/install/rematerialize. */
@@ -658,7 +658,7 @@ public:
     void setStickyZoomEnabled(bool on);
     void releaseStickyZoom();
     void captureStickyZoomFromCurrentFraming();
-    bool stickyZoomEnabled() const { return m_framing.stickyZoomEnabled; }
+    bool stickyZoomEnabled() const { return m_framing.isStickyZoomEnabled(); }
     void setStickyZoomKind(StickyZoomKind kind);
     StickyZoomKind stickyZoomKind() const { return m_framing.stickyZoomKind; }
     /** Image-mode framing after soft/full install (honours sticky zoom). */
@@ -880,7 +880,7 @@ public:
      * Independent of flashHud (which times out after ~1s). Cleared on resume/stop.
      */
     void setSlideshowPausedHud(bool on);
-    bool slideshowPausedHud() const { return m_ssHud.pausedHud; }
+    bool slideshowPausedHud() const { return m_ssHud.isPausedHud(); }
     /** Freeze/resume dwell progress elapsed without resetting the timeline. */
     void setSlideshowProgressPaused(bool paused);
     /** Image-mode fit after leaving slideshow (Fit to window). */

@@ -202,7 +202,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
     };
 
     // Pure-phase composite (SLIDESHOW.md): wall clock sets fadeT; we only blit.
-    if (m_ssHud.progressActive
+    if (m_ssHud.isProgressActive()
         && (!m_ss.fromImage.isNull() || !m_ssDwell.sourceImage.isNull() || !m_ss.toImage.isNull())) {
         const QRect vr = viewport()->rect();
         // Prefer member references (not a local QImage copy) so paintMotionCover
@@ -363,7 +363,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     // chip during slideshow or normal Image browsing.
     const QString loadingLine = m_hudPrefs.visible ? loadingStatusHudLine() : QString();
     if (m_crop.active() || m_hudPrefs.visible || m_hudFlash.visible || m_hudFlash.identityPulse
-        || m_ssHud.pausedHud || gallerySizeResolveActive()
+        || m_ssHud.isPausedHud() || gallerySizeResolveActive()
         || !m_centreProgress.title.isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
@@ -435,7 +435,7 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("Crop mode"), true},
                        {tr("Handles · Reset · Apply · Esc"), false}},
                       margin, margin, false, false);
-        } else if (m_ssHud.pausedHud) {
+        } else if (m_ssHud.isPausedHud()) {
             drawPanel({{tr("❚❚  Paused"), true},
                        {tr("Space: resume · Esc: leave"), false}},
                       margin, margin, false, false);
@@ -529,8 +529,8 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
     // Slideshow timeline (extended HUD only): video-player style progress bar
     // plus elapsed / total and remaining. Driven by setSlideshowTimeline from
     // the host clock. Falls back to per-interval dwell line if no timeline.
-    if (m_ssHud.progressActive
-        && (m_hudPrefs.visible || m_ssHud.seekbarVisible || m_ssHud.seekDragging)) {
+    if (m_ssHud.isProgressActive()
+        && (m_hudPrefs.visible || m_ssHud.isSeekbarVisible() || m_ssHud.isSeekDragging())) {
         const int viewW = viewport()->width();
         const int viewH = viewport()->height();
         if (viewW > 0 && viewH > 0) {
@@ -558,7 +558,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
             painter.setBrush(track);
             // Thin dwell/session line when HUD pinned; thicker mpv seekbar when
             // the cursor is in the bottom hover zone.
-            const int barH = HudGeometry::progressBarHeight(m_ssHud.seekbarVisible);
+            const int barH = HudGeometry::progressBarHeight(m_ssHud.isSeekbarVisible());
             painter.drawRect(0, viewH - barH, viewW, barH);
             if (fraction > 0.0) {
                 const int barW = HudGeometry::progressFillWidth(fraction, viewW);
@@ -1224,7 +1224,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
     if (isGalleryMode() && !m_hudPrefs.visible && !m_hudFlash.visible && !m_hudFlash.identityPulse
-        && !m_ssHud.pausedHud && !gallerySizeResolveActive()
+        && !m_ssHud.isPausedHud() && !gallerySizeResolveActive()
         && m_centreProgress.title.isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_crop.active()
         && !m_ssDwell.motionActive 

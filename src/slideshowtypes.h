@@ -653,6 +653,16 @@ struct SlideshowProgressHud {
         return true;
     }
 
+    bool isProgressActive() const { return progressActive; }
+
+    bool isNavHot() const { return navHot; }
+
+    bool isPausedHud() const { return pausedHud; }
+
+    bool isSeekDragging() const { return seekDragging; }
+
+    bool isSeekbarVisible() const { return seekbarVisible; }
+
     bool setSeekbarVisible(bool on)
     {
         if (seekbarVisible == on) {

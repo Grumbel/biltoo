@@ -590,7 +590,7 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
             return false;
         }
         // Image key-repeat: never ensure per skipped path (IMAGE_MODE_NAV_SOFT).
-        if (m_ssHud.navHot && isImageMode()) {
+        if (m_ssHud.isNavHot() && isImageMode()) {
             return false;
         }
         const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : fallbackNeedEdge;
@@ -603,7 +603,7 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
         if (isGalleryMode()) {
             return false;
         }
-        if (m_ssHud.navHot && isImageMode()) {
+        if (m_ssHud.isNavHot() && isImageMode()) {
             return false;
         }
         scheduleAsyncHostRematerialize(
@@ -792,7 +792,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     if (wantBake) {
         // Key-repeat: never schedule async rematerialize per skipped path —
         // settle loadImage will bake once for the final index.
-        const bool navHot = m_ssHud.navHot && isImageMode();
+        const bool navHot = m_ssHud.isNavHot() && isImageMode();
         // Nav-hot: tighter clamp so materializeDisplay stays cheap under hold.
         const int maxGui = navHot
             ? ContentXform::materializePreviewEdge()
@@ -865,7 +865,7 @@ ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &in
     // placeholders so soft can install. applyLayout stays deferred until
     // finishGallerySizeResolve. Blocking on gallerySizeResolveActive() left
     // m_items empty until a manual relayout (and never for pure Fill open).
-    if (m_gallerySoftBook.deferPopulate) {
+    if (m_gallerySoftBook.isDeferPopulate()) {
         return nullptr;
     }
     auto *item = new ImageItem(path, intrinsicSize);
@@ -1012,7 +1012,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     // Slideshow owns the viewport with dwell/live blits. Pending tile used to
     // clearLiveCanvas + cancelSlideshowMotion after fade-end cleared the hold,
     // wiping the dwell we just armed. Underlay is hidden for the whole show.
-    if (m_ssHud.progressActive) {
+    if (m_ssHud.isProgressActive()) {
         return;
     }
     if (isCropDraftLockedPath(path)) {
@@ -1058,14 +1058,14 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
                 // Soft PreferCache encode is removed for Image underlay
                 // (LQIP + tiles only). Nav-hot: no IPC — settle loadImage probes
                 // size and issues tiles once. Do not scheduleSoftPixels here.
-                if (!m_ssHud.navHot && ThumtooCache::isAvailable()) {
+                if (!m_ssHud.isNavHot() && ThumtooCache::isAvailable()) {
                     ThumtooCache::scheduleProbe(path);
                 }
                 if (viewport()) {
                     viewport()->update();
                 }
                 biltooLoadDbg(
-                    m_ssHud.navHot
+                    m_ssHud.isNavHot()
                         ? "pendingTile DEFER blank path=%s (nav-hot, placeholder)"
                         : "pendingTile DEFER blank path=%s (placeholder, probe size)",
                     qPrintable(QFileInfo(path).fileName()));
@@ -1161,7 +1161,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
             const bool needFit =
                 sizeBefore.width() <= 1
                 || ContentXform::aspectChanged(sizeBefore, targetSize);
-            if (needFit || m_framing.stickyZoomEnabled || m_framing.havePreservedViewScale) {
+            if (needFit || m_framing.isStickyZoomEnabled() || m_framing.hasPreservedViewScale()) {
                 // Aspect change, sticky mode, or free-zoom preserve across files.
                 resetImageModeItemPlacement(item);
                 applyImageModeFraming(item);
@@ -1174,7 +1174,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         // Key-repeat (nav hot): async update only — sync repaint every auto-repeat
         // event was the cumulative GUI freeze under held ←/→.
         if (viewport()) {
-            if (m_ssHud.navHot) {
+            if (m_ssHud.isNavHot()) {
                 viewport()->update();
             } else {
                 viewport()->repaint();
@@ -1182,13 +1182,13 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
         }
         // Retained path RAM: bind session and paint tiles without waiting for
         // the next coordinator timer (A→B→A should show tiles on this frame).
-        if (!m_ssHud.navHot && item->tileLodHasPathRam()) {
+        if (!m_ssHud.isNavHot() && item->tileLodHasPathRam()) {
             item->tickTileLod(8);
         }
         biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d painted=%s",
                       qPrintable(QFileInfo(path).fileName()),
                       pixels.width(), pixels.height(), didFit,
-                      m_ssHud.navHot ? "async" : "sync");
+                      m_ssHud.isNavHot() ? "async" : "sync");
         return;
     }
 
@@ -1247,7 +1247,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 
     // Slideshow owns the viewport via pure-phase buffers — never soft-install
     // or PreferCache-climb the underlay ImageItem while the show is running.
-    if (role == LoadReplace && isImageMode() && m_ssHud.progressActive) {
+    if (role == LoadReplace && isImageMode() && m_ssHud.isProgressActive()) {
         biltooLoadDbg("PATH slideshow active skip image-mode load path=%s",
                       qPrintable(QFileInfo(path).fileName()));
         return;
@@ -1259,7 +1259,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
         // Rapid ←/→: stop here. No PreferCache, no classic decode, no escalate —
         // those race the next key and stall the GUI. Settle timer (MainWindow
         // ~80ms quiet) clears nav-hot and calls loadImage again for climb.
-        if (m_ssHud.navHot) {
+        if (m_ssHud.isNavHot()) {
             const int edge = imageModeItemForPath(path)
                 ? imageModeItemForPath(path)->displayPixelLongEdge()
                 : 0;
@@ -1276,7 +1276,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
                     if (!isImageMode() || classicPath() != pathCopy) {
                         return;
                     }
-                    if (m_ssHud.navHot) {
+                    if (m_ssHud.isNavHot()) {
                         return;
                     }
                     ensureImageModeQualityClimb(pathCopy, soft);
@@ -1289,7 +1289,7 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     // Image mode: do not SoftOnly/PreferCache on cold open — LQIP (if cached)
     // + tiles. Other modes still seed Soft via scheduleClassicImageDecode.
 
-    if (m_ssHud.progressActive) {
+    if (m_ssHud.isProgressActive()) {
         scheduleSlideshowReplaceDecode(path, gen, role);
         return;
     }
@@ -1366,7 +1366,7 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
 {
     // Image mode: LQIP/cache underlay only if already present, then tiles.
     // No SoftOnly encode and no PreferCache/Full climb in parallel with tiles.
-    if (isImageMode() && !m_ssHud.progressActive && !m_ssHud.navHot
+    if (isImageMode() && !m_ssHud.isProgressActive() && !m_ssHud.isNavHot()
         && role == LoadReplace) {
         ThumtooCache::scheduleProbe(path);
         tickPrimaryTileLod(12);
@@ -1551,7 +1551,7 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
         if (!image.isNull()) {
             ImageCache::put(path, image);
         }
-        if (m_ssHud.progressActive && !image.isNull()) {
+        if (m_ssHud.isProgressActive() && !image.isNull()) {
             onSlideshowRasterReady(path, image);
         }
     }
@@ -1560,7 +1560,7 @@ void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &im
     // in flight. ladderReady used to return early for non-Gallery, so PDF /
     // page / archive PreferCache deliveries left the view stuck on the soft
     // thumbnail forever.
-    if (isImageMode() && !image.isNull() && !m_ssHud.progressActive) {
+    if (isImageMode() && !image.isNull() && !m_ssHud.isProgressActive()) {
         upgradeImageModeFromLadder(path, maxEdge, image);
     }
 
@@ -1828,7 +1828,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
     ImageCache::put(path, image);
     // Soft job during slideshow must upgrade phase buffers (m_ssFrom/To), not
     // only ImageCache — otherwise crossfade stays on empty/LQIP until preload.
-    if (m_ssHud.progressActive) {
+    if (m_ssHud.isProgressActive()) {
         onSlideshowRasterReady(path, image);
     }
 
@@ -2133,7 +2133,7 @@ int ImageView::fillLiveItemsWithDecodedPixels(const QString &path, const QImage 
 void ImageView::createMissingLoadAddItems(const QString &path, const QImage &image,
                                           int have, int wanted)
 {
-    if (gallerySizeResolveActive() || m_gallerySoftBook.deferPopulate) {
+    if (gallerySizeResolveActive() || m_gallerySoftBook.isDeferPopulate()) {
         return;
     }
     // Create missing occurrences (each duplicate is a normal separate tile).
@@ -2160,7 +2160,7 @@ void ImageView::createMissingLoadAddItems(const QString &path, const QImage &ima
 
 void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
 {
-    if (gallerySizeResolveActive() || m_gallerySoftBook.deferPopulate) {
+    if (gallerySizeResolveActive() || m_gallerySoftBook.isDeferPopulate()) {
         return;
     }
     if (m_layout.mode != LayoutMode::FreeForm) {
@@ -2267,20 +2267,20 @@ void ImageView::frameImageModeReplaceItem(ImageItem *item, const QString &path)
     // Slideshow framing: when dwell motion is on, the camera sets the
     // transform (including handoff from a live transition). Applying zoom
     // framing first would centre the image then jump to motion t0.
-    if (m_ssHud.progressActive && m_ssSettings.motion == SlideshowMotion::Off) {
+    if (m_ssHud.isProgressActive() && m_ssSettings.motion == SlideshowMotion::Off) {
         applySlideshowZoomFraming(item);
-    } else if (!m_ssHud.progressActive) {
+    } else if (!m_ssHud.isProgressActive()) {
         applyImageModeFraming(item);
     }
     syncImageModeSceneRect(item);
     // Apply camera while updates are still blocked and any live hold still
     // covers the viewport — avoids a flash of identity / wrong pan pose.
     maybeStartSlideshowMotion();
-    if (m_ssHud.progressActive && m_ssSettings.motion != SlideshowMotion::Off
+    if (m_ssHud.isProgressActive() && m_ssSettings.motion != SlideshowMotion::Off
         && !m_ssDwell.motionActive) {
         applySlideshowZoomFraming(item);
     }
-    if (m_ssHud.progressActive) {
+    if (m_ssHud.isProgressActive()) {
         item->setVisible(false);
         // Paused ←/→ loads the underlay while pure phase still paints the
         // previous path — refresh dwell to this decode.
@@ -2297,7 +2297,7 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
     if (!m_items.isEmpty()) {
         if (m_items.first()->path() != path) {
             captureStickyPanAnchor(m_items.first());
-        } else if (m_framing.stickyZoomEnabled
+        } else if (m_framing.isStickyZoomEnabled()
                    && m_framing.stickyZoomKind != StickyZoomKind::Fit) {
             // Same path rebuild: keep looking where we are now.
             captureStickyPanAnchor(m_items.first());
@@ -2373,7 +2373,7 @@ void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantE
 
 void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
 {
-    if (!m_pathRaster || path.isEmpty() || m_ssHud.navHot) {
+    if (!m_pathRaster || path.isEmpty() || m_ssHud.isNavHot()) {
         return;
     }
     if (isCropDraftLockedPath(path)) {
@@ -2402,7 +2402,7 @@ void ImageView::requestEscalateClimb(const QString &path, int wantEdge)
     // Slideshow + durable tiles: SoftDisplay (PreferCache/TileSynth) only —
     // EscalateToFull native decode is the CPU storm on prepared libraries.
     const auto policy =
-        (m_ssHud.progressActive && ThumtooCache::hasDurableTilesKnown(path))
+        (m_ssHud.isProgressActive() && ThumtooCache::hasDurableTilesKnown(path))
             ? PathRasterService::ClimbPolicy::SoftDisplay
             : PathRasterService::ClimbPolicy::EscalateToFull;
     biltooLoadDbg("escalateClimb(service) path=%s edge=%d policy=%d",
@@ -2480,13 +2480,13 @@ void ImageView::noteImageModePreferCacheDelivery(const QString &path, int reques
 
 void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &sample)
 {
-    if (path.isEmpty() || m_ssHud.navHot || !m_pathRaster) {
+    if (path.isEmpty() || m_ssHud.isNavHot() || !m_pathRaster) {
         return;
     }
     if (isCropDraftLockedPath(path)) {
         return;
     }
-    if (m_ssHud.progressActive) {
+    if (m_ssHud.isProgressActive()) {
         return;
     }
     // Tiles own display once wanted or durable pyramid is known — no PreferCache.
@@ -2667,7 +2667,7 @@ qreal ImageView::prefetchDevicePixelRatio() const
 
 bool ImageView::tilePrefetchNavHot() const
 {
-    return m_ssHud.navHot;
+    return m_ssHud.isNavHot();
 }
 
 
@@ -2708,7 +2708,7 @@ void ImageView::tickPrimaryTileLod(int budget)
 {
     ASSERT_GUI_THREAD();
     // Key-repeat: do not plan/issue tiles — soft underlay only until settle.
-    if (m_ssHud.navHot) {
+    if (m_ssHud.isNavHot()) {
         return;
     }
     if (!m_tileCoordinator) {
@@ -2751,7 +2751,7 @@ void ImageView::maybeClimbImageModePixelsForView()
     // Zoom / resize: PreferCache climbs when on-screen need exceeds painted.
     // Do not start Display@ladder while soft is still missing — that races the
     // soft 512 job and is what THUMTOO_DEBUG showed as need=2048 decoded=0.
-    if (!isImageMode() || m_ssHud.progressActive) {
+    if (!isImageMode() || m_ssHud.isProgressActive()) {
         return;
     }
     ImageItem *item = imageModeItemForPath(classicPath());
@@ -2845,7 +2845,7 @@ void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 
     if (!image.isNull() && !path.isEmpty()) {
         ImageCache::put(path, image);
         // Quality/soft climb during slideshow → phase buffer + atlas upgrade.
-        if (m_ssHud.progressActive) {
+        if (m_ssHud.isProgressActive()) {
             onSlideshowRasterReady(path, image);
         }
     }
@@ -2940,13 +2940,13 @@ void ImageView::syncImageFocusSurfaceState()
 
 void ImageView::driveImageFocusSurface()
 {
-    if (!isImageMode() || m_ssHud.progressActive) {
+    if (!isImageMode() || m_ssHud.isProgressActive()) {
         return;
     }
     // Key-repeat: install soft only. evaluate() → ScheduleClimb / async bake
     // would pathRaster->ensure every skipped path (bypassed requestEscalateClimb
     // nav-hot guard). Settle loadImage drives the surface once.
-    if (m_ssHud.navHot) {
+    if (m_ssHud.isNavHot()) {
         return;
     }
     syncImageFocusSurfaceState();
