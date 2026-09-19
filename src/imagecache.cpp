@@ -3,6 +3,7 @@
 
 #include "imagecache.h"
 #include "imageloader.h"
+#include "displayquality.h"
 
 #include <QFileInfo>
 #include <QFont>
@@ -100,7 +101,7 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     const int h = image->height();
     // Single cyan plate (not a repeated grid) — readable when soft is stretched
     // into large Gallery cells. Distinct from thumtoo magenta/yellow TILE stamps.
-    const int border = qMax(2, qMin(8, qMin(w, h) / 48));
+    const int border = DisplayQuality::debugStampBorderPx(w, h);
     p.setPen(QPen(QColor(0, 220, 255), border));
     p.setBrush(Qt::NoBrush);
     p.drawRect(border / 2, border / 2, w - border, h - border);
@@ -109,7 +110,7 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     // Host ImageCache sample. Gallery must not show these as underlay (>LQIP);
     // stamp marks accidental soft/HOST plates vs thumtoo TILE stamps.
     const int le = qMax(w, h);
-    if (le <= 96) {
+    if (le <= DisplayQuality::kLqipMaxEdge) {
         lines << QStringLiteral("LQIP");
     } else {
         lines << QStringLiteral("HOST-SAMPLE"); // not product underlay in Gallery
@@ -123,7 +124,7 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     QFont f = p.font();
     f.setBold(true);
     // Fixed readable band; avoid tiny soft fonts and avoid huge stretched ones.
-    f.setPixelSize(qBound(14, qMin(w, h) / 18, 22));
+    f.setPixelSize(DisplayQuality::debugStampFontPx(w, h));
     p.setFont(f);
     const QFontMetrics fm(f);
     int blockW = 0;

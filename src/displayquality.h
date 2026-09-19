@@ -5,6 +5,7 @@
 #define DISPLAYQUALITY_H
 
 #include <QString>
+#include <QtGlobal>
 
 /**
  * Host-side display quality helpers (edge / tier only).
@@ -34,7 +35,20 @@ Tier tierOf(int longEdge);
 bool isStrictUpgrade(int shownLongEdge, int incomingLongEdge);
 
 /** ImageCache long edge for path, or 0. */
-int hostLongEdge(const QString &path);
+int hostLongEdge(con
+/** Debug HOST/LQIP stamp border width from sample size. */
+inline int debugStampBorderPx(int w, int h)
+{
+    return qMax(2, qMin(8, qMin(w, h) / 48));
+}
+
+/** Debug stamp label pixel size (readable band on soft samples). */
+inline int debugStampFontPx(int w, int h)
+{
+    return qBound(14, qMin(w, h) / 18, 22);
+}
+
+st QString &path);
 
 } // namespace DisplayQuality
 
