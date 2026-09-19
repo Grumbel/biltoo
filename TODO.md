@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1541-crop-pathraster-ownership.** CropPathRaster suspend boundary; cancel PreferCache on enter, Full request, and leave.
+Prior: **1540**.
+
+### Change
+- `croppathraster.h` — documents PathRaster ownership during crop; `CropPathRaster::suspend`.
+- `cancelPathRasterForCrop` → thin wrapper around suspend.
+- `requestCropFullRaster` suspends soft/PreferCache before Full encode.
+- `clearCropModeState` suspends subject path before LOD release / draft clear.
+
+### Still on ImageView
+Enter UI orchestration (already factored into begin/complete/prepare helpers), further chrome splits.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1541-crop-pathraster-ownership.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1540-crop-appearance-command.** Extract `CropAppearanceCommand` from nested undo class in imageview_crop.
 Prior: **1539**.
 

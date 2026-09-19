@@ -391,7 +391,7 @@ public:
 
     /**
      * Bind target, enter snapshot, and zero placement rotation for crop grips.
-     * Host still owns PathRaster cancel and full-frame install.
+     * Host owns PathRaster suspend (CropPathRaster) and full-frame install.
      * Suppresses tile LOD on the bound item until leave.
      */
     void beginEnterSession(ImageItem *item, const QImage &enterSrc,

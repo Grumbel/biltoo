@@ -6,6 +6,7 @@
 
 #include "imageview.h"
 #include "cropappearancecommand.h"
+#include "croppathraster.h"
 #include "cropgeometry.h"
 #include "placementlinear.h"
 #include "imagecache.h"
@@ -439,9 +440,7 @@ bool ImageView::isCropDraftLockedPath(const QString &path) const
 
 void ImageView::cancelPathRasterForCrop(const QString &path)
 {
-    if (m_pathRaster && !path.isEmpty()) {
-        m_pathRaster->cancel(path);
-    }
+    CropPathRaster::suspend(m_pathRaster, path);
 }
 
 void ImageView::rememberCropEnterSizes(const QString &path, const QImage &full)
@@ -676,6 +675,8 @@ void ImageView::requestCropFullRaster(const QString &path)
     if (path.isEmpty()) {
         return;
     }
+    // Soft/PreferCache must not race Full encode for the crop subject.
+    cancelPathRasterForCrop(path);
     // Prefer thumtoo scheduleFullPixels; fall back to pool ImageLoader::load.
     if (ThumtooCache::isAvailable()) {
         const int edge = CropSession::fullRasterScheduleEdge(path);
@@ -1421,6 +1422,14 @@ void ImageView::notifyCropModeLeftChrome()
 
 void ImageView::clearCropModeState()
 {
+    // Stop PreferCache before releasing tile LOD / clearing draft identity.
+    QString subjectPath = m_crop.draftPathRef();
+    if (subjectPath.isEmpty()) {
+        if (ImageItem *bound = cropSessionBoundItem()) {
+            subjectPath = bound->path();
+        }
+    }
+    cancelPathRasterForCrop(subjectPath);
     m_crop.releaseAllTileLod(cropSessionBoundItem());
     QString pendingPath;
     SessionImageId pendingSid = kInvalidSessionImageId;
