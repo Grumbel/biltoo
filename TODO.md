@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1350-grade-filmstrip-overlay-stamp.** ColorAdjustments clamps,
+FilmstripGeometry, overlay font, debug stamp pure helpers.
+Prior: **1349**.
+
+### Change
+- `ColorAdjustments` grade clamps + `gammaToPercent` / `gammaFromPercent`
+- `FilmstripGeometry` (letterbox, fold, pad, thumb clamp, badge)
+- `ViewTransform::overlayFontPixelSize` for tile LOD debug overlay
+- `DisplayQuality::{debugStampBorderPx,debugStampFontPx}`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tip **1349**)
+```bash
+git pull /path/to/biltoo-1350-grade-filmstrip-overlay-stamp.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1349-opacity-track-interval-hud-progress.** Opacity track inverse,
 stored interval clamp, HUD progress strip pure helpers.
 Prior: **1348**.
