@@ -588,6 +588,9 @@ if(Qt6Test_FOUND)
   add_executable(biltoo-sessiondocument-test
     tests/sessiondocument_test.cpp
     src/sessiondocument.cpp
+    src/sessionappearance.cpp
+    src/contentxform.cpp
+    src/coloradjust.cpp
   )
   target_include_directories(biltoo-sessiondocument-test PRIVATE src)
   target_link_libraries(biltoo-sessiondocument-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)

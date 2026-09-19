@@ -695,6 +695,8 @@ the stop line when Tier 4 lands.
 
 ### Remaining Phase 6 work (post-1613)
 
+**Compile green** as of biltoo-1622 (controller stack links and runs).
+
 **Done (mechanical):** Tiers 0–3, 2a/2b, 5a state ownership, 6a/6b mode input
 dispatch, friend list empty, HudModel + session identity characterization tests.
 
@@ -735,7 +737,9 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - Tier 4 prerequisite: **started** (biltoo-1608) — `sessiondocument_test` +
   `sessionappearance_test` lock id-keyed appearance and path/id identity.
   Full offscreen ImageView open→Gallery→crop harness still open.
-- Tier 4: _pending_ (needs fuller ImageView characterization before move)
+- Tier 4a: **done** (biltoo-1623) — `SessionDocument` owns a `SessionAppearanceStore`
+  (additive; ImageView still has live store). Char test covers doc-keyed crop.
+- Tier 4b: _pending_ — single owner, delete view `m_pathOrderBook` / dual store.
 - Tier 5a: **done** (biltoo-1610) — `DisplayPipelineController` owns loadGate,
   displaySurfaces, imageFocusSurface, tileCoordinator, tile LOD timers.
   Methods stay on ImageView; soft provider + neighbor prefetch remain on view.

@@ -5,6 +5,7 @@
 #define SESSIONDOCUMENT_H
 
 #include "imageview_types.h"
+#include "sessionappearance.h"
 
 #include <QString>
 #include <QStringList>
@@ -55,10 +56,20 @@ public:
     /** Return false and log if any SessionImageId appears more than once. */
     bool validateUniqueIds(const char *context = nullptr) const;
 
+    /**
+     * Phase 6 Tier 4a: appearance lives on the document (target architecture).
+     * ImageView still owns a live store until Tier 4b wires a single owner;
+     * MainWindow may dual-write during the transition.
+     */
+    SessionAppearanceStore &appearance() { return m_appearance; }
+    const SessionAppearanceStore &appearance() const { return m_appearance; }
+
 private:
     QStringList m_paths;
     QVector<SessionImageId> m_ids;
     SessionImageId m_nextId = 1;
+    SessionAppearanceStore m_appearance;
 };
+
 
 #endif // SESSIONDOCUMENT_H

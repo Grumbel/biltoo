@@ -25,6 +25,7 @@ private slots:
     void validateUniqueIds_detectsDuplicate();
     void insert_middle_shiftsIds();
     void clear_empties();
+    void appearance_on_document();
 };
 
 void SessionDocumentTest::empty_initial()
@@ -125,6 +126,23 @@ void SessionDocumentTest::clear_empties()
     doc.clear();
     QVERIFY(doc.isEmpty());
     QCOMPARE(doc.size(), 0);
+}
+
+void SessionDocumentTest::appearance_on_document()
+{
+    SessionDocument doc;
+    doc.append(QStringLiteral("/a.jpg"));
+    const SessionImageId id = doc.idAt(0);
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(2, 3, 40, 50);
+    doc.appearance().set(id, st);
+    QVERIFY(doc.appearance().contains(id));
+    QCOMPARE(doc.appearance().get(id)->cropRect, QRect(2, 3, 40, 50));
+    // Path list clear does not yet couple appearance (Tier 4b).
+    doc.clear();
+    QVERIFY(doc.isEmpty());
+    QVERIFY(doc.appearance().contains(id));
 }
 
 QTEST_MAIN(SessionDocumentTest)

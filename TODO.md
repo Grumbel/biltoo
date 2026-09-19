@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1623-phase6-tier4a-doc-appearance.** Phase 6 Tier 4a: SessionDocument owns SessionAppearanceStore (additive).
+Prior: **1622** (compile green).
+
+### Change
+- `SessionDocument::appearance()` — store on the document (target architecture)
+- ImageView still owns live `m_appearance` until Tier 4b single-owner wiring
+- Test: `appearance_on_document`; sessiondocument-test links sessionappearance
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1623-phase6-tier4a-doc-appearance.bundle HEAD
+```
+
+### Next (Tier 4b)
+- Wire MainWindow dual-write or view→document pointer
+- `clear()` couples path remove + appearance remove
+- Delete view `m_pathOrderBook` / duplicate store
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1622-fix-link-ctor-ensureSize.** AttentionController ctor; ensureSlideshowLogicalSize definition.
 Prior: **1621**.
 
