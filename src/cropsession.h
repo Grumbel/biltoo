@@ -103,6 +103,16 @@ public:
 
     void endHandleDrag() { activeHandle = CropHandle::None; }
 
+    /** Expand limits when allowExpand (4× content padding). */
+    QRectF expandLimits(const QRectF &contentRect) const;
+
+    void applyMoveDrag(const QPointF &local, const QRectF &contentRect);
+    void applyRotateDrag(const QPointF &local, const QRectF &contentRect, qreal minSide,
+                         bool shiftSnap, bool ctrlSnap);
+    void applyResizeDrag(const QPointF &local, const QRectF &contentRect, const QRectF &limits,
+                         qreal minSide, bool fromCenter, bool forceSquare);
+
+
     void beginRubber(const QPointF &originLocal)
     {
         rubberBanding = true;

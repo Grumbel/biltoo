@@ -202,3 +202,56 @@ void CropSession::restoreEnterPlacementPose(ImageItem *item) const
     const qreal sy = enterScaleY() > 0.0 ? enterScaleY() : sx;
     item->setItemScale(sx, sy);
 }
+
+QRectF CropSession::expandLimits(const QRectF &contentRect) const
+{
+    if (!isAllowExpand()) {
+        return contentRect;
+    }
+    return contentRect.adjusted(-contentRect.width() * 4, -contentRect.height() * 4,
+                                contentRect.width() * 4, contentRect.height() * 4);
+}
+
+void CropSession::applyMoveDrag(const QPointF &local, const QRectF &contentRect)
+{
+    const QPointF delta = local - dragStartLocal;
+    QRectF r = dragStartRect.translated(delta);
+    if (!isAllowExpand()) {
+        r = r.normalized();
+        r = CropGeometry::translateInside(r, currentRotation(), contentRect);
+    }
+    setRect(r);
+}
+
+void CropSession::applyRotateDrag(const QPointF &local, const QRectF &contentRect, qreal minSide,
+                                  bool shiftSnap, bool ctrlSnap)
+{
+    setRotation(CropGeometry::rotationFromDrag(
+        local, dragStartRect.center(), rotateStartRotation, rotateStartAngle,
+        shiftSnap, ctrlSnap));
+    if (!isAllowExpand()) {
+        setRect(CropGeometry::constrainToContent(
+            dragStartRect, currentRotation(), contentRect, minSide));
+    }
+}
+
+void CropSession::applyResizeDrag(const QPointF &local, const QRectF &contentRect,
+                                  const QRectF &limits, qreal minSide,
+                                  bool fromCenter, bool forceSquare)
+{
+    QRectF r = CropGeometry::resizeDraftRect(
+        activeHandle, local, dragStartRect, currentRotation(), minSide,
+        fromCenter, forceSquare);
+    if (isAllowExpand()) {
+        r = r.intersected(limits);
+        if (r.width() < minSide) {
+            r.setWidth(minSide);
+        }
+        if (r.height() < minSide) {
+            r.setHeight(minSide);
+        }
+        setRect(r);
+    } else {
+        setRect(CropGeometry::constrainToContent(r, currentRotation(), contentRect, minSide));
+    }
+}

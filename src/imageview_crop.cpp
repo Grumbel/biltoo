@@ -1666,16 +1666,7 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
 
 void ImageView::updateCropMoveDrag(const QPointF &local, const QRectF &cr)
 {
-    const QPointF delta = local - m_crop.dragStartLocalRef();
-    QRectF r = m_crop.dragStartRectRef().translated(delta);
-    if (!m_crop.isAllowExpand()) {
-        // Move must never shrink the draft (axis-aligned intersect used to clip
-        // size at the image edge). Only slide so corners stay inside — same as
-        // the rotated-frame path via translateCropInside.
-        r = r.normalized();
-        r = CropGeometry::translateInside(r, m_crop.currentRotation(), cr);
-    }
-    m_crop.setRect(r);
+    m_crop.applyMoveDrag(local, cr);
     viewport()->update();
 }
 
@@ -1683,41 +1674,18 @@ void ImageView::updateCropRotateDrag(const QPointF &local, const QRectF &cr, qre
 {
     // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
     const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
-    m_crop.setRotation(CropGeometry::rotationFromDrag(
-        local, m_crop.dragStartRectRef().center(), m_crop.rotateStartRotationValue(),
-        m_crop.rotateStartAngleValue(), mods & Qt::ShiftModifier, mods & Qt::ControlModifier));
-    if (!m_crop.isAllowExpand()) {
-        m_crop.setRect(CropGeometry::constrainToContent(m_crop.dragStartRectRef(), m_crop.currentRotation(), cr,
-                                            minSide));
-    }
+    m_crop.applyRotateDrag(local, cr, minSide, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
     viewport()->update();
 }
 
 void ImageView::updateCropResizeDrag(const QPointF &local, const QRectF &cr, const QRectF &limits,
                                      qreal minSide)
 {
-    // Resize in crop-local axes, then map the new centre through crop rotation
-    // so edges stay under the grips when the frame is rotated.
     const bool fromCenter =
         QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
     const bool forceSquare =
         QGuiApplication::keyboardModifiers() & Qt::ShiftModifier;
-    QRectF r = CropGeometry::resizeDraftRect(
-        m_crop.currentActiveHandle(), local, m_crop.dragStartRectRef(), m_crop.currentRotation(), minSide,
-        fromCenter, forceSquare);
-
-    if (m_crop.isAllowExpand()) {
-        r = r.intersected(limits);
-        if (r.width() < minSide) {
-            r.setWidth(minSide);
-        }
-        if (r.height() < minSide) {
-            r.setHeight(minSide);
-        }
-        m_crop.setRect(r);
-    } else {
-        m_crop.setRect(CropGeometry::constrainToContent(r, m_crop.currentRotation(), cr, minSide));
-    }
+    m_crop.applyResizeDrag(local, cr, limits, minSide, fromCenter, forceSquare);
     viewport()->update();
 }
 
@@ -1731,9 +1699,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
     const QRectF cr = item->contentRect();
-    const QRectF limits = m_crop.isAllowExpand()
-        ? cr.adjusted(-cr.width() * 4, -cr.height() * 4, cr.width() * 4, cr.height() * 4)
-        : cr;
+    const QRectF limits = m_crop.expandLimits(cr);
     const qreal minSide = 4.0;
 
     if (m_crop.currentActiveHandle() == CropHandle::Move) {
