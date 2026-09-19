@@ -75,6 +75,21 @@ struct ImageSizeBook {
     }
 
     /** Stand-in geometry while a probe is outstanding. */
+    /** Neutral stand-in while probe is outstanding (plain files). */
+    static QSize standInNeutral() { return QSize(1000, 1000); }
+
+    /** Square stand-in for archive/page refs (matches kProvisionalLayoutLongEdge). */
+    static QSize standInSquare()
+    {
+        return QSize(kProvisionalLayoutLongEdge, kProvisionalLayoutLongEdge);
+    }
+
+    /** Prefer square for multipage/archive paths; neutral otherwise. */
+    static QSize standInForCompoundPath(bool compoundRef)
+    {
+        return compoundRef ? standInSquare() : standInNeutral();
+    }
+
     void markProvisional(const QString &path, const QSize &standIn)
     {
         if (path.isEmpty() || !isPositiveSize(standIn)) {

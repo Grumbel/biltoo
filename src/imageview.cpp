@@ -409,9 +409,9 @@ QSize ImageView::probeImageSize(const QString &path) const
     }
     if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
         || PagePath::isPdfImageRef(path)) {
-        return QSize(1024, 1024);
+        return ImageSizeBook::standInSquare();
     }
-    return QSize(1000, 1000);
+    return ImageSizeBook::standInNeutral();
 }
 
 void ImageView::rememberImageSize(const QString &path, const QSize &size)
@@ -457,7 +457,7 @@ bool ImageView::isProvisionalImageSize(const QString &path) const
 QSize ImageView::imageSizeForPath(const QString &path)
 {
     if (path.isEmpty()) {
-        return QSize(1000, 1000);
+        return ImageSizeBook::standInNeutral();
     }
     const QSize known = logicalSizeForPath(path);
     if (isPositiveSize(known)) {
@@ -468,12 +468,10 @@ QSize ImageView::imageSizeForPath(const QString &path)
     }
     // Archives / multipage / embedded PDF: async probe; neutral stand-in.
     scheduleImageSizeProbe(path);
-    QSize standIn(1000, 1000);
-    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
-        || PagePath::isPdfImageRef(path)) {
-        // Square is only a last resort until soft aspect or probe arrives.
-        standIn = QSize(kProvisionalLayoutLongEdge, kProvisionalLayoutLongEdge);
-    }
+    const bool compound = ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
+        || PagePath::isPdfImageRef(path);
+    // Square is only a last resort for compound refs until soft aspect or probe.
+    const QSize standIn = ImageSizeBook::standInForCompoundPath(compound);
     m_sizeBook.markProvisional(path, standIn);
     return standIn;
 }
@@ -544,7 +542,7 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
     QThreadPool::globalInstance()->start([guard, path]() {
         QSize s = ImageLoader::probeSize(path);
         if (!s.isValid() || s.width() <= 0 || s.height() <= 0) {
-            s = QSize(1000, 1000);
+            s = ImageSizeBook::standInNeutral();
         }
         if (!guard) {
             return;
