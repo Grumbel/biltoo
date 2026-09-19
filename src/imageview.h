@@ -710,8 +710,6 @@ public:
      * Enter applies pixel crop; Esc / toggle off cancels.
      */
     void setCropMode(bool on);
-    bool resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
-                                  WorkspaceItemState *st, SessionImageId *sid);
     bool completeCropEnterUnderHold(ImageItem *item,
                                     const QPointF &workspaceAnchorScene);
     bool enterCropModeFromUi();
@@ -1710,14 +1708,6 @@ private:
     void storeCropAppearance(ImageItem *item, SessionImageId sid,
                              const WorkspaceItemState &s);
     QSize cropRecordFileNative(const QString &path) const;
-    void commitCropApplyBake(ImageItem *item, const QImage &display,
-                             const WorkspaceItemState &st, bool multiMp,
-                             qreal cropW, qreal cropH, const QString &path,
-                             const QPointF &cropSceneCenter, bool hostFromCache,
-                             SessionImageId sid);
-    bool bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cropH,
-                                   qreal footW, qreal footH,
-                                   const QPointF &cropSceneCenter);
     bool applyCropCommit(ImageItem *item);
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace

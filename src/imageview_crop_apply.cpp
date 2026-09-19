@@ -13,32 +13,6 @@
 
 #include <QUndoStack>
 
-bool ImageView::resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
-                                         WorkspaceItemState *st, SessionImageId *sid)
-{
-    if (!item || !host || !hostFromCache || !st || !sid) {
-        return false;
-    }
-    const QString path = item->path();
-    *host = CropSession::pickApplyHost(item, path, hostFromCache);
-    const CropSession::ApplyHostStatus hostSt =
-        CropSession::classifyApplyHost(*host, *hostFromCache, item);
-    if (hostSt != CropSession::ApplyHostStatus::Ok) {
-        flashCropHud(CropFlash::applyHostStatus(hostSt));
-        return false;
-    }
-    *sid = cropRecordSessionId(item);
-    loadSessionAppearance(*sid, st);
-    if (!st->hasCrop) {
-        *st = captureState(item);
-        m_crop.seedApplyCropState(st, item->offset(), item->imageSize());
-        if (*sid != kInvalidSessionImageId) {
-            m_appearance.set(*sid, *st);
-        }
-    }
-    return true;
-}
-
 void ImageView::applyCrop()
 {
     // Soft draft is valid — crop is content-space. Do not wait on multi-MP load.
@@ -107,64 +81,6 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 }
 
 
-void ImageView::commitCropApplyBake(ImageItem *item, const QImage &display,
-                                    const WorkspaceItemState &st, bool multiMp,
-                                    qreal cropW, qreal cropH, const QString &path,
-                                    const QPointF &cropSceneCenter, bool hostFromCache,
-                                    SessionImageId sid)
-{
-    {
-        ViewportUpdateHold paintHold(viewport());
-        // Clear first so the crop bake replaces full-frame pixels — otherwise canvas
-        // stretches full into the crop box and filmstrip gets img=full.
-        item->clearDecodedPixels();
-        // Geometry before pixels: empty item with crop intrinsic, then bake.
-        applyContentLayoutSize(item, st);
-        CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
-        attachDisplaySample(item, display, st, CropSession::applyPixelKind(multiMp));
-        m_crop.restoreEnterScale(item);
-        alignItemCenterToScene(item, cropSceneCenter);
-        // Multi-MP: soft stand-in now; pure full rematerialize after leave.
-        m_crop.queueFullRematerializeIfSoft(hostFromCache, multiMp, path, sid, st);
-        if (isWorkspaceMode()) {
-            m_crop.applyCommitPlacementRotation(item);
-        }
-        relayoutAfterCropLeave(item);
-    }
-    commitItemSessionEdit(item);
-    emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
-    pushCropAppearanceUndo(item, CropFlash::undoCropText());
-    flashCropHud(CropFlash::applied(item->imageSize().width(), item->imageSize().height()));
-}
-
-
-bool ImageView::bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cropH,
-                                          qreal footW, qreal footH,
-                                          const QPointF &cropSceneCenter)
-{
-    const QString path = item->path();
-    bool hostFromCache = false;
-    QImage host;
-    WorkspaceItemState st;
-    SessionImageId sid = kInvalidSessionImageId;
-    if (!resolveApplyHostAndState(item, &host, &hostFromCache, &st, &sid)) {
-        return false;
-    }
-    CropSession::ApplyBakeResult baked =
-        CropSession::materializeApplyDisplay(host, hostFromCache, st);
-    if (!baked.ok()) {
-        flashCropHud(CropFlash::bakeFailed());
-        return false;
-    }
-    CropDebug::applyCrop(path, host.width(), host.height(), hostFromCache,
-                         baked.display.width(), baked.display.height(), cropW, cropH, footW,
-                         footH, item->imageSize().width(), item->imageSize().height());
-    commitCropApplyBake(item, baked.display, st, baked.multiMp, cropW, cropH, path,
-                        cropSceneCenter, hostFromCache, sid);
-    return true;
-}
-
-
 bool ImageView::applyCropCommit(ImageItem *item)
 {
     // Returns true when Workspace placement rotation should keep the crop-frame
@@ -185,9 +101,58 @@ bool ImageView::applyCropCommit(ImageItem *item)
         CropSession::itemScalePair(item, &sx0, &sy0);
         m_crop.draftFootprint(sx0, sy0, &cropW, &cropH, &footW, &footH);
         cropSceneCenter = item->mapToScene(m_crop.draftCenterLocal());
-        if (!bakeAndCommitNonFullApply(item, cropW, cropH, footW, footH, cropSceneCenter)) {
+
+        const QString path = item->path();
+        bool hostFromCache = false;
+        QImage host = CropSession::pickApplyHost(item, path, &hostFromCache);
+        const CropSession::ApplyHostStatus hostSt =
+            CropSession::classifyApplyHost(host, hostFromCache, item);
+        if (hostSt != CropSession::ApplyHostStatus::Ok) {
+            flashCropHud(CropFlash::applyHostStatus(hostSt));
             return false;
         }
+        SessionImageId sid = cropRecordSessionId(item);
+        WorkspaceItemState st;
+        loadSessionAppearance(sid, &st);
+        if (!st.hasCrop) {
+            st = captureState(item);
+            m_crop.seedApplyCropState(&st, item->offset(), item->imageSize());
+            if (sid != kInvalidSessionImageId) {
+                m_appearance.set(sid, st);
+            }
+        }
+        CropSession::ApplyBakeResult baked =
+            CropSession::materializeApplyDisplay(host, hostFromCache, st);
+        if (!baked.ok()) {
+            flashCropHud(CropFlash::bakeFailed());
+            return false;
+        }
+        CropDebug::applyCrop(path, host.width(), host.height(), hostFromCache,
+                             baked.display.width(), baked.display.height(), cropW, cropH, footW,
+                             footH, item->imageSize().width(), item->imageSize().height());
+        {
+            ViewportUpdateHold paintHold(viewport());
+            // Clear first so the crop bake replaces full-frame pixels — otherwise canvas
+            // stretches full into the crop box and filmstrip gets img=full.
+            item->clearDecodedPixels();
+            // Geometry before pixels: empty item with crop intrinsic, then bake.
+            applyContentLayoutSize(item, st);
+            CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
+            attachDisplaySample(item, baked.display, st,
+                                CropSession::applyPixelKind(baked.multiMp));
+            m_crop.restoreEnterScale(item);
+            alignItemCenterToScene(item, cropSceneCenter);
+            // Multi-MP: soft stand-in now; pure full rematerialize after leave.
+            m_crop.queueFullRematerializeIfSoft(hostFromCache, baked.multiMp, path, sid, st);
+            if (isWorkspaceMode()) {
+                m_crop.applyCommitPlacementRotation(item);
+            }
+            relayoutAfterCropLeave(item);
+        }
+        commitItemSessionEdit(item);
+        emitCropApplyAppearance(sid, path, item, baked.display, /*hasCrop=*/true);
+        pushCropAppearanceUndo(item, CropFlash::undoCropText());
+        flashCropHud(CropFlash::applied(item->imageSize().width(), item->imageSize().height()));
         return isWorkspaceMode();
     }
     // Reset / full frame: keep full pixels; clear session crop metadata.

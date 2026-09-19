@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1576-crop-inline-apply-bake-chain.** Collapse non-full apply host/bake/commit into applyCropCommit.
+Prior: **1575**.
+
+### Change
+- `resolveApplyHostAndState` / `commitCropApplyBake` / `bakeAndCommitNonFullApply`
+  → body of `applyCropCommit` (non-full-frame path)
+- Kept multi-use: `recordSessionCrop`, `pushCropAppearanceUndo`, `cropRecordSessionId`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1576-crop-inline-apply-bake-chain.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1575-crop-inline-enter-install-chain.** Collapse enter install helpers into prepareCropModeFullImage.
 Prior: **1574**.
 
