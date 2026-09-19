@@ -65,6 +65,14 @@ public:
         dragStartStates = states;
     }
 
+    /** Mark drag slot @p i as null (item left canvas mid-drag). */
+    void nullDragItemAt(int i)
+    {
+        if (i >= 0 && i < dragItems.size()) {
+            dragItems[i] = nullptr;
+        }
+    }
+
     /** Remove null items from drag lists (item destroyed mid-drag). */
     void pruneNullItems()
     {

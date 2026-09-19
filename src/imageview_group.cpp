@@ -49,7 +49,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     for (int i = m_groupXform.dragItems.size() - 1; i >= 0; --i) {
         ImageItem *item = m_groupXform.dragItems.at(i);
         if (!item || !m_items.contains(item) || item->scene() != m_scene) {
-            m_groupXform.dragItems[i] = nullptr;
+            m_groupXform.nullDragItemAt(i);
         }
     }
     m_groupXform.pruneNullItems();
@@ -131,7 +131,7 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
     for (int i = m_groupXform.dragItems.size() - 1; i >= 0; --i) {
         ImageItem *item = m_groupXform.dragItems.at(i);
         if (!item || !m_items.contains(item) || item->scene() != m_scene) {
-            m_groupXform.dragItems[i] = nullptr;
+            m_groupXform.nullDragItemAt(i);
         }
     }
     m_groupXform.pruneNullItems();
