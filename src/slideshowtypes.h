@@ -561,6 +561,8 @@ struct SlideshowDwellState {
 
     const QString &biasPathRef() const { return biasPath; }
 
+    quint64 atlasRebuildGenerationValue() const { return atlasRebuildGeneration; }
+
     /** @return true when motion-paused flag changed. */
     bool setMotionPaused(bool on)
     {
@@ -720,6 +722,12 @@ struct SlideshowZoomBlurState {
 
     const QPixmap &underlayAt(int slot) const { return underlay[slot]; }
 
+    int viewportWidth() const { return vw; }
+
+    int viewportHeight() const { return vh; }
+
+    quint64 generationValue() const { return generation; }
+
     bool hasLastGood() const { return !lastGood.isNull(); }
 
     const QPixmap &lastGoodPixmap() const { return lastGood; }
@@ -833,6 +841,8 @@ struct SlideshowProgressHud {
     qreal cycleProgress() const { return cycleProgress01; }
 
     bool isCycleProgressValid() const { return cycleProgressValid; }
+
+    bool isProgressClockPaused() const { return progressClockPaused; }
 
     bool setSeekbarVisible(bool on)
     {

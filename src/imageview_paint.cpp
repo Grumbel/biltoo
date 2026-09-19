@@ -468,13 +468,13 @@ void ImageView::paintHudPanels(QPainter &painter)
             if (!ssPrefetchLine.isEmpty()) {
                 topLeft.append({ssPrefetchLine, false});
             }
-            if (m_perf.enabled) {
+            if (m_perf.isEnabled()) {
                 topLeft.append({
                     tr("FPS %1 · paint %2 ms · decode-win %3 ms (max %4)")
-                        .arg(m_perf.fps, 0, 'f', 1)
-                        .arg(m_perf.lastPaintUs / 1000.0, 0, 'f', 1)
-                        .arg(m_perf.lastDecodeWindowUs / 1000.0, 0, 'f', 1)
-                        .arg(m_perf.maxDecodeWindowUs / 1000.0, 0, 'f', 1),
+                        .arg(m_perf.fpsValue(), 0, 'f', 1)
+                        .arg(m_perf.lastPaintUsValue() / 1000.0, 0, 'f', 1)
+                        .arg(m_perf.lastDecodeWindowUsValue() / 1000.0, 0, 'f', 1)
+                        .arg(m_perf.maxDecodeWindowUsValue() / 1000.0, 0, 'f', 1),
                     false});
             }
             ImageItem *focus = targetItem();
@@ -542,7 +542,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                 fraction = m_ssHud.cycleProgress();
             } else if (m_ssHud.hasProgressInterval()) {
                 qint64 elapsed = m_ssHud.progressBase();
-                if (!m_ssHud.progressClockPaused
+                if (!m_ssHud.isProgressClockPaused()
                     && m_ssHud.progressElapsed.isValid()) {
                     elapsed += m_ssHud.progressElapsed.elapsed();
                 }
@@ -635,7 +635,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
 void ImageView::paintEvent(QPaintEvent *event)
 {
     // All overlays are drawn in drawForeground (single GL-safe paint path).
-    if (!m_perf.enabled) {
+    if (!m_perf.isEnabled()) {
         QGraphicsView::paintEvent(event);
         return;
     }
@@ -945,7 +945,7 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
     WorkspaceItemState st;
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_sessionId.currentId;
+        sid = m_sessionId.currentIdValue();
     }
     if (sid != kInvalidSessionImageId) {
         st = sessionAppearanceValue(sid);
