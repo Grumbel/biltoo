@@ -220,6 +220,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowPhaseState** path/image/motion-T; **ProgressHud**/Settings value
   accessors; **PageGuideSession** visibility/geometry; **ItemInteractSession**
   item/start-state accessors.
+- **SlideshowDwell**/phase atlas image accessors; **TextLayerSession** query/
+  path/region list accessors.
 
 
 ## Current pain (evidence)

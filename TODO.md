@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1474-dwell-atlas-textlayer.** Dwell atlas, phase atlas, TextLayer lists.
+Prior: **1473**. Commits 1474a–1474b (+ docs).
+
+### Commits
+1. **SlideshowDwell** / phase atlas image accessors
+2. **TextLayerSession** query, path, and region list accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled. Crop enter/apply
+still on view (larger ownership extraction). Remaining digs are mostly
+geometry math on crop.rect or surface bind pointers.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1474-dwell-atlas-textlayer.bundle HEAD
+```
+Requires tip **1473**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1473-phase-hud-settings-pageguide-interact.** Phase, HUD, Settings, PageGuide, ItemInteract.
 Prior: **1472**. Commits 1473a–1473d (+ docs).
 
