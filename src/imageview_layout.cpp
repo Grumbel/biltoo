@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "viewtransform.h"
 #include "pageguidegeometry.h"
 #include "biltoo_thread.h"
 #include "thumtoocache.h"
@@ -1426,8 +1427,8 @@ bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const Q
             item->setItemScale(1.0, 1.0);
         } else {
             // Prior intentional scale (e.g. moved from Gallery): fit uniformly.
-            const qreal s = qMin(footW / qreal(after.width()),
-                                 footH / qreal(after.height()));
+            const qreal s = ViewTransform::uniformFitScale(
+                footW, footH, qreal(after.width()), qreal(after.height()));
             if (s > 1e-6) {
                 item->setItemScale(s, s);
             }
@@ -2549,16 +2550,8 @@ QImage ImageView::renderExportImage(const QSize &pixelSize, const QRectF &source
 
     // Target rect with aspect preserved (same as QGraphicsScene::render KeepAspectRatio).
     const QRectF target(QPointF(0, 0), QSizeF(pixelSize));
-    QRectF fitted = target;
-    {
-        const qreal sx = target.width() / sourceSceneRect.width();
-        const qreal sy = target.height() / sourceSceneRect.height();
-        const qreal s = qMin(sx, sy);
-        const qreal tw = sourceSceneRect.width() * s;
-        const qreal th = sourceSceneRect.height() * s;
-        fitted = QRectF(target.center().x() - tw / 2.0,
-                        target.center().y() - th / 2.0, tw, th);
-    }
+    const QRectF fitted = ViewTransform::fitRectCentered(
+        target, sourceSceneRect.size());
 
     if (!transparentBackground) {
         painter.save();

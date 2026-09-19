@@ -73,6 +73,30 @@ inline QSize atLeast1(const QSize &s)
 
 inline int atLeast1(int v) { return qMax(1, v); }
 
+/** Uniform scale to fit content into a footprint (min of axis ratios). */
+inline qreal uniformFitScale(qreal footW, qreal footH, qreal contentW, qreal contentH)
+{
+    const qreal cw = qMax(1.0, contentW);
+    const qreal ch = qMax(1.0, contentH);
+    return qMin(footW / cw, footH / ch);
+}
+
+inline qreal uniformFitScale(const QSizeF &foot, const QSizeF &content)
+{
+    return uniformFitScale(foot.width(), foot.height(), content.width(), content.height());
+}
+
+/** Axis-aligned rect of @p content size fitted into @p target, centred. */
+inline QRectF fitRectCentered(const QRectF &target, const QSizeF &content)
+{
+    const qreal s = uniformFitScale(target.size(), content);
+    const qreal tw = content.width() * s;
+    const qreal th = content.height() * s;
+    return QRectF(target.center().x() - tw / 2.0,
+                  target.center().y() - th / 2.0, tw, th);
+}
+
+
 /** Position / span clamped to [0,1]. */
 inline qreal unitFraction(int pos, int span)
 {
