@@ -1679,6 +1679,7 @@ private:
      * so the region can grow. Returns false if the image cannot be prepared.
      */
     bool prepareCropModeFullImage(ImageItem *item);
+    bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     bool resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const;
     /** @p unorientedSource true when @p full is ImageCache/host raw (safe to bake). */
     void finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspaceAnchorScene);

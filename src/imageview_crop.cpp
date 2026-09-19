@@ -28,6 +28,36 @@
 #include <QPointer>
 #include <QMetaObject>
 
+namespace {
+
+/** Disable viewport updates for a critical section; restore and update on scope exit. */
+struct ViewportUpdateHold {
+    QWidget *viewport = nullptr;
+    bool held = false;
+
+    explicit ViewportUpdateHold(QWidget *vp)
+        : viewport(vp)
+        , held(vp && vp->updatesEnabled())
+    {
+        if (held) {
+            viewport->setUpdatesEnabled(false);
+        }
+    }
+
+    ~ViewportUpdateHold()
+    {
+        if (held && viewport) {
+            viewport->setUpdatesEnabled(true);
+            viewport->update();
+        }
+    }
+
+    ViewportUpdateHold(const ViewportUpdateHold &) = delete;
+    ViewportUpdateHold &operator=(const ViewportUpdateHold &) = delete;
+};
+
+} // namespace
+
 ImageItem *ImageView::cropSessionBoundItem() const
 {
     // Bound subject for the active crop session (IDENTITY.md).
@@ -163,31 +193,24 @@ bool ImageView::enterCropModeFromUi()
     // Workspace: remember displayed image centre so the crop frame can stay fixed.
     const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
     // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
-    if (viewport()) {
-        viewport()->setUpdatesEnabled(false);
-    }
-    if (!prepareCropModeFullImage(item)) {
-        if (viewport()) {
-            viewport()->setUpdatesEnabled(true);
+    {
+        ViewportUpdateHold paintHold(viewport());
+        if (!prepareCropModeFullImage(item)) {
+            // prepare may have set mode for fitItem then failed — restore placement
+            // before abortEnter clears the stash.
+            item->setTileLodSuppressed(false);
+            m_crop.abortEnterRestoringPlacement(item);
+            flashHud(tr("Crop"), tr("Could not load full image"));
+            return false;
         }
-        // prepare may have set mode for fitItem then failed — restore placement
-        // before abortEnter clears the stash.
-        item->setTileLodSuppressed(false);
-        m_crop.abortEnterRestoringPlacement(item);
-        flashHud(tr("Crop"), tr("Could not load full image"));
-        return false;
-    }
-    if (isWorkspaceMode()) {
-        finishWorkspaceCropEnter(item, workspaceAnchorScene);
-    }
-    // Mode already active (activateModeAfterDraft in prepare).
-    flashHud(tr("Crop mode"),
-             tr("Apply commits · Esc cancels"));
-    emit cropModeChanged(true);
-    emit statusChanged();
-    if (viewport()) {
-        viewport()->setUpdatesEnabled(true);
-        viewport()->update();
+        if (isWorkspaceMode()) {
+            finishWorkspaceCropEnter(item, workspaceAnchorScene);
+        }
+        // Mode already active (activateModeAfterDraft in prepare).
+        flashHud(tr("Crop mode"),
+                 tr("Apply commits · Esc cancels"));
+        emit cropModeChanged(true);
+        emit statusChanged();
     }
     return true;
 }
@@ -207,16 +230,25 @@ void ImageView::setCropMode(bool on)
 
 
 
+bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const
+{
+    if (!st || sid == kInvalidSessionImageId) {
+        return false;
+    }
+    if (const WorkspaceItemState *it = m_appearance.get(sid)) {
+        *st = *it;
+        return true;
+    }
+    return false;
+}
+
 bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const
 {
     // Prior crop + content flags for *this* session image only — never path map alone.
     const SessionImageId sid = CropSession::resolveSessionIdForItem(
         item, m_sessionId.currentIdValue());
-    if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
-            *app = *it;
-            return true;
-        }
+    if (loadSessionAppearance(sid, app)) {
+        return true;
     }
     if (CropSession::fillAppearanceFromItemSessionCrop(app, item)) {
         return true;
@@ -466,11 +498,8 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     bool have = false;
     const SessionImageId sid = CropSession::resolveSessionIdForItem(
         item, m_sessionId.currentIdValue());
-    if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = m_appearance.get(sid)) {
-            app = *it;
-            have = true;
-        }
+    if (loadSessionAppearance(sid, &app)) {
+        have = true;
     }
     if (!have && CropSession::fillAppearanceFromItemSessionCrop(&app, item)) {
         have = true;
@@ -871,11 +900,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
 
         WorkspaceItemState st;
         const SessionImageId sid = cropRecordSessionId(item);
-        if (sid != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = m_appearance.get(sid)) {
-                st = *app;
-            }
-        }
+        loadSessionAppearance(sid, &st);
         if (!st.hasCrop) {
             st = captureState(item);
             m_crop.seedApplyCropState(&st, item->offset(), item->imageSize());
@@ -921,10 +946,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // never composites crop pixels into the pre-crop contentRect (or the
         // reverse). fitItem still runs under m_crop.active(); it must not treat Apply
         // as draft (see fitItem cropDraft).
-        const bool holdPaint = viewport() && viewport()->updatesEnabled();
-        if (holdPaint) {
-            viewport()->setUpdatesEnabled(false);
-        }
+        ViewportUpdateHold paintHold(viewport());
         item->clearDecodedPixels();
         // Geometry before pixels: empty item with crop intrinsic, then bake.
         applyContentLayoutSize(item, st);
@@ -948,10 +970,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         } else {
             fitImageOrUpdateWorkspace(item);
         }
-        if (holdPaint) {
-            viewport()->setUpdatesEnabled(true);
-            viewport()->update();
-        }
+        // paintHold restores viewport updates on scope exit
 
         commitItemSessionEdit(item);
 
