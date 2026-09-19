@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1496-crop-chrome-private.** cropChromeButtons no longer calls private cropRectView.
+Prior: **1495**. Commits 1496a–1496b (+ docs).
+
+### Fixes
+- Free helper takes (active, cropView, viewportRect) — members call it with cropRectView()
+- cropHandleAt shares the helper
+
+### Apply
+```bash
+git pull /path/to/biltoo-1496-crop-chrome-private.bundle HEAD
+```
+Requires tip **1495** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1495-slideshow-clock-accessors.** Phase/Dwell clock Ref and generation accessors.
 Prior: **1494**. Commits 1495a–1495b (+ docs).
 
