@@ -67,10 +67,9 @@ void ImageView::setTool(Tool tool)
 
 void ImageView::setImageModeNavigationEnabled(bool on)
 {
-    if (m_sessionNav.imageModeNavEnabled == on) {
+    if (!m_sessionNav.setImageModeNav(on)) {
         return;
     }
-    m_sessionNav.imageModeNavEnabled = on;
     if (!on && m_hoverEdge != EdgeZone::GalleryReturn) {
         m_hoverEdge = EdgeZone::None;
     }
@@ -79,10 +78,9 @@ void ImageView::setImageModeNavigationEnabled(bool on)
 
 void ImageView::setGalleryReturnAvailable(bool on)
 {
-    if (m_sessionNav.galleryReturnAvailable == on) {
+    if (!m_sessionNav.setGalleryReturnAvailable(on)) {
         return;
     }
-    m_sessionNav.galleryReturnAvailable = on;
     if (!on && m_hoverEdge == EdgeZone::GalleryReturn) {
         m_hoverEdge = EdgeZone::None;
     }
@@ -91,10 +89,9 @@ void ImageView::setGalleryReturnAvailable(bool on)
 
 void ImageView::setBackgroundColor(const QColor &color)
 {
-    if (!color.isValid() || color == m_canvasBg.color) {
+    if (!m_canvasBg.setColor(color)) {
         return;
     }
-    m_canvasBg.color = color;
     setBackgroundBrush(QBrush(m_canvasBg.color));
     if (viewport()) {
         viewport()->update();

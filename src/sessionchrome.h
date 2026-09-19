@@ -48,6 +48,25 @@ struct SessionIdentity {
 struct SessionNavFlags {
     bool imageModeNavEnabled = false;
     bool galleryReturnAvailable = false;
+
+    /** @return true when the flag changed. */
+    bool setImageModeNav(bool on)
+    {
+        if (imageModeNavEnabled == on) {
+            return false;
+        }
+        imageModeNavEnabled = on;
+        return true;
+    }
+
+    bool setGalleryReturnAvailable(bool on)
+    {
+        if (galleryReturnAvailable == on) {
+            return false;
+        }
+        galleryReturnAvailable = on;
+        return true;
+    }
 };
 
 /**
