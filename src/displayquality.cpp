@@ -18,7 +18,7 @@ Tier tierOf(int longEdge)
     if (longEdge <= kSoftMaxEdge) {
         return Tier::Soft;
     }
-    if (longEdge <= 1024) {
+    if (longEdge <= kOverviewMaxEdge) {
         return Tier::Overview;
     }
     return Tier::Full;

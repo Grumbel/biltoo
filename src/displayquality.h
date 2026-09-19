@@ -21,11 +21,14 @@ constexpr int kLqipMaxEdge = 96;
 /** Soft ladder durable max (matches ThumtooCache::kGalleryLadderEdge). */
 constexpr int kSoftMaxEdge = 512;
 
+/** Overview / “high quality soft” band ceiling used by tierOf. */
+constexpr int kOverviewMaxEdge = 1024;
+
 enum class Tier {
     Blank = 0,
     Lqip = 1,       ///< ≤ kLqipMaxEdge
     Soft = 2,       ///< ≤ kSoftMaxEdge
-    Overview = 3,   ///< ≤ 1024
+    Overview = 3,   ///< ≤ kOverviewMaxEdge
     Full = 4
 };
 

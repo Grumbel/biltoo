@@ -6,12 +6,20 @@
 
 #include <QPoint>
 #include <QRect>
+#include <QtGlobal>
 
 /**
  * Pure Image-mode edge chrome geometry (prev / next / gallery return).
  * Callers still gate mode (Image vs crop/attention) before consulting this.
  */
 namespace EdgeNavPolicy {
+
+constexpr int kZoneWidthFloor = 48;
+constexpr qreal kZoneWidthFrac = 0.12;
+constexpr int kZoneHeightFloor = 40;
+constexpr qreal kZoneHeightFrac = 0.10;
+constexpr int kDefaultButtonRadius = 22;
+constexpr int kDefaultMargin = 10;
 
 enum class Zone {
     None = 0,
@@ -46,7 +54,7 @@ struct ChromeLayout {
  * Button radius is caller-owned (paint uses 22); margin is 10.
  */
 ChromeLayout chromeLayout(Zone zone, const QRect &viewport, int zoneW, int zoneH,
-                          int buttonRadius = 22, int margin = 10);
+                          int buttonRadius = kDefaultButtonRadius, int margin = kDefaultMargin);
 
 } // namespace EdgeNavPolicy
 

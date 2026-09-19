@@ -9,12 +9,12 @@ namespace EdgeNavPolicy {
 
 int zoneWidth(int viewportWidth)
 {
-    return qMax(48, static_cast<int>(viewportWidth * 0.12));
+    return qMax(kZoneWidthFloor, static_cast<int>(viewportWidth * kZoneWidthFrac));
 }
 
 int zoneHeight(int viewportHeight)
 {
-    return qMax(40, static_cast<int>(viewportHeight * 0.10));
+    return qMax(kZoneHeightFloor, static_cast<int>(viewportHeight * kZoneHeightFrac));
 }
 
 Zone zoneAt(const QPoint &viewPos, int viewportWidth, int viewportHeight,
