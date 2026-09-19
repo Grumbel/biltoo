@@ -209,7 +209,7 @@ void ImageView::refreshStatus()
         m_statusRefreshTimer->setInterval(HudAppearance::kStatusRefreshMs);
         connect(m_statusRefreshTimer, &QTimer::timeout, this, [this]() {
             emit statusChanged();
-            if ((m_hudPrefs.visible || m_hudFlash.visible || m_ssHud.isPausedHud())
+            if ((m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_ssHud.isPausedHud())
                 && viewport()) {
                 viewport()->update();
             }
@@ -567,13 +567,13 @@ void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
             m_hudFlashTimer->start(HudFlash::kIdentityPulseMs);
         }
     }
-    if (!(changed || m_hudPrefs.visible || m_hudFlash.visible || m_hudFlash.identityPulse
+    if (!(changed || m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_hudFlash.isIdentityPulse()
           || m_ssHud.isPausedHud())) {
         return;
     }
     // Gallery selection already invalidates the tile; a full viewport()->update()
     // here forced every image through the GL path and felt like lag on click.
-    if (isGalleryMode() && !m_hudPrefs.visible && !m_hudFlash.identityPulse) {
+    if (isGalleryMode() && !m_hudPrefs.isVisible() && !m_hudFlash.isIdentityPulse()) {
         return;
     }
     if (viewport()) {
@@ -749,7 +749,7 @@ void ImageView::setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs)
     }
     m_ssHud.setTimelineProgress(elapsedMs, totalMs);
     // Progress bar needs sub-second updates while the extended HUD is pinned.
-    if (m_hudPrefs.visible && viewport()) {
+    if (m_hudPrefs.isVisible() && viewport()) {
         viewport()->update();
     }
 }

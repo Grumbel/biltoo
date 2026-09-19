@@ -248,7 +248,7 @@ ImageView::ImageView(QWidget *parent)
             });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
-        if (m_hudPrefs.visible || m_hudFlash.visible || m_ssHud.isPausedHud()) {
+        if (m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_ssHud.isPausedHud()) {
             viewport()->update();
         }
     });
@@ -287,7 +287,7 @@ ImageView::ImageView(QWidget *parent)
             if (viewport()) {
                 viewport()->update();
             }
-        } else if (m_hudPrefs.visible && m_ssHud.progressIntervalMs > 0) {
+        } else if (m_hudPrefs.isVisible() && m_ssHud.progressIntervalMs > 0) {
             if (viewport()) {
                 viewport()->update();
             }

@@ -361,8 +361,8 @@ void ImageView::paintHudPanels(QPainter &painter)
     const QString ssPrefetchLine = slideshowPrefetchHudLine();
     // Loading · … only in the extended (pinned) HUD — not as a free-floating
     // chip during slideshow or normal Image browsing.
-    const QString loadingLine = m_hudPrefs.visible ? loadingStatusHudLine() : QString();
-    if (m_crop.active() || m_hudPrefs.visible || m_hudFlash.visible || m_hudFlash.identityPulse
+    const QString loadingLine = m_hudPrefs.isVisible() ? loadingStatusHudLine() : QString();
+    if (m_crop.active() || m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_hudFlash.isIdentityPulse()
         || m_ssHud.isPausedHud() || gallerySizeResolveActive()
         || !m_centreProgress.title.isEmpty()
         || !ssPrefetchLine.isEmpty()
@@ -454,13 +454,13 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("Resolving sizes…"), true},
                        {tr("%1 / %2").arg(done).arg(m_gallerySizeResolve.total()), false}},
                       0, 0, false, false, true);
-        } else if (m_hudFlash.visible && !m_hudFlash.action.isEmpty()) {
+        } else if (m_hudFlash.isVisible() && m_hudFlash.hasAction()) {
             QString actionLine = m_hudFlash.action;
             if (!m_hudFlash.detail.isEmpty()) {
                 actionLine += QLatin1Char(' ') + m_hudFlash.detail;
             }
             drawPanel({{actionLine, true}}, margin, margin, false, false);
-        } else if (m_hudPrefs.visible || m_hudFlash.identityPulse) {
+        } else if (m_hudPrefs.isVisible() || m_hudFlash.isIdentityPulse()) {
             QList<HudLine> topLeft;
             if (!loadingLine.isEmpty()) {
                 topLeft.append({loadingLine, true});
@@ -500,18 +500,18 @@ void ImageView::paintHudPanels(QPainter &painter)
         // user navigation. Not during pure action flashes (slideshow start, …)
         // and not on automatic slideshow advance (pulseIdentity=false).
         const QString badge = sessionBadgeText();
-        if (!badge.isEmpty() && (m_hudPrefs.visible || m_hudFlash.identityPulse)) {
+        if (!badge.isEmpty() && (m_hudPrefs.isVisible() || m_hudFlash.isIdentityPulse())) {
             drawPanel({{badge, true}}, 0, margin, true, false);
         }
 
         // Bottom: filename — pinned HUD, identity pulse after user nav, or gallery hover
-        if (m_hudPrefs.visible || m_hudFlash.identityPulse || !m_gallery.hoverPath().isEmpty()) {
+        if (m_hudPrefs.isVisible() || m_hudFlash.isIdentityPulse() || !m_gallery.hoverPath().isEmpty()) {
             QList<HudLine> bottom;
             const QString name = hudFileName();
             if (!name.isEmpty()) {
                 bottom.append({name, true});
             }
-            if (m_hudPrefs.visible) {
+            if (m_hudPrefs.isVisible()) {
                 const QString tech = statusText();
                 if (!tech.isEmpty() && tech != name) {
                     bottom.append({tech, false});
@@ -530,7 +530,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
     // plus elapsed / total and remaining. Driven by setSlideshowTimeline from
     // the host clock. Falls back to per-interval dwell line if no timeline.
     if (m_ssHud.isProgressActive()
-        && (m_hudPrefs.visible || m_ssHud.isSeekbarVisible() || m_ssHud.isSeekDragging())) {
+        && (m_hudPrefs.isVisible() || m_ssHud.isSeekbarVisible() || m_ssHud.isSeekDragging())) {
         const int viewW = viewport()->width();
         const int viewH = viewport()->height();
         if (viewW > 0 && viewH > 0) {
@@ -1223,7 +1223,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
         paintGallerySelectionFrames(painter, rect);
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
-    if (isGalleryMode() && !m_hudPrefs.visible && !m_hudFlash.visible && !m_hudFlash.identityPulse
+    if (isGalleryMode() && !m_hudPrefs.isVisible() && !m_hudFlash.isVisible() && !m_hudFlash.isIdentityPulse()
         && !m_ssHud.isPausedHud() && !gallerySizeResolveActive()
         && m_centreProgress.title.isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_crop.active()

@@ -58,6 +58,12 @@ struct HudFlash {
         action.clear();
         detail.clear();
     }
+
+    bool isVisible() const { return visible; }
+
+    bool isIdentityPulse() const { return identityPulse; }
+
+    bool hasAction() const { return !action.isEmpty(); }
 };
 
 #endif // HUDFLASH_H

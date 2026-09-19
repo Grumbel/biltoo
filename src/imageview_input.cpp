@@ -834,7 +834,7 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            if (m_hudPrefs.visible || m_hudFlash.visible) {
+            if (m_hudPrefs.isVisible() || m_hudFlash.isVisible()) {
                 emit statusChanged();
             }
             return true;
@@ -857,7 +857,7 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
                 emit galleryItemFocused(hit->path());
             }
             event->accept();
-            if (m_hudPrefs.visible || m_hudFlash.visible) {
+            if (m_hudPrefs.isVisible() || m_hudFlash.isVisible()) {
                 emit statusChanged();
             }
             return true;

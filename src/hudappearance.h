@@ -57,6 +57,8 @@ struct HudAppearance {
         return true;
     }
 
+    bool isVisible() const { return visible; }
+
     bool setTextColor(const QColor &c)
     {
         if (!c.isValid() || c == textColor) {
