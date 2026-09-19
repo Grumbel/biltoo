@@ -504,7 +504,7 @@ public:
 
     /** Workspace: show a paper-sized frame (scene units) for print layout. */
     void setPageGuideVisible(bool on);
-    bool pageGuideVisible() const { return m_pageGuide.visible; }
+    bool pageGuideVisible() const { return m_pageGuide.isVisible(); }
     /** Update guide size from a printer page layout (millimetres → scene px). */
     void setPageGuideFromPrinter(const QPrinter &printer);
     /** Size page guide to live content bounds (+ margin); shows the guide. */
@@ -861,17 +861,17 @@ public:
     void setSlideshowTransition(SlideshowTransition kind);
     SlideshowTransition slideshowTransition() const { return m_ssSettings.transition; }
     void setSlideshowTransitionDurationMs(int ms);
-    int slideshowTransitionDurationMs() const { return m_ssSettings.transitionDurationMs; }
+    int slideshowTransitionDurationMs() const { return m_ssSettings.transitionDuration(); }
     /** Clear residual transition overlay state (safe during pure-phase show). */
     void cancelSlideshowTransition();
 
     void setSlideshowMotion(SlideshowMotion mode);
-    SlideshowMotion slideshowMotion() const { return m_ssSettings.motion; }
+    SlideshowMotion slideshowMotion() const { return m_ssSettings.currentMotion(); }
     void setPanZoomFactor(qreal factor);
-    qreal panZoomFactor() const { return m_ssSettings.panZoomFactor; }
+    qreal panZoomFactor() const { return m_ssSettings.currentPanZoomFactor(); }
 
     void setSlideshowZoom(SlideshowZoom mode);
-    SlideshowZoom slideshowZoom() const { return m_ssSettings.zoom; }
+    SlideshowZoom slideshowZoom() const { return m_ssSettings.currentZoom(); }
 
     void setSlideshowLetterboxFill(SlideshowLetterboxFill mode);
     SlideshowLetterboxFill slideshowLetterboxFill() const { return m_ssSettings.letterboxFill; }
