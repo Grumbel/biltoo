@@ -733,6 +733,21 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
     return false;
 }
 
+
+void ImageView::installRestoredCropPixelsFromFull(ImageItem *item, const WorkspaceItemState &app,
+                                                  SessionImageId sid, const QImage &full)
+{
+    if (!tryRematerializeFromHost(item, app)) {
+        installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
+        if (!ContentXform::equal(
+                item->hasAppliedContentXform() ? item->appliedContentXform()
+                                               : ContentXform::Value{},
+                ContentXform::Value::fromState(app))) {
+            rematerializeItemContent(item, app);
+        }
+    }
+}
+
 void ImageView::installRestoredCropPixels(ImageItem *item, const WorkspaceItemState &app,
                                           SessionImageId sid, const QImage &full)
 {
@@ -740,19 +755,11 @@ void ImageView::installRestoredCropPixels(ImageItem *item, const WorkspaceItemSt
         return;
     }
     CropSession::applyItemPlacementFromState(item, app, isImageMode());
-    if (!full.isNull()) {
-        if (!tryRematerializeFromHost(item, app)) {
-            installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
-            if (!ContentXform::equal(
-                    item->hasAppliedContentXform() ? item->appliedContentXform()
-                                                   : ContentXform::Value{},
-                    ContentXform::Value::fromState(app))) {
-                rematerializeItemContent(item, app);
-            }
-        }
-    } else {
+    if (full.isNull()) {
         rematerializeItemContent(item, app);
+        return;
     }
+    installRestoredCropPixelsFromFull(item, app, sid, full);
 }
 
 void ImageView::restoreSessionCropAppearance(ImageItem *item)

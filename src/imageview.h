@@ -1813,6 +1813,8 @@ private:
     /** Cancel path: put the session crop (if any) back on the live item. */
     bool loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
                                     SessionImageId *sidOut) const;
+    void installRestoredCropPixelsFromFull(ImageItem *item, const WorkspaceItemState &app,
+                                           SessionImageId sid, const QImage &full);
     void installRestoredCropPixels(ImageItem *item, const WorkspaceItemState &app,
                                    SessionImageId sid, const QImage &full);
     void restoreSessionCropAppearance(ImageItem *item);
