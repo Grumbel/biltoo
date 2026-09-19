@@ -8,6 +8,7 @@
 #include <QString>
 
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <vector>
 
@@ -107,6 +108,11 @@ void TileLodRegistry::trim_idle_locked()
     }
     // Dropping the entry destroys ThumtooTileSource (epoch bump) and the
     // TileMemoryCache; in-flight completions become no-ops via session inbox.
+    if (const char* td = std::getenv("BILTOO_TILE_DEBUG");
+        td && td[0] && td[0] != '0') {
+      std::fprintf(stderr, "biltoo/tile-reg: trim idle path=%s\n", key.c_str());
+      std::fflush(stderr);
+    }
     m_by_path.erase(key);
   }
 }
