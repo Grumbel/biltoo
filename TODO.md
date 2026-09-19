@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1565-crop-includes-emit-appearance.** Trim unused crop includes; emit Apply appearance in appearance TU.
+Prior: **1564**.
+
+### Change
+- Drop unused includes from enter/apply TUs
+- `pickCropApplyAppearanceImage` / `emitCropApplyAppearance` → `imageview_appearance.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1565-crop-includes-emit-appearance.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1564-crop-locks-shared.** Draft locks + PathRaster cancel live in imageview_crop.cpp.
 Prior: **1563**.
 

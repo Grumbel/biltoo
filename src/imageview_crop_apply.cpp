@@ -5,15 +5,11 @@
 
 #include "imageview.h"
 #include "cropappearancecommand.h"
-#include "croppathraster.h"
 #include "viewportupdatehold.h"
 #include "cropflash.h"
 #include "cropdebug.h"
-#include "cropgeometry.h"
 #include "imageitem.h"
 #include "sessionappearance.h"
-#include "contentxform.h"
-#include "imagecache.h"
 
 #include <QUndoStack>
 
@@ -196,38 +192,6 @@ void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
     attachDisplaySample(item, display, st, CropSession::applyPixelKind(multiMp));
     m_crop.restoreEnterScale(item);
     alignItemCenterToScene(item, cropSceneCenter);
-}
-
-
-QImage ImageView::pickCropApplyAppearanceImage(ImageItem *item,
-                                               const QImage &preferredDisplay) const
-{
-    // Prefer the crop bake just materialized when provided — not displayImage(),
-    // which can still be pre-crop if soft attach was rejected.
-    if (!preferredDisplay.isNull()) {
-        return preferredDisplay;
-    }
-    if (item) {
-        return sessionAppearanceImage(item);
-    }
-    return {};
-}
-
-void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
-                                           ImageItem *item, const QImage &preferredDisplay,
-                                           bool hasCrop)
-{
-    if (sid == kInvalidSessionImageId) {
-        return;
-    }
-    const QImage appearance = pickCropApplyAppearanceImage(item, preferredDisplay);
-    if (appearance.isNull()) {
-        return;
-    }
-    if (hasCrop) {
-        emit sessionAppearanceChanged(sid, path, appearance);
-    }
-    emit sessionCropApplied(sid, path, appearance, hasCrop);
 }
 
 

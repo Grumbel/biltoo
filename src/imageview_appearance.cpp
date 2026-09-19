@@ -292,3 +292,35 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     relayoutAfterAppearanceApply(item);
 }
 
+QImage ImageView::pickCropApplyAppearanceImage(ImageItem *item,
+                                               const QImage &preferredDisplay) const
+{
+    // Prefer the crop bake just materialized when provided — not displayImage(),
+    // which can still be pre-crop if soft attach was rejected.
+    if (!preferredDisplay.isNull()) {
+        return preferredDisplay;
+    }
+    if (item) {
+        return sessionAppearanceImage(item);
+    }
+    return {};
+}
+
+void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
+                                           ImageItem *item, const QImage &preferredDisplay,
+                                           bool hasCrop)
+{
+    if (sid == kInvalidSessionImageId) {
+        return;
+    }
+    const QImage appearance = pickCropApplyAppearanceImage(item, preferredDisplay);
+    if (appearance.isNull()) {
+        return;
+    }
+    if (hasCrop) {
+        emit sessionAppearanceChanged(sid, path, appearance);
+    }
+    emit sessionCropApplied(sid, path, appearance, hasCrop);
+}
+
+

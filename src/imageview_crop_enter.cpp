@@ -5,15 +5,12 @@
 // docs/CROP_MODE.md / IDENTITY.md
 
 #include "imageview.h"
-#include "croppathraster.h"
 #include "viewportupdatehold.h"
 #include "cropflash.h"
 #include "cropdebug.h"
 #include "cropgeometry.h"
-#include "placementlinear.h"
 #include "imagecache.h"
 #include "imageitem.h"
-#include "sessionappearance.h"
 #include "contentxform.h"
 
 void ImageView::finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspaceAnchorScene)
