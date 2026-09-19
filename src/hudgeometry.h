@@ -142,6 +142,21 @@ inline void accumulateLineSize(int *textW, int *textH, const QFontMetrics &m,
     *textH += qMax(m.height(), br.height());
 }
 
+/** Filled progress strip width for fraction in [0,1]; at least 1 when fraction > 0. */
+inline int progressFillWidth(qreal fraction, int viewW)
+{
+    if (fraction <= 0.0 || viewW <= 0) {
+        return 0;
+    }
+    return qMax(1, int(qRound(fraction * qreal(viewW))));
+}
+
+/** Dwell line vs hover seekbar thickness (viewport CSS px). */
+inline int progressBarHeight(bool seekbarVisible)
+{
+    return seekbarVisible ? 6 : 2;
+}
+
 } // namespace HudGeometry
 
 #endif // HUDGEOMETRY_H

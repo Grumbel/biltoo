@@ -556,10 +556,10 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
             painter.setBrush(track);
             // Thin dwell/session line when HUD pinned; thicker mpv seekbar when
             // the cursor is in the bottom hover zone.
-            const int barH = m_ssHud.seekbarVisible ? 6 : 2;
+            const int barH = HudGeometry::progressBarHeight(m_ssHud.seekbarVisible);
             painter.drawRect(0, viewH - barH, viewW, barH);
             if (fraction > 0.0) {
-                const int barW = qMax(1, int(qRound(fraction * viewW)));
+                const int barW = HudGeometry::progressFillWidth(fraction, viewW);
                 painter.setBrush(c);
                 painter.drawRect(0, viewH - barH, barW, barH);
             }
