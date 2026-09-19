@@ -190,7 +190,7 @@ bool ImageView::enterCropModeFromUi()
         // the item stays axis-aligned for editing.
         if (qAbs(m_crop.rotation) < 0.05
             && qAbs(m_crop.stashedPlacementRotation) > 0.05) {
-            m_crop.rotation = m_crop.stashedPlacementRotation;
+            m_crop.setRotation(m_crop.stashedPlacementRotation);
             while (m_crop.rotation > 180.0) {
                 m_crop.rotation -= 360.0;
             }
@@ -463,7 +463,7 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
         // size differs from the size at record time — same rule as applyCrop.
         const QRect prior = SessionAppearance::scaleCropRect(
             priorCrop.normalized(), app.cropSourceSize, sz);
-        m_crop.rotation = haveApp ? app.cropRotation : 0.0;
+        m_crop.setRotation(haveApp ? app.cropRotation : 0.0);
         if (prior.width() <= 1 || prior.height() <= 1) {
             qCritical("initCropRect: prior crop scaled to %dx%d (stored %dx%d "
                       "sourceSize %dx%d live imageSize %dx%d) — draft will be 1×1",
@@ -477,8 +477,8 @@ void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const Workspace
             // Do not mirror for contentHFlip/VFlip: content bake / materialize already
             // put pixels in content-oriented space and the stored rect is in
             // that space. Re-mirroring shifted the frame on re-entry.
-            m_crop.rect = QRectF(prior.x() + off.x(), prior.y() + off.y(),
-                                prior.width(), prior.height());
+            m_crop.setRect(QRectF(prior.x() + off.x(), prior.y() + off.y(),
+                                prior.width(), prior.height()));
             // Expand is not persisted. Detect both axis-aligned overflow and
             // rotated-corner overflow so ensureCropRectValid does not translate
             // a previously applied rotated draft to a new centre.
@@ -803,11 +803,11 @@ void ImageView::applyAutoCrop()
 
     const qreal invSx = ContentXform::invAxisScale(cr.width(), src.width());
     const qreal invSy = ContentXform::invAxisScale(cr.height(), src.height());
-    m_crop.rect = QRectF(cr.left() + trimmed.x() * invSx,
+    m_crop.setRect(QRectF(cr.left() + trimmed.x() * invSx,
                         cr.top() + trimmed.y() * invSy,
                         trimmed.width() * invSx,
-                        trimmed.height() * invSy);
-    m_crop.rotation = 0.0;
+                        trimmed.height() * invSy));
+    m_crop.setRotation(0.0);
     m_crop.setAllowExpand(false);
     ensureCropRectValid();
     if (viewport()) {
