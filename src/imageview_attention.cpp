@@ -282,11 +282,11 @@ void ImageView::attentionCommitSelectionMove()
 {
     if (m_attention.isGestureActive()) {
         const QVector<QPointF> after = attentionPointsForTarget();
-        pushAttentionPointsUndo(m_attention.gestureBefore, after,
+        pushAttentionPointsUndo(m_attention.gestureBeforeRef(), after,
                                 tr("Edit attention points"));
     }
     m_attention.clearGesture();
-    m_attention.gestureBefore.clear();
+    m_attention.gestureBeforeMutable().clear();
     m_attention.dragStartPtsRef().clear();
 }
 

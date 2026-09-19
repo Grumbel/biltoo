@@ -181,6 +181,9 @@ public:
     QVector<int> selected;
     QVector<QPointF> dragStartPts;
     QPoint dragOriginView;
+    const QVector<QPointF> &gestureBeforeRef() const { return gestureBefore; }
+    QVector<QPointF> &gestureBeforeMutable() { return gestureBefore; }
+
     QVector<QPointF> gestureBefore;
     bool gestureActive = false;
     bool draftValid = false;
