@@ -161,7 +161,7 @@ void ImageView::paintTextRubberBandOverlay(QPainter &painter)
 
 void ImageView::paintWorkspaceViewportChrome(QPainter &painter)
 {
-    if (!m_crop.active() && isWorkspaceMode() && m_scene) {
+    if (!m_cropCtrl.session().active() && isWorkspaceMode() && m_scene) {
         QList<ImageItem *> selected;
         for (QGraphicsItem *gi : m_scene->selectedItems()) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
@@ -325,7 +325,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
 {
     // Empty session: invite the user to open or drop images.
     // Suppress while centre progress is active (archive expand / size resolve).
-    if (m_items.isEmpty() && !hasClassicPath() && !m_crop.active()
+    if (m_items.isEmpty() && !hasClassicPath() && !m_cropCtrl.session().active()
         && m_centreProgress.titleRef().isEmpty() && !gallerySizeResolveActive()) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
@@ -394,7 +394,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     // Loading · … only in the extended (pinned) HUD — not as a free-floating
     // chip during slideshow or normal Image browsing.
     const QString loadingLine = m_hudPrefs.isVisible() ? loadingStatusHudLine() : QString();
-    if (m_crop.active() || m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_hudFlash.isIdentityPulse()
+    if (m_cropCtrl.session().active() || m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_hudFlash.isIdentityPulse()
         || m_slideshow.hud().isPausedHud() || gallerySizeResolveActive()
         || !m_centreProgress.titleRef().isEmpty()
         || !ssPrefetchLine.isEmpty()
@@ -463,7 +463,7 @@ void ImageView::paintHudPanels(QPainter &painter)
 
         // Top-left: crop mode cue (persistent while active), slideshow paused
         // cue (persistent until resume/stop), or transient flash.
-        if (m_crop.active()) {
+        if (m_cropCtrl.session().active()) {
             drawPanel({{tr("Crop mode"), true},
                        {tr("Handles · Reset · Apply · Esc"), false}},
                       margin, margin, false, false);
@@ -642,10 +642,10 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     // Workspace chrome in *viewport* device pixels (not scene drawForeground).
     // Painting here keeps handles a constant on-screen size under any view or
     // item scale — the same coordinate space as edge affordances and the HUD.
-    if (m_crop.active()) {
+    if (m_cropCtrl.session().active()) {
         paintCropOverlay(painter);
     }
-    if (m_attention.active()) {
+    if (m_attentionCtrl.session().active()) {
         paintAttentionOverlay(painter);
     }
     paintWorkspaceViewportChrome(painter);
@@ -655,7 +655,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     paintSlideshowLetterboxComposite(painter);
     paintEmptySessionInvite(painter);
 
-    if (!m_crop.active() && !m_attention.active() && m_hoverEdge != EdgeZone::None && isImageMode()
+    if (!m_cropCtrl.session().active() && !m_attentionCtrl.session().active() && m_hoverEdge != EdgeZone::None && isImageMode()
         && (m_sessionNav.isImageModeNavEnabled() || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
@@ -1309,7 +1309,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     if (isGalleryMode() && !m_hudPrefs.isVisible() && !m_hudFlash.isVisible() && !m_hudFlash.isIdentityPulse()
         && !m_slideshow.hud().isPausedHud() && !gallerySizeResolveActive()
         && m_centreProgress.titleRef().isEmpty()
-        && m_hoverEdge == EdgeZone::None && !m_crop.active()
+        && m_hoverEdge == EdgeZone::None && !m_cropCtrl.session().active()
         && !m_slideshow.dwell().isMotionActive() 
         ) {
         return;

@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1600-phase6-tier2a-crop-attention-state.** Phase 6 Tier 2a: CropController + AttentionController own session state; drop unused CropAppearanceCommand friend.
+Prior: **1599**.
+
+### Change
+- `CropController` / `AttentionController` own `CropSession` / `AttentionSession`
+- `ImageView::m_cropCtrl` / `m_attentionCtrl`; all former `m_crop` / `m_attention` refs rewritten
+- Remove `friend class CropAppearanceCommand` (uses public `applyCropAppearance`)
+- Orchestration methods still on ImageView (Tier 2b)
+
+### Remaining friends
+- `friend class SlideshowController` only (Host surface later)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1600-phase6-tier2a-crop-attention-state.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1599-fix-tier1-compile.** Fix Tier 1b compile: public requestEscalateClimb; mutable zoomBlur const access; pad colour from view.
 Prior: **1598**.
 

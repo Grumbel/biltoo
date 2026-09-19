@@ -705,8 +705,11 @@ the stop line when Tier 4 lands.
   (status/HUD temporarily in `imageview_status.cpp` pending Tier 3 HudModel).
   Narrow `SlideshowHost` (replace friend) still open as 1c / follow-up.
 - Tier 1: **done** for exit metrics (view.cpp ≤900, no m_ss* on ImageView);
-  Host-surface cleanup remains.
-- Tier 2: _pending_
+  Host-surface cleanup remains (`friend SlideshowController`).
+- Tier 2a: **done** (biltoo-1600) — `CropController` / `AttentionController` own
+  `CropSession` / `AttentionSession`; removed unused `friend CropAppearanceCommand`
+  (`applyCropAppearance` is already public). Method move + empty friend list = 2b.
+- Tier 2: _in progress_ (2a state ownership)
 - Tier 3: _pending_
 - Tier 4: _pending_
 - Tier 5: _pending_

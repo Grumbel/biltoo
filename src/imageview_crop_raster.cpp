@@ -58,21 +58,21 @@ void ImageView::requestCropFullRaster(const QString &path)
 
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
 {
-    ImageItem *item = m_crop.target();
+    ImageItem *item = m_cropCtrl.session().target();
     if (!item || item->path() != path) {
-        if (m_crop.acceptsFullRasterUpgrade(path)) {
-            m_crop.clearAwaitingFull();
+        if (m_cropCtrl.session().acceptsFullRasterUpgrade(path)) {
+            m_cropCtrl.session().clearAwaitingFull();
         }
         return;
     }
     const bool covers = sampleCoversNativeLogical(path, image);
-    if (!m_crop.shouldAcceptFullRasterUpgrade(path, image, item, covers)) {
+    if (!m_cropCtrl.session().shouldAcceptFullRasterUpgrade(path, image, item, covers)) {
         return;
     }
     // Cache for Apply accuracy; do not reinstall mid-draft (stalls interaction).
     if (!path.isEmpty() && !image.isNull()) {
         ImageCache::put(path, image);
     }
-    m_crop.clearAwaitingFull();
+    m_cropCtrl.session().clearAwaitingFull();
     flashCropHud(CropFlash::fullReady());
 }

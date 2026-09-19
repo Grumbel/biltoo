@@ -11,11 +11,11 @@
 
 void ImageView::paintCropOverlay(QPainter &painter)
 {
-    if (!m_crop.active()) {
+    if (!m_cropCtrl.session().active()) {
         return;
     }
     ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.hasValidRect()) {
+    if (!item || !m_cropCtrl.session().hasValidRect()) {
         return;
     }
     ensureCropRectValid();
@@ -30,20 +30,20 @@ void ImageView::paintCropOverlay(QPainter &painter)
     }
     CropGeometry::paintFrame(painter, cropViewPoly);
     CropGeometry::paintResizeHandles(painter, cropViewPoly,
-        [this](CropHandle h) { return m_crop.isHandleHot(h); });
+        [this](CropHandle h) { return m_cropCtrl.session().isHandleHot(h); });
 
-    const bool rotateHot = (m_crop.currentHoverHandle() == CropHandle::Rotate
-                            || m_crop.currentActiveHandle() == CropHandle::Rotate);
+    const bool rotateHot = (m_cropCtrl.session().currentHoverHandle() == CropHandle::Rotate
+                            || m_cropCtrl.session().currentActiveHandle() == CropHandle::Rotate);
     CropGeometry::paintRotateKnobs(painter, cropViewPoly, rotateHot);
-    const bool moveHot = (m_crop.currentHoverHandle() == CropHandle::Move
-                          || m_crop.currentActiveHandle() == CropHandle::Move);
+    const bool moveHot = (m_cropCtrl.session().currentHoverHandle() == CropHandle::Move
+                          || m_cropCtrl.session().currentActiveHandle() == CropHandle::Move);
     CropGeometry::paintMoveGrip(painter, cropViewPoly, moveHot);
 
     // Controls: outside below crop when possible, inside if off-screen.
     // Same design language as Workspace chrome (HANDLES.md).
     const CropGeometry::CropButtonLayout chrome = cropChromeLayout();
     for (const CropGeometry::ChromePaintItem &chromeItem :
-         CropGeometry::chromePaintItems(chrome, m_crop.isAllowExpand())) {
+         CropGeometry::chromePaintItems(chrome, m_cropCtrl.session().isAllowExpand())) {
         if (chromeItem.rect.isEmpty()) {
             continue;
         }
@@ -69,11 +69,11 @@ void ImageView::paintCropOverlay(QPainter &painter)
         }
         CropGeometry::paintTextButton(
             painter, chromeItem.rect,
-            m_crop.currentHoverHandle() == chromeItem.handle, label, chromeItem.role,
+            m_cropCtrl.session().currentHoverHandle() == chromeItem.handle, label, chromeItem.role,
             chromeItem.toggled);
     }
 
-    const QSize cropSz = m_crop.draftPixelSize();
+    const QSize cropSz = m_cropCtrl.session().draftPixelSize();
     CropGeometry::paintSizeBadge(painter, cropView, cropSz.width(), cropSz.height());
 
     painter.restore();

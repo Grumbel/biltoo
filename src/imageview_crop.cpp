@@ -14,11 +14,11 @@
 ImageItem *ImageView::cropSessionBoundItem() const
 {
     // Bound subject for the active crop session (IDENTITY.md).
-    if (m_crop.target()) {
-        return m_crop.target();
+    if (m_cropCtrl.session().target()) {
+        return m_cropCtrl.session().target();
     }
-    if (m_crop.hasTargetId()) {
-        return findItemBySessionId(m_crop.targetIdValue());
+    if (m_cropCtrl.session().hasTargetId()) {
+        return findItemBySessionId(m_cropCtrl.session().targetIdValue());
     }
     return nullptr;
 }
@@ -28,7 +28,7 @@ ImageItem *ImageView::cropTargetItem() const
 {
     // Crop session is bound to one subject for its entire lifetime. Never
     // retarget from selection while the draft is active.
-    if (m_crop.active() || m_crop.isEnterValid()) {
+    if (m_cropCtrl.session().active() || m_cropCtrl.session().isEnterValid()) {
         if (ImageItem *bound = cropSessionBoundItem()) {
             return bound;
         }
@@ -57,7 +57,7 @@ bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
         return false;
     }
     // Pointer/id lock on CropSession, then path lock (draftPath / targetId resolve).
-    return m_crop.locksItem(item) || isCropDraftLockedPath(item->path());
+    return m_cropCtrl.session().locksItem(item) || isCropDraftLockedPath(item->path());
 }
 
 bool ImageView::isCropDraftLockedPath(const QString &path) const
@@ -66,7 +66,7 @@ bool ImageView::isCropDraftLockedPath(const QString &path) const
     if (ImageItem *bound = cropSessionBoundItem()) {
         boundPath = bound->path();
     }
-    return m_crop.locksResolvedPath(path, boundPath);
+    return m_cropCtrl.session().locksResolvedPath(path, boundPath);
 }
 
 void ImageView::cancelPathRasterForCrop(const QString &path)
@@ -102,7 +102,7 @@ void ImageView::ensureCropRectValid()
     if (!item) {
         return;
     }
-    m_crop.ensureRectValid(item->contentRect());
+    m_cropCtrl.session().ensureRectValid(item->contentRect());
 }
 
 void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
@@ -119,7 +119,7 @@ void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnch
 
 void ImageView::toggleCropMode()
 {
-    setCropMode(!m_crop.active());
+    setCropMode(!m_cropCtrl.session().active());
 }
 
 
@@ -133,7 +133,7 @@ void ImageView::requestCropViewportUpdate()
 void ImageView::applyAutoCrop()
 {
     ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.active()) {
+    if (!item || !m_cropCtrl.session().active()) {
         return;
     }
     const QImage src = CropSession::pickAutoCropSourcePixels(item);
@@ -141,7 +141,7 @@ void ImageView::applyAutoCrop()
         return;
     }
     ensureCropRectValid();
-    if (!m_crop.tryPaddedAutoTrim(item->contentRect(), src)) {
+    if (!m_cropCtrl.session().tryPaddedAutoTrim(item->contentRect(), src)) {
         return;
     }
     requestCropViewportUpdate();

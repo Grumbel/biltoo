@@ -16,7 +16,7 @@
 void ImageView::applyCrop()
 {
     // Soft draft is valid — crop is content-space. Do not wait on multi-MP load.
-    m_crop.clearAwaitingFull();
+    m_cropCtrl.session().clearAwaitingFull();
     leaveCropModeInternal(true);
 }
 
@@ -29,7 +29,7 @@ SessionImageId ImageView::cropRecordSessionId(const ImageItem *item) const
 {
     return CropSession::sessionIdForRecord(
         item,
-        m_crop.hasTargetId() ? m_crop.targetIdValue() : kInvalidSessionImageId,
+        m_cropCtrl.session().hasTargetId() ? m_cropCtrl.session().targetIdValue() : kInvalidSessionImageId,
         isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
 }
 
@@ -42,7 +42,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     // Crop mode always edits the full on-disk image — store absolute source rect.
     // Map through active flips so cropRect is in unflipped source space
     // (cropToLocalRect bakes flips into pixels and clears the flags).
-    CropSession::RecordGeometry rec = m_crop.computeRecordGeometry(
+    CropSession::RecordGeometry rec = m_cropCtrl.session().computeRecordGeometry(
         localCrop, item->contentRect(), item->offset(),
         item->imageSize().width(), item->imageSize().height(),
         item->itemHFlip(), item->itemVFlip());
@@ -63,7 +63,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     CropSession::mergeOrientFromAppearance(&s, orientApp);
     s.sessionId = sid;
     s.sessionIndex = item->sessionIndex();
-    m_crop.applyRecordToState(&s, rec, cropBasis);
+    m_cropCtrl.session().applyRecordToState(&s, rec, cropBasis);
     CropDebug::recordCrop(cropBasis, item->imageSize(), rec.sourceRect);
     s.path = item->path();
     item->setSessionCrop(s.hasCrop, s.cropRect);
@@ -73,7 +73,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 
 void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 {
-    if (!m_undoStack || !item || !m_crop.isEnterValid()) {
+    if (!m_undoStack || !item || !m_cropCtrl.session().isEnterValid()) {
         return;
     }
     WorkspaceItemState afterSt = captureState(item);
@@ -81,8 +81,8 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
     // captureState pulls cropRotation from appearance
     // (recordSessionCrop + commitItemSessionEdit).
     m_undoStack->push(new CropAppearanceCommand(
-        this, item, m_crop.enterSourceRef(), item->sourceImage().copy(),
-        m_crop.enterStateRef(), afterSt, text));
+        this, item, m_cropCtrl.session().enterSourceRef(), item->sourceImage().copy(),
+        m_cropCtrl.session().enterStateRef(), afterSt, text));
 }
 
 
@@ -92,8 +92,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
     // angle (non-full-frame commit).
     ensureCropRectValid();
     const QRectF full = item->contentRect();
-    recordSessionCrop(item, m_crop.draftRectOr(full));
-    if (!m_crop.isFullFrameDraft(full)) {
+    recordSessionCrop(item, m_cropCtrl.session().draftRectOr(full));
+    if (!m_cropCtrl.session().isFullFrameDraft(full)) {
         // Workspace footprint: draft selection scene size stays constant after Apply
         // (intrinsic becomes cropW×cropH at the same placement scale).
         qreal cropW = 0.0;
@@ -104,8 +104,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
         qreal sx0 = 0.0;
         qreal sy0 = 0.0;
         CropSession::itemScalePair(item, &sx0, &sy0);
-        m_crop.draftFootprint(sx0, sy0, &cropW, &cropH, &footW, &footH);
-        cropSceneCenter = item->mapToScene(m_crop.draftCenterLocal());
+        m_cropCtrl.session().draftFootprint(sx0, sy0, &cropW, &cropH, &footW, &footH);
+        cropSceneCenter = item->mapToScene(m_cropCtrl.session().draftCenterLocal());
 
         const QString path = item->path();
         bool hostFromCache = false;
@@ -121,7 +121,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         loadSessionAppearance(sid, &st);
         if (!st.hasCrop) {
             st = captureState(item);
-            m_crop.seedApplyCropState(&st, item->offset(), item->imageSize());
+            m_cropCtrl.session().seedApplyCropState(&st, item->offset(), item->imageSize());
             if (sid != kInvalidSessionImageId) {
                 m_appearance.set(sid, st);
             }
@@ -145,12 +145,12 @@ bool ImageView::applyCropCommit(ImageItem *item)
             CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
             attachDisplaySample(item, baked.display, st,
                                 CropSession::applyPixelKind(baked.multiMp));
-            m_crop.restoreEnterScale(item);
+            m_cropCtrl.session().restoreEnterScale(item);
             alignItemCenterToScene(item, cropSceneCenter);
             // Multi-MP: soft stand-in now; pure full rematerialize after leave.
-            m_crop.queueFullRematerializeIfSoft(hostFromCache, baked.multiMp, path, sid, st);
+            m_cropCtrl.session().queueFullRematerializeIfSoft(hostFromCache, baked.multiMp, path, sid, st);
             if (isWorkspaceMode()) {
-                m_crop.applyCommitPlacementRotation(item);
+                m_cropCtrl.session().applyCommitPlacementRotation(item);
             }
             relayoutAfterCropLeave(item);
         }
@@ -161,15 +161,15 @@ bool ImageView::applyCropCommit(ImageItem *item)
         return isWorkspaceMode();
     }
     // Reset / full frame: keep full pixels; clear session crop metadata.
-    if (isWorkspaceMode() && m_crop.isEnterValid()) {
+    if (isWorkspaceMode() && m_cropCtrl.session().isEnterValid()) {
         // Drop the enter-time crop-frame offset; restore pre-crop pose.
-        m_crop.restoreEnterPlacementPose(item);
+        m_cropCtrl.session().restoreEnterPlacementPose(item);
     }
     relayoutAfterCropLeave(item);
     commitItemSessionEdit(item);
     emitCropApplyAppearance(cropRecordSessionId(item), item->path(), item, QImage(),
                             /*hasCrop=*/false);
-    if (m_crop.shouldPushResetUndo(item->sourceImage().size())) {
+    if (m_cropCtrl.session().shouldPushResetUndo(item->sourceImage().size())) {
         pushCropAppearanceUndo(item, CropFlash::undoResetText());
     }
     flashCropHud(CropFlash::reset());
@@ -179,7 +179,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
 
 void ImageView::leaveCropModeInternal(bool apply)
 {
-    if (!m_crop.active()) {
+    if (!m_cropCtrl.session().active()) {
         return;
     }
     ImageItem *item = cropTargetItem();
@@ -189,29 +189,29 @@ void ImageView::leaveCropModeInternal(bool apply)
     if (item) {
         if (apply) {
             preserveCropFrameRotation = applyCropCommit(item);
-        } else if (m_crop.isShowingFullImage()) {
+        } else if (m_cropCtrl.session().isShowingFullImage()) {
             restoreSessionCropAppearance(item);
-            if (isWorkspaceMode() && m_crop.isEnterValid()) {
-                m_crop.restoreEnterPlacementPose(item);
+            if (isWorkspaceMode() && m_cropCtrl.session().isEnterValid()) {
+                m_cropCtrl.session().restoreEnterPlacementPose(item);
             }
         }
     }
-    m_crop.finishLeave(item, preserveCropFrameRotation);
+    m_cropCtrl.session().finishLeave(item, preserveCropFrameRotation);
     // Stop PreferCache before releasing tile LOD / clearing draft identity.
-    QString subjectPath = m_crop.draftPathRef();
+    QString subjectPath = m_cropCtrl.session().draftPathRef();
     if (subjectPath.isEmpty()) {
         if (ImageItem *bound = cropSessionBoundItem()) {
             subjectPath = bound->path();
         }
     }
     cancelPathRasterForCrop(subjectPath);
-    m_crop.releaseAllTileLod(cropSessionBoundItem());
+    m_cropCtrl.session().releaseAllTileLod(cropSessionBoundItem());
     QString pendingPath;
     SessionImageId pendingSid = kInvalidSessionImageId;
     WorkspaceItemState pendingWant;
     const bool pendingFull =
-        m_crop.takePendingFullRematerialize(&pendingPath, &pendingSid, &pendingWant);
-    m_crop.clear();
+        m_cropCtrl.session().takePendingFullRematerialize(&pendingPath, &pendingSid, &pendingWant);
+    m_cropCtrl.session().clear();
     emit cropModeChanged(false);
     emit statusChanged();
     if (viewport()) {

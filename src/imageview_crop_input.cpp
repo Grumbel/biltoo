@@ -25,10 +25,10 @@ QPolygonF ImageView::mapItemLocalPolygonToView(ImageItem *item, const QPolygonF 
 QPolygonF ImageView::cropPolygonView() const
 {
     ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.hasValidRect()) {
+    if (!item || !m_cropCtrl.session().hasValidRect()) {
         return {};
     }
-    return mapItemLocalPolygonToView(item, m_crop.polygonLocal());
+    return mapItemLocalPolygonToView(item, m_cropCtrl.session().polygonLocal());
 }
 
 QRectF ImageView::cropRectView() const
@@ -38,7 +38,7 @@ QRectF ImageView::cropRectView() const
 
 CropGeometry::CropButtonLayout ImageView::cropChromeLayout() const
 {
-    if (!m_crop.active()) {
+    if (!m_cropCtrl.session().active()) {
         return {};
     }
     return CropGeometry::cropButtonLayout(cropRectView(),
@@ -62,7 +62,7 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
     if (!item || !CropSession::isGeometryHandle(h)) {
         return;
     }
-    m_crop.beginHandleDrag(h, m_crop.currentRect(), itemLocalFromView(item, viewPos));
+    m_cropCtrl.session().beginHandleDrag(h, m_cropCtrl.session().currentRect(), itemLocalFromView(item, viewPos));
 }
 
 
@@ -80,13 +80,13 @@ void ImageView::cropKeyboardMods(bool *shiftHeld, bool *ctrlHeld)
 void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.isHandleDragging()) {
+    if (!item || !m_cropCtrl.session().isHandleDragging()) {
         return;
     }
     bool shiftHeld = false;
     bool ctrlHeld = false;
     cropKeyboardMods(&shiftHeld, &ctrlHeld);
-    m_crop.applyActiveHandleDrag(itemLocalFromView(item, viewPos), item->contentRect(),
+    m_cropCtrl.session().applyActiveHandleDrag(itemLocalFromView(item, viewPos), item->contentRect(),
                                  CropSession::kMinDraftSidePx, shiftHeld, ctrlHeld);
     requestCropViewportUpdate();
 }
@@ -94,7 +94,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 void ImageView::endCropHandleDrag()
 {
     ImageItem *item = cropTargetItem();
-    m_crop.finishHandleDrag(item ? item->contentRect() : QRectF());
+    m_cropCtrl.session().finishHandleDrag(item ? item->contentRect() : QRectF());
     requestCropViewportUpdate();
 }
 
@@ -113,30 +113,30 @@ void ImageView::beginCropRubberBand(const QPoint &viewPos)
     if (!contentLocalContains(item, local)) {
         return;
     }
-    m_crop.beginRubberDraft(local);
+    m_cropCtrl.session().beginRubberDraft(local);
     requestCropViewportUpdate();
 }
 
 void ImageView::updateCropRubberBand(const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.isRubberbanding()) {
+    if (!item || !m_cropCtrl.session().isRubberbanding()) {
         return;
     }
     const QRectF cr = item->contentRect();
     bool shiftHeld = false;
     bool ctrlHeld = false;
     cropKeyboardMods(&shiftHeld, &ctrlHeld);
-    m_crop.applyRubberBand(itemLocalFromView(item, viewPos), cr, shiftHeld, ctrlHeld);
+    m_cropCtrl.session().applyRubberBand(itemLocalFromView(item, viewPos), cr, shiftHeld, ctrlHeld);
     requestCropViewportUpdate();
 }
 
 void ImageView::finishCropRubberBand()
 {
     if (ImageItem *item = cropTargetItem()) {
-        m_crop.finishRubber(item->contentRect());
+        m_cropCtrl.session().finishRubber(item->contentRect());
     } else {
-        m_crop.endRubber();
+        m_cropCtrl.session().endRubber();
     }
 }
 
@@ -148,7 +148,7 @@ void ImageView::endCropRubberBand()
 
 CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
 {
-    if (!m_crop.active() || !m_crop.hasValidRect() || !cropTargetItem()) {
+    if (!m_cropCtrl.session().active() || !m_cropCtrl.session().hasValidRect() || !cropTargetItem()) {
         return CropHandle::None;
     }
     const CropGeometry::CropFrameViewAnchors anchors =

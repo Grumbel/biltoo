@@ -33,14 +33,14 @@ bool ImageView::enterCropModeFromUi()
     }
     cancelZoomRegion();
     // Lock identity + enter snapshot + unrotate placement (IDENTITY.md).
-    // m_crop.active() stays false until after the first draft attach.
+    // m_cropCtrl.session().active() stays false until after the first draft attach.
     {
         QImage enterSrc = CropSession::pickEnterSnapshotPixels(item);
         WorkspaceItemState enterSt = captureState(item);
         CropSession::seedEnterCropFlags(&enterSt, item);
-        m_crop.beginEnterSession(item, enterSrc, enterSt,
+        m_cropCtrl.session().beginEnterSession(item, enterSrc, enterSt,
                                  !enterSrc.isNull() || item->hasDisplayPixels());
-        cancelPathRasterForCrop(m_crop.draftPathRef());
+        cancelPathRasterForCrop(m_cropCtrl.session().draftPathRef());
     }
     // Workspace: displayed image centre so the crop frame can stay fixed.
     const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
@@ -51,7 +51,7 @@ bool ImageView::enterCropModeFromUi()
         // prepare may have set mode for fitItem then failed — restore placement
         // before abortEnter clears the stash.
         item->setTileLodSuppressed(false);
-        m_crop.abortEnterRestoringPlacement(item);
+        m_cropCtrl.session().abortEnterRestoringPlacement(item);
         flashCropHud(CropFlash::loadFailed());
         return false;
     }
@@ -59,14 +59,14 @@ bool ImageView::enterCropModeFromUi()
         // If there was no stored crop angle but the tile was free-rotated,
         // seed the draft rotation so the frame matches the prior pose while
         // the item stays axis-aligned for editing.
-        if (m_crop.seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
+        if (m_cropCtrl.session().seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
             ensureCropRectValid();
         }
-        if (m_crop.hasValidRect()) {
+        if (m_cropCtrl.session().hasValidRect()) {
             CropSession::applyScenePosDelta(
                 item,
                 PlacementLinear::scenePosDeltaToAlign(
-                    item->mapToScene(m_crop.draftCenterLocal()), workspaceAnchorScene));
+                    item->mapToScene(m_cropCtrl.session().draftCenterLocal()), workspaceAnchorScene));
         }
         updateWorkspaceSceneRect();
     }
@@ -78,7 +78,7 @@ bool ImageView::enterCropModeFromUi()
 
 void ImageView::setCropMode(bool on)
 {
-    if (on == m_crop.active()) {
+    if (on == m_cropCtrl.session().active()) {
         return;
     }
     if (on) {
@@ -94,7 +94,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         return false;
     }
     const QString path = item->path();
-    m_crop.clearAwaitingFull();
+    m_cropCtrl.session().clearAwaitingFull();
 
     WorkspaceItemState app;
     const bool haveApp = loadRestoreCropAppearance(item, &app, nullptr);
@@ -105,7 +105,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     if (enter.image.isNull()) {
         if (CropSession::shouldRequestFullOnNullEnter(hadCrop, path)) {
             requestCropFullRaster(path);
-            m_crop.setAwaitingFull(path);
+            m_cropCtrl.session().setAwaitingFull(path);
             flashCropHud(CropFlash::loadingFull());
         }
         flashCropHud(CropFlash::notCached());
@@ -141,7 +141,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
                                             sample.needGeomBake)) {
         CropSession::applyKeepEnterFlags(item, contentOnly, wantX);
         applyContentLayoutSize(item, contentOnly);
-        m_crop.markShowingFullImage();
+        m_cropCtrl.session().markShowingFullImage();
         CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);
     } else {
         CropSession::clearItemFreePlacementForDraft(item);
@@ -155,17 +155,17 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
         CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
                                   sample.display.width(), sample.display.height(),
                                   item->sessionHasCrop(), contentOnly.contentQuarterTurns);
-        m_crop.markShowingFullImage();
+        m_cropCtrl.session().markShowingFullImage();
     }
 
     if (isWorkspaceMode() && beforeScene.width() > 1.0 && beforeScene.height() > 1.0) {
         alignItemCenterToScene(item, beforeScene.center());
     }
-    m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
+    m_cropCtrl.session().initRectFromPriorAppearance(item->contentRect(), item->offset(),
                                        item->imageSize(), appPtr, haveApp);
     // Crop chrome + fitItem only after pixels and contentRect match the draft.
-    m_crop.activateModeAfterDraft();
+    m_cropCtrl.session().activateModeAfterDraft();
     fitImageOrUpdateWorkspace(item);
-    m_crop.clearAwaitingFull();
+    m_cropCtrl.session().clearAwaitingFull();
     return true;
 }

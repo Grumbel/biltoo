@@ -253,15 +253,15 @@
     SessionImageId cropRecordSessionId(const ImageItem *item) const;
     void fitImageOrUpdateWorkspace(ImageItem *item);
     void ensureCropRectValid();
-    QRectF cropRectItemLocal() const { return m_crop.currentRect(); }
-    qreal cropRotation() const { return m_crop.currentRotation(); }
+    QRectF cropRectItemLocal() const { return m_cropCtrl.session().currentRect(); }
+    qreal cropRotation() const { return m_cropCtrl.session().currentRotation(); }
     /** Crop corners in item-local space (rotation about rect centre). */
     QRectF cropRectView() const;
     QPolygonF mapItemLocalPolygonToView(ImageItem *item, const QPolygonF &local) const;
     QPolygonF cropPolygonView() const;
     /** Viewport chrome button rects under the draft frame (empty when inactive). */
     CropGeometry::CropButtonLayout cropChromeLayout() const;
-    bool cropAllowExpand() const { return m_crop.isAllowExpand(); }
+    bool cropAllowExpand() const { return m_cropCtrl.session().isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
@@ -296,7 +296,7 @@
     void onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
                                      quint64 gen);
     void requestCropFullRaster(const QString &path);
-    /** Upgrade crop source when native full arrives for m_crop.awaitingFullPath. */
+    /** Upgrade crop source when native full arrives for m_cropCtrl.session().awaitingFullPath. */
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
@@ -485,8 +485,9 @@
 
     ItemInteractSession m_itemInteract;
 
-    CropSession m_crop;
-    AttentionSession m_attention;
+    /** Phase 6 Tier 2a: crop/attention session state on controllers. */
+    CropController m_cropCtrl;
+    AttentionController m_attentionCtrl;
     /** Image-mode focus surface (DisplaySurfaceController). Invalid outside Image. */
     DisplaySurfaceController m_displaySurfaces;
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;

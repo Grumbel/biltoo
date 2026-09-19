@@ -292,10 +292,10 @@ void ImageView::setViewMode(ViewMode mode)
         return;
     }
 
-    if (m_crop.active()) {
+    if (m_cropCtrl.session().active()) {
         leaveCropModeInternal(false);
     }
-    if (m_attention.active()) {
+    if (m_attentionCtrl.session().active()) {
         setAttentionMode(false);
     }
 

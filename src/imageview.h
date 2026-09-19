@@ -43,6 +43,8 @@
 #include "sessionappearance.h"
 #include "gallerycontroller.h"
 #include "slideshowcontroller.h"
+#include "cropcontroller.h"
+#include "attentioncontroller.h"
 #include "workspacecontroller.h"
 #include "imagecontroller.h"
 #include "pathrasterservice.h"
@@ -94,7 +96,6 @@ class ImageView : public QGraphicsView,
                   private GallerySizeResolveHost,
                   private TileNeighborPrefetchHost
 {
-    friend class CropAppearanceCommand;
     friend class SlideshowController;
 
     Q_OBJECT
@@ -480,7 +481,7 @@ public:
      * session already holds native pixels.
      */
     QImage fullRasterForEdit(const QString &path) const;
-    bool isCropMode() const { return m_crop.active(); }
+    bool isCropMode() const { return m_cropCtrl.active(); }
     void toggleCropMode();
 
     /**
@@ -491,7 +492,7 @@ public:
      * when entering if none stored.
      */
     void setAttentionMode(bool on);
-    bool isAttentionMode() const { return m_attention.active(); }
+    bool isAttentionMode() const { return m_attentionCtrl.active(); }
     void toggleAttentionMode();
     /** Commit the draft crop rect to pixels and leave crop mode. */
     void applyCrop();

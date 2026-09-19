@@ -681,13 +681,13 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     // Crop draft: never layoutSize with store crop — that collapses the
     // full-frame draft to the old crop box.
     //
-    // Critical: m_crop.active() stays true through applyCropCommit → fitItem, *after*
-    // the crop bake is attached. Treating any m_crop.active() as draft forced
+    // Critical: m_cropCtrl.session().active() stays true through applyCropCommit → fitItem, *after*
+    // the crop bake is attached. Treating any m_cropCtrl.session().active() as draft forced
     // orient-only layout on top of crop pixels → stretch into the pre-crop
     // contentRect. Only pure draft (no applied crop, no session crop on the
     // item) is draft geometry.
     const bool cropDraft = CropSession::isDraftLayoutGeometry(
-        m_crop.active(),
+        m_cropCtrl.session().active(),
         item->hasAppliedContentXform() && item->appliedContentXform().hasCrop,
         item->sessionHasCrop());
     if (!path.isEmpty() && !item->sessionHasCrop() && !cropDraft) {

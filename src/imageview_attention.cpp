@@ -48,8 +48,8 @@ QVector<QPointF> ImageView::attentionPointsForTarget() const
             }
         }
     }
-    if (m_attention.hasDraftFor(sid)) {
-        return m_attention.draftPtsRef();
+    if (m_attentionCtrl.session().hasDraftFor(sid)) {
+        return m_attentionCtrl.session().draftPtsRef();
     }
     return {};
 }
@@ -71,15 +71,15 @@ void ImageView::setAttentionPointsForTarget(const QVector<QPointF> &pts)
     if (item && sid != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
         item->setSessionId(sid);
     }
-    m_attention.setDraft(clamped, sid);
+    m_attentionCtrl.session().setDraft(clamped, sid);
 
     QVector<int> kept;
-    for (int i : m_attention.selectedRef()) {
+    for (int i : m_attentionCtrl.session().selectedRef()) {
         if (i >= 0 && i < clamped.size()) {
             kept.append(i);
         }
     }
-    m_attention.setSelected(kept);
+    m_attentionCtrl.session().setSelected(kept);
 
     if (sid != kInvalidSessionImageId) {
         WorkspaceItemState st = m_appearance.value(sid);
@@ -111,7 +111,7 @@ void ImageView::ensureAttentionPoint()
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_appearance.get(sid)) {
             if (!st->attentionPoints.isEmpty() || st->hasAttention) {
-                m_attention.setDraft(
+                m_attentionCtrl.session().setDraft(
                     !st->attentionPoints.isEmpty()
                         ? st->attentionPoints
                         : QVector<QPointF>{st->attentionNorm},
@@ -126,7 +126,7 @@ void ImageView::ensureAttentionPoint()
 void ImageView::restoreAttentionPoints(const QVector<QPointF> &pts)
 {
     setAttentionPointsForTarget(pts);
-    m_attention.selectAllIndices(pts.size());
+    m_attentionCtrl.session().selectAllIndices(pts.size());
     if (viewport()) {
         viewport()->update();
     }
@@ -187,7 +187,7 @@ void ImageView::detectAttentionPoint()
     }
     const QVector<QPointF> before = attentionPointsForTarget();
     setAttentionPointsForTarget(pts);
-    m_attention.selectAllIndices(pts.size());
+    m_attentionCtrl.session().selectAllIndices(pts.size());
     pushAttentionPointsUndo(before, pts, tr("Detect attention points"));
     if (viewport()) {
         viewport()->update();
@@ -196,7 +196,7 @@ void ImageView::detectAttentionPoint()
 
 void ImageView::setAttentionMode(bool on)
 {
-    if (on == m_attention.active()) {
+    if (on == m_attentionCtrl.session().active()) {
         return;
     }
     if (on) {
@@ -207,7 +207,7 @@ void ImageView::setAttentionMode(bool on)
         if (isCropMode()) {
             cancelCrop();
         }
-        m_attention.enterMode();
+        m_attentionCtrl.session().enterMode();
         if (m_hoverEdge != EdgeZone::None) {
             clearHoverEdge();
         }
@@ -216,7 +216,7 @@ void ImageView::setAttentionMode(bool on)
             viewport()->setCursor(Qt::CrossCursor);
         }
     } else {
-        m_attention.leaveMode();
+        m_attentionCtrl.session().leaveMode();
         if (viewport()) {
             viewport()->unsetCursor();
         }
@@ -224,13 +224,13 @@ void ImageView::setAttentionMode(bool on)
     if (viewport()) {
         viewport()->update();
     }
-    emit attentionModeChanged(m_attention.active());
+    emit attentionModeChanged(m_attentionCtrl.session().active());
     emit statusChanged();
 }
 
 void ImageView::toggleAttentionMode()
 {
-    setAttentionMode(!m_attention.active());
+    setAttentionMode(!m_attentionCtrl.session().active());
 }
 
 int ImageView::attentionHandleIndexAt(const QPoint &viewPos) const
@@ -255,36 +255,36 @@ bool ImageView::attentionHandleAt(const QPoint &viewPos) const
 
 void ImageView::attentionDeleteSelected()
 {
-    if (!m_attention.hasSelection()) {
+    if (!m_attentionCtrl.session().hasSelection()) {
         return;
     }
     QVector<QPointF> pts = attentionPointsForTarget();
     const QVector<QPointF> before = pts;
-    QSet<int> kill(m_attention.selectedRef().begin(), m_attention.selectedRef().end());
+    QSet<int> kill(m_attentionCtrl.session().selectedRef().begin(), m_attentionCtrl.session().selectedRef().end());
     QVector<QPointF> kept;
     for (int i = 0; i < pts.size(); ++i) {
         if (!kill.contains(i)) {
             kept.append(pts.at(i));
         }
     }
-    m_attention.clearSelected();
+    m_attentionCtrl.session().clearSelected();
     setAttentionPointsForTarget(kept);
     pushAttentionPointsUndo(before, kept, tr("Delete attention points"));
 }
 
 void ImageView::attentionCommitSelectionMove()
 {
-    if (m_attention.isGestureActive()) {
+    if (m_attentionCtrl.session().isGestureActive()) {
         const QVector<QPointF> after = attentionPointsForTarget();
-        pushAttentionPointsUndo(m_attention.gestureBeforeRef(), after,
+        pushAttentionPointsUndo(m_attentionCtrl.session().gestureBeforeRef(), after,
                                 tr("Edit attention points"));
     }
-    m_attention.clearGesture();
+    m_attentionCtrl.session().clearGesture();
 }
 
 void ImageView::paintAttentionOverlay(QPainter &painter)
 {
-    if (!m_attention.active() || !isImageMode()) {
+    if (!m_attentionCtrl.session().active() || !isImageMode()) {
         return;
     }
     ImageItem *item = targetItem();
@@ -299,7 +299,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
     }
 
     const QVector<QPointF> pts = attentionPointsForTarget();
-    QSet<int> selected(m_attention.selectedRef().begin(), m_attention.selectedRef().end());
+    QSet<int> selected(m_attentionCtrl.session().selectedRef().begin(), m_attentionCtrl.session().selectedRef().end());
 
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -333,10 +333,10 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
                          isPrimary ? tr("P") : QString::number(i + 1));
     }
 
-    if (m_attention.isRubberbanding() && !m_attention.rubberRectRef().isEmpty()) {
+    if (m_attentionCtrl.session().isRubberbanding() && !m_attentionCtrl.session().rubberRectRef().isEmpty()) {
         painter.setPen(QPen(QColor(80, 180, 255, 220), 1.2, Qt::DashLine));
         painter.setBrush(QColor(80, 180, 255, 40));
-        painter.drawRect(m_attention.rubberRectRef().normalized());
+        painter.drawRect(m_attentionCtrl.session().rubberRectRef().normalized());
     }
 
     QFont f = painter.font();
@@ -348,7 +348,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
            "Ctrl+click empty: add · drag handle: move · Del: delete · Ctrl+Z: undo · Esc: exit\n"
            "%1 point(s), %2 selected  (primary “P” = Ken Burns)")
             .arg(pts.size())
-            .arg(m_attention.selectedRef().size());
+            .arg(m_attentionCtrl.session().selectedRef().size());
     painter.drawText(viewport()->rect().adjusted(12, 12, -12, -12),
                      Qt::AlignTop | Qt::AlignLeft, hint);
     painter.restore();
