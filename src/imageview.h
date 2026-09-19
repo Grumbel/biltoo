@@ -1666,6 +1666,7 @@ private:
     qreal cropRotation() const { return m_crop.currentRotation(); }
     /** Crop corners in item-local space (rotation about rect centre). */
     QRectF cropRectView() const;
+    QPolygonF mapItemLocalPolygonToView(ImageItem *item, const QPolygonF &local) const;
     QPolygonF cropPolygonView() const;
     /** Viewport chrome button rects under the draft frame (empty when inactive). */
     CropGeometry::CropButtonLayout cropChromeLayout() const;
@@ -1729,6 +1730,7 @@ private:
     void relayoutAfterCropLeave(ImageItem *item);
     void finishCropResetLayout(ImageItem *item);
     void finishCropApplyLayout(ImageItem *item);
+    void flashApplyHostStatusHud(CropSession::ApplyHostStatus hostSt);
     bool flashApplyHostFailure(CropSession::ApplyHostStatus hostSt);
     void ensureApplyCropState(ImageItem *item, SessionImageId sid,
                               WorkspaceItemState *st);

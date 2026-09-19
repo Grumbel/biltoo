@@ -1178,15 +1178,21 @@ void ImageView::finishCropApplyLayout(ImageItem *item)
     relayoutAfterCropLeave(item);
 }
 
+
+void ImageView::flashApplyHostStatusHud(CropSession::ApplyHostStatus hostSt)
+{
+    const QString msg = (hostSt == CropSession::ApplyHostStatus::NeedFull)
+                            ? tr("Full image not ready — try again")
+                            : tr("No pixels to crop");
+    flashHud(tr("Crop"), msg);
+}
+
 bool ImageView::flashApplyHostFailure(CropSession::ApplyHostStatus hostSt)
 {
     if (hostSt == CropSession::ApplyHostStatus::Ok) {
         return false;
     }
-    flashHud(tr("Crop"),
-             hostSt == CropSession::ApplyHostStatus::NeedFull
-                 ? tr("Full image not ready — try again")
-                 : tr("No pixels to crop"));
+    flashApplyHostStatusHud(hostSt);
     return true;
 }
 
@@ -1393,19 +1399,27 @@ void ImageView::leaveCropModeInternal(bool apply)
     clearCropModeState();
 }
 
-QPolygonF ImageView::cropPolygonView() const
+
+QPolygonF ImageView::mapItemLocalPolygonToView(ImageItem *item, const QPolygonF &local) const
 {
-    ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.hasValidRect()) {
+    if (!item) {
         return {};
     }
-    const QPolygonF local = m_crop.polygonLocal();
     QPolygonF viewPoly;
     viewPoly.reserve(local.size());
     for (const QPointF &pt : local) {
         viewPoly << QPointF(mapFromScene(item->mapToScene(pt)));
     }
     return viewPoly;
+}
+
+QPolygonF ImageView::cropPolygonView() const
+{
+    ImageItem *item = cropTargetItem();
+    if (!item || !m_crop.hasValidRect()) {
+        return {};
+    }
+    return mapItemLocalPolygonToView(item, m_crop.polygonLocal());
 }
 
 QRectF ImageView::cropRectView() const
