@@ -34,7 +34,9 @@ not claimed (`tileLodWanted` requires `hasDurableTiles`).
 9. **Zoom out** below soft max — tile requests stop; PreferCache may resume.
 10. **A→B→A path switch** (Image ←/→) — tiles for A remain in the global path cache
     after leaving A; returning to A should paint from RAM without a full rebuild
-    (until global 384 MiB LRU eviction of idle paths).
+    (until global 384 MiB LRU eviction of idle paths, or the **64 idle-path**
+    cap drops oldest zero-ref entries). `pathRam=K` in `BILTOO_TILE_DEBUG` item
+    lines should be >0 immediately after return; soft may still swap first.
 11. **Neighbor prefetch** — after quiet settle on index *i*, ±1 session neighbors
     should receive overview tile requests that are **pumped until completions
     land** (when durable pyramid is known); stepping to a neighbor should show
