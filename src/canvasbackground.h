@@ -35,6 +35,27 @@ struct CanvasBackground {
         workspaceTilePath.clear();
     }
 
+    /** @return true when the primary canvas colour changed. */
+    bool setColor(const QColor &c)
+    {
+        if (!c.isValid() || c == color) {
+            return false;
+        }
+        color = c;
+        return true;
+    }
+
+    bool setColorAlt(const QColor &c)
+    {
+        if (!c.isValid() || c == colorAlt) {
+            return false;
+        }
+        colorAlt = c;
+        return true;
+    }
+
+    void setPattern(BackgroundPattern p) { pattern = p; }
+
     /** App-default checker when pattern is Checkerboard (optional WS-only). */
     bool useChecker(bool isWorkspaceMode) const
     {
