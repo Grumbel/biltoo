@@ -207,8 +207,20 @@ void TileLodRegistry::invalidate(QString const& path)
 void TileLodRegistry::invalidateAll()
 {
   std::lock_guard<std::mutex> lock(m_mu);
-  // Destroy sources (epoch) and path caches so in-flight completions no-op and
-  // tiles from a previous archive/session cannot be rebound.
+  // Cancel + clear every entry first so any remaining holders (stashed items)
+  // cannot paint Succeeded tiles from the previous session after the map drop.
+  for (auto& [key, shared] : m_by_path) {
+    (void)key;
+    if (!shared) {
+      continue;
+    }
+    if (shared->source) {
+      shared->source->cancel_all();
+    }
+    if (shared->cache) {
+      shared->cache->clear();
+    }
+  }
   m_by_path.clear();
 }
 
