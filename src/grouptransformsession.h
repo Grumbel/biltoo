@@ -57,6 +57,25 @@ public:
         dragStartStates = states;
     }
 
+    /** Remove null items from drag lists (item destroyed mid-drag). */
+    void pruneNullItems()
+    {
+        for (int i = dragItems.size() - 1; i >= 0; --i) {
+            if (!dragItems.at(i)) {
+                dragItems.removeAt(i);
+                if (i < dragStartStates.size()) {
+                    dragStartStates.removeAt(i);
+                }
+            }
+        }
+    }
+
+    bool dragListsAligned() const
+    {
+        return !dragItems.isEmpty()
+            && dragStartStates.size() == dragItems.size();
+    }
+
     /** Drop active scale/rotate drag (also clears hover). */
     void endDrag()
     {
