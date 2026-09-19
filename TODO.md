@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1361-clamp01-index-filmstrip.** Attention/motion/project clamp01;
+session index clamps; filmstrip/histogram pure floors.
+Prior: **1360**.
+
+### Change
+- `AttentionGeometry::clampNorm` and motionT via `ViewTransform::clamp01`
+- Projectfile attention load via `AttentionGeometry::clampNorm`
+- `ViewTransform::clampInsertIndex`; session path index / interval clamps
+- Filmstrip grid `atLeast1`; metadata luma `clampPixel`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1361**)
+```bash
+git pull /path/to/biltoo-1361-clamp01-index-filmstrip.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1360-scope-step-nonneg.** ColorAdjustments scopeSampleStep;
 ViewTransform::nonNeg for transition caps.
 Prior: **1359**.

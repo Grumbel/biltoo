@@ -338,3 +338,4 @@ part of early-phase exit criteria).
 - **Fix DisplayQuality::hostLongEdge**; **ContentXform::scaleCropRect**; ViewFraming clamp01.
 - **PathRasterService::capWant** → DisplayEdgePolicy; **CropGeometry::kFreeRotationEps**; tile atLeast1.
 - **ColorAdjustments::scopeSampleStep**; **ViewTransform::nonNeg** for transition caps.
+- clamp01 attention/motion/project; **clampInsertIndex**; filmstrip atLeast1; luma clampPixel.
