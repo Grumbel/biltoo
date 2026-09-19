@@ -110,6 +110,30 @@ void rotateHandlePoints(const FrameViewGeom &g, QPointF out[4],
 void shearHandlePoints(const FrameViewGeom &g, QPointF out[4],
                        qreal alongPx = kHandleScreenPx * 2.2);
 
+/** Placeholder “⋯” point size from content inner edge (scene-ish units). */
+inline qreal placeholderEllipsisPointSize(qreal innerEdge)
+{
+    return qBound(8.0, innerEdge * 0.08, 28.0);
+}
+
+/** Content-edit mark glyph size from half-box edge. */
+inline qreal contentEditGlyphPointSize(qreal halfEdge)
+{
+    return qMax(8.0, halfEdge * 0.72);
+}
+
+/** Chrome button glyph size from button radius (viewport px). */
+inline qreal chromeGlyphPointSize(qreal buttonRadius)
+{
+    return qMax(7.0, buttonRadius * 0.55);
+}
+
+/** Neutral placeholder inset as fraction of content short edge. */
+inline qreal placeholderInset(qreal contentW, qreal contentH, qreal frac = 0.06)
+{
+    return qMin(contentW, contentH) * frac;
+}
+
 } // namespace ItemFrameGeometry
 
 #endif // ITEMFRAMEGEOMETRY_H

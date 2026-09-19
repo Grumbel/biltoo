@@ -1088,7 +1088,7 @@ QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
     if (!grade.isIdentity()) {
         img = applyColorAdjustments(img, grade);
     }
-    const int costKiB = qMax(1, (img.width() * img.height() * 4) / 1024);
+    const int costKiB = ImageCache::rgbaCostKiB(img);
     auto *stored = new QImage(std::move(img));
     m_tileGradedCache.insert(ck, stored, costKiB);
     return *stored;
@@ -1503,7 +1503,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 // provisional box while cold. Never invent LQIP here.
                 const QRectF cr = contentRect();
                 painter->fillRect(cr, QColor(40, 40, 44));
-                const qreal inset = qMin(cr.width(), cr.height()) * 0.06;
+                const qreal inset = ItemFrameGeometry::placeholderInset(cr.width(), cr.height());
                 const QRectF inner = cr.adjusted(inset, inset, -inset, -inset);
                 painter->setPen(QPen(QColor(70, 72, 80), 0));
                 painter->setBrush(QColor(52, 54, 62));
@@ -1511,7 +1511,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 painter->setPen(QPen(QColor(140, 145, 160), 0));
                 QFont f = painter->font();
                 const qreal edge = qMin(inner.width(), inner.height());
-                f.setPointSizeF(qBound(8.0, edge * 0.08, 28.0));
+                f.setPointSizeF(ItemFrameGeometry::placeholderEllipsisPointSize(edge));
                 f.setBold(true);
                 painter->setFont(f);
                 painter->drawText(inner, Qt::AlignCenter, QStringLiteral("⋯"));
@@ -2000,7 +2000,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             }
             painter->setPen(on ? QColor(255, 255, 255) : QColor(230, 230, 230));
             QFont f = painter->font();
-            f.setPointSizeF(qMax(8.0, half * 0.72));
+            f.setPointSizeF(ItemFrameGeometry::contentEditGlyphPointSize(half));
             f.setBold(true);
             painter->setFont(f);
             painter->drawText(box, Qt::AlignCenter, glyph);
@@ -2020,7 +2020,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             painter->drawEllipse(c, rad, rad);
             painter->setPen(QColor(240, 240, 240));
             QFont f = painter->font();
-            f.setPointSizeF(qMax(7.0, rad * 0.55));
+            f.setPointSizeF(ItemFrameGeometry::chromeGlyphPointSize(rad));
             f.setBold(true);
             painter->setFont(f);
             painter->drawText(QRectF(c.x() - rad, c.y() - rad, rad * 2, rad * 2),
@@ -2075,7 +2075,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         trackPoly << a + perp * (thick / 2) << b + perp * (thick / 2)
                   << b - perp * (thick / 2) << a - perp * (thick / 2);
         painter->drawPolygon(trackPoly);
-        const QPointF mid = a + ab * qBound(0.0, tval, 1.0);
+        const QPointF mid = ViewTransform::pointAlong(a, b, tval);
         painter->setBrush(QColor(140, 100, 200, 230));
         QPolygonF filled;
         filled << a + perp * (thick / 2) << mid + perp * (thick / 2)
