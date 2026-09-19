@@ -478,21 +478,18 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         // often reset QAbstractScrollArea scroll position.
         switch (m_framing.stickyZoomKind) {
         case StickyZoomKind::Fill:
-            m_framing.fitMode = true;
-            m_framing.fillMode = true;
+            m_framing.setFillMode();
             fitItem(item, Qt::KeepAspectRatioByExpanding);
             break;
         case StickyZoomKind::Actual:
-            m_framing.fitMode = false;
-            m_framing.fillMode = false;
+            m_framing.clearFitFill();
             item->setItemScale(1.0);
             resetTransform();
             centerOn(item);
             break;
         case StickyZoomKind::Fit:
         default:
-            m_framing.fitMode = true;
-            m_framing.fillMode = false;
+            m_framing.setFitOnly();
             fitItem(item, Qt::KeepAspectRatio);
             break;
         }
@@ -520,8 +517,7 @@ void ImageView::applyImageModeFraming(ImageItem *item)
     // Non-sticky: keep the previous view scale + relative pan (prev/next at the
     // same zoom). Cold open with no prior capture still defaults to Fit.
     if (m_framing.havePreservedViewScale) {
-        m_framing.fitMode = false;
-        m_framing.fillMode = false;
+        m_framing.clearFitFill();
         item->setItemScale(1.0);
         resetTransform();
         scale(m_framing.preservedViewScale, m_framing.preservedViewScale);
@@ -701,15 +697,10 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ss.toPath.clear();
         unbindSlideshowPhaseSurface(&m_ss.fromSurface);
         unbindSlideshowPhaseSurface(&m_ss.toSurface);
-        m_ss.fromImage = QImage();
-        m_ss.toImage = QImage();
-        m_ss.fromContentApplied = false;
-        m_ss.toContentApplied = false;
+        m_ss.clearFromImage();
+        m_ss.clearToImage();
         m_ss.beginDwell();
-        m_ss.setFromMotionT(0.0);
-        m_ss.setToMotionT(0.0);
-        m_ss.fromMotionClockRunning = false;
-        m_ss.toMotionClockRunning = false;
+        m_ss.stopMotionClocks();
         // Rasters live in ImageCache — do not clear the host map on stop.
         m_ss.rasterInflight.clear();
         m_ss.rasterPending.clear();
@@ -905,17 +896,14 @@ void ImageView::applySlideshowZoomFraming(ImageItem *item)
     qreal scale = slideshowZoomBaseScale(logical, int(vw), int(vh));
     switch (m_ssSettings.zoom) {
     case SlideshowZoom::Fill:
-        m_framing.fitMode = false;
-        m_framing.fillMode = true;
+        m_framing.setFitFillFlags(false, true);
         break;
     case SlideshowZoom::Actual:
-        m_framing.fitMode = false;
-        m_framing.fillMode = false;
+        m_framing.clearFitFill();
         break;
     case SlideshowZoom::Fit:
     default:
-        m_framing.fitMode = true;
-        m_framing.fillMode = false;
+        m_framing.setFitOnly();
         break;
     }
     if (scale <= 0.0 || !qIsFinite(scale)) {
@@ -1244,8 +1232,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         && SlideshowPhasePolicy::acceptOrientedUpgrade(
                incoming, ImageCache::longEdge(m_ss.fromImage),
                m_ss.fromContentApplied)) {
-        m_ss.fromImage = oriented;
-        m_ss.fromContentApplied = true;
+        m_ss.setFromImage(oriented, true);
         ImageCache::stampDebugOverlayIfEnabled(&m_ss.fromImage, path);
         m_ssDwell.setSourceImage(m_ss.fromImage);
         // Orient may swap aspect — drop atlas built from the unoriented sample.
@@ -1275,8 +1262,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         && SlideshowPhasePolicy::acceptOrientedUpgrade(
                incoming, ImageCache::longEdge(m_ss.toImage),
                m_ss.toContentApplied)) {
-        m_ss.toImage = oriented;
-        m_ss.toContentApplied = true;
+        m_ss.setToImage(oriented, true);
         ImageCache::stampDebugOverlayIfEnabled(&m_ss.toImage, path);
         if (!m_ss.toAtlas.isNull() && m_ss.toAtlas.height() > 0
             && oriented.height() > 0) {
@@ -1284,10 +1270,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
                     qreal(m_ss.toAtlas.width()), qreal(m_ss.toAtlas.height()),
                     qreal(oriented.width()), qreal(oriented.height()))) {
                 ++m_ss.toAtlasRebuildGeneration;
-                m_ss.toAtlas = QPixmap();
-                m_ss.toAtlasScale = 0.0;
-                m_ss.toAtlasVw = 0;
-                m_ss.toAtlasVh = 0;
+                m_ss.clearToAtlas();
             }
         }
         const DwellAtlasParams params = dwellAtlasParams();
@@ -1374,10 +1357,7 @@ void ImageView::finishSlideshowAtlas(SlideshowAtlasKind kind, quint64 generation
         if (generation != m_ss.toAtlasRebuildGeneration) {
             return;
         }
-        m_ss.toAtlas = QPixmap::fromImage(scaled);
-        m_ss.toAtlasScale = atlasScale;
-        m_ss.toAtlasVw = atlasVw;
-        m_ss.toAtlasVh = atlasVh;
+        m_ss.setToAtlas(QPixmap::fromImage(scaled), atlasScale, atlasVw, atlasVh);
     }
     if (viewport() && m_ssHud.progressActive) {
         viewport()->update();
@@ -1819,12 +1799,10 @@ bool ImageView::shouldPromoteSlideshowToAsFrom(const QString &fromPath) const
 void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
 {
     if (!m_ss.toImage.isNull()) {
-        m_ss.fromImage = m_ss.toImage;
-        m_ss.fromContentApplied = m_ss.toContentApplied;
+        m_ss.setFromImage(m_ss.toImage, m_ss.toContentApplied);
     } else {
         // Oriented path when to-phase missing (slideshowPixelsForPath materializes).
-        m_ss.fromImage = slideshowPixelsForPath(fromPath);
-        m_ss.fromContentApplied = true;
+        m_ss.setFromImage(slideshowPixelsForPath(fromPath), true);
     }
     m_ssDwell.applyBias(m_ss.toBiasA, m_ss.toBiasB, m_ssDwell.travelDir, m_ssDwell.motionSign);
     m_ssDwell.setBiasPath(fromPath);
@@ -1846,11 +1824,10 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
     // (prepareSlideshowFromDwell → scheduleSlideshowPhaseBufferUpgrade).
     // Sync orient of multi-MP on every ←/→ dropped frames; same-edge orient must
     // still be accepted (see phaseBufferWantsSample / m_ss.fromContentApplied).
-    m_ss.fromImage = slideshowSampleUnoriented(fromPath);
-    m_ss.fromContentApplied = false;
+    m_ss.setFromImage(slideshowSampleUnoriented(fromPath), false);
     if (m_ss.fromImage.isNull() && !fromPath.isEmpty()) {
-        m_ss.fromImage = ImageCache::clampToMaxEdge(
-            slideshowSoftPlaceholder(fromPath), slideshowTargetEdge());
+        m_ss.setFromImage(ImageCache::clampToMaxEdge(
+            slideshowSoftPlaceholder(fromPath), slideshowTargetEdge()), false);
     }
     // Always orient a ≤512 stand-in on the GUI when appearance is present so
     // the first paint is correct. Larger samples are clamped for this pass;
@@ -1868,8 +1845,7 @@ void ImageView::startSlideshowFromPhase(const QString &fromPath)
             const QImage oriented = SessionAppearance::materializeDisplay(
                 soft, app, SessionAppearance::PixelKind::SoftPreview);
             if (!oriented.isNull()) {
-                m_ss.fromImage = oriented;
-                m_ss.fromContentApplied = true;
+                m_ss.setFromImage(oriented, true);
             }
         }
     }
@@ -1976,13 +1952,9 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     if (toPath.isEmpty()) {
         m_ss.toPath.clear();
         unbindSlideshowPhaseSurface(&m_ss.toSurface);
-        m_ss.toImage = QImage();
-        m_ss.toContentApplied = false;
+        m_ss.clearToImage();
         ++m_ss.toAtlasRebuildGeneration;
-        m_ss.toAtlas = QPixmap();
-        m_ss.toAtlasScale = 0.0;
-        m_ss.toAtlasVw = 0;
-        m_ss.toAtlasVh = 0;
+        m_ss.clearToAtlas();
         m_ss.toMotionClockRunning = false;
         m_ss.setToMotionT(0.0);
         return;
@@ -1990,11 +1962,10 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
     m_ss.toPath = toPath;
     bindSlideshowPhaseSurface(&m_ss.toSurface, toPath);
     (void)ensureSlideshowLogicalSize(toPath);
-    m_ss.toImage = slideshowSampleUnoriented(toPath);
-    m_ss.toContentApplied = false;
+    m_ss.setToImage(slideshowSampleUnoriented(toPath), false);
     if (m_ss.toImage.isNull()) {
-        m_ss.toImage = ImageCache::clampToMaxEdge(
-            slideshowSoftPlaceholder(toPath), slideshowTargetEdge());
+        m_ss.setToImage(ImageCache::clampToMaxEdge(
+            slideshowSoftPlaceholder(toPath), slideshowTargetEdge()), false);
     }
     if (!m_ss.toImage.isNull()) {
         WorkspaceItemState app;
@@ -2008,8 +1979,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
             const QImage oriented = SessionAppearance::materializeDisplay(
                 soft, app, SessionAppearance::PixelKind::SoftPreview);
             if (!oriented.isNull()) {
-                m_ss.toImage = oriented;
-                m_ss.toContentApplied = true;
+                m_ss.setToImage(oriented, true);
             }
         }
     }
@@ -2026,7 +1996,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         schedulePhaseZoomBlur(toPath, m_ss.toImage);
     }
     ++m_ss.toAtlasRebuildGeneration; // drop stale to-atlas jobs
-    m_ss.toAtlas = QPixmap();
+    m_ss.clearToAtlas();
     requestToPhaseAtlasRebuild();
     if (!m_ss.toImage.isNull()) {
         {
@@ -2755,12 +2725,12 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
         if (m_ss.fromPath != path || m_ss.fromImage.isNull()) {
             m_ss.fromPath = path;
             bindSlideshowPhaseSurface(&m_ss.fromSurface, path);
-            m_ss.fromImage = dwell;
             WorkspaceItemState app2;
-            m_ss.fromContentApplied =
+            const bool applied =
                 snapshotSlideshowContentAppearance(path, &app2)
                 && SessionAppearance::hasContentAppearance(app2)
                 && !dwell.isNull();
+            m_ss.setFromImage(dwell, applied);
         }
     }
     // Align underlay camera to slideshow zoom before hiding it so cancel/stop
@@ -2793,8 +2763,7 @@ void ImageView::freezeScrollbarsForMotion()
 
 void ImageView::resetItemPlacementForMotion(ImageItem *item)
 {
-    m_framing.fitMode = false;
-    m_framing.fillMode = (m_ssSettings.zoom == SlideshowZoom::Fill);
+    m_framing.setFitFillFlags(false, m_ssSettings.zoom == SlideshowZoom::Fill);
     item->setItemShear(0.0);
     item->setItemRotation(0.0);
     item->setItemScale(1.0);
