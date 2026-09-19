@@ -7,6 +7,7 @@
 #include "imageview_types.h"
 #include "crophandle.h"
 #include "contentxform.h"
+#include "sessionappearance.h"
 // WorkspaceItemState is in imageview_types.h
 
 #include <QImage>
@@ -100,6 +101,25 @@ public:
 
     static ApplyBakeResult materializeApplyDisplay(const QImage &host, bool hostFromCache,
                                                    WorkspaceItemState st);
+
+    /**
+     * Pure enter-install sample: content-only want from prior appearance, clamp
+     * host for GUI bake limits, materialize orient/colour when @p unorientedSource.
+     * Does not touch ImageItem or caches.
+     */
+    struct EnterInstallSample {
+        WorkspaceItemState contentOnly;
+        ContentXform::Value wantX;
+        bool hadPriorCrop = false;
+        bool needGeomBake = false;
+        bool needColor = false;
+        QImage display;
+        SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
+    };
+
+    static EnterInstallSample prepareEnterInstallSample(
+        const QImage &full, bool unorientedSource,
+        const WorkspaceItemState *app, bool haveApp);
 
     bool isHandleHot(CropHandle h) const
     {

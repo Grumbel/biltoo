@@ -9,6 +9,7 @@
 #include "sessionappearance.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
+#include "coloradjust.h"
 
 CropSession::EnterFullRaster CropSession::pickEnterFullRaster(ImageItem *item,
                                                               const QString &path,
@@ -125,6 +126,53 @@ CropSession::ApplyBakeResult CropSession::materializeApplyDisplay(const QImage &
         sample, out.bake,
         out.multiMp ? SessionAppearance::PixelKind::SoftPreview
                     : SessionAppearance::PixelKind::FullSource);
+    return out;
+}
+
+CropSession::EnterInstallSample CropSession::prepareEnterInstallSample(
+    const QImage &full, bool unorientedSource,
+    const WorkspaceItemState *app, bool haveApp)
+{
+    EnterInstallSample out;
+    if (haveApp && app) {
+        out.contentOnly = SessionAppearance::withoutCrop(*app);
+    }
+    out.wantX = ContentXform::Value::fromState(out.contentOnly);
+    out.hadPriorCrop = haveApp && app && app->hasCrop && !app->cropRect.isEmpty();
+    out.needGeomBake = out.contentOnly.contentHFlip || out.contentOnly.contentVFlip
+        || out.contentOnly.contentQuarterTurns != 0;
+    out.needColor = !out.contentOnly.colorAdjust.isIdentity();
+
+    QImage sample = full;
+    out.kind = SessionAppearance::PixelKind::FullSource;
+    constexpr int kColorOnlyDraftMaxEdge = 2048;
+    if (out.needGeomBake
+        && ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
+        sample = ImageCache::clampToMaxEdge(
+            sample, ContentXform::kGuiMaterializeMaxEdge);
+        out.kind = SessionAppearance::PixelKind::SoftPreview;
+    } else if (!out.needGeomBake && out.needColor
+               && ImageCache::longEdge(sample) > kColorOnlyDraftMaxEdge) {
+        sample = ImageCache::clampToMaxEdge(sample, kColorOnlyDraftMaxEdge);
+        out.kind = SessionAppearance::PixelKind::SoftPreview;
+    }
+
+    if (unorientedSource && out.needGeomBake) {
+        out.display = SessionAppearance::materializeDisplay(sample, out.contentOnly, out.kind);
+        if (out.display.isNull()) {
+            out.display = sample;
+        }
+    } else if (unorientedSource && out.needColor) {
+        out.display = applyColorAdjustments(sample, out.contentOnly.colorAdjust);
+        if (out.display.isNull()) {
+            out.display = sample;
+        }
+    } else {
+        out.display = sample;
+    }
+    if (out.display.isNull()) {
+        out.display = sample;
+    }
     return out;
 }
 

@@ -260,19 +260,15 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     }
 
     // Content flips/turns only — crop is drafted on the full post-orient frame.
-    WorkspaceItemState contentOnly;
-    if (haveApp && app) {
-        contentOnly = SessionAppearance::withoutCrop(*app);
-    }
-    const ContentXform::Value wantX = ContentXform::Value::fromState(contentOnly);
-    const bool hadPriorCrop = haveApp && app && app->hasCrop && !app->cropRect.isEmpty();
-    const bool needGeomBake = contentOnly.contentHFlip || contentOnly.contentVFlip
-        || contentOnly.contentQuarterTurns != 0;
-    const bool needColor = !contentOnly.colorAdjust.isIdentity();
+    const CropSession::EnterInstallSample sample =
+        CropSession::prepareEnterInstallSample(full, unorientedSource, app, haveApp);
+    const WorkspaceItemState &contentOnly = sample.contentOnly;
+    const ContentXform::Value &wantX = sample.wantX;
 
     // Full-frame already on the item (no crop bake): keep those pixels.
     // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
-    if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, hadPriorCrop, needGeomBake)) {
+    if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
+                                            sample.needGeomBake)) {
         CropSession::clearItemFreePlacementForDraft(item);
         item->setSessionCrop(false, QRect());
         item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
@@ -300,51 +296,14 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                    .arg(path)
                    .arg(item->imageSize().width()).arg(item->imageSize().height())
                    .arg(item->hasDecodedPixels() ? 1 : 0)
-                   .arg(hadPriorCrop ? 1 : 0)
+                   .arg(sample.hadPriorCrop ? 1 : 0)
                    .arg(ImageCache::longEdge(full));
     }
     item->clearDecodedPixels();
     item->clearAppliedContentXform();
 
     // Interactive crop draft: orient-only full frame (never prior crop bake).
-    // Identity (no orient/colour bake): attach the host as FullSource at native
-    // resolution. Clamping multi-MP identity to SoftPreview≤2048 was wrong —
-    // it manufactured a low-res draft that then fought host upgrades (soft↔full).
-    // Geom bake on GUI only ≤ kGuiMaterializeMaxEdge (ASSERT_NOT_GUI_THREAD).
-    // Colour-only: grade on host (or ≤2048 stand-in if host is huge) once.
-    QImage sample = full;
-    SessionAppearance::PixelKind kind = SessionAppearance::PixelKind::FullSource;
-    constexpr int kColorOnlyDraftMaxEdge = 2048;
-    if (needGeomBake
-        && ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge) {
-        sample = ImageCache::clampToMaxEdge(
-            sample, ContentXform::kGuiMaterializeMaxEdge);
-        kind = SessionAppearance::PixelKind::SoftPreview;
-    } else if (!needGeomBake && needColor
-               && ImageCache::longEdge(sample) > kColorOnlyDraftMaxEdge) {
-        sample = ImageCache::clampToMaxEdge(sample, kColorOnlyDraftMaxEdge);
-        kind = SessionAppearance::PixelKind::SoftPreview;
-    }
-    // else identity: keep host size + FullSource (no artificial Soft demotion)
-
-    QImage display;
-    if (unorientedSource && needGeomBake) {
-        display = SessionAppearance::materializeDisplay(sample, contentOnly, kind);
-        if (display.isNull()) {
-            display = sample;
-        }
-    } else if (unorientedSource && needColor) {
-        display = applyColorAdjustments(sample, contentOnly.colorAdjust);
-        if (display.isNull()) {
-            display = sample;
-        }
-    } else {
-        display = sample;
-    }
-    if (display.isNull()) {
-        display = sample;
-    }
-    attachDisplaySample(item, display, contentOnly, kind);
+    attachDisplaySample(item, sample.display, contentOnly, sample.kind);
     // Geometry: file-native orient size only (never soft pixels, never crop box).
     applyContentLayoutSize(item, contentOnly);
     item->setSessionCrop(false, QRect());
@@ -356,7 +315,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
                    "[crop] enter-full done imageSize=%1x%2 display=%3x%4 "
                    "appliedCrop=%5 contentTurns=%6")
                    .arg(item->imageSize().width()).arg(item->imageSize().height())
-                   .arg(display.width()).arg(display.height())
+                   .arg(sample.display.width()).arg(sample.display.height())
                    .arg(item->sessionHasCrop() ? 1 : 0)
                    .arg(contentOnly.contentQuarterTurns);
     }
