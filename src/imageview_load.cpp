@@ -68,304 +68,48 @@ int ImageView::pathOrderOccurrences(const QString &path) const
 
 WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
 {
-    // Prefer stable session-image id appearance; path map is legacy only.
-    //
-    // Image mode LoadReplace: the sole canvas item is the current session
-    // image, so m_sessionId.currentIdValue() identifies it correctly.
-    //
-    // Gallery / Workspace LoadAdd must not call this: each tile is bound to
-    // its own session id *after* creation. Applying m_sessionId.currentIdValue() here
-    // would bake the navigated image's crop into every newly decoded tile.
-    if (m_sessionId.hasCurrentId()) {
-        seedSessionAppearanceFromState(m_sessionId.currentIdValue(), path);
-        if (const WorkspaceItemState *sit = appearance().get(m_sessionId.currentIdValue())) {
-            return *sit;
-        }
-        // Bound session image with no appearance entry = full frame, no path fallback.
-        return {};
-    }
-    // Path map only when unbound (no session image id).
-    if (const WorkspaceItemState *st = m_itemStateBook.get(path)) {
-        return *st;
-    }
-    return {};
+    return m_displayPipeline.appearanceForNewImageModeItem(path);
 }
 
 ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image,
                                           bool applyStoredSessionCrop)
 {
-    if (image.isNull()) {
-        return nullptr;
-    }
-    // @p image is always host-raw (workers no longer bake). Size-first ctor;
-    // never QPixmap::fromImage of multi-MP in ImageItem(path, image).
-    WorkspaceItemState app;
-    if (applyStoredSessionCrop && isImageMode()) {
-        // Always attempt seed from path XDG when bound. The old gate
-        // !(haveId && !appearance().get(id)) *skipped* seed when the slot was
-        // empty — which is exactly when durable rotate/flip must be loaded
-        // after restart. appearanceForNewImageModeItem seeds then returns
-        // identity only if XDG has nothing.
-        if (m_sessionId.hasCurrentId()
-            || m_itemStateBook.contains(path)) {
-            app = appearanceForNewImageModeItem(path);
-        }
-    }
-    // Logical size only from probe / map — never sample (LQIP/soft) dims.
-    QSize native = layoutSizeForPath(path, QImage());
-    if (isProvisionalImageSize(path)
-        || !isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
-        // Cold: 1×1 until sizeReady; soft install must not invent geometry.
-        native = QSize(1, 1);
-        scheduleImageSizeProbe(path);
-    }
-    QSize intrinsic = ContentXform::layoutSize(native, app);
-    if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {
-        intrinsic = QSize(1, 1);
-    }
-
-    auto *item = new ImageItem(path, intrinsic);
-    applyItemModeFlags(item);
-    m_scene->addItem(item);
-    m_items.append(item);
-    registerItemDisplaySurface(item);
-
-    // @p image is host-raw. Sole materialize site is installDisplayPixels.
-    const bool wantBake = SessionAppearance::hasContentAppearance(app)
-        || !app.colorAdjust.isIdentity();
-    if (wantBake) {
-        // Seed item chrome so wantAppearanceForItem can merge if the store slot
-        // is still empty (bound id with no entry yet).
-        item->setContentHFlip(app.contentHFlip);
-        item->setContentVFlip(app.contentVFlip);
-        item->setSessionCrop(app.hasCrop, app.cropRect);
-        item->setColorAdjustmentsRecord(app.colorAdjust);
-        const SessionImageId sid = isImageMode()
-            ? m_sessionId.currentIdValue()
-            : kInvalidSessionImageId;
-        const int hostEdge = ImageCache::longEdge(image);
-        const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
-            ? SessionAppearance::PixelKind::FullSource
-            : SessionAppearance::PixelKind::SoftPreview;
-        installDisplayPixels(item, image, kind, sid);
-    } else {
-        if (!path.isEmpty()) {
-            ImageCache::put(path, image);
-        }
-        // Always installDisplayPixels so seed + materialize run. Skipping that
-        // for Image-mode Soft (setPreviewImage) left durable orient unapplied.
-        const int hostEdge = ImageCache::longEdge(image);
-        const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
-            ? SessionAppearance::PixelKind::FullSource
-            : SessionAppearance::PixelKind::SoftPreview;
-        const SessionImageId sid = isImageMode()
-            ? m_sessionId.currentIdValue()
-            : item->sessionId();
-        installDisplayPixels(item, image, kind, sid);
-    }
-    return item;
+    return m_displayPipeline.createItemFromImage(path, image, applyStoredSessionCrop);
 }
-
 
 void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
                                                    const QVector<SessionImageId> &ids)
 {
-    // Fresh session: allow seed again for new ids (old set cleared on invalidate).
-    const int n = ViewTransform::pairCount(paths.size(), ids.size());
-    for (int i = 0; i < n; ++i) {
-        appearance().clearSeedAttempted(ids.at(i));
-    }
-    // Small sessions: fine on GUI (few stats). Large sessions: locatorId +
-    // appearance SQLite used to run O(n) on the GUI during open and freeze the
-    // event loop while the HUD still said "Reading file info…".
-    if (n <= 24) {
-        for (int i = 0; i < n; ++i) {
-            if (ids.at(i) == kInvalidSessionImageId || paths.at(i).isEmpty()) {
-                continue;
-            }
-            seedSessionAppearanceFromState(ids.at(i), paths.at(i));
-        }
-        return;
-    }
-    QVector<SessionImageId> idsCopy = ids.mid(0, n);
-    QStringList pathsCopy = paths.mid(0, n);
-    const QPointer<ImageView> guard(this);
-    QThreadPool::globalInstance()->start([guard, pathsCopy, idsCopy]() {
-        struct Hit {
-            SessionImageId sid = kInvalidSessionImageId;
-            QString path;
-            ThumtooCache::StoredContentAppearance stored;
-        };
-        QVector<Hit> hits;
-        hits.reserve(pathsCopy.size());
-        // Every examined sid must be marked attempted on the GUI (including
-        // load miss / identity) so wantAppearanceForItem does not re-drive
-        // locatorId on every paint.
-        QVector<SessionImageId> attempted;
-        attempted.reserve(pathsCopy.size());
-        for (int i = 0; i < pathsCopy.size(); ++i) {
-            if (idsCopy.at(i) == kInvalidSessionImageId || pathsCopy.at(i).isEmpty()) {
-                continue;
-            }
-            attempted.push_back(idsCopy.at(i));
-            ThumtooCache::StoredContentAppearance stored;
-            if (!ThumtooCache::loadContentAppearance(pathsCopy.at(i), &stored)) {
-                continue;
-            }
-            if (stored.isIdentity()) {
-                continue;
-            }
-            hits.push_back(Hit{idsCopy.at(i), pathsCopy.at(i), stored});
-        }
-        if (hits.isEmpty() && attempted.isEmpty()) {
-            return;
-        }
-        QMetaObject::invokeMethod(guard.data(), [guard, hits, attempted]() {
-            ImageView *host = guard.data();
-            if (!host) {
-                return;
-            }
-            for (const SessionImageId sid : attempted) {
-                host->markAppearanceSeedAttempted(sid);
-            }
-            for (const Hit &h : hits) {
-                host->applyStoredContentAppearanceSeed(h.sid, h.path, h.stored);
-            }
-        }, Qt::QueuedConnection);
-    });
+    m_displayPipeline.seedSessionAppearancesFromPaths(paths, ids);
 }
 
 void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString &path)
 {
-    if (sid == kInvalidSessionImageId || path.isEmpty()) {
-        return;
-    }
-    // One attempt per session id — archive/miss paths must not re-hit locatorId
-    // on every paint via wantAppearanceForItem.
-    if (appearance().seedAttempted(sid)) {
-        return;
-    }
-    appearance().markSeedAttempted(sid);
-    ThumtooCache::StoredContentAppearance stored;
-    if (!ThumtooCache::loadContentAppearance(path, &stored)) {
-        return;
-    }
-    if (stored.isIdentity()) {
-        return;
-    }
-    applyStoredContentAppearanceSeed(sid, path, stored);
+    m_displayPipeline.seedSessionAppearanceFromState(sid, path);
 }
 
 void ImageView::markAppearanceSeedAttempted(SessionImageId sid)
 {
-    if (sid != kInvalidSessionImageId) {
-        appearance().markSeedAttempted(sid);
-    }
+    m_displayPipeline.markAppearanceSeedAttempted(sid);
 }
 
 void ImageView::applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
                                                  const ThumtooCache::StoredContentAppearance &stored)
 {
-    if (sid == kInvalidSessionImageId || path.isEmpty() || stored.isIdentity()) {
-        return;
-    }
-    // Worker path may not have marked attempted yet; mark here so paint does not
-    // re-drive locatorId via wantAppearanceForItem.
-    appearance().markSeedAttempted(sid);
-    if (appearance().contains(sid)) {
-        // Keep a non-identity entry; refill only if the slot is still empty of
-        // content ops so Gallery→Image cannot miss durable orientation.
-        if (const WorkspaceItemState *cur = appearance().get(sid)) {
-            if (SessionAppearance::hasContentAppearance(*cur)) {
-                return;
-            }
-        }
-    }
-    WorkspaceItemState seed;
-    seed.sessionId = sid;
-    seed.path = path;
-    // Orient/flip/grade only. Crop is per SessionImageId — never seed from
-    // path-keyed XDG (duplicates share a path; last crop would leak).
-    seed.contentHFlip = stored.contentHFlip;
-    seed.contentVFlip = stored.contentVFlip;
-    seed.contentQuarterTurns = stored.contentQuarterTurns;
-    if (stored.hasGrade) {
-        // Durable gradeGamma is percent (100 = 1.0); 0 contrast/sat = identity 100.
-        seed.colorAdjust = ColorAdjustments::fromDurableGrade(
-            stored.gradeBrightness, stored.gradeContrast, stored.gradeSaturation,
-            stored.gradeHue, stored.gradeGamma, stored.gradeInvert);
-    }
-    appearance().set(sid, seed);
+    m_displayPipeline.applyStoredContentAppearanceSeed(sid, path, stored);
 }
 
 void ImageView::installDisplayPreservingView(ImageItem *item, const QImage &pixels,
                                              SessionAppearance::PixelKind kind,
                                              SessionImageId sid)
 {
-    if (!item || pixels.isNull()) {
-        return;
-    }
-    const QSize before = item->imageSize();
-    if (sid == kInvalidSessionImageId) {
-        sid = item->sessionId() != kInvalidSessionImageId
-                  ? item->sessionId()
-                  : m_sessionId.currentIdValue();
-    }
-    installDisplayPixels(item, pixels, kind, sid);
-    preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
+    m_displayPipeline.installDisplayPreservingView(item, pixels, kind, sid);
 }
 
 WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
                                                       SessionImageId sid) const
 {
-    WorkspaceItemState want;
-    if (!item) {
-        return want;
-    }
-    SessionImageId id = sid;
-    if (id == kInvalidSessionImageId) {
-        id = item->sessionId();
-    }
-    if (id == kInvalidSessionImageId && isImageMode()) {
-        id = m_sessionId.currentIdValue();
-    }
-    if (id != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = appearance().get(id)) {
-            want = *app;
-        }
-        // Cold open / ←→: id slot often empty until first seed. Path XDG holds
-        // durable rotate/flip/grade — pull it before materialize or we paint
-        // unoriented host forever.
-        if (!SessionAppearance::hasContentAppearance(want)
-            && want.colorAdjust.isIdentity()
-            && !item->path().isEmpty()) {
-            const_cast<ImageView *>(this)->seedSessionAppearanceFromState(
-                id, item->path());
-            if (const WorkspaceItemState *app = appearance().get(id)) {
-                want = *app;
-            }
-        }
-    } else if (item->sessionId() == kInvalidSessionImageId) {
-        if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
-            want = *st;
-        }
-    }
-    const ContentXform::Value applied =
-        item->hasAppliedContentXform() ? item->appliedContentXform()
-                                       : ContentXform::Value{};
-    SessionAppearance::mergeAppliedAndLiveFlags(
-        want,
-        item->hasAppliedContentXform() ? &applied : nullptr,
-        item->contentHFlip(), item->contentVFlip(),
-        item->sessionHasCrop(), item->sessionCropRect());
-    return want;
-}
-
-DisplaySurface::State ImageView::displaySurfaceStateForItem(const ImageItem *item,
-                                                            int hostLongEdge,
-                                                            bool climbPending) const
-{
-    return m_displayPipeline.displaySurfaceStateForItem(item, hostLongEdge, climbPending);
+    return m_displayPipeline.wantAppearanceForItem(item, sid);
 }
 
 bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
@@ -392,19 +136,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
 
 ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
 {
-    // Defer-populate only: size-resolve for Fill layouts must still create
-    // placeholders so soft can install. applyLayout stays deferred until
-    // finishGallerySizeResolve. Blocking on gallerySizeResolveActive() left
-    // m_items empty until a manual relayout (and never for pure Fill open).
-    if (m_gallerySoftBook.isDeferPopulate()) {
-        return nullptr;
-    }
-    auto *item = new ImageItem(path, intrinsicSize);
-    applyItemModeFlags(item);
-    m_scene->addItem(item);
-    m_items.append(item);
-    registerItemDisplaySurface(item);
-    return item;
+    return m_displayPipeline.createPlaceholderItem(path, intrinsicSize);
 }
 
 void ImageView::bindImageModeSessionCursor(ImageItem *item)
@@ -563,29 +295,13 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
 
 int ImageView::itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes) const
 {
-    // On-screen long edge in device pixels, snapped to a ladder step.
-    // Gallery visible tiles and Image-mode zoom climb share this metric.
-    if (!item) {
-        return ThumtooCache::kFilmstripLadderEdge;
-    }
-    const QRectF br = item->contentSceneRect();
-    if (br.isEmpty()) {
-        return ThumtooCache::kFilmstripLadderEdge;
-    }
-    const QPointF a = mapFromScene(br.topLeft());
-    const QPointF b = mapFromScene(br.bottomRight());
-    const qreal longPx =
-        ViewTransform::chebyshev(a, b) * devicePixelRatioF();
-    return DisplayEdgePolicy::needEdgeFromScreenLongPx(longPx, allowHighRes);
+    return m_displayPipeline.itemOnScreenNeedEdge(item, allowHighRes);
 }
 
 int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const
 {
-    // Visible tiles: full on-screen need. Off-screen / idle: soft band only.
-    return itemOnScreenNeedEdge(item, allowHighRes);
+    return m_displayPipeline.galleryDisplayEdgeForItem(item, allowHighRes);
 }
-
-
 
 void ImageView::gallerySoftResetPath(const QString &path)
 {

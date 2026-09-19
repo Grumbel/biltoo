@@ -8,6 +8,7 @@
 #include "displaysurface.h"
 #include "sessionappearance.h"
 #include "pathrasterservice.h"
+#include "thumtoocache.h"
 
 #include <QTimer>
 
@@ -120,6 +121,23 @@ public:
                               int role);
     bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);
     void completeLoadRestore(const QString &path, const QImage &image);
+    WorkspaceItemState appearanceForNewImageModeItem(const QString &path);
+    ImageItem *createItemFromImage(const QString &path, const QImage &image,
+                                   bool applyStoredSessionCrop = true);
+    void seedSessionAppearancesFromPaths(const QStringList &paths,
+                                         const QVector<SessionImageId> &ids);
+    void seedSessionAppearanceFromState(SessionImageId sid, const QString &path);
+    void markAppearanceSeedAttempted(SessionImageId sid);
+    void applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
+                                          const ThumtooCache::StoredContentAppearance &stored);
+    void installDisplayPreservingView(ImageItem *item, const QImage &pixels,
+                                      SessionAppearance::PixelKind kind,
+                                      SessionImageId sid);
+    WorkspaceItemState wantAppearanceForItem(const ImageItem *item,
+                                             SessionImageId sid) const;
+    ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
+    int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = false) const;
+    int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
 
 private:
     ImageView *m_view = nullptr; // not owned

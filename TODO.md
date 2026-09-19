@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1645-create-want-seed-controller.** Tier 5b: move createItem/wantAppearance/seed/edge.
+Prior: **1644**.
+
+### Change
+- DisplayPipelineController owns:
+  - `appearanceForNewImageModeItem` / `createItemFromImage` / `createPlaceholderItem`
+  - `seedSessionAppearancesFromPaths` / `seedSessionAppearanceFromState` / `markAppearanceSeedAttempted` / `applyStoredContentAppearanceSeed`
+  - `installDisplayPreservingView` / `wantAppearanceForItem`
+  - `itemOnScreenNeedEdge` / `galleryDisplayEdgeForItem`
+- ImageView thin-forwards
+- `imageview_load.cpp` ~880 lines (near Tier 5 exit target)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1645-create-want-seed-controller.bundle HEAD
+```
+
+### Next
+- Remaining load.cpp (bindImageMode, resolvePendingPixels, pixelKind, frame/legacy)
+- Host accessors to replace friend; trim thin-forward file further if needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1644-preview-restore-controller.** Tier 5b: move preview/restore handlers.
 Prior: **1643**.
 
