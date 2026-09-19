@@ -188,3 +188,11 @@ JXL does **not** replace cold jpeg_shrink overview of a large archive JPEG for f
 ---
 
 *Session notes 2026-09-13: ladder semantics, progressive 1+4, scale-from-large vs native 1024, tile assemble cost, SQL completeness / resume.*
+
+## Global path tile RAM
+
+Succeeded grid tiles live in process-wide `TileLodRegistry` (path-keyed), not on
+the `ImageItem`. Image ←/→ and mode switches release per-item sessions only;
+tiles remain until the ~384 MiB byte budget or 64 idle-path cap evicts them
+(`BILTOO_TILE_RAM_MIB` / `BILTOO_TILE_MAX_IDLE`). See [TILE_LOD.md](TILE_LOD.md).
+
