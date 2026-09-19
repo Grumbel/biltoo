@@ -85,6 +85,22 @@ public:
      */
     static int fullRasterScheduleEdge(const QString &path);
 
+    /**
+     * Pure Apply pixel bake: host raster + session want → display sample.
+     * When @p hostFromCache is false, orient is assumed already baked into host
+     * so bake content flips/turns are cleared. Multi-MP hosts are clamped and
+     * marked SoftPreview.
+     */
+    struct ApplyBakeResult {
+        QImage display;
+        WorkspaceItemState bake;
+        bool multiMp = false;
+        bool ok() const { return !display.isNull(); }
+    };
+
+    static ApplyBakeResult materializeApplyDisplay(const QImage &host, bool hostFromCache,
+                                                   WorkspaceItemState st);
+
     bool isHandleHot(CropHandle h) const
     {
         return hoverHandle == h || activeHandle == h;

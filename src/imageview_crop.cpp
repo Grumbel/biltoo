@@ -363,17 +363,6 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     m_crop.setShowingFullImage(true);
 }
 
-void ImageView::initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
-                                                 bool haveApp)
-{
-    if (!item) {
-        return;
-    }
-    m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
-                                       item->imageSize(),
-                                       haveApp ? &app : nullptr, haveApp);
-}
-
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
 {
     if (!item) {
@@ -416,7 +405,9 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     if (isWorkspaceMode() && footW0 > 1.0 && footH0 > 1.0) {
         alignItemCenterToScene(item, center0);
     }
-    initCropRectFromPriorAppearance(item, app, haveApp);
+    m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
+                                       item->imageSize(),
+                                       haveApp ? &app : nullptr, haveApp);
 
     // Crop chrome + fitItem only after pixels and contentRect match the draft.
     m_crop.activateModeAfterDraft();
@@ -969,29 +960,14 @@ bool ImageView::applyCropCommit(ImageItem *item)
             }
         }
 
-        // materializeDisplay: prefer unoriented ImageCache host + full want.
-        // Draft item pixels may be orient- or crop-baked — crop-only bake then.
-        WorkspaceItemState bake = st;
-        if (!hostFromCache) {
-            bake.contentQuarterTurns = 0;
-            bake.contentHFlip = false;
-            bake.contentVFlip = false;
-        }
-        QImage sample = host;
-        const bool multiMp =
-            ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge;
-        if (multiMp) {
-            sample = ImageCache::clampToMaxEdge(
-                sample, ContentXform::kGuiMaterializeMaxEdge);
-        }
-        const QImage display = SessionAppearance::materializeDisplay(
-            sample, bake,
-            multiMp ? SessionAppearance::PixelKind::SoftPreview
-                    : SessionAppearance::PixelKind::FullSource);
-        if (display.isNull()) {
+        const CropSession::ApplyBakeResult baked =
+            CropSession::materializeApplyDisplay(host, hostFromCache, st);
+        if (!baked.ok()) {
             flashHud(tr("Crop"), tr("Crop bake failed"));
             return false;
         }
+        const QImage &display = baked.display;
+        const bool multiMp = baked.multiMp;
 
         // Placement scale is never written by crop (Workspace Zoom stays put).
         // Geometry = layoutSize(fileNative, st) via applyContentLayoutSize only.
@@ -1177,19 +1153,13 @@ void ImageView::leaveCropModeInternal(bool apply)
     clearCropModeState();
 }
 
-QPolygonF ImageView::cropPolygonItemLocal() const
-{
-    return m_crop.polygonLocal();
-}
-
-
 QPolygonF ImageView::cropPolygonView() const
 {
     ImageItem *item = cropTargetItem();
     if (!item || !m_crop.hasValidRect()) {
         return {};
     }
-    const QPolygonF local = cropPolygonItemLocal();
+    const QPolygonF local = m_crop.polygonLocal();
     QPolygonF viewPoly;
     viewPoly.reserve(local.size());
     for (const QPointF &pt : local) {

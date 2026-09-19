@@ -100,6 +100,34 @@ int CropSession::fullRasterScheduleEdge(const QString &path)
     return edge;
 }
 
+CropSession::ApplyBakeResult CropSession::materializeApplyDisplay(const QImage &host,
+                                                                  bool hostFromCache,
+                                                                  WorkspaceItemState st)
+{
+    ApplyBakeResult out;
+    out.bake = st;
+    if (host.isNull()) {
+        return out;
+    }
+    // materializeDisplay: prefer unoriented ImageCache host + full want.
+    // Draft item pixels may be orient- or crop-baked — crop-only bake then.
+    if (!hostFromCache) {
+        out.bake.contentQuarterTurns = 0;
+        out.bake.contentHFlip = false;
+        out.bake.contentVFlip = false;
+    }
+    QImage sample = host;
+    out.multiMp = ImageCache::longEdge(sample) > ContentXform::kGuiMaterializeMaxEdge;
+    if (out.multiMp) {
+        sample = ImageCache::clampToMaxEdge(sample, ContentXform::kGuiMaterializeMaxEdge);
+    }
+    out.display = SessionAppearance::materializeDisplay(
+        sample, out.bake,
+        out.multiMp ? SessionAppearance::PixelKind::SoftPreview
+                    : SessionAppearance::PixelKind::FullSource);
+    return out;
+}
+
 bool CropSession::locksPath(const QString &path) const
 {
     if (!draftSampleFrozen || path.isEmpty()) {

@@ -1622,7 +1622,6 @@ private:
     QRectF cropRectItemLocal() const { return m_crop.currentRect(); }
     qreal cropRotation() const { return m_crop.currentRotation(); }
     /** Crop corners in item-local space (rotation about rect centre). */
-    QPolygonF cropPolygonItemLocal() const;
     QRectF cropRectView() const;
     QPolygonF cropPolygonView() const;
     /** Viewport chrome button rects under the draft frame (empty when inactive). */
@@ -1677,8 +1676,6 @@ private:
     void installFullImageForCrop(ImageItem *item, const QImage &full,
                                  const WorkspaceItemState *app, bool haveApp,
                                  bool unorientedSource);
-    void initCropRectFromPriorAppearance(ImageItem *item, const WorkspaceItemState &app,
-                                         bool haveApp);
     /** Workspace: shift item so crop-frame centre maps to @p sceneAnchor. */
     void alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
