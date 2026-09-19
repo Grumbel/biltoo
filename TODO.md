@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1457-itemstate-bindbook-pathorder.** PathItemStateBook, BindBook, PathOrder.
+Prior: **1456**. Commits 1457a–1457c (+ docs).
+
+### Commits
+1. **PathItemStateBook** get/set/contains (no byPath digs)
+2. **SessionBindBook** append/index/select API
+3. **SessionPathOrder** appendRow
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1457-itemstate-bindbook-pathorder.bundle HEAD
+```
+Requires tip **1456**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1456-canvas-pathorder-sizebook-margins.** Canvas tile, path order, size book, margins.
 Prior: **1455**. Commits 1456a–1456e (+ docs).
 

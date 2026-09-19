@@ -172,6 +172,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **CanvasBackground** setWorkspaceTile; **SessionPathOrder** setOrder;
   **ImageSizeBook** known/contains; **ViewTransform** kEnsureVisibleMargin;
   seekbar near-edge via ProgressHud isSeekHit.
+- **PathItemStateBook** get/set/contains (no byPath digs); **SessionBindBook**
+  append/index/select helpers; **SessionPathOrder** appendRow.
 
 
 ## Current pain (evidence)
