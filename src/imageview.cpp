@@ -257,7 +257,7 @@ ImageView::ImageView(QWidget *parent)
     m_hudFlashTimer->setSingleShot(true);
     m_layoutDebounceTimer = new QTimer(this);
     m_layoutDebounceTimer->setSingleShot(true);
-    m_layoutDebounceTimer->setInterval(48);
+    m_layoutDebounceTimer->setInterval(LayoutDebounce::kIntervalMs);
     connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
         GalleryPackReason reason = GalleryPackReason::ContentChange;
         if (isGalleryMode() && m_layout.mode != LayoutMode::FreeForm

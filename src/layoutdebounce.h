@@ -11,6 +11,9 @@
  * Timer ownership stays on ImageView.
  */
 struct LayoutDebounce {
+    /** Debounce QTimer interval for scheduleApplyLayout (ms). */
+    static constexpr int kIntervalMs = 48;
+
     GalleryPackReason reason = GalleryPackReason::ContentChange;
     bool pending = false;
 
