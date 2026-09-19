@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1491-crop-host-bound.** Chrome buttons helper, Apply host pick, cropSessionBoundItem.
+Prior: **1490**. Commits 1491a–1491c (+ docs).
+
+### Commits
+1. cropChromeButtons shared layout for action buttons
+2. pickCropApplyHost for Apply raster selection
+3. cropSessionBoundItem for IDENTITY-bound subject
+
+### Apply
+```bash
+git pull /path/to/biltoo-1491-crop-host-bound.bundle HEAD
+```
+Requires tip **1490** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1490-crop-activate-drag.** activateModeAfterDraft, draftFootprint, beginHandleDrag rotate, isGeometryHandle.
 Prior: **1489**. Commits 1490a–1490c (+ docs).
 
