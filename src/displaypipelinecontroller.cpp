@@ -23,6 +23,7 @@
 #include "coloradjust.h"
 #include "imagesizebook.h"
 #include "biltoo_logging.h"
+#include "ttfp_trace.h"
 
 #include <QFileInfo>
 #include <QThreadPool>
@@ -281,7 +282,7 @@ void DisplayPipelineController::installImageModeSampleInPlace(ImageItem *item, c
     if (!item || image.isNull()) {
         return;
     }
-    // Same rules as every other attach: accept → materialize → attachDisplaySample.
+    // Same rules as every other attach: accept → materialize → m_view->attachDisplaySample.
     m_view->installDisplayPixels(item, image, kind, item->sessionId() != kInvalidSessionImageId
                                              ? item->sessionId()
                                              : m_view->m_sessionId.currentIdValue());
@@ -379,7 +380,7 @@ bool DisplayPipelineController::tryInstallImageModeSampleBaked(const QString &pa
         return true;
     }
     // First install for this path: SoftPreview uses pending-tile path so
-    // FullSource-only createItemFromImage is not forced on a soft sample.
+    // FullSource-only m_view->createItemFromImage is not forced on a soft sample.
     if (kind == SessionAppearance::PixelKind::SoftPreview) {
         m_view->installImageModePendingTile(path, image);
         ensureImageModeQualityClimb(path, image);
@@ -913,18 +914,18 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     if (sid == kInvalidSessionImageId) {
         if (item->sessionId() != kInvalidSessionImageId) {
             sid = item->sessionId();
-        } else if (m_view->isImageMode() && m_sessionId.hasCurrentId()) {
-            sid = m_sessionId.currentIdValue();
+        } else if (m_view->isImageMode() && m_view->m_sessionId.hasCurrentId()) {
+            sid = m_view->m_sessionId.currentIdValue();
         }
     }
-    seedSessionAppearanceFromState(sid, path);
+    m_view->seedSessionAppearanceFromState(sid, path);
 
     // Absolute want xform (session store / path map / live flags).
     const WorkspaceItemState appearance = m_view->wantAppearanceForItem(item, sid);
 
     // Host cache is unoriented. Every ladder/decode sample that enters here is
     // host-raw (Gallery, Image, Workspace). Display-ready stash soft never
-    // enters this function — pendingTile attaches it via attachDisplaySample.
+    // enters this function — pendingTile attaches it via m_view->attachDisplaySample.
     //
     // Invariant: for session-bound tiles, attach only materializeDisplay(host,
     // store want). Never attach host under a content want. Never set applied
@@ -942,7 +943,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     if (m_view->isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
         pixelsForDisplay = DisplayEdgePolicy::clampSoftForCell(
             pixels,
-            galleryDisplayEdgeForItem(item, /*allowHighRes=*/true),
+            m_view->galleryDisplayEdgeForItem(item, /*allowHighRes=*/true),
             ThumtooCache::kFilmstripLadderEdge);
     }
     QImage display = pixelsForDisplay;
@@ -1024,13 +1025,13 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     if (!m_view->isImageMode() || path.isEmpty()) {
         return;
     }
-    // Slideshow owns the viewport with dwell/live blits. Pending tile used to
-    // clearLiveCanvas + cancelSlideshowMotion after fade-end cleared the hold,
+    // Slideshow owns the m_view->viewport with dwell/live blits. Pending tile used to
+    // m_view->clearLiveCanvas + cancelSlideshowMotion after fade-end cleared the hold,
     // wiping the dwell we just armed. Underlay is hidden for the whole show.
     if (m_view->m_slideshow.hud().isProgressActive()) {
         return;
     }
-    if (isCropDraftLockedPath(path)) {
+    if (m_view->isCropDraftLockedPath(path)) {
         return;
     }
 
@@ -1068,7 +1069,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
                 const QSize sz = m_view->layoutSizeForPath(path, QImage());
                 if (isPositiveSize(sz)) {
                     item->setIntrinsicSize(sz);
-                    syncImageModeSceneRect(item);
+                    m_view->syncImageModeSceneRect(item);
                 }
                 // Soft PreferCache encode is removed for Image underlay
                 // (LQIP + tiles only). Nav-hot: no IPC — settle loadImage probes
@@ -1123,7 +1124,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         }
         item->setPath(path);
         m_view->bindImageModeSessionCursor(item);
-        // Path change: drop prior sample AND content chrome. wantAppearanceForItem
+        // Path change: drop prior sample AND content chrome. m_view->wantAppearanceForItem
         // merges item->sessionHasCrop / contentHFlip when the store slot is empty;
         // leaking the previous image's crop into the new soft is the ←/→ stretch.
         if (pathChanged) {
@@ -1146,7 +1147,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         // matches store want — otherwise rematerialize from host so crop/rotate
         // in SessionAppearanceStore are not skipped (stale strip Soft looked like
         // "edits not persistent").
-        const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
+        const WorkspaceItemState want = m_view->wantAppearanceForItem(item, item->sessionId());
         if (displayReady && SessionAppearance::hasContentAppearance(want)) {
             const QImage host = ImageCache::get(path);
             if (!host.isNull()) {
@@ -1155,7 +1156,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             }
         }
         if (displayReady) {
-            attachDisplaySample(item, pixels, want,
+            m_view->attachDisplaySample(item, pixels, want,
                                 SessionAppearance::PixelKind::SoftPreview);
         } else {
             installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
@@ -1163,15 +1164,15 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         }
 
         // Intrinsic only from definitive file size — never from soft/LQIP sz.
-        const QSize known = logicalSizeForPath(path);
+        const QSize known = m_view->logicalSizeForPath(path);
         QSize targetSize = item->imageSize();
         if (isPositiveSize(known) && known.width() > 1 && known.height() > 1
-            && !isProvisionalImageSize(path)) {
+            && !m_view->isProvisionalImageSize(path)) {
             targetSize = ContentXform::layoutSize(known, want);
         }
         int didFit = 0;
         if (isPositiveSize(targetSize) && targetSize.width() > 1
-            && !isProvisionalImageSize(path)) {
+            && !m_view->isProvisionalImageSize(path)) {
             item->setIntrinsicSize(targetSize);
             const bool needFit =
                 sizeBefore.width() <= 1
@@ -1179,10 +1180,10 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             if (needFit || m_view->m_framing.isStickyZoomEnabled() || m_view->m_framing.hasPreservedViewScale()) {
                 // Aspect change, sticky mode, or free-zoom preserve across files.
                 m_view->resetImageModeItemPlacement(item);
-                applyImageModeFraming(item);
+                m_view->applyImageModeFraming(item);
                 didFit = 1;
             } else if (sizeBefore != targetSize) {
-                preserveImageViewOnLogicalSizeChange(item, sizeBefore, targetSize);
+                m_view->preserveImageViewOnLogicalSizeChange(item, sizeBefore, targetSize);
             }
         }
         // Single press: sync repaint so soft is visible before PreferCache.
@@ -1222,7 +1223,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
                          m_view->m_sessionId.currentIdValue());
     m_view->resetImageModeItemPlacement(item);
     m_view->prepareImageModeCanvas();
-    applyImageModeFraming(item);
+    m_view->applyImageModeFraming(item);
     m_view->setUpdatesEnabled(true);
     if (m_view->viewport()) {
         m_view->viewport()->update();
@@ -1260,7 +1261,7 @@ void DisplayPipelineController::installImageModeReplaceItem(const QString &path,
     // Filmstrip overrides are not driven by decode (selection/nav).
     // DOMAIN: flips/crop and *cardinal* rotation persist across navigation.
     // Arbitrary Workspace rotation stays on the free-form item only.
-    // createItemFromImage materializes host × store want (install invariant).
+    // m_view->createItemFromImage materializes host × store want (install invariant).
     m_view->bindImageModeSessionCursor(item);
     m_view->resetImageModeItemPlacement(item);
     m_view->applyLegacyPathFlipsIfNeeded(item, path);
@@ -1279,7 +1280,7 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
         return; // superseded by a newer navigation / open
     }
     // Stale navigation: only the current classic path may install.
-    // Empty multi-item canvas can still seed from classicPath.
+    // Empty multi-item canvas can still seed from m_view->classicPath.
     if (path != m_view->classicPath()) {
         return;
     }
@@ -1449,8 +1450,8 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
                              bound.id != kInvalidSessionImageId
                                  ? bound.id
                                  : existing->sessionId());
-        if (bound.id != kInvalidSessionImageId && appearance().get(bound.id)) {
-            applyState(existing, *appearance().get(bound.id));
+        if (bound.id != kInvalidSessionImageId && m_view->appearance().get(bound.id)) {
+            applyState(existing, *m_view->appearance().get(bound.id));
         }
         // Explicit drop position wins over restored gallery/workspace pose.
         applyPendingBindScenePos(existing, bound);

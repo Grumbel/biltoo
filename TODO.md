@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1641-fix-host-prefixes.** Fix DisplayPipelineController host call sites.
+Prior: **1640**.
+
+### Change
+- Prefix bare ImageView members/methods with `m_view->` in moved install/pending bodies
+- Include `ttfp_trace.h` for `TtfpTrace::noteFirstPixels`
+- Restore local `appearance` variable (was incorrectly rewritten as `m_view->appearance`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1641-fix-host-prefixes.bundle HEAD
+```
+
+### Next
+- scheduleImageLoad / classic decode / gallery soft
+- Host accessors to replace friend when surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1640-loadadd-controller.** Tier 5b: move LoadAdd membership handlers.
 Prior: **1639**.
 
