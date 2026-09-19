@@ -157,6 +157,23 @@ inline int progressBarHeight(bool seekbarVisible)
     return seekbarVisible ? 6 : 2;
 }
 
+constexpr int kTimelinePadX = 10;
+constexpr int kTimelinePadY = 4;
+constexpr int kTimelineCornerRadius = 6;
+/** Gap above bottom edge for the clock panel (above thin progress strip). */
+constexpr int kTimelineBottomGap = 10;
+
+/** Centred clock panel box above the bottom progress strip. */
+inline PanelBox placeTimelineClock(int viewW, int viewH, int textW, int textH)
+{
+    PanelBox box;
+    box.bgW = textW + 2 * kTimelinePadX;
+    box.bgH = textH + 2 * kTimelinePadY;
+    box.x = (viewW - box.bgW) / 2;
+    box.y = viewH - kTimelineBottomGap - box.bgH;
+    return box;
+}
+
 } // namespace HudGeometry
 
 #endif // HUDGEOMETRY_H

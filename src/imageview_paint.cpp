@@ -580,18 +580,18 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
                 const QFontMetrics fm(f);
                 const int textW = fm.horizontalAdvance(timeLine);
                 const int textH = fm.height();
-                const int padX = 10;
-                const int padY = 4;
-                const int bgW = textW + 2 * padX;
-                const int bgH = textH + 2 * padY;
-                const int x = (viewW - bgW) / 2;
-                const int y = viewH - 2 - 8 - bgH;
+                const HudGeometry::PanelBox clock =
+                    HudGeometry::placeTimelineClock(viewW, viewH, textW, textH);
                 painter.setBrush(m_hudPrefs.effectivePanelColor());
                 painter.setPen(Qt::NoPen);
-                painter.drawRoundedRect(QRect(x, y, bgW, bgH), 6, 6);
+                painter.drawRoundedRect(
+                    HudGeometry::panelRect(clock), HudGeometry::kTimelineCornerRadius,
+                    HudGeometry::kTimelineCornerRadius);
                 painter.setPen(m_hudPrefs.effectiveTextColor());
-                painter.drawText(QRect(x + padX, y + padY, textW, textH),
-                                 Qt::AlignLeft | Qt::AlignVCenter, timeLine);
+                painter.drawText(
+                    QRect(clock.x + HudGeometry::kTimelinePadX,
+                          clock.y + HudGeometry::kTimelinePadY, textW, textH),
+                    Qt::AlignLeft | Qt::AlignVCenter, timeLine);
             }
         }
     }
