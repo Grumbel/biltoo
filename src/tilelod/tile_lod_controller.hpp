@@ -54,6 +54,11 @@ public:
   void setEnabled(bool on) { m_enabled = on; }
 
   bool hasAnyTile() const;
+  /**
+   * Succeeded tiles present in the shared path cache (retained after a prior
+   * session release). True even before the first set_viewport / tick.
+   */
+  bool hasRetainedTiles() const;
   bool viewportFullyCovered() const;
   int targetScale() const;
   TileSession* session() { return m_session.get(); }

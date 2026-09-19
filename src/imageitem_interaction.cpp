@@ -1206,6 +1206,13 @@ void ImageItem::prepareTileLodPlan()
         m_tileLod.reset();
         return;
     }
+    // Retained path RAM: first plan after rebind must not skip set_viewport
+    // (lastDpc/vis still describe the previous file).
+    if (m_tileLod->hasRetainedTiles() && m_tileLodLastUpdateGen == 0
+        && m_tileLodLastDpc > 0.0) {
+        m_tileLodLastDpc = -1.0;
+        m_tileLodLastVisSource = QRectF();
+    }
     // Tile grid is always full native (source) size.
     // Gallery: durable min_scale floors the plan (no encode-on-miss budget).
     // Image/Workspace: always min_scale 0 so density can climb to full-res —

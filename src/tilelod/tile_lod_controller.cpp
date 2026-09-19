@@ -131,6 +131,14 @@ bool TileLodController::hasAnyTile() const
   return m_session && m_session->has_any_succeeded_tile();
 }
 
+bool TileLodController::hasRetainedTiles() const
+{
+  if (m_shared && m_shared->cache) {
+    return m_shared->cache->has_succeeded();
+  }
+  return hasAnyTile();
+}
+
 bool TileLodController::viewportFullyCovered() const
 {
   return m_session && m_session->coverage().fully_covered()
