@@ -1806,9 +1806,7 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
     }
     m_ssDwell.applyBias(m_ss.toBiasA, m_ss.toBiasB, m_ssDwell.travelDir, m_ssDwell.motionSign);
     m_ssDwell.setBiasPath(fromPath);
-    m_ss.fromMotionClock = m_ss.toMotionClock;
-    m_ss.setFromMotionClockRunning(true);
-    m_ss.setFromMotionT(m_ss.toMotionT);
+    m_ss.promoteFromMotionFromTo();
     m_ssDwell.setMotionT(m_ss.fromMotionT);
     // Keep the to-atlas as the from/dwell atlas — clearing it forced multi-MP
     // drawImage every frame until rebuild (visible frame drops on promote).
@@ -2514,22 +2512,18 @@ tilelod::TileLodController *ImageView::slideshowTilesForPath(const QString &path
         return nullptr;
     }
     if (path == m_ss.fromPath) {
-        if (!m_ss.fromTiles) {
-            m_ss.fromTiles = std::make_unique<tilelod::TileLodController>();
+        tilelod::TileLodController *ctrl = m_ss.ensureFromTiles();
+        if (ctrl->path() != path) {
+            ctrl->setPath(path);
         }
-        if (m_ss.fromTiles->path() != path) {
-            m_ss.fromTiles->setPath(path);
-        }
-        return m_ss.fromTiles.get();
+        return ctrl;
     }
     if (path == m_ss.toPath) {
-        if (!m_ss.toTiles) {
-            m_ss.toTiles = std::make_unique<tilelod::TileLodController>();
+        tilelod::TileLodController *ctrl = m_ss.ensureToTiles();
+        if (ctrl->path() != path) {
+            ctrl->setPath(path);
         }
-        if (m_ss.toTiles->path() != path) {
-            m_ss.toTiles->setPath(path);
-        }
-        return m_ss.toTiles.get();
+        return ctrl;
     }
     return nullptr;
 }

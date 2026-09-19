@@ -117,6 +117,30 @@ struct SlideshowPhaseState {
         toMotionClockRunning = true;
     }
 
+    /** Promote to-phase motion clock/T into from (after fade lands on B). */
+    void promoteFromMotionFromTo()
+    {
+        fromMotionClock = toMotionClock;
+        fromMotionClockRunning = true;
+        setFromMotionT(toMotionT);
+    }
+
+    tilelod::TileLodController *ensureFromTiles()
+    {
+        if (!fromTiles) {
+            fromTiles = std::make_unique<tilelod::TileLodController>();
+        }
+        return fromTiles.get();
+    }
+
+    tilelod::TileLodController *ensureToTiles()
+    {
+        if (!toTiles) {
+            toTiles = std::make_unique<tilelod::TileLodController>();
+        }
+        return toTiles.get();
+    }
+
     QPointF toBiasA{-1.0, -1.0};
     QPointF toBiasB{1.0, 1.0};
     QElapsedTimer fromMotionClock;
