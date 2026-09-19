@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1455-layout-phase-hover-loadgate.** Layout, phase raster, hover, load gate.
+Prior: **1454**. Commits 1455a–1455d (+ docs).
+
+### Commits
+1. **LayoutPrefs** setMode in setActiveMode
+2. **SlideshowPhaseState** clearRasterQueues / bumpPhaseUpgradeGeneration
+3. **ImageView** setHoverEdge / clearHoverEdge
+4. clearWorkspace loadGate clearPending + GallerySoftBook setDeferPopulate
+
+### Note
+Continues bag-transition series. Residual direct bag field writes are largely gone.
+Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1455-layout-phase-hover-loadgate.bundle HEAD
+```
+Requires tip **1454**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1454-phase-path-zoom-text-tiles.** Phase path/clock, zoom, text, tiles.
 Prior: **1453**. Commits 1454a–1454e (+ docs).
 

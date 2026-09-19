@@ -166,6 +166,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowPhaseState** setFromPath/setToPath / start*MotionClock / promoteFromMotionFromTo /
   ensureFromTiles / ensureToTiles.
 - **ZoomRegionGesture** setRubberBand; **TextLayerSession** searchMatches transitions.
+- **LayoutPrefs** setMode in setActiveMode; **SlideshowPhaseState** clearRasterQueues /
+  bumpPhaseUpgradeGeneration; **ImageView** setHoverEdge / clearHoverEdge;
+  clearWorkspace via loadGate clearPending + GallerySoftBook setDeferPopulate.
 
 
 ## Current pain (evidence)
