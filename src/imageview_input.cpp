@@ -544,16 +544,15 @@ bool ImageView::tryMousePressCrop(QMouseEvent *event)
 
 bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
 {
-    if (!(m_zoomRegion.armed || (isWorkspaceMode() && m_tool == Tool::Zoom))
+    if (!(m_zoomRegion.isArmed() || (isWorkspaceMode() && m_tool == Tool::Zoom))
         || event->button() != Qt::LeftButton) {
         return false;
     }
     m_zoomRegion.beginDrag(event->pos());
-    if (!m_zoomRegion.rubberBand) {
+    if (!m_zoomRegion.hasRubberBand()) {
         m_zoomRegion.setRubberBand(new QRubberBand(QRubberBand::Rectangle, viewport()));
     }
-    m_zoomRegion.rubberBand->setGeometry(QRect(m_zoomRegion.origin, QSize()));
-    m_zoomRegion.rubberBand->show();
+    m_zoomRegion.showRubberAt(m_zoomRegion.originPos());
     event->accept();
     return true;
 }
@@ -1187,10 +1186,10 @@ bool ImageView::tryMouseMoveCropHover(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
 {
-    if (!m_zoomRegion.dragging || !m_zoomRegion.rubberBand) {
+    if (!m_zoomRegion.isDragging() || !m_zoomRegion.hasRubberBand()) {
         return false;
     }
-    m_zoomRegion.rubberBand->setGeometry(ViewTransform::rubberRect(m_zoomRegion.origin, event->pos()));
+    m_zoomRegion.updateRubberTo(event->pos());
     event->accept();
     return true;
 }
@@ -1590,10 +1589,10 @@ bool ImageView::tryMouseReleaseCrop(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 {
-    if (!m_zoomRegion.dragging) {
+    if (!m_zoomRegion.isDragging()) {
         return false;
     }
-    const QRect viewRect = ViewTransform::rubberRect(m_zoomRegion.origin, event->pos());
+    const QRect viewRect = ViewTransform::rubberRect(m_zoomRegion.originPos(), event->pos());
     m_zoomRegion.endDrag();
     m_zoomRegion.hideRubber();
     // Ignore tiny clicks — treat as cancel rather than extreme zoom.

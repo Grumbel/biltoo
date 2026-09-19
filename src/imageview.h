@@ -680,7 +680,7 @@ public:
      */
     void armZoomRegion();
     void cancelZoomRegion();
-    bool zoomRegionArmed() const { return m_zoomRegion.armed; }
+    bool zoomRegionArmed() const { return m_zoomRegion.isArmed(); }
     /** Current view-level scale factor (workspace zoom). */
     qreal viewScale() const;
     void rotateLeft();

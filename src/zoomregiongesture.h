@@ -76,6 +76,31 @@ struct ZoomRegionGesture {
     {
         return ViewTransform::significantRubber(viewRect, kMinRubberPx);
     }
+
+    bool isArmed() const { return armed; }
+
+    bool isDragging() const { return dragging; }
+
+    bool hasRubberBand() const { return rubberBand != nullptr; }
+
+    QPoint originPos() const { return origin; }
+
+    void showRubberAt(const QPoint &pos)
+    {
+        if (!rubberBand) {
+            return;
+        }
+        rubberBand->setGeometry(QRect(pos, QSize()));
+        rubberBand->show();
+    }
+
+    void updateRubberTo(const QPoint &pos)
+    {
+        if (!rubberBand) {
+            return;
+        }
+        rubberBand->setGeometry(ViewTransform::rubberRect(origin, pos));
+    }
 };
 
 #endif // ZOOMREGIONGESTURE_H
