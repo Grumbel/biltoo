@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1458-pathorder-soft-bind-accessors.** PathOrder, SoftBook, BindBook accessors.
+Prior: **1457**. Commits 1458a–1458d (+ docs).
+
+### Commits
+1. **SessionPathOrder** isEmpty/size/pathAt/idAt
+2. **GallerySoftBook** state/get/find
+3. **SessionPathOrder** pathList/idList; **BindBook** bindCount
+4. **SessionBindBook** bindAt/removeBindAt/takeBindAt
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1458-pathorder-soft-bind-accessors.bundle HEAD
+```
+Requires tip **1457**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1457-itemstate-bindbook-pathorder.** PathItemStateBook, BindBook, PathOrder.
 Prior: **1456**. Commits 1457a–1457c (+ docs).
 

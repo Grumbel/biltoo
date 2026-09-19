@@ -174,6 +174,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   seekbar near-edge via ProgressHud isSeekHit.
 - **PathItemStateBook** get/set/contains (no byPath digs); **SessionBindBook**
   append/index/select helpers; **SessionPathOrder** appendRow.
+- **SessionPathOrder** isEmpty/size/pathAt/idAt/pathList/idList; **GallerySoftBook**
+  state/get/find; **SessionBindBook** bindCount/bindAt/removeBindAt/takeBindAt.
 
 
 ## Current pain (evidence)
