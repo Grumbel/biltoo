@@ -113,6 +113,24 @@ inline int overlayFontPixelSize(qreal viewScale, int targetPx = 14,
     return qBound(lo, qRound(qreal(targetPx) / viewScale), hi);
 }
 
+
+/** Point at parameter t ∈ [0,1] along segment a→b (t clamped). */
+inline QPointF pointAlong(const QPointF &a, const QPointF &b, qreal t)
+{
+    t = clamp01(t);
+    return a + (b - a) * t;
+}
+
+
+/** Integer progress for QProgressBar-style widgets (0 when total ≤ 0). */
+inline int clampedProgress(int current, int total)
+{
+    if (total <= 0) {
+        return 0;
+    }
+    return qBound(0, current, total);
+}
+
 } // namespace ViewTransform
 
 #endif // VIEWTRANSFORM_H

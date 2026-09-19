@@ -562,7 +562,7 @@ void MainWindow::setExpandProgress(int current, int total, const QString &messag
     if (m_statusProgress) {
         if (total > 0) {
             m_statusProgress->setRange(0, total);
-            m_statusProgress->setValue(qBound(0, current, total));
+            m_statusProgress->setValue(ViewTransform::clampedProgress(current, total));
             m_statusProgress->show();
         } else {
             m_statusProgress->setRange(0, 0);

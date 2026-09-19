@@ -42,6 +42,17 @@ inline int longEdge(const QImage &img)
     return img.isNull() ? 0 : qMax(img.width(), img.height());
 }
 
+/** Approximate ARGB32 footprint in KiB (min 1) for QCache costs. */
+inline int rgbaCostKiB(int width, int height)
+{
+    return qMax(1, (width * height * 4) / 1024);
+}
+
+inline int rgbaCostKiB(const QImage &img)
+{
+    return rgbaCostKiB(img.width(), img.height());
+}
+
 /** True when long edge ≥ need (need ≤ 0 ⇒ any non-null). */
 inline bool adequate(const QImage &img, int needLongEdge)
 {
