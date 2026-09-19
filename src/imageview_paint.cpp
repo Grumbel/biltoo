@@ -227,7 +227,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                 } else {
                     painter.setOpacity(1.0);
                     paintMotionCover(&painter, m_ss.toImage, toT,
-                                     m_ss.toBiasA, m_ss.toBiasB, m_ss.toPath);
+                                     m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPath);
                     painter.setOpacity((1.0 - t) * 2.0);
                     painter.fillRect(vr, Qt::black);
                     painter.setOpacity(1.0);
@@ -249,7 +249,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                 painter.save();
                 painter.translate(xNew, 0);
                 paintMotionCover(&painter, m_ss.toImage, toT,
-                                 m_ss.toBiasA, m_ss.toBiasB, m_ss.toPath);
+                                 m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPath);
                 painter.restore();
                 painter.setClipping(false);
             } else if (m_ssSettings.transition == SlideshowTransition::None) {
@@ -263,7 +263,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                 } else {
                     painter.setOpacity(1.0);
                     paintMotionCover(&painter, m_ss.toImage, toT,
-                                     m_ss.toBiasA, m_ss.toBiasB, m_ss.toPath);
+                                     m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPath);
                 }
             } else {
                 // Crossfade: A 1→0, B 0→1; both in motion.
@@ -274,7 +274,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                 }
                 painter.setOpacity(t);
                 paintMotionCover(&painter, m_ss.toImage, toT,
-                                 m_ss.toBiasA, m_ss.toBiasB, m_ss.toPath);
+                                 m_ss.toBiasAPoint(), m_ss.toBiasBPoint(), m_ss.toPath);
                 painter.setOpacity(1.0);
             }
         } else if (!fromImg.isNull()) {

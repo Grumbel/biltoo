@@ -218,6 +218,14 @@ struct SlideshowPhaseState {
 
     bool hasToPath() const { return !toPath.isEmpty(); }
 
+    const QPointF &toBiasAPoint() const { return toBiasA; }
+
+    const QPointF &toBiasBPoint() const { return toBiasB; }
+
+    QPointF &toBiasARef() { return toBiasA; }
+
+    QPointF &toBiasBRef() { return toBiasB; }
+
     void clearToImage()
     {
         toImage = {};
