@@ -49,11 +49,15 @@ void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPer
         if (m_host->pathOnLiveCanvas(path)) {
             continue;
         }
-        // Global path RAM (1212): already warm — do not open another controller
-        // or spend request budget. Live canvas rebinds the same SharedPathTiles.
-        if (tilelod::TileLodRegistry::instance().has_succeeded_tiles(path)) {
-            tilelod::TileLodRegistry::instance().touch(path);
-            continue;
+        // Global path RAM (1212): overview-warm paths skip re-issue. A single
+        // coarse cell is not enough — still prefetch to fill the overview grid.
+        // Threshold: ≥4 Succeeded tiles (~overview coverage at low dpc).
+        {
+            auto& reg = tilelod::TileLodRegistry::instance();
+            if (reg.path_succeeded_count(path) >= 4) {
+                reg.touch(path);
+                continue;
+            }
         }
         bool existing = false;
         for (Slot &slot : m_slots) {
