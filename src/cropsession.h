@@ -334,6 +334,14 @@ public:
      */
     void ensureRectValid(const QRectF &contentRect);
 
+    /**
+     * Map a source-pixel trim rect into content space and set as axis-aligned draft.
+     * Clears expand and rotation. Caller must ensureRectValid afterward if needed.
+     */
+    void setRectFromSourcePixelTrim(const QRectF &contentRect, const QSize &srcSize,
+                                    const QRect &trimmed);
+
+
     /** Draft corners in item-local content space. */
     QPolygonF polygonLocal() const;
 

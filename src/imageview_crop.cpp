@@ -747,14 +747,7 @@ void ImageView::applyAutoCrop()
         return;
     }
 
-    const qreal invSx = ContentXform::invAxisScale(cr.width(), src.width());
-    const qreal invSy = ContentXform::invAxisScale(cr.height(), src.height());
-    m_crop.setRect(QRectF(cr.left() + trimmed.x() * invSx,
-                        cr.top() + trimmed.y() * invSy,
-                        trimmed.width() * invSx,
-                        trimmed.height() * invSy));
-    m_crop.setRotation(0.0);
-    m_crop.setAllowExpand(false);
+    m_crop.setRectFromSourcePixelTrim(cr, src.size(), trimmed);
     ensureCropRectValid();
     if (viewport()) {
         viewport()->update();

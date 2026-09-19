@@ -117,3 +117,21 @@ void CropSession::restoreStashedPlacement(ImageItem *item) const
     item->setItemRotation(stashedPlacementRotation);
     item->setItemShear(stashedPlacementShear);
 }
+
+void CropSession::setRectFromSourcePixelTrim(const QRectF &contentRect,
+                                             const QSize &srcSize,
+                                             const QRect &trimmed)
+{
+    if (srcSize.width() < 1 || srcSize.height() < 1 || contentRect.width() < 1.0
+        || contentRect.height() < 1.0 || !trimmed.isValid() || trimmed.isEmpty()) {
+        return;
+    }
+    const qreal invSx = contentRect.width() / qreal(srcSize.width());
+    const qreal invSy = contentRect.height() / qreal(srcSize.height());
+    setRect(QRectF(contentRect.left() + trimmed.x() * invSx,
+                   contentRect.top() + trimmed.y() * invSy,
+                   trimmed.width() * invSx,
+                   trimmed.height() * invSy));
+    setRotation(0.0);
+    setAllowExpand(false);
+}
