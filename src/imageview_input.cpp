@@ -452,7 +452,7 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
         if (shift || ctrl) {
             m_attention.setSelected(
                 AttentionGeometry::toggleSelectionIndex(m_attention.selectedMutable(), hit));
-        } else if (!m_attention.selectedMutable().contains(hit)) {
+        } else if (!m_attention.selectedRef().contains(hit)) {
             m_attention.setSelected({hit});
         }
         const QVector<QPointF> startPts = attentionPointsForTarget();

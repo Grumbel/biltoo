@@ -74,7 +74,7 @@ void ImageView::setAttentionPointsForTarget(const QVector<QPointF> &pts)
     m_attention.setDraft(clamped, sid);
 
     QVector<int> kept;
-    for (int i : m_attention.selectedMutable()) {
+    for (int i : m_attention.selectedRef()) {
         if (i >= 0 && i < clamped.size()) {
             kept.append(i);
         }
@@ -266,7 +266,7 @@ void ImageView::attentionDeleteSelected()
     }
     QVector<QPointF> pts = attentionPointsForTarget();
     const QVector<QPointF> before = pts;
-    QSet<int> kill(m_attention.selectedMutable().begin(), m_attention.selectedMutable().end());
+    QSet<int> kill(m_attention.selectedRef().begin(), m_attention.selectedRef().end());
     QVector<QPointF> kept;
     for (int i = 0; i < pts.size(); ++i) {
         if (!kill.contains(i)) {
@@ -305,7 +305,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
     }
 
     const QVector<QPointF> pts = attentionPointsForTarget();
-    QSet<int> selected(m_attention.selectedMutable().begin(), m_attention.selectedMutable().end());
+    QSet<int> selected(m_attention.selectedRef().begin(), m_attention.selectedRef().end());
 
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -354,7 +354,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
            "Ctrl+click empty: add · drag handle: move · Del: delete · Ctrl+Z: undo · Esc: exit\n"
            "%1 point(s), %2 selected  (primary “P” = Ken Burns)")
             .arg(pts.size())
-            .arg(m_attention.selectedMutable().size());
+            .arg(m_attention.selectedRef().size());
     painter.drawText(viewport()->rect().adjusted(12, 12, -12, -12),
                      Qt::AlignTop | Qt::AlignLeft, hint);
     painter.restore();
