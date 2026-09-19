@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1369-crop-enter-attention-mode.** CropSession enter ownership;
+AttentionSession draft and mode transitions.
+Prior: **1368**.
+
+### Change
+- `CropSession::{bindTarget,setEnterSnapshot,stashPlacement,abortEnter,clearTargetBinding}`
+- `AttentionSession::{setDraft,enterMode,leaveMode}`
+- ImageView crop prepare/abort and attention mode/draft paths wired
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1369**)
+```bash
+git pull /path/to/biltoo-1369-crop-enter-attention-mode.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1368-crop-group-session.** CropSession and GroupTransformSession
 own handle/rubber/drag transitions.
 Prior: **1367**.

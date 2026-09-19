@@ -346,3 +346,4 @@ part of early-phase exit criteria).
 - **ViewTransform** axisAlignedHandlePoints; **AttentionSession** rubber begin/update/end.
 - **TextLayerSession** rubber transitions; **PageGuideSession** resize/hover transitions.
 - **CropSession** handle/rubber/hover; **GroupTransformSession** begin/end drag + hover.
+- **CropSession** enter bind/snapshot/stash/abort; **AttentionSession** setDraft/enterMode/leaveMode.
