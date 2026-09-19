@@ -13,33 +13,6 @@
 #include "imageitem.h"
 #include "contentxform.h"
 
-void ImageView::finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspaceAnchorScene)
-{
-    if (!item) {
-        return;
-    }
-    // If there was no stored crop angle but the tile was free-rotated,
-    // seed the draft rotation so the frame matches the prior pose while
-    // the item stays axis-aligned for editing.
-    if (m_crop.seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
-        ensureCropRectValid();
-    }
-    alignCropFrameCenterToScene(item, workspaceAnchorScene);
-    updateWorkspaceSceneRect();
-}
-
-
-void ImageView::abortCropEnterFailed(ImageItem *item)
-{
-    // prepare may have set mode for fitItem then failed — restore placement
-    // before abortEnter clears the stash.
-    if (item) {
-        item->setTileLodSuppressed(false);
-    }
-    m_crop.abortEnterRestoringPlacement(item);
-    flashCropHud(CropFlash::loadFailed());
-}
-
 void ImageView::beginCropEnterSession(ImageItem *item)
 {
     if (!item) {
@@ -80,11 +53,26 @@ bool ImageView::completeCropEnterUnderHold(ImageItem *item,
     // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
     ViewportUpdateHold paintHold(viewport());
     if (!prepareCropModeFullImage(item)) {
-        abortCropEnterFailed(item);
+        // prepare may have set mode for fitItem then failed — restore placement
+        // before abortEnter clears the stash.
+        if (item) {
+            item->setTileLodSuppressed(false);
+        }
+        m_crop.abortEnterRestoringPlacement(item);
+        flashCropHud(CropFlash::loadFailed());
         return false;
     }
     if (isWorkspaceMode()) {
-        finishWorkspaceCropEnter(item, workspaceAnchorScene);
+        if (item) {
+            // If there was no stored crop angle but the tile was free-rotated,
+            // seed the draft rotation so the frame matches the prior pose while
+            // the item stays axis-aligned for editing.
+            if (m_crop.seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
+                ensureCropRectValid();
+            }
+            alignCropFrameCenterToScene(item, workspaceAnchorScene);
+            updateWorkspaceSceneRect();
+        }
     }
     flashCropHud(CropFlash::modeEntered());
     emit cropModeChanged(true);
@@ -118,19 +106,6 @@ void ImageView::setCropMode(bool on)
     }
     // Turning crop off from the toolbar commits the draft (auto-apply).
     leaveCropModeInternal(true);
-}
-
-
-void ImageView::rememberCropEnterSizes(const QString &path, const QImage &full)
-{
-    if (full.isNull() || !sampleCoversNativeLogical(path, full)) {
-        return;
-    }
-    rememberSizeFromDecode(path, full);
-    QSize logical = logicalSizeForPath(path);
-    if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
-        rememberImageSize(path, full.size());
-    }
 }
 
 
@@ -189,7 +164,13 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
     }
     const QString path = item->path();
     cancelPathRasterForCrop(path);
-    rememberCropEnterSizes(path, full);
+    if (!full.isNull() && sampleCoversNativeLogical(path, full)) {
+        rememberSizeFromDecode(path, full);
+        QSize logical = logicalSizeForPath(path);
+        if (!isPositiveSize(logical) || isProvisionalImageSize(path)) {
+            rememberImageSize(path, full.size());
+        }
+    }
     CropSession::maybePutUnorientedHostCache(
         path, full, unorientedSource, sampleCoversNativeLogical(path, full));
     const CropSession::EnterInstallSample sample =
@@ -242,5 +223,3 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
                                 enter.unoriented);
     return true;
 }
-
-

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1572-crop-inline-finalize-ensure-cancel.** Inline finalize/ensure/capture/cancel + enter abort/workspace/sizes.
+Prior: **1571**.
+
+### Change
+- `ensureApplyCropState` → body of `resolveApplyHostAndState`
+- `captureCropUndoAfterState` → body of `pushCropAppearanceUndo`
+- `attachCropApplyDisplay` → body of `commitCropApplyBake`
+- `finalizeCropApplySuccess` → body of `commitCropApplyBake`
+- `finalizeCropResetSuccess` → body of `applyCropCommit` (full-frame path)
+- `cancelCropShowingFullImage` → body of `leaveCropModeInternal`
+- `abortCropEnterFailed` → body of `completeCropEnterUnderHold`
+- `finishWorkspaceCropEnter` → body of `completeCropEnterUnderHold`
+- `rememberCropEnterSizes` → body of `installFullImageForCrop`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1572-crop-inline-finalize-ensure-cancel.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1571-crop-inline-flush-bake-notify.** Inline flush/bake/flash + enter notify/anchor/null/host helpers.
 Prior: **1570**.
 

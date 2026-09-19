@@ -710,13 +710,9 @@ public:
      * Enter applies pixel crop; Esc / toggle off cancels.
      */
     void setCropMode(bool on);
-    void abortCropEnterFailed(ImageItem *item);
     void beginCropEnterSession(ImageItem *item);
     bool resolveApplyHostAndState(ImageItem *item, QImage *host, bool *hostFromCache,
                                   WorkspaceItemState *st, SessionImageId *sid);
-    void finalizeCropResetSuccess(ImageItem *item);
-    void finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
-                                  const QString &path, const QImage &display);
     ImageItem *resolveCropEnterTarget();
     bool completeCropEnterUnderHold(ImageItem *item,
                                     const QPointF &workspaceAnchorScene);
@@ -1710,12 +1706,7 @@ private:
     /** Upgrade crop source when native full arrives for m_crop.awaitingFullPath. */
     void acceptCropFullRasterReady(const QString &path, const QImage &image);
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
-    WorkspaceItemState captureCropUndoAfterState(ImageItem *item) const;
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
-    void attachCropApplyDisplay(ImageItem *item, const QImage &display,
-                                const WorkspaceItemState &st, bool multiMp,
-                                qreal cropW, qreal cropH, const QString &path,
-                                const QPointF &cropSceneCenter);
     QImage pickCropApplyAppearanceImage(ImageItem *item,
                                         const QImage &preferredDisplay) const;
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
@@ -1725,8 +1716,6 @@ private:
     void finishCropResetLayout(ImageItem *item);
     void finishCropApplyLayout(ImageItem *item);
     void flashCropHud(const CropFlash::Hud &hud);
-    void ensureApplyCropState(ImageItem *item, SessionImageId sid,
-                              WorkspaceItemState *st);
     void storeCropAppearance(ImageItem *item, SessionImageId sid,
                              const WorkspaceItemState &s);
     QSize cropRecordFileNative(const QString &path) const;
@@ -1740,7 +1729,6 @@ private:
                                    const QPointF &cropSceneCenter);
     bool applyCropCommitNonFullFrame(ImageItem *item);
     bool applyCropCommit(ImageItem *item);
-    void cancelCropShowingFullImage(ImageItem *item);
     void notifyCropModeLeftChrome();
     void clearCropModeState();
     /**
@@ -1758,9 +1746,7 @@ private:
     bool prepareCropModeFullImage(ImageItem *item);
     bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     /** @p unorientedSource true when @p full is ImageCache/host raw (safe to bake). */
-    void finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspaceAnchorScene);
     void cancelPathRasterForCrop(const QString &path);
-    void rememberCropEnterSizes(const QString &path, const QImage &full);
     void installKeepEnterDisplay(ImageItem *item, const WorkspaceItemState &contentOnly,
                                  const ContentXform::Value &wantX, const QString &path);
     void installDraftEnterDisplay(ImageItem *item,

@@ -28,31 +28,16 @@ bool ImageView::resolveApplyHostAndState(ImageItem *item, QImage *host, bool *ho
         return false;
     }
     *sid = cropRecordSessionId(item);
-    ensureApplyCropState(item, *sid, st);
+    loadSessionAppearance(*sid, st);
+    if (!st->hasCrop) {
+        *st = captureState(item);
+        m_crop.seedApplyCropState(st, item->offset(), item->imageSize());
+        if (*sid != kInvalidSessionImageId) {
+            m_appearance.set(*sid, *st);
+        }
+    }
     return true;
 }
-
-void ImageView::finalizeCropResetSuccess(ImageItem *item)
-{
-    commitItemSessionEdit(item);
-    emitCropApplyAppearance(cropRecordSessionId(item), item->path(), item, QImage(),
-                            /*hasCrop=*/false);
-    if (m_crop.shouldPushResetUndo(item->sourceImage().size())) {
-        pushCropAppearanceUndo(item, CropFlash::undoResetText());
-    }
-    flashCropHud(CropFlash::reset());
-}
-
-void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
-                                         const QString &path, const QImage &display)
-{
-    commitItemSessionEdit(item);
-    emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
-    pushCropAppearanceUndo(item, CropFlash::undoCropText());
-    flashCropHud(CropFlash::applied(item->imageSize().width(), item->imageSize().height()));
-}
-
-
 
 void ImageView::applyCrop()
 {
@@ -107,58 +92,20 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 }
 
 
-WorkspaceItemState ImageView::captureCropUndoAfterState(ImageItem *item) const
-{
-    WorkspaceItemState afterSt = captureState(item);
-    CropSession::fillSessionCropFromItem(&afterSt, item);
-    // captureState pulls cropRotation from appearance
-    // (recordSessionCrop + commitItemSessionEdit).
-    return afterSt;
-}
-
 void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 {
     if (!m_undoStack || !item || !m_crop.isEnterValid()) {
         return;
     }
+    WorkspaceItemState afterSt = captureState(item);
+    CropSession::fillSessionCropFromItem(&afterSt, item);
+    // captureState pulls cropRotation from appearance
+    // (recordSessionCrop + commitItemSessionEdit).
     m_undoStack->push(new CropAppearanceCommand(
         this, item, m_crop.enterSourceRef(), item->sourceImage().copy(),
-        m_crop.enterStateRef(), captureCropUndoAfterState(item), text));
+        m_crop.enterStateRef(), afterSt, text));
 }
 
-
-void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
-                                          const WorkspaceItemState &st, bool multiMp,
-                                          qreal cropW, qreal cropH, const QString &path,
-                                          const QPointF &cropSceneCenter)
-{
-    // Clear first so the crop bake replaces full-frame pixels — otherwise canvas
-    // stretches full into the crop box and filmstrip gets img=full.
-    item->clearDecodedPixels();
-    // Geometry before pixels: empty item with crop intrinsic, then bake.
-    applyContentLayoutSize(item, st);
-    CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
-    attachDisplaySample(item, display, st, CropSession::applyPixelKind(multiMp));
-    m_crop.restoreEnterScale(item);
-    alignItemCenterToScene(item, cropSceneCenter);
-}
-
-
-void ImageView::ensureApplyCropState(ImageItem *item, SessionImageId sid,
-                                     WorkspaceItemState *st)
-{
-    if (!item || !st) {
-        return;
-    }
-    loadSessionAppearance(sid, st);
-    if (!st->hasCrop) {
-        *st = captureState(item);
-        m_crop.seedApplyCropState(st, item->offset(), item->imageSize());
-        if (sid != kInvalidSessionImageId) {
-            m_appearance.set(sid, *st);
-        }
-    }
-}
 
 void ImageView::commitCropApplyBake(ImageItem *item, const QImage &display,
                                     const WorkspaceItemState &st, bool multiMp,
@@ -168,13 +115,23 @@ void ImageView::commitCropApplyBake(ImageItem *item, const QImage &display,
 {
     {
         ViewportUpdateHold paintHold(viewport());
-        attachCropApplyDisplay(item, display, st, multiMp, cropW, cropH, path,
-                               cropSceneCenter);
+        // Clear first so the crop bake replaces full-frame pixels — otherwise canvas
+        // stretches full into the crop box and filmstrip gets img=full.
+        item->clearDecodedPixels();
+        // Geometry before pixels: empty item with crop intrinsic, then bake.
+        applyContentLayoutSize(item, st);
+        CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
+        attachDisplaySample(item, display, st, CropSession::applyPixelKind(multiMp));
+        m_crop.restoreEnterScale(item);
+        alignItemCenterToScene(item, cropSceneCenter);
         // Multi-MP: soft stand-in now; pure full rematerialize after leave.
         m_crop.queueFullRematerializeIfSoft(hostFromCache, multiMp, path, sid, st);
         finishCropApplyLayout(item);
     }
-    finalizeCropApplySuccess(item, sid, path, display);
+    commitItemSessionEdit(item);
+    emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
+    pushCropAppearanceUndo(item, CropFlash::undoCropText());
+    flashCropHud(CropFlash::applied(item->imageSize().width(), item->imageSize().height()));
 }
 
 
@@ -190,7 +147,6 @@ bool ImageView::bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cr
     if (!resolveApplyHostAndState(item, &host, &hostFromCache, &st, &sid)) {
         return false;
     }
-
     CropSession::ApplyBakeResult baked =
         CropSession::materializeApplyDisplay(host, hostFromCache, st);
     if (!baked.ok()) {
@@ -238,16 +194,14 @@ bool ImageView::applyCropCommit(ImageItem *item)
     }
     // Reset / full frame: keep full pixels; clear session crop metadata.
     finishCropResetLayout(item);
-    finalizeCropResetSuccess(item);
-    return false;
-}
-
-void ImageView::cancelCropShowingFullImage(ImageItem *item)
-{
-    restoreSessionCropAppearance(item);
-    if (isWorkspaceMode() && m_crop.isEnterValid()) {
-        m_crop.restoreEnterPlacementPose(item);
+    commitItemSessionEdit(item);
+    emitCropApplyAppearance(cropRecordSessionId(item), item->path(), item, QImage(),
+                            /*hasCrop=*/false);
+    if (m_crop.shouldPushResetUndo(item->sourceImage().size())) {
+        pushCropAppearanceUndo(item, CropFlash::undoResetText());
     }
+    flashCropHud(CropFlash::reset());
+    return false;
 }
 
 
@@ -289,7 +243,10 @@ void ImageView::leaveCropModeInternal(bool apply)
         if (apply) {
             preserveCropFrameRotation = applyCropCommit(item);
         } else if (m_crop.isShowingFullImage()) {
-            cancelCropShowingFullImage(item);
+            restoreSessionCropAppearance(item);
+            if (isWorkspaceMode() && m_crop.isEnterValid()) {
+                m_crop.restoreEnterPlacementPose(item);
+            }
         }
     }
     m_crop.finishLeave(item, preserveCropFrameRotation);
