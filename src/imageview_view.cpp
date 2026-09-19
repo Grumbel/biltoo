@@ -543,9 +543,7 @@ void ImageView::applyImageModeFraming(ImageItem *item)
 void ImageView::cancelZoomRegion()
 {
     m_zoomRegion.disarm();
-    if (m_zoomRegion.rubberBand) {
-        m_zoomRegion.rubberBand->hide();
-    }
+    m_zoomRegion.hideRubber();
     if (!m_chrome.panning && !m_itemInteract.rotating) {
         setCursor(ToolPolicy::cursorFor(m_tool));
     }
@@ -3346,7 +3344,7 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
 
 QString ImageView::statusText() const
 {
-    if (m_zoomRegion.armed || m_zoomRegion.dragging) {
+    if (m_zoomRegion.isActive()) {
         return tr("Zoom region: drag a rectangle · Esc cancels");
     }
     ImageItem *item = targetItem();

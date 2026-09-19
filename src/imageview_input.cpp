@@ -1596,9 +1596,7 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
     }
     const QRect viewRect = ViewTransform::rubberRect(m_zoomRegion.origin, event->pos());
     m_zoomRegion.endDrag();
-    if (m_zoomRegion.rubberBand) {
-        m_zoomRegion.rubberBand->hide();
-    }
+    m_zoomRegion.hideRubber();
     // Ignore tiny clicks — treat as cancel rather than extreme zoom.
     if (m_zoomRegion.rubberSignificant(viewRect)) {
         const QRectF sceneRect = mapToScene(viewRect).boundingRect();
@@ -1777,7 +1775,7 @@ bool ImageView::tryKeyPressCrop(QKeyEvent *event)
 
 bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
 {
-    if (event->key() != Qt::Key_Escape || !(m_zoomRegion.armed || m_zoomRegion.dragging)) {
+    if (event->key() != Qt::Key_Escape || !(m_zoomRegion.isActive())) {
         return false;
     }
     cancelZoomRegion();

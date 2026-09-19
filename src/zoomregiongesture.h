@@ -9,7 +9,7 @@
 #include <QPoint>
 #include <QRect>
 
-class QRubberBand;
+#include <QRubberBand>
 
 /**
  * One-shot rubber-band zoom (Z tool): armed until drag completes or Esc.
@@ -62,6 +62,15 @@ struct ZoomRegionGesture {
     void setRubberBand(QRubberBand *band) { rubberBand = band; }
 
     void clearRubberBand() { rubberBand = nullptr; }
+
+    void hideRubber()
+    {
+        if (rubberBand) {
+            rubberBand->hide();
+        }
+    }
+
+    bool isActive() const { return armed || dragging; }
 
     bool rubberSignificant(const QRect &viewRect) const
     {
