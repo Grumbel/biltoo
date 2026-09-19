@@ -44,6 +44,16 @@ constexpr int kDecodeWindowRearmMs = 32;
 constexpr int kWatchdogIntervalMs = 1000;
 /** Gallery status-line refresh after host soft install (ms). */
 constexpr int kStatusRefreshMs = 100;
+/** Decode-window rearm after scroll / wheel (ms). */
+constexpr int kDecodeWindowScrollMs = 80;
+/** Decode-window rearm after layout / mode settle (ms). */
+constexpr int kDecodeWindowSettleMs = 48;
+/** Decode-window rearm after soft install slice (ms). */
+constexpr int kDecodeWindowSliceMs = 16;
+/** Decode-window rearm for Image/Workspace (non-gallery) interest (ms). */
+constexpr int kDecodeWindowImageMs = 150;
+/** Decode-window rearm after pack / heavy layout (ms). */
+constexpr int kDecodeWindowAfterPackMs = 180;
 
 inline int maxHave(int a, int b)
 {

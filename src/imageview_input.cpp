@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "gallerysoftsm.h"
 #include "toolpolicy.h"
 #include "workspacenavgeometry.h"
 #include "grouptransformgeometry.h"
@@ -96,13 +97,7 @@ void ImageView::updateHoverEdge(const QPoint &viewPos)
         || m_hoverEdge == EdgeZone::GalleryReturn) {
         setCursor(Qt::PointingHandCursor);
     } else if (!m_chrome.panning && !m_itemInteract.rotating) {
-        if (m_tool == Tool::Pan) {
-            setCursor(Qt::OpenHandCursor);
-        } else if (m_tool == Tool::Zoom) {
-            setCursor(Qt::CrossCursor);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
+        setCursor(ToolPolicy::cursorFor(m_tool));
     }
     viewport()->update();
 }
@@ -294,7 +289,7 @@ bool ImageView::tryWheelGalleryZoom(QWheelEvent *event)
     // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
     // each wheel notch used to rescan all tiles + setInterest + repaint
     // every high-res soft, freezing the UI while zooming out.
-    scheduleGalleryDecodeWindowRefresh(80);
+    scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowScrollMs);
     refreshStatus();
     event->accept();
     return true;
@@ -401,7 +396,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
     // into ImageCache, and without this pulse cells stay blank until F5/relayout.
     if (isGalleryMode()) {
         if (viewport() && viewport()->width() > 1 && viewport()->height() > 1) {
-            scheduleGalleryDecodeWindowRefresh(32);
+            scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);
         }
         return;
     }

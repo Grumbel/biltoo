@@ -183,7 +183,7 @@ MainWindow::MainWindow(QWidget *parent)
     // ticks. Without this, tiles stay blank until scroll / ladderReady / watchdog.
     connect(m_thumbnailBar, &ThumbnailBar::loadsChanged, this, [this]() {
         if (isGalleryMode() && m_imageView) {
-            m_imageView->scheduleGalleryDecodeWindowRefresh(48);
+            m_imageView->scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
         }
     });
     connect(m_imageView, &ImageView::workspacePathsChanged,

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "gallerysoftsm.h"
 #include "displayquality.h"
 
 #include <QCoreApplication>
@@ -329,7 +330,9 @@ ImageView::ImageView(QWidget *parent)
         // Debounce: every scroll pixel used to scan all tiles + start pool
         // work and could peg a core while the user was only panning.
         // Gallery soft install needs a responsive window while LQIP→soft climbs.
-        scheduleGalleryDecodeWindowRefresh(isGalleryMode() ? 48 : 150);
+        scheduleGalleryDecodeWindowRefresh(isGalleryMode()
+            ? GallerySoft::kDecodeWindowSettleMs
+            : GallerySoft::kDecodeWindowImageMs);
         // Image/Workspace deep zoom: timer may be stopped after coverage;
         // scrollbar drag (or pan setValue) must re-issue visible cells.
         // Hand pan already ticks; skip when m_chrome.panning to avoid double work.
@@ -339,7 +342,9 @@ ImageView::ImageView(QWidget *parent)
     });
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
-        scheduleGalleryDecodeWindowRefresh(isGalleryMode() ? 48 : 150);
+        scheduleGalleryDecodeWindowRefresh(isGalleryMode()
+            ? GallerySoft::kDecodeWindowSettleMs
+            : GallerySoft::kDecodeWindowImageMs);
         if (!m_chrome.panning && !isGalleryMode()) {
             tickPrimaryTileLod(4);
         }

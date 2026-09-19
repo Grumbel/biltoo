@@ -1669,8 +1669,8 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
         it.value().have = GallerySoft::maxHave(it.value().have, galleryHaveEdgeFromItems(path, nullptr));
     }
 
-    scheduleGalleryDecodeWindowRefresh(16);
-    scheduleGalleryStatusRefresh(100);
+    scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
+    scheduleGalleryStatusRefresh(GallerySoft::kStatusRefreshMs);
 }
 
 
@@ -1965,7 +1965,7 @@ void ImageView::finishLoadAddStatus(bool refreshGalleryWindow)
 {
     emit statusChanged();
     if (refreshGalleryWindow && isGalleryMode()) {
-        scheduleGalleryDecodeWindowRefresh(48);
+        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
     }
 }
 
@@ -2248,7 +2248,7 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
     emit statusChanged();
     emit workspacePathsChanged();
     if (isGalleryMode()) {
-        scheduleGalleryDecodeWindowRefresh(48);
+        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
     }
     if (isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();

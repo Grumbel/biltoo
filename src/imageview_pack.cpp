@@ -284,7 +284,7 @@ void ImageView::updateGalleryDecodeWindow()
             : scene()->items(sceneVisible, Qt::IntersectsItemBoundingRect);
     for (QGraphicsItem *gi : hit) {
         if (wall.elapsed() >= kDecodeWindowWallMs) {
-            scheduleGalleryDecodeWindowRefresh(16);
+            scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
             break;
         }
         auto *item = qgraphicsitem_cast<ImageItem *>(gi);
@@ -311,7 +311,7 @@ void ImageView::updateGalleryDecodeWindow()
     int scheduled = 0;
     for (const QString &path : visible) {
         if (scheduled >= kSchedBudget || wall.elapsed() >= kDecodeWindowWallMs) {
-            scheduleGalleryDecodeWindowRefresh(16);
+            scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
             break;
         }
         scheduleGalleryDecode(path);
@@ -333,7 +333,7 @@ void ImageView::updateGalleryDecodeWindow()
         int tileBudget = isGalleryMode() ? 32 : 8;
         tickPrimaryTileLod(tileBudget);
     } else {
-        scheduleGalleryDecodeWindowRefresh(16);
+        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
     }
 
     // Rate-limited tile debug (BILTOO_TILE_DEBUG=1) — sample viewport hits only.
@@ -353,7 +353,7 @@ void ImageView::updateGalleryDecodeWindow()
     // Re-arm while LQIP installs or schedules remain; tile coverage continues
     // via TileLoadCoordinator re-arm / completion wake.
     if (scheduled > 0 || moreInstallsPending) {
-        scheduleGalleryDecodeWindowRefresh(16);
+        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
     }
     updateGallerySoftProgressHud();
     if (m_perf.enabled && decodeWinTimer.isValid()) {
@@ -627,11 +627,11 @@ void ImageView::applyLayout(GalleryPackReason reason)
     // EnterGallery / Reload: run decode once now so startup is not blank until
     // the 180ms timer; still schedule a short follow-up for late soft.
     if (reason == GalleryPackReason::ExplicitLayout) {
-        scheduleGalleryDecodeWindowRefresh(180);
+        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowAfterPackMs);
     } else if (reason == GalleryPackReason::EnterGallery
                || reason == GalleryPackReason::Reload) {
         updateGalleryDecodeWindow();
-        scheduleGalleryDecodeWindowRefresh(48);
+        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
     } else {
         updateGalleryDecodeWindow();
     }
