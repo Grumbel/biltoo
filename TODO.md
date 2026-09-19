@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1368-crop-group-session.** CropSession and GroupTransformSession
+own handle/rubber/drag transitions.
+Prior: **1367**.
+
+### Change
+- `CropSession` begin/end handle drag, rubber, hover, setRotateStart
+- `GroupTransformSession` beginDrag / endDrag / setHoverHandle / clearHover
+- ImageView crop, group, and input paths call session transitions
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1368**)
+```bash
+git pull /path/to/biltoo-1368-crop-group-session.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1367-text-pageguide-session.** TextLayer rubber and PageGuide
 resize/hover owned by session bags.
 Prior: **1366**.

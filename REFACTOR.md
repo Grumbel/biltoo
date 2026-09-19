@@ -345,3 +345,4 @@ part of early-phase exit criteria).
 - **FilmstripGeometry** virtualOverscan/seedVirtualRange; DisplayEdge/ImageCache atLeast1.
 - **ViewTransform** axisAlignedHandlePoints; **AttentionSession** rubber begin/update/end.
 - **TextLayerSession** rubber transitions; **PageGuideSession** resize/hover transitions.
+- **CropSession** handle/rubber/hover; **GroupTransformSession** begin/end drag + hover.
