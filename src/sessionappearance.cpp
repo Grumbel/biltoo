@@ -364,6 +364,20 @@ void SessionAppearanceStore::set(SessionImageId id, const WorkspaceItemState &st
     m_byId.insert(id, s);
 }
 
+bool SessionAppearanceStore::take(SessionImageId id, WorkspaceItemState *out)
+{
+    if (id == kInvalidSessionImageId || !out) {
+        return false;
+    }
+    const auto it = m_byId.find(id);
+    if (it == m_byId.end()) {
+        return false;
+    }
+    *out = *it;
+    m_byId.erase(it);
+    return true;
+}
+
 void SessionAppearanceStore::remove(SessionImageId id)
 {
     if (id != kInvalidSessionImageId) {

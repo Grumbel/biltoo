@@ -182,6 +182,8 @@ public:
     bool contains(SessionImageId id) const;
     void set(SessionImageId id, const WorkspaceItemState &state);
     void remove(SessionImageId id);
+    /** Take state for @p id; false if none. */
+    bool take(SessionImageId id, WorkspaceItemState *out);
     void clear();
     int size() const { return m_byId.size(); }
     bool isEmpty() const { return m_byId.isEmpty(); }
