@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1384-text-attention-hudtimers-soft-ss-canvas.** Bag transitions and
+named timer intervals on tip 1383.
+Prior: **1383**.
+
+### Change
+1. `TextLayerSession::setShowRegions` reports change
+2. `AttentionSession::setMode` (enter/leave share it)
+3. `HudFlash::{kIdentityPulseMs,kActionFlashMs}`
+4. `GallerySoft::{kWatchdogIntervalMs,kStatusRefreshMs}`
+5. `SlideshowProgressHud::kProgressTickMs`
+6. `CanvasBackground::setWorkspaceShowDefault`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1384-text-attention-hudtimers-soft-ss-canvas.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1384).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1383-chrome-interact-color-dwell-pageguide.** Bag transitions on tip 1382.
 Prior: **1382**.
 

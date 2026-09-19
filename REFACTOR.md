@@ -121,6 +121,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ViewTransform::kFreeformScenePad**; **SlideshowProgressHud** paused/nav transitions.
 - **ViewportChrome** left-pan/mouse-info; interaction clear via session bags; **ColorAdjustCommit::kIntervalMs**.
 - **SlideshowDwellState** motion flags; **CropSession::setMode**; **PageGuide** visibility + DPI.
+- **TextLayerSession::setShowRegions**; **AttentionSession::setMode**; **HudFlash** pulse/action ms.
+- **GallerySoft** watchdog/status intervals; **SlideshowProgressHud::kProgressTickMs**; canvas workspace-default.
 
 
 ## Current pain (evidence)
