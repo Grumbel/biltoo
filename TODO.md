@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1362-interval-step-zoomblur.** SlideshowClocks interval step;
+ZoomBlur ViewTransform helpers; thread/tile floors.
+Prior: **1361**.
+
+### Change
+- `SlideshowClocks::{intervalFaster,intervalSlower}` (from MainWindow)
+- ZoomBlur: `coverScale` / `atLeast1` / `clampPixel`
+- Main thread-pool and workspace background tile `atLeast1`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1362**)
+```bash
+git pull /path/to/biltoo-1362-interval-step-zoomblur.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1361-clamp01-index-filmstrip.** Attention/motion/project clamp01;
 session index clamps; filmstrip/histogram pure floors.
 Prior: **1360**.

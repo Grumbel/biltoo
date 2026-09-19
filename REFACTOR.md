@@ -339,3 +339,4 @@ part of early-phase exit criteria).
 - **PathRasterService::capWant** → DisplayEdgePolicy; **CropGeometry::kFreeRotationEps**; tile atLeast1.
 - **ColorAdjustments::scopeSampleStep**; **ViewTransform::nonNeg** for transition caps.
 - clamp01 attention/motion/project; **clampInsertIndex**; filmstrip atLeast1; luma clampPixel.
+- **SlideshowClocks** intervalFaster/Slower; ZoomBlur coverScale/clampPixel; main/workspace atLeast1.
