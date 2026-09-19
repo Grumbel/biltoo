@@ -2,6 +2,26 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1653-fix-double-m-view.** Drop accidental `m_view->m_view->`.
+Prior: **1652**.
+
+### Change
+- `applyLoadAddLayoutAfterMembership`: `m_view->applyLayout(...)` (was double-qualified)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1653-fix-double-m-view.bundle HEAD
+```
+
+### Next
+- `biltoo-build` verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1652-moc-loadrole-public.** Move LoadRole/host decls out of public slots.
 Prior: **1651**.
 

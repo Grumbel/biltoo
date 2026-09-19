@@ -269,7 +269,7 @@ void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChang
             if (sizeChanged) {
                 m_view->applyLayout(GalleryPackReason::ContentChange);
             } else {
-                m_view->m_view->applyLayout(GalleryPackReason::SessionMutate);
+                m_view->applyLayout(GalleryPackReason::SessionMutate);
             }
         }
     } else {
