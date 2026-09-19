@@ -76,7 +76,15 @@ struct TextLayerSession {
         linkHoverTip.clear();
     }
 
-    void setShowRegions(bool on) { showRegions = on; }
+    /** @return true when region overlay visibility changed. */
+    bool setShowRegions(bool on)
+    {
+        if (showRegions == on) {
+            return false;
+        }
+        showRegions = on;
+        return true;
+    }
 
     void setLayer(const ThumtooCache::PageTextLayer &l, const QString &path)
     {

@@ -742,10 +742,9 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 
 void ImageView::setShowTextRegions(bool on)
 {
-    if (m_textLayer.showRegions == on) {
+    if (!m_textLayer.setShowRegions(on)) {
         return;
     }
-    m_textLayer.setShowRegions(on);
     if (m_textLayer.needsLayer()) {
         refreshTextLayer();
     } else {
