@@ -482,3 +482,222 @@ part of early-phase exit criteria).
 - **ViewportChrome** pan/pointer transitions; Crop residual draft seeds.
 - **Fix nonNeg(qint64)** for qsizetype; **TextLayerSession** setSearchQuery; **HudFlash** show/pulse.
 - **ZoomRegionGesture** arm/drag; **ViewFraming** fit/fill/sticky; **SessionIdentity** position/error.
+## Phase 6 — ImageView behaviour extraction (proposed)
+
+Phases 1–5 extracted **pure helpers** and **state bags**. They did not extract
+**behaviour**: the bags became `ImageView` members and the methods that drive
+them stayed on the view. This phase moves behaviour together with the state it
+owns, so `ImageView` becomes the shell AGENTS.md already describes — scene,
+mode dispatch, input router, paint sequencer — and nothing else.
+
+Follows DOMAIN.md / IDENTITY.md / SESSION.md. No new domain model.
+
+### Evidence (measured at 8427e69)
+
+| Metric | Value |
+|--------|------:|
+| `imageview.h` + `imageview_types.h` + 21 `imageview*.cpp` | 21,043 lines |
+| `imageview.h` alone | 1,924 lines |
+| `ImageView::` member functions | 642 |
+| Public declarations | 455 |
+| …never referenced outside `imageview*` | **194** |
+| Data members | ~65 |
+| Test binaries touching `ImageView` | **0** |
+
+Member/file coupling — the file split is orthogonal to the data:
+
+| Member | Translation units touching it |
+|--------|------------------------------:|
+| `m_scene`, `m_items` | 12 each |
+| `m_crop` | 11 |
+| `m_framing`, `m_gallery` | 10 |
+| `m_sessionId`, `m_appearance` | 9 |
+
+Only 18 of ~65 members are touched by exactly one slice. Splitting a class
+across translation units without splitting ownership is why 194 helpers are
+public: the slices need to see each other, so the header carries the whole
+internal vocabulary.
+
+Two specific findings:
+
+- `imageview_view.cpp` (3,390 lines) is **65% slideshow** by line count, with
+  HUD text and zoom/framing stapled on. Three unrelated subsystems, one file.
+- `ImageView::m_pathOrderBook` (`SessionPathOrder`: paths + parallel
+  `SessionImageId`s) is a **second copy of `SessionDocument`'s data**, and
+  `m_appearance` still lives on the view. The Target architecture diagram above
+  shows appearance owned by `SessionDocument`; that diagram is not yet true.
+
+### Extraction ladder
+
+Cohesion order. One tip per boundary, behaviour frozen, this document updated.
+
+| Tier | Extract | From | Approx. lines |
+|-----:|---------|------|--------------:|
+| 0 | Header closure (no code moves) | `imageview.h` | — |
+| 1 | **SlideshowController** | `imageview_view` + paint/input/load/modes | ~2,900 |
+| 2 | **CropController**, **AttentionController** | `imageview_crop*`, `imageview_attention` | ~1,200 |
+| 3 | **HudModel** + pure formatting | `imageview_view`, `imageview_paint` | ~800 |
+| 4 | Appearance into **SessionDocument** | `imageview_layout`, `imageview_appearance` | ~1,200 |
+| 5 | **DisplayPipeline** | `imageview_load` | ~3,000 |
+| 6 | Input router dispatch list | `imageview_input` | residual |
+
+**Rule (unchanged from Phase 5):** new collaborator types with an explicit Host
+or narrow public API — not more `imageview_*.cpp` slices alone. New collaborators
+follow the `GallerySizeResolveHost` pattern, not `friend`.
+
+### Tier 0 — Header closure
+
+Privatize the 194 public methods that no file outside `imageview*` references.
+Keep a documented `ImageViewHost` banner for what the mode controllers genuinely
+need. Mechanical, compiler-checked, no behaviour risk; do it first so every later
+tier is measured against an honest API surface.
+
+**Exit criteria:** `imageview.h` under 1,000 lines; public method count under 260;
+no new `friend`.
+
+### Tier 1 — SlideshowController
+
+Biggest and cleanest win. Every pure policy it needs already exists
+(`SlideshowClocks`, `SlideshowPhasePolicy`, `SlideshowAtlasPolicy`,
+`SlideshowMotionGeometry`, `zoomblurhelpers`), so this tier moves orchestration
+only.
+
+Owns: `m_ss`, `m_ssDwell`, `m_ssHud`, `m_ssSettings`, `m_ssZoomBlur`,
+`m_motionScroll`, `m_motionTimer`, `m_slideshowProgressTimer`, phase
+`DisplaySurface::SurfaceId`s.
+
+`SlideshowHost` surface (keep it this small):
+
+```text
+currentPath()            viewportWidgetSize()      devicePixelRatio()
+requestRepaint()         applyFraming(...)         requestRaster(path, edge)
+slideshowRaster(path)    sessionBadgeText()
+```
+
+Integration points:
+
+- Paint: `imageview_paint.cpp` calls `paintUnderlay(QPainter&)` and
+  `paintPhase(QPainter&)`; no slideshow state read from the view.
+- Input: seek-bar and centre-click become `tryMousePressSlideshow*` returning
+  `bool`, matching the existing `try*` router convention.
+- GUI-thread rules per GUI_THREAD_AUDIT.md are unchanged — the controller owns
+  the timers but still runs on the GUI thread.
+
+**Exit criteria:** `imageview_view.cpp` deleted or under 900 lines; no `m_ss*`
+member on `ImageView`; slideshow transitions, Ken Burns motion, ZoomBlur
+letterbox, and seek behave identically by manual QA.
+
+### Tier 2 — CropController and AttentionController
+
+Both already have pure geometry (`CropGeometry`, `AttentionGeometry`) and a
+session bag (`CropSession`, `AttentionSession`); only enter/apply/leave
+orchestration is on the view. The crop slices touch just 9 members.
+
+Host surface: target item, undo stack push, repaint, raster request, relayout
+after leave. `CropAppearanceCommand` keeps its current undo semantics; the
+`friend class CropAppearanceCommand` declaration goes away with the move.
+
+**Exit criteria:** `friend` list on `ImageView` empty; crop enter/apply/cancel
+and attention point edit unchanged in all three modes.
+
+### Tier 3 — HudModel
+
+`statusText*`, `hudFileName`, `pixelQualityLabel`, `loadingStatusHudLine`,
+`slideshowPrefetchHudLine`, `appendThumtooDebugStatus` are string formatting over
+view state. Introduce a `HudModel` snapshot struct plus pure formatting
+functions; `HudGeometry` already owns placement.
+
+This is the first piece of `ImageView` behaviour that becomes unit-testable
+without a `QGraphicsView` — add `tests/hudmodel_test.cpp` in the same tip.
+
+**Exit criteria:** status/HUD text produced by pure functions over a snapshot;
+at least one test binary covering quality-tier and session-badge formatting.
+
+### Tier 4 — Appearance into SessionDocument
+
+Finishes Phase 4 and makes the Target architecture diagram accurate.
+
+- Move `SessionAppearanceStore m_appearance` into `SessionDocument`.
+- Delete `m_pathOrderBook`; the view queries the document for path/id order.
+- `ImageView` asks the document for appearance on decode, per the diagram.
+- `appearanceChanged(SessionImageId)` drives ThumbnailBar and filmstrip.
+
+Identity stays `SessionImageId` (IDENTITY.md). The path map
+(`PathItemStateBook`) remains Workspace free-placement cache and unbound
+fallback only — that boundary was set in Phase 2b/2c and does not change.
+
+This is the highest correctness payoff of the ladder: the duplicate-path and
+crop-identity entries in *Current pain* all trace to two session models.
+
+**Prerequisite:** characterization tests (see Rules below). Do not start Tier 4
+without them.
+
+**Exit criteria:** one session model; `git grep m_pathOrderBook` empty;
+duplicate paths, Gallery remove, and crop-in-Image-mode unchanged.
+
+### Tier 5 — DisplayPipeline
+
+`imageview_load.cpp`: load generations, `DisplaySurface` binding, PreferCache
+climbs, tile LOD, host rematerialize. Genuinely entangled with mode and
+framing — leave it last, when the Host pattern has been exercised four times.
+
+Owns: `m_loadGate`, `m_displaySurfaces`, `m_imageFocusSurface`,
+`m_imageModeSoftProvider`, `m_tileCoordinator`, `m_tileLodTimer`,
+`m_tileLodZoomDebounce`, `m_tileNeighborPrefetch`.
+
+SIZE.md's HARD RULE (soft sample dimensions never define logical size) moves
+with `ImageSizeBook` and must be restated in the new header.
+
+**Exit criteria:** `imageview_load.cpp` under 800 lines; no regression in
+soft→full climb, hard reload (Shift+F5), or Gallery blank-cell recovery.
+
+### Tier 6 — Input router
+
+`imageview_input.cpp` is already a clean `try*` router. After Tiers 1–2 most
+handlers have moved into their controllers; what remains becomes a dispatch
+list over registered handlers. Transform chrome input stays owned by
+`ImageView` (AGENTS.md sharp edge) — HANDLES.md is normative here.
+
+### Rules while refactoring
+
+Phase 1–5 rules still apply. Additions:
+
+- **Per extraction:** (1) define the Host with only what compiles, (2) move
+  state, (3) move methods unchanged, (4) delete forwarding wrappers,
+  (5) privatize the residue. Steps 1–3 must be reviewable as pure moves.
+- **Tiers 0–3 are safe as mechanical moves. Tiers 4–5 are not.** Add
+  characterization tests before Tier 4: an offscreen `QTest` harness that drives
+  `ImageView` through open → Gallery → crop → return → Image and asserts
+  appearance, logical size, and framing. Today no test touches `ImageView` at
+  all, so these tiers are otherwise unbisectable.
+- No behaviour change without a failing scenario or explicit product decision.
+- GPLv3+ / REUSE headers on new sources.
+
+### Exit criteria (whole phase)
+
+| Target | Value |
+|--------|------:|
+| `imageview.h` | < 400 lines |
+| Public methods | < 150 |
+| Members touched by > 3 translation units | 0 |
+| `imageview_view.cpp` | gone |
+| Largest remaining `imageview_*.cpp` | < 800 lines |
+| `ImageView` total | ~3,000–4,000 lines |
+
+### Note on the structural stop line
+
+The stop line above states that remaining work is product features or "further
+host-API narrowing if desired." Tiers 0–3 and 6 are that narrowing. Tier 4 is
+not optional narrowing — two session models is a correctness issue, and the
+Target architecture diagram documents a state the code has not reached. Amend
+the stop line when Tier 4 lands.
+
+### Progress log (Phase 6)
+
+- Tier 0: _pending_
+- Tier 1: _pending_
+- Tier 2: _pending_
+- Tier 3: _pending_
+- Tier 4: _pending_
+- Tier 5: _pending_
+- Tier 6: _pending_
