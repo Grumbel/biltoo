@@ -2637,58 +2637,12 @@ QString formatSlideshowInterval(int ms)
     return QCoreApplication::translate("MainWindow", "%1 s").arg(sec, 0, 'f', 1);
 }
 
-/**
- * Adaptive step toward a shorter interval (faster slideshow).
- * Fine additive steps near zero; coarser / multiplicative at longer dwells.
- */
-int slideshowIntervalFaster(int ms)
-{
-    if (ms <= 0) {
-        return 0;
-    }
-    if (ms <= 50) {
-        return qMax(0, ms - 10);
-    }
-    if (ms <= 200) {
-        return qMax(0, ms - 25);
-    }
-    if (ms <= 1000) {
-        return qMax(0, ms - 100);
-    }
-    if (ms <= 5000) {
-        return qMax(1000, int(qRound(ms / 1.25)));
-    }
-    return qMax(5000, int(qRound(ms / 1.25)));
-}
-
-/**
- * Adaptive step toward a longer interval (slower slideshow).
- */
-int slideshowIntervalSlower(int ms)
-{
-    if (ms < 50) {
-        return ms + 10;
-    }
-    if (ms < 200) {
-        return ms + 25;
-    }
-    if (ms < 1000) {
-        return ms + 100;
-    }
-    if (ms < 5000) {
-        const int next = int(qRound(ms * 1.25));
-        return qMin(5000, qMax(ms + 1, next));
-    }
-    const int next = int(qRound(ms * 1.25));
-    return qMin(60000, qMax(ms + 1, next));
-}
-
 } // namespace
 
 void MainWindow::slideshowFaster()
 {
     // mpv ]: higher playback speed → shorter dwell per slide
-    const int next = slideshowIntervalFaster(m_slideshowIntervalMs);
+    const int next = SlideshowClocks::intervalFaster(m_slideshowIntervalMs);
     if (next == m_slideshowIntervalMs) {
         const QString msg = tr("Slideshow already at maximum speed (0 ms)");
         if (m_imageView) {
@@ -2712,7 +2666,7 @@ void MainWindow::slideshowFaster()
 void MainWindow::slideshowSlower()
 {
     // mpv [: lower playback speed → longer dwell per slide
-    const int next = slideshowIntervalSlower(m_slideshowIntervalMs);
+    const int next = SlideshowClocks::intervalSlower(m_slideshowIntervalMs);
     if (next == m_slideshowIntervalMs) {
         const QString msg = tr("Slideshow already at maximum interval (60 s)");
         if (m_imageView) {

@@ -156,6 +156,51 @@ void advancePhaseMotion(SlideshowPhaseState *phase, SlideshowDwellState *dwell,
 /** Advance single-dwell motionT from dwell.clock. */
 void advanceDwellMotion(SlideshowDwellState *dwell);
 
+
+/**
+ * Adaptive step toward a shorter interval (faster slideshow).
+ * Fine additive steps near zero; coarser / multiplicative at longer dwells.
+ */
+inline int intervalFaster(int ms)
+{
+    if (ms <= 0) {
+        return 0;
+    }
+    if (ms <= 50) {
+        return qMax(0, ms - 10);
+    }
+    if (ms <= 200) {
+        return qMax(0, ms - 25);
+    }
+    if (ms <= 1000) {
+        return qMax(0, ms - 100);
+    }
+    if (ms <= 5000) {
+        return qMax(1000, int(qRound(ms / 1.25)));
+    }
+    return qMax(5000, int(qRound(ms / 1.25)));
+}
+
+/** Adaptive step toward a longer interval (slower slideshow). */
+inline int intervalSlower(int ms)
+{
+    if (ms < 50) {
+        return ms + 10;
+    }
+    if (ms < 200) {
+        return ms + 25;
+    }
+    if (ms < 1000) {
+        return ms + 100;
+    }
+    if (ms < 5000) {
+        const int next = int(qRound(ms * 1.25));
+        return qMin(5000, qMax(ms + 1, next));
+    }
+    const int next = int(qRound(ms * 1.25));
+    return qMin(60000, qMax(ms + 1, next));
+}
+
 } // namespace SlideshowClocks
 
 #endif // SLIDESHOWCLOCKS_H
