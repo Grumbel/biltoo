@@ -679,8 +679,8 @@ bool attentionPoints(const QImage &image, QVector<QPointF> *normalizedOut, int m
             break;
         }
         const QPointF n = AttentionGeometry::clampNorm(QPointF(
-            qreal(pk.x) / qreal(qMax(1, w - 1)),
-            qreal(pk.y) / qreal(qMax(1, h - 1))));
+            qreal(pk.x) / qreal(ViewTransform::atLeast1(w - 1)),
+            qreal(pk.y) / qreal(ViewTransform::atLeast1(h - 1))));
         bool near = false;
         for (const QPointF &ex : *normalizedOut) {
             if (QLineF(ex, n).length() < 0.08) {

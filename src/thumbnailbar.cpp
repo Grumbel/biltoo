@@ -1915,7 +1915,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             const int across = ViewTransform::atLeast1(viewport()->width() / cell);
             const int down = ViewTransform::atLeast1(viewport()->height() / cell);
             const int over = qMax(16, across * down * 2);
-            lo = qMax(0, minRow - over);
+            lo = ViewTransform::nonNeg(minRow - over);
             hi = qMin(n, maxRow + over + 1);
         } else {
             // No geometry yet — seed from selection or start.
@@ -1923,7 +1923,7 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
             if (focus < 0) {
                 focus = 0;
             }
-            lo = qMax(0, focus - 24);
+            lo = ViewTransform::nonNeg(focus - 24);
             hi = qMin(n, focus + 25);
         }
     }

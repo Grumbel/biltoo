@@ -160,8 +160,8 @@ QImage makeCover(const QImage &src, int vw, int vh)
     QImage scaled = src.scaled(sw, sh, Qt::IgnoreAspectRatio, Qt::FastTransformation)
                         .convertToFormat(QImage::Format_ARGB32_Premultiplied);
     // Centre-crop to workW×workH
-    const int x0 = qMax(0, (sw - workW) / 2);
-    const int y0 = qMax(0, (sh - workH) / 2);
+    const int x0 = ViewTransform::nonNeg((sw - workW) / 2);
+    const int y0 = ViewTransform::nonNeg((sh - workH) / 2);
     scaled = scaled.copy(x0, y0, qMin(workW, scaled.width()), qMin(workH, scaled.height()));
     if (scaled.width() != workW || scaled.height() != workH) {
         QImage canvas(workW, workH, QImage::Format_ARGB32_Premultiplied);

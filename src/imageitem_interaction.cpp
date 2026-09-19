@@ -119,7 +119,7 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const tilelod::TileSession::Coverage cov = session->coverage();
     // Holes are omitted from the draw plan when soft is the continuous base;
     // derive count from coverage vs painted exact/parent commands.
-    const int nHole = qMax(0, cov.visible - nExact - nParent);
+    const int nHole = ViewTransform::nonNeg(cov.visible - nExact - nParent);
     const int target = session->target_scale();
     const int desired = session->desired_scale();
 
