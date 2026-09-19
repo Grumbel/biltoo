@@ -1749,6 +1749,9 @@ private:
     void installAndActivateCropEnter(ImageItem *item, const QImage &full,
                                      const WorkspaceItemState *app, bool haveApp,
                                      bool unorientedSource);
+    bool pickEnterFullRasterOrRequest(ImageItem *item, const QString &path,
+                                      bool hadCrop,
+                                      CropSession::EnterFullRaster *enter);
     bool prepareCropModeFullImage(ImageItem *item);
     bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     bool resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const;

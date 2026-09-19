@@ -510,6 +510,23 @@ void ImageView::installAndActivateCropEnter(ImageItem *item, const QImage &full,
     activateCropModeAfterInstall(item);
 }
 
+bool ImageView::pickEnterFullRasterOrRequest(ImageItem *item, const QString &path,
+                                             bool hadCrop,
+                                             CropSession::EnterFullRaster *enter)
+{
+    if (!enter) {
+        return false;
+    }
+    // Unoriented ImageCache host preferred. Never use item display as the crop
+    // base when a prior crop exists — that bake is already cropped.
+    *enter = CropSession::pickEnterFullRaster(item, path, hadCrop);
+    if (enter->image.isNull()) {
+        handleNullEnterFullRaster(path, hadCrop);
+        return false;
+    }
+    return true;
+}
+
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
 {
     if (!item) {
@@ -521,19 +538,12 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     WorkspaceItemState app;
     const bool haveApp = resolveCropEnterAppearance(item, &app);
     const bool hadCrop = CropSession::appearanceHasCrop(&app, haveApp);
-
-    // Unoriented ImageCache host preferred. Never use item display as the crop
-    // base when a prior crop exists — that bake is already cropped, so a second
-    // crop would edit the wrong frame and shrink further.
-    const CropSession::EnterFullRaster enter = CropSession::pickEnterFullRaster(item, path, hadCrop);
-    const QImage &full = enter.image;
-    const bool unorientedSource = enter.unoriented;
-    if (full.isNull()) {
-        return handleNullEnterFullRaster(path, hadCrop);
+    CropSession::EnterFullRaster enter;
+    if (!pickEnterFullRasterOrRequest(item, path, hadCrop, &enter)) {
+        return false;
     }
-
-    installAndActivateCropEnter(item, full, haveApp ? &app : nullptr, haveApp,
-                                unorientedSource);
+    installAndActivateCropEnter(item, enter.image, haveApp ? &app : nullptr, haveApp,
+                                enter.unoriented);
     return true;
 }
 
