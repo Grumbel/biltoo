@@ -2205,10 +2205,9 @@ void ImageView::setPageGuideSelected(bool on)
     if (!m_pageGuide.visible) {
         on = false;
     }
-    if (m_pageGuide.selected == on) {
+    if (!m_pageGuide.setSelected(on)) {
         return;
     }
-    m_pageGuide.setSelected(on);
     viewport()->update();
 }
 

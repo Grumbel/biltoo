@@ -40,6 +40,20 @@ struct PageGuideSession {
         clearDrag();
     }
 
+    /** @return true when selection flag changed. */
+    bool setSelected(bool on)
+    {
+        if (selected == on) {
+            return false;
+        }
+        selected = on;
+        if (!on) {
+            setHoverHandle(-1);
+            clearDrag();
+        }
+        return true;
+    }
+
     /** @return true when hover handle index changed. */
     bool setHoverHandle(int handle)
     {
