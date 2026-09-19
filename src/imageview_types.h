@@ -328,6 +328,11 @@ struct GallerySoftState : GallerySoft::State {
 
     /** scheduleTilePyramid issued once for this path (tile band). */
     bool tilesPyramidQueued = false;
+
+    bool isTilesPyramidQueued() const { return tilesPyramidQueued; }
+
+    void markTilesPyramidQueued() { tilesPyramidQueued = true; }
 };
+
 
 #endif // IMAGEVIEW_TYPES_H

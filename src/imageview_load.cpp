@@ -1525,8 +1525,8 @@ void ImageView::scheduleGalleryDecode(const QString &path)
             return;
         }
         // Only encode a pyramid when Store has no durable coverage yet.
-        if (!st.tilesPyramidQueued) {
-            st.tilesPyramidQueued = true;
+        if (!st.isTilesPyramidQueued()) {
+            st.markTilesPyramidQueued();
             if (!ThumtooCache::hasDurableTilesKnown(path)) {
                 (void)ThumtooCache::scheduleTilePyramid(path);
             }
