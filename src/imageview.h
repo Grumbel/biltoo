@@ -769,14 +769,14 @@ public:
     bool imageModeLeftDragPan() const { return m_chrome.imageModeLeftDragPan; }
 
     void setBackgroundColor(const QColor &color);
-    QColor backgroundColor() const { return m_canvasBg.color; }
+    QColor backgroundColor() const { return m_canvasBg.primaryColor(); }
     /**
      * Effective solid pad colour for slideshow letterbox (Solid mode colour,
      * else Preferences background). Used when ZoomBlur cannot run.
      */
     QColor slideshowPadColor() const;
     void setBackgroundColorAlt(const QColor &color);
-    QColor backgroundColorAlt() const { return m_canvasBg.colorAlt; }
+    QColor backgroundColorAlt() const { return m_canvasBg.primaryColor()Alt; }
     void setBackgroundPattern(BackgroundPattern pattern);
     BackgroundPattern backgroundPattern() const { return m_canvasBg.pattern; }
     /** When true, checkerboard is used only in Workspace; other modes stay solid. */

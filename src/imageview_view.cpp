@@ -90,7 +90,7 @@ void ImageView::setBackgroundColor(const QColor &color)
     if (!m_canvasBg.setColor(color)) {
         return;
     }
-    setBackgroundBrush(QBrush(m_canvasBg.color));
+    setBackgroundBrush(QBrush(m_canvasBg.primaryColor()));
     if (viewport()) {
         viewport()->update();
     }
@@ -102,8 +102,8 @@ QColor ImageView::slideshowPadColor() const
         && m_ssSettings.padColor.isValid()) {
         return m_ssSettings.padColor;
     }
-    if (m_canvasBg.color.isValid()) {
-        return m_canvasBg.color;
+    if (m_canvasBg.primaryColor().isValid()) {
+        return m_canvasBg.primaryColor();
     }
     const QBrush b = backgroundBrush();
     if (b.style() != Qt::NoBrush && b.color().isValid()) {
@@ -166,7 +166,7 @@ void ImageView::setWorkspaceBackground(const WorkspaceBackground &bg)
         return;
     }
     if (bg.mode == WorkspaceBackgroundMode::ImageTile && !bg.imagePath.isEmpty()) {
-        if (m_canvasBg.workspaceTilePath != bg.imagePath) {
+        if (!m_canvasBg.workspaceTilePathMatches(bg.imagePath)) {
             QPixmap px(bg.imagePath);
             if (!px.isNull()) {
                 m_canvasBg.setWorkspaceTile(px, bg.imagePath);

@@ -35,6 +35,19 @@ struct CanvasBackground {
         workspaceTilePath.clear();
     }
 
+    const QColor &primaryColor() const { return color; }
+
+    bool isWorkspaceShowDefault() const { return workspaceShowDefault; }
+
+    bool hasWorkspaceTile() const { return !workspaceTile.isNull(); }
+
+    const QPixmap &workspaceTilePixmap() const { return workspaceTile; }
+
+    bool workspaceTilePathMatches(const QString &path) const
+    {
+        return workspaceTilePath == path;
+    }
+
     void setWorkspaceTile(const QPixmap &px, const QString &path)
     {
         workspaceTile = px;
