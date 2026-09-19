@@ -59,6 +59,12 @@ struct HudAppearance {
 
     bool isVisible() const { return visible; }
 
+    int fontPointSizeValue() const { return fontPointSize; }
+
+    const QColor &textColorRef() const { return textColor; }
+
+    const QColor &panelColorRef() const { return panelColor; }
+
     bool setTextColor(const QColor &c)
     {
         if (!c.isValid() || c == textColor) {

@@ -43,6 +43,8 @@ struct TextLayerSession {
 
     bool hasLinkHoverTip() const { return !linkHoverTip.isEmpty(); }
 
+    const QString &linkHoverTipRef() const { return linkHoverTip; }
+
     const QString &searchQueryRef() const { return searchQuery; }
 
     const QString &layerPathRef() const { return layerPath; }

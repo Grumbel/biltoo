@@ -39,6 +39,8 @@ struct PageGuideSession {
 
     bool isVisible() const { return visible; }
 
+    bool isSelected() const { return selected; }
+
     bool hasValidRect() const
     {
         return rect.isValid() && rect.width() > 0 && rect.height() > 0;
