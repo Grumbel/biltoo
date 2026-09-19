@@ -11,6 +11,7 @@
 #include <QPointF>
 #include <QRectF>
 #include <QString>
+#include <QtMath>
 
 class ImageItem;
 
@@ -125,6 +126,61 @@ public:
     }
 
     void endRubber() { rubberBanding = false; }
+
+
+    void bindTarget(ImageItem *item, SessionImageId sid, const QString &path)
+    {
+        targetItem = item;
+        targetId = sid;
+        draftPath = path;
+        draftSampleFrozen = true;
+    }
+
+    void clearTargetBinding()
+    {
+        targetItem = nullptr;
+        targetId = kInvalidSessionImageId;
+        draftSampleFrozen = false;
+        draftPath.clear();
+    }
+
+    void setEnterSnapshot(const QImage &source, const WorkspaceItemState &state, bool valid)
+    {
+        enterSource = source;
+        enterState = state;
+        enterValid = valid;
+    }
+
+    void clearEnterSnapshot()
+    {
+        enterValid = false;
+        enterSource = {};
+        enterState = {};
+    }
+
+    void stashPlacement(qreal rot, qreal shear)
+    {
+        stashedPlacementRotation = rot;
+        stashedPlacementShear = shear;
+        hadStashedPlacement = qAbs(rot) > 0.05 || qAbs(shear) > 1e-4;
+    }
+
+    void clearPlacementStash()
+    {
+        stashedPlacementRotation = 0.0;
+        stashedPlacementShear = 0.0;
+        hadStashedPlacement = false;
+    }
+
+    /** Failed prepare: drop mode, target, enter stash, placement stash, interaction. */
+    void abortEnter()
+    {
+        mode = false;
+        clearTargetBinding();
+        clearEnterSnapshot();
+        clearPlacementStash();
+        clearInteraction();
+    }
 
     /**
      * Full leave / session wipe: inactive, no target, no enter stash, no pending

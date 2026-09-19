@@ -131,13 +131,10 @@ bool ImageView::enterCropModeFromUi()
     }
     cancelZoomRegion();
     // Lock identity for the whole crop session (IDENTITY.md).
-    m_crop.targetItem = item;
-    m_crop.targetId = item->sessionId();
     // Freeze sample installs immediately — before prepare attaches the draft.
     // m_crop.mode stays false until after the first draft attach (chrome timing);
     // freeze must not wait on m_crop.mode or ladder/async can land in between.
-    m_crop.draftSampleFrozen = true;
-    m_crop.draftPath = item->path();
+    m_crop.bindTarget(item, item->sessionId(), item->path());
     item->setTileLodSuppressed(true);
     if (m_pathRaster && !m_crop.draftPath.isEmpty()) {
         m_pathRaster->cancel(m_crop.draftPath);
@@ -146,26 +143,24 @@ bool ImageView::enterCropModeFromUi()
     // prepareCropModeFullImage / end of this function). Setting it earlier
     // painted one frame of crop chrome on the still-cropped bake.
     // Snapshot appearance before full-image reload so Close can be undone.
-    m_crop.enterSource = item->sourceImage().copy();
-    if (m_crop.enterSource.isNull()) {
-        m_crop.enterSource = item->previewImage().copy();
+    QImage enterSrc = item->sourceImage().copy();
+    if (enterSrc.isNull()) {
+        enterSrc = item->previewImage().copy();
     }
-    m_crop.enterState = captureState(item);
-    m_crop.enterState.hasCrop = item->sessionHasCrop();
-    m_crop.enterState.cropRect = item->sessionCropRect();
+    WorkspaceItemState enterSt = captureState(item);
+    enterSt.hasCrop = item->sessionHasCrop();
+    enterSt.cropRect = item->sessionCropRect();
     // cropRotation / cropSourceSize come from captureState → appearance.
     // Soft-only tiles have preview only; still a valid enter snapshot.
-    m_crop.enterValid = !m_crop.enterSource.isNull() || item->hasDisplayPixels();
+    m_crop.setEnterSnapshot(enterSrc, enterSt,
+                            !enterSrc.isNull() || item->hasDisplayPixels());
     // Crop handles are axis-aligned in item space; free Workspace placement
     // rotation makes rubber-band and edge grips unusable. Unrotate for the
     // crop session and restore on exit.
     // Workspace: remember where the *displayed* image centre sits so the
     // restored crop frame can stay fixed while the full image grows around it.
     const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
-    m_crop.stashedPlacementRotation = item->itemRotation();
-    m_crop.stashedPlacementShear = item->itemShear();
-    m_crop.hadStashedPlacement = qAbs(m_crop.stashedPlacementRotation) > 0.05
-        || qAbs(m_crop.stashedPlacementShear) > 1e-4;
+    m_crop.stashPlacement(item->itemRotation(), item->itemShear());
     if (m_crop.hadStashedPlacement) {
         item->setItemRotation(0.0);
         item->setItemShear(0.0);
@@ -178,19 +173,14 @@ bool ImageView::enterCropModeFromUi()
         if (viewport()) {
             viewport()->setUpdatesEnabled(true);
         }
-        m_crop.mode = false; // prepare may have set it for fitItem then failed
-        m_crop.draftSampleFrozen = false;
-        m_crop.draftPath.clear();
+        // prepare may have set mode for fitItem then failed — restore placement
+        // before abortEnter clears the stash.
         item->setTileLodSuppressed(false);
-        m_crop.enterValid = false;
-        m_crop.enterSource = QImage();
         if (m_crop.hadStashedPlacement) {
             item->setItemRotation(m_crop.stashedPlacementRotation);
             item->setItemShear(m_crop.stashedPlacementShear);
         }
-        m_crop.hadStashedPlacement = false;
-        m_crop.targetItem = nullptr;
-        m_crop.targetId = kInvalidSessionImageId;
+        m_crop.abortEnter();
         flashHud(tr("Crop"), tr("Could not load full image"));
         return false;
     }
@@ -1351,8 +1341,7 @@ void ImageView::clearCropModeState()
             byId->setTileLodSuppressed(false);
         }
     }
-    m_crop.targetItem = nullptr;
-    m_crop.targetId = kInvalidSessionImageId;
+    m_crop.clearTargetBinding();
     m_crop.rect = QRectF();
     m_crop.clearInteraction();
     m_crop.allowExpand = false;
