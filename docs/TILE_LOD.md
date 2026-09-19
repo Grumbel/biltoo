@@ -365,6 +365,11 @@ the first frame after rebind.
 `idle_path_count`; neighbor prefetch skips only overview-warm paths (≥4 tiles);
 `setPath` touches registry LRU; `BILTOO_TILE_DEBUG` logs registry pressure.
 
+**biltoo-1412–1415:** O(1) `approx_bytes`; named `kPrefetchWarmSucceededMin`;
+`tileLodHasPathRam` for coordinator priority and immediate tick after Image ←/→
+when retained tiles exist.
+
+
 
 
 
@@ -431,6 +436,8 @@ fine tiles load. `cancel_obsolete` keeps those parent keys in-flight.
 | Thumtoo source + Image / Workspace / Gallery | Done |
 | Shared path RAM cache + 128 MiB budget | Done |
 | Global path retention + 384 MiB LRU (1212) | Done |
+| Path identity + retained replan (1400–1405) | Done |
+| O(1) succeeded count/bytes; warm prefetch (1406–1415) | Done |
 | Parent protect + parent prefetch | Done |
 | HiDPI, scale hold, coverage heartbeat | Done |
 | ContentXform axis-aligned map | Done |

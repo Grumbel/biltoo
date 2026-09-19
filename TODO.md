@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1415-tile-path-ram-priority-o1-bytes.** Path-RAM priority; O(1) bytes; warm const.
+Prior: **1411**. Commits 1412–1415.
+
+### Commits
+1. **1412** O(1) `TileMemoryCache::approx_bytes` (`m_succeeded_bytes`)
+2. **1413** `kPrefetchWarmSucceededMin` named constant
+3. **1414** `ImageItem::tileLodHasPathRam` + coordinator `hasAnyTile` includes path RAM
+4. **1415** Image pending install: `tickTileLod` when retained path RAM (non-nav-hot)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1415-tile-path-ram-priority-o1-bytes.bundle HEAD
+```
+Requires tip **1411**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1411-tile-ram-o1-warm-prefetch-debug.** O(1) succeeded count; warm prefetch; LRU touch; debug.
 Prior: **1405**. Commits 1406–1411.
 
