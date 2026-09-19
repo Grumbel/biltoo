@@ -352,7 +352,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
     }
 
     QFont f = painter.font();
-    f.setPointSize(qMax(10, f.pointSize() + 1));
+    f.setPointSize(AttentionGeometry::clampHintPointSize(f.pointSize()));
     painter.setFont(f);
     painter.setPen(QColor(255, 255, 255, 240));
     const QString hint =

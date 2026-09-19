@@ -9,6 +9,7 @@
 #include <QRect>
 #include <QRectF>
 #include <QVector>
+#include <QtGlobal>
 
 /**
  * Pure attention-point geometry (normalized 0–1 content space and viewport hits).
@@ -65,7 +66,14 @@ QVector<int> mergeSelection(const QVector<int> &current, const QVector<int> &hit
 /**
  * Toggle membership of @p index in @p selected (Shift/Ctrl click on a handle).
  */
-QVector<int> toggleSelectionIndex(const QVector<int> &selected, int index);
+QVector<int> toggleSelectionIndex(const QVector<int> &sel
+/** Mode-hint overlay point size (base + 1, floor 10). */
+inline int clampHintPointSize(int basePt)
+{
+    return qMax(10, basePt + 1);
+}
+
+ected, int index);
 
 } // namespace AttentionGeometry
 
