@@ -54,7 +54,7 @@ void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPer
         // Threshold: ≥4 Succeeded tiles (~overview coverage at low dpc).
         {
             auto& reg = tilelod::TileLodRegistry::instance();
-            if (reg.path_succeeded_count(path) >= 4) {
+            if (reg.path_succeeded_count(path) >= kPrefetchWarmSucceededMin) {
                 reg.touch(path);
                 continue;
             }

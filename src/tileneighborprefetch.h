@@ -77,6 +77,8 @@ private:
     static constexpr double kPrefetchMaxDpc = 0.25;
     static constexpr int kPrefetchMaxTicks = 30;
     static constexpr int kTickIntervalMs = 33;
+    /** Retained Succeeded tiles before neighbor issue is skipped as warm. */
+    static constexpr int kPrefetchWarmSucceededMin = 4;
 };
 
 #endif // TILENEIGHBORPREFETCH_H
