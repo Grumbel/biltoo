@@ -20,7 +20,7 @@ SessionImageId ImageView::attentionSessionId() const
             return item->sessionId();
         }
     }
-    if (m_sessionId.currentId != kInvalidSessionImageId) {
+    if (m_sessionId.hasCurrentId()) {
         return m_sessionId.currentId;
     }
     return kInvalidSessionImageId;

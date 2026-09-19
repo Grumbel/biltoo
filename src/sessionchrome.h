@@ -64,7 +64,17 @@ struct SessionIdentity {
     }
 
     void clearLastLoadError() { lastLoadError.clear(); }
+
+    bool hasCurrentId() const { return currentId != kInvalidSessionImageId; }
+
+    bool hasLastLoadError() const { return !lastLoadError.isEmpty(); }
+
+    bool isValidPosition() const
+    {
+        return total > 0 && index >= 0 && index < total;
+    }
 };
+
 
 struct SessionNavFlags {
     bool imageModeNavEnabled = false;
