@@ -247,23 +247,6 @@ void ImageView::installAndActivateCropEnter(ImageItem *item, const QImage &full,
     m_crop.clearAwaitingFull();
 }
 
-bool ImageView::pickEnterFullRasterOrRequest(ImageItem *item, const QString &path,
-                                             bool hadCrop,
-                                             CropSession::EnterFullRaster *enter)
-{
-    if (!enter) {
-        return false;
-    }
-    // Unoriented ImageCache host preferred. Never use item display as the crop
-    // base when a prior crop exists — that bake is already cropped.
-    *enter = CropSession::pickEnterFullRaster(item, path, hadCrop);
-    if (enter->image.isNull()) {
-        handleNullEnterFullRaster(path, hadCrop);
-        return false;
-    }
-    return true;
-}
-
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
 {
     if (!item) {
@@ -275,8 +258,11 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     WorkspaceItemState app;
     const bool haveApp = loadRestoreCropAppearance(item, &app, nullptr);
     const bool hadCrop = CropSession::appearanceHasCrop(&app, haveApp);
-    CropSession::EnterFullRaster enter;
-    if (!pickEnterFullRasterOrRequest(item, path, hadCrop, &enter)) {
+    // Unoriented ImageCache host preferred. Never use item display as the crop
+    // base when a prior crop exists — that bake is already cropped.
+    CropSession::EnterFullRaster enter = CropSession::pickEnterFullRaster(item, path, hadCrop);
+    if (enter.image.isNull()) {
+        handleNullEnterFullRaster(path, hadCrop);
         return false;
     }
     installAndActivateCropEnter(item, enter.image, haveApp ? &app : nullptr, haveApp,

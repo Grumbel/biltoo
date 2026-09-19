@@ -1725,8 +1725,6 @@ private:
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     WorkspaceItemState captureCropUndoAfterState(ImageItem *item) const;
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
-    void installApplyDisplayGeometry(ImageItem *item, const WorkspaceItemState &st,
-                                     qreal cropW, qreal cropH, const QString &path);
     void attachCropApplyDisplay(ImageItem *item, const QImage &display,
                                 const WorkspaceItemState &st, bool multiMp,
                                 qreal cropW, qreal cropH, const QString &path,
@@ -1757,7 +1755,6 @@ private:
     bool applyCropCommitNonFullFrame(ImageItem *item);
     bool applyCropCommitFullFrame(ImageItem *item);
     bool applyCropCommit(ImageItem *item);
-    void restoreEnterPlacementIfWorkspace(ImageItem *item);
     void cancelCropShowingFullImage(ImageItem *item);
     void flushPendingFullRematerialize(bool pendingFull, const QString &pendingPath,
                                        SessionImageId pendingSid,
@@ -1776,9 +1773,6 @@ private:
     void installAndActivateCropEnter(ImageItem *item, const QImage &full,
                                      const WorkspaceItemState *app, bool haveApp,
                                      bool unorientedSource);
-    bool pickEnterFullRasterOrRequest(ImageItem *item, const QString &path,
-                                      bool hadCrop,
-                                      CropSession::EnterFullRaster *enter);
     bool prepareCropModeFullImage(ImageItem *item);
     bool loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const;
     /** @p unorientedSource true when @p full is ImageCache/host raw (safe to bake). */

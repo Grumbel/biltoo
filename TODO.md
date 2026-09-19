@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1569-crop-inline-apply-enter-thin.** Inline more single-use apply/enter helpers.
+Prior: **1568**.
+
+### Change
+- `installApplyDisplayGeometry` → body of `attachCropApplyDisplay`
+- `restoreEnterPlacementIfWorkspace` → body of `cancelCropShowingFullImage`
+- `pickEnterFullRasterOrRequest` → body of `prepareCropModeFullImage`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1569-crop-inline-apply-enter-thin.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1568-crop-enter-inline-thin.** Inline resolve/activate/capture into enter pipeline.
 Prior: **1567**.
 

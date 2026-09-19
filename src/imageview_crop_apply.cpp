@@ -162,8 +162,10 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 }
 
 
-void ImageView::installApplyDisplayGeometry(ImageItem *item, const WorkspaceItemState &st,
-                                            qreal cropW, qreal cropH, const QString &path)
+void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
+                                          const WorkspaceItemState &st, bool multiMp,
+                                          qreal cropW, qreal cropH, const QString &path,
+                                          const QPointF &cropSceneCenter)
 {
     // Clear first so the crop bake replaces full-frame pixels — otherwise canvas
     // stretches full into the crop box and filmstrip gets img=full.
@@ -171,14 +173,6 @@ void ImageView::installApplyDisplayGeometry(ImageItem *item, const WorkspaceItem
     // Geometry before pixels: empty item with crop intrinsic, then bake.
     applyContentLayoutSize(item, st);
     CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
-}
-
-void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
-                                          const WorkspaceItemState &st, bool multiMp,
-                                          qreal cropW, qreal cropH, const QString &path,
-                                          const QPointF &cropSceneCenter)
-{
-    installApplyDisplayGeometry(item, st, cropW, cropH, path);
     attachDisplaySample(item, display, st, CropSession::applyPixelKind(multiMp));
     m_crop.restoreEnterScale(item);
     alignItemCenterToScene(item, cropSceneCenter);
@@ -291,17 +285,12 @@ bool ImageView::applyCropCommit(ImageItem *item)
     return applyCropCommitFullFrame(item);
 }
 
-void ImageView::restoreEnterPlacementIfWorkspace(ImageItem *item)
-{
-    if (isWorkspaceMode() && m_crop.isEnterValid()) {
-        m_crop.restoreEnterPlacementPose(item);
-    }
-}
-
 void ImageView::cancelCropShowingFullImage(ImageItem *item)
 {
     restoreSessionCropAppearance(item);
-    restoreEnterPlacementIfWorkspace(item);
+    if (isWorkspaceMode() && m_crop.isEnterValid()) {
+        m_crop.restoreEnterPlacementPose(item);
+    }
 }
 
 
