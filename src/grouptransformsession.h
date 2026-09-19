@@ -35,6 +35,39 @@ public:
 
     bool active() const { return scaleDrag || rotateDrag; }
 
+    void setHoverHandle(int h) { hoverHandle = h; }
+
+    void clearHover() { hoverHandle = -1; }
+
+    /** Start scale or rotate drag for the given handle and selection snapshot. */
+    void beginDrag(int h, bool isRotate, const QRectF &bounds,
+                   const QList<ImageItem *> &items,
+                   const QList<WorkspaceItemState> &states)
+    {
+        handle = h;
+        scaleDrag = !isRotate;
+        rotateDrag = isRotate;
+        boundsStart = bounds;
+        centerStart = bounds.center();
+        dragItems = items;
+        dragStartStates = states;
+    }
+
+    /** Drop active scale/rotate drag (also clears hover). */
+    void endDrag()
+    {
+        handle = -1;
+        hoverHandle = -1;
+        scaleDrag = false;
+        rotateDrag = false;
+        boundsStart = {};
+        centerStart = {};
+        pressScenePos = {};
+        pressAngleDeg = 0.0;
+        dragStartStates.clear();
+        dragItems.clear();
+    }
+
     int handle = -1;
     int hoverHandle = -1;
     bool scaleDrag = false;

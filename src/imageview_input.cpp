@@ -1345,7 +1345,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
             const int gh = groupHandleAt(event->pos(), candidates);
             const bool groupHoverChanged = (gh != m_groupXform.hoverHandle);
             if (groupHoverChanged) {
-                m_groupXform.hoverHandle = gh;
+                m_groupXform.setHoverHandle(gh);
                 viewport()->update();
             }
             if (gh >= 0) {
@@ -1384,7 +1384,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
             }
         } else {
             if (m_groupXform.hoverHandle != -1) {
-                m_groupXform.hoverHandle = -1;
+                m_groupXform.clearHover();
                 viewport()->update();
             }
             ImageItem *hoverOwner = nullptr;

@@ -29,16 +29,13 @@ bool ImageView::beginGroupScale(int handle, const QList<ImageItem *> &items)
     if (!bounds.isValid() || bounds.isEmpty()) {
         return false;
     }
-    m_groupXform.handle = handle;
-    m_groupXform.scaleDrag = !GroupTransformGeometry::isRotateHandle(handle);
-    m_groupXform.rotateDrag = GroupTransformGeometry::isRotateHandle(handle);
-    m_groupXform.boundsStart = bounds;
-    m_groupXform.centerStart = bounds.center();
-    m_groupXform.dragItems = items;
-    m_groupXform.dragStartStates.clear();
+    QList<WorkspaceItemState> states;
+    states.reserve(items.size());
     for (ImageItem *item : items) {
-        m_groupXform.dragStartStates.append(captureState(item));
+        states.append(captureState(item));
     }
+    m_groupXform.beginDrag(handle, GroupTransformGeometry::isRotateHandle(handle),
+                           bounds, items, states);
     return true;
 }
 
@@ -122,12 +119,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
 void ImageView::endGroupScale()
 {
     // Undo is committed from mouseReleaseEvent (TransformCommand is local there).
-    m_groupXform.scaleDrag = false;
-    m_groupXform.rotateDrag = false;
-    m_groupXform.handle = -1;
-    m_groupXform.hoverHandle = -1;
-    m_groupXform.dragItems.clear();
-    m_groupXform.dragStartStates.clear();
+    m_groupXform.endDrag();
 }
 
 void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods)
