@@ -1521,11 +1521,7 @@ void ImageView::endCropRubberBand()
 
 CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
 {
-    if (!m_crop.active()) {
-        return CropHandle::None;
-    }
-    ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.hasValidRect()) {
+    if (!m_crop.active() || !m_crop.hasValidRect() || !cropTargetItem()) {
         return CropHandle::None;
     }
     const CropGeometry::CropFrameViewAnchors anchors =
