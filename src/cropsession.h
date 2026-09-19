@@ -29,6 +29,9 @@ class ImageItem;
 class CropSession
 {
 public:
+    /** Minimum draft side in content pixels during handle drag. */
+    static constexpr qreal kMinDraftSidePx = 4.0;
+
     bool active() const { return mode; }
 
     /** True for frame drag handles (not chrome buttons). */

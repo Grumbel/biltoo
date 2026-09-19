@@ -347,12 +347,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
         && ContentXform::equal(item->appliedContentXform(), wantX);
     const bool liveGradeOk = !item->hasAppliedContentXform()
         && !needGeomBake
-        && item->colorAdjustments().brightness == contentOnly.colorAdjust.brightness
-        && item->colorAdjustments().contrast == contentOnly.colorAdjust.contrast
-        && item->colorAdjustments().saturation == contentOnly.colorAdjust.saturation
-        && item->colorAdjustments().hue == contentOnly.colorAdjust.hue
-        && item->colorAdjustments().invert == contentOnly.colorAdjust.invert
-        && qFuzzyCompare(item->colorAdjustments().gamma, contentOnly.colorAdjust.gamma);
+        && item->colorAdjustments().matches(contentOnly.colorAdjust);
     if (!hadPriorCrop && item->hasDisplayPixels()
         && !item->sessionHasCrop()
         && (appliedOk || liveGradeOk)
@@ -1462,7 +1457,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
     }
     const QPointF local = item->mapFromScene(mapToScene(viewPos));
     const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
-    m_crop.applyActiveHandleDrag(local, item->contentRect(), 4.0,
+    m_crop.applyActiveHandleDrag(local, item->contentRect(), CropSession::kMinDraftSidePx,
                                  mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
     viewport()->update();
 }
