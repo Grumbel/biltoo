@@ -28,6 +28,15 @@ struct PageGuideSession {
         dragStartRect = {};
     }
 
+    bool isInteractive() const { return visible && selected; }
+
+    bool isDragging() const { return dragHandle >= 0; }
+
+    bool isHandleHot(int id) const
+    {
+        return hoverHandle == id || dragHandle == id;
+    }
+
     /** Begin resize from handle with starting page rect in scene space. */
     void beginResize(int handle, const QRectF &startRect)
     {
