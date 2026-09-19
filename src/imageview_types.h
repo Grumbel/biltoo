@@ -117,6 +117,12 @@ inline bool layoutIsSideBySide(LayoutMode mode)
     return mode == LayoutMode::SideBySide;
 }
 
+/** Vertical strip pack mode. */
+inline bool layoutIsVertical(LayoutMode mode)
+{
+    return mode == LayoutMode::Vertical;
+}
+
 /** Fill-mode pack that needs global sizes before first pack. */
 inline bool layoutNeedsAllSizes(LayoutMode mode)
 {
