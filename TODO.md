@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1360-scope-step-nonneg.** ColorAdjustments scopeSampleStep;
+ViewTransform::nonNeg for transition caps.
+Prior: **1359**.
+
+### Change
+- `ColorAdjustments::scopeSampleStep` for vectorscope subsample stride
+- `ViewTransform::nonNeg(qreal)`; prefs / slideshow transition interval caps
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1360**)
+```bash
+git pull /path/to/biltoo-1360-scope-step-nonneg.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1359-capwant-freerot-tile.** PathRaster capWant → DisplayEdgePolicy;
 CropGeometry free-rotation eps; tile fill atLeast1.
 Prior: **1358**.

@@ -337,3 +337,4 @@ part of early-phase exit criteria).
 - Group snapDegrees; clocks clamp01; **WorkspaceGeometry** sceneMargins/paddedSceneRect; **HudGeometry::placeTimelineClock**.
 - **Fix DisplayQuality::hostLongEdge**; **ContentXform::scaleCropRect**; ViewFraming clamp01.
 - **PathRasterService::capWant** → DisplayEdgePolicy; **CropGeometry::kFreeRotationEps**; tile atLeast1.
+- **ColorAdjustments::scopeSampleStep**; **ViewTransform::nonNeg** for transition caps.
