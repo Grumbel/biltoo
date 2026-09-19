@@ -91,6 +91,32 @@ struct SlideshowPhaseState {
     void setFromMotionT(qreal t) { fromMotionT = qBound(0.0, t, 1.0); }
 
     void setToMotionT(qreal t) { toMotionT = qBound(0.0, t, 1.0); }
+
+    void setFromPath(const QString &path) { fromPath = path; }
+
+    void setToPath(const QString &path) { toPath = path; }
+
+    void clearFromPath() { fromPath.clear(); }
+
+    void clearToPath() { toPath.clear(); }
+
+    void setFromMotionClockRunning(bool on) { fromMotionClockRunning = on; }
+
+    void setToMotionClockRunning(bool on) { toMotionClockRunning = on; }
+
+    /** Start from-phase motion clock at T=0 (or keep T if already set). */
+    void startFromMotionClock()
+    {
+        fromMotionClock.start();
+        fromMotionClockRunning = true;
+    }
+
+    void startToMotionClock()
+    {
+        toMotionClock.start();
+        toMotionClockRunning = true;
+    }
+
     QPointF toBiasA{-1.0, -1.0};
     QPointF toBiasB{1.0, 1.0};
     QElapsedTimer fromMotionClock;
