@@ -250,9 +250,13 @@ struct SlideshowPhaseState {
 
     quint64 phaseUpgradeGenerationValue() const { return phaseUpgradeGeneration; }
 
-    SlideshowPhaseSurface &fromSurfaceRef() { return fromSurface; }
+    DisplaySurface::SurfaceId &fromSurfaceRef() { return fromSurface; }
 
-    SlideshowPhaseSurface &toSurfaceRef() { return toSurface; }
+    DisplaySurface::SurfaceId &toSurfaceRef() { return toSurface; }
+
+    DisplaySurface::SurfaceId fromSurfaceId() const { return fromSurface; }
+
+    DisplaySurface::SurfaceId toSurfaceId() const { return toSurface; }
 
     const QPointF &toBiasAPoint() const { return toBiasA; }
 

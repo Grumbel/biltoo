@@ -968,7 +968,7 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
 
     const bool pageYUp = pageYUpForTextLayer();
     const QRectF inSource = ThumtooCache::pageRectToImageRect(
-        region.bbox, m_textLayer.pageBoundsRef(), sourceSize, pageYUp);
+        region.bbox, m_textLayer.pageBounds(), sourceSize, pageYUp);
     if (inSource.isEmpty()) {
         return {};
     }

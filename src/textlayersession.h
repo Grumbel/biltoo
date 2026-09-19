@@ -47,13 +47,11 @@ struct TextLayerSession {
 
     const QString &layerPathRef() const { return layerPath; }
 
-    const QRectF &pageBoundsRef() const { return pageBounds; }
-
     const QVector<int> &searchMatchesRef() const { return searchMatches; }
 
     const QVector<int> &selectedRegionsRef() const { return selectedRegions; }
 
-    const TextLayer &layerRef() const { return layer; }
+    const ThumtooCache::PageTextLayer &layerRef() const { return layer; }
 
     bool hasLayerRegions() const { return !layer.regions.isEmpty(); }
 
