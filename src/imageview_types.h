@@ -141,6 +141,13 @@ struct WorkspaceBackground {
     QString imageSha256;
 
     bool isAppDefault() const { return mode == WorkspaceBackgroundMode::AppDefault; }
+
+    /** True when durable override fields match (ignores tile pixmap cache). */
+    bool matches(const WorkspaceBackground &o) const
+    {
+        return mode == o.mode && color == o.color && colorAlt == o.colorAlt
+            && imagePath == o.imagePath && imagePathRelative == o.imagePathRelative;
+    }
 };
 
 /**

@@ -161,22 +161,10 @@ void ImageView::setCheckerboardWorkspaceOnly(bool on)
 
 void ImageView::setWorkspaceBackground(const WorkspaceBackground &bg)
 {
-    if (m_canvasBg.workspace.mode == bg.mode
-        && m_canvasBg.workspace.color == bg.color
-        && m_canvasBg.workspace.colorAlt == bg.colorAlt
-        && m_canvasBg.workspace.imagePath == bg.imagePath
-        && m_canvasBg.workspace.imagePathRelative == bg.imagePathRelative) {
-        // No-op: leave a temporary "show default" preview alone so the
-        // toolbar toggle does not desync from paint.
+    // No-op when durable fields match: leave temporary "show default" preview
+    // alone so the toolbar toggle does not desync from paint.
+    if (!m_canvasBg.setWorkspace(bg)) {
         return;
-    }
-    // Permanent override changed — drop temporary preview.
-    m_canvasBg.workspaceShowDefault = false;
-    m_canvasBg.workspace = bg;
-    if (bg.mode != WorkspaceBackgroundMode::ImageTile
-        || bg.imagePath != m_canvasBg.workspaceTilePath) {
-        m_canvasBg.workspaceTile = QPixmap();
-        m_canvasBg.workspaceTilePath.clear();
     }
     if (bg.mode == WorkspaceBackgroundMode::ImageTile && !bg.imagePath.isEmpty()) {
         if (m_canvasBg.workspaceTilePath != bg.imagePath) {
