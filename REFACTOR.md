@@ -117,6 +117,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **GallerySoftBook::setDeferPopulate**; **HudAppearance** visible/colour setters.
 - **LayoutPrefs::setMode**; **LayoutDebounce::take**; **GalleryRelayoutSuppress::Scoped**.
 - **CanvasBackground::setCheckerWorkspaceOnly**; modes Fit/Fill via ViewFraming.
+- **Tool** in imageview_types; **ToolPolicy** cursor/rubber-band; **LayoutDebounce::kIntervalMs**.
+- **ViewTransform::kFreeformScenePad**; **SlideshowProgressHud** paused/nav transitions.
 
 
 ## Current pain (evidence)

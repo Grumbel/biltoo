@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1382-toolpolicy-debounce-freepad-sshud.** Pure helpers on tip 1381.
+Prior: **1381**.
+
+### Change
+1. `Tool` moved to `imageview_types.h`; `ToolPolicy::{cursorFor,workspaceRubberBand}`
+2. `LayoutDebounce::kIntervalMs`
+3. `ViewTransform::kFreeformScenePad`
+4. `SlideshowProgressHud::{setPausedHud,setNavHot}`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1382-toolpolicy-debounce-freepad-sshud.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1382).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1381-layoutmode-fitfill-checker-debounce-suppress.** Bag transitions on tip 1380.
 Prior: **1380**.
 
