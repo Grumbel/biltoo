@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1515-crop-session-stack.** Restored 1512–1514 policy + enter LOD/PathRaster helpers.
+Prior: **1511** (`b8ef3f2`). Commits 1515a–1515d (+ docs).
+
+### Commits
+1. Restore CropSession enter/record/apply policy stack (1512–1514 APIs)
+2. Enter LOD suppress on beginEnterSession; seedEnterCropFlags; PathRaster/size helpers
+3. finishWorkspaceCropEnter
+4. Define finishWorkspaceCropEnter (fix)
+
+### Note
+Still on ImageView: attachDisplaySample, applyCropCommit attach/undo/HUD/mode fit,
+appearance store writes, PathRaster service ownership, enter UI orchestration.
+
+### Apply (on tip **1511** / `b8ef3f2`)
+```bash
+git pull --ff-only /path/to/biltoo-1515-crop-session-stack.bundle HEAD
+```
+Includes **1512–1515** restored stack.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1511-crop-session-policy.** Enter/apply pure policy + chrome layout on CropSession.
 Prior: **1510**. Commits 1511a–1511c (+ docs).
 
