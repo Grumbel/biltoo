@@ -360,7 +360,7 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
 keeps identity correct.
 
-**Global path RAM tip history (1400–1428):**
+**Global path RAM tip history (1400–1429):**
 
 | Range | Summary |
 |-------|---------|
@@ -373,6 +373,7 @@ keeps identity correct.
 | **1422–1424** | Shared `kWarmSucceededMin`; prefetch max 4 slots; `debug_summary` |
 | **1425–1427** | `BILTOO_TILE_RAM_MIB` / `BILTOO_TILE_MAX_IDLE`; prefetch eviction by ticksLeft |
 | **1428** | Prefetch touch on live takeover / slot done; tip history table |
+| **1429** | `tickPrimaryTileLod` public controller-host API (Gallery restore) |
 
 ### Session / archive replace (biltoo-1233 / 1234)
 

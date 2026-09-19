@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1429-tick-primary-public-host.** Public tickPrimaryTileLod for Gallery restore.
+Prior: **1428**. Commit 1429.
+
+### Commits
+1. **1429** Move `ImageView::tickPrimaryTileLod` to controller-host public API
+   (fixes GalleryController private access compile error)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1429-tick-primary-public-host.bundle HEAD
+```
+Requires tip **1428**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1428-tile-prefetch-touch-tip-history.** Prefetch LRU touch; consolidated tip table.
 Prior: **1427**. Commit 1428.
 

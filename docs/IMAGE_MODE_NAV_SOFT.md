@@ -115,3 +115,10 @@ Slideshow does **not** call `loadImage` on user Next/Prev. It calls
 | **Key-repeat (nav hot)** | Swap phase stand-in from ImageCache; **no** atlas / phase-upgrade / zoom-blur / PathRaster |
 | **Settle (~80ms quiet)** | Clear nav-hot; `setSlideshowPhase` once for **current** path |
 | **Neighbour preload** | Debounced; skipped while nav-hot |
+
+## Global path tile RAM (1212 / 1400+)
+
+Image ←/→ destroys only the per-item `TileSession`; Succeeded tiles remain in
+`TileLodRegistry` until idle LRU eviction. Returning to a path should paint
+retained cells without a full rebuild. See [TILE_LOD.md](TILE_LOD.md).
+
