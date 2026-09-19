@@ -112,6 +112,58 @@ struct SlideshowPhaseState {
     bool inTransition() const { return fadeT >= 0.0; }
     bool inDwell() const { return fadeT < 0.0; }
 
+    void setFromImage(const QImage &img, bool contentApplied)
+    {
+        fromImage = img;
+        fromContentApplied = contentApplied;
+    }
+
+    void setToImage(const QImage &img, bool contentApplied)
+    {
+        toImage = img;
+        toContentApplied = contentApplied;
+    }
+
+    void clearFromImage()
+    {
+        fromImage = {};
+        fromContentApplied = false;
+    }
+
+    void clearToImage()
+    {
+        toImage = {};
+        toContentApplied = false;
+    }
+
+    void setToAtlas(const QPixmap &pm, qreal scale, int vw, int vh, quint64 gen = 0)
+    {
+        toAtlas = pm;
+        toAtlasScale = scale;
+        toAtlasVw = vw;
+        toAtlasVh = vh;
+        if (gen != 0) {
+            toAtlasRebuildGeneration = gen;
+        }
+    }
+
+    void clearToAtlas()
+    {
+        toAtlas = {};
+        toAtlasRebuildGeneration = 0;
+        toAtlasScale = 0.0;
+        toAtlasVw = 0;
+        toAtlasVh = 0;
+    }
+
+    void stopMotionClocks()
+    {
+        fromMotionClockRunning = false;
+        toMotionClockRunning = false;
+        setFromMotionT(0.0);
+        setToMotionT(0.0);
+    }
+
     void clearTiles()
     {
         fromTiles.reset();
@@ -124,26 +176,17 @@ struct SlideshowPhaseState {
         toPath.clear();
         fromSurface = DisplaySurface::kInvalidSurfaceId;
         toSurface = DisplaySurface::kInvalidSurfaceId;
-        fromImage = {};
-        toImage = {};
+        clearFromImage();
+        clearToImage();
         clearTiles();
-        fromContentApplied = false;
-        toContentApplied = false;
-        fadeT = -1.0;
-        fromMotionT = 0.0;
-        toMotionT = 0.0;
+        beginDwell();
+        stopMotionClocks();
         toBiasA = {-1.0, -1.0};
         toBiasB = {1.0, 1.0};
-        fromMotionClockRunning = false;
-        toMotionClockRunning = false;
         rasterInflight.clear();
         rasterPending.clear();
         phaseUpgradeGeneration = 0;
-        toAtlas = {};
-        toAtlasRebuildGeneration = 0;
-        toAtlasScale = 0.0;
-        toAtlasVw = 0;
-        toAtlasVh = 0;
+        clearToAtlas();
     }
 };
 
