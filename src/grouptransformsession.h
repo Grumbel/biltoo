@@ -39,6 +39,10 @@ public:
 
     void clearHover() { hoverHandle = -1; }
 
+    void setPressScenePos(const QPointF &p) { pressScenePos = p; }
+
+    void setPressAngleDeg(qreal deg) { pressAngleDeg = deg; }
+
     /** Start scale or rotate drag for the given handle and selection snapshot. */
     void beginDrag(int h, bool isRotate, const QRectF &bounds,
                    const QList<ImageItem *> &items,
