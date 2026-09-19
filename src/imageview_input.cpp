@@ -418,19 +418,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
 
 bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
 {
-    // mpv-style seekbar: drag along bottom edge during slideshow.
-    if (event->button() != Qt::LeftButton || !viewport()) {
-        return false;
-    }
-    if (!m_slideshow.hud().isSeekHit(event->pos().y(), viewport()->height())) {
-        return false;
-    }
-    m_slideshow.hud().setSeekDragging(true);
-    m_slideshow.hud().setSeekbarVisible(true);
-    const qreal f = ViewTransform::unitFraction(event->pos().x(), viewport()->width());
-    emit slideshowSeekRequested(f);
-    event->accept();
-    return true;
+    return m_slideshow.tryMousePressSlideshowSeek(event);
 }
 
 bool ImageView::tryMousePressAttention(QMouseEvent *event)
@@ -1048,19 +1036,7 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
 
 void ImageView::updateMouseMoveSlideshowSeek(QMouseEvent *event)
 {
-    if (!m_slideshow.hud().isProgressActive() || !viewport()) {
-        return;
-    }
-    const int h = viewport()->height();
-    const bool nearBottom = m_slideshow.hud().isSeekHit(event->pos().y(), h);
-    if (nearBottom != m_slideshow.hud().isSeekbarVisible() && !m_slideshow.hud().isSeekDragging()) {
-        m_slideshow.hud().setSeekbarVisible(nearBottom);
-        viewport()->update();
-    }
-    if (m_slideshow.hud().isSeekDragging() && h > 0 && viewport()->width() > 0) {
-        const qreal f = ViewTransform::unitFraction(event->pos().x(), viewport()->width());
-        emit slideshowSeekRequested(f);
-    }
+    m_slideshow.updateMouseMoveSlideshowSeek(event);
 }
 
 void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
@@ -1284,15 +1260,7 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
 
 bool ImageView::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
 {
-    if (!m_slideshow.hud().isSeekDragging() || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    m_slideshow.hud().setSeekDragging(false);
-    event->accept();
-    if (viewport()) {
-        viewport()->update();
-    }
-    return true;
+    return m_slideshow.tryMouseReleaseSlideshowSeek(event);
 }
 
 bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
@@ -1309,54 +1277,12 @@ bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
 {
-    if (!m_attentionCtrl.session().active() || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    if (m_attentionCtrl.session().isRubberbanding()) {
-        ImageItem *item = targetItem();
-        if (item && !item->contentRect().isEmpty()) {
-            const QVector<QPointF> pts = attentionPointsForTarget();
-            QVector<QPointF> viewPts;
-            viewPts.reserve(pts.size());
-            for (const QPointF &n : pts) {
-                viewPts.append(attentionViewPos(item, n));
-            }
-            const QVector<int> hit = AttentionGeometry::indicesInViewRect(
-                viewPts, m_attentionCtrl.session().rubberRectRef());
-            const bool shift = event->modifiers() & Qt::ShiftModifier;
-            m_attentionCtrl.session().setSelected(AttentionGeometry::mergeSelection(
-                m_attentionCtrl.session().selectedMutable(), hit, shift));
-        }
-        m_attentionCtrl.session().endRubber();
-        viewport()->update();
-        event->accept();
-        return true;
-    }
-    if (m_attentionCtrl.session().isDragging()) {
-        m_attentionCtrl.session().endPointDrag();
-        attentionCommitSelectionMove();
-        event->accept();
-        return true;
-    }
-    return false;
+    return m_attentionCtrl.tryMouseReleaseAttention(event);
 }
 
 bool ImageView::tryMouseReleaseCrop(QMouseEvent *event)
 {
-    if (!m_cropCtrl.session().active() || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    if (m_cropCtrl.session().isHandleDragging()) {
-        endCropHandleDrag();
-        event->accept();
-        return true;
-    }
-    if (m_cropCtrl.session().isRubberbanding()) {
-        endCropRubberBand();
-        event->accept();
-        return true;
-    }
-    return false;
+    return m_cropCtrl.tryMouseReleaseCrop(event);
 }
 
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
@@ -1496,48 +1422,12 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
 
 bool ImageView::tryKeyPressAttention(QKeyEvent *event)
 {
-    if (!m_attentionCtrl.session().active()) {
-        return false;
-    }
-    if (event->key() == Qt::Key_Escape) {
-        setAttentionMode(false);
-        event->accept();
-        return true;
-    }
-    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
-        attentionDeleteSelected();
-        event->accept();
-        return true;
-    }
-    if (event->key() == Qt::Key_A && (event->modifiers() & Qt::ControlModifier)) {
-        const int n = attentionPointsForTarget().size();
-        m_attentionCtrl.session().selectAllIndices(n);
-        if (viewport()) {
-            viewport()->update();
-        }
-        event->accept();
-        return true;
-    }
-    // Detect is toolbar-only — Space is reserved for slideshow.
-    return false;
+    return m_attentionCtrl.tryKeyPressAttention(event);
 }
 
 bool ImageView::tryKeyPressCrop(QKeyEvent *event)
 {
-    if (!m_cropCtrl.session().active()) {
-        return false;
-    }
-    if (event->key() == Qt::Key_Escape) {
-        cancelCrop();
-        event->accept();
-        return true;
-    }
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        applyCrop();
-        event->accept();
-        return true;
-    }
-    return false;
+    return m_cropCtrl.tryKeyPressCrop(event);
 }
 
 bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)

@@ -23,6 +23,7 @@
 class ImageView;
 class ImageItem;
 class QPainter;
+class QMouseEvent;
 namespace tilelod { class TileLodController; }
 
 /**
@@ -165,6 +166,9 @@ public:
     void tickSlideshowDwellMotionClock();
     void tickSlideshowMotion();
     QString sessionBadgeText() const;
+    bool tryMousePressSlideshowSeek(QMouseEvent *event);
+    void updateMouseMoveSlideshowSeek(QMouseEvent *event);
+    bool tryMouseReleaseSlideshowSeek(QMouseEvent *event);
 
     SessionImageId sessionIdForPath(const QString &path) const;
     DwellAtlasParams dwellAtlasParams() const;

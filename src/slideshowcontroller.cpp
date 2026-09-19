@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <QFileInfo>
+#include <QMouseEvent>
 #include "biltoo_logging.h"
 #include "hudmodel.h"
 #include "imageloader.h"
@@ -2351,4 +2352,53 @@ QString SlideshowController::sessionBadgeText() const
 {
     return HudModel::sessionBadge(
         m_view->hostSessionId().currentIndex(), m_view->hostSessionId().currentTotal());
+}
+
+// --- Tier 6b input ---
+
+bool SlideshowController::tryMousePressSlideshowSeek(QMouseEvent *event)
+{
+    // mpv-style seekbar: drag along bottom edge during slideshow.
+    if (event->button() != Qt::LeftButton || !m_view->viewport()) {
+        return false;
+    }
+    if (!hud().isSeekHit(event->pos().y(), m_view->viewport()->height())) {
+        return false;
+    }
+    hud().setSeekDragging(true);
+    hud().setSeekbarVisible(true);
+    const qreal f = ViewTransform::unitFraction(event->pos().x(), m_view->viewport()->width());
+    emit m_view->slideshowSeekRequested(f);
+    event->accept();
+    return true;
+}
+
+void SlideshowController::updateMouseMoveSlideshowSeek(QMouseEvent *event)
+{
+    if (!hud().isProgressActive() || !m_view->viewport()) {
+        return;
+    }
+    const int h = m_view->viewport()->height();
+    const bool nearBottom = hud().isSeekHit(event->pos().y(), h);
+    if (nearBottom != hud().isSeekbarVisible() && !hud().isSeekDragging()) {
+        hud().setSeekbarVisible(nearBottom);
+        m_view->viewport()->update();
+    }
+    if (hud().isSeekDragging() && h > 0 && m_view->viewport()->width() > 0) {
+        const qreal f = ViewTransform::unitFraction(event->pos().x(), m_view->viewport()->width());
+        emit m_view->slideshowSeekRequested(f);
+    }
+}
+
+bool SlideshowController::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
+{
+    if (!hud().isSeekDragging() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    hud().setSeekDragging(false);
+    event->accept();
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    return true;
 }

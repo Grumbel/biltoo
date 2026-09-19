@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1613-phase6-tier6b-input-release-key.** Phase 6 Tier 6b: crop/attention release+key; slideshow seek on controllers.
+Prior: **1612**.
+
+### Change
+- Crop: `tryMouseReleaseCrop`, `tryKeyPressCrop`
+- Attention: `tryMouseReleaseAttention`, `tryKeyPressAttention`
+- Slideshow: `tryMousePress/ReleaseSlideshowSeek`, `updateMouseMoveSlideshowSeek`
+- ImageView input: thin forwards
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1613-phase6-tier6b-input-release-key.bundle HEAD
+```
+
+### Phase 6 remaining
+- Tier 4 Appearance → SessionDocument (needs fuller ImageView tests)
+- Tier 5b load method extraction
+- Workspace/gallery try* stay on ImageView; transform chrome stays on ImageView
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1612-phase6-tier6a-input-dispatch.** Phase 6 Tier 6a: crop/attention mouse try* on controllers.
 Prior: **1611**.
 

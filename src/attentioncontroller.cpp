@@ -11,6 +11,7 @@
 #include <QCursor>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QSet>
 #include <QUndoCommand>
 #include <algorithm>
@@ -442,5 +443,69 @@ bool AttentionController::tryMouseMoveAttention(QMouseEvent *event)
     }
     m_view->viewport()->setCursor(attentionHandleAt(event->pos()) ? Qt::SizeAllCursor
                                                           : Qt::CrossCursor);
+    return false;
+}
+
+// --- Tier 6b release/key ---
+
+bool AttentionController::tryMouseReleaseAttention(QMouseEvent *event)
+{
+    if (!session().active() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    if (session().isRubberbanding()) {
+        ImageItem *item = m_view->targetItem();
+        if (item && !item->contentRect().isEmpty()) {
+            const QVector<QPointF> pts = attentionPointsForTarget();
+            QVector<QPointF> viewPts;
+            viewPts.reserve(pts.size());
+            for (const QPointF &n : pts) {
+                viewPts.append(attentionViewPos(item, n));
+            }
+            const QVector<int> hit = AttentionGeometry::indicesInViewRect(
+                viewPts, session().rubberRectRef());
+            const bool shift = event->modifiers() & Qt::ShiftModifier;
+            session().setSelected(AttentionGeometry::mergeSelection(
+                session().selectedMutable(), hit, shift));
+        }
+        session().endRubber();
+        m_view->viewport()->update();
+        event->accept();
+        return true;
+    }
+    if (session().isDragging()) {
+        session().endPointDrag();
+        attentionCommitSelectionMove();
+        event->accept();
+        return true;
+    }
+    return false;
+}
+
+bool AttentionController::tryKeyPressAttention(QKeyEvent *event)
+{
+    if (!session().active()) {
+        return false;
+    }
+    if (event->key() == Qt::Key_Escape) {
+        setAttentionMode(false);
+        event->accept();
+        return true;
+    }
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        attentionDeleteSelected();
+        event->accept();
+        return true;
+    }
+    if (event->key() == Qt::Key_A && (event->modifiers() & Qt::ControlModifier)) {
+        const int n = attentionPointsForTarget().size();
+        session().selectAllIndices(n);
+        if (m_view->viewport()) {
+            m_view->viewport()->update();
+        }
+        event->accept();
+        return true;
+    }
+    // Detect is toolbar-only — Space is reserved for slideshow.
     return false;
 }

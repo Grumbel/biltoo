@@ -20,6 +20,7 @@
 #include <QGuiApplication>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include "imageloader.h"
 #include <QThreadPool>
 #include <QPointer>
@@ -27,6 +28,7 @@
 
 #include <QPainter>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QGuiApplication>
 #include <QtMath>
 
@@ -1024,4 +1026,42 @@ bool CropController::tryMouseMoveCropHover(QMouseEvent *event)
     updateMouseInfo(event->pos());
     event->accept();
     return true;
+}
+
+// --- Tier 6b release/key ---
+
+bool CropController::tryMouseReleaseCrop(QMouseEvent *event)
+{
+    if (!session().active() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    if (session().isHandleDragging()) {
+        endCropHandleDrag();
+        event->accept();
+        return true;
+    }
+    if (session().isRubberbanding()) {
+        endCropRubberBand();
+        event->accept();
+        return true;
+    }
+    return false;
+}
+
+bool CropController::tryKeyPressCrop(QKeyEvent *event)
+{
+    if (!session().active()) {
+        return false;
+    }
+    if (event->key() == Qt::Key_Escape) {
+        cancelCrop();
+        event->accept();
+        return true;
+    }
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        applyCrop();
+        event->accept();
+        return true;
+    }
+    return false;
 }

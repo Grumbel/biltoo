@@ -15,6 +15,7 @@ class ImageView;
 class ImageItem;
 class QPainter;
 class QMouseEvent;
+class QKeyEvent;
 
 /**
  * Attention-mode collaborator for ImageView (Phase 6 Tier 2a).
@@ -55,6 +56,8 @@ public:
 
     bool tryMousePressAttention(QMouseEvent *event);
     bool tryMouseMoveAttention(QMouseEvent *event);
+    bool tryMouseReleaseAttention(QMouseEvent *event);
+    bool tryKeyPressAttention(QKeyEvent *event);
 
 private:
     ImageView *m_view = nullptr; // not owned

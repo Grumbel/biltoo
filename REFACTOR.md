@@ -721,4 +721,7 @@ the stop line when Tier 4 lands.
 - Tier 5b: _pending_ (method move / imageview_load.cpp shrink)
 - Tier 6a: **done** (biltoo-1612) — crop/attention mouse try* handlers on
   controllers; ImageView input is thin dispatch for those modes.
-- Tier 6: _in progress_ (remaining try* still on ImageView)
+- Tier 6b: **done** (biltoo-1613) — crop/attention release+key; slideshow seek
+  on controllers.
+- Tier 6: _mostly done_ (workspace/gallery/transform chrome try* remain on view;
+  transform chrome is intentionally ImageView-owned per AGENTS.md).

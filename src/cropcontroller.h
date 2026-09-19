@@ -21,6 +21,7 @@ class ImageView;
 class ImageItem;
 class QPainter;
 class QMouseEvent;
+class QKeyEvent;
 
 /**
  * Crop-mode collaborator for ImageView (Phase 6 Tier 2b).
@@ -88,6 +89,8 @@ public:
     bool tryMousePressCrop(QMouseEvent *event);
     bool tryMouseMoveCropDrag(QMouseEvent *event);
     bool tryMouseMoveCropHover(QMouseEvent *event);
+    bool tryMouseReleaseCrop(QMouseEvent *event);
+    bool tryKeyPressCrop(QKeyEvent *event);
 
 private:
     ImageView *m_view = nullptr; // not owned
