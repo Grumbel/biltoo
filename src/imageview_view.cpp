@@ -544,7 +544,7 @@ void ImageView::cancelZoomRegion()
 {
     m_zoomRegion.disarm();
     m_zoomRegion.hideRubber();
-    if (!m_chrome.panning && !m_itemInteract.rotating) {
+    if (!m_chrome.panning && !m_itemInteract.isRotating()) {
         setCursor(ToolPolicy::cursorFor(m_tool));
     }
     emit statusChanged();

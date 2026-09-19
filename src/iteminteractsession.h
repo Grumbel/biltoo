@@ -46,6 +46,17 @@ struct ItemInteractSession {
         clearMove();
     }
 
+    bool isRotating() const { return rotating && rotateItem; }
+
+    bool isHandleDragging() const { return handleDragItem != nullptr; }
+
+    bool isMoving() const { return dragItem != nullptr; }
+
+    bool isActive() const
+    {
+        return isRotating() || isHandleDragging() || isMoving();
+    }
+
     void beginRotate(ImageItem *item, qreal startAngle, qreal itemStart,
                      const WorkspaceItemState &startState)
     {
