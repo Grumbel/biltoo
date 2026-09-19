@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1486-crophandle-include.** Fix include cycle; CropHandle own header.
+Prior: **1485**. Commits 1486a–1486b (+ docs).
+
+### Fixes
+- Remove cropgeometry.h from cropsession.h (cycle broke CropHandle)
+- **crophandle.h** — shared enum for CropSession + CropGeometry
+
+### Apply
+```bash
+git pull /path/to/biltoo-1486-crophandle-include.bundle HEAD
+```
+Requires tip **1485** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1485-crop-enter-ownership.** beginEnterSession, auto-crop map, releaseTargetTileLod.
 Prior: **1484**. Commits 1485a–1485c (+ docs).
 
