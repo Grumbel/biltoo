@@ -89,6 +89,40 @@ struct ViewFraming {
         return true;
     }
 
+    /**
+     * Set both flags explicitly (e.g. sticky restore, slideshow zoom).
+     * Slideshow Fill uses fit=false, fill=true — distinct from setFillMode().
+     */
+    bool setFitFillFlags(bool fit, bool fill)
+    {
+        if (fitMode == fit && fillMode == fill) {
+            return false;
+        }
+        fitMode = fit;
+        fillMode = fill;
+        return true;
+    }
+
+    /** Arm fitMode only (leave fillMode unchanged). */
+    bool armFit()
+    {
+        if (fitMode) {
+            return false;
+        }
+        fitMode = true;
+        return true;
+    }
+
+    /** Drop fitMode only (leave fillMode unchanged). */
+    bool releaseFit()
+    {
+        if (!fitMode) {
+            return false;
+        }
+        fitMode = false;
+        return true;
+    }
+
     /** @return true when sticky-zoom enabled flag changed. */
     bool setStickyZoomEnabled(bool on)
     {
