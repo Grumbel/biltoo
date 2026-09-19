@@ -2,6 +2,23 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1507-crop-enter-host.** pickEnterFullRaster for crop enter host selection.
+Prior: **1506**. Commits 1507a (+ docs).
+
+### Apply (on tip **1500**)
+```bash
+git pull --ff-only /path/to/biltoo-1507-crop-enter-host.bundle HEAD
+```
+Includes **1501–1507**.
+
+Still on ImageView: installFullImageForCrop, applyCropCommit bake, PathRaster, paint wrappers.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1506-crop-lock-leave.** locksResolvedPath; finishLeave.
 Prior: **1505**. Commits 1506a–1506b (+ docs).
 
