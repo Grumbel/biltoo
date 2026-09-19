@@ -166,7 +166,7 @@ void GallerySizeResolve::updateProgressHud()
         finish();
         return;
     }
-    const int done = ViewTransform::nonNeg(m_total - m_pending.size());
+    const int done = ViewTransform::nonNeg(qint64(m_total) - qint64(m_pending.size()));
     m_host->setSizeResolveProgress(
         tr("Resolving sizes…"),
         tr("%1 / %2").arg(done).arg(m_total));

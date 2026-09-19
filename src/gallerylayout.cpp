@@ -340,7 +340,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                 contentW += e.w;
                 contentH = qMax(contentH, e.h);
             }
-            contentW += gap * ViewTransform::nonNeg(row.size() - 1);
+            contentW += gap * ViewTransform::nonNeg(qint64(row.size()) - 1);
             const qreal s = (fill && contentW > 1e-6) ? (layoutW / contentW) : 1.0;
             qreal x = margin;
             qreal placedH = 0.0;

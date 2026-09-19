@@ -14,6 +14,7 @@
 #include <QtMath>
 #include <QtGlobal>
 #include <cmath>
+#include <limits>
 
 /**
  * Pure view-matrix helpers (no QGraphicsView).
@@ -202,6 +203,18 @@ inline qreal nonNeg(qreal v)
 inline int nonNeg(int v)
 {
     return v < 0 ? 0 : v;
+}
+
+/** Integral non-negative (qsizetype / qint64 counts → int, floored at 0). */
+inline int nonNeg(qint64 v)
+{
+    if (v <= 0) {
+        return 0;
+    }
+    if (v > qint64(std::numeric_limits<int>::max())) {
+        return std::numeric_limits<int>::max();
+    }
+    return int(v);
 }
 
 

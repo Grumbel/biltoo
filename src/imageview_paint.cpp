@@ -449,7 +449,8 @@ void ImageView::paintHudPanels(QPainter &painter)
         } else if (gallerySizeResolveActive() && m_gallerySizeResolve.total() > 0) {
             // Fallback if title was cleared but gate still active.
             const int done = ViewTransform::nonNeg(
-                m_gallerySizeResolve.total() - m_gallerySizeResolve.pendingCount());
+                qint64(m_gallerySizeResolve.total())
+                - qint64(m_gallerySizeResolve.pendingCount()));
             drawPanel({{tr("Resolving sizes…"), true},
                        {tr("%1 / %2").arg(done).arg(m_gallerySizeResolve.total()), false}},
                       0, 0, false, false, true);
@@ -820,7 +821,7 @@ int ImageView::setTextSearchQuery(const QString &query)
     if (m_textLayer.searchQuery == trimmed && !m_textLayer.layer.regions.isEmpty()) {
         return m_textLayer.searchMatches.size();
     }
-    m_textLayer.searchQuery = trimmed;
+    m_textLayer.setSearchQuery(trimmed);
     if (m_textLayer.searchQuery.isEmpty()) {
         m_textLayer.searchMatches.clear();
         if (!m_textLayer.showRegions) {
