@@ -1686,8 +1686,7 @@ void ImageView::setCurrentSessionId(SessionImageId id)
     m_sessionId.setCurrentId(id);
     // Attention marker is per SessionImageId — reload draft for the new image.
     if (m_attention.mode) {
-        m_attention.draftValid = false;
-        m_attention.draftSessionId = kInvalidSessionImageId;
+        m_attention.clearDraft();
         ensureAttentionPoint();
         if (viewport()) {
             viewport()->update();
@@ -2003,27 +2002,13 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     }
     // AUDIT H8/H9: clear every view-owned pointer before delete so paint /
     // input cannot touch a dangling ImageItem (BSP crashes in scene paint).
-    if (item == m_itemInteract.dragItem) {
-        m_itemInteract.dragItem = nullptr;
-    }
-    if (item == m_itemInteract.rotateItem) {
-        m_itemInteract.rotateItem = nullptr;
-        m_itemInteract.rotating = false;
-    }
-    if (item == m_itemInteract.handleDragItem) {
-        m_itemInteract.handleDragItem = nullptr;
-    }
+    m_itemInteract.dropIfItem(item);
     if (item == m_gallery.selectionAnchor()) {
         m_gallery.setSelectionAnchor(nullptr);
     }
     // Group scale holds raw pointers — drop before delete or BSP paint UAF.
     if (m_groupXform.scaleDrag || m_groupXform.rotateDrag || !m_groupXform.dragItems.isEmpty()) {
-        m_groupXform.scaleDrag = false;
-        m_groupXform.rotateDrag = false;
-        m_groupXform.handle = -1;
-        m_groupXform.clearHover();
-        m_groupXform.dragItems.clear();
-        m_groupXform.dragStartStates.clear();
+        m_groupXform.endDrag();
     }
     // Also drop from gallery stash so discardStashedGallery cannot double-free.
     m_gallery.stashedItems().removeAll(item);

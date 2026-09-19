@@ -1700,7 +1700,7 @@ bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
         return false;
     }
     pushItemTransformUndo(m_itemInteract.dragItem, m_itemInteract.dragStartState, captureState(m_itemInteract.dragItem), tr("Move"));
-    m_itemInteract.dragItem = nullptr;
+    m_itemInteract.endMove();
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }

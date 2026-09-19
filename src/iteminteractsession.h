@@ -79,6 +79,26 @@ struct ItemInteractSession {
     }
 
     void endMove() { clearMove(); }
+
+    /**
+     * Drop any interaction that still holds @p item (item about to be destroyed).
+     * Safe when @p item is null or not involved.
+     */
+    void dropIfItem(const ImageItem *item)
+    {
+        if (!item) {
+            return;
+        }
+        if (item == dragItem) {
+            clearMove();
+        }
+        if (item == rotateItem) {
+            clearRotate();
+        }
+        if (item == handleDragItem) {
+            clearHandleDrag();
+        }
+    }
 };
 
 #endif // ITEMINTERACTSESSION_H
