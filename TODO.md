@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1554-crop-input-tu.** Crop input/view mapping in imageview_crop_input.cpp.
+Prior: **1553**.
+
+### Change
+- New `imageview_crop_input.cpp`: polygon view map, chrome layout, handle drag, rubber-band, hit-test
+- `imageview_crop.cpp` keeps enter/leave/apply/session only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1554-crop-input-tu.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1553-crop-paint-tu.** Crop overlay paint in imageview_crop_paint.cpp.
 Prior: **1552**.
 
