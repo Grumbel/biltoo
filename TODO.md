@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1424-tile-prefetch-slots-warm-debug.** Prefetch max slots; shared warm min; debug_summary.
+Prior: **1421**. Commits 1422–1424.
+
+### Commits
+1. **1422** `TileLodRegistry::kWarmSucceededMin` + `debug_summary()`
+2. **1423** Neighbor prefetch: max 4 concurrent slots; use shared warm min
+3. **1424** Coordinator tile-coord uses `debug_summary()` (includes maxIdle)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1424-tile-prefetch-slots-warm-debug.bundle HEAD
+```
+Requires tip **1421**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1421-tile-coord-cand-retained-paint.** Coordinator makeCand; retained zero-applied paint.
 Prior: **1418**. Commits 1419–1421.
 

@@ -31,7 +31,7 @@ and `man biltoo`.
 | **`BILTOO_DEBUG_CROP`** | Crop-mode geometry and bake diagnostics. |
 | **`BILTOO_DEBUG_APPEARANCE`** | Session appearance / materialize path logging. |
 | **`BILTOO_PERF`** | Paint and decode-window timing (FPS-style HUD path). Also enabled when `THUMTOO_DEBUG` is on. |
-| **`BILTOO_TILE_DEBUG`** | Tile LOD coordinator / per-item lines on stderr (~500 ms). Reports `regPaths` / `idle` / `ramMiB` (global path RAM) and per-item `pathRam=K`. |
+| **`BILTOO_TILE_DEBUG`** | Tile LOD coordinator / per-item lines on stderr (~500 ms). Reports `regPaths` / `idle` / `ramMiB` / `maxIdle` (global path RAM) and per-item `pathRam=K`. |
 | **`THUMTOO_DEBUG_OVERLAY`** / **`BILTOO_DEBUG_OVERLAY`** | Stamp a tiled watermark + border on decoded samples so soft vs full vs host origin is visible on the canvas. |
 
 ### Thumtoo cache policy (Store-only, library ≥ 272)

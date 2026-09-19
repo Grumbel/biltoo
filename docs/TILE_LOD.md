@@ -344,6 +344,8 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 5. **Max idle paths** (default **64**): long ←/→ sessions can keep many small
    overview caches under the byte cap; excess zero-ref paths are dropped oldest
    first (same order as byte trim).
+5b. **Warm threshold** (`kWarmSucceededMin` = 4): neighbor prefetch skips issue
+   when a path already has this many Succeeded tiles in global RAM.
 6. **Paint identity by path** — draw only from `cache[item->path()]`; re-acquire
    after A→B→A rebinds the same retained entry.
 7. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
@@ -373,6 +375,9 @@ Gallery restore ticks warm path RAM after Image mode.
 
 **biltoo-1419–1421:** Coordinator `makeCand` + named priorities; force paint when
 retained RAM binds with zero applied completions; runtime A→B→A notes.
+
+**biltoo-1422–1424:** Shared `kWarmSucceededMin`; prefetch max 4 slots;
+`debug_summary()` for tile-coord (includes maxIdle).
 
 **biltoo-1412–1415:** O(1) `approx_bytes`; named `kPrefetchWarmSucceededMin`;
 `tileLodHasPathRam` for coordinator priority and immediate tick after Image ←/→
