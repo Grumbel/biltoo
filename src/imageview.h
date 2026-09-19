@@ -1627,6 +1627,9 @@ private:
      */
     void applyStoredAppearancePixels(ImageItem *item, const WorkspaceItemState &app,
                                      SessionImageId sid);
+    const WorkspaceItemState *resolveStoredAppearance(ImageItem *item,
+                                                       WorkspaceItemState *fallback,
+                                                       SessionImageId *sidOut);
     void applyStoredAppearance(ImageItem *item);
     /**
      * After installing full on-disk pixels (soft→full), re-apply crop / content

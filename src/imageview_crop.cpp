@@ -933,31 +933,46 @@ void ImageView::applyStoredAppearancePixels(ImageItem *item, const WorkspaceItem
     rematerializeItemContent(item, app);
 }
 
-void ImageView::applyStoredAppearance(ImageItem *item)
+
+const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
+                                                             WorkspaceItemState *fallback,
+                                                             SessionImageId *sidOut)
 {
-    if (!item) {
-        return;
+    if (!item || !fallback) {
+        return nullptr;
     }
-    const WorkspaceItemState *app = nullptr;
-    WorkspaceItemState fallback;
     const SessionImageId sid = item->sessionId();
+    if (sidOut) {
+        *sidOut = sid;
+    }
     if (sid != kInvalidSessionImageId) {
         // Seed orient/flip/grade from path XDG when the id slot is still empty
         // (restart / first bind). Crop is never seeded from path (IDENTITY).
         seedSessionAppearanceFromState(sid, item->path());
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
-            app = &(*it);
+            return it;
         }
         // Bound with no durable content after seed = full frame.
         // NEVER fall back to the path map — that leaks crop/flip across
         // independent session images that share a file path.
-    } else {
-        // Path map only when unbound (no session image id).
-        if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
-            fallback = *st;
-            app = &fallback;
-        }
+        return nullptr;
     }
+    // Path map only when unbound (no session image id).
+    if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
+        *fallback = *st;
+        return fallback;
+    }
+    return nullptr;
+}
+
+void ImageView::applyStoredAppearance(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    WorkspaceItemState fallback;
+    SessionImageId sid = kInvalidSessionImageId;
+    const WorkspaceItemState *app = resolveStoredAppearance(item, &fallback, &sid);
     if (!app) {
         return;
     }
