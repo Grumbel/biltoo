@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1497-crop-paint-geometry.** CropGeometry paint dim/frame; sourceCropFromLocal.
+Prior: **1496**. Commits 1497a–1497b (+ docs).
+
+### Commits
+1. **CropGeometry** paintDimOutside / paintFrame
+2. **CropSession** sourceCropFromLocal
+
+### Apply
+```bash
+git pull /path/to/biltoo-1497-crop-paint-geometry.bundle HEAD
+```
+Requires tip **1496** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1496-crop-chrome-private.** cropChromeButtons no longer calls private cropRectView.
 Prior: **1495**. Commits 1496a–1496b (+ docs).
 
