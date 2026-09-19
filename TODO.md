@@ -2,6 +2,33 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1405-tile-ram-query-prefetch-replan.** Global tile RAM: queries, prefetch skip, replan.
+Prior: **1400** (path identity). Commits 1401–1405.
+
+### Commits
+1. **1401** `TileMemoryCache::succeeded_count` / `has_succeeded`
+2. **1402** `TileLodRegistry::{has_succeeded_tiles,path_approx_bytes,touch}`
+3. **1403** Neighbor prefetch skips paths that already have retained Succeeded tiles (touch LRU)
+4. **1404** `TileLodController::hasRetainedTiles` + prepare clears lastDpc on rebind so paint sees retained cells
+5. **1405** Unit test for succeeded_count
+
+### Design (unchanged spine)
+Pixels live in process-wide `TileLodRegistry`; controllers/sessions are ephemeral.
+A→B→A rebinds the same `SharedPathTiles`. Prefetch and paint consult retained RAM
+instead of always re-issuing.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1405-tile-ram-query-prefetch-replan.bundle HEAD
+```
+Requires tip **1400**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1400-tile-path-identity-alive.** Path identity on global tile RAM; setPath alive.
 Prior: **1399**.
 

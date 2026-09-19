@@ -356,6 +356,12 @@ keeps identity correct. **biltoo-1400:** `setPath` rotates `m_tileLodAlive` and
 leaves crop suppress intact; prepare/paint refuse a controller whose path does
 not match the item (retained global tiles must never paint under the wrong file).
 
+**biltoo-1401–1405:** `succeeded_count` / `has_succeeded_tiles` / `touch` query the
+retained path cache without acquire. Neighbor prefetch skips warm paths (LRU touch
+only). `hasRetainedTiles` + prepare lastDpc reset make A→B→A paint retained cells on
+the first frame after rebind.
+
+
 
 ### Session / archive replace (biltoo-1233 / 1234)
 
