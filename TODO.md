@@ -2,6 +2,20 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1621-fix-coversEdge-cropKeyboardMods.** Inline coversEdge; cropKeyboardMods non-static ImageView forward.
+Prior: **1620**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1621-fix-coversEdge-cropKeyboardMods.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1620-fix-hudmodel-test-link.** hudmodel test no longer links displayedgepolicy.cpp (ImageCache); QualityTier is header-only for this test.
 Prior: **1619**.
 

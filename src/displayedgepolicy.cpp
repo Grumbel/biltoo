@@ -12,11 +12,6 @@
 
 namespace DisplayEdgePolicy {
 
-bool coversEdge(int haveLongEdge, int targetEdge)
-{
-    return targetEdge <= 0 || haveLongEdge >= targetEdge;
-}
-
 int cappedDisplayEdge(int wantEdge, int nativeLongEdge)
 {
     // Ladder steps are discrete (…1024, 2048). Never request past the known

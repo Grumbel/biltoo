@@ -37,7 +37,10 @@ inline int tileSynthEdge(int qualityEdge, int overviewEdge)
  * No fuzzy ratio — PreferCache settle is terminal per request edge elsewhere;
  * coverage for climb/display is strict so policy stays deterministic.
  */
-bool coversEdge(int haveLongEdge, int targetEdge);
+inline bool coversEdge(int haveLongEdge, int targetEdge)
+{
+    return targetEdge <= 0 || haveLongEdge >= targetEdge;
+}
 
 /**
  * Cap @p wantEdge to the image ladder, then to known native long edge, with
