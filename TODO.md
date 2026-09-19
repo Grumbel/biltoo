@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1376-fit-axes-flowpad-interval-nav.** Pure helpers on tip 1375 base.
+Prior: **1375**.
+
+### Change
+1. `ViewTransform::{uniformFitScale,fitRectCentered}`
+2. `GalleryLayout::axesSwapForItemRotation`
+3. `FilmstripGeometry::flowPadFromCellPad`
+4. `SlideshowClocks::intervalLabelParts`
+5. `LayoutPrefs::kMaxMasonryBands`
+6. `WorkspaceNavGeometry::scoreRelative` (new header)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1376-fit-axes-flowpad-interval-nav.bundle HEAD
+```
+Requires upstream **3830dda** (tip 1375).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1375-zoomregion-framing-sessionid.** ZoomRegionGesture,
 ViewFraming, and SessionIdentity transitions.
 Prior: **1374**.

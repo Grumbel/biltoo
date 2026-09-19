@@ -104,6 +104,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ZoomBlur::clearAllSlots** + **sessionBadgeAscii** pure session HUD index form.
 - **GallerySoftBook** path reset + native-decode set API; SoftDisplayPolicy gallery LQIP gates.
 - **SoftDisplayPolicy::aggregatePathHaveEdge**: pure max display edge + any-full for a path.
+- **ViewTransform::{uniformFitScale,fitRectCentered}**; **GalleryLayout::axesSwapForItemRotation**.
+- **FilmstripGeometry::flowPadFromCellPad**; **SlideshowClocks::intervalLabelParts**.
+- **WorkspaceNavGeometry::scoreRelative** for Workspace arrow-key neighbour pick.
 
 
 ## Current pain (evidence)
