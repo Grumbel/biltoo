@@ -797,6 +797,22 @@ void test_parent_key()
 
 }  // namespace
 
+
+void test_succeeded_count()
+{
+  tilelod::TileMemoryCache cache;
+  CHECK_EQ(cache.succeeded_count(), 0u);
+  CHECK(!cache.has_succeeded());
+  tilelod::TileKey k{0, 0, 0};
+  cache.set_succeeded(k, solid_tile(256, 256, 10), 1);
+  CHECK_EQ(cache.succeeded_count(), 1u);
+  CHECK(cache.has_succeeded());
+  cache.set_in_flight({0, 1, 0}, 1);
+  CHECK_EQ(cache.succeeded_count(), 1u);
+  cache.erase(k);
+  CHECK(!cache.has_succeeded());
+}
+
 int main()
 {
   test_dim_at_tile_scale();
@@ -827,6 +843,7 @@ int main()
   test_destroy_clears_inflight_shared();
   test_min_scale_raise_keeps_climb();
   test_parent_key();
+  test_succeeded_count();
 
   if (g_failures) {
     std::cerr << g_failures << " failure(s)\n";
