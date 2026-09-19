@@ -270,6 +270,22 @@ public:
         return true;
     }
 
+    /** Fold rotation into (-180, 180]. */
+    void normalizeRotation()
+    {
+        while (rotation > 180.0) {
+            rotation -= 360.0;
+        }
+        while (rotation <= -180.0) {
+            rotation += 360.0;
+        }
+    }
+
+    bool isNearZeroRotation(qreal eps = 1e-3) const
+    {
+        return qAbs(rotation) < eps;
+    }
+
     /** @return true when the draft rect changed. */
     bool setRect(const QRectF &r)
     {
@@ -279,6 +295,12 @@ public:
         rect = r;
         return true;
     }
+
+    bool hasValidRect() const { return rect.isValid() && !rect.isEmpty(); }
+
+    bool hasTargetId() const { return targetId != kInvalidSessionImageId; }
+
+    ImageItem *target() const { return targetItem; }
 
     /** @return true when crop mode flag changed. */
     bool setMode(bool on)
