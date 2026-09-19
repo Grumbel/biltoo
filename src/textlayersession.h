@@ -57,6 +57,10 @@ struct TextLayerSession {
 
     void addSearchMatch(int idx) { searchMatches.push_back(idx); }
 
+    int matchCount() const { return searchMatches.size(); }
+
+    int selectionCount() const { return selectedRegions.size(); }
+
     void clearSelection()
     {
         endRubber();

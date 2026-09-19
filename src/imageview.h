@@ -747,7 +747,7 @@ public:
      */
     int setTextSearchQuery(const QString &query);
     QString textSearchQuery() const { return m_textLayer.searchQuery; }
-    int textSearchMatchCount() const { return m_textLayer.searchMatches.size(); }
+    int textSearchMatchCount() const { return m_textLayer.matchCount(); }
     bool hasTextLayer() const;
     int textLayerRegionCount() const;
     /** Soft match for OCR noise (alnum-only + light edit distance). Default on. */
@@ -757,7 +757,7 @@ public:
     static bool textMatchesQuery(const QString &regionText, const QString &query, bool fuzzy);
 
     /** Selected region indices from Shift+drag rubber-band (Image mode page docs). */
-    int textSelectionCount() const { return m_textLayer.selectedRegions.size(); }
+    int textSelectionCount() const { return m_textLayer.selectionCount(); }
     /** Joined text of the selection in reading order; empty if none. */
     QString selectedText() const;
     /** Copy selected text to the clipboard; returns false if nothing selected. */
