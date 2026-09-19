@@ -116,10 +116,9 @@ QColor ImageView::slideshowPadColor() const
 
 void ImageView::setSlideshowPadColor(const QColor &color)
 {
-    if (!color.isValid() || color == m_ssSettings.padColor) {
+    if (!m_ssSettings.setPadColor(color)) {
         return;
     }
-    m_ssSettings.padColor = color;
     clearSlideshowZoomBlurSlots();
     if (m_ssHud.progressActive && viewport()) {
         viewport()->update();
@@ -128,10 +127,9 @@ void ImageView::setSlideshowPadColor(const QColor &color)
 
 void ImageView::setSlideshowLetterboxFill(SlideshowLetterboxFill mode)
 {
-    if (m_ssSettings.letterboxFill == mode) {
+    if (!m_ssSettings.setLetterboxFill(mode)) {
         return;
     }
-    m_ssSettings.letterboxFill = mode;
     clearSlideshowZoomBlurSlots();
     if (m_ssHud.progressActive && viewport()) {
         viewport()->update();
@@ -639,10 +637,9 @@ bool ImageView::contentEditMarksVisible() const
 
 void ImageView::setHudVisible(bool on)
 {
-    if (m_hudPrefs.visible == on) {
+    if (!m_hudPrefs.setVisible(on)) {
         return;
     }
-    m_hudPrefs.visible = on;
     // Progress line only paints with the pinned HUD; drive the timer accordingly.
     if (m_slideshowProgressTimer) {
         if (on && m_ssHud.progressActive && m_ssHud.progressIntervalMs > 0) {
@@ -666,19 +663,17 @@ void ImageView::setHudFontPointSize(int pt)
 
 void ImageView::setHudTextColor(const QColor &color)
 {
-    if (!color.isValid() || color == m_hudPrefs.textColor) {
+    if (!m_hudPrefs.setTextColor(color)) {
         return;
     }
-    m_hudPrefs.textColor = color;
     viewport()->update();
 }
 
 void ImageView::setHudPanelColor(const QColor &color)
 {
-    if (!color.isValid() || color == m_hudPrefs.panelColor) {
+    if (!m_hudPrefs.setPanelColor(color)) {
         return;
     }
-    m_hudPrefs.panelColor = color;
     viewport()->update();
 }
 
@@ -818,10 +813,9 @@ void ImageView::setSlideshowCycleProgress(qreal phase01)
 
 void ImageView::setSlideshowTransition(SlideshowTransition kind)
 {
-    if (m_ssSettings.transition == kind) {
+    if (!m_ssSettings.setTransition(kind)) {
         return;
     }
-    m_ssSettings.transition = kind;
     if (kind == SlideshowTransition::None) {
         cancelSlideshowTransition();
     }
@@ -875,10 +869,9 @@ void ImageView::cancelSlideshowTransition()
 
 void ImageView::setSlideshowMotion(SlideshowMotion mode)
 {
-    if (m_ssSettings.motion == mode) {
+    if (!m_ssSettings.setMotion(mode)) {
         return;
     }
-    m_ssSettings.motion = mode;
     if (mode == SlideshowMotion::Off) {
         cancelSlideshowMotion();
         if (m_ssHud.progressActive) {
@@ -896,10 +889,9 @@ void ImageView::setPanZoomFactor(qreal factor)
 
 void ImageView::setSlideshowZoom(SlideshowZoom mode)
 {
-    if (m_ssSettings.zoom == mode) {
+    if (!m_ssSettings.setZoom(mode)) {
         return;
     }
-    m_ssSettings.zoom = mode;
     // Zoom is the base scale for Ken Burns as well as static framing.
     if (m_ssHud.progressActive) {
         reapplySlideshowFraming();

@@ -160,6 +160,51 @@ struct SlideshowSettings {
     {
         transitionDurationMs = qMax(0, ms);
     }
+
+    bool setPadColor(const QColor &c)
+    {
+        if (!c.isValid() || c == padColor) {
+            return false;
+        }
+        padColor = c;
+        return true;
+    }
+
+    bool setLetterboxFill(SlideshowLetterboxFill mode)
+    {
+        if (letterboxFill == mode) {
+            return false;
+        }
+        letterboxFill = mode;
+        return true;
+    }
+
+    bool setTransition(SlideshowTransition kind)
+    {
+        if (transition == kind) {
+            return false;
+        }
+        transition = kind;
+        return true;
+    }
+
+    bool setMotion(SlideshowMotion mode)
+    {
+        if (motion == mode) {
+            return false;
+        }
+        motion = mode;
+        return true;
+    }
+
+    bool setZoom(SlideshowZoom mode)
+    {
+        if (zoom == mode) {
+            return false;
+        }
+        zoom = mode;
+        return true;
+    }
 };
 
 /**
