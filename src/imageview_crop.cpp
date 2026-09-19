@@ -1063,12 +1063,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
     ensureCropRectValid();
 
     const QRectF full = item->contentRect();
-    const bool fullFrame =
-        !m_crop.hasValidRect()
-        || (qAbs(m_crop.currentRect().left() - full.left()) < 0.5
-            && qAbs(m_crop.currentRect().top() - full.top()) < 0.5
-            && qAbs(m_crop.currentRect().width() - full.width()) < 0.5
-            && qAbs(m_crop.currentRect().height() - full.height()) < 0.5);
+    const bool fullFrame = m_crop.isFullFrameDraft(full);
     // Record content-space crop while the draft frame is still valid.
     recordSessionCrop(item, m_crop.currentRect().isValid() ? m_crop.currentRect() : full);
     if (!fullFrame) {

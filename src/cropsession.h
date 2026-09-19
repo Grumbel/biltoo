@@ -306,6 +306,21 @@ public:
         return true;
     }
 
+    /**
+     * True when draft matches @p contentRect (axis-aligned full frame within 0.5px).
+     */
+    bool isFullFrameDraft(const QRectF &contentRect) const
+    {
+        if (!hasValidRect()) {
+            return true;
+        }
+        const QRectF &r = rect;
+        return qAbs(r.left() - contentRect.left()) < 0.5
+            && qAbs(r.top() - contentRect.top()) < 0.5
+            && qAbs(r.width() - contentRect.width()) < 0.5
+            && qAbs(r.height() - contentRect.height()) < 0.5;
+    }
+
     bool hasValidRect() const { return rect.isValid() && !rect.isEmpty(); }
 
     QRectF normalizedRect() const { return rect.normalized(); }
