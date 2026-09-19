@@ -1770,7 +1770,8 @@ CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
         return CropHandle::None;
     }
     const CropGeometry::CropButtonLayout buttons =
-        CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
+        cropChromeButtons(m_crop.active(), cropRectView(),
+                          viewport() ? viewport()->rect() : QRect());
     // Map rotated crop corners through item → scene → view.
     const QPolygonF localPoly = cropPolygonItemLocal();
     QPolygonF viewPoly;
