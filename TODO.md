@@ -2,6 +2,21 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1505-crop-enter-abort.** fullRasterScheduleEdge; abortEnterRestoringPlacement.
+Prior: **1504**. Commits 1505a–1505b (+ docs).
+
+### Apply (on tip **1500**)
+```bash
+git pull --ff-only /path/to/biltoo-1505-crop-enter-abort.bundle HEAD
+```
+Includes **1501–1505**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1504-crop-enter-ensure.** kMinDraftSidePx, ColorAdjustments::matches, ensureRectValid.
 Prior: **1503**. Commits 1504a–1504b (+ docs).
 
