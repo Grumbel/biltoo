@@ -12,6 +12,7 @@
 #include <QPointF>
 #include <QRect>
 #include <QRectF>
+#include <QSize>
 #include <QPolygonF>
 #include <QString>
 #include <QtMath>
@@ -461,6 +462,14 @@ public:
         return !path.isEmpty() && awaitingFullPath == path;
     }
 
+    /** Active crop waiting on this path for a better full-raster delivery. */
+    bool acceptsFullRasterUpgrade(const QString &path) const
+    {
+        return mode && isAwaitingFullPath(path);
+    }
+
+    /** Draft size in integer content pixels (size badge / Apply). */
+    QSize draftPixelSize() const;
 
     const QString &draftPathRef() const { return draftPath; }
 

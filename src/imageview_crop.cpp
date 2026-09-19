@@ -577,7 +577,7 @@ void ImageView::requestCropFullRaster(const QString &path)
 
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
 {
-    if (!m_crop.active() || path.isEmpty() || !m_crop.isAwaitingFullPath(path)) {
+    if (!m_crop.acceptsFullRasterUpgrade(path)) {
         return;
     }
     if (image.isNull()) {
@@ -1415,8 +1415,7 @@ void ImageView::paintCropActionButtons(QPainter &painter)
 
 void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
 {
-    const QSize cropSz = ContentXform::roundedSizeAtLeast1(
-        m_crop.currentRect().width(), m_crop.currentRect().height());
+    const QSize cropSz = m_crop.draftPixelSize();
     CropGeometry::paintSizeBadge(painter, cropView, cropSz.width(), cropSz.height());
 }
 

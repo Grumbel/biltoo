@@ -3,6 +3,7 @@
 
 #include "cropsession.h"
 #include "cropgeometry.h"
+#include "contentxform.h"
 #include "placementlinear.h"
 #include "imageitem.h"
 #include "sessionappearance.h"
@@ -333,4 +334,9 @@ void CropSession::applyActiveHandleDrag(const QPointF &local, const QRectF &cont
         return;
     }
     applyResizeDrag(local, contentRect, expandLimits(contentRect), minSide, ctrlSnap, shiftSnap);
+}
+
+QSize CropSession::draftPixelSize() const
+{
+    return ContentXform::roundedSizeAtLeast1(currentRect().width(), currentRect().height());
 }
