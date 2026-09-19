@@ -71,8 +71,8 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
         return EdgeZone::None;
     }
     const EdgeNavPolicy::Zone z = EdgeNavPolicy::zoneAt(
-        viewPos, width(), height(), m_sessionNav.galleryReturnAvailable,
-        m_sessionNav.imageModeNavEnabled);
+        viewPos, width(), height(), m_sessionNav.isGalleryReturnAvailable(),
+        m_sessionNav.isImageModeNavEnabled());
     switch (z) {
     case EdgeNavPolicy::Zone::Previous:
         return EdgeZone::Previous;
@@ -404,7 +404,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
     }
     // Dwell cover owns framing — never refit the underlay over it.
     // Invalidate atlas viewport keys so the next tick rebuilds at new size.
-    if (m_ssDwell.motionActive) {
+    if (m_ssDwell.isMotionActive()) {
         m_ssDwell.invalidateAtlasViewport();
         m_ssZoomBlur.clearUnderlays();
         if (viewport()) {
@@ -692,7 +692,7 @@ bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
 bool ImageView::tryMousePressPan(QMouseEvent *event)
 {
     // Middle-button pan in any mode; Gallery also allows Alt+left pan.
-    if (!m_ssDwell.motionActive
+    if (!m_ssDwell.isMotionActive()
         && (event->button() == Qt::MiddleButton
             || (event->button() == Qt::LeftButton
                 && ((isImageMode() && m_chrome.imageModeLeftDragPan)
@@ -707,7 +707,7 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
             return true;
         }
     }
-    if (event->button() == Qt::MiddleButton && !m_ssDwell.motionActive) {
+    if (event->button() == Qt::MiddleButton && !m_ssDwell.isMotionActive()) {
         m_chrome.beginPan(event->pos());
         setCursor(Qt::ClosedHandCursor);
         event->accept();
@@ -1075,7 +1075,7 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
         return false;
     }
     // Dwell camera owns the view transform — do not fight it with hand pan.
-    if (m_ssDwell.motionActive) {
+    if (m_ssDwell.isMotionActive()) {
         m_chrome.endPan();
         event->accept();
         return true;

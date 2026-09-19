@@ -561,8 +561,8 @@ public:
     void setImageModeNavigationEnabled(bool on);
     /** When true, Image mode top edge offers return-to-gallery. */
     void setGalleryReturnAvailable(bool on);
-    bool galleryReturnAvailable() const { return m_sessionNav.galleryReturnAvailable; }
-    bool imageModeNavigationEnabled() const { return m_sessionNav.imageModeNavEnabled; }
+    bool galleryReturnAvailable() const { return m_sessionNav.isGalleryReturnAvailable(); }
+    bool imageModeNavigationEnabled() const { return m_sessionNav.isImageModeNavEnabled(); }
 
     /**
      * Show exactly the given paths on the workspace. Images already present

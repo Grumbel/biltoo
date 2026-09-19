@@ -32,7 +32,7 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
     if (m_hoverEdge == EdgeZone::None || !isImageMode()) {
         return;
     }
-    if (m_hoverEdge != EdgeZone::GalleryReturn && !m_sessionNav.imageModeNavEnabled) {
+    if (m_hoverEdge != EdgeZone::GalleryReturn && !m_sessionNav.isImageModeNavEnabled()) {
         return;
     }
 
@@ -170,7 +170,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
                        const QImage &toSrc = QImage(), qreal t = -1.0,
                        const QString &fromPath = QString(),
                        const QString &toPath = QString()) {
-        if (m_ssSettings.letterboxFill != SlideshowLetterboxFill::ZoomBlur) {
+        if (!m_ssSettings.isZoomBlurLetterbox()) {
             painter.fillRect(vr, slideshowPadColor());
             return;
         }
@@ -203,7 +203,7 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
 
     // Pure-phase composite (SLIDESHOW.md): wall clock sets fadeT; we only blit.
     if (m_ssHud.isProgressActive()
-        && (!m_ss.fromImage.isNull() || !m_ssDwell.sourceImage.isNull() || !m_ss.toImage.isNull())) {
+        && (!m_ss.fromImage.isNull() || m_ssDwell.hasSourceImage() || !m_ss.toImage.isNull())) {
         const QRect vr = viewport()->rect();
         // Prefer member references (not a local QImage copy) so paintMotionCover
         // can match the dwell atlas by address as well as by path.
@@ -624,7 +624,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     paintEmptySessionInvite(painter);
 
     if (!m_crop.active() && !m_attention.active() && m_hoverEdge != EdgeZone::None && isImageMode()
-        && (m_sessionNav.imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
+        && (m_sessionNav.isImageModeNavEnabled() || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
 
@@ -1227,7 +1227,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
         && !m_ssHud.isPausedHud() && !gallerySizeResolveActive()
         && m_centreProgress.title.isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_crop.active()
-        && !m_ssDwell.motionActive 
+        && !m_ssDwell.isMotionActive() 
         ) {
         return;
     }

@@ -88,6 +88,10 @@ struct SessionNavFlags {
         galleryReturnAvailable = on;
         return true;
     }
+
+    bool isImageModeNavEnabled() const { return imageModeNavEnabled; }
+
+    bool isGalleryReturnAvailable() const { return galleryReturnAvailable; }
 };
 
 /**
