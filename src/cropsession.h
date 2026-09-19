@@ -170,6 +170,15 @@ public:
     bool applyPaddedAutoTrim(const QRectF &contentRect, const QSize &srcSize,
                              const QRect &trimmed, int padPx = 2);
 
+    /** Pixels for auto-trim: source, else pixmap. */
+    static QImage pickAutoCropSourcePixels(const ImageItem *item);
+
+    /**
+     * Run ImageLoader::autoTrimRect on the draft search box and apply padding.
+     * @return false when search invalid, trim fails, or draft unchanged.
+     */
+    bool tryPaddedAutoTrim(const QRectF &contentRect, const QImage &src, int padPx = 2);
+
     void queueFullRematerializeIfSoft(bool hostFromCache, bool multiMp,
                                       const QString &path, SessionImageId sid,
                                       const WorkspaceItemState &st);

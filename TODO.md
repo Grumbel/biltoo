@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1546-crop-auto-trim.** Auto-trim search/trim/pad on CropSession; ImageView only ensures draft + notifies.
+Prior: **1545**.
+
+### Change
+- `CropSession::pickAutoCropSourcePixels` / `tryPaddedAutoTrim`
+- ImageView `pickAutoCropSourcePixels` / `runPaddedAutoTrim` are thin wrappers
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1546-crop-auto-trim.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1545-crop-debug.** BILTOO_DEBUG_CROP formatting in CropDebug; ImageView only supplies fields.
 Prior: **1544**.
 
