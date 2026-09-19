@@ -194,6 +194,16 @@ public:
 
     static SessionAppearance::PixelKind applyPixelKind(bool multiMp);
 
+    /** Fill hasCrop/cropRect/content flips from the live item session crop. */
+    static bool fillAppearanceFromItemSessionCrop(WorkspaceItemState *app,
+                                                  const ImageItem *item);
+
+    /** True when enter host is null and a prior crop should force a full load. */
+    static bool shouldRequestFullOnNullEnter(bool hadPriorCrop, const QString &path);
+
+    /** End handle drag with content clamp (no-op content when empty). */
+    void finishHandleDrag(const QRectF &contentRect);
+
     bool isHandleHot(CropHandle h) const
     {
         return hoverHandle == h || activeHandle == h;

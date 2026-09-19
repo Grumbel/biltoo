@@ -65,6 +65,19 @@ ImageItem *ImageView::cropTargetItem() const
 }
 
 
+void ImageView::fitImageOrUpdateWorkspace(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    if (isImageMode()) {
+        m_framing.armFit();
+        fitItem(item, currentFitAspectMode());
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+}
+
 void ImageView::ensureCropRectValid()
 {
     ImageItem *item = cropTargetItem();
@@ -196,11 +209,7 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
             return true;
         }
     }
-    if (item->sessionHasCrop()) {
-        app->hasCrop = true;
-        app->cropRect = item->sessionCropRect();
-        app->contentHFlip = item->contentHFlip();
-        app->contentVFlip = item->contentVFlip();
+    if (CropSession::fillAppearanceFromItemSessionCrop(app, item)) {
         return true;
     }
     // Last resort for unbound single-instance tiles.
@@ -344,7 +353,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     const bool unorientedSource = enter.unoriented;
     if (full.isNull()) {
         // Prior crop and no host: force a load; do not enter on the bake.
-        if (hadCrop && !path.isEmpty()) {
+        if (CropSession::shouldRequestFullOnNullEnter(hadCrop, path)) {
             requestCropFullRaster(path);
             m_crop.setAwaitingFull(path);
             flashHud(tr("Crop"), tr("Loading full image…"));
@@ -372,12 +381,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
 
     // Crop chrome + fitItem only after pixels and contentRect match the draft.
     m_crop.activateModeAfterDraft();
-    if (isImageMode()) {
-        m_framing.armFit();
-        fitItem(item, currentFitAspectMode());
-    } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
+    fitImageOrUpdateWorkspace(item);
 
     m_crop.clearAwaitingFull();
     return true;
@@ -931,12 +935,11 @@ bool ImageView::applyCropCommit(ImageItem *item)
 
         if (isWorkspaceMode()) {
             m_crop.applyCommitPlacementRotation(item);
-            updateWorkspaceSceneRect();
-        } else if (isImageMode()) {
-            m_framing.armFit();
-            fitItem(item, currentFitAspectMode());
-        } else if (isGalleryMode()) {
+        }
+        if (isGalleryMode()) {
             applyLayout(GalleryPackReason::ContentChange);
+        } else {
+            fitImageOrUpdateWorkspace(item);
         }
         if (holdPaint) {
             viewport()->setUpdatesEnabled(true);
@@ -966,17 +969,14 @@ bool ImageView::applyCropCommit(ImageItem *item)
     }
 
     // Reset / full frame: keep full pixels; clear session crop metadata.
-    if (isImageMode()) {
-        m_framing.armFit();
-        fitItem(item, currentFitAspectMode());
-    } else if (isWorkspaceMode()) {
+    if (isWorkspaceMode() && m_crop.isEnterValid()) {
         // Drop the enter-time crop-frame offset; restore pre-crop pose.
-        if (m_crop.isEnterValid()) {
-            m_crop.restoreEnterPlacementPose(item);
-        }
-        updateWorkspaceSceneRect();
-    } else if (isGalleryMode()) {
+        m_crop.restoreEnterPlacementPose(item);
+    }
+    if (isGalleryMode()) {
         applyLayout(GalleryPackReason::ContentChange);
+    } else {
+        fitImageOrUpdateWorkspace(item);
     }
     commitItemSessionEdit(item);
     {
@@ -1173,11 +1173,8 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 
 void ImageView::endCropHandleDrag()
 {
-    if (ImageItem *item = cropTargetItem()) {
-        m_crop.endHandleDragClamped(item->contentRect());
-    } else {
-        m_crop.endHandleDrag();
-    }
+    ImageItem *item = cropTargetItem();
+    m_crop.finishHandleDrag(item ? item->contentRect() : QRectF());
     viewport()->update();
 }
 

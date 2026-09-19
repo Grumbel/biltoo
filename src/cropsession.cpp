@@ -461,6 +461,34 @@ void CropSession::seedEnterCropFlags(WorkspaceItemState *st, const ImageItem *it
     st->cropRect = item->sessionCropRect();
 }
 
+
+bool CropSession::fillAppearanceFromItemSessionCrop(WorkspaceItemState *app,
+                                                    const ImageItem *item)
+{
+    if (!app || !item || !item->sessionHasCrop()) {
+        return false;
+    }
+    app->hasCrop = true;
+    app->cropRect = item->sessionCropRect();
+    app->contentHFlip = item->contentHFlip();
+    app->contentVFlip = item->contentVFlip();
+    return true;
+}
+
+bool CropSession::shouldRequestFullOnNullEnter(bool hadPriorCrop, const QString &path)
+{
+    return hadPriorCrop && !path.isEmpty();
+}
+
+void CropSession::finishHandleDrag(const QRectF &contentRect)
+{
+    if (contentRect.isValid() && !contentRect.isEmpty()) {
+        endHandleDragClamped(contentRect);
+    } else {
+        endHandleDrag();
+    }
+}
+
 bool CropSession::locksPath(const QString &path) const
 {
     if (!draftSampleFrozen || path.isEmpty()) {
