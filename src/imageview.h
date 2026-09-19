@@ -45,6 +45,7 @@
 #include "slideshowcontroller.h"
 #include "cropcontroller.h"
 #include "attentioncontroller.h"
+#include "displaypipelinecontroller.h"
 #include "workspacecontroller.h"
 #include "imagecontroller.h"
 #include "pathrasterservice.h"
@@ -271,13 +272,13 @@ public:
     {
         return m_itemStateBook.get(path);
     }
-    bool hasPendingWorkspacePaths() const { return m_loadGate.hasPendingWorkspacePaths(); }
-    void clearPendingWorkspacePaths() { m_loadGate.clearPendingWorkspacePaths(); }
-    void addPendingWorkspacePath(const QString &path) { m_loadGate.addPendingWorkspacePath(path); }
+    bool hasPendingWorkspacePaths() const { return m_displayPipeline.loadGate().hasPendingWorkspacePaths(); }
+    void clearPendingWorkspacePaths() { m_displayPipeline.loadGate().clearPendingWorkspacePaths(); }
+    void addPendingWorkspacePath(const QString &path) { m_displayPipeline.loadGate().addPendingWorkspacePath(path); }
     void takePendingWorkspacePath(const QString &path);
     void setPendingRestoreStates(const QList<WorkspaceItemState> &states)
     {
-        m_loadGate.setPendingRestoreStates(states);
+        m_displayPipeline.loadGate().setPendingRestoreStates(states);
     }
 
 
@@ -313,14 +314,14 @@ public:
     const HudFlash &hostHudFlash() const { return m_hudFlash; }
     QTimer *&hostHudFlashTimer() { return m_hudFlashTimer; }
     QTimer *hostHudFlashTimer() const { return m_hudFlashTimer; }
-    DisplaySurfaceController &hostDisplaySurfaces() { return m_displaySurfaces; }
-    const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displaySurfaces; }
+    DisplaySurfaceController &hostDisplaySurfaces() { return m_displayPipeline.displaySurfaces(); }
+    const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displayPipeline.displaySurfaces(); }
     TileNeighborPrefetch &hostTileNeighborPrefetch() { return m_tileNeighborPrefetch; }
     const TileNeighborPrefetch &hostTileNeighborPrefetch() const { return m_tileNeighborPrefetch; }
     EdgeZone hostHoverEdge() const { return m_hoverEdge; }
     void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
-    SessionLoadGate &hostLoadGate() { return m_loadGate; }
-    const SessionLoadGate &hostLoadGate() const { return m_loadGate; }
+    SessionLoadGate &hostLoadGate() { return m_displayPipeline.loadGate(); }
+    const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }
     /** PreferCache / soft climb edge cap (also used outside slideshow). */
     int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     QSize ensureSlideshowLogicalSize(const QString &path);
@@ -933,7 +934,7 @@ public slots:
     /** True while @p gen is still the active LoadReplace generation (pool jobs). */
     bool matchesLoadGeneration(quint64 gen) const
     {
-        return m_loadGate.accepts(gen);
+        return m_displayPipeline.loadGate().accepts(gen);
     }
 protected:
     void wheelEvent(QWheelEvent *event) override;

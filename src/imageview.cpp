@@ -61,6 +61,7 @@ ImageView::ImageView(QWidget *parent)
     , m_attentionCtrl(this)
     , m_workspace(this)
     , m_image(this)
+    , m_displayPipeline(this)
     , m_gallerySizeResolve(this, this)
     , m_tileNeighborPrefetch(this, this)
 {
@@ -197,7 +198,7 @@ ImageView::ImageView(QWidget *parent)
                 }
             });
     m_pathRaster = new PathRasterService(this);
-    m_tileCoordinator = std::make_unique<TileLoadCoordinator>(this);
+    m_displayPipeline.tileCoordinator() = std::make_unique<TileLoadCoordinator>(this);
     connect(m_pathRaster, &PathRasterService::rasterImproved, this,
             [this](const QString &path, int longEdge) {
                 if (path.isEmpty()) {
@@ -233,11 +234,11 @@ ImageView::ImageView(QWidget *parent)
                 // Gallery: soft may land in ImageCache via noteDelivery while the
                 // tile still shows LQIP — mirror ladderReady install.
                 if (isGalleryMode()) {
-                    onImagePreviewLoaded(path, img, m_loadGate.generation(),
+                    onImagePreviewLoaded(path, img, m_displayPipeline.loadGate().generation(),
                                          static_cast<int>(LoadAdd));
                 }
                 if (isWorkspaceMode()) {
-                    onImagePreviewLoaded(path, img, m_loadGate.generation(),
+                    onImagePreviewLoaded(path, img, m_displayPipeline.loadGate().generation(),
                                          static_cast<int>(LoadAdd));
                 }
             });
@@ -376,7 +377,7 @@ ImageView::~ImageView()
     m_slideshow.phase().clearTiles();
 
     // Invalidate any queued onImageLoaded invocations from the thread pool.
-    m_loadGate.bumpGeneration();
+    m_displayPipeline.loadGate().bumpGeneration();
 
     if (m_hudFlashTimer) {
         m_hudFlashTimer->stop();
@@ -398,7 +399,7 @@ ImageView::~ImageView()
         m_scene->blockSignals(true);
         m_scene->clear();
         m_items.clear();
-        m_loadGate.clearPendingWorkspacePaths();
+        m_displayPipeline.loadGate().clearPendingWorkspacePaths();
         gallerySoftResetAll();
         setScene(nullptr);
         delete m_scene;
@@ -802,8 +803,8 @@ int ImageView::pendingDecodeCount() const
 {
     // Remaining work overview — not concurrent inflight. Counting only inflight
     // flickered 1↔0 as each soft job finished before the next was claimed.
-    int n = m_loadGate.pendingWorkspaceAddCount()
-          + m_loadGate.pendingRestoreCount();
+    int n = m_displayPipeline.loadGate().pendingWorkspaceAddCount()
+          + m_displayPipeline.loadGate().pendingRestoreCount();
 
     if (isGalleryMode()) {
         // Gallery: blanks still need LQIP. LQIP-only is intentional underlay

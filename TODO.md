@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1610-phase6-tier5a-display-pipeline.** Phase 6 Tier 5a: DisplayPipelineController owns load/surface/tile state.
+Prior: **1609**.
+
+### Change
+- `DisplayPipelineController` owns `loadGate`, `displaySurfaces`, `imageFocusSurface`, `tileCoordinator`, `tileLodTimer`, `tileLodZoomDebounce`
+- ImageView keeps PreferCache climb methods; soft provider + neighbor prefetch still on view
+- Host accessors `hostLoadGate` / `hostDisplaySurfaces` forward to pipeline
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1610-phase6-tier5a-display-pipeline.bundle HEAD
+```
+
+### Next
+- Rebuild; fix compile issues
+- Tier 5b method extraction when ready
+- Tier 4 characterization / Appearance move
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1609-fix-crop-flashHud.** CropController::flashCropHud uses m_view->flashHud; REFACTOR progress log cleanup.
 Prior: **1608**.
 

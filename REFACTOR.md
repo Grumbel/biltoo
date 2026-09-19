@@ -715,5 +715,8 @@ the stop line when Tier 4 lands.
   `sessionappearance_test` lock id-keyed appearance and path/id identity.
   Full offscreen ImageView open→Gallery→crop harness still open.
 - Tier 4: _pending_ (needs fuller ImageView characterization before move)
-- Tier 5: _pending_
+- Tier 5a: **done** (biltoo-1610) — `DisplayPipelineController` owns loadGate,
+  displaySurfaces, imageFocusSurface, tileCoordinator, tile LOD timers.
+  Methods stay on ImageView; soft provider + neighbor prefetch remain on view.
+- Tier 5b: _pending_ (method move / imageview_load.cpp shrink)
 - Tier 6: _pending_

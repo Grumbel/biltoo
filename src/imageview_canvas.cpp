@@ -102,7 +102,7 @@ void ImageView::destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed)
 {
     for (ImageItem *item : doomed) {
         gallerySoftResetPath(item->path());
-        m_loadGate.removePendingWorkspacePath(item->path());
+        m_displayPipeline.loadGate().removePendingWorkspacePath(item->path());
         destroyCanvasItem(item);
     }
 }
@@ -369,7 +369,7 @@ void ImageView::removeWorkspacePath(const QString &path)
         return;
     }
     takePendingWorkspacePath(path);
-    m_loadGate.removePendingScenePos(path);
+    m_displayPipeline.loadGate().removePendingScenePos(path);
         gallerySoftResetPath(path);
     destroyCanvasItem(item);
     emit statusChanged();
@@ -481,7 +481,7 @@ bool ImageView::addImageAt(const QString &path, const QPointF &scenePos)
     if (path.isEmpty()) {
         return false;
     }
-    m_loadGate.setPendingScenePos(path, scenePos);
+    m_displayPipeline.loadGate().setPendingScenePos(path, scenePos);
     return addImage(path);
 }
 
@@ -551,7 +551,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         m_pathOrderBook.appendRow(path, kInvalidSessionImageId);
     }
     // Legacy path-keyed pos kept as fallback when a bind is missing.
-    m_loadGate.setPendingScenePos(path, scenePos);
+    m_displayPipeline.loadGate().setPendingScenePos(path, scenePos);
 
     // Immediate placeholder at the drop point so placement does not depend on
     // async decode ordering (and so archive ladder delays still show a tile).

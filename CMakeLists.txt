@@ -119,6 +119,8 @@ add_executable(biltoo
   src/attentioncontroller.h
   src/hudmodel.cpp
   src/hudmodel.h
+  src/displaypipelinecontroller.cpp
+  src/displaypipelinecontroller.h
   src/gallerycontroller.h
   src/gallerysizeresolve.cpp
   src/gallerysizeresolve.h

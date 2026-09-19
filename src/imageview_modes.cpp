@@ -45,7 +45,7 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
 
 void ImageView::clearPendingLoads()
 {
-    m_loadGate.clearPending();
+    m_displayPipeline.loadGate().clearPending();
 }
 
 void ImageView::invalidateGalleryDecodes()
@@ -54,8 +54,8 @@ void ImageView::invalidateGalleryDecodes()
     // cannot create tiles after leaving Gallery. Bump generation so in-flight
     // pool jobs are rejected in onImageLoaded.
     gallerySoftResetAll();
-    m_loadGate.clearPendingWorkspacePaths();
-    m_loadGate.bumpGeneration();
+    m_displayPipeline.loadGate().clearPendingWorkspacePaths();
+    m_displayPipeline.loadGate().bumpGeneration();
 }
 
 void ImageView::invalidateSessionLoads()
@@ -63,9 +63,9 @@ void ImageView::invalidateSessionLoads()
     // New Open / History session: cancel every in-flight decode and drop the
     // live canvas so a late soft/PreferCache for the previous session cannot
     // paint over the first image of the new set.
-    m_loadGate.bumpGeneration();
-    if (m_tileCoordinator) {
-        m_tileCoordinator->clearPreferCancelled();
+    m_displayPipeline.loadGate().bumpGeneration();
+    if (m_displayPipeline.tileCoordinator()) {
+        m_displayPipeline.tileCoordinator()->clearPreferCancelled();
     }
     clearPendingLoads();
     gallerySoftResetAll();
@@ -103,7 +103,7 @@ void ImageView::invalidateSessionLoads()
 
 void ImageView::takePendingWorkspacePath(const QString &path)
 {
-    if (!m_loadGate.takePendingWorkspacePath(path)) {
+    if (!m_displayPipeline.loadGate().takePendingWorkspacePath(path)) {
         return;
     }
     // Status bar / HUD pending count (even when the caller also emits).
@@ -221,7 +221,7 @@ void ImageView::clearWorkspace()
     discardStashedWorkspace();
     discardStashedGallery();
     m_workspace.savedItems().clear();
-    m_loadGate.clearPending();
+    m_displayPipeline.loadGate().clearPending();
     m_bindBook.clear();
     m_pendingAppearance.clear();
     gallerySoftResetAll();
@@ -240,7 +240,7 @@ void ImageView::clearWorkspace()
     clearClassicPath();
     // Invalidate in-flight LoadReplace so a prior Image-mode decode cannot
     // seed the empty Workspace after this wipe (first-path unbound tile).
-    m_loadGate.bumpGeneration();
+    m_displayPipeline.loadGate().bumpGeneration();
     if (m_scene) {
         m_scene->blockSignals(true);
         m_scene->clear();

@@ -659,7 +659,7 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
                 static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
             const DisplaySurface::Action again =
                 (sid != DisplaySurface::kInvalidSurfaceId)
-                    ? m_displaySurfaces.evaluate(sid)
+                    ? m_displayPipeline.displaySurfaces().evaluate(sid)
                     : DisplaySurface::decide(
                           displaySurfaceStateForItem(
                               item, ImageCache::longEdge(host), false));
@@ -1226,12 +1226,12 @@ void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
     if (role == LoadAdd) {
         addPendingWorkspacePath(path);
     }
-    // LoadRestore pending is owned by m_loadGate.pendingRestoreStates() (AUDIT M27).
+    // LoadRestore pending is owned by m_displayPipeline.loadGate().pendingRestoreStates() (AUDIT M27).
     // AUDIT H3a: only LoadReplace advances the generation token so workspace
     // adds cannot cancel an in-flight Image-mode navigation decode.
-    quint64 gen = m_loadGate.generation();
+    quint64 gen = m_displayPipeline.loadGate().generation();
     if (role == LoadReplace) {
-        gen = m_loadGate.bumpGeneration();
+        gen = m_displayPipeline.loadGate().bumpGeneration();
         m_gallerySoftBook.clearImageModeNativeDecode();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
@@ -1679,7 +1679,7 @@ void ImageView::applyWorkspaceLadderReady(const QString &path, int maxEdge,
     }
     Q_UNUSED(maxEdge);
     // Same soft/display install as Gallery tiles — Workspace items share paths.
-    onImagePreviewLoaded(path, image, m_loadGate.generation(),
+    onImagePreviewLoaded(path, image, m_displayPipeline.loadGate().generation(),
                          static_cast<int>(LoadAdd));
     ensureWorkspaceQualityClimb();
 }
@@ -1738,11 +1738,11 @@ void ImageView::ensureWorkspaceQualityClimb()
         const DisplaySurface::SurfaceId sid =
             static_cast<DisplaySurface::SurfaceId>(ii->displaySurfaceId());
         if (sid != DisplaySurface::kInvalidSurfaceId) {
-            m_displaySurfaces.setNeed(sid, needEdge);
+            m_displayPipeline.displaySurfaces().setNeed(sid, needEdge);
         }
         DisplaySurface::Action act =
             (sid != DisplaySurface::kInvalidSurfaceId)
-                ? m_displaySurfaces.evaluate(sid)
+                ? m_displayPipeline.displaySurfaces().evaluate(sid)
                 : DisplaySurface::decide(
                       displaySurfaceStateForItem(ii, -1, pending));
         if (act.type == DisplaySurface::ActionType::ScheduleClimb
@@ -1784,7 +1784,7 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
         return;
     }
     m_gallerySoftBook.markImageModeNativeDecode(path);
-    const quint64 gen = m_loadGate.generation();
+    const quint64 gen = m_displayPipeline.loadGate().generation();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
         ASSERT_NOT_GUI_THREAD();
@@ -1803,7 +1803,7 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
                     ImageCache::put(path, decoded);
                 }
                 if (host->isImageMode()) {
-                    if (gen != host->m_loadGate.generation()) {
+                    if (gen != host->m_displayPipeline.loadGate().generation()) {
                         return;
                     }
                     if (!decoded.isNull()) {
@@ -1811,7 +1811,7 @@ void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
                     }
                 } else if (host->isWorkspaceMode() && !decoded.isNull()) {
                     host->onImagePreviewLoaded(
-                        path, decoded, host->m_loadGate.generation(),
+                        path, decoded, host->m_displayPipeline.loadGate().generation(),
                         static_cast<int>(LoadAdd));
                 }
             },
@@ -1834,7 +1834,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
 
     // Replace navigations: drop superseded previews.
     if (role == LoadReplace) {
-        if (generation != m_loadGate.generation() || path != classicPath()) {
+        if (generation != m_displayPipeline.loadGate().generation() || path != classicPath()) {
             return;
         }
         if (isImageMode()) {
@@ -1880,7 +1880,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
             static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
         const DisplaySurface::Action act =
             (sid != DisplaySurface::kInvalidSurfaceId)
-                ? m_displaySurfaces.evaluate(sid)
+                ? m_displayPipeline.displaySurfaces().evaluate(sid)
                 : DisplaySurface::decide(ds);
         const auto pol =
             (!ThumtooCache::hasDurableTilesKnown(path))
@@ -1898,7 +1898,7 @@ void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, q
 
 bool ImageView::takePendingRestoreState(const QString &path, WorkspaceItemState *out)
 {
-    return m_loadGate.takePendingRestoreForPath(path, out);
+    return m_displayPipeline.loadGate().takePendingRestoreForPath(path, out);
 }
 
 void ImageView::completeLoadRestore(const QString &path, const QImage &image)
@@ -1961,11 +1961,11 @@ bool ImageView::acceptPendingLoadAdd(const QString &path, quint64 generation)
     // Mode leave / empty Workspace bumps generation and clears pending paths.
     // Reject superseded gallery window decodes so they cannot spawn tiles on
     // Workspace after the user switched modes mid-decode.
-    if (generation != m_loadGate.generation()) {
+    if (generation != m_displayPipeline.loadGate().generation()) {
         finishLoadAddStatus(/*refreshGalleryWindow=*/false);
         return false;
     }
-    if (!m_loadGate.containsPendingWorkspacePath(path)) {
+    if (!m_displayPipeline.loadGate().containsPendingWorkspacePath(path)) {
         // Cancelled (e.g. path removed from session) — drop the result.
         finishLoadAddStatus(/*refreshGalleryWindow=*/true);
         return false;
@@ -2188,7 +2188,7 @@ void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint6
 
     // Remember size even when the pending membership was cancelled — a successful
     // decode still updates the session size cache for later layout.
-    if (generation == m_loadGate.generation() && !image.isNull()) {
+    if (generation == m_displayPipeline.loadGate().generation() && !image.isNull()) {
         rememberSizeFromDecode(path, image);
     }
     if (!acceptPendingLoadAdd(path, generation)) {
@@ -2336,7 +2336,7 @@ void ImageView::seedEmptyWorkspaceFromReplace(const QString &path, const QImage 
     // (default placement, no flip/grade) and steal the first path's LoadAdd.
     if (!m_items.isEmpty()
         || !m_bindBook.isEmpty()
-        || m_loadGate.containsPendingWorkspacePath(path)) {
+        || m_displayPipeline.loadGate().containsPendingWorkspacePath(path)) {
         return;
     }
     ImageItem *item = createItemFromImage(path, image);
@@ -2615,10 +2615,10 @@ int ImageView::imageModeOnScreenNeedEdge() const
 
 void ImageView::scheduleTileLodAfterInteraction(int delayMs)
 {
-    if (!m_tileLodZoomDebounce) {
-        m_tileLodZoomDebounce = new QTimer(this);
-        m_tileLodZoomDebounce->setSingleShot(true);
-        connect(m_tileLodZoomDebounce, &QTimer::timeout, this, [this]() {
+    if (!m_displayPipeline.tileLodZoomDebounce()) {
+        m_displayPipeline.tileLodZoomDebounce() = new QTimer(this);
+        m_displayPipeline.tileLodZoomDebounce()->setSingleShot(true);
+        connect(m_displayPipeline.tileLodZoomDebounce(), &QTimer::timeout, this, [this]() {
             if (isGalleryMode()) {
                 tickPrimaryTileLod(8);
                 return;
@@ -2630,8 +2630,8 @@ void ImageView::scheduleTileLodAfterInteraction(int delayMs)
             }
         });
     }
-    m_tileLodZoomDebounce->setInterval(ViewTransform::nonNegMs(delayMs));
-    m_tileLodZoomDebounce->start();
+    m_displayPipeline.tileLodZoomDebounce()->setInterval(ViewTransform::nonNegMs(delayMs));
+    m_displayPipeline.tileLodZoomDebounce()->start();
 }
 
 void ImageView::prefetchTilesForPaths(const QStringList &paths, int budgetPerPath)
@@ -2711,10 +2711,10 @@ void ImageView::tickPrimaryTileLod(int budget)
     if (m_slideshow.hud().isNavHot()) {
         return;
     }
-    if (!m_tileCoordinator) {
-        m_tileCoordinator = std::make_unique<TileLoadCoordinator>(this);
+    if (!m_displayPipeline.tileCoordinator()) {
+        m_displayPipeline.tileCoordinator() = std::make_unique<TileLoadCoordinator>(this);
     }
-    m_tileCoordinator->tick(budget);
+    m_displayPipeline.tileCoordinator()->tick(budget);
 
     // Image/Workspace: keep issuing until every tileLodWanted item is covered.
     // Without a re-arm, only the first budget of center keys climbed to target
@@ -2732,16 +2732,16 @@ void ImageView::tickPrimaryTileLod(int budget)
     if (!needMore) {
         return;
     }
-    if (!m_tileLodTimer) {
-        m_tileLodTimer = new QTimer(this);
-        m_tileLodTimer->setSingleShot(true);
-        connect(m_tileLodTimer, &QTimer::timeout, this, [this]() {
+    if (!m_displayPipeline.tileLodTimer()) {
+        m_displayPipeline.tileLodTimer() = new QTimer(this);
+        m_displayPipeline.tileLodTimer()->setSingleShot(true);
+        connect(m_displayPipeline.tileLodTimer(), &QTimer::timeout, this, [this]() {
             // Image focus: higher budget so density climb is not starved.
             tickPrimaryTileLod(isGalleryMode() ? 48 : 32);
         });
     }
-    if (!m_tileLodTimer->isActive()) {
-        m_tileLodTimer->start(16);
+    if (!m_displayPipeline.tileLodTimer()->isActive()) {
+        m_displayPipeline.tileLodTimer()->start(16);
     }
 }
 
@@ -2804,7 +2804,7 @@ void ImageView::maybeClimbImageModePixelsForView()
 
 void ImageView::completeLoadReplace(const QString &path, const QImage &image, quint64 generation)
 {
-    if (generation != m_loadGate.generation()) {
+    if (generation != m_displayPipeline.loadGate().generation()) {
         return; // superseded by a newer navigation / open
     }
     // Stale navigation: only the current classic path may install.
@@ -2893,15 +2893,15 @@ bool ImageView::loadImage(const QString &path)
 void ImageView::ensureImageFocusSurface()
 {
     if (!isImageMode()) {
-        if (m_imageFocusSurface != DisplaySurface::kInvalidSurfaceId) {
+        if (m_displayPipeline.imageFocusSurfaceRef() != DisplaySurface::kInvalidSurfaceId) {
             // Do not unbind item-owned surface; only clear the focus alias.
-            m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
+            m_displayPipeline.imageFocusSurfaceRef() = DisplaySurface::kInvalidSurfaceId;
         }
         return;
     }
     ImageItem *item = primaryItem();
     if (!item || item->path().isEmpty()) {
-        m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
+        m_displayPipeline.imageFocusSurfaceRef() = DisplaySurface::kInvalidSurfaceId;
         return;
     }
     // Prefer the canvas item registry (create/destroy lifecycle).
@@ -2911,18 +2911,18 @@ void ImageView::ensureImageFocusSurface()
     // Kind may have been GalleryTile if item was created before mode switch.
     const auto itemSid =
         static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
-    const DisplaySurface::Binding *ib = m_displaySurfaces.binding(itemSid);
+    const DisplaySurface::Binding *ib = m_displayPipeline.displaySurfaces().binding(itemSid);
     if (ib && ib->kind != DisplaySurface::Kind::ImageFocus) {
         registerItemDisplaySurface(item); // rebind as ImageFocus
     }
-    m_imageFocusSurface =
+    m_displayPipeline.imageFocusSurfaceRef() =
         static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
 }
 
 void ImageView::syncImageFocusSurfaceState()
 {
     ensureImageFocusSurface();
-    if (m_imageFocusSurface == DisplaySurface::kInvalidSurfaceId) {
+    if (m_displayPipeline.imageFocusSurfaceRef() == DisplaySurface::kInvalidSurfaceId) {
         return;
     }
     ImageItem *item = primaryItem();
@@ -2934,7 +2934,7 @@ void ImageView::syncImageFocusSurfaceState()
         m_pathRaster && !path.isEmpty() && m_pathRaster->isClimbPending(path);
     syncItemDisplaySurface(item, -1, pending);
     if (m_cropCtrl.session().isDraftSampleFrozen() && isCropDraftLockedPath(path)) {
-        m_displaySurfaces.setFrozen(m_imageFocusSurface, true);
+        m_displayPipeline.displaySurfaces().setFrozen(m_displayPipeline.imageFocusSurfaceRef(), true);
     }
 }
 
@@ -2950,15 +2950,15 @@ void ImageView::driveImageFocusSurface()
         return;
     }
     syncImageFocusSurfaceState();
-    if (m_imageFocusSurface == DisplaySurface::kInvalidSurfaceId) {
+    if (m_displayPipeline.imageFocusSurfaceRef() == DisplaySurface::kInvalidSurfaceId) {
         return;
     }
     const DisplaySurface::Binding *b =
-        m_displaySurfaces.binding(m_imageFocusSurface);
+        m_displayPipeline.displaySurfaces().binding(m_displayPipeline.imageFocusSurfaceRef());
     if (!b) {
         return;
     }
-    const DisplaySurface::Action action = m_displaySurfaces.evaluate(m_imageFocusSurface);
+    const DisplaySurface::Action action = m_displayPipeline.displaySurfaces().evaluate(m_displayPipeline.imageFocusSurfaceRef());
     const QString path = b->path;
     if (path.isEmpty()) {
         return;
@@ -2997,7 +2997,7 @@ void ImageView::registerItemDisplaySurface(ImageItem *item)
     } else if (isImageMode()) {
         kind = DisplaySurface::Kind::ImageFocus;
     }
-    const DisplaySurface::SurfaceId id = m_displaySurfaces.bind(
+    const DisplaySurface::SurfaceId id = m_displayPipeline.displaySurfaces().bind(
         kind, item->path(), item->sessionId());
     item->setDisplaySurfaceId(id);
 }
@@ -3011,7 +3011,7 @@ void ImageView::unregisterItemDisplaySurface(ImageItem *item)
     if (sid == 0) {
         return;
     }
-    m_displaySurfaces.unbind(static_cast<DisplaySurface::SurfaceId>(sid));
+    m_displayPipeline.displaySurfaces().unbind(static_cast<DisplaySurface::SurfaceId>(sid));
     item->setDisplaySurfaceId(0);
 }
 
@@ -3031,11 +3031,11 @@ void ImageView::syncItemDisplaySurface(ImageItem *item, int hostLongEdge,
     }
     const DisplaySurface::State ds =
         displaySurfaceStateForItem(item, hostLongEdge, climbPending);
-    m_displaySurfaces.setNeed(id, ds.needEdge);
-    m_displaySurfaces.setFrozen(id, ds.frozen);
-    m_displaySurfaces.setHostLongEdge(id, ds.hostLongEdge);
-    m_displaySurfaces.setClimbPending(id, ds.climbPending);
-    m_displaySurfaces.setWant(id, ds.want);
-    m_displaySurfaces.setAttached(id, ds.attachedKind, ds.haveDisplayEdge,
+    m_displayPipeline.displaySurfaces().setNeed(id, ds.needEdge);
+    m_displayPipeline.displaySurfaces().setFrozen(id, ds.frozen);
+    m_displayPipeline.displaySurfaces().setHostLongEdge(id, ds.hostLongEdge);
+    m_displayPipeline.displaySurfaces().setClimbPending(id, ds.climbPending);
+    m_displayPipeline.displaySurfaces().setWant(id, ds.want);
+    m_displayPipeline.displaySurfaces().setAttached(id, ds.attachedKind, ds.haveDisplayEdge,
                                   ds.applied);
 }

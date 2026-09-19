@@ -1711,7 +1711,7 @@ void ThumbnailBar::rebindFilmstripSurfaces()
 {
     for (DisplaySurface::SurfaceId id : m_rowSurfaceIds) {
         if (id != DisplaySurface::kInvalidSurfaceId) {
-            m_displaySurfaces.unbind(id);
+            m_displayPipeline.displaySurfaces().unbind(id);
         }
     }
     m_rowSurfaceIds.clear();
@@ -1726,7 +1726,7 @@ void ThumbnailBar::rebindFilmstripSurfaces()
         if (i < m_sessionIds.size()) {
             sid = m_sessionIds.at(i);
         }
-        m_rowSurfaceIds[i] = m_displaySurfaces.bind(
+        m_rowSurfaceIds[i] = m_displayPipeline.displaySurfaces().bind(
             DisplaySurface::Kind::FilmstripCell, path, sid);
     }
 }
@@ -1793,24 +1793,24 @@ void ThumbnailBar::filmstripSurfaceTick()
             if (i < m_sessionIds.size()) {
                 sess = m_sessionIds.at(i);
             }
-            sid = m_displaySurfaces.bind(
+            sid = m_displayPipeline.displaySurfaces().bind(
                 DisplaySurface::Kind::FilmstripCell, path, sess);
             if (i < m_rowSurfaceIds.size()) {
                 m_rowSurfaceIds[i] = sid;
             }
         }
         const int hostEdge = DisplayQuality::hostLongEdge(path);
-        m_displaySurfaces.setNeed(sid, decodeSize);
-        m_displaySurfaces.setHostLongEdge(sid, hostEdge);
-        m_displaySurfaces.setClimbPending(sid, climbPending);
+        m_displayPipeline.displaySurfaces().setNeed(sid, decodeSize);
+        m_displayPipeline.displaySurfaces().setHostLongEdge(sid, hostEdge);
+        m_displayPipeline.displaySurfaces().setClimbPending(sid, climbPending);
         DisplaySurface::AttachedKind ak = DisplaySurface::AttachedKind::None;
         if (shown > 0) {
             ak = (shown >= decodeSize)
                 ? DisplaySurface::AttachedKind::FullSource
                 : DisplaySurface::AttachedKind::SoftPreview;
         }
-        m_displaySurfaces.setAttached(sid, ak, shown, ContentXform::Value{});
-        const DisplaySurface::Action act = m_displaySurfaces.evaluate(sid);
+        m_displayPipeline.displaySurfaces().setAttached(sid, ak, shown, ContentXform::Value{});
+        const DisplaySurface::Action act = m_displayPipeline.displaySurfaces().evaluate(sid);
         using AT = DisplaySurface::ActionType;
         if (act.type == AT::None) {
             continue;

@@ -372,6 +372,8 @@
     WorkspaceController m_workspace;
     /** Image-mode collaborator (enter transition). */
     ImageController m_image;
+    /** Phase 6 Tier 5a: load gate, surfaces, tile LOD timers/coordinator. */
+    DisplayPipelineController m_displayPipeline;
     QList<ImageItem *> m_items;
     /**
      * Path-keyed placement / legacy unbound appearance.
@@ -430,13 +432,11 @@
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutPrefs m_layout;
-    SessionLoadGate m_loadGate;
     GallerySoftBook m_gallerySoftBook;
     /** Central path→raster climb (slideshow + shared PreferCache policy). */
     ImageModeSoftProvider m_imageModeSoftProvider;
 
     PathRasterService *m_pathRaster = nullptr;
-    std::unique_ptr<TileLoadCoordinator> m_tileCoordinator;
     void gallerySoftResetPath(const QString &path);
     void gallerySoftResetAll();
     /** @deprecated Gallery always virtualizes; kept for ABI/docs only. */
@@ -468,8 +468,6 @@
     ItemInteractSession m_itemInteract;
 
     /** Image-mode focus surface (DisplaySurfaceController). Invalid outside Image. */
-    DisplaySurfaceController m_displaySurfaces;
-    DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
 
     /** Multi-select group scale/rotate gesture (Workspace). */
     GroupTransformSession m_groupXform;
@@ -481,9 +479,7 @@
     QTimer *m_galleryStatusRefreshTimer = nullptr;
     QTimer *m_statusRefreshTimer = nullptr;
     /** Pump tile LOD while zoomed (Image mode). */
-    QTimer *m_tileLodTimer = nullptr;
     /** Single-shot: coalesce zoom notches before climb/tick. */
-    QTimer *m_tileLodZoomDebounce = nullptr;
     /** Off-canvas neighbor tile prefetch (session-replace clears). */
     TileNeighborPrefetch m_tileNeighborPrefetch;
     /** Paths for which PreferCache was cancelled after entering tile band. */

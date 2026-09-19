@@ -657,7 +657,7 @@ void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImage
         <= ContentXform::kGuiMaterializeMaxEdge) {
         return; // GUI path already handled by tryRematerializeFromHost
     }
-    const quint64 gen = m_loadGate.generation();
+    const quint64 gen = m_displayPipeline.loadGate().generation();
     QPointer<ImageView> guard(this);
     const WorkspaceItemState wantCopy = want;
     QThreadPool::globalInstance()->start([guard, path, sid, wantCopy, gen]() {
@@ -1387,7 +1387,7 @@ void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBi
         item->setInteractive(true);
         item->setScaleHandlesEnabled(true);
     }
-    m_loadGate.removePendingScenePos(item->path());
+    m_displayPipeline.loadGate().removePendingScenePos(item->path());
     rememberItemState(item);
 }
 
@@ -1500,7 +1500,7 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
         return;
     }
     QPointF pos;
-    if (m_loadGate.takePendingScenePos(path, &pos)) {
+    if (m_displayPipeline.loadGate().takePendingScenePos(path, &pos)) {
         item->setPos(pos);
         item->setItemScale(1.0);
         item->setItemRotation(0.0);
@@ -1547,9 +1547,9 @@ QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
         removedPaths.append(path);
         // Drop in-flight decodes so a late LoadAdd cannot create a tile or
         // call applyLayout after this session image is gone.
-        m_loadGate.removePendingWorkspacePath(path);
+        m_displayPipeline.loadGate().removePendingWorkspacePath(path);
         gallerySoftResetPath(path);
-        m_loadGate.removePendingScenePos(path);
+        m_displayPipeline.loadGate().removePendingScenePos(path);
         m_bindBook.removeIndexForPath(path);
         // destroyCanvasItem clears selection anchor / drag pointers and
         // removes from m_items and both stashes (safe if already only in one).
@@ -1715,8 +1715,8 @@ void ImageView::removeWorkspaceSessionIndex(int sessionIndex)
         }
     }
     if (!pathStillLive) {
-        m_loadGate.removePendingWorkspacePath(path);
-        m_loadGate.removePendingScenePos(path);
+        m_displayPipeline.loadGate().removePendingWorkspacePath(path);
+        m_displayPipeline.loadGate().removePendingScenePos(path);
         m_bindBook.removeIndexForPath(path);
         gallerySoftResetPath(path);
 }
@@ -1748,7 +1748,7 @@ void ImageView::detachCanvasSessionId(SessionImageId sessionId)
         }
         if (!pathStillLive) {
             takePendingWorkspacePath(path);
-            m_loadGate.removePendingScenePos(path);
+            m_displayPipeline.loadGate().removePendingScenePos(path);
             m_bindBook.removeIndexForPath(path);
         gallerySoftResetPath(path);
 }
@@ -1912,7 +1912,7 @@ void ImageView::removeWorkspacePathOccurrence(const QString &path, int occurrenc
         }
         if (found == occurrence) {
             takePendingWorkspacePath(path);
-            m_loadGate.removePendingScenePos(path);
+            m_displayPipeline.loadGate().removePendingScenePos(path);
             m_bindBook.removeIndexForPath(path);
         gallerySoftResetPath(path);
 destroyCanvasItem(item);
