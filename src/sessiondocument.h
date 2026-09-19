@@ -37,9 +37,16 @@ public:
     /** Last index of @p path (duplicate-safe). -1 if absent. */
     int lastIndexOfPath(const QString &path) const;
 
+    /** Count path occurrences (duplicate-safe identity). */
+    int countPathOccurrences(const QString &path) const;
+    /** First non-invalid id for @p path, or invalid if none. */
+    SessionImageId firstIdForPath(const QString &path) const;
+
     /** Never reuses an id after remove. */
     SessionImageId allocId();
 
+    /** Clear paths/ids only (does not clear appearance or recycle ids). */
+    void clearPaths();
     void clear();
     /** Replace list; allocates a fresh id for every path. */
     void setPaths(const QStringList &paths);

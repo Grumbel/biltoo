@@ -41,6 +41,7 @@
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
+#include "sessiondocument.h"
 #include "gallerycontroller.h"
 #include "slideshowcontroller.h"
 #include "cropcontroller.h"
@@ -278,6 +279,14 @@ public:
     void bindSessionAppearance(SessionAppearanceStore *store)
     {
         m_appearanceBound = store;
+    }
+    /**
+     * Phase 6 Tier 4 path-order: dual-write view book + document when bound.
+     * MainWindow binds the same SessionDocument that owns appearance.
+     */
+    void bindSessionDocument(SessionDocument *doc)
+    {
+        m_sessionDoc = doc;
     }
     /** Controller host: path-keyed placement / unbound appearance cache. */
     void setItemStateForPath(const QString &path, const WorkspaceItemState &state)

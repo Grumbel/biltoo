@@ -185,7 +185,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     destroyDoomedWorkspaceItems(collectDoomedWorkspaceItems(paths, sessionIds));
 
     // Align lengths: missing ids stay invalid (unbound rows).
-    m_pathOrderBook.setOrder(paths, sessionIds);
+    pathOrderSetOrder(paths, sessionIds);
 
     // Gallery size-first: probe all unknown sizes before creating tiles so the
     // first pack never uses 1024² stand-ins (first cell stuck square until reload).
@@ -460,10 +460,10 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
                 }
             }
             if (!alreadyOrdered) {
-                m_pathOrderBook.appendRow(path, sessionId);
+                pathOrderAppendRow(path, sessionId);
             }
         } else {
-            m_pathOrderBook.appendRow(path, kInvalidSessionImageId);
+            pathOrderAppendRow(path, kInvalidSessionImageId);
         }
     }
     scheduleImageLoad(path, LoadAdd);
@@ -544,11 +544,11 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
             }
         }
         if (!alreadyOrdered) {
-            m_pathOrderBook.appendRow(path, sessionId);
+            pathOrderAppendRow(path, sessionId);
         }
     } else {
         // Unbound place: still need a decode slot beyond existing path matches.
-        m_pathOrderBook.appendRow(path, kInvalidSessionImageId);
+        pathOrderAppendRow(path, kInvalidSessionImageId);
     }
     // Legacy path-keyed pos kept as fallback when a bind is missing.
     m_displayPipeline.loadGate().setPendingScenePos(path, scenePos);

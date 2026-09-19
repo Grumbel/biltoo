@@ -50,12 +50,42 @@ SessionImageId SessionDocument::allocId()
     return m_nextId++;
 }
 
-void SessionDocument::clear()
+int SessionDocument::countPathOccurrences(const QString &path) const
+{
+    int n = 0;
+    for (const QString &p : m_paths) {
+        if (p == path) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+SessionImageId SessionDocument::firstIdForPath(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return kInvalidSessionImageId;
+    }
+    const int n = qMin(m_paths.size(), m_ids.size());
+    for (int i = 0; i < n; ++i) {
+        if (m_paths.at(i) == path && m_ids.at(i) != kInvalidSessionImageId) {
+            return m_ids.at(i);
+        }
+    }
+    return kInvalidSessionImageId;
+}
+
+void SessionDocument::clearPaths()
 {
     m_paths.clear();
     m_ids.clear();
-    m_appearance.clear();
     // Do not reset m_nextId — removed ids must never be recycled (IDENTITY.md).
+}
+
+void SessionDocument::clear()
+{
+    clearPaths();
+    m_appearance.clear();
 }
 
 void SessionDocument::setPaths(const QStringList &paths)

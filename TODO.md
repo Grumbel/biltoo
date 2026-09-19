@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1627-path-order-dual-write.** Tier 4 path-order: bind SessionDocument + dual-write.
+Prior: **1626**.
+
+### Change
+- `SessionDocument::clearPaths` / `countPathOccurrences` / `firstIdForPath`
+- `ImageView::bindSessionDocument` + `pathOrderClear/SetOrder/AppendRow` dual-write
+- MainWindow binds `&m_session`; mutations keep view book and document aligned
+- Tests: `clearPaths_keepsAppearance`, `countPath_and_firstId`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1627-path-order-dual-write.bundle HEAD
+```
+
+### Next
+- Switch reads to SessionDocument; delete `m_pathOrderBook`
+- Tier 5b PreferCache
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1626-tier4b-require-bound-appearance.** Tier 4b complete: no view-owned appearance store.
 Prior: **1625**.
 

@@ -26,6 +26,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_imageView = new ImageView(this);
     // Phase 6 Tier 4b: single appearance store on SessionDocument.
     m_imageView->bindSessionAppearance(&m_session.appearance());
+    // Tier 4 path-order: dual-write view book + document until book is deleted.
+    m_imageView->bindSessionDocument(&m_session);
     m_imageView->setAccessibleName(tr("Image view"));
     m_imageView->setAccessibleDescription(
         tr("Shows the current image. In image mode, click the left or right edge "

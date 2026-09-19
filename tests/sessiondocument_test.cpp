@@ -25,6 +25,8 @@ private slots:
     void validateUniqueIds_detectsDuplicate();
     void insert_middle_shiftsIds();
     void clear_empties();
+    void clearPaths_keepsAppearance();
+    void countPath_and_firstId();
     void appearance_on_document();
 };
 
@@ -126,6 +128,31 @@ void SessionDocumentTest::clear_empties()
     doc.clear();
     QVERIFY(doc.isEmpty());
     QCOMPARE(doc.size(), 0);
+}
+
+void SessionDocumentTest::clearPaths_keepsAppearance()
+{
+    SessionDocument doc;
+    doc.append(QStringLiteral("/a.jpg"));
+    const SessionImageId id = doc.idAt(0);
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    doc.appearance().set(id, st);
+    doc.clearPaths();
+    QVERIFY(doc.isEmpty());
+    QVERIFY(doc.appearance().contains(id));
+}
+
+void SessionDocumentTest::countPath_and_firstId()
+{
+    SessionDocument doc;
+    doc.append(QStringLiteral("/a.jpg"));
+    doc.append(QStringLiteral("/b.jpg"));
+    doc.append(QStringLiteral("/a.jpg"));
+    QCOMPARE(doc.countPathOccurrences(QStringLiteral("/a.jpg")), 2);
+    QCOMPARE(doc.countPathOccurrences(QStringLiteral("/b.jpg")), 1);
+    QCOMPARE(doc.firstIdForPath(QStringLiteral("/a.jpg")), doc.idAt(0));
+    QCOMPARE(doc.firstIdForPath(QStringLiteral("/missing.jpg")), kInvalidSessionImageId);
 }
 
 void SessionDocumentTest::appearance_on_document()

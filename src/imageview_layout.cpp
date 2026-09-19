@@ -1609,7 +1609,7 @@ void ImageView::prunePathOrdersAfterSessionRemove(const QStringList &removedPath
             unboundBudget[path] -= 1;
         }
     }
-    m_pathOrderBook.setOrder(prunedPaths, prunedIds);
+    pathOrderSetOrder(prunedPaths, prunedIds);
 }
 
 void ImageView::restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,

@@ -375,6 +375,8 @@
      * Must be set via bindSessionAppearance before appearance() is used.
      */
     SessionAppearanceStore *m_appearanceBound = nullptr;
+    /** Non-owning; when set, path-order mutations dual-write the document. */
+    SessionDocument *m_sessionDoc = nullptr;
     /** Session ids we already tried to seed from path XDG (success or miss). */
     /** Gallery tiles kept while in Image mode (decoded pixels retained). */
     /** Last setWorkspacePaths order — used to keep m_items sorted for Gallery pack. */

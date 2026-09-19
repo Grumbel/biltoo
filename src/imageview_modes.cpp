@@ -233,7 +233,7 @@ void ImageView::clearWorkspace()
     dropAllTileLodSessions();
     tilelod::TileLodRegistry::instance().invalidateAll();
     ThumtooCache::clearSessionReplaceMemos();
-    m_pathOrderBook.clear();
+    pathOrderClear();
     // Path-keyed placement is legacy for unbound tiles only; drop it so a
     // project load cannot inherit stale poses from a previous session.
     m_itemStateBook.clear();
