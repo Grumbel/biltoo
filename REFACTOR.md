@@ -189,6 +189,10 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SlideshowZoomBlurState** slot/lastGood accessors; **GroupTransformSession**
   drag list accessors; **TextLayerSession** matchCount/selectionCount;
   **CropSession** mode checks via active().
+- **AttentionSession** active(); **PageGuideSession** isInteractive/isDragging/
+  isHandleHot; **ItemInteractSession** isRotating/isHandleDragging;
+  **ViewportChrome** isPanning; **CropSession** isHandleHot;
+  **TextLayerSession** isRubberbanding.
 
 
 ## Current pain (evidence)

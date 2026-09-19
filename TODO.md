@@ -2,6 +2,32 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1464-attention-pageguide-interact-chrome.** Attention, PageGuide, interact, chrome.
+Prior: **1463**. Commits 1464a–1464f (+ docs).
+
+### Commits
+1. **AttentionSession** mode checks via active()
+2. **PageGuideSession** isInteractive / isDragging / isHandleHot
+3. **ItemInteractSession** isRotating / isHandleDragging
+4. **ViewportChrome** isPanning
+5. **CropSession** isHandleHot
+6. **TextLayerSession** isRubberbanding
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1464-attention-pageguide-interact-chrome.bundle HEAD
+```
+Requires tip **1463**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1463-zoomblur-group-text-crop.** ZoomBlur, Group, TextLayer, Crop active.
 Prior: **1462**. Commits 1463a–1463d (+ docs).
 
