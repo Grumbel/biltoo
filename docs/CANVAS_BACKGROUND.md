@@ -7,8 +7,13 @@ Three layers, one material vocabulary.
 | Layer | Scope | UI |
 |--------|--------|-----|
 | **Preferences default** | App-wide solid / checker | Preferences → Background |
-| **View background** | Session only (Gallery + Image) | View → View Background… / toolbar |
-| **Workspace background** | Project | Workspace → Background… |
+| **View background** | Session only (Gallery + Image) | View → Background… / main toolbar |
+| **Workspace background** | Project | Workspace → Background… / main toolbar (Workspace mode) |
+
+The main toolbar **Background…** button is mode-aware: Gallery and Image open
+the session View dialog; Workspace opens the project Workspace dialog. The
+vertical Workspace tools bar no longer duplicates the Background action (it
+still has the temporary **Background Default** toggle).
 
 Slideshow **letterbox fill** (Solid / App background / ZoomBlur) is presentation
 chrome for the slideshow, not a fourth canvas layer. It reuses the ZoomBlur

@@ -4551,6 +4551,15 @@ void MainWindow::editWorkspaceBackground()
     }
 }
 
+void MainWindow::editBackgroundForCurrentMode()
+{
+    if (isWorkspaceMode()) {
+        editWorkspaceBackground();
+    } else {
+        editViewBackground();
+    }
+}
+
 void MainWindow::editViewBackground()
 {
     if (!m_imageView) {

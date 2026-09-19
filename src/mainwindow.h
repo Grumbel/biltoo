@@ -266,6 +266,11 @@ private slots:
     void editWorkspaceBackground();
     /** Session Gallery/Image canvas background (not Preferences, not project). */
     void editViewBackground();
+    /**
+     * Toolbar / View-menu Background entry: Workspace mode opens the project
+     * Workspace Background dialog; Gallery/Image open the session View dialog.
+     */
+    void editBackgroundForCurrentMode();
     void workspaceBackgroundDefault(bool checked);
     void syncWorkspaceBackgroundActions();
     void updatePasteActionEnabled();

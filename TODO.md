@@ -2,6 +2,22 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1595-toolbar-bg-workspace.** Main toolbar Background… works in Workspace; remove duplicate from vertical Workspace bar.
+Prior: **1594**.
+
+### Change
+- `m_viewBackgroundAct` renamed to **Background…**; enabled in Gallery, Image, *and* Workspace
+- Trigger dispatches via `editBackgroundForCurrentMode()` (Workspace → project dialog, else session View)
+- Vertical `m_workspaceToolBar` no longer hosts `m_workspaceBackgroundAct` (menu entry kept; Default toggle stays)
+- Help + `docs/CANVAS_BACKGROUND.md` updated for mode-aware toolbar button
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1595-toolbar-bg-workspace.bundle HEAD
+```
+
+---
+
 **Tip: biltoo-1594-content-blur-gallery-color.** Content blur Gallery uses Color field; dialog keeps color enabled; Color spelling.
 Prior: **1593**.
 

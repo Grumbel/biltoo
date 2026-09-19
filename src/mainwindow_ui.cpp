@@ -122,11 +122,13 @@ void MainWindow::createActions()
         tr("Workspace: show a paper-sized frame to arrange images for printing"));
     connect(m_pageGuideAct, &QAction::triggered, this, &MainWindow::togglePageGuide);
 
-    m_viewBackgroundAct = new QAction(tr("View &Background…"), this);
+    m_viewBackgroundAct = new QAction(tr("&Background…"), this);
     m_viewBackgroundAct->setIcon(resourceIcon(QStringLiteral("workspace-background")));
     m_viewBackgroundAct->setStatusTip(
-        tr("Session canvas background for Gallery and Image (not Preferences)"));
-    connect(m_viewBackgroundAct, &QAction::triggered, this, &MainWindow::editViewBackground);
+        tr("Canvas background for the current mode "
+           "(session View in Gallery/Image, project Workspace in Workspace)"));
+    connect(m_viewBackgroundAct, &QAction::triggered, this,
+            &MainWindow::editBackgroundForCurrentMode);
 
     m_workspaceBackgroundAct = new QAction(tr("Workspace &Background…"), this);
     m_workspaceBackgroundAct->setIcon(resourceIcon(QStringLiteral("workspace-background")));
@@ -1277,11 +1279,12 @@ void MainWindow::createToolBar()
     m_workspaceToolBar->addAction(m_panToolAct);
     m_workspaceToolBar->addAction(m_zoomToolAct);
     m_workspaceToolBar->addSeparator();
-    // Page guide pair, then background pair, then layout.
+    // Page guide pair, then temporary default toggle, then layout.
+    // Background itself lives on the main toolbar (mode-dispatch) and in the
+    // Workspace menu — not duplicated on this vertical bar.
     m_workspaceToolBar->addAction(m_pageGuideAct);
     m_workspaceToolBar->addAction(m_fitPageGuideAct);
     m_workspaceToolBar->addSeparator();
-    m_workspaceToolBar->addAction(m_workspaceBackgroundAct);
     m_workspaceToolBar->addAction(m_workspaceBgDefaultAct);
     m_workspaceToolBar->addSeparator();
     m_workspaceToolBar->addAction(m_toggleLayoutPanelAct);
@@ -1847,15 +1850,21 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_fitPageGuideAct, tr(
         "<p>Size/position the page guide to fit the current content bounds.</p>"));
     setHelp(m_viewBackgroundAct, tr(
-        "<p>Session canvas background for <b>Gallery</b> and <b>Image</b>: solid, "
-        "checker, image pattern, Preferences default, or <b>content blur</b> "
-        "(Image: blurred cover of the current image; Gallery: the Color field). "
-        "Not stored in Preferences or the project.</p>"));
+        "<p>Canvas background for the current mode.</p>"
+        "<p><b>Gallery / Image</b> — session View materials: solid, checker, image "
+        "pattern, Preferences default, or <b>content blur</b> (Image: blurred cover "
+        "of the current image; Gallery: the Color field). Not stored in Preferences "
+        "or the project.</p>"
+        "<p><b>Workspace</b> — project materials: solid, checker, image tile, or app "
+        "default. Stored in the project when you save. Same dialog as "
+        "Workspace → Background…</p>"));
     setHelp(m_workspaceBackgroundAct, tr(
         "<p>Choose Workspace background: solid, checker, image tile, or app default. "
-        "Stored in the project when you save.</p>"));
+        "Stored in the project when you save. Also available from the main toolbar "
+        "<b>Background…</b> button while in Workspace mode.</p>"));
     setHelp(m_workspaceBgDefaultAct, tr(
-        "<p>Reset Workspace background to the application default.</p>"));
+        "<p>Temporarily show the Preferences / technical background without "
+        "clearing a custom project Workspace background.</p>"));
     setHelp(m_selectToolAct, tr(
         "<p>Workspace tool: select and transform tiles (move, handles, multi-select).</p>"));
     setHelp(m_panToolAct, tr(

@@ -644,12 +644,15 @@ void MainWindow::updateWorkspaceActionVisibility()
     if (m_workspaceToolBar) {
         m_workspaceToolBar->setVisible(workspace && !isFullScreen());
     }
-    // Session Gallery/Image canvas materials (Preferences remain the default).
+    // Canvas materials: Gallery/Image → session View; Workspace → project.
+    // Same main-toolbar action for all three modes (vertical bar no longer
+    // duplicates Background).
     if (m_viewBackgroundAct) {
-        const bool viewBg = m_imageView
-            && (m_imageView->isGalleryMode() || m_imageView->isImageMode());
+        const bool bgOk = m_imageView
+            && (m_imageView->isGalleryMode() || m_imageView->isImageMode()
+                || m_imageView->isWorkspaceMode());
         m_viewBackgroundAct->setVisible(true);
-        m_viewBackgroundAct->setEnabled(viewBg);
+        m_viewBackgroundAct->setEnabled(bgOk);
     }
     updateThumbnailBarForMode();
     updateLayoutPanelForMode();
