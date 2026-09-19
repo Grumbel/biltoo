@@ -280,7 +280,7 @@ void ImageView::attentionDeleteSelected()
 
 void ImageView::attentionCommitSelectionMove()
 {
-    if (m_attention.gestureActive) {
+    if (m_attention.isGestureActive()) {
         const QVector<QPointF> after = attentionPointsForTarget();
         pushAttentionPointsUndo(m_attention.gestureBefore, after,
                                 tr("Edit attention points"));
@@ -341,7 +341,7 @@ void ImageView::paintAttentionOverlay(QPainter &painter)
                          isPrimary ? tr("P") : QString::number(i + 1));
     }
 
-    if (m_attention.rubberbanding && !m_attention.rubberRect.isEmpty()) {
+    if (m_attention.isRubberbanding() && !m_attention.rubberRect.isEmpty()) {
         painter.setPen(QPen(QColor(80, 180, 255, 220), 1.2, Qt::DashLine));
         painter.setBrush(QColor(80, 180, 255, 40));
         painter.drawRect(m_attention.rubberRect.normalized());

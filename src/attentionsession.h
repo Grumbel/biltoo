@@ -24,6 +24,14 @@ class AttentionSession
 public:
     bool active() const { return mode; }
 
+    bool isDragging() const { return dragging; }
+
+    bool isRubberbanding() const { return rubberbanding; }
+
+    bool isGestureActive() const { return gestureActive; }
+
+    bool isDraftValid() const { return draftValid; }
+
     /** True when mode is on and draft points are bound to @p sid. */
     bool hasDraftFor(SessionImageId sid) const
     {
