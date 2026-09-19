@@ -388,7 +388,8 @@ void ImageView::setLayoutMode(LayoutMode mode)
         }
         restoreFreeFormStates();
         if (!m_items.isEmpty()) {
-            m_scene->setSceneRect(m_scene->itemsBoundingRect().adjusted(-64, -64, 64, 64));
+            m_scene->setSceneRect(ViewTransform::padded(m_scene->itemsBoundingRect(),
+                                               ViewTransform::kFreeformScenePad));
         }
         m_framing.fitMode = false;
         emit statusChanged();

@@ -108,6 +108,9 @@ inline qreal unitFraction(qreal pos, qreal span)
     return qBound(0.0, pos / qMax(qreal(1e-9), span), 1.0);
 }
 
+/** Workspace free-form sceneRect padding after pack (scene units). */
+constexpr qreal kFreeformScenePad = 64.0;
+
 /** Expand @p bounds by @p pad on each side (empty stays empty). */
 inline QRectF padded(const QRectF &bounds, qreal pad)
 {
