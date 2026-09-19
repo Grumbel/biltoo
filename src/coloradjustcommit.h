@@ -13,6 +13,9 @@
  * QTimer stays on ImageView; this bag only holds sid + path.
  */
 struct ColorAdjustCommit {
+    /** Idle debounce before durable grade commit (ms). */
+    static constexpr int kIntervalMs = 180;
+
     SessionImageId sid = kInvalidSessionImageId;
     QString path;
 

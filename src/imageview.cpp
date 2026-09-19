@@ -268,7 +268,7 @@ ImageView::ImageView(QWidget *parent)
     // Colour sliders fire every tick — durable SQLite + filmstrip bake are deferred.
     m_colorAdjustCommitTimer = new QTimer(this);
     m_colorAdjustCommitTimer->setSingleShot(true);
-    m_colorAdjustCommitTimer->setInterval(180);
+    m_colorAdjustCommitTimer->setInterval(ColorAdjustCommit::kIntervalMs);
     connect(m_colorAdjustCommitTimer, &QTimer::timeout, this, [this]() {
         flushColorAdjustCommit();
     });
