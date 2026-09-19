@@ -324,6 +324,22 @@ public:
 
     CropHandle currentActiveHandle() const { return activeHandle; }
 
+    CropHandle currentHoverHandle() const { return hoverHandle; }
+
+    const QString &draftPathRef() const { return draftPath; }
+
+    SessionImageId targetIdValue() const { return targetId; }
+
+    bool hasStashedPlacement() const { return hadStashedPlacement; }
+
+    qreal stashedPlacementRotationValue() const { return stashedPlacementRotation; }
+
+    bool isEnterValid() const { return enterValid; }
+
+    const WorkspaceItemState &enterStateRef() const { return enterState; }
+
+    const QPointF &rubberOriginLocalRef() const { return rubberOriginLocal; }
+
     bool hasTargetId() const { return targetId != kInvalidSessionImageId; }
 
     ImageItem *target() const { return targetItem; }

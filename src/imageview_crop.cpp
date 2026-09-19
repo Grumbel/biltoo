@@ -38,7 +38,7 @@ ImageItem *ImageView::cropTargetItem() const
             return m_crop.target();
         }
         if (m_crop.hasTargetId()) {
-            if (ImageItem *byId = findItemBySessionId(m_crop.targetId)) {
+            if (ImageItem *byId = findItemBySessionId(m_crop.targetIdValue())) {
                 return byId;
             }
         }
@@ -138,8 +138,8 @@ bool ImageView::enterCropModeFromUi()
     // freeze must not wait on m_crop.active() or ladder/async can land in between.
     m_crop.bindTarget(item, item->sessionId(), item->path());
     item->setTileLodSuppressed(true);
-    if (m_pathRaster && !m_crop.draftPath.isEmpty()) {
-        m_pathRaster->cancel(m_crop.draftPath);
+    if (m_pathRaster && !m_crop.draftPathRef().isEmpty()) {
+        m_pathRaster->cancel(m_crop.draftPathRef());
     }
     // m_crop.active() is set only after the full-frame draft is installed (see
     // prepareCropModeFullImage / end of this function). Setting it earlier
@@ -163,7 +163,7 @@ bool ImageView::enterCropModeFromUi()
     // restored crop frame can stay fixed while the full image grows around it.
     const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
     m_crop.stashPlacement(item->itemRotation(), item->itemShear());
-    if (m_crop.hadStashedPlacement) {
+    if (m_crop.hasStashedPlacement()) {
         item->setItemRotation(0.0);
         item->setItemShear(0.0);
     }
@@ -178,8 +178,8 @@ bool ImageView::enterCropModeFromUi()
         // prepare may have set mode for fitItem then failed — restore placement
         // before abortEnter clears the stash.
         item->setTileLodSuppressed(false);
-        if (m_crop.hadStashedPlacement) {
-            item->setItemRotation(m_crop.stashedPlacementRotation);
+        if (m_crop.hasStashedPlacement()) {
+            item->setItemRotation(m_crop.stashedPlacementRotationValue());
             item->setItemShear(m_crop.stashedPlacementShear);
         }
         m_crop.abortEnter();
@@ -191,8 +191,8 @@ bool ImageView::enterCropModeFromUi()
         // seed the draft rotation so the frame matches the prior pose while
         // the item stays axis-aligned for editing.
         if (m_crop.isNearZeroRotation(CropGeometry::kFreeRotationEps)
-            && qAbs(m_crop.stashedPlacementRotation) > CropGeometry::kFreeRotationEps) {
-            m_crop.setRotation(m_crop.stashedPlacementRotation);
+            && qAbs(m_crop.stashedPlacementRotationValue()) > CropGeometry::kFreeRotationEps) {
+            m_crop.setRotation(m_crop.stashedPlacementRotationValue());
             m_crop.normalizeRotation();
             ensureCropRectValid();
         }
@@ -278,7 +278,7 @@ bool ImageView::isCropDraftLockedPath(const QString &path) const
         return false;
     }
     if (m_crop.hasTargetId()) {
-        if (ImageItem *byId = findItemBySessionId(m_crop.targetId)) {
+        if (ImageItem *byId = findItemBySessionId(m_crop.targetIdValue())) {
             if (byId->path() == path) {
                 return true;
             }
@@ -930,7 +930,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
             // Prefer appearance turns when present.
             SessionImageId sidR = item->sessionId();
             if (sidR == kInvalidSessionImageId && m_crop.hasTargetId()) {
-                sidR = m_crop.targetId;
+                sidR = m_crop.targetIdValue();
             }
             if (sidR == kInvalidSessionImageId && isImageMode()) {
                 sidR = m_sessionId.currentIdValue();
@@ -959,7 +959,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     // id; never invent one from the navigation cursor while other tiles exist.
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && m_crop.hasTargetId()) {
-        sid = m_crop.targetId;
+        sid = m_crop.targetIdValue();
     }
     if (sid == kInvalidSessionImageId && isImageMode()) {
         sid = m_sessionId.currentIdValue();
@@ -1011,7 +1011,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 
 void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 {
-    if (!m_undoStack || !item || !m_crop.enterValid) {
+    if (!m_undoStack || !item || !m_crop.isEnterValid()) {
         return;
     }
     class CropCommand : public QUndoCommand {
@@ -1054,7 +1054,7 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
     // (recordSessionCrop + commitItemSessionEdit).
     m_undoStack->push(new CropCommand(
         this, item, m_crop.enterSource, item->sourceImage().copy(),
-        m_crop.enterState, afterSt, text));
+        m_crop.enterStateRef(), afterSt, text));
 }
 
 bool ImageView::applyCropCommit(ImageItem *item)
@@ -1114,7 +1114,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         WorkspaceItemState st;
         SessionImageId sid = item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
-            : m_crop.targetId;
+            : m_crop.targetIdValue();
         if (sid == kInvalidSessionImageId) {
             sid = m_sessionId.currentIdValue();
         }
@@ -1208,9 +1208,9 @@ bool ImageView::applyCropCommit(ImageItem *item)
                                        : SessionAppearance::PixelKind::FullSource;
         attachDisplaySample(item, display, st, pixelKind);
         // Restore enter placement scale if something else mutated it during draft.
-        if (m_crop.enterValid && m_crop.enterState.scale > 1e-6) {
-            const qreal sx = m_crop.enterState.scale;
-            const qreal sy = (m_crop.enterState.scaleY > 1e-6) ? m_crop.enterState.scaleY : sx;
+        if (m_crop.isEnterValid() && m_crop.enterStateRef().scale > 1e-6) {
+            const qreal sx = m_crop.enterStateRef().scale;
+            const qreal sy = (m_crop.enterStateRef().scaleY > 1e-6) ? m_crop.enterStateRef().scaleY : sx;
             item->setItemScale(sx, sy);
         }
         alignItemCenterToScene(item, cropSceneCenter);
@@ -1264,12 +1264,12 @@ bool ImageView::applyCropCommit(ImageItem *item)
         fitItem(item, currentFitAspectMode());
     } else if (isWorkspaceMode()) {
         // Drop the enter-time crop-frame offset; restore pre-crop pose.
-        if (m_crop.enterValid) {
-            item->setPos(m_crop.enterState.pos);
-            item->setItemScale(m_crop.enterState.scale,
-                               m_crop.enterState.scaleY > 0.0
-                                   ? m_crop.enterState.scaleY
-                                   : m_crop.enterState.scale);
+        if (m_crop.isEnterValid()) {
+            item->setPos(m_crop.enterStateRef().pos);
+            item->setItemScale(m_crop.enterStateRef().scale,
+                               m_crop.enterStateRef().scaleY > 0.0
+                                   ? m_crop.enterStateRef().scaleY
+                                   : m_crop.enterStateRef().scale);
         }
         updateWorkspaceSceneRect();
     } else if (isGalleryMode()) {
@@ -1279,7 +1279,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
     {
         SessionImageId sid = item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
-            : m_crop.targetId;
+            : m_crop.targetIdValue();
         if (sid == kInvalidSessionImageId) {
             sid = m_sessionId.currentIdValue();
         }
@@ -1291,8 +1291,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
             }
         }
     }
-    if (m_crop.enterValid
-        && (m_crop.enterState.hasCrop
+    if (m_crop.isEnterValid()
+        && (m_crop.enterStateRef().hasCrop
             || m_crop.enterSource.size() != item->sourceImage().size())) {
         pushCropAppearanceUndo(item, tr("Crop reset"));
     }
@@ -1304,12 +1304,12 @@ void ImageView::cancelCropShowingFullImage(ImageItem *item)
 {
     // Esc / toggle off: put the previous session crop back on the canvas.
     restoreSessionCropAppearance(item);
-    if (isWorkspaceMode() && m_crop.enterValid) {
-        item->setPos(m_crop.enterState.pos);
-        item->setItemScale(m_crop.enterState.scale,
-                           m_crop.enterState.scaleY > 0.0
-                               ? m_crop.enterState.scaleY
-                               : m_crop.enterState.scale);
+    if (isWorkspaceMode() && m_crop.isEnterValid()) {
+        item->setPos(m_crop.enterStateRef().pos);
+        item->setItemScale(m_crop.enterStateRef().scale,
+                           m_crop.enterStateRef().scaleY > 0.0
+                               ? m_crop.enterStateRef().scaleY
+                               : m_crop.enterStateRef().scale);
     }
 }
 
@@ -1319,7 +1319,7 @@ void ImageView::clearCropModeState()
     if (m_crop.target()) {
         m_crop.target()->setTileLodSuppressed(false);
     } else if (m_crop.hasTargetId()) {
-        if (ImageItem *byId = findItemBySessionId(m_crop.targetId)) {
+        if (ImageItem *byId = findItemBySessionId(m_crop.targetIdValue())) {
             byId->setTileLodSuppressed(false);
         }
     }
@@ -1356,8 +1356,8 @@ void ImageView::leaveCropModeInternal(bool apply)
     }
     // Restore pre-crop placement rotation unless Apply already set it from the
     // crop frame (Workspace non-full-frame commit).
-    if (item && m_crop.hadStashedPlacement && !preserveCropFrameRotation) {
-        item->setItemRotation(m_crop.stashedPlacementRotation);
+    if (item && m_crop.hasStashedPlacement() && !preserveCropFrameRotation) {
+        item->setItemRotation(m_crop.stashedPlacementRotationValue());
         item->setItemShear(m_crop.stashedPlacementShear);
     }
     clearCropModeState();
@@ -1878,7 +1878,7 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
     const QRectF cr = item->contentRect();
     const Qt::KeyboardModifiers mods = QGuiApplication::keyboardModifiers();
     QRectF r = CropGeometry::rubberBandRect(
-        m_crop.rubberOriginLocal, local,
+        m_crop.rubberOriginLocalRef(), local,
         mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
     if (r.width() < 1.0) {
         r.setWidth(1.0);
