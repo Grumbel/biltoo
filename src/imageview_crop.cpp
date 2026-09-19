@@ -1208,9 +1208,9 @@ bool ImageView::applyCropCommit(ImageItem *item)
                                        : SessionAppearance::PixelKind::FullSource;
         attachDisplaySample(item, display, st, pixelKind);
         // Restore enter placement scale if something else mutated it during draft.
-        if (m_crop.isEnterValid() && m_crop.enterStateRef().scale > 1e-6) {
-            const qreal sx = m_crop.enterStateRef().scale;
-            const qreal sy = (m_crop.enterStateRef().scaleY > 1e-6) ? m_crop.enterStateRef().scaleY : sx;
+        if (m_crop.enterScaleX() > 1e-6) {
+            const qreal sx = m_crop.enterScaleX();
+            const qreal sy = m_crop.enterScaleY() > 1e-6 ? m_crop.enterScaleY() : sx;
             item->setItemScale(sx, sy);
         }
         alignItemCenterToScene(item, cropSceneCenter);
@@ -1266,10 +1266,10 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // Drop the enter-time crop-frame offset; restore pre-crop pose.
         if (m_crop.isEnterValid()) {
             item->setPos(m_crop.enterStateRef().pos);
-            item->setItemScale(m_crop.enterStateRef().scale,
-                               m_crop.enterStateRef().scaleY > 0.0
-                                   ? m_crop.enterStateRef().scaleY
-                                   : m_crop.enterStateRef().scale);
+            item->setItemScale(m_crop.enterScaleX(),
+                               m_crop.enterScaleY() > 0.0
+                                   ? m_crop.enterScaleY()
+                                   : m_crop.enterScaleX());
         }
         updateWorkspaceSceneRect();
     } else if (isGalleryMode()) {
@@ -1306,10 +1306,10 @@ void ImageView::cancelCropShowingFullImage(ImageItem *item)
     restoreSessionCropAppearance(item);
     if (isWorkspaceMode() && m_crop.isEnterValid()) {
         item->setPos(m_crop.enterStateRef().pos);
-        item->setItemScale(m_crop.enterStateRef().scale,
-                           m_crop.enterStateRef().scaleY > 0.0
-                               ? m_crop.enterStateRef().scaleY
-                               : m_crop.enterStateRef().scale);
+        item->setItemScale(m_crop.enterScaleX(),
+                           m_crop.enterScaleY() > 0.0
+                               ? m_crop.enterScaleY()
+                               : m_crop.enterScaleX());
     }
 }
 

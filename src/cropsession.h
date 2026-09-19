@@ -356,6 +356,20 @@ public:
 
     const WorkspaceItemState &enterStateRef() const { return enterState; }
 
+    /** Enter-stash placement scales (identity if enter invalid). */
+    qreal enterScaleX() const
+    {
+        return isEnterValid() && enterState.scale > 1e-6 ? enterState.scale : 0.0;
+    }
+    qreal enterScaleY() const
+    {
+        if (!isEnterValid()) {
+            return 0.0;
+        }
+        return enterState.scaleY > 1e-6 ? enterState.scaleY : enterScaleX();
+    }
+
+
     const QPointF &rubberOriginLocalRef() const { return rubberOriginLocal; }
 
     bool hasTargetId() const { return targetId != kInvalidSessionImageId; }
