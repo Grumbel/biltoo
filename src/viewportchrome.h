@@ -40,6 +40,16 @@ struct ViewportChrome {
 
     bool isPanning() const { return panning; }
 
+    bool isImageModeLeftDragPan() const { return imageModeLeftDragPan; }
+
+    bool hasMouseInfo() const { return mouseInfo.valid; }
+
+    const ImageMouseInfo &currentMouseInfo() const { return mouseInfo; }
+
+    QPoint hoverViewPos() const { return lastHoverViewPos; }
+
+    bool hasHoverViewPos() const { return !lastHoverViewPos.isNull(); }
+
     void updatePanPos(const QPoint &pos) { lastMousePos = pos; }
 
     /** @return true when mouse readout changed. */

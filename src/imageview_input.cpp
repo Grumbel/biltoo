@@ -270,7 +270,7 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
     }
 
     if (m_chrome.setMouseInfo(info)) {
-        emit mouseInfoChanged(m_chrome.mouseInfo);
+        emit mouseInfoChanged(m_chrome.currentMouseInfo());
     }
 }
 
@@ -693,7 +693,7 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
     if (!m_ssDwell.isMotionActive()
         && (event->button() == Qt::MiddleButton
             || (event->button() == Qt::LeftButton
-                && ((isImageMode() && m_chrome.imageModeLeftDragPan)
+                && ((isImageMode() && m_chrome.isImageModeLeftDragPan())
                     || (isWorkspaceMode() && m_tool == Tool::Pan)
                     || (isGalleryMode() && (event->modifiers() & Qt::AltModifier))
                     || (event->modifiers() & Qt::AltModifier))))) {
@@ -1002,7 +1002,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
                 tip = tr("Link");
             }
         } else if (m_hoverEdge == EdgeZone::None) {
-            setCursor(m_chrome.imageModeLeftDragPan ? Qt::OpenHandCursor : Qt::ArrowCursor);
+            setCursor(m_chrome.isImageModeLeftDragPan() ? Qt::OpenHandCursor : Qt::ArrowCursor);
         }
         if (m_textLayer.setLinkHoverTip(tip)) {
             emit statusChanged();
@@ -1463,7 +1463,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
     m_chrome.setHoverViewPos(event->pos());
     updateMouseMoveSlideshowSeek(event);
-    updateGalleryHoverAt(m_chrome.lastHoverViewPos);
+    updateGalleryHoverAt(m_chrome.hoverViewPos());
     updateMouseMoveWorkspaceChromeHover(event);
 
     QGraphicsView::mouseMoveEvent(event);

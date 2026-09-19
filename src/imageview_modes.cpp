@@ -209,7 +209,7 @@ void ImageView::clearLiveCanvas()
     // Do not m_scene->clear() — that would delete stashed items if any were
     // still parented (they are not). Scene may hold no items; that is fine.
     m_chrome.clearMouseInfo();
-    emit mouseInfoChanged(m_chrome.mouseInfo);
+    emit mouseInfoChanged(m_chrome.currentMouseInfo());
 }
 
 void ImageView::clearWorkspace()
