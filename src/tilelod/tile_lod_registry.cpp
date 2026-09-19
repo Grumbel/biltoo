@@ -284,4 +284,36 @@ std::size_t TileLodRegistry::global_budget_bytes() const
   return m_global_budget;
 }
 
+void TileLodRegistry::set_max_idle_paths(std::size_t n)
+{
+  std::lock_guard<std::mutex> lock(m_mu);
+  m_max_idle_paths = n > 0 ? n : kDefaultMaxIdlePaths;
+  trim_idle_locked();
+}
+
+std::size_t TileLodRegistry::max_idle_paths() const
+{
+  std::lock_guard<std::mutex> lock(m_mu);
+  return m_max_idle_paths;
+}
+
+QString TileLodRegistry::debug_summary() const
+{
+  std::lock_guard<std::mutex> lock(m_mu);
+  std::size_t idle = 0;
+  for (auto const& [k, shared] : m_by_path) {
+    (void)k;
+    if (shared && shared->refcount == 0) {
+      ++idle;
+    }
+  }
+  const double mib =
+      static_cast<double>(total_approx_bytes_locked()) / (1024.0 * 1024.0);
+  return QStringLiteral("regPaths=%1 idle=%2 ramMiB=%3 maxIdle=%4")
+      .arg(m_by_path.size())
+      .arg(idle)
+      .arg(mib, 0, 'f', 1)
+      .arg(m_max_idle_paths);
+}
+
 }  // namespace tilelod
