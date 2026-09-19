@@ -255,7 +255,15 @@ public:
         return true;
     }
 
-    void setRotation(qreal deg) { rotation = deg; }
+    /** @return true when rotation changed. */
+    bool setRotation(qreal deg)
+    {
+        if (qFuzzyCompare(rotation, deg)) {
+            return false;
+        }
+        rotation = deg;
+        return true;
+    }
 
     /** @return true when the draft rect changed. */
     bool setRect(const QRectF &r)
