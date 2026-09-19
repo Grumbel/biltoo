@@ -227,7 +227,15 @@ public:
 
     void setRect(const QRectF &r) { rect = r; }
 
-    void setMode(bool on) { mode = on; }
+    /** @return true when crop mode flag changed. */
+    bool setMode(bool on)
+    {
+        if (mode == on) {
+            return false;
+        }
+        mode = on;
+        return true;
+    }
 
     /**
      * Full leave / session wipe: inactive, no target, no enter stash, no pending

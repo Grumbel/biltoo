@@ -17,6 +17,15 @@
  */
 namespace PageGuideGeometry {
 
+/** Default print DPI when synthesising A4 guide size. */
+constexpr qreal kDefaultDpi = 300.0;
+
+/** Pixels per millimetre at kDefaultDpi. */
+inline qreal pixelsPerMm(qreal dpi = kDefaultDpi)
+{
+    return dpi / 25.4;
+}
+
 /** Viewport hit radius for scale grips (matches paint size). */
 constexpr qreal kScaleHitPx = 12.0;
 

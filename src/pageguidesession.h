@@ -45,14 +45,19 @@ struct PageGuideSession {
         hoverHandle = handle;
     }
 
-    void setVisible(bool on)
+    /** @return true when visibility changed. */
+    bool setVisible(bool on)
     {
+        if (visible == on) {
+            return false;
+        }
         visible = on;
         if (!on) {
             selected = false;
             setHoverHandle(-1);
             clearDrag();
         }
+        return true;
     }
 
     void setSelected(bool on)

@@ -2061,16 +2061,14 @@ qreal ImageView::pageGuidePxPerMm()
     // ~4000px wide; at screen 96dpi an A4 sheet is only ~794px and looks tiny.
     // Use 300dpi so a page is roughly photo-scale (~2480×3508 for A4) while
     // still mapping 1:1 to physical paper on print/PDF.
-    constexpr qreal kPageGuideDpi = 300.0;
-    return kPageGuideDpi / 25.4;
+    return PageGuideGeometry::pixelsPerMm();
 }
 
 void ImageView::setPageGuideVisible(bool on)
 {
-    if (m_pageGuide.visible == on) {
+    if (!m_pageGuide.setVisible(on)) {
         return;
     }
-    m_pageGuide.setVisible(on);
     if (m_pageGuide.visible && !m_pageGuide.size.isValid()) {
         const qreal pxPerMm = pageGuidePxPerMm();
         m_pageGuide.setSize(QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm));
