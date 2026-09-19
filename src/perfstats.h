@@ -19,6 +19,16 @@ struct PerfStats {
     static constexpr qint64 kWarnDecodeWindowUs = 4000;
 
     bool enabled = false;
+
+    bool isEnabled() const { return enabled; }
+
+    qreal fpsValue() const { return fps; }
+
+    qint64 lastPaintUsValue() const { return lastPaintUs; }
+
+    qint64 lastDecodeWindowUsValue() const { return lastDecodeWindowUs; }
+
+    qint64 maxDecodeWindowUsValue() const { return maxDecodeWindowUs; }
     QElapsedTimer fpsClock;
     int frameCount = 0;
     qreal fps = 0.0;
