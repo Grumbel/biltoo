@@ -90,10 +90,14 @@ class QPainter;
  *
  * Gallery is not a Workspace layout — it is a separate mode of this view.
  */
+class CropAppearanceCommand;
+
 class ImageView : public QGraphicsView,
                   private GallerySizeResolveHost,
                   private TileNeighborPrefetchHost
 {
+    friend class CropAppearanceCommand;
+
     Q_OBJECT
 
 

@@ -5,6 +5,7 @@
 // draft, clear FullSource before soft crop attach, filmstrip bake emit).
 
 #include "imageview.h"
+#include "cropappearancecommand.h"
 #include "cropgeometry.h"
 #include "placementlinear.h"
 #include "imagecache.h"
@@ -1131,40 +1132,7 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
     if (!m_undoStack || !item || !m_crop.isEnterValid()) {
         return;
     }
-    class CropCommand : public QUndoCommand {
-    public:
-        CropCommand(ImageView *view, ImageItem *item,
-                    const QImage &beforeSrc, const QImage &afterSrc,
-                    const WorkspaceItemState &beforeSt,
-                    const WorkspaceItemState &afterSt,
-                    const QString &text)
-            : m_view(view)
-            , m_item(item)
-            , m_beforeSrc(beforeSrc)
-            , m_afterSrc(afterSrc)
-            , m_beforeSt(beforeSt)
-            , m_afterSt(afterSt)
-        {
-            setText(text);
-        }
-        void undo() override { apply(m_beforeSrc, m_beforeSt); }
-        void redo() override { apply(m_afterSrc, m_afterSt); }
-    private:
-        void apply(const QImage &src, const WorkspaceItemState &st)
-        {
-            if (!m_view || !m_item) {
-                return;
-            }
-            m_view->applyCropAppearance(m_item, src, st);
-        }
-        ImageView *m_view;
-        ImageItem *m_item;
-        QImage m_beforeSrc;
-        QImage m_afterSrc;
-        WorkspaceItemState m_beforeSt;
-        WorkspaceItemState m_afterSt;
-    };
-    m_undoStack->push(new CropCommand(
+    m_undoStack->push(new CropAppearanceCommand(
         this, item, m_crop.enterSourceRef(), item->sourceImage().copy(),
         m_crop.enterStateRef(), captureCropUndoAfterState(item), text));
 }

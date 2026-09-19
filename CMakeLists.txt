@@ -129,6 +129,8 @@ add_executable(biltoo
   src/cropgeometry.h
   src/cropsession.cpp
   src/cropsession.h
+  src/cropappearancecommand.cpp
+  src/cropappearancecommand.h
   src/attentionsession.h
   src/attentiongeometry.cpp
   src/attentiongeometry.h

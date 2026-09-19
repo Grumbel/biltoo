@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1540-crop-appearance-command.** Extract `CropAppearanceCommand` from nested undo class in imageview_crop.
+Prior: **1539**.
+
+### Change
+- New `cropappearancecommand.{h,cpp}` — QUndoCommand for crop Apply undo/redo.
+- `ImageView` friends the command; `pushCropAppearanceUndo` is a thin push.
+- CMake lists the new sources.
+
+### Still on ImageView (later)
+PathRaster ownership during crop, enter UI orchestration, further chrome/paint splits.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1540-crop-appearance-command.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1539-paint-crop-chrome-button-decl.** Declare `paintCropChromeButton` in imageview.h (compile fix).
 Prior: **1538**.
 
