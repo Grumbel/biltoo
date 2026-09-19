@@ -694,7 +694,10 @@ the stop line when Tier 4 lands.
 
 ### Progress log (Phase 6)
 
-- Tier 0: _pending_
+- Tier 0: **done** (biltoo-1596) — privatized 190 methods with no refs outside
+  `imageview*`; declarations live in `imageview_private_methods.inc` +
+  `imageview_private_rest.inc` included from `private:`. Metrics: `imageview.h`
+  993 lines; public methods 259; no new `friend`.
 - Tier 1: _pending_
 - Tier 2: _pending_
 - Tier 3: _pending_

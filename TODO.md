@@ -2,6 +2,36 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1596-phase6-tier0-header-closure.** Phase 6 Tier 0: privatize ImageView methods with no external refs; shrink header via private includes.
+Prior: **1595** (on origin/master through Phase 6 plan commit).
+
+### Change
+- Identified ~190 public methods never referenced outside `imageview*` (controllers, MainWindow, …)
+- Moved declarations to `private:` via `src/imageview_private_methods.inc`
+- Remainder of existing private methods/members → `src/imageview_private_rest.inc`
+- `imageview.h` includes both from the class `private:` section only
+- No behaviour change; no new `friend`
+
+### Metrics (exit criteria)
+| Metric | Before | After |
+|--------|-------:|------:|
+| `imageview.h` lines | 1924 | 993 |
+| Public methods | ~450 non-slot | 259 |
+| New friends | — | 0 |
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1596-phase6-tier0-header-closure.bundle HEAD
+```
+
+Requires current **origin/master** (includes 1595 + Phase 6 plan).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1595-toolbar-bg-workspace.** Main toolbar Background… works in Workspace; remove duplicate from vertical Workspace bar.
 Prior: **1594**.
 
