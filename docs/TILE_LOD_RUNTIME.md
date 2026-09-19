@@ -40,7 +40,8 @@ not claimed (`tileLodWanted` requires `hasDurableTiles`).
 11. **Neighbor prefetch** — after quiet settle on index *i*, ±1 session neighbors
     should receive overview tile requests that are **pumped until completions
     land** (when durable pyramid is known); stepping to a neighbor should show
-    coarse tiles sooner than a cold path.
+    coarse tiles sooner than a cold path. Already-warm neighbors (≥4 Succeeded
+    in path RAM) skip issue. Optional env: `BILTOO_TILE_RAM_MIB`, `BILTOO_TILE_MAX_IDLE`.
 
 ## Workspace
 

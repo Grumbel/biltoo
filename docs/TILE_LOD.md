@@ -351,44 +351,28 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 7. **`invalidate(path)`** force-drops an entry (file replaced / explicit wipe).
 8. **Neighbor prefetch (1213 / 1214):** on Image-mode nav settle,
    `prefetchTilesForPaths` binds a short-lived `TileLodController` per ±1 path
-   and **pumps it on a 33 ms timer** until overview coverage / idle / tick cap.
-   Stack controllers (issue-once then destroy) cancelled InFlight and dropped
-   tiles — 1214 keeps the session alive for completions. Paths without a known
+   and **pumps it on a 33 ms timer** until overview coverage / idle / tick cap
+   (max **4** concurrent slots; warm paths with ≥`kWarmSucceededMin` Succeeded
+   tiles are skipped with LRU touch only). When the live canvas takes over a
+   path, the slot is dropped and the path is touched. Paths without a known
    durable pyramid only get `scheduleTilePyramid`.
 
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
-keeps identity correct. **biltoo-1400:** `setPath` rotates `m_tileLodAlive` and
-leaves crop suppress intact; prepare/paint refuse a controller whose path does
-not match the item (retained global tiles must never paint under the wrong file).
+keeps identity correct.
 
-**biltoo-1401–1405:** `succeeded_count` / `has_succeeded_tiles` / `touch` query the
-retained path cache without acquire. Neighbor prefetch skips warm paths (LRU touch
-only). `hasRetainedTiles` + prepare lastDpc reset make A→B→A paint retained cells on
-the first frame after rebind.
+**Global path RAM tip history (1400–1428):**
 
-**biltoo-1406–1411:** O(1) succeeded tile counter; `path_succeeded_count` /
-`idle_path_count`; neighbor prefetch skips only overview-warm paths (≥4 tiles);
-`setPath` touches registry LRU; `BILTOO_TILE_DEBUG` logs registry pressure.
-
-**biltoo-1416–1418:** Max idle path cap (64); `pathRam` in item debug lines;
-Gallery restore ticks warm path RAM after Image mode.
-
-**biltoo-1419–1421:** Coordinator `makeCand` + named priorities; force paint when
-retained RAM binds with zero applied completions; runtime A→B→A notes.
-
-**biltoo-1422–1424:** Shared `kWarmSucceededMin`; prefetch max 4 slots;
-`debug_summary()` for tile-coord (includes maxIdle).
-
-**biltoo-1425–1427:** `BILTOO_TILE_RAM_MIB` / `BILTOO_TILE_MAX_IDLE` env overrides;
-prefetch evicts lowest `ticksLeft` when full.
-
-**biltoo-1412–1415:** O(1) `approx_bytes`; named `kPrefetchWarmSucceededMin`;
-`tileLodHasPathRam` for coordinator priority and immediate tick after Image ←/→
-when retained tiles exist.
-
-
-
-
+| Range | Summary |
+|-------|---------|
+| **1400** | Path identity: `setPath` alive rotate; prepare/paint refuse wrong path |
+| **1401–1405** | Query API (`succeeded_count` / `has_succeeded_tiles` / `touch`); prefetch warm skip; retained replan |
+| **1406–1411** | O(1) succeeded counter; `path_succeeded_count` / `idle_path_count`; warm ≥4; setPath LRU touch |
+| **1412–1415** | O(1) `approx_bytes`; `tileLodHasPathRam`; pending-install tick |
+| **1416–1418** | Max idle paths (64); `pathRam` debug; Gallery restore tick |
+| **1419–1421** | Coordinator `makeCand`; force paint when retained + applied=0 |
+| **1422–1424** | Shared `kWarmSucceededMin`; prefetch max 4 slots; `debug_summary` |
+| **1425–1427** | `BILTOO_TILE_RAM_MIB` / `BILTOO_TILE_MAX_IDLE`; prefetch eviction by ticksLeft |
+| **1428** | Prefetch touch on live takeover / slot done; tip history table |
 
 ### Session / archive replace (biltoo-1233 / 1234)
 

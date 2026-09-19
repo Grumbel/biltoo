@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1428-tile-prefetch-touch-tip-history.** Prefetch LRU touch; consolidated tip table.
+Prior: **1427**. Commit 1428.
+
+### Commits
+1. **1428** Prefetch touches registry on live takeover / slot done; TILE_LOD tip history table (1400–1428)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1428-tile-prefetch-touch-tip-history.bundle HEAD
+```
+Requires tip **1427**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1427-tile-env-budget-prefetch-evict.** Env RAM/idle caps; smarter prefetch eviction.
 Prior: **1424**. Commits 1425–1427.
 
