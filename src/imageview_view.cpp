@@ -502,7 +502,7 @@ void ImageView::applyImageModeFraming(ImageItem *item)
             QTimer::singleShot(0, this, [guard]() {
                 ImageView *const view = guard.data();
                 if (!view || !view->m_framing.isStickyZoomEnabled()
-                    || view->m_framing.stickyZoomKind == StickyZoomKind::Fit
+                    || view->m_framing.isStickyFit()
                     || !view->m_scene || !view->viewport()) {
                     return;
                 }
@@ -659,7 +659,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
     if (active && m_ssHud.isProgressActive()) {
         m_ssHud.setProgressIntervalMs(intervalMs);
         if (m_ssHud.hasProgressInterval() && m_slideshowProgressTimer
-            && !m_ssHud.progressClockPaused) {
+            && !m_ssHud.isProgressClockPaused()) {
             m_slideshowProgressTimer->start();
         } else if (m_slideshowProgressTimer && !m_ssHud.hasProgressInterval()) {
             m_slideshowProgressTimer->stop();
@@ -706,7 +706,7 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
 
 void ImageView::setSlideshowProgressPaused(bool paused)
 {
-    if (paused == m_ssHud.progressClockPaused) {
+    if (paused == m_ssHud.isProgressClockPaused()) {
         return;
     }
     if (paused) {
@@ -1346,7 +1346,7 @@ void ImageView::finishSlideshowAtlas(SlideshowAtlasKind kind, quint64 generation
         return;
     }
     if (kind == SlideshowAtlasKind::From) {
-        if (generation != m_ssDwell.atlasRebuildGeneration) {
+        if (generation != m_ssDwell.atlasRebuildGenerationValue()) {
             return;
         }
         m_ssDwell.setAtlas(QPixmap::fromImage(scaled), atlasScale, atlasVw, atlasVh);
@@ -1667,13 +1667,13 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
     }
     // Image-mode slideshow: current session cursor when path matches.
     if (m_sessionId.hasCurrentId()) {
-        if (ImageItem *it = findItemBySessionId(m_sessionId.currentId)) {
+        if (ImageItem *it = findItemBySessionId(m_sessionId.currentIdValue())) {
             if (it->path() == path) {
-                return m_sessionId.currentId;
+                return m_sessionId.currentIdValue();
             }
         }
         if (classicPath() == path || currentPath() == path) {
-            return m_sessionId.currentId;
+            return m_sessionId.currentIdValue();
         }
     }
     return kInvalidSessionImageId;
@@ -1730,9 +1730,9 @@ QImage ImageView::slideshowPixelsForPath(const QString &path)
 
 void ImageView::pruneZoomBlurOutsidePhasePair(const QString &fromPath, const QString &toPath)
 {
-    const int vw = m_ssZoomBlur.vw > 0 ? m_ssZoomBlur.vw
+    const int vw = m_ssZoomBlur.viewportWidth() > 0 ? m_ssZoomBlur.viewportWidth()
                                     : (viewport() ? viewport()->width() : 0);
-    const int vh = m_ssZoomBlur.vh > 0 ? m_ssZoomBlur.vh
+    const int vh = m_ssZoomBlur.viewportHeight() > 0 ? m_ssZoomBlur.viewportHeight()
                                     : (viewport() ? viewport()->height() : 0);
     // Keep lastGood across path changes — previous underlay holds until the
     // new key finishes (paintZoomBlurUnderlay draws it).
@@ -2406,7 +2406,7 @@ void ImageView::scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint6
     if (claimZoomBlurFlightSlot(key) < 0) {
         return;
     }
-    const quint64 gen = m_ssZoomBlur.generation;
+    const quint64 gen = m_ssZoomBlur.generationValue();
     // Snapshot pixels for the worker (avoid touching GUI QImage after return).
     const QImage src = image.copy();
     const QPointer<ImageView> guard(const_cast<ImageView *>(this));
@@ -2979,7 +2979,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
             && !isProvisionalImageSize(path)) {
             const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
                 ? item->sessionId()
-                : (isImageMode() ? m_sessionId.currentId : kInvalidSessionImageId);
+                : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
             const WorkspaceItemState want = wantAppearanceForItem(item, sid);
             const QSize lay = ContentXform::layoutSize(fileNative, want);
             if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
@@ -2992,7 +2992,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
                 item,
                 item->sessionId() != kInvalidSessionImageId
                     ? item->sessionId()
-                    : (isImageMode() ? m_sessionId.currentId
+                    : (isImageMode() ? m_sessionId.currentIdValue()
                                      : kInvalidSessionImageId)));
         applyContentLayoutSize(item, orientOnly);
     }
@@ -3031,7 +3031,7 @@ QString ImageView::currentPath() const
 
 QString ImageView::sessionBadgeText() const
 {
-    const QString ascii = sessionBadgeAscii(m_sessionId.index, m_sessionId.total);
+    const QString ascii = sessionBadgeAscii(m_sessionId.currentIndex(), m_sessionId.currentTotal());
     if (ascii.isEmpty()) {
         return {};
     }
@@ -3050,7 +3050,7 @@ QString ImageView::hudFileName() const
         return {};
     }
     if (m_sessionId.hasLastLoadError()) {
-        return PagePath::displayName(m_sessionId.lastLoadError);
+        return PagePath::displayName(m_sessionId.lastLoadErrorRef());
     }
     ImageItem *item = targetItem();
     if (!item) {
@@ -3158,7 +3158,7 @@ void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
 QString ImageView::statusTextEmpty() const
 {
     if (m_sessionId.hasLastLoadError()) {
-        return tr("Failed to load “%1”").arg(PagePath::displayName(m_sessionId.lastLoadError));
+        return tr("Failed to load “%1”").arg(PagePath::displayName(m_sessionId.lastLoadErrorRef()));
     }
     if (hasClassicPath() && isImageMode()) {
         return tr("Loading…");

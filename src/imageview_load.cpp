@@ -238,14 +238,14 @@ WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
     // Prefer stable session-image id appearance; path map is legacy only.
     //
     // Image mode LoadReplace: the sole canvas item is the current session
-    // image, so m_sessionId.currentId identifies it correctly.
+    // image, so m_sessionId.currentIdValue() identifies it correctly.
     //
     // Gallery / Workspace LoadAdd must not call this: each tile is bound to
-    // its own session id *after* creation. Applying m_sessionId.currentId here
+    // its own session id *after* creation. Applying m_sessionId.currentIdValue() here
     // would bake the navigated image's crop into every newly decoded tile.
     if (m_sessionId.hasCurrentId()) {
-        seedSessionAppearanceFromState(m_sessionId.currentId, path);
-        if (const WorkspaceItemState *sit = m_appearance.get(m_sessionId.currentId)) {
+        seedSessionAppearanceFromState(m_sessionId.currentIdValue(), path);
+        if (const WorkspaceItemState *sit = m_appearance.get(m_sessionId.currentIdValue())) {
             return *sit;
         }
         // Bound session image with no appearance entry = full frame, no path fallback.
@@ -308,7 +308,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         item->setSessionCrop(app.hasCrop, app.cropRect);
         item->setColorAdjustmentsRecord(app.colorAdjust);
         const SessionImageId sid = isImageMode()
-            ? m_sessionId.currentId
+            ? m_sessionId.currentIdValue()
             : kInvalidSessionImageId;
         const int hostEdge = ImageCache::longEdge(image);
         const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
@@ -326,7 +326,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
             ? SessionAppearance::PixelKind::FullSource
             : SessionAppearance::PixelKind::SoftPreview;
         const SessionImageId sid = isImageMode()
-            ? m_sessionId.currentId
+            ? m_sessionId.currentIdValue()
             : item->sessionId();
         installDisplayPixels(item, image, kind, sid);
     }
@@ -476,7 +476,7 @@ void ImageView::installDisplayPreservingView(ImageItem *item, const QImage &pixe
     if (sid == kInvalidSessionImageId) {
         sid = item->sessionId() != kInvalidSessionImageId
                   ? item->sessionId()
-                  : m_sessionId.currentId;
+                  : m_sessionId.currentIdValue();
     }
     installDisplayPixels(item, pixels, kind, sid);
     preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
@@ -494,7 +494,7 @@ WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
         id = item->sessionId();
     }
     if (id == kInvalidSessionImageId && isImageMode()) {
-        id = m_sessionId.currentId;
+        id = m_sessionId.currentIdValue();
     }
     if (id != kInvalidSessionImageId) {
         if (const WorkspaceItemState *app = m_appearance.get(id)) {
@@ -755,7 +755,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
         if (item->sessionId() != kInvalidSessionImageId) {
             sid = item->sessionId();
         } else if (isImageMode() && m_sessionId.hasCurrentId()) {
-            sid = m_sessionId.currentId;
+            sid = m_sessionId.currentIdValue();
         }
     }
     seedSessionAppearanceFromState(sid, path);
@@ -883,10 +883,10 @@ void ImageView::bindImageModeSessionCursor(ImageItem *item)
     }
     // Image-mode crop/flip targets the matching Workspace session slot.
     if (m_sessionId.hasCurrentId()) {
-        item->setSessionId(m_sessionId.currentId);
+        item->setSessionId(m_sessionId.currentIdValue());
     }
-    if (m_sessionId.index >= 0) {
-        item->setSessionIndex(m_sessionId.index);
+    if (m_sessionId.currentIndex() >= 0) {
+        item->setSessionIndex(m_sessionId.currentIndex());
     }
 }
 
@@ -936,7 +936,7 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     // LRU-evicted the soft). Prefer strip / shared host sample first.
     if (pixels.isNull() && m_imageModeSoftProvider) {
         bool ready = false;
-        pixels = m_imageModeSoftProvider(path, m_sessionId.currentId, &ready);
+        pixels = m_imageModeSoftProvider(path, m_sessionId.currentIdValue(), &ready);
         if (!pixels.isNull()) {
             if (displayReadyOut) {
                 *displayReadyOut = ready;
@@ -962,7 +962,7 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
 
     WorkspaceItemState want;
     if (m_sessionId.hasCurrentId()) {
-        if (const WorkspaceItemState *st = m_appearance.get(m_sessionId.currentId)) {
+        if (const WorkspaceItemState *st = m_appearance.get(m_sessionId.currentIdValue())) {
             want = *st;
         }
     }
@@ -977,7 +977,7 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
             continue;
         }
         const bool sameId = (m_sessionId.hasCurrentId()
-                             && cand->sessionId() == m_sessionId.currentId);
+                             && cand->sessionId() == m_sessionId.currentIdValue());
         const bool hasApplied = cand->hasAppliedContentXform();
         const ContentXform::Value applied = hasApplied
             ? cand->appliedContentXform()
@@ -1204,7 +1204,7 @@ void ImageView::installImageModePendingTile(const QString &path, const QImage &p
     }
     bindImageModeSessionCursor(item);
     installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
-                         m_sessionId.currentId);
+                         m_sessionId.currentIdValue());
     resetImageModeItemPlacement(item);
     prepareImageModeCanvas();
     applyImageModeFraming(item);
@@ -2421,7 +2421,7 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     // Same rules as every other attach: accept → materialize → attachDisplaySample.
     installDisplayPixels(item, image, kind, item->sessionId() != kInvalidSessionImageId
                                              ? item->sessionId()
-                                             : m_sessionId.currentId);
+                                             : m_sessionId.currentIdValue());
     m_sessionId.clearLastLoadError();
     rememberSizeFromDecode(path, image);
     if (viewport()) {
@@ -2970,7 +2970,7 @@ void ImageView::driveImageFocusSurface()
     SessionImageId sid = b->sessionId;
     if (sid == kInvalidSessionImageId) {
         sid = item->sessionId() != kInvalidSessionImageId ? item->sessionId()
-                                                          : m_sessionId.currentId;
+                                                          : m_sessionId.currentIdValue();
     }
 
     Q_UNUSED(sid);

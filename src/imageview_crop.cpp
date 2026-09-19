@@ -232,7 +232,7 @@ bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *
     // Prior crop + content flags for *this* session image only — never path map alone.
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
-        : m_sessionId.currentId;
+        : m_sessionId.currentIdValue();
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             *app = *it;
@@ -644,7 +644,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     bool have = false;
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
-        : m_sessionId.currentId;
+        : m_sessionId.currentIdValue();
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             app = *it;
@@ -727,7 +727,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     {
         SessionImageId sid = item->sessionId();
         if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_sessionId.currentId;
+            sid = m_sessionId.currentIdValue();
         }
         if (sid != kInvalidSessionImageId) {
             WorkspaceItemState slot = state;
@@ -933,7 +933,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
                 sidR = m_crop.targetId;
             }
             if (sidR == kInvalidSessionImageId && isImageMode()) {
-                sidR = m_sessionId.currentId;
+                sidR = m_sessionId.currentIdValue();
             }
             if (sidR != kInvalidSessionImageId) {
                 if (const WorkspaceItemState *it = m_appearance.get(sidR)) {
@@ -962,7 +962,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         sid = m_crop.targetId;
     }
     if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_sessionId.currentId;
+        sid = m_sessionId.currentIdValue();
     }
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
@@ -1116,7 +1116,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
             ? item->sessionId()
             : m_crop.targetId;
         if (sid == kInvalidSessionImageId) {
-            sid = m_sessionId.currentId;
+            sid = m_sessionId.currentIdValue();
         }
         if (sid != kInvalidSessionImageId) {
             if (const WorkspaceItemState *app = m_appearance.get(sid)) {
@@ -1281,7 +1281,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
             ? item->sessionId()
             : m_crop.targetId;
         if (sid == kInvalidSessionImageId) {
-            sid = m_sessionId.currentId;
+            sid = m_sessionId.currentIdValue();
         }
         if (sid != kInvalidSessionImageId) {
             QImage appearance = sessionAppearanceImage(item);

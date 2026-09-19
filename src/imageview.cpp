@@ -588,7 +588,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         // (turns + crop), not a simple axis swap.
         SessionImageId sid = item->sessionId();
         if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_sessionId.currentId;
+            sid = m_sessionId.currentIdValue();
         }
         WorkspaceItemState want = wantAppearanceForItem(item, sid);
         QSize layoutSize = ContentXform::layoutSize(size, want);

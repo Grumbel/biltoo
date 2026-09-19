@@ -73,7 +73,16 @@ struct SessionIdentity {
     {
         return total > 0 && index >= 0 && index < total;
     }
+
+    int currentIndex() const { return index; }
+
+    int currentTotal() const { return total; }
+
+    SessionImageId currentIdValue() const { return currentId; }
+
+    const QString &lastLoadErrorRef() const { return lastLoadError; }
 };
+
 
 
 struct SessionNavFlags {
