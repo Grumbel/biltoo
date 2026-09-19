@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1516-crop-session-relayout.** Shared fit/relayout, placement restore, chrome/emit helpers.
+Prior: **1515**. Commits 1516a–1516c (+ docs).
+
+### Commits
+1. fitImageOrUpdateWorkspace; fillAppearanceFromItemSessionCrop; finishHandleDrag; null-enter gate
+2. applyItemPlacementFromState; preserveWorkspaceItemCenter
+3. paintCropChromeButtons; emitCropApplyAppearance
+
+### Note
+Still on ImageView: attachDisplaySample, applyCropCommit pixel attach/undo/HUD,
+appearance store writes, PathRaster ownership, enter UI orchestration.
+
+### Apply (on tip **1515** / `ee1aa66`)
+```bash
+git pull --ff-only /path/to/biltoo-1516-crop-session-relayout.bundle HEAD
+```
+Includes **1516**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1515-crop-session-stack.** Restored 1512–1514 policy + enter LOD/PathRaster helpers.
 Prior: **1511** (`b8ef3f2`). Commits 1515a–1515d (+ docs).
 
