@@ -977,9 +977,9 @@ void ImageView::setSlideshowMotionPaused(bool paused)
         // Fold phase-motion clocks into T ∈ [0,1].
         const int pathMs = slideshowPathDurationMs();
         if (pathMs > 0) {
-            SlideshowClocks::integrateMotionProgress01(&m_ss.fromMotionTRef(), &m_ss.fromMotionClock,
+            SlideshowClocks::integrateMotionProgress01(&m_ss.fromMotionTRef(), &m_ss.fromMotionClockMutable(),
                                       m_ss.isFromMotionClockRunning(), false, pathMs);
-            SlideshowClocks::integrateMotionProgress01(&m_ss.toMotionTRef(), &m_ss.toMotionClock,
+            SlideshowClocks::integrateMotionProgress01(&m_ss.toMotionTRef(), &m_ss.toMotionClockMutable(),
                                       m_ss.isToMotionClockRunning(), false, pathMs);
             if (m_ss.isFromMotionClockRunning()) {
                 m_ssDwell.setMotionT(m_ss.fromMotionTValue());
@@ -993,10 +993,10 @@ void ImageView::setSlideshowMotionPaused(bool paused)
     }
     m_ssDwell.setMotionPaused(false);
     if (m_ss.isFromMotionClockRunning()) {
-        m_ss.fromMotionClock.start();
+        m_ss.startFromMotionClock();
     }
     if (m_ss.isToMotionClockRunning()) {
-        m_ss.toMotionClock.start();
+        m_ss.startToMotionClock();
     }
     if (m_ssDwell.isMotionActive() && m_motionTimer && m_ssDwell.hasDuration()) {
         m_ssDwell.restartClock();
@@ -1351,7 +1351,7 @@ void ImageView::finishSlideshowAtlas(SlideshowAtlasKind kind, quint64 generation
         }
         m_ssDwell.setAtlas(QPixmap::fromImage(scaled), atlasScale, atlasVw, atlasVh);
     } else {
-        if (generation != m_ss.toAtlasRebuildGeneration) {
+        if (generation != m_ss.toAtlasRebuildGenerationValue()) {
             return;
         }
         m_ss.setToAtlas(QPixmap::fromImage(scaled), atlasScale, atlasVw, atlasVh);
@@ -1809,7 +1809,7 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
     // drawImage every frame until rebuild (visible frame drops on promote).
     if (m_ss.hasToAtlas()) {
         m_ssDwell.setAtlas(m_ss.toAtlasRef(), m_ss.toAtlasScaleValue(), m_ss.toAtlasVwValue(),
-                           m_ss.toAtlasVhValue(), m_ss.toAtlasRebuildGeneration);
+                           m_ss.toAtlasVhValue(), m_ss.toAtlasRebuildGenerationValue());
     }
 }
 
@@ -2040,7 +2040,7 @@ void ImageView::warmZoomBlurForCurrentPhase()
 bool ImageView::applySlideshowFadeProgressOnly(qreal fadeT)
 {
     // Pure-phase clock ticks at 16ms with unchanged from/to — only advance fade.
-    if (qFuzzyCompare(fadeT, m_ss.fadeT) || (fadeT < 0.0 && m_ss.inDwell())) {
+    if (qFuzzyCompare(fadeT, m_ss.fadeTValue()) || (fadeT < 0.0 && m_ss.inDwell())) {
         return false;
     }
     m_ss.setFadeBlend(fadeT);
@@ -2788,7 +2788,7 @@ void ImageView::retargetSlideshowMotionDuration(int durationMs)
     m_ssDwell.setDurationMs(SlideshowClocks::pathDurationMs(
         durationMs, m_ssSettings.transitionDuration()));
     m_ssDwell.setElapsedOffsetMs(qint64(progress * qreal(m_ssDwell.durationMsValue())));
-    m_ssDwell.clock.start();
+    m_ssDwell.startClock();
     if (m_motionTimer && !m_ssDwell.isMotionPaused()) {
         m_motionTimer->start();
     }
@@ -2822,7 +2822,7 @@ void ImageView::startSlideshowMotion(int durationMs, qreal initialProgress)
     m_ssDwell.setDurationMs(SlideshowClocks::pathDurationMs(
         durationMs, m_ssSettings.transitionDuration()));
     initialProgress = ViewTransform::clamp01(initialProgress); // [0,1]
-    m_ssDwell.clock.start();
+    m_ssDwell.startClock();
     m_ssDwell.setMotionT(ViewTransform::clamp01(initialProgress));
     m_ssDwell.setElapsedOffsetMs((m_ssDwell.hasDuration())
         ? qint64(m_ssDwell.motionTValue() * qreal(m_ssDwell.durationMsValue()))

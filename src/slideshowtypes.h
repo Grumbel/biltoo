@@ -174,6 +174,8 @@ struct SlideshowPhaseState {
 
     int toAtlasVhValue() const { return toAtlasVh; }
 
+    qreal fadeTValue() const { return fadeT; }
+
     qreal clampedFadeT() const
     {
         return fadeT < 0.0 ? 0.0 : qBound(0.0, fadeT, 1.0);
@@ -294,6 +296,17 @@ struct SlideshowPhaseState {
 
     /** Bump to-atlas rebuild generation. @return new generation. */
     quint64 bumpToAtlasRebuildGeneration() { return ++toAtlasRebuildGeneration; }
+
+    quint64 toAtlasRebuildGenerationValue() const { return toAtlasRebuildGeneration; }
+
+    QElapsedTimer &fromMotionClockMutable() { return fromMotionClock; }
+
+    QElapsedTimer &toMotionClockMutable() { return toMotionClock; }
+
+    void startFromMotionClock() { fromMotionClock.start(); }
+
+    void startToMotionClock() { toMotionClock.start(); }
+
 
     void stopMotionClocks()
     {
