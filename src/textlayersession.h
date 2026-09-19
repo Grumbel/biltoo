@@ -39,6 +39,12 @@ struct TextLayerSession {
         searchMatches.clear();
     }
 
+    void clearSearchMatches() { searchMatches.clear(); }
+
+    void setSearchMatches(const QVector<int> &ids) { searchMatches = ids; }
+
+    void addSearchMatch(int idx) { searchMatches.push_back(idx); }
+
     void clearSelection()
     {
         endRubber();

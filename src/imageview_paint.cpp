@@ -749,7 +749,7 @@ void ImageView::setShowTextRegions(bool on)
         refreshTextLayer();
     } else {
         m_textLayer.resetLayerContent();
-        m_textLayer.searchMatches.clear();
+        m_textLayer.clearSearchMatches();
     }
     viewport()->update();
 }
@@ -757,7 +757,7 @@ void ImageView::setShowTextRegions(bool on)
 void ImageView::refreshTextLayer()
 {
     m_textLayer.resetLayerContent();
-    m_textLayer.searchMatches.clear();
+    m_textLayer.clearSearchMatches();
     if (!m_textLayer.needsLayer()) {
         return;
     }
@@ -796,7 +796,7 @@ void ImageView::setTextSearchFuzzy(bool on)
 
 void ImageView::recomputeTextSearchMatches()
 {
-    m_textLayer.searchMatches.clear();
+    m_textLayer.clearSearchMatches();
     if (m_textLayer.searchQuery.isEmpty() || m_textLayer.layer.regions.isEmpty()) {
         return;
     }
@@ -808,7 +808,7 @@ void ImageView::recomputeTextSearchMatches()
             continue;
         }
         if (TextSearchPolicy::regionMatchesQuery(r.text, qn, qa, m_textLayer.searchFuzzy)) {
-            m_textLayer.searchMatches.push_back(i);
+            m_textLayer.addSearchMatch(i);
         }
     }
 }
@@ -821,7 +821,7 @@ int ImageView::setTextSearchQuery(const QString &query)
     }
     m_textLayer.setSearchQuery(trimmed);
     if (m_textLayer.searchQuery.isEmpty()) {
-        m_textLayer.searchMatches.clear();
+        m_textLayer.clearSearchMatches();
         if (!m_textLayer.showRegions) {
             m_textLayer.resetLayerContent();
         }
