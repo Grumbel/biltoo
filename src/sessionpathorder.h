@@ -65,6 +65,14 @@ struct SessionPathOrder {
         return n;
     }
 
+    QString pathAt(int index) const
+    {
+        if (index < 0 || index >= paths.size()) {
+            return {};
+        }
+        return paths.at(index);
+    }
+
     SessionImageId idAt(int index) const
     {
         if (index < 0 || index >= ids.size()) {

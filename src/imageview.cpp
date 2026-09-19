@@ -720,7 +720,7 @@ void ImageView::onSizeResolveGateComplete()
             }
         }
         // Safety: size-resolve used to refuse createPlaceholder → empty canvas.
-        if (isGalleryMode() && m_items.isEmpty() && !m_pathOrderBook.paths.isEmpty()) {
+        if (isGalleryMode() && m_items.isEmpty() && !m_pathOrderBook.isEmpty()) {
             ensureGalleryPlaceholders();
         }
     }

@@ -1515,7 +1515,7 @@ void ImageView::scheduleGalleryDecode(const QString &path)
         }
     }
 
-    GallerySoftState &st = m_gallerySoftBook.soft[path];
+    GallerySoftState &st = m_gallerySoftBook.state(path);
     st.terminal = true; // no soft climb ever
     st.have = GallerySoft::maxHave(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
@@ -1660,10 +1660,9 @@ void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
         }
     }
 
-    auto it = m_gallerySoftBook.soft.find(path);
-    if (it != m_gallerySoftBook.soft.end()) {
-        it.value().terminal = true;
-        it.value().have = GallerySoft::maxHave(it.value().have, galleryHaveEdgeFromItems(path, nullptr));
+    if (GallerySoftState *st = m_gallerySoftBook.find(path)) {
+        st->terminal = true;
+        st->have = GallerySoft::maxHave(st->have, galleryHaveEdgeFromItems(path, nullptr));
     }
 
     scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
@@ -1998,7 +1997,7 @@ void ImageView::handleLoadAddDecodeFailure(const QString &path)
     }
     qWarning("ImageView: decode failed for %s", qPrintable(path));
     if (isGalleryMode()) {
-        GallerySoftState &st = m_gallerySoftBook.soft[path];
+        GallerySoftState &st = m_gallerySoftBook.state(path);
         st.failed = true;
         st.inflight = 0;
     }
@@ -2174,7 +2173,7 @@ void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
         return;
     }
     if (m_layout.mode != LayoutMode::FreeForm) {
-        if (!m_pathOrderBook.paths.isEmpty()) {
+        if (!m_pathOrderBook.isEmpty()) {
             reorderItemsByPaths(m_pathOrderBook.paths);
         }
         if (!(isGalleryMode() && m_galleryRelayoutSuppress.active())) {

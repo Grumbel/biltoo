@@ -879,18 +879,16 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
 
 void ImageView::ensureGalleryPlaceholders()
 {
-    if (!isGalleryMode() || m_pathOrderBook.paths.isEmpty()) {
+    if (!isGalleryMode() || m_pathOrderBook.isEmpty()) {
         return;
     }
     // Only clear defer-populate. Keep size-resolve active so fill layouts still
     // wait for finishGallerySizeResolve to pack (soft may install meanwhile).
     m_gallerySoftBook.setDeferPopulate(false);
     QSet<ImageItem *> claimed;
-    for (int i = 0; i < m_pathOrderBook.paths.size(); ++i) {
-        const QString &path = m_pathOrderBook.paths.at(i);
-        const SessionImageId sid = (i < m_pathOrderBook.ids.size())
-            ? m_pathOrderBook.ids.at(i)
-            : kInvalidSessionImageId;
+    for (int i = 0; i < m_pathOrderBook.size(); ++i) {
+        const QString &path = m_pathOrderBook.pathAt(i);
+        const SessionImageId sid = m_pathOrderBook.idAt(i);
 
         ImageItem *existing = nullptr;
         if (sid != kInvalidSessionImageId) {
