@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1372-item-interact-crop-text.** ItemInteractSession transitions;
+Crop draft setters; TextLayer layer content.
+Prior: **1371**.
+
+### Change
+- `ItemInteractSession` begin/end handle, move, rotate
+- Crop draft `setRect` / `setRotation` on ensure and drag paths
+- `TextLayerSession::{setLayerContent,resetLayerContent,setSearchFuzzy}`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1372**)
+```bash
+git pull /path/to/biltoo-1372-item-interact-crop-text.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1371-attention-drag-pageguide-vis.** Attention point-drag;
 PageGuide visibility/geometry; group press pos.
 Prior: **1370**.
