@@ -40,9 +40,14 @@ struct PageGuideSession {
         clearDrag();
     }
 
-    void setHoverHandle(int handle)
+    /** @return true when hover handle index changed. */
+    bool setHoverHandle(int handle)
     {
+        if (hoverHandle == handle) {
+            return false;
+        }
         hoverHandle = handle;
+        return true;
     }
 
     /** @return true when visibility changed. */
