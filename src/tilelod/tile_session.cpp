@@ -542,13 +542,7 @@ DrawPlan TileSession::draw_plan() const
 
 bool TileSession::has_any_succeeded_tile() const
 {
-  for (auto const& [k, e] : m_cache->map()) {
-    (void)k;
-    if (e.state == TileState::Succeeded && e.bitmap.valid()) {
-      return true;
-    }
-  }
-  return false;
+  return m_cache && m_cache->has_succeeded();
 }
 
 bool TileSession::has_succeeded_scale_ge(int min_scale) const
