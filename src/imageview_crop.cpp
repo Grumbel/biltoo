@@ -97,6 +97,21 @@ void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnch
             item->mapToScene(QPointF(0.0, 0.0)), sceneAnchor));
 }
 
+void ImageView::finishWorkspaceCropEnter(ImageItem *item, const QPointF &workspaceAnchorScene)
+{
+    if (!item) {
+        return;
+    }
+    // If there was no stored crop angle but the tile was free-rotated,
+    // seed the draft rotation so the frame matches the prior pose while
+    // the item stays axis-aligned for editing.
+    if (m_crop.seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
+        ensureCropRectValid();
+    }
+    alignCropFrameCenterToScene(item, workspaceAnchorScene);
+    updateWorkspaceSceneRect();
+}
+
 bool ImageView::enterCropModeFromUi()
 {
     // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
