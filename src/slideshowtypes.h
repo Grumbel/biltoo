@@ -248,6 +248,12 @@ struct SlideshowPhaseState {
 
     bool hasToPath() const { return !toPath.isEmpty(); }
 
+    quint64 phaseUpgradeGenerationValue() const { return phaseUpgradeGeneration; }
+
+    SlideshowPhaseSurface &fromSurfaceRef() { return fromSurface; }
+
+    SlideshowPhaseSurface &toSurfaceRef() { return toSurface; }
+
     const QPointF &toBiasAPoint() const { return toBiasA; }
 
     const QPointF &toBiasBPoint() const { return toBiasB; }

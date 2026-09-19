@@ -692,8 +692,8 @@ void ImageView::setSlideshowProgress(bool active, int intervalMs)
         m_ssHud.clearPaintFingerprint();
         m_ss.clearFromPath();
         m_ss.clearToPath();
-        unbindSlideshowPhaseSurface(&m_ss.fromSurface);
-        unbindSlideshowPhaseSurface(&m_ss.toSurface);
+        unbindSlideshowPhaseSurface(&m_ss.fromSurfaceRef());
+        unbindSlideshowPhaseSurface(&m_ss.toSurfaceRef());
         m_ss.clearFromImage();
         m_ss.clearToImage();
         m_ss.beginDwell();
@@ -1020,7 +1020,7 @@ void ImageView::setSlideshowPausedHud(bool on)
         if (m_hudFlashTimer) {
             m_hudFlashTimer->stop();
         }
-    } else if (m_hudFlash.action.contains(QStringLiteral("Paused"))) {
+    } else if (m_hudFlash.actionText().contains(QStringLiteral("Paused"))) {
         m_hudFlash.clearAction();
     }
     if (viewport()) {
@@ -1216,7 +1216,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
                                                   quint64 generation)
 {
     // GUI assign after pool orient. Generation discards stale mid-slide work.
-    if (generation != m_ss.phaseUpgradeGeneration) {
+    if (generation != m_ss.phaseUpgradeGenerationValue()) {
         return;
     }
     if (path.isEmpty() || oriented.isNull()) {
@@ -1557,8 +1557,8 @@ void ImageView::slideshowPhaseSurfaceTick()
                 path, target, logicalSizeForPath(path), policy);
         }
     };
-    drivePhase(&m_ss.fromSurface, m_ss.fromPathRef(), ImageCache::longEdge(m_ss.fromImageRef()));
-    drivePhase(&m_ss.toSurface, m_ss.toPathRef(), ImageCache::longEdge(m_ss.toImageRef()));
+    drivePhase(&m_ss.fromSurfaceRef(), m_ss.fromPathRef(), ImageCache::longEdge(m_ss.fromImageRef()));
+    drivePhase(&m_ss.toSurfaceRef(), m_ss.toPathRef(), ImageCache::longEdge(m_ss.toImageRef()));
 }
 
 
@@ -1926,7 +1926,7 @@ void ImageView::armSlideshowFromPhase(const QString &fromPath, int pathMs)
 {
     const bool promote = shouldPromoteSlideshowToAsFrom(fromPath);
     m_ss.setFromPath(fromPath);
-    bindSlideshowPhaseSurface(&m_ss.fromSurface, fromPath);
+    bindSlideshowPhaseSurface(&m_ss.fromSurfaceRef(), fromPath);
     if (promote) {
         promoteSlideshowFromToPhase(fromPath);
     } else {
@@ -1945,7 +1945,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
 {
     if (toPath.isEmpty()) {
         m_ss.clearToPath();
-        unbindSlideshowPhaseSurface(&m_ss.toSurface);
+        unbindSlideshowPhaseSurface(&m_ss.toSurfaceRef());
         m_ss.clearToImage();
         m_ss.bumpToAtlasRebuildGeneration();
         m_ss.clearToAtlas();
@@ -1954,7 +1954,7 @@ void ImageView::armSlideshowToPhase(const QString &toPath)
         return;
     }
     m_ss.setToPath(toPath);
-    bindSlideshowPhaseSurface(&m_ss.toSurface, toPath);
+    bindSlideshowPhaseSurface(&m_ss.toSurfaceRef(), toPath);
     (void)ensureSlideshowLogicalSize(toPath);
     m_ss.setToImage(slideshowSampleUnoriented(toPath), false);
     if (!m_ss.hasToImage()) {
@@ -2704,7 +2704,7 @@ bool ImageView::prepareSlideshowMotionDwell(ImageItem *item)
     if (m_ssHud.isProgressActive() && !path.isEmpty()) {
         if (m_ss.fromPathRef() != path || !m_ss.hasFromImage()) {
             m_ss.setFromPath(path);
-            bindSlideshowPhaseSurface(&m_ss.fromSurface, path);
+            bindSlideshowPhaseSurface(&m_ss.fromSurfaceRef(), path);
             WorkspaceItemState app2;
             const bool applied =
                 snapshotSlideshowContentAppearance(path, &app2)
