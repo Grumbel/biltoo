@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1397-grouphover-mouseinfo-croprect-pathorder.** Compile fix + bag
+transitions on tip 1396.
+Prior: **1396**.
+
+### Change
+1. Fix: restore `groupHoverChanged` from `setHoverHandle` return (tooltip gate)
+2. `ViewportChrome::setMouseInfo` reports change
+3. `CropSession::{setRect,setAwaitingFull}` report change
+4. `SessionPathOrder::{isEmpty,size}`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1397-grouphover-mouseinfo-croprect-pathorder.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1397).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1396-loaderr-cropfull-dwell-page-attention-bind.** Bag transitions on tip 1395.
 Prior: **1395**.
 

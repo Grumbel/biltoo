@@ -147,6 +147,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SessionIdentity::setLastLoadError**; **CropSession::setShowingFullImage**.
 - **SlideshowDwellState** motion flags; **PageGuideSession** size/rect; **AttentionSession::hasSelection**.
 - **SessionBindBook::takeFront**.
+- **groupHoverChanged** fix; **ViewportChrome::setMouseInfo**; **CropSession** setRect/awaiting.
+- **SessionPathOrder** isEmpty/size.
 
 
 ## Current pain (evidence)
