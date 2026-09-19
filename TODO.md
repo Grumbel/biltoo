@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1495-slideshow-clock-accessors.** Phase/Dwell clock Ref and generation accessors.
+Prior: **1494**. Commits 1495a–1495b (+ docs).
+
+### Commits
+1. Route fromMotionClock/toMotionClock/fadeT/toAtlasRebuildGeneration digs
+2. Dedupe startFrom/ToMotionClock; Dwell startClock
+
+### Apply
+```bash
+git pull /path/to/biltoo-1495-slideshow-clock-accessors.bundle HEAD
+```
+Requires tip **1494** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1494-attention-crop-helpers.** selectAllIndices; clampLocalCrop.
 Prior: **1493**. Commits 1494a–1494b (+ docs).
 
