@@ -227,6 +227,11 @@ public:
     bool isSlideshowProgressActive() const { return m_slideshow.hud().isProgressActive(); }
     /** PathRasterService for PreferCache cancel when tiles issue (coordinator). */
     PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
+    /**
+     * PathRaster / soft-job GUI escalate: PreferCache climb when soft is inadequate.
+     * Public so queued lambdas (QPointer) can invoke it (not private closure access).
+     */
+    void requestEscalateClimb(const QString &path, int wantEdge = 0);
     /** Crop draft owns the live sample — no ladder/install/rematerialize. */
     bool isCropDraftLockedItem(const ImageItem *item) const;
     /**

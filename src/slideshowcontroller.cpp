@@ -231,7 +231,7 @@ QPixmap SlideshowController::captureSlideshowFrame() const
     const qreal dpr = m_view->viewport()->devicePixelRatioF();
     QPixmap pm(QSize(vw, vh) * dpr);
     pm.setDevicePixelRatio(dpr);
-    pm.fill(slideshowPadColor());
+    pm.fill(m_view->slideshowPadColor());
     QPainter painter(&pm);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
@@ -1914,7 +1914,7 @@ void SlideshowController::paintZoomBlurUnderlay(QPainter *painter, const QImage 
     // Slideshow letterbox uses the dedicated pad colour; Image View content-blur
     // falls back to the Preferences / canvas primary colour.
     const QColor pad = settings().isZoomBlurLetterbox()
-        ? slideshowPadColor()
+        ? m_view->slideshowPadColor()
         : m_view->m_canvasBg.primaryColor();
     painter->fillRect(viewportRect, pad.isValid() ? pad : QColor(42, 42, 42));
 }
@@ -2096,7 +2096,7 @@ QPixmap SlideshowController::renderMotionCoverPixmap(const QImage &image, qreal 
     const int vw = ViewTransform::atLeast1(m_view->viewport()->width());
     const int vh = ViewTransform::atLeast1(m_view->viewport()->height());
     QImage out(vw, vh, QImage::Format_ARGB32_Premultiplied);
-    out.fill(slideshowPadColor());
+    out.fill(m_view->slideshowPadColor());
     QPainter painter(&out);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     // pathHash was historical; recover path from phase when possible.

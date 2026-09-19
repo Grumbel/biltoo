@@ -45,11 +45,6 @@
 
 
 
-    /**
-     * PathRaster Soft→PreferCache→Full (ClimbPolicy::EscalateToFull).
-     * Safe to invoke via QueuedConnection from pool workers (contract §1).
-     */
-    void requestEscalateClimb(const QString &path, int wantEdge = 0);
 
 
     /** @deprecated name — use logicalSizeForPath. */

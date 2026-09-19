@@ -53,8 +53,8 @@ public:
     SlideshowSettings &settings() { return m_ssSettings; }
     const SlideshowSettings &settings() const { return m_ssSettings; }
 
-    SlideshowZoomBlurState &zoomBlur() { return m_ssZoomBlur; }
-    const SlideshowZoomBlurState &zoomBlur() const { return m_ssZoomBlur; }
+    /** Mutable cache: non-const even on const controller (like former ImageView::m_ssZoomBlur). */
+    SlideshowZoomBlurState &zoomBlur() const { return m_ssZoomBlur; }
 
     MotionScrollChrome &motionScroll() { return m_motionScroll; }
     const MotionScrollChrome &motionScroll() const { return m_motionScroll; }

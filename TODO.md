@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1599-fix-tier1-compile.** Fix Tier 1b compile: public requestEscalateClimb; mutable zoomBlur const access; pad colour from view.
+Prior: **1598**.
+
+### Change
+- `requestEscalateClimb` public again (queued `QPointer` lambdas cannot call private members)
+- `SlideshowController::zoomBlur() const` returns non-const ref to **mutable** cache (same as former `m_ssZoomBlur`)
+- Controller letterbox/fill uses `m_view->slideshowPadColor()` for canvas fallback
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1599-fix-tier1-compile.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1598-phase6-tier1b-slideshow-methods.** Phase 6 Tier 1b: move slideshow orchestration onto SlideshowController; imageview_view.cpp under 900 lines.
 Prior: **1597**.
 
