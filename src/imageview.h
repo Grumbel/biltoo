@@ -410,9 +410,6 @@ public:
     /** Controller host: path-keyed placement / unbound appearance cache. */
     PathItemStateBook &itemStates() { return m_itemStateBook; }
     const PathItemStateBook &itemStates() const { return m_itemStateBook; }
-    QHash<QString, WorkspaceItemState> &itemStatesByPath() { return m_itemStateBook.byPath; }
-    const QHash<QString, WorkspaceItemState> &itemStatesByPath() const { return m_itemStateBook.byPath; }
-
     void setItemStateForPath(const QString &path, const WorkspaceItemState &state)
     {
         m_itemStateBook.set(path, state);
@@ -426,9 +423,6 @@ public:
     void clearPendingWorkspacePaths() { m_loadGate.clearPendingWorkspacePaths(); }
     void addPendingWorkspacePath(const QString &path) { m_loadGate.addPendingWorkspacePath(path); }
     void takePendingWorkspacePath(const QString &path);
-    QList<WorkspaceItemState> &pendingRestoreStates() { return m_loadGate.pendingRestoreStates(); }
-    const QList<WorkspaceItemState> &pendingRestoreStates() const { return m_loadGate.pendingRestoreStates(); }
-
     void setPendingRestoreStates(const QList<WorkspaceItemState> &states)
     {
         m_loadGate.setPendingRestoreStates(states);
