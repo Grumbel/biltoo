@@ -286,7 +286,6 @@ void ImageView::attentionCommitSelectionMove()
                                 tr("Edit attention points"));
     }
     m_attention.clearGesture();
-    m_attention.gestureBeforeMutable().clear();
     m_attention.dragStartPtsRef().clear();
 }
 
