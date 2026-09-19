@@ -140,10 +140,9 @@ void ImageView::setSlideshowLetterboxFill(SlideshowLetterboxFill mode)
 
 void ImageView::setBackgroundColorAlt(const QColor &color)
 {
-    if (!color.isValid() || color == m_canvasBg.colorAlt) {
+    if (!m_canvasBg.setColorAlt(color)) {
         return;
     }
-    m_canvasBg.colorAlt = color;
     viewport()->update();
 }
 
@@ -152,7 +151,7 @@ void ImageView::setBackgroundPattern(BackgroundPattern pattern)
     if (m_canvasBg.pattern == pattern) {
         return;
     }
-    m_canvasBg.pattern = pattern;
+    m_canvasBg.setPattern(pattern);
     viewport()->update();
 }
 
