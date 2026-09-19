@@ -692,6 +692,26 @@ not optional narrowing — two session models is a correctness issue, and the
 Target architecture diagram documents a state the code has not reached. Amend
 the stop line when Tier 4 lands.
 
+
+### Remaining Phase 6 work (post-1613)
+
+**Done (mechanical):** Tiers 0–3, 2a/2b, 5a state ownership, 6a/6b mode input
+dispatch, friend list empty, HudModel + session identity characterization tests.
+
+**Still open:**
+1. **Tier 4** — Move `SessionAppearanceStore` into `SessionDocument`; delete
+   view-owned `m_pathOrderBook` path list in favor of document. Blocked on
+   fuller ImageView characterization (open→Gallery→crop→Image). Document/id
+   tests exist (`sessiondocument_test`, `sessionappearance_test`).
+2. **Tier 5b** — Move PreferCache climb / install methods off
+   `imageview_load.cpp` (~3k lines) onto `DisplayPipelineController`. Soft
+   provider and neighbor prefetch still on ImageView.
+3. **Tier 6 remainder** — Workspace/Gallery try* stay until product need;
+   transform chrome stays on ImageView (AGENTS.md).
+4. **Metrics** — `imageview.h` ~1050 lines / ~200 public methods vs targets
+   <400 / <150. Host accessors from Tiers 1–5 inflate the public surface;
+   further narrowing is optional product work once Tier 4 lands.
+
 ### Progress log (Phase 6)
 
 - Tier 0: **done** (biltoo-1596) — privatized 190 methods with no refs outside

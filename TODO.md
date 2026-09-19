@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1614-phase6-cleanup-empty-crop-tus.** Remove emptied imageview_crop_*.cpp TUs from build; document remaining Phase 6 work.
+Prior: **1613**.
+
+### Change
+- Drop empty `imageview_crop_{apply,enter,input,paint,raster}.cpp` from CMake and tree
+- REFACTOR: remaining Phase 6 checklist (Tier 4, 5b, metrics)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1614-phase6-cleanup-empty-crop-tus.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1613-phase6-tier6b-input-release-key.** Phase 6 Tier 6b: crop/attention release+key; slideshow seek on controllers.
 Prior: **1612**.
 
