@@ -29,12 +29,22 @@ struct ZoomRegionGesture {
         origin = {};
     }
 
+    void arm() { armed = true; }
+
     void disarm()
     {
         armed = false;
         clearDrag();
         // rubberBand lifetime stays with ImageView
     }
+
+    void beginDrag(const QPoint &pos)
+    {
+        dragging = true;
+        origin = pos;
+    }
+
+    void endDrag() { dragging = false; }
 
     bool rubberSignificant(const QRect &viewRect) const
     {

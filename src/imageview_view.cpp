@@ -248,8 +248,7 @@ void ImageView::zoomViewBy(qreal factor)
     // resize still resets the view transform so tiles stay layout-correct
     // (AUDIT M4 — one policy: zoom works until next pack).
     releaseStickyZoom();
-    m_framing.fitMode = false;
-    m_framing.fillMode = false;
+    m_framing.clearFitFill();
     // Keep the viewport centre stable when zooming via toolbar/shortcuts
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(factor, factor);
@@ -286,8 +285,7 @@ void ImageView::setWorkspaceDefaultViewScale()
     // zoom-out presses: each step is 1/1.25, so scale = (1/1.25)^4 ≈ 0.4096 (41%).
     constexpr qreal kStep = 1.25;
     const qreal s = 1.0 / (kStep * kStep * kStep * kStep);
-    m_framing.fitMode = false;
-    m_framing.fillMode = false;
+    m_framing.clearFitFill();
     resetTransform();
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(s, s);
@@ -300,8 +298,7 @@ void ImageView::setWorkspaceDefaultViewScale()
 
 void ImageView::zoomReset()
 {
-    m_framing.fitMode = false;
-    m_framing.fillMode = false;
+    m_framing.clearFitFill();
     if (isMultiItemMode()) {
         // Gallery/Workspace: one-shot identity view (sticky zoom is Image-only).
         resetTransform();
@@ -338,8 +335,7 @@ void ImageView::refreshScrollBarGeometry()
 
 void ImageView::zoomFit()
 {
-    m_framing.fitMode = true;
-    m_framing.fillMode = false;
+    m_framing.setFitOnly();
     if (isGalleryMode()) {
         // Fit the packed gallery into the viewport (whole pack). Sticky zoom
         // is Image-mode only — Gallery uses one-shot framing + ensureVisible.
@@ -378,8 +374,7 @@ void ImageView::zoomFit()
 
 void ImageView::zoomFill()
 {
-    m_framing.fitMode = true;
-    m_framing.fillMode = true;
+    m_framing.setFillMode();
     if (isGalleryMode()) {
         if (!m_items.isEmpty()) {
             const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), 16);
@@ -420,7 +415,7 @@ void ImageView::armZoomRegion()
         return;
     }
     cancelZoomRegion();
-    m_zoomRegion.armed = true;
+    m_zoomRegion.arm();
     setCursor(Qt::CrossCursor);
     emit statusChanged();
     viewport()->update();
@@ -432,7 +427,7 @@ void ImageView::setStickyZoomEnabled(bool on)
     if (m_framing.stickyZoomEnabled == on) {
         return;
     }
-    m_framing.stickyZoomEnabled = on;
+    m_framing.setStickyZoomEnabled(on);
     emit stickyZoomChanged();
     emit statusChanged();
 }
@@ -442,7 +437,7 @@ void ImageView::releaseStickyZoom()
     if (!m_framing.stickyZoomEnabled) {
         return;
     }
-    m_framing.stickyZoomEnabled = false;
+    m_framing.setStickyZoomEnabled(false);
     emit stickyZoomChanged();
     emit statusChanged();
 }
@@ -450,25 +445,25 @@ void ImageView::releaseStickyZoom()
 void ImageView::captureStickyZoomFromCurrentFraming()
 {
     if (!m_framing.fitMode && !m_framing.fillMode) {
-        m_framing.stickyZoomKind = StickyZoomKind::Actual;
+        m_framing.setStickyZoomKind(StickyZoomKind::Actual);
     } else if (m_framing.fillMode) {
-        m_framing.stickyZoomKind = StickyZoomKind::Fill;
+        m_framing.setStickyZoomKind(StickyZoomKind::Fill);
     } else {
-        m_framing.stickyZoomKind = StickyZoomKind::Fit;
+        m_framing.setStickyZoomKind(StickyZoomKind::Fit);
     }
 }
 
 void ImageView::setStickyZoomKind(StickyZoomKind kind)
 {
-    m_framing.stickyZoomKind = kind;
+    m_framing.setStickyZoomKind(kind);
 }
 
 void ImageView::captureStickyPanAnchor(ImageItem *item)
 {
     // Always sample scale + pan when leaving an image so free navigation
     // (no sticky Fit/Fill/1:1) can keep the same zoom and relative position.
-    m_framing.haveStickyPanAnchor = false;
-    m_framing.havePreservedViewScale = false;
+    m_framing.clearStickyPan();
+    m_framing.clearPreservedViewScale();
     if (!item || !viewport() || !m_scene) {
         return;
     }
@@ -477,8 +472,7 @@ void ImageView::captureStickyPanAnchor(ImageItem *item)
     }
     const qreal sx = transform().m11();
     if (qIsFinite(sx) && sx > 1e-6) {
-        m_framing.preservedViewScale = sx;
-        m_framing.havePreservedViewScale = true;
+        m_framing.setPreservedViewScale(sx);
     }
     const QRectF r = item->sceneBoundingRect();
     if (r.width() < 1.0 || r.height() < 1.0) {
@@ -578,15 +572,13 @@ void ImageView::applyImageModeFraming(ImageItem *item)
         });
         return;
     }
-    m_framing.fitMode = true;
-    m_framing.fillMode = false;
+    m_framing.setFitOnly();
     fitItem(item, Qt::KeepAspectRatio);
 }
 
 void ImageView::cancelZoomRegion()
 {
-    m_zoomRegion.armed = false;
-    m_zoomRegion.dragging = false;
+    m_zoomRegion.disarm();
     if (m_zoomRegion.rubberBand) {
         m_zoomRegion.rubberBand->hide();
     }
@@ -610,8 +602,7 @@ void ImageView::setImageModeLeftDragPan(bool on)
 void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
 {
     const bool changed = (m_sessionId.index != index || m_sessionId.total != total);
-    m_sessionId.index = index;
-    m_sessionId.total = total;
+    m_sessionId.setPosition(index, total);
     // Pulse only when the session cursor actually moves (user Next/Prev, etc.).
     // Do not pulse on every statusChanged while total > 0 (AUDIT H7).
     // Slideshow auto-advance passes pulseIdentity=false.
@@ -1156,8 +1147,7 @@ void ImageView::restoreImageFramingAfterSlideshow()
     if (!item || item->boundingRect().isEmpty()) {
         return;
     }
-    m_framing.fitMode = true;
-    m_framing.fillMode = false;
+    m_framing.setFitOnly();
     fitItem(item, Qt::KeepAspectRatio);
     if (viewport()) {
         viewport()->update();

@@ -553,8 +553,7 @@ bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
         || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_zoomRegion.dragging = true;
-    m_zoomRegion.origin = event->pos();
+    m_zoomRegion.beginDrag(event->pos());
     if (!m_zoomRegion.rubberBand) {
         m_zoomRegion.rubberBand = new QRubberBand(QRubberBand::Rectangle, viewport());
     }
@@ -1611,7 +1610,7 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
         return false;
     }
     const QRect viewRect = ViewTransform::rubberRect(m_zoomRegion.origin, event->pos());
-    m_zoomRegion.dragging = false;
+    m_zoomRegion.endDrag();
     if (m_zoomRegion.rubberBand) {
         m_zoomRegion.rubberBand->hide();
     }
