@@ -9,6 +9,7 @@
 #include <QPoint>
 #include <QPolygonF>
 #include <QRect>
+#include <QPainter>
 #include <QRectF>
 #include <QtGlobal>
 
@@ -183,6 +184,14 @@ QRect integerCropFromLocal(const QRectF &local, const QPointF &offset);
 QRect flipAwareSourceCrop(const QRect &disp, int imageW, int imageH,
                           bool hFlip, bool vFlip);
 
+/** Dim viewport outside the crop polygon (view coordinates). */
+void paintDimOutside(QPainter &painter, const QRect &viewportRect,
+                     const QPolygonF &cropViewPoly);
+
+/** Amber crop frame outline (solid + dash). */
+void paintFrame(QPainter &painter, const QPolygonF &cropViewPoly);
+
 } // namespace CropGeometry
 
 #endif // CROPGEOMETRY_H
+

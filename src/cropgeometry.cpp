@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "cropgeometry.h"
+
+#include <QPainter>
+#include <QPainterPath>
 #include "contentxform.h"
 
 #include <QLineF>
@@ -488,6 +491,34 @@ QRect flipAwareSourceCrop(const QRect &disp, int imageW, int imageH,
         dy = imageH - dy - dh;
     }
     return QRect(dx, dy, dw, dh);
+}
+
+void paintDimOutside(QPainter &painter, const QRect &viewportRect,
+                     const QPolygonF &cropViewPoly)
+{
+    QPainterPath outer;
+    outer.addRect(QRectF(viewportRect));
+    QPainterPath hole;
+    hole.addPolygon(cropViewPoly);
+    hole.closeSubpath();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, 140));
+    painter.drawPath(outer.subtracted(hole));
+}
+
+void paintFrame(QPainter &painter, const QPolygonF &cropViewPoly)
+{
+    painter.setBrush(Qt::NoBrush);
+    QPen frame(QColor(255, 190, 40, 240), 0);
+    frame.setCosmetic(true);
+    frame.setWidthF(1.75);
+    painter.setPen(frame);
+    painter.drawPolygon(cropViewPoly);
+    QPen dash(QColor(40, 30, 10, 180), 0, Qt::DashLine);
+    dash.setCosmetic(true);
+    dash.setWidthF(1.0);
+    painter.setPen(dash);
+    painter.drawPolygon(cropViewPoly);
 }
 
 } // namespace CropGeometry

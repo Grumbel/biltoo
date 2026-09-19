@@ -1346,31 +1346,15 @@ QRect ImageView::cropCloseButtonView() const
 
 void ImageView::paintCropDimOutside(QPainter &painter, const QPolygonF &cropViewPoly)
 {
-    // Dim everything outside the (possibly rotated) crop.
-    QPainterPath outer;
-    outer.addRect(QRectF(viewport()->rect()));
-    QPainterPath hole;
-    hole.addPolygon(cropViewPoly);
-    hole.closeSubpath();
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 140));
-    painter.drawPath(outer.subtracted(hole));
+    if (!viewport()) {
+        return;
+    }
+    CropGeometry::paintDimOutside(painter, viewport()->rect(), cropViewPoly);
 }
 
 void ImageView::paintCropFrame(QPainter &painter, const QPolygonF &cropViewPoly)
 {
-    // Crop frame — amber family (distinct from single-select blue / group violet).
-    painter.setBrush(Qt::NoBrush);
-    QPen frame(QColor(255, 190, 40, 240), 0);
-    frame.setCosmetic(true);
-    frame.setWidthF(1.75);
-    painter.setPen(frame);
-    painter.drawPolygon(cropViewPoly);
-    QPen dash(QColor(40, 30, 10, 180), 0, Qt::DashLine);
-    dash.setCosmetic(true);
-    dash.setWidthF(1.0);
-    painter.setPen(dash);
-    painter.drawPolygon(cropViewPoly);
+    CropGeometry::paintFrame(painter, cropViewPoly);
 }
 
 void ImageView::paintCropResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly)
