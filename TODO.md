@@ -14,14 +14,12 @@ Prior: **1531** (`7cc1873`). Many small commits.
 6. pickEnterFullRasterOrRequest
 7. cropHandleAt guards
 
-### Apply (on tip **1531** / `7cc1873`)
+### Apply (on tip **1527** / `24da05b` / origin/master)
 ```bash
 git fetch origin && git merge --ff-only origin/master
-# if origin still at 1527:
-git pull --ff-only /path/to/biltoo-1531-crop-session-appearance-install.bundle HEAD
 git pull --ff-only /path/to/biltoo-1532-crop-session-drag-enter.bundle HEAD
 ```
-Requires **`7cc1873`**. If only origin tip 1527 is available, apply 1531 then 1532.
+Full stack **1531–1532** from origin tip 1527. `git bundle verify` requires **`24da05b`**.
 
 ---
 
