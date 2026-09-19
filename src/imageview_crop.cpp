@@ -110,25 +110,7 @@ void ImageView::ensureCropRectValid()
     if (!item) {
         return;
     }
-    const QRectF cr = item->contentRect();
-    if (!m_crop.hasValidRect()) {
-        m_crop.setRect(cr);
-        m_crop.setRotation(0.0);
-        return;
-    }
-    m_crop.setRect(m_crop.normalizedRect());
-    if (m_crop.isAllowExpand()) {
-        QRectF r = m_crop.currentRect();
-        if (r.width() < 1.0) {
-            r.setWidth(1.0);
-        }
-        if (r.height() < 1.0) {
-            r.setHeight(1.0);
-        }
-        m_crop.setRect(r);
-        return;
-    }
-    m_crop.setRect(CropGeometry::constrainToContent(m_crop.currentRect(), m_crop.currentRotation(), cr, 1.0));
+    m_crop.ensureRectValid(item->contentRect());
 }
 
 void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
