@@ -8,6 +8,7 @@
 #include <QString>
 
 #include <algorithm>
+#include <cstdlib>
 #include <vector>
 
 namespace tilelod {
@@ -274,7 +275,7 @@ std::size_t TileLodRegistry::total_approx_bytes() const
 void TileLodRegistry::set_global_budget_bytes(std::size_t bytes)
 {
   std::lock_guard<std::mutex> lock(m_mu);
-  m_global_budget = bytes;
+  m_global_budget = bytes > 0 ? bytes : kDefaultGlobalBudgetBytes;
   trim_idle_locked();
 }
 
@@ -314,6 +315,26 @@ QString TileLodRegistry::debug_summary() const
       .arg(idle)
       .arg(mib, 0, 'f', 1)
       .arg(m_max_idle_paths);
+}
+
+void TileLodRegistry::apply_environment_overrides()
+{
+  if (const char* e = std::getenv("BILTOO_TILE_RAM_MIB");
+      e && e[0]) {
+    char* end = nullptr;
+    const long mib = std::strtol(e, &end, 10);
+    if (end != e && mib > 0 && mib < 1024 * 1024) {
+      set_global_budget_bytes(static_cast<std::size_t>(mib) * 1024ull * 1024ull);
+    }
+  }
+  if (const char* e = std::getenv("BILTOO_TILE_MAX_IDLE");
+      e && e[0]) {
+    char* end = nullptr;
+    const long n = std::strtol(e, &end, 10);
+    if (end != e && n > 0 && n < 100000) {
+      set_max_idle_paths(static_cast<std::size_t>(n));
+    }
+  }
 }
 
 }  // namespace tilelod

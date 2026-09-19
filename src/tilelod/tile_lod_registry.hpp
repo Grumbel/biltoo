@@ -131,6 +131,12 @@ public:
   /** One-line summary for BILTOO_TILE_DEBUG (paths/idle/MiB/caps). */
   QString debug_summary() const;
 
+  /**
+   * Apply BILTOO_TILE_RAM_MIB and BILTOO_TILE_MAX_IDLE from the environment
+   * (no-op when unset). Safe to call once at process start.
+   */
+  void apply_environment_overrides();
+
 private:
   TileLodRegistry() = default;
 
