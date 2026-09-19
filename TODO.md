@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1462-loadgate-textlayer-zoom.** LoadGate digs, TextLayer, ZoomRegion.
+Prior: **1461**. Commits 1462a–1462c (+ docs).
+
+### Commits
+1. Drop unused ImageView pathOrderBook/itemStates; tighten LoadGate maps
+2. **TextLayerSession** region accessors for paint
+3. **ZoomRegionGesture** hideRubber / isActive
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1462-loadgate-textlayer-zoom.bundle HEAD
+```
+Requires tip **1461**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1461-ensuretiles-const-book-private.** ensureTiles const + book privacy.
 Prior: **1460**. Commits 1461a–1461b (+ docs).
 

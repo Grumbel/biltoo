@@ -184,6 +184,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **Fix** ensureFromTiles/ensureToTiles const; privatize PathItemStateBook /
   GallerySoftBook / ImageSizeBook / SessionBindBook / SessionPathOrder storage;
   pathOrder clear/set for controllers.
+- Drop ImageView pathOrderBook/itemStates digs; LoadGate map refs private;
+  **TextLayerSession** region accessors; **ZoomRegionGesture** hideRubber/isActive.
 
 
 ## Current pain (evidence)
