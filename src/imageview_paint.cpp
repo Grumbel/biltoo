@@ -294,7 +294,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
     // Empty session: invite the user to open or drop images.
     // Suppress while centre progress is active (archive expand / size resolve).
     if (m_items.isEmpty() && !hasClassicPath() && !m_crop.active()
-        && m_centreProgress.title.isEmpty() && !gallerySizeResolveActive()) {
+        && m_centreProgress.titleRef().isEmpty() && !gallerySizeResolveActive()) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         QFont titleFont = font();
@@ -364,7 +364,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     const QString loadingLine = m_hudPrefs.isVisible() ? loadingStatusHudLine() : QString();
     if (m_crop.active() || m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_hudFlash.isIdentityPulse()
         || m_ssHud.isPausedHud() || gallerySizeResolveActive()
-        || !m_centreProgress.title.isEmpty()
+        || !m_centreProgress.titleRef().isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
         // Prefer the user preference (Preferences → HUD), not the widget font.
@@ -439,11 +439,11 @@ void ImageView::paintHudPanels(QPainter &painter)
             drawPanel({{tr("❚❚  Paused"), true},
                        {tr("Space: resume · Esc: leave"), false}},
                       margin, margin, false, false);
-        } else if (!m_centreProgress.title.isEmpty()) {
+        } else if (!m_centreProgress.titleRef().isEmpty()) {
             QList<HudLine> lines;
-            lines.append({m_centreProgress.title, true});
-            if (!m_centreProgress.detail.isEmpty()) {
-                lines.append({m_centreProgress.detail, false});
+            lines.append({m_centreProgress.titleRef(), true});
+            if (!m_centreProgress.detailRef().isEmpty()) {
+                lines.append({m_centreProgress.detailRef(), false});
             }
             drawPanel(lines, 0, 0, false, false, true);
         } else if (gallerySizeResolveActive() && m_gallerySizeResolve.total() > 0) {
@@ -1225,7 +1225,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
     if (isGalleryMode() && !m_hudPrefs.isVisible() && !m_hudFlash.isVisible() && !m_hudFlash.isIdentityPulse()
         && !m_ssHud.isPausedHud() && !gallerySizeResolveActive()
-        && m_centreProgress.title.isEmpty()
+        && m_centreProgress.titleRef().isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_crop.active()
         && !m_ssDwell.isMotionActive() 
         ) {

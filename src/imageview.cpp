@@ -743,7 +743,7 @@ void ImageView::onSizeResolveGateComplete()
 void ImageView::onSizeResolveGateCancelled()
 {
     m_gallerySoftBook.setDeferPopulate(false);
-    if (isGalleryMode() && m_centreProgress.title.isEmpty()) {
+    if (isGalleryMode() && m_centreProgress.titleRef().isEmpty()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
     clearSizeResolveProgress();
