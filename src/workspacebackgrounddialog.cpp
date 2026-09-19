@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspacebackgrounddialog.h"
+#include "viewtransform.h"
 #include "icons.h"
 
 #include <QColorDialog>
@@ -100,8 +101,8 @@ void WorkspaceBackgroundPreview::paintEvent(QPaintEvent * /*event*/)
             }
         }
         if (!m_tile.isNull()) {
-            const int tw = qMax(1, m_tile.width());
-            const int th = qMax(1, m_tile.height());
+            const int tw = ViewTransform::atLeast1(m_tile.width());
+            const int th = ViewTransform::atLeast1(m_tile.height());
             for (int y = 0; y < r.height(); y += th) {
                 for (int x = 0; x < r.width(); x += tw) {
                     p.drawPixmap(x, y, m_tile);

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow.h"
+#include "viewtransform.h"
 #include "biltoo_logging.h"
 #include "metadatapanel.h"
 #include "imageloader.h"
@@ -75,7 +76,7 @@ int main(int argc, char *argv[])
     {
         const int ideal = QThread::idealThreadCount();
         const int cap = ideal <= 2 ? 1 : ideal - 1;
-        QThreadPool::globalInstance()->setMaxThreadCount(qMax(1, cap));
+        QThreadPool::globalInstance()->setMaxThreadCount(ViewTransform::atLeast1(cap));
     }
     // After QApplication so thumtoo callbacks can queue onto the GUI thread.
     ThumtooCache::init();
