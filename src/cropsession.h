@@ -129,6 +129,13 @@ public:
     static SessionImageId resolveSessionIdForItem(const ImageItem *item,
                                                   SessionImageId imageModeCurrentId);
 
+    /** Copy content orient flags from appearance into @p s when @p orient is set. */
+    static void mergeOrientFromAppearance(WorkspaceItemState *s,
+                                          const WorkspaceItemState *orient);
+
+    /** Item scale pair for draft footprint (Y falls back to X when unset). */
+    static void itemScalePair(const ImageItem *item, qreal *sx, qreal *sy);
+
     static bool isAxisAlignedFullFrame(const QRectF &local, const QRectF &contentRect,
                                        qreal eps = 0.5);
 

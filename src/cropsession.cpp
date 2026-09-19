@@ -177,6 +177,26 @@ CropSession::EnterInstallSample CropSession::prepareEnterInstallSample(
 }
 
 
+void CropSession::mergeOrientFromAppearance(WorkspaceItemState *s,
+                                               const WorkspaceItemState *orient)
+{
+    if (!s || !orient) {
+        return;
+    }
+    s->contentQuarterTurns = orient->contentQuarterTurns;
+    s->contentHFlip = orient->contentHFlip;
+    s->contentVFlip = orient->contentVFlip;
+}
+
+void CropSession::itemScalePair(const ImageItem *item, qreal *sx, qreal *sy)
+{
+    if (!item || !sx || !sy) {
+        return;
+    }
+    *sx = item->itemScaleX();
+    *sy = item->itemScaleY() > 0.0 ? item->itemScaleY() : *sx;
+}
+
 SessionImageId CropSession::resolveSessionIdForItem(const ImageItem *item,
                                                  SessionImageId imageModeCurrentId)
 {

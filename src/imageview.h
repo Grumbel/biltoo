@@ -1670,6 +1670,12 @@ private:
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);
+    bool flashApplyHostFailure(CropSession::ApplyHostStatus hostSt);
+    void ensureApplyCropState(ImageItem *item, SessionImageId sid,
+                              WorkspaceItemState *st);
+    void storeCropAppearance(ImageItem *item, SessionImageId sid,
+                             const WorkspaceItemState &s);
+    QSize cropRecordFileNative(const QString &path) const;
     bool applyCropCommit(ImageItem *item);
     void cancelCropShowingFullImage(ImageItem *item);
     void clearCropModeState();

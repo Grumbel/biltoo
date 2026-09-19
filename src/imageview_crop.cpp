@@ -740,30 +740,15 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     // edited in — file-native layoutSize without crop — not a soft sample or
     // prior crop intrinsic (that breaks second-enter scaleCropRect).
     const SessionImageId sid = cropRecordSessionId(item);
-    const WorkspaceItemState *orientApp = nullptr;
-    if (sid != kInvalidSessionImageId) {
-        orientApp = m_appearance.get(sid);
-    }
-    QSize fileNative;
-    {
-        const QString path = item->path();
-        fileNative = logicalSizeForPath(path);
-        if (!isPositiveSize(fileNative) || fileNative.width() <= 1
-            || isProvisionalImageSize(path)) {
-            fileNative = QSize();
-        }
-    }
+    const WorkspaceItemState *orientApp =
+        (sid != kInvalidSessionImageId) ? m_appearance.get(sid) : nullptr;
     const QSize cropBasis = CropSession::cropBasisSize(
-        QSize(iw, ih), fileNative, orientApp, item);
+        QSize(iw, ih), cropRecordFileNative(item->path()), orientApp, item);
 
     WorkspaceItemState s = captureState(item);
     // Appearance is keyed by SessionImageId only. Prefer the locked crop target
     // id; never invent one from the navigation cursor while other tiles exist.
-    if (orientApp) {
-        s.contentQuarterTurns = orientApp->contentQuarterTurns;
-        s.contentHFlip = orientApp->contentHFlip;
-        s.contentVFlip = orientApp->contentVFlip;
-    }
+    CropSession::mergeOrientFromAppearance(&s, orientApp);
     s.sessionId = sid;
     s.sessionIndex = item->sessionIndex();
     // Full-frame draft clears the session crop (Reset or expanded to entire image).
@@ -779,12 +764,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     }
     s.path = item->path();
     item->setSessionCrop(s.hasCrop, s.cropRect);
-    if (sid != kInvalidSessionImageId) {
-        m_appearance.set(sid, s);
-    } else {
-        // Unbound only: path map is the sole store.
-        m_itemStateBook.set(item->path(), s);
-    }
+    storeCropAppearance(item, sid, s);
 }
 
 void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
@@ -873,6 +853,58 @@ void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
     emit sessionCropApplied(sid, path, appearance, hasCrop);
 }
 
+bool ImageView::flashApplyHostFailure(CropSession::ApplyHostStatus hostSt)
+{
+    if (hostSt == CropSession::ApplyHostStatus::Ok) {
+        return false;
+    }
+    flashHud(tr("Crop"),
+             hostSt == CropSession::ApplyHostStatus::NeedFull
+                 ? tr("Full image not ready — try again")
+                 : tr("No pixels to crop"));
+    return true;
+}
+
+void ImageView::ensureApplyCropState(ImageItem *item, SessionImageId sid,
+                                     WorkspaceItemState *st)
+{
+    if (!item || !st) {
+        return;
+    }
+    loadSessionAppearance(sid, st);
+    if (!st->hasCrop) {
+        *st = captureState(item);
+        m_crop.seedApplyCropState(st, item->offset(), item->imageSize());
+        if (sid != kInvalidSessionImageId) {
+            m_appearance.set(sid, *st);
+        }
+    }
+}
+
+void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
+                                    const WorkspaceItemState &s)
+{
+    if (!item) {
+        return;
+    }
+    if (sid != kInvalidSessionImageId) {
+        m_appearance.set(sid, s);
+    } else {
+        // Unbound only: path map is the sole store.
+        m_itemStateBook.set(item->path(), s);
+    }
+}
+
+QSize ImageView::cropRecordFileNative(const QString &path) const
+{
+    QSize fileNative = logicalSizeForPath(path);
+    if (!isPositiveSize(fileNative) || fileNative.width() <= 1
+        || isProvisionalImageSize(path)) {
+        return {};
+    }
+    return fileNative;
+}
+
 bool ImageView::applyCropCommit(ImageItem *item)
 {
     // Returns true when Workspace placement rotation should keep the crop-frame
@@ -892,8 +924,9 @@ bool ImageView::applyCropCommit(ImageItem *item)
         //   footH = m_crop.rect.height() * itemScaleY
         // After Apply we set intrinsic to (cropW, cropH) in the *same* content
         // units and keep the same scale → scene size unchanged.
-        const qreal sx0 = item->itemScaleX();
-        const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
+        qreal sx0 = 0.0;
+        qreal sy0 = 0.0;
+        CropSession::itemScalePair(item, &sx0, &sy0);
         qreal cropW = 0.0;
         qreal cropH = 0.0;
         qreal footW = 0.0;
@@ -906,24 +939,13 @@ bool ImageView::applyCropCommit(ImageItem *item)
         QImage host = CropSession::pickApplyHost(item, path, &hostFromCache);
         const CropSession::ApplyHostStatus hostSt =
             CropSession::classifyApplyHost(host, hostFromCache, item);
-        if (hostSt != CropSession::ApplyHostStatus::Ok) {
-            flashHud(tr("Crop"),
-                     hostSt == CropSession::ApplyHostStatus::NeedFull
-                         ? tr("Full image not ready — try again")
-                         : tr("No pixels to crop"));
+        if (flashApplyHostFailure(hostSt)) {
             return false;
         }
 
         WorkspaceItemState st;
         const SessionImageId sid = cropRecordSessionId(item);
-        loadSessionAppearance(sid, &st);
-        if (!st.hasCrop) {
-            st = captureState(item);
-            m_crop.seedApplyCropState(&st, item->offset(), item->imageSize());
-            if (sid != kInvalidSessionImageId) {
-                m_appearance.set(sid, st);
-            }
-        }
+        ensureApplyCropState(item, sid, &st);
 
         const CropSession::ApplyBakeResult baked =
             CropSession::materializeApplyDisplay(host, hostFromCache, st);
