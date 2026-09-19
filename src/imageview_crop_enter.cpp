@@ -12,6 +12,7 @@
 #include "imagecache.h"
 #include "imageitem.h"
 #include "contentxform.h"
+#include "placementlinear.h"
 
 void ImageView::beginCropEnterSession(ImageItem *item)
 {
@@ -70,7 +71,12 @@ bool ImageView::completeCropEnterUnderHold(ImageItem *item,
             if (m_crop.seedRotationFromStashedPlacement(CropGeometry::kFreeRotationEps)) {
                 ensureCropRectValid();
             }
-            alignCropFrameCenterToScene(item, workspaceAnchorScene);
+            if (m_crop.hasValidRect()) {
+                CropSession::applyScenePosDelta(
+                    item,
+                    PlacementLinear::scenePosDeltaToAlign(
+                        item->mapToScene(m_crop.draftCenterLocal()), workspaceAnchorScene));
+            }
             updateWorkspaceSceneRect();
         }
     }
@@ -186,8 +192,10 @@ void ImageView::installAndActivateCropEnter(ImageItem *item, const QImage &full,
     const QRectF beforeScene =
         item ? item->mapRectToScene(item->contentRect()) : QRectF();
     installFullImageForCrop(item, full, app, haveApp, unorientedSource);
-    preserveWorkspaceItemCenter(item, beforeScene.center(),
-                                beforeScene.width(), beforeScene.height());
+    if (item && isWorkspaceMode() && beforeScene.width() > 1.0
+        && beforeScene.height() > 1.0) {
+        alignItemCenterToScene(item, beforeScene.center());
+    }
     m_crop.initRectFromPriorAppearance(item->contentRect(), item->offset(),
                                        item->imageSize(), app, haveApp);
     // Crop chrome + fitItem only after pixels and contentRect match the draft.

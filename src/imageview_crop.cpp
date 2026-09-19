@@ -79,15 +79,6 @@ void ImageView::cancelPathRasterForCrop(const QString &path)
     CropPathRaster::suspend(m_pathRaster, path);
 }
 
-void ImageView::preserveWorkspaceItemCenter(ImageItem *item, const QPointF &center0,
-                                            qreal footW0, qreal footH0)
-{
-    if (!item || !isWorkspaceMode() || footW0 <= 1.0 || footH0 <= 1.0) {
-        return;
-    }
-    alignItemCenterToScene(item, center0);
-}
-
 void ImageView::fitImageOrUpdateWorkspace(ImageItem *item)
 {
     if (!item) {
@@ -110,27 +101,6 @@ void ImageView::relayoutAfterCropLeave(ImageItem *item)
     }
 }
 
-void ImageView::finishCropResetLayout(ImageItem *item)
-{
-    if (isWorkspaceMode() && m_crop.isEnterValid()) {
-        // Drop the enter-time crop-frame offset; restore pre-crop pose.
-        m_crop.restoreEnterPlacementPose(item);
-    }
-    relayoutAfterCropLeave(item);
-}
-
-void ImageView::finishCropApplyLayout(ImageItem *item)
-{
-    if (!item) {
-        return;
-    }
-    if (isWorkspaceMode()) {
-        m_crop.applyCommitPlacementRotation(item);
-    }
-    relayoutAfterCropLeave(item);
-}
-
-
 void ImageView::ensureCropRectValid()
 {
     ImageItem *item = cropTargetItem();
@@ -138,17 +108,6 @@ void ImageView::ensureCropRectValid()
         return;
     }
     m_crop.ensureRectValid(item->contentRect());
-}
-
-void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
-{
-    if (!item || !m_crop.hasValidRect()) {
-        return;
-    }
-    CropSession::applyScenePosDelta(
-        item,
-        PlacementLinear::scenePosDeltaToAlign(
-            item->mapToScene(m_crop.draftCenterLocal()), sceneAnchor));
 }
 
 void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor)

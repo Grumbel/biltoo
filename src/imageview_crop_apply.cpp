@@ -126,7 +126,10 @@ void ImageView::commitCropApplyBake(ImageItem *item, const QImage &display,
         alignItemCenterToScene(item, cropSceneCenter);
         // Multi-MP: soft stand-in now; pure full rematerialize after leave.
         m_crop.queueFullRematerializeIfSoft(hostFromCache, multiMp, path, sid, st);
-        finishCropApplyLayout(item);
+        if (isWorkspaceMode()) {
+            m_crop.applyCommitPlacementRotation(item);
+        }
+        relayoutAfterCropLeave(item);
     }
     commitItemSessionEdit(item);
     emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
@@ -161,26 +164,6 @@ bool ImageView::bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cr
     return true;
 }
 
-bool ImageView::applyCropCommitNonFullFrame(ImageItem *item)
-{
-    // Workspace footprint: draft selection scene size stays constant after Apply
-    // (intrinsic becomes cropW×cropH at the same placement scale).
-    qreal cropW = 0.0;
-    qreal cropH = 0.0;
-    qreal footW = 0.0;
-    qreal footH = 0.0;
-    QPointF cropSceneCenter;
-    qreal sx0 = 0.0;
-    qreal sy0 = 0.0;
-    CropSession::itemScalePair(item, &sx0, &sy0);
-    m_crop.draftFootprint(sx0, sy0, &cropW, &cropH, &footW, &footH);
-    cropSceneCenter = item->mapToScene(m_crop.draftCenterLocal());
-    if (!bakeAndCommitNonFullApply(item, cropW, cropH, footW, footH, cropSceneCenter)) {
-        return false;
-    }
-    return isWorkspaceMode();
-}
-
 
 bool ImageView::applyCropCommit(ImageItem *item)
 {
@@ -190,10 +173,29 @@ bool ImageView::applyCropCommit(ImageItem *item)
     const QRectF full = item->contentRect();
     recordSessionCrop(item, m_crop.draftRectOr(full));
     if (!m_crop.isFullFrameDraft(full)) {
-        return applyCropCommitNonFullFrame(item);
+        // Workspace footprint: draft selection scene size stays constant after Apply
+        // (intrinsic becomes cropW×cropH at the same placement scale).
+        qreal cropW = 0.0;
+        qreal cropH = 0.0;
+        qreal footW = 0.0;
+        qreal footH = 0.0;
+        QPointF cropSceneCenter;
+        qreal sx0 = 0.0;
+        qreal sy0 = 0.0;
+        CropSession::itemScalePair(item, &sx0, &sy0);
+        m_crop.draftFootprint(sx0, sy0, &cropW, &cropH, &footW, &footH);
+        cropSceneCenter = item->mapToScene(m_crop.draftCenterLocal());
+        if (!bakeAndCommitNonFullApply(item, cropW, cropH, footW, footH, cropSceneCenter)) {
+            return false;
+        }
+        return isWorkspaceMode();
     }
     // Reset / full frame: keep full pixels; clear session crop metadata.
-    finishCropResetLayout(item);
+    if (isWorkspaceMode() && m_crop.isEnterValid()) {
+        // Drop the enter-time crop-frame offset; restore pre-crop pose.
+        m_crop.restoreEnterPlacementPose(item);
+    }
+    relayoutAfterCropLeave(item);
     commitItemSessionEdit(item);
     emitCropApplyAppearance(cropRecordSessionId(item), item->path(), item, QImage(),
                             /*hasCrop=*/false);

@@ -1645,8 +1645,6 @@ private:
     ImageItem *cropTargetItem() const;
     ImageItem *cropSessionBoundItem() const;
     SessionImageId cropRecordSessionId(const ImageItem *item) const;
-    void preserveWorkspaceItemCenter(ImageItem *item, const QPointF &center0,
-                                     qreal footW0, qreal footH0);
     void fitImageOrUpdateWorkspace(ImageItem *item);
     void ensureCropRectValid();
     QRectF cropRectItemLocal() const { return m_crop.currentRect(); }
@@ -1713,8 +1711,6 @@ private:
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);
     void relayoutAfterCropLeave(ImageItem *item);
-    void finishCropResetLayout(ImageItem *item);
-    void finishCropApplyLayout(ImageItem *item);
     void flashCropHud(const CropFlash::Hud &hud);
     void storeCropAppearance(ImageItem *item, SessionImageId sid,
                              const WorkspaceItemState &s);
@@ -1727,7 +1723,6 @@ private:
     bool bakeAndCommitNonFullApply(ImageItem *item, qreal cropW, qreal cropH,
                                    qreal footW, qreal footH,
                                    const QPointF &cropSceneCenter);
-    bool applyCropCommitNonFullFrame(ImageItem *item);
     bool applyCropCommit(ImageItem *item);
     void notifyCropModeLeftChrome();
     void clearCropModeState();
@@ -1758,8 +1753,6 @@ private:
     void installFullImageForCrop(ImageItem *item, const QImage &full,
                                  const WorkspaceItemState *app, bool haveApp,
                                  bool unorientedSource);
-    /** Workspace: shift item so crop-frame centre maps to @p sceneAnchor. */
-    void alignCropFrameCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
     void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /** Cancel path: put the session crop (if any) back on the live item. */

@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1573-crop-inline-layout-preserve-commit.** Inline leave-layout finishers, workspace centre preserve, crop-frame align, non-full commit.
+Prior: **1572**.
+
+### Change
+- `preserveWorkspaceItemCenter` → body of `installAndActivateCropEnter`
+- `alignCropFrameCenterToScene` → body of `completeCropEnterUnderHold`
+- `finishCropApplyLayout` → body of `commitCropApplyBake`
+- `finishCropResetLayout` → body of `applyCropCommit` (full-frame path)
+- `applyCropCommitNonFullFrame` → body of `applyCropCommit` (non-full path)
+- Kept multi-use: `alignItemCenterToScene`, `relayoutAfterCropLeave`, `fitImageOrUpdateWorkspace`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1573-crop-inline-layout-preserve-commit.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1572-crop-inline-finalize-ensure-cancel.** Inline finalize/ensure/capture/cancel + enter abort/workspace/sizes.
 Prior: **1571**.
 
