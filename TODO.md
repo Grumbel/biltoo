@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1539-paint-crop-chrome-button-decl.** Declare `paintCropChromeButton` in imageview.h (compile fix).
+Prior: **1538**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1539-paint-crop-chrome-button-decl.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1538-strict-edge-cover.** Replace fuzzy ~90% edge ratios with strict `have >= need` and discrete soft-plateau rules.
 Prior: **1537**.
 
