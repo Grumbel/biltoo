@@ -79,15 +79,6 @@ struct PageGuideSession {
         return true;
     }
 
-    void setSelected(bool on)
-    {
-        selected = on;
-        if (!on) {
-            setHoverHandle(-1);
-            clearDrag();
-        }
-    }
-
     /** @return true when page size changed. */
     bool setSize(const QSizeF &sz)
     {
@@ -108,10 +99,16 @@ struct PageGuideSession {
         return true;
     }
 
-    void setPage(const QRectF &r)
+    /** @return true when page rect or size changed. */
+    bool setPage(const QRectF &r)
     {
+        const QSizeF sz = r.size();
+        if (rect == r && size == sz) {
+            return false;
+        }
         rect = r;
-        size = r.size();
+        size = sz;
+        return true;
     }
 
     void clear()
