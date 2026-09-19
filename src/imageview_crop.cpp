@@ -1126,17 +1126,23 @@ void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
     emit sessionCropApplied(sid, path, appearance, hasCrop);
 }
 
+
+void ImageView::relayoutAfterCropLeave(ImageItem *item)
+{
+    if (isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
+    } else {
+        fitImageOrUpdateWorkspace(item);
+    }
+}
+
 void ImageView::finishCropResetLayout(ImageItem *item)
 {
     if (isWorkspaceMode() && m_crop.isEnterValid()) {
         // Drop the enter-time crop-frame offset; restore pre-crop pose.
         m_crop.restoreEnterPlacementPose(item);
     }
-    if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
-    } else {
-        fitImageOrUpdateWorkspace(item);
-    }
+    relayoutAfterCropLeave(item);
 }
 
 void ImageView::finishCropApplyLayout(ImageItem *item)
@@ -1147,11 +1153,7 @@ void ImageView::finishCropApplyLayout(ImageItem *item)
     if (isWorkspaceMode()) {
         m_crop.applyCommitPlacementRotation(item);
     }
-    if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
-    } else {
-        fitImageOrUpdateWorkspace(item);
-    }
+    relayoutAfterCropLeave(item);
 }
 
 bool ImageView::flashApplyHostFailure(CropSession::ApplyHostStatus hostSt)

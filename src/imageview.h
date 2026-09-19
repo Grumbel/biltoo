@@ -1721,6 +1721,7 @@ private:
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);
+    void relayoutAfterCropLeave(ImageItem *item);
     void finishCropResetLayout(ImageItem *item);
     void finishCropApplyLayout(ImageItem *item);
     bool flashApplyHostFailure(CropSession::ApplyHostStatus hostSt);
