@@ -7,6 +7,7 @@
 #include "imageview.h"
 #include "cropappearancecommand.h"
 #include "croppathraster.h"
+#include "viewportupdatehold.h"
 #include "cropgeometry.h"
 #include "placementlinear.h"
 #include "imagecache.h"
@@ -29,36 +30,6 @@
 #include <QThreadPool>
 #include <QPointer>
 #include <QMetaObject>
-
-namespace {
-
-/** Disable viewport updates for a critical section; restore and update on scope exit. */
-struct ViewportUpdateHold {
-    QWidget *viewport = nullptr;
-    bool held = false;
-
-    explicit ViewportUpdateHold(QWidget *vp)
-        : viewport(vp)
-        , held(vp && vp->updatesEnabled())
-    {
-        if (held) {
-            viewport->setUpdatesEnabled(false);
-        }
-    }
-
-    ~ViewportUpdateHold()
-    {
-        if (held && viewport) {
-            viewport->setUpdatesEnabled(true);
-            viewport->update();
-        }
-    }
-
-    ViewportUpdateHold(const ViewportUpdateHold &) = delete;
-    ViewportUpdateHold &operator=(const ViewportUpdateHold &) = delete;
-};
-
-} // namespace
 
 ImageItem *ImageView::cropSessionBoundItem() const
 {
@@ -1440,26 +1411,38 @@ void ImageView::paintCropChromeButton(QPainter &painter, const QRect &btn, CropH
                                   role, toggled);
 }
 
+QString ImageView::cropChromeButtonLabel(CropHandle kind)
+{
+    switch (kind) {
+    case CropHandle::ExpandToggle:
+        return tr("Expand");
+    case CropHandle::Auto:
+        return tr("Auto");
+    case CropHandle::Reset:
+        return tr("Reset");
+    case CropHandle::Cancel:
+        return tr("Cancel");
+    case CropHandle::Close:
+        return tr("Apply");
+    default:
+        return {};
+    }
+}
+
 void ImageView::paintCropChromeButtons(QPainter &painter)
 {
     // Controls: outside below crop when possible, inside if off-screen.
-    // Same design language as Workspace chrome (HANDLES.md):
-    //   toggle  = rounded square / stronger on-state
-    //   action  = dark + accent ring
-    //   neutral = grey (Cancel)
-    //   commit  = filled accent (Apply)
+    // Same design language as Workspace chrome (HANDLES.md).
     const CropGeometry::CropButtonLayout chrome = cropChromeLayout();
-    paintCropChromeButton(painter, chrome.expand, CropHandle::ExpandToggle,
-                          ImageView::tr("Expand"), CropGeometry::CropBtnRole::Toggle,
-                          m_crop.isAllowExpand());
-    paintCropChromeButton(painter, chrome.autoBtn, CropHandle::Auto,
-                          ImageView::tr("Auto"), CropGeometry::CropBtnRole::Action);
-    paintCropChromeButton(painter, chrome.reset, CropHandle::Reset,
-                          ImageView::tr("Reset"), CropGeometry::CropBtnRole::Action);
-    paintCropChromeButton(painter, chrome.cancel, CropHandle::Cancel,
-                          ImageView::tr("Cancel"), CropGeometry::CropBtnRole::Neutral);
-    paintCropChromeButton(painter, chrome.apply, CropHandle::Close,
-                          ImageView::tr("Apply"), CropGeometry::CropBtnRole::Commit);
+    for (const CropGeometry::ChromePaintItem &item :
+         CropGeometry::chromePaintItems(chrome, m_crop.isAllowExpand())) {
+        if (item.rect.isEmpty()) {
+            continue;
+        }
+        paintCropChromeButton(painter, item.rect, item.handle,
+                              cropChromeButtonLabel(item.handle), item.role,
+                              item.toggled);
+    }
 }
 
 

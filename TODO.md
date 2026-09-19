@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1543-crop-chrome-viewport-hold.** Shared ViewportUpdateHold; CropGeometry::chromePaintItems for chrome paint.
+Prior: **1542**.
+
+### Change
+- `viewportupdatehold.h` — RAII viewport paint hold (was anonymous in imageview_crop).
+- `CropGeometry::ChromePaintItem` / `chromePaintItems` — pure chrome button list.
+- `cropChromeButtonLabel` + loop in `paintCropChromeButtons`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1543-crop-chrome-viewport-hold.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1542-imageview-appearance-tu.** Move stored-appearance apply out of imageview_crop into imageview_appearance.cpp.
 Prior: **1541**.
 

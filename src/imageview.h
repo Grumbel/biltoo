@@ -1688,6 +1688,7 @@ private:
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
     void paintCropRotateAndMoveGrips(QPainter &painter, const QPolygonF &cropViewPoly);
     void paintCropFrameDecorations(QPainter &painter, const QPolygonF &cropViewPoly);
+    static QString cropChromeButtonLabel(CropHandle kind);
     void paintCropChromeButton(QPainter &painter, const QRect &btn, CropHandle kind,
                                const QString &label, CropGeometry::CropBtnRole role,
                                bool toggled = false);

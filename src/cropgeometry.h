@@ -12,6 +12,7 @@
 #include <QPainter>
 #include <QRectF>
 #include <QString>
+#include <QVector>
 #include <QtGlobal>
 
 #include <functional>
@@ -102,6 +103,29 @@ struct CropButtonLayout {
     QRect apply;
     bool valid = false;
 };
+
+/** One chrome button for paint/hit — rect + handle + role (+ optional toggle). */
+struct ChromePaintItem {
+    QRect rect;
+    CropHandle handle = CropHandle::None;
+    CropBtnRole role = CropBtnRole::Action;
+    bool toggled = false;
+};
+
+/**
+ * Fixed order: Expand, Auto, Reset, Cancel, Apply. Labels stay on the host (tr).
+ */
+inline QVector<ChromePaintItem> chromePaintItems(const CropButtonLayout &layout,
+                                                 bool expandToggled)
+{
+    return {
+        {layout.expand, CropHandle::ExpandToggle, CropBtnRole::Toggle, expandToggled},
+        {layout.autoBtn, CropHandle::Auto, CropBtnRole::Action, false},
+        {layout.reset, CropHandle::Reset, CropBtnRole::Action, false},
+        {layout.cancel, CropHandle::Cancel, CropBtnRole::Neutral, false},
+        {layout.apply, CropHandle::Close, CropBtnRole::Commit, false},
+    };
+}
 
 /**
  * Place crop chrome buttons relative to @p cropView (viewport coords) and
