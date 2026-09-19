@@ -95,6 +95,18 @@ public:
     void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
     void installImageModeReplaceItem(const QString &path, const QImage &image);
     void completeLoadReplace(const QString &path, const QImage &image, quint64 generation);
+    void finishLoadAddStatus(bool refreshGalleryWindow);
+    bool acceptPendingLoadAdd(const QString &path, quint64 generation);
+    void handleLoadAddDecodeFailure(const QString &path);
+    void fillStashedItemsForPath(const QString &path, const QImage &image);
+    void reassertPendingBindPlacement(const QString &path);
+    void claimUnboundItemsForPendingBinds(const QString &path, const QImage &image);
+    int fillLiveItemsWithDecodedPixels(const QString &path, const QImage &image,
+                                       bool *sizeChangedOut);
+    void createMissingLoadAddItems(const QString &path, const QImage &image,
+                                   int have, int wanted);
+    void applyLoadAddLayoutAfterMembership(bool sizeChanged);
+    void completeLoadAdd(const QString &path, const QImage &image, quint64 generation);
 
 private:
     ImageView *m_view = nullptr; // not owned

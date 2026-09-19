@@ -1185,296 +1185,54 @@ void ImageView::completeLoadRestore(const QString &path, const QImage &image)
 
 void ImageView::finishLoadAddStatus(bool refreshGalleryWindow)
 {
-    emit statusChanged();
-    if (refreshGalleryWindow && isGalleryMode()) {
-        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
-    }
+    m_displayPipeline.finishLoadAddStatus(refreshGalleryWindow);
 }
 
 bool ImageView::acceptPendingLoadAdd(const QString &path, quint64 generation)
 {
-    // Mode leave / empty Workspace bumps generation and clears pending paths.
-    // Reject superseded gallery window decodes so they cannot spawn tiles on
-    // Workspace after the user switched modes mid-decode.
-    if (generation != m_displayPipeline.loadGate().generation()) {
-        finishLoadAddStatus(/*refreshGalleryWindow=*/false);
-        return false;
-    }
-    if (!m_displayPipeline.loadGate().containsPendingWorkspacePath(path)) {
-        // Cancelled (e.g. path removed from session) — drop the result.
-        finishLoadAddStatus(/*refreshGalleryWindow=*/true);
-        return false;
-    }
-    takePendingWorkspacePath(path);
-    return true;
+    return m_displayPipeline.acceptPendingLoadAdd(path, generation);
 }
 
 void ImageView::handleLoadAddDecodeFailure(const QString &path)
 {
-    // //pdfimage: / //page: with thumtoo: empty sync load is expected while the
-    // ladder builds — await ladderReady instead of permanent failure.
-    if (ThumtooCache::isAvailable()
-        && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
-        ThumtooCache::scheduleProbe(path);
-        // Soft state machine will request placeholder / higher steps.
-        m_sessionId.clearLastLoadError();
-        finishLoadAddStatus(/*refreshGalleryWindow=*/true);
-        return;
-    }
-    qWarning("ImageView: decode failed for %s", qPrintable(path));
-    if (isGalleryMode()) {
-        GallerySoftState &st = m_gallerySoftBook.state(path);
-        st.failed = true;
-        st.inflight = 0;
-    }
-    m_sessionId.setLastLoadError(path);
-    // Surface the error on any live placeholder for this path.
-    for (ImageItem *item : m_items) {
-        if (item && item->path() == path && !item->hasDecodedPixels()) {
-            item->setToolTip(tr("Failed to load:\n%1").arg(path));
-        }
-    }
-    finishLoadAddStatus(/*refreshGalleryWindow=*/true);
+    m_displayPipeline.handleLoadAddDecodeFailure(path);
 }
 
 void ImageView::fillStashedItemsForPath(const QString &path, const QImage &image)
 {
-    for (ImageItem *cand : m_gallery.stashedItems()) {
-        if (cand && cand->path() == path && !cand->hasDecodedPixels()) {
-            installDisplayPixels(cand, image,
-                                 SessionAppearance::PixelKind::FullSource,
-                                 cand->sessionId());
-        }
-    }
+    m_displayPipeline.fillStashedItemsForPath(path, image);
 }
 
 void ImageView::reassertPendingBindPlacement(const QString &path)
 {
-    // Drop placeholders created in placeOrMoveImageAt already sit at scenePos;
-    // re-assert hasScenePos binds so nothing later drifts them, and so a bind
-    // still pairs with the pre-created tile.
-    for (ImageItem *item : m_items) {
-        if (!item || item->path() != path) {
-            continue;
-        }
-        for (int bi = 0; bi < m_bindBook.bindCount(); ++bi) {
-            const PendingSessionBind &b = m_bindBook.bindAt(bi);
-            if (b.path != path) {
-                continue;
-            }
-            if (b.id != kInvalidSessionImageId && item->sessionId() != kInvalidSessionImageId
-                && b.id != item->sessionId()) {
-                continue;
-            }
-            if (b.hasScenePos) {
-                item->setGalleryCellSize({});
-                item->setPos(b.scenePos);
-                item->setItemScale(1.0);
-                item->setItemRotation(0.0);
-                item->setItemShear(0.0);
-                item->setItemOpacity(1.0);
-                if (isWorkspaceMode()) {
-                    item->setInteractive(true);
-                    item->setScaleHandlesEnabled(true);
-                }
-            }
-            if (b.id != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
-                item->setSessionId(b.id);
-            }
-            if (b.index >= 0 && item->sessionIndex() < 0) {
-                item->setSessionIndex(b.index);
-            }
-            break;
-        }
-    }
+    m_displayPipeline.reassertPendingBindPlacement(path);
 }
 
 void ImageView::claimUnboundItemsForPendingBinds(const QString &path, const QImage &image)
 {
-    // Claim existing *unbound* tiles of this path for pending session binds
-    // (e.g. empty-Workspace LoadReplace seeded the first path before LoadAdd).
-    // Without this, have==wanted and the bind is never applied — placement,
-    // content flips, and colour grade stay at defaults on that tile.
-    for (ImageItem *existing : m_items) {
-        if (!existing || existing->path() != path) {
-            continue;
-        }
-        if (existing->sessionId() != kInvalidSessionImageId) {
-            continue;
-        }
-        PendingSessionBind bound;
-        if (!takePendingSessionBind(path, &bound)) {
-            break;
-        }
-        if (bound.id != kInvalidSessionImageId) {
-            existing->setSessionId(bound.id);
-        }
-        if (bound.index >= 0 && bound.id != kInvalidSessionImageId) {
-            existing->setSessionIndex(bound.index);
-        }
-        // Raw full decode → single appearance gate (seed tiles may already
-        // have decoded defaults without content ops).
-        installDisplayPixels(existing, image,
-                             SessionAppearance::PixelKind::FullSource,
-                             bound.id != kInvalidSessionImageId
-                                 ? bound.id
-                                 : existing->sessionId());
-        if (bound.id != kInvalidSessionImageId && appearance().get(bound.id)) {
-            applyState(existing, *appearance().get(bound.id));
-        }
-        // Explicit drop position wins over restored gallery/workspace pose.
-        applyPendingBindScenePos(existing, bound);
-        if (bound.id != kInvalidSessionImageId) {
-            // Decode must not rewrite filmstrip (sessionAppearanceChanged).
-            if (m_bindBook.removeSelectId(bound.id)) {
-                existing->setSelected(true);
-            }
-        }
-    }
+    m_displayPipeline.claimUnboundItemsForPendingBinds(path, image);
 }
 
 int ImageView::fillLiveItemsWithDecodedPixels(const QString &path, const QImage &image,
                                               bool *sizeChangedOut)
 {
-    bool sizeChanged = false;
-    int have = 0;
-    const int incoming = ImageCache::longEdge(image);
-    for (ImageItem *existing : m_items) {
-        if (!existing || existing->path() != path) {
-            continue;
-        }
-        ++have;
-        // Soft was wrongly stored as "decoded"; still accept stricter long edge.
-        if (!existing->hasDecodedPixels()
-            || existing->shouldUpgradeDisplayTo(incoming)) {
-            if (installFullPreservingWorkspaceFootprint(existing, image)) {
-                sizeChanged = true;
-            } else if (existing->shouldUpgradeDisplayTo(incoming)) {
-                // Footprint helper no-ops once hasDecodedPixels; force upgrade.
-                installDisplayPixels(existing, image,
-                                     SessionAppearance::PixelKind::FullSource,
-                                     existing->sessionId());
-                existing->update();
-                sizeChanged = true;
-            }
-        }
-    }
-    if (sizeChangedOut) {
-        *sizeChangedOut = sizeChanged;
-    }
-    return have;
+    return m_displayPipeline.fillLiveItemsWithDecodedPixels(path, image, sizeChangedOut);
 }
 
 void ImageView::createMissingLoadAddItems(const QString &path, const QImage &image,
                                           int have, int wanted)
 {
-    if (gallerySizeResolveActive() || m_gallerySoftBook.isDeferPopulate()) {
-        return;
-    }
-    // Create missing occurrences (each duplicate is a normal separate tile).
-    while (have < wanted) {
-        ImageItem *item = createItemFromImage(path, image);
-        if (!item) {
-            break;
-        }
-        ++have;
-        // Bind pending session row if any remain for this path (FIFO).
-        PendingSessionBind bound;
-        const bool haveBound = takePendingSessionBindForNewItem(path, item, &bound);
-        applyStoredAppearance(item);
-        // Decode/membership must not rewrite filmstrip; user edits emit overrides.
-        if (haveBound && bound.id != kInvalidSessionImageId) {
-            // Paste: select tiles as they finish decoding.
-            if (m_bindBook.removeSelectId(bound.id)) {
-                item->setSelected(true);
-            }
-        }
-        placeNewLoadAddItem(item, path, image, haveBound, bound);
-    }
+    m_displayPipeline.createMissingLoadAddItems(path, image, have, wanted);
 }
 
 void ImageView::applyLoadAddLayoutAfterMembership(bool sizeChanged)
 {
-    if (gallerySizeResolveActive() || m_gallerySoftBook.isDeferPopulate()) {
-        return;
-    }
-    if (!m_layout.isFreeForm()) {
-        if (!pathOrderIsEmpty()) {
-            reorderItemsByPaths(pathOrderPaths());
-        }
-        if (!(isGalleryMode() && m_galleryRelayoutSuppress.active())) {
-            if (sizeChanged) {
-                applyLayout(GalleryPackReason::ContentChange);
-            } else {
-                applyLayout(GalleryPackReason::SessionMutate);
-            }
-        }
-    } else {
-        updateWorkspaceSceneRect();
-    }
+    m_displayPipeline.applyLoadAddLayoutAfterMembership(sizeChanged);
 }
 
 void ImageView::completeLoadAdd(const QString &path, const QImage &image, quint64 generation)
 {
-    // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window.
-    // Duplicate paths are separate session images: fill every undecoded live
-    // occurrence, then create until live count matches pathOrder occurrences.
-    gallerySoftResetPath(path);
-
-    // Remember size even when the pending membership was cancelled — a successful
-    // decode still updates the session size cache for later layout.
-    if (generation == m_displayPipeline.loadGate().generation() && !image.isNull()) {
-        rememberSizeFromDecode(path, image);
-    }
-    if (!acceptPendingLoadAdd(path, generation)) {
-        return;
-    }
-    if (image.isNull()) {
-        handleLoadAddDecodeFailure(path);
-        return;
-    }
-
-    if (isImageMode()) {
-        // Fill stashed Gallery placeholders while user is in Image mode.
-        fillStashedItemsForPath(path, image);
-        emit statusChanged();
-        return;
-    }
-
-    reassertPendingBindPlacement(path);
-
-    const int pathOrderCount = pathOrderOccurrences(path);
-
-    // Pending binds whose SessionImageId is already on a live tile are satisfied.
-    purgeSatisfiedPendingBinds(path);
-
-    claimUnboundItemsForPendingBinds(path, image);
-
-    const int pendingBinds = countPendingSessionBinds(path);
-
-    bool sizeChanged = false;
-    int have = fillLiveItemsWithDecodedPixels(path, image, &sizeChanged);
-    fillStashedItemsForPath(path, image);
-
-    // Session pathOrder is the multiplicity source of truth. Do not create more
-    // tiles than session rows for this path (pending binds only fill gaps).
-    int wanted = pathOrderCount;
-    if (wanted <= 0) {
-        // Not in session pathOrder (ad-hoc workspace place): one tile per bind.
-        wanted = DisplayEdgePolicy::wantedBindCount(have, pendingBinds);
-    }
-
-    createMissingLoadAddItems(path, image, have, wanted);
-    applyLoadAddLayoutAfterMembership(sizeChanged);
-
-    emit statusChanged();
-    emit workspacePathsChanged();
-    if (isGalleryMode()) {
-        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
-    }
-    if (isWorkspaceMode()) {
-        ensureWorkspaceQualityClimb();
-    }
+    m_displayPipeline.completeLoadAdd(path, image, generation);
 }
 
 void ImageView::applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path)

@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1640-loadadd-controller.** Tier 5b: move LoadAdd membership handlers.
+Prior: **1639**.
+
+### Change
+- DisplayPipelineController owns the LoadAdd cluster:
+  - `finishLoadAddStatus` / `acceptPendingLoadAdd` / `handleLoadAddDecodeFailure`
+  - `fillStashedItemsForPath` / `reassertPendingBindPlacement` / `claimUnboundItemsForPendingBinds`
+  - `fillLiveItemsWithDecodedPixels` / `createMissingLoadAddItems` / `applyLoadAddLayoutAfterMembership`
+  - `completeLoadAdd`
+- ImageView thin-forwards
+- `imageview_load.cpp` ~1670 lines
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1640-loadadd-controller.bundle HEAD
+```
+
+### Next
+- scheduleImageLoad / classic decode / gallery soft
+- Host accessors to replace friend when surface stabilizes
+- Target: imageview_load.cpp under 800 lines
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1639-pending-replace-controller.** Tier 5b: move pending-tile and LoadReplace install.
 Prior: **1638**.
 
