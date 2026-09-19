@@ -286,7 +286,6 @@ void ImageView::attentionCommitSelectionMove()
                                 tr("Edit attention points"));
     }
     m_attention.clearGesture();
-    m_attention.dragStartPtsRef().clear();
 }
 
 void ImageView::paintAttentionOverlay(QPainter &painter)

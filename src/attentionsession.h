@@ -130,10 +130,13 @@ public:
         // gestureActive cleared by commit path after undo is recorded.
     }
 
+    void clearDragStartPts() { dragStartPts.clear(); }
+
     void clearGesture()
     {
         gestureActive = false;
         gestureBefore.clear();
+        clearDragStartPts();
     }
 
     void clear()
