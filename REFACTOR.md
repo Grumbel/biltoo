@@ -214,6 +214,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **Fix** isHandleHot(CropHandle) and CanvasBackground altColor;
   **AttentionSession** hasSelection gates; **SlideshowDwellState** bias/
   duration accessors.
+- **ViewFraming** sticky kind/scale; **ViewportChrome** mouse/pan accessors;
+  **SlideshowPhaseState** toBias; **CropSession** currentRect/rotation;
+  **GroupTransformSession** geometry accessors.
 
 
 ## Current pain (evidence)

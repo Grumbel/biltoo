@@ -2,6 +2,32 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1472-framing-chrome-phase-crop-group.** Framing, chrome, phase bias, crop, group.
+Prior: **1471**. Commits 1472a–1472e (+ docs).
+
+### Commits
+1. **ViewFraming** sticky kind and preserved scale accessors
+2. **ViewportChrome** mouse info and left-drag pan accessors
+3. **SlideshowPhaseState** toBias accessors
+4. **CropSession** currentRect / normalizedRect / currentRotation
+5. **GroupTransformSession** geometry accessors
+
+### Note
+Continues bag encapsulation. Path RAM remains settled. Crop enter/apply
+still on view (larger ownership extraction).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1472-framing-chrome-phase-crop-group.bundle HEAD
+```
+Requires tip **1471**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1471-fix-crop-alt-attention-dwell.** Fix CropHandle/altColor; Attention; Dwell.
 Prior: **1470**. Commits 1471a–1471c (+ docs).
 
