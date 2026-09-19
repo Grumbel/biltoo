@@ -469,6 +469,9 @@ public:
      * Full leave / session wipe: inactive, no target, no enter stash, no pending
      * full rematerialize. Does not touch ImageItem pixels.
      */
+    /** Clear tile LOD suppress on the bound target pointer (if any). */
+    void releaseTargetTileLod();
+
     void clear()
     {
         mode = false;

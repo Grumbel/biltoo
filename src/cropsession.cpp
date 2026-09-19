@@ -151,3 +151,10 @@ void CropSession::beginEnterSession(ImageItem *item, const QImage &enterSrc,
         item->setItemShear(0.0);
     }
 }
+
+void CropSession::releaseTargetTileLod()
+{
+    if (targetItem) {
+        targetItem->setTileLodSuppressed(false);
+    }
+}

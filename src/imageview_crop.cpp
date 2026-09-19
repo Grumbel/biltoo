@@ -1236,9 +1236,8 @@ void ImageView::cancelCropShowingFullImage(ImageItem *item)
 void ImageView::clearCropModeState()
 {
     // Unsuppress LOD before binding is cleared.
-    if (m_crop.target()) {
-        m_crop.target()->setTileLodSuppressed(false);
-    } else if (m_crop.hasTargetId()) {
+    m_crop.releaseTargetTileLod();
+    if (!m_crop.target() && m_crop.hasTargetId()) {
         if (ImageItem *byId = findItemBySessionId(m_crop.targetIdValue())) {
             byId->setTileLodSuppressed(false);
         }
