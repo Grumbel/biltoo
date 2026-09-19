@@ -266,8 +266,7 @@ void ImageView::prepareImageModeCanvas()
     }
     // Drop large Gallery/Workspace scene rects so fitInView centres cleanly.
     m_scene->setSceneRect(QRectF());
-    m_framing.fitMode = true;
-    m_framing.fillMode = false;
+    m_framing.setFitOnly();
 }
 
 void ImageView::prepareGalleryCanvas()
@@ -284,8 +283,7 @@ void ImageView::prepareGalleryCanvas()
         verticalScrollBar()->setValue(0);
     }
     m_scene->setSceneRect(QRectF());
-    m_framing.fitMode = true;
-    m_framing.fillMode = false;
+    m_framing.setFitOnly();
     // Force a blank pass before items are re-packed.
     viewport()->update();
 }

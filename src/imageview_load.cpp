@@ -2356,7 +2356,7 @@ void ImageView::seedEmptyWorkspaceFromReplace(const QString &path, const QImage 
         return;
     }
     item->setSelected(true);
-    m_framing.fitMode = true;
+    m_framing.armFit();
     fitItem(item, currentFitAspectMode());
     emit statusChanged();
 }

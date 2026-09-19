@@ -367,7 +367,7 @@ void ImageView::setLayoutMode(LayoutMode mode)
             m_scene->setSceneRect(ViewTransform::padded(m_scene->itemsBoundingRect(),
                                                ViewTransform::kFreeformScenePad));
         }
-        m_framing.fitMode = false;
+        m_framing.releaseFit();
         emit statusChanged();
         return;
     }
@@ -593,7 +593,7 @@ void ImageView::applyLayout(GalleryPackReason reason)
     if (verticalScrollBarPolicy() != savedVBar) {
         setVerticalScrollBarPolicy(savedVBar);
     }
-    m_framing.fitMode = true;
+    m_framing.armFit();
     // Keep the guard until after statusChanged so slots cannot re-enter layout.
     emit statusChanged();
     // layoutApplyScope ends after this function returns (keeps guard through statusChanged)

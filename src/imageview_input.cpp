@@ -277,8 +277,7 @@ bool ImageView::tryWheelGalleryZoom(QWheelEvent *event)
     }
     const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
     releaseStickyZoom();
-    m_framing.fitMode = false;
-    m_framing.fillMode = false;
+    m_framing.clearFitFill();
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
@@ -356,7 +355,7 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
     cancelSlideshowMotion();
     releaseStickyZoom();
-    m_framing.fitMode = false;
+    m_framing.releaseFit();
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
     // Soft / PreferCache / tile LOD: coalesce continuous wheel notches.
@@ -1264,7 +1263,7 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
         event->modifiers() & Qt::ControlModifier,
         event->modifiers() & Qt::ShiftModifier);
     m_itemInteract.rotateItem->setItemRotation(rot);
-    m_framing.fitMode = false;
+    m_framing.releaseFit();
     emit statusChanged();
     event->accept();
     return true;
@@ -1599,8 +1598,7 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
         const QRectF sceneRect = mapToScene(viewRect).boundingRect();
         if (sceneRect.isValid() && !sceneRect.isEmpty()) {
             releaseStickyZoom();
-            m_framing.fitMode = false;
-            m_framing.fillMode = false;
+            m_framing.clearFitFill();
             fitInView(sceneRect, Qt::KeepAspectRatio);
             emit statusChanged();
         }
