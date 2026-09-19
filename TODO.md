@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1366-handle-points-attention-rubber.** Shared axis-aligned
+handles; AttentionSession rubber ownership.
+Prior: **1365**.
+
+### Change
+- `ViewTransform::{axisAlignedHandlePoints,axisAlignedHandleIndexAt}`
+- PageGuide + group scale grips delegate to shared helpers
+- `AttentionSession::{beginRubber,updateRubber,endRubber}`; input path wired
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1366**)
+```bash
+git pull /path/to/biltoo-1366-handle-points-attention-rubber.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1365-filmstrip-virtual-atleast1.** FilmstripGeometry virtual
 range helpers; DisplayEdge/ImageCache atLeast1.
 Prior: **1364**.

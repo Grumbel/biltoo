@@ -343,3 +343,4 @@ part of early-phase exit criteria).
 - **ZoomBlur::workSize**; **ViewTransform::nonNeg(int)** for progress/margins/budget.
 - **ContentXform::clampEstimatedEdge**; **ColorAdjustments::clampUnit**; residual nonNeg/atLeast1.
 - **FilmstripGeometry** virtualOverscan/seedVirtualRange; DisplayEdge/ImageCache atLeast1.
+- **ViewTransform** axisAlignedHandlePoints; **AttentionSession** rubber begin/update/end.
