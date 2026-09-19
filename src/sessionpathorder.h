@@ -32,6 +32,13 @@ struct SessionPathOrder {
         syncIdLength();
     }
 
+    /** Append one session row (path + optional id). */
+    void appendRow(const QString &path, SessionImageId id = kInvalidSessionImageId)
+    {
+        paths.append(path);
+        ids.append(id);
+    }
+
     bool isEmpty() const { return paths.isEmpty(); }
 
     int size() const { return paths.size(); }

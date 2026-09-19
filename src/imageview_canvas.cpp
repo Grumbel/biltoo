@@ -460,12 +460,10 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
                 }
             }
             if (!alreadyOrdered) {
-                m_pathOrderBook.paths.append(path);
-                m_pathOrderBook.ids.append(sessionId);
+                m_pathOrderBook.appendRow(path, sessionId);
             }
         } else {
-            m_pathOrderBook.paths.append(path);
-            m_pathOrderBook.ids.append(kInvalidSessionImageId);
+            m_pathOrderBook.appendRow(path, kInvalidSessionImageId);
         }
     }
     scheduleImageLoad(path, LoadAdd);
@@ -546,13 +544,11 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
             }
         }
         if (!alreadyOrdered) {
-            m_pathOrderBook.paths.append(path);
-            m_pathOrderBook.ids.append(sessionId);
+            m_pathOrderBook.appendRow(path, sessionId);
         }
     } else {
         // Unbound place: still need a decode slot beyond existing path matches.
-        m_pathOrderBook.paths.append(path);
-        m_pathOrderBook.ids.append(kInvalidSessionImageId);
+        m_pathOrderBook.appendRow(path, kInvalidSessionImageId);
     }
     // Legacy path-keyed pos kept as fallback when a bind is missing.
     m_loadGate.pendingScenePos().insert(path, scenePos);
