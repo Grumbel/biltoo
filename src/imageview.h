@@ -281,6 +281,19 @@ public:
     }
 
 
+
+    // --- Crop host (Phase 6 Tier 2b CropController) ---
+    void storeCropAppearance(ImageItem *item, SessionImageId sid,
+                             const WorkspaceItemState &s);
+    bool loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
+                                    SessionImageId *sidOut) const;
+    void rememberSizeFromDecode(const QString &path, const QImage &image);
+    void rememberImageSize(const QString &path, const QSize &size);
+    bool sampleCoversNativeLogical(const QString &path, const QImage &image) const;
+    void emitCropApplyAppearance(SessionImageId sid, const QString &path,
+                                 ImageItem *item, const QImage &preferredDisplay,
+                                 bool hasCrop);
+
     // --- Slideshow host (Phase 6: replaces friend SlideshowController) ---
     SessionAppearanceStore &hostAppearance() { return m_appearance; }
     const SessionAppearanceStore &hostAppearance() const { return m_appearance; }
@@ -306,6 +319,8 @@ public:
     const TileNeighborPrefetch &hostTileNeighborPrefetch() const { return m_tileNeighborPrefetch; }
     EdgeZone hostHoverEdge() const { return m_hoverEdge; }
     void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
+    SessionLoadGate &hostLoadGate() { return m_loadGate; }
+    const SessionLoadGate &hostLoadGate() const { return m_loadGate; }
     /** PreferCache / soft climb edge cap (also used outside slideshow). */
     int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     QSize ensureSlideshowLogicalSize(const QString &path);

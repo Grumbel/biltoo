@@ -1,154 +1,201 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Crop targets, draft locks, PathRaster cancel, align/leave layout, auto-trim.
-// Enter → crop_enter; Apply → crop_apply; Full → crop_raster;
-// paint → crop_paint; input → crop_input.
-
 #include "imageview.h"
-#include "croppathraster.h"
+
+#include "crophandle.h"
 #include "cropflash.h"
-#include "placementlinear.h"
-#include "imageitem.h"
 
-ImageItem *ImageView::cropSessionBoundItem() const
-{
-    // Bound subject for the active crop session (IDENTITY.md).
-    if (m_cropCtrl.session().target()) {
-        return m_cropCtrl.session().target();
-    }
-    if (m_cropCtrl.session().hasTargetId()) {
-        return findItemBySessionId(m_cropCtrl.session().targetIdValue());
-    }
-    return nullptr;
-}
-
-
-ImageItem *ImageView::cropTargetItem() const
-{
-    // Crop session is bound to one subject for its entire lifetime. Never
-    // retarget from selection while the draft is active.
-    if (m_cropCtrl.session().active() || m_cropCtrl.session().isEnterValid()) {
-        if (ImageItem *bound = cropSessionBoundItem()) {
-            return bound;
-        }
-    }
-    if (ImageItem *t = targetItem()) {
-        // Soft ladder tiles have preview/source with m_previewPixels; pixmap is
-        // often empty (paint uses m_source). hasDecodedPixels() alone was
-        // "Crop / No image" for every soft-only Workspace/Gallery selection.
-        if (t->hasDisplayPixels()) {
-            return t;
-        }
-    }
-    // Image mode only: sole canvas item. Gallery/Workspace need an explicit
-    // single selection (hasSingleCropTarget) — never primaryItem() fan-out.
-    if (isImageMode()) {
-        return primaryItem();
-    }
-    return nullptr;
-}
-
-
+#include <QImage>
+#include <QPainter>
+#include <QPoint>
+#include <QPointF>
+#include <QRectF>
+#include <QString>
 
 bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 {
-    if (!item) {
-        return false;
-    }
-    // Pointer/id lock on CropSession, then path lock (draftPath / targetId resolve).
-    return m_cropCtrl.session().locksItem(item) || isCropDraftLockedPath(item->path());
+    return m_cropCtrl.isCropDraftLockedItem(item);
 }
 
 bool ImageView::isCropDraftLockedPath(const QString &path) const
 {
-    QString boundPath;
-    if (ImageItem *bound = cropSessionBoundItem()) {
-        boundPath = bound->path();
-    }
-    return m_cropCtrl.session().locksResolvedPath(path, boundPath);
+    return m_cropCtrl.isCropDraftLockedPath(path);
 }
 
 void ImageView::cancelPathRasterForCrop(const QString &path)
 {
-    CropPathRaster::suspend(m_pathRaster, path);
+    m_cropCtrl.cancelPathRasterForCrop(path);
 }
 
 void ImageView::fitImageOrUpdateWorkspace(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    if (isImageMode()) {
-        m_framing.armFit();
-        fitItem(item, currentFitAspectMode());
-    } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
+    m_cropCtrl.fitImageOrUpdateWorkspace(item);
 }
 
 void ImageView::relayoutAfterCropLeave(ImageItem *item)
 {
-    if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
-    } else {
-        fitImageOrUpdateWorkspace(item);
-    }
+    m_cropCtrl.relayoutAfterCropLeave(item);
 }
 
 void ImageView::ensureCropRectValid()
 {
-    ImageItem *item = cropTargetItem();
-    if (!item) {
-        return;
-    }
-    m_cropCtrl.session().ensureRectValid(item->contentRect());
+    m_cropCtrl.ensureCropRectValid();
 }
 
 void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
 {
-    if (!item) {
-        return;
-    }
-    // Pixmap is centred on the item origin (offset -w/2,-h/2).
-    CropSession::applyScenePosDelta(
-        item,
-        PlacementLinear::scenePosDeltaToAlign(
-            item->mapToScene(QPointF(0.0, 0.0)), sceneAnchor));
+    m_cropCtrl.alignItemCenterToScene(item, sceneAnchor);
 }
 
 void ImageView::toggleCropMode()
 {
-    setCropMode(!m_cropCtrl.session().active());
+    m_cropCtrl.toggleCropMode();
 }
-
 
 void ImageView::requestCropViewportUpdate()
 {
-    if (viewport()) {
-        viewport()->update();
-    }
+    m_cropCtrl.requestCropViewportUpdate();
 }
 
 void ImageView::applyAutoCrop()
 {
-    ImageItem *item = cropTargetItem();
-    if (!item || !m_cropCtrl.session().active()) {
-        return;
-    }
-    const QImage src = CropSession::pickAutoCropSourcePixels(item);
-    if (src.isNull()) {
-        return;
-    }
-    ensureCropRectValid();
-    if (!m_cropCtrl.session().tryPaddedAutoTrim(item->contentRect(), src)) {
-        return;
-    }
-    requestCropViewportUpdate();
-    emit statusChanged();
+    m_cropCtrl.applyAutoCrop();
 }
 
 void ImageView::flashCropHud(const CropFlash::Hud &hud)
 {
-    flashHud(hud.title, hud.detail);
+    m_cropCtrl.flashCropHud(hud);
+}
+
+void ImageView::applyCrop()
+{
+    m_cropCtrl.applyCrop();
+}
+
+void ImageView::cancelCrop()
+{
+    m_cropCtrl.cancelCrop();
+}
+
+SessionImageId ImageView::cropRecordSessionId(const ImageItem *item) const
+{
+    return m_cropCtrl.cropRecordSessionId(item);
+}
+
+void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
+{
+    m_cropCtrl.recordSessionCrop(item, localCrop);
+}
+
+void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
+{
+    m_cropCtrl.pushCropAppearanceUndo(item, text);
+}
+
+bool ImageView::applyCropCommit(ImageItem *item)
+{
+    return m_cropCtrl.applyCropCommit(item);
+}
+
+void ImageView::leaveCropModeInternal(bool apply)
+{
+    m_cropCtrl.leaveCropModeInternal(apply);
+}
+
+bool ImageView::enterCropModeFromUi()
+{
+    return m_cropCtrl.enterCropModeFromUi();
+}
+
+void ImageView::setCropMode(bool on)
+{
+    m_cropCtrl.setCropMode(on);
+}
+
+bool ImageView::prepareCropModeFullImage(ImageItem *item)
+{
+    return m_cropCtrl.prepareCropModeFullImage(item);
+}
+
+QRectF ImageView::cropRectView() const
+{
+    return m_cropCtrl.cropRectView();
+}
+
+void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
+{
+    m_cropCtrl.beginCropHandleDrag(h, viewPos);
+}
+
+void ImageView::cropKeyboardMods(bool *shiftHeld, bool *ctrlHeld)
+{
+    m_cropCtrl.cropKeyboardMods(shiftHeld, ctrlHeld);
+}
+
+void ImageView::updateCropHandleDrag(const QPoint &viewPos)
+{
+    m_cropCtrl.updateCropHandleDrag(viewPos);
+}
+
+void ImageView::endCropHandleDrag()
+{
+    m_cropCtrl.endCropHandleDrag();
+}
+
+bool ImageView::contentLocalContains(ImageItem *item, const QPointF &local) const
+{
+    return m_cropCtrl.contentLocalContains(item, local);
+}
+
+void ImageView::beginCropRubberBand(const QPoint &viewPos)
+{
+    m_cropCtrl.beginCropRubberBand(viewPos);
+}
+
+void ImageView::updateCropRubberBand(const QPoint &viewPos)
+{
+    m_cropCtrl.updateCropRubberBand(viewPos);
+}
+
+void ImageView::finishCropRubberBand()
+{
+    m_cropCtrl.finishCropRubberBand();
+}
+
+void ImageView::endCropRubberBand()
+{
+    m_cropCtrl.endCropRubberBand();
+}
+
+void ImageView::paintCropOverlay(QPainter &painter)
+{
+    m_cropCtrl.paintCropOverlay(painter);
+}
+
+void ImageView::onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
+                                            quint64 gen)
+{
+    m_cropCtrl.onPoolCropFullRasterDecoded(path, decoded, gen);
+}
+
+void ImageView::requestCropFullRaster(const QString &path)
+{
+    m_cropCtrl.requestCropFullRaster(path);
+}
+
+void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
+{
+    m_cropCtrl.maybeUpgradeCropFullRaster(path, image);
+}
+
+
+ImageItem *ImageView::cropSessionBoundItem() const
+{
+    return m_cropCtrl.cropSessionBoundItem();
+}
+
+ImageItem *ImageView::cropTargetItem() const
+{
+    return m_cropCtrl.cropTargetItem();
 }

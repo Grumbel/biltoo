@@ -96,7 +96,6 @@
                                         const WorkspaceItemState &want);
     void finishAsyncHostRematerialize(const QString &path, SessionImageId sid,
                                       const WorkspaceItemState &want, const QImage &display);
-    bool sampleCoversNativeLogical(const QString &path, const QImage &image) const;
     void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                           const QImage &sample);
     void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
@@ -152,13 +151,6 @@
      * Does not schedule ladder encode or source I/O.
      */
     void primeGalleryGeometryFromCache(const QStringList &paths);
-    /** Remember native size after a successful full decode (or async probe). */
-    void rememberImageSize(const QString &path, const QSize &size);
-    /**
-     * After a decode: prefer thumtoo/probe size. Never treat soft/ladder
-     * sample dimensions as definitive logical size.
-     */
-    void rememberSizeFromDecode(const QString &path, const QImage &image);
     void scheduleImageSizeProbe(const QString &path);
 
     // --- GallerySizeResolveHost -------------------------------------------------
@@ -296,13 +288,8 @@
     /** Upgrade crop source when native full arrives for m_cropCtrl.session().awaitingFullPath. */
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
-    void emitCropApplyAppearance(SessionImageId sid, const QString &path,
-                                 ImageItem *item, const QImage &preferredDisplay,
-                                 bool hasCrop);
     void relayoutAfterCropLeave(ImageItem *item);
     void flashCropHud(const CropFlash::Hud &hud);
-    void storeCropAppearance(ImageItem *item, SessionImageId sid,
-                             const WorkspaceItemState &s);
     bool applyCropCommit(ImageItem *item);
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace
@@ -318,9 +305,6 @@
     void cancelPathRasterForCrop(const QString &path);
     /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
     void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
-    /** Cancel path: put the session crop (if any) back on the live item. */
-    bool loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
-                                    SessionImageId *sidOut) const;
     void restoreSessionCropAppearance(ImageItem *item);
     void updateMouseInfo(const QPoint &viewPos);
     /**

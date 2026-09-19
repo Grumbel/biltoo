@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1607-phase6-tier2b-crop-controller.** Phase 6 Tier 2b: crop orchestration on CropController; ImageView thin forwards.
+Prior: **1606**.
+
+### Change
+- All crop enter/apply/leave/paint/input/raster methods on `CropController`
+- `imageview_crop.cpp` thin forwards; other `imageview_crop_*.cpp` emptied
+- Crop host: `hostLoadGate`; promoted store/load crop appearance helpers as needed
+- ImageView friends remain empty
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1607-phase6-tier2b-crop-controller.bundle HEAD
+```
+
+### Next
+- Rebuild; fix compile errors from crop move
+- Tier 4 characterization tests / Appearance into SessionDocument
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1606-phase6-tier2b-attention-controller.** Phase 6 Tier 2b: attention orchestration on AttentionController; ImageView thin forwards.
 Prior: **1605**.
 
