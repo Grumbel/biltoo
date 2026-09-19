@@ -786,10 +786,10 @@ public:
     void setBackgroundColorAlt(const QColor &color);
     QColor backgroundColorAlt() const { return m_canvasBg.altColor(); }
     void setBackgroundPattern(BackgroundPattern pattern);
-    BackgroundPattern backgroundPattern() const { return m_canvasBg.pattern; }
+    BackgroundPattern backgroundPattern() const { return m_canvasBg.currentPattern(); }
     /** When true, checkerboard is used only in Workspace; other modes stay solid. */
     void setCheckerboardWorkspaceOnly(bool on);
-    bool checkerboardWorkspaceOnly() const { return m_canvasBg.checkerWorkspaceOnly; }
+    bool checkerboardWorkspaceOnly() const { return m_canvasBg.isCheckerWorkspaceOnly(); }
 
     /**
      * Per-Workspace background override (project state). AppDefault uses the

@@ -45,6 +45,14 @@ struct CanvasBackground {
 
     const QPixmap &workspaceTilePixmap() const { return workspaceTile; }
 
+    const WorkspaceBackground &workspaceRef() const { return workspace; }
+
+    bool isWorkspaceAppDefault() const { return workspace.isAppDefault(); }
+
+    BackgroundPattern currentPattern() const { return pattern; }
+
+    bool isCheckerWorkspaceOnly() const { return checkerWorkspaceOnly; }
+
     bool workspaceTilePathMatches(const QString &path) const
     {
         return workspaceTilePath == path;
