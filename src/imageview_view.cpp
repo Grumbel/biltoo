@@ -1261,7 +1261,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
                m_ss.toContentApplied)) {
         m_ss.setToImage(oriented, true);
         ImageCache::stampDebugOverlayIfEnabled(&m_ss.toImage, path);
-        if (!m_ss.toAtlas.isNull() && m_ss.toAtlas.height() > 0
+        if (m_ss.hasToAtlas() && m_ss.toAtlas.height() > 0
             && oriented.height() > 0) {
             if (SlideshowMotionGeometry::aspectMismatch(
                     qreal(m_ss.toAtlas.width()), qreal(m_ss.toAtlas.height()),
@@ -1272,7 +1272,7 @@ void ImageView::finishSlideshowPhaseBufferUpgrade(const QString &path, const QIm
         }
         const DwellAtlasParams params = dwellAtlasParams();
         const bool needAtlas =
-            m_ss.toAtlas.isNull()
+            !m_ss.hasToAtlas()
             || incoming >= need
             || incoming > ThumtooCache::kGalleryLadderEdge
             || !SlideshowAtlasPolicy::coversSource(
@@ -1666,7 +1666,7 @@ SessionImageId ImageView::sessionIdForPath(const QString &path) const
         }
     }
     // Image-mode slideshow: current session cursor when path matches.
-    if (m_sessionId.currentId != kInvalidSessionImageId) {
+    if (m_sessionId.hasCurrentId()) {
         if (ImageItem *it = findItemBySessionId(m_sessionId.currentId)) {
             if (it->path() == path) {
                 return m_sessionId.currentId;
@@ -1807,7 +1807,7 @@ void ImageView::promoteSlideshowFromToPhase(const QString &fromPath)
     m_ssDwell.setMotionT(m_ss.fromMotionT);
     // Keep the to-atlas as the from/dwell atlas — clearing it forced multi-MP
     // drawImage every frame until rebuild (visible frame drops on promote).
-    if (!m_ss.toAtlas.isNull()) {
+    if (m_ss.hasToAtlas()) {
         m_ssDwell.setAtlas(m_ss.toAtlas, m_ss.toAtlasScale, m_ss.toAtlasVw,
                            m_ss.toAtlasVh, m_ss.toAtlasRebuildGeneration);
     }
@@ -2040,7 +2040,7 @@ void ImageView::warmZoomBlurForCurrentPhase()
 bool ImageView::applySlideshowFadeProgressOnly(qreal fadeT)
 {
     // Pure-phase clock ticks at 16ms with unchanged from/to — only advance fade.
-    if (qFuzzyCompare(fadeT, m_ss.fadeT) || (fadeT < 0.0 && m_ss.fadeT < 0.0)) {
+    if (qFuzzyCompare(fadeT, m_ss.fadeT) || (fadeT < 0.0 && m_ss.inDwell())) {
         return false;
     }
     m_ss.setFadeBlend(fadeT);
@@ -2594,7 +2594,7 @@ void ImageView::paintMotionCover(QPainter *painter, const QImage &image,
     const QPixmap *atlas = nullptr;
     if (!path.isEmpty() && m_ss.isFromPath(path) && m_ssDwell.hasAtlas()) {
         atlas = &m_ssDwell.atlas;
-    } else if (!path.isEmpty() && m_ss.isToPath(path) && !m_ss.toAtlas.isNull()) {
+    } else if (!path.isEmpty() && m_ss.isToPath(path) && m_ss.hasToAtlas()) {
         atlas = &m_ss.toAtlas;
     } else if (path.isEmpty() && m_ssDwell.hasAtlas()
                && (&image == &m_ssDwell.sourceImage || &image == &m_ss.fromImage)) {
@@ -3049,7 +3049,7 @@ QString ImageView::hudFileName() const
     if (m_items.isEmpty() && isMultiItemMode()) {
         return {};
     }
-    if (!m_sessionId.lastLoadError.isEmpty()) {
+    if (m_sessionId.hasLastLoadError()) {
         return PagePath::displayName(m_sessionId.lastLoadError);
     }
     ImageItem *item = targetItem();
@@ -3157,7 +3157,7 @@ void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
 
 QString ImageView::statusTextEmpty() const
 {
-    if (!m_sessionId.lastLoadError.isEmpty()) {
+    if (m_sessionId.hasLastLoadError()) {
         return tr("Failed to load “%1”").arg(PagePath::displayName(m_sessionId.lastLoadError));
     }
     if (hasClassicPath() && isImageMode()) {

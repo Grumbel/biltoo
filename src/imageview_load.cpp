@@ -243,7 +243,7 @@ WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
     // Gallery / Workspace LoadAdd must not call this: each tile is bound to
     // its own session id *after* creation. Applying m_sessionId.currentId here
     // would bake the navigated image's crop into every newly decoded tile.
-    if (m_sessionId.currentId != kInvalidSessionImageId) {
+    if (m_sessionId.hasCurrentId()) {
         seedSessionAppearanceFromState(m_sessionId.currentId, path);
         if (const WorkspaceItemState *sit = m_appearance.get(m_sessionId.currentId)) {
             return *sit;
@@ -273,7 +273,7 @@ ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &ima
         // empty — which is exactly when durable rotate/flip must be loaded
         // after restart. appearanceForNewImageModeItem seeds then returns
         // identity only if XDG has nothing.
-        if (m_sessionId.currentId != kInvalidSessionImageId
+        if (m_sessionId.hasCurrentId()
             || m_itemStateBook.contains(path)) {
             app = appearanceForNewImageModeItem(path);
         }
@@ -754,7 +754,7 @@ void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
     if (sid == kInvalidSessionImageId) {
         if (item->sessionId() != kInvalidSessionImageId) {
             sid = item->sessionId();
-        } else if (isImageMode() && m_sessionId.currentId != kInvalidSessionImageId) {
+        } else if (isImageMode() && m_sessionId.hasCurrentId()) {
             sid = m_sessionId.currentId;
         }
     }
@@ -882,7 +882,7 @@ void ImageView::bindImageModeSessionCursor(ImageItem *item)
         return;
     }
     // Image-mode crop/flip targets the matching Workspace session slot.
-    if (m_sessionId.currentId != kInvalidSessionImageId) {
+    if (m_sessionId.hasCurrentId()) {
         item->setSessionId(m_sessionId.currentId);
     }
     if (m_sessionId.index >= 0) {
@@ -961,7 +961,7 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     }
 
     WorkspaceItemState want;
-    if (m_sessionId.currentId != kInvalidSessionImageId) {
+    if (m_sessionId.hasCurrentId()) {
         if (const WorkspaceItemState *st = m_appearance.get(m_sessionId.currentId)) {
             want = *st;
         }
@@ -976,7 +976,7 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
         if (pixels.isNull()) {
             continue;
         }
-        const bool sameId = (m_sessionId.currentId != kInvalidSessionImageId
+        const bool sameId = (m_sessionId.hasCurrentId()
                              && cand->sessionId() == m_sessionId.currentId);
         const bool hasApplied = cand->hasAppliedContentXform();
         const ContentXform::Value applied = hasApplied

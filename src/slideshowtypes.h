@@ -162,6 +162,13 @@ struct SlideshowPhaseState {
     bool inTransition() const { return fadeT >= 0.0; }
     bool inDwell() const { return fadeT < 0.0; }
 
+    bool hasToAtlas() const { return !toAtlas.isNull(); }
+
+    qreal clampedFadeT() const
+    {
+        return fadeT < 0.0 ? 0.0 : qBound(0.0, fadeT, 1.0);
+    }
+
     void setFromImage(const QImage &img, bool contentApplied)
     {
         fromImage = img;

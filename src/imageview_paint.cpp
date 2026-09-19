@@ -210,8 +210,8 @@ void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
         const QImage &fromImg = m_ss.hasFromImage() ? m_ss.fromImage : m_ssDwell.sourceImage;
         const qreal fromT = m_ss.fromMotionT;
         const qreal toT = m_ss.toMotionT;
-        if (m_ss.fadeT >= 0.0 && m_ss.hasToImage()) {
-            const qreal t = ViewTransform::clamp01(m_ss.fadeT);
+        if (m_ss.inTransition() && m_ss.hasToImage()) {
+            const qreal t = m_ss.clampedFadeT();
             fillPad(vr, fromImg, m_ss.toImage, t, m_ss.fromPath, m_ss.toPath);
             if (m_ssSettings.transition == SlideshowTransition::FadeBlack) {
                 // V envelope: A→black (t in [0,0.5]), then black→B (t in [0.5,1]).
