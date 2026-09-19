@@ -213,9 +213,7 @@ bool ImageView::enterCropModeFromUi()
         updateWorkspaceSceneRect();
     }
     // m_crop.mode already true (set in prepare after full-frame install).
-    m_crop.activeHandle = CropHandle::None;
-    m_crop.hoverHandle = CropHandle::None;
-    m_crop.rubberBanding = false;
+    m_crop.clearInteraction();
     flashHud(tr("Crop mode"),
              tr("Apply commits · Esc cancels"));
     emit cropModeChanged(true);
@@ -1356,11 +1354,9 @@ void ImageView::clearCropModeState()
     m_crop.targetItem = nullptr;
     m_crop.targetId = kInvalidSessionImageId;
     m_crop.rect = QRectF();
-    m_crop.activeHandle = CropHandle::None;
-    m_crop.hoverHandle = CropHandle::None;
+    m_crop.clearInteraction();
     m_crop.allowExpand = false;
     m_crop.rotation = 0.0;
-    m_crop.rubberBanding = false;
     // Apply may have queued a full bake while freeze was still on.
     const bool pendingFull = m_crop.pendingFullRematerialize;
     const QString pendingPath = m_crop.pendingFullRematerializePath;
@@ -1793,13 +1789,12 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
         || h == CropHandle::Auto) {
         return;
     }
-    m_crop.activeHandle = h;
-    m_crop.dragStartRect = m_crop.rect;
-    m_crop.dragStartLocal = item->mapFromScene(mapToScene(viewPos));
+    const QPointF startLocal = item->mapFromScene(mapToScene(viewPos));
+    m_crop.beginHandleDrag(h, m_crop.rect, startLocal);
     if (h == CropHandle::Rotate) {
-        m_crop.rotateStartRotation = m_crop.rotation;
-        m_crop.rotateStartAngle = PlacementLinear::angleAbout(
-            m_crop.rect.center(), m_crop.dragStartLocal);
+        m_crop.setRotateStart(
+            m_crop.rotation,
+            PlacementLinear::angleAbout(m_crop.rect.center(), startLocal));
     }
 }
 
@@ -1888,7 +1883,7 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 
 void ImageView::endCropHandleDrag()
 {
-    m_crop.activeHandle = CropHandle::None;
+    m_crop.endHandleDrag();
     ensureCropRectValid();
     viewport()->update();
 }
@@ -1903,8 +1898,7 @@ void ImageView::beginCropRubberBand(const QPoint &viewPos)
     if (!item->contentRect().contains(local)) {
         return;
     }
-    m_crop.rubberBanding = true;
-    m_crop.rubberOriginLocal = local;
+    m_crop.beginRubber(local);
     m_crop.rect = QRectF(local, QSizeF(0, 0));
     m_crop.rotation = 0.0; // new rubber-band is axis-aligned
     viewport()->update();
@@ -1934,7 +1928,7 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
 
 void ImageView::endCropRubberBand()
 {
-    m_crop.rubberBanding = false;
+    m_crop.endRubber();
     ensureCropRectValid();
     viewport()->update();
 }

@@ -101,6 +101,31 @@ public:
         rotateStartRotation = 0.0;
     }
 
+    void setHoverHandle(CropHandle h) { hoverHandle = h; }
+
+    void beginHandleDrag(CropHandle h, const QRectF &startRect, const QPointF &startLocal)
+    {
+        activeHandle = h;
+        dragStartRect = startRect;
+        dragStartLocal = startLocal;
+    }
+
+    void setRotateStart(qreal rotationDeg, qreal angleDeg)
+    {
+        rotateStartRotation = rotationDeg;
+        rotateStartAngle = angleDeg;
+    }
+
+    void endHandleDrag() { activeHandle = CropHandle::None; }
+
+    void beginRubber(const QPointF &originLocal)
+    {
+        rubberBanding = true;
+        rubberOriginLocal = originLocal;
+    }
+
+    void endRubber() { rubberBanding = false; }
+
     /**
      * Full leave / session wipe: inactive, no target, no enter stash, no pending
      * full rematerialize. Does not touch ImageItem pixels.

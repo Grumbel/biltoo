@@ -1127,7 +1127,7 @@ bool ImageView::tryMouseMoveCropHover(QMouseEvent *event)
     const CropHandle h = cropHandleAt(event->pos());
     const bool cropHoverChanged = (h != m_crop.hoverHandle);
     if (cropHoverChanged) {
-        m_crop.hoverHandle = h;
+        m_crop.setHoverHandle(h);
         viewport()->update();
     }
     switch (h) {
