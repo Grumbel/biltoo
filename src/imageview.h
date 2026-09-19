@@ -304,6 +304,8 @@ public:
     const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displaySurfaces; }
     TileNeighborPrefetch &hostTileNeighborPrefetch() { return m_tileNeighborPrefetch; }
     const TileNeighborPrefetch &hostTileNeighborPrefetch() const { return m_tileNeighborPrefetch; }
+    EdgeZone hostHoverEdge() const { return m_hoverEdge; }
+    void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
     /** PreferCache / soft climb edge cap (also used outside slideshow). */
     int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     QSize ensureSlideshowLogicalSize(const QString &path);

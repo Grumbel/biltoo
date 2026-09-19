@@ -5,8 +5,15 @@
 #define ATTENTIONCONTROLLER_H
 
 #include "attentionsession.h"
+#include "imageview_types.h"
+
+#include <QPointF>
+#include <QVector>
+#include <QString>
 
 class ImageView;
+class ImageItem;
+class QPainter;
 
 /**
  * Attention-mode collaborator for ImageView (Phase 6 Tier 2a).
@@ -25,6 +32,25 @@ public:
     const AttentionSession &session() const { return m_attention; }
 
     bool active() const { return m_attention.active(); }
+
+    SessionImageId attentionSessionId() const;
+    QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
+    QVector<QPointF> attentionPointsForTarget() const;
+    QPointF attentionNormForTarget() const;
+    void setAttentionPointsForTarget(const QVector<QPointF> &pts);
+    void setAttentionNormForTarget(const QPointF &norm);
+    void ensureAttentionPoint();
+    void restoreAttentionPoints(const QVector<QPointF> &pts);
+    void pushAttentionPointsUndo(const QVector<QPointF> &before,
+                                 const QVector<QPointF> &after, const QString &text);
+    void detectAttentionPoint();
+    void setAttentionMode(bool on);
+    void toggleAttentionMode();
+    int attentionHandleIndexAt(const QPoint &viewPos) const;
+    bool attentionHandleAt(const QPoint &viewPos) const;
+    void attentionDeleteSelected();
+    void attentionCommitSelectionMove();
+    void paintAttentionOverlay(QPainter &painter);
 
 private:
     ImageView *m_view = nullptr; // not owned

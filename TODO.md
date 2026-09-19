@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1606-phase6-tier2b-attention-controller.** Phase 6 Tier 2b: attention orchestration on AttentionController; ImageView thin forwards.
+Prior: **1605**.
+
+### Change
+- All attention mode methods live on `AttentionController`
+- `imageview_attention.cpp` is thin public/private forwards for input/paint call sites
+- Host: `hostHoverEdge` / `setHostHoverEdge` for cursor edge cleanup on mode enter
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1606-phase6-tier2b-attention-controller.bundle HEAD
+```
+
+### Next
+- Tier 2b crop method move (same pattern)
+- Rebuild
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1605-phase6-slideshow-host.** Phase 6: Slideshow host surface; ImageView friend list empty.
 Prior: **1604**.
 
