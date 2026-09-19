@@ -1375,8 +1375,8 @@ void ImageView::requestSlideshowAtlas(SlideshowAtlasKind kind)
         return;
     }
     const QImage *source = (kind == SlideshowAtlasKind::From)
-                               ? &m_ssDwell.sourceImageMutable()
-                               : &m_ss.toImageMutable();
+                               ? &m_ssDwell.sourceImageRef()
+                               : &m_ss.toImageRef();
     if (!source || source->isNull()) {
         return;
     }
@@ -1384,7 +1384,7 @@ void ImageView::requestSlideshowAtlas(SlideshowAtlasKind kind)
     if (!params.valid) {
         return;
     }
-    const QPixmap *atlas = (kind == SlideshowAtlasKind::From) ? &m_ssDwell.atlasMutable() : &m_ss.toAtlasMutable();
+    const QPixmap *atlas = (kind == SlideshowAtlasKind::From) ? &m_ssDwell.atlasRef() : &m_ss.toAtlasRef();
     const qreal aScale = (kind == SlideshowAtlasKind::From) ? m_ssDwell.atlasScaleValue() : m_ss.toAtlasScaleValue();
     const int aVw = (kind == SlideshowAtlasKind::From) ? m_ssDwell.atlasVwValue() : m_ss.toAtlasVwValue();
     const int aVh = (kind == SlideshowAtlasKind::From) ? m_ssDwell.atlasVhValue() : m_ss.toAtlasVhValue();
