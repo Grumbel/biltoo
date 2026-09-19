@@ -56,6 +56,15 @@ struct CanvasBackground {
 
     void setPattern(BackgroundPattern p) { pattern = p; }
 
+    bool setCheckerWorkspaceOnly(bool on)
+    {
+        if (checkerWorkspaceOnly == on) {
+            return false;
+        }
+        checkerWorkspaceOnly = on;
+        return true;
+    }
+
     /** App-default checker when pattern is Checkerboard (optional WS-only). */
     bool useChecker(bool isWorkspaceMode) const
     {

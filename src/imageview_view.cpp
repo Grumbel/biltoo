@@ -155,10 +155,9 @@ void ImageView::setBackgroundPattern(BackgroundPattern pattern)
 
 void ImageView::setCheckerboardWorkspaceOnly(bool on)
 {
-    if (m_canvasBg.checkerWorkspaceOnly == on) {
+    if (!m_canvasBg.setCheckerWorkspaceOnly(on)) {
         return;
     }
-    m_canvasBg.checkerWorkspaceOnly = on;
     viewport()->update();
 }
 
