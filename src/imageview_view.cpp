@@ -713,7 +713,7 @@ void ImageView::setSlideshowProgressPaused(bool paused)
     }
     if (paused) {
         if (m_ssHud.progressElapsed.isValid()) {
-            m_ssHud.progressBaseMs += m_ssHud.progressElapsed.elapsed();
+            m_ssHud.accumulateProgressBaseFromElapsed();
         }
         m_ssHud.setProgressClockPaused(true);
         if (m_slideshowProgressTimer) {

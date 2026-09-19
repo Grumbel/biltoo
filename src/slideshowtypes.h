@@ -668,6 +668,14 @@ struct SlideshowProgressHud {
         progressElapsed.start();
     }
 
+    /** Fold progressElapsed into progressBaseMs (pause / stop). */
+    void accumulateProgressBaseFromElapsed()
+    {
+        if (progressElapsed.isValid()) {
+            progressBaseMs += progressElapsed.elapsed();
+        }
+    }
+
     void clearTimeline()
     {
         timelineElapsedMs = 0;
