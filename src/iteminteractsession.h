@@ -45,6 +45,40 @@ struct ItemInteractSession {
         clearHandleDrag();
         clearMove();
     }
+
+    void beginRotate(ImageItem *item, qreal startAngle, qreal itemStart,
+                     const WorkspaceItemState &startState)
+    {
+        rotating = true;
+        rotateItem = item;
+        rotateStartAngle = startAngle;
+        rotateItemStart = itemStart;
+        dragStartState = startState;
+    }
+
+    void endRotate() { clearRotate(); }
+
+    void beginHandleDrag(ImageItem *item, const WorkspaceItemState &startState)
+    {
+        handleDragItem = item;
+        dragItem = item;
+        dragStartState = startState;
+    }
+
+    void endHandleDrag()
+    {
+        handleDragItem = nullptr;
+        dragItem = nullptr;
+        // keep dragStartState until caller has pushed undo
+    }
+
+    void beginMove(ImageItem *item, const WorkspaceItemState &startState)
+    {
+        dragItem = item;
+        dragStartState = startState;
+    }
+
+    void endMove() { clearMove(); }
 };
 
 #endif // ITEMINTERACTSESSION_H

@@ -512,8 +512,8 @@ bool ImageView::tryMousePressCrop(QMouseEvent *event)
     if (h == CropHandle::Reset) {
         // Expand draft to the full image; Apply commits a cleared session crop.
         if (ImageItem *item = cropTargetItem()) {
-            m_crop.rect = item->contentRect();
-            m_crop.rotation = 0.0;
+            m_crop.setRect(item->contentRect());
+            m_crop.setRotation(0.0);
             ensureCropRectValid();
             viewport()->update();
         }
@@ -595,9 +595,7 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
         // pointer is over another tile's pixmap (handles are drawn on top).
         ImageItem *item = selected.first();
         if (item->beginHandleInteraction(scenePos, event->modifiers())) {
-            m_itemInteract.handleDragItem = item;
-            m_itemInteract.dragItem = item;
-            m_itemInteract.dragStartState = captureState(item);
+            m_itemInteract.beginHandleDrag(item, captureState(item));
             setPageGuideSelected(false);
             event->accept();
             return true;
@@ -751,11 +749,8 @@ bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
     if (!hit) {
         return false;
     }
-    m_itemInteract.rotating = true;
-    m_itemInteract.rotateItem = hit;
-    m_itemInteract.rotateStartAngle = angleAt(scenePos, hit);
-    m_itemInteract.rotateItemStart = hit->itemRotation();
-    m_itemInteract.dragStartState = captureState(hit);
+    m_itemInteract.beginRotate(hit, angleAt(scenePos, hit), hit->itemRotation(),
+                               captureState(hit));
     m_scene->clearSelection();
     hit->setSelected(true);
     setCursor(Qt::CrossCursor);
@@ -950,8 +945,7 @@ bool ImageView::tryMousePressWorkspaceSelect(QMouseEvent *event)
         setPageGuideSelected(false);
         QGraphicsView::mousePressEvent(event);
         if (ImageItem *hit = targetItem()) {
-            m_itemInteract.dragItem = hit;
-            m_itemInteract.dragStartState = captureState(hit);
+            m_itemInteract.beginMove(hit, captureState(hit));
         }
         emit statusChanged();
         return true;
@@ -999,8 +993,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
             const ThumtooCache::PageTextLayer cached =
                 ThumtooCache::cachedPageTextLayer(classicPath());
             if (!cached.regions.isEmpty()) {
-                m_textLayer.layer = cached;
-                m_textLayer.layerPath = classicPath();
+                m_textLayer.setLayerContent(cached, classicPath());
             }
         }
         int page = 0;
@@ -1681,11 +1674,11 @@ bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
     if (!m_itemInteract.handleDragItem || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_itemInteract.handleDragItem->endHandleInteraction();
-    pushItemTransformUndo(m_itemInteract.handleDragItem, m_itemInteract.dragStartState,
-                          captureState(m_itemInteract.handleDragItem), tr("Transform"));
-    m_itemInteract.handleDragItem = nullptr;
-    m_itemInteract.dragItem = nullptr;
+    ImageItem *handleItem = m_itemInteract.handleDragItem;
+    handleItem->endHandleInteraction();
+    pushItemTransformUndo(handleItem, m_itemInteract.dragStartState,
+                          captureState(handleItem), tr("Transform"));
+    m_itemInteract.endHandleDrag();
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
@@ -1699,11 +1692,10 @@ bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
         return false;
     }
     if (m_itemInteract.rotateItem) {
-        pushItemTransformUndo(m_itemInteract.rotateItem, m_itemInteract.dragStartState, captureState(m_itemInteract.rotateItem),
-                              tr("Rotate"));
+        pushItemTransformUndo(m_itemInteract.rotateItem, m_itemInteract.dragStartState,
+                              captureState(m_itemInteract.rotateItem), tr("Rotate"));
     }
-    m_itemInteract.rotating = false;
-    m_itemInteract.rotateItem = nullptr;
+    m_itemInteract.endRotate();
     restoreToolCursor();
     event->accept();
     return true;
