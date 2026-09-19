@@ -27,6 +27,23 @@ void TileNeighborPrefetch::clear()
     m_slots.clear();
 }
 
+void TileNeighborPrefetch::dropPath(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    for (auto it = m_slots.begin(); it != m_slots.end();) {
+        if (it->path == path) {
+            it = m_slots.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    if (m_slots.empty() && m_timer) {
+        m_timer->stop();
+    }
+}
+
 void TileNeighborPrefetch::prefetchPaths(const QStringList &paths, int budgetPerPath)
 {
     ASSERT_GUI_THREAD();
