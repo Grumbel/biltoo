@@ -75,12 +75,14 @@ void ImageView::ensureCropRectValid()
     }
     m_crop.setRect(m_crop.rect.normalized());
     if (m_crop.allowExpand) {
-        if (m_crop.rect.width() < 1.0) {
-            m_crop.rect.setWidth(1.0);
+        QRectF r = m_crop.rect;
+        if (r.width() < 1.0) {
+            r.setWidth(1.0);
         }
-        if (m_crop.rect.height() < 1.0) {
-            m_crop.rect.setHeight(1.0);
+        if (r.height() < 1.0) {
+            r.setHeight(1.0);
         }
+        m_crop.setRect(r);
         return;
     }
     m_crop.setRect(CropGeometry::constrainToContent(m_crop.rect, m_crop.rotation, cr, 1.0));
