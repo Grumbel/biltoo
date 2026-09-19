@@ -107,6 +107,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **ViewTransform::{uniformFitScale,fitRectCentered}**; **GalleryLayout::axesSwapForItemRotation**.
 - **FilmstripGeometry::flowPadFromCellPad**; **SlideshowClocks::intervalLabelParts**.
 - **WorkspaceNavGeometry::scoreRelative** for Workspace arrow-key neighbour pick.
+- **PlacementLinear** shear/opacity keyboard step helpers; **GalleryPackFit::kDecodeOverscanPx**.
+- **CentreProgress::matchesTitlePrefix**; **MotionScrollChrome::release**.
 
 
 ## Current pain (evidence)

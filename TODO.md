@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1377-shear-freerot-overscan-margin-progress-scroll.** Pure helpers
+and bag transitions on tip 1376.
+Prior: **1376**.
+
+### Change
+1. `PlacementLinear::{shearStepFromModifiers,shearAfterKey,opacityStepFromModifiers}`
+2. `CropGeometry::kFreeRotationEps` used in ImageItem + crop draft
+3. `GalleryPackFit::kDecodeOverscanPx` (was ImageView static)
+4. `GalleryLayout::Params::{kDefaultMargin,kDefaultGap}`
+5. `CentreProgress::matchesTitlePrefix`
+6. `MotionScrollChrome::release`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1377-shear-freerot-overscan-margin-progress-scroll.bundle HEAD
+```
+Requires tip **1376** / `11864b7` (or full stack from upstream **3830dda**).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1376-fit-axes-flowpad-interval-nav.** Pure helpers on tip 1375 base.
 Prior: **1375**.
 
