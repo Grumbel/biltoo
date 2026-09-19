@@ -1358,24 +1358,26 @@ bool ImageView::applyCropCommitNonFullFrame(ImageItem *item)
     return isWorkspaceMode();
 }
 
+
+bool ImageView::applyCropCommitFullFrame(ImageItem *item)
+{
+    // Reset / full frame: keep full pixels; clear session crop metadata.
+    finishCropResetLayout(item);
+    finalizeCropResetSuccess(item);
+    return false;
+}
+
 bool ImageView::applyCropCommit(ImageItem *item)
 {
     // Returns true when Workspace placement rotation should keep the crop-frame
     // angle (non-full-frame commit).
     ensureCropRectValid();
-
     const QRectF full = item->contentRect();
-    const bool fullFrame = m_crop.isFullFrameDraft(full);
-    // Record content-space crop while the draft frame is still valid.
     recordSessionCrop(item, m_crop.draftRectOr(full));
-    if (!fullFrame) {
+    if (!m_crop.isFullFrameDraft(full)) {
         return applyCropCommitNonFullFrame(item);
     }
-
-    // Reset / full frame: keep full pixels; clear session crop metadata.
-    finishCropResetLayout(item);
-    finalizeCropResetSuccess(item);
-    return false;
+    return applyCropCommitFullFrame(item);
 }
 
 void ImageView::restoreEnterPlacementIfWorkspace(ImageItem *item)

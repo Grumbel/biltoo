@@ -1755,6 +1755,7 @@ private:
                            bool hostFromCache, const QImage &display,
                            qreal cropW, qreal cropH, qreal footW, qreal footH) const;
     bool applyCropCommitNonFullFrame(ImageItem *item);
+    bool applyCropCommitFullFrame(ImageItem *item);
     bool applyCropCommit(ImageItem *item);
     void restoreEnterPlacementIfWorkspace(ImageItem *item);
     void cancelCropShowingFullImage(ImageItem *item);
