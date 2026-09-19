@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1502-crop-upgrade-size.** acceptsFullRasterUpgrade, draftPixelSize, isChromeButton.
+Prior: **1501**. Commits 1502a–1502b (+ docs).
+
+### Apply (on tip 1501)
+```bash
+git pull --ff-only /path/to/biltoo-1502-crop-upgrade-size.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1501-crop-badge-drag.** paintSizeBadge; applyActiveHandleDrag; drop dead wrappers.
 Prior: **1500**. Commits 1501a–1501c (+ docs).
 
