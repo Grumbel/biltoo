@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1534-crop-session-hud-chrome.** HUD/chrome/polygon helpers on tip 1533.
+Prior: **1533** (`8912ef4`). Full stack from origin tip **1527** (`24da05b`).
+
+### Commits
+1. flashCropLoadingFullHud, flashCropNotCachedHud
+2. flashCropNeedSingleTargetHud, flashCropNoImageHud
+3. paintCropRotateAndMoveGrips
+4. flashApplyHostStatusHud, mapItemLocalPolygonToView
+5. notifyCropModeLeftChrome
+
+### Apply (on tip **1527** / `24da05b` / origin/master)
+```bash
+git fetch origin && git merge --ff-only origin/master
+git pull --ff-only /path/to/biltoo-1534-crop-session-hud-chrome.bundle HEAD
+```
+Full stack from origin tip 1527. `git bundle verify` requires **`24da05b`**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1533-crop-session-enter-overlay.** Enter/HUD/overlay helpers on tip 1532.
 Prior: **1532** (`5f81846`). Full stack from origin tip **1527** (`24da05b`).
 
