@@ -5,7 +5,6 @@
 #define CROPSESSION_H
 
 #include "imageview_types.h"
-#include "cropgeometry.h"
 // WorkspaceItemState is in imageview_types.h
 
 #include <QImage>
