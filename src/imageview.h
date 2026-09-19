@@ -724,6 +724,8 @@ public:
     void finalizeCropResetSuccess(ImageItem *item);
     void finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
                                   const QString &path, const QImage &display);
+    void flashCropNeedSingleTargetHud();
+    void flashCropNoImageHud();
     ImageItem *resolveCropEnterTarget();
     QPointF workspaceAnchorSceneForItem(ImageItem *item) const;
     bool completeCropEnterUnderHold(ImageItem *item,

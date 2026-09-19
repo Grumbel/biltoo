@@ -308,6 +308,17 @@ void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
 }
 
 
+
+void ImageView::flashCropNeedSingleTargetHud()
+{
+    flashHud(tr("Crop"), tr("Select a single image"));
+}
+
+void ImageView::flashCropNoImageHud()
+{
+    flashHud(tr("Crop"), tr("No image"));
+}
+
 ImageItem *ImageView::resolveCropEnterTarget()
 {
     // Gallery packing cannot host crop UI — MainWindow opens Image mode instead.
@@ -316,12 +327,12 @@ ImageItem *ImageView::resolveCropEnterTarget()
     }
     // Image or Workspace: one explicit subject only.
     if (!hasSingleCropTarget()) {
-        flashHud(tr("Crop"), tr("Select a single image"));
+        flashCropNeedSingleTargetHud();
         return nullptr;
     }
     ImageItem *item = cropTargetItem();
     if (!item || !item->hasDisplayPixels()) {
-        flashHud(tr("Crop"), tr("No image"));
+        flashCropNoImageHud();
         return nullptr;
     }
     return item;
