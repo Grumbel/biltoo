@@ -297,6 +297,16 @@ ImageItem *ImageView::resolveCropEnterTarget()
     return item;
 }
 
+
+QPointF ImageView::workspaceAnchorSceneForItem(ImageItem *item) const
+{
+    if (!item) {
+        return {};
+    }
+    // Workspace: displayed image centre so the crop frame can stay fixed.
+    return item->mapToScene(QPointF(0.0, 0.0));
+}
+
 bool ImageView::enterCropModeFromUi()
 {
     ImageItem *item = resolveCropEnterTarget();
@@ -307,8 +317,7 @@ bool ImageView::enterCropModeFromUi()
     // Lock identity + enter snapshot + unrotate placement (IDENTITY.md).
     // m_crop.active() stays false until after the first draft attach.
     beginCropEnterSession(item);
-    // Workspace: remember displayed image centre so the crop frame can stay fixed.
-    const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
+    const QPointF workspaceAnchorScene = workspaceAnchorSceneForItem(item);
     // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
     {
         ViewportUpdateHold paintHold(viewport());
@@ -952,6 +961,16 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     writeRecordedCropState(item, sid, orientApp, rec, cropBasis, disp);
 }
 
+
+WorkspaceItemState ImageView::captureCropUndoAfterState(ImageItem *item) const
+{
+    WorkspaceItemState afterSt = captureState(item);
+    CropSession::fillSessionCropFromItem(&afterSt, item);
+    // captureState pulls cropRotation from appearance
+    // (recordSessionCrop + commitItemSessionEdit).
+    return afterSt;
+}
+
 void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 {
     if (!m_undoStack || !item || !m_crop.isEnterValid()) {
@@ -990,13 +1009,9 @@ void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
         WorkspaceItemState m_beforeSt;
         WorkspaceItemState m_afterSt;
     };
-    WorkspaceItemState afterSt = captureState(item);
-    CropSession::fillSessionCropFromItem(&afterSt, item);
-    // captureState pulls cropRotation from appearance
-    // (recordSessionCrop + commitItemSessionEdit).
     m_undoStack->push(new CropCommand(
         this, item, m_crop.enterSourceRef(), item->sourceImage().copy(),
-        m_crop.enterStateRef(), afterSt, text));
+        m_crop.enterStateRef(), captureCropUndoAfterState(item), text));
 }
 
 void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
@@ -1015,6 +1030,21 @@ void ImageView::attachCropApplyDisplay(ImageItem *item, const QImage &display,
     alignItemCenterToScene(item, cropSceneCenter);
 }
 
+
+QImage ImageView::pickCropApplyAppearanceImage(ImageItem *item,
+                                               const QImage &preferredDisplay) const
+{
+    // Prefer the crop bake just materialized when provided — not displayImage(),
+    // which can still be pre-crop if soft attach was rejected.
+    if (!preferredDisplay.isNull()) {
+        return preferredDisplay;
+    }
+    if (item) {
+        return sessionAppearanceImage(item);
+    }
+    return {};
+}
+
 void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                            ImageItem *item, const QImage &preferredDisplay,
                                            bool hasCrop)
@@ -1022,12 +1052,7 @@ void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
     if (sid == kInvalidSessionImageId) {
         return;
     }
-    // Prefer the crop bake just materialized when provided — not displayImage(),
-    // which can still be pre-crop if soft attach was rejected.
-    QImage appearance = preferredDisplay;
-    if (appearance.isNull() && item) {
-        appearance = sessionAppearanceImage(item);
-    }
+    const QImage appearance = pickCropApplyAppearanceImage(item, preferredDisplay);
     if (appearance.isNull()) {
         return;
     }
