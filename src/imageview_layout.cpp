@@ -2069,15 +2069,10 @@ void ImageView::setPageGuideVisible(bool on)
     if (m_pageGuide.visible == on) {
         return;
     }
-    m_pageGuide.visible = on;
-    if (!m_pageGuide.visible) {
-        m_pageGuide.selected = false;
-        m_pageGuide.setHoverHandle(-1);
-        m_pageGuide.clearDrag();
-    }
+    m_pageGuide.setVisible(on);
     if (m_pageGuide.visible && !m_pageGuide.size.isValid()) {
         const qreal pxPerMm = pageGuidePxPerMm();
-        m_pageGuide.size = QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm);
+        m_pageGuide.setSize(QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm));
     }
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
@@ -2105,8 +2100,8 @@ void ImageView::setPageGuideFromPrinter(const QPrinter &printer)
         }
     }
     const qreal pxPerMm = pageGuidePxPerMm();
-    m_pageGuide.size = QSizeF(mm.width() * pxPerMm, mm.height() * pxPerMm);
-    m_pageGuide.rect = QRectF(); // printer pages stay centred on the origin
+    m_pageGuide.setSize(QSizeF(mm.width() * pxPerMm, mm.height() * pxPerMm));
+    m_pageGuide.setRect(QRectF()); // printer pages stay centred on the origin
     if (m_pageGuide.visible) {
         if (isWorkspaceMode()) {
             updateWorkspaceSceneRect();
@@ -2196,10 +2191,9 @@ void ImageView::fitPageGuideToContent(qreal marginPx)
         // contentExportBounds already pads 4px; add the requested extra margin.
         bounds.adjust(-marginPx, -marginPx, marginPx, marginPx);
     }
-    m_pageGuide.rect = bounds;
-    m_pageGuide.size = bounds.size();
-    m_pageGuide.visible = true;
-    m_pageGuide.selected = true;
+    m_pageGuide.setPage(bounds);
+    m_pageGuide.setVisible(true);
+    m_pageGuide.setSelected(true);
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
@@ -2215,11 +2209,7 @@ void ImageView::setPageGuideSelected(bool on)
     if (m_pageGuide.selected == on) {
         return;
     }
-    m_pageGuide.selected = on;
-    if (!on) {
-        m_pageGuide.setHoverHandle(-1);
-        m_pageGuide.clearDrag();
-    }
+    m_pageGuide.setSelected(on);
     viewport()->update();
 }
 
@@ -2245,7 +2235,7 @@ bool ImageView::beginPageGuideResize(int handle)
     if (!page.isValid() || page.width() < 1.0 || page.height() < 1.0) {
         return false;
     }
-    m_pageGuide.selected = true;
+    m_pageGuide.setSelected(true);
     m_pageGuide.beginResize(handle, page);
     return true;
 }
@@ -2268,8 +2258,7 @@ void ImageView::updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModif
         return;
     }
     const QRectF next = pageGuideRectFromHandleDrag(scenePos, mods);
-    m_pageGuide.rect = next;
-    m_pageGuide.size = next.size();
+    m_pageGuide.setPage(next);
     updateWorkspaceSceneRect();
     viewport()->update();
     emit statusChanged();

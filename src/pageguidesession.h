@@ -45,6 +45,35 @@ struct PageGuideSession {
         hoverHandle = handle;
     }
 
+    void setVisible(bool on)
+    {
+        visible = on;
+        if (!on) {
+            selected = false;
+            setHoverHandle(-1);
+            clearDrag();
+        }
+    }
+
+    void setSelected(bool on)
+    {
+        selected = on;
+        if (!on) {
+            setHoverHandle(-1);
+            clearDrag();
+        }
+    }
+
+    void setSize(const QSizeF &sz) { size = sz; }
+
+    void setRect(const QRectF &r) { rect = r; }
+
+    void setPage(const QRectF &r)
+    {
+        rect = r;
+        size = r.size();
+    }
+
     void clear()
     {
         visible = false;
