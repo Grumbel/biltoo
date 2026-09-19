@@ -329,3 +329,4 @@ part of early-phase exit criteria).
 - **ItemFrameGeometry** opacity track min/max/span + trackParamFromOpacity; **SlideshowClocks::clampStoredIntervalMs**; **HudGeometry** progressFillWidth / progressBarHeight.
 - **ColorAdjustments** grade clamps / gamma percent; **FilmstripGeometry**; **ViewTransform::overlayFontPixelSize**; **DisplayQuality** debug stamp metrics.
 - **ItemFrameGeometry** chrome/placeholder fonts; **AttentionGeometry::clampHintPointSize**; **ImageCache::rgbaCostKiB**; **ViewTransform** pointAlong / clampedProgress.
+- **GalleryLayout** pack cell/scale helpers; **SlideshowMotionGeometry** bias/panZoom clamps; **SlideshowAtlasPolicy::clampPanZoomHeadroom**.

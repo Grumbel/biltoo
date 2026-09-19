@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1352-gallery-pack-motion-bias.** GalleryLayout pack cell/scale
+helpers; motion bias and panZoom/atlas headroom pure clamps.
+Prior: **1351**.
+
+### Change
+- `GalleryLayout::{resolvedColumns,resolvedFlowColumns,resolvedBandCount,cellAxisLength,containScale,coverScale,axisFillScale}`
+- `SlideshowMotionGeometry::{clampBiasCoord,clampBiasPoint,clampPanZoomFactor}`
+- `SlideshowAtlasPolicy::clampPanZoomHeadroom`; viewport floors via `ViewTransform::atLeast1`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1352**)
+```bash
+git pull /path/to/biltoo-1352-gallery-pack-motion-bias.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1351-chrome-attention-cost-progress.** ItemFrame chrome fonts,
 attention hint size, rgbaCostKiB, pointAlong, clampedProgress.
 Prior: **1350**.
