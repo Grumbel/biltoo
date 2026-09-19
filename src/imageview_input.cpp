@@ -1007,8 +1007,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
         } else if (m_hoverEdge == EdgeZone::None) {
             setCursor(m_chrome.imageModeLeftDragPan ? Qt::OpenHandCursor : Qt::ArrowCursor);
         }
-        if (tip != m_textLayer.linkHoverTip) {
-            m_textLayer.setLinkHoverTip(tip);
+        if (m_textLayer.setLinkHoverTip(tip)) {
             emit statusChanged();
         }
     } else if (!m_textLayer.linkHoverTip.isEmpty() && event->buttons() == Qt::NoButton) {

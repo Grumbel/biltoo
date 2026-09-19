@@ -94,7 +94,15 @@ struct TextLayerSession {
 
     void clearLayerPath() { layerPath.clear(); }
 
-    void setLinkHoverTip(const QString &tip) { linkHoverTip = tip; }
+    /** @return true when the hover tip text changed. */
+    bool setLinkHoverTip(const QString &tip)
+    {
+        if (linkHoverTip == tip) {
+            return false;
+        }
+        linkHoverTip = tip;
+        return true;
+    }
 
     void clearLinkHoverTip() { linkHoverTip.clear(); }
 
