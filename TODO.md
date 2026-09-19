@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1454-phase-path-zoom-text-tiles.** Phase path/clock, zoom, text, tiles.
+Prior: **1453**. Commits 1454a–1454e (+ docs).
+
+### Commits
+1. **SlideshowPhaseState** setFromPath/setToPath / start*MotionClock
+2. Phase path/clock call sites
+3. **ZoomRegionGesture** setRubberBand
+4. **TextLayerSession** clearSearchMatches / addSearchMatch
+5. **promoteFromMotionFromTo** / ensureFromTiles / ensureToTiles
+
+### Note
+Continues bag-transition series. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1454-phase-path-zoom-text-tiles.bundle HEAD
+```
+Requires tip **1453**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1453-framing-phase-bag-transitions.** ViewFraming + SlideshowPhaseState.
 Prior: **1452**. Commits 1453a–1453d (+ docs).
 

@@ -163,6 +163,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   **SlideshowZoomBlurState** clearUnderlays / setViewportSize.
 - **ViewFraming** setFitFillFlags / armFit / releaseFit; residual fit/fill routed.
 - **SlideshowPhaseState** setFromImage/setToImage / clearToAtlas / stopMotionClocks.
+- **SlideshowPhaseState** setFromPath/setToPath / start*MotionClock / promoteFromMotionFromTo /
+  ensureFromTiles / ensureToTiles.
+- **ZoomRegionGesture** setRubberBand; **TextLayerSession** searchMatches transitions.
 
 
 ## Current pain (evidence)
