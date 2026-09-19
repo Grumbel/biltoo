@@ -753,6 +753,8 @@ public:
     /** Discard the draft and leave crop mode. */
     void cancelCrop();
     /** Restore pixels + session crop metadata (used by crop undo/redo). */
+    void storeAppearanceFromState(ImageItem *item, const WorkspaceItemState &state);
+    void relayoutAfterAppearanceApply(ImageItem *item);
     void applyCropAppearance(ImageItem *item, const QImage &src,
                             const WorkspaceItemState &state);
 
@@ -1703,8 +1705,12 @@ private:
     void logApplyCropDebug(ImageItem *item, const QString &path, const QImage &host,
                            bool hostFromCache, const QImage &display,
                            qreal cropW, qreal cropH, qreal footW, qreal footH) const;
+    bool applyCropCommitNonFullFrame(ImageItem *item);
     bool applyCropCommit(ImageItem *item);
     void cancelCropShowingFullImage(ImageItem *item);
+    void flushPendingFullRematerialize(bool pendingFull, const QString &pendingPath,
+                                       SessionImageId pendingSid,
+                                       const WorkspaceItemState &pendingWant);
     void clearCropModeState();
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace

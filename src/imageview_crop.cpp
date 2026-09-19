@@ -661,6 +661,36 @@ void ImageView::toggleCropMode()
     setCropMode(!m_crop.active());
 }
 
+
+void ImageView::storeAppearanceFromState(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId && isImageMode()) {
+        sid = m_sessionId.currentIdValue();
+    }
+    WorkspaceItemState slot = state;
+    slot.sessionId = sid;
+    slot.path = item->path();
+    storeCropAppearance(item, sid, slot);
+}
+
+void ImageView::relayoutAfterAppearanceApply(ImageItem *item)
+{
+    if (isImageMode()) {
+        m_framing.armFit();
+        fitItem(item, currentFitAspectMode());
+    } else if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+    emit statusChanged();
+}
+
 void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
                                     const WorkspaceItemState &state)
 {
@@ -679,20 +709,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     applyState(item, state);
     // Seed appearance with the full state (including cropRotation) before
     // commitItemSessionEdit, which rebuilds the slot via captureState.
-    {
-        SessionImageId sid = item->sessionId();
-        if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_sessionId.currentIdValue();
-        }
-        if (sid != kInvalidSessionImageId) {
-            WorkspaceItemState slot = state;
-            slot.sessionId = sid;
-            slot.path = item->path();
-            m_appearance.set(sid, slot);
-        } else {
-            m_itemStateBook.set(item->path(), state);
-        }
-    }
+    storeAppearanceFromState(item, state);
     // Appearance persistence is commitItemSessionEdit → m_appearance (by id).
     // Do not write crop state into the path map for bound tiles.
     commitItemSessionEdit(item);
@@ -701,14 +718,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     if (!SessionAppearance::hasContentAppearance(state)) {
         ThumtooCache::clearContentAppearance(item->path());
     }
-    if (isImageMode()) {
-        m_framing.armFit();
-        fitItem(item, currentFitAspectMode());
-    } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    viewport()->update();
-    emit statusChanged();
+    relayoutAfterAppearanceApply(item);
 }
 
 void ImageView::applyAutoCrop()
@@ -1094,6 +1104,38 @@ void ImageView::logApplyCropDebug(ImageItem *item, const QString &path, const QI
                .arg(item->imageSize().width()).arg(item->imageSize().height());
 }
 
+
+bool ImageView::applyCropCommitNonFullFrame(ImageItem *item)
+{
+    // Workspace footprint: draft selection scene size stays constant after Apply
+    // (intrinsic becomes cropW×cropH at the same placement scale).
+    qreal cropW = 0.0;
+    qreal cropH = 0.0;
+    qreal footW = 0.0;
+    qreal footH = 0.0;
+    QPointF cropSceneCenter;
+    captureApplyDraftMetrics(item, &cropW, &cropH, &footW, &footH, &cropSceneCenter);
+
+    const QString path = item->path();
+    bool hostFromCache = false;
+    QImage host;
+    WorkspaceItemState st;
+    SessionImageId sid = kInvalidSessionImageId;
+    if (!resolveApplyHostAndState(item, &host, &hostFromCache, &st, &sid)) {
+        return false;
+    }
+
+    CropSession::ApplyBakeResult baked;
+    if (!materializeApplyBake(host, hostFromCache, st, &baked)) {
+        return false;
+    }
+    logApplyCropDebug(item, path, host, hostFromCache, baked.display, cropW, cropH,
+                      footW, footH);
+    commitCropApplyBake(item, baked.display, st, baked.multiMp, cropW, cropH, path,
+                        cropSceneCenter, hostFromCache, sid);
+    return isWorkspaceMode();
+}
+
 bool ImageView::applyCropCommit(ImageItem *item)
 {
     // Returns true when Workspace placement rotation should keep the crop-frame
@@ -1105,55 +1147,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
     // Record content-space crop while the draft frame is still valid.
     recordSessionCrop(item, m_crop.draftRectOr(full));
     if (!fullFrame) {
-        // --- Workspace footprint math (verify) ---
-        // During crop mode the item is axis-aligned (placement rotation stashed).
-        // Content units: m_crop.rect is in item content space (same as contentRect).
-        // Scene size of the draft selection:
-        //   footW = m_crop.rect.width()  * itemScaleX
-        //   footH = m_crop.rect.height() * itemScaleY
-        // After Apply we set intrinsic to (cropW, cropH) in the *same* content
-        // units and keep the same scale → scene size unchanged.
-        qreal cropW = 0.0;
-        qreal cropH = 0.0;
-        qreal footW = 0.0;
-        qreal footH = 0.0;
-        QPointF cropSceneCenter;
-        captureApplyDraftMetrics(item, &cropW, &cropH, &footW, &footH, &cropSceneCenter);
-
-        const QString path = item->path();
-        bool hostFromCache = false;
-        QImage host;
-        WorkspaceItemState st;
-        SessionImageId sid = kInvalidSessionImageId;
-        if (!resolveApplyHostAndState(item, &host, &hostFromCache, &st, &sid)) {
-            return false;
-        }
-
-        CropSession::ApplyBakeResult baked;
-        if (!materializeApplyBake(host, hostFromCache, st, &baked)) {
-            return false;
-        }
-        const QImage &display = baked.display;
-        const bool multiMp = baked.multiMp;
-
-        // Placement scale is never written by crop (Workspace Zoom stays put).
-        // Geometry = layoutSize(fileNative, st) via applyContentLayoutSize only.
-        logApplyCropDebug(item, path, host, hostFromCache, display, cropW, cropH,
-                          footW, footH);
-
-        // Single attach path (layoutSize only — never soft size as intrinsic).
-        // Enter may have installed FullSource host; SoftPreview is ignored when
-        // m_source is set (setPreviewImage no-op). Clear first so the crop bake
-        // replaces full-frame pixels — otherwise canvas stretches full into the
-        // crop box and filmstrip gets img=full (cropApply with uncropped pixels).
-        //
-        // Hold viewport paints across clear → layout → pixels → fit so the view
-        // never composites crop pixels into the pre-crop contentRect (or the
-        // reverse). fitItem still runs under m_crop.active(); it must not treat Apply
-        // as draft (see fitItem cropDraft).
-        commitCropApplyBake(item, display, st, multiMp, cropW, cropH, path,
-                            cropSceneCenter, hostFromCache, sid);
-        return isWorkspaceMode();
+        return applyCropCommitNonFullFrame(item);
     }
 
     // Reset / full frame: keep full pixels; clear session crop metadata.
@@ -1171,11 +1165,21 @@ void ImageView::cancelCropShowingFullImage(ImageItem *item)
     }
 }
 
+
+void ImageView::flushPendingFullRematerialize(bool pendingFull, const QString &pendingPath,
+                                              SessionImageId pendingSid,
+                                              const WorkspaceItemState &pendingWant)
+{
+    // Apply may have queued a full bake while freeze was still on.
+    if (pendingFull && !pendingPath.isEmpty()) {
+        scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
+    }
+}
+
 void ImageView::clearCropModeState()
 {
     // Unsuppress LOD before binding is cleared.
     m_crop.releaseAllTileLod(cropSessionBoundItem());
-    // Apply may have queued a full bake while freeze was still on.
     QString pendingPath;
     SessionImageId pendingSid = kInvalidSessionImageId;
     WorkspaceItemState pendingWant;
@@ -1184,11 +1188,11 @@ void ImageView::clearCropModeState()
     m_crop.clear();
     emit cropModeChanged(false);
     emit statusChanged();
-    viewport()->unsetCursor();
-    viewport()->update();
-    if (pendingFull && !pendingPath.isEmpty()) {
-        scheduleAsyncHostRematerialize(pendingPath, pendingSid, pendingWant);
+    if (viewport()) {
+        viewport()->unsetCursor();
+        viewport()->update();
     }
+    flushPendingFullRematerialize(pendingFull, pendingPath, pendingSid, pendingWant);
 }
 
 void ImageView::leaveCropModeInternal(bool apply)
