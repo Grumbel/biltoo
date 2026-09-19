@@ -221,14 +221,12 @@ void ImageView::clearWorkspace()
     discardStashedWorkspace();
     discardStashedGallery();
     m_workspace.savedItems().clear();
-    m_loadGate.pendingScenePos().clear();
-    m_loadGate.clearPendingWorkspacePaths();
-    m_loadGate.pendingRestoreStates().clear();
+    m_loadGate.clearPending();
     m_bindBook.clear();
     m_pendingAppearance.clear();
     gallerySoftResetAll();
     m_sizeBook.clear();
-    m_gallerySoftBook.deferPopulate = false;
+    m_gallerySoftBook.setDeferPopulate(false);
     cancelGallerySizeResolve();
     ImageCache::clear();
     m_tileNeighborPrefetch.clear();
