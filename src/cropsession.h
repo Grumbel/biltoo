@@ -118,6 +118,11 @@ public:
     /** Integer session crop rect from draft (content-local minus item offset). */
     QRect integerCropForOffset(const QPointF &itemOffset) const;
 
+    /** Integer crop in unflipped source space (flip-aware). */
+    QRect sourceCropFromLocal(const QRectF &local, const QPointF &itemOffset,
+                              int imageW, int imageH, bool hFlip, bool vFlip) const;
+
+
 
 
     /** Start rubber-band: origin + zero-size axis-aligned draft. */

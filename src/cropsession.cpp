@@ -312,3 +312,11 @@ QRectF CropSession::clampLocalCrop(const QRectF &local, const QRectF &contentRec
     }
     return r;
 }
+
+QRect CropSession::sourceCropFromLocal(const QRectF &local, const QPointF &itemOffset,
+                                       int imageW, int imageH, bool hFlip, bool vFlip) const
+{
+    return CropGeometry::flipAwareSourceCrop(
+        CropGeometry::integerCropFromLocal(local, itemOffset),
+        imageW, imageH, hFlip, vFlip);
+}

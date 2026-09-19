@@ -868,9 +868,8 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     // (cropToLocalRect bakes flips into pixels and clears the flags).
     const int iw = item->imageSize().width();
     const int ih = item->imageSize().height();
-    const QRect disp = CropGeometry::flipAwareSourceCrop(
-        CropGeometry::integerCropFromLocal(local, off), iw, ih,
-        item->itemHFlip(), item->itemVFlip());
+    const QRect disp = m_crop.sourceCropFromLocal(
+        local, off, iw, ih, item->itemHFlip(), item->itemVFlip());
 
     // cropSourceSize must be the post-orient full-frame size the draft was
     // edited in — file-native layoutSize without crop — not a soft sample or
