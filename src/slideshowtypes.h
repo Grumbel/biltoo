@@ -303,11 +303,6 @@ struct SlideshowPhaseState {
 
     QElapsedTimer &toMotionClockMutable() { return toMotionClock; }
 
-    void startFromMotionClock() { fromMotionClock.start(); }
-
-    void startToMotionClock() { toMotionClock.start(); }
-
-
     void stopMotionClocks()
     {
         fromMotionClockRunning = false;
@@ -582,6 +577,8 @@ struct SlideshowDwellState {
     qint64 clockElapsed() const { return clock.elapsed(); }
 
     void restartClock() { clock.restart(); }
+
+    void startClock() { clock.start(); }
 
     int durationMsValue() const { return durationMs; }
 
