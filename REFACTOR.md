@@ -348,3 +348,4 @@ part of early-phase exit criteria).
 - **CropSession** handle/rubber/hover; **GroupTransformSession** begin/end drag + hover.
 - **CropSession** enter bind/snapshot/stash/abort; **AttentionSession** setDraft/enterMode/leaveMode.
 - **CropSession** leave via clear/takePending; **TextLayerSession** showRegions/link tip.
+- **AttentionSession** point-drag/selection; **PageGuideSession** visibility/page; group press pos.

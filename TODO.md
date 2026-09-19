@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1371-attention-drag-pageguide-vis.** Attention point-drag;
+PageGuide visibility/geometry; group press pos.
+Prior: **1370**.
+
+### Change
+- `AttentionSession::{beginPointDrag,endPointDrag,setSelected,clearGesture}`
+- `PageGuideSession::{setVisible,setSelected,setSize,setRect,setPage}`
+- `GroupTransformSession::setPressScenePos`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1371**)
+```bash
+git pull /path/to/biltoo-1371-attention-drag-pageguide-vis.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1370-crop-leave-textlayer.** CropSession leave via clear/takePending;
 TextLayerSession region and tip transitions.
 Prior: **1369**.
