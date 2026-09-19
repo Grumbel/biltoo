@@ -59,6 +59,10 @@ struct ZoomRegionGesture {
 
     void endDrag() { dragging = false; }
 
+    void setRubberBand(QRubberBand *band) { rubberBand = band; }
+
+    void clearRubberBand() { rubberBand = nullptr; }
+
     bool rubberSignificant(const QRect &viewRect) const
     {
         return ViewTransform::significantRubber(viewRect, kMinRubberPx);

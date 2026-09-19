@@ -544,7 +544,7 @@ bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
     }
     m_zoomRegion.beginDrag(event->pos());
     if (!m_zoomRegion.rubberBand) {
-        m_zoomRegion.rubberBand = new QRubberBand(QRubberBand::Rectangle, viewport());
+        m_zoomRegion.setRubberBand(new QRubberBand(QRubberBand::Rectangle, viewport()));
     }
     m_zoomRegion.rubberBand->setGeometry(QRect(m_zoomRegion.origin, QSize()));
     m_zoomRegion.rubberBand->show();
