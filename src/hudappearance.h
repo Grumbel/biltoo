@@ -22,9 +22,15 @@ struct HudAppearance {
     /** Preferences / effective HUD text size (8–48 pt). */
     static int clampFontPointSize(int pt) { return qBound(8, pt, 48); }
 
-    void setFontPointSize(int pt)
+    /** @return true when the clamped size changed. */
+    bool setFontPointSize(int pt)
     {
-        fontPointSize = clampFontPointSize(pt);
+        const int next = clampFontPointSize(pt);
+        if (fontPointSize == next) {
+            return false;
+        }
+        fontPointSize = next;
+        return true;
     }
 
     int effectiveFontPointSize() const { return clampFontPointSize(fontPointSize); }

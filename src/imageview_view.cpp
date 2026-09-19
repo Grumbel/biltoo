@@ -627,9 +627,7 @@ void ImageView::setHudVisible(bool on)
 
 void ImageView::setHudFontPointSize(int pt)
 {
-    const int before = m_hudPrefs.fontPointSize;
-    m_hudPrefs.setFontPointSize(pt);
-    if (m_hudPrefs.fontPointSize == before) {
+    if (!m_hudPrefs.setFontPointSize(pt)) {
         return;
     }
     viewport()->update();
