@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "cropgeometry.h"
 #include "tilelod/tile_lod_controller.hpp"
 #include "displayquality.h"
 #include "imagecache.h"
@@ -697,7 +698,7 @@ bool ImageItem::cropToLocalRect(const QRectF &localRect, const QColor &padColor,
     }
 
     QImage cropped;
-    const bool rotated = std::abs(rotationDegrees) > 0.05;
+    const bool rotated = std::abs(rotationDegrees) > CropGeometry::kFreeRotationEps;
     if (!rotated) {
         const int dx = qRound((local.left() - off.x()) * sx);
         const int dy = qRound((local.top() - off.y()) * sy);

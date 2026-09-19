@@ -188,8 +188,8 @@ bool ImageView::enterCropModeFromUi()
         // If there was no stored crop angle but the tile was free-rotated,
         // seed the draft rotation so the frame matches the prior pose while
         // the item stays axis-aligned for editing.
-        if (qAbs(m_crop.rotation) < 0.05
-            && qAbs(m_crop.stashedPlacementRotation) > 0.05) {
+        if (qAbs(m_crop.rotation) < CropGeometry::kFreeRotationEps
+            && qAbs(m_crop.stashedPlacementRotation) > CropGeometry::kFreeRotationEps) {
             m_crop.setRotation(m_crop.stashedPlacementRotation);
             while (m_crop.rotation > 180.0) {
                 m_crop.rotation -= 360.0;
@@ -986,7 +986,7 @@ void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         && qAbs(local.top() - cr.top()) < 0.5
         && qAbs(local.width() - cr.width()) < 0.5
         && qAbs(local.height() - cr.height()) < 0.5;
-    if (fullFrame && qAbs(m_crop.rotation) < 0.05) {
+    if (fullFrame && qAbs(m_crop.rotation) < CropGeometry::kFreeRotationEps) {
         s = SessionAppearance::withoutCrop(s);
         s.cropSourceSize = QSize();
         s.cropRotation = 0.0;
