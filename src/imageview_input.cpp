@@ -1737,10 +1737,7 @@ bool ImageView::tryKeyPressAttention(QKeyEvent *event)
     }
     if (event->key() == Qt::Key_A && (event->modifiers() & Qt::ControlModifier)) {
         const int n = attentionPointsForTarget().size();
-        m_attention.selectedMutable().clear();
-        for (int i = 0; i < n; ++i) {
-            m_attention.selectedMutable().append(i);
-        }
+        m_attention.selectAllIndices(n);
         if (viewport()) {
             viewport()->update();
         }

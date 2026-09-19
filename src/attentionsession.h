@@ -108,6 +108,20 @@ public:
 
     void clearSelected() { selected.clear(); }
 
+    /** Select every index in [0, count). */
+    void selectAllIndices(int count)
+    {
+        selected.clear();
+        if (count <= 0) {
+            return;
+        }
+        selected.reserve(count);
+        for (int i = 0; i < count; ++i) {
+            selected.append(i);
+        }
+    }
+
+
     /**
      * Start dragging selected points from @p origin (viewport).
      * @p startPts snapshot of all draft points; @p beforePts for undo (may differ
