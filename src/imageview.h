@@ -713,9 +713,12 @@ public:
                                   WorkspaceItemState *st, SessionImageId *sid);
     void captureApplyDraftMetrics(ImageItem *item, qreal *cropW, qreal *cropH,
                                   qreal *footW, qreal *footH, QPointF *sceneCenter);
+    void flashCropBakeFailed();
     bool materializeApplyBake(const QImage &host, bool hostFromCache,
                               const WorkspaceItemState &st,
                               CropSession::ApplyBakeResult *baked);
+    void flashCropResetHud();
+    void flashCropAppliedHud(ImageItem *item);
     void finalizeCropResetSuccess(ImageItem *item);
     void finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
                                   const QString &path, const QImage &display);

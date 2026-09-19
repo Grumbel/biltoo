@@ -239,6 +239,11 @@ void ImageView::captureApplyDraftMetrics(ImageItem *item, qreal *cropW, qreal *c
     }
 }
 
+void ImageView::flashCropBakeFailed()
+{
+    flashHud(tr("Crop"), tr("Crop bake failed"));
+}
+
 bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
                                      const WorkspaceItemState &st,
                                      CropSession::ApplyBakeResult *baked)
@@ -248,10 +253,27 @@ bool ImageView::materializeApplyBake(const QImage &host, bool hostFromCache,
     }
     *baked = CropSession::materializeApplyDisplay(host, hostFromCache, st);
     if (!baked->ok()) {
-        flashHud(tr("Crop"), tr("Crop bake failed"));
+        flashCropBakeFailed();
         return false;
     }
     return true;
+}
+
+
+void ImageView::flashCropResetHud()
+{
+    flashHud(tr("Crop reset"), tr("Full image"));
+}
+
+void ImageView::flashCropAppliedHud(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    flashHud(tr("Cropped"),
+             QStringLiteral("%1×%2")
+                 .arg(item->imageSize().width())
+                 .arg(item->imageSize().height()));
 }
 
 void ImageView::finalizeCropResetSuccess(ImageItem *item)
@@ -262,7 +284,7 @@ void ImageView::finalizeCropResetSuccess(ImageItem *item)
     if (m_crop.shouldPushResetUndo(item->sourceImage().size())) {
         pushCropAppearanceUndo(item, tr("Crop reset"));
     }
-    flashHud(tr("Crop reset"), tr("Full image"));
+    flashCropResetHud();
 }
 
 void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
@@ -271,10 +293,7 @@ void ImageView::finalizeCropApplySuccess(ImageItem *item, SessionImageId sid,
     commitItemSessionEdit(item);
     emitCropApplyAppearance(sid, path, item, display, /*hasCrop=*/true);
     pushCropAppearanceUndo(item, tr("Crop"));
-    flashHud(tr("Cropped"),
-             QStringLiteral("%1×%2")
-                 .arg(item->imageSize().width())
-                 .arg(item->imageSize().height()));
+    flashCropAppliedHud(item);
 }
 
 
