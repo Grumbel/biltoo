@@ -306,16 +306,62 @@ struct SlideshowDwellState {
         sourceImage = {};
     }
 
-    void clearMotionPath()
+    /** Drop atlas pixmap only; keep sourceImage for rebuild. */
+    void clearAtlasPixmap()
     {
-        motionActive = false;
-        motionPaused = false;
+        atlas = {};
+        atlasRebuildGeneration = 0;
+        atlasScale = 0.0;
+        atlasVw = 0;
+        atlasVh = 0;
+    }
+
+    /** Force next tick to rebuild atlas at current viewport size. */
+    void invalidateAtlasViewport() { atlasVw = 0; }
+
+    void setAtlas(const QPixmap &pm, qreal scale, int vw, int vh, quint64 gen = 0)
+    {
+        atlas = pm;
+        atlasScale = scale;
+        atlasVw = vw;
+        atlasVh = vh;
+        if (gen != 0) {
+            atlasRebuildGeneration = gen;
+        }
+    }
+
+    void setSourceImage(const QImage &img) { sourceImage = img; }
+
+    void setElapsedOffsetMs(qint64 ms) { elapsedOffsetMs = ms; }
+
+    void setDurationMs(int ms) { durationMs = qMax(0, ms); }
+
+    void applyBias(const QPointF &a, const QPointF &b, const QPointF &dir, qreal sign)
+    {
+        biasA = a;
+        biasB = b;
+        travelDir = dir;
+        motionSign = sign;
+        biasValid = true;
+    }
+
+    void clearBias()
+    {
         biasValid = false;
         biasPath.clear();
         biasA = {-1.0, -1.0};
         biasB = {1.0, 1.0};
         travelDir = {0.0, 1.0};
         motionSign = 1.0;
+    }
+
+    void setBiasPath(const QString &path) { biasPath = path; }
+
+    void clearMotionPath()
+    {
+        motionActive = false;
+        motionPaused = false;
+        clearBias();
         durationMs = 0;
         elapsedOffsetMs = 0;
         motionT = 0.0;
@@ -356,6 +402,19 @@ struct SlideshowZoomBlurState {
         bumpGeneration();
         inFlightGen[0] = inFlightGen[1] = 0;
         inFlightKey[0] = inFlightKey[1] = 0;
+    }
+
+    void clearUnderlays()
+    {
+        underlay[0] = {};
+        underlay[1] = {};
+        sourceKey[0] = sourceKey[1] = 0;
+    }
+
+    void setViewportSize(int w, int h)
+    {
+        vw = w;
+        vh = h;
     }
 
     void bumpGeneration() { ++generation; }
@@ -433,6 +492,57 @@ struct SlideshowProgressHud {
         return true;
     }
 
+    bool setProgressActive(bool on)
+    {
+        if (progressActive == on) {
+            return false;
+        }
+        progressActive = on;
+        return true;
+    }
+
+    bool setSeekbarVisible(bool on)
+    {
+        if (seekbarVisible == on) {
+            return false;
+        }
+        seekbarVisible = on;
+        return true;
+    }
+
+    bool setSeekDragging(bool on)
+    {
+        if (seekDragging == on) {
+            return false;
+        }
+        seekDragging = on;
+        return true;
+    }
+
+    bool setProgressClockPaused(bool on)
+    {
+        if (progressClockPaused == on) {
+            return false;
+        }
+        progressClockPaused = on;
+        return true;
+    }
+
+    void resetProgressClock()
+    {
+        progressBaseMs = 0;
+        progressClockPaused = false;
+        progressElapsed.start();
+    }
+
+    void clearTimeline()
+    {
+        timelineElapsedMs = 0;
+        timelineTotalMs = 0;
+    }
+
+    void clearPaintFingerprint() { lastPaintFp.clear(); }
+
     void clearProgress()
     {
         progressActive = false;
@@ -444,6 +554,8 @@ struct SlideshowProgressHud {
         cycleProgressValid = false;
         timelineTotalMs = 0;
         lastPaintFp.clear();
+        seekDragging = false;
+        seekbarVisible = false;
     }
 };
 
