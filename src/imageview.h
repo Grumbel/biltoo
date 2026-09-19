@@ -1675,6 +1675,7 @@ private:
     void endCropRubberBand();
     void leaveCropModeInternal(bool apply);
     /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
+    void scheduleCropFullRasterFromPool(const QString &path);
     void requestCropFullRaster(const QString &path);
     /** Upgrade crop source when native full arrives for m_crop.awaitingFullPath. */
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
@@ -1694,6 +1695,14 @@ private:
     void storeCropAppearance(ImageItem *item, SessionImageId sid,
                              const WorkspaceItemState &s);
     QSize cropRecordFileNative(const QString &path) const;
+    void commitCropApplyBake(ImageItem *item, const QImage &display,
+                             const WorkspaceItemState &st, bool multiMp,
+                             qreal cropW, qreal cropH, const QString &path,
+                             const QPointF &cropSceneCenter, bool hostFromCache,
+                             SessionImageId sid);
+    void logApplyCropDebug(ImageItem *item, const QString &path, const QImage &host,
+                           bool hostFromCache, const QImage &display,
+                           qreal cropW, qreal cropH, qreal footW, qreal footH) const;
     bool applyCropCommit(ImageItem *item);
     void cancelCropShowingFullImage(ImageItem *item);
     void clearCropModeState();

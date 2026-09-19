@@ -542,23 +542,8 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     return true;
 }
 
-void ImageView::requestCropFullRaster(const QString &path)
+void ImageView::scheduleCropFullRasterFromPool(const QString &path)
 {
-    if (path.isEmpty()) {
-        return;
-    }
-    // Always try scheduleFullPixels (API macros only defined in TUs that
-    // include thumtoo/client.hpp — not this file).
-    if (ThumtooCache::isAvailable()) {
-        const int edge = CropSession::fullRasterScheduleEdge(path);
-        if (ThumtooCache::scheduleFullPixels(path, edge)) {
-            return;
-        }
-        if (ThumtooCache::isPixelsPending(path, edge)) {
-            return;
-        }
-    }
-    // scheduleFull skipped/unavailable: pool ImageLoader::load.
     const quint64 gen = m_loadGate.generation();
     const QPointer<ImageView> guard(this);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
@@ -581,6 +566,24 @@ void ImageView::requestCropFullRaster(const QString &path)
             },
             Qt::QueuedConnection);
     });
+}
+
+void ImageView::requestCropFullRaster(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    // Prefer thumtoo scheduleFullPixels; fall back to pool ImageLoader::load.
+    if (ThumtooCache::isAvailable()) {
+        const int edge = CropSession::fullRasterScheduleEdge(path);
+        if (ThumtooCache::scheduleFullPixels(path, edge)) {
+            return;
+        }
+        if (ThumtooCache::isPixelsPending(path, edge)) {
+            return;
+        }
+    }
+    scheduleCropFullRasterFromPool(path);
 }
 
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
@@ -1051,6 +1054,46 @@ QSize ImageView::cropRecordFileNative(const QString &path) const
     return fileNative;
 }
 
+
+void ImageView::commitCropApplyBake(ImageItem *item, const QImage &display,
+                                    const WorkspaceItemState &st, bool multiMp,
+                                    qreal cropW, qreal cropH, const QString &path,
+                                    const QPointF &cropSceneCenter, bool hostFromCache,
+                                    SessionImageId sid)
+{
+    {
+        ViewportUpdateHold paintHold(viewport());
+        attachCropApplyDisplay(item, display, st, multiMp, cropW, cropH, path,
+                               cropSceneCenter);
+        // Multi-MP: soft stand-in now; pure full rematerialize after leave.
+        m_crop.queueFullRematerializeIfSoft(hostFromCache, multiMp, path, sid, st);
+        finishCropApplyLayout(item);
+    }
+    finalizeCropApplySuccess(item, sid, path, display);
+}
+
+
+void ImageView::logApplyCropDebug(ImageItem *item, const QString &path, const QImage &host,
+                                  bool hostFromCache, const QImage &display,
+                                  qreal cropW, qreal cropH, qreal footW, qreal footH) const
+{
+    if (!qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP") || !item) {
+        return;
+    }
+    qWarning().noquote()
+        << QStringLiteral(
+               "[crop] Apply path=%1 host=%2x%3 cache=%4 display=%5x%6 "
+               "cropDraft=%7x%8 foot=%9x%10 "
+               "imageSizeBefore=%11x%12")
+               .arg(path)
+               .arg(host.width()).arg(host.height())
+               .arg(hostFromCache ? 1 : 0)
+               .arg(display.width()).arg(display.height())
+               .arg(cropW).arg(cropH)
+               .arg(footW).arg(footH)
+               .arg(item->imageSize().width()).arg(item->imageSize().height());
+}
+
 bool ImageView::applyCropCommit(ImageItem *item)
 {
     // Returns true when Workspace placement rotation should keep the crop-frame
@@ -1095,20 +1138,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
 
         // Placement scale is never written by crop (Workspace Zoom stays put).
         // Geometry = layoutSize(fileNative, st) via applyContentLayoutSize only.
-        if (qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
-            qWarning().noquote()
-                << QStringLiteral(
-                       "[crop] Apply path=%1 host=%2x%3 cache=%4 display=%5x%6 "
-                       "cropDraft=%7x%8 foot=%9x%10 "
-                       "imageSizeBefore=%11x%12")
-                       .arg(path)
-                       .arg(host.width()).arg(host.height())
-                       .arg(hostFromCache ? 1 : 0)
-                       .arg(display.width()).arg(display.height())
-                       .arg(cropW).arg(cropH)
-                       .arg(footW).arg(footH)
-                       .arg(item->imageSize().width()).arg(item->imageSize().height());
-        }
+        logApplyCropDebug(item, path, host, hostFromCache, display, cropW, cropH,
+                          footW, footH);
 
         // Single attach path (layoutSize only — never soft size as intrinsic).
         // Enter may have installed FullSource host; SoftPreview is ignored when
@@ -1120,15 +1151,8 @@ bool ImageView::applyCropCommit(ImageItem *item)
         // never composites crop pixels into the pre-crop contentRect (or the
         // reverse). fitItem still runs under m_crop.active(); it must not treat Apply
         // as draft (see fitItem cropDraft).
-        {
-            ViewportUpdateHold paintHold(viewport());
-            attachCropApplyDisplay(item, display, st, multiMp, cropW, cropH, path,
-                                   cropSceneCenter);
-            // Multi-MP: soft stand-in now; pure full rematerialize after leave.
-            m_crop.queueFullRematerializeIfSoft(hostFromCache, multiMp, path, sid, st);
-            finishCropApplyLayout(item);
-        }
-        finalizeCropApplySuccess(item, sid, path, display);
+        commitCropApplyBake(item, display, st, multiMp, cropW, cropH, path,
+                            cropSceneCenter, hostFromCache, sid);
         return isWorkspaceMode();
     }
 
