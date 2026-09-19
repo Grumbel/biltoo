@@ -121,6 +121,79 @@ public:
         const QImage &full, bool unorientedSource,
         const WorkspaceItemState *app, bool haveApp);
 
+    static SessionImageId sessionIdForRecord(const ImageItem *item,
+                                             SessionImageId boundTargetId,
+                                             SessionImageId imageModeCurrentId);
+
+    static bool isAxisAlignedFullFrame(const QRectF &local, const QRectF &contentRect,
+                                       qreal eps = 0.5);
+
+    struct RecordGeometry {
+        QRectF localClamped;
+        QRect sourceRect;
+        bool clearCrop = false;
+        bool valid() const { return !localClamped.isEmpty() && !sourceRect.isEmpty(); }
+    };
+
+    RecordGeometry computeRecordGeometry(const QRectF &localCrop, const QRectF &contentRect,
+                                         const QPointF &itemOffset, int imageW, int imageH,
+                                         bool hFlip, bool vFlip) const;
+
+    static void applyScenePosDelta(ImageItem *item, const QPointF &delta);
+
+    void seedApplyCropState(WorkspaceItemState *st, const QPointF &itemOffset,
+                            const QSize &imageSize) const;
+
+    void restoreEnterScale(ImageItem *item) const;
+
+    static void applyKeepEnterFlags(ImageItem *item, const WorkspaceItemState &contentOnly,
+                                    const ContentXform::Value &wantX);
+
+    static QSize cropBasisSize(const QSize &imageSize, const QSize &fileNative,
+                               const WorkspaceItemState *orientFromAppearance,
+                               const ImageItem *item);
+
+    void applyRecordToState(WorkspaceItemState *s, const RecordGeometry &rec,
+                            const QSize &cropBasis) const;
+
+    bool applyPaddedAutoTrim(const QRectF &contentRect, const QSize &srcSize,
+                             const QRect &trimmed, int padPx = 2);
+
+    void queueFullRematerializeIfSoft(bool hostFromCache, bool multiMp,
+                                      const QString &path, SessionImageId sid,
+                                      const WorkspaceItemState &st);
+
+    static QImage pickEnterSnapshotPixels(const ImageItem *item);
+
+    static void applyEnterDraftFlags(ImageItem *item, const ContentXform::Value &wantX);
+
+    bool shouldPushResetUndo(const QSize &currentSourceSize) const;
+
+    static void clearItemPixelsForDraftReinstall(ImageItem *item);
+
+    static bool maybePutUnorientedHostCache(const QString &path, const QImage &full,
+                                            bool unorientedSource, bool coversNative);
+
+    void finishRubber(const QRectF &contentRect);
+
+    bool shouldAcceptFullRasterUpgrade(const QString &path, const QImage &image,
+                                       const ImageItem *item, bool coversNative) const;
+
+    void applyCommitPlacementRotation(ImageItem *item) const;
+
+    static QSize ensureApplyIntrinsicSize(ImageItem *item, qreal cropW, qreal cropH,
+                                          const QString &pathForLog);
+
+    static bool appearanceHasCrop(const WorkspaceItemState *app, bool haveApp);
+
+    enum class ApplyHostStatus { Ok, NeedFull, NoPixels };
+    static ApplyHostStatus classifyApplyHost(const QImage &host, bool hostFromCache,
+                                             const ImageItem *item);
+
+    void releaseAllTileLod(ImageItem *boundByIdFallback);
+
+    static SessionAppearance::PixelKind applyPixelKind(bool multiMp);
+
     bool isHandleHot(CropHandle h) const
     {
         return hoverHandle == h || activeHandle == h;

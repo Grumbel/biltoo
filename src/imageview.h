@@ -1628,6 +1628,7 @@ private:
     CropGeometry::CropButtonLayout cropChromeLayout() const;
     bool cropAllowExpand() const { return m_crop.isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
+    QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);
     void paintAttentionOverlay(QPainter &painter);
     int attentionHandleIndexAt(const QPoint &viewPos) const;

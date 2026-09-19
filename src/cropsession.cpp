@@ -176,6 +176,281 @@ CropSession::EnterInstallSample CropSession::prepareEnterInstallSample(
     return out;
 }
 
+
+SessionImageId CropSession::sessionIdForRecord(const ImageItem *item,
+                                               SessionImageId boundTargetId,
+                                               SessionImageId imageModeCurrentId)
+{
+    if (!item) {
+        return kInvalidSessionImageId;
+    }
+    SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId) {
+        sid = boundTargetId;
+    }
+    if (sid == kInvalidSessionImageId) {
+        sid = imageModeCurrentId;
+    }
+    return sid;
+}
+
+bool CropSession::isAxisAlignedFullFrame(const QRectF &local, const QRectF &contentRect,
+                                         qreal eps)
+{
+    return qAbs(local.left() - contentRect.left()) < eps
+        && qAbs(local.top() - contentRect.top()) < eps
+        && qAbs(local.width() - contentRect.width()) < eps
+        && qAbs(local.height() - contentRect.height()) < eps;
+}
+
+CropSession::RecordGeometry CropSession::computeRecordGeometry(
+    const QRectF &localCrop, const QRectF &contentRect, const QPointF &itemOffset,
+    int imageW, int imageH, bool hFlip, bool vFlip) const
+{
+    RecordGeometry out;
+    out.localClamped = clampLocalCrop(localCrop, contentRect);
+    if (out.localClamped.isEmpty()) {
+        return out;
+    }
+    out.sourceRect = sourceCropFromLocal(
+        out.localClamped, itemOffset, imageW, imageH, hFlip, vFlip);
+    out.clearCrop = isAxisAlignedFullFrame(out.localClamped, contentRect)
+        && isNearZeroRotation(CropGeometry::kFreeRotationEps);
+    return out;
+}
+
+void CropSession::applyScenePosDelta(ImageItem *item, const QPointF &delta)
+{
+    if (!item || !qIsFinite(delta.x()) || !qIsFinite(delta.y())) {
+        return;
+    }
+    item->setPos(item->pos() + delta);
+}
+
+void CropSession::seedApplyCropState(WorkspaceItemState *st, const QPointF &itemOffset,
+                                     const QSize &imageSize) const
+{
+    if (!st) {
+        return;
+    }
+    st->hasCrop = true;
+    st->cropRect = integerCropForOffset(itemOffset);
+    st->cropSourceSize = imageSize;
+    st->cropRotation = currentRotation();
+}
+
+void CropSession::restoreEnterScale(ImageItem *item) const
+{
+    if (!item || enterScaleX() <= 1e-6) {
+        return;
+    }
+    const qreal sx = enterScaleX();
+    const qreal sy = enterScaleY() > 1e-6 ? enterScaleY() : sx;
+    item->setItemScale(sx, sy);
+}
+
+void CropSession::applyKeepEnterFlags(ImageItem *item, const WorkspaceItemState &contentOnly,
+                                      const ContentXform::Value &wantX)
+{
+    if (!item) {
+        return;
+    }
+    clearItemFreePlacementForDraft(item);
+    item->setSessionCrop(false, QRect());
+    item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
+    item->setAppliedContentXform(wantX);
+}
+
+QSize CropSession::cropBasisSize(const QSize &imageSize, const QSize &fileNative,
+                                 const WorkspaceItemState *orientFromAppearance,
+                                 const ImageItem *item)
+{
+    QSize cropBasis = imageSize;
+    if (fileNative.width() <= 1 || fileNative.height() <= 0) {
+        return cropBasis;
+    }
+    WorkspaceItemState orientOnly;
+    if (orientFromAppearance) {
+        orientOnly.contentQuarterTurns = orientFromAppearance->contentQuarterTurns;
+        orientOnly.contentHFlip = orientFromAppearance->contentHFlip;
+        orientOnly.contentVFlip = orientFromAppearance->contentVFlip;
+    } else if (item) {
+        orientOnly.contentHFlip = item->contentHFlip();
+        orientOnly.contentVFlip = item->contentVFlip();
+        orientOnly.contentQuarterTurns = item->hasAppliedContentXform()
+            ? item->appliedContentXform().quarterTurns : 0;
+    }
+    const QSize oriented = ContentXform::layoutSize(fileNative, orientOnly);
+    if (oriented.width() > 1 && oriented.height() > 0) {
+        return oriented;
+    }
+    return cropBasis;
+}
+
+void CropSession::applyRecordToState(WorkspaceItemState *s, const RecordGeometry &rec,
+                                     const QSize &cropBasis) const
+{
+    if (!s) {
+        return;
+    }
+    if (rec.clearCrop) {
+        *s = SessionAppearance::withoutCrop(*s);
+        s->cropSourceSize = QSize();
+        s->cropRotation = 0.0;
+        return;
+    }
+    s->hasCrop = true;
+    s->cropRect = rec.sourceRect;
+    s->cropSourceSize = cropBasis;
+    s->cropRotation = currentRotation();
+}
+
+bool CropSession::applyPaddedAutoTrim(const QRectF &contentRect, const QSize &srcSize,
+                                      const QRect &trimmed, int padPx)
+{
+    QRect t = CropGeometry::paddedIntersectedRect(trimmed, srcSize, padPx);
+    if (!t.isValid() || t.isEmpty()) {
+        return false;
+    }
+    setRectFromSourcePixelTrim(contentRect, srcSize, t);
+    ensureRectValid(contentRect);
+    return true;
+}
+
+void CropSession::queueFullRematerializeIfSoft(bool hostFromCache, bool multiMp,
+                                              const QString &path, SessionImageId sid,
+                                              const WorkspaceItemState &st)
+{
+    if (hostFromCache && multiMp) {
+        queuePendingFullRematerialize(path, sid, st);
+    }
+}
+
+QImage CropSession::pickEnterSnapshotPixels(const ImageItem *item)
+{
+    if (!item) {
+        return {};
+    }
+    QImage src = item->sourceImage().copy();
+    if (src.isNull()) {
+        src = item->previewImage().copy();
+    }
+    return src;
+}
+
+void CropSession::applyEnterDraftFlags(ImageItem *item, const ContentXform::Value &wantX)
+{
+    if (!item) {
+        return;
+    }
+    item->setSessionCrop(false, QRect());
+    item->setAppliedContentXform(wantX);
+}
+
+bool CropSession::shouldPushResetUndo(const QSize &currentSourceSize) const
+{
+    return isEnterValid()
+        && (enterHadCrop() || enterSourceDiffersFrom(currentSourceSize));
+}
+
+void CropSession::clearItemPixelsForDraftReinstall(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    item->clearDecodedPixels();
+    item->clearAppliedContentXform();
+}
+
+bool CropSession::maybePutUnorientedHostCache(const QString &path, const QImage &full,
+                                              bool unorientedSource, bool coversNative)
+{
+    if (path.isEmpty() || !unorientedSource || !coversNative || full.isNull()) {
+        return false;
+    }
+    ImageCache::put(path, full);
+    return true;
+}
+
+void CropSession::finishRubber(const QRectF &contentRect)
+{
+    endRubber();
+    ensureRectValid(contentRect);
+}
+
+bool CropSession::shouldAcceptFullRasterUpgrade(const QString &path, const QImage &image,
+                                                const ImageItem *item, bool coversNative) const
+{
+    if (!acceptsFullRasterUpgrade(path) || image.isNull()) {
+        return false;
+    }
+    if (!item || item->path() != path) {
+        return false;
+    }
+    if (!coversNative
+        && ImageCache::longEdge(image) <= item->displayPixelLongEdge()) {
+        return false;
+    }
+    return true;
+}
+
+void CropSession::applyCommitPlacementRotation(ImageItem *item) const
+{
+    if (!item) {
+        return;
+    }
+    item->setItemRotation(currentRotation());
+}
+
+QSize CropSession::ensureApplyIntrinsicSize(ImageItem *item, qreal cropW, qreal cropH,
+                                            const QString &pathForLog)
+{
+    if (!item) {
+        return {};
+    }
+    QSize isz = item->imageSize();
+    if (isz.width() <= 1 || isz.height() <= 1) {
+        qCritical("applyCropCommit: layoutSize after crop is %dx%d (draft %gx%g path=%s)",
+                  isz.width(), isz.height(), cropW, cropH, qPrintable(pathForLog));
+        isz = ContentXform::roundedSizeAtLeast1(cropW, cropH);
+        item->setIntrinsicSize(isz);
+    }
+    return isz;
+}
+
+bool CropSession::appearanceHasCrop(const WorkspaceItemState *app, bool haveApp)
+{
+    return haveApp && app && app->hasCrop && !app->cropRect.isEmpty();
+}
+
+CropSession::ApplyHostStatus CropSession::classifyApplyHost(const QImage &host,
+                                                            bool hostFromCache,
+                                                            const ImageItem *item)
+{
+    if (!host.isNull()) {
+        return ApplyHostStatus::Ok;
+    }
+    if (!hostFromCache && item && item->hasAppliedContentXform()
+        && item->appliedContentXform().hasCrop) {
+        return ApplyHostStatus::NeedFull;
+    }
+    return ApplyHostStatus::NoPixels;
+}
+
+void CropSession::releaseAllTileLod(ImageItem *boundByIdFallback)
+{
+    releaseTargetTileLod();
+    if (!target() && boundByIdFallback) {
+        boundByIdFallback->setTileLodSuppressed(false);
+    }
+}
+
+SessionAppearance::PixelKind CropSession::applyPixelKind(bool multiMp)
+{
+    return multiMp ? SessionAppearance::PixelKind::SoftPreview
+                   : SessionAppearance::PixelKind::FullSource;
+}
+
 bool CropSession::locksPath(const QString &path) const
 {
     if (!draftSampleFrozen || path.isEmpty()) {
