@@ -5,6 +5,7 @@
 #define IMAGECACHE_H
 
 #include <QImage>
+#include "viewtransform.h"
 #include <QString>
 #include <QStringList>
 
@@ -45,7 +46,7 @@ inline int longEdge(const QImage &img)
 /** Approximate ARGB32 footprint in KiB (min 1) for QCache costs. */
 inline int rgbaCostKiB(int width, int height)
 {
-    return qMax(1, (width * height * 4) / 1024);
+    return ViewTransform::atLeast1((width * height * 4) / 1024);
 }
 
 inline int rgbaCostKiB(const QImage &img)

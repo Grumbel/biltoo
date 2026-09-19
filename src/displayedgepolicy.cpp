@@ -5,6 +5,7 @@
 
 #include "imagecache.h"
 #include "thumtoocache.h"
+#include "viewtransform.h"
 
 #include <QtGlobal>
 #include <QtMath>
@@ -37,7 +38,7 @@ int cappedDisplayEdge(int wantEdge, int nativeLongEdge)
     if (nativeLongEdge > 0) {
         edge = qMin(edge, nativeLongEdge);
     }
-    return qMax(1, edge);
+    return ViewTransform::atLeast1(edge);
 }
 
 bool sampleCoversNative(int sampleLongEdge, int nativeLongEdge, bool nativeKnown,
