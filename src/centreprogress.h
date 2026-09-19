@@ -22,10 +22,15 @@ struct CentreProgress {
         detail.clear();
     }
 
-    void set(const QString &t, const QString &d = QString())
+    /** @return true when title or detail changed. */
+    bool set(const QString &t, const QString &d = QString())
     {
+        if (title == t && detail == d) {
+            return false;
+        }
         title = t;
         detail = d;
+        return true;
     }
 
     /** True when title starts with @p prefix (progress clear / paint gates). */

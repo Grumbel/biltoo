@@ -756,11 +756,9 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
         clearCentreProgress();
         return;
     }
-    if (m_centreProgress.title == title && m_centreProgress.detail == detail) {
+    if (!m_centreProgress.set(title, detail)) {
         return;
     }
-    m_centreProgress.title = title;
-    m_centreProgress.detail = detail;
     // Empty scene needs FullViewportUpdate or the centre panel never paints.
     // Gallery with tiles must keep BoundingRectViewportUpdate — FullViewport
     // during “Improving previews…” re-painted every item every frame and
@@ -775,11 +773,10 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
 
 void ImageView::clearCentreProgress()
 {
-    if (m_centreProgress.title.isEmpty() && m_centreProgress.detail.isEmpty()) {
+    if (!m_centreProgress.active()) {
         return;
     }
-    m_centreProgress.title.clear();
-    m_centreProgress.detail.clear();
+    m_centreProgress.clear();
     if (isGalleryMode() && !gallerySizeResolveActive()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
