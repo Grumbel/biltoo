@@ -1625,12 +1625,8 @@ private:
     QPolygonF cropPolygonItemLocal() const;
     QRectF cropRectView() const;
     QPolygonF cropPolygonView() const;
-    /** Viewport rects of Reset / Apply controls above the crop frame. */
-    QRect cropExpandButtonView() const;
-    QRect cropAutoButtonView() const;
-    QRect cropResetButtonView() const;
-    QRect cropCancelButtonView() const;
-    QRect cropCloseButtonView() const;
+    /** Viewport chrome button rects under the draft frame (empty when inactive). */
+    CropGeometry::CropButtonLayout cropChromeLayout() const;
     bool cropAllowExpand() const { return m_crop.isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     void paintCropOverlay(QPainter &painter);

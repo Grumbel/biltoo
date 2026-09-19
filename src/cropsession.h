@@ -6,6 +6,7 @@
 
 #include "imageview_types.h"
 #include "crophandle.h"
+#include "contentxform.h"
 // WorkspaceItemState is in imageview_types.h
 
 #include <QImage>
@@ -46,6 +47,43 @@ public:
     {
         return h != CropHandle::None && !isChromeButton(h);
     }
+
+    /**
+     * Raster chosen for crop enter install: prefer unoriented ImageCache,
+     * else item sample only when there is no prior session crop bake.
+     */
+    struct EnterFullRaster {
+        QImage image;
+        bool unoriented = false;
+    };
+
+    /** Prefer ImageCache path sample; fall back to item display when no prior crop. */
+    static EnterFullRaster pickEnterFullRaster(ImageItem *item, const QString &path,
+                                              bool hadPriorCrop);
+
+    /**
+     * Prefer ImageCache for Apply host; fall back to item display only when
+     * the live pixels are not already a prior crop bake.
+     */
+    static QImage pickApplyHost(ImageItem *item, const QString &path, bool *fromCache);
+
+    /**
+     * True when enter can KEEP the live display pixels (no re-bake): full-frame,
+     * no prior crop, applied/live grade already matches content-only want.
+     */
+    static bool canKeepDisplayForEnter(const ImageItem *item,
+                                       const ContentXform::Value &wantX,
+                                       const WorkspaceItemState &contentOnly,
+                                       bool hadPriorCrop, bool needGeomBake);
+
+    /** Zero free placement (item rotate/shear/flip) so crop draft is content-only. */
+    static void clearItemFreePlacementForDraft(ImageItem *item);
+
+    /**
+     * Long edge for Thumtoo full-pixel schedule during crop: native size clamped
+     * to ImageCache::kDisplayMaxEdge, or 8192 when size unknown.
+     */
+    static int fullRasterScheduleEdge(const QString &path);
 
     bool isHandleHot(CropHandle h) const
     {

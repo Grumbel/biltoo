@@ -28,119 +28,6 @@
 #include <QPointer>
 #include <QMetaObject>
 
-namespace {
-
-CropGeometry::CropButtonLayout cropChromeButtons(bool cropActive, const QRectF &cropView,
-                                                 const QRect &viewportRect)
-{
-    CropGeometry::CropButtonLayout empty;
-    if (!cropActive) {
-        return empty;
-    }
-    return CropGeometry::cropButtonLayout(cropView, viewportRect);
-}
-
-} // namespace
-
-int fullRasterScheduleEdge(const QString &path)
-{
-    int edge = 8192;
-    if (path.isEmpty()) {
-        return edge;
-    }
-    const QSize native = ThumtooCache::cachedSize(path);
-    if (native.isValid() && native.width() > 0 && native.height() > 0) {
-        edge = ContentXform::clampLongEdge(ContentXform::longEdge(native),
-                                          ImageCache::kDisplayMaxEdge);
-    }
-    return edge;
-}
-
-
-/** Prefer ImageCache; fall back to item display only when not a prior crop bake. */
-QImage pickCropApplyHost(ImageItem *item, const QString &path, bool *fromCache)
-{
-    QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-    if (fromCache) {
-        *fromCache = !host.isNull();
-    }
-    if (!host.isNull()) {
-        return host;
-    }
-    if (item && item->hasAppliedContentXform()
-        && item->appliedContentXform().hasCrop) {
-        return {};
-    }
-    if (!item) {
-        return {};
-    }
-    host = item->sourceImage();
-    if (host.isNull()) {
-        host = item->previewImage();
-    }
-    return host;
-}
-
-
-
-struct EnterFullRaster {
-    QImage image;
-    bool unoriented = false;
-};
-
-/** Prefer unoriented ImageCache; fall back to item sample only when no prior crop. */
-EnterFullRaster pickEnterFullRaster(ImageItem *item, const QString &path, bool hadPriorCrop)
-{
-    EnterFullRaster out;
-    if (!path.isEmpty()) {
-        out.image = ImageCache::get(path);
-        if (!out.image.isNull()) {
-            out.unoriented = true;
-            return out;
-        }
-    }
-    if (!hadPriorCrop && item) {
-        out.image = item->sourceImage();
-        if (out.image.isNull()) {
-            out.image = item->previewImage();
-        }
-        out.unoriented = false;
-    }
-    return out;
-}
-
-
-
-void clearItemFreePlacementForCropDraft(ImageItem *item)
-{
-    if (!item) {
-        return;
-    }
-    item->setItemRotation(0.0);
-    item->setItemShear(0.0);
-    item->setItemHFlip(false);
-    item->setItemVFlip(false);
-}
-
-bool canKeepDisplayForCropEnter(const ImageItem *item, const ContentXform::Value &wantX,
-                                const WorkspaceItemState &contentOnly, bool hadPriorCrop,
-                                bool needGeomBake)
-{
-    if (!item || hadPriorCrop || !item->hasDisplayPixels() || item->sessionHasCrop()) {
-        return false;
-    }
-    if (item->displayPixelLongEdge() < ContentXform::kGuiMaterializeMaxEdge) {
-        return false;
-    }
-    const bool appliedOk = item->hasAppliedContentXform()
-        && !item->appliedContentXform().hasCrop
-        && ContentXform::equal(item->appliedContentXform(), wantX);
-    const bool liveGradeOk = !item->hasAppliedContentXform()
-        && !needGeomBake
-        && item->colorAdjustments().matches(contentOnly.colorAdjust);
-    return appliedOk || liveGradeOk;
-}
-
 ImageItem *ImageView::cropSessionBoundItem() const
 {
     // Bound subject for the active crop session (IDENTITY.md).
@@ -385,8 +272,8 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
 
     // Full-frame already on the item (no crop bake): keep those pixels.
     // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
-    if (canKeepDisplayForCropEnter(item, wantX, contentOnly, hadPriorCrop, needGeomBake)) {
-        clearItemFreePlacementForCropDraft(item);
+    if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, hadPriorCrop, needGeomBake)) {
+        CropSession::clearItemFreePlacementForDraft(item);
         item->setSessionCrop(false, QRect());
         item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
         item->setAppliedContentXform(wantX);
@@ -401,7 +288,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
         return;
     }
 
-    clearItemFreePlacementForCropDraft(item);
+    CropSession::clearItemFreePlacementForDraft(item);
     // Drop prior crop bake so SoftPreview full-frame stand-in is accepted.
     // Otherwise hasDecodedPixels() rejects soft install and the draft stays
     // on the already-cropped pixmap (second crop cannot see the original).
@@ -502,7 +389,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     // Unoriented ImageCache host preferred. Never use item display as the crop
     // base when a prior crop exists — that bake is already cropped, so a second
     // crop would edit the wrong frame and shrink further.
-    const EnterFullRaster enter = pickEnterFullRaster(item, path, hadCrop);
+    const CropSession::EnterFullRaster enter = CropSession::pickEnterFullRaster(item, path, hadCrop);
     const QImage &full = enter.image;
     const bool unorientedSource = enter.unoriented;
     if (full.isNull()) {
@@ -552,7 +439,7 @@ void ImageView::requestCropFullRaster(const QString &path)
     // Always try scheduleFullPixels (API macros only defined in TUs that
     // include thumtoo/client.hpp — not this file).
     if (ThumtooCache::isAvailable()) {
-        const int edge = fullRasterScheduleEdge(path);
+        const int edge = CropSession::fullRasterScheduleEdge(path);
         if (ThumtooCache::scheduleFullPixels(path, edge)) {
             return;
         }
@@ -1053,7 +940,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
 
         const QString path = item->path();
         bool hostFromCache = false;
-        QImage host = pickCropApplyHost(item, path, &hostFromCache);
+        QImage host = CropSession::pickApplyHost(item, path, &hostFromCache);
         if (host.isNull()) {
             if (!hostFromCache && item->hasAppliedContentXform()
                 && item->appliedContentXform().hasCrop) {
@@ -1316,34 +1203,13 @@ QRectF ImageView::cropRectView() const
     return cropPolygonView().boundingRect().normalized();
 }
 
-QRect ImageView::cropExpandButtonView() const
+CropGeometry::CropButtonLayout ImageView::cropChromeLayout() const
 {
-    const CropGeometry::CropButtonLayout L = cropChromeButtons(m_crop.active(), cropRectView(), viewport() ? viewport()->rect() : QRect());
-    return L.valid ? L.expand : QRect();
-}
-
-QRect ImageView::cropAutoButtonView() const
-{
-    const CropGeometry::CropButtonLayout L = cropChromeButtons(m_crop.active(), cropRectView(), viewport() ? viewport()->rect() : QRect());
-    return L.valid ? L.autoBtn : QRect();
-}
-
-QRect ImageView::cropResetButtonView() const
-{
-    const CropGeometry::CropButtonLayout L = cropChromeButtons(m_crop.active(), cropRectView(), viewport() ? viewport()->rect() : QRect());
-    return L.valid ? L.reset : QRect();
-}
-
-QRect ImageView::cropCancelButtonView() const
-{
-    const CropGeometry::CropButtonLayout L = cropChromeButtons(m_crop.active(), cropRectView(), viewport() ? viewport()->rect() : QRect());
-    return L.valid ? L.cancel : QRect();
-}
-
-QRect ImageView::cropCloseButtonView() const
-{
-    const CropGeometry::CropButtonLayout L = cropChromeButtons(m_crop.active(), cropRectView(), viewport() ? viewport()->rect() : QRect());
-    return L.valid ? L.apply : QRect();
+    if (!m_crop.active()) {
+        return {};
+    }
+    return CropGeometry::cropButtonLayout(cropRectView(),
+                                          viewport() ? viewport()->rect() : QRect());
 }
 
 
@@ -1394,15 +1260,16 @@ void ImageView::paintCropOverlay(QPainter &painter)
         CropGeometry::paintTextButton(painter, btn, m_crop.currentHoverHandle() == kind, label,
                                       role, toggled);
     };
-    paintBtn(cropExpandButtonView(), CropHandle::ExpandToggle,
+    const CropGeometry::CropButtonLayout chrome = cropChromeLayout();
+    paintBtn(chrome.expand, CropHandle::ExpandToggle,
              ImageView::tr("Expand"), CropGeometry::CropBtnRole::Toggle, m_crop.isAllowExpand());
-    paintBtn(cropAutoButtonView(), CropHandle::Auto, ImageView::tr("Auto"),
+    paintBtn(chrome.autoBtn, CropHandle::Auto, ImageView::tr("Auto"),
              CropGeometry::CropBtnRole::Action);
-    paintBtn(cropResetButtonView(), CropHandle::Reset, ImageView::tr("Reset"),
+    paintBtn(chrome.reset, CropHandle::Reset, ImageView::tr("Reset"),
              CropGeometry::CropBtnRole::Action);
-    paintBtn(cropCancelButtonView(), CropHandle::Cancel, ImageView::tr("Cancel"),
+    paintBtn(chrome.cancel, CropHandle::Cancel, ImageView::tr("Cancel"),
              CropGeometry::CropBtnRole::Neutral);
-    paintBtn(cropCloseButtonView(), CropHandle::Close, ImageView::tr("Apply"),
+    paintBtn(chrome.apply, CropHandle::Close, ImageView::tr("Apply"),
              CropGeometry::CropBtnRole::Commit);
 
     {
@@ -1491,11 +1358,8 @@ CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
     if (!item || !m_crop.hasValidRect()) {
         return CropHandle::None;
     }
-    const CropGeometry::CropButtonLayout buttons =
-        cropChromeButtons(m_crop.active(), cropRectView(),
-                          viewport() ? viewport()->rect() : QRect());
     const CropGeometry::CropFrameViewAnchors anchors =
         CropGeometry::frameViewAnchors(cropPolygonView());
-    return CropGeometry::hitTestCropChrome(viewPos, buttons, anchors);
+    return CropGeometry::hitTestCropChrome(viewPos, cropChromeLayout(), anchors);
 }
 

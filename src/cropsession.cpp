@@ -7,6 +7,98 @@
 #include "placementlinear.h"
 #include "imageitem.h"
 #include "sessionappearance.h"
+#include "imagecache.h"
+#include "thumtoocache.h"
+
+CropSession::EnterFullRaster CropSession::pickEnterFullRaster(ImageItem *item,
+                                                              const QString &path,
+                                                              bool hadPriorCrop)
+{
+    EnterFullRaster out;
+    if (!path.isEmpty()) {
+        out.image = ImageCache::get(path);
+        if (!out.image.isNull()) {
+            out.unoriented = true;
+            return out;
+        }
+    }
+    if (!hadPriorCrop && item) {
+        out.image = item->sourceImage();
+        if (out.image.isNull()) {
+            out.image = item->previewImage();
+        }
+        out.unoriented = false;
+    }
+    return out;
+}
+
+QImage CropSession::pickApplyHost(ImageItem *item, const QString &path, bool *fromCache)
+{
+    QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+    if (fromCache) {
+        *fromCache = !host.isNull();
+    }
+    if (!host.isNull()) {
+        return host;
+    }
+    if (item && item->hasAppliedContentXform()
+        && item->appliedContentXform().hasCrop) {
+        return {};
+    }
+    if (!item) {
+        return {};
+    }
+    host = item->sourceImage();
+    if (host.isNull()) {
+        host = item->previewImage();
+    }
+    return host;
+}
+
+bool CropSession::canKeepDisplayForEnter(const ImageItem *item,
+                                         const ContentXform::Value &wantX,
+                                         const WorkspaceItemState &contentOnly,
+                                         bool hadPriorCrop, bool needGeomBake)
+{
+    if (!item || hadPriorCrop || !item->hasDisplayPixels() || item->sessionHasCrop()) {
+        return false;
+    }
+    if (item->displayPixelLongEdge() < ContentXform::kGuiMaterializeMaxEdge) {
+        return false;
+    }
+    const bool appliedOk = item->hasAppliedContentXform()
+        && !item->appliedContentXform().hasCrop
+        && ContentXform::equal(item->appliedContentXform(), wantX);
+    const bool liveGradeOk = !item->hasAppliedContentXform()
+        && !needGeomBake
+        && item->colorAdjustments().matches(contentOnly.colorAdjust);
+    return appliedOk || liveGradeOk;
+}
+
+void CropSession::clearItemFreePlacementForDraft(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    item->setItemRotation(0.0);
+    item->setItemShear(0.0);
+    item->setItemHFlip(false);
+    item->setItemVFlip(false);
+}
+
+int CropSession::fullRasterScheduleEdge(const QString &path)
+{
+    int edge = 8192;
+    if (path.isEmpty()) {
+        return edge;
+    }
+    const QSize native = ThumtooCache::cachedSize(path);
+    if (native.isValid() && native.width() > 0 && native.height() > 0) {
+        edge = ContentXform::clampLongEdge(ContentXform::longEdge(native),
+                                          ImageCache::kDisplayMaxEdge);
+    }
+    return edge;
+}
 
 bool CropSession::locksPath(const QString &path) const
 {
