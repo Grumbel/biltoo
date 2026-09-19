@@ -1682,7 +1682,7 @@ void ImageView::setCurrentSessionId(SessionImageId id)
     if (m_sessionId.currentId == id) {
         return;
     }
-    m_sessionId.currentId = id;
+    m_sessionId.setCurrentId(id);
     // Attention marker is per SessionImageId — reload draft for the new image.
     if (m_attention.mode) {
         m_attention.draftValid = false;

@@ -1995,7 +1995,7 @@ void ImageView::handleLoadAddDecodeFailure(const QString &path)
         && (PagePath::isPdfImageRef(path) || PagePath::isPageRef(path))) {
         ThumtooCache::scheduleProbe(path);
         // Soft state machine will request placeholder / higher steps.
-        m_sessionId.lastLoadError.clear();
+        m_sessionId.clearLastLoadError();
         finishLoadAddStatus(/*refreshGalleryWindow=*/true);
         return;
     }
@@ -2005,7 +2005,7 @@ void ImageView::handleLoadAddDecodeFailure(const QString &path)
         st.failed = true;
         st.inflight = 0;
     }
-    m_sessionId.lastLoadError = path;
+    m_sessionId.setLastLoadError(path);
     // Surface the error on any live placeholder for this path.
     for (ImageItem *item : m_items) {
         if (item && item->path() == path && !item->hasDecodedPixels()) {
@@ -2321,7 +2321,7 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
     ImageItem *item = createItemFromImage(path, image);
     if (!item) {
         setUpdatesEnabled(true);
-        m_sessionId.lastLoadError = path;
+        m_sessionId.setLastLoadError(path);
         emit statusChanged();
         return;
     }
@@ -2435,7 +2435,7 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     installDisplayPixels(item, image, kind, item->sessionId() != kInvalidSessionImageId
                                              ? item->sessionId()
                                              : m_sessionId.currentId);
-    m_sessionId.lastLoadError.clear();
+    m_sessionId.clearLastLoadError();
     rememberSizeFromDecode(path, image);
     if (viewport()) {
         viewport()->update();
@@ -2802,9 +2802,9 @@ void ImageView::completeLoadReplace(const QString &path, const QImage &image, qu
             if (!tilesOwn) {
                 scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
             }
-            m_sessionId.lastLoadError.clear();
+            m_sessionId.clearLastLoadError();
         } else {
-            m_sessionId.lastLoadError = path;
+            m_sessionId.setLastLoadError(path);
         }
         emit statusChanged();
         return;
@@ -2850,7 +2850,7 @@ bool ImageView::loadImage(const QString &path)
     if (m_textLayer.showRegions || !m_textLayer.searchQuery.isEmpty()) {
         refreshTextLayer();
     }
-    m_sessionId.lastLoadError.clear();
+    m_sessionId.clearLastLoadError();
 
     if (isMultiItemMode()) {
         // Session navigation while in multi-item mode does not destroy the canvas;

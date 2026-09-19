@@ -31,6 +31,18 @@ struct SessionIdentity {
         currentId = kInvalidSessionImageId;
         lastLoadError.clear();
     }
+
+    void setPosition(int idx, int tot)
+    {
+        index = idx;
+        total = tot;
+    }
+
+    void setCurrentId(SessionImageId id) { currentId = id; }
+
+    void setLastLoadError(const QString &err) { lastLoadError = err; }
+
+    void clearLastLoadError() { lastLoadError.clear(); }
 };
 
 struct SessionNavFlags {
