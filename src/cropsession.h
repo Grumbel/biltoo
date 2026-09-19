@@ -328,6 +328,16 @@ public:
 
     bool isDraftSampleFrozen() const { return draftSampleFrozen; }
 
+    /** True when draft freeze applies to @p path (path lock or draftPath). */
+    bool isDraftSampleFrozenForPath(const QString &path) const
+    {
+        if (!draftSampleFrozen || path.isEmpty()) {
+            return false;
+        }
+        return locksPath(path) || (!draftPath.isEmpty() && draftPath == path);
+    }
+
+
     const QImage &enterSourceRef() const { return enterSource; }
 
     const QString &awaitingFullPathRef() const { return awaitingFullPath; }

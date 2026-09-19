@@ -269,10 +269,9 @@ bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 
 bool ImageView::isCropDraftLockedPath(const QString &path) const
 {
-    if (m_crop.locksPath(path)) {
+    if (m_crop.locksPath(path) || m_crop.isDraftSampleFrozenForPath(path)) {
         return true;
     }
-    // Prefer the path captured at lock time — survives item pointer churn.
     // Host resolves targetId → current item path when draftPath is empty.
     if (!m_crop.isDraftSampleFrozen() || path.isEmpty()) {
         return false;
