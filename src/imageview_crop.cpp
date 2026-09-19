@@ -109,6 +109,26 @@ EnterFullRaster pickEnterFullRaster(ImageItem *item, const QString &path, bool h
     return out;
 }
 
+
+bool canKeepDisplayForCropEnter(const ImageItem *item, const ContentXform::Value &wantX,
+                                const WorkspaceItemState &contentOnly, bool hadPriorCrop,
+                                bool needGeomBake)
+{
+    if (!item || hadPriorCrop || !item->hasDisplayPixels() || item->sessionHasCrop()) {
+        return false;
+    }
+    if (item->displayPixelLongEdge() < ContentXform::kGuiMaterializeMaxEdge) {
+        return false;
+    }
+    const bool appliedOk = item->hasAppliedContentXform()
+        && !item->appliedContentXform().hasCrop
+        && ContentXform::equal(item->appliedContentXform(), wantX);
+    const bool liveGradeOk = !item->hasAppliedContentXform()
+        && !needGeomBake
+        && item->colorAdjustments().matches(contentOnly.colorAdjust);
+    return appliedOk || liveGradeOk;
+}
+
 ImageItem *ImageView::cropSessionBoundItem() const
 {
     // Bound subject for the active crop session (IDENTITY.md).
@@ -353,18 +373,7 @@ void ImageView::installFullImageForCrop(ImageItem *item, const QImage &full,
 
     // Full-frame already on the item (no crop bake): keep those pixels.
     // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
-    // Accept either matching applied xform, or live grade (no applied yet) when
-    // the painted sample is already large enough.
-    const bool appliedOk = item->hasAppliedContentXform()
-        && !item->appliedContentXform().hasCrop
-        && ContentXform::equal(item->appliedContentXform(), wantX);
-    const bool liveGradeOk = !item->hasAppliedContentXform()
-        && !needGeomBake
-        && item->colorAdjustments().matches(contentOnly.colorAdjust);
-    if (!hadPriorCrop && item->hasDisplayPixels()
-        && !item->sessionHasCrop()
-        && (appliedOk || liveGradeOk)
-        && item->displayPixelLongEdge() >= ContentXform::kGuiMaterializeMaxEdge) {
+    if (canKeepDisplayForCropEnter(item, wantX, contentOnly, hadPriorCrop, needGeomBake)) {
         item->setItemRotation(0.0);
         item->setItemShear(0.0);
         item->setItemHFlip(false);
