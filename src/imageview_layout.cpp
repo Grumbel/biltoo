@@ -1990,6 +1990,7 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     if (!item) {
         return;
     }
+    const QString path = item->path();
     unregisterItemDisplaySurface(item);
     // Re-entrancy / double-destroy: after the first call the pointer is gone from
     // live and stash lists. A second call must not touch a deleted QGraphicsItem
@@ -2030,6 +2031,10 @@ void ImageView::destroyCanvasItem(ImageItem *item)
 
     rememberItemState(item);
     m_items.removeAll(item);
+    // Off-canvas neighbor prefetch may still hold a controller for this path.
+    if (!path.isEmpty() && !pathOnLiveCanvas(path)) {
+        dropTilePrefetchPath(path);
+    }
     if (QGraphicsScene *sc = item->scene()) {
         // selectionChanged → statusChanged → paint must not run mid-teardown
         // (re-entrant paint was UAF in the BSP / item lists).
