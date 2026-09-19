@@ -1360,6 +1360,11 @@ void ImageItem::tickTileLod(int budget)
         m_tileLodLastUpdateGen = gen;
         // Plan-only change (pan): cheap mark, no pixmap clear.
         update();
+    } else if (m_tileLodLastUpdateGen == 0 && m_tileLod->hasRetainedTiles()) {
+        // A→B→A: Succeeded tiles already in shared cache — pump applied 0 but
+        // paint must run once so retained cells appear without waiting for issue.
+        m_tileLodLastUpdateGen = gen ? gen : 1;
+        update();
     }
 }
 
