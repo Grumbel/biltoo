@@ -1451,10 +1451,10 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
                                  ? bound.id
                                  : existing->sessionId());
         if (bound.id != kInvalidSessionImageId && m_view->appearance().get(bound.id)) {
-            applyState(existing, *m_view->appearance().get(bound.id));
+            m_view->applyState(existing, *m_view->appearance().get(bound.id));
         }
         // Explicit drop position wins over restored gallery/workspace pose.
-        applyPendingBindScenePos(existing, bound);
+        m_view->applyPendingBindScenePos(existing, bound);
         if (bound.id != kInvalidSessionImageId) {
             // Decode must not rewrite filmstrip (sessionAppearanceChanged).
             if (m_view->m_bindBook.removeSelectId(bound.id)) {
@@ -1479,7 +1479,7 @@ int DisplayPipelineController::fillLiveItemsWithDecodedPixels(const QString &pat
         // Soft was wrongly stored as "decoded"; still accept stricter long edge.
         if (!existing->hasDecodedPixels()
             || existing->shouldUpgradeDisplayTo(incoming)) {
-            if (installFullPreservingWorkspaceFootprint(existing, image)) {
+            if (m_view->installFullPreservingWorkspaceFootprint(existing, image)) {
                 sizeChanged = true;
             } else if (existing->shouldUpgradeDisplayTo(incoming)) {
                 // Footprint helper no-ops once hasDecodedPixels; force upgrade.
@@ -1501,7 +1501,7 @@ int DisplayPipelineController::fillLiveItemsWithDecodedPixels(const QString &pat
 void DisplayPipelineController::createMissingLoadAddItems(const QString &path, const QImage &image,
                                           int have, int wanted)
 {
-    if (gallerySizeResolveActive() || m_view->m_gallerySoftBook.isDeferPopulate()) {
+    if (m_view->gallerySizeResolveActive() || m_view->m_gallerySoftBook.isDeferPopulate()) {
         return;
     }
     // Create missing occurrences (each duplicate is a normal separate tile).
@@ -1514,7 +1514,7 @@ void DisplayPipelineController::createMissingLoadAddItems(const QString &path, c
         // Bind pending session row if any remain for this path (FIFO).
         PendingSessionBind bound;
         const bool haveBound = m_view->takePendingSessionBindForNewItem(path, item, &bound);
-        applyStoredAppearance(item);
+        m_view->applyStoredAppearance(item);
         // Decode/membership must not rewrite filmstrip; user edits emit overrides.
         if (haveBound && bound.id != kInvalidSessionImageId) {
             // Paste: select tiles as they finish decoding.
@@ -1529,14 +1529,14 @@ void DisplayPipelineController::createMissingLoadAddItems(const QString &path, c
 
 void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChanged)
 {
-    if (gallerySizeResolveActive() || m_view->m_gallerySoftBook.isDeferPopulate()) {
+    if (m_view->gallerySizeResolveActive() || m_view->m_gallerySoftBook.isDeferPopulate()) {
         return;
     }
-    if (!m_layout.isFreeForm()) {
-        if (!pathOrderIsEmpty()) {
-            reorderItemsByPaths(pathOrderPaths());
+    if (!m_view->m_layout.isFreeForm()) {
+        if (!m_view->pathOrderIsEmpty()) {
+            m_view->reorderItemsByPaths(m_view->pathOrderPaths());
         }
-        if (!(m_view->isGalleryMode() && m_galleryRelayoutSuppress.active())) {
+        if (!(m_view->isGalleryMode() && m_view->m_galleryRelayoutSuppress.active())) {
             if (sizeChanged) {
                 m_view->applyLayout(GalleryPackReason::ContentChange);
             } else {

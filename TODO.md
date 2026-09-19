@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1642-fix-host-prefixes-loadadd.** Complete m_view qualification in controller.
+Prior: **1641**.
+
+### Change
+- Qualify remaining LoadAdd host calls: `gallerySizeResolveActive`, `applyStoredAppearance`,
+  `applyState`, `applyPendingBindScenePos`, `installFullPreservingWorkspaceFootprint`,
+  `pathOrderIsEmpty/Paths`, `reorderItemsByPaths`, `m_layout`, `m_galleryRelayoutSuppress`
+- Confirm install/pending-tile host prefixes and `ttfp_trace.h` include
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1642-fix-host-prefixes-loadadd.bundle HEAD
+```
+
+### Next
+- scheduleImageLoad / classic decode / gallery soft
+- Host accessors to replace friend when surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1641-fix-host-prefixes.** Fix DisplayPipelineController host call sites.
 Prior: **1640**.
 
