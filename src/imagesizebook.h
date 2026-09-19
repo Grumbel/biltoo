@@ -21,38 +21,35 @@
  * Async schedule and canvas apply remain on ImageView; this bag is pure map
  * state only.
  */
-struct ImageSizeBook {
-    QHash<QString, QSize> byPath;
-    QSet<QString> provisionalPaths;
-    QSet<QString> probeScheduled;
-
+class ImageSizeBook {
+public:
     void clear()
     {
-        byPath.clear();
-        provisionalPaths.clear();
-        probeScheduled.clear();
+        m_byPath.clear();
+        m_provisionalPaths.clear();
+        m_probeScheduled.clear();
     }
 
     bool contains(const QString &path) const
     {
-        return !path.isEmpty() && byPath.contains(path);
+        return !path.isEmpty() && m_byPath.contains(path);
     }
 
     bool isProvisional(const QString &path) const
     {
-        return !path.isEmpty() && provisionalPaths.contains(path);
+        return !path.isEmpty() && m_provisionalPaths.contains(path);
     }
 
     bool hasDefinitive(const QString &path) const
     {
-        return !path.isEmpty() && byPath.contains(path) && !isProvisional(path);
+        return !path.isEmpty() && m_byPath.contains(path) && !isProvisional(path);
     }
 
     /** Map-only lookup (no thumtoo). Empty if absent or non-positive. */
     QSize known(const QString &path) const
     {
-        const auto it = byPath.constFind(path);
-        if (it == byPath.cend() || !isPositiveSize(*it)) {
+        const auto it = m_byPath.constFind(path);
+        if (it == m_byPath.cend() || !isPositiveSize(*it)) {
             return {};
         }
         return *it;
@@ -69,13 +66,13 @@ struct ImageSizeBook {
         if (path.isEmpty() || !isPositiveSize(size)) {
             return false;
         }
-        const auto it = byPath.constFind(path);
-        if (it != byPath.cend() && isPositiveSize(*it) && !isProvisional(path)
+        const auto it = m_byPath.constFind(path);
+        if (it != m_byPath.cend() && isPositiveSize(*it) && !isProvisional(path)
             && isMuchSmallerArea(size, *it)) {
             return false;
         }
-        byPath.insert(path, size);
-        provisionalPaths.remove(path);
+        m_byPath.insert(path, size);
+        m_provisionalPaths.remove(path);
         return true;
     }
 
@@ -100,25 +97,25 @@ struct ImageSizeBook {
         if (path.isEmpty() || !isPositiveSize(standIn)) {
             return;
         }
-        provisionalPaths.insert(path);
-        byPath.insert(path, standIn);
+        m_provisionalPaths.insert(path);
+        m_byPath.insert(path, standIn);
     }
 
     void markProbeScheduled(const QString &path)
     {
         if (!path.isEmpty()) {
-            probeScheduled.insert(path);
+            m_probeScheduled.insert(path);
         }
     }
 
     void clearProbeScheduled(const QString &path)
     {
-        probeScheduled.remove(path);
+        m_probeScheduled.remove(path);
     }
 
     bool isProbeScheduled(const QString &path) const
     {
-        return !path.isEmpty() && probeScheduled.contains(path);
+        return !path.isEmpty() && m_probeScheduled.contains(path);
     }
 
     /** Take known size for @p path; false if absent. Clears provisional flag. */
@@ -127,16 +124,22 @@ struct ImageSizeBook {
         if (path.isEmpty() || !out) {
             return false;
         }
-        const auto it = byPath.find(path);
-        if (it == byPath.end()) {
+        const auto it = m_byPath.find(path);
+        if (it == m_byPath.end()) {
             return false;
         }
         *out = *it;
-        byPath.erase(it);
-        provisionalPaths.remove(path);
-        probeScheduled.remove(path);
+        m_byPath.erase(it);
+        m_provisionalPaths.remove(path);
+        m_probeScheduled.remove(path);
         return true;
     }
+
+private:
+    QHash<QString, QSize> m_byPath;
+    QSet<QString> m_provisionalPaths;
+    QSet<QString> m_probeScheduled;
 };
 
 #endif // IMAGESIZEBOOK_H
+

@@ -76,7 +76,7 @@ void GalleryController::restoreStashedItems()
     m_view->liveItems() = m_stashedItems;
     m_stashedItems.clear();
     if (!m_stashedPathOrder.isEmpty()) {
-        m_view->pathOrder() = m_stashedPathOrder;
+        m_view->setPathOrder(m_stashedPathOrder);
     }
     m_stashedPathOrder.clear();
     for (ImageItem *item : m_view->liveItems()) {
@@ -217,8 +217,7 @@ void GalleryController::onLeave(int nextMode)
         // free-form canvas.
         m_view->invalidateGalleryDecodes();
         m_view->clearLiveCanvas();
-        m_view->pathOrder().clear();
-        m_view->sessionIdOrder().clear();
+        m_view->clearPathOrder();
     }
 }
 
@@ -340,7 +339,7 @@ void GalleryController::enter(int packagedLayoutInt)
             }
         }
         if (!livePaths.isEmpty()) {
-            m_view->pathOrder() = livePaths;
+            m_view->setPathOrder(livePaths);
         }
     }
     // Pack now only when tiles already belong to this Gallery session:

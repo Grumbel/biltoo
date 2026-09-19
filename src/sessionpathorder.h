@@ -14,54 +14,53 @@
  * Session row order: paths with parallel SessionImageId slots (IDENTITY.md).
  * Gallery pack and LoadAdd bind use this sequence; content is still id-keyed.
  */
-struct SessionPathOrder {
-    QStringList paths;
-    QVector<SessionImageId> ids;
-
+class SessionPathOrder
+{
+public:
     void clear()
     {
-        paths.clear();
-        ids.clear();
+        m_paths.clear();
+        m_ids.clear();
     }
 
     /** Replace order and align id vector length (invalid ids when growing). */
     void setOrder(const QStringList &newPaths, const QVector<SessionImageId> &newIds)
     {
-        paths = newPaths;
-        ids = newIds;
+        m_paths = newPaths;
+        m_ids = newIds;
         syncIdLength();
     }
 
     /** Append one session row (path + optional id). */
     void appendRow(const QString &path, SessionImageId id = kInvalidSessionImageId)
     {
-        paths.append(path);
-        ids.append(id);
+        m_paths.append(path);
+        m_ids.append(id);
     }
 
-    bool isEmpty() const { return paths.isEmpty(); }
+    bool isEmpty() const { return m_paths.isEmpty(); }
 
-    int size() const { return paths.size(); }
+    int size() const { return m_paths.size(); }
 
-    const QStringList &pathList() const { return paths; }
+    const QStringList &pathList() const { return m_paths; }
 
-    const QVector<SessionImageId> &idList() const { return ids; }
+    const QVector<SessionImageId> &idList() const { return m_ids; }
 
-    /** Pad or trim @p ids so it matches @p paths length (invalid ids when growing). */
+    /** Pad or trim ids so length matches paths (invalid ids when growing). */
     void syncIdLength()
     {
-        while (ids.size() < paths.size()) {
-            ids.append(kInvalidSessionImageId);
+        while (m_ids.size() < m_paths.size()) {
+            m_ids.append(kInvalidSessionImageId);
         }
-        while (ids.size() > paths.size()) {
-            ids.removeLast();
+        while (m_ids.size() > m_paths.size()) {
+            m_ids.removeLast();
         }
     }
 
     int countPathOccurrences(const QString &path) const
     {
         int n = 0;
-        for (const QString &p : paths) {
+        for (const QString &p : m_paths) {
             if (p == path) {
                 ++n;
             }
@@ -71,18 +70,18 @@ struct SessionPathOrder {
 
     QString pathAt(int index) const
     {
-        if (index < 0 || index >= paths.size()) {
+        if (index < 0 || index >= m_paths.size()) {
             return {};
         }
-        return paths.at(index);
+        return m_paths.at(index);
     }
 
     SessionImageId idAt(int index) const
     {
-        if (index < 0 || index >= ids.size()) {
+        if (index < 0 || index >= m_ids.size()) {
             return kInvalidSessionImageId;
         }
-        return ids.at(index);
+        return m_ids.at(index);
     }
 
     /** First non-invalid id for @p path, or invalid if none. */
@@ -91,14 +90,18 @@ struct SessionPathOrder {
         if (path.isEmpty()) {
             return kInvalidSessionImageId;
         }
-        const int n = qMin(paths.size(), ids.size());
+        const int n = qMin(m_paths.size(), m_ids.size());
         for (int i = 0; i < n; ++i) {
-            if (paths.at(i) == path && ids.at(i) != kInvalidSessionImageId) {
-                return ids.at(i);
+            if (m_paths.at(i) == path && m_ids.at(i) != kInvalidSessionImageId) {
+                return m_ids.at(i);
             }
         }
         return kInvalidSessionImageId;
     }
+
+private:
+    QStringList m_paths;
+    QVector<SessionImageId> m_ids;
 };
 
 #endif // SESSIONPATHORDER_H

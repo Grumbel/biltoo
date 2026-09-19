@@ -30,35 +30,30 @@ struct PendingSessionBind {
  * Decode orchestration and canvas placement stay on ImageView; this bag owns
  * the pending lists that clear together on session wipe.
  */
-struct SessionBindBook {
-    QList<PendingSessionBind> binds;
-    /** Session list index to assign when a LoadAdd for path finishes. */
-    QHash<QString, int> indexByPath;
-    /** Select these session ids when LoadAdd creates their tiles (paste). */
-    QSet<SessionImageId> selectIds;
-
+class SessionBindBook {
+public:
     void clear()
     {
-        binds.clear();
-        indexByPath.clear();
-        selectIds.clear();
+        m_binds.clear();
+        m_indexByPath.clear();
+        m_selectIds.clear();
     }
 
     /** Take the front pending bind; false if empty. */
     bool takeFront(PendingSessionBind *out)
     {
-        if (binds.isEmpty() || !out) {
+        if (m_binds.isEmpty() || !out) {
             return false;
         }
-        *out = binds.takeFirst();
+        *out = m_binds.takeFirst();
         return true;
     }
 
     /** Take and clear select-on-create session ids. */
     QSet<SessionImageId> takeSelectIds()
     {
-        QSet<SessionImageId> out = selectIds;
-        selectIds.clear();
+        QSet<SessionImageId> out = m_selectIds;
+        m_selectIds.clear();
         return out;
     }
 
@@ -67,7 +62,7 @@ struct SessionBindBook {
         if (path.isEmpty()) {
             return false;
         }
-        for (const PendingSessionBind &b : binds) {
+        for (const PendingSessionBind &b : m_binds) {
             if (b.path == path) {
                 return true;
             }
@@ -78,7 +73,7 @@ struct SessionBindBook {
     int countBindsForPath(const QString &path) const
     {
         int n = 0;
-        for (const PendingSessionBind &b : binds) {
+        for (const PendingSessionBind &b : m_binds) {
             if (b.path == path) {
                 ++n;
             }
@@ -92,11 +87,11 @@ struct SessionBindBook {
         if (!out || path.isEmpty()) {
             return false;
         }
-        for (int bi = 0; bi < binds.size(); ++bi) {
-            if (binds.at(bi).path != path) {
+        for (int bi = 0; bi < m_binds.size(); ++bi) {
+            if (m_binds.at(bi).path != path) {
                 continue;
             }
-            *out = binds.takeAt(bi);
+            *out = m_binds.takeAt(bi);
             return true;
         }
         return false;
@@ -107,52 +102,57 @@ struct SessionBindBook {
         if (sessionId == kInvalidSessionImageId) {
             return;
         }
-        for (int i = binds.size() - 1; i >= 0; --i) {
-            if (binds.at(i).id == sessionId) {
-                binds.removeAt(i);
+        for (int i = m_binds.size() - 1; i >= 0; --i) {
+            if (m_binds.at(i).id == sessionId) {
+                m_binds.removeAt(i);
             }
         }
     }
 
-    bool isEmpty() const { return binds.isEmpty(); }
+    bool isEmpty() const { return m_binds.isEmpty(); }
 
-    int bindCount() const { return binds.size(); }
+    int bindCount() const { return m_binds.size(); }
 
     void setIndexForPath(const QString &path, int index)
     {
         if (!path.isEmpty()) {
-            indexByPath.insert(path, index);
+            m_indexByPath.insert(path, index);
         }
     }
 
-    void removeIndexForPath(const QString &path) { indexByPath.remove(path); }
+    void removeIndexForPath(const QString &path) { m_indexByPath.remove(path); }
 
-    void clearSelectIds() { selectIds.clear(); }
+    void clearSelectIds() { m_selectIds.clear(); }
 
     void addSelectId(SessionImageId id)
     {
         if (id != kInvalidSessionImageId) {
-            selectIds.insert(id);
+            m_selectIds.insert(id);
         }
     }
 
     /** @return true when @p id was pending selection. */
-    bool removeSelectId(SessionImageId id) { return selectIds.remove(id); }
+    bool removeSelectId(SessionImageId id) { return m_selectIds.remove(id); }
 
-    void append(const PendingSessionBind &b) { binds.append(b); }
+    void append(const PendingSessionBind &b) { m_binds.append(b); }
 
-    const PendingSessionBind &bindAt(int i) const { return binds.at(i); }
+    const PendingSessionBind &bindAt(int i) const { return m_binds.at(i); }
 
-    void removeBindAt(int i) { binds.removeAt(i); }
+    void removeBindAt(int i) { m_binds.removeAt(i); }
 
     bool takeBindAt(int i, PendingSessionBind *out)
     {
-        if (!out || i < 0 || i >= binds.size()) {
+        if (!out || i < 0 || i >= m_binds.size()) {
             return false;
         }
-        *out = binds.takeAt(i);
+        *out = m_binds.takeAt(i);
         return true;
     }
+
+private:
+    QList<PendingSessionBind> m_binds;
+    QHash<QString, int> m_indexByPath;
+    QSet<SessionImageId> m_selectIds;
 };
 
 #endif // SESSIONBINDBOOK_H

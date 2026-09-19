@@ -390,12 +390,19 @@ public:
     /** Fit / Fill / 1:1 framing for a slideshow slide (motion off). */
     void applySlideshowZoomFraming(ImageItem *item);
     /** Controller host: session path order used for Gallery packing. */
-    QStringList &pathOrder() { return m_pathOrderBook.paths; }
-    const QStringList &pathOrder() const { return m_pathOrderBook.paths; }
+    const QStringList &pathOrder() const { return m_pathOrderBook.pathList(); }
     /** How many times @a path appears in session path order (duplicate tiles). */
     int pathOrderOccurrences(const QString &path) const;
-    QVector<SessionImageId> &sessionIdOrder() { return m_pathOrderBook.ids; }
-    const QVector<SessionImageId> &sessionIdOrder() const { return m_pathOrderBook.ids; }
+    const QVector<SessionImageId> &sessionIdOrder() const { return m_pathOrderBook.idList(); }
+    void clearPathOrder() { m_pathOrderBook.clear(); }
+    void setPathOrder(const QStringList &paths)
+    {
+        m_pathOrderBook.setOrder(paths, QVector<SessionImageId>());
+    }
+    void setPathOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
+    {
+        m_pathOrderBook.setOrder(paths, ids);
+    }
     SessionPathOrder &pathOrderBook() { return m_pathOrderBook; }
     const SessionPathOrder &pathOrderBook() const { return m_pathOrderBook; }
     /** Controller host: disable Image-mode fit/fill when restoring free-form. */

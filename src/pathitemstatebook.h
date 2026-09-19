@@ -16,14 +16,14 @@
  * This bag remains the Workspace free-placement cache and unbound-tile
  * fallback (IDENTITY: path is not the content key when an id is bound).
  */
-struct PathItemStateBook {
-    QHash<QString, WorkspaceItemState> byPath;
-
-    void clear() { byPath.clear(); }
+class PathItemStateBook
+{
+public:
+    void clear() { m_byPath.clear(); }
 
     bool contains(const QString &path) const
     {
-        return !path.isEmpty() && byPath.contains(path);
+        return !path.isEmpty() && m_byPath.contains(path);
     }
 
     const WorkspaceItemState *get(const QString &path) const
@@ -31,8 +31,8 @@ struct PathItemStateBook {
         if (path.isEmpty()) {
             return nullptr;
         }
-        const auto it = byPath.constFind(path);
-        if (it == byPath.cend()) {
+        const auto it = m_byPath.constFind(path);
+        if (it == m_byPath.cend()) {
             return nullptr;
         }
         return &(*it);
@@ -41,11 +41,11 @@ struct PathItemStateBook {
     void set(const QString &path, const WorkspaceItemState &state)
     {
         if (!path.isEmpty()) {
-            byPath.insert(path, state);
+            m_byPath.insert(path, state);
         }
     }
 
-    void remove(const QString &path) { byPath.remove(path); }
+    void remove(const QString &path) { m_byPath.remove(path); }
 
     /** Take state for @p path; false if none. */
     bool take(const QString &path, WorkspaceItemState *out)
@@ -53,14 +53,20 @@ struct PathItemStateBook {
         if (path.isEmpty() || !out) {
             return false;
         }
-        const auto it = byPath.find(path);
-        if (it == byPath.end()) {
+        const auto it = m_byPath.find(path);
+        if (it == m_byPath.end()) {
             return false;
         }
         *out = *it;
-        byPath.erase(it);
+        m_byPath.erase(it);
         return true;
     }
+
+    int size() const { return m_byPath.size(); }
+    bool isEmpty() const { return m_byPath.isEmpty(); }
+
+private:
+    QHash<QString, WorkspaceItemState> m_byPath;
 };
 
 #endif // PATHITEMSTATEBOOK_H

@@ -14,23 +14,23 @@
  * Per-path Gallery soft/decode-window state and related path sets.
  * Soft watchdog QTimer stays on ImageView.
  */
-struct GallerySoftBook {
-    QHash<QString, GallerySoftState> soft;
+class GallerySoftBook
+{
+public:
     bool deferPopulate = false;
-    QSet<QString> imageModeNativeDecodePaths;
 
-    void clearSoft() { soft.clear(); }
+    void clearSoft() { m_soft.clear(); }
 
     /** Mutable soft state for @p path (creates empty entry if missing). */
-    GallerySoftState &state(const QString &path) { return soft[path]; }
+    GallerySoftState &state(const QString &path) { return m_soft[path]; }
 
     const GallerySoftState *get(const QString &path) const
     {
         if (path.isEmpty()) {
             return nullptr;
         }
-        const auto it = soft.constFind(path);
-        if (it == soft.cend()) {
+        const auto it = m_soft.constFind(path);
+        if (it == m_soft.cend()) {
             return nullptr;
         }
         return &(*it);
@@ -41,8 +41,8 @@ struct GallerySoftBook {
         if (path.isEmpty()) {
             return nullptr;
         }
-        const auto it = soft.find(path);
-        if (it == soft.end()) {
+        const auto it = m_soft.find(path);
+        if (it == m_soft.end()) {
             return nullptr;
         }
         return &(*it);
@@ -61,30 +61,34 @@ struct GallerySoftBook {
     void resetPath(const QString &path)
     {
         if (!path.isEmpty()) {
-            soft.remove(path);
+            m_soft.remove(path);
         }
     }
 
     bool hasImageModeNativeDecode(const QString &path) const
     {
-        return !path.isEmpty() && imageModeNativeDecodePaths.contains(path);
+        return !path.isEmpty() && m_imageModeNativeDecodePaths.contains(path);
     }
 
     void markImageModeNativeDecode(const QString &path)
     {
         if (!path.isEmpty()) {
-            imageModeNativeDecodePaths.insert(path);
+            m_imageModeNativeDecodePaths.insert(path);
         }
     }
 
-    void clearImageModeNativeDecode() { imageModeNativeDecodePaths.clear(); }
+    void clearImageModeNativeDecode() { m_imageModeNativeDecodePaths.clear(); }
 
     void clear()
     {
-        soft.clear();
+        m_soft.clear();
         deferPopulate = false;
-        imageModeNativeDecodePaths.clear();
+        m_imageModeNativeDecodePaths.clear();
     }
+
+private:
+    QHash<QString, GallerySoftState> m_soft;
+    QSet<QString> m_imageModeNativeDecodePaths;
 };
 
 #endif // GALLERYSOFTBOOK_H
