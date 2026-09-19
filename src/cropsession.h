@@ -112,6 +112,13 @@ public:
 
     void endHandleDrag() { activeHandle = CropHandle::None; }
 
+    void endHandleDragClamped(const QRectF &contentRect)
+    {
+        endHandleDrag();
+        ensureRectValid(contentRect);
+    }
+
+
     /** Expand limits when allowExpand (4× content padding). */
     QRectF expandLimits(const QRectF &contentRect) const;
 

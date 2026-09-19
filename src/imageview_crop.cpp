@@ -1469,8 +1469,11 @@ void ImageView::updateCropHandleDrag(const QPoint &viewPos)
 
 void ImageView::endCropHandleDrag()
 {
-    m_crop.endHandleDrag();
-    ensureCropRectValid();
+    if (ImageItem *item = cropTargetItem()) {
+        m_crop.endHandleDragClamped(item->contentRect());
+    } else {
+        m_crop.endHandleDrag();
+    }
     viewport()->update();
 }
 
@@ -1504,7 +1507,9 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
 void ImageView::endCropRubberBand()
 {
     m_crop.endRubber();
-    ensureCropRectValid();
+    if (ImageItem *item = cropTargetItem()) {
+        m_crop.ensureRectValid(item->contentRect());
+    }
     viewport()->update();
 }
 
