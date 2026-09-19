@@ -809,8 +809,33 @@ void test_succeeded_count()
   CHECK(cache.has_succeeded());
   cache.set_in_flight({0, 1, 0}, 1);
   CHECK_EQ(cache.succeeded_count(), 1u);
-  cache.erase(k);
+  // Overwrite same key Succeeded → still one.
+  cache.set_succeeded(k, solid_tile(256, 256, 20), 2);
+  CHECK_EQ(cache.succeeded_count(), 1u);
+  cache.set_succeeded({0, 1, 0}, solid_tile(256, 256, 30), 2);
+  CHECK_EQ(cache.succeeded_count(), 2u);
+  cache.set_failed(k, 3);
+  CHECK_EQ(cache.succeeded_count(), 1u);
+  cache.erase({0, 1, 0});
   CHECK(!cache.has_succeeded());
+  cache.set_succeeded(k, solid_tile(128, 128, 1), 4);
+  CHECK_EQ(cache.succeeded_count(), 1u);
+  cache.clear();
+  CHECK_EQ(cache.succeeded_count(), 0u);
+}
+
+void test_trim_updates_succeeded_count()
+{
+  tilelod::TileMemoryCache cache;
+  for (int i = 0; i < 4; ++i) {
+    cache.set_succeeded({0, i, 0}, solid_tile(256, 256, static_cast<std::uint8_t>(i)), 1);
+  }
+  CHECK_EQ(cache.succeeded_count(), 4u);
+  const std::size_t per = solid_tile(256, 256, 0).bytes.size();
+  std::vector<tilelod::TileKey> protect = {{0, 0, 0}};
+  cache.trim_to_budget(per * 2, protect);
+  CHECK(cache.succeeded_count() <= 2u);
+  CHECK(cache.succeeded_count() >= 1u); // protected key kept
 }
 
 int main()
@@ -844,6 +869,7 @@ int main()
   test_min_scale_raise_keeps_climb();
   test_parent_key();
   test_succeeded_count();
+  test_trim_updates_succeeded_count();
 
   if (g_failures) {
     std::cerr << g_failures << " failure(s)\n";
