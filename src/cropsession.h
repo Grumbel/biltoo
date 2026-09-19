@@ -255,6 +255,12 @@ public:
         return true;
     }
 
+    /** Toggle allow-expand; @return true when the flag changed. */
+    bool toggleAllowExpand()
+    {
+        return setAllowExpand(!allowExpand);
+    }
+
     /** @return true when allow-expand flag changed. */
     bool setAllowExpand(bool on)
     {
