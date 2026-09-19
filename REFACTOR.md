@@ -144,6 +144,9 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **CropSession::setAllowExpand** reports change.
 - **HudAppearance::setFontPointSize**; **TextLayerSession::setLinkHoverTip**.
 - **ZoomRegionGesture** arm/disarm report change.
+- **SessionIdentity::setLastLoadError**; **CropSession::setShowingFullImage**.
+- **SlideshowDwellState** motion flags; **PageGuideSession** size/rect; **AttentionSession::hasSelection**.
+- **SessionBindBook::takeFront**.
 
 
 ## Current pain (evidence)

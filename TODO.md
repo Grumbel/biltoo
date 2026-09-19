@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1396-loaderr-cropfull-dwell-page-attention-bind.** Bag transitions on tip 1395.
+Prior: **1395**.
+
+### Change
+1. `SessionIdentity::setLastLoadError` reports change
+2. `CropSession::setShowingFullImage` reports change
+3. `SlideshowDwellState::{setMotionActive,setMotionPaused}` report change
+4. `PageGuideSession::{setSize,setRect}` report change
+5. `AttentionSession::hasSelection`
+6. `SessionBindBook::takeFront`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1396-loaderr-cropfull-dwell-page-attention-bind.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1396).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1395-hud-font-linktip-zoom-arm.** Bag transitions on tip 1394.
 Prior: **1394**.
 
