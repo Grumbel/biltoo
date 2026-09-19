@@ -19,6 +19,8 @@ class GallerySoftBook
 public:
     bool deferPopulate = false;
 
+    bool isDeferPopulate() const { return deferPopulate; }
+
     void clearSoft() { m_soft.clear(); }
 
     /** Mutable soft state for @p path (creates empty entry if missing). */
