@@ -81,6 +81,19 @@ std::size_t TileMemoryCache::approx_bytes() const
   return n;
 }
 
+std::size_t TileMemoryCache::succeeded_count() const
+{
+  std::size_t n = 0;
+  for (auto const& [k, e] : m_map) {
+    (void)k;
+    if (e.state == TileState::Succeeded && e.bitmap.valid()) {
+      ++n;
+    }
+  }
+  return n;
+}
+
+
 void TileMemoryCache::touch(TileKey const& key, std::uint64_t now)
 {
   auto it = m_map.find(key);

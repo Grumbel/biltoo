@@ -35,6 +35,11 @@ public:
   /// Approximate payload bytes for Succeeded bitmaps.
   std::size_t approx_bytes() const;
 
+  /// Number of Succeeded entries (any scale).
+  std::size_t succeeded_count() const;
+
+  bool has_succeeded() const { return succeeded_count() > 0; }
+
   /**
    * Evict Succeeded tiles not in @p protect until approx_bytes() <= max_bytes.
    * Oldest last_used first. Never drops InFlight/Failed. Returns bytes freed.
