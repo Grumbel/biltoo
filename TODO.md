@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1548-crop-full-raster-store.** Thumtoo Full schedule on CropSession; appearance store in appearance TU.
+Prior: **1547**.
+
+### Change
+- `CropSession::tryScheduleThumtooFullRaster`
+- `requestCropFullRaster` thin: suspend → try thumtoo → pool
+- `storeCropAppearance` / `cropRecordFileNative` → `imageview_appearance.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1548-crop-full-raster-store.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1547-crop-auto-trim-impl.** CropSession auto-trim implementations (completes 1546 decls).
 Prior: **1546**.
 

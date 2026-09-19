@@ -87,6 +87,12 @@ public:
     static int fullRasterScheduleEdge(const QString &path);
 
     /**
+     * Prefer Thumtoo scheduleFullPixels for crop Full load.
+     * @return true when scheduled or already pending (caller must not pool-load).
+     */
+    static bool tryScheduleThumtooFullRaster(const QString &path);
+
+    /**
      * Pure Apply pixel bake: host raster + session want → display sample.
      * When @p hostFromCache is false, orient is assumed already baked into host
      * so bake content flips/turns are cleared. Multi-MP hosts are clamped and
