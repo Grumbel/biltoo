@@ -743,7 +743,7 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             fillImageTile(tileCache, wb.imagePath, storeTile);
         } else if (wb.mode == WorkspaceBackgroundMode::ContentBlur) {
             // Image mode: cover-scale blur under the sharp item (viewport space).
-            // Gallery has no single subject — fall back to solid.
+            // Gallery (no single subject): configured solid color from the dialog.
             QImage src;
             QString path;
             if (isImageMode()) {
@@ -770,7 +770,8 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
                 paintZoomBlurUnderlay(painter, src, vr, key);
                 painter->restore();
             } else {
-                painter->fillRect(rect, m_canvasBg.primaryColor());
+                const QColor fill = wb.color.isValid() ? wb.color : m_canvasBg.primaryColor();
+                painter->fillRect(rect, fill);
             }
         } else {
             painter->fillRect(rect, m_canvasBg.primaryColor());

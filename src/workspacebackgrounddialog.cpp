@@ -113,6 +113,11 @@ void WorkspaceBackgroundPreview::paintEvent(QPaintEvent * /*event*/)
             p.setPen(Qt::white);
             p.drawText(r, Qt::AlignCenter, tr("No image"));
         }
+    } else if (mode == WorkspaceBackgroundMode::ContentBlur) {
+        // Gallery: configured solid; Image: blur at runtime — preview shows the pad color.
+        p.fillRect(r, a.isValid() ? a : QColor(42, 42, 42));
+        p.setPen(QColor(200, 200, 200));
+        p.drawText(r, Qt::AlignCenter, tr("Content blur"));
     } else {
         p.fillRect(r, QColor(42, 42, 42));
     }
@@ -142,7 +147,7 @@ WorkspaceBackgroundDialog::WorkspaceBackgroundDialog(QWidget *parent)
 
     m_modeCombo = new QComboBox(this);
     m_modeCombo->addItem(tr("Application default"), int(WorkspaceBackgroundMode::AppDefault));
-    m_modeCombo->addItem(tr("Solid colour"), int(WorkspaceBackgroundMode::Solid));
+    m_modeCombo->addItem(tr("Solid color"), int(WorkspaceBackgroundMode::Solid));
     m_modeCombo->addItem(tr("Checkerboard"), int(WorkspaceBackgroundMode::Checkerboard));
     m_modeCombo->addItem(tr("Image pattern"), int(WorkspaceBackgroundMode::ImageTile));
     m_modeCombo->addItem(tr("Content blur"), int(WorkspaceBackgroundMode::ContentBlur));
@@ -164,7 +169,7 @@ WorkspaceBackgroundDialog::WorkspaceBackgroundDialog(QWidget *parent)
         styleColorButton(m_colorBtn, m_color);
         updatePreview();
     });
-    form->addRow(tr("Colour:"), m_colorRow);
+    form->addRow(tr("Color:"), m_colorRow);
 
     m_colorAltBtn = new QPushButton(this);
     m_colorAltBtn->setMinimumWidth(100);
@@ -174,7 +179,7 @@ WorkspaceBackgroundDialog::WorkspaceBackgroundDialog(QWidget *parent)
         styleColorButton(m_colorAltBtn, m_colorAlt);
         updatePreview();
     });
-    form->addRow(tr("Checker colour:"), m_colorAltRow);
+    form->addRow(tr("Checker color:"), m_colorAltRow);
 
     m_imageEdit = new QLineEdit(this);
     m_imageEdit->setPlaceholderText(tr("Path to tile image…"));
@@ -304,11 +309,13 @@ void WorkspaceBackgroundDialog::updateControlsEnabled()
     const bool solid = (mode == WorkspaceBackgroundMode::Solid);
     const bool checker = (mode == WorkspaceBackgroundMode::Checkerboard);
     const bool image = (mode == WorkspaceBackgroundMode::ImageTile);
+    const bool contentBlur = (mode == WorkspaceBackgroundMode::ContentBlur);
     // Lock fields that the current mode does not use.
+    // Content blur: Image uses ZoomBlur underlay; Gallery uses the solid color.
     if (m_colorRow) {
-        m_colorRow->setEnabled(solid || checker);
+        m_colorRow->setEnabled(solid || checker || contentBlur);
     } else {
-        m_colorBtn->setEnabled(solid || checker);
+        m_colorBtn->setEnabled(solid || checker || contentBlur);
     }
     if (m_colorAltRow) {
         m_colorAltRow->setEnabled(checker);
@@ -337,7 +344,7 @@ void WorkspaceBackgroundDialog::updatePreview()
 
 void WorkspaceBackgroundDialog::chooseColor()
 {
-    const QColor c = QColorDialog::getColor(m_color, this, tr("Background colour"));
+    const QColor c = QColorDialog::getColor(m_color, this, tr("Background color"));
     if (!c.isValid()) {
         return;
     }
@@ -348,7 +355,7 @@ void WorkspaceBackgroundDialog::chooseColor()
 
 void WorkspaceBackgroundDialog::chooseColorAlt()
 {
-    const QColor c = QColorDialog::getColor(m_colorAlt, this, tr("Checker colour"));
+    const QColor c = QColorDialog::getColor(m_colorAlt, this, tr("Checker color"));
     if (!c.isValid()) {
         return;
     }

@@ -17,11 +17,11 @@ pipeline shared with View **Content blur**.
 ## Materials (`WorkspaceBackgroundMode`)
 
 - **AppDefault / Preferences default** — follow Preferences
-- **Solid** — one colour
+- **Solid** — one color
 - **Checkerboard** — technical grid
 - **ImageTile** — repeating pattern image
-- **ContentBlur** — cover-scaled blur of the current image (View / Image only;
-  omitted from the Workspace project dialog; Gallery falls back to solid)
+- **ContentBlur** — Image: cover-scaled blur of the current image; Gallery: the
+  configured solid color (View session only; omitted from Workspace project dialog)
 
 ## Paint order
 

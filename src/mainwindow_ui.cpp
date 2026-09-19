@@ -1849,7 +1849,7 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_viewBackgroundAct, tr(
         "<p>Session canvas background for <b>Gallery</b> and <b>Image</b>: solid, "
         "checker, image pattern, Preferences default, or <b>content blur</b> "
-        "(Image mode: blurred cover of the current image in letterbox margins). "
+        "(Image: blurred cover of the current image; Gallery: the Color field). "
         "Not stored in Preferences or the project.</p>"));
     setHelp(m_workspaceBackgroundAct, tr(
         "<p>Choose Workspace background: solid, checker, image tile, or app default. "

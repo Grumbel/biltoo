@@ -2,6 +2,16 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1594-content-blur-gallery-color.** Content blur Gallery uses Color field; dialog keeps color enabled; Color spelling.
+Prior: **1593**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1594-content-blur-gallery-color.bundle HEAD
+```
+
+---
+
 **Tip: biltoo-1593-edge-nav-radial.** Edge nav lobes use scaled QRadialGradient (soft ellipse falloff).
 Prior: **1592**.
 
