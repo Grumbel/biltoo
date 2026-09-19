@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "zoomblurhelpers.h"
+#include "viewtransform.h"
 
 #include <QHash>
 #include <QPainter>
@@ -158,9 +159,9 @@ QImage makeCover(const QImage &src, int vw, int vh)
         workW = qMax(8, int(workW * s));
         workH = qMax(8, int(workH * s));
     }
-    const qreal cover = qMax(qreal(workW) / iw, qreal(workH) / ih);
-    const int sw = qMax(1, int(std::ceil(iw * cover)));
-    const int sh = qMax(1, int(std::ceil(ih * cover)));
+    const qreal cover = ViewTransform::coverScale(qreal(workW), qreal(workH), iw, ih);
+    const int sw = ViewTransform::atLeast1(int(std::ceil(iw * cover)));
+    const int sh = ViewTransform::atLeast1(int(std::ceil(ih * cover)));
     // FastTransformation: underlay is blurred anyway; Smooth is pure CPU cost.
     QImage scaled = src.scaled(sw, sh, Qt::IgnoreAspectRatio, Qt::FastTransformation)
                         .convertToFormat(QImage::Format_ARGB32_Premultiplied);
@@ -191,13 +192,13 @@ QImage makeCover(const QImage &src, int vw, int vh)
                 QRgb *outLine = reinterpret_cast<QRgb *>(out.scanLine(y));
                 int rSum = 0, gSum = 0, bSum = 0, aSum = 0;
                 for (int i = -radius; i <= radius; ++i) {
-                    const QRgb px = inLine[qBound(0, i, w - 1)];
+                    const QRgb px = inLine[ViewTransform::clampPixel(i, w)];
                     rSum += qRed(px); gSum += qGreen(px); bSum += qBlue(px); aSum += qAlpha(px);
                 }
                 outLine[0] = qRgba(rSum / diam, gSum / diam, bSum / diam, aSum / diam);
                 for (int x = 1; x < w; ++x) {
-                    const QRgb leave = inLine[qBound(0, x - radius - 1, w - 1)];
-                    const QRgb enter = inLine[qBound(0, x + radius, w - 1)];
+                    const QRgb leave = inLine[ViewTransform::clampPixel(x - radius - 1, w)];
+                    const QRgb enter = inLine[ViewTransform::clampPixel(x + radius, w)];
                     rSum += qRed(enter) - qRed(leave);
                     gSum += qGreen(enter) - qGreen(leave);
                     bSum += qBlue(enter) - qBlue(leave);
@@ -210,7 +211,7 @@ QImage makeCover(const QImage &src, int vw, int vh)
             QVector<int> rSum(w), gSum(w), bSum(w), aSum(w);
             rSum.fill(0); gSum.fill(0); bSum.fill(0); aSum.fill(0);
             for (int i = -radius; i <= radius; ++i) {
-                const int yy = qBound(0, i, h - 1);
+                const int yy = ViewTransform::clampPixel(i, h);
                 const QRgb *line = reinterpret_cast<const QRgb *>(img.constScanLine(yy));
                 for (int x = 0; x < w; ++x) {
                     const QRgb px = line[x];
@@ -223,8 +224,8 @@ QImage makeCover(const QImage &src, int vw, int vh)
                 out0[x] = qRgba(rSum[x] / diam, gSum[x] / diam, bSum[x] / diam, aSum[x] / diam);
             }
             for (int y = 1; y < h; ++y) {
-                const int leaveY = qBound(0, y - radius - 1, h - 1);
-                const int enterY = qBound(0, y + radius, h - 1);
+                const int leaveY = ViewTransform::clampPixel(y - radius - 1, h);
+                const int enterY = ViewTransform::clampPixel(y + radius, h);
                 const QRgb *leaveLine = reinterpret_cast<const QRgb *>(img.constScanLine(leaveY));
                 const QRgb *enterLine = reinterpret_cast<const QRgb *>(img.constScanLine(enterY));
                 QRgb *outLine = reinterpret_cast<QRgb *>(out.scanLine(y));
