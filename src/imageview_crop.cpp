@@ -1654,11 +1654,6 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
     }
     const QPointF startLocal = item->mapFromScene(mapToScene(viewPos));
     m_crop.beginHandleDrag(h, m_crop.currentRect(), startLocal);
-    if (h == CropHandle::Rotate) {
-        m_crop.setRotateStart(
-            m_crop.currentRotation(),
-            PlacementLinear::angleAbout(m_crop.draftCenterLocal(), startLocal));
-    }
 }
 
 void ImageView::updateCropMoveDrag(const QPointF &local, const QRectF &cr)

@@ -3,6 +3,7 @@
 
 #include "cropsession.h"
 #include "cropgeometry.h"
+#include "placementlinear.h"
 #include "imageitem.h"
 #include "sessionappearance.h"
 
@@ -287,4 +288,15 @@ void CropSession::resetDraftToContent(const QRectF &contentRect)
     setRect(contentRect);
     setRotation(0.0);
     ensureRectValid(contentRect);
+}
+
+void CropSession::beginHandleDrag(CropHandle h, const QRectF &startRect, const QPointF &startLocal)
+{
+    activeHandle = h;
+    dragStartRect = startRect;
+    dragStartLocal = startLocal;
+    if (h == CropHandle::Rotate) {
+        setRotateStart(currentRotation(),
+                       PlacementLinear::angleAbout(startRect.center(), startLocal));
+    }
 }

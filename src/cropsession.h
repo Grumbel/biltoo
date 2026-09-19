@@ -88,12 +88,7 @@ public:
         return true;
     }
 
-    void beginHandleDrag(CropHandle h, const QRectF &startRect, const QPointF &startLocal)
-    {
-        activeHandle = h;
-        dragStartRect = startRect;
-        dragStartLocal = startLocal;
-    }
+    void beginHandleDrag(CropHandle h, const QRectF &startRect, const QPointF &startLocal);
 
     void setRotateStart(qreal rotationDeg, qreal angleDeg)
     {
