@@ -140,6 +140,19 @@ struct SessionBindBook {
     bool removeSelectId(SessionImageId id) { return selectIds.remove(id); }
 
     void append(const PendingSessionBind &b) { binds.append(b); }
+
+    const PendingSessionBind &bindAt(int i) const { return binds.at(i); }
+
+    void removeBindAt(int i) { binds.removeAt(i); }
+
+    bool takeBindAt(int i, PendingSessionBind *out)
+    {
+        if (!out || i < 0 || i >= binds.size()) {
+            return false;
+        }
+        *out = binds.takeAt(i);
+        return true;
+    }
 };
 
 #endif // SESSIONBINDBOOK_H

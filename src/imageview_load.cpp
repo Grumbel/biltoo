@@ -2032,7 +2032,7 @@ void ImageView::reassertPendingBindPlacement(const QString &path)
             continue;
         }
         for (int bi = 0; bi < m_bindBook.bindCount(); ++bi) {
-            const PendingSessionBind &b = m_bindBook.binds.at(bi);
+            const PendingSessionBind &b = m_bindBook.bindAt(bi);
             if (b.path != path) {
                 continue;
             }

@@ -1352,12 +1352,12 @@ int ImageView::countPendingSessionBinds(const QString &path) const
 void ImageView::purgeSatisfiedPendingBinds(const QString &path)
 {
     for (int bi = m_bindBook.bindCount() - 1; bi >= 0; --bi) {
-        const PendingSessionBind &b = m_bindBook.binds.at(bi);
+        const PendingSessionBind &b = m_bindBook.bindAt(bi);
         if (b.path != path || b.id == kInvalidSessionImageId) {
             continue;
         }
         if (findItemBySessionId(b.id)) {
-            m_bindBook.binds.removeAt(bi);
+            m_bindBook.removeBindAt(bi);
         }
     }
 }
@@ -1447,20 +1447,20 @@ bool ImageView::takePendingSessionBindForNewItem(const QString &path, ImageItem 
         return false;
     }
     for (int bi = 0; bi < m_bindBook.bindCount(); ++bi) {
-        if (m_bindBook.binds.at(bi).path != path) {
+        if (m_bindBook.bindAt(bi).path != path) {
             continue;
         }
-        const PendingSessionBind candidate = m_bindBook.binds.at(bi);
+        const PendingSessionBind candidate = m_bindBook.bindAt(bi);
         if (candidate.id != kInvalidSessionImageId) {
             if (ImageItem *owner = findItemBySessionId(candidate.id)) {
                 if (owner != item) {
-                    m_bindBook.binds.removeAt(bi);
+                    m_bindBook.removeBindAt(bi);
                     --bi;
                     continue;
                 }
             }
         }
-        *out = m_bindBook.binds.takeAt(bi);
+        m_bindBook.takeBindAt(bi, out);
         if (out->id != kInvalidSessionImageId) {
             item->setSessionId(out->id);
         }
