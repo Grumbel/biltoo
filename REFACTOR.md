@@ -335,3 +335,4 @@ part of early-phase exit criteria).
 - **ViewTransform** containScale / coverScale / floorScale; **ItemFrameGeometry** selectedChromePad / maxChromeOffset.
 - **PlacementLinear** clampShear in decompose; **CropGeometry** kChrome*; **ViewTransform** clampIndex/Pixel; SoftDisplay LQIP overloads.
 - Group snapDegrees; clocks clamp01; **WorkspaceGeometry** sceneMargins/paddedSceneRect; **HudGeometry::placeTimelineClock**.
+- **Fix DisplayQuality::hostLongEdge**; **ContentXform::scaleCropRect**; ViewFraming clamp01.

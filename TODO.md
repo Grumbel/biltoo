@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1358-displayquality-fix-scalecrop.** Fix hostLongEdge header;
+ContentXform::scaleCropRect; ViewFraming clamp01.
+Prior: **1357**.
+
+### Change
+- **Fix:** `DisplayQuality::hostLongEdge(const QString &)` declaration restored
+- `ContentXform::scaleCropRect` public; SessionAppearance delegates
+- `ViewFraming::clampStickyPanNorms` uses `ViewTransform::clamp01`
+- Free-rotated crop size uses `ViewTransform::atLeast1`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1358**)
+```bash
+git pull /path/to/biltoo-1358-displayquality-fix-scalecrop.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1357-snap-margins-timeline-clock.** Group snapDegrees, clocks
 clamp01, workspace sceneMargins, HUD timeline clock placement.
 Prior: **1356**.
