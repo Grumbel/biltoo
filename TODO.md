@@ -2,6 +2,36 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1646-load-remainder-controller.** Tier 5b: move remaining load helpers; exit size target.
+Prior: **1645**.
+
+### Change
+- DisplayPipelineController owns remaining load bodies:
+  - bind/reset image-mode cursor & placement
+  - `resolveImageModePendingPixels` (both overloads)
+  - `pixelKindForImageModeSample` / legacy flips / frame replace
+  - `seedEmptyWorkspaceFromReplace` / `imageModeItemForPath` / `fullRasterForEdit`
+  - `imageModeOnScreenNeedEdge` / `onImageLoaded` / `loadImage`
+  - `ensureImageFocusSurface` / `syncImageFocusSurfaceState`
+- ImageView thin-forwards
+- **`imageview_load.cpp` ~610 lines** (Tier 5 exit target <800 met)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1646-load-remainder-controller.bundle HEAD
+```
+
+### Next
+- Host accessors to replace `friend class DisplayPipelineController`
+- Optional: split controller cpp if it grows too large
+- Audit dual-write / path-order once load surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1645-create-want-seed-controller.** Tier 5b: move createItem/wantAppearance/seed/edge.
 Prior: **1644**.
 

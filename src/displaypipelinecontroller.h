@@ -138,6 +138,24 @@ public:
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = false) const;
     int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
+    void bindImageModeSessionCursor(ImageItem *item);
+    void resetImageModeItemPlacement(ImageItem *item);
+    QImage resolveImageModePendingPixels(const QString &path,
+                                         const QImage &preview = QImage()) const;
+    QImage resolveImageModePendingPixels(const QString &path, const QImage &preview,
+                                         bool *displayReadyOut) const;
+    SessionAppearance::PixelKind pixelKindForImageModeSample(const QString &path,
+                                                             const QImage &image) const;
+    void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
+    void frameImageModeReplaceItem(ImageItem *item, const QString &path);
+    void seedEmptyWorkspaceFromReplace(const QString &path, const QImage &image);
+    ImageItem *imageModeItemForPath(const QString &path) const;
+    QImage fullRasterForEdit(const QString &path) const;
+    int imageModeOnScreenNeedEdge() const;
+    void onImageLoaded(const QString &path, const QImage &image, quint64 generation, int role);
+    bool loadImage(const QString &path);
+    void ensureImageFocusSurface();
+    void syncImageFocusSurfaceState();
 
 private:
     ImageView *m_view = nullptr; // not owned
