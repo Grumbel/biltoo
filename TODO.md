@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1494-attention-crop-helpers.** selectAllIndices; clampLocalCrop.
+Prior: **1493**. Commits 1494a–1494b (+ docs).
+
+### Commits
+1. **AttentionSession::selectAllIndices**
+2. **CropSession::clampLocalCrop** for recordSessionCrop
+
+### Apply
+```bash
+git pull /path/to/biltoo-1494-attention-crop-helpers.bundle HEAD
+```
+Requires tip **1493** (or **1479** + full stack).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1493-attention-const.** clearGesture clears dragStartPts; selectedRef.
 Prior: **1492**. Commits 1493a–1493c (+ docs).
 
