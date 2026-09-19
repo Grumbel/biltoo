@@ -78,6 +78,22 @@ public:
 
   int path_refcount(QString const& path) const;
 
+  /**
+   * True if the path entry exists and holds at least one Succeeded tile.
+   * Does not acquire (refcount unchanged). Used to skip redundant prefetch
+   * when A→B→A retained tiles are already warm.
+   */
+  bool has_succeeded_tiles(QString const& path) const;
+
+  /** Succeeded payload bytes for one path (0 if absent). */
+  std::size_t path_approx_bytes(QString const& path) const;
+
+  /**
+   * Bump LRU clock for an existing path without changing refcount.
+   * No-op if the path is not in the registry.
+   */
+  void touch(QString const& path);
+
   /** Number of path entries currently in the registry (active + idle retained). */
   std::size_t path_count() const;
 

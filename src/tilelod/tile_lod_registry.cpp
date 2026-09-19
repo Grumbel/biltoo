@@ -168,6 +168,48 @@ void TileLodRegistry::invalidateAll()
   m_by_path.clear();
 }
 
+bool TileLodRegistry::has_succeeded_tiles(QString const& path) const
+{
+  if (path.isEmpty()) {
+    return false;
+  }
+  std::string const key = path.toStdString();
+  std::lock_guard<std::mutex> lock(m_mu);
+  auto it = m_by_path.find(key);
+  if (it == m_by_path.end() || !it->second || !it->second->cache) {
+    return false;
+  }
+  return it->second->cache->has_succeeded();
+}
+
+std::size_t TileLodRegistry::path_approx_bytes(QString const& path) const
+{
+  if (path.isEmpty()) {
+    return 0;
+  }
+  std::string const key = path.toStdString();
+  std::lock_guard<std::mutex> lock(m_mu);
+  auto it = m_by_path.find(key);
+  if (it == m_by_path.end() || !it->second || !it->second->cache) {
+    return 0;
+  }
+  return it->second->cache->approx_bytes();
+}
+
+void TileLodRegistry::touch(QString const& path)
+{
+  if (path.isEmpty()) {
+    return;
+  }
+  std::string const key = path.toStdString();
+  std::lock_guard<std::mutex> lock(m_mu);
+  auto it = m_by_path.find(key);
+  if (it == m_by_path.end() || !it->second) {
+    return;
+  }
+  touch_locked(*it->second);
+}
+
 int TileLodRegistry::path_refcount(QString const& path) const
 {
   if (path.isEmpty()) {
