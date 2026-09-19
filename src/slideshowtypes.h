@@ -310,10 +310,12 @@ struct SlideshowZoomBlurState {
         vw = vh = 0;
         lastGood = {};
         lastGoodKey = 0;
-        ++generation;
+        bumpGeneration();
         inFlightGen[0] = inFlightGen[1] = 0;
         inFlightKey[0] = inFlightKey[1] = 0;
     }
+
+    void bumpGeneration() { ++generation; }
 };
 
 /**
