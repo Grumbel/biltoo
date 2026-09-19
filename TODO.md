@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1501-crop-badge-drag.** paintSizeBadge; applyActiveHandleDrag; drop dead wrappers.
+Prior: **1500**. Commits 1501a–1501c (+ docs).
+
+### Commits
+1. **CropGeometry::paintSizeBadge**
+2. **CropSession::applyActiveHandleDrag**
+3. Remove dead updateCropMove/Rotate/ResizeDrag
+
+### Apply
+```bash
+git pull /path/to/biltoo-1501-crop-badge-drag.bundle HEAD
+```
+Requires tip **1500** (or **1479** + full stack). Use `--ff-only` or `git reset --hard` if pull diverges.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1500-crop-handle-paint.** CropGeometry rotate/move/resize handle paint.
 Prior: **1499**. Commits 1500a–1500b (+ docs).
 
