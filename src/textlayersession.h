@@ -91,6 +91,8 @@ struct TextLayerSession {
 
     void setSearchFuzzy(bool on) { searchFuzzy = on; }
 
+    void setSearchQuery(const QString &q) { searchQuery = q; }
+
     void setLayerContent(const ThumtooCache::PageTextLayer &l, const QString &path)
     {
         layer = l;
