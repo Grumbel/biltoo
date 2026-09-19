@@ -163,7 +163,7 @@ void DisplayPipelineController::seedSessionAppearancesFromPaths(const QStringLis
     }
     QVector<SessionImageId> idsCopy = ids.mid(0, n);
     QStringList pathsCopy = paths.mid(0, n);
-    const QPointer<ImageView> guard(this);
+    const QPointer<ImageView> guard(m_view);
     QThreadPool::globalInstance()->start([guard, pathsCopy, idsCopy]() {
         struct Hit {
             SessionImageId sid = kInvalidSessionImageId;
@@ -290,7 +290,7 @@ void DisplayPipelineController::installDisplayPreservingView(ImageItem *item, co
                   : m_view->hostSessionId().currentIdValue();
     }
     installDisplayPixels(item, pixels, kind, sid);
-    preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
+    m_view->preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
 }
 
 
@@ -460,7 +460,7 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
     }
     const ContentXform::Value wantX = ContentXform::Value::fromState(want);
 
-    for (ImageItem *cand : m_gallery.stashedItems()) {
+    for (ImageItem *cand : m_view->hostGallery().stashedItems()) {
         if (!cand || cand->path() != path || !cand->hasDisplayPixels()) {
             continue;
         }
@@ -544,7 +544,7 @@ void DisplayPipelineController::frameImageModeReplaceItem(ImageItem *item, const
     } else if (!m_view->hostSlideshow().hud().isProgressActive()) {
         m_view->applyImageModeFraming(item);
     }
-    syncImageModeSceneRect(item);
+    m_view->syncImageModeSceneRect(item);
     // Apply camera while updates are still blocked and any live hold still
     // covers the viewport — avoids a flash of identity / wrong pan pose.
     m_view->hostSlideshow().maybeStartSlideshowMotion();
@@ -578,8 +578,8 @@ void DisplayPipelineController::seedEmptyWorkspaceFromReplace(const QString &pat
     }
     item->setSelected(true);
     m_view->hostFraming().armFit();
-    fitItem(item, currentFitAspectMode());
-    emit statusChanged();
+    m_view->fitItem(item, m_view->currentFitAspectMode());
+    emit m_view->statusChanged();
 }
 
 
@@ -589,7 +589,7 @@ ImageItem *DisplayPipelineController::imageModeItemForPath(const QString &path) 
     if (path.isEmpty()) {
         return nullptr;
     }
-    ImageItem *cur = targetItem();
+    ImageItem *cur = m_view->targetItem();
     if (cur && cur->path() == path) {
         return cur;
     }
@@ -622,7 +622,7 @@ int DisplayPipelineController::imageModeOnScreenNeedEdge() const
     if (!m_view->isImageMode()) {
         return 0;
     }
-    const ImageItem *item = targetItem();
+    const ImageItem *item = m_view->targetItem();
     if (!item) {
         item = m_view->primaryItem();
     }
@@ -642,15 +642,15 @@ void DisplayPipelineController::onImageLoaded(const QString &path, const QImage 
             m_view->hostSlideshow().onSlideshowRasterReady(path, image);
         }
     }
-    switch (static_cast<LoadRole>(role)) {
+    switch (static_cast<ImageView::LoadRole>(role)) {
     case ImageView::LoadReplace:
-        completeImageView::LoadReplace(path, image, generation);
+        completeLoadReplace(path, image, generation);
         break;
     case ImageView::LoadRestore:
-        completeImageView::LoadRestore(path, image);
+        completeLoadRestore(path, image);
         break;
     case ImageView::LoadAdd:
-        completeImageView::LoadAdd(path, image, generation);
+        completeLoadAdd(path, image, generation);
         break;
     }
 }
@@ -667,14 +667,14 @@ bool DisplayPipelineController::loadImage(const QString &path)
     }
     m_view->hostSessionId().clearLastLoadError();
 
-    if (isMultiItemMode()) {
+    if (m_view->isMultiItemMode()) {
         // Session navigation while in multi-item mode does not destroy the canvas;
         // only ensure the path is available as classic fallback.
         // Still show the navigated image if the workspace is empty.
         if (m_view->liveItems().isEmpty()) {
             scheduleImageLoad(path, ImageView::LoadReplace);
         }
-        emit statusChanged();
+        emit m_view->statusChanged();
         return true;
     }
 

@@ -1025,7 +1025,15 @@ public slots:
         return m_displayPipeline.loadGate().accepts(gen);
     }
 
+    // --- Load roles (public for DisplayPipelineController; values stable) ---
+    enum LoadRole {
+        LoadReplace = 0,
+        LoadAdd = 1,
+        LoadRestore = 2
+    };
+
     // --- Display pipeline host methods (Tier 5c; was private friend surface) ---
+    bool isMultiItemMode() const { return m_viewMode != ViewMode::Image; }
     void clearTextSelection();
     void refreshTextLayer();
     bool isCropDraftLockedPath(const QString &path) const;
@@ -1047,6 +1055,12 @@ public slots:
     void scheduleImageSizeProbe(const QString &path);
     void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,
                                               const QSize &after);
+    bool tryInstallImageModeSample(const QString &path, const QImage &image);
+    bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
+                                        SessionAppearance::PixelKind kind);
+    void markAppearanceSeedAttempted(SessionImageId sid);
+    void applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
+                                          const ThumtooCache::StoredContentAppearance &stored);
     WorkspaceItemState wantAppearanceForItem(const ImageItem *item,
                                              SessionImageId sid = kInvalidSessionImageId) const;
     void bindImageModeSessionCursor(ImageItem *item);

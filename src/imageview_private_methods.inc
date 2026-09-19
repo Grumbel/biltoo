@@ -197,7 +197,6 @@
 
     ViewMode viewMode() const { return m_viewMode; }
 
-    bool isMultiItemMode() const { return m_viewMode != ViewMode::Image; }
 
     bool galleryReturnAvailable() const { return m_sessionNav.isGalleryReturnAvailable(); }
 

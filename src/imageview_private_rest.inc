@@ -4,11 +4,7 @@
 // Remainder of ImageView private: methods + data members.
 // Included only from imageview.h inside class `private:`.
 
-    enum LoadRole {
-        LoadReplace = 0,
-        LoadAdd = 1,
-        LoadRestore = 2
-    };
+    // LoadRole is public on ImageView (controller TUs need it).
 
     /**
      * Create a canvas item from decoded pixels.
@@ -89,9 +85,6 @@
     void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
     /** One ImageLoader::load when thumtoo Full settles short of on-screen need. */
     void scheduleImageModeNativeDecodeOnce(const QString &path);
-    bool tryInstallImageModeSample(const QString &path, const QImage &image);
-    bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
-                                       SessionAppearance::PixelKind kind);
     /** On-screen long edge (device px) for the current Image-mode item. */
     int imageModeOnScreenNeedEdge() const;
     /** PreferCache + native full when zoom leaves soft samples undersampled. */
@@ -202,10 +195,7 @@
      * If @p sid has no m_appearance entry, load durable content-hash state for
      * @p path into the store (no-op when missing / thumtoo off).
      */
-    void applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
-                                          const ThumtooCache::StoredContentAppearance &stored);
     /** Record that durable appearance was probed for @p sid (hit or miss). */
-    void markAppearanceSeedAttempted(SessionImageId sid);
     /**
      * Map item-local draft rect to source pixel rect of the *current* pixmap,
      * then compose into original on-disk coordinates in @p state.

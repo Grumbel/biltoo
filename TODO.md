@@ -2,6 +2,35 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1651-fix-split-controller-compile.** Fix split DisplayPipelineController compile.
+Prior: **1650**.
+
+### Change
+- Make `ImageView::LoadRole` public (controller TUs need values after friend drop)
+- Public host: `tryInstallImageModeSample(Baked)`, `markAppearanceSeedAttempted`,
+  `applyStoredContentAppearanceSeed`, `isMultiItemMode`
+- Qualify incomplete host calls in `_load.cpp` / `_item.cpp`:
+  `QPointer(m_view)`, `m_view->tickPrimaryTileLod`, layout/appearance/emit paths
+- Fix `onImageLoaded` dispatch (`completeLoadReplace` / `Restore` / `Add`)
+- Core lambda: `hostLoadGate()` instead of private `m_displayPipeline`
+- Remove duplicate `displaySurfaceStateForItem` thin-forward left in core TU
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1651-fix-split-controller-compile.bundle HEAD
+```
+
+### Next
+- Path-order dual-write audit
+- Further Tier 6 pure extractions per REFACTOR.md
+- Full `biltoo-build` verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1650-display-pipeline-jobs.** Shared load-job helpers for split controller TUs.
 Prior: **1649**.
 

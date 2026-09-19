@@ -269,7 +269,7 @@ void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChang
             if (sizeChanged) {
                 m_view->applyLayout(GalleryPackReason::ContentChange);
             } else {
-                m_view->applyLayout(GalleryPackReason::SessionMutate);
+                m_view->m_view->applyLayout(GalleryPackReason::SessionMutate);
             }
         }
     } else {
@@ -426,7 +426,7 @@ bool DisplayPipelineController::tryDeliverReplaceFromSlideshowRaster(const QStri
     if (ready.isNull()) {
         return false;
     }
-    const QPointer<ImageView> guard(this);
+    const QPointer<ImageView> guard(m_view);
     QMetaObject::invokeMethod(guard, "onImageLoaded", Qt::QueuedConnection,
                               Q_ARG(QString, path),
                               Q_ARG(QImage, ready),
@@ -442,7 +442,7 @@ void DisplayPipelineController::scheduleSlideshowReplaceDecode(const QString &pa
     // Key-repeat skips loadImage entirely (MainWindow debounce); this path is
     // for settled index / auto-advance — must climb above soft max or the show
     // stays on thumbnails forever.
-    const QPointer<ImageView> guard(this);
+    const QPointer<ImageView> guard(m_view);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const int qualityEdge = m_view->hostSlideshow().slideshowTargetEdge();
     const int roleInt = static_cast<int>(role);
@@ -462,7 +462,7 @@ void DisplayPipelineController::scheduleSlideshowReplaceDecode(const QString &pa
             }
         }
         if (ThumtooCache::hasDurableTilesKnown(path)) {
-            tickPrimaryTileLod(12);
+            m_view->tickPrimaryTileLod(12);
             if (qualityEdge > softEdge) {
                 startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge,
                                        sessionApp);
@@ -493,7 +493,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
     if (m_view->isImageMode() && !m_view->hostSlideshow().hud().isProgressActive() && !m_view->hostSlideshow().hud().isNavHot()
         && role == ImageView::LoadReplace) {
         ThumtooCache::scheduleProbe(path);
-        tickPrimaryTileLod(12);
+        m_view->tickPrimaryTileLod(12);
         Q_UNUSED(gen);
         return;
     }
@@ -504,19 +504,19 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
         const QImage cached = ImageCache::get(path);
         if (!cached.isNull()
             && ImageCache::longEdge(cached) <= DisplayQuality::kLqipMaxEdge) {
-            const QPointer<ImageView> guard(this);
+            const QPointer<ImageView> guard(m_view);
             queuePreviewLoaded(guard, path, cached, gen, static_cast<int>(role));
         }
         if (m_view->isGalleryMode()) {
             scheduleGalleryDecode(path);
         }
-        tickPrimaryTileLod(12);
+        m_view->tickPrimaryTileLod(12);
         Q_UNUSED(role);
         return;
     }
 
     // Fallback (rare non-mode): soft stand-in — prefer cache LQIP first.
-    const QPointer<ImageView> guard(this);
+    const QPointer<ImageView> guard(m_view);
     const int roleInt = static_cast<int>(role);
     const int softEdge = ThumtooCache::kGalleryLadderEdge;
     const WorkspaceItemState sessionApp = appearanceForNewImageModeItem(path);
@@ -525,7 +525,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
         if (!cached.isNull()
             && ImageCache::longEdge(cached) <= DisplayQuality::kLqipMaxEdge) {
             queuePreviewLoaded(guard, path, cached, gen, roleInt);
-            tickPrimaryTileLod(8);
+            m_view->tickPrimaryTileLod(8);
             Q_UNUSED(sessionApp);
             return;
         }
@@ -737,7 +737,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     WorkspaceItemState app = state;
     if (state.sessionId != kInvalidSessionImageId) {
         item->setSessionId(state.sessionId);
-        if (const WorkspaceItemState *it = appearance().get(state.sessionId)) {
+        if (const WorkspaceItemState *it = m_view->appearance().get(state.sessionId)) {
             app = *it;
             // Keep placement from the snapshot.
             app.pos = state.pos;
@@ -756,14 +756,14 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     // bake crop on the GUI and used to claim applied == want without pixels.
     if (SessionAppearance::hasContentAppearance(app)
         || !app.colorAdjust.isIdentity()) {
-        rematerializeItemContent(item, app);
+        m_view->rematerializeItemContent(item, app);
     }
     m_view->applyState(item, app);
-    if (!m_layout.isFreeForm()
-        && !(m_view->isGalleryMode() && m_galleryRelayoutSuppress.active())) {
-        applyLayout(GalleryPackReason::SessionMutate);
+    if (!m_view->hostLayout().isFreeForm()
+        && !(m_view->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
+        m_view->applyLayout(GalleryPackReason::SessionMutate);
     }
     emit m_view->statusChanged();
-    emit workspacePathsChanged();
+    emit m_view->workspacePathsChanged();
 }
 

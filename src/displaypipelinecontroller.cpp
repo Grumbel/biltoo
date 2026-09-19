@@ -164,7 +164,7 @@ void DisplayPipelineController::scheduleImageModeNativeDecodeOnce(const QString 
                     ImageCache::put(path, decoded);
                 }
                 if (host->isImageMode()) {
-                    if (gen != host->m_displayPipeline.loadGate().generation()) {
+                    if (gen != host->hostLoadGate().generation()) {
                         return;
                     }
                     if (!decoded.isNull()) {
@@ -172,7 +172,7 @@ void DisplayPipelineController::scheduleImageModeNativeDecodeOnce(const QString 
                     }
                 } else if (host->isWorkspaceMode() && !decoded.isNull()) {
                     host->onImagePreviewLoaded(
-                        path, decoded, host->m_displayPipeline.loadGate().generation(),
+                        path, decoded, host->hostLoadGate().generation(),
                         static_cast<int>(ImageView::LoadAdd));
                 }
             },
@@ -1313,14 +1313,6 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
     }
     seedEmptyWorkspaceFromReplace(path, image);
 }
-
-DisplaySurface::State DisplayPipelineController::displaySurfaceStateForItem(const ImageItem *item,
-                                                            int hostLongEdge,
-                                                            bool climbPending) const
-{
-    return m_displayPipeline.displaySurfaceStateForItem(item, hostLongEdge, climbPending);
-}
-
 
 ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
 {
