@@ -85,8 +85,14 @@ public:
    */
   bool has_succeeded_tiles(QString const& path) const;
 
+  /** Succeeded tile count for one path (0 if absent). O(1) per path cache. */
+  std::size_t path_succeeded_count(QString const& path) const;
+
   /** Succeeded payload bytes for one path (0 if absent). */
   std::size_t path_approx_bytes(QString const& path) const;
+
+  /** Paths with refcount == 0 still retained for LRU. */
+  std::size_t idle_path_count() const;
 
   /**
    * Bump LRU clock for an existing path without changing refcount.

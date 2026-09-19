@@ -170,16 +170,34 @@ void TileLodRegistry::invalidateAll()
 
 bool TileLodRegistry::has_succeeded_tiles(QString const& path) const
 {
+  return path_succeeded_count(path) > 0;
+}
+
+std::size_t TileLodRegistry::path_succeeded_count(QString const& path) const
+{
   if (path.isEmpty()) {
-    return false;
+    return 0;
   }
   std::string const key = path.toStdString();
   std::lock_guard<std::mutex> lock(m_mu);
   auto it = m_by_path.find(key);
   if (it == m_by_path.end() || !it->second || !it->second->cache) {
-    return false;
+    return 0;
   }
-  return it->second->cache->has_succeeded();
+  return it->second->cache->succeeded_count();
+}
+
+std::size_t TileLodRegistry::idle_path_count() const
+{
+  std::lock_guard<std::mutex> lock(m_mu);
+  std::size_t n = 0;
+  for (auto const& [k, shared] : m_by_path) {
+    (void)k;
+    if (shared && shared->refcount == 0) {
+      ++n;
+    }
+  }
+  return n;
 }
 
 std::size_t TileLodRegistry::path_approx_bytes(QString const& path) const
