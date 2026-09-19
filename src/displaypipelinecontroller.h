@@ -68,6 +68,11 @@ public:
     bool tryInstallImageModeSample(const QString &path, const QImage &image);
     bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
                                         SessionAppearance::PixelKind kind);
+    void onLadderReady(const QString &path, int maxEdge, const QImage &image);
+    void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
+    void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
+    void applyWorkspaceLadderReady(const QString &path, int maxEdge, const QImage &image);
+    void maybeClimbImageModePixelsForView();
 
 private:
     ImageView *m_view = nullptr; // not owned

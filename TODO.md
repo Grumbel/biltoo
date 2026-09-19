@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1635-ladder-ready-controller.** Tier 5b: move ladder-ready handlers.
+Prior: **1634**.
+
+### Change
+- DisplayPipelineController owns:
+  - `onLadderReady`
+  - `upgradeImageModeFromLadder`
+  - `applyGalleryLadderReady` / `applyWorkspaceLadderReady`
+  - `maybeClimbImageModePixelsForView`
+- ImageView thin-forwards
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1635-ladder-ready-controller.bundle HEAD
+```
+
+### Next
+- Move `driveImageFocusSurface` / surface bind helpers / more load paths
+- Host accessors to replace friend when surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1634-install-sample-controller.** Tier 5b: move image-mode sample install helpers.
 Prior: **1633**.
 

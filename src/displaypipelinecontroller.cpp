@@ -10,6 +10,8 @@
 #include "displayedgepolicy.h"
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
+#include "gallerysoftsm.h"
+#include "displayquality.h"
 #include "biltoo_thread.h"
 
 #include "imageloader.h"
@@ -22,6 +24,8 @@
 #include <QThreadPool>
 #include <QPointer>
 #include <QMetaObject>
+#include <cstdlib>
+#include <cstdio>
 
 #include <QGraphicsScene>
 #include <QGraphicsItem>
@@ -384,5 +388,193 @@ bool DisplayPipelineController::tryInstallImageModeSampleBaked(const QString &pa
     }
     return true;
 }
+
+void DisplayPipelineController::onLadderReady(const QString &path, int maxEdge, const QImage &image)
+{
+    ASSERT_GUI_THREAD();
+    if (path.isEmpty()) {
+        return;
+    }
+    // Central climb policy + ImageCache put. Slideshow installs via
+    // PathRasterService::rasterImproved (no second direct call).
+    if (m_view->m_pathRaster) {
+        m_view->m_pathRaster->noteDelivery(path, maxEdge, image);
+        // PreferCache BestAvailable / Full escalate is PathRasterService policy
+        // (docs/THUMTOO_HOST_CONTRACT.md). Do not recover ad-hoc here.
+    } else {
+        if (!image.isNull()) {
+            ImageCache::put(path, image);
+        }
+        if (m_view->m_slideshow.hud().isProgressActive() && !image.isNull()) {
+            m_view->m_slideshow.onSlideshowRasterReady(path, image);
+        }
+    }
+
+    // Image mode: soft→sharp when full ImageLoader::load missed or is still
+    // in flight. ladderReady used to return early for non-Gallery, so PDF /
+    // page / archive PreferCache deliveries left the view stuck on the soft
+    // thumbnail forever.
+    if (m_view->isImageMode() && !image.isNull() && !m_view->m_slideshow.hud().isProgressActive()) {
+        upgradeImageModeFromLadder(path, maxEdge, image);
+    }
+
+    // Workspace: was falling through to early return without installing samples.
+    if (m_view->isWorkspaceMode() && !image.isNull()) {
+        applyWorkspaceLadderReady(path, maxEdge, image);
+    }
+
+    // Crop may be open in Image or Workspace on a provisional sample.
+    if (!image.isNull()) {
+        m_view->maybeUpgradeCropFullRaster(path, image);
+    }
+
+    // PreferCache/FocusFull may have co-built durable tiles; wake tile LOD only
+    // if some on-canvas item for this path already wants tiles (avoids a full
+    // tickPrimary scan on every soft delivery).
+    if (m_view->isImageMode() || m_view->isWorkspaceMode() || m_view->isGalleryMode()) {
+        for (ImageItem *ii : m_view->m_items) {
+            if (ii && ii->path() == path && ii->tileLodWanted()) {
+                m_view->tickPrimaryTileLod(12);
+                break;
+            }
+        }
+    }
+
+    if (!m_view->isGalleryMode()) {
+        return;
+    }
+    applyGalleryLadderReady(path, maxEdge, image);
+}
+
+
+void DisplayPipelineController::upgradeImageModeFromLadder(const QString &path, int maxEdge,
+                                           const QImage &image)
+{
+    // ladderReady Image-mode path: same install policy as completeLoadReplace.
+    if (path.isEmpty() || image.isNull() || path != m_view->classicPath()) {
+        return;
+    }
+    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+        dbg && dbg[0] && dbg[0] != '0') {
+        const int req = maxEdge > 0 ? maxEdge : ImageCache::longEdge(image);
+        fprintf(stderr,
+                "biltoo/image: ladderReady UPGRADE path=%s req=%d got=%dx%d\n",
+                qPrintable(QFileInfo(path).fileName()), req, image.width(),
+                image.height());
+    }
+    // Ladder samples are host-raw. installDisplayPixels materializes want
+    // (soft stand-in ≤512 + async full for multi-MP). Never bake here and
+    // put the result into ImageCache — that double-applied crop.
+    Q_UNUSED(maxEdge);
+    (void)tryInstallImageModeSample(path, image);
+}
+
+
+void DisplayPipelineController::applyGalleryLadderReady(const QString &path, int maxEdge,
+                                          const QImage &image)
+{
+    if (!m_view->isGalleryMode() || path.isEmpty()) {
+        return;
+    }
+    Q_UNUSED(maxEdge);
+    // Gallery accepts LQIP only. Larger soft samples stay in ImageCache for
+    // filmstrip / Image mode — not painted onto Gallery cells.
+    if (!image.isNull()
+        && ImageCache::longEdge(image) <= DisplayQuality::kLqipMaxEdge) {
+        ImageCache::put(path, image);
+        for (ImageItem *item : m_view->m_items) {
+            if (!item || item->path() != path || item->hasDisplayPixels()) {
+                continue;
+            }
+            m_view->installDisplayPixels(item, image,
+                                 SessionAppearance::PixelKind::SoftPreview,
+                                 item->sessionId());
+        }
+        if (m_view->viewport()) {
+            m_view->viewport()->update();
+        }
+    }
+
+    if (GallerySoftState *st = m_view->m_gallerySoftBook.find(path)) {
+        st->terminal = true;
+        st->have = GallerySoft::maxHave(st->have, m_view->galleryHaveEdgeFromItems(path, nullptr));
+    }
+
+    m_view->scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
+    m_view->scheduleGalleryStatusRefresh(GallerySoft::kStatusRefreshMs);
+}
+
+
+
+void DisplayPipelineController::applyWorkspaceLadderReady(const QString &path, int maxEdge,
+                                          const QImage &image)
+{
+    ASSERT_GUI_THREAD();
+    if (!m_view->isWorkspaceMode() || path.isEmpty() || image.isNull()) {
+        return;
+    }
+    Q_UNUSED(maxEdge);
+    // Same soft/display install as Gallery tiles — Workspace items share paths.
+    m_view->onImagePreviewLoaded(path, image, loadGate().generation(),
+                         static_cast<int>(ImageView::LoadAdd));
+    ensureWorkspaceQualityClimb();
+}
+
+
+void DisplayPipelineController::maybeClimbImageModePixelsForView()
+{
+    // Zoom / resize: PreferCache climbs when on-screen need exceeds painted.
+    // Do not start Display@ladder while soft is still missing — that races the
+    // soft 512 job and is what THUMTOO_DEBUG showed as need=2048 decoded=0.
+    if (!m_view->isImageMode() || m_view->m_slideshow.hud().isProgressActive()) {
+        return;
+    }
+    ImageItem *item = m_view->imageModeItemForPath(m_view->classicPath());
+    if (!item) {
+        item = m_view->targetItem();
+    }
+    if (!item || item->path().isEmpty()) {
+        return;
+    }
+    const QString path = item->path();
+    // Crop draft freezes the sample — do not schedule soft↔full climb.
+    if (m_view->isCropDraftLockedPath(path)) {
+        return;
+    }
+
+    // Tile LOD owns deep zoom when on-screen need exceeds soft max (TILE_LOD).
+    // PreferCache whole-frame climb is skipped for that band; soft/LQIP stays
+    // as underlay until tiles arrive.
+    m_view->tickPrimaryTileLod(8);
+    if (item->tileLodWanted()) {
+        m_view->driveImageFocusSurface();
+        return;
+    }
+
+    const int need = m_view->itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
+    const int have = item->displayPixelLongEdge();
+    if (have <= 0) {
+        // Soft / LQIP not installed yet — ensureImageModeQualityClimb runs
+        // after soft lands; PreferCache waits for that.
+        return;
+    }
+    if (need <= 0 || DisplayEdgePolicy::coversEdge(have, need)) {
+        return;
+    }
+
+    if (const char *dbg = std::getenv("THUMTOO_DEBUG");
+        dbg && dbg[0] && dbg[0] != '0') {
+        fprintf(stderr,
+                "biltoo/image: view climb path=%s have=%d need=%d decoded=%d\n",
+                qPrintable(QFileInfo(path).fileName()), have, need,
+                item->hasDecodedPixels() ? 1 : 0);
+    }
+
+    // Moderate zoom still on soft band: PathRaster Soft→PreferCache→Full.
+    scheduleImageModePreferCacheClimb(path, need);
+    // Soft matching want + large host → ScheduleAsyncMaterialize via decide.
+    m_view->driveImageFocusSurface();
+}
+
 
 
