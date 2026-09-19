@@ -84,6 +84,8 @@ public:
 
     void setSelected(const QVector<int> &sel) { selected = sel; }
 
+    bool hasSelection() const { return !selected.isEmpty(); }
+
     void clearSelected() { selected.clear(); }
 
     /**
