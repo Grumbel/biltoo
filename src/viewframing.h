@@ -56,22 +56,37 @@ struct ViewFraming {
                        itemBounds.top() + stickyPanNormY * itemBounds.height());
     }
 
-    void clearFitFill()
+    /** @return true when either fit or fill flag changed. */
+    bool clearFitFill()
     {
+        if (!fitMode && !fillMode) {
+            return false;
+        }
         fitMode = false;
         fillMode = false;
+        return true;
     }
 
-    void setFitOnly()
+    /** @return true when flags changed to fit-only. */
+    bool setFitOnly()
     {
+        if (fitMode && !fillMode) {
+            return false;
+        }
         fitMode = true;
         fillMode = false;
+        return true;
     }
 
-    void setFillMode()
+    /** @return true when flags changed to fill. */
+    bool setFillMode()
     {
+        if (fitMode && fillMode) {
+            return false;
+        }
         fitMode = true;
         fillMode = true;
+        return true;
     }
 
     /** @return true when sticky-zoom enabled flag changed. */
