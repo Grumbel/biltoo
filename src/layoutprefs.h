@@ -31,6 +31,12 @@ struct LayoutPrefs {
 
     LayoutMode currentMode() const { return mode; }
 
+    int gridColumnsValue() const { return gridColumns; }
+
+    int masonryColumnsValue() const { return masonryColumns; }
+
+    int masonryRowsValue() const { return masonryRows; }
+
     /** 0 = automatic for grid/flow. */
     void setGridColumns(int columns) { gridColumns = qMax(0, columns); }
 

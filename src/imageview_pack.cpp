@@ -391,7 +391,7 @@ void ImageView::setLayoutMode(LayoutMode mode)
 
 void ImageView::setGridColumns(int columns)
 {
-    const int before = m_layout.gridColumns;
+    const int before = m_layout.gridColumnsValue();
     m_layout.setGridColumns(columns);
     if (m_layout.gridColumns == before) {
         return;
@@ -406,7 +406,7 @@ void ImageView::setGridColumns(int columns)
 
 void ImageView::setMasonryColumns(int columns)
 {
-    const int before = m_layout.masonryColumns;
+    const int before = m_layout.masonryColumnsValue();
     m_layout.setMasonryColumns(columns);
     if (m_layout.masonryColumns == before) {
         return;
@@ -419,7 +419,7 @@ void ImageView::setMasonryColumns(int columns)
 
 void ImageView::setMasonryRows(int rows)
 {
-    const int before = m_layout.masonryRows;
+    const int before = m_layout.masonryRowsValue();
     m_layout.setMasonryRows(rows);
     if (m_layout.masonryRows == before) {
         return;
@@ -571,9 +571,9 @@ void ImageView::applyLayout(GalleryPackReason reason)
     params.gap = gap;
     params.availW = availW;
     params.availH = availH;
-    params.masonryColumns = m_layout.masonryColumns;
-    params.gridColumns = m_layout.gridColumns;
-    params.masonryRows = m_layout.masonryRows;
+    params.masonryColumns = m_layout.masonryColumnsValue();
+    params.gridColumns = m_layout.gridColumnsValue();
+    params.masonryRows = m_layout.masonryRowsValue();
     params.mode = galleryLayoutModeFromViewMode();
 
     GalleryLayout::pack(m_items, params, [this](ImageItem *item) {

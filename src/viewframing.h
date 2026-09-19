@@ -52,6 +52,10 @@ struct ViewFraming {
 
     qreal currentPreservedViewScale() const { return preservedViewScale; }
 
+    bool hasStickyPan() const { return haveStickyPan; }
+
+    QPointF stickyPanNormPoint() const { return stickyPanNorm; }
+
     /** Capture sticky pan as norms of @p sceneCentre within @p itemBounds. */
     void setStickyPanFromScene(const QPointF &sceneCentre, const QRectF &itemBounds)
     {
