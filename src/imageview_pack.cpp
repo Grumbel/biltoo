@@ -575,14 +575,16 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
         return;
     }
 
-    const QString detail = (pathSet.size() == 1)
-        ? QFileInfo(*pathSet.constBegin()).fileName()
-        : tr("%1 paths · %2 items").arg(pathSet.size()).arg(itemCount);
+    // Prefer QStringList over QSet::constBegin() — avoids GCC -Wnull-dereference
+    // on QHash span access when inlining QSet iterators.
+    const QStringList paths = pathSet.values();
+    const QString detail = (paths.size() == 1)
+        ? QFileInfo(paths.constFirst()).fileName()
+        : tr("%1 paths · %2 items").arg(paths.size()).arg(itemCount);
     flashHud(tr("Hard reload"), detail);
 
     // Purge durable Store tiles off the GUI, then re-decode only after forget
     // so PreferCache / tile LOD cannot re-hit the old pyramid.
-    const QStringList paths = pathSet.values();
     auto remaining = std::make_shared<int>(paths.size());
     auto tileTotal = std::make_shared<qint64>(0);
     const bool doRelayout = relayoutGallery;

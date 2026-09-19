@@ -2,6 +2,19 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1587-hard-reload-set-iter-warn.** Avoid GCC -Wnull-dereference on QSet iterator in hardReloadFromDisk.
+Prior: **1586**.
+
+### Change
+- Build `QStringList paths` before the HUD detail string; use `paths.constFirst()` instead of `*pathSet.constBegin()`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1587-hard-reload-set-iter-warn.bundle HEAD
+```
+
+---
+
 **Tip: biltoo-1586-view-background.** Session Gallery/Image view background toolbar + unified canvas materials paint.
 Prior: **1585**.
 
