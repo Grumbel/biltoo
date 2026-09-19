@@ -168,9 +168,9 @@ bool rotationDeltaFromDrag(const QPointF &centre, const QPointF &pressScene,
     }
     qreal delta = qRadiansToDegrees(qAtan2(v1.y(), v1.x()) - qAtan2(v0.y(), v0.x()));
     if (snap15) {
-        delta = qRound(delta / 15.0) * 15.0;
+        delta = PlacementLinear::snapDegrees(delta, 15.0);
     } else if (snap45) {
-        delta = qRound(delta / 45.0) * 45.0;
+        delta = PlacementLinear::snapDegrees(delta, 45.0);
     }
     *deltaOut = delta;
     return true;

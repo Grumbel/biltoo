@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "slideshowclocks.h"
+#include "viewtransform.h"
 
 #include <QtGlobal>
 
@@ -19,7 +20,7 @@ void integrateMotionProgress01(qreal *t, QElapsedTimer *clock, bool running,
     }
     const qint64 d = clock->restart();
     if (d > 0) {
-        *t = qBound(0.0, *t + qreal(d) / qreal(pathMs), 1.0);
+        *t = ViewTransform::clamp01(*t + qreal(d) / qreal(pathMs));
     }
 }
 
@@ -51,8 +52,8 @@ void advanceDwellMotion(SlideshowDwellState *dwell)
     }
     const qint64 d = dwell->clock.restart();
     if (d > 0) {
-        dwell->motionT =
-            qBound(0.0, dwell->motionT + qreal(d) / qreal(dwell->durationMs), 1.0);
+        dwell->motionT = ViewTransform::clamp01(
+            dwell->motionT + qreal(d) / qreal(dwell->durationMs));
         dwell->elapsedOffsetMs =
             qint64(dwell->motionT * qreal(dwell->durationMs));
     }
