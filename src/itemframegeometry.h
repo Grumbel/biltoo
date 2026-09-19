@@ -134,6 +134,24 @@ inline qreal placeholderInset(qreal contentW, qreal contentH, qreal frac = 0.06)
     return qMin(contentW, contentH) * frac;
 }
 
+/**
+ * Local AABB pad for selected interactive chrome (scene-space only).
+ * Clamped so near-zero item scale cannot explode the rect.
+ */
+inline qreal selectedChromePad(qreal contentLongEdge,
+                               qreal floorPx = 32.0, qreal ceilPx = 96.0,
+                               qreal frac = 0.12)
+{
+    return qMin(ceilPx, qMax(floorPx, contentLongEdge * frac));
+}
+
+/** Cap handle offset so local chrome centres stay finite. */
+inline qreal maxChromeOffset(qreal contentLongEdge, qreal floorPx = 40.0,
+                             qreal frac = 0.75)
+{
+    return qMax(floorPx, contentLongEdge * frac);
+}
+
 } // namespace ItemFrameGeometry
 
 #endif // ITEMFRAMEGEOMETRY_H
