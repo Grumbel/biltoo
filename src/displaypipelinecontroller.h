@@ -7,6 +7,7 @@
 #include "sessionloadgate.h"
 #include "displaysurface.h"
 #include "sessionappearance.h"
+#include "pathrasterservice.h"
 
 #include <QTimer>
 
@@ -73,6 +74,19 @@ public:
     void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
     void applyWorkspaceLadderReady(const QString &path, int maxEdge, const QImage &image);
     void maybeClimbImageModePixelsForView();
+    DisplaySurface::State displaySurfaceStateForItem(const ImageItem *item,
+                                                     int hostLongEdge = -1,
+                                                     bool climbPending = false) const;
+    bool applyDisplaySurfaceAction(ImageItem *item,
+                                   const DisplaySurface::Action &act,
+                                   const QImage &hostSample,
+                                   int fallbackNeedEdge,
+                                   PathRasterService::ClimbPolicy climbPolicy);
+    void driveImageFocusSurface();
+    void registerItemDisplaySurface(ImageItem *item);
+    void unregisterItemDisplaySurface(ImageItem *item);
+    void syncItemDisplaySurface(ImageItem *item, int hostLongEdge = -1,
+                                bool climbPending = false);
 
 private:
     ImageView *m_view = nullptr; // not owned

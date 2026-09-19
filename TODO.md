@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1637-display-surface-controller.** Tier 5b: move display-surface drive/bind.
+Prior: **1636**.
+
+### Change
+- DisplayPipelineController owns:
+  - `displaySurfaceStateForItem` / `applyDisplaySurfaceAction`
+  - `driveImageFocusSurface`
+  - `registerItemDisplaySurface` / `unregisterItemDisplaySurface` / `syncItemDisplaySurface`
+- ImageView thin-forwards
+- `imageview_load.cpp` ~2350 lines
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1637-display-surface-controller.bundle HEAD
+```
+
+### Next
+- More load.cpp shrink (installDisplayPixels, LoadAdd/LoadReplace paths)
+- Host accessors to replace friend when surface stabilizes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1636-shared-load-dbg.** Share biltooLoadDbg for DisplayPipelineController.
 Prior: **1635**.
 

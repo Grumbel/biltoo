@@ -507,39 +507,7 @@ DisplaySurface::State ImageView::displaySurfaceStateForItem(const ImageItem *ite
                                                             int hostLongEdge,
                                                             bool climbPending) const
 {
-    DisplaySurface::State ds;
-    if (!item) {
-        return ds;
-    }
-    ds.climbPending = climbPending;
-    ds.hostLongEdge = hostLongEdge >= 0
-        ? hostLongEdge
-        : (item->path().isEmpty()
-               ? 0
-               : ImageCache::longEdge(ImageCache::get(item->path())));
-    ds.want = ContentXform::Value::fromState(
-        wantAppearanceForItem(item, item->sessionId()));
-    if (item->hasDisplayPixels()) {
-        ds.haveDisplayEdge = item->displayPixelLongEdge();
-        ds.attachedKind = item->hasDecodedPixels()
-            ? DisplaySurface::AttachedKind::FullSource
-            : DisplaySurface::AttachedKind::SoftPreview;
-        if (item->hasAppliedContentXform()) {
-            ds.applied = item->appliedContentXform();
-        }
-    }
-    if (isImageMode()) {
-        // ImageFocus: on-screen (window) need only. Forcing need ≥ file native
-        // jumped straight to Full and skipped Soft→Prefer progressive installs.
-        // Zoom / 1:1 raises on-screen need; climb then escalates.
-        const int need = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
-        ds.needEdge = cappedDisplayEdgeForPath(item->path(), need);
-    } else if (isGalleryMode()) {
-        ds.needEdge = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-    } else if (isWorkspaceMode()) {
-        ds.needEdge = itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
-    }
-    return ds;
+    return m_displayPipeline.displaySurfaceStateForItem(item, hostLongEdge, climbPending);
 }
 
 bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
@@ -548,113 +516,7 @@ bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
                                           int fallbackNeedEdge,
                                           PathRasterService::ClimbPolicy climbPolicy)
 {
-    if (!item) {
-        return false;
-    }
-    using AT = DisplaySurface::ActionType;
-    if (act.type == AT::None) {
-        return false;
-    }
-    const QString path = item->path();
-    if (path.isEmpty()) {
-        return false;
-    }
-    if (act.type == AT::ScheduleClimb) {
-        // Gallery never PreferCache/soft climb — LQIP + tiles only.
-        if (isGalleryMode() || !m_pathRaster) {
-            return false;
-        }
-        // Image key-repeat: never ensure per skipped path (IMAGE_MODE_NAV_SOFT).
-        if (m_slideshow.hud().isNavHot() && isImageMode()) {
-            return false;
-        }
-        const int need = act.climbNeedEdge > 0 ? act.climbNeedEdge : fallbackNeedEdge;
-        if (need > 0) {
-            m_pathRaster->ensure(path, need, logicalSizeForPath(path), climbPolicy);
-        }
-        return false;
-    }
-    if (act.type == AT::ScheduleAsyncMaterialize) {
-        if (isGalleryMode()) {
-            return false;
-        }
-        if (m_slideshow.hud().isNavHot() && isImageMode()) {
-            return false;
-        }
-        scheduleAsyncHostRematerialize(
-            path, item->sessionId(),
-            wantAppearanceForItem(item, item->sessionId()));
-        // Intermediate Prefer host is baking async; keep Soft→Prefer→Full climb
-        // when on-screen need is still above host (Workspace zoom-in).
-        const int need = fallbackNeedEdge > 0 ? fallbackNeedEdge : 0;
-        if (m_pathRaster && need > 0
-            && !DisplayEdgePolicy::coversEdge(item->displayPixelLongEdge(), need)
-            && !DisplayEdgePolicy::coversEdge(ImageCache::longEdge(ImageCache::get(path)), need)) {
-            m_pathRaster->ensure(path, need, logicalSizeForPath(path), climbPolicy);
-        }
-        return false;
-    }
-    if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
-        QImage host = hostSample;
-        if (host.isNull()) {
-            host = ImageCache::get(path);
-        }
-        if (host.isNull()) {
-            return false;
-        }
-        auto kind = (act.type == AT::AttachSoft)
-            ? SessionAppearance::PixelKind::SoftPreview
-            : SessionAppearance::PixelKind::FullSource;
-        if (!canAcceptDisplaySample(item, host, kind)) {
-            // Gallery LQIP tile: force SoftPreview when host is a real upgrade.
-            const int shown = item->displayPixelLongEdge();
-            const int hostEdge = ImageCache::longEdge(host);
-            if (!(isGalleryMode()
-                  && shown <= DisplayQuality::kLqipMaxEdge
-                  && hostEdge > shown)) {
-                return false;
-            }
-            kind = SessionAppearance::PixelKind::SoftPreview;
-        }
-        const QSize before = item->imageSize();
-        if (isImageMode()) {
-            installImageModeSampleInPlace(item, path, host, kind);
-        } else {
-            installDisplayPixels(item, host, kind, item->sessionId());
-            item->update();
-            if (m_scene) {
-                m_scene->update(item->sceneBoundingRect());
-            }
-        }
-        const bool sizeChanged = (item->imageSize() != before);
-        if (act.type == AT::AttachSoft) {
-            syncItemDisplaySurface(item, ImageCache::longEdge(host),
-                m_pathRaster && m_pathRaster->isClimbPending(path));
-            const DisplaySurface::SurfaceId sid =
-                static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
-            const DisplaySurface::Action again =
-                (sid != DisplaySurface::kInvalidSurfaceId)
-                    ? m_displayPipeline.displaySurfaces().evaluate(sid)
-                    : DisplaySurface::decide(
-                          displaySurfaceStateForItem(
-                              item, ImageCache::longEdge(host), false));
-            if (again.type == AT::ScheduleAsyncMaterialize) {
-                scheduleAsyncHostRematerialize(
-                    path, item->sessionId(),
-                    wantAppearanceForItem(item, item->sessionId()));
-            } else if (again.type == AT::ScheduleClimb && m_pathRaster
-                       && !isGalleryMode()) {
-                const int need = again.climbNeedEdge > 0 ? again.climbNeedEdge
-                                                         : fallbackNeedEdge;
-                if (need > 0) {
-                    m_pathRaster->ensure(path, need, logicalSizeForPath(path),
-                                         climbPolicy);
-                }
-            }
-        }
-        return sizeChanged;
-    }
-    return false;
+    return m_displayPipeline.applyDisplaySurfaceAction(item, act, hostSample, fallbackNeedEdge, climbPolicy);
 }
 
 bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
@@ -2469,102 +2331,22 @@ void ImageView::syncImageFocusSurfaceState()
 
 void ImageView::driveImageFocusSurface()
 {
-    if (!isImageMode() || m_slideshow.hud().isProgressActive()) {
-        return;
-    }
-    // Key-repeat: install soft only. evaluate() → ScheduleClimb / async bake
-    // would pathRaster->ensure every skipped path (bypassed requestEscalateClimb
-    // nav-hot guard). Settle loadImage drives the surface once.
-    if (m_slideshow.hud().isNavHot()) {
-        return;
-    }
-    syncImageFocusSurfaceState();
-    if (m_displayPipeline.imageFocusSurfaceRef() == DisplaySurface::kInvalidSurfaceId) {
-        return;
-    }
-    const DisplaySurface::Binding *b =
-        m_displayPipeline.displaySurfaces().binding(m_displayPipeline.imageFocusSurfaceRef());
-    if (!b) {
-        return;
-    }
-    const DisplaySurface::Action action = m_displayPipeline.displaySurfaces().evaluate(m_displayPipeline.imageFocusSurfaceRef());
-    const QString path = b->path;
-    if (path.isEmpty()) {
-        return;
-    }
-    ImageItem *item = primaryItem();
-    if (!item || item->path() != path) {
-        return;
-    }
-    SessionImageId sid = b->sessionId;
-    if (sid == kInvalidSessionImageId) {
-        sid = item->sessionId() != kInvalidSessionImageId ? item->sessionId()
-                                                          : m_sessionId.currentIdValue();
-    }
-
-    Q_UNUSED(sid);
-    {
-        const auto pol =
-            ThumtooCache::hasDurableTilesKnown(path)
-                ? PathRasterService::ClimbPolicy::SoftDisplay
-                : PathRasterService::ClimbPolicy::EscalateToFull;
-        (void)applyDisplaySurfaceAction(
-            item, action, QImage(),
-            cappedDisplayEdgeForPath(path, 0), pol);
-    }
+    m_displayPipeline.driveImageFocusSurface();
 }
 
 void ImageView::registerItemDisplaySurface(ImageItem *item)
 {
-    if (!item || item->path().isEmpty()) {
-        return;
-    }
-    unregisterItemDisplaySurface(item);
-    DisplaySurface::Kind kind = DisplaySurface::Kind::GalleryTile;
-    if (isWorkspaceMode()) {
-        kind = DisplaySurface::Kind::WorkspaceItem;
-    } else if (isImageMode()) {
-        kind = DisplaySurface::Kind::ImageFocus;
-    }
-    const DisplaySurface::SurfaceId id = m_displayPipeline.displaySurfaces().bind(
-        kind, item->path(), item->sessionId());
-    item->setDisplaySurfaceId(id);
+    m_displayPipeline.registerItemDisplaySurface(item);
 }
 
 void ImageView::unregisterItemDisplaySurface(ImageItem *item)
 {
-    if (!item) {
-        return;
-    }
-    const qint64 sid = item->displaySurfaceId();
-    if (sid == 0) {
-        return;
-    }
-    m_displayPipeline.displaySurfaces().unbind(static_cast<DisplaySurface::SurfaceId>(sid));
-    item->setDisplaySurfaceId(0);
+    m_displayPipeline.unregisterItemDisplaySurface(item);
 }
 
 void ImageView::syncItemDisplaySurface(ImageItem *item, int hostLongEdge,
                                        bool climbPending)
 {
-    if (!item) {
-        return;
-    }
-    if (item->displaySurfaceId() == 0) {
-        registerItemDisplaySurface(item);
-    }
-    const DisplaySurface::SurfaceId id =
-        static_cast<DisplaySurface::SurfaceId>(item->displaySurfaceId());
-    if (id == DisplaySurface::kInvalidSurfaceId) {
-        return;
-    }
-    const DisplaySurface::State ds =
-        displaySurfaceStateForItem(item, hostLongEdge, climbPending);
-    m_displayPipeline.displaySurfaces().setNeed(id, ds.needEdge);
-    m_displayPipeline.displaySurfaces().setFrozen(id, ds.frozen);
-    m_displayPipeline.displaySurfaces().setHostLongEdge(id, ds.hostLongEdge);
-    m_displayPipeline.displaySurfaces().setClimbPending(id, ds.climbPending);
-    m_displayPipeline.displaySurfaces().setWant(id, ds.want);
-    m_displayPipeline.displaySurfaces().setAttached(id, ds.attachedKind, ds.haveDisplayEdge,
-                                  ds.applied);
+    m_displayPipeline.syncItemDisplaySurface(item, hostLongEdge, climbPending);
 }
+
