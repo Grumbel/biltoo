@@ -360,7 +360,7 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
 keeps identity correct.
 
-**Global path RAM tip history (1400–1435):**
+**Global path RAM tip history (1400–1438):**
 
 | Range | Summary |
 |-------|---------|
@@ -376,6 +376,7 @@ keeps identity correct.
 | **1429** | `tickPrimaryTileLod` public controller-host API (Gallery restore) |
 | **1430–1431** | Drop coordinator `friend`; public accessors; pathRam priority docs |
 | **1432–1435** | Trim debug log; `dropTilePrefetchPath`; destroyCanvasItem wire; PERFORMANCE |
+| **1436–1438** | Completion touches path LRU; env override debug log; rule renumber |
 
 ### Session / archive replace (biltoo-1233 / 1234)
 

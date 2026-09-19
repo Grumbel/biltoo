@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1438-tile-completion-lru-env-log.** Completion touches path LRU; env override debug.
+Prior: **1435**. Commits 1436–1438.
+
+### Commits
+1. **1436** `TileLodController::tick` touches registry when completions apply
+2. **1437** Log env overrides under `BILTOO_TILE_DEBUG`
+3. **1438** TILE_LOD rule renumber + implementation status
+
+### Apply
+```bash
+git pull /path/to/biltoo-1438-tile-completion-lru-env-log.bundle HEAD
+```
+Requires tip **1435**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1435-tile-trim-log-drop-prefetch.** Trim debug; dropTilePrefetchPath; PERFORMANCE.
 Prior: **1431**. Commits 1432–1435.
 
