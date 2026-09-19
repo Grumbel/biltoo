@@ -342,3 +342,4 @@ part of early-phase exit criteria).
 - **SlideshowClocks** intervalFaster/Slower; ZoomBlur coverScale/clampPixel; main/workspace atLeast1.
 - **ZoomBlur::workSize**; **ViewTransform::nonNeg(int)** for progress/margins/budget.
 - **ContentXform::clampEstimatedEdge**; **ColorAdjustments::clampUnit**; residual nonNeg/atLeast1.
+- **FilmstripGeometry** virtualOverscan/seedVirtualRange; DisplayEdge/ImageCache atLeast1.

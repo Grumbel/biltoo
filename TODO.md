@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1365-filmstrip-virtual-atleast1.** FilmstripGeometry virtual
+range helpers; DisplayEdge/ImageCache atLeast1.
+Prior: **1364**.
+
+### Change
+- `FilmstripGeometry::{virtualOverscan,seedVirtualRange}`; letterbox atLeast1
+- `DisplayEdgePolicy::cappedDisplayEdge` and `ImageCache::rgbaCostKiB` use atLeast1
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1365**)
+```bash
+git pull /path/to/biltoo-1365-filmstrip-virtual-atleast1.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1364-estimated-edge-unit-residuals.** clampEstimatedEdge,
 clampUnit, residual nonNeg/atLeast1 wiring.
 Prior: **1363**.
