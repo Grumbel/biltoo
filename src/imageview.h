@@ -724,6 +724,8 @@ public:
                                   const QString &path, const QImage &display);
     ImageItem *resolveCropEnterTarget();
     QPointF workspaceAnchorSceneForItem(ImageItem *item) const;
+    bool completeCropEnterUnderHold(ImageItem *item,
+                                    const QPointF &workspaceAnchorScene);
     bool enterCropModeFromUi();
     /**
      * Best host raster for crop / content bake / Workspace restore.

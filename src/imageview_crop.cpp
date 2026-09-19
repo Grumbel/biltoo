@@ -326,6 +326,23 @@ QPointF ImageView::workspaceAnchorSceneForItem(ImageItem *item) const
     return item->mapToScene(QPointF(0.0, 0.0));
 }
 
+
+bool ImageView::completeCropEnterUnderHold(ImageItem *item,
+                                           const QPointF &workspaceAnchorScene)
+{
+    // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
+    ViewportUpdateHold paintHold(viewport());
+    if (!prepareCropModeFullImage(item)) {
+        abortCropEnterFailed(item);
+        return false;
+    }
+    if (isWorkspaceMode()) {
+        finishWorkspaceCropEnter(item, workspaceAnchorScene);
+    }
+    notifyCropModeEntered();
+    return true;
+}
+
 bool ImageView::enterCropModeFromUi()
 {
     ImageItem *item = resolveCropEnterTarget();
@@ -337,19 +354,7 @@ bool ImageView::enterCropModeFromUi()
     // m_crop.active() stays false until after the first draft attach.
     beginCropEnterSession(item);
     const QPointF workspaceAnchorScene = workspaceAnchorSceneForItem(item);
-    // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
-    {
-        ViewportUpdateHold paintHold(viewport());
-        if (!prepareCropModeFullImage(item)) {
-            abortCropEnterFailed(item);
-            return false;
-        }
-        if (isWorkspaceMode()) {
-            finishWorkspaceCropEnter(item, workspaceAnchorScene);
-        }
-        notifyCropModeEntered();
-    }
-    return true;
+    return completeCropEnterUnderHold(item, workspaceAnchorScene);
 }
 
 void ImageView::setCropMode(bool on)
