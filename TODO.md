@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1399-pagesel-ss-settings-layout-vertical.** Compile fix + helpers
+on tip 1398.
+Prior: **1398**.
+
+### Change
+1. Fix: remove duplicate `void PageGuideSession::setSelected` (keep bool return)
+2. `SlideshowSettings::{setPanZoomFactor,setTransitionDurationMs}` report change
+3. `PageGuideSession::setPage` reports change (in fix commit)
+4. `CropSession::clearAwaitingFull` (in fix commit)
+5. `layoutIsVertical`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1399-pagesel-ss-settings-layout-vertical.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1399).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1398-facing-fitfill-croprot-selectids.** Pure helpers on tip 1397.
 Prior: **1397**.
 

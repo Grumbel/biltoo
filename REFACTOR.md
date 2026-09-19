@@ -151,6 +151,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **SessionPathOrder** isEmpty/size.
 - **layoutIsFacing** / **layoutIsSideBySide**; **ViewFraming** fit/fill transitions.
 - **CropSession::setRotation**; **SessionBindBook::takeSelectIds**.
+- **PageGuideSession** setSelected fix + setPage; **SlideshowSettings** pan-zoom/duration.
+- **CropSession::clearAwaitingFull**; **layoutIsVertical**.
 
 
 ## Current pain (evidence)
