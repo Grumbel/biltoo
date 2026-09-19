@@ -111,6 +111,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **CentreProgress::matchesTitlePrefix**; **MotionScrollChrome::release**.
 - **ImageSizeBook** provisional stand-in helpers; **GallerySoft** decode-window budgets.
 - **LayoutApplyGuard::Scoped**; **ViewFraming::kindFromFitFill**.
+- **SessionNavFlags** nav transitions; **TextLayerSession** rubberRect; **PerfStats** slow threshold.
+- **AttentionSession::clearSelected**; **CanvasBackground** colour/pattern setters.
 
 
 ## Current pain (evidence)

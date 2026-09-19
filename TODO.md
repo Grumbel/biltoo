@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1379-navflags-text-perf-attention-canvasbg.** Bag transitions on tip 1378.
+Prior: **1378**.
+
+### Change
+1. `SessionNavFlags::{setImageModeNav,setGalleryReturnAvailable}`
+2. `TextLayerSession::updateRubber` → `ViewTransform::rubberRect`
+3. `PerfStats::{kWarnDecodeWindowUs,lastDecodeWindowSlow}`
+4. `AttentionSession::clearSelected`
+5. `CanvasBackground::{setColor,setColorAlt,setPattern}` wired on ImageView
+
+### Apply
+```bash
+git pull /path/to/biltoo-1379-navflags-text-perf-attention-canvasbg.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1379).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1378-standin-softbudget-layoutguard-stickykind.** Pure helpers on tip 1377.
 Prior: **1377**.
 
