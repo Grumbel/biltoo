@@ -37,6 +37,8 @@ struct CanvasBackground {
 
     const QColor &primaryColor() const { return color; }
 
+    const QColor &altColor() const { return colorAlt; }
+
     bool isWorkspaceShowDefault() const { return workspaceShowDefault; }
 
     bool hasWorkspaceTile() const { return !workspaceTile.isNull(); }

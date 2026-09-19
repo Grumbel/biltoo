@@ -784,7 +784,7 @@ public:
      */
     QColor slideshowPadColor() const;
     void setBackgroundColorAlt(const QColor &color);
-    QColor backgroundColorAlt() const { return m_canvasBg.primaryColor()Alt; }
+    QColor backgroundColorAlt() const { return m_canvasBg.altColor(); }
     void setBackgroundPattern(BackgroundPattern pattern);
     BackgroundPattern backgroundPattern() const { return m_canvasBg.pattern; }
     /** When true, checkerboard is used only in Workspace; other modes stay solid. */
