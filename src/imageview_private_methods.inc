@@ -88,7 +88,6 @@
 
 
 
-    tilelod::TileLodController *slideshowTilesForPath(const QString &path) const;
 
 
 
@@ -107,10 +106,6 @@
 
 
 
-
-
-    /** Viewport × motion headroom → atlas budget (see SlideshowAtlasPolicy). */
-    DwellAtlasParams dwellAtlasParams() const;
 
 
 
@@ -302,9 +297,6 @@
 
 
 
-
-    /** SessionImageId for a session path (path order), or invalid. */
-    SessionImageId sessionIdForPath(const QString &path) const;
 
 
     /** Invoked by ImageItem during handle interaction for live status updates. */

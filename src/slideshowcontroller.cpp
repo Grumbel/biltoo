@@ -28,6 +28,9 @@
 #include <QtMath>
 #include <algorithm>
 #include <cstdlib>
+#include <QFileInfo>
+#include "biltoo_logging.h"
+#include "imageloader.h"
 
 
 SlideshowController::SlideshowController(ImageView *view)
@@ -399,7 +402,7 @@ void SlideshowController::reapplySlideshowFraming()
         if (m_view->viewport()) {
             m_view->viewport()->update();
         }
-        emit statusChanged();
+        emit m_view->statusChanged();
     }
 }
 
@@ -535,7 +538,7 @@ void SlideshowController::restoreImageFramingAfterSlideshow()
     if (m_view->viewport()) {
         m_view->viewport()->update();
     }
-    emit statusChanged();
+    emit m_view->statusChanged();
 }
 
 
@@ -939,7 +942,7 @@ void SlideshowController::onSlideshowRasterReady(const QString &path, const QIma
     // Climb while the *phase buffer* is still short of target (not only when
     // the host cache edge increases).
     if (m_view->m_pathRaster) {
-        const int target = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
+        const int target = m_view->cappedDisplayEdgeForPath(path, slideshowTargetEdge());
         const int need = SlideshowAtlasPolicy::needEdge(target);
         const int phaseHave =
             (phase().isFromPath(path)) ? ImageCache::longEdge(phase().fromImageRef())
@@ -1661,7 +1664,7 @@ void SlideshowController::preloadSlideshowImage(const QString &path)
     if (hud().isNavHot()) {
         return;
     }
-    const int targetEdge = cappedDisplayEdgeForPath(path, slideshowTargetEdge());
+    const int targetEdge = m_view->cappedDisplayEdgeForPath(path, slideshowTargetEdge());
     const int need = SlideshowAtlasPolicy::needEdge(targetEdge);
     const QSize native = m_view->logicalSizeForPath(path);
     const QImage cached = ImageCache::get(path);
@@ -2145,7 +2148,7 @@ bool SlideshowController::prepareSlideshowMotionDwell(ImageItem *item)
     if (host.isNull()) {
         return false;
     }
-    QImage dwell = host;
+    QImage dwellImg = host;
     WorkspaceItemState app;
     if (!path.isEmpty()
         && snapshotSlideshowContentAppearance(path, &app)
@@ -2158,10 +2161,10 @@ bool SlideshowController::prepareSlideshowMotionDwell(ImageItem *item)
         const QImage oriented = SessionAppearance::materializeDisplay(
             soft, app, SessionAppearance::PixelKind::SoftPreview);
         if (!oriented.isNull()) {
-            dwell = oriented;
+            dwellImg = oriented;
         }
     }
-    dwell().setSourceImage(dwell);
+    dwell().setSourceImage(dwellImg);
     // Keep pure-phase buffers in sync when progress is already active (start
     // path arms phase first; motion-only path must not leave m_ssFrom empty).
     if (hud().isProgressActive() && !path.isEmpty()) {
@@ -2172,8 +2175,8 @@ bool SlideshowController::prepareSlideshowMotionDwell(ImageItem *item)
             const bool applied =
                 snapshotSlideshowContentAppearance(path, &app2)
                 && SessionAppearance::hasContentAppearance(app2)
-                && !dwell.isNull();
-            phase().setFromImage(dwell, applied);
+                && !dwellImg.isNull();
+            phase().setFromImage(dwellImg, applied);
         }
     }
     // Align underlay camera to slideshow zoom before hiding it so cancel/stop

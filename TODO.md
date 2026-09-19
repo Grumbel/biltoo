@@ -2,6 +2,28 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1601-fix-slideshow-controller-compile.** Fix SlideshowController compile errors after Tier 1b method move.
+Prior: **1600**.
+
+### Change
+- Decls: `sessionIdForPath`, `dwellAtlasParams`, `slideshowTilesForPath` on controller
+- `startSlideshowMotion(durationMs, initialProgress = 0.0)`
+- Includes: `imageloader.h`, `biltoo_logging.h`, `QFileInfo`, `imageview_types.h`
+- `emit m_view->statusChanged()`; `m_view->cappedDisplayEdgeForPath(...)`
+- Rename local `dwell` → `dwellImg` in `prepareSlideshowMotionDwell` (shadowed `dwell()`)
+- Drop orphan ImageView private decls for methods that live only on the controller
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1601-fix-slideshow-controller-compile.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1600-phase6-tier2a-crop-attention-state.** Phase 6 Tier 2a: CropController + AttentionController own session state; drop unused CropAppearanceCommand friend.
 Prior: **1599**.
 

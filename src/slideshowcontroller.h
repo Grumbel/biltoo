@@ -5,6 +5,7 @@
 #define SLIDESHOWCONTROLLER_H
 
 #include "slideshowtypes.h"
+#include "imageview_types.h"
 #include "motionscrollchrome.h"
 #include "displaysurface.h"
 
@@ -22,6 +23,7 @@
 class ImageView;
 class ImageItem;
 class QPainter;
+namespace tilelod { class TileLodController; }
 
 /**
  * Slideshow collaborator for ImageView (Phase 6 Tier 1).
@@ -159,11 +161,15 @@ public:
     void resetItemPlacementForMotion(ImageItem *item);
     void armMotionBiasForPath(ImageItem *item, const QString &path);
     void retargetSlideshowMotionDuration(int durationMs);
-    void startSlideshowMotion(int durationMs, qreal initialProgress);
+    void startSlideshowMotion(int durationMs, qreal initialProgress = 0.0);
     void tickSlideshowPhaseMotionClocks();
     void tickSlideshowDwellMotionClock();
     void tickSlideshowMotion();
     QString sessionBadgeText() const;
+
+    SessionImageId sessionIdForPath(const QString &path) const;
+    DwellAtlasParams dwellAtlasParams() const;
+    tilelod::TileLodController *slideshowTilesForPath(const QString &path) const;
 
 private:
     ImageView *m_view = nullptr; // not owned
