@@ -93,7 +93,7 @@ void ImageView::alignCropFrameCenterToScene(ImageItem *item, const QPointF &scen
     if (!item || !m_crop.hasValidRect()) {
         return;
     }
-    const QPointF current = item->mapToScene(m_crop.currentRect().center());
+    const QPointF current = item->mapToScene(m_crop.draftCenterLocal());
     if (!qIsFinite(current.x()) || !qIsFinite(current.y())
         || !qIsFinite(sceneAnchor.x()) || !qIsFinite(sceneAnchor.y())) {
         return;
@@ -999,7 +999,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         const qreal cropH = m_crop.currentRect().height();
         const qreal footW = cropW * sx0;
         const qreal footH = cropH * sy0;
-        const QPointF cropSceneCenter = item->mapToScene(m_crop.currentRect().center());
+        const QPointF cropSceneCenter = item->mapToScene(m_crop.draftCenterLocal());
 
         const QString path = item->path();
         QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
@@ -1658,7 +1658,7 @@ void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
     if (h == CropHandle::Rotate) {
         m_crop.setRotateStart(
             m_crop.currentRotation(),
-            PlacementLinear::angleAbout(m_crop.currentRect().center(), startLocal));
+            PlacementLinear::angleAbout(m_crop.draftCenterLocal(), startLocal));
     }
 }
 

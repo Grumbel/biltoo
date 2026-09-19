@@ -376,6 +376,9 @@ public:
 
     const QRectF &currentRect() const { return rect; }
 
+    QPointF draftCenterLocal() const { return rect.center(); }
+
+
     qreal currentRotation() const { return rotation; }
 
     const QRectF &dragStartRectRef() const { return dragStartRect; }
