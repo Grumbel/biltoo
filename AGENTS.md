@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-1520-crop-session-apply-store**.
-Latest tip: **biltoo-1520-crop-session-apply-store**. Next bundle number: **1521**
+Latest agent handoff: **TODO.md → biltoo-1523-crop-session-enter-apply**.
+Latest tip: **biltoo-1523-crop-session-enter-apply**. Next bundle number: **1524**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
@@ -85,24 +85,54 @@ Windows / cross-compile feasibility (not a scheduled port).
 ### Bundle handovers (agents)
 
 Agents often work in a sandbox **without** write access to the user’s real
-git remotes. The reliable handoff is:
+git remotes. The reliable handoff is a **git bundle that fast-forwards from
+the human’s current tip**.
 
-1. Commit on a local clone (often under `/tmp/…`).
-2. `git bundle create /path/to/biltoo-NNN-slug.bundle HEAD`
-3. Copy the file into a place the chat UI can expose as a **downloadable**
-   artifact (this session: `/home/workdir/artifacts/`).
-4. Mention the path in the reply so the human can `git pull` the bundle.
+#### Critical: base on upstream tip, never parallel history
 
-**Do not** end a coding turn with only a commit hash and no bundle unless the
-human can already pull that commit from a remote they control. Prefer always
-emitting a numbered `.bundle` for any tip the human is expected to integrate.
+1. **Fetch what the human actually has** before starting:
+   ```bash
+   git fetch origin
+   git checkout -B tip origin/master   # or the tip recorded in TODO.md
+   git rev-parse HEAD                  # this SHA is the bundle prerequisite
+   ```
+2. **Commit only new work on top of that tip.** Do **not** rebuild earlier
+   tips with different commit SHAs (parallel history). `git pull --ff-only`
+   of a parallel stack will refuse or leave the repo in a dead end.
+3. **Create the bundle from the prerequisite tip through HEAD:**
+   ```bash
+   BASE=$(git merge-base HEAD origin/master)   # usually origin/master tip
+   # Prefer the explicit tip the human is on (from TODO / origin/master):
+   BASE=$(git rev-parse origin/master)
+   git bundle create /path/to/biltoo-NNN-slug.bundle ${BASE}..HEAD
+   git bundle list-heads /path/to/biltoo-NNN-slug.bundle   # must show HEAD
+   git bundle verify /path/to/biltoo-NNN-slug.bundle       # requires ${BASE}
+   ```
+4. Copy into `/home/workdir/artifacts/` and name
+   `biltoo-{revCount}-{short-slug}.bundle` (never reuse NNN).
+5. **One artifact tip is enough:** include the full stack of *new* commits
+   since `${BASE}` in a single bundle. Do not delete intermediate bases the
+   human still needs unless the new bundle starts from `origin/master`.
+
+**Wrong (causes non-stacking tips):**
+- `git bundle create foo.bundle HEAD` with no range (opaque prerequisites)
+- Rebuilding 1519–1521 from an older tip while upstream already has different
+  SHAs for the same work
+- Bundle requires tip X after tip X was deleted from artifacts and never pushed
+
+**Right:**
+```bash
+git pull --ff-only /path/to/biltoo-NNN-slug.bundle HEAD
+```
+Prerequisite SHA in `git bundle verify` must equal the human’s `HEAD`
+(or an ancestor they still have).
 
 Apply on the human side:
 
 ```bash
 cd ~/projects/biltoo
-git pull /path/to/biltoo-NNN-slug.bundle HEAD
-# or: git fetch bundle.file HEAD:refs/heads/agent-tip && git merge …
+git fetch origin && git merge --ff-only origin/master   # stay current
+git pull --ff-only /path/to/biltoo-NNN-slug.bundle HEAD
 ```
 
 thumtoo is a **separate** repo with its own sequence (`thumtoo-NNN-…`). Keep

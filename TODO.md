@@ -2,6 +2,31 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1523-crop-session-enter-apply.** Enter/Apply helpers on upstream tip 1520.
+Prior: **1520** (`824440a` / origin/master). Commits 1523a (+ docs + bundle rules).
+
+### Commits
+1. installKeep/DraftEnterDisplay, beginCropEnterSession, handleNullEnterFullRaster,
+   resolveApplyHostAndState, captureApplyDraftMetrics, materializeApplyBake,
+   finalizeCropApplySuccess, paintCropFrameDecorations, fillSessionCropFromItem
+2. AGENTS.md: correct git bundle stacking rules (base on origin tip, `${BASE}..HEAD`)
+
+### Bundle stacking (read AGENTS.md § Bundle handovers)
+Always `git fetch origin` first. Bundle **must** require the human’s current tip
+SHA (`origin/master`), not a parallel rebuild of older tips.
+
+### Apply (on tip **1520** / `824440a` / upstream master)
+```bash
+git pull --ff-only /path/to/biltoo-1523-crop-session-enter-apply.bundle HEAD
+```
+Includes **1523** only (stacks on pushed tip 1520).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1520-crop-session-apply-store.** Apply host/state/store helpers and activate after install.
 Prior: **1519**. Commits 1520a–1520c (+ docs).
 
