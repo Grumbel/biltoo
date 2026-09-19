@@ -132,19 +132,8 @@ bool ImageView::enterCropModeFromUi()
         return false;
     }
     cancelZoomRegion();
-    // Lock identity for the whole crop session (IDENTITY.md).
-    // Freeze sample installs immediately — before prepare attaches the draft.
-    // m_crop.active() stays false until after the first draft attach (chrome timing);
-    // freeze must not wait on m_crop.active() or ladder/async can land in between.
-    m_crop.bindTarget(item, item->sessionId(), item->path());
-    item->setTileLodSuppressed(true);
-    if (m_pathRaster && !m_crop.draftPathRef().isEmpty()) {
-        m_pathRaster->cancel(m_crop.draftPathRef());
-    }
-    // m_crop.active() is set only after the full-frame draft is installed (see
-    // prepareCropModeFullImage / end of this function). Setting it earlier
-    // painted one frame of crop chrome on the still-cropped bake.
-    // Snapshot appearance before full-image reload so Close can be undone.
+    // Lock identity + enter snapshot + unrotate placement (IDENTITY.md).
+    // m_crop.active() stays false until after the first draft attach.
     QImage enterSrc = item->sourceImage().copy();
     if (enterSrc.isNull()) {
         enterSrc = item->previewImage().copy();
@@ -152,21 +141,14 @@ bool ImageView::enterCropModeFromUi()
     WorkspaceItemState enterSt = captureState(item);
     enterSt.hasCrop = item->sessionHasCrop();
     enterSt.cropRect = item->sessionCropRect();
-    // cropRotation / cropSourceSize come from captureState → appearance.
-    // Soft-only tiles have preview only; still a valid enter snapshot.
-    m_crop.setEnterSnapshot(enterSrc, enterSt,
-                            !enterSrc.isNull() || item->hasDisplayPixels());
-    // Crop handles are axis-aligned in item space; free Workspace placement
-    // rotation makes rubber-band and edge grips unusable. Unrotate for the
-    // crop session and restore on exit.
-    // Workspace: remember where the *displayed* image centre sits so the
-    // restored crop frame can stay fixed while the full image grows around it.
-    const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
-    m_crop.stashPlacement(item->itemRotation(), item->itemShear());
-    if (m_crop.hasStashedPlacement()) {
-        item->setItemRotation(0.0);
-        item->setItemShear(0.0);
+    m_crop.beginEnterSession(item, enterSrc, enterSt,
+                             !enterSrc.isNull() || item->hasDisplayPixels());
+    item->setTileLodSuppressed(true);
+    if (m_pathRaster && !m_crop.draftPathRef().isEmpty()) {
+        m_pathRaster->cancel(m_crop.draftPathRef());
     }
+    // Workspace: remember displayed image centre so the crop frame can stay fixed.
+    const QPointF workspaceAnchorScene = item->mapToScene(QPointF(0.0, 0.0));
     // One paint after full-frame draft is ready (no intermediate crop-on-old-box).
     if (viewport()) {
         viewport()->setUpdatesEnabled(false);

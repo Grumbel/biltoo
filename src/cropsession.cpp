@@ -135,3 +135,19 @@ void CropSession::setRectFromSourcePixelTrim(const QRectF &contentRect,
     setRotation(0.0);
     setAllowExpand(false);
 }
+
+void CropSession::beginEnterSession(ImageItem *item, const QImage &enterSrc,
+                                    const WorkspaceItemState &enterSt,
+                                    bool snapshotValid)
+{
+    if (!item) {
+        return;
+    }
+    bindTarget(item, item->sessionId(), item->path());
+    setEnterSnapshot(enterSrc, enterSt, snapshotValid);
+    stashPlacement(item->itemRotation(), item->itemShear());
+    if (hasStashedPlacement()) {
+        item->setItemRotation(0.0);
+        item->setItemShear(0.0);
+    }
+}

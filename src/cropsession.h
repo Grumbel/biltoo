@@ -183,6 +183,13 @@ public:
         enterState = {};
     }
 
+    /**
+     * Bind target, enter snapshot, and zero placement rotation for crop grips.
+     * Host still owns PathRaster cancel, tile LOD suppress, and full-frame install.
+     */
+    void beginEnterSession(ImageItem *item, const QImage &enterSrc,
+                           const WorkspaceItemState &enterSt, bool snapshotValid);
+
     void stashPlacement(qreal rot, qreal shear)
     {
         stashedPlacementRotation = rot;
