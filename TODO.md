@@ -2,6 +2,23 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1603-fix-controller-init-order.** ImageView: declare m_cropCtrl/m_attentionCtrl before m_workspace (match ctor; silence -Wreorder).
+Prior: **1602** (includes m_view->findItemBySessionId).
+
+### Note
+If you still see `findItemBySessionId` undeclared **without** `m_view->`, tip **1602** is not applied — use this full-stack bundle.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1603-fix-controller-init-order.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1602-fix-slideshow-findItem.** SlideshowController: m_view->findItemBySessionId in sessionIdForPath.
 Prior: **1601**.
 

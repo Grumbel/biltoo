@@ -386,6 +386,9 @@
     GalleryController m_gallery;
     /** Phase 6 Tier 1: slideshow state (phase/dwell/HUD/settings/ZoomBlur/motion). */
     SlideshowController m_slideshow;
+    /** Phase 6 Tier 2a: crop/attention session state on controllers. */
+    CropController m_cropCtrl;
+    AttentionController m_attentionCtrl;
     /** Workspace-mode collaborator (stash, free-form snapshot, transitions). */
     WorkspaceController m_workspace;
     /** Image-mode collaborator (enter transition). */
@@ -485,9 +488,6 @@
 
     ItemInteractSession m_itemInteract;
 
-    /** Phase 6 Tier 2a: crop/attention session state on controllers. */
-    CropController m_cropCtrl;
-    AttentionController m_attentionCtrl;
     /** Image-mode focus surface (DisplaySurfaceController). Invalid outside Image. */
     DisplaySurfaceController m_displaySurfaces;
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
