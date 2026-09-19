@@ -2,6 +2,30 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1479-settings-crop-header.** Settings letterbox, crop stash, header wrappers.
+Prior: **1478**. Commits 1479a–1479c (+ docs).
+
+### Commits
+1. **SlideshowSettings** letterbox and pad color accessors
+2. **CropSession** stashed placement geometry accessors
+3. Route **ImageView** public wrappers through bag accessors
+
+### Note
+Bag micro-accessor work is largely complete. Crop enter/apply logic still
+on ImageView. Path RAM settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1479-settings-crop-header.bundle HEAD
+```
+Requires tip **1478**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1478-fix-types-attention-centre.** Fix types; Attention; CentreProgress.
 Prior: **1477**. Commits 1478a–1478d (+ docs).
 

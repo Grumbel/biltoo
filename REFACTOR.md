@@ -231,6 +231,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   tilesPyramidQueued; **ViewFraming** sticky pan; **LayoutPrefs** columns.
 - **Fix** TextLayer/phase SurfaceId types; **AttentionSession** selected/
   rubber/drag; **CentreProgress** title/detail accessors.
+- **SlideshowSettings** letterbox/pad; **CropSession** stashed placement;
+  ImageView public wrappers routed through bag accessors.
 
 
 ## Current pain (evidence)
