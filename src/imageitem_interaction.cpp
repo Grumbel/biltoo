@@ -17,6 +17,7 @@
 
 #include <QCoreApplication>
 #include "placementlinear.h"
+#include "viewtransform.h"
 #include "imageview.h"
 
 #include <QCursor>
@@ -89,9 +90,9 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     // Washes under labels; keep image readable.
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     const QTransform dt = painter->deviceTransform();
-    const qreal sx = qMax(1e-6, qSqrt(dt.m11() * dt.m11() + dt.m12() * dt.m12()));
+    const qreal sx = ViewTransform::scaleFrom(dt);
     // Aim for ~13–16 device px font regardless of zoom.
-    const int fontPx = qBound(10, qRound(14.0 / sx), 36);
+    const int fontPx = ViewTransform::overlayFontPixelSize(sx);
     QFont of = painter->font();
     of.setBold(true);
     of.setPixelSize(fontPx);

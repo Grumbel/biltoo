@@ -104,6 +104,15 @@ inline qreal chebyshev(const QPointF &a, const QPointF &b)
     return qMax(qAbs(b.x() - a.x()), qAbs(b.y() - a.y()));
 }
 
+
+/** Device-pixel font size for overlays under a view scale (aims ~@p targetPx). */
+inline int overlayFontPixelSize(qreal viewScale, int targetPx = 14,
+                                int lo = 10, int hi = 36)
+{
+    viewScale = sanitizeViewScale(viewScale);
+    return qBound(lo, qRound(qreal(targetPx) / viewScale), hi);
+}
+
 } // namespace ViewTransform
 
 #endif // VIEWTRANSFORM_H
