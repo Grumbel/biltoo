@@ -198,10 +198,9 @@ void ImageView::clearWorkspaceBackground()
 
 void ImageView::setWorkspaceBackgroundShowDefault(bool on)
 {
-    if (m_canvasBg.workspaceShowDefault == on) {
+    if (!m_canvasBg.setWorkspaceShowDefault(on)) {
         return;
     }
-    m_canvasBg.workspaceShowDefault = on;
     if (viewport()) {
         viewport()->update();
     }
@@ -586,7 +585,7 @@ void ImageView::setSessionPosition(int index, int total, bool pulseIdentity)
     if (pulseIdentity && changed) {
         m_hudFlash.setIdentityPulse(true);
         if (m_hudFlashTimer) {
-            m_hudFlashTimer->start(1000);
+            m_hudFlashTimer->start(HudFlash::kIdentityPulseMs);
         }
     }
     if (!(changed || m_hudPrefs.visible || m_hudFlash.visible || m_hudFlash.identityPulse
@@ -670,7 +669,7 @@ void ImageView::flashHud(const QString &action, const QString &detail)
 {
     m_hudFlash.show(action, detail);
     if (m_hudFlashTimer) {
-        m_hudFlashTimer->start(1000);
+        m_hudFlashTimer->start(HudFlash::kActionFlashMs);
     }
     viewport()->update();
 }

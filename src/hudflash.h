@@ -11,6 +11,11 @@
  * Flash QTimer stays on ImageView.
  */
 struct HudFlash {
+    /** Identity badge pulse duration after session cursor moves (ms). */
+    static constexpr int kIdentityPulseMs = 1000;
+    /** Default action flash duration when callers omit an explicit ms (ms). */
+    static constexpr int kActionFlashMs = 1400;
+
     bool visible = false;
     bool identityPulse = false;
     QString action;
