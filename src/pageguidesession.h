@@ -88,9 +88,25 @@ struct PageGuideSession {
         }
     }
 
-    void setSize(const QSizeF &sz) { size = sz; }
+    /** @return true when page size changed. */
+    bool setSize(const QSizeF &sz)
+    {
+        if (size == sz) {
+            return false;
+        }
+        size = sz;
+        return true;
+    }
 
-    void setRect(const QRectF &r) { rect = r; }
+    /** @return true when page rect changed. */
+    bool setRect(const QRectF &r)
+    {
+        if (rect == r) {
+            return false;
+        }
+        rect = r;
+        return true;
+    }
 
     void setPage(const QRectF &r)
     {
