@@ -3,6 +3,7 @@
 
 #include "slideshowsettingsdialog.h"
 #include "slideshowclocks.h"
+#include "viewtransform.h"
 #include "slideshowmotiongeometry.h"
 
 #include <QCheckBox>
@@ -174,7 +175,7 @@ void SlideshowSettingsDialog::syncTransitionCap()
     // Duration is the full transition (out + in); may use the whole dwell.
     // Cap only at the interval (open-ended — no fixed 5s ceiling).
     const double intervalSec = m_intervalSpin->value();
-    const double capSec = qMax(0.0, intervalSec);
+    const double capSec = ViewTransform::nonNeg(intervalSec);
     m_blockEmit = true;
     m_transitionMsSpin->setMaximum(capSec);
     if (m_transitionMsSpin->value() > capSec) {

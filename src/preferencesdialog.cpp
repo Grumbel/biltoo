@@ -3,6 +3,7 @@
 
 #include "preferencesdialog.h"
 #include "slideshowclocks.h"
+#include "viewtransform.h"
 #include "hudappearance.h"
 #include "slideshowtypes.h"
 #include "defaultapps.h"
@@ -782,7 +783,7 @@ void PreferencesDialog::syncSlideshowTransitionCap()
     if (!m_intervalSpin || !m_slideshowTransitionMsSpin) {
         return;
     }
-    const double capSec = qMax(0.0, m_intervalSpin->value());
+    const double capSec = ViewTransform::nonNeg(m_intervalSpin->value());
     m_slideshowTransitionMsSpin->setMaximum(capSec);
     if (m_slideshowTransitionMsSpin->value() > capSec) {
         m_slideshowTransitionMsSpin->setValue(capSec);

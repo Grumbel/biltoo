@@ -182,6 +182,13 @@ inline int clampPixel(int coord, int extent)
     return qBound(0, coord, extent - 1);
 }
 
+
+/** Non-negative qreal (floors at 0). */
+inline qreal nonNeg(qreal v)
+{
+    return v < 0.0 ? 0.0 : v;
+}
+
 } // namespace ViewTransform
 
 #endif // VIEWTRANSFORM_H
