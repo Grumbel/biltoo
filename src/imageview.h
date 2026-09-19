@@ -403,8 +403,6 @@ public:
     {
         m_pathOrderBook.setOrder(paths, ids);
     }
-    SessionPathOrder &pathOrderBook() { return m_pathOrderBook; }
-    const SessionPathOrder &pathOrderBook() const { return m_pathOrderBook; }
     /** Controller host: disable Image-mode fit/fill when restoring free-form. */
     void clearFitFillModes();
     /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */
@@ -415,8 +413,6 @@ public:
     SessionAppearanceStore &appearance() { return m_appearance; }
     const SessionAppearanceStore &appearance() const { return m_appearance; }
     /** Controller host: path-keyed placement / unbound appearance cache. */
-    PathItemStateBook &itemStates() { return m_itemStateBook; }
-    const PathItemStateBook &itemStates() const { return m_itemStateBook; }
     void setItemStateForPath(const QString &path, const WorkspaceItemState &state)
     {
         m_itemStateBook.set(path, state);

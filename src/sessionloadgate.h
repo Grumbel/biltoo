@@ -105,15 +105,6 @@ public:
 
     // --- LoadRestore states ----------------------------------------------------
 
-    QList<WorkspaceItemState> &pendingRestoreStates()
-    {
-        return m_pendingRestoreStates;
-    }
-    const QList<WorkspaceItemState> &pendingRestoreStates() const
-    {
-        return m_pendingRestoreStates;
-    }
-
     int pendingRestoreCount() const { return m_pendingRestoreStates.size(); }
 
     void setPendingRestoreStates(const QList<WorkspaceItemState> &states)
@@ -138,12 +129,6 @@ public:
     }
 
     // --- Deferred scene positions ----------------------------------------------
-
-    QHash<QString, QPointF> &pendingScenePos() { return m_pendingScenePos; }
-    const QHash<QString, QPointF> &pendingScenePos() const
-    {
-        return m_pendingScenePos;
-    }
 
     void clearPendingScenePos() { m_pendingScenePos.clear(); }
 
