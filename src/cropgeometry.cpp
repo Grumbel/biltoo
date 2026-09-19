@@ -102,7 +102,7 @@ QRectF constrainToContent(QRectF rect, qreal degrees, const QRectF &bounds,
     if (rect.height() < minSide) {
         rect.setHeight(minSide);
     }
-    if (qAbs(degrees) < 0.05) {
+    if (qAbs(degrees) < kFreeRotationEps) {
         rect = rect.intersected(bounds);
         if (rect.width() < minSide) {
             rect.setWidth(minSide);
@@ -146,7 +146,7 @@ bool priorDraftNeedsExpand(const QRectF &priorInImage, const QRectF &imageBounds
         return true;
     }
     // Match ensureCropRectValid / initCropRect: ignore near-zero rotation noise.
-    if (qAbs(rotationDeg) > 0.05
+    if (qAbs(rotationDeg) > kFreeRotationEps
         && !cornersInside(draftLocal, rotationDeg, contentRect)) {
         return true;
     }

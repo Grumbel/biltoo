@@ -31,6 +31,9 @@ constexpr int kChromeMargin = 6;
 /** Min air between left (Expand/Auto) and right (Reset/Cancel/Apply) groups. */
 constexpr int kChromeGroupGapMin = 18;
 
+/** Degrees below this are treated as axis-aligned crop. */
+constexpr qreal kFreeRotationEps = 0.05;
+
 inline int clampLabelPointSize(int basePt)
 {
     return qMax(9, basePt);

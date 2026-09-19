@@ -3,6 +3,7 @@
 
 #include "sessionappearance.h"
 #include "contentxform.h"
+#include "cropgeometry.h"
 #include "viewtransform.h"
 #include "biltoo_thread.h"
 #include "coloradjust.h"
@@ -210,7 +211,7 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
             }
         }
         if (crop.width() >= 1 && crop.height() >= 1) {
-            const bool freeRot = qAbs(state.cropRotation) > 0.05;
+            const bool freeRot = qAbs(state.cropRotation) > CropGeometry::kFreeRotationEps;
             if (!freeRot) {
                 const QRect bounds(0, 0, out.width(), out.height());
                 const QRect srcRect = crop.intersected(bounds);
