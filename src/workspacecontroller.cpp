@@ -27,7 +27,7 @@ void WorkspaceController::snapshot()
             m_view->appearance().set(s.sessionId, s);
         }
         if (s.sessionIndex >= 0) {
-            m_view->itemStatesByPath().insert(s.path, s);
+            m_view->setItemStateForPath(s.path, s);
         }
     }
     // Durable view backup when the live stash is later discarded (e.g. Gallery).
@@ -57,8 +57,8 @@ void WorkspaceController::restore()
                 continue;
             }
         }
-        const auto it = m_view->itemStatesByPath().constFind(slot.path);
-        if (it == m_view->itemStatesByPath().cend()) {
+        const WorkspaceItemState *it = m_view->itemStateForPath(slot.path);
+        if (!it) {
             continue;
         }
         // Path-level appearance only for matching bound session slots (legacy).
@@ -76,9 +76,9 @@ void WorkspaceController::restore()
         slot.orientation = 0.0;
     }
     // AUDIT M27: queue every saved state (including duplicate paths) then load.
-    m_view->pendingRestoreStates() = m_savedItems;
+    m_view->setPendingRestoreStates(m_savedItems);
     for (const WorkspaceItemState &state : m_savedItems) {
-        m_view->itemStatesByPath().insert(state.path, state);
+        m_view->setItemStateForPath(state.path, state);
         m_view->scheduleRestoreLoad(state.path);
     }
     m_view->clearFitFillModes();
@@ -184,9 +184,8 @@ void WorkspaceController::restoreStashedItems()
                 }
             }
             if (samePath == 1) {
-                const auto it = m_view->itemStatesByPath().constFind(item->path());
-                if (it != m_view->itemStatesByPath().cend()) {
-                    pathFallback = *it;
+                if (const WorkspaceItemState *st = m_view->itemStateForPath(item->path())) {
+                    pathFallback = *st;
                     app = &pathFallback;
                 }
             }
@@ -252,7 +251,7 @@ void WorkspaceController::restoreFreeFormStates()
         const auto it = m_freeFormStates.constFind(item->path());
         if (it != m_freeFormStates.constEnd()) {
             m_view->applyState(item, *it);
-            m_view->itemStatesByPath().insert(item->path(), *it);
+            m_view->setItemStateForPath(item->path(), *it);
         }
     }
     if (m_hasFreeFormViewTransform) {

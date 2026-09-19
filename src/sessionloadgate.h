@@ -116,6 +116,11 @@ public:
 
     int pendingRestoreCount() const { return m_pendingRestoreStates.size(); }
 
+    void setPendingRestoreStates(const QList<WorkspaceItemState> &states)
+    {
+        m_pendingRestoreStates = states;
+    }
+
     /** Take first pending restore whose path matches @p path. */
     bool takePendingRestoreForPath(const QString &path, WorkspaceItemState *out)
     {
