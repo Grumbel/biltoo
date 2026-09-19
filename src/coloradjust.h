@@ -49,6 +49,16 @@ struct ColorAdjustments {
         hue = clampHue(hue);
         gamma = clampGamma(gamma);
     }
+
+    /**
+     * Subsample stride for vectorscope / waveform so large images stay cheap.
+     * Targets ~@p targetSamples along the long edge.
+     */
+    static int scopeSampleStep(int width, int height, int targetSamples = 120)
+    {
+        const int longEdge = qMax(1, qMax(width, height));
+        return qMax(1, longEdge / qMax(1, targetSamples));
+    }
 };
 
 QImage applyColorAdjustments(const QImage &src, const ColorAdjustments &adj);

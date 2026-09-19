@@ -32,7 +32,7 @@ void VectorScopeWidget::setFromImage(const QImage &image)
     m_plot.fill(QColor(20, 20, 24));
     if (image.isNull()) { update(); return; }
     QImage src = image.convertToFormat(QImage::Format_RGB32);
-    const int step = qMax(1, qMax(src.width(), src.height()) / 120);
+    const int step = ColorAdjustments::scopeSampleStep(src.width(), src.height());
     QPainter p(&m_plot);
     for (int y = 0; y < src.height(); y += step) {
         const QRgb *line = reinterpret_cast<const QRgb *>(src.constScanLine(y));
