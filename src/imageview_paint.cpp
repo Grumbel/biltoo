@@ -682,14 +682,14 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             const QColor b = wb.colorAlt.isValid() ? wb.colorAlt : a.lighter(120);
             fillChecker(a, b);
         } else if (wb.mode == WorkspaceBackgroundMode::ImageTile) {
-            if (m_canvasBg.workspaceTile.isNull() && !wb.imagePath.isEmpty()) {
+            if (m_canvasBg.workspaceTilePixmap().isNull() && !wb.imagePath.isEmpty()) {
                 QPixmap px(wb.imagePath);
                 if (!px.isNull()) {
                     m_canvasBg.setWorkspaceTile(px, wb.imagePath);
                 }
             }
-            if (!m_canvasBg.workspaceTile.isNull()) {
-                const QPixmap &tile = m_canvasBg.workspaceTile;
+            if (!m_canvasBg.workspaceTilePixmap().isNull()) {
+                const QPixmap &tile = m_canvasBg.workspaceTilePixmap();
                 qreal tw = qreal(ViewTransform::atLeast1(tile.width()));
                 qreal th = qreal(ViewTransform::atLeast1(tile.height()));
                 const qreal lod = CanvasPatternGeometry::tileLodFactor(tw, viewScale);
