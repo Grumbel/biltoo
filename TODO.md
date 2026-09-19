@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1557-crop-enter-tu.** Crop enter pipeline in imageview_crop_enter.cpp.
+Prior: **1556**.
+
+### Change
+- New `imageview_crop_enter.cpp` (~385 lines): enter session, install full draft, activate
+- `imageview_crop.cpp` (~174 lines): targets, align helpers, auto-trim, toggle
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1557-crop-enter-tu.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1556-crop-raster-tu.** Crop Full raster load in imageview_crop_raster.cpp.
 Prior: **1555**.
 
