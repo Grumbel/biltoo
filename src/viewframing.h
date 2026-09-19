@@ -5,6 +5,7 @@
 #define VIEWFRAMING_H
 
 #include <QtGlobal>
+#include "viewtransform.h"
 #include <QPointF>
 #include <QRectF>
 #include <QtCore/qnamespace.h>
@@ -28,8 +29,8 @@ struct ViewFraming {
 
     void clampStickyPanNorms()
     {
-        stickyPanNormX = qBound(0.0, stickyPanNormX, 1.0);
-        stickyPanNormY = qBound(0.0, stickyPanNormY, 1.0);
+        stickyPanNormX = ViewTransform::clamp01(stickyPanNormX);
+        stickyPanNormY = ViewTransform::clamp01(stickyPanNormY);
     }
 
     Qt::AspectRatioMode aspectMode() const
