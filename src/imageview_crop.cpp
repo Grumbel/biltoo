@@ -1352,9 +1352,19 @@ void ImageView::flushPendingFullRematerialize(bool pendingFull, const QString &p
     }
 }
 
+
+void ImageView::notifyCropModeLeftChrome()
+{
+    emit cropModeChanged(false);
+    emit statusChanged();
+    if (viewport()) {
+        viewport()->unsetCursor();
+        viewport()->update();
+    }
+}
+
 void ImageView::clearCropModeState()
 {
-    // Unsuppress LOD before binding is cleared.
     m_crop.releaseAllTileLod(cropSessionBoundItem());
     QString pendingPath;
     SessionImageId pendingSid = kInvalidSessionImageId;
@@ -1362,12 +1372,7 @@ void ImageView::clearCropModeState()
     const bool pendingFull =
         m_crop.takePendingFullRematerialize(&pendingPath, &pendingSid, &pendingWant);
     m_crop.clear();
-    emit cropModeChanged(false);
-    emit statusChanged();
-    if (viewport()) {
-        viewport()->unsetCursor();
-        viewport()->update();
-    }
+    notifyCropModeLeftChrome();
     flushPendingFullRematerialize(pendingFull, pendingPath, pendingSid, pendingWant);
 }
 

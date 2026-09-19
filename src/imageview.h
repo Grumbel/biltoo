@@ -1752,6 +1752,7 @@ private:
     void flushPendingFullRematerialize(bool pendingFull, const QString &pendingPath,
                                        SessionImageId pendingSid,
                                        const WorkspaceItemState &pendingWant);
+    void notifyCropModeLeftChrome();
     void clearCropModeState();
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace
