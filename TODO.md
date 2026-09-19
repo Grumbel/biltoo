@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1482-bag-accessors.** Canvas tile, Attention gesture, TextLayer rubber, crop freeze path.
+Prior: **1481**. Commits 1482a–1482d (+ docs).
+
+### Commits
+1. **CanvasBackground** workspaceTile digs → accessors
+2. **AttentionSession** gestureBefore accessors
+3. **TextLayerSession** rubberRect / searchQuery accessors
+4. **CropSession** isDraftSampleFrozenForPath
+
+### Apply
+```bash
+git pull /path/to/biltoo-1482-bag-accessors.bundle HEAD
+```
+Requires tip **1481** (or **1479** + 1480–1481).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1481-fix-accessor-compile.** Fix CropSession/ViewFraming/ImageView broken accessors.
 Prior: **1480**.
 
