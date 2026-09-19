@@ -67,7 +67,7 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
     }
     // Tool modes own the canvas: no Up-to-Gallery / prev-next edge chrome
     // (same as crop). Esc or the toolbar toggle leaves the mode.
-    if (m_crop.mode || m_attention.mode) {
+    if (m_crop.active() || m_attention.mode) {
         return EdgeZone::None;
     }
     const EdgeNavPolicy::Zone z = EdgeNavPolicy::zoneAt(
@@ -487,7 +487,7 @@ bool ImageView::tryMousePressAttention(QMouseEvent *event)
 
 bool ImageView::tryMousePressCrop(QMouseEvent *event)
 {
-    if (!m_crop.mode || event->button() != Qt::LeftButton) {
+    if (!m_crop.active() || event->button() != Qt::LeftButton) {
         return false;
     }
     const CropHandle h = cropHandleAt(event->pos());
@@ -610,7 +610,7 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
 
 bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 {
-    if (!isImageMode() || m_crop.mode || m_attention.mode
+    if (!isImageMode() || m_crop.active() || m_attention.mode
         || event->button() != Qt::LeftButton
         || event->modifiers() != Qt::NoModifier
         || !PagePath::isPageRef(classicPath())) {
@@ -634,7 +634,7 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 
 bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
 {
-    if (!isImageMode() || m_crop.mode || m_attention.mode
+    if (!isImageMode() || m_crop.active() || m_attention.mode
         || event->button() != Qt::LeftButton
         || !(event->modifiers() & Qt::ShiftModifier)
         || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))
@@ -979,7 +979,7 @@ bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
 void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
-    if (isImageMode() && !m_crop.mode && !m_attention.mode && !m_textLayer.rubberbanding
+    if (isImageMode() && !m_crop.active() && !m_attention.mode && !m_textLayer.rubberbanding
         && !m_chrome.panning && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(classicPath())) {
         if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
@@ -1053,7 +1053,7 @@ bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveCropDrag(QMouseEvent *event)
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return false;
     }
     if (m_crop.activeHandle != CropHandle::None) {
@@ -1098,7 +1098,7 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveCropHover(QMouseEvent *event)
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return false;
     }
     const CropHandle h = cropHandleAt(event->pos());
@@ -1573,7 +1573,7 @@ bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseCrop(QMouseEvent *event)
 {
-    if (!m_crop.mode || event->button() != Qt::LeftButton) {
+    if (!m_crop.active() || event->button() != Qt::LeftButton) {
         return false;
     }
     if (m_crop.activeHandle != CropHandle::None) {
@@ -1757,7 +1757,7 @@ bool ImageView::tryKeyPressAttention(QKeyEvent *event)
 
 bool ImageView::tryKeyPressCrop(QKeyEvent *event)
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return false;
     }
     if (event->key() == Qt::Key_Escape) {

@@ -33,7 +33,7 @@ ImageItem *ImageView::cropTargetItem() const
     // Crop session is bound to one subject for its entire lifetime. Never
     // re-resolve via selection or primaryItem() — that applied the draft to
     // unrelated tiles when selection changed mid-crop (IDENTITY.md).
-    if (m_crop.mode) {
+    if (m_crop.active()) {
         if (m_crop.targetItem) {
             return m_crop.targetItem;
         }
@@ -134,14 +134,14 @@ bool ImageView::enterCropModeFromUi()
     cancelZoomRegion();
     // Lock identity for the whole crop session (IDENTITY.md).
     // Freeze sample installs immediately — before prepare attaches the draft.
-    // m_crop.mode stays false until after the first draft attach (chrome timing);
-    // freeze must not wait on m_crop.mode or ladder/async can land in between.
+    // m_crop.active() stays false until after the first draft attach (chrome timing);
+    // freeze must not wait on m_crop.active() or ladder/async can land in between.
     m_crop.bindTarget(item, item->sessionId(), item->path());
     item->setTileLodSuppressed(true);
     if (m_pathRaster && !m_crop.draftPath.isEmpty()) {
         m_pathRaster->cancel(m_crop.draftPath);
     }
-    // m_crop.mode is set only after the full-frame draft is installed (see
+    // m_crop.active() is set only after the full-frame draft is installed (see
     // prepareCropModeFullImage / end of this function). Setting it earlier
     // painted one frame of crop chrome on the still-cropped bake.
     // Snapshot appearance before full-image reload so Close can be undone.
@@ -204,7 +204,7 @@ bool ImageView::enterCropModeFromUi()
         alignCropFrameCenterToScene(item, workspaceAnchorScene);
         updateWorkspaceSceneRect();
     }
-    // m_crop.mode already true (set in prepare after full-frame install).
+    // m_crop.active() already true (set in prepare after full-frame install).
     m_crop.clearInteraction();
     flashHud(tr("Crop mode"),
              tr("Apply commits · Esc cancels"));
@@ -219,7 +219,7 @@ bool ImageView::enterCropModeFromUi()
 
 void ImageView::setCropMode(bool on)
 {
-    if (on == m_crop.mode) {
+    if (on == m_crop.active()) {
         return;
     }
     if (on) {
@@ -551,7 +551,7 @@ bool ImageView::prepareCropModeFullImage(ImageItem *item)
     initCropRectFromPriorAppearance(item, app, haveApp);
 
     // Crop chrome + fitItem only after pixels and contentRect match the draft.
-    // m_crop.mode true before fitItem so layout uses orient-only full size.
+    // m_crop.active() true before fitItem so layout uses orient-only full size.
     m_crop.setMode(true);
     if (isImageMode()) {
         m_framing.armFit();
@@ -612,7 +612,7 @@ void ImageView::requestCropFullRaster(const QString &path)
 
 void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
 {
-    if (!m_crop.mode || path.isEmpty() || path != m_crop.awaitingFullPath) {
+    if (!m_crop.active() || path.isEmpty() || path != m_crop.awaitingFullPath) {
         return;
     }
     if (image.isNull()) {
@@ -708,7 +708,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
 
 void ImageView::toggleCropMode()
 {
-    setCropMode(!m_crop.mode);
+    setCropMode(!m_crop.active());
 }
 
 void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
@@ -764,7 +764,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
 void ImageView::applyAutoCrop()
 {
     ImageItem *item = cropTargetItem();
-    if (!item || !m_crop.mode) {
+    if (!item || !m_crop.active()) {
         return;
     }
     QImage src = item->sourceImage();
@@ -1191,7 +1191,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         //
         // Hold viewport paints across clear → layout → pixels → fit so the view
         // never composites crop pixels into the pre-crop contentRect (or the
-        // reverse). fitItem still runs under m_crop.mode; it must not treat Apply
+        // reverse). fitItem still runs under m_crop.active(); it must not treat Apply
         // as draft (see fitItem cropDraft).
         const bool holdPaint = viewport() && viewport()->updatesEnabled();
         if (holdPaint) {
@@ -1346,7 +1346,7 @@ void ImageView::clearCropModeState()
 
 void ImageView::leaveCropModeInternal(bool apply)
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return;
     }
     ImageItem *item = cropTargetItem();
@@ -1389,7 +1389,7 @@ QRectF ImageView::cropRectView() const
 
 QRect ImageView::cropExpandButtonView() const
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return {};
     }
     const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1398,7 +1398,7 @@ QRect ImageView::cropExpandButtonView() const
 
 QRect ImageView::cropAutoButtonView() const
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return {};
     }
     const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1407,7 +1407,7 @@ QRect ImageView::cropAutoButtonView() const
 
 QRect ImageView::cropResetButtonView() const
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return {};
     }
     const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1416,7 +1416,7 @@ QRect ImageView::cropResetButtonView() const
 
 QRect ImageView::cropCancelButtonView() const
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return {};
     }
     const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1425,7 +1425,7 @@ QRect ImageView::cropCancelButtonView() const
 
 QRect ImageView::cropCloseButtonView() const
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return {};
     }
     const CropGeometry::CropButtonLayout L = CropGeometry::cropButtonLayout(cropRectView(), viewport()->rect());
@@ -1716,7 +1716,7 @@ void ImageView::paintCropSizeBadge(QPainter &painter, const QRect &cropView)
 
 void ImageView::paintCropOverlay(QPainter &painter)
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return;
     }
     ImageItem *item = cropTargetItem();
@@ -1904,7 +1904,7 @@ void ImageView::endCropRubberBand()
 
 CropHandle ImageView::cropHandleAt(const QPoint &viewPos) const
 {
-    if (!m_crop.mode) {
+    if (!m_crop.active()) {
         return CropHandle::None;
     }
     ImageItem *item = cropTargetItem();
