@@ -493,7 +493,7 @@ bool ImageView::tryMousePressCrop(QMouseEvent *event)
     }
     const CropHandle h = cropHandleAt(event->pos());
     if (h == CropHandle::ExpandToggle) {
-        m_crop.allowExpand = !m_crop.allowExpand;
+        m_crop.setAllowExpand(!m_crop.allowExpand);
         if (!m_crop.allowExpand) {
             ensureCropRectValid(); // clamp back into the image
         }

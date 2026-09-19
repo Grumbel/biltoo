@@ -229,7 +229,15 @@ public:
 
     void setShowingFullImage(bool on) { showingFullImage = on; }
 
-    void setAllowExpand(bool on) { allowExpand = on; }
+    /** @return true when allow-expand flag changed. */
+    bool setAllowExpand(bool on)
+    {
+        if (allowExpand == on) {
+            return false;
+        }
+        allowExpand = on;
+        return true;
+    }
 
     void setRotation(qreal deg) { rotation = deg; }
 
