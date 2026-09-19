@@ -37,6 +37,23 @@ struct PageGuideSession {
         return hoverHandle == id || dragHandle == id;
     }
 
+    bool isVisible() const { return visible; }
+
+    bool hasValidRect() const
+    {
+        return rect.isValid() && rect.width() > 0 && rect.height() > 0;
+    }
+
+    bool hasValidSize() const { return size.isValid(); }
+
+    const QRectF &currentRect() const { return rect; }
+
+    const QSizeF &currentSize() const { return size; }
+
+    const QRectF &dragStartRectRef() const { return dragStartRect; }
+
+    int currentDragHandle() const { return dragHandle; }
+
     /** Begin resize from handle with starting page rect in scene space. */
     void beginResize(int handle, const QRectF &startRect)
     {

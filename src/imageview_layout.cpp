@@ -2050,7 +2050,7 @@ void ImageView::setPageGuideVisible(bool on)
     if (!m_pageGuide.setVisible(on)) {
         return;
     }
-    if (m_pageGuide.visible && !m_pageGuide.size.isValid()) {
+    if (m_pageGuide.isVisible() && !m_pageGuide.hasValidSize()) {
         const qreal pxPerMm = pageGuidePxPerMm();
         m_pageGuide.setSize(QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm));
     }
@@ -2082,7 +2082,7 @@ void ImageView::setPageGuideFromPrinter(const QPrinter &printer)
     const qreal pxPerMm = pageGuidePxPerMm();
     m_pageGuide.setSize(QSizeF(mm.width() * pxPerMm, mm.height() * pxPerMm));
     m_pageGuide.setRect(QRectF()); // printer pages stay centred on the origin
-    if (m_pageGuide.visible) {
+    if (m_pageGuide.isVisible()) {
         if (isWorkspaceMode()) {
             updateWorkspaceSceneRect();
         }
@@ -2099,7 +2099,7 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
     }
 
     if (isWorkspaceMode() && m_scene) {
-        const QRectF source = (m_pageGuide.visible && pageGuideSceneRect().isValid())
+        const QRectF source = (m_pageGuide.isVisible() && pageGuideSceneRect().isValid())
             ? pageGuideSceneRect()
             : contentExportBounds();
         if (!source.isValid() || source.isEmpty()) {
@@ -2150,10 +2150,10 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
 
 QRectF ImageView::pageGuideSceneRect() const
 {
-    if (m_pageGuide.rect.isValid() && m_pageGuide.rect.width() > 0 && m_pageGuide.rect.height() > 0) {
-        return m_pageGuide.rect;
+    if (m_pageGuide.hasValidRect()) {
+        return m_pageGuide.currentRect();
     }
-    QSizeF sz = m_pageGuide.size;
+    QSizeF sz = m_pageGuide.currentSize();
     if (!sz.isValid() || sz.width() <= 0 || sz.height() <= 0) {
         const qreal pxPerMm = pageGuidePxPerMm();
         sz = QSizeF(210.0 * pxPerMm, 297.0 * pxPerMm);
@@ -2183,7 +2183,7 @@ void ImageView::fitPageGuideToContent(qreal marginPx)
 
 void ImageView::setPageGuideSelected(bool on)
 {
-    if (!m_pageGuide.visible) {
+    if (!m_pageGuide.isVisible()) {
         on = false;
     }
     if (!m_pageGuide.setSelected(on)) {
@@ -2207,7 +2207,7 @@ int ImageView::pageGuideHandleAt(const QPoint &viewPos) const
 
 bool ImageView::beginPageGuideResize(int handle)
 {
-    if (handle < 0 || handle > 7 || !m_pageGuide.visible) {
+    if (handle < 0 || handle > 7 || !m_pageGuide.isVisible()) {
         return false;
     }
     const QRectF page = pageGuideSceneRect();
@@ -2227,7 +2227,7 @@ QRectF ImageView::pageGuideRectFromHandleDrag(const QPointF &scenePos,
     //   Ctrl    = scale about centre
     //   Shift   = lock starting aspect (corners; with or without Ctrl)
     return PageGuideGeometry::rectFromHandleDrag(
-        scenePos, m_pageGuide.dragStartRect, m_pageGuide.dragHandle,
+        scenePos, m_pageGuide.dragStartRectRef(), m_pageGuide.currentDragHandle(),
         mods & Qt::ControlModifier, mods & Qt::ShiftModifier);
 }
 

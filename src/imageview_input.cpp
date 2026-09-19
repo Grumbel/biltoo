@@ -923,7 +923,7 @@ bool ImageView::tryMousePressWorkspaceSelect(QMouseEvent *event)
                 }
             }
         }
-        if (!itemHit && m_pageGuide.visible
+        if (!itemHit && m_pageGuide.isVisible()
             && pageGuideSceneRect().contains(scenePos)) {
             if (m_scene) {
                 m_scene->clearSelection();
@@ -1245,8 +1245,8 @@ bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
         event->accept();
         return true;
     }
-    if (m_itemInteract.isHandleDragging() && m_itemInteract.handleDragItem->hasActiveHandle()) {
-        m_itemInteract.handleDragItem->updateHandleInteraction(mapToScene(event->pos()),
+    if (m_itemInteract.isHandleDragging() && m_itemInteract.currentHandleDragItem()->hasActiveHandle()) {
+        m_itemInteract.currentHandleDragItem()->updateHandleInteraction(mapToScene(event->pos()),
                                                     event->modifiers());
         viewport()->update(); // live chrome while scaling/rotating
         event->accept();
@@ -1261,13 +1261,13 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
         return false;
     }
     const QPointF scenePos = mapToScene(event->pos());
-    const qreal angle = angleAt(scenePos, m_itemInteract.rotateItem);
+    const qreal angle = angleAt(scenePos, m_itemInteract.currentRotateItem());
     // Shift is held to start free-rotate; Ctrl snaps 90°, Shift alone 45°.
     const qreal rot = PlacementLinear::placementRotationFromDrag(
-        m_itemInteract.rotateItemStart, m_itemInteract.rotateStartAngle, angle,
+        m_itemInteract.currentRotateItemStart(), m_itemInteract.currentRotateStartAngle(), angle,
         event->modifiers() & Qt::ControlModifier,
         event->modifiers() & Qt::ShiftModifier);
-    m_itemInteract.rotateItem->setItemRotation(rot);
+    m_itemInteract.currentRotateItem()->setItemRotation(rot);
     m_framing.releaseFit();
     emit statusChanged();
     event->accept();
@@ -1651,9 +1651,9 @@ bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
     if (!m_itemInteract.isHandleDragging() || event->button() != Qt::LeftButton) {
         return false;
     }
-    ImageItem *handleItem = m_itemInteract.handleDragItem;
+    ImageItem *handleItem = m_itemInteract.currentHandleDragItem();
     handleItem->endHandleInteraction();
-    pushItemTransformUndo(handleItem, m_itemInteract.dragStartState,
+    pushItemTransformUndo(handleItem, m_itemInteract.currentDragStartState(),
                           captureState(handleItem), tr("Transform"));
     m_itemInteract.endHandleDrag();
     if (isWorkspaceMode()) {
@@ -1668,9 +1668,9 @@ bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
     if (!m_itemInteract.isRotating() || event->button() != Qt::LeftButton) {
         return false;
     }
-    if (m_itemInteract.rotateItem) {
-        pushItemTransformUndo(m_itemInteract.rotateItem, m_itemInteract.dragStartState,
-                              captureState(m_itemInteract.rotateItem), tr("Rotate"));
+    if (m_itemInteract.currentRotateItem()) {
+        pushItemTransformUndo(m_itemInteract.currentRotateItem(), m_itemInteract.currentDragStartState(),
+                              captureState(m_itemInteract.currentRotateItem()), tr("Rotate"));
     }
     m_itemInteract.endRotate();
     restoreToolCursor();
@@ -1693,10 +1693,10 @@ bool ImageView::tryMouseReleasePan(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
 {
-    if (!m_itemInteract.dragItem || event->button() != Qt::LeftButton) {
+    if (!m_itemInteract.currentDragItem() || event->button() != Qt::LeftButton) {
         return false;
     }
-    pushItemTransformUndo(m_itemInteract.dragItem, m_itemInteract.dragStartState, captureState(m_itemInteract.dragItem), tr("Move"));
+    pushItemTransformUndo(m_itemInteract.currentDragItem(), m_itemInteract.currentDragStartState(), captureState(m_itemInteract.currentDragItem()), tr("Move"));
     m_itemInteract.endMove();
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
