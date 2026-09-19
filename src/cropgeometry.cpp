@@ -585,4 +585,46 @@ void paintTextButton(QPainter &painter, const QRect &btn, bool hover,
     painter.drawText(btn, Qt::AlignCenter, label);
 }
 
+
+void paintRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly, bool hot)
+{
+    const CropFrameViewAnchors a = frameViewAnchors(cropViewPoly);
+    if (!a.valid) {
+        return;
+    }
+    auto drawRotateKnob = [&](const QPointF &mid, const QPointF &knob) {
+        QPen stem(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
+        stem.setCosmetic(true);
+        stem.setWidthF(hot ? 1.8 : 1.3);
+        painter.setPen(stem);
+        painter.drawLine(mid, knob);
+        painter.setBrush(hot ? QColor(255, 220, 80) : QColor(255, 190, 40));
+        painter.drawEllipse(knob, hot ? 6.0 : 5.0, hot ? 6.0 : 5.0);
+        painter.setBrush(Qt::NoBrush);
+    };
+    drawRotateKnob(a.tm, a.rotTop);
+    drawRotateKnob(a.rm, a.rotRight);
+    drawRotateKnob(a.bm, a.rotBottom);
+    drawRotateKnob(a.lm, a.rotLeft);
+}
+
+void paintMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly, bool hot)
+{
+    const CropFrameViewAnchors a = frameViewAnchors(cropViewPoly);
+    if (!a.valid) {
+        return;
+    }
+    const QPointF centre = a.centre;
+    const qreal s = hot ? 10.0 : 9.0;
+    painter.setPen(QPen(hot ? QColor(255, 255, 255) : QColor(40, 30, 10), hot ? 1.8 : 1.35));
+    painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
+    painter.drawRoundedRect(QRectF(centre.x() - s, centre.y() - s, 2 * s, 2 * s), 3.0, 3.0);
+    painter.setPen(QPen(QColor(40, 30, 10), 1.35));
+    painter.drawLine(QPointF(centre.x() - s + 3, centre.y()),
+                     QPointF(centre.x() + s - 3, centre.y()));
+    painter.drawLine(QPointF(centre.x(), centre.y() - s + 3),
+                     QPointF(centre.x(), centre.y() + s - 3));
+    painter.setBrush(Qt::NoBrush);
+}
+
 } // namespace CropGeometry

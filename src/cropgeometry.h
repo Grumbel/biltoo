@@ -200,6 +200,10 @@ void paintFrame(QPainter &painter, const QPolygonF &cropViewPoly);
 void paintTextButton(QPainter &painter, const QRect &btn, bool hover,
                      const QString &label, CropBtnRole role, bool toggled = false);
 
+void paintRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly, bool hot);
+void paintMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly, bool hot);
+
+
 
 } // namespace CropGeometry
 

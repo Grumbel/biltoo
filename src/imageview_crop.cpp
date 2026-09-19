@@ -1443,52 +1443,16 @@ void ImageView::paintCropResizeHandles(QPainter &painter, const QPolygonF &cropV
 
 void ImageView::paintCropRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly)
 {
-    // Rotate knobs on each side (outward from edge midpoints).
-    const CropGeometry::CropFrameViewAnchors a =
-        CropGeometry::frameViewAnchors(cropViewPoly);
-    if (!a.valid) {
-        return;
-    }
     const bool hot = (m_crop.currentHoverHandle() == CropHandle::Rotate
                       || m_crop.currentActiveHandle() == CropHandle::Rotate);
-    auto drawRotateKnob = [&](const QPointF &mid, const QPointF &knob) {
-        QPen stem(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
-        stem.setCosmetic(true);
-        stem.setWidthF(hot ? 1.8 : 1.3);
-        painter.setPen(stem);
-        painter.drawLine(mid, knob);
-        painter.setBrush(hot ? QColor(255, 220, 80) : QColor(255, 190, 40));
-        painter.drawEllipse(knob, hot ? 6.0 : 5.0, hot ? 6.0 : 5.0);
-        painter.setBrush(Qt::NoBrush);
-    };
-    drawRotateKnob(a.tm, a.rotTop);
-    drawRotateKnob(a.rm, a.rotRight);
-    drawRotateKnob(a.bm, a.rotBottom);
-    drawRotateKnob(a.lm, a.rotLeft);
+    CropGeometry::paintRotateKnobs(painter, cropViewPoly, hot);
 }
 
 void ImageView::paintCropMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly)
 {
-    // Move grip at centre (interior of the crop starts a rubber-band, not Move).
-    const CropGeometry::CropFrameViewAnchors a =
-        CropGeometry::frameViewAnchors(cropViewPoly);
-    if (!a.valid) {
-        return;
-    }
-    const QPointF centre = a.centre;
     const bool hot = (m_crop.currentHoverHandle() == CropHandle::Move
                       || m_crop.currentActiveHandle() == CropHandle::Move);
-    const qreal s = hot ? 10.0 : 9.0;
-    painter.setPen(QPen(hot ? QColor(255, 255, 255) : QColor(40, 30, 10), hot ? 1.8 : 1.35));
-    painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
-    painter.drawRoundedRect(QRectF(centre.x() - s, centre.y() - s, 2 * s, 2 * s), 3.0, 3.0);
-    // Crosshair to signal "move"
-    painter.setPen(QPen(QColor(40, 30, 10), 1.35));
-    painter.drawLine(QPointF(centre.x() - s + 3, centre.y()),
-                     QPointF(centre.x() + s - 3, centre.y()));
-    painter.drawLine(QPointF(centre.x(), centre.y() - s + 3),
-                     QPointF(centre.x(), centre.y() + s - 3));
-    painter.setBrush(Qt::NoBrush);
+    CropGeometry::paintMoveGrip(painter, cropViewPoly, hot);
 }
 
 void ImageView::drawCropTextButton(QPainter &painter, const QRect &btn, CropHandle kind,
