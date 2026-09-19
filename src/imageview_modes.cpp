@@ -180,7 +180,7 @@ void ImageView::clearInteractionState()
 {
     m_itemInteract.clear();
     m_groupXform.clear();
-    m_gallery.setSelectionAnchor(nullptr);
+    m_gallery.clearChrome();
 }
 
 void ImageView::clearLiveCanvas()

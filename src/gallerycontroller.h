@@ -65,6 +65,12 @@ public:
     void setHoverPath(const QString &path) { m_hoverPath = path; }
     void clearHoverPath() { m_hoverPath.clear(); }
 
+    /** Drop hover path and selection anchor (leave / wipe). */
+    void clearChrome()
+    {
+        clearHoverPath();
+        m_selectionAnchor = nullptr;
+    }
 
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
     {

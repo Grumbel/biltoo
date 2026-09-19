@@ -191,8 +191,7 @@ void GalleryController::reassertViewport()
 void GalleryController::onLeave(int nextMode)
 {
     const auto next = static_cast<ImageView::ViewMode>(nextMode);
-    m_hoverPath.clear();
-    m_selectionAnchor = nullptr;
+    clearChrome();
     m_view->setDragMode(QGraphicsView::NoDrag);
     // Stop deferred packs immediately — a pending 0ms debounce after
     // scrollbar/thumb resize must not re-enter applyLayout while we tear down.
