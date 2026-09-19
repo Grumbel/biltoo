@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1535-crop-session-target-install.** Target/enter/auto/record helpers on tip 1534.
+Prior: **1534** (`66cf388`). Full stack from origin tip **1527** (`24da05b`).
+
+### Commits
+1. resolveInactiveCropTarget
+2. installEnterSampleDisplay
+3. runPaddedAutoTrim
+4. computeSessionCropRecord (+ paintCropChromeButton)
+5. resolveStoredAppearance
+
+### Apply (on tip **1527** / `24da05b` / origin/master)
+```bash
+git fetch origin && git merge --ff-only origin/master
+git pull --ff-only /path/to/biltoo-1535-crop-session-target-install.bundle HEAD
+```
+Full stack from origin tip 1527. `git bundle verify` requires **`24da05b`**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1534-crop-session-hud-chrome.** HUD/chrome/polygon helpers on tip 1533.
 Prior: **1533** (`8912ef4`). Full stack from origin tip **1527** (`24da05b`).
 
