@@ -17,6 +17,11 @@
 #include <QUndoCommand>
 #include <algorithm>
 
+AttentionController::AttentionController(ImageView *view)
+    : m_view(view)
+{
+}
+
 SessionImageId AttentionController::attentionSessionId() const
 {
     if (ImageItem *item = m_view->targetItem()) {

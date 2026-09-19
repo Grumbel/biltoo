@@ -2,6 +2,20 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1622-fix-link-ctor-ensureSize.** AttentionController ctor; ensureSlideshowLogicalSize definition.
+Prior: **1621**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1622-fix-link-ctor-ensureSize.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1621-fix-coversEdge-cropKeyboardMods.** Inline coversEdge; cropKeyboardMods non-static ImageView forward.
 Prior: **1620**.
 
