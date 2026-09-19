@@ -2,6 +2,38 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1400-tile-path-identity-alive.** Path identity on global tile RAM; setPath alive.
+Prior: **1399**.
+
+### Context
+Global path retention is already in tree (**1212** registry retain + **1213/1214**
+neighbor prefetch). Controllers remain ephemeral; Succeeded tiles live in
+`TileLodRegistry` across Image ←/→ and mode switches.
+
+### Change
+1. `ImageItem::setPath`: rotate `m_tileLodAlive` (kill pending tick singleShot);
+   do **not** clear `m_tileLodSuppressed` (crop-draft owns it); session destroy
+   only — registry keeps tiles.
+2. `prepareTileLodPlan` / paint: refuse controller whose `path()` ≠ item path so
+   retained tiles cannot paint under the wrong file.
+3. Docs: TILE_LOD.md global retention note (1400).
+
+### Non-goals
+- Neighbor prefetch / budget changes (already 1212–1214).
+- Stripping nav-hot request skip (still valid budget polish).
+
+### Apply
+```bash
+git pull /path/to/biltoo-1400-tile-path-identity-alive.bundle HEAD
+```
+Requires tip **1399** / `f54288e`.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1399-pagesel-ss-settings-layout-vertical.** Compile fix + helpers
 on tip 1398.
 Prior: **1398**.

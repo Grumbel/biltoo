@@ -352,7 +352,10 @@ evicted by `last_used`. InFlight entries are never dropped by the budget trim.
    durable pyramid only get `scheduleTilePyramid`.
 
 Nav-hot / suppress remains optional request-budget polish, not the mechanism that
-keeps identity correct across path switches.
+keeps identity correct. **biltoo-1400:** `setPath` rotates `m_tileLodAlive` and
+leaves crop suppress intact; prepare/paint refuse a controller whose path does
+not match the item (retained global tiles must never paint under the wrong file).
+
 
 ### Session / archive replace (biltoo-1233 / 1234)
 

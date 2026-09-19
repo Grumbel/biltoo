@@ -1200,6 +1200,12 @@ void ImageItem::prepareTileLodPlan()
     } else if (m_tileLod->path() != m_path) {
         m_tileLod->setPath(m_path);
     }
+    // Never plan against a controller bound to another path (global cache is
+    // path-keyed; wrong bind would paint retained tiles for the wrong file).
+    if (!m_tileLod || m_tileLod->path() != m_path) {
+        m_tileLod.reset();
+        return;
+    }
     // Tile grid is always full native (source) size.
     // Gallery: durable min_scale floors the plan (no encode-on-miss budget).
     // Image/Workspace: always min_scale 0 so density can climb to full-res —
@@ -1531,7 +1537,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
         if (tileLodWanted() && !navHot) {
             prepareTileLodPlan();
-            if (m_tileLod && m_tileLod->session()) {
+            if (m_tileLod && m_tileLod->path() == m_path && m_tileLod->session()) {
                 const QImage under = hasDecodedPixels() ? m_source
                     : (!m_preview.isNull() ? m_preview : QImage());
                 tilelod::DrawPlan plan = m_tileLod->session()->draw_plan();

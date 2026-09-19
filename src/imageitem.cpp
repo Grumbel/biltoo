@@ -59,9 +59,16 @@ void ImageItem::setPath(const QString &path)
         return;
     }
     m_path = path;
+    // Kill pending tickTileLod singleShot so it cannot update() after this
+    // item now represents a different file (stale path identity).
+    if (m_tileLodAlive) {
+        *m_tileLodAlive = false;
+    }
+    m_tileLodAlive = std::make_shared<bool>(true);
+    // Destroy session only — SharedPathTiles stay in TileLodRegistry (1212).
     m_tileLod.reset();
     m_tileLodLastUpdateGen = 0;
-    m_tileLodSuppressed = false;
+    // Do not clear m_tileLodSuppressed: crop-draft owns it across path binds.
     m_tileLodRepaintQueued = false;
     m_tileLodLastDpc = -1.0;
     m_tileLodLastVisSource = QRectF();
