@@ -323,6 +323,8 @@ struct SlideshowZoomBlurState {
 struct SlideshowProgressHud {
     /** Progress bar paint tick while slideshow is running (~30 Hz). */
     static constexpr int kProgressTickMs = 33;
+    /** Ken Burns / phase motion QTimer interval (~60 Hz). */
+    static constexpr int kMotionTickMs = 16;
 
     bool pausedHud = false;
     bool seekbarVisible = false;

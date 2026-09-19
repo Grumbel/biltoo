@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "tile_load_coordinator.h"
+#include "gallerylayout.h"
 #include "toolpolicy.h"
 #include "gallerysoftsm.h"
 #include "viewtransform.h"
@@ -218,7 +220,7 @@ void ImageView::refreshStatus()
     if (!m_statusRefreshTimer) {
         m_statusRefreshTimer = new QTimer(this);
         m_statusRefreshTimer->setSingleShot(true);
-        m_statusRefreshTimer->setInterval(120);
+        m_statusRefreshTimer->setInterval(HudAppearance::kStatusRefreshMs);
         connect(m_statusRefreshTimer, &QTimer::timeout, this, [this]() {
             emit statusChanged();
             if ((m_hudPrefs.visible || m_hudFlash.visible || m_ssHud.pausedHud)
@@ -328,7 +330,7 @@ void ImageView::zoomFit()
         // Fit the packed gallery into the viewport (whole pack). Sticky zoom
         // is Image-mode only — Gallery uses one-shot framing + ensureVisible.
         if (!m_items.isEmpty()) {
-            const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), 16);
+            const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);
             if (bounds.isValid() && !bounds.isEmpty()) {
                 m_scene->setSceneRect(bounds);
                 fitInView(bounds, Qt::KeepAspectRatio);
@@ -365,7 +367,7 @@ void ImageView::zoomFill()
     m_framing.setFillMode();
     if (isGalleryMode()) {
         if (!m_items.isEmpty()) {
-            const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), 16);
+            const QRectF bounds = ViewTransform::padded(m_scene->itemsBoundingRect(), GalleryLayout::Params::kDefaultMargin);
             if (bounds.isValid() && !bounds.isEmpty()) {
                 m_scene->setSceneRect(bounds);
                 fitInView(bounds, Qt::KeepAspectRatioByExpanding);
@@ -1841,7 +1843,7 @@ void ImageView::ensureSlideshowMotionTimer()
     }
     m_motionTimer = new QTimer(this);
     m_motionTimer->setTimerType(Qt::PreciseTimer);
-    m_motionTimer->setInterval(16);
+    m_motionTimer->setInterval(SlideshowProgressHud::kMotionTickMs);
     connect(m_motionTimer, &QTimer::timeout, this, &ImageView::tickSlideshowMotion);
 }
 
@@ -2346,7 +2348,7 @@ void ImageView::preloadSlideshowImage(const QString &path)
     if (!ThumtooCache::hasDurableTilesKnown(path)) {
         (void)ThumtooCache::scheduleTilePyramid(path);
     }
-    tickPrimaryTileLod(16);
+    tickPrimaryTileLod(TileLoadCoordinator::kDefaultTickBudget);
 
     const QImage have = ImageCache::get(path);
     if (!have.isNull()) {
