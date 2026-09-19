@@ -361,6 +361,24 @@ struct SlideshowProgressHud {
             && y >= viewportHeight - edgePx;
     }
 
+    bool setPausedHud(bool on)
+    {
+        if (pausedHud == on) {
+            return false;
+        }
+        pausedHud = on;
+        return true;
+    }
+
+    bool setNavHot(bool on)
+    {
+        if (navHot == on) {
+            return false;
+        }
+        navHot = on;
+        return true;
+    }
+
     void clearProgress()
     {
         progressActive = false;
