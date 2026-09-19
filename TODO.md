@@ -2,6 +2,20 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1545-crop-debug.** BILTOO_DEBUG_CROP formatting in CropDebug; ImageView only supplies fields.
+Prior: **1544**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1545-crop-debug.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1544-crop-flash.** Crop HUD copy in CropFlash; ImageView only flashHud.
 Prior: **1543**.
 

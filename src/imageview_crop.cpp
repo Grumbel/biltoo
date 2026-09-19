@@ -9,6 +9,7 @@
 #include "croppathraster.h"
 #include "viewportupdatehold.h"
 #include "cropflash.h"
+#include "cropdebug.h"
 #include "cropgeometry.h"
 #include "placementlinear.h"
 #include "imagecache.h"
@@ -437,13 +438,10 @@ void ImageView::rememberCropEnterSizes(const QString &path, const QImage &full)
 
 void ImageView::logKeepEnterDisplay(ImageItem *item, const QString &path) const
 {
-    if (!qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP") || !item) {
+    if (!item) {
         return;
     }
-    qWarning().noquote()
-        << QStringLiteral("[crop] enter-full KEEP display edge=%1 path=%2")
-               .arg(item->displayPixelLongEdge())
-               .arg(path);
+    CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);
 }
 
 void ImageView::installKeepEnterDisplay(ImageItem *item, const WorkspaceItemState &contentOnly,
@@ -460,34 +458,23 @@ void ImageView::logDraftEnterBegin(ImageItem *item, const QString &path,
                                    const CropSession::EnterInstallSample &sample,
                                    const QImage &full) const
 {
-    if (!qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP") || !item) {
+    if (!item) {
         return;
     }
-    qWarning().noquote()
-        << QStringLiteral(
-               "[crop] enter-full path=%1 imageSize=%2x%3 hasDecoded=%4 "
-               "appliedCrop=%5 hostEdge=%6")
-               .arg(path)
-               .arg(item->imageSize().width()).arg(item->imageSize().height())
-               .arg(item->hasDecodedPixels() ? 1 : 0)
-               .arg(sample.hadPriorCrop ? 1 : 0)
-               .arg(ImageCache::longEdge(full));
+    CropDebug::draftEnterBegin(path, item->imageSize().width(), item->imageSize().height(),
+                               item->hasDecodedPixels(), sample.hadPriorCrop,
+                               ImageCache::longEdge(full));
 }
 
 void ImageView::logDraftEnterDone(ImageItem *item, const CropSession::EnterInstallSample &sample,
                                   const WorkspaceItemState &contentOnly) const
 {
-    if (!qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP") || !item) {
+    if (!item) {
         return;
     }
-    qWarning().noquote()
-        << QStringLiteral(
-               "[crop] enter-full done imageSize=%1x%2 display=%3x%4 "
-               "appliedCrop=%5 contentTurns=%6")
-               .arg(item->imageSize().width()).arg(item->imageSize().height())
-               .arg(sample.display.width()).arg(sample.display.height())
-               .arg(item->sessionHasCrop() ? 1 : 0)
-               .arg(contentOnly.contentQuarterTurns);
+    CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
+                              sample.display.width(), sample.display.height(),
+                              item->sessionHasCrop(), contentOnly.contentQuarterTurns);
 }
 
 void ImageView::installDraftEnterDisplay(ImageItem *item,
@@ -958,16 +945,7 @@ SessionImageId ImageView::cropRecordSessionId(const ImageItem *item) const
 void ImageView::logRecordCropDebug(const QSize &cropBasis, const QSize &imageSize,
                                    const QRect &disp) const
 {
-    if (disp.isEmpty() || cropBasis == imageSize
-        || !qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP")) {
-        return;
-    }
-    qWarning().noquote()
-        << QStringLiteral(
-               "[crop] record basis=%1x%2 imageSize=%3x%4 rect=%5x%6+%7x%8")
-               .arg(cropBasis.width()).arg(cropBasis.height())
-               .arg(imageSize.width()).arg(imageSize.height())
-               .arg(disp.x()).arg(disp.y()).arg(disp.width()).arg(disp.height());
+    CropDebug::recordCrop(cropBasis, imageSize, disp);
 }
 
 void ImageView::writeRecordedCropState(ImageItem *item, SessionImageId sid,
@@ -1204,21 +1182,12 @@ void ImageView::logApplyCropDebug(ImageItem *item, const QString &path, const QI
                                   bool hostFromCache, const QImage &display,
                                   qreal cropW, qreal cropH, qreal footW, qreal footH) const
 {
-    if (!qEnvironmentVariableIsSet("BILTOO_DEBUG_CROP") || !item) {
+    if (!item) {
         return;
     }
-    qWarning().noquote()
-        << QStringLiteral(
-               "[crop] Apply path=%1 host=%2x%3 cache=%4 display=%5x%6 "
-               "cropDraft=%7x%8 foot=%9x%10 "
-               "imageSizeBefore=%11x%12")
-               .arg(path)
-               .arg(host.width()).arg(host.height())
-               .arg(hostFromCache ? 1 : 0)
-               .arg(display.width()).arg(display.height())
-               .arg(cropW).arg(cropH)
-               .arg(footW).arg(footH)
-               .arg(item->imageSize().width()).arg(item->imageSize().height());
+    CropDebug::applyCrop(path, host.width(), host.height(), hostFromCache,
+                         display.width(), display.height(), cropW, cropH, footW, footH,
+                         item->imageSize().width(), item->imageSize().height());
 }
 
 
