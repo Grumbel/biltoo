@@ -67,7 +67,7 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
     }
     // Tool modes own the canvas: no Up-to-Gallery / prev-next edge chrome
     // (same as crop). Esc or the toolbar toggle leaves the mode.
-    if (m_crop.active() || m_attention.mode) {
+    if (m_crop.active() || m_attention.active()) {
         return EdgeZone::None;
     }
     const EdgeNavPolicy::Zone z = EdgeNavPolicy::zoneAt(
@@ -95,7 +95,7 @@ bool ImageView::setHoverEdge(EdgeZone zone)
     if (m_hoverEdge == EdgeZone::Previous || m_hoverEdge == EdgeZone::Next
         || m_hoverEdge == EdgeZone::GalleryReturn) {
         setCursor(Qt::PointingHandCursor);
-    } else if (!m_chrome.panning && !m_itemInteract.rotating) {
+    } else if (!m_chrome.panning && !m_itemInteract.isRotating()) {
         setCursor(ToolPolicy::cursorFor(m_tool));
     }
     if (viewport()) {
@@ -436,7 +436,7 @@ bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
 
 bool ImageView::tryMousePressAttention(QMouseEvent *event)
 {
-    if (!m_attention.mode || event->button() != Qt::LeftButton || !isImageMode()
+    if (!m_attention.active() || event->button() != Qt::LeftButton || !isImageMode()
         || edgeZoneAt(event->pos()) != EdgeZone::None) {
         return false;
     }
@@ -597,7 +597,7 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
         }
     }
     // Page guide scale grips when the guide is selected.
-    if (m_pageGuide.visible && m_pageGuide.selected) {
+    if (m_pageGuide.isInteractive()) {
         const int ph = pageGuideHandleAt(event->pos());
         if (ph >= 0 && beginPageGuideResize(ph)) {
             event->accept();
@@ -610,7 +610,7 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
 
 bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 {
-    if (!isImageMode() || m_crop.active() || m_attention.mode
+    if (!isImageMode() || m_crop.active() || m_attention.active()
         || event->button() != Qt::LeftButton
         || event->modifiers() != Qt::NoModifier
         || !PagePath::isPageRef(classicPath())) {
@@ -634,7 +634,7 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 
 bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
 {
-    if (!isImageMode() || m_crop.active() || m_attention.mode
+    if (!isImageMode() || m_crop.active() || m_attention.active()
         || event->button() != Qt::LeftButton
         || !(event->modifiers() & Qt::ShiftModifier)
         || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))
@@ -979,7 +979,7 @@ bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
 void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
-    if (isImageMode() && !m_crop.active() && !m_attention.mode && !m_textLayer.rubberbanding
+    if (isImageMode() && !m_crop.active() && !m_attention.active() && !m_textLayer.rubberbanding
         && !m_chrome.panning && event->buttons() == Qt::NoButton
         && PagePath::isPageRef(classicPath())) {
         if (m_textLayer.layer.regions.isEmpty() || m_textLayer.layerPath != classicPath()) {
@@ -1017,7 +1017,7 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
 {
-    if (!m_attention.mode || !isImageMode()) {
+    if (!m_attention.active() || !isImageMode()) {
         return false;
     }
     if (m_attention.rubberbanding) {
@@ -1198,12 +1198,12 @@ bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
 
 bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
 {
-    if (m_pageGuide.dragHandle >= 0) {
+    if (m_pageGuide.isDragging()) {
         updatePageGuideResize(mapToScene(event->pos()), event->modifiers());
         event->accept();
         return true;
     }
-    if (isWorkspaceMode() && m_pageGuide.visible && m_pageGuide.selected
+    if (isWorkspaceMode() && m_pageGuide.isInteractive()
         && !(event->buttons() & Qt::LeftButton)) {
         const int ph = pageGuideHandleAt(event->pos());
         if (m_pageGuide.setHoverHandle(ph)) {
@@ -1247,7 +1247,7 @@ bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
         event->accept();
         return true;
     }
-    if (m_itemInteract.handleDragItem && m_itemInteract.handleDragItem->hasActiveHandle()) {
+    if (m_itemInteract.isHandleDragging() && m_itemInteract.handleDragItem->hasActiveHandle()) {
         m_itemInteract.handleDragItem->updateHandleInteraction(mapToScene(event->pos()),
                                                     event->modifiers());
         viewport()->update(); // live chrome while scaling/rotating
@@ -1259,7 +1259,7 @@ bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
 
 bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
 {
-    if (!m_itemInteract.rotating || !m_itemInteract.rotateItem) {
+    if (!m_itemInteract.isRotating()) {
         return false;
     }
     const QPointF scenePos = mapToScene(event->pos());
@@ -1297,7 +1297,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
 {
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
-    if (isWorkspaceMode() && m_tool == Tool::Select && !m_itemInteract.handleDragItem
+    if (isWorkspaceMode() && m_tool == Tool::Select && !m_itemInteract.isHandleDragging()
         && !m_groupXform.scaleDrag && !m_groupXform.rotateDrag && !m_chrome.panning) {
         const QPointF scenePos = mapToScene(event->pos());
         QList<ImageItem *> candidates;
@@ -1428,7 +1428,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                         QToolTip::hideText();
                     }
                 }
-            } else if (!m_chrome.panning && !m_itemInteract.handleDragItem) {
+            } else if (!m_chrome.panning && !m_itemInteract.isHandleDragging()) {
                 viewport()->unsetCursor();
                 if (hoverChanged) {
                     QToolTip::hideText();
@@ -1539,7 +1539,7 @@ bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
 {
-    if (!m_attention.mode || event->button() != Qt::LeftButton) {
+    if (!m_attention.active() || event->button() != Qt::LeftButton) {
         return false;
     }
     if (m_attention.rubberbanding) {
@@ -1614,7 +1614,7 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 
 bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
 {
-    if (m_pageGuide.dragHandle < 0 || event->button() != Qt::LeftButton) {
+    if (!m_pageGuide.isDragging() || event->button() != Qt::LeftButton) {
         return false;
     }
     endPageGuideResize();
@@ -1650,7 +1650,7 @@ bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
 {
-    if (!m_itemInteract.handleDragItem || event->button() != Qt::LeftButton) {
+    if (!m_itemInteract.isHandleDragging() || event->button() != Qt::LeftButton) {
         return false;
     }
     ImageItem *handleItem = m_itemInteract.handleDragItem;
@@ -1667,7 +1667,7 @@ bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
 {
-    if (!m_itemInteract.rotating || event->button() != Qt::LeftButton) {
+    if (!m_itemInteract.isRotating() || event->button() != Qt::LeftButton) {
         return false;
     }
     if (m_itemInteract.rotateItem) {
@@ -1726,7 +1726,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
 
 bool ImageView::tryKeyPressAttention(QKeyEvent *event)
 {
-    if (!m_attention.mode) {
+    if (!m_attention.active()) {
         return false;
     }
     if (event->key() == Qt::Key_Escape) {

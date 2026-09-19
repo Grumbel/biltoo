@@ -151,7 +151,7 @@ void ImageView::paintWorkspaceViewportChrome(QPainter &painter)
             }
             paintGroupSelectionChrome(&painter, selected);
         }
-        if (m_pageGuide.visible && m_pageGuide.selected) {
+        if (m_pageGuide.isInteractive()) {
             paintPageGuideHandles(&painter);
         }
     }
@@ -613,7 +613,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     if (m_crop.active()) {
         paintCropOverlay(painter);
     }
-    if (m_attention.mode) {
+    if (m_attention.active()) {
         paintAttentionOverlay(painter);
     }
     paintWorkspaceViewportChrome(painter);
@@ -623,7 +623,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     paintSlideshowLetterboxComposite(painter);
     paintEmptySessionInvite(painter);
 
-    if (!m_crop.active() && !m_attention.mode && m_hoverEdge != EdgeZone::None && isImageMode()
+    if (!m_crop.active() && !m_attention.active() && m_hoverEdge != EdgeZone::None && isImageMode()
         && (m_sessionNav.imageModeNavEnabled || m_hoverEdge == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
@@ -1375,7 +1375,7 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
 
 void ImageView::paintPageGuideHandles(QPainter *painter) const
 {
-    if (!painter || !m_pageGuide.visible || !m_pageGuide.selected) {
+    if (!painter || !m_pageGuide.isInteractive()) {
         return;
     }
     const QRectF page = pageGuideSceneRect();
@@ -1405,7 +1405,7 @@ void ImageView::paintPageGuideHandles(QPainter *painter) const
         return len > 1e-6 ? v / len : QPointF(1, 0);
     };
     auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB, int id) {
-        const bool hot = (m_pageGuide.hoverHandle == id || m_pageGuide.dragHandle == id);
+        const bool hot = m_pageGuide.isHandleHot(id);
         const QPointF d1 = unit(alongA);
         const QPointF d2 = unit(alongB);
         const qreal hs = hot ? 12.0 : 10.0;
@@ -1425,7 +1425,7 @@ void ImageView::paintPageGuideHandles(QPainter *painter) const
         painter->drawPath(path);
     };
     auto drawEdge = [&](const QPointF &c, const QPointF &along, int id) {
-        const bool hot = (m_pageGuide.hoverHandle == id || m_pageGuide.dragHandle == id);
+        const bool hot = m_pageGuide.isHandleHot(id);
         const QPointF d = unit(along);
         const qreal hs = hot ? 11.0 : 9.0;
         const qreal half = hs * 1.1;

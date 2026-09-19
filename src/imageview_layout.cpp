@@ -1680,7 +1680,7 @@ void ImageView::setCurrentSessionId(SessionImageId id)
     }
     m_sessionId.setCurrentId(id);
     // Attention marker is per SessionImageId — reload draft for the new image.
-    if (m_attention.mode) {
+    if (m_attention.active()) {
         m_attention.clearDraft();
         ensureAttentionPoint();
         if (viewport()) {
@@ -2194,7 +2194,7 @@ void ImageView::setPageGuideSelected(bool on)
 
 int ImageView::pageGuideHandleAt(const QPoint &viewPos) const
 {
-    if (!m_pageGuide.visible || !m_pageGuide.selected || !isWorkspaceMode()) {
+    if (!m_pageGuide.isInteractive() || !isWorkspaceMode()) {
         return -1;
     }
     const QRectF page = pageGuideSceneRect();
@@ -2233,7 +2233,7 @@ QRectF ImageView::pageGuideRectFromHandleDrag(const QPointF &scenePos,
 
 void ImageView::updatePageGuideResize(const QPointF &scenePos, Qt::KeyboardModifiers mods)
 {
-    if (m_pageGuide.dragHandle < 0) {
+    if (!m_pageGuide.isDragging()) {
         return;
     }
     const QRectF next = pageGuideRectFromHandleDrag(scenePos, mods);

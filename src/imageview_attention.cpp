@@ -202,7 +202,7 @@ void ImageView::detectAttentionPoint()
 
 void ImageView::setAttentionMode(bool on)
 {
-    if (on == m_attention.mode) {
+    if (on == m_attention.active()) {
         return;
     }
     if (on) {
@@ -230,13 +230,13 @@ void ImageView::setAttentionMode(bool on)
     if (viewport()) {
         viewport()->update();
     }
-    emit attentionModeChanged(m_attention.mode);
+    emit attentionModeChanged(m_attention.active());
     emit statusChanged();
 }
 
 void ImageView::toggleAttentionMode()
 {
-    setAttentionMode(!m_attention.mode);
+    setAttentionMode(!m_attention.active());
 }
 
 int ImageView::attentionHandleIndexAt(const QPoint &viewPos) const
@@ -292,7 +292,7 @@ void ImageView::attentionCommitSelectionMove()
 
 void ImageView::paintAttentionOverlay(QPainter &painter)
 {
-    if (!m_attention.mode || !isImageMode()) {
+    if (!m_attention.active() || !isImageMode()) {
         return;
     }
     ImageItem *item = targetItem();
