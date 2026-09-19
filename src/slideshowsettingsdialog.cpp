@@ -3,6 +3,7 @@
 
 #include "slideshowsettingsdialog.h"
 #include "slideshowclocks.h"
+#include "slideshowmotiongeometry.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -294,7 +295,7 @@ void SlideshowSettingsDialog::setPanZoomFactor(double factor)
         return;
     }
     m_blockEmit = true;
-    m_panZoomFactorSpin->setValue(qBound(1.02, factor, 1.40));
+    m_panZoomFactorSpin->setValue(SlideshowMotionGeometry::clampPanZoomFactor(factor));
     m_blockEmit = false;
 }
 

@@ -62,6 +62,13 @@ DwellAtlasParams makeParams(int viewportW, int viewportH, qreal headroom);
  */
 qreal zoomBaseScale(SlideshowZoom zoom, const QSize &logical, int vw, int vh);
 
+
+/** Headroom multiplier for PanZoom atlas sample (past 1:1 cover). */
+inline qreal clampPanZoomHeadroom(qreal panZoomFactor)
+{
+    return qBound(1.05, panZoomFactor, 1.50);
+}
+
 } // namespace SlideshowAtlasPolicy
 
 #endif // SLIDESHOWATLASPOLICY_H

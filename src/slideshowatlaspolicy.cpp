@@ -4,6 +4,7 @@
 #include "slideshowatlaspolicy.h"
 
 #include "thumtoocache.h"
+#include "viewtransform.h"
 
 #include <QtGlobal>
 #include <QtMath>
@@ -53,7 +54,7 @@ qreal motionHeadroom(SlideshowMotion motion, qreal panZoomFactor, bool progressA
         return 1.0;
     }
     if (motion == SlideshowMotion::PanZoom) {
-        return qBound(1.05, panZoomFactor, 1.50);
+        return clampPanZoomHeadroom(panZoomFactor);
     }
     // PanScan can raise scale when travel is short.
     return 1.25;
@@ -82,8 +83,8 @@ int targetLongEdge(bool viewportValid, int viewportW, int viewportH, qreal dpr,
 DwellAtlasParams makeParams(int viewportW, int viewportH, qreal headroom)
 {
     DwellAtlasParams p;
-    p.vw = qMax(1, viewportW);
-    p.vh = qMax(1, viewportH);
+    p.vw = ViewTransform::atLeast1(viewportW);
+    p.vh = ViewTransform::atLeast1(viewportH);
     p.headroom = headroom;
     p.longCap = int(qCeil(qreal(qMax(p.vw, p.vh)) * p.headroom));
     p.keyScale = p.headroom;
@@ -99,8 +100,8 @@ qreal zoomBaseScale(SlideshowZoom zoom, const QSize &logical, int vw, int vh)
     }
     const qreal iw = qreal(logical.width());
     const qreal ih = qreal(logical.height());
-    const qreal w = qreal(qMax(1, vw));
-    const qreal h = qreal(qMax(1, vh));
+    const qreal w = qreal(ViewTransform::atLeast1(vw));
+    const qreal h = qreal(ViewTransform::atLeast1(vh));
     switch (zoom) {
     case SlideshowZoom::Fill:
         return qMax(w / iw, h / ih);

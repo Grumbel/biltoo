@@ -79,6 +79,26 @@ inline int atlasBudgetPx(int viewportW, int viewportH)
     return qMax(viewportW, viewportH) * 2;
 }
 
+
+/** Bias space is [-1, 1] per axis (corner/edge table + attention map). */
+inline qreal clampBiasCoord(qreal v)
+{
+    return qBound(-1.0, v, 1.0);
+}
+
+inline QPointF clampBiasPoint(QPointF p)
+{
+    p.setX(clampBiasCoord(p.x()));
+    p.setY(clampBiasCoord(p.y()));
+    return p;
+}
+
+/** PanZoom end scale relative to zoom base (UI / path range). */
+inline qreal clampPanZoomFactor(qreal factor)
+{
+    return qBound(1.02, factor, 1.40);
+}
+
 } // namespace SlideshowMotionGeometry
 
 #endif // SLIDESHOWMOTIONGEOMETRY_H

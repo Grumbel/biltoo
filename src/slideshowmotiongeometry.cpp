@@ -57,7 +57,7 @@ QRectF coverDestRect(SlideshowMotion motion, qreal baseScale, qreal panZoomFacto
             biasY = along;
         }
     } else if (motion == SlideshowMotion::PanZoom) {
-        const qreal factor = qBound(1.02, panZoomFactor, 1.40);
+        const qreal factor = clampPanZoomFactor(panZoomFactor);
         qreal motionBase = baseScale;
         {
             constexpr qreal kMinHalf = 32.0;
@@ -147,8 +147,7 @@ bool attentionBiasPath(const QPointF &att01, uint seed, BiasPath *out)
     }
     // Map normalized focus to bias space [-1, 1] (same as corner table).
     QPointF subject((att01.x() - 0.5) * 2.0, (att01.y() - 0.5) * 2.0);
-    subject.setX(qBound(-1.0, subject.x(), 1.0));
-    subject.setY(qBound(-1.0, subject.y(), 1.0));
+    subject = clampBiasPoint(subject);
     // Near-centre attention still needs travel — fall through to geometry.
     if (qAbs(subject.x()) <= 0.12 && qAbs(subject.y()) <= 0.12) {
         return false;
@@ -165,10 +164,8 @@ bool attentionBiasPath(const QPointF &att01, uint seed, BiasPath *out)
         path.a = subject + travel;
         path.b = subject - travel;
     }
-    path.a.setX(qBound(-1.0, path.a.x(), 1.0));
-    path.a.setY(qBound(-1.0, path.a.y(), 1.0));
-    path.b.setX(qBound(-1.0, path.b.x(), 1.0));
-    path.b.setY(qBound(-1.0, path.b.y(), 1.0));
+    path.a = clampBiasPoint(path.a);
+    path.b = clampBiasPoint(path.b);
     path.travelDir = path.b - path.a;
     path.motionSign = (path.travelDir.y() >= 0.0) ? 1.0 : -1.0;
     *out = path;
