@@ -2,6 +2,24 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1542-imageview-appearance-tu.** Move stored-appearance apply out of imageview_crop into imageview_appearance.cpp.
+Prior: **1541**.
+
+### Change
+- New `imageview_appearance.cpp`: `resolveStoredAppearance`, `applyStoredAppearance*`, `applyContentAppearanceAfterDecode`.
+- Crop TU keeps Apply-undo path (`applyCropAppearance*`) only.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1542-imageview-appearance-tu.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1541-crop-pathraster-ownership.** CropPathRaster suspend boundary; cancel PreferCache on enter, Full request, and leave.
 Prior: **1540**.
 
