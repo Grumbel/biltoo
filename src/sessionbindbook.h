@@ -44,6 +44,16 @@ struct SessionBindBook {
         selectIds.clear();
     }
 
+    /** Take the front pending bind; false if empty. */
+    bool takeFront(PendingSessionBind *out)
+    {
+        if (binds.isEmpty() || !out) {
+            return false;
+        }
+        *out = binds.takeFirst();
+        return true;
+    }
+
     bool hasBindForPath(const QString &path) const
     {
         if (path.isEmpty()) {
