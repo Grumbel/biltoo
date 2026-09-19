@@ -627,4 +627,86 @@ void paintMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly, bool hot)
     painter.setBrush(Qt::NoBrush);
 }
 
+void paintResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly,
+                        const std::function<bool(CropHandle)> &isHot)
+{
+    if (cropViewPoly.size() < 4) {
+        return;
+    }
+    // Bold corner + edge bars at rotated corners (poly order: TL, TR, BR, BL).
+    const QPointF tl = cropViewPoly.at(0);
+    const QPointF tr = cropViewPoly.at(1);
+    const QPointF br = cropViewPoly.at(2);
+    const QPointF bl = cropViewPoly.at(3);
+    const qreal hs = 14.0;
+    auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB,
+                          CropHandle h) {
+        const bool hot = isHot(h);
+        auto unit = [](QPointF v) {
+            const qreal len = qHypot(v.x(), v.y());
+            return len > 1e-6 ? v / len : QPointF(1, 0);
+        };
+        const QPointF d1 = unit(alongA);
+        const QPointF d2 = unit(alongB);
+        const qreal arm = hs * (hot ? 1.55 : 1.25);
+        const qreal thick = hs * (hot ? 0.48 : 0.36);
+        QPainterPath path;
+        path.moveTo(c + d1 * arm);
+        path.lineTo(c);
+        path.lineTo(c + d2 * arm);
+        QPen hp(hot ? QColor(255, 255, 255) : QColor(255, 190, 40), 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(thick);
+        hp.setCapStyle(Qt::RoundCap);
+        hp.setJoinStyle(Qt::RoundJoin);
+        painter.setPen(hp);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawPath(path);
+        if (hot) {
+            QPen glow(QColor(255, 190, 40, 200), 0);
+            glow.setCosmetic(true);
+            glow.setWidthF(thick * 0.55);
+            glow.setCapStyle(Qt::RoundCap);
+            glow.setJoinStyle(Qt::RoundJoin);
+            painter.setPen(glow);
+            painter.drawPath(path);
+        }
+    };
+    // along directions follow rotated edges away from the corner.
+    drawCorner(tl, tr - tl, bl - tl, CropHandle::TopLeft);
+    drawCorner(tr, tl - tr, br - tr, CropHandle::TopRight);
+    drawCorner(bl, br - bl, tl - bl, CropHandle::BottomLeft);
+    drawCorner(br, bl - br, tr - br, CropHandle::BottomRight);
+
+    auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, CropHandle h) {
+        const bool hot = isHot(h);
+        auto unit = [](QPointF v) {
+            const qreal len = qHypot(v.x(), v.y());
+            return len > 1e-6 ? v / len : QPointF(1, 0);
+        };
+        const QPointF a = unit(along);
+        const QPointF perp(-a.y(), a.x());
+        const qreal len = hs * (hot ? 2.2 : 1.7);
+        const qreal thick = hs * (hot ? 0.42 : 0.30);
+        // Outline matches workspace edge bars (accent family only differs by hue).
+        QPen hp(hot ? QColor(255, 255, 255) : QColor(180, 130, 20), 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(hot ? 1.6 : 1.15);
+        painter.setPen(hp);
+        painter.setBrush(hot ? QColor(255, 220, 80, 255) : QColor(255, 190, 40, 240));
+        QPolygonF bar;
+        bar << mid + a * (len / 2) + perp * (thick / 2)
+            << mid - a * (len / 2) + perp * (thick / 2)
+            << mid - a * (len / 2) - perp * (thick / 2)
+            << mid + a * (len / 2) - perp * (thick / 2);
+        painter.drawPolygon(bar);
+        painter.setBrush(Qt::NoBrush);
+    };
+    drawEdgeBar((tl + tr) / 2.0, tr - tl, CropHandle::Top);
+    drawEdgeBar((bl + br) / 2.0, br - bl, CropHandle::Bottom);
+    drawEdgeBar((tl + bl) / 2.0, bl - tl, CropHandle::Left);
+    drawEdgeBar((tr + br) / 2.0, br - tr, CropHandle::Right);
+
+    }
+
 } // namespace CropGeometry

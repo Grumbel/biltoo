@@ -14,6 +14,8 @@
 #include <QString>
 #include <QtGlobal>
 
+#include <functional>
+
 /**
  * Pure crop geometry and viewport chrome layout / hit-test.
  * No ImageView state — safe to unit-test and share with paint and input.
@@ -199,6 +201,9 @@ void paintFrame(QPainter &painter, const QPolygonF &cropViewPoly);
 /** Draw a labeled crop chrome button (hover from handle hot state). */
 void paintTextButton(QPainter &painter, const QRect &btn, bool hover,
                      const QString &label, CropBtnRole role, bool toggled = false);
+
+void paintResizeHandles(QPainter &painter, const QPolygonF &cropViewPoly,
+                        const std::function<bool(CropHandle)> &isHot);
 
 void paintRotateKnobs(QPainter &painter, const QPolygonF &cropViewPoly, bool hot);
 void paintMoveGrip(QPainter &painter, const QPolygonF &cropViewPoly, bool hot);
