@@ -28,7 +28,7 @@ void ImageView::stopDeferredPacking()
 void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
 {
     m_viewMode = mode;
-    m_layout.mode = layout;
+    m_layout.setMode(layout);
     // Gallery: BoundingRect — FullViewportUpdate repaints every tile on each
     // scroll/zoom tick and is unusable with large soft bitmaps. Soft upgrades
     // must call item->update() (installDisplayPixels already does).
@@ -69,9 +69,8 @@ void ImageView::invalidateSessionLoads()
     }
     clearPendingLoads();
     gallerySoftResetAll();
-    m_ss.rasterInflight.clear();
-    m_ss.rasterPending.clear();
-    m_ss.phaseUpgradeGeneration++;
+    m_ss.clearRasterQueues();
+    m_ss.bumpPhaseUpgradeGeneration();
     m_ssDwell.atlasRebuildGeneration++;
     m_ss.toAtlasRebuildGeneration++;
     // Drop logical-size memory so the size-first gate re-probes (stale square
