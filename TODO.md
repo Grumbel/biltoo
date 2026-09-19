@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1431-coord-public-accessors-pathram-docs.** Drop coordinator friend; pathRam priority docs.
+Prior: **1429**. Commits 1430–1431.
+
+### Commits
+1. **1430** Public ImageView accessors for TileLoadCoordinator; remove `friend`
+2. **1431** TILE_LOAD_COORDINATOR.md: path RAM counts as non-cold `hasAnyTile`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1431-coord-public-accessors-pathram-docs.bundle HEAD
+```
+Requires tip **1429**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1429-tick-primary-public-host.** Public tickPrimaryTileLod for Gallery restore.
 Prior: **1428**. Commit 1429.
 
