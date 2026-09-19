@@ -8,6 +8,29 @@
 
 namespace tilelod {
 
+namespace {
+
+bool is_succeeded_valid(CacheEntry const& e)
+{
+  return e.state == TileState::Succeeded && e.bitmap.valid();
+}
+
+}  // namespace
+
+void TileMemoryCache::note_leaving_succeeded(CacheEntry const& e)
+{
+  if (is_succeeded_valid(e) && m_succeeded_count > 0) {
+    --m_succeeded_count;
+  }
+}
+
+void TileMemoryCache::note_entering_succeeded(CacheEntry const& e)
+{
+  if (is_succeeded_valid(e)) {
+    ++m_succeeded_count;
+  }
+}
+
 CacheEntry const* TileMemoryCache::find(TileKey const& key) const
 {
   auto it = m_map.find(key);
@@ -30,6 +53,7 @@ void TileMemoryCache::set_in_flight(TileKey const& key,
                                     std::uint64_t generation)
 {
   CacheEntry& e = m_map[key];
+  note_leaving_succeeded(e);
   e.state = TileState::InFlight;
   e.bitmap = {};
   e.generation = generation;
@@ -39,29 +63,45 @@ void TileMemoryCache::set_succeeded(TileKey const& key, TileBitmap bitmap,
                                     std::uint64_t generation)
 {
   CacheEntry& e = m_map[key];
+  note_leaving_succeeded(e);
   e.state = TileState::Succeeded;
   e.bitmap = std::move(bitmap);
   e.generation = generation;
   e.last_used = generation;
+  note_entering_succeeded(e);
 }
 
 void TileMemoryCache::set_failed(TileKey const& key, std::uint64_t generation)
 {
   CacheEntry& e = m_map[key];
+  note_leaving_succeeded(e);
   e.state = TileState::Failed;
   e.bitmap = {};
   e.generation = generation;
 }
 
-void TileMemoryCache::erase(TileKey const& key) { m_map.erase(key); }
+void TileMemoryCache::erase(TileKey const& key)
+{
+  auto it = m_map.find(key);
+  if (it == m_map.end()) {
+    return;
+  }
+  note_leaving_succeeded(it->second);
+  m_map.erase(it);
+}
 
-void TileMemoryCache::clear() { m_map.clear(); }
+void TileMemoryCache::clear()
+{
+  m_map.clear();
+  m_succeeded_count = 0;
+}
 
 void TileMemoryCache::drop_finer_than(int keep_min_scale)
 {
   for (auto it = m_map.begin(); it != m_map.end();) {
     if (it->second.state == TileState::Succeeded &&
         it->first.scale < keep_min_scale) {
+      note_leaving_succeeded(it->second);
       it = m_map.erase(it);
     } else {
       ++it;
@@ -81,19 +121,6 @@ std::size_t TileMemoryCache::approx_bytes() const
   return n;
 }
 
-std::size_t TileMemoryCache::succeeded_count() const
-{
-  std::size_t n = 0;
-  for (auto const& [k, e] : m_map) {
-    (void)k;
-    if (e.state == TileState::Succeeded && e.bitmap.valid()) {
-      ++n;
-    }
-  }
-  return n;
-}
-
-
 void TileMemoryCache::touch(TileKey const& key, std::uint64_t now)
 {
   auto it = m_map.find(key);
@@ -109,7 +136,6 @@ std::size_t TileMemoryCache::trim_to_budget(std::size_t max_bytes,
     return 0;
   }
   std::set<TileKey> keep(protect.begin(), protect.end());
-  // Candidates: Succeeded not protected, sorted by last_used ascending.
   std::vector<std::pair<std::uint64_t, TileKey>> victims;
   for (auto const& [k, e] : m_map) {
     if (e.state != TileState::Succeeded) {
@@ -133,6 +159,7 @@ std::size_t TileMemoryCache::trim_to_budget(std::size_t max_bytes,
       continue;
     }
     freed += it->second.bitmap.bytes.size();
+    note_leaving_succeeded(it->second);
     m_map.erase(it);
   }
   return freed;

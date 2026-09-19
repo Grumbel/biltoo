@@ -35,10 +35,10 @@ public:
   /// Approximate payload bytes for Succeeded bitmaps.
   std::size_t approx_bytes() const;
 
-  /// Number of Succeeded entries (any scale).
-  std::size_t succeeded_count() const;
+  /// Number of Succeeded entries (any scale). O(1).
+  std::size_t succeeded_count() const { return m_succeeded_count; }
 
-  bool has_succeeded() const { return succeeded_count() > 0; }
+  bool has_succeeded() const { return m_succeeded_count > 0; }
 
   /**
    * Evict Succeeded tiles not in @p protect until approx_bytes() <= max_bytes.
@@ -60,7 +60,11 @@ public:
   static constexpr std::size_t kDefaultBudgetBytes = 128ull * 1024ull * 1024ull;
 
 private:
+  void note_leaving_succeeded(CacheEntry const& e);
+  void note_entering_succeeded(CacheEntry const& e);
+
   std::map<TileKey, CacheEntry> m_map;
+  std::size_t m_succeeded_count = 0;
 };
 
 }  // namespace tilelod
