@@ -98,9 +98,23 @@ struct TextLayerSession {
 
     void clearLinkHoverTip() { linkHoverTip.clear(); }
 
-    void setSearchFuzzy(bool on) { searchFuzzy = on; }
+    bool setSearchFuzzy(bool on)
+    {
+        if (searchFuzzy == on) {
+            return false;
+        }
+        searchFuzzy = on;
+        return true;
+    }
 
-    void setSearchQuery(const QString &q) { searchQuery = q; }
+    bool setSearchQuery(const QString &q)
+    {
+        if (searchQuery == q) {
+            return false;
+        }
+        searchQuery = q;
+        return true;
+    }
 
     void setLayerContent(const ThumtooCache::PageTextLayer &l, const QString &path)
     {

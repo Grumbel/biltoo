@@ -785,10 +785,9 @@ bool ImageView::textMatchesQuery(const QString &regionText, const QString &query
 
 void ImageView::setTextSearchFuzzy(bool on)
 {
-    if (m_textLayer.searchFuzzy == on) {
+    if (!m_textLayer.setSearchFuzzy(on)) {
         return;
     }
-    m_textLayer.setSearchFuzzy(on);
     if (!m_textLayer.searchQuery.isEmpty()) {
         recomputeTextSearchMatches();
         viewport()->update();
