@@ -29,6 +29,9 @@ class ImageView;
 class TileLoadCoordinator
 {
 public:
+    /** Default tile requests per GUI tick (slideshow warm / primary climb). */
+    static constexpr int kDefaultTickBudget = 16;
+
     explicit TileLoadCoordinator(ImageView *view);
 
     /**
