@@ -1688,6 +1688,8 @@ private:
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
     void updateCropHandleDrag(const QPoint &viewPos);
     void endCropHandleDrag();
+    bool contentLocalContains(ImageItem *item, const QPointF &local) const;
+    void finishCropRubberBand();
     void beginCropRubberBand(const QPoint &viewPos);
     void updateCropRubberBand(const QPoint &viewPos);
     void endCropRubberBand();

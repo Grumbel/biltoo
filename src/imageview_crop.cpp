@@ -1461,6 +1461,11 @@ void ImageView::endCropHandleDrag()
     requestCropViewportUpdate();
 }
 
+bool ImageView::contentLocalContains(ImageItem *item, const QPointF &local) const
+{
+    return item && item->contentRect().contains(local);
+}
+
 void ImageView::beginCropRubberBand(const QPoint &viewPos)
 {
     ImageItem *item = cropTargetItem();
@@ -1468,7 +1473,7 @@ void ImageView::beginCropRubberBand(const QPoint &viewPos)
         return;
     }
     const QPointF local = itemLocalFromView(item, viewPos);
-    if (!item->contentRect().contains(local)) {
+    if (!contentLocalContains(item, local)) {
         return;
     }
     m_crop.beginRubberDraft(local);
@@ -1489,13 +1494,18 @@ void ImageView::updateCropRubberBand(const QPoint &viewPos)
     requestCropViewportUpdate();
 }
 
-void ImageView::endCropRubberBand()
+void ImageView::finishCropRubberBand()
 {
     if (ImageItem *item = cropTargetItem()) {
         m_crop.finishRubber(item->contentRect());
     } else {
         m_crop.endRubber();
     }
+}
+
+void ImageView::endCropRubberBand()
+{
+    finishCropRubberBand();
     requestCropViewportUpdate();
 }
 
