@@ -89,6 +89,8 @@ void ImageView::invalidateSessionLoads()
     // (old archive paths / LQIP samples). clearWorkspace does the same for
     // Workspace; Gallery Open only hits invalidateSessionLoads.
     m_tileNeighborPrefetch.clear();
+    // Stashed Gallery/Workspace items can still hold SharedPathTiles.
+    dropAllTileLodSessions();
     tilelod::TileLodRegistry::instance().invalidateAll();
     ThumtooCache::clearSessionReplaceMemos();
     ImageCache::clear();
@@ -231,6 +233,7 @@ void ImageView::clearWorkspace()
     cancelGallerySizeResolve();
     ImageCache::clear();
     m_tileNeighborPrefetch.clear();
+    dropAllTileLodSessions();
     tilelod::TileLodRegistry::instance().invalidateAll();
     ThumtooCache::clearSessionReplaceMemos();
     m_pathOrderBook.clear();

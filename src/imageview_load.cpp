@@ -2702,6 +2702,20 @@ void ImageView::purgeTilePathRam(const QString &path)
     dropTilePrefetchPath(path);
 }
 
+void ImageView::dropAllTileLodSessions()
+{
+    auto dropList = [](const QList<ImageItem *> &items) {
+        for (ImageItem *item : items) {
+            if (item) {
+                item->dropTileLodSession();
+            }
+        }
+    };
+    dropList(m_items);
+    dropList(m_gallery.stashedItems());
+    dropList(m_workspace.stashedItems());
+}
+
 void ImageView::tickPrimaryTileLod(int budget)
 {
     ASSERT_GUI_THREAD();

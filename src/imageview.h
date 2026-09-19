@@ -297,6 +297,8 @@ public:
      * and cancel neighbor prefetch. Use on Reload / file-replaced.
      */
     void purgeTilePathRam(const QString &path);
+    /** Drop tile sessions on live + stashed items (before session-wide invalidateAll). */
+    void dropAllTileLodSessions();
     void tickSlideshowPhaseMotionClocks();
     void tickSlideshowDwellMotionClock();
     void tickSlideshowMotion();
