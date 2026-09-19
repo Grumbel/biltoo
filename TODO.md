@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1459-fix-layoutsize-loadgate-phase.** Fix layoutSize + LoadGate + phase queues.
+Prior: **1458**. Commits 1459a–1459c (+ docs).
+
+### Commits
+1. **Fix** layoutSizeForPath `bookSize` name (known redeclaration)
+2. **SessionLoadGate** pending scene pos + restore helpers
+3. Phase/dwell atlas generation + raster queue helpers
+
+### Note
+Continues bag encapsulation. Path RAM remains settled.
+
+### Apply
+```bash
+git pull /path/to/biltoo-1459-fix-layoutsize-loadgate-phase.bundle HEAD
+```
+Requires tip **1458**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1458-pathorder-soft-bind-accessors.** PathOrder, SoftBook, BindBook accessors.
 Prior: **1457**. Commits 1458a–1458d (+ docs).
 

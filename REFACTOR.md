@@ -176,6 +176,8 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
   append/index/select helpers; **SessionPathOrder** appendRow.
 - **SessionPathOrder** isEmpty/size/pathAt/idAt/pathList/idList; **GallerySoftBook**
   state/get/find; **SessionBindBook** bindCount/bindAt/removeBindAt/takeBindAt.
+- **Fix** layoutSizeForPath bookSize binding; **SessionLoadGate** pending scene/
+  restore helpers; phase/dwell atlas generation + raster queue helpers.
 
 
 ## Current pain (evidence)
