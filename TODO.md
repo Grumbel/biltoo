@@ -2,6 +2,26 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1359-capwant-freerot-tile.** PathRaster capWant → DisplayEdgePolicy;
+CropGeometry free-rotation eps; tile fill atLeast1.
+Prior: **1358**.
+
+### Change
+- `PathRasterService::capWant` → `DisplayEdgePolicy::cappedDisplayEdge` (+ QSize overload)
+- `CropGeometry::kFreeRotationEps`; session appearance uses it
+- Workspace image-tile fill uses `ViewTransform::atLeast1`
+
+### Apply (full stack from upstream **1348** / `342478b`; includes tips **1349–1359**)
+```bash
+git pull /path/to/biltoo-1359-capwant-freerot-tile.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1358-displayquality-fix-scalecrop.** Fix hostLongEdge header;
 ContentXform::scaleCropRect; ViewFraming clamp01.
 Prior: **1357**.
