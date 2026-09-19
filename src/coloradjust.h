@@ -22,6 +22,13 @@ struct ColorAdjustments {
                && hue == 0 && qFuzzyCompare(gamma, 1.0) && !invert;
     }
 
+    bool matches(const ColorAdjustments &o) const
+    {
+        return brightness == o.brightness && contrast == o.contrast
+            && saturation == o.saturation && hue == o.hue
+            && qFuzzyCompare(gamma, o.gamma) && invert == o.invert;
+    }
+
     /** Grade ranges match AdjustmentsPanel slider limits. */
     static int clampBrightness(int v) { return qBound(-100, v, 100); }
     static int clampContrast(int v) { return qBound(0, v, 200); }
