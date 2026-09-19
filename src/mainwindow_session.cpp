@@ -2523,6 +2523,16 @@ void MainWindow::reloadFromDisk()
     updateStatus();
 }
 
+void MainWindow::hardReloadFromDisk()
+{
+    if (!m_imageView) {
+        return;
+    }
+    const bool relayout = m_imageView->isGalleryMode();
+    m_imageView->hardReloadFromDisk(relayout);
+    updateStatus();
+}
+
 void MainWindow::goPrevious()
 {
     if (m_session.paths().size() <= 1) {

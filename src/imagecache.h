@@ -91,6 +91,9 @@ void warm(const QStringList &paths, int maxEdge = kPreviewEdge);
 /** Drop all entries and in-flight ensures. */
 void clear();
 
+/** Drop the process host sample for @p path (and matching in-flight ensures). */
+void remove(const QString &path);
+
 /** THUMTOO_DEBUG_OVERLAY / BILTOO_DEBUG_OVERLAY: tiled watermark + border. */
 bool debugOverlayEnabled();
 void stampDebugOverlayIfEnabled(QImage *image, const QString &label = QString());

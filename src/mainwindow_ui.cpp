@@ -70,6 +70,16 @@ void MainWindow::createActions()
         tr("Reload from disk (F5): current image in Image mode, all tiles in Gallery/Workspace"));
     connect(m_reloadAct, &QAction::triggered, this, &MainWindow::reloadFromDisk);
 
+    m_hardReloadAct = new QAction(tr("Hard &Reload"), this);
+    m_hardReloadAct->setShortcut(Qt::SHIFT | Qt::Key_F5);
+    m_hardReloadAct->setIcon(themeIcon(QStringLiteral("view-refresh"), QStyle::SP_BrowserReload));
+    m_hardReloadAct->setToolTip(
+        tr("Clear caches and re-decode from disk (Shift+F5)"));
+    m_hardReloadAct->setStatusTip(
+        tr("Hard reload (Shift+F5): drop host/tile caches, then re-decode — "
+           "current image in Image mode; selection (or all tiles) in Gallery/Workspace"));
+    connect(m_hardReloadAct, &QAction::triggered, this, &MainWindow::hardReloadFromDisk);
+
     m_printAct = new QAction(tr("&Print…"), this);
     m_printAct->setShortcut(QKeySequence::Print);
     m_printAct->setIcon(themeIcon(QStringLiteral("document-print"), QStyle::SP_FileDialogDetailedView));
@@ -899,6 +909,7 @@ void MainWindow::createMenus()
         m_fileMenu->addAction(m_openSelectionNewWindowAct);
     }
     m_fileMenu->addAction(m_reloadAct);
+    m_fileMenu->addAction(m_hardReloadAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_openProjectAct);
     m_fileMenu->addAction(m_saveProjectAct);
@@ -1652,6 +1663,12 @@ void MainWindow::populateActionHelpTexts()
         "<p>Reload pixels and metadata for the current session from disk (or "
         "archive members). Appearance and Workspace poses stay; decode caches "
         "refresh when content changed.</p>"));
+    setHelp(m_hardReloadAct, tr(
+        "<p>Hard reload (Shift+F5): drop the process host sample, path tile RAM, "
+        "and thumtoo settled-pixel markers for the targets, clear on-canvas "
+        "decoded pixels, then re-decode from disk. Image mode uses the current "
+        "image; Gallery/Workspace use the selection when any items are "
+        "selected, otherwise all on-canvas items.</p>"));
     setHelp(m_quitAct, tr(
         "<p>Quit this Biltoo window. You may be prompted if the Workspace has "
         "unsaved project state.</p>"));

@@ -266,4 +266,24 @@ void clear()
     inFlight().clear();
 }
 
+void remove(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    QMutexLocker lock(&mutex());
+    map().remove(path);
+    order().removeAll(path);
+    // Drop in-flight ensure keys for this path (key is path + '\n' + edge).
+    QSet<QString> &flight = inFlight();
+    const QString prefix = path + QLatin1Char('\n');
+    for (auto it = flight.begin(); it != flight.end(); ) {
+        if (it->startsWith(prefix) || *it == path) {
+            it = flight.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
 } // namespace ImageCache

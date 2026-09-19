@@ -495,6 +495,94 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
     emit statusChanged();
 }
 
+void ImageView::hardReloadFromDisk(bool relayoutGallery)
+{
+    // Build the path set: Image = focused path; multi-mode = selection, else all.
+    QList<ImageItem *> targets;
+    if (isImageMode()) {
+        if (!hasClassicPath()) {
+            return;
+        }
+        // Prefer the live item for the classic path so bind ids stay correct.
+        for (ImageItem *item : m_items) {
+            if (item && item->path() == classicPath()) {
+                targets.append(item);
+                break;
+            }
+        }
+        if (targets.isEmpty()) {
+            // No item yet — still purge path caches and force LoadReplace.
+            const QString path = classicPath();
+            ImageCache::remove(path);
+            purgeTilePathRam(path);
+            ThumtooCache::cancelTilesForPath(path);
+            for (int edge : ThumtooCache::kLadderEdges) {
+                ThumtooCache::forgetPixelsSettled(path, edge);
+            }
+            scheduleImageLoad(path, LoadReplace);
+            flashHud(tr("Hard reload"), QFileInfo(path).fileName());
+            emit statusChanged();
+            return;
+        }
+    } else {
+        targets = transformTargets();
+        if (targets.isEmpty()) {
+            targets = m_items;
+        }
+    }
+    if (targets.isEmpty()) {
+        return;
+    }
+
+    QSet<QString> purgedPaths;
+    int itemCount = 0;
+    for (ImageItem *item : targets) {
+        if (!item) {
+            continue;
+        }
+        const QString path = item->path();
+        if (path.isEmpty()) {
+            continue;
+        }
+        ++itemCount;
+        gallerySoftResetPath(path);
+        if (!purgedPaths.contains(path)) {
+            // Host sample, tile RAM, queued tiles, settled-pixel short-circuit.
+            ImageCache::remove(path);
+            purgeTilePathRam(path);
+            ThumtooCache::cancelTilesForPath(path);
+            for (int edge : ThumtooCache::kLadderEdges) {
+                ThumtooCache::forgetPixelsSettled(path, edge);
+            }
+            purgedPaths.insert(path);
+        } else {
+            item->dropTileLodSession();
+        }
+        takePendingWorkspacePath(path);
+        item->clearDecodedPixels();
+        PendingSessionBind b;
+        b.path = path;
+        b.id = item->sessionId();
+        b.index = item->sessionIndex();
+        m_bindBook.append(b);
+        if (isImageMode()) {
+            scheduleImageLoad(path, LoadReplace);
+        } else if (isGalleryMode()) {
+            scheduleGalleryDecode(path);
+        } else {
+            scheduleImageLoad(path, LoadAdd);
+        }
+    }
+    if (isGalleryMode() && relayoutGallery) {
+        applyLayout(GalleryPackReason::Reload);
+    }
+    const QString detail = (purgedPaths.size() == 1)
+        ? QFileInfo(*purgedPaths.constBegin()).fileName()
+        : tr("%1 paths · %2 items").arg(purgedPaths.size()).arg(itemCount);
+    flashHud(tr("Hard reload"), detail);
+    emit statusChanged();
+}
+
 void ImageView::applyLayout(GalleryPackReason reason)
 {
     ASSERT_GUI_THREAD();

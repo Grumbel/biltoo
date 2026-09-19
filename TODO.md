@@ -2,6 +2,29 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1581-hard-reload-shift-f5.** Shift+F5 hard reload: clear path caches and re-decode selection/current image.
+Prior: **1580**.
+
+### Change
+- `ImageCache::remove(path)` — drop host sample + in-flight ensures for one path
+- `ImageView::hardReloadFromDisk` — purge ImageCache, tile path RAM, thumtoo
+  cancelTiles + forgetPixelsSettled (all ladder edges), soft reset, clear
+  decoded pixels, re-schedule load
+- Scope: Image = current path; Gallery/Workspace = selection if any, else all
+  on-canvas items
+- `MainWindow`: File → Hard Reload, shortcut Shift+F5
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1581-hard-reload-shift-f5.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1580-tile-crop-map-paint.** Fix cropped tile paint: skip outside cells, UV-clip edges, session crop in tileContentXform.
 Prior: **1579**.
 

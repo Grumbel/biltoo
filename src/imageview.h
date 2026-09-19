@@ -615,6 +615,13 @@ public:
      * Workspace — re-decode on-canvas items in place.
      */
     void reloadFromDisk(bool relayoutGallery = true);
+    /**
+     * Hard reload (Shift+F5): drop host ImageCache + tile path RAM + thumtoo
+     * settled-pixel markers for the target paths, clear decoded pixels, then
+     * re-decode from disk. Image mode — current image; Gallery/Workspace —
+     * selection if any, otherwise all on-canvas items.
+     */
+    void hardReloadFromDisk(bool relayoutGallery = true);
     /** When true, destroyCanvasItem does not clear the undo stack (session remove). */
     void setPreserveUndoOnDestroy(bool on) { m_preserveUndoOnDestroy = on; }
     /**

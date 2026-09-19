@@ -175,6 +175,8 @@ private slots:
     void openDirectory();
     /** F5: reload current image (Image) or re-decode gallery/workspace tiles. */
     void reloadFromDisk();
+    /** Shift+F5: clear host/tile caches for targets and re-decode from disk. */
+    void hardReloadFromDisk();
     void zoomIn();
     void zoomOut();
     void zoomReset();
@@ -549,6 +551,7 @@ private:
     QAction *m_addAct = nullptr;
     QAction *m_openDirAct = nullptr;
     QAction *m_reloadAct = nullptr;
+    QAction *m_hardReloadAct = nullptr;
     QAction *m_openLocationAct = nullptr;
     QAction *m_showLocationBarAct = nullptr;
     QToolBar *m_locationBar = nullptr;
