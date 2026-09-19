@@ -58,7 +58,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     }
     const GroupTransformGeometry::ScaleFactors sf =
         GroupTransformGeometry::scaleFactorsFromDrag(
-            scenePos, m_groupXform.boundsStart, m_groupXform.handle,
+            scenePos, m_groupXform.boundsStartRect(), m_groupXform.handle,
             mods & Qt::ShiftModifier);
     if (!sf.valid) {
         return;
@@ -137,12 +137,12 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
         return;
     }
 
-    const QPointF centre = m_groupXform.centerStart;
+    const QPointF centre = m_groupXform.centerStartPoint();
     // Angle from group centre to pointer; seed from first press stored in
-    // m_groupXform.pressScenePos when the drag starts (set in mouse path).
+    // m_groupXform.pressScenePosPoint() when the drag starts (set in mouse path).
     qreal delta = 0.0;
     if (!GroupTransformGeometry::rotationDeltaFromDrag(
-            centre, m_groupXform.pressScenePos, scenePos,
+            centre, m_groupXform.pressScenePosPoint(), scenePos,
             mods & Qt::ShiftModifier, mods & Qt::ControlModifier, &delta)) {
         return;
     }

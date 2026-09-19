@@ -48,6 +48,14 @@ public:
 
     bool hasActiveHandle() const { return handle != -1; }
 
+    const QPointF &centerStartPoint() const { return centerStart; }
+
+    const QRectF &boundsStartRect() const { return boundsStart; }
+
+    const QPointF &pressScenePosPoint() const { return pressScenePos; }
+
+    qreal pressAngle() const { return pressAngleDeg; }
+
     /** @return true when hover handle index changed. */
     bool setHoverHandle(int h)
     {
