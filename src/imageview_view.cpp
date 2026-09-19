@@ -144,10 +144,9 @@ void ImageView::setBackgroundColorAlt(const QColor &color)
 
 void ImageView::setBackgroundPattern(BackgroundPattern pattern)
 {
-    if (m_canvasBg.pattern == pattern) {
+    if (!m_canvasBg.setPattern(pattern)) {
         return;
     }
-    m_canvasBg.setPattern(pattern);
     viewport()->update();
 }
 

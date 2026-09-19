@@ -54,7 +54,15 @@ struct CanvasBackground {
         return true;
     }
 
-    void setPattern(BackgroundPattern p) { pattern = p; }
+    /** @return true when the pattern changed. */
+    bool setPattern(BackgroundPattern p)
+    {
+        if (pattern == p) {
+            return false;
+        }
+        pattern = p;
+        return true;
+    }
 
     bool setCheckerWorkspaceOnly(bool on)
     {
