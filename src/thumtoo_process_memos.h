@@ -50,6 +50,11 @@ public:
     bool durableNoActive(const QString &path, qint64 nowMs) const;
     void noteDurableNo(const QString &path, qint64 untilMs);
     void clearDurableNo(const QString &path);
+    /**
+     * Drop durable yes/no/min_scale for one path (hard reload / Store purge).
+     * Size memo is retained unless the caller also wants a size re-probe.
+     */
+    void clearDurablePath(const QString &path);
 
     /**
      * Session Open / archive replace: drop durable yes/no/min_scale so a new

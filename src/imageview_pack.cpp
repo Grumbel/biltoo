@@ -503,7 +503,6 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
         if (!hasClassicPath()) {
             return;
         }
-        // Prefer the live item for the classic path so bind ids stay correct.
         for (ImageItem *item : m_items) {
             if (item && item->path() == classicPath()) {
                 targets.append(item);
@@ -511,17 +510,18 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
             }
         }
         if (targets.isEmpty()) {
-            // No item yet — still purge path caches and force LoadReplace.
+            // No item yet — still purge Store + process caches, then LoadReplace.
             const QString path = classicPath();
             ImageCache::remove(path);
             purgeTilePathRam(path);
-            ThumtooCache::cancelTilesForPath(path);
             for (int edge : ThumtooCache::kLadderEdges) {
                 ThumtooCache::forgetPixelsSettled(path, edge);
             }
-            scheduleImageLoad(path, LoadReplace);
             flashHud(tr("Hard reload"), QFileInfo(path).fileName());
-            emit statusChanged();
+            ThumtooCache::purgePathDurable(path, [this, path](qint64 /*tiles*/) {
+                scheduleImageLoad(path, LoadReplace);
+                emit statusChanged();
+            });
             return;
         }
     } else {
@@ -534,7 +534,13 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
         return;
     }
 
-    QSet<QString> purgedPaths;
+    QSet<QString> pathSet;
+    struct ReloadBind {
+        QString path;
+        SessionImageId id = kInvalidSessionImageId;
+        int index = -1;
+    };
+    QList<ReloadBind> binds;
     int itemCount = 0;
     for (ImageItem *item : targets) {
         if (!item) {
@@ -546,41 +552,75 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
         }
         ++itemCount;
         gallerySoftResetPath(path);
-        if (!purgedPaths.contains(path)) {
-            // Host sample, tile RAM, queued tiles, settled-pixel short-circuit.
+        takePendingWorkspacePath(path);
+        item->clearDecodedPixels();
+        if (!pathSet.contains(path)) {
             ImageCache::remove(path);
             purgeTilePathRam(path);
-            ThumtooCache::cancelTilesForPath(path);
             for (int edge : ThumtooCache::kLadderEdges) {
                 ThumtooCache::forgetPixelsSettled(path, edge);
             }
-            purgedPaths.insert(path);
+            pathSet.insert(path);
         } else {
             item->dropTileLodSession();
         }
-        takePendingWorkspacePath(path);
-        item->clearDecodedPixels();
-        PendingSessionBind b;
+        ReloadBind b;
         b.path = path;
         b.id = item->sessionId();
         b.index = item->sessionIndex();
-        m_bindBook.append(b);
-        if (isImageMode()) {
-            scheduleImageLoad(path, LoadReplace);
-        } else if (isGalleryMode()) {
-            scheduleGalleryDecode(path);
-        } else {
-            scheduleImageLoad(path, LoadAdd);
-        }
+        binds.append(b);
     }
-    if (isGalleryMode() && relayoutGallery) {
-        applyLayout(GalleryPackReason::Reload);
+    if (pathSet.isEmpty()) {
+        return;
     }
-    const QString detail = (purgedPaths.size() == 1)
-        ? QFileInfo(*purgedPaths.constBegin()).fileName()
-        : tr("%1 paths · %2 items").arg(purgedPaths.size()).arg(itemCount);
+
+    const QString detail = (pathSet.size() == 1)
+        ? QFileInfo(*pathSet.constBegin()).fileName()
+        : tr("%1 paths · %2 items").arg(pathSet.size()).arg(itemCount);
     flashHud(tr("Hard reload"), detail);
-    emit statusChanged();
+
+    // Purge durable Store tiles off the GUI, then re-decode only after forget
+    // so PreferCache / tile LOD cannot re-hit the old pyramid.
+    const QStringList paths = pathSet.values();
+    auto remaining = std::make_shared<int>(paths.size());
+    auto tileTotal = std::make_shared<qint64>(0);
+    const bool doRelayout = relayoutGallery;
+    const bool imageMode = isImageMode();
+    const bool galleryMode = isGalleryMode();
+
+    auto finish = [this, binds, doRelayout, imageMode, galleryMode, tileTotal]() {
+        for (const ReloadBind &b : binds) {
+            PendingSessionBind pending;
+            pending.path = b.path;
+            pending.id = b.id;
+            pending.index = b.index;
+            m_bindBook.append(pending);
+            if (imageMode) {
+                scheduleImageLoad(b.path, LoadReplace);
+            } else if (galleryMode) {
+                scheduleGalleryDecode(b.path);
+            } else {
+                scheduleImageLoad(b.path, LoadAdd);
+            }
+        }
+        if (galleryMode && doRelayout) {
+            applyLayout(GalleryPackReason::Reload);
+        }
+        if (*tileTotal > 0) {
+            flashHud(tr("Hard reload"),
+                     tr("%1 Store tiles removed").arg(*tileTotal));
+        }
+        emit statusChanged();
+    };
+
+    for (const QString &path : paths) {
+        ThumtooCache::purgePathDurable(path, [remaining, tileTotal, finish](qint64 tiles) {
+            *tileTotal += tiles;
+            if (--(*remaining) == 0) {
+                finish();
+            }
+        });
+    }
 }
 
 void ImageView::applyLayout(GalleryPackReason reason)

@@ -185,6 +185,14 @@ int cancelPendingThumtooWork();
 int cancelTilesForPath(const QString &path);
 
 /**
+ * Hard reload: cancel queued work for @p path, clear process durable memos,
+ * and forget the path in the durable Store (Client::purge_path — tiles + levels).
+ * Store I/O runs on a worker; @p done is invoked on the GUI thread with
+ * tiles_deleted (0 when thumtoo unavailable).
+ */
+void purgePathDurable(const QString &path, std::function<void(qint64 tilesDeleted)> done = {});
+
+/**
  * Replace thumtoo interest snapshot (cancels stale work, schedules overview).
  * pathsNear = visible / high priority; pathsSpeculative = idle overscan.
  * @return new epoch or 0 if unavailable.

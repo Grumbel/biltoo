@@ -93,6 +93,17 @@ void ProcessMemos::clearDurableNo(const QString &path)
     m_durableNoUntilMs.remove(path);
 }
 
+void ProcessMemos::clearDurablePath(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    std::lock_guard lock(m_mu);
+    m_durableYes.remove(path);
+    m_durableMinScale.remove(path);
+    m_durableNoUntilMs.remove(path);
+}
+
 void ProcessMemos::clearSessionReplaceDurable()
 {
     std::lock_guard lock(m_mu);

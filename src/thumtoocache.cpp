@@ -1711,6 +1711,64 @@ int cancelTilesForPath(const QString &path)
 #endif
 }
 
+void purgePathDurable(const QString &path, std::function<void(qint64 tilesDeleted)> done)
+{
+    if (path.isEmpty()) {
+        if (done) {
+            done(0);
+        }
+        return;
+    }
+    // Process memos must not claim durable coverage after Store forget.
+    ProcessMemos::instance().clearDurablePath(path);
+    (void)cancelTilesForPath(path);
+#ifdef BILTOO_HAVE_THUMTOO
+#if defined(THUMTOO_API_PURGE_URI) && THUMTOO_API_PURGE_URI
+    init();
+    const QString pathCopy = path;
+    auto doneCopy = std::move(done);
+    QThreadPool::globalInstance()->start([pathCopy, doneCopy]() {
+        ASSERT_NOT_GUI_THREAD();
+        qint64 tiles = 0;
+        thumtoo::Client *c = nullptr;
+        {
+            std::lock_guard lock(g_mu);
+            c = clientUnlocked();
+        }
+        if (c) {
+            // Forget locators + tile/level blobs for this outer path (and
+            // file:/// URI). Leaves the source file; next decode is cold.
+            const auto stats = c->purge_path(
+                std::filesystem::path(pathCopy.toStdString()), /*dry_run=*/false);
+            tiles = stats.tiles_deleted;
+            thumtooDbg("purgePathDurable path=%s tiles=%lld levels=%lld",
+                       qPrintable(QFileInfo(pathCopy).fileName()),
+                       static_cast<long long>(stats.tiles_deleted),
+                       static_cast<long long>(stats.levels_deleted));
+        }
+        if (!doneCopy) {
+            return;
+        }
+        QCoreApplication *app = QCoreApplication::instance();
+        if (!app) {
+            doneCopy(tiles);
+            return;
+        }
+        QMetaObject::invokeMethod(app, [doneCopy, tiles]() { doneCopy(tiles); },
+                                  Qt::QueuedConnection);
+    });
+#else
+    if (done) {
+        done(0);
+    }
+#endif
+#else
+    if (done) {
+        done(0);
+    }
+#endif
+}
+
 quint64 setInterest(const QStringList &pathsNear, const QStringList &pathsSpeculative,
                     int nearEdge, int speculativeEdge,
                     const QStringList &pathsPrimary, int primaryEdge)

@@ -1664,11 +1664,11 @@ void MainWindow::populateActionHelpTexts()
         "archive members). Appearance and Workspace poses stay; decode caches "
         "refresh when content changed.</p>"));
     setHelp(m_hardReloadAct, tr(
-        "<p>Hard reload (Shift+F5): drop the process host sample, path tile RAM, "
-        "and thumtoo settled-pixel markers for the targets, clear on-canvas "
-        "decoded pixels, then re-decode from disk. Image mode uses the current "
-        "image; Gallery/Workspace use the selection when any items are "
-        "selected, otherwise all on-canvas items.</p>"));
+        "<p>Hard reload (Shift+F5): drop the process host sample and path tile "
+        "RAM, forget durable thumtoo Store tiles for the targets, clear "
+        "on-canvas decoded pixels, then re-decode from disk. Image mode uses "
+        "the current image; Gallery/Workspace use the selection when any items "
+        "are selected, otherwise all on-canvas items.</p>"));
     setHelp(m_quitAct, tr(
         "<p>Quit this Biltoo window. You may be prompted if the Workspace has "
         "unsaved project state.</p>"));

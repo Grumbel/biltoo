@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1582-hard-reload-purge-store.** Shift+F5 also forgets durable thumtoo Store tiles (Client::purge_path).
+Prior: **1581**.
+
+### Change
+- `ProcessMemos::clearDurablePath` — drop durable yes/no memo for one path
+- `ThumtooCache::purgePathDurable` — cancel + clear memo + worker `Client::purge_path`
+- `hardReloadFromDisk` — re-decode only **after** Store purge completes
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1582-hard-reload-purge-store.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1581-hard-reload-shift-f5.** Shift+F5 hard reload: clear path caches and re-decode selection/current image.
 Prior: **1580**.
 
