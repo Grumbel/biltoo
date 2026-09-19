@@ -114,14 +114,14 @@ void ImageView::drawEdgeAffordances(QPainter &painter)
 
 void ImageView::paintTextRubberBandOverlay(QPainter &painter)
 {
-    if (m_textLayer.isRubberbanding() && !m_textLayer.rubberRect.isEmpty()) {
+    if (m_textLayer.isRubberbanding() && m_textLayer.hasRubberRect()) {
         painter.save();
         QPen pen(QColor(40, 120, 220, 220));
         pen.setStyle(Qt::DashLine);
         pen.setWidth(1);
         painter.setPen(pen);
         painter.setBrush(QColor(60, 160, 255, 40));
-        painter.drawRect(m_textLayer.rubberRect.normalized());
+        painter.drawRect(m_textLayer.rubberRectRef().normalized());
         painter.restore();
     }
 
@@ -815,7 +815,7 @@ void ImageView::recomputeTextSearchMatches()
 int ImageView::setTextSearchQuery(const QString &query)
 {
     const QString trimmed = query.trimmed();
-    if (m_textLayer.searchQuery == trimmed && m_textLayer.hasRegions()) {
+    if (m_textLayer.searchQueryRef() == trimmed && m_textLayer.hasRegions()) {
         return m_textLayer.searchMatchesRef().size();
     }
     m_textLayer.setSearchQuery(trimmed);

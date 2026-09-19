@@ -35,6 +35,11 @@ struct TextLayerSession {
 
     bool isRubberbanding() const { return rubberbanding; }
 
+    const QRect &rubberRectRef() const { return rubberRect; }
+
+    bool hasRubberRect() const { return !rubberRect.isEmpty(); }
+
+
     bool showsRegions() const { return showRegions; }
 
     bool isSearchFuzzy() const { return searchFuzzy; }
