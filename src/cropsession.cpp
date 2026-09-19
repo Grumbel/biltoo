@@ -177,6 +177,18 @@ CropSession::EnterInstallSample CropSession::prepareEnterInstallSample(
 }
 
 
+SessionImageId CropSession::resolveSessionIdForItem(const ImageItem *item,
+                                                 SessionImageId imageModeCurrentId)
+{
+    if (!item) {
+        return kInvalidSessionImageId;
+    }
+    if (item->sessionId() != kInvalidSessionImageId) {
+        return item->sessionId();
+    }
+    return imageModeCurrentId;
+}
+
 SessionImageId CropSession::sessionIdForRecord(const ImageItem *item,
                                                SessionImageId boundTargetId,
                                                SessionImageId imageModeCurrentId)

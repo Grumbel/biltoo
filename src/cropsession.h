@@ -125,6 +125,10 @@ public:
                                              SessionImageId boundTargetId,
                                              SessionImageId imageModeCurrentId);
 
+    /** Prefer item session id, else image-mode current id. */
+    static SessionImageId resolveSessionIdForItem(const ImageItem *item,
+                                                  SessionImageId imageModeCurrentId);
+
     static bool isAxisAlignedFullFrame(const QRectF &local, const QRectF &contentRect,
                                        qreal eps = 0.5);
 

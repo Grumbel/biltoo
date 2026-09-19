@@ -210,9 +210,8 @@ void ImageView::setCropMode(bool on)
 bool ImageView::resolveCropEnterAppearance(ImageItem *item, WorkspaceItemState *app) const
 {
     // Prior crop + content flags for *this* session image only — never path map alone.
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : m_sessionId.currentIdValue();
+    const SessionImageId sid = CropSession::resolveSessionIdForItem(
+        item, m_sessionId.currentIdValue());
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             *app = *it;
@@ -465,9 +464,8 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     }
     WorkspaceItemState app;
     bool have = false;
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : m_sessionId.currentIdValue();
+    const SessionImageId sid = CropSession::resolveSessionIdForItem(
+        item, m_sessionId.currentIdValue());
     if (sid != kInvalidSessionImageId) {
         if (const WorkspaceItemState *it = m_appearance.get(sid)) {
             app = *it;
