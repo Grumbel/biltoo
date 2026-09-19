@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1388-pattern-centre-pathbook-mouseinfo.** Bag transitions on tip 1387.
+Prior: **1387**.
+
+### Change
+1. `CanvasBackground::setPattern` reports change
+2. `CentreProgress::set` reports change; clear via `active()`
+3. `PathItemStateBook::take`
+4. `ImageMouseInfo::clear` (ViewportChrome uses it)
+
+### Apply
+```bash
+git pull /path/to/biltoo-1388-pattern-centre-pathbook-mouseinfo.bundle HEAD
+```
+Requires upstream **3830dda** (tips 1376–1388).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1387-decode-delays-hover-zoomblur-layoutpred.** Named delays and
 predicates on tip 1386.
 Prior: **1386**.

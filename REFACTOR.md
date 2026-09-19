@@ -129,6 +129,7 @@ Work in **small tips**: one ownership boundary per tip, behaviour frozen, docs u
 - **AttentionSession** rubber via ViewTransform::rubberRect.
 - **GallerySoft** decode-window delay tiers; hover cursor via ToolPolicy.
 - **SlideshowZoomBlurState::bumpGeneration**; **layoutIsPackaged** / **layoutIsHeightFitted**.
+- **CanvasBackground::setPattern**; **CentreProgress::set**; **PathItemStateBook::take**; **ImageMouseInfo::clear**.
 
 
 ## Current pain (evidence)
