@@ -702,7 +702,8 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 1. **Tier 4** — Move `SessionAppearanceStore` into `SessionDocument`; delete
    view-owned `m_pathOrderBook` path list in favor of document. Blocked on
    fuller ImageView characterization (open→Gallery→crop→Image). Document/id
-   tests exist (`sessiondocument_test`, `sessionappearance_test`).
+   tests exist (`sessiondocument_test`, `sessionappearance_test`; expanded
+  biltoo-1615: crop materialize, dual-model orphan, reorder-by-id).
 2. **Tier 5b** — Move PreferCache climb / install methods off
    `imageview_load.cpp` (~3k lines) onto `DisplayPipelineController`. Soft
    provider and neighbor prefetch still on ImageView.

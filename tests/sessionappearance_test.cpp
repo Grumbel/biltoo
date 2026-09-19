@@ -21,6 +21,10 @@ private slots:
     void duplicatePath_independentCrop();
     void remove_clearsSlot();
     void materialize_identityWhenNoCrop();
+    void materialize_appliesCrop();
+    void materialize_quarterTurnSwapsAspect();
+    void documentRemove_appearanceOrphanAllowed();
+    void replaceAll_preservesAppearanceById();
 };
 
 void SessionAppearanceTest::store_keyedById_notPath()
@@ -78,6 +82,68 @@ void SessionAppearanceTest::materialize_identityWhenNoCrop()
     const QImage out = SessionAppearance::materializeDisplay(
         raw, empty, SessionAppearance::PixelKind::FullSource);
     QCOMPARE(out.size(), raw.size());
+}
+
+void SessionAppearanceTest::materialize_appliesCrop()
+{
+    QImage raw(100, 80, QImage::Format_RGB32);
+    raw.fill(Qt::blue);
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(10, 10, 40, 30);
+    st.cropSourceSize = QSize(100, 80);
+    const QImage out = SessionAppearance::materializeDisplay(
+        raw, st, SessionAppearance::PixelKind::FullSource);
+    QCOMPARE(out.width(), 40);
+    QCOMPARE(out.height(), 30);
+}
+
+void SessionAppearanceTest::materialize_quarterTurnSwapsAspect()
+{
+    QImage raw(40, 20, QImage::Format_RGB32);
+    raw.fill(Qt::green);
+    WorkspaceItemState st;
+    st.contentQuarterTurns = 1; // 90°
+    const QImage out = SessionAppearance::materializeDisplay(
+        raw, st, SessionAppearance::PixelKind::FullSource);
+    QCOMPARE(out.width(), 20);
+    QCOMPARE(out.height(), 40);
+}
+
+void SessionAppearanceTest::documentRemove_appearanceOrphanAllowed()
+{
+    // Tier 4 will own both; today store can retain orphans after doc remove.
+    SessionDocument doc;
+    doc.append(QStringLiteral("/x.jpg"));
+    const SessionImageId id = doc.idAt(0);
+    SessionAppearanceStore store;
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(1, 1, 2, 2);
+    store.set(id, st);
+    doc.removeAt(0);
+    QVERIFY(doc.isEmpty());
+    QVERIFY(store.contains(id)); // current dual-model behaviour
+}
+
+void SessionAppearanceTest::replaceAll_preservesAppearanceById()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+    const SessionImageId idA = doc.idAt(0);
+    const SessionImageId idB = doc.idAt(1);
+    SessionAppearanceStore store;
+    WorkspaceItemState a;
+    a.hasCrop = true;
+    a.cropRect = QRect(0, 0, 10, 10);
+    WorkspaceItemState b;
+    b.hasCrop = true;
+    b.cropRect = QRect(5, 5, 10, 10);
+    store.set(idA, a);
+    store.set(idB, b);
+    doc.replaceAll({QStringLiteral("/b.jpg"), QStringLiteral("/a.jpg")}, {idB, idA});
+    QCOMPARE(store.get(idA)->cropRect, QRect(0, 0, 10, 10));
+    QCOMPARE(store.get(idB)->cropRect, QRect(5, 5, 10, 10));
 }
 
 QTEST_MAIN(SessionAppearanceTest)

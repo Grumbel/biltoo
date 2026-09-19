@@ -23,6 +23,8 @@ private slots:
     void replaceAll_preservesIds();
     void indexOfId_and_path();
     void validateUniqueIds_detectsDuplicate();
+    void insert_middle_shiftsIds();
+    void clear_empties();
 };
 
 void SessionDocumentTest::empty_initial()
@@ -99,6 +101,30 @@ void SessionDocumentTest::validateUniqueIds_detectsDuplicate()
     doc.replaceAll({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")},
                    {1, 1}); // forced duplicate (legacy recovery path)
     QVERIFY(!doc.validateUniqueIds("dup ids"));
+}
+
+void SessionDocumentTest::insert_middle_shiftsIds()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/c.jpg")});
+    const SessionImageId idA = doc.idAt(0);
+    const SessionImageId idC = doc.idAt(1);
+    doc.insert(1, QStringLiteral("/b.jpg"));
+    QCOMPARE(doc.size(), 3);
+    QCOMPARE(doc.idAt(0), idA);
+    QCOMPARE(doc.idAt(2), idC);
+    QVERIFY(doc.idAt(1) != idA);
+    QVERIFY(doc.idAt(1) != idC);
+    QVERIFY(doc.validateUniqueIds("insert"));
+}
+
+void SessionDocumentTest::clear_empties()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg")});
+    doc.clear();
+    QVERIFY(doc.isEmpty());
+    QCOMPARE(doc.size(), 0);
 }
 
 QTEST_MAIN(SessionDocumentTest)

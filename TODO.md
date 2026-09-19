@@ -2,6 +2,25 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1615-phase6-tier4-char-expand.** Expand SessionDocument/Appearance characterization (crop materialize, dual-model orphan, reorder-by-id).
+Prior: **1614**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1615-phase6-tier4-char-expand.bundle HEAD
+```
+
+### Next
+- Rebuild / fix controller compile errors
+- ImageView offscreen harness when linkable
+- Tier 4 Appearance into SessionDocument after tests green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1614-phase6-cleanup-empty-crop-tus.** Remove emptied imageview_crop_*.cpp TUs from build; document remaining Phase 6 work.
 Prior: **1613**.
 
