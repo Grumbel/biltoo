@@ -326,3 +326,4 @@ part of early-phase exit criteria).
 - **DisplayEdgePolicy** climb/bind/tileSynth; crop font clamps; materializePreviewEdge.
 - **maxAxisScale**; **clampGroupScaleAxis**; **safeDivisor**; **SlideshowClocks** policy clamps; track clamp01; pairCount.
 - **WorkspaceGeometry** margins/footprint; HUD maxPanel widths; clampPanZoomFactor; layout longEdge.
+- **ItemFrameGeometry** opacity track min/max/span + trackParamFromOpacity; **SlideshowClocks::clampStoredIntervalMs**; **HudGeometry** progressFillWidth / progressBarHeight.

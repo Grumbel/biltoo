@@ -2,6 +2,27 @@
 
 ## Status (2026-09-19)
 
+**Tip: biltoo-1349-opacity-track-interval-hud-progress.** Opacity track inverse,
+stored interval clamp, HUD progress strip pure helpers.
+Prior: **1348**.
+
+### Change
+- `ItemFrameGeometry::{kOpacityTrackMin,Max,Span,trackParamFromOpacity}`
+- ImageItem shear path: `setItemScale` only (clamp inside)
+- `SlideshowClocks::clampStoredIntervalMs`; seek uses `ViewTransform::clamp01`
+- `HudGeometry::{progressFillWidth,progressBarHeight}`
+
+### Apply
+```bash
+git pull /path/to/biltoo-1349-opacity-track-interval-hud-progress.bundle HEAD
+```
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-19)
+
 **Tip: biltoo-1348-clocks-sec-font-line.** Reconstructed on upstream (tip 1347 base missing from bundle).
 
 ### Bundle apply note
