@@ -1038,9 +1038,7 @@ bool ImageView::applyCropCommit(ImageItem *item)
         if (!st.hasCrop) {
             st = captureState(item);
             st.hasCrop = true;
-            st.cropRect = CropGeometry::integerCropFromLocal(
-                QRectF(m_crop.currentRect().left(), m_crop.currentRect().top(), cropW, cropH),
-                item->offset());
+            st.cropRect = m_crop.integerCropForOffset(item->offset());
             st.cropSourceSize = item->imageSize();
             st.cropRotation = m_crop.currentRotation();
             if (sid != kInvalidSessionImageId) {

@@ -112,6 +112,10 @@ public:
     void applyResizeDrag(const QPointF &local, const QRectF &contentRect, const QRectF &limits,
                          qreal minSide, bool fromCenter, bool forceSquare);
 
+    /** Integer session crop rect from draft (content-local minus item offset). */
+    QRect integerCropForOffset(const QPointF &itemOffset) const;
+
+
 
     void beginRubber(const QPointF &originLocal)
     {

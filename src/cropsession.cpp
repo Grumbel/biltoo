@@ -255,3 +255,8 @@ void CropSession::applyResizeDrag(const QPointF &local, const QRectF &contentRec
         setRect(CropGeometry::constrainToContent(r, currentRotation(), contentRect, minSide));
     }
 }
+
+QRect CropSession::integerCropForOffset(const QPointF &itemOffset) const
+{
+    return CropGeometry::integerCropFromLocal(currentRect(), itemOffset);
+}
