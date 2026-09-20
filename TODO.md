@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1751-continuous-handle-authority.** Continuous drag via HandlePressScratch.
+Prior: **1750**.
+
+### Change
+- `HandlePressScratch::hasContinuousHandle()` — interaction authority for continuous drag
+- begin sites (chrome/shell) gate `beginHandleDrag` on press, not `hasActiveHandle()`
+- mid-drag: `isHandleDragging()` alone (session already owns continuous drag)
+- `endHandleInteraction(Handle continuous)` takes press-time handle for commit
+- `hasActiveHandle()` / `m_activeHandle` remain paint-hot residual only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1751-continuous-handle-authority.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear/rotate smoke
+- Further paint residual demotion or characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1750-handle-press-handle.** Continuous handle on HandlePressScratch.
 Prior: **1749**.
 

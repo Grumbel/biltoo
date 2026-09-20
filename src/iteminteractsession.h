@@ -24,6 +24,9 @@ struct HandlePressScratch {
      * None = 0. Mid-drag scale/shear/rotate read this, not ImageItem::m_activeHandle.
      */
     int handle = 0;
+
+    /** True when beginHandleInteraction armed a continuous drag (not a chrome click). */
+    bool hasContinuousHandle() const { return handle != 0; }
 };
 
 /**

@@ -2250,7 +2250,7 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
         activateChromeHandle(h);
         return true;
     }
-    m_activeHandle = h; // paint hot + hasActiveHandle until Stage 2 residual clears
+    m_activeHandle = h; // paint hot residual (interaction authority is press.handle)
     HandlePressScratch press;
     press.scenePos = scenePos;
     press.scaleX = m_scaleX;
@@ -2296,10 +2296,11 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
     notifyViewStatus();
 }
 
-void ImageItem::endHandleInteraction()
+void ImageItem::endHandleInteraction(Handle continuous)
 {
     // Free-rotate / scale: persist when the gesture finishes.
-    if (m_activeHandle != Handle::None && m_activeHandle != Handle::OpacitySlider) {
+    // continuous comes from HandlePressScratch (interaction authority).
+    if (continuous != Handle::None && continuous != Handle::OpacitySlider) {
         if (scene()) {
             for (QGraphicsView *v : scene()->views()) {
                 if (auto *iv = qobject_cast<ImageView *>(v)) {

@@ -986,3 +986,5 @@ Phase 1–6 rules still apply. Additions:
   endHandleDrag); fixes free-rotate mouse release build break.
 - biltoo-1750: HandlePressScratch::handle owns continuous handle for mid-drag;
   update/applyScale/applyShear read press.handle; m_activeHandle paint residual.
+- biltoo-1751: continuous-drag authority on HandlePressScratch (hasContinuousHandle);
+  endHandleInteraction(Handle) from press; hasActiveHandle paint residual only.

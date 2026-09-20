@@ -318,7 +318,7 @@ bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
         event->accept();
         return true;
     }
-    if (m_itemInteract.isHandleDragging() && m_itemInteract.currentHandleDragItem()->hasActiveHandle()) {
+    if (m_itemInteract.isHandleDragging()) {
         m_itemInteract.currentHandleDragItem()->updateHandleInteraction(
             mapToScene(event->pos()), event->modifiers(), m_itemInteract.handlePressRef());
         viewport()->update(); // live chrome while scaling/rotating
@@ -360,7 +360,9 @@ bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
         return false;
     }
     ImageItem *handleItem = m_itemInteract.currentHandleDragItem();
-    handleItem->endHandleInteraction();
+    const ImageItem::Handle continuous =
+        static_cast<ImageItem::Handle>(m_itemInteract.handlePressRef().handle);
+    handleItem->endHandleInteraction(continuous);
     pushItemTransformUndo(handleItem, m_itemInteract.currentDragStartState(),
                           captureState(handleItem), tr("Transform"));
     m_itemInteract.endHandleDrag();

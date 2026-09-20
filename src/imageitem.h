@@ -311,14 +311,21 @@ public:
      */
     /**
      * Start continuous handle drag. Writes press scratch to @p outPress when
-     * a scale/shear/rotate/opacity handle is armed (hasActiveHandle()).
+     * a scale/shear/rotate/opacity handle is armed (outPress->hasContinuousHandle()).
      * One-shot chrome buttons (flip/raise/…) return true without arming drag.
      */
     bool beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods,
                                 HandlePressScratch *outPress = nullptr);
     void updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods,
                                  HandlePressScratch &press);
-    void endHandleInteraction();
+    /**
+     * Finish continuous handle drag. @p continuous is the press-time handle
+     * (HandlePressScratch::handle); geometry commit skipped for None / OpacitySlider.
+     * Clears paint residual m_activeHandle.
+     */
+    void endHandleInteraction(Handle continuous = Handle::None);
+    /** Paint residual: continuous handle still armed on this item. Prefer
+     * HandlePressScratch::hasContinuousHandle for interaction authority. */
     bool hasActiveHandle() const { return m_activeHandle != Handle::None; }
 
     /** Paint transform chrome in device pixels (identity world transform). */
