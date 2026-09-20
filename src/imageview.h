@@ -466,21 +466,6 @@ public:
     /** True when crop is allowed: exactly one transform target (not multi-select). */
     bool hasSingleCropTarget() const;
 
-    /**
-     * Interactive crop (Image mode, or a single Workspace target).
-     * Toggle on: draft rect = full content; dim outside; edge/corner handles.
-     * Enter applies pixel crop; Esc / toggle off cancels.
-     */
-    void setCropMode(bool on);
-    /**
-     * Best host raster for crop / content bake / Workspace restore.
-     * Prefer ImageCache when it already covers native logical size (after
-     * Image-mode / thumtoo full climb); otherwise ImageLoader::load and put
-     * into ImageCache. Avoids redundant full decodes on the GUI when the
-     * session already holds native pixels.
-     */
-    bool isCropMode() const { return m_cropCtrl.active(); }
-    void toggleCropMode();
 
     /**
      * Attention / focus-point mode (Image mode). Multi-point overlay with
@@ -492,10 +477,6 @@ public:
     void setAttentionMode(bool on);
     bool isAttentionMode() const { return m_attentionCtrl.active(); }
     void toggleAttentionMode();
-    /** Commit the draft crop rect to pixels and leave crop mode. */
-    void applyCrop();
-    /** Discard the draft and leave crop mode. */
-    void cancelCrop();
     /** Restore pixels + session crop metadata (used by crop undo/redo). */
     void applyCropAppearance(ImageItem *item, const QImage &src,
                             const WorkspaceItemState &state);

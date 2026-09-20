@@ -1727,8 +1727,8 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
         refreshSameCurrentIndex(ensureGalleryVisible);
         return;
     }
-    if (m_imageView && m_imageView->isCropMode()) {
-        m_imageView->cancelCrop();
+    if (m_imageView && m_imageView->hostCrop().active()) {
+        m_imageView->hostCrop().cancelCrop();
     }
     // Paused slideshow: clear transition overlay so the newly loaded image is
     // visible (hold/live layers otherwise mask LoadReplace).
@@ -2119,8 +2119,8 @@ void MainWindow::updateNavTransformCropActions(bool canTransform)
         m_cropAct->setProperty(
             "biltooDisabledHelp",
             tr("Crop needs Image mode, or exactly one selected tile in Gallery or Workspace."));
-        if (!canCrop && m_imageView && m_imageView->isCropMode()) {
-            m_imageView->cancelCrop();
+        if (!canCrop && m_imageView && m_imageView->hostCrop().active()) {
+            m_imageView->hostCrop().cancelCrop();
         }
     }
     // Placement resets are Workspace-only (content transforms use Image menu).

@@ -191,7 +191,6 @@
     /** Current view-level scale factor (workspace zoom). */
     qreal viewScale() const;
 
-    bool enterCropModeFromUi();
 
     /** Re-run saliency detect on the current image (replaces all points). */
     void detectAttentionPoint();
@@ -201,7 +200,6 @@
     /** Shrink draft to non-background content (margin trim). */
     void requestCropViewportUpdate();
 
-    void applyAutoCrop();
 
     bool showTextRegions() const { return m_textLayer.showsRegions(); }
 

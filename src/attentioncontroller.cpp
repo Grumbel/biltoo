@@ -203,8 +203,8 @@ void AttentionController::setAttentionMode(bool on)
             emit m_view->attentionModeChanged(false);
             return;
         }
-        if (m_view->isCropMode()) {
-            m_view->cancelCrop();
+        if (m_view->hostCrop().active()) {
+            m_view->hostCrop().cancelCrop();
         }
         session().enterMode();
         if (m_view->hostHoverEdge() != ImageView::EdgeZone::None) {

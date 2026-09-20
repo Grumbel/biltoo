@@ -386,8 +386,8 @@ MainWindow::MainWindow(QWidget *parent)
             cancelSearchBar();
             return;
         }
-        if (m_imageView && m_imageView->isCropMode()) {
-            m_imageView->cancelCrop();
+        if (m_imageView && m_imageView->hostCrop().active()) {
+            m_imageView->hostCrop().cancelCrop();
             return;
         }
         // Leave slideshow (playing or paused) before leaving fullscreen / Image mode.
@@ -821,9 +821,9 @@ void MainWindow::toggleCropMode()
                 m_pendingGalleryCrop = false;
                 QObject::disconnect(*conn);
                 delete conn;
-                m_imageView->setCropMode(true);
+                m_imageView->hostCrop().setCropMode(true);
                 if (m_cropAct) {
-                    m_cropAct->setChecked(m_imageView->isCropMode());
+                    m_cropAct->setChecked(m_imageView->hostCrop().active());
                 }
             });
         if (m_cropAct) {
@@ -833,9 +833,9 @@ void MainWindow::toggleCropMode()
         return;
     }
     m_pendingGalleryCrop = false;
-    m_imageView->setCropMode(want);
+    m_imageView->hostCrop().setCropMode(want);
     if (m_cropAct) {
-        m_cropAct->setChecked(m_imageView->isCropMode());
+        m_cropAct->setChecked(m_imageView->hostCrop().active());
     }
 }
 
@@ -1322,8 +1322,8 @@ void MainWindow::toggleAttentionMode()
         return;
     }
     const bool want = m_attentionAct->isChecked();
-    if (want && m_imageView->isCropMode()) {
-        m_imageView->cancelCrop();
+    if (want && m_imageView->hostCrop().active()) {
+        m_imageView->hostCrop().cancelCrop();
         if (m_cropAct) {
             m_cropAct->setChecked(false);
         }
@@ -3299,8 +3299,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         }
-        if (m_imageView && m_imageView->isCropMode()) {
-            m_imageView->cancelCrop();
+        if (m_imageView && m_imageView->hostCrop().active()) {
+            m_imageView->hostCrop().cancelCrop();
             event->accept();
             return;
         }

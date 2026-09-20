@@ -53,35 +53,19 @@ void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnch
     m_cropCtrl.alignItemCenterToScene(item, sceneAnchor);
 }
 
-void ImageView::toggleCropMode()
-{
-    m_cropCtrl.toggleCropMode();
-}
 
 void ImageView::requestCropViewportUpdate()
 {
     m_cropCtrl.requestCropViewportUpdate();
 }
 
-void ImageView::applyAutoCrop()
-{
-    m_cropCtrl.applyAutoCrop();
-}
 
 void ImageView::flashCropHud(const CropFlash::Hud &hud)
 {
     m_cropCtrl.flashCropHud(hud);
 }
 
-void ImageView::applyCrop()
-{
-    m_cropCtrl.applyCrop();
-}
 
-void ImageView::cancelCrop()
-{
-    m_cropCtrl.cancelCrop();
-}
 
 SessionImageId ImageView::cropRecordSessionId(const ImageItem *item) const
 {
@@ -108,15 +92,7 @@ void ImageView::leaveCropModeInternal(bool apply)
     m_cropCtrl.leaveCropModeInternal(apply);
 }
 
-bool ImageView::enterCropModeFromUi()
-{
-    return m_cropCtrl.enterCropModeFromUi();
-}
 
-void ImageView::setCropMode(bool on)
-{
-    m_cropCtrl.setCropMode(on);
-}
 
 bool ImageView::prepareCropModeFullImage(ImageItem *item)
 {
