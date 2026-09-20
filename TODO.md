@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1766-duplicate-apply-placement.** Duplicate pose via applyPlacement.
+Prior: **1765**.
+
+### Change
+- Workspace duplicate: copy `src->placement()`, offset pos, bump z, applyPlacement
+- Gallery duplicate: identity Placement at src pos via applyPlacement
+- Stage 2 single pose writer for duplicateSelected
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1766-duplicate-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + duplicate/paste smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1765-free-rotate-apply-placement.** Workspace free-rotate via applyPlacement.
 Prior: **1764**.
 

@@ -5,6 +5,7 @@
 
 #include "imageview.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 #include "sessionappearance.h"
 
 #include <QSet>
@@ -87,22 +88,15 @@ void ImageView::duplicateSelected()
         attachDisplaySample(copy, display, content, kind);
         m_pendingAppearance.insert(copy, content);
         if (isWorkspaceMode()) {
-            copy->setItemScale(src->itemScaleX(), src->itemScaleY());
-            copy->setItemShear(src->itemShear());
-            copy->setItemRotation(src->itemRotation());
-            copy->setItemHFlip(src->itemHFlip());
-            copy->setItemVFlip(src->itemVFlip());
-            copy->setItemOpacity(src->itemOpacity());
-            copy->setStackZ(src->stackZ() + 0.01);
-            // Offset so the duplicate is visible beside the original
-            copy->setPos(src->pos() + QPointF(40.0, 40.0));
+            ItemComponents::Placement pl = src->placement();
+            pl.pos += QPointF(40.0, 40.0); // visible beside the original
+            pl.z = src->stackZ() + 0.01;
+            copy->applyPlacement(pl);
         } else {
             // Gallery: upright tile; MainWindow packs after binding session ids.
-            copy->setItemRotation(0.0);
-            copy->setItemHFlip(false);
-            copy->setItemVFlip(false);
-            copy->setItemOpacity(1.0);
-            copy->setPos(src->pos());
+            ItemComponents::Placement pl;
+            pl.pos = src->pos();
+            copy->applyPlacement(pl);
         }
         copy->setSelected(true);
     }
