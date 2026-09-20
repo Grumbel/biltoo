@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1855-ccache-startup-diag.** ccache status printed on `nix develop`.
+Prior: **1854**.
+
+### Change
+- shellHook: binary, version, CCACHE_DIR writability, CC/CXX wrapper, stats,
+  and instructions for persistent `nix build` cache (`extra-sandbox-paths`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1855-ccache-startup-diag.bundle HEAD
+```
+Requires tip **1854**.
+
+### Next
+- biltoo-build / Image smoke
+- Phase 6 Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1854-gallery-placeholders-via-host.** ensureGalleryPlaceholders via gallery.
 Prior: **1853**.
 
