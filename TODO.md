@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1729-component-attention-color.** Use Attention + Color component APIs.
+Prior: **1728**.
+
+### Change
+- AttentionController: read `itemWorld().attention()`, write `setAttention`
+- `setTargetColorAdjustments` → `itemWorld().setColor` (+ path/id DTO backfill)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1729-component-attention-color.bundle HEAD
+```
+
+### Next
+- biltoo-build + manual attention / grade smoke
+- Route crop/bake through setCrop / setContentBake where updates are field-local
+- Stage 2: ImageItem demotion, or Phase 6 Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1728-itemworld-bake-color.** Stage 1 ContentBake + Color components.
 Prior: **1727**.
 

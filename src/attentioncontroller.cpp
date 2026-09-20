@@ -48,13 +48,9 @@ QVector<QPointF> AttentionController::attentionPointsForTarget() const
 {
     const SessionImageId sid = attentionSessionId();
     if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *st = m_view->hostAppearance().get(sid)) {
-            if (!st->attentionPoints.isEmpty()) {
-                return st->attentionPoints;
-            }
-            if (st->hasAttention) {
-                return {st->attentionNorm};
-            }
+        const ItemComponents::Attention a = m_view->itemWorld().attention(sid);
+        if (!a.isEmpty()) {
+            return a.points;
         }
     }
     if (session().hasDraftFor(sid)) {
@@ -91,10 +87,9 @@ void AttentionController::setAttentionPointsForTarget(const QVector<QPointF> &pt
     session().setSelected(kept);
 
     if (sid != kInvalidSessionImageId) {
-        WorkspaceItemState st = m_view->hostAppearance().value(sid);
-        st.attentionPoints = clamped;
-        st.syncAttentionPrimary();
-        m_view->itemWorld().setAppearance(sid, st);
+        ItemComponents::Attention a;
+        a.points = clamped;
+        m_view->itemWorld().setAttention(sid, a);
     }
     if (m_view->viewport()) {
         m_view->viewport()->update();
@@ -118,15 +113,10 @@ void AttentionController::ensureAttentionPoint()
 {
     const SessionImageId sid = attentionSessionId();
     if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *st = m_view->hostAppearance().get(sid)) {
-            if (!st->attentionPoints.isEmpty() || st->hasAttention) {
-                session().setDraft(
-                    !st->attentionPoints.isEmpty()
-                        ? st->attentionPoints
-                        : QVector<QPointF>{st->attentionNorm},
-                    sid);
-                return;
-            }
+        const ItemComponents::Attention a = m_view->itemWorld().attention(sid);
+        if (!a.isEmpty()) {
+            session().setDraft(a.points, sid);
+            return;
         }
     }
     detectAttentionPoint();

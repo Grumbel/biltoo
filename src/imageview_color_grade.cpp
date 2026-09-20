@@ -4,6 +4,7 @@
 // Interactive colour-grade apply and commit.
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "imageitem.h"
 #include "contentxform.h"
 #include "thumtoocache.h"
@@ -165,13 +166,23 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     WorkspaceItemState slot = (sid != kInvalidSessionImageId && appearance().contains(sid))
         ? appearance().value(sid)
         : captureState(item);
+    slot.sessionId = (sid != kInvalidSessionImageId) ? sid : slot.sessionId;
+    slot.path = item->path().isEmpty() ? slot.path : item->path();
+    slot.colorAdjust = adj;
     if (sid != kInvalidSessionImageId) {
-        slot.sessionId = sid;
-        slot.path = item->path();
-        slot.colorAdjust = adj;
-        m_itemWorld.setAppearance(sid, slot);
-    } else {
-        slot.colorAdjust = adj;
+        // Component write (dual-writes DTO color fields); then ensure path/id.
+        ItemComponents::Color c;
+        c.grade = adj;
+        m_itemWorld.setColor(sid, c);
+        if (const WorkspaceItemState *cur = m_itemWorld.getAppearance(sid)) {
+            slot = *cur;
+            if (slot.path.isEmpty() || slot.sessionId == kInvalidSessionImageId) {
+                slot.sessionId = sid;
+                slot.path = item->path();
+                slot.colorAdjust = adj;
+                m_itemWorld.setAppearance(sid, slot);
+            }
+        }
     }
     // Fast path while dragging: bake from clamped host (no SQLite / filmstrip).
     applyInteractiveColorGrade(item, slot);

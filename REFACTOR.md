@@ -940,3 +940,5 @@ Phase 1–6 rules still apply. Additions:
   `clearAppearance` clears DTO + sparse tables.
 - biltoo-1728: Stage 1 residual — ContentBake + Color components and sparse
   tables on ItemWorld (dual-write with DTO; identity ⇒ absent).
+- biltoo-1729: Attention read/write via `itemWorld().attention` / `setAttention`;
+  colour grade via `setColor` (path/id backfill on DTO when needed).
