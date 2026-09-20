@@ -102,7 +102,10 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             if (isImageMode()) {
                 ImageItem *item = primaryItem();
                 if (!item && m_image.hasClassicPath()) {
-                    item = findItemByPath(m_image.classicPath());
+                    item = findPreferredItemForPath(m_image.classicPath());
+                    if (!item) {
+                        item = findItemByPath(m_image.classicPath());
+                    }
                 }
                 if (item) {
                     src = item->displayImage();

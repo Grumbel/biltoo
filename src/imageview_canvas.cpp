@@ -550,7 +550,11 @@ void ImageView::focusSessionPath(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    ImageItem *item = findItemByPath(path);
+    // Before clearSelection so a selected duplicate wins over first-match.
+    ImageItem *item = findPreferredItemForPath(path);
+    if (!item) {
+        item = findItemByPath(path);
+    }
     if (!item) {
         return;
     }

@@ -20,7 +20,12 @@ bool ImageView::addImage(const QString &path)
         return false;
     }
 
-    if (ImageItem *existing = findItemByPath(path)) {
+    // Prefer selected/sole instance when LoadAdd left multiple tiles for path.
+    ImageItem *existing = findPreferredItemForPath(path);
+    if (!existing) {
+        existing = findItemByPath(path);
+    }
+    if (existing) {
         m_scene->clearSelection();
         existing->setSelected(true);
         ensureVisibleItem(existing);

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1923-preferred-path-add-focus-paint.** More preferred-item path lookups.
+Prior: **1922**.
+
+### Change
+- `addImage`: select preferred/sole path instance before first-match
+- `focusSessionPath`: prefer selected duplicate **before** clearSelection
+- Classic-path paint fallback: preferred then first-match
+- Complements Gallery preferred lookups (1922)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1923-preferred-path-add-focus-paint-516d734.bundle HEAD
+```
+Requires tip **1922** (base **516d734**).
+
+### Next
+- Prefer session-id APIs at call sites that already have an id
+- Green CHARACTERIZATION=ON on roomier host
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1922-preferred-path-lookup-gallery.** Identity-correct path lookup in Gallery.
 Prior: **1921**.
 
