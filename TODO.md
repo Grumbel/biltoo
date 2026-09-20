@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1840-drop-dead-crop-forwards.** Drop dead ImageView crop one-liners.
+Prior: **1839**.
+
+### Change
+- Live hops → `m_cropCtrl` / `hostCrop()`: draft-lock, leaveCrop, paint overlay,
+  maybeUpgrade full raster, pool decode callback
+- Remove ~30 pure ImageView→CropController forwards + decls
+- `imageview_crop.cpp` retains store/load/apply/emit appearance helpers only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1840-drop-dead-crop-forwards.bundle HEAD
+```
+Requires tip **1839**.
+
+### Next
+- biltoo-build smoke (crop + pipeline freeze paths)
+- Tier 4 characterization
+- Optional: further host-surface narrowing
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1839-crop-via-host.** MainWindow crop mode via hostCrop.
 Prior: **1838**.
 
