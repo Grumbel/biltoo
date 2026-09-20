@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1779-bind-pose-via-placement.** Residual pose pack via Placement.
+Prior: **1778**.
+
+### Change
+- `bindSelectedSessionIds`: live pose → `applyPlacementToState(slot, item->placement())`
+- CropSession enter stash rotation/shear and scale extract read `item->placement()`
+- Footprint soft→full scale read via `placement()` in session bind
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1779-bind-pose-via-placement.bundle HEAD
+```
+
+### Next
+- Tile-LOD demotion off ImageItem (Stage 2 residual)
+- Offscreen ImageView characterization harness (Tier 4)
+- Remaining HUD/status pose getters may stay (read-only convenience)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1778-itemworld-link-sessionappearance.** Fix itemworld test link.
 Prior: **1777** (`bf2e64a`).
 

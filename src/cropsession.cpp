@@ -209,8 +209,9 @@ void CropSession::itemScalePair(const ImageItem *item, qreal *sx, qreal *sy)
     if (!item || !sx || !sy) {
         return;
     }
-    *sx = item->itemScaleX();
-    *sy = item->itemScaleY() > 0.0 ? item->itemScaleY() : *sx;
+    const ItemComponents::Placement pl = item->placement();
+    *sx = pl.scale;
+    *sy = pl.scaleY > 0.0 ? pl.scaleY : *sx;
 }
 
 SessionImageId CropSession::resolveSessionIdForItem(const ImageItem *item,
@@ -740,7 +741,10 @@ void CropSession::beginEnterSession(ImageItem *item, const QImage &enterSrc,
     }
     bindTarget(item, item->sessionId(), item->path());
     setEnterSnapshot(enterSrc, enterSt, snapshotValid);
-    stashPlacement(item->itemRotation(), item->itemShear());
+    {
+        const ItemComponents::Placement pl = item->placement();
+        stashPlacement(pl.rotation, pl.shear);
+    }
     if (hasStashedPlacement()) {
         ItemComponents::Placement pl = item->placement();
         pl.rotation = 0.0;

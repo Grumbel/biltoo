@@ -6,6 +6,7 @@
 #include "imageview.h"
 #include "packorderview.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 #include "imagecache.h"
 #include "sessionappearance.h"
 #include "sessionbindbook.h"
@@ -277,15 +278,7 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         }
         item->setSessionId(id);
         // Live placement from the canvas item (Duplicate offsets, scales, …).
-        slot.pos = item->pos();
-        slot.scale = item->itemScaleX();
-        slot.scaleY = item->itemScaleY();
-        slot.shear = item->itemShear();
-        slot.rotation = item->itemRotation();
-        slot.opacity = item->itemOpacity();
-        slot.z = item->stackZ();
-        slot.hFlip = item->itemHFlip();
-        slot.vFlip = item->itemVFlip();
+        ItemComponents::applyPlacementToState(slot, item->placement());
         slot.hasCrop = item->sessionHasCrop();
         slot.cropRect = item->sessionCropRect();
         slot.contentHFlip = item->contentHFlip();

@@ -85,8 +85,9 @@ bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const Q
     // oriented (or just aspect-correct) pixels into the provisional footprint and
     // looked like "wrong rotation + stretch" on drag-drop without any rotate.
     const QSize before = item->imageSize();
-    const qreal sx0 = item->itemScaleX();
-    const qreal sy0 = item->itemScaleY() > 0.0 ? item->itemScaleY() : sx0;
+    const ItemComponents::Placement pl0 = item->placement();
+    const qreal sx0 = pl0.scale;
+    const qreal sy0 = pl0.scaleY > 0.0 ? pl0.scaleY : sx0;
     const qreal footW = before.width() * sx0;
     const qreal footH = before.height() * sy0;
     // Leave Gallery pack geometry on Workspace tiles.
