@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1921-pure-characterization-verified-green.** Pure suite green on Qt 6.11.
+Prior: **1920**.
+
+### Change
+- AGENT-ENV.md: how to build/run pure characterization under low RAM (`-j1`)
+- IMAGEVIEW_CHARACTERIZATION.md: recorded **16 passed / 0 failed / 1 skipped**
+  (Qt 6.11 `nix develop`, pure scaffold, offscreen)
+- Full harness still needs CHARACTERIZATION=ON + enough RAM for `biltoo_lib`
+- No code behaviour change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1921-pure-characterization-verified-green-516d734.bundle HEAD
+```
+Requires tip **1920** (base **516d734**).
+
+### Next
+- Full green: `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` + ctest on a host with
+  ≥4 GiB RAM (or patience at `-j1`)
+- Phase 7 ImageItem field demotion (design-heavy)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1920-harness-all-components-survive-clear.** Full harness mirrors pure locks.
 Prior: **1919**.
 

@@ -61,6 +61,11 @@ asserts LoadAdd multiplicity — without waiting on decode.
 
 ### Pure (green — imageview-characterization)
 
+Verified 2026-09-21 on Qt 6.11 (`nix develop`, pure scaffold, offscreen):
+**16 passed, 0 failed, 1 skipped** (full ImageView slot skips without
+`-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON`). See AGENT-ENV.md for commands.
+
+
 - [x] After open: `doc.size() == 2`, unique ids
 - [x] After Gallery enter simulation: overlay resolves aligned with document
 - [x] After crop commit: `itemWorld().hasCrop(sid)` + `ContentXform::layoutSize`

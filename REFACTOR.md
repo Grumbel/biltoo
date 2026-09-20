@@ -779,8 +779,9 @@ split (1913–1915): `host_accessors` bags, `host_ops` / `host_crop_display` /
    on `PackOrderOverlay` (1883–1884). Pure + dual-model (1885–1886); dead
    read-source API (1887). `biltoo_lib` + optional characterization link
    (1891). Offscreen ImageView body exercises pack/crop/LoadAdd without
-   decode wait (1892). **Still open:** decode/framing assertions; green
-   ctest with `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` on a Qt host.
+   decode wait (1892). **Pure scaffold green** (1921: 16 pass / 1 skip on Qt 6.11). **Still open:**
+   full harness decode/framing; green ctest with
+   `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` (needs RAM for biltoo_lib).
    See PATH_ORDER.md / IMAGEVIEW_CHARACTERIZATION.md.
 2. **Tier 5** — **done** for exit size: PreferCache/install/schedule/tile LOD on
    `DisplayPipelineController` (split TUs + jobs). Soft provider and neighbor
@@ -1152,6 +1153,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1918: pure characterization ContentBake + Color survive pathOrderClear.
 - biltoo-1919: pure characterization Attention survives pathOrderClear (component family complete).
 - biltoo-1920: full ImageView harness asserts all id-keyed components survive pathOrderClear.
+- biltoo-1921: pure characterization verified green (16 pass / 1 skip) on Qt 6.11 nix develop.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
