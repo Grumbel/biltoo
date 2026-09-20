@@ -70,6 +70,7 @@ asserts LoadAdd multiplicity — without waiting on decode.
 - [x] Host setOrder collapses when aligned; clear stays Explicit empty
 - [x] Append after collapse seeds document membership
 - [x] Crop survives pathOrderClear (return-to-Image invariant)
+- [x] Placement survives pathOrderClear; sibling id has no placement
 
 ### Full ImageView (`BILTOO_HAVE_IMAGEVIEW_HARNESS`)
 

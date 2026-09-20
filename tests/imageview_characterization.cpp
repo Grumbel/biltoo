@@ -48,6 +48,7 @@ private slots:
     void hostMutators_clearStaysExplicitEmpty();
     void hostMutators_appendAfterCollapse_seedsMembership();
     void returnToImage_cropSurvivesPathOrderClear();
+    void returnToImage_placementSurvivesPathOrderClear();
 
     void imageView_openGalleryCropReturn();
 
@@ -255,6 +256,40 @@ void ImageViewCharacterizationTest::returnToImage_cropSurvivesPathOrderClear()
     QVERIFY(world.hasCrop(focus));
     QVERIFY(!world.hasCrop(other));
     QCOMPARE(world.getAppearance(focus)->cropRect, QRect(8, 8, 16, 12));
+    QVERIFY(overlay.resolve(&doc).isEmpty());
+    QCOMPARE(doc.size(), 2);
+}
+
+/** Stage 2: Placement is id-keyed; path-order clear must not drop pose. */
+void ImageViewCharacterizationTest::returnToImage_placementSurvivesPathOrderClear()
+{
+    SessionDocument doc;
+    doc.setPaths({m_pathA, m_pathB});
+    const SessionImageId focus = doc.idAt(0);
+    const SessionImageId other = doc.idAt(1);
+
+    ItemWorld world;
+    world.bindAppearance(&doc.appearance());
+
+    ItemComponents::Placement pose;
+    pose.pos = QPointF(120.0, 80.0);
+    pose.scale = 1.25;
+    pose.rotation = 15.0;
+    world.setPlacement(focus, pose);
+
+    QVERIFY(world.hasPlacement(focus));
+    QVERIFY(!world.hasPlacement(other));
+
+    PackOrderOverlay overlay;
+    overlay.setExplicit(doc.paths(), doc.ids());
+    overlay.clearExplicit();
+
+    QVERIFY(world.hasPlacement(focus));
+    QVERIFY(!world.hasPlacement(other));
+    const ItemComponents::Placement got = world.placement(focus);
+    QCOMPARE(got.pos, QPointF(120.0, 80.0));
+    QVERIFY(qFuzzyCompare(got.scale, 1.25));
+    QVERIFY(qFuzzyCompare(got.rotation, 15.0));
     QVERIFY(overlay.resolve(&doc).isEmpty());
     QCOMPARE(doc.size(), 2);
 }

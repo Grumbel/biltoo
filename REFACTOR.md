@@ -1148,6 +1148,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1914: host_ops vs host_accessors — gallery/page-guide ops off accessors file.
 - biltoo-1915: host bags (appearance/session/HUD/loadGate/…) in accessors; crop_display ops-only; ~598 lines.
 - biltoo-1916: private_methods blank trim; host include banners; REFACTOR metrics/friend/load TU notes.
+- biltoo-1917: pure characterization Placement survives pathOrderClear; PackOrderOverlay docs.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

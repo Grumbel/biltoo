@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1917-placement-survives-pathorder-clear.** Phase 7 pure characterization.
+Prior: **1916**.
+
+### Change
+- Pure characterization: `returnToImage_placementSurvivesPathOrderClear` —
+  Placement is id-keyed; path-order clear leaves pose; sibling unchanged
+- PackOrderOverlay header: FollowDocument via setOrder collapse; private append
+- IMAGEVIEW_CHARACTERIZATION.md checklist updated
+- No behaviour change (tests + docs only)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1917-placement-survives-pathorder-clear-516d734.bundle HEAD
+```
+Requires tip **1916** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON (full ImageView harness on Qt host)
+- ctest (pure characterization includes new placement slot)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1916-private-methods-host-docs.** Hygiene after host-surface series.
 Prior: **1915**.
 

@@ -24,17 +24,18 @@
  *
  * - **FollowDocument** — resolve() yields the document membership (or empty
  *   when no document is bound). Used when pack order is known to align with
- *   session membership (post-loadFiles, no LoadAdd extras). Optional collapse
- *   target; not used by ImageView host mutators yet.
+ *   session membership (post-loadFiles, no LoadAdd extras). Reachable via
+ *   pathOrderSetOrder → tryCollapseToFollowDocument when order aligns.
  * - **Explicit** — resolve() yields the held SessionPathOrder. The held order
  *   may be empty: pathOrderClear / mode-leave must suppress pack even while
  *   SessionDocument still has membership (see PATH_ORDER.md and the dual-model
  *   characterization test `modeLeave_clearBook_documentPackWouldRegenerateIncorrectly`).
  *
- * ImageView host mutators: clear/set/append write Explicit; pathOrderSetOrder
- * may tryCollapseToFollowDocument when the new order aligns with the bound
- * document. pathOrderClear stays Explicit empty (must not follow membership).
- * Collapse is storage-only — not required for correctness.
+ * ImageView host mutators: public pathOrderClear / pathOrderSetOrder write
+ * Explicit (setOrder may collapse when aligned). Private pathOrderAppendRow
+ * also writes Explicit (place/add only). pathOrderClear stays Explicit empty
+ * (must not follow membership). Collapse is storage-only — not required for
+ * correctness.
  *
  * See docs/PATH_ORDER.md § PackOrderOverlay and REFACTOR.md Tier 4 residual.
  */
