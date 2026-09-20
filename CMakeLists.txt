@@ -624,6 +624,17 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-sessionpathorder-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME sessionpathorder COMMAND biltoo-sessionpathorder-test)
 
+  # Dual model: SessionDocument vs SessionPathOrder independence (PATH_ORDER.md).
+  add_executable(biltoo-pathorder-dual-model-test
+    tests/pathorder_dual_model_test.cpp
+    src/sessiondocument.cpp
+    src/sessionappearance.cpp
+    src/contentxform.cpp
+    src/coloradjust.cpp
+  )
+  target_include_directories(biltoo-pathorder-dual-model-test PRIVATE src)
+  target_link_libraries(biltoo-pathorder-dual-model-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME pathorder-dual-model COMMAND biltoo-pathorder-dual-model-test)
 
   add_executable(biltoo-sessionappearance-test
     tests/sessionappearance_test.cpp

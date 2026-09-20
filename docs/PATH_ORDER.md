@@ -39,12 +39,20 @@ membership queries for identity prefer the document when bound.
 Identity for slideshow / crop / filmstrip: **`firstSessionIdForPath`** prefers
 `m_sessionDoc` when bound; the book is fallback only.
 
+## Characterization
+
+Pure dual-model contracts are locked by `tests/pathorder_dual_model_test.cpp`
+(`pathorder-dual-model` CTest): independent mutation, LoadAdd multiplicity
+on the book only, `pathOrderClear` leaves the document intact, appearance
+survives book clear, and the open → Gallery → crop session-side id/crop
+invariants.
+
 ## Exit criteria (Tier 4 residual)
 
-`git grep m_pathOrderBook` empty requires characterization of
-open → Gallery → crop → Image (and LoadAdd multiplicity) so the view can query
-the document for pack order without regenerating session tiles incorrectly.
-Until then, keep the dual model and the accessors in
+`git grep m_pathOrderBook` empty still requires an offscreen **ImageView**
+harness (decode + framing) for open → Gallery → crop → return → Image so the
+view can query the document for pack order without regenerating session tiles
+incorrectly. Until then, keep the dual model and the accessors in
 `imageview_private_methods.inc`.
 
 See also: [IDENTITY.md](../IDENTITY.md), [DOMAIN.md](../DOMAIN.md) session open rules.

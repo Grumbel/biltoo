@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1696-pathorder-dual-model-char.** Dual-model path-order characterization tests.
+Prior: **1695**.
+
+### Change
+- `tests/pathorder_dual_model_test.cpp` — SessionDocument vs SessionPathOrder independence
+  (LoadAdd multiplicity, clear-vs-membership, appearance survives book clear, open→Gallery→crop session side)
+- CMake: `biltoo-pathorder-dual-model-test` / CTest `pathorder-dual-model`
+- `docs/PATH_ORDER.md` — characterization section + residual ImageView harness note
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1696-pathorder-dual-model-char.bundle HEAD
+```
+
+### Next
+- biltoo-build verification (run `pathorder-dual-model` + existing session* tests)
+- Offscreen ImageView harness: open → Gallery → crop → return → Image (decode + framing)
+- Then Tier 4: delete `m_pathOrderBook` / query document for pack order
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1695-crop-appearance-bake.** Crop appearance with crop TU; bake out of rematerialize.
 Prior: **1694**.
 
