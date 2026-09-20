@@ -154,21 +154,6 @@ void ImageView::setCurrentSessionId(SessionImageId id)
 }
 
 
-
-
-
-
-        // Drop pending binds for this id only (not every same-path bind).
-        m_bindBook.removeBindsForSessionId(sessionId);
-        destroyCanvasItem(item);
-    }
-    if (!doomed.isEmpty()) {
-        emit statusChanged();
-        emit workspacePathsChanged();
-    }
-}
-
-
 void ImageView::bindSelectedSessionIndices(int firstSessionIndex)
 {
     if (firstSessionIndex < 0) {

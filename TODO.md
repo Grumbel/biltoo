@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1880-session-remove-orphan-tail.** Drop orphaned code after setCurrentSessionId.
+Prior: **1879**.
+
+### Change
+- `imageview_session_remove.cpp`: remove free-floating fragment after
+  `setCurrentSessionId` (tail of an old destroy path: `m_bindBook.removeBinds…`
+  / `destroyCanvasItem` / emits) that left the TU unparseable
+- Real `destroySessionIdItems` lives in `imageview_session_bind.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1880-session-remove-orphan-tail.bundle HEAD
+```
+Requires tip **1879** (base **1858** / `1e112d94`).
+
+### Next
+- Tier 4 dual-write / PackOrderOverlay design before deleting `m_pathOrderBook`
+- nix build after ccache host perms
+- Re-run full biltoo-build after 1879+1880
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1879-restore-private-members.** Restore ImageView members deleted by 1878 orphan strip.
 Prior: **1878**.
 
