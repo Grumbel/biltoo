@@ -78,6 +78,21 @@ public:
         return n;
     }
 
+    /** First non-invalid id for @p path, or invalid if none. */
+    SessionImageId firstIdForPath(const QString &path) const
+    {
+        if (path.isEmpty()) {
+            return kInvalidSessionImageId;
+        }
+        const int n = qMin(m_paths.size(), m_ids.size());
+        for (int i = 0; i < n; ++i) {
+            if (m_paths.at(i) == path && m_ids.at(i) != kInvalidSessionImageId) {
+                return m_ids.at(i);
+            }
+        }
+        return kInvalidSessionImageId;
+    }
+
     /** True when paths and ids match the document membership (no LoadAdd extra). */
     bool alignsWithDocument(const SessionDocument &doc) const
     {

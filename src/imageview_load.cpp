@@ -10,7 +10,7 @@ int ImageView::pathOrderOccurrences(const QString &path) const
     // View-local multiplicity only (Gallery pack / LoadAdd).
     // clearPathOrder() zeros the book without wiping SessionDocument — consulting
     // the document here would recreate session tiles on a blank Workspace.
-    return m_pathOrderBook.countPathOccurrences(path);
+    return currentPackOrder().countPathOccurrences(path);
 }
 
 void ImageView::setImageModeSoftProvider(ImageModeSoftProvider provider)

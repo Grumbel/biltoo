@@ -18,6 +18,7 @@ private slots:
     void fromBook_preservesMultiplicity();
     void alignsWithDocument_falseWhenLoadAdd();
     void fromBook_equals_fromDocument_whenAligned();
+    void firstIdForPath_skipsInvalid();
 };
 
 void PackOrderViewTest::empty_initial()
@@ -76,6 +77,16 @@ void PackOrderViewTest::fromBook_equals_fromDocument_whenAligned()
     const PackOrderView fromBook = PackOrderView::fromBook(book);
     QCOMPARE(fromDoc, fromBook);
     QVERIFY(fromBook.alignsWithDocument(doc));
+}
+
+void PackOrderViewTest::firstIdForPath_skipsInvalid()
+{
+    SessionPathOrder book;
+    book.appendRow(QStringLiteral("/a.jpg"), kInvalidSessionImageId);
+    book.appendRow(QStringLiteral("/a.jpg"), SessionImageId(42));
+    const PackOrderView v = PackOrderView::fromBook(book);
+    QCOMPARE(v.firstIdForPath(QStringLiteral("/a.jpg")), SessionImageId(42));
+    QCOMPARE(v.firstIdForPath(QStringLiteral("/missing.jpg")), kInvalidSessionImageId);
 }
 
 QTEST_MAIN(PackOrderViewTest)

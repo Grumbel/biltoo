@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1713-packorder-occurrences.** Occurrences + stash reorder via PackOrderView.
+Prior: **1712**.
+
+### Change
+- pathOrderOccurrences → currentPackOrder().countPathOccurrences
+- Gallery stash/restore reorder → currentPackOrder().paths()
+- PackOrderView::firstIdForPath + test
+
+Mutations still on m_pathOrderBook.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1713-packorder-occurrences.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest packorderview
+- ImageView harness → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1712-packorder-sites.** More pack sites walk currentPackOrder().
 Prior: **1711**.
 

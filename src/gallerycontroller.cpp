@@ -67,7 +67,7 @@ void GalleryController::stashItems()
     if (m_view->liveItems().isEmpty()) {
         return;
     }
-    m_stashedPathOrder = m_view->pathOrder();
+    m_stashedPathOrder = m_view->currentPackOrder().paths();
     m_stashedItems = m_view->liveItems();
     m_selectionAnchor = nullptr;
     m_hoverPath.clear();
@@ -117,7 +117,7 @@ void GalleryController::restoreStashedItems()
         // rematerialize from the store so Gallery does not show full-frame.
         m_view->rematerializeGalleryItemFromStore(item);
     }
-    m_view->reorderItemsByPaths(m_view->pathOrder());
+    m_view->reorderItemsByPaths(m_view->currentPackOrder().paths());
     // Image-mode navigation may have filled global path RAM; bind/paint without
     // waiting for the next decode-window timer.
     m_view->tickPrimaryTileLod(16);
