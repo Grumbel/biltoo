@@ -81,41 +81,10 @@ void ImageView::setLayoutMode(LayoutMode mode)
 {
     // Packaged layouts belong only to Gallery; FreeForm only to Workspace.
     if (mode == LayoutMode::FreeForm) {
-        if (!isWorkspaceMode()) {
-            return;
-        }
-        if (!m_layout.isFreeForm()) {
-            // Should not happen in Workspace (always FreeForm).
-        }
-        m_layout.setMode(LayoutMode::FreeForm);
-        for (ImageItem *item : m_items) {
-            applyItemModeFlags(item);
-        }
-        restoreFreeFormStates();
-        if (!m_items.isEmpty()) {
-            m_scene->setSceneRect(ViewTransform::padded(m_scene->itemsBoundingRect(),
-                                               ViewTransform::kFreeformScenePad));
-        }
-        m_framing.releaseFit();
-        emit statusChanged();
+        m_workspace.applyFreeFormLayout();
         return;
     }
-
-    // Packaged layout → Gallery only (enterGallery if needed).
-    if (!isGalleryMode()) {
-        enterGallery(mode);
-        return;
-    }
-
-    if (m_layout.isFreeForm() && mode != LayoutMode::FreeForm) {
-        snapshotFreeFormStates();
-    }
-
-    m_layout.setMode(mode);
-    for (ImageItem *item : m_items) {
-        applyItemModeFlags(item);
-    }
-    applyLayout(GalleryPackReason::EnterGallery);
+    m_gallery.setLayoutMode(mode);
 }
 
 void ImageView::setGridColumns(int columns)

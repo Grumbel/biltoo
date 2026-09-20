@@ -70,6 +70,8 @@ public:
     bool tryKeyPressShear(QKeyEvent *event);
     bool layoutItems(const GalleryLayout::Params &userParams,
                      const QList<ImageItem *> &itemsIn = {});
+    /** ImageView::setLayoutMode(FreeForm) body — Workspace only. */
+    void applyFreeFormLayout();
 
 private:
     ImageView *m_view = nullptr;

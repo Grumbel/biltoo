@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspacecontroller.h"
+#include "viewtransform.h"
 #include "imageview.h"
 #include <QUndoStack>
 #include "gallerypackfit.h"
@@ -572,3 +573,25 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
     return true;
 }
 
+
+void WorkspaceController::applyFreeFormLayout()
+{
+    if (!m_view->isWorkspaceMode()) {
+        return;
+    }
+    if (!m_view->hostLayout().isFreeForm()) {
+        // Should not happen in Workspace (always FreeForm).
+    }
+    m_view->hostLayout().setMode(LayoutMode::FreeForm);
+    for (ImageItem *item : m_view->liveItems()) {
+        m_view->applyItemModeFlags(item);
+    }
+    restoreFreeFormStates();
+    if (!m_view->liveItems().isEmpty() && m_view->canvasScene()) {
+        m_view->canvasScene()->setSceneRect(
+            ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(),
+                                  ViewTransform::kFreeformScenePad));
+    }
+    m_view->hostFraming().releaseFit();
+    emit m_view->statusChanged();
+}

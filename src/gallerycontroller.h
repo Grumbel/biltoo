@@ -128,6 +128,8 @@ public:
     void setGridColumns(int columns);
     void setMasonryColumns(int columns);
     void setMasonryRows(int rows);
+    /** Packaged Gallery layout only (FreeForm is Workspace). */
+    void setLayoutMode(LayoutMode mode);
     void prepareCanvas();
     void invalidateDecodes();
 

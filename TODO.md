@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1676-set-layout-mode-controllers.** setLayoutMode onto Gallery/Workspace controllers.
+Prior: **1675**. Base: **789df2d**.
+
+### Change
+- `GalleryController::setLayoutMode` — packaged Gallery layouts (enterGallery / pack)
+- `WorkspaceController::applyFreeFormLayout` — FreeForm branch (restore states, scene pad)
+- `ImageView::setLayoutMode` thin-forwards by mode
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1676-set-layout-mode-controllers.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Optional: reloadFromDisk / hardReloadFromDisk split by mode onto controllers
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1675-workspace-layout-items.** Move layoutWorkspaceItems onto WorkspaceController.
 Prior: **1674**.
 

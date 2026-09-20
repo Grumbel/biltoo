@@ -1400,3 +1400,27 @@ void GalleryController::invalidateDecodes()
     m_view->hostDisplayPipeline().loadGate().bumpGeneration();
 }
 
+
+void GalleryController::setLayoutMode(LayoutMode mode)
+{
+    // Packaged layouts only; FreeForm is WorkspaceController::applyFreeFormLayout.
+    if (mode == LayoutMode::FreeForm) {
+        return;
+    }
+
+    // Packaged layout → Gallery only (enterGallery if needed).
+    if (!m_view->isGalleryMode()) {
+        m_view->enterGallery(mode);
+        return;
+    }
+
+    if (m_view->hostLayout().isFreeForm() && mode != LayoutMode::FreeForm) {
+        m_view->hostWorkspace().snapshotFreeFormStates();
+    }
+
+    m_view->hostLayout().setMode(mode);
+    for (ImageItem *item : m_view->liveItems()) {
+        m_view->applyItemModeFlags(item);
+    }
+    applyLayout(GalleryPackReason::EnterGallery);
+}
