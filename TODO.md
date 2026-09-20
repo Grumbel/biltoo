@@ -2,6 +2,27 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1699-pathorder-test-paths.** Dual-model test: SessionDocument::paths().
+Prior: **1698**.
+
+### Change
+- `tests/pathorder_dual_model_test.cpp`: `pathList()` → `paths()` (document API)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1699-pathorder-test-paths.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest pathorder-dual-model
+- Offscreen ImageView characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1698-qobject-connect.** Qualify connect in non-QObject controllers.
 Prior: **1697**.
 

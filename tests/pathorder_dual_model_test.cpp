@@ -91,7 +91,7 @@ void PathOrderDualModelTest::pathOrderClear_leavesDocumentIntact()
     SessionDocument doc;
     SessionPathOrder book;
     doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
-    book.setOrder(doc.pathList(),
+    book.setOrder(doc.paths(),
                   {doc.idAt(0), doc.idAt(1)});
 
     book.clear();
@@ -184,7 +184,7 @@ void PathOrderDualModelTest::openGalleryCropScenario_sessionSide()
     const SessionImageId idTwo = doc.idAt(1);
 
     // Gallery: view book mirrors membership for pack
-    book.setOrder(doc.pathList(), {idOne, idTwo});
+    book.setOrder(doc.paths(), {idOne, idTwo});
     QCOMPARE(book.size(), 2);
 
     // crop on the focused session image (id-keyed appearance)
