@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1859-pathRaster-pack-hops.** pathRaster + dead pack forwards; layout-mode hop.
+Prior: **1858**.
+
+### Change
+- `pathRasterForCoordinator` → `hostPathRaster()` (crop / slideshow / tile coordinator)
+- Drop dead `publishGalleryInterest` / `scheduleIdleGalleryDecodes` (no callers)
+- Demote `galleryLayoutModeFromViewMode` →
+  `GalleryPackFit::modeFromLayoutMode(hostLayout().currentMode())` in GalleryController
+- `imageview_pack.cpp` keeps only mode-dispatch (`setLayoutMode`, reload)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1859-pathRaster-pack-hops.bundle HEAD
+```
+Requires tip **1858** (`1e112d94`).
+
+### Next
+- Continue residual pure-hop demotion (sticky/layout/bg/hud/text/classicPath)
+- Tier 4 characterization
+- biltoo-build smoke
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1858-ccache-diag-accuracy.** ccache diagnostic matches real nix-build setup.
 Prior: **1857**.
 
