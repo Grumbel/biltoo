@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1685-session-bind-tu.** Split session-bind / session-id ops out of canvas.cpp.
+Prior: **1684**.
+
+### Change
+- New `imageview_session_bind.cpp`: pending binds, load-add placement, session-id remove/bind/place
+- `imageview_canvas.cpp` ~1882 → ~1321 lines (path membership, selection, clipboard, focus)
+- CMake lists the new TU
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1685-session-bind-tu.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Characterization before Tier 4 path-order / SessionAppearance store move
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1684-input-domain-try.** Move page-guide / group / text-rubber try* out of input.cpp.
 Prior: **1683**.
 
