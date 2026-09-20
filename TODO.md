@@ -2,6 +2,36 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1853-ccache-writable-dir.** Fix ccacheStdenv sandbox Permission denied.
+Prior: **1852**.
+
+### Root cause
+`nix build` sets `HOME=/homeless-shelter` (not writable). ccache defaulted to
+`$HOME/.ccache` → Permission denied on CMake's first CXX probe.
+
+### Fix
+- Flake overlay on `ccacheWrapper.extraConfig`: default
+  `CCACHE_DIR=$NIX_BUILD_TOP/.ccache` when unset
+- `default.nix` `ccacheDirPhase` before configure
+- Keep `ccacheStdenv` on package + dev shell
+- Optional: host shared cache via `CCACHE_DIR` + `extra-sandbox-paths`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1853-ccache-writable-dir.bundle HEAD
+```
+Requires tip **1852**.
+
+### Next
+- `nix build` / `nix develop` + biltoo-build smoke
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1852-ccacheStdenv.** Integrate ccacheStdenv in flake.nix.
 Prior: **1851**.
 
