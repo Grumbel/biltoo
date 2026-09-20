@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1785-destroy-drop-tilelod.** Stage 2: destroy drops tile session via pipeline.
+Prior: **1784**.
+
+### Change
+- `ImageView::destroyCanvasItem` calls `m_displayPipeline.dropItemTileLodSession(item)`
+  before surface unbind and delete
+- Explicit tile lifecycle on canvas teardown (not only ItemBag dtor)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1785-destroy-drop-tilelod.bundle HEAD
+```
+
+### Next
+- Move ItemBag storage under DisplayPipelineController
+- Offscreen ImageView characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1784-privatize-tilelod-mutators.** Stage 2: tile mutators private.
 Prior: **1783**.
 
