@@ -238,35 +238,27 @@ public:
     /** Display pipeline host: filmstrip soft provider for image-mode pending. */
     ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
 
-    /** Controller host: session path order used for Gallery packing. */
-    /** Pack-order overlay: pathOrderClear / pathOrderSetOrder / pathOrderAppendRow / currentPackOrder. */
-    /** Rebuild pack order from live tiles (path∥sessionId). Id-safe. */
-    /** Controller host: session appearance store (id-keyed). */
     /**
-     * Session appearance (id-keyed). Always the SessionDocument store after
-     * Phase 6 Tier 4b — call bindSessionAppearance before any appearance use.
+     * Phase 7 Stage 0 facade (appearance / path-book / size-book).
+     * Pack-order host mutators live in imageview_host_pipeline.inc
+     * (pathOrderClear / SetOrder / AppendRow / currentPackOrder).
      */
-    /** Appearance store: hostAppearance() / itemWorld().appearance(). */
-    /** Phase 7 Stage 0: facade over appearance / path-book / size-book. */
     ItemWorld &itemWorld() { return m_itemWorld; }
     const ItemWorld &itemWorld() const { return m_itemWorld; }
-    /** Point at SessionDocument appearance (required before hostAppearance()). */
+    /** Bind SessionDocument appearance store (required before hostAppearance()). */
     void bindSessionAppearance(SessionAppearanceStore *store)
     {
         m_appearanceBound = store;
         m_itemWorld.bindAppearance(store);
     }
     /**
-     * Phase 6 Tier 4 path-order: MainWindow binds the working SessionDocument.
-     * firstSessionIdForPath uses the document; LoadAdd multiplicity stays on the
-     * view pack-order overlay (pathOrderClear must not consult the document).
+     * Bind working SessionDocument. firstSessionIdForPath prefers the document;
+     * LoadAdd multiplicity stays on the pack-order overlay.
      */
     void bindSessionDocument(SessionDocument *doc)
     {
         m_sessionDoc = doc;
     }
-    /** Path-keyed placement cache: itemWorld().setPathState / getPathState. */
-    /** Pending workspace paths / restore: hostDisplayPipeline().loadGate(). */
     void takePendingWorkspacePath(const QString &path);
 
 

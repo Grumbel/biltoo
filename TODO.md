@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1890-header-cleanup.** Orphan comments, kMarker, CMake option note.
+Prior: **1889**.
+
+### Change
+- `imageview.h`: remove orphaned path-order / appearance doc comments; point at
+  host_pipeline.inc for pack mutators
+- `pagepath.h`: drop unused deprecated `PagePath::kMarker` (use `kPageMarker`)
+- CMake: `BILTOO_IMAGEVIEW_CHARACTERIZATION` option documents that full ImageView
+  link is not wired yet (pure scaffold remains the default)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1890-header-cleanup-516d734.bundle HEAD
+```
+Requires tip **1889** (base **516d734**).
+
+### Next
+- Factor biltoo link deps into a shared target, then wire full characterization
+- Full offscreen ImageView harness when Qt/thumtoo available
+- Keep Explicit suppress until that harness is green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1889-refactor-tier4-wording.** REFACTOR historical path-order wording.
 Prior: **1888**.
 

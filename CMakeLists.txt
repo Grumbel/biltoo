@@ -656,8 +656,18 @@ if(Qt6Test_FOUND)
   add_test(NAME itemworld COMMAND biltoo-itemworld-test)
 
   # Tier 4 characterization scaffold (pure session + real PNG fixtures).
-  # Full offscreen ImageView link: reuse ${BILTOO_LIB_SOURCES} + same deps as biltoo
-  # (optional BILTOO_IMAGEVIEW_CHARACTERIZATION — later tip).
+  # Full offscreen ImageView link is intentionally not enabled here yet: it needs
+  # the same link set as `biltoo` (Qt Widgets/OpenGL, thumtoo, optional vips, …).
+  # Wire with -DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON once that dep list is factored
+  # into a shared imported target (see docs/IMAGEVIEW_CHARACTERIZATION.md).
+  option(BILTOO_IMAGEVIEW_CHARACTERIZATION
+         "Link full ImageView into characterization test (not implemented yet)" OFF)
+  if(BILTOO_IMAGEVIEW_CHARACTERIZATION)
+    message(WARNING
+      "BILTOO_IMAGEVIEW_CHARACTERIZATION=ON: full ImageView link is not wired yet; "
+      "building the pure scaffold only. Factor biltoo link deps into a shared "
+      "target before enabling the near-full harness.")
+  endif()
   add_executable(biltoo-imageview-characterization-test
     tests/imageview_characterization.cpp
     src/sessiondocument.cpp

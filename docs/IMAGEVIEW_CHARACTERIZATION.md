@@ -50,8 +50,9 @@ tests/imageview_characterization.cpp
 ```
 
 CMake pure target is always built with `Qt6Test`. Full offscreen ImageView
-link: optional `BILTOO_IMAGEVIEW_CHARACTERIZATION` + `${BILTOO_LIB_SOURCES}`
-(same deps as the `biltoo` executable; expensive).
+link is **not wired yet**: `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` only
+warns; pure scaffold still builds. Next step is a shared target for biltoo
+link deps, then `${BILTOO_LIB_SOURCES}` + that target on the test.
 
 ## Assertions (checklist)
 

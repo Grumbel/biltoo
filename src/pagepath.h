@@ -25,8 +25,6 @@ inline constexpr const char kPageMarker[] = "//page:";
 inline constexpr const char kEpubMarker[] = "//epub:";
 inline constexpr const char kPdfImageMarker[] = "//pdfimage:";
 inline constexpr const char kPdfImagesMarker[] = "//pdfimages";
-/** @deprecated use kPageMarker */
-inline constexpr const char kMarker[] = "//page:";
 
 struct Ref {
     QString pdfPath; /**< Local filesystem path of the PDF or EPUB file. */
