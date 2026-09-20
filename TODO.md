@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1899-merge-shell-dnd-events.** Shell + dnd events → input_events.
+Prior: **1898**.
+
+### Change
+- `mouseDoubleClickEvent` / leave handlers from shell_events → input_events
+- viewport/drag/drop from dnd → input_events
+- Delete `imageview_shell_events.cpp`, `imageview_dnd.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1899-merge-shell-dnd-events-516d734.bundle HEAD
+```
+Requires tip **1898** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- Note: next bundle number **1900**
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1898-merge-transform-undo.** Transform undo helpers → actions TU.
 Prior: **1897**.
 

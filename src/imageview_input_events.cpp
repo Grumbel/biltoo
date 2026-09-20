@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include <cstdlib>
+#include <QEvent>
 #include "itemcomponents.h"
 #include "gallerysoftsm.h"
 #include "toolpolicy.h"
@@ -306,4 +308,222 @@ void ImageView::keyPressEvent(QKeyEvent *event)
         return;
     }
     QGraphicsView::keyPressEvent(event);
+}
+
+// --- Shell events (double-click / leave) ---
+
+void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    // Rapid edge clicks arrive as double-clicks (second press is not a Press event).
+    // Treat them as navigation, same as a single click on the affordance.
+    if (isImageMode() && event->button() == Qt::LeftButton
+        && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
+        const EdgeZone zone = edgeZoneAt(event->pos());
+        if (zone == EdgeZone::Previous) {
+            emit navigatePreviousRequested();
+            event->accept();
+            return;
+        }
+        if (zone == EdgeZone::Next) {
+            emit navigateNextRequested();
+            event->accept();
+            return;
+        }
+        emit fullscreenToggleRequested();
+        event->accept();
+        return;
+    }
+
+    // Gallery: double-click opens the tile in Image mode (classic file view).
+    // Prefer SessionImageId so duplicate paths open the correct session row.
+    if (isGalleryMode() && event->button() == Qt::LeftButton) {
+        const QPointF scenePos = mapToScene(event->pos());
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (item->sessionId() != kInvalidSessionImageId) {
+                    emit sessionImageOpenRequested(item->sessionId());
+                } else if (item->sessionIndex() >= 0) {
+                    emit sessionSlotOpenRequested(item->sessionIndex());
+                } else {
+                    const QString path = item->path();
+                    if (!path.isEmpty()) {
+                        emit galleryItemOpenRequested(path);
+                    }
+                }
+                event->accept();
+                return;
+            }
+        }
+        event->accept();
+        return;
+    }
+
+    // Workspace: double-click on chrome starts a handle drag; on the image
+    // body opens Image mode (same path as Gallery). Empty space is swallowed
+    // so the missing second press does not clear selection via the base class.
+    if (isWorkspaceMode() && event->button() == Qt::LeftButton
+        && m_tool == Tool::Select && m_scene) {
+        const QPointF scenePos = mapToScene(event->pos());
+        // Selected item handles first (chrome is above tiles).
+        QList<ImageItem *> selected;
+        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (ii->isInteractive() && m_items.contains(ii)) {
+                    selected.append(ii);
+                }
+            }
+        }
+        if (selected.size() == 1) {
+            ImageItem *item = selected.first();
+            HandlePressScratch press;
+            if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
+                && press.hasContinuousHandle()) {
+                m_itemInteract.beginHandleDrag(item, captureState(item), press);
+                event->accept();
+                return;
+            }
+        } else if (selected.size() > 1) {
+            const int gh = groupHandleAt(event->pos(), selected);
+            if (gh >= 0 && beginGroupScale(gh, selected)) {
+                event->accept();
+                return;
+            }
+        }
+        // Image body under cursor → Image mode for *this* session slot
+        // (path-only open would always hit the first duplicate in the session).
+        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (ii->isInteractive() && m_items.contains(ii)) {
+                    if (ii->sessionId() != kInvalidSessionImageId) {
+                        emit sessionImageOpenRequested(ii->sessionId());
+                    } else if (ii->sessionIndex() >= 0) {
+                        emit sessionSlotOpenRequested(ii->sessionIndex());
+                    } else {
+                        const QString path = ii->path();
+                        if (!path.isEmpty()) {
+                            emit galleryItemOpenRequested(path);
+                        }
+                    }
+                    event->accept();
+                    return;
+                }
+            }
+        }
+        event->accept();
+        return;
+    }
+
+    QGraphicsView::mouseDoubleClickEvent(event);
+}
+
+void ImageView::leaveEvent(QEvent *event)
+{
+    if (m_chrome.hasMouseInfo()) {
+        m_chrome.clearMouseInfo();
+        emit mouseInfoChanged(m_chrome.currentMouseInfo());
+    }
+    if (m_hoverEdge != EdgeZone::None) {
+        clearHoverEdge();
+        viewport()->update();
+    }
+    if (!m_gallery.hoverPath().isEmpty()) {
+        m_gallery.clearHoverPath();
+        viewport()->update();
+    }
+    if (m_slideshow.hud().isSeekbarVisible() && !m_slideshow.hud().isSeekDragging()) {
+        m_slideshow.hud().setSeekbarVisible(false);
+        if (viewport()) {
+            viewport()->update();
+        }
+    }
+    QGraphicsView::leaveEvent(event);
+}
+
+// --- Drag / drop ---
+
+bool ImageView::viewportEvent(QEvent *event)
+{
+    // Viewport is a QOpenGLWidget; it receives drag/drop when acceptDrops is
+    // set on it. Forward to the view so scene mapping runs here.
+    switch (event->type()) {
+    case QEvent::DragEnter:
+        dragEnterEvent(static_cast<QDragEnterEvent *>(event));
+        return event->isAccepted();
+    case QEvent::DragMove:
+        dragMoveEvent(static_cast<QDragMoveEvent *>(event));
+        return event->isAccepted();
+    case QEvent::Drop:
+        dropEvent(static_cast<QDropEvent *>(event));
+        return event->isAccepted();
+    default:
+        break;
+    }
+    return QGraphicsView::viewportEvent(event);
+}
+
+void ImageView::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()
+        && (event->mimeData()->hasUrls()
+            || event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-paths")))) {
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void ImageView::dragMoveEvent(QDragMoveEvent *event)
+{
+    if (event->mimeData()
+        && (event->mimeData()->hasUrls()
+            || event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-paths")))) {
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void ImageView::dropEvent(QDropEvent *event)
+{
+    if (!event->mimeData()) {
+        event->ignore();
+        return;
+    }
+    const QByteArray pathBytes =
+        event->mimeData()->data(QStringLiteral("application/x-biltoo-paths"));
+    const bool hasInternal = !pathBytes.isEmpty();
+    if (!event->mimeData()->hasUrls() && !hasInternal) {
+        event->ignore();
+        return;
+    }
+    // Prefer global→viewport→scene. Drop events may land on the view or the
+    // OpenGL viewport child; widget-local position() is then wrong for mapToScene.
+    // QDropEvent has no portable globalPosition() here — use the cursor.
+    const QPoint viewPos = viewport()->mapFromGlobal(QCursor::pos());
+    const QPointF scenePos = mapToScene(viewPos);
+    QList<qint64> sessionIds;
+    const QByteArray idBytes =
+        event->mimeData()->data(QStringLiteral("application/x-biltoo-session-ids"));
+    if (!idBytes.isEmpty()) {
+        for (const QByteArray &tok : idBytes.split(',')) {
+            bool ok = false;
+            const qint64 v = tok.trimmed().toLongLong(&ok);
+            sessionIds.append(ok ? v : 0);
+        }
+    }
+    QStringList internalPaths;
+    if (hasInternal) {
+        internalPaths = QString::fromUtf8(pathBytes).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    }
+    if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
+        dbg && dbg[0] != '\0' && dbg[0] != '0') {
+        fprintf(stderr,
+                "biltoo/drop: ImageView::dropEvent viewPos=(%d,%d) scene=(%.1f,%.1f) "
+                "mode=W%d G%d\n",
+                viewPos.x(), viewPos.y(), scenePos.x(), scenePos.y(),
+                isWorkspaceMode() ? 1 : 0, isGalleryMode() ? 1 : 0);
+    }
+    emit filesDropped(event->mimeData()->urls(), event->modifiers(), scenePos,
+                      /*hasScenePos=*/true, sessionIds, internalPaths);
+    event->acceptProposedAction();
 }
