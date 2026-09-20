@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1903-merge-color-grade.** Colour grade → appearance TU.
+Prior: **1902**.
+
+### Change
+- Interactive colour-grade apply/commit → `imageview_appearance.cpp`
+- Delete `imageview_color_grade.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1903-merge-color-grade-516d734.bundle HEAD
+```
+Requires tip **1902** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1902-merge-canvas-focus.** Canvas focus/destroy → canvas TU.
 Prior: **1901**.
 
