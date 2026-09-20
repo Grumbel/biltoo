@@ -9,7 +9,31 @@
   outputs = { self, nixpkgs, thumtoo }:
     let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      # ccacheStdenv's wrapper must not use $HOME/.ccache: under `nix build` the
+      # sandbox sets HOME=/homeless-shelter (not writable) → "ccache: error:
+      # Permission denied" on the first compiler probe. Point the wrapper at a
+      # writable dir; keep host override via CCACHE_DIR for extra-sandbox-paths.
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [
+          (final: prev: {
+            ccacheWrapper = prev.ccacheWrapper.override {
+              extraConfig = ''
+                # Prefer an explicit CCACHE_DIR (host shared cache + sandbox path).
+                if [ -z "''${CCACHE_DIR:-}" ]; then
+                  if [ -n "''${NIX_BUILD_TOP:-}" ]; then
+                    export CCACHE_DIR="$NIX_BUILD_TOP/.ccache"
+                  else
+                    export CCACHE_DIR="''${XDG_CACHE_HOME:-''${HOME:-/tmp}/.cache}/ccache-biltoo"
+                  fi
+                fi
+                mkdir -p "$CCACHE_DIR" || true
+                export CCACHE_COMPRESS=1
+              '';
+            };
+          })
+        ];
+      };
 
       versionBase = nixpkgs.lib.strings.removeSuffix "\n" (builtins.readFile ./VERSION);
       gitRev = "${self.shortRev or self.dirtyShortRev or "dirty"}";
@@ -20,8 +44,9 @@
         else
           versionBase;
 
-      # ccacheStdenv wraps CC/CXX with ccache (helps repeated nix builds when
-      # the daemon allows a shared cache; see nix.settings.extra-sandbox-paths).
+      # ccacheStdenv: CC/CXX via ccacheWrapper (overlay sets a writable CCACHE_DIR
+      # inside the sandbox). For a persistent host cache across nix builds, set
+      # CCACHE_DIR to a path listed in nix.conf extra-sandbox-paths.
       biltoo = pkgs.qt6Packages.callPackage ./default.nix {
         inherit version;
         stdenv = pkgs.ccacheStdenv;

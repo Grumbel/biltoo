@@ -103,13 +103,27 @@ stdenv.mkDerivation (finalAttrs: {
   cmakeBuildType = "RelWithDebInfo";
   separateDebugInfo = true;
 
+  # ccacheStdenv: ensure a writable cache before cmake probes the compiler.
+  # (Wrapper overlay also sets this; phase keeps local/default.nix builds safe.)
+  prePhases = [ "ccacheDirPhase" ];
+  ccacheDirPhase = ''
+    if [ -z "''${CCACHE_DIR:-}" ]; then
+      if [ -n "''${NIX_BUILD_TOP:-}" ]; then
+        export CCACHE_DIR="$NIX_BUILD_TOP/.ccache"
+      else
+        export CCACHE_DIR="''${XDG_CACHE_HOME:-''${HOME:-/tmp}/.cache}/ccache-biltoo"
+      fi
+    fi
+    mkdir -p "$CCACHE_DIR"
+  '';
+
   # Nixpkgs Qt/KDE setup hooks inject many -DKDE_INSTALL_* and related cmake
   # cache vars (ECM-style install dirs). This project is plain CMake + Qt, not
   # KDEInstallDirs, so CMake would spam "Manually-specified variables were not
   # used". --no-warn-unused-cli silences that without pretending to consume them.
   # CMAKE_C_COMPILER is similarly unused (C++-only) but comes from stdenv.
   cmakeFlags = [
-    "--no-warn-unused-cli"
+    "-Wno-unused-cli"
     "-DPROJECT_VERSION_FULL=${finalAttrs.version}"
   ] ++ lib.optionals (thumtooSrc != null) [
     "-DTHUMTOO_SOURCE_DIR=${thumtooSrc}"
