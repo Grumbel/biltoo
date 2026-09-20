@@ -730,6 +730,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - biltoo-1711: currentPackOrder host + ensurePlaceholders walks PackOrderView; accessors ImageCache include.
 - biltoo-1712: gallery reorder, session_remove, size_book, canvas walk currentPackOrder().
 - biltoo-1713: pathOrderOccurrences + gallery stash reorder via PackOrderView; firstIdForPath on view.
+- biltoo-1714: LoadAdd reorder, canvas_place id checks, firstSessionId fallback via currentPackOrder().
 
 - Tier 0: **done** (biltoo-1596) — privatized 190 methods with no refs outside
   `imageview*`; declarations live in `imageview_private_methods.inc` +

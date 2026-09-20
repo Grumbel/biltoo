@@ -263,7 +263,7 @@ void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChang
     }
     if (!m_view->hostLayout().isFreeForm()) {
         if (!m_view->pathOrderIsEmpty()) {
-            m_view->reorderItemsByPaths(m_view->pathOrderPaths());
+            m_view->reorderItemsByPaths(m_view->currentPackOrder().paths());
         }
         if (!(m_view->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
             if (sizeChanged) {

@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1714-packorder-read-gateway.** Remaining pack reads via currentPackOrder().
+Prior: **1713**.
+
+### Change
+- displaypipeline LoadAdd layout reorder → currentPackOrder().paths()
+- canvas_place alreadyOrdered checks → currentPackOrder().ids()
+- firstSessionIdForPath book fallback → currentPackOrder().firstIdForPath
+
+m_pathOrderBook now mainly: mutations + thin reference accessors (pathOrderPaths/ids)
++ currentPackOrder() factory.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1714-packorder-read-gateway.bundle HEAD
+```
+
+### Next
+- biltoo-build
+- ImageView harness → Tier 4 drop book
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1713-packorder-occurrences.** Occurrences + stash reorder via PackOrderView.
 Prior: **1712**.
 

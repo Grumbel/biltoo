@@ -42,7 +42,7 @@
         if (m_sessionDoc) {
             return m_sessionDoc->firstIdForPath(path);
         }
-        return m_pathOrderBook.firstIdForPath(path);
+        return currentPackOrder().firstIdForPath(path);
     }
     PathItemStateBook &hostItemStateBook() { return m_itemStateBook; }
     const PathItemStateBook &hostItemStateBook() const { return m_itemStateBook; }
