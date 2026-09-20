@@ -262,9 +262,6 @@ public:
     /** View-driven hover highlight for chrome (keeps highlight in sync with hits). */
     void setHoverHandle(Handle h);
     Handle hoverHandle() const { return m_hoverHandle; }
-    /** Translated tooltip for a handle (empty if none). */
-    static QString handleToolTip(Handle h);
-
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 

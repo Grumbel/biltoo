@@ -1371,11 +1371,6 @@ void ImageItem::setHoverHandle(Handle h)
     // viewport. Avoid item-only update which would miss external handle pads.
 }
 
-QString ImageItem::handleToolTip(Handle h)
-{
-    return ItemHandlePolicy::toolTip(h);
-}
-
 void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRect) const
 {
     // HARD RULE (AGENTS.md): draw only in viewport logical pixels.

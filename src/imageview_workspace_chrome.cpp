@@ -6,6 +6,7 @@
 #include "imageview.h"
 #include "itemcomponents.h"
 #include "imageitem.h"
+#include "itemhandlepolicy.h"
 
 #include <QMouseEvent>
 #include "placementlinear.h"
@@ -250,7 +251,7 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                     break;
                 }
                 if (hoverChanged) {
-                    const QString tip = ImageItem::handleToolTip(hoverH);
+                    const QString tip = ItemHandlePolicy::toolTip(hoverH);
                     if (!tip.isEmpty()) {
                         QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
                     } else {

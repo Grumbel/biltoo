@@ -285,11 +285,6 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
     m_displayPipeline.installImageModeReplaceItem(path, image);
 }
 
-void ImageView::seedEmptyWorkspaceFromReplace(const QString &path, const QImage &image)
-{
-    m_displayPipeline.seedEmptyWorkspaceFromReplace(path, image);
-}
-
 ImageItem *ImageView::imageModeItemForPath(const QString &path) const
 {
     return m_displayPipeline.imageModeItemForPath(path);
