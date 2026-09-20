@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1764-group-drag-apply-placement.** Group mid-drag via applyPlacement.
+Prior: **1763**.
+
+### Change
+- `updateGroupScale` / `updateGroupRotate` write live pose via `item->applyPlacement`
+- Decompose-fail path still only moves pos
+- Stage 2 single writer for multi-select transform mid-drag
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1764-group-drag-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + multi-select scale/rotate smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1763-handle-drag-apply-placement.** Mid-drag scale/shear/rotate via applyPlacement.
 Prior: **1762**.
 

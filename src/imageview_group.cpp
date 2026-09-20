@@ -76,24 +76,25 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
 
     for (int i = 0; i < m_groupXform.dragCount(); ++i) {
         ImageItem *item = m_groupXform.dragItemAt(i);
-        const ItemComponents::Placement &pl = m_groupXform.dragStartPlacementAt(i);
+        const ItemComponents::Placement &start = m_groupXform.dragStartPlacementAt(i);
         if (!item || !m_items.contains(item)) {
             continue;
         }
-        const QPointF rel = pl.pos - anchor;
+        const QPointF rel = start.pos - anchor;
         const QPointF newPos = anchor + QPointF(rel.x() * sx, rel.y() * sy);
         if (!qIsFinite(newPos.x()) || !qIsFinite(newPos.y())) {
             continue;
         }
-        item->setPos(newPos);
 
-        const qreal baseX = pl.scale > 0 ? pl.scale : 1.0;
-        const qreal baseY = pl.scaleY > 0 ? pl.scaleY : baseX;
+        ItemComponents::Placement pl = start;
+        pl.pos = newPos;
+        const qreal baseX = start.scale > 0 ? start.scale : 1.0;
+        const qreal baseY = start.scaleY > 0 ? start.scaleY : baseX;
         if (!anisotropic) {
             // Uniform scene scale: scales only; rotation and shear stay from press.
-            item->setItemScale(baseX * sx, baseY * sy);
-            item->setItemShear(pl.shear);
-            item->setItemRotation(pl.rotation);
+            pl.scale = baseX * sx;
+            pl.scaleY = baseY * sy;
+            item->applyPlacement(pl);
             continue;
         }
         // Anisotropic: scale the *scene* images of local axes (e.x *= sx, e.y *= sy),
@@ -101,20 +102,24 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         // broken fallthrough that applied scene sx/sy as local scales (axis mix-up
         // on rotated tiles).
         QPointF e1, e2;
-        PlacementLinear::unitAxes(baseX, baseY, pl.shear, pl.rotation, &e1, &e2);
+        PlacementLinear::unitAxes(baseX, baseY, start.shear, start.rotation, &e1, &e2);
         e1 = QPointF(e1.x() * sx, e1.y() * sy);
         e2 = QPointF(e2.x() * sx, e2.y() * sy);
         qreal nx = baseX;
         qreal ny = baseY;
-        qreal nk = pl.shear;
-        qreal nrot = pl.rotation;
+        qreal nk = start.shear;
+        qreal nrot = start.rotation;
         if (PlacementLinear::decomposeAxes(e1, e2, &nx, &ny, &nk, &nrot)) {
             PlacementLinear::clampScaleXY(&nx, &ny);
-            item->setItemScale(nx, ny);
-            item->setItemShear(nk);
-            item->setItemRotation(nrot);
+            pl.scale = nx;
+            pl.scaleY = ny;
+            pl.shear = nk;
+            pl.rotation = nrot;
+            item->applyPlacement(pl);
+        } else {
+            // Decompose failed: still move; leave linear pose from last good frame.
+            item->setPos(newPos);
         }
-        // If decompose fails, leave linear pose from last good frame (pos already updated).
     }
     m_framing.releaseFit();
     emit statusChanged();
@@ -154,17 +159,19 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
 
     for (int i = 0; i < m_groupXform.dragCount(); ++i) {
         ImageItem *item = m_groupXform.dragItemAt(i);
-        const ItemComponents::Placement &pl = m_groupXform.dragStartPlacementAt(i);
+        const ItemComponents::Placement &start = m_groupXform.dragStartPlacementAt(i);
         if (!item || !m_items.contains(item)) {
             continue;
         }
         // Orbit position around group centre; add the same delta to placement angle.
-        const QPointF newPos = GroupTransformGeometry::orbitPoint(centre, pl.pos, delta);
+        const QPointF newPos = GroupTransformGeometry::orbitPoint(centre, start.pos, delta);
         if (!qIsFinite(newPos.x()) || !qIsFinite(newPos.y())) {
             continue;
         }
-        item->setPos(newPos);
-        item->setItemRotation(pl.rotation + delta);
+        ItemComponents::Placement pl = start;
+        pl.pos = newPos;
+        pl.rotation = start.rotation + delta;
+        item->applyPlacement(pl);
     }
     m_framing.releaseFit();
     emit statusChanged();

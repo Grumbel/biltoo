@@ -1009,3 +1009,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1761: GroupTransformSession data members private (accessor-only API).
 - biltoo-1762: ItemInteractSession class with private members (parity with group session).
 - biltoo-1763: handle-drag scale/shear/rotate mid-drag writes via applyPlacement.
+- biltoo-1764: group scale/rotate mid-drag writes via applyPlacement.
