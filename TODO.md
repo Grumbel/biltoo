@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1898-merge-transform-undo.** Transform undo helpers → actions TU.
+Prior: **1897**.
+
+### Change
+- `pushItemGeometryCommand` / `pushItemContentCommand` → `imageview_transform_actions.cpp`
+- Delete `src/imageview_transform.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1898-merge-transform-undo-516d734.bundle HEAD
+```
+Requires tip **1897** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1897-merge-gallery-edge-tus.** Fold tiny gallery + edge chrome TUs.
 Prior: **1896**.
 
