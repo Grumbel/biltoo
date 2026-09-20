@@ -158,33 +158,6 @@ void ImageView::setCurrentSessionId(SessionImageId id)
 
 
 
-void ImageView::detachCanvasSessionId(SessionImageId sessionId)
-{
-    if (sessionId == kInvalidSessionImageId) {
-        return;
-    }
-    // Canvas membership only — keep session appearance and session list entry.
-    QList<ImageItem *> doomed;
-    for (ImageItem *item : m_items) {
-        if (item && item->sessionId() == sessionId) {
-            doomed.append(item);
-        }
-    }
-    for (ImageItem *item : doomed) {
-        const QString path = item->path();
-        bool pathStillLive = false;
-        for (ImageItem *other : m_items) {
-            if (other && other != item && other->path() == path) {
-                pathStillLive = true;
-                break;
-            }
-        }
-        if (!pathStillLive) {
-            takePendingWorkspacePath(path);
-            m_displayPipeline.loadGate().removePendingScenePos(path);
-            m_bindBook.removeIndexForPath(path);
-        m_displayPipeline.gallerySoftResetPath(path);
-}
         // Drop pending binds for this id only (not every same-path bind).
         m_bindBook.removeBindsForSessionId(sessionId);
         destroyCanvasItem(item);

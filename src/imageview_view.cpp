@@ -119,10 +119,6 @@ void ImageView::setContentEditMarksVisible(bool on)
     }
 }
 
-bool ImageView::contentEditMarksVisible() const
-{
-    return ImageItem::contentEditMarksVisible();
-}
 
 QSize ImageView::logicalSizeForPath(const QString &path) const
 {

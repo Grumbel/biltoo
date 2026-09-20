@@ -113,7 +113,6 @@
                                            const QPointF &keptCenter, int scrollH, int scrollV);
 
     /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
-    void detachCanvasSessionId(SessionImageId sessionId);
 
     /** Image-mode framing after soft/full install (honours sticky zoom). */
 

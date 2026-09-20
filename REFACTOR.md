@@ -635,6 +635,25 @@ without them.
 **Exit criteria:** one session model; `git grep m_pathOrderBook` empty;
 duplicate paths, Gallery remove, and crop-in-Image-mode unchanged.
 
+
+### Tier 4 residual characterization (2026-09-20 / tip 1864)
+
+`ImageView::m_pathOrderBook` (`SessionPathOrder`) is **not** yet deletable.
+
+| Concern | Owner today | Notes |
+|---------|-------------|-------|
+| Session path list + ids | `SessionDocument` (`MainWindow::m_session`) | Source of truth for open files |
+| Gallery pack / LoadAdd multiplicity | `m_pathOrderBook` on `ImageView` | `pathOrderOccurrences` must **not** consult the document (blank Workspace would recreate session tiles — see `imageview_load.cpp`) |
+| Gallery leave/enter stash | `GalleryController::m_stashedPackOrder` | Snapshot of view book, not the document |
+| Ad-hoc Workspace place | `pathOrderAppendRow` from canvas place | Rows may exist with invalid session id |
+
+**Write sites (view book):** `pathOrderClear` / `pathOrderSetOrder` / `pathOrderAppendRow` (private); public `clearPathOrder` / `setPathOrder` / `setPathOrderFromLiveItems` used by Gallery/Workspace controllers and ImageView canvas.
+
+**Bound document:** `bindSessionDocument` already routes some identity lookups (`firstIdForPath`). Appearance store migration (Tier 4b comment in `mainwindow.cpp`) is separate from path-order deletion.
+
+**Safe next steps (not this tip):** inventory every `currentPackOrder` / `pathOrderOccurrences` call; design a pack-order view that can be fed from the document **or** a transient Workspace overlay without dual write; only then delete `m_pathOrderBook`.
+
+
 ### Tier 5 — DisplayPipeline
 
 `imageview_load.cpp`: load generations, `DisplaySurface` binding, PreferCache

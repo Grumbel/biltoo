@@ -3272,7 +3272,7 @@ void MainWindow::writeSettings()
                           m_imageView->hostChrome().isImageModeLeftDragPan());
         settings.setValue(QStringLiteral("hudVisible"), m_imageView->hostHudPrefs().isVisible());
         settings.setValue(QStringLiteral("contentEditMarksVisible"),
-                          m_imageView->contentEditMarksVisible());
+                          ImageItem::contentEditMarksVisible());
         settings.setValue(QStringLiteral("hudFontPointSize"), m_imageView->hostHudPrefs().fontPointSizeValue());
         settings.setValue(QStringLiteral("hudTextColor"), m_imageView->hostHudPrefs().textColorRef().name(QColor::HexArgb));
         settings.setValue(QStringLiteral("hudPanelColor"), m_imageView->hostHudPrefs().panelColorRef().name(QColor::HexArgb));
