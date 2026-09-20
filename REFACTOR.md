@@ -757,3 +757,4 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - Tier 6: _mostly done_ (workspace/transform chrome try* remain on view;
   transform chrome is intentionally ImageView-owned per AGENTS.md).
 - Tier 6c: **done** (biltoo-1657) — Gallery hover/wheel/press try* on GalleryController.
+- Tier 6d: **done** (biltoo-1658) — Workspace Select press on WorkspaceController; chrome/rotate remain view-owned.

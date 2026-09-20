@@ -4,6 +4,9 @@
 #include "workspacecontroller.h"
 #include "imageview.h"
 #include "imageitem.h"
+#include <QMouseEvent>
+#include <QGraphicsScene>
+#include "imageitem.h"
 #include "imageloader.h"
 #include "sessionappearance.h"
 
@@ -314,5 +317,45 @@ void WorkspaceController::enter(int previousMode)
     }
     m_view->updateWorkspaceSceneRect();
     emit m_view->statusChanged();
+}
+
+
+// --- Workspace select input (Tier 6d) ---
+
+bool WorkspaceController::tryMousePressSelect(QMouseEvent *event)
+{
+    // Workspace Select tool: item move/select, or click the page guide sheet.
+    if (!m_view->isWorkspaceMode() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+        const QPointF scenePos = m_view->mapToScene(event->pos());
+        ImageItem *itemHit = nullptr;
+        if (m_view->canvasScene()) {
+            for (QGraphicsItem *gi : m_view->canvasScene()->items(scenePos)) {
+                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    if (ii->isInteractive() && m_view->liveItems().contains(ii)) {
+                        itemHit = ii;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!itemHit && m_view->pageGuideVisible()
+            && m_view->pageGuideSceneRect().contains(scenePos)) {
+            if (m_view->canvasScene()) {
+                m_view->canvasScene()->clearSelection();
+            }
+            m_view->setPageGuideSelected(true);
+            event->accept();
+            emit m_view->statusChanged();
+            return true;
+        }
+        m_view->setPageGuideSelected(false);
+        m_view->forwardGraphicsViewMousePress(event);
+        if (ImageItem *hit = m_view->targetItem()) {
+            m_view->hostItemInteract().beginMove(hit, m_view->captureState(hit));
+        }
+        emit m_view->statusChanged();
+        return true;
 }
 

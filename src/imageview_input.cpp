@@ -568,40 +568,9 @@ bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
 
 bool ImageView::tryMousePressWorkspaceSelect(QMouseEvent *event)
 {
-    // Workspace Select tool: item move/select, or click the page guide sheet.
-    if (!isWorkspaceMode() || event->button() != Qt::LeftButton) {
-        return false;
-    }
-        const QPointF scenePos = mapToScene(event->pos());
-        ImageItem *itemHit = nullptr;
-        if (m_scene) {
-            for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-                if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                    if (ii->isInteractive() && m_items.contains(ii)) {
-                        itemHit = ii;
-                        break;
-                    }
-                }
-            }
-        }
-        if (!itemHit && m_pageGuide.isVisible()
-            && pageGuideSceneRect().contains(scenePos)) {
-            if (m_scene) {
-                m_scene->clearSelection();
-            }
-            setPageGuideSelected(true);
-            event->accept();
-            emit statusChanged();
-            return true;
-        }
-        setPageGuideSelected(false);
-        QGraphicsView::mousePressEvent(event);
-        if (ImageItem *hit = targetItem()) {
-            m_itemInteract.beginMove(hit, captureState(hit));
-        }
-        emit statusChanged();
-        return true;
+    return m_workspace.tryMousePressSelect(event);
 }
+
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {

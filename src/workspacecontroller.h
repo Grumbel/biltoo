@@ -14,6 +14,7 @@
 
 class ImageView;
 class ImageItem;
+class QMouseEvent;
 
 /**
  * Workspace-mode collaborator for ImageView.
@@ -61,6 +62,9 @@ public:
     const QHash<QString, WorkspaceItemState> &freeFormStates() const { return m_freeFormStates; }
     bool hasFreeFormViewTransform() const { return m_hasFreeFormViewTransform; }
     QTransform freeFormViewTransform() const { return m_freeFormViewTransform; }
+
+    /** Select tool: item hit / page-guide / rubber-band (Tier 6d). */
+    bool tryMousePressSelect(QMouseEvent *event);
 
 private:
     ImageView *m_view = nullptr;

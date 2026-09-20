@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1658-workspace-select-controller.** Tier 6d: Workspace Select press on WorkspaceController.
+Prior: **1657**.
+
+### Change
+- `WorkspaceController::tryMousePressSelect` (was `ImageView::tryMousePressWorkspaceSelect`)
+- Host: `hostItemInteract()`, public `setPageGuideSelected`
+- ImageView thin-forwards; transform chrome / rotate / pan stay on the view
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1658-workspace-select-controller.bundle HEAD
+```
+
+### Next
+- Path-order residual / imageview.h narrowing
+- Further workspace try* only if clearly non-chrome
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1657-gallery-input-controller.** Tier 6c: Gallery try* input on GalleryController.
 Prior: **1656**.
 

@@ -273,6 +273,9 @@ public:
     const GalleryController &hostGallery() const { return m_gallery; }
     WorkspaceController &hostWorkspace() { return m_workspace; }
     const WorkspaceController &hostWorkspace() const { return m_workspace; }
+    ItemInteractSession &hostItemInteract() { return m_itemInteract; }
+    const ItemInteractSession &hostItemInteract() const { return m_itemInteract; }
+    void setPageGuideSelected(bool on);
     /** Display pipeline host: crop controller (draft freeze). */
     CropController &hostCrop() { return m_cropCtrl; }
     const CropController &hostCrop() const { return m_cropCtrl; }

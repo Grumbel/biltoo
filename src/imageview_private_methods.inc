@@ -187,7 +187,6 @@
 
     bool pageGuideSelected() const { return m_pageGuide.isSelected(); }
 
-    void setPageGuideSelected(bool on);
 
     /** Scene pixels per millimetre for the page guide (layout scale). */
     static qreal pageGuidePxPerMm();
