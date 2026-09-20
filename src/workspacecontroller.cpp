@@ -451,12 +451,14 @@ bool WorkspaceController::tryKeyPressShear(QKeyEvent *event)
     const qreal step = PlacementLinear::shearStepFromModifiers(
         event->modifiers() & Qt::ShiftModifier);
     for (ImageItem *item : targets) {
+        ItemComponents::Placement pl = item->placement();
         if (key == Qt::Key_0) {
-            item->setItemShear(0.0);
+            pl.shear = 0.0;
         } else {
-            item->setItemShear(PlacementLinear::shearAfterKey(
-                item->itemShear(), step, key == Qt::Key_BracketRight));
+            pl.shear = PlacementLinear::shearAfterKey(
+                pl.shear, step, key == Qt::Key_BracketRight);
         }
+        item->applyPlacement(pl);
         m_view->commitItemSessionEdit(item);
     }
     emit m_view->statusChanged();
@@ -524,9 +526,11 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
         if (!item) {
             continue;
         }
-        item->setItemRotation(0.0);
-        item->setItemHFlip(false);
-        item->setItemVFlip(false);
+        ItemComponents::Placement pl = item->placement();
+        pl.rotation = 0.0;
+        pl.hFlip = false;
+        pl.vFlip = false;
+        item->applyPlacement(pl);
     }
 
     GalleryLayout::pack(items, params);

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1772-commands-apply-placement.** User commands / slideshow pose via applyPlacement.
+Prior: **1771**.
+
+### Change
+- Opacity up/down/reset, reset scale/rotation/shear → applyPlacement
+- Workspace shear keys and layout free-form clear → applyPlacement
+- Slideshow framing / motion placement reset → applyPlacement
+- Session-bind footprint scale after decode upgrade → applyPlacement
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1772-commands-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + opacity/reset/slideshow smoke
+- Remaining content-flip / opacity-slider audit or Tier 4 harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1771-crop-session-apply-placement.** CropSession pose via applyPlacement.
 Prior: **1770**.
 

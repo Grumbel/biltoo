@@ -1017,3 +1017,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1769: framing scale (and Image-mode pos) reset via applyPlacement.
 - biltoo-1770: Gallery enter / pre-pack free-form clear via applyPlacement.
 - biltoo-1771: CropSession draft/enter/restore/commit pose via applyPlacement.
+- biltoo-1772: transform commands, workspace shear/layout, slideshow, footprint via applyPlacement.

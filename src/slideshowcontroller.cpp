@@ -4,6 +4,7 @@
 #include "slideshowcontroller.h"
 #include "imageview.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 #include "imagecache.h"
 #include "sessionappearance.h"
 #include "contentxform.h"
@@ -310,11 +311,16 @@ void SlideshowController::applySlideshowZoomFraming(ImageItem *item)
     }
     // Explicit uniform scale for static slideshow framing — logical size owns
     // geometry (same model as paintMotionCover), not soft contentRect pixels.
-    item->setItemShear(0.0);
-    item->setItemRotation(0.0);
-    item->setItemScale(1.0);
-    if (m_view->isImageMode()) {
-        item->setPos(0, 0);
+    {
+        ItemComponents::Placement pl = item->placement();
+        pl.shear = 0.0;
+        pl.rotation = 0.0;
+        pl.scale = 1.0;
+        pl.scaleY = 1.0;
+        if (m_view->isImageMode()) {
+            pl.pos = QPointF(0, 0);
+        }
+        item->applyPlacement(pl);
     }
     const QString path = item->path();
     QSize logical = m_view->ensureSlideshowLogicalSize(path);
@@ -2216,11 +2222,16 @@ void SlideshowController::freezeScrollbarsForMotion()
 void SlideshowController::resetItemPlacementForMotion(ImageItem *item)
 {
     m_view->hostFraming().setFitFillFlags(false, settings().isZoomFill());
-    item->setItemShear(0.0);
-    item->setItemRotation(0.0);
-    item->setItemScale(1.0);
-    if (m_view->isImageMode()) {
-        item->setPos(0, 0);
+    {
+        ItemComponents::Placement pl = item->placement();
+        pl.shear = 0.0;
+        pl.rotation = 0.0;
+        pl.scale = 1.0;
+        pl.scaleY = 1.0;
+        if (m_view->isImageMode()) {
+            pl.pos = QPointF(0, 0);
+        }
+        item->applyPlacement(pl);
     }
 }
 

@@ -102,13 +102,19 @@ bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const Q
             qAbs(sx0 - 1.0) < 1e-6 && qAbs(sy0 - 1.0) < 1e-6;
         if (neutralScale) {
             // Fresh drop: 1:1 scene units = content pixels (no footprint squash).
-            item->setItemScale(1.0, 1.0);
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            item->applyPlacement(pl);
         } else {
             // Prior intentional scale (e.g. moved from Gallery): fit uniformly.
             const qreal s = ViewTransform::uniformFitScale(
                 footW, footH, qreal(after.width()), qreal(after.height()));
             if (s > 1e-6) {
-                item->setItemScale(s, s);
+                ItemComponents::Placement pl = item->placement();
+                pl.scale = s;
+                pl.scaleY = s;
+                item->applyPlacement(pl);
             }
         }
         return true;

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "placementlinear.h"
 #include "stackgeometry.h"
 #include "thumtoocache.h"
@@ -275,7 +276,9 @@ void ImageView::opacityUp()
     }
     if (ImageItem *item = targetItem()) {
         const WorkspaceItemState before = captureState(item);
-        item->setItemOpacity(PlacementLinear::opacityAfterStep(item->itemOpacity(), 0.1));
+        ItemComponents::Placement pl = item->placement();
+        pl.opacity = PlacementLinear::opacityAfterStep(pl.opacity, 0.1);
+        item->applyPlacement(pl);
         pushItemGeometryCommand(tr("Opacity"), item, before, captureState(item));
         emit statusChanged();
     }
@@ -288,7 +291,9 @@ void ImageView::opacityDown()
     }
     if (ImageItem *item = targetItem()) {
         const WorkspaceItemState before = captureState(item);
-        item->setItemOpacity(PlacementLinear::opacityAfterStep(item->itemOpacity(), -0.1));
+        ItemComponents::Placement pl = item->placement();
+        pl.opacity = PlacementLinear::opacityAfterStep(pl.opacity, -0.1);
+        item->applyPlacement(pl);
         pushItemGeometryCommand(tr("Opacity"), item, before, captureState(item));
         emit statusChanged();
     }
@@ -301,7 +306,9 @@ void ImageView::opacityReset()
     }
     if (ImageItem *item = targetItem()) {
         const WorkspaceItemState before = captureState(item);
-        item->setItemOpacity(1.0);
+        ItemComponents::Placement pl = item->placement();
+        pl.opacity = 1.0;
+        item->applyPlacement(pl);
         pushItemGeometryCommand(tr("Reset opacity"), item, before, captureState(item));
         emit statusChanged();
     }
@@ -333,8 +340,11 @@ void ImageView::resetItemScale()
     }
     for (ImageItem *item : targets) {
         const WorkspaceItemState before = captureState(item);
-        item->setItemScale(1.0, 1.0);
-        item->setItemShear(0.0);
+        ItemComponents::Placement pl = item->placement();
+        pl.scale = 1.0;
+        pl.scaleY = 1.0;
+        pl.shear = 0.0;
+        item->applyPlacement(pl);
         pushItemGeometryCommand(tr("Reset scale"), item, before, captureState(item));
     }
     if (macro) {
@@ -370,7 +380,9 @@ void ImageView::resetItemRotation()
     }
     for (ImageItem *item : targets) {
         const WorkspaceItemState before = captureState(item);
-        item->setItemRotation(0.0);
+        ItemComponents::Placement pl = item->placement();
+        pl.rotation = 0.0;
+        item->applyPlacement(pl);
         commitItemSessionEdit(item);
         pushItemGeometryCommand(tr("Reset rotation"), item, before, captureState(item));
     }
@@ -406,7 +418,9 @@ void ImageView::resetItemShear()
     }
     for (ImageItem *item : targets) {
         const WorkspaceItemState before = captureState(item);
-        item->setItemShear(0.0);
+        ItemComponents::Placement pl = item->placement();
+        pl.shear = 0.0;
+        item->applyPlacement(pl);
         pushItemGeometryCommand(tr("Reset shear"), item, before, captureState(item));
     }
     if (macro) {
