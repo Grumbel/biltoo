@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1830-fix-pipeline-host-lambdas.** Fix: pipeline lambdas after 1826/1829 API moves.
+Prior: **1829**.
+
+### Change
+- `displaypipelinecontroller.cpp`: Workspace soft preview → `hostDisplayPipeline().onImagePreviewLoaded`
+- `displaypipelinecontroller_item.cpp`: seed workers → `hostDisplayPipeline().markAppearanceSeedAttempted` /
+  `applyStoredContentAppearanceSeed`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1830-fix-pipeline-host-lambdas.bundle HEAD
+```
+Includes **1806–1830** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (compile + session open)
+- Remaining pipeline_forwards demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1829-create-seed-via-pipeline.** Stage 2: placeholder create + appearance seed via pipeline.
 Prior: **1828**.
 
