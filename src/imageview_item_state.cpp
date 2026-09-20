@@ -114,13 +114,9 @@ WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
 {
-    // ContentXform ground truth: applied fingerprint > appearance store >
-    // captureState placement. Never path-map turns for bound ids.
+    // Applied ContentXform fingerprint wins mid-edit; otherwise captureState
+    // already prefers ItemWorld sparse tables for bound ids (Stage 1).
     WorkspaceItemState beforeSt = captureState(item);
-    beforeSt.hasCrop = item->sessionHasCrop();
-    beforeSt.cropRect = item->sessionCropRect();
-    beforeSt.contentHFlip = item->contentHFlip();
-    beforeSt.contentVFlip = item->contentVFlip();
     const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
@@ -134,14 +130,6 @@ WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) con
         beforeSt.cropRect = x.cropRect;
         beforeSt.cropSourceSize = x.cropSourceSize;
         beforeSt.cropRotation = x.cropRotation;
-        return beforeSt;
-    }
-    if (sid0 != kInvalidSessionImageId) {
-        const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid0);
-        beforeSt.contentQuarterTurns =
-            ContentXform::normalizeQuarterTurns(bake.quarterTurns);
-        beforeSt.contentHFlip = bake.hFlip;
-        beforeSt.contentVFlip = bake.vFlip;
     }
     return beforeSt;
 }

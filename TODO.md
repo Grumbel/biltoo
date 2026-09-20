@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1937-content-bake-before-authority.** Content-bake before/after without item overwrite.
+Prior: **1936**.
+
+### Change
+- `captureContentBakeBeforeState`: no longer overwrites captureState crop/flips
+  from live ImageItem; applied ContentXform still wins mid-edit
+- Bake rotate/flip after-state + applied xform tag use `cropMap`/`want` fields
+  (not `item->sessionHasCrop()`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1937-content-bake-before-authority-516d734.bundle HEAD
+```
+Requires tip **1936** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ImageItem live crop/flip demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1936-remember-crop-authority.** rememberItemState / crop undo authority cleanup.
 Prior: **1935**.
 

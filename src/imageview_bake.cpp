@@ -130,12 +130,12 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     }
 
     WorkspaceItemState afterSt = captureState(item);
-    afterSt.hasCrop = item->sessionHasCrop();
-    afterSt.cropRect = item->sessionCropRect();
+    afterSt.hasCrop = cropMap.hasCrop;
+    afterSt.cropRect = cropMap.cropRect;
     afterSt.cropRotation = cropMap.cropRotation;
     afterSt.cropSourceSize = cropMap.cropSourceSize;
-    afterSt.contentHFlip = item->contentHFlip();
-    afterSt.contentVFlip = item->contentVFlip();
+    afterSt.contentHFlip = want.contentHFlip;
+    afterSt.contentVFlip = want.contentVFlip;
     afterSt.contentQuarterTurns = turns;
     afterSt.sessionId = beforeSt.sessionId;
     pushItemContentCommand(tr("Rotate"), item, beforeSrc, item->sourceImage().copy(),
@@ -232,16 +232,16 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         tag.contentHFlip = h;
         tag.contentVFlip = v;
         tag.contentQuarterTurns = beforeSt.contentQuarterTurns;
-        tag.hasCrop = item->sessionHasCrop();
-        tag.cropRect = item->sessionCropRect();
+        tag.hasCrop = cropMap.hasCrop;
+        tag.cropRect = cropMap.cropRect;
         tag.cropRotation = cropMap.cropRotation;
         tag.cropSourceSize = cropMap.cropSourceSize;
         item->setAppliedContentXform(ContentXform::Value::fromState(tag));
     }
 
     WorkspaceItemState afterSt = captureState(item);
-    afterSt.hasCrop = item->sessionHasCrop();
-    afterSt.cropRect = item->sessionCropRect();
+    afterSt.hasCrop = cropMap.hasCrop;
+    afterSt.cropRect = cropMap.cropRect;
     afterSt.cropRotation = cropMap.cropRotation;
     afterSt.cropSourceSize = cropMap.cropSourceSize;
     afterSt.contentHFlip = h;
