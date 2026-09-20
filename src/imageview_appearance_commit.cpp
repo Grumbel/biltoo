@@ -10,6 +10,7 @@
 #include "sessionappearance.h"
 #include "thumtoocache.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 #include "imageloader.h"
 
 void ImageView::syncSessionEditPeers(ImageItem *item)
@@ -88,8 +89,12 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
                 applyContentLayoutSize(other, *st);
             }
         }
-        other->setItemHFlip(hFlip);
-        other->setItemVFlip(vFlip);
+        {
+            ItemComponents::Placement pl = other->placement();
+            pl.hFlip = hFlip;
+            pl.vFlip = vFlip;
+            other->applyPlacement(pl);
+        }
     };
     for (ImageItem *other : peers) {
         syncOne(other);
@@ -314,8 +319,12 @@ int ImageView::resetContentAppearanceForTargets()
         item->setContentHFlip(false);
         item->setContentVFlip(false);
         item->setSessionCrop(false, QRect());
-        item->setItemHFlip(false);
-        item->setItemVFlip(false);
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.hFlip = false;
+            pl.vFlip = false;
+            item->applyPlacement(pl);
+        }
 
         // Restore layout geometry to the unoriented native size (content
         // rotate may have transposed intrinsic).

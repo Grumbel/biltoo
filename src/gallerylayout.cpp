@@ -79,7 +79,10 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     // (or Image). Residual free-form angles are cleared when *entering* Gallery
     // from Workspace — pack itself must not wipe user transforms.
     for (ImageItem *item : items) {
-        item->setItemOpacity(1.0);
+        // applyPackPose also forces opacity 1; set early so layoutSize reads match.
+        ItemComponents::Placement pl = item->placement();
+        pl.opacity = 1.0;
+        item->applyPlacement(pl);
         if (params.mode != Mode::GridCrop) {
             item->setGalleryCellSize({});
         }

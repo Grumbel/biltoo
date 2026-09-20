@@ -524,8 +524,10 @@ void DisplayPipelineController::applyLegacyPathFlipsIfNeeded(ImageItem *item, co
         return;
     }
     if (!st->contentHFlip && !st->contentVFlip) {
-        item->setItemHFlip(st->hFlip);
-        item->setItemVFlip(st->vFlip);
+        ItemComponents::Placement pl = item->placement();
+        pl.hFlip = st->hFlip;
+        pl.vFlip = st->vFlip;
+        item->applyPlacement(pl);
     }
 }
 

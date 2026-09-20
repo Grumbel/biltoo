@@ -614,7 +614,11 @@ void ImageItem::setOpacityFromSliderPos(const QPointF &scenePos)
     ItemFrameGeometry::opacityTrackView(fg, &a, &b);
     const QPointF p = sceneToViewPx(scenePos);
     const qreal tval = ItemFrameGeometry::trackParam(a, b, p);
-    setItemOpacity(ItemFrameGeometry::opacityFromTrackParam(tval));
+    {
+        ItemComponents::Placement pl = placement();
+        pl.opacity = ItemFrameGeometry::opacityFromTrackParam(tval);
+        applyPlacement(pl);
+    }
 }
 
 QList<ImageItem::Handle> ImageItem::activeHandles() const
@@ -976,16 +980,26 @@ void ImageItem::activateChromeHandle(Handle h)
         }
         break;
     }
-    case Handle::ResetScale:
-        setItemScale(1.0, 1.0);
-        setItemShear(0.0);
+    case Handle::ResetScale: {
+        ItemComponents::Placement pl = placement();
+        pl.scale = 1.0;
+        pl.scaleY = 1.0;
+        pl.shear = 0.0;
+        applyPlacement(pl);
         break;
-    case Handle::ResetRotation:
-        setItemRotation(0.0);
+    }
+    case Handle::ResetRotation: {
+        ItemComponents::Placement pl = placement();
+        pl.rotation = 0.0;
+        applyPlacement(pl);
         break;
-    case Handle::ResetShear:
-        setItemShear(0.0);
+    }
+    case Handle::ResetShear: {
+        ItemComponents::Placement pl = placement();
+        pl.shear = 0.0;
+        applyPlacement(pl);
         break;
+    }
     default:
         break;
     }

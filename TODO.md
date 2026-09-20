@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1773-chrome-flip-apply-placement.** Chrome reset, flips, opacity slider via applyPlacement.
+Prior: **1772**.
+
+### Change
+- Opacity-slider drag and chrome ResetScale/Rotation/Shear → applyPlacement
+- Peer/content-clear placement flips and legacy path flips → applyPlacement
+- Gallery pack pre-pass opacity → applyPlacement
+- Remaining setItem* outside ImageItem setters are function names only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1773-chrome-flip-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + chrome reset / flip / opacity-slider smoke
+- Tier 4 characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1772-commands-apply-placement.** User commands / slideshow pose via applyPlacement.
 Prior: **1771**.
 
