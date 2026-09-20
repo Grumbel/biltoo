@@ -379,7 +379,7 @@ void GalleryController::enter(int packagedLayoutInt)
     // worst on cold cache while size-resolve runs. First pack is owned by
     // setWorkspacePaths / finishGallerySizeResolve.
     if (layoutSwitch || restoredStash) {
-        m_view->applyLayout(GalleryPackReason::EnterGallery);
+        applyLayout(GalleryPackReason::EnterGallery);
     }
 
     if (holdPaint && m_view->viewport()) {
@@ -443,7 +443,7 @@ bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
     // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
     // each wheel notch used to rescan all tiles + setInterest + repaint
     // every high-res soft, freezing the UI while zooming out.
-    m_view->scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowScrollMs);
+    scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowScrollMs);
     emit m_view->statusChanged();
     event->accept();
     return true;
@@ -1193,7 +1193,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     emit m_view->statusChanged();
     // layoutApplyScope ends after this function returns (keeps guard through statusChanged)
     // Re-apply scroll after m_view->centerOn(0,0) above when returning from Image.
-    m_view->applyPendingGalleryRestore();
+    applyPendingRestore();
     if (preserveView) {
         if (keptScrollH >= 0 && m_view->horizontalScrollBar()) {
             m_view->horizontalScrollBar()->setValue(keptScrollH);

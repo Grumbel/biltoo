@@ -3057,7 +3057,7 @@ void MainWindow::stopSlideshow()
     qApp->removeEventFilter(this);
     updateSlideshowActionUi();
     if (m_imageView) {
-        m_imageView->hostSlideshow().setSlideshowProgress(false);
+        m_imageView->hostSlideshow().setSlideshowProgress(false, 0);
         // Slideshow advances the session index without loadImage (pure phase owns
         // the viewport). Leaving without a canvas load left Image mode on the
         // pre-show tile. Session flags are already cleared so LoadReplace runs.

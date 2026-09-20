@@ -328,7 +328,7 @@ void MainWindow::returnToWorkspace()
     m_galleryReturnActive = false;
     // Phase 3: restore stashed free-form tiles (or durable snapshot) in one place.
     if (m_imageView) {
-        m_imageView->setViewMode(ViewMode::Workspace);
+        m_imageView->setViewMode(ImageView::ViewMode::Workspace);
     } else {
         enterWorkspaceMode();
     }
