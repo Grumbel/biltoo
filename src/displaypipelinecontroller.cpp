@@ -178,7 +178,7 @@ void DisplayPipelineController::scheduleImageModeNativeDecodeOnce(const QString 
                         (void)host->tryInstallImageModeSample(path, decoded);
                     }
                 } else if (host->isWorkspaceMode() && !decoded.isNull()) {
-                    host->onImagePreviewLoaded(
+                    host->hostDisplayPipeline().onImagePreviewLoaded(
                         path, decoded, host->hostLoadGate().generation(),
                         static_cast<int>(ImageView::LoadAdd));
                 }

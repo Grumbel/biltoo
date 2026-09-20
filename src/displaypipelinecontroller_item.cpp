@@ -201,10 +201,11 @@ void DisplayPipelineController::seedSessionAppearancesFromPaths(const QStringLis
                 return;
             }
             for (const SessionImageId sid : attempted) {
-                host->markAppearanceSeedAttempted(sid);
+                host->hostDisplayPipeline().markAppearanceSeedAttempted(sid);
             }
             for (const Hit &h : hits) {
-                host->applyStoredContentAppearanceSeed(h.sid, h.path, h.stored);
+                host->hostDisplayPipeline().applyStoredContentAppearanceSeed(
+                    h.sid, h.path, h.stored);
             }
         }, Qt::QueuedConnection);
     });
