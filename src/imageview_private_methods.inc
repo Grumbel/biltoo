@@ -11,14 +11,6 @@
             || zone == EdgeZone::GalleryReturn;
     }
 
-    /** qCritical if two live/stashed items share one SessionImageId. */
-    bool validateUniqueLiveSessionIds(const char *context = nullptr) const;
-    }
-
-    /**
-     * Ensure logical size is known (may schedule async probe).
-     * Phase entry, fit, and framing call this before geometry.
-     */
 
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
     QString loadingStatusHudLine() const;
@@ -26,18 +18,7 @@
     /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */
     void refreshScrollBarGeometry();
 
-    /** Claim one pending restore snapshot for @a path (FIFO; duplicates OK). */
 
-    /**
-     * LoadReplace: Image-mode navigation install, or empty multi-item seed.
-     */
-
-    /** LoadRestore: create tile from decode + claimed restore snapshot. */
-
-    /**
-     * LoadAdd: fill/create tiles for @a path after a successful or failed decode.
-     * Honours load generation and pending-workspace cancellation.
-     */
 
 
 
@@ -81,9 +62,6 @@
     void restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,
                                            const QPointF &keptCenter, int scrollH, int scrollV);
 
-    /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
-
-    /** Image-mode framing after soft/full install (honours sticky zoom). */
 
     /** Best-effort: remember viewport centre in image-normalized coords. */
 
@@ -92,9 +70,6 @@
     /** Current view-level scale factor (workspace zoom). */
     qreal viewScale() const;
 
-
-
-    /** Undo/redo: replace attention points on the current attention target. */
 
 
     /** Joined text of the selection in reading order; empty if none. */
@@ -162,21 +137,6 @@
 
     void flushColorAdjustCommit();
 
-    /** Bake ±90° content into pixels and session state (not placement). */
-    WorkspaceItemState captureContentBakeBeforeState(ImageItem *item) const;
-
-    SessionImageId resolveContentEditSessionId(ImageItem *item) const;
-
-    WorkspaceItemState appearanceCropMapForEdit(ImageItem *item,
-                                                const WorkspaceItemState &fallback,
-                                                SessionImageId sid) const;
-
-    void persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
-                                         const char *debugTag);
-
-    void bakeItemRotate90(ImageItem *item, int quarterTurns);
-
-    /** Push geometry-only undo (pos/scale/rotation/opacity/z/item flips). */
 
     /** Push content bake undo (pixels + session appearance). */
     void pushItemContentCommand(const QString &text, ImageItem *item,
@@ -200,11 +160,5 @@
     QString pixelQualityLabel(const ImageItem *item) const;
 
 
-    /** Basename of the current/target image for the bottom HUD. */
-    QString hudFileName() const;
-
-
-
-    /** Coalesce statusChanged during soft climb (MainWindow is not free). */
 
 
