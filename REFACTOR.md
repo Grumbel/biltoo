@@ -739,6 +739,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - biltoo-1718: Gallery layout-switch pack rebuild preserves session ids.
 - biltoo-1719: remove paths-only setPathOrder; PackOrderView overload.
 - biltoo-1720: setPathOrderFromLiveItems(); Gallery layout-switch uses it.
+- biltoo-1721: PackOrderView locals — fix dangling ref warnings on .ids()/.paths().
 
 - Tier 0: **done** (biltoo-1596) — privatized 190 methods with no refs outside
   `imageview*`; declarations live in `imageview_private_methods.inc` +

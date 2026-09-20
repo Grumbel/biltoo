@@ -7,6 +7,7 @@
 #include "tile_load_coordinator.h"
 
 #include "imageview.h"
+#include "packorderview.h"
 #include "imageitem.h"
 #include "displayedgepolicy.h"
 #include "pathrasterservice.h"
@@ -263,7 +264,8 @@ void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChang
     }
     if (!m_view->hostLayout().isFreeForm()) {
         if (!m_view->pathOrderIsEmpty()) {
-            m_view->reorderItemsByPaths(m_view->currentPackOrder().paths());
+            const PackOrderView pack = m_view->currentPackOrder();
+            m_view->reorderItemsByPaths(pack.paths());
         }
         if (!(m_view->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
             if (sizeChanged) {

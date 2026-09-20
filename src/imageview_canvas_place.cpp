@@ -4,6 +4,7 @@
 // Add / place / move images onto the canvas.
 
 #include "imageview.h"
+#include "packorderview.h"
 #include "imageitem.h"
 #include "imagecache.h"
 #include "sessionappearance.h"
@@ -90,7 +91,8 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
         // (filmstrip row only, wrong thumb until appearance emit).
         if (sessionId != kInvalidSessionImageId) {
             bool alreadyOrdered = false;
-            for (SessionImageId id : currentPackOrder().ids()) {
+            const PackOrderView packOrder = currentPackOrder();
+            for (SessionImageId id : packOrder.ids()) {
                 if (id == sessionId) {
                     alreadyOrdered = true;
                     break;
@@ -177,7 +179,8 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     // Path alone cannot express "two tiles, same file".
     if (sessionId != kInvalidSessionImageId) {
         bool alreadyOrdered = false;
-        for (SessionImageId id : currentPackOrder().ids()) {
+        const PackOrderView packOrder = currentPackOrder();
+        for (SessionImageId id : packOrder.ids()) {
             if (id == sessionId) {
                 alreadyOrdered = true;
                 break;

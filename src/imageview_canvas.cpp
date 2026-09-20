@@ -115,7 +115,8 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
 {
     TtfpTrace::mark("finishSetWorkspacePaths");
     // Keep canvas order aligned with session/sort order (not async load order).
-    reorderItemsByPaths(currentPackOrder().paths());
+    const PackOrderView pack = currentPackOrder();
+    reorderItemsByPaths(pack.paths());
 
     if (haveIds) {
         rebindWorkspaceSession(paths, sessionIds);

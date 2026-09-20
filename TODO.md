@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1721-packorder-dangling-fix.** Bind PackOrderView locals (dangling refs).
+Prior: **1720**.
+
+### Change
+- canvas_place alreadyOrdered loops: local PackOrderView before .ids()
+- gallery/displaypipeline/canvas reorder: local PackOrderView before .paths()
+- size_book sizeResolvePathOrder: local PackOrderView before return
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1721-packorder-dangling-fix.bundle HEAD
+```
+
+### Next
+- biltoo-build (warnings should be gone)
+- ImageView harness → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1720-pathorder-from-live.** setPathOrderFromLiveItems centralizes id-safe rebuild.
 Prior: **1719**.
 
