@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1815-drop-dead-chrome-helpers.** Stage 2: remove unused ImageItem chrome helpers.
+Prior: **1814**.
+
+### Change
+- Removed dead private helpers: `deviceScaleMin`, `handleHitRadius`,
+  `drawCornerBracket`, `chromeButtonSize`, `handleDistanceScreenPx`
+- Hit/paint chrome already uses `ItemFrameGeometry` in viewport space
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1815-drop-dead-chrome-helpers.bundle HEAD
+```
+Includes **1806–1815** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Workspace chrome hit-test)
+- ImageView characterization / Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1814-drop-dead-crop-local.** Stage 2: remove unused ImageItem::cropToLocalRect.
 Prior: **1813**.
 
