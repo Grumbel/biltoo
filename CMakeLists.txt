@@ -231,6 +231,8 @@ add_executable(biltoo
   src/imageview_status.cpp
   src/imageview_transform.cpp
   src/imageview_input.cpp
+  src/imageview_edge_chrome.cpp
+  src/imageview_dnd.cpp
   src/imageview_input_forwards.cpp
   src/imageview_paint.cpp
   src/imageview_slideshow_paint.cpp

@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1693-edge-dnd-tu.** Split edge chrome and drag/drop out of input.cpp.
+Prior: **1692**.
+
+### Change
+- New `imageview_edge_chrome.cpp` — edge zone width/height and hover
+- New `imageview_dnd.cpp` — viewportEvent + drag enter/move/drop
+- `imageview_input.cpp` ~869 → ~758 lines (pan, zoom region, workspace chrome, routers)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1693-edge-dnd-tu.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Tier 4 still needs ImageView characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1692-path-order-characterization.** Expand SessionPathOrder characterization tests.
 Prior: **1691**.
 
