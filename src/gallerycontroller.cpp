@@ -789,7 +789,7 @@ void GalleryController::scheduleStatusRefresh(int delayMs)
     if (!m_statusRefreshTimer) {
         m_statusRefreshTimer = new QTimer(m_view);
         m_statusRefreshTimer->setSingleShot(true);
-        connect(m_statusRefreshTimer, &QTimer::timeout, m_view, [this]() {
+        QObject::connect(m_statusRefreshTimer, &QTimer::timeout, m_view, [this]() {
             if (m_view->isGalleryMode()) {
                 updateSoftProgressHud();
                 emit m_view->statusChanged();
@@ -808,7 +808,7 @@ void GalleryController::scheduleDecodeWindowRefresh(int delayMs)
     if (!m_decodeScrollTimer) {
         m_decodeScrollTimer = new QTimer(m_view);
         m_decodeScrollTimer->setSingleShot(true);
-        connect(m_decodeScrollTimer, &QTimer::timeout, m_view, [this]() {
+        QObject::connect(m_decodeScrollTimer, &QTimer::timeout, m_view, [this]() {
             if (m_view->isGalleryMode()) {
                 updateDecodeWindow();
             }

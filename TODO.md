@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1698-qobject-connect.** Qualify connect in non-QObject controllers.
+Prior: **1697**.
+
+### Change
+- `GalleryController` / `DisplayPipelineController`: `connect` → `QObject::connect`
+  (neither class inherits QObject; bare `connect` is not in scope)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1698-qobject-connect.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Offscreen ImageView characterization harness
+- Then Tier 4 path-order book removal
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1697-tu-split-includes.** Restore includes after recent imageview TU splits.
 Prior: **1696**.
 

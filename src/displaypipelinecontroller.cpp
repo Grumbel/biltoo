@@ -1340,7 +1340,7 @@ void DisplayPipelineController::scheduleTileLodAfterInteraction(int delayMs)
     if (!tileLodZoomDebounce()) {
         tileLodZoomDebounce() = new QTimer(m_view);
         tileLodZoomDebounce()->setSingleShot(true);
-        connect(tileLodZoomDebounce(), &QTimer::timeout, m_view, [this]() {
+        QObject::connect(tileLodZoomDebounce(), &QTimer::timeout, m_view, [this]() {
             if (m_view->isGalleryMode()) {
                 tickPrimaryTileLod(8);
                 return;
@@ -1418,7 +1418,7 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
     if (!tileLodTimer()) {
         tileLodTimer() = new QTimer(m_view);
         tileLodTimer()->setSingleShot(true);
-        connect(tileLodTimer(), &QTimer::timeout, m_view, [this]() {
+        QObject::connect(tileLodTimer(), &QTimer::timeout, m_view, [this]() {
             // Image focus: higher budget so density climb is not starved.
             tickPrimaryTileLod(m_view->isGalleryMode() ? 48 : 32);
         });
