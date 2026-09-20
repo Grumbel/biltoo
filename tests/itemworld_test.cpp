@@ -27,6 +27,7 @@ private slots:
     void attention_setAndClear();
     void removeAppearance_clearsComponents();
     void crop_fallbackWhenDtoWrittenDirectly();
+    void clearAppearance_clearsDtoAndTables();
 };
 
 void ItemWorldTest::unbound_gettersAreSafe()
@@ -239,6 +240,28 @@ void ItemWorldTest::crop_fallbackWhenDtoWrittenDirectly()
     QCOMPARE(world.cropCount(), 0); // table not dual-written
     // Fallback extract still works.
     QCOMPARE(world.crop(8).rect, QRect(3, 3, 20, 20));
+}
+
+
+void ItemWorldTest::clearAppearance_clearsDtoAndTables()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(1, 1, 8, 8);
+    st.attentionPoints = {QPointF(0.1, 0.2)};
+    st.hasAttention = true;
+    world.setAppearance(1, st);
+    QCOMPARE(world.cropCount(), 1);
+    QCOMPARE(world.attentionCount(), 1);
+
+    world.clearAppearance();
+    QVERIFY(!store.contains(1));
+    QCOMPARE(world.cropCount(), 0);
+    QCOMPARE(world.attentionCount(), 0);
 }
 
 QTEST_MAIN(ItemWorldTest)

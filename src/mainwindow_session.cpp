@@ -4051,7 +4051,7 @@ void MainWindow::installProjectAppearances(
     if (!m_imageView) {
         return;
     }
-    m_imageView->appearance().clear();
+    m_imageView->itemWorld().clearAppearance();
     for (int i = 0; i < appearanceByRow.size(); ++i) {
         if (!rowHasAppearance.at(i)) {
             continue;

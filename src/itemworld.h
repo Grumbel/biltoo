@@ -99,6 +99,16 @@ public:
         m_attentions.remove(id);
     }
 
+    /** Clear DTO store and sparse component tables. */
+    void clearAppearance()
+    {
+        if (m_appearance) {
+            m_appearance->clear();
+        }
+        m_crops.clear();
+        m_attentions.clear();
+    }
+
     /** Sparse crop table (Stage 1). Empty crop ⇒ absent. */
     ItemComponents::Crop crop(SessionImageId id) const
     {

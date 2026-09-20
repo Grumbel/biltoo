@@ -98,7 +98,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
                 s.vFlip = prev->vFlip;
                 s.sessionIndex = prev->sessionIndex;
             }
-            appearance().set(sid, s);
+            m_itemWorld.setAppearance(sid, s);
             persistDurableContentAppearance(item, s, "bakeRotate");
         }
         // Keep path map content fields in sync so pack afterEach cannot leave
@@ -212,7 +212,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         s.contentHFlip = h;
         s.contentVFlip = v;
         s.contentQuarterTurns = cropMap.contentQuarterTurns;
-        appearance().set(sid, s);
+        m_itemWorld.setAppearance(sid, s);
         persistDurableContentAppearance(item, s, "bakeFlip");
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = captureState(item);

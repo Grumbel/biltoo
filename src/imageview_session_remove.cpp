@@ -106,7 +106,7 @@ void ImageView::removeWorkspaceSessionId(SessionImageId sessionId)
     if (sessionId == kInvalidSessionImageId) {
         return;
     }
-    appearance().remove(sessionId);
+    m_itemWorld.removeAppearance(sessionId);
 
     // Capture view before any item is destroyed — Qt may shrink sceneRect
     // while removeItem runs, which zeroes scrollbar ranges mid-loop.
@@ -294,7 +294,7 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         slot.sessionId = id;
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
-        appearance().set(id, slot);
+        m_itemWorld.setAppearance(id, slot);
         // Drive ThumbnailBar per-id override (cropped/rotated/graded pixels).
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {

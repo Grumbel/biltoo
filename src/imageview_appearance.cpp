@@ -167,7 +167,7 @@ void ImageView::rememberItemState(ImageItem *item)
         slot.sessionId = item->sessionId();
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
-        appearance().set(item->sessionId(), slot);
+        m_itemWorld.setAppearance(item->sessionId(), slot);
         return;
     }
     m_itemStateBook.set(item->path(), captureState(item));
@@ -370,7 +370,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
                 slot.cropRotation = x.cropRotation;
             }
         }
-        appearance().set(sid, slot);
+        m_itemWorld.setAppearance(sid, slot);
         contentSlot = slot;
         haveContentSlot = true;
     } else {

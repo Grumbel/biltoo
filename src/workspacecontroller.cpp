@@ -40,7 +40,7 @@ void WorkspaceController::snapshot()
         // Path map is session/Image appearance only; unbound duplicates stay
         // in the list and must not collapse into a single path entry.
         if (s.sessionId != kInvalidSessionImageId) {
-            m_view->appearance().set(s.sessionId, s);
+            m_view->itemWorld().setAppearance(s.sessionId, s);
         }
         if (s.sessionIndex >= 0) {
             m_view->setItemStateForPath(s.path, s);
@@ -568,7 +568,7 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
             continue;
         }
         if (item->sessionId() != kInvalidSessionImageId) {
-            m_view->appearance().set(item->sessionId(), m_view->captureState(item));
+            m_view->itemWorld().setAppearance(item->sessionId(), m_view->captureState(item));
         }
         m_view->hostItemStateBook().set(item->path(), m_view->captureState(item));
     }

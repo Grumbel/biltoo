@@ -169,7 +169,7 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
         slot.sessionId = sid;
         slot.path = item->path();
         slot.colorAdjust = adj;
-        appearance().set(sid, slot);
+        m_itemWorld.setAppearance(sid, slot);
     } else {
         slot.colorAdjust = adj;
     }

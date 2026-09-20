@@ -304,7 +304,7 @@ bool CropController::applyCropCommit(ImageItem *item)
             st = m_view->captureState(item);
             session().seedApplyCropState(&st, item->offset(), item->imageSize());
             if (sid != kInvalidSessionImageId) {
-                m_view->hostAppearance().set(sid, st);
+                m_view->itemWorld().setAppearance(sid, st);
             }
         }
         CropSession::ApplyBakeResult baked =

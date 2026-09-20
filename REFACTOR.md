@@ -935,3 +935,6 @@ Phase 1–6 rules still apply. Additions:
   ItemWorld owns sparse crop/attention tables dual-written with DTO on
   `setAppearance` / `setCrop` / `setAttention`; `setSessionAppearance` routes
   through ItemWorld; tests cover presence, clear, remove, DTO-direct fallback.
+- biltoo-1727: route all `appearance().set` / remove / clear through ItemWorld
+  (ImageView, Crop/Attention/Workspace/DisplayPipeline controllers, MainWindow);
+  `clearAppearance` clears DTO + sparse tables.

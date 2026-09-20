@@ -214,7 +214,7 @@ void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
         return;
     }
     if (sid != kInvalidSessionImageId) {
-        appearance().set(sid, s);
+        m_itemWorld.setAppearance(sid, s);
     } else {
         // Unbound only: path map is the sole store.
         m_itemStateBook.set(item->path(), s);

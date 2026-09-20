@@ -272,7 +272,7 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
             stored.gradeBrightness, stored.gradeContrast, stored.gradeSaturation,
             stored.gradeHue, stored.gradeGamma, stored.gradeInvert);
     }
-    m_view->appearance().set(sid, seed);
+    m_view->itemWorld().setAppearance(sid, seed);
 }
 
 

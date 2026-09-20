@@ -94,7 +94,7 @@ void AttentionController::setAttentionPointsForTarget(const QVector<QPointF> &pt
         WorkspaceItemState st = m_view->hostAppearance().value(sid);
         st.attentionPoints = clamped;
         st.syncAttentionPrimary();
-        m_view->hostAppearance().set(sid, st);
+        m_view->itemWorld().setAppearance(sid, st);
     }
     if (m_view->viewport()) {
         m_view->viewport()->update();

@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1727-itemworld-appearance-writes.** All appearance writes via ItemWorld.
+Prior: **1726**.
+
+### Change
+- Every `appearance().set` / `hostAppearance().set` → `itemWorld().setAppearance`
+- `appearance().remove` → `removeAppearance`; MainWindow clear → `clearAppearance`
+- ItemWorld::clearAppearance clears DTO + crop/attention tables
+- itemworld_test: clearAppearance_clearsDtoAndTables
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1727-itemworld-appearance-writes.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest itemworld
+- Stage 1 residual: ContentBake / Color components
+- Or route appearance *reads* that care about crop through `itemWorld().crop()`
+- Phase 6 Tier 4 path-order residual still open
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1726-itemworld-crop-attention.** Phase 7 Stage 1 Crop + Attention components.
 Prior: **1725**.
 

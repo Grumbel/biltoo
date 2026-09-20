@@ -215,7 +215,7 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
     dst.rotation = 0.0;
     dst.opacity = 1.0;
     dst.z = 0.0;
-    appearance().set(toId, dst);
+    m_itemWorld.setAppearance(toId, dst);
 
     ImageItem *donor = findItemBySessionId(fromId);
     if (!donor && isImageMode()) {
@@ -302,7 +302,7 @@ int ImageView::resetContentAppearanceForTargets()
             slot.sessionId = sid;
             slot.path = path;
             // Keep color grade / pose if present.
-            appearance().set(sid, slot);
+            m_itemWorld.setAppearance(sid, slot);
         }
         // Path map still holds content turns from prior bake/pack; captureState
         // re-merges turns==0 from m_itemStateBook.byPath and can resurrect orientation.
