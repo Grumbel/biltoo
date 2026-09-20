@@ -1150,6 +1150,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1916: private_methods blank trim; host include banners; REFACTOR metrics/friend/load TU notes.
 - biltoo-1917: pure characterization Placement survives pathOrderClear; PackOrderOverlay docs.
 - biltoo-1918: pure characterization ContentBake + Color survive pathOrderClear.
+- biltoo-1919: pure characterization Attention survives pathOrderClear (component family complete).
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

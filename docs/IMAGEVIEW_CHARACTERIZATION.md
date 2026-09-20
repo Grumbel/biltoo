@@ -20,7 +20,7 @@ size, and framing before trusting FollowDocument / document-only pack.
 | `contentxform` | layout size, crop map through rotate |
 | `packorderview` | fromBook/fromDocument, alignsWithDocument, multiplicity |
 | `packorderoverlay` | FollowDocument / Explicit, collapse, seed-on-append |
-| `session-gallery-crop-scenario` | narrative open→Gallery→crop→return pure side; ItemWorld Crop/ContentBake presence |
+| `session-gallery-crop-scenario` | narrative open→Gallery→crop→return pure side; ItemWorld Crop/ContentBake/Placement/Color/Attention presence |
 | `itemworld` | Stage 0–2 facade: dual-write, presence, clear |
 | `imageview-characterization` | PNG fixtures + overlay host-mutator simulation + layoutSize |
 
@@ -73,6 +73,7 @@ asserts LoadAdd multiplicity — without waiting on decode.
 - [x] Placement survives pathOrderClear; sibling id has no placement
 - [x] ContentBake survives pathOrderClear; sibling clean
 - [x] Color grade survives pathOrderClear; sibling clean
+- [x] Attention points survive pathOrderClear; sibling clean
 
 ### Full ImageView (`BILTOO_HAVE_IMAGEVIEW_HARNESS`)
 

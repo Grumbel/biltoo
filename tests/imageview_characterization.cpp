@@ -51,6 +51,7 @@ private slots:
     void returnToImage_placementSurvivesPathOrderClear();
     void returnToImage_contentBakeSurvivesPathOrderClear();
     void returnToImage_colorSurvivesPathOrderClear();
+    void returnToImage_attentionSurvivesPathOrderClear();
 
     void imageView_openGalleryCropReturn();
 
@@ -354,6 +355,37 @@ void ImageViewCharacterizationTest::returnToImage_colorSurvivesPathOrderClear()
     QVERIFY(!world.hasColor(other));
     QCOMPARE(world.color(focus).grade.brightness, -12);
     QCOMPARE(world.color(focus).grade.contrast, 115);
+    QVERIFY(overlay.resolve(&doc).isEmpty());
+    QCOMPARE(doc.size(), 2);
+}
+
+/** Stage 1: Attention points are id-keyed; path-order clear must not drop them. */
+void ImageViewCharacterizationTest::returnToImage_attentionSurvivesPathOrderClear()
+{
+    SessionDocument doc;
+    doc.setPaths({m_pathA, m_pathB});
+    const SessionImageId focus = doc.idAt(0);
+    const SessionImageId other = doc.idAt(1);
+
+    ItemWorld world;
+    world.bindAppearance(&doc.appearance());
+
+    ItemComponents::Attention att;
+    att.points = {QPointF(0.25, 0.35), QPointF(0.6, 0.7)};
+    world.setAttention(focus, att);
+
+    QVERIFY(world.hasAttention(focus));
+    QVERIFY(!world.hasAttention(other));
+
+    PackOrderOverlay overlay;
+    overlay.setExplicit(doc.paths(), doc.ids());
+    overlay.clearExplicit();
+
+    QVERIFY(world.hasAttention(focus));
+    QVERIFY(!world.hasAttention(other));
+    QCOMPARE(world.attention(focus).points.size(), 2);
+    QCOMPARE(world.attention(focus).points.at(0), QPointF(0.25, 0.35));
+    QCOMPARE(world.attention(focus).points.at(1), QPointF(0.6, 0.7));
     QVERIFY(overlay.resolve(&doc).isEmpty());
     QCOMPARE(doc.size(), 2);
 }

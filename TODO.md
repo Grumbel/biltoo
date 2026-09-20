@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1919-attention-survives-pathorder-clear.** Phase 7 pure characterization complete set.
+Prior: **1918**.
+
+### Change
+- Pure characterization: Attention points survive `pathOrderClear`; sibling clean
+- Completes id-keyed component × pack-order independence family:
+  Crop, Placement, ContentBake, Color, Attention
+- IMAGEVIEW_CHARACTERIZATION.md checklist updated
+- No behaviour change (tests + docs only)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1919-attention-survives-pathorder-clear-516d734.bundle HEAD
+```
+Requires tip **1918** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+- Phase 7 production demotion of ImageItem fields remains design-heavy
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1918-contentbake-color-survive-pathorder-clear.** Phase 7 pure characterization.
 Prior: **1917**.
 
