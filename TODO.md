@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1816-drop-dead-handle-lists.** Stage 2: remove unused handleDrawSize/activeHandles.
+Prior: **1815**.
+
+### Change
+- Removed dead `ImageItem::handleDrawSize` and `activeHandles`
+- Viewport-space chrome no longer consults these; scale flags still via field
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1816-drop-dead-handle-lists.bundle HEAD
+```
+Includes **1806–1816** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Workspace chrome)
+- ImageView characterization / Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1815-drop-dead-chrome-helpers.** Stage 2: remove unused ImageItem chrome helpers.
 Prior: **1814**.
 

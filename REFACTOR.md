@@ -1063,3 +1063,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1813: drop dead ImageItem itemScale/itemShear/itemOpacity/updateHandleLayout.
 - biltoo-1814: drop dead ImageItem::cropToLocalRect + scaleHandlesEnabled getter.
 - biltoo-1815: drop dead chrome helpers (deviceScaleMin, handleHitRadius, drawCornerBracket, chromeButtonSize, handleDistanceScreenPx).
+- biltoo-1816: drop dead handleDrawSize + activeHandles.
