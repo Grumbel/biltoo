@@ -175,7 +175,7 @@ void DisplayPipelineController::scheduleImageModeNativeDecodeOnce(const QString 
                         return;
                     }
                     if (!decoded.isNull()) {
-                        (void)host->tryInstallImageModeSample(path, decoded);
+                        (void)host->hostDisplayPipeline().tryInstallImageModeSample(path, decoded);
                     }
                 } else if (host->isWorkspaceMode() && !decoded.isNull()) {
                     host->hostDisplayPipeline().onImagePreviewLoaded(

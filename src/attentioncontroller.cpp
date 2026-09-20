@@ -153,13 +153,13 @@ void AttentionController::pushAttentionPointsUndo(const QVector<QPointF> &before
         void undo() override
         {
             if (m_view) {
-                m_view->restoreAttentionPoints(m_before);
+                m_view->hostAttention().restoreAttentionPoints(m_before);
             }
         }
         void redo() override
         {
             if (m_view) {
-                m_view->restoreAttentionPoints(m_after);
+                m_view->hostAttention().restoreAttentionPoints(m_after);
             }
         }
     private:
