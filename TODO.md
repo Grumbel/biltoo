@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1857-slideshow-getters-via-host.** Slideshow getters via hostSlideshow.
+Prior: **1856**.
+
+### Change
+- MainWindow / tile coordinator / ImageItem: `hostSlideshow().settings()` /
+  `hud()` for transition, motion, zoom, letterbox, nav-hot, progress
+- Removed ImageView one-liner getters (setters already demoted in 1838)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1857-slideshow-getters-via-host.bundle HEAD
+```
+Requires tip **1856**.
+
+### Next
+- biltoo-build smoke (slideshow prefs dialog, filmstrip)
+- Phase 6 Tier 4 path-order / offscreen ImageView characterization
+- Optional: more getter hops (sticky zoom, chrome, canvas bg) via hosts
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1856-nix-build-ccache.** Persistent nix-build ccache path selection.
 Prior: **1855**.
 
