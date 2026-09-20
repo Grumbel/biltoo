@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1664-imageview-host-incs.** Narrow imageview.h via host API .inc includes.
+Prior: **1663**.
+
+### Change
+- `imageview_host_accessors.inc` — hostPathRaster / hostSlideshow / hostGallery / …
+- `imageview_host_crop_display.inc` — Crop / Slideshow / Display host decls
+- `imageview_host_pipeline.inc` — Tier 5c pipeline host methods
+- `imageview.h` ~966 lines (was ~1205; under 1000 metric)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1664-imageview-host-incs.bundle HEAD
+```
+
+### Next
+- Further host-API / public surface narrowing
+- biltoo-build verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1663-path-order-docs-test.** Document path-order dual model + SessionPathOrder tests.
 Prior: **1662**.
 
