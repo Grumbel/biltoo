@@ -1125,6 +1125,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1897: fold imageview_gallery + edge_chrome into modes/paint/input.
 - biltoo-1898: merge transform undo helpers into transform_actions.
 - biltoo-1899: merge shell_events + dnd into input_events.
+- biltoo-1900: merge background settings into paint_background.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

@@ -236,7 +236,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview_view.cpp
   src/imageview_framing.cpp
   src/imageview_framing_image.cpp
-  src/imageview_background.cpp
   src/imageview_status.cpp
   src/imageview_transform_actions.cpp
   src/imageview_input.cpp

@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1900-merge-background-settings.** Background setters → paint_background.
+Prior: **1899**.
+
+### Change
+- Canvas/view/workspace background setters → `imageview_paint_background.cpp`
+- Delete `imageview_background.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1900-merge-background-settings-516d734.bundle HEAD
+```
+Requires tip **1899** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1899-merge-shell-dnd-events.** Shell + dnd events → input_events.
 Prior: **1898**.
 
