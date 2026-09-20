@@ -64,6 +64,13 @@ are on — full link is expensive (near-full app).
 - After open / Gallery align / crop commit / pathOrderClear / LoadAdd multiplicity
 - `imageView_openGalleryCropReturn_pending` is `QSKIP` until offscreen ImageView links
 
+## CMake shared sources (biltoo-1788)
+
+`BILTOO_LIB_SOURCES` in the root `CMakeLists.txt` is every biltoo TU except
+`main.cpp`. The app is `add_executable(biltoo src/main.cpp ${BILTOO_LIB_SOURCES})`.
+A future full harness target can link `${BILTOO_LIB_SOURCES}` with the same
+dependency set as `biltoo` (Qt, thumtoo, …) without maintaining a second list.
+
 ## Until the full ImageView harness exists
 
 Keep `m_pathOrderBook`. Identity queries continue to prefer `m_sessionDoc`

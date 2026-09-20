@@ -92,8 +92,10 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGLWidgets PrintSupport)
 find_package(PkgConfig)
 
-add_executable(biltoo
-  src/main.cpp
+# Application translation units (everything except main).
+# Shared so an optional ImageView characterization harness can link the
+# same objects without duplicating the list (docs/IMAGEVIEW_CHARACTERIZATION.md).
+set(BILTOO_LIB_SOURCES
   src/mainwindow.cpp
   src/mainwindow_ui.cpp
   src/mainwindow_gallery.cpp
@@ -332,6 +334,11 @@ add_executable(biltoo
   src/tilelod/tile_lod_controller.cpp
   src/tilelod/tile_lod_registry.cpp
   src/icons.qrc
+)
+
+add_executable(biltoo
+  src/main.cpp
+  ${BILTOO_LIB_SOURCES}
 )
 
 target_include_directories(biltoo PRIVATE
@@ -652,7 +659,8 @@ if(Qt6Test_FOUND)
   add_test(NAME itemworld COMMAND biltoo-itemworld-test)
 
   # Tier 4 characterization scaffold (pure session + real PNG fixtures).
-  # Full offscreen ImageView link is a later tip (BILTOO_IMAGEVIEW_CHARACTERIZATION).
+  # Full offscreen ImageView link: reuse ${BILTOO_LIB_SOURCES} + same deps as biltoo
+  # (optional BILTOO_IMAGEVIEW_CHARACTERIZATION — later tip).
   add_executable(biltoo-imageview-characterization-test
     tests/imageview_characterization.cpp
     src/sessiondocument.cpp

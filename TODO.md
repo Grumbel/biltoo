@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1788-cmake-lib-sources.** Shared BILTOO_LIB_SOURCES for app + harness.
+Prior: **1787**.
+
+### Change
+- `set(BILTOO_LIB_SOURCES …)` — all biltoo TUs except `main.cpp`
+- `add_executable(biltoo src/main.cpp ${BILTOO_LIB_SOURCES})`
+- Characterization doc notes how to link the full ImageView harness next
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1788-cmake-lib-sources.bundle HEAD
+```
+
+### Next
+- Optional full ImageView characterization link (`BILTOO_IMAGEVIEW_CHARACTERIZATION`)
+- Move ItemBag under DisplayPipelineController
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1787-imageview-characterization-scaffold.** Tier 4 pure harness scaffold.
 Prior: **1786**.
 
