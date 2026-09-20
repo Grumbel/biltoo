@@ -177,6 +177,7 @@ public:
         dragItems.clear();
     }
 
+private:
     int handle = -1;
     int hoverHandle = -1;
     bool scaleDrag = false;

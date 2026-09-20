@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1761-group-session-private.** GroupTransformSession members private.
+Prior: **1760**.
+
+### Change
+- All GroupTransformSession data members are private
+- Interaction only via accessors / beginDrag / endDrag / clear
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1761-group-session-private.bundle HEAD
+```
+
+### Next
+- biltoo-build + multi-select scale/rotate smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1760-group-drag-accessors.** Group drag list accessors.
 Prior: **1759**.
 
