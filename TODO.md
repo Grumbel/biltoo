@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1846-load-framing-via-host.** Load/framing pure hops via hosts.
+Prior: **1845**.
+
+### Change
+- Add `hostChrome()`
+- Route: `prefetchTilesForPaths` / `dropTilePrefetchPath` →
+  `hostTileNeighborPrefetch()`
+- Route: `setStickyZoomKind` → `hostFraming()`; `setImageModeLeftDragPan` →
+  `hostChrome()`
+- Keep `tilePrefetchNavHot` (TileNeighborPrefetchHost)
+- Drop dead `captureStickyZoomFromCurrentFraming`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1846-load-framing-via-host.bundle HEAD
+```
+Requires tip **1845**.
+
+### Next
+- biltoo-build smoke (sticky zoom prefs, tile neighbor prefetch)
+- Residual pure-forward scan; Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1845-modes-size-bind-via-host.** Modes/size/bind pure hops via hosts.
 Prior: **1844**.
 
