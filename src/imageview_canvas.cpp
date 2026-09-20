@@ -583,7 +583,11 @@ void ImageView::revealGalleryPath(const QString &path)
     if (path.isEmpty() || !isGalleryMode()) {
         return;
     }
-    ImageItem *item = findItemByPath(path);
+    // Prefer the selected instance of this path when duplicates exist (LoadAdd).
+    ImageItem *item = findPreferredItemForPath(path);
+    if (!item) {
+        item = findItemByPath(path);
+    }
     if (!item) {
         return;
     }

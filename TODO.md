@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1922-preferred-path-lookup-gallery.** Identity-correct path lookup in Gallery.
+Prior: **1921**.
+
+### Change
+- Gallery restore focus + layout selection restore: `findPreferredItemForPath`
+  before deprecated first-match `findItemByPath`
+- `revealGalleryPath`: prefer selected/sole instance when LoadAdd duplicates exist
+- IDENTITY.md table documents `findPreferredItemForPath`
+- Behaviour: ambiguous multi-match with no exclusive selection returns nullptr
+  (preferred), then falls back to first-match for legacy continuity
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1922-preferred-path-lookup-gallery-516d734.bundle HEAD
+```
+Requires tip **1921** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON on a roomier host
+- Phase 7 ImageItem demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1921-pure-characterization-verified-green.** Pure suite green on Qt 6.11.
 Prior: **1920**.
 

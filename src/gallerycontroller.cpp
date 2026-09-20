@@ -175,7 +175,11 @@ void GalleryController::applyPendingRestore()
 
     ImageItem *focus = nullptr;
     if (!m_focusPath.isEmpty()) {
-        focus = m_view->findItemByPath(m_focusPath);
+        // Prefer selected sole match; first-match is wrong with LoadAdd duplicates.
+        focus = m_view->findPreferredItemForPath(m_focusPath);
+        if (!focus) {
+            focus = m_view->findItemByPath(m_focusPath);
+        }
     }
     if (focus) {
         focus->setSelected(true);
@@ -390,13 +394,23 @@ void GalleryController::enter(int packagedLayoutInt)
     if (layoutSwitch && !selectedPaths.isEmpty()) {
         m_view->canvasScene()->clearSelection();
         for (const QString &path : selectedPaths) {
-            if (ImageItem *item = m_view->findItemByPath(path)) {
+            // After clearSelection: sole live match, or first if multiple (legacy).
+            ImageItem *item = m_view->findPreferredItemForPath(path);
+            if (!item) {
+                item = m_view->findItemByPath(path);
+            }
+            if (item) {
                 item->setSelected(true);
             }
         }
-        m_selectionAnchor = anchorPath.isEmpty()
-            ? nullptr
-            : m_view->findItemByPath(anchorPath);
+        if (anchorPath.isEmpty()) {
+            m_selectionAnchor = nullptr;
+        } else {
+            m_selectionAnchor = m_view->findPreferredItemForPath(anchorPath);
+            if (!m_selectionAnchor) {
+                m_selectionAnchor = m_view->findItemByPath(anchorPath);
+            }
+        }
     }
 
     emit m_view->statusChanged();

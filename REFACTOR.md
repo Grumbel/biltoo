@@ -1154,6 +1154,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1919: pure characterization Attention survives pathOrderClear (component family complete).
 - biltoo-1920: full ImageView harness asserts all id-keyed components survive pathOrderClear.
 - biltoo-1921: pure characterization verified green (16 pass / 1 skip) on Qt 6.11 nix develop.
+- biltoo-1922: Gallery path lookup prefers findPreferredItemForPath (duplicate identity).
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
