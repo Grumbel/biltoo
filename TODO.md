@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1909-refactor-metrics-update.** REFACTOR metrics after TU fold.
+Prior: **1908**.
+
+### Change
+- Metrics: ~682 `imageview.h` lines;
+  ~26 ImageView TUs; ~10459 lines
+- Note: 1894–1908 domain folds; further merges low payoff
+- No code change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1909-refactor-metrics-update-516d734.bundle HEAD
+```
+Requires tip **1908** (base **516d734**).
+
+### Next
+- Green build default + `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON`
+- ctest imageview-characterization
+- Optional: public-surface narrowing once harness is green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1908-merge-overlay-paint.** Slideshow + HUD paint → paint TU.
 Prior: **1907**.
 

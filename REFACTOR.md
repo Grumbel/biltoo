@@ -786,9 +786,11 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 3. **Tier 6 remainder** — input try* hop demoted (biltoo-1837: dispatch calls
    controllers directly; `imageview_input_forwards.cpp` gone). Transform chrome
    stays on ImageView (AGENTS.md).
-4. **Metrics** — `imageview.h` ~670 lines (tip 1890); `imageview*.cpp` ~12k
-   (down from ~21k at Phase 6 start). Host accessors from Tiers 1–5 still inflate
-   the public surface; further narrowing optional once harness is green.
+4. **Metrics** — `imageview.h` ~682 lines;
+   ~26 `imageview*.cpp` TUs,
+   ~10459 lines total (down from ~21k / many more TUs at Phase 6 start).
+   1894–1908 folded thin/grab-bag TUs by domain. Further merges have weak
+   cohesion payoff; prefer green harness + public-surface narrowing.
 5. **Beyond Phase 6** — per-id component ownership and demoting `ImageItem` from
    a parallel appearance store are **Phase 7** (ItemWorld), not more Phase 6
    controller extraction. See Phase 7 below.
@@ -1134,6 +1136,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1906: split imageview_view grab-bag into modes/accessors/size_book.
 - biltoo-1907: merge workspace scene/placement into canvas TU.
 - biltoo-1908: merge slideshow + HUD overlay paint into paint TU.
+- biltoo-1909: REFACTOR metrics after ImageView TU fold (1894–1908).
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
