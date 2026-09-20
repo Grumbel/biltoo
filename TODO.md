@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1876-ensureLogicalSize-host.** Promote ensureLogicalSizeForPath; drop slideshow alias.
+Prior: **1875**.
+
+### Change
+- Public host: `ensureLogicalSizeForPath` (was private + `ensureSlideshowLogicalSize` pure hop)
+- SlideshowController uses the host name directly
+- Remove `ensureSlideshowLogicalSize`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1876-ensureLogicalSize-host.bundle HEAD
+```
+Requires tip **1875** (base **1858** / `1e112d94`).
+
+### Next
+- Tier 4 dual-write design before deleting `m_pathOrderBook`
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1875-tile-prefetch-inline-hops.** Inline thin TileNeighborPrefetchHost overrides.
 Prior: **1874**.
 
