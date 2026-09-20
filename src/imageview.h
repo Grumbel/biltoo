@@ -909,7 +909,6 @@ public slots:
      * thumtoo PreferCache / soft / overview delivery (GUI thread after queue).
      * Seeds ImageCache; upgrades Image mode, slideshow, and Gallery soft state.
      */
-    void onLadderReady(const QString &path, int maxEdge, const QImage &image);
 
 public:
     /** True while @p gen is still the active LoadReplace generation (pool jobs). */

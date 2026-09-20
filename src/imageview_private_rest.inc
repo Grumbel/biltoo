@@ -76,16 +76,12 @@
                                       const WorkspaceItemState &want, const QImage &display);
     void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                           const QImage &sample);
-    void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
     /** One ImageLoader::load when thumtoo Full settles short of on-screen need. */
     /** On-screen long edge (device px) for the current Image-mode item. */
     int imageModeOnScreenNeedEdge() const;
     /** PreferCache + native full when zoom leaves soft samples undersampled. */
     void maybeClimbImageModePixelsForView();
-    void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
     /** Gallery soft state + install path for a ladderReady delivery. */
-    void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
-    void applyWorkspaceLadderReady(const QString &path, int maxEdge, const QImage &image);
     /** PathRaster EscalateToFull for selected Workspace items. */
     void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
     /** Fit / slideshow zoom / motion handoff after Image-mode full replace. */

@@ -126,33 +126,10 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
     m_displayPipeline.scheduleClassicImageDecode(path, gen, static_cast<int>(role));
 }
 
-void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
-{
-    m_displayPipeline.onLadderReady(path, maxEdge, image);
-}
-
 SessionAppearance::PixelKind ImageView::pixelKindForImageModeSample(
     const QString &path, const QImage &image) const
 {
     return m_displayPipeline.pixelKindForImageModeSample(path, image);
-}
-
-void ImageView::upgradeImageModeFromLadder(const QString &path, int maxEdge,
-                                           const QImage &image)
-{
-    m_displayPipeline.upgradeImageModeFromLadder(path, maxEdge, image);
-}
-
-void ImageView::applyGalleryLadderReady(const QString &path, int maxEdge,
-                                          const QImage &image)
-{
-    m_displayPipeline.applyGalleryLadderReady(path, maxEdge, image);
-}
-
-void ImageView::applyWorkspaceLadderReady(const QString &path, int maxEdge,
-                                          const QImage &image)
-{
-    m_displayPipeline.applyWorkspaceLadderReady(path, maxEdge, image);
 }
 
 
@@ -280,11 +257,6 @@ void ImageView::noteImageModePreferCacheDelivery(const QString &path, int reques
     m_displayPipeline.noteImageModePreferCacheDelivery(path, requestEdge, sample);
 }
 
-
-void ImageView::ensureImageModeQualityClimb(const QString &path, const QImage &sample)
-{
-    m_displayPipeline.ensureImageModeQualityClimb(path, sample);
-}
 
 
 bool ImageView::tryInstallImageModeSample(const QString &path, const QImage &image)

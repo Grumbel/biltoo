@@ -248,7 +248,9 @@ ImageView::ImageView(QWidget *parent)
                 }
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
-            &ImageView::onLadderReady);
+            [this](const QString &path, int maxEdge, const QImage &image) {
+                m_displayPipeline.onLadderReady(path, maxEdge, image);
+            });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::durableTilesReady, this,
             [this](const QString &path) {
                 Q_UNUSED(path);
