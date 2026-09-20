@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1869-path-state-itemWorld.** Path-state pure hops → itemWorld.
+Prior: **1868**.
+
+### Change
+- WorkspaceController: `itemWorld().setPathState` / `getPathState`
+- Drop `setItemStateForPath` / `itemStateForPath` pure-hop facades
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1869-path-state-itemWorld.bundle HEAD
+```
+Requires tip **1868** (base **1858** / `1e112d94`).
+
+### Next
+- Residual pure-hop scan
+- Tier 4 design
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1868-appearance-host.** hostAppearance direct; drop appearance/tool/session pure hops.
 Prior: **1867**.
 
