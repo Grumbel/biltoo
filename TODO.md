@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1715-packorder-accessors.** Host size/at accessors via currentPackOrder().
+Prior: **1714**.
+
+### Change
+- pathOrderIsEmpty/Size/PathAt/IdAt → currentPackOrder()
+- pathOrderPaths/Ids remain book references (documented)
+- PATH_ORDER.md read-path section
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1715-packorder-accessors.bundle HEAD
+```
+
+### Next
+- biltoo-build
+- ImageView harness → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1714-packorder-read-gateway.** Remaining pack reads via currentPackOrder().
 Prior: **1713**.
 

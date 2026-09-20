@@ -54,6 +54,14 @@ Offscreen ImageView harness plan: [IMAGEVIEW_CHARACTERIZATION.md](IMAGEVIEW_CHAR
 `PackOrderView` so Tier 4 can switch the source without rewriting pack loops.
 Characterization: `tests/packorderview_test.cpp` (`packorderview` CTest).
 
+## Read path (post-1714)
+
+Almost all pack/LoadAdd **reads** go through `ImageView::currentPackOrder()`
+(`PackOrderView::fromBook`). Exceptions that still return references into the
+book (call-lifetime stable): `pathOrderPaths()`, `pathOrderIds()`.
+
+Mutations remain `pathOrderClear` / `SetOrder` / `AppendRow` on the book.
+
 ## Exit criteria (Tier 4 residual)
 
 `git grep m_pathOrderBook` empty still requires an offscreen **ImageView**

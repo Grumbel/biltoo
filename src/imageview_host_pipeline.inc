@@ -19,12 +19,13 @@
     int pathOrderOccurrences(const QString &path) const;
     /** Drop neighbor-prefetch slot for one path (session remove / tile purge). */
     void dropTilePrefetchPath(const QString &path);
-    bool pathOrderIsEmpty() const { return m_pathOrderBook.isEmpty(); }
-    int pathOrderSize() const { return m_pathOrderBook.size(); }
-    QString pathOrderPathAt(int index) const { return m_pathOrderBook.pathAt(index); }
-    SessionImageId pathOrderIdAt(int index) const { return m_pathOrderBook.idAt(index); }
+    bool pathOrderIsEmpty() const { return currentPackOrder().isEmpty(); }
+    int pathOrderSize() const { return currentPackOrder().size(); }
+    QString pathOrderPathAt(int index) const { return currentPackOrder().pathAt(index); }
+    SessionImageId pathOrderIdAt(int index) const { return currentPackOrder().idAt(index); }
+    /** Reference into the book (stable for the call). Prefer currentPackOrder() for new code. */
     const QStringList &pathOrderPaths() const { return m_pathOrderBook.pathList(); }
-    /** Pack source snapshot (Tier 4: currently from book; document when aligned). */
+    /** Pack source snapshot (Tier 4: currently fromBook; document when aligned). */
     PackOrderView currentPackOrder() const { return PackOrderView::fromBook(m_pathOrderBook); }
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
     void scheduleImageSizeProbe(const QString &path);
