@@ -72,19 +72,6 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     rematerializeItemContent(item, *app);
 }
 
-void ImageView::applyContentAppearanceAfterDecode(ImageItem *item)
-{
-    if (!item) {
-        return;
-    }
-    WorkspaceItemState fallback;
-    const WorkspaceItemState *app = resolveStoredAppearance(item, &fallback, nullptr);
-    if (!app || !SessionAppearance::hasContentAppearance(*app)) {
-        return;
-    }
-    // Caller just installed full on-disk pixels; do not load again.
-    rematerializeItemContent(item, *app);
-}
 
 bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st) const
 {

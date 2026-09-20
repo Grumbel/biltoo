@@ -133,18 +133,6 @@ void ImageView::applyModeFlagsToLiveItems()
     }
 }
 
-void ImageView::ensurePrimarySelection()
-{
-    if (m_items.isEmpty() || !m_scene) {
-        return;
-    }
-    if (!m_scene->selectedItems().isEmpty()) {
-        return;
-    }
-    if (ImageItem *first = m_items.first()) {
-        first->setSelected(true);
-    }
-}
 
 void ImageView::applyToolDragMode()
 {

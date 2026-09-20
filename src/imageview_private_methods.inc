@@ -11,45 +11,8 @@
             || zone == EdgeZone::GalleryReturn;
     }
 
-    bool hasHoverNavEdge() const { return isNavEdge(m_hoverEdge); }
-
-    /** Add image and place its centre at scenePos once loaded. */
-    bool addImageAt(const QString &path, const QPointF &scenePos);
-
-    /** Session slots currently represented on the Workspace canvas. */
-    QSet<int> workspaceSessionIndices() const;
-
-    /**
-     * Assign sessionIndex from @p sessionFiles order (legacy). Prefer
-     * rebindWorkspaceSession with stable ids.
-     * Matches by path occurrence so duplicates and older unbound items work.
-     */
-    void rebindWorkspaceSessionIndices(const QStringList &sessionFiles);
-
     /** qCritical if two live/stashed items share one SessionImageId. */
     bool validateUniqueLiveSessionIds(const char *context = nullptr) const;
-
-    bool hasCentreProgress() const { return m_centreProgress.active(); }
-
-    /** Controller host: if live items exist and none selected, select first. */
-    void ensurePrimarySelection();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /** @deprecated name — use logicalSizeForPath. */
-    QSize slideshowLogicalSize(const QString &path) const {
-        return logicalSizeForPath(path);
     }
 
     /**
@@ -57,9 +20,6 @@
      * Phase entry, fit, and framing call this before geometry.
      */
     QSize ensureLogicalSizeForPath(const QString &path);
-
-    /** Static centre-crop cover of @p image to the current viewport size. */
-    QPixmap renderCoverPixmap(const QImage &image) const;
 
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
     QString loadingStatusHudLine() const;
@@ -117,9 +77,6 @@
     // --- completeLoadReplace phases ---
 
 
-    bool pageGuideSelected() const { return m_pageGuide.isSelected(); }
-
-
     /** Scene pixels per millimetre for the page guide (layout scale). */
     static qreal pageGuidePxPerMm();
 
@@ -128,8 +85,6 @@
 
 
     bool galleryReturnAvailable() const { return m_sessionNav.isGalleryReturnAvailable(); }
-
-    bool imageModeNavigationEnabled() const { return m_sessionNav.isImageModeNavEnabled(); }
 
     /**
      * Same as path-only overload, but binds each path to the parallel
@@ -143,17 +98,6 @@
 
     void finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
                                  const QVector<SessionImageId> &sessionIds);
-
-
-    bool galleryRelayoutSuppressed() const { return m_galleryRelayoutSuppress.active(); }
-
-    /** Remove one image from the workspace, remembering its transform. */
-    void removeWorkspacePath(const QString &path);
-
-    /** Remove the canvas item bound to this session slot (duplicate-safe). */
-    void removeWorkspaceSessionIndex(int sessionIndex);
-
-    bool hasWorkspaceSessionIndex(int sessionIndex) const;
 
     ImageItem *findItemBySessionIndex(int sessionIndex) const;
 
@@ -171,16 +115,11 @@
     /** Hide canvas tile(s) for @p sessionId without dropping session appearance. */
     void detachCanvasSessionId(SessionImageId sessionId);
 
-    /** Remove the n-th canvas item with @p path (0-based, m_items order). */
-    void removeWorkspacePathOccurrence(const QString &path, int occurrence);
-
     /** Image-mode framing after soft/full install (honours sticky zoom). */
 
     /** Best-effort: remember viewport centre in image-normalized coords. */
 
     void restoreStickyPanAnchor(ImageItem *item);
-
-    bool zoomRegionArmed() const { return m_zoomRegion.isArmed(); }
 
     /** Current view-level scale factor (workspace zoom). */
     qreal viewScale() const;
@@ -190,19 +129,8 @@
     /** Undo/redo: replace attention points on the current attention target. */
 
 
-
-    bool showTextRegions() const { return m_textLayer.showsRegions(); }
-
-
     /** Joined text of the selection in reading order; empty if none. */
     QString selectedText() const;
-
-
-    void clearViewBackground(); /**< AppDefault */
-
-    int sessionTotal() const { return m_sessionId.currentTotal(); }
-
-    bool slideshowPausedHud() const { return m_slideshow.hud().isPausedHud(); }
 
 
 
@@ -227,9 +155,6 @@
 
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
-
-    /** Workspace: remove selected tiles from the canvas only (session kept). */
-    void removeSelectedCanvasItems();
 
 
     /**
@@ -260,8 +185,6 @@
      */
     QImage imageWithSessionAppearance(const QImage &src, SessionImageId sid,
                                       const QString &path = QString()) const;
-
-    ColorAdjustments targetColorAdjustments() const;
 
     /** Interactive grade: clamped host bake (no SQLite / filmstrip). */
     void applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemState &want);
@@ -313,9 +236,6 @@
     QString hudFileName() const;
 
     ImageMouseInfo mouseInfo() const { return m_chrome.currentMouseInfo(); }
-
-    /** Clear canvas selection. */
-    void clearCanvasSelection();
 
 
 

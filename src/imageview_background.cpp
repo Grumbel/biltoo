@@ -102,9 +102,4 @@ void ImageView::setViewBackground(const WorkspaceBackground &bg)
 }
 
 
-void ImageView::clearViewBackground()
-{
-    WorkspaceBackground def;
-    setViewBackground(def);
-}
 

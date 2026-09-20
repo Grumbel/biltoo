@@ -118,14 +118,6 @@ bool ImageView::addImageForSession(const QString &path, int sessionIndex)
 }
 
 
-bool ImageView::addImageAt(const QString &path, const QPointF &scenePos)
-{
-    if (path.isEmpty()) {
-        return false;
-    }
-    m_displayPipeline.loadGate().setPendingScenePos(path, scenePos);
-    return addImage(path);
-}
 
 
 bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,

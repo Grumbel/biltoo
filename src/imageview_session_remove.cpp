@@ -154,42 +154,8 @@ void ImageView::setCurrentSessionId(SessionImageId id)
 }
 
 
-bool ImageView::hasWorkspaceSessionIndex(int sessionIndex) const
-{
-    return findItemBySessionIndex(sessionIndex) != nullptr;
-}
 
 
-void ImageView::removeWorkspaceSessionIndex(int sessionIndex)
-{
-    ImageItem *item = findItemBySessionIndex(sessionIndex);
-    if (!item) {
-        return;
-    }
-    // Prefer id-based detach when the tile is bound (duplicate-safe).
-    if (item->sessionId() != kInvalidSessionImageId) {
-        detachCanvasSessionId(item->sessionId());
-        return;
-    }
-    const QString path = item->path();
-    // Only cancel pending work if no other live tile still uses this path.
-    bool pathStillLive = false;
-    for (ImageItem *other : m_items) {
-        if (other && other != item && other->path() == path) {
-            pathStillLive = true;
-            break;
-        }
-    }
-    if (!pathStillLive) {
-        m_displayPipeline.loadGate().removePendingWorkspacePath(path);
-        m_displayPipeline.loadGate().removePendingScenePos(path);
-        m_bindBook.removeIndexForPath(path);
-        m_displayPipeline.gallerySoftResetPath(path);
-}
-    destroyCanvasItem(item);
-    emit statusChanged();
-    emit workspacePathsChanged();
-}
 
 
 void ImageView::detachCanvasSessionId(SessionImageId sessionId)

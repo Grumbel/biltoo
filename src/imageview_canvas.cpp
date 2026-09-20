@@ -368,25 +368,7 @@ void ImageView::reorderItemsByPaths(const QStringList &paths)
     }
 }
 
-void ImageView::removeWorkspacePath(const QString &path)
-{
-    ImageItem *item = findItemByPath(path);
-    if (!item) {
-        return;
-    }
-    takePendingWorkspacePath(path);
-    m_displayPipeline.loadGate().removePendingScenePos(path);
-        m_displayPipeline.gallerySoftResetPath(path);
-    destroyCanvasItem(item);
-    emit statusChanged();
-    emit workspacePathsChanged();
-}
 
-void ImageView::rebindWorkspaceSessionIndices(const QStringList &sessionFiles)
-{
-    // Legacy path-only rebind (no stable ids available).
-    rebindWorkspaceSession(sessionFiles, {});
-}
 
 void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
                                        const QVector<SessionImageId> &sessionIds)

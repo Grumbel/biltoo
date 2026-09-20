@@ -137,34 +137,6 @@ QList<WorkspaceItemState> ImageView::captureSelectedWorkspaceClipboard() const
 }
 
 
-void ImageView::removeSelectedCanvasItems()
-{
-    if (!isWorkspaceMode() || !m_scene) {
-        return;
-    }
-    QList<ImageItem *> toRemove;
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
-        if (item && m_items.contains(item)) {
-            toRemove.append(item);
-        }
-    }
-    if (toRemove.isEmpty()) {
-        return;
-    }
-    setUpdatesEnabled(false);
-    m_scene->blockSignals(true);
-    for (ImageItem *item : toRemove) {
-        // Persist pose + content so filmstrip membership toggle can restore pose.
-        rememberItemState(item);
-        destroyCanvasItem(item);
-    }
-    m_scene->blockSignals(false);
-    setUpdatesEnabled(true);
-    viewport()->update();
-    emit statusChanged();
-    emit workspacePathsChanged();
-}
 
 
 void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &items,

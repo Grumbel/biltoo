@@ -175,15 +175,6 @@ void ImageView::selectAllCanvasItems()
 }
 
 
-void ImageView::clearCanvasSelection()
-{
-    if (!m_scene) {
-        return;
-    }
-    m_scene->clearSelection();
-    emit canvasSelectionChanged();
-    emit statusChanged();
-}
 
 
 QList<ImageItem *> ImageView::transformTargets() const

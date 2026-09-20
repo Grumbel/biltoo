@@ -71,29 +71,6 @@ int ImageView::workspacePathOccurrenceCount(const QString &path) const
 }
 
 
-void ImageView::removeWorkspacePathOccurrence(const QString &path, int occurrence)
-{
-    if (occurrence < 0) {
-        return;
-    }
-    int found = 0;
-    for (ImageItem *item : m_items) {
-        if (item->path() != path) {
-            continue;
-        }
-        if (found == occurrence) {
-            takePendingWorkspacePath(path);
-            m_displayPipeline.loadGate().removePendingScenePos(path);
-            m_bindBook.removeIndexForPath(path);
-        m_displayPipeline.gallerySoftResetPath(path);
-destroyCanvasItem(item);
-            emit statusChanged();
-            emit workspacePathsChanged();
-            return;
-        }
-        ++found;
-    }
-}
 
 
 void ImageView::focusSessionPath(const QString &path)

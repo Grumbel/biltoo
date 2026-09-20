@@ -23,20 +23,6 @@
 #include <QThreadPool>
 #include <algorithm>
 
-QSize ImageView::probeImageSize(const QString &path) const
-{
-    // Never open the source on the GUI thread (USB/NFS freeze). Cache-only or
-    // neutral stand-in; scheduleImageSizeProbe / sizeReady supply the real size.
-    if (const QSize cached = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
-        cached.isValid()) {
-        return cached;
-    }
-    if (ArchivePath::isArchiveRef(path) || PagePath::isPageRef(path)
-        || PagePath::isPdfImageRef(path)) {
-        return ImageSizeBook::standInSquare();
-    }
-    return ImageSizeBook::standInNeutral();
-}
 
 void ImageView::rememberImageSize(const QString &path, const QSize &size)
 {

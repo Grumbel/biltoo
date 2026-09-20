@@ -67,11 +67,6 @@
      * Image mode: drop the previous frame and show a loading/provisional tile
      * for @p path immediately (do not wait for the background decode).
      */
-    /** Bind Image-mode item to the current session cursor (id + index). */
-    /** Neutral Image-mode pose (no Workspace free-form scale/rotation). */
-    /** Soft pixels for pending tile: explicit preview → slideshow map → ImageCache. */
-    /** @p displayReadyOut set when soft is already content-baked (stashed Gallery tile). */
-    QSize probeImageSize(const QString &path) const;
     /**
      * Best-known native pixel size for @p path from the session cache only.
      * Never does filesystem I/O — returns a neutral size and schedules an async
@@ -123,26 +118,13 @@
                                                        WorkspaceItemState *fallback,
                                                        SessionImageId *sidOut);
     /**
-     * After installing full on-disk pixels (soft→full), re-apply crop / content
-     * flip / quarter-turn / grade from the item's session appearance without a
-     * second disk load. No-op when no appearance is stored.
-     */
-    void applyContentAppearanceAfterDecode(ImageItem *item);
-    /**
      * If @p sid has no m_appearance entry, load durable content-hash state for
      * @p path into the store (no-op when missing / thumtoo off).
      */
     /** Record that durable appearance was probed for @p sid (hit or miss). */
-
-    // CropHandle is defined in cropsession.h
-    QRectF cropRectItemLocal() const { return m_cropCtrl.session().currentRect(); }
     qreal cropRotation() const { return m_cropCtrl.session().currentRotation(); }
     QPolygonF mapItemLocalPolygonToView(ImageItem *item, const QPolygonF &local) const;
     QPolygonF cropPolygonView() const;
-    /** Viewport chrome button rects under the draft frame (empty when inactive). */
-    CropGeometry::CropButtonLayout cropChromeLayout() const;
-    bool cropAllowExpand() const { return m_cropCtrl.session().isAllowExpand(); }
-    CropHandle cropHandleAt(const QPoint &viewPos) const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace
@@ -178,8 +160,6 @@
     bool beginGroupScale(int handle, const QList<ImageItem *> &items);
     void updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers mods);
     void endGroupScale();
-    /** Handles 0–7 = scale corners/edges; 8–11 = rotate (T/R/B/L). */
-    bool isGroupRotateHandle(int handle) const { return handle >= 8 && handle <= 11; }
     void updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods);
     static QSizeF nativeSize(const ImageItem *item);
     void zoomViewBy(qreal factor);
