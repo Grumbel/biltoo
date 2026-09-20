@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1690-slideshow-hud-paint.** Split slideshow and HUD paint out of paint.cpp.
+Prior: **1689**.
+
+### Change
+- New `imageview_slideshow_paint.cpp` — letterbox composite + seekbar
+- New `imageview_hud_paint.cpp` — empty-session invite + HUD panels
+- `imageview_paint.cpp` ~940 → ~500 lines (overlays router, edge chrome, canvas background)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1690-slideshow-hud-paint.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Characterization before Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1689-framing-background-tu.** Split zoom/framing and background out of view.cpp.
 Prior: **1688**.
 
