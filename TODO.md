@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1868-appearance-host.** hostAppearance direct; drop appearance/tool/session pure hops.
+Prior: **1867**.
+
+### Change
+- `hostAppearance()` → `m_itemWorld.appearance()` (no intermediate pure hop)
+- Display pipeline uses `hostAppearance()` instead of `appearance()`
+- Drop `appearance()` pure-hop accessors from `imageview.h`
+- Drop unused pure-hop getters `tool()`, `currentSessionId()`, `sessionIndex()`
+  (use `hostSessionId()` when needed)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1868-appearance-host.bundle HEAD
+```
+Requires tip **1867** (base **1858** / `1e112d94`).
+
+### Next
+- Residual pure-hop scan
+- Tier 4 design
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1867-pathOrder-host-mutators.** Path-order mutators on host pipeline; drop pure hops.
 Prior: **1866**.
 
