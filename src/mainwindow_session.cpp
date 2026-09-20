@@ -1573,7 +1573,7 @@ bool MainWindow::refreshSameCurrentIndex(bool ensureGalleryVisible)
         const QString path = m_session.paths().at(m_currentIndex);
         if (m_imageView->itemCount() == 0
             || m_imageView->classicPath() != path) {
-            m_imageView->loadImage(path);
+            m_imageView->hostDisplayPipeline().loadImage(path);
         }
         return true;
     }
@@ -1639,7 +1639,7 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
         }
         // Key-repeat: soft install every step; PreferCache only after quiet settle.
         m_imageView->setSlideshowNavHot(true);
-        m_imageView->loadImage(path);
+        m_imageView->hostDisplayPipeline().loadImage(path);
         if (!m_slideshowNavLoadTimer) {
             m_slideshowNavLoadTimer = new QTimer(this);
             m_slideshowNavLoadTimer->setSingleShot(true);
@@ -1655,7 +1655,7 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
                 }
                 m_imageView->setSlideshowNavHot(false);
                 // Full load + PreferCache climb for the settled index only.
-                m_imageView->loadImage(m_session.paths().at(m_currentIndex));
+                m_imageView->hostDisplayPipeline().loadImage(m_session.paths().at(m_currentIndex));
                 // ±1 neighbors: overview tiles into global path RAM (1212 retain).
                 QStringList nbr;
                 if (m_currentIndex > 0) {
@@ -3064,7 +3064,7 @@ void MainWindow::stopSlideshow()
         if (announce && isImageMode()
             && m_currentIndex >= 0
             && m_currentIndex < m_session.paths().size()) {
-            m_imageView->loadImage(m_session.paths().at(m_currentIndex));
+            m_imageView->hostDisplayPipeline().loadImage(m_session.paths().at(m_currentIndex));
             m_imageView->restoreImageFramingAfterSlideshow();
             m_imageView->flashHud(tr("■  Slideshow stopped"));
         } else if (announce) {

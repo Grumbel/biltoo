@@ -141,8 +141,6 @@ public:
     void setImageModeSoftProvider(ImageModeSoftProvider provider);
 
     ~ImageView() override;
-
-    bool loadImage(const QString &path);
     bool addImage(const QString &path);
     /** Add (or select) the canvas instance bound to @p sessionIndex. */
     bool addImageForSession(const QString &path, int sessionIndex);

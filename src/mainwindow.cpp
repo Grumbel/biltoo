@@ -1512,7 +1512,7 @@ void MainWindow::toggleWorkspaceMode()
         m_thumbnailBar->setMultiSelectEnabled(false);
         m_imageView->setViewMode(ImageView::ViewMode::Image);
         if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-            m_imageView->loadImage(m_session.paths().at(m_currentIndex));
+            m_imageView->hostDisplayPipeline().loadImage(m_session.paths().at(m_currentIndex));
             m_thumbnailBar->setCurrentIndex(m_currentIndex);
         }
     }
@@ -2343,7 +2343,7 @@ void MainWindow::navigateDocumentPage(int page_1based)
             // Navigate session index — reuse existing go-to if any.
             if (i != m_currentIndex) {
                 m_currentIndex = i;
-                m_imageView->loadImage(p);
+                m_imageView->hostDisplayPipeline().loadImage(p);
                 updateStatus();
                 updateTocPanel();
             }
@@ -2360,7 +2360,7 @@ void MainWindow::navigateDocumentPage(int page_1based)
         target = PagePath::makeRef(doc, page_1based);
     }
     if (!target.isEmpty()) {
-        m_imageView->loadImage(target);
+        m_imageView->hostDisplayPipeline().loadImage(target);
         updateStatus();
     }
 }
