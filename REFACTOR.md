@@ -1079,3 +1079,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1828: installDisplayPixels via pipeline host; drop ImageView install + preserving-view forwards.
 - biltoo-1829: createPlaceholder + appearance seed via pipeline; drop dead createItem/bind/seed ImageView forwards.
 - biltoo-1830: fix pipeline host lambdas (onImagePreviewLoaded / seed APIs via hostDisplayPipeline).
+- biltoo-1831: contentxform matchesMapCorners — no QVERIFY-in-lambda; crop from oriented AABB.

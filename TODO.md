@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1831-fix-matches-map-corners-test.** Fix ContentXform matchesMapCorners fixture.
+Prior: **1830**.
+
+### Change
+- `sourceToDisplayTransform_matchesMapCorners`: no QVERIFY-in-lambda (Qt Test scope)
+- Crop fixture derived from `mapSourceRectToOriented` + margin (not a hard-coded rect)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1831-fix-matches-map-corners-test.bundle HEAD
+```
+Includes **1806–1831** when base is tip **1805**.
+
+### Next
+- biltoo-build: `ctest -R contentxform` should be 100%
+- Continue pipeline hop demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1830-fix-pipeline-host-lambdas.** Fix: pipeline lambdas after 1826/1829 API moves.
 Prior: **1829**.
 
