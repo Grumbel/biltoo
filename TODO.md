@@ -2,6 +2,37 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1852-ccacheStdenv.** Integrate ccacheStdenv in flake.nix.
+Prior: **1851**.
+
+### Change
+- `nix build`: `stdenv = pkgs.ccacheStdenv`
+- `nix develop`: `mkShell.override { stdenv = ccacheStdenv }`, `ccache` on PATH,
+  `CCACHE_DIR` default `~/.cache/ccache-biltoo`, cmake launcher env +
+  `biltoo-configure` `-DCMAKE_*_COMPILER_LAUNCHER=ccache`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1852-ccacheStdenv.bundle HEAD
+```
+Requires tip **1851**.
+
+### Notes
+- Re-run `biltoo-configure` once so the cmake cache picks up launchers.
+- For `nix build` ccache hits across builds, configure the Nix daemon with a
+  writable cache path (`extra-sandbox-paths`); local `biltoo-build` uses
+  `CCACHE_DIR` and needs no daemon changes.
+
+### Next
+- biltoo-build smoke (Image mode + ccache -s)
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1851-fix-onImageLoaded-queue.** Fix Image mode blank after hop demotion.
 Prior: **1850**.
 
