@@ -399,6 +399,9 @@ ImageView::~ImageView()
     // scene down here while ImageView is still fully constructed.
     discardStashedGallery();
 
+    // Stage 2: detach pipeline tile bags while ImageItems are still alive.
+    m_displayPipeline.releaseAllTileBags();
+
     if (m_scene) {
         disconnect(m_scene, nullptr, this, nullptr);
         m_scene->blockSignals(true);

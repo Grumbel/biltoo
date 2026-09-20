@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1797-release-all-tile-bags.** Stage 2: safe tile bag teardown.
+Prior: **1796**.
+
+### Change
+- `releaseAllTileBags()` — detach every item then clear `m_tileBags`
+- Pipeline dtor calls it
+- `ImageView::~ImageView` calls it **before** `scene->clear()` so items are still alive
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1797-release-all-tile-bags.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke
+- ImageView characterization / Tier 4 path-order
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1796-tilelod-bag-fallback-guard.** Stage 2: local bag debug + dropAll map.
 Prior: **1795**.
 

@@ -33,6 +33,7 @@ class DisplayPipelineController
 {
 public:
     explicit DisplayPipelineController(ImageView *view);
+    ~DisplayPipelineController();
 
     ImageView *view() const { return m_view; }
 
@@ -130,6 +131,8 @@ public:
     tilelod::ItemBag &ensureTileBag(ImageItem *item);
     /** Detach and destroy pipeline-owned bag (canvas destroy). */
     void releaseTileBag(ImageItem *item);
+    /** Detach all items and clear the map (view teardown). */
+    void releaseAllTileBags();
     /** Non-owning access (nullptr if never ensured). */
     tilelod::ItemBag *tileLodBag(ImageItem *item);
     const tilelod::ItemBag *tileLodBag(const ImageItem *item) const;

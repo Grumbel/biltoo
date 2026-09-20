@@ -47,6 +47,11 @@ DisplayPipelineController::DisplayPipelineController(ImageView *view)
 {
 }
 
+DisplayPipelineController::~DisplayPipelineController()
+{
+    releaseAllTileBags();
+}
+
 void DisplayPipelineController::ensureWorkspaceQualityClimb()
 {
     ASSERT_GUI_THREAD();
@@ -1389,6 +1394,16 @@ void DisplayPipelineController::releaseTileBag(ImageItem *item)
     }
     item->detachTileLodBag();
     m_tileBags.erase(item);
+}
+
+void DisplayPipelineController::releaseAllTileBags()
+{
+    for (auto &entry : m_tileBags) {
+        if (entry.first) {
+            entry.first->detachTileLodBag();
+        }
+    }
+    m_tileBags.clear();
 }
 
 tilelod::ItemBag *DisplayPipelineController::tileLodBag(ImageItem *item)

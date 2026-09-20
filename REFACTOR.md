@@ -1042,3 +1042,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1794: registerItemDisplaySurface ensures pipeline tile bag.
 - biltoo-1795: m_tileBags as unordered_map (unique_ptr-safe).
 - biltoo-1796: local bag debug warning; dropAll resets m_tileBags entries.
+- biltoo-1797: releaseAllTileBags before scene clear / pipeline dtor.
