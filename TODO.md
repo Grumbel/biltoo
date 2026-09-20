@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1684-input-domain-try.** Move page-guide / group / text-rubber try* out of input.cpp.
+Prior: **1683**.
+
+### Change
+- Page-guide move/release try* → `imageview_pageguide.cpp`
+- Group/handle drag try* → `imageview_group.cpp`
+- Text-rubber press/move/release try* → `imageview_text.cpp`
+- `imageview_input.cpp` ~1015 → ~869 lines (shell chrome, pan, zoom region, drag/drop, routers remain)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1684-input-domain-try.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Optional: further canvas TU split (membership vs session-bind)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1683-transform-canvas-split.** Canvas membership and content-appearance out of transform.cpp.
 Prior: **1682**.
 

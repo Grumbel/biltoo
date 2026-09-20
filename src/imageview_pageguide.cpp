@@ -11,6 +11,7 @@
 #include <QPainter>
 #include <QPrinter>
 #include <QScrollBar>
+#include <QMouseEvent>
 
 void ImageView::setPageGuideVisible(bool on)
 {
@@ -302,4 +303,53 @@ void ImageView::paintPageGuideHandles(QPainter *painter) const
     drawEdge(pts[5], pts[4] - pts[6], 5);
     drawEdge(pts[7], pts[6] - pts[0], 7);
     painter->restore();
+}
+
+// --- input try* (pageguide) from imageview_input.cpp ---
+
+bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
+{
+    if (m_pageGuide.isDragging()) {
+        updatePageGuideResize(mapToScene(event->pos()), event->modifiers());
+        event->accept();
+        return true;
+    }
+    if (isWorkspaceMode() && m_pageGuide.isInteractive()
+        && !(event->buttons() & Qt::LeftButton)) {
+        const int ph = pageGuideHandleAt(event->pos());
+        if (m_pageGuide.setHoverHandle(ph)) {
+            viewport()->update();
+        }
+        if (ph >= 0) {
+            switch (ph) {
+            case 0: case 4:
+                viewport()->setCursor(Qt::SizeFDiagCursor);
+                break;
+            case 2: case 6:
+                viewport()->setCursor(Qt::SizeBDiagCursor);
+                break;
+            case 1: case 5:
+                viewport()->setCursor(Qt::SizeVerCursor);
+                break;
+            case 3: case 7:
+                viewport()->setCursor(Qt::SizeHorCursor);
+                break;
+            default:
+                break;
+            }
+            event->accept();
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
+{
+    if (!m_pageGuide.isDragging() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    endPageGuideResize();
+    event->accept();
+    return true;
 }

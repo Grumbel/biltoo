@@ -16,6 +16,7 @@
 #include <QGuiApplication>
 #include <QPainter>
 #include <QRegularExpression>
+#include <QMouseEvent>
 
 void ImageView::paintTextRubberBandOverlay(QPainter &painter)
 {
@@ -387,3 +388,45 @@ bool ImageView::copySelectedText()
     return true;
 }
 
+
+// --- input try* (text rubber) from imageview_input.cpp ---
+
+bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
+{
+    if (!isImageMode() || m_cropCtrl.session().active() || m_attentionCtrl.session().active()
+        || event->button() != Qt::LeftButton
+        || !(event->modifiers() & Qt::ShiftModifier)
+        || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))
+        || !PagePath::isPageRef(classicPath())) {
+        return false;
+    }
+    m_textLayer.beginRubber(event->pos());
+    m_textLayer.clearSelectedRegions();
+    setCursor(Qt::CrossCursor);
+    viewport()->update();
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
+{
+    if (!m_textLayer.isRubberbanding() || !(event->buttons() & Qt::LeftButton)) {
+        return false;
+    }
+    m_textLayer.updateRubber(event->pos());
+    viewport()->update();
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
+{
+    if (!m_textLayer.isRubberbanding() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    m_textLayer.updateRubber(event->pos());
+    finishTextRubberBand();
+    unsetCursor();
+    event->accept();
+    return true;
+}

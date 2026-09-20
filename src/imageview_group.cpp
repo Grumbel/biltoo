@@ -11,6 +11,7 @@
 #include <QtMath>
 #include <cmath>
 #include <QPainter>
+#include <QMouseEvent>
 
 int ImageView::groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &items) const
 {
@@ -298,3 +299,72 @@ void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageIt
     painter->restore();
 }
 
+
+// --- input try* (group) from imageview_input.cpp ---
+
+bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
+{
+    if (m_groupXform.isScaleDrag()) {
+        updateGroupScale(mapToScene(event->pos()), event->modifiers());
+        viewport()->update();
+        event->accept();
+        return true;
+    }
+    if (m_groupXform.isRotateDrag()) {
+        updateGroupRotate(mapToScene(event->pos()), event->modifiers());
+        viewport()->update();
+        event->accept();
+        return true;
+    }
+    if (m_itemInteract.isHandleDragging() && m_itemInteract.currentHandleDragItem()->hasActiveHandle()) {
+        m_itemInteract.currentHandleDragItem()->updateHandleInteraction(mapToScene(event->pos()),
+                                                    event->modifiers());
+        viewport()->update(); // live chrome while scaling/rotating
+        event->accept();
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
+{
+    if (!(m_groupXform.isScaleDrag() || m_groupXform.isRotateDrag()) || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    if (m_undoStack && !m_groupXform.dragItems.isEmpty()) {
+        m_undoStack->beginMacro(m_groupXform.isRotateDrag() ? tr("Rotate selection")
+                                                  : tr("Scale selection"));
+        for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
+            ImageItem *item = m_groupXform.dragItemAt(i);
+            if (!item || i >= m_groupXform.dragStartStates.size()) {
+                continue;
+            }
+            pushItemTransformUndo(item, m_groupXform.dragStartStates.at(i), captureState(item),
+                                  tr("Transform"));
+        }
+        m_undoStack->endMacro();
+    }
+    endGroupScale();
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    event->accept();
+    return true;
+}
+
+bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
+{
+    if (!m_itemInteract.isHandleDragging() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    ImageItem *handleItem = m_itemInteract.currentHandleDragItem();
+    handleItem->endHandleInteraction();
+    pushItemTransformUndo(handleItem, m_itemInteract.currentDragStartState(),
+                          captureState(handleItem), tr("Transform"));
+    m_itemInteract.endHandleDrag();
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
+    event->accept();
+    return true;
+}

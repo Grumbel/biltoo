@@ -357,22 +357,6 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
     event->accept();
     return true;
 }
-bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
-{
-    if (!isImageMode() || m_cropCtrl.session().active() || m_attentionCtrl.session().active()
-        || event->button() != Qt::LeftButton
-        || !(event->modifiers() & Qt::ShiftModifier)
-        || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))
-        || !PagePath::isPageRef(classicPath())) {
-        return false;
-    }
-    m_textLayer.beginRubber(event->pos());
-    m_textLayer.clearSelectedRegions();
-    setCursor(Qt::CrossCursor);
-    viewport()->update();
-    event->accept();
-    return true;
-}
 bool ImageView::tryMousePressPan(QMouseEvent *event)
 {
     // Middle-button pan in any mode; Gallery also allows Alt+left pan.
@@ -453,16 +437,6 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
     QGraphicsView::mousePressEvent(event);
 }
-bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
-{
-    if (!m_textLayer.isRubberbanding() || !(event->buttons() & Qt::LeftButton)) {
-        return false;
-    }
-    m_textLayer.updateRubber(event->pos());
-    viewport()->update();
-    event->accept();
-    return true;
-}
 void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
@@ -534,65 +508,6 @@ bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
     }
     event->accept();
     return true;
-}
-bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
-{
-    if (m_pageGuide.isDragging()) {
-        updatePageGuideResize(mapToScene(event->pos()), event->modifiers());
-        event->accept();
-        return true;
-    }
-    if (isWorkspaceMode() && m_pageGuide.isInteractive()
-        && !(event->buttons() & Qt::LeftButton)) {
-        const int ph = pageGuideHandleAt(event->pos());
-        if (m_pageGuide.setHoverHandle(ph)) {
-            viewport()->update();
-        }
-        if (ph >= 0) {
-            switch (ph) {
-            case 0: case 4:
-                viewport()->setCursor(Qt::SizeFDiagCursor);
-                break;
-            case 2: case 6:
-                viewport()->setCursor(Qt::SizeBDiagCursor);
-                break;
-            case 1: case 5:
-                viewport()->setCursor(Qt::SizeVerCursor);
-                break;
-            case 3: case 7:
-                viewport()->setCursor(Qt::SizeHorCursor);
-                break;
-            default:
-                break;
-            }
-            event->accept();
-            return true;
-        }
-    }
-    return false;
-}
-bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
-{
-    if (m_groupXform.isScaleDrag()) {
-        updateGroupScale(mapToScene(event->pos()), event->modifiers());
-        viewport()->update();
-        event->accept();
-        return true;
-    }
-    if (m_groupXform.isRotateDrag()) {
-        updateGroupRotate(mapToScene(event->pos()), event->modifiers());
-        viewport()->update();
-        event->accept();
-        return true;
-    }
-    if (m_itemInteract.isHandleDragging() && m_itemInteract.currentHandleDragItem()->hasActiveHandle()) {
-        m_itemInteract.currentHandleDragItem()->updateHandleInteraction(mapToScene(event->pos()),
-                                                    event->modifiers());
-        viewport()->update(); // live chrome while scaling/rotating
-        event->accept();
-        return true;
-    }
-    return false;
 }
 bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
 {
@@ -827,17 +742,6 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
     m_undoStack->push(new TransformCommand(this, item, before, after, text));
     emit statusChanged();
 }
-bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
-{
-    if (!m_textLayer.isRubberbanding() || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    m_textLayer.updateRubber(event->pos());
-    finishTextRubberBand();
-    unsetCursor();
-    event->accept();
-    return true;
-}
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 {
     if (!m_zoomRegion.isDragging()) {
@@ -855,56 +759,6 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
         }
     }
     cancelZoomRegion();
-    event->accept();
-    return true;
-}
-bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
-{
-    if (!m_pageGuide.isDragging() || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    endPageGuideResize();
-    event->accept();
-    return true;
-}
-bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
-{
-    if (!(m_groupXform.isScaleDrag() || m_groupXform.isRotateDrag()) || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    if (m_undoStack && !m_groupXform.dragItems.isEmpty()) {
-        m_undoStack->beginMacro(m_groupXform.isRotateDrag() ? tr("Rotate selection")
-                                                  : tr("Scale selection"));
-        for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
-            ImageItem *item = m_groupXform.dragItemAt(i);
-            if (!item || i >= m_groupXform.dragStartStates.size()) {
-                continue;
-            }
-            pushItemTransformUndo(item, m_groupXform.dragStartStates.at(i), captureState(item),
-                                  tr("Transform"));
-        }
-        m_undoStack->endMacro();
-    }
-    endGroupScale();
-    if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
-    event->accept();
-    return true;
-}
-bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
-{
-    if (!m_itemInteract.isHandleDragging() || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    ImageItem *handleItem = m_itemInteract.currentHandleDragItem();
-    handleItem->endHandleInteraction();
-    pushItemTransformUndo(handleItem, m_itemInteract.currentDragStartState(),
-                          captureState(handleItem), tr("Transform"));
-    m_itemInteract.endHandleDrag();
-    if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    }
     event->accept();
     return true;
 }
