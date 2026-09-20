@@ -86,13 +86,29 @@
     void primeGalleryGeometryFromCache(const QStringList &paths);
 
     // --- GallerySizeResolveHost -------------------------------------------------
-    bool hasDefinitiveHostSize(const QString &path) const override;
+    bool hasDefinitiveHostSize(const QString &path) const override
+    {
+        return m_sizeBook.hasDefinitive(path);
+    }
     void adoptResolvedSize(const QString &path, const QSize &size) override;
-    void scheduleSizeProbe(const QString &path) override;
-    QStringList sizeResolvePathOrder() const override;
-    bool sizeResolveLayoutDefersPopulate() const override;
+    void scheduleSizeProbe(const QString &path) override
+    {
+        scheduleImageSizeProbe(path);
+    }
+    /** Pack order for TTFP probes — PackOrderReadSource::ViewBook only. */
+    QStringList sizeResolvePathOrder() const override
+    {
+        return currentPackOrder().paths();
+    }
+    bool sizeResolveLayoutDefersPopulate() const override
+    {
+        return layoutDefersPopulateUntilSizes(m_layout.currentMode());
+    }
     void setSizeResolveProgress(const QString &title,
-                                 const QString &detail) override;
+                                 const QString &detail) override
+    {
+        setCentreProgress(title, detail);
+    }
     void clearSizeResolveProgress() override;
     void onSizeResolveGateComplete() override;
     void onSizeResolveGateCancelled() override;

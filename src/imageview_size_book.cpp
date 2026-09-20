@@ -247,10 +247,6 @@ bool ImageView::layoutDefersPopulateUntilSizes(LayoutMode mode)
 
 
 
-bool ImageView::hasDefinitiveHostSize(const QString &path) const
-{
-    return m_sizeBook.hasDefinitive(path);
-}
 
 void ImageView::adoptResolvedSize(const QString &path, const QSize &size)
 {
@@ -258,26 +254,9 @@ void ImageView::adoptResolvedSize(const QString &path, const QSize &size)
     applyProbedImageSize(path, size);
 }
 
-void ImageView::scheduleSizeProbe(const QString &path)
-{
-    scheduleImageSizeProbe(path);
-}
 
-QStringList ImageView::sizeResolvePathOrder() const
-{
-    const PackOrderView pack = currentPackOrder();
-    return pack.paths();
-}
 
-bool ImageView::sizeResolveLayoutDefersPopulate() const
-{
-    return layoutDefersPopulateUntilSizes(m_layout.currentMode());
-}
 
-void ImageView::setSizeResolveProgress(const QString &title, const QString &detail)
-{
-    setCentreProgress(title, detail);
-}
 
 void ImageView::clearSizeResolveProgress()
 {
