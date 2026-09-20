@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1732-itemworld-placement.** Stage 2 start: Placement component.
+Prior: **1731**.
+
+### Change
+- `ItemComponents::Placement` (pos, scale, scaleY, shear, rotation, opacity, z, h/vFlip)
+- ItemWorld sparse `m_placements` always dual-written on setAppearance
+- setPlacement / placement / hasPlacement / placementCount
+- captureState: path-book via getPathState
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1732-itemworld-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest itemworld
+- Stage 2: route workspace pose writes through setPlacement; thin captureState
+- Phase 6 Tier 4 path-order residual still open
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1731-itemworld-appearance-reads.** All appearance DTO reads via ItemWorld.
 Prior: **1730**.
 

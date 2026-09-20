@@ -948,3 +948,5 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1731: all appearance **reads** via ItemWorld — `getAppearance` /
   `hasAppearance` / `appearanceValue`; controllers and ImageView no longer call
   `appearance().get/value/contains` for DTO lookup.
+- biltoo-1732: **Stage 2 start** — Placement component + sparse table (always
+  dual-written on setAppearance); captureState path-book reads via getPathState.

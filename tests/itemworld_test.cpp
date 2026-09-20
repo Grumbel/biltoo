@@ -31,7 +31,10 @@ private slots:
     void contentBake_setAndClear();
     void color_setAndClear();
     void setAppearance_dualWritesBakeAndColor();
+    void placement_setAppearanceDualWrites();
+    void setPlacement_updatesDto();
 };
+
 
 
 void ItemWorldTest::unbound_gettersAreSafe()
@@ -261,11 +264,13 @@ void ItemWorldTest::clearAppearance_clearsDtoAndTables()
     st.contentHFlip = true;
     st.contentQuarterTurns = 1;
     st.colorAdjust.brightness = 20;
+    st.pos = QPointF(9, 9);
     world.setAppearance(1, st);
     QCOMPARE(world.cropCount(), 1);
     QCOMPARE(world.attentionCount(), 1);
     QCOMPARE(world.contentBakeCount(), 1);
     QCOMPARE(world.colorCount(), 1);
+    QCOMPARE(world.placementCount(), 1);
 
     world.clearAppearance();
     QVERIFY(!store.contains(1));
@@ -273,6 +278,7 @@ void ItemWorldTest::clearAppearance_clearsDtoAndTables()
     QCOMPARE(world.attentionCount(), 0);
     QCOMPARE(world.contentBakeCount(), 0);
     QCOMPARE(world.colorCount(), 0);
+    QCOMPARE(world.placementCount(), 0);
 }
 
 void ItemWorldTest::contentBake_setAndClear()
@@ -337,6 +343,47 @@ void ItemWorldTest::setAppearance_dualWritesBakeAndColor()
     QVERIFY(world.contentBake(15).vFlip);
     QVERIFY(world.hasColor(15));
     QCOMPARE(world.color(15).grade.saturation, 80);
+}
+
+
+void ItemWorldTest::placement_setAppearanceDualWrites()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    WorkspaceItemState st;
+    st.pos = QPointF(12, 34);
+    st.scale = 2.0;
+    st.rotation = 45.0;
+    st.hFlip = true;
+    world.setAppearance(20, st);
+
+    QCOMPARE(world.placementCount(), 1);
+    QVERIFY(world.hasPlacement(20));
+    QCOMPARE(world.placement(20).pos, QPointF(12, 34));
+    QCOMPARE(world.placement(20).scale, 2.0);
+    QVERIFY(world.placement(20).hFlip);
+}
+
+void ItemWorldTest::setPlacement_updatesDto()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    ItemComponents::Placement pl;
+    pl.pos = QPointF(5, 6);
+    pl.scaleY = 1.5;
+    pl.shear = 0.25;
+    world.setPlacement(21, pl);
+
+    QVERIFY(world.hasPlacement(21));
+    const WorkspaceItemState *s = store.get(21);
+    QVERIFY(s);
+    QCOMPARE(s->pos, QPointF(5, 6));
+    QCOMPARE(s->scaleY, 1.5);
+    QCOMPARE(s->shear, 0.25);
 }
 
 QTEST_MAIN(ItemWorldTest)

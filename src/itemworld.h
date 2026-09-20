@@ -18,10 +18,9 @@
  * Stage 0: non-owning pointers to SessionAppearanceStore, PathItemStateBook,
  * ImageSizeBook.
  *
- * Stage 1: owned sparse tables (Crop, Attention, ContentBake, Color) dual-written
- * with the fat WorkspaceItemState DTO in the appearance store. Component
- * accessors are the preferred API for new code; setAppearance/getAppearance
- * keep DTO round-trips working for project file and undo.
+ * Stage 1–2: owned sparse tables (Crop, Attention, ContentBake, Color, Placement)
+ * dual-written with the fat WorkspaceItemState DTO. Placement is Stage 2 start
+ * (pose off ImageItem eventually). Component accessors preferred for new code.
  *
  * Entity key for content appearance: SessionImageId (IDENTITY.md).
  */
@@ -112,6 +111,7 @@ public:
         m_attentions.remove(id);
         m_contentBakes.remove(id);
         m_colors.remove(id);
+        m_placements.remove(id);
     }
 
     /** Clear DTO store and sparse component tables. */
@@ -124,6 +124,7 @@ public:
         m_attentions.clear();
         m_contentBakes.clear();
         m_colors.clear();
+        m_placements.clear();
     }
 
     /** Sparse crop table (Stage 1). Empty crop ⇒ absent. */
@@ -274,6 +275,44 @@ public:
 
     bool hasColor(SessionImageId id) const { return !color(id).isIdentity(); }
 
+    /**
+     * Sparse placement table (Stage 2 start). Always present once setAppearance
+     * or setPlacement has written an id (including identity pose).
+     */
+    ItemComponents::Placement placement(SessionImageId id) const
+    {
+        if (id == kInvalidSessionImageId) {
+            return {};
+        }
+        const auto it = m_placements.constFind(id);
+        if (it != m_placements.cend()) {
+            return it.value();
+        }
+        if (const WorkspaceItemState *s = getAppearance(id)) {
+            return ItemComponents::placementFromState(*s);
+        }
+        return {};
+    }
+
+    void setPlacement(SessionImageId id, const ItemComponents::Placement &pl)
+    {
+        if (!m_appearance || id == kInvalidSessionImageId) {
+            return;
+        }
+        m_placements.insert(id, pl);
+        WorkspaceItemState s;
+        if (const WorkspaceItemState *cur = m_appearance->get(id)) {
+            s = *cur;
+        }
+        ItemComponents::applyPlacementToState(s, pl);
+        m_appearance->set(id, s);
+    }
+
+    bool hasPlacement(SessionImageId id) const
+    {
+        return id != kInvalidSessionImageId && m_placements.contains(id);
+    }
+
     /** Path-keyed placement / unbound fallback (not identity). */
     const WorkspaceItemState *getPathState(const QString &path) const
     {
@@ -311,6 +350,7 @@ public:
     int attentionCount() const { return m_attentions.size(); }
     int contentBakeCount() const { return m_contentBakes.size(); }
     int colorCount() const { return m_colors.size(); }
+    int placementCount() const { return m_placements.size(); }
 
 private:
     void syncComponentsFromState(SessionImageId id, const WorkspaceItemState &state)
@@ -339,6 +379,8 @@ private:
         } else {
             m_colors.insert(id, col);
         }
+        // Placement: always dual-write (identity pose is still a placed item).
+        m_placements.insert(id, ItemComponents::placementFromState(state));
     }
 
     SessionAppearanceStore *m_appearance = nullptr;
@@ -348,6 +390,7 @@ private:
     QHash<SessionImageId, ItemComponents::Attention> m_attentions;
     QHash<SessionImageId, ItemComponents::ContentBake> m_contentBakes;
     QHash<SessionImageId, ItemComponents::Color> m_colors;
+    QHash<SessionImageId, ItemComponents::Placement> m_placements;
 };
 
 #endif // ITEMWORLD_H

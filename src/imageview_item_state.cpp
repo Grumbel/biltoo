@@ -72,7 +72,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         // turns/crop meta from m_itemStateBook.byPath.
     } else {
         // Unbound tile: path map may hold content orient.
-        if (const WorkspaceItemState *prev = m_itemStateBook.get(item->path())) {
+        if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
             s.contentQuarterTurns =
                 ContentXform::normalizeQuarterTurns(prev->contentQuarterTurns);
             s.cropRotation = prev->cropRotation;
@@ -86,7 +86,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     }
     // Placement path-map hint for session index only (bound or unbound).
     if (s.sessionIndex < 0) {
-        if (const WorkspaceItemState *prev = m_itemStateBook.get(item->path())) {
+        if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
             if (prev->sessionIndex >= 0) {
                 s.sessionIndex = prev->sessionIndex;
             }

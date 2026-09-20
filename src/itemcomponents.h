@@ -36,6 +36,32 @@ struct Attention {
     bool isEmpty() const { return points.isEmpty(); }
 };
 
+/**
+ * Workspace / free-placement pose (not content orient).
+ * Presence: non-default scale/pos/rotation/shear/opacity/z/item flips.
+ * Identity placement (origin, scale 1, no flips) is still stored when the
+ * item is on the canvas — use hasPlacement on ItemWorld for table presence.
+ */
+struct Placement {
+    QPointF pos;
+    qreal scale = 1.0;
+    qreal scaleY = 1.0;
+    qreal shear = 0.0;
+    qreal rotation = 0.0;
+    qreal opacity = 1.0;
+    qreal z = 0.0;
+    bool hFlip = false;
+    bool vFlip = false;
+
+    bool isIdentity() const
+    {
+        return pos.isNull() && qFuzzyCompare(scale, 1.0) && qFuzzyCompare(scaleY, 1.0)
+            && qFuzzyIsNull(shear) && qFuzzyIsNull(rotation)
+            && qFuzzyCompare(opacity, 1.0) && qFuzzyIsNull(z)
+            && !hFlip && !vFlip;
+    }
+};
+
 /** Content orient bake (disk → flip → quarter turns), independent of placement. */
 struct ContentBake {
     int quarterTurns = 0; // 0..3
@@ -104,6 +130,34 @@ inline void applyAttentionToState(WorkspaceItemState &s, const Attention &a)
     }
     s.attentionPoints = a.points;
     s.syncAttentionPrimary();
+}
+
+inline Placement placementFromState(const WorkspaceItemState &s)
+{
+    Placement p;
+    p.pos = s.pos;
+    p.scale = s.scale;
+    p.scaleY = s.scaleY;
+    p.shear = s.shear;
+    p.rotation = s.rotation;
+    p.opacity = s.opacity;
+    p.z = s.z;
+    p.hFlip = s.hFlip;
+    p.vFlip = s.vFlip;
+    return p;
+}
+
+inline void applyPlacementToState(WorkspaceItemState &s, const Placement &p)
+{
+    s.pos = p.pos;
+    s.scale = p.scale;
+    s.scaleY = p.scaleY;
+    s.shear = p.shear;
+    s.rotation = p.rotation;
+    s.opacity = p.opacity;
+    s.z = p.z;
+    s.hFlip = p.hFlip;
+    s.vFlip = p.vFlip;
 }
 
 inline ContentBake contentBakeFromState(const WorkspaceItemState &s)
