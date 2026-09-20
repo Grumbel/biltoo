@@ -545,6 +545,38 @@ int ImageView::workspacePathOccurrenceCount(const QString &path) const
 
 
 
+void ImageView::focusGalleryItem(ImageItem *item)
+{
+    if (!item || !m_scene) {
+        return;
+    }
+    m_scene->clearSelection();
+    item->setSelected(true);
+    if (!isGalleryMode()) {
+        return;
+    }
+    // Open/TTFP: first index is often already in view after pack — ensureVisible
+    // on a large scene was hundreds of ms for no visual change.
+    bool needScroll = true;
+    if (viewport()) {
+        const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
+        if (vis.isValid() && item->sceneBoundingRect().intersects(vis)) {
+            needScroll = false;
+        }
+    }
+    if (needScroll) {
+        ensureVisible(item, ViewTransform::kEnsureVisibleMargin, ViewTransform::kEnsureVisibleMargin);
+    }
+    // Keyboard focus: show filename in the HUD like mouse hover.
+    const QString path = item->path();
+    if (m_gallery.hoverPath() != path) {
+        m_gallery.setHoverPath(path);
+        if (viewport()) {
+            viewport()->update();
+        }
+    }
+}
+
 void ImageView::focusSessionPath(const QString &path)
 {
     if (path.isEmpty()) {
@@ -555,30 +587,7 @@ void ImageView::focusSessionPath(const QString &path)
     if (!item) {
         item = findItemByPath(path);
     }
-    if (!item) {
-        return;
-    }
-    m_scene->clearSelection();
-    item->setSelected(true);
-    if (isGalleryMode()) {
-        // Open/TTFP: first index is often already in view after pack — ensureVisible
-        // on a large scene was hundreds of ms for no visual change.
-        bool needScroll = true;
-        if (viewport()) {
-            const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
-            if (vis.isValid() && item->sceneBoundingRect().intersects(vis)) {
-                needScroll = false;
-            }
-        }
-        if (needScroll) {
-            ensureVisible(item, ViewTransform::kEnsureVisibleMargin, ViewTransform::kEnsureVisibleMargin);
-        }
-        // Keyboard focus: show filename in the HUD like mouse hover.
-        if (m_gallery.hoverPath() != path) {
-            m_gallery.setHoverPath(path);
-            viewport()->update();
-        }
-    }
+    focusGalleryItem(item);
 }
 
 

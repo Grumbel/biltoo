@@ -405,7 +405,12 @@ public:
      * use false for silent updates (e.g. slideshow auto-advance).
      */
     void setCurrentSessionId(SessionImageId id);
-    /** Select canvas item for @p path; ensure visible in Gallery. */
+    /**
+     * Exclusive-select @p item; ensure visible + HUD hover in Gallery.
+     * Prefer this when the live ImageItem is already known (keyboard nav).
+     */
+    void focusGalleryItem(ImageItem *item);
+    /** Select preferred/first canvas item for @p path; ensure visible in Gallery. */
     void focusSessionPath(const QString &path);
 
     /** Pin the on-image HUD overlay (filename, zoom, …). */

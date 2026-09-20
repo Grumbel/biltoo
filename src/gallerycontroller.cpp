@@ -708,7 +708,7 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
         ImageItem *item = (event->key() == Qt::Key_Home)
                               ? m_view->liveItems().first()
                               : m_view->liveItems().last();
-        m_view->focusSessionPath(item->path());
+        m_view->focusGalleryItem(item);
         m_view->emitGalleryItemFocus(item);
         event->accept();
         return true;
@@ -746,7 +746,7 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
     if (!best) {
         return false;
     }
-    m_view->focusSessionPath(best->path());
+    m_view->focusGalleryItem(best);
     m_view->emitGalleryItemFocus(best);
     event->accept();
     return true;

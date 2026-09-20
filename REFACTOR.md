@@ -1156,6 +1156,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1921: pure characterization verified green (16 pass / 1 skip) on Qt 6.11 nix develop.
 - biltoo-1922: Gallery path lookup prefers findPreferredItemForPath (duplicate identity).
 - biltoo-1923: addImage / focusSessionPath / classic paint prefer preferred-item path lookup.
+- biltoo-1924: focusGalleryItem; path focus delegates; Gallery keyboard uses item pointer.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

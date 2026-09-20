@@ -284,6 +284,7 @@ keyed.
 |-----|----------|
 | `findItemByPath(path)` | **First** canvas item with that path (deprecated for identity) |
 | `findPreferredItemForPath(path)` | Selected sole match, else sole live match; else nullptr if ambiguous |
+| `focusGalleryItem(item)` | Exclusive-select known live item (Gallery keyboard); no path lookup |
 | `findItemBySessionIndex(i)` | Item bound to session index `i` |
 | `m_files.indexOf(path)` | **First** session slot with that path |
 | `createItemFromImage(..., applyStoredSessionCrop=true)` | Applies appearance from `m_sessionSlotStates[m_sessionIndex]` in Image mode if present, else **path** `m_itemStates` |

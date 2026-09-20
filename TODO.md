@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1924-focus-gallery-item.** Item-pointer focus for Gallery keyboard nav.
+Prior: **1923**.
+
+### Change
+- New `ImageView::focusGalleryItem(ImageItem *)` — exclusive-select + ensureVisible + HUD
+- `focusSessionPath` resolves preferred/first path then delegates to `focusGalleryItem`
+- Gallery Home/End and arrow-key nav call `focusGalleryItem` on the known item
+  (no path round-trip; correct under LoadAdd duplicates)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1924-focus-gallery-item-516d734.bundle HEAD
+```
+Requires tip **1923** (base **516d734**).
+
+### Next
+- MainWindow filmstrip nav: prefer session-id focus when id is known
+- Green CHARACTERIZATION=ON on roomier host
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1923-preferred-path-add-focus-paint.** More preferred-item path lookups.
 Prior: **1922**.
 
