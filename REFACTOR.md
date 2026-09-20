@@ -682,10 +682,21 @@ extra multiplicity). Today Gallery pack always reads the book; switching readers
 `packorderview.h`. `currentPackOrder()` reads `ViewBook` only. Do not switch pack
 readers to `SessionDocument` without the dual-write design below.
 
-**Safe next steps:** use the source policy when migrating Gallery pack readers;
-introduce an explicit pack-order **source policy** (document vs book vs
-overlay) owned outside ImageView; migrate Gallery pack readers only after multiplicity is
-expressed without a second full copy; only then delete `m_pathOrderBook`.
+**PackOrderOverlay (tip 1881):** design type in `src/packorderoverlay.h` with
+FollowDocument vs Explicit modes. Explicit empty models `pathOrderClear` (pack
+blank while document membership remains). Pure tests:
+`tests/packorderoverlay_test.cpp`. Normative write-up: [docs/PATH_ORDER.md](docs/PATH_ORDER.md)
+§ PackOrderOverlay. ImageView still stores `m_pathOrderBook`; runtime adoption
+is a later tip.
+
+**Migration (do not skip):** (1) design type + pure tests — done 1881;
+(2) adopt storage — replace member with overlay, mutators as wrappers;
+(3) optional FollowDocument collapse when aligned; (4) ImageView harness green;
+(5) then `git grep m_pathOrderBook` empty.
+
+**Safe next steps:** adopt overlay storage behind existing host mutators
+(behaviour-identical Explicit mode); keep pack readers on ViewBook until
+harness is green; only then delete `m_pathOrderBook`.
 
 
 ### Tier 5 — DisplayPipeline

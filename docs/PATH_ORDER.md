@@ -57,12 +57,69 @@ Characterization: `tests/packorderview_test.cpp` (`packorderview` CTest).
 ## Read path (post-1714)
 
 All pack/LoadAdd **reads** go through `ImageView::currentPackOrder()`
-(`PackOrderView::fromBook`). Book-reference accessors (`pathOrderPaths` /
-`pathOrderIds`) were removed (biltoo-1817).
+(`PackOrderView::fromBook` via `packOrderForRead(PackOrderReadSource::ViewBook, …)`).
+Book-reference accessors (`pathOrderPaths` / `pathOrderIds`) were removed
+(biltoo-1817).
 
 Mutations remain `pathOrderClear` / `SetOrder` / `AppendRow` on the book.
 Public `setPathOrder` requires paths∥ids (or `PackOrderView`); the paths-only
 overload was removed so session ids cannot be cleared by accident.
+
+## PackOrderOverlay (design — tip 1881)
+
+Replacement vehicle for `m_pathOrderBook`. Header: `src/packorderoverlay.h`.
+Characterization: `tests/packorderoverlay_test.cpp` (`packorderoverlay` CTest).
+
+### Modes
+
+| Mode | `resolve(doc)` | Models |
+|------|----------------|--------|
+| **FollowDocument** | `PackOrderView::fromDocument(*doc)` (or empty) | Pack aligns with session membership; no extra storage |
+| **Explicit** | `PackOrderView::fromBook(held order)` | Multiplicity, ad-hoc place, stash restore, **or cleared** |
+
+**Explicit empty is distinct from FollowDocument.** After `pathOrderClear` /
+mode leave, pack must stay blank while `SessionDocument` still lists open
+files. If pack fell through to the document, blank Workspace / leave Gallery
+would regenerate session tiles — the dual-model reason the book still exists.
+
+### Mapping from today’s book API
+
+| Today (ImageView) | Overlay |
+|-------------------|---------|
+| `pathOrderClear()` | `clearExplicit()` → Explicit + empty |
+| `pathOrderSetOrder(paths, ids)` | `setExplicit(paths, ids)` |
+| `pathOrderAppendRow(path, id)` | `appendExplicitRow(path, id)` (promotes from FollowDocument) |
+| `currentPackOrder()` | `resolve(m_sessionDoc)` |
+| `pathOrderOccurrences(path)` | `countPathOccurrences(path, m_sessionDoc)` |
+| Stash snapshot | `PackOrderView` of `resolve(...)`; restore via `setExplicit` |
+| Post-loadFiles align | Optional later: `followDocument()` when order matches doc |
+
+### Migration steps (do not skip)
+
+1. **Design type + pure tests** (this tip) — `PackOrderOverlay` + resolve
+   invariants locked without touching ImageView.
+2. **Adopt storage** — replace `m_pathOrderBook` member with
+   `PackOrderOverlay`; host mutators become thin wrappers. Behaviour
+   identical (always Explicit, seeded like today’s book).
+3. **Optional collapse** — when explicit order aligns with document, switch
+   to FollowDocument (storage savings only; not required for correctness).
+4. **ImageView harness green** — open → Gallery → crop → return → Image with
+   decode + framing ([IMAGEVIEW_CHARACTERIZATION.md](IMAGEVIEW_CHARACTERIZATION.md)).
+5. **Delete book** — `git grep m_pathOrderBook` empty; pack readers use
+   overlay resolve only.
+
+Until step 4, do **not** delete `m_pathOrderBook` or switch pack readers to
+`SessionDocument` alone.
+
+### Read policy
+
+`PackOrderReadSource` (in `packorderview.h`) remains:
+
+- `ViewBook` — current default for all pack / LoadAdd / size-resolve readers
+- `SessionDocument` — identity / membership only; **not** a pack drop-in
+
+After adoption, pack readers will resolve through the overlay; the enum may
+gain an `Overlay` case or pack will simply call `overlay.resolve(doc)`.
 
 ## Exit criteria (Tier 4 residual)
 
@@ -70,6 +127,6 @@ overload was removed so session ids cannot be cleared by accident.
 harness (decode + framing) for open → Gallery → crop → return → Image so the
 view can query the document for pack order without regenerating session tiles
 incorrectly. Until then, keep the dual model and the accessors in
-`imageview_private_methods.inc`.
+`imageview_private_methods.inc` / host pipeline.
 
 See also: [IDENTITY.md](../IDENTITY.md), [DOMAIN.md](../DOMAIN.md) session open rules.

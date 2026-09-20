@@ -2,6 +2,35 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1881-pack-order-overlay-design.** PackOrderOverlay design type + pure tests.
+Prior: **1880**.
+
+### Change
+- Add `src/packorderoverlay.h`: FollowDocument vs Explicit modes; Explicit empty
+  models pathOrderClear (pack blank while SessionDocument still has membership)
+- Add `tests/packorderoverlay_test.cpp` + CMake target `packorderoverlay`
+- Expand `docs/PATH_ORDER.md` § PackOrderOverlay with mapping + migration steps
+- REFACTOR.md Tier 4 residual: point at overlay design; next is adopt storage
+- No ImageView runtime change — `m_pathOrderBook` remains until harness is green
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1881-pack-order-overlay-design.bundle HEAD
+```
+Requires tip **1880** (base **1858** / `1e112d94`).
+
+### Next
+- Adopt PackOrderOverlay storage behind existing host mutators (step 2)
+- ImageView characterization harness (decode + framing)
+- Do **not** delete `m_pathOrderBook` until harness green
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1880-session-remove-orphan-tail.** Drop orphaned code after setCurrentSessionId.
 Prior: **1879**.
 

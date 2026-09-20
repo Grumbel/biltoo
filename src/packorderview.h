@@ -132,6 +132,10 @@ private:
  *
  * Writes always go to the view book (pathOrderClear / SetOrder / AppendRow).
  * SessionDocument is mutated only by MainWindow session APIs.
+ *
+ * Planned replacement for permanent ViewBook storage: PackOrderOverlay
+ * (src/packorderoverlay.h, tip 1881) with FollowDocument vs Explicit modes.
+ * Explicit empty models pathOrderClear. See docs/PATH_ORDER.md.
  */
 enum class PackOrderReadSource {
     ViewBook,

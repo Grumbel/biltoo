@@ -227,6 +227,7 @@ set(BILTOO_LIB_SOURCES
   src/sessionloadgate.h
   src/sessionbindbook.h
   src/sessionpathorder.h
+  src/packorderoverlay.h
   src/displayedgepolicy.h
   src/displayedgepolicy.cpp
   src/edgenavpolicy.h
@@ -690,6 +691,17 @@ if(Qt6Test_FOUND)
   target_include_directories(biltoo-packorderview-test PRIVATE src)
   target_link_libraries(biltoo-packorderview-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME packorderview COMMAND biltoo-packorderview-test)
+
+  add_executable(biltoo-packorderoverlay-test
+    tests/packorderoverlay_test.cpp
+    src/sessiondocument.cpp
+    src/sessionappearance.cpp
+    src/contentxform.cpp
+    src/coloradjust.cpp
+  )
+  target_include_directories(biltoo-packorderoverlay-test PRIVATE src)
+  target_link_libraries(biltoo-packorderoverlay-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME packorderoverlay COMMAND biltoo-packorderoverlay-test)
 
   add_executable(biltoo-session-gallery-crop-scenario-test
     tests/session_gallery_crop_scenario_test.cpp
