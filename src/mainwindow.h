@@ -5,6 +5,7 @@
 #define MAINWINDOW_H
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "sessiondocument.h"
 #include "imageview_types.h"
 #include "projectfile.h"
@@ -481,8 +482,8 @@ private:
     static QString containerHashPathForSessionPath(const QString &sessionPath);
     QString ensureProjectAsset(ProjectDocument *doc, QHash<QString, QString> *pathToSha,
                                const QDir &projDir, const QString &sessionPath);
-    QHash<SessionImageId, WorkspaceItemState> captureLiveWorkspacePoses() const;
-    static void mergePoseIntoProjectImage(ProjectImage *im, const WorkspaceItemState &pose);
+    QHash<SessionImageId, ItemComponents::Placement> captureLiveWorkspacePoses() const;
+    static void mergePoseIntoProjectImage(ProjectImage *im, const ItemComponents::Placement &pose);
     void attachWorkspaceBackgroundToDocument(ProjectDocument *doc, const QDir &projDir);
     void setExpandProgressMessage(const QString &message);
     void setExpandProgressBusy(bool busy);

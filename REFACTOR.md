@@ -1164,6 +1164,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1929: persistGeometrySessionState bound-id path is Placement-only (no setAppearance).
 - biltoo-1930: geometry undo command + APIs store/apply Placement only.
 - biltoo-1931: interact/group drag-start is Placement only (no fat DTO anchor).
+- biltoo-1932: project save workspace poses are Placement (no captureState).
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

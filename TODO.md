@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1932-project-pose-placement.** Project save workspace poses are Placement.
+Prior: **1931**.
+
+### Change
+- `captureLiveWorkspacePoses` → `QHash<SessionImageId, ItemComponents::Placement>`
+  via `item->placement()` (no `captureState`)
+- `mergePoseIntoProjectImage` takes Placement
+- Project write path no longer fat-DTO snapshots for pose merge
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1932-project-pose-placement-516d734.bundle HEAD
+```
+Requires tip **1931** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ImageItem live crop/flip demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1931-interact-drag-start-placement.** Interact/group press-anchor is Placement only.
 Prior: **1930**.
 

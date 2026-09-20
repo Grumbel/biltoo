@@ -3962,9 +3962,9 @@ QString MainWindow::ensureProjectAsset(ProjectDocument *doc,
     return sha;
 }
 
-QHash<SessionImageId, WorkspaceItemState> MainWindow::captureLiveWorkspacePoses() const
+QHash<SessionImageId, ItemComponents::Placement> MainWindow::captureLiveWorkspacePoses() const
 {
-    QHash<SessionImageId, WorkspaceItemState> poses;
+    QHash<SessionImageId, ItemComponents::Placement> poses;
     if (!m_imageView) {
         return poses;
     }
@@ -3972,12 +3972,12 @@ QHash<SessionImageId, WorkspaceItemState> MainWindow::captureLiveWorkspacePoses(
         if (!item || item->sessionId() == kInvalidSessionImageId) {
             continue;
         }
-        poses.insert(item->sessionId(), m_imageView->captureState(item));
+        poses.insert(item->sessionId(), item->placement());
     }
     return poses;
 }
 
-void MainWindow::mergePoseIntoProjectImage(ProjectImage *im, const WorkspaceItemState &pose)
+void MainWindow::mergePoseIntoProjectImage(ProjectImage *im, const ItemComponents::Placement &pose)
 {
     if (!im) {
         return;
@@ -4032,7 +4032,7 @@ bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
 
     QHash<QString, QString> pathToSha; // absolute path → sha256
     const QDir projDir = QFileInfo(projectPath).absoluteDir();
-    const QHash<SessionImageId, WorkspaceItemState> poses = captureLiveWorkspacePoses();
+    const QHash<SessionImageId, ItemComponents::Placement> poses = captureLiveWorkspacePoses();
 
     for (int i = 0; i < m_session.size(); ++i) {
         const QString path = m_session.pathAt(i);
