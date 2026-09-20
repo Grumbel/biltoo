@@ -356,15 +356,19 @@ void GalleryController::enter(int packagedLayoutInt)
     }
     // Explicit layout action: pack only live items (drop stale path-order holes).
     if (layoutSwitch) {
+        // Preserve SessionImageId slots — paths alone clear id vector (stash bug class).
         QStringList livePaths;
+        QVector<SessionImageId> liveIds;
         livePaths.reserve(m_view->liveItems().size());
+        liveIds.reserve(m_view->liveItems().size());
         for (ImageItem *item : m_view->liveItems()) {
             if (item) {
                 livePaths.append(item->path());
+                liveIds.append(item->sessionId());
             }
         }
         if (!livePaths.isEmpty()) {
-            m_view->setPathOrder(livePaths);
+            m_view->setPathOrder(livePaths, liveIds);
         }
     }
     // Pack now only when tiles already belong to this Gallery session:

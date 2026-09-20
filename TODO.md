@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1718-layout-switch-pack-ids.** Gallery layout switch keeps session ids.
+Prior: **1717**.
+
+### Change
+- enter/layoutSwitch: rebuild path order from live path+sessionId (not paths alone)
+- packorderview_test: layoutSwitch_rebuildPreservesIds
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1718-layout-switch-pack-ids.bundle HEAD
+```
+
+### Next
+- biltoo-build
+- ImageView harness → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1717-gallery-stash-packorder.** Gallery stash preserves pack paths∥ids.
 Prior: **1716**.
 

@@ -20,6 +20,7 @@ private slots:
     void fromBook_equals_fromDocument_whenAligned();
     void firstIdForPath_skipsInvalid();
     void stashRestore_preservesIds();
+    void layoutSwitch_rebuildPreservesIds();
 };
 
 void PackOrderViewTest::empty_initial()
@@ -105,6 +106,21 @@ void PackOrderViewTest::stashRestore_preservesIds()
     QCOMPARE(restored.idList(), book.idList());
     QCOMPARE(restored.idAt(0), doc.idAt(0));
     QCOMPARE(restored.idAt(1), doc.idAt(1));
+}
+
+void PackOrderViewTest::layoutSwitch_rebuildPreservesIds()
+{
+    // Gallery layout switch rebuilds pack order from live tiles' path+id.
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+    QStringList livePaths;
+    QVector<SessionImageId> liveIds;
+    livePaths << QStringLiteral("/a.jpg") << QStringLiteral("/b.jpg");
+    liveIds << doc.idAt(0) << doc.idAt(1);
+    const PackOrderView rebuilt(livePaths, liveIds);
+    QCOMPARE(rebuilt.idAt(0), doc.idAt(0));
+    QCOMPARE(rebuilt.idAt(1), doc.idAt(1));
+    QVERIFY(rebuilt.alignsWithDocument(doc));
 }
 
 QTEST_MAIN(PackOrderViewTest)
