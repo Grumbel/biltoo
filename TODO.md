@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1841-drop-dead-attention-forwards.** Drop dead ImageView attention forwards.
+Prior: **1840**.
+
+### Change
+- Add `hostAttention()`; MainWindow / modes / paint / session-remove → controller
+- Delete `imageview_attention.cpp` (all pure forwards) + decls
+- Drop `isAttentionMode` inline (use `hostAttention().active()`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1841-drop-dead-attention-forwards.bundle HEAD
+```
+Requires tip **1840**.
+
+### Next
+- biltoo-build smoke (attention toggle / overlay)
+- Same pattern for gallery/workspace thin TUs if pure-forward heavy
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1840-drop-dead-crop-forwards.** Drop dead ImageView crop one-liners.
 Prior: **1839**.
 
