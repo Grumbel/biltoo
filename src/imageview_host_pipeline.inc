@@ -20,9 +20,6 @@
     /** Drop neighbor-prefetch slot for one path (session remove / tile purge). */
     void dropTilePrefetchPath(const QString &path);
     bool pathOrderIsEmpty() const { return currentPackOrder().isEmpty(); }
-    int pathOrderSize() const { return currentPackOrder().size(); }
-    QString pathOrderPathAt(int index) const { return currentPackOrder().pathAt(index); }
-    SessionImageId pathOrderIdAt(int index) const { return currentPackOrder().idAt(index); }
     /** Pack source snapshot (Tier 4: currently fromBook; document when aligned). */
     PackOrderView currentPackOrder() const { return PackOrderView::fromBook(m_pathOrderBook); }
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
