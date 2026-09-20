@@ -17,12 +17,13 @@ class ImageView;
  * Sole owner of Gallery/Image tile *load* policy for an ImageView.
  *
  * All tile issue / progressive climb / per-item tick routing goes through here.
- * ImageItem::tickTileLod is the only per-item entry (prepare + pump + issue +
- * repaint). Paint only draws the current DrawPlan — no scheduling.
+ * DisplayPipelineController::tickItemTileLod is the per-item entry (forwards to
+ * ImageItem::tickTileLod: prepare + pump + issue + repaint). Paint only draws
+ * the current DrawPlan — no scheduling.
  *
  *   1. Collect viewport hits (gallery screen-edge or tileLodWanted).
  *   2. Prioritize cells with zero tiles (LQIP/blank) before upres.
- *   3. Split budget; call ImageItem::tickTileLod(share).
+ *   3. Split budget; call hostDisplayPipeline().tickItemTileLod(item, share).
  *
  * GUI thread only (ImageView::tickPrimaryTileLod).
  */

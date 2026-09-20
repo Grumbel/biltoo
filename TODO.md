@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1783-pipeline-tick-suppress-tilelod.** Stage 2: tile tick/suppress via pipeline.
+Prior: **1782**.
+
+### Change
+- `DisplayPipelineController::tickItemTileLod` / `setItemTileLodSuppressed`
+- `TileLoadCoordinator` issues ticks only through the pipeline
+- CropController restore-from-failed-enter uses pipeline suppress
+- CropSession draft suppress stays on the item (enter/leave target binding)
+- Item still owns `ItemBag`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1783-pipeline-tick-suppress-tilelod.bundle HEAD
+```
+
+### Next
+- Move ItemBag storage under DisplayPipelineController
+- Offscreen ImageView characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1782-pipeline-drop-tilelod.** Stage 2: tile session drop via pipeline API.
 Prior: **1781**.
 

@@ -124,6 +124,13 @@ public:
     void purgeTilePathRam(const QString &path);
     /** Drop one item's tile session (shared path cache kept). External callers use this. */
     void dropItemTileLodSession(ImageItem *item);
+    /** Crop-draft freeze: suppress tile requests/paint for this item. */
+    void setItemTileLodSuppressed(ImageItem *item, bool on);
+    /**
+     * Per-item tile service entry (prepare + pump + issue).
+     * Only TileLoadCoordinator should pass budget > 0.
+     */
+    void tickItemTileLod(ImageItem *item, int budget = 8);
     void dropAllTileLodSessions();
     void tickPrimaryTileLod(int budget = 8);
     void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,

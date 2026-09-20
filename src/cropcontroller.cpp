@@ -447,7 +447,7 @@ bool CropController::enterCropModeFromUi()
     if (!prepareCropModeFullImage(item)) {
         // prepare may have set mode for fitItem then failed — restore placement
         // before abortEnter clears the stash.
-        item->setTileLodSuppressed(false);
+        m_view->hostDisplayPipeline().setItemTileLodSuppressed(item, false);
         session().abortEnterRestoringPlacement(item);
         flashCropHud(CropFlash::loadFailed());
         return false;

@@ -1028,3 +1028,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1780: imageitem_tilelod.cpp — tile LOD methods out of interaction TU.
 - biltoo-1781: tilelod::ItemBag — controller + scratch on ImageItem (demotion prep).
 - biltoo-1782: dropItemTileLodSession pipeline API; controllers no longer drop on item.
+- biltoo-1783: tickItemTileLod / setItemTileLodSuppressed; coordinator via pipeline.

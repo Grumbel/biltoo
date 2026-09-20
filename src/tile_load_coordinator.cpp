@@ -232,7 +232,7 @@ void TileLoadCoordinator::tick(int globalBudget)
                 break;
             }
             if (c.item) {
-                c.item->tickTileLod(0);
+                m_view->hostDisplayPipeline().tickItemTileLod(c.item, 0);
             }
         }
         return;
@@ -289,7 +289,7 @@ void TileLoadCoordinator::tick(int globalBudget)
         const int share = remaining > 0
             ? qMin(perCellCap, ViewTransform::atLeast1(remaining / left))
             : 0;
-        item->tickTileLod(share);
+        m_view->hostDisplayPipeline().tickItemTileLod(item, share);
         remaining -= share;
         if (wall.elapsed() >= kWallMs) {
             break;

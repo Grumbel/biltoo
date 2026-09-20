@@ -1206,7 +1206,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         // Retained path RAM: bind session and paint tiles without waiting for
         // the next coordinator timer (A→B→A should show tiles on this frame).
         if (!m_view->hostSlideshow().hud().isNavHot() && item->tileLodHasPathRam()) {
-            item->tickTileLod(8);
+            tickItemTileLod(item, 8);
         }
         biltooLoadDbg("pendingTile INSTALLED path=%s soft=%dx%d fit=%d painted=%s",
                       qPrintable(QFileInfo(path).fileName()),
@@ -1361,6 +1361,20 @@ void DisplayPipelineController::dropItemTileLodSession(ImageItem *item)
 {
     if (item) {
         item->dropTileLodSession();
+    }
+}
+
+void DisplayPipelineController::setItemTileLodSuppressed(ImageItem *item, bool on)
+{
+    if (item) {
+        item->setTileLodSuppressed(on);
+    }
+}
+
+void DisplayPipelineController::tickItemTileLod(ImageItem *item, int budget)
+{
+    if (item) {
+        item->tickTileLod(budget);
     }
 }
 
