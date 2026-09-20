@@ -113,20 +113,26 @@ void WorkspaceController::restore()
 
 void WorkspaceController::discardStash()
 {
-    for (ImageItem *item : m_stashedItems) {
-        if (!item) {
+    // Snapshot + clear first (re-entrant / duplicate-safe). Not destroyCanvasItem:
+    // off-list after take; must not clear undo or path-book from abandoned tiles.
+    QList<ImageItem *> doomed = m_stashedItems;
+    m_stashedItems.clear();
+    m_hasStashedView = false;
+    QSet<ImageItem *> seen;
+    for (ImageItem *item : doomed) {
+        if (!item || seen.contains(item)) {
             continue;
         }
-        // Stage 2: release pipeline tile bag before delete.
+        seen.insert(item);
+        // Stage 2: bags + display surface before delete.
         m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         m_view->hostDisplayPipeline().releaseTileBag(item);
+        m_view->hostDisplayPipeline().unregisterItemDisplaySurface(item);
         if (QGraphicsScene *sc = item->scene()) {
             sc->removeItem(item);
         }
         delete item;
     }
-    m_stashedItems.clear();
-    m_hasStashedView = false;
 }
 
 void WorkspaceController::clearDurableSnapshot()

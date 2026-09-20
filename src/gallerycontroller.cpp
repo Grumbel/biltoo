@@ -45,6 +45,8 @@ void GalleryController::discardStash()
 {
     // Take ownership first so re-entrant callers (and double-discard) see an
     // empty list. Duplicates in the list would otherwise double-free.
+    // Not destroyCanvasItem: items are off-list after the take, and discard must
+    // not clear the undo stack or write path-book state from abandoned tiles.
     QList<ImageItem *> doomed = m_stashedItems;
     m_stashedItems.clear();
     m_stashedPackOrder = PackOrderView();
@@ -54,9 +56,10 @@ void GalleryController::discardStash()
             continue;
         }
         seen.insert(item);
-        // Stage 2: release pipeline tile bag before delete (not on scene destroy path).
+        // Stage 2: bags + display surface before delete (not the scene-clear path).
         m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         m_view->hostDisplayPipeline().releaseTileBag(item);
+        m_view->hostDisplayPipeline().unregisterItemDisplaySurface(item);
         if (QGraphicsScene *sc = item->scene()) {
             sc->removeItem(item);
         }
@@ -94,19 +97,11 @@ void GalleryController::restoreStashedItems()
     if (m_stashedItems.isEmpty()) {
         return;
     }
-    // Live canvas should be empty (Image mode held a single item that
-    // clearWorkspace removes before Gallery is entered).
-    for (ImageItem *item : m_view->liveItems()) {
-        if (!item) {
-            continue;
-        }
-        // Stage 2: release pipeline tile bag before delete.
-        m_view->hostDisplayPipeline().dropItemTileLodSession(item);
-        m_view->hostDisplayPipeline().releaseTileBag(item);
-        if (item->scene()) {
-            item->scene()->removeItem(item);
-        }
-        delete item;
+    // Residual live canvas (e.g. Image-mode tile) must go through destroyCanvasItem
+    // so tile bags, display surfaces, interact anchors, and list membership stay
+    // consistent — same path as WorkspaceController::restoreStashedItems.
+    while (!m_view->liveItems().isEmpty()) {
+        m_view->destroyCanvasItem(m_view->liveItems().last());
     }
     m_view->liveItems() = m_stashedItems;
     m_stashedItems.clear();

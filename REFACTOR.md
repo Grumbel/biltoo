@@ -1045,3 +1045,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1797: releaseAllTileBags before scene clear / pipeline dtor.
 - biltoo-1798: gallery/workspace discardStash releases pipeline tile bags.
 - biltoo-1799: gallery restoreStashedItems releases bags for residual live items.
+- biltoo-1800: gallery restore residual via destroyCanvasItem; discardStash unregisters display surface.

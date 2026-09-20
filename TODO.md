@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1800-stash-teardown-destroy-surface.** Stage 2: stash teardown parity.
+Prior: **1799**.
+
+### Change
+- `GalleryController::restoreStashedItems` drops residual live items via
+  `destroyCanvasItem` (bags, display surface, interact, list membership) —
+  same path as Workspace restore
+- Gallery/Workspace `discardStash` also `unregisterItemDisplaySurface` before
+  delete (still off-list take-ownership path; no undo clear)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1800-stash-teardown-destroy-surface.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke
+- ImageView characterization / Tier 4 path-order
+- Stage 2 tile-LOD ownership + stash teardown treated as complete pending smoke
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1799-gallery-restore-release-tilelod.** Stage 2: gallery restore releases live bags.
 Prior: **1798**.
 
