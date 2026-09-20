@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1908-merge-overlay-paint.** Slideshow + HUD paint → paint TU.
+Prior: **1907**.
+
+### Change
+- `paintSlideshowLetterboxComposite` / seekbar → `imageview_paint.cpp`
+- `paintEmptySessionInvite` / HUD panels → `imageview_paint.cpp`
+- Delete `imageview_slideshow_paint.cpp`, `imageview_hud_paint.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1908-merge-overlay-paint-516d734.bundle HEAD
+```
+Requires tip **1907** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1907-merge-workspace-canvas.** Workspace scene/placement → canvas.
 Prior: **1906**.
 

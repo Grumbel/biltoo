@@ -236,8 +236,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview_workspace_chrome.cpp
   src/imageview_paint.cpp
   src/imageview_paint_background.cpp
-  src/imageview_slideshow_paint.cpp
-  src/imageview_hud_paint.cpp
   src/imageview_text.cpp
   src/imageview_pageguide.cpp
   src/imageview_export.cpp
