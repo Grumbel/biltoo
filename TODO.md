@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1905-merge-clipboard-selection.** Clipboard → selection TU.
+Prior: **1904**.
+
+### Change
+- `duplicateSelected` / workspace clipboard capture+place → `imageview_selection.cpp`
+- Delete `imageview_clipboard.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1905-merge-clipboard-selection-516d734.bundle HEAD
+```
+Requires tip **1904** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1904-merge-crop-appearance.** Crop appearance helpers → appearance TU.
 Prior: **1903**.
 

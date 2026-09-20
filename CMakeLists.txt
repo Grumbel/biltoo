@@ -141,7 +141,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview_canvas.cpp
   src/imageview_canvas_place.cpp
   src/imageview_selection.cpp
-  src/imageview_clipboard.cpp
   src/imageview_session_bind.cpp
   src/imageview_session_remove.cpp
   src/imageview_appearance.cpp

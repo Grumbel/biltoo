@@ -1130,6 +1130,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1902: merge canvas_focus into canvas TU.
 - biltoo-1903: merge color_grade into appearance TU.
 - biltoo-1904: merge crop appearance helpers into appearance TU.
+- biltoo-1905: merge clipboard into selection TU.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
