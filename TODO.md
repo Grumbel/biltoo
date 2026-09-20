@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1728-itemworld-bake-color.** Stage 1 ContentBake + Color components.
+Prior: **1727**.
+
+### Change
+- `ItemComponents::ContentBake` / `Color` + extract/apply
+- ItemWorld sparse `m_contentBakes` / `m_colors`; dual-write on setAppearance
+- setContentBake / setColor / has*; clear/remove clear all four tables
+- itemworld_test: bake/color set-clear + dual-write from setAppearance
+
+Stage 1 sparse set is now: Crop, Attention, ContentBake, Color.
+Placement remains on path book / ImageItem (Stage 2).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1728-itemworld-bake-color.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest itemworld
+- Stage 2 start: demote ImageItem scratch / route bake chrome through contentBake()
+- Or Phase 6 Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1727-itemworld-appearance-writes.** All appearance writes via ItemWorld.
 Prior: **1726**.
 

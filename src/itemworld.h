@@ -18,10 +18,10 @@
  * Stage 0: non-owning pointers to SessionAppearanceStore, PathItemStateBook,
  * ImageSizeBook.
  *
- * Stage 1 (Crop + Attention): owned sparse tables dual-written with the fat
- * WorkspaceItemState DTO in the appearance store. Component accessors are the
- * preferred API for new code; setAppearance/getAppearance keep DTO round-trips
- * working for project file and undo.
+ * Stage 1: owned sparse tables (Crop, Attention, ContentBake, Color) dual-written
+ * with the fat WorkspaceItemState DTO in the appearance store. Component
+ * accessors are the preferred API for new code; setAppearance/getAppearance
+ * keep DTO round-trips working for project file and undo.
  *
  * Entity key for content appearance: SessionImageId (IDENTITY.md).
  */
@@ -97,6 +97,8 @@ public:
         }
         m_crops.remove(id);
         m_attentions.remove(id);
+        m_contentBakes.remove(id);
+        m_colors.remove(id);
     }
 
     /** Clear DTO store and sparse component tables. */
@@ -107,6 +109,8 @@ public:
         }
         m_crops.clear();
         m_attentions.clear();
+        m_contentBakes.clear();
+        m_colors.clear();
     }
 
     /** Sparse crop table (Stage 1). Empty crop ⇒ absent. */
@@ -182,6 +186,81 @@ public:
 
     bool hasAttention(SessionImageId id) const { return !attention(id).isEmpty(); }
 
+    /** Sparse content-bake table (Stage 1). Identity bake ⇒ absent. */
+    ItemComponents::ContentBake contentBake(SessionImageId id) const
+    {
+        if (id == kInvalidSessionImageId) {
+            return {};
+        }
+        const auto it = m_contentBakes.constFind(id);
+        if (it != m_contentBakes.cend()) {
+            return it.value();
+        }
+        if (const WorkspaceItemState *s = getAppearance(id)) {
+            return ItemComponents::contentBakeFromState(*s);
+        }
+        return {};
+    }
+
+    void setContentBake(SessionImageId id, const ItemComponents::ContentBake &b)
+    {
+        if (!m_appearance || id == kInvalidSessionImageId) {
+            return;
+        }
+        if (b.isIdentity()) {
+            m_contentBakes.remove(id);
+        } else {
+            m_contentBakes.insert(id, b);
+        }
+        WorkspaceItemState s;
+        if (const WorkspaceItemState *cur = m_appearance->get(id)) {
+            s = *cur;
+        }
+        ItemComponents::applyContentBakeToState(s, b);
+        m_appearance->set(id, s);
+    }
+
+    bool hasContentBake(SessionImageId id) const
+    {
+        return !contentBake(id).isIdentity();
+    }
+
+    /** Sparse color-grade table (Stage 1). Identity grade ⇒ absent. */
+    ItemComponents::Color color(SessionImageId id) const
+    {
+        if (id == kInvalidSessionImageId) {
+            return {};
+        }
+        const auto it = m_colors.constFind(id);
+        if (it != m_colors.cend()) {
+            return it.value();
+        }
+        if (const WorkspaceItemState *s = getAppearance(id)) {
+            return ItemComponents::colorFromState(*s);
+        }
+        return {};
+    }
+
+    void setColor(SessionImageId id, const ItemComponents::Color &c)
+    {
+        if (!m_appearance || id == kInvalidSessionImageId) {
+            return;
+        }
+        if (c.isIdentity()) {
+            m_colors.remove(id);
+        } else {
+            m_colors.insert(id, c);
+        }
+        WorkspaceItemState s;
+        if (const WorkspaceItemState *cur = m_appearance->get(id)) {
+            s = *cur;
+        }
+        ItemComponents::applyColorToState(s, c);
+        m_appearance->set(id, s);
+    }
+
+    bool hasColor(SessionImageId id) const { return !color(id).isIdentity(); }
+
     /** Path-keyed placement / unbound fallback (not identity). */
     const WorkspaceItemState *getPathState(const QString &path) const
     {
@@ -217,6 +296,8 @@ public:
 
     int cropCount() const { return m_crops.size(); }
     int attentionCount() const { return m_attentions.size(); }
+    int contentBakeCount() const { return m_contentBakes.size(); }
+    int colorCount() const { return m_colors.size(); }
 
 private:
     void syncComponentsFromState(SessionImageId id, const WorkspaceItemState &state)
@@ -233,6 +314,18 @@ private:
         } else {
             m_attentions.insert(id, a);
         }
+        const ItemComponents::ContentBake b = ItemComponents::contentBakeFromState(state);
+        if (b.isIdentity()) {
+            m_contentBakes.remove(id);
+        } else {
+            m_contentBakes.insert(id, b);
+        }
+        const ItemComponents::Color col = ItemComponents::colorFromState(state);
+        if (col.isIdentity()) {
+            m_colors.remove(id);
+        } else {
+            m_colors.insert(id, col);
+        }
     }
 
     SessionAppearanceStore *m_appearance = nullptr;
@@ -240,6 +333,8 @@ private:
     ImageSizeBook *m_sizeBook = nullptr;
     QHash<SessionImageId, ItemComponents::Crop> m_crops;
     QHash<SessionImageId, ItemComponents::Attention> m_attentions;
+    QHash<SessionImageId, ItemComponents::ContentBake> m_contentBakes;
+    QHash<SessionImageId, ItemComponents::Color> m_colors;
 };
 
 #endif // ITEMWORLD_H

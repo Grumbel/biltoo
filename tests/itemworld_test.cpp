@@ -28,7 +28,11 @@ private slots:
     void removeAppearance_clearsComponents();
     void crop_fallbackWhenDtoWrittenDirectly();
     void clearAppearance_clearsDtoAndTables();
+    void contentBake_setAndClear();
+    void color_setAndClear();
+    void setAppearance_dualWritesBakeAndColor();
 };
+
 
 void ItemWorldTest::unbound_gettersAreSafe()
 {
@@ -254,14 +258,85 @@ void ItemWorldTest::clearAppearance_clearsDtoAndTables()
     st.cropRect = QRect(1, 1, 8, 8);
     st.attentionPoints = {QPointF(0.1, 0.2)};
     st.hasAttention = true;
+    st.contentHFlip = true;
+    st.contentQuarterTurns = 1;
+    st.colorAdjust.brightness = 20;
     world.setAppearance(1, st);
     QCOMPARE(world.cropCount(), 1);
     QCOMPARE(world.attentionCount(), 1);
+    QCOMPARE(world.contentBakeCount(), 1);
+    QCOMPARE(world.colorCount(), 1);
 
     world.clearAppearance();
     QVERIFY(!store.contains(1));
     QCOMPARE(world.cropCount(), 0);
     QCOMPARE(world.attentionCount(), 0);
+    QCOMPARE(world.contentBakeCount(), 0);
+    QCOMPARE(world.colorCount(), 0);
+}
+
+void ItemWorldTest::contentBake_setAndClear()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    ItemComponents::ContentBake b;
+    b.quarterTurns = 2;
+    b.hFlip = true;
+    world.setContentBake(6, b);
+
+    QVERIFY(world.hasContentBake(6));
+    QCOMPARE(world.contentBake(6).quarterTurns, 2);
+    QVERIFY(world.contentBake(6).hFlip);
+    const WorkspaceItemState *s = store.get(6);
+    QVERIFY(s);
+    QCOMPARE(s->contentQuarterTurns, 2);
+    QVERIFY(s->contentHFlip);
+
+    world.setContentBake(6, ItemComponents::ContentBake{});
+    QVERIFY(!world.hasContentBake(6));
+    QCOMPARE(world.contentBakeCount(), 0);
+    QVERIFY(store.get(6)->contentQuarterTurns == 0);
+    QVERIFY(!store.get(6)->contentHFlip);
+}
+
+void ItemWorldTest::color_setAndClear()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    ItemComponents::Color c;
+    c.grade.brightness = -10;
+    c.grade.contrast = 110;
+    world.setColor(12, c);
+
+    QVERIFY(world.hasColor(12));
+    QCOMPARE(world.color(12).grade.brightness, -10);
+    QCOMPARE(store.get(12)->colorAdjust.brightness, -10);
+
+    world.setColor(12, ItemComponents::Color{});
+    QVERIFY(!world.hasColor(12));
+    QCOMPARE(world.colorCount(), 0);
+    QVERIFY(store.get(12)->colorAdjust.isIdentity());
+}
+
+void ItemWorldTest::setAppearance_dualWritesBakeAndColor()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    WorkspaceItemState st;
+    st.contentVFlip = true;
+    st.colorAdjust.saturation = 80;
+    world.setAppearance(15, st);
+
+    QVERIFY(world.hasContentBake(15));
+    QVERIFY(world.contentBake(15).vFlip);
+    QVERIFY(world.hasColor(15));
+    QCOMPARE(world.color(15).grade.saturation, 80);
 }
 
 QTEST_MAIN(ItemWorldTest)

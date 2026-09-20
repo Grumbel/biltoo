@@ -938,3 +938,5 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1727: route all `appearance().set` / remove / clear through ItemWorld
   (ImageView, Crop/Attention/Workspace/DisplayPipeline controllers, MainWindow);
   `clearAppearance` clears DTO + sparse tables.
+- biltoo-1728: Stage 1 residual — ContentBake + Color components and sparse
+  tables on ItemWorld (dual-write with DTO; identity ⇒ absent).
