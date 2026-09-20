@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1798-stash-discard-release-tilelod.** Stage 2: stash discard releases bags.
+Prior: **1797**.
+
+### Change
+- `GalleryController::discardStash` / `WorkspaceController::discardStash` call
+  `dropItemTileLodSession` + `releaseTileBag` before `delete item`
+- Matches destroyCanvasItem / view-teardown lifetime rules
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1798-stash-discard-release-tilelod.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke
+- ImageView characterization / Tier 4 path-order
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1797-release-all-tile-bags.** Stage 2: safe tile bag teardown.
 Prior: **1796**.
 

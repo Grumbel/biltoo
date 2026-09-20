@@ -117,6 +117,9 @@ void WorkspaceController::discardStash()
         if (!item) {
             continue;
         }
+        // Stage 2: release pipeline tile bag before delete.
+        m_view->hostDisplayPipeline().dropItemTileLodSession(item);
+        m_view->hostDisplayPipeline().releaseTileBag(item);
         if (QGraphicsScene *sc = item->scene()) {
             sc->removeItem(item);
         }

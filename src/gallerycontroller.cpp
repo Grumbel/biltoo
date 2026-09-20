@@ -54,6 +54,9 @@ void GalleryController::discardStash()
             continue;
         }
         seen.insert(item);
+        // Stage 2: release pipeline tile bag before delete (not on scene destroy path).
+        m_view->hostDisplayPipeline().dropItemTileLodSession(item);
+        m_view->hostDisplayPipeline().releaseTileBag(item);
         if (QGraphicsScene *sc = item->scene()) {
             sc->removeItem(item);
         }
