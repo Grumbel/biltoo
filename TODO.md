@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1819-itemhandlepolicy-direct.** Stage 2: ImageItem uses ItemHandlePolicy directly.
+Prior: **1818**.
+
+### Change
+- Removed ImageItem thin wrappers: isChromeHandle, isRotateHandle, isCornerScaleHandle,
+  isEdgeScaleHandle, isScaleHandle, isShearHandle, isUprightChromeHandle
+- Interaction TU calls ItemHandlePolicy::… directly
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1819-itemhandlepolicy-direct.bundle HEAD
+```
+Includes **1806–1819** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Workspace chrome drag)
+- Offscreen ImageView characterization (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1818-drop-pathorder-index-helpers.** Tier 4 residual: drop unused pack index helpers.
 Prior: **1817**.
 
