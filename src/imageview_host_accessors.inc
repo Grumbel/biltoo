@@ -36,4 +36,6 @@
     const PerfStats &hostPerf() const { return m_perf; }
     LayoutApplyGuard &hostLayoutApply() { return m_layoutApply; }
     const LayoutApplyGuard &hostLayoutApply() const { return m_layoutApply; }
+    CentreProgress &hostCentreProgress() { return m_centreProgress; }
+    const CentreProgress &hostCentreProgress() const { return m_centreProgress; }
 

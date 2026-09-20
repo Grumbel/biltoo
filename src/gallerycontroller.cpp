@@ -784,7 +784,7 @@ void GalleryController::scheduleStatusRefresh(int delayMs)
         m_statusRefreshTimer->setSingleShot(true);
         connect(m_statusRefreshTimer, &QTimer::timeout, m_view, [this]() {
             if (m_view->isGalleryMode()) {
-                m_view->updateGallerySoftProgressHud();
+                updateSoftProgressHud();
                 emit m_view->statusChanged();
             }
         });
@@ -1278,5 +1278,92 @@ void GalleryController::ensurePlaceholders()
         }
     }
     m_view->reorderItemsByPaths(m_view->pathOrderPaths());
+}
+
+
+// --- Gallery soft watchdog + layout columns ---
+
+void GalleryController::softWatchdogTick()
+{
+    if (!m_view->isGalleryMode() || m_view->liveItems().isEmpty()) {
+        return;
+    }
+    // Soft PreferCache is gone. Watchdog only re-installs LQIP on blank
+    // on-screen cells and keeps the tile coordinator awake.
+    const QRectF sceneVisible =
+        m_view->mapToScene(m_view->viewport()->rect().adjusted(-80, -80, 80, 80)).boundingRect();
+    bool needWindow = false;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        const QRectF tile = item->contentSceneRect();
+        if (!tile.isNull() && tile.isValid() && !tile.intersects(sceneVisible)) {
+            continue;
+        }
+        if (!item->hasDisplayPixels()) {
+            scheduleGalleryDecode(item->path());
+            needWindow = true;
+        }
+    }
+    if (needWindow) {
+        updateGalleryDecodeWindow();
+    } else {
+        m_view->tickPrimaryTileLod(48);
+    }
+    updateGallerySoftProgressHud();
+}
+
+void GalleryController::updateSoftProgressHud()
+{
+    if (!m_view->isGalleryMode()) {
+        return;
+    }
+    // LQIP is a free durable placeholder, not a user-facing "preview stage".
+    // Never show "Improving previews… LQIP" — that was noise and mis-sold the product.
+    if (m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Improving previews"))) {
+        m_view->clearCentreProgress();
+    }
+}
+
+void GalleryController::setGridColumns(int columns)
+{
+    const int before = m_view->hostLayout().gridColumnsValue();
+    m_view->hostLayout().setGridColumns(columns);
+    if (m_view->hostLayout().gridColumns == before) {
+        return;
+    }
+    if (m_view->isGalleryMode()
+        && (layoutIsGridFamily(m_view->hostLayout().currentMode())
+            || layoutIsFlowFamily(m_view->hostLayout().currentMode())
+            || m_view->hostLayout().currentMode() == LayoutMode::Facing)) {
+        applyLayout(GalleryPackReason::ExplicitLayout);
+    }
+}
+
+void GalleryController::setMasonryColumns(int columns)
+{
+    const int before = m_view->hostLayout().masonryColumnsValue();
+    m_view->hostLayout().setMasonryColumns(columns);
+    if (m_view->hostLayout().masonryColumns == before) {
+        return;
+    }
+    if ((layoutIsMasonryColumns(m_view->hostLayout().currentMode()))
+        && !m_view->liveItems().isEmpty()) {
+        applyLayout(GalleryPackReason::ExplicitLayout);
+    }
+}
+
+void GalleryController::setMasonryRows(int rows)
+{
+    const int before = m_view->hostLayout().masonryRowsValue();
+    m_view->hostLayout().setMasonryRows(rows);
+    if (m_view->hostLayout().masonryRows == before) {
+        return;
+    }
+    if ((m_view->hostLayout().currentMode() == LayoutMode::MasonryRows || m_view->hostLayout().currentMode() == LayoutMode::MasonryRowsFill)
+        && !m_view->liveItems().isEmpty()) {
+        applyLayout(GalleryPackReason::ExplicitLayout);
+    }
 }
 

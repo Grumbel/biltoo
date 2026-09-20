@@ -120,44 +120,21 @@ void ImageView::setLayoutMode(LayoutMode mode)
 
 void ImageView::setGridColumns(int columns)
 {
-    const int before = m_layout.gridColumnsValue();
-    m_layout.setGridColumns(columns);
-    if (m_layout.gridColumns == before) {
-        return;
-    }
-    if (isGalleryMode()
-        && (layoutIsGridFamily(m_layout.currentMode())
-            || layoutIsFlowFamily(m_layout.currentMode())
-            || m_layout.currentMode() == LayoutMode::Facing)) {
-        applyLayout(GalleryPackReason::ExplicitLayout);
-    }
+    m_gallery.setGridColumns(columns);
 }
+
 
 void ImageView::setMasonryColumns(int columns)
 {
-    const int before = m_layout.masonryColumnsValue();
-    m_layout.setMasonryColumns(columns);
-    if (m_layout.masonryColumns == before) {
-        return;
-    }
-    if ((layoutIsMasonryColumns(m_layout.currentMode()))
-        && !m_items.isEmpty()) {
-        applyLayout(GalleryPackReason::ExplicitLayout);
-    }
+    m_gallery.setMasonryColumns(columns);
 }
+
 
 void ImageView::setMasonryRows(int rows)
 {
-    const int before = m_layout.masonryRowsValue();
-    m_layout.setMasonryRows(rows);
-    if (m_layout.masonryRows == before) {
-        return;
-    }
-    if ((m_layout.currentMode() == LayoutMode::MasonryRows || m_layout.currentMode() == LayoutMode::MasonryRowsFill)
-        && !m_items.isEmpty()) {
-        applyLayout(GalleryPackReason::ExplicitLayout);
-    }
+    m_gallery.setMasonryRows(rows);
 }
+
 
 void ImageView::setGalleryRelayoutSuppressed(bool on)
 {
@@ -484,43 +461,12 @@ bool ImageView::layoutWorkspaceItems(const GalleryLayout::Params &userParams,
 
 void ImageView::updateGallerySoftProgressHud()
 {
-    if (!isGalleryMode()) {
-        return;
-    }
-    // LQIP is a free durable placeholder, not a user-facing "preview stage".
-    // Never show "Improving previews… LQIP" — that was noise and mis-sold the product.
-    if (m_centreProgress.matchesTitlePrefix(tr("Improving previews"))) {
-        clearCentreProgress();
-    }
+    m_gallery.updateSoftProgressHud();
 }
+
 
 void ImageView::gallerySoftWatchdogTick()
 {
-    if (!isGalleryMode() || m_items.isEmpty()) {
-        return;
-    }
-    // Soft PreferCache is gone. Watchdog only re-installs LQIP on blank
-    // on-screen cells and keeps the tile coordinator awake.
-    const QRectF sceneVisible =
-        mapToScene(viewport()->rect().adjusted(-80, -80, 80, 80)).boundingRect();
-    bool needWindow = false;
-    for (ImageItem *item : m_items) {
-        if (!item || item->path().isEmpty()) {
-            continue;
-        }
-        const QRectF tile = item->contentSceneRect();
-        if (!tile.isNull() && tile.isValid() && !tile.intersects(sceneVisible)) {
-            continue;
-        }
-        if (!item->hasDisplayPixels()) {
-            scheduleGalleryDecode(item->path());
-            needWindow = true;
-        }
-    }
-    if (needWindow) {
-        updateGalleryDecodeWindow();
-    } else {
-        tickPrimaryTileLod(48);
-    }
-    updateGallerySoftProgressHud();
+    m_gallery.softWatchdogTick();
 }
+

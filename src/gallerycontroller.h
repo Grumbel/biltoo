@@ -123,6 +123,11 @@ public:
     void updateDecodeWindow();
     void applyLayout(GalleryPackReason reason);
     void ensurePlaceholders();
+    void softWatchdogTick();
+    void updateSoftProgressHud();
+    void setGridColumns(int columns);
+    void setMasonryColumns(int columns);
+    void setMasonryRows(int rows);
 
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
     {

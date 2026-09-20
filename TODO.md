@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1673-gallery-soft-layout-columns.** Soft watchdog, HUD, column setters on GalleryController.
+Prior: **1672**.
+
+### Change
+- `softWatchdogTick` / `updateSoftProgressHud`
+- `setGridColumns` / `setMasonryColumns` / `setMasonryRows` (rep pack)
+- ImageView thin-forwards; host: `hostCentreProgress`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1673-gallery-soft-layout-columns.bundle HEAD
+```
+
+### Next
+- biltoo-build + Gallery columns / soft verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1672-gallery-ensure-placeholders.** Move ensureGalleryPlaceholders onto GalleryController.
 Prior: **1671**.
 
