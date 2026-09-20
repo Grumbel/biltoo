@@ -307,7 +307,7 @@ QString ImageView::imageModeClimbActivityLabel(const ImageItem *item) const
     if (have <= 0) {
         return tr("Loading…");
     }
-    const int need = imageModeOnScreenNeedEdge();
+    const int need = m_displayPipeline.imageModeOnScreenNeedEdge();
     // Strict cover (DisplayEdgePolicy::coversEdge): have >= need.
     if (need > 0 && have >= need) {
         return {};

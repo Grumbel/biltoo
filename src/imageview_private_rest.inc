@@ -25,15 +25,8 @@
      * Called from onLadderReady; no-op when full native already covers.
      */
     /** SoftPreview vs FullSource from delivered sample size (not request edge). */
-    SessionAppearance::PixelKind pixelKindForImageModeSample(const QString &path,
-                                                             const QImage &image) const;
-    void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
-    void installImageModeSampleInPlace(ImageItem *item, const QString &path, const QImage &image,
-                                       SessionAppearance::PixelKind kind);
     /** Install/upgrade Image-mode sample; schedules PreferCache on soft. */
     /** Absolute content want for @p item (session store + live flags). */
-    bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
-                                 SessionAppearance::PixelKind kind) const;
     /** Native host + materialize for PNG/PDF/print (off-GUI load). */
     QImage blockingExportDisplayForItem(const ImageItem *item) const;
     void paintHighResExportItems(QPainter *painter, const QRectF &sourceScene,
@@ -46,11 +39,6 @@
      * @p hostSample used for Attach*; empty → ImageCache::get(path).
      * @return true if item layout size changed after attach.
      */
-    bool applyDisplaySurfaceAction(ImageItem *item,
-                                   const DisplaySurface::Action &act,
-                                   const QImage &hostSample,
-                                   int fallbackNeedEdge,
-                                   PathRasterService::ClimbPolicy climbPolicy);
     /**
      * If ImageCache has a sample with long edge ≤512, materializeDisplay
      * for @p want and attach to @p item. Returns true when attached.
@@ -69,15 +57,11 @@
      */
     void finishAsyncHostRematerialize(const QString &path, SessionImageId sid,
                                       const WorkspaceItemState &want, const QImage &display);
-    void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
-                                          const QImage &sample);
     /** One ImageLoader::load when thumtoo Full settles short of on-screen need. */
     /** On-screen long edge (device px) for the current Image-mode item. */
-    int imageModeOnScreenNeedEdge() const;
     /** PreferCache + native full when zoom leaves soft samples undersampled. */
     /** Gallery soft state + install path for a ladderReady delivery. */
     /** PathRaster EscalateToFull for selected Workspace items. */
-    void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
     /** Fit / slideshow zoom / motion handoff after Image-mode full replace. */
     /**
      * Image mode: drop the previous frame and show a loading/provisional tile
@@ -86,10 +70,7 @@
     /** Bind Image-mode item to the current session cursor (id + index). */
     /** Neutral Image-mode pose (no Workspace free-form scale/rotation). */
     /** Soft pixels for pending tile: explicit preview → slideshow map → ImageCache. */
-    QImage resolveImageModePendingPixels(const QString &path, const QImage &preview) const;
     /** @p displayReadyOut set when soft is already content-baked (stashed Gallery tile). */
-    QImage resolveImageModePendingPixels(const QString &path, const QImage &preview,
-                                         bool *displayReadyOut) const;
     QSize probeImageSize(const QString &path) const;
     /**
      * Best-known native pixel size for @p path from the session cache only.

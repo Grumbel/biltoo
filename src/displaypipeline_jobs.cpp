@@ -126,7 +126,7 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                     guard.data(),
                     [guard, path, qualityEdge]() {
                         if (guard) {
-                            guard->requestEscalateClimb(path, qualityEdge);
+                            guard->hostDisplayPipeline().requestEscalateClimb(path, qualityEdge);
                         }
                     },
                     Qt::QueuedConnection);
@@ -138,7 +138,7 @@ void startDisplayQualityJob(const QPointer<ImageView> &guard, const QString &pat
                     guard.data(),
                     [guard, path, qualityEdge]() {
                         if (guard) {
-                            guard->requestEscalateClimb(path, qualityEdge);
+                            guard->hostDisplayPipeline().requestEscalateClimb(path, qualityEdge);
                         }
                     },
                     Qt::QueuedConnection);

@@ -175,9 +175,6 @@ public:
     /** Gallery empty-canvas press: rubber-band via QGraphicsView base. */
     void forwardGraphicsViewMousePress(QMouseEvent *event)
     { QGraphicsView::mousePressEvent(event); }
-    bool tryInstallImageModeSample(const QString &path, const QImage &image);
-    bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
-                                        SessionAppearance::PixelKind kind);
     // =====================================================================
     // Mode-controller host API
     // Used by ImageController / GalleryController / WorkspaceController.
@@ -255,11 +252,6 @@ public:
     const TextLayerSession &hostTextLayer() const { return m_textLayer; }
     /** Display pipeline host: filmstrip soft provider for image-mode pending. */
     ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
-    /**
-     * PathRaster / soft-job GUI escalate: PreferCache climb when soft is inadequate.
-     * Public so queued lambdas (QPointer) can invoke it (not private closure access).
-     */
-    void requestEscalateClimb(const QString &path, int wantEdge = 0);
     /** Crop draft owns the live sample — no ladder/install/rematerialize. */
     bool isCropDraftLockedItem(const ImageItem *item) const;
     /**

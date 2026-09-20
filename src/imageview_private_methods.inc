@@ -93,44 +93,28 @@
     void refreshScrollBarGeometry();
 
     /** Claim one pending restore snapshot for @a path (FIFO; duplicates OK). */
-    bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);
 
     /**
      * LoadReplace: Image-mode navigation install, or empty multi-item seed.
      */
 
     /** LoadRestore: create tile from decode + claimed restore snapshot. */
-    void completeLoadRestore(const QString &path, const QImage &image);
 
     /**
      * LoadAdd: fill/create tiles for @a path after a successful or failed decode.
      * Honours load generation and pending-workspace cancellation.
      */
-    void completeLoadAdd(const QString &path, const QImage &image, quint64 generation);
 
-    // --- completeLoadAdd phases (private; keep the driver thin) ---
-    void finishLoadAddStatus(bool refreshGalleryWindow);
 
-    bool acceptPendingLoadAdd(const QString &path, quint64 generation);
 
-    void handleLoadAddDecodeFailure(const QString &path);
 
-    void fillStashedItemsForPath(const QString &path, const QImage &image);
 
-    void reassertPendingBindPlacement(const QString &path);
 
-    void claimUnboundItemsForPendingBinds(const QString &path, const QImage &image);
 
-    int fillLiveItemsWithDecodedPixels(const QString &path, const QImage &image,
-                                       bool *sizeChangedOut);
 
-    void createMissingLoadAddItems(const QString &path, const QImage &image,
-                                   int have, int wanted);
 
-    void applyLoadAddLayoutAfterMembership(bool sizeChanged);
 
     // --- completeLoadReplace phases ---
-    void installImageModeReplaceItem(const QString &path, const QImage &image);
 
 
     bool pageGuideSelected() const { return m_pageGuide.isSelected(); }
