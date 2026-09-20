@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1920-harness-all-components-survive-clear.** Full harness mirrors pure locks.
+Prior: **1919**.
+
+### Change
+- `imageView_openGalleryCropReturn` (CHARACTERIZATION=ON): after ItemWorld writes,
+  assert Crop + Placement + ContentBake + Color + Attention survive `pathOrderClear`
+  on the real ImageView; siblings stay clean
+- IMAGEVIEW_CHARACTERIZATION.md full-harness checklist updated
+- No production behaviour change (harness + docs only)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1920-harness-all-components-survive-clear-516d734.bundle HEAD
+```
+Requires tip **1919** (base **516d734**).
+
+### Next
+- Green build with Qt ≥ 6.9 + `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON`
+- ctest imageview-characterization
+- Phase 7 ImageItem field demotion remains design-heavy
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1919-attention-survives-pathorder-clear.** Phase 7 pure characterization complete set.
 Prior: **1918**.
 

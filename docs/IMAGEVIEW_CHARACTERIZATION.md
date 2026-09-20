@@ -80,7 +80,8 @@ asserts LoadAdd multiplicity — without waiting on decode.
 - [x] Offscreen `ImageView` construct + bind document/appearance
 - [x] `enterGallery` + `setWorkspacePaths` pack order aligns
 - [x] Crop via ItemWorld; sibling clean; layoutSize
-- [x] `pathOrderClear` leaves doc + crop; LoadAdd multiplicity
+- [x] Placement / ContentBake / Color / Attention on focus; siblings clean
+- [x] `pathOrderClear` leaves doc + all id-keyed components; LoadAdd multiplicity
 - [ ] Decode / soft tiles for fixture PNGs (not required for pack dual-model)
 - [ ] Live framing / return-to-Image view matrix (later)
 

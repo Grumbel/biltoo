@@ -422,24 +422,60 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         QCOMPARE(pack.idAt(0), focus);
     }
 
-    // Crop one session id via ItemWorld (same store MainWindow binds).
+    // Id-keyed components via ItemWorld (same store MainWindow binds).
     WorkspaceItemState crop;
     crop.hasCrop = true;
     crop.cropRect = QRect(4, 4, 32, 24);
     crop.cropSourceSize = QSize(64, 48);
     view.itemWorld().setAppearance(focus, crop);
+
+    ItemComponents::Placement pose;
+    pose.pos = QPointF(40.0, 60.0);
+    pose.scale = 1.5;
+    view.itemWorld().setPlacement(focus, pose);
+
+    ItemComponents::ContentBake bake;
+    bake.quarterTurns = 2;
+    bake.vFlip = true;
+    view.itemWorld().setContentBake(focus, bake);
+
+    ItemComponents::Color color;
+    color.grade.brightness = 8;
+    view.itemWorld().setColor(focus, color);
+
+    ItemComponents::Attention att;
+    att.points = {QPointF(0.1, 0.2)};
+    view.itemWorld().setAttention(focus, att);
+
     QVERIFY(view.itemWorld().hasCrop(focus));
+    QVERIFY(view.itemWorld().hasPlacement(focus));
+    QVERIFY(view.itemWorld().hasContentBake(focus));
+    QVERIFY(view.itemWorld().hasColor(focus));
+    QVERIFY(view.itemWorld().hasAttention(focus));
     QVERIFY(!view.itemWorld().hasCrop(other));
+    QVERIFY(!view.itemWorld().hasPlacement(other));
     QCOMPARE(ContentXform::layoutSize(QSize(64, 48),
                                       *view.itemWorld().getAppearance(focus)),
              QSize(32, 24));
 
-    // Mode-leave style clear: pack blank, document + crop intact.
+    // Mode-leave style clear: pack blank; all id-keyed components intact.
     view.pathOrderClear();
     QVERIFY(view.pathOrderIsEmpty());
     QCOMPARE(doc.size(), 2);
     QVERIFY(view.itemWorld().hasCrop(focus));
+    QVERIFY(view.itemWorld().hasPlacement(focus));
+    QVERIFY(view.itemWorld().hasContentBake(focus));
+    QVERIFY(view.itemWorld().hasColor(focus));
+    QVERIFY(view.itemWorld().hasAttention(focus));
     QVERIFY(!view.itemWorld().hasCrop(other));
+    QVERIFY(!view.itemWorld().hasPlacement(other));
+    QVERIFY(!view.itemWorld().hasContentBake(other));
+    QVERIFY(!view.itemWorld().hasColor(other));
+    QVERIFY(!view.itemWorld().hasAttention(other));
+    QCOMPARE(view.itemWorld().placement(focus).pos, QPointF(40.0, 60.0));
+    QCOMPARE(view.itemWorld().contentBake(focus).quarterTurns, 2);
+    QCOMPARE(view.itemWorld().color(focus).grade.brightness, 8);
+    QCOMPARE(view.itemWorld().attention(focus).points.size(), 1);
 
     // LoadAdd multiplicity on the view overlay only.
     view.pathOrderSetOrder({m_pathA, m_pathA, m_pathA}, {focus, focus, focus});
