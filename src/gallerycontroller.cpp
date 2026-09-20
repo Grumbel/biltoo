@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include "thumtoocache.h"
 #include "imageview.h"
+#include "packorderview.h"
 #include "sessionbindbook.h"
 #include "imageview_types.h"
 #include "gallerylayout.h"
@@ -1220,9 +1221,10 @@ void GalleryController::ensurePlaceholders()
     // wait for finishGallerySizeResolve to pack (soft may install meanwhile).
     m_view->hostGallerySoftBook().setDeferPopulate(false);
     QSet<ImageItem *> claimed;
-    for (int i = 0; i < m_view->pathOrderSize(); ++i) {
-        const QString &path = m_view->pathOrderPathAt(i);
-        const SessionImageId sid = m_view->pathOrderIdAt(i);
+    const PackOrderView pack = m_view->currentPackOrder();
+    for (int i = 0; i < pack.size(); ++i) {
+        const QString path = pack.pathAt(i);
+        const SessionImageId sid = pack.idAt(i);
 
         ImageItem *existing = nullptr;
         if (sid != kInvalidSessionImageId) {

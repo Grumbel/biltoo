@@ -24,6 +24,8 @@
     QString pathOrderPathAt(int index) const { return m_pathOrderBook.pathAt(index); }
     SessionImageId pathOrderIdAt(int index) const { return m_pathOrderBook.idAt(index); }
     const QStringList &pathOrderPaths() const { return m_pathOrderBook.pathList(); }
+    /** Pack source snapshot (Tier 4: currently from book; document when aligned). */
+    PackOrderView currentPackOrder() const { return PackOrderView::fromBook(m_pathOrderBook); }
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
     void scheduleImageSizeProbe(const QString &path);
     void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,

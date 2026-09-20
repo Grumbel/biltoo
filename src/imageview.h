@@ -38,6 +38,7 @@
 #include "sessionloadgate.h"
 #include "sessionbindbook.h"
 #include "sessionpathorder.h"
+#include "packorderview.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"

@@ -5,6 +5,7 @@
 
 #include "imageview.h"
 #include "imageitem.h"
+#include "imagecache.h"
 #include "gallerysoftsm.h"
 #include "displayquality.h"
 

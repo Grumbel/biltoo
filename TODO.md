@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1711-packorder-wire-accessors-fix.** Accessors ImageCache + PackOrderView wire.
+Prior: **1710**.
+
+### Change
+- `imageview_accessors.cpp`: `#include "imagecache.h"` (pendingDecodeCount)
+- `ImageView::currentPackOrder()` host API → `PackOrderView::fromBook`
+- `GalleryController::ensurePlaceholders` walks `currentPackOrder()` (behavior unchanged)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1711-packorder-wire-accessors-fix.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- More pack sites → PackOrderView; ImageView harness → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1710-packorderview.** Pure PackOrderView for Tier 4 pack source swap.
 Prior: **1709**.
 
