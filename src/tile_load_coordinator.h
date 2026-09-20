@@ -25,7 +25,7 @@ class ImageView;
  *   2. Prioritize cells with zero tiles (LQIP/blank) before upres.
  *   3. Split budget; call hostDisplayPipeline().tickItemTileLod(item, share).
  *
- * GUI thread only (ImageView::tickPrimaryTileLod).
+ * GUI thread only (DisplayPipelineController::tickPrimaryTileLod).
  */
 class TileLoadCoordinator
 {

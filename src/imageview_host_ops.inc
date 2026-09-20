@@ -8,8 +8,8 @@
     void rematerializeGalleryItemFromStore(ImageItem *item);
     /**
      * Controller host: budgeted tile pump/issue for viewport items.
-     * Gallery restore uses this so Image-mode path RAM paints without waiting
-     * for the decode-window timer.
+     * Prefer hostDisplayPipeline().tickPrimaryTileLod (same as drop/purge).
+     * Thin forward remains for callers that only have ImageView*.
      */
     void tickPrimaryTileLod(int budget = 8);
     /** @deprecated Path is not identity; prefer findItemBySessionId. */

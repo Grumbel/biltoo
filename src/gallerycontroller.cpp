@@ -128,7 +128,7 @@ void GalleryController::restoreStashedItems()
     }
     // Image-mode navigation may have filled global path RAM; bind/paint without
     // waiting for the next decode-window timer.
-    m_view->tickPrimaryTileLod(16);
+    m_view->hostDisplayPipeline().tickPrimaryTileLod(16);
 }
 
 void GalleryController::snapshotViewport()
@@ -1043,7 +1043,7 @@ void GalleryController::updateDecodeWindow()
     // Skip if the LQIP/schedule slice already burned the wall — re-arm instead.
     if (wall.elapsed() < kDecodeWindowWallMs) {
         int tileBudget = m_view->isGalleryMode() ? 32 : 8;
-        m_view->tickPrimaryTileLod(tileBudget);
+        m_view->hostDisplayPipeline().tickPrimaryTileLod(tileBudget);
     } else {
         scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
     }
@@ -1327,7 +1327,7 @@ void GalleryController::softWatchdogTick()
     if (needWindow) {
         updateDecodeWindow();
     } else {
-        m_view->tickPrimaryTileLod(48);
+        m_view->hostDisplayPipeline().tickPrimaryTileLod(48);
     }
     updateSoftProgressHud();
 }

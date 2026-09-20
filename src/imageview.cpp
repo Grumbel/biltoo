@@ -253,7 +253,7 @@ ImageView::ImageView(QWidget *parent)
             [this](const QString &path) {
                 Q_UNUSED(path);
                 // Pyramid appeared mid-session; start tile pump if already in band.
-                tickPrimaryTileLod(8);
+                m_displayPipeline.tickPrimaryTileLod(8);
             });
 
     connect(this, &ImageView::statusChanged, this, [this]() {
@@ -292,7 +292,7 @@ ImageView::ImageView(QWidget *parent)
     connect(m_slideshow.progressTimer(), &QTimer::timeout, this, [this]() {
         if (m_slideshow.hud().isProgressActive()) {
             // Pump shared path tiles for phase slides (paint uses TileLodController).
-            tickPrimaryTileLod(8);
+            m_displayPipeline.tickPrimaryTileLod(8);
             if (viewport()) {
                 viewport()->update();
             }
@@ -346,7 +346,7 @@ ImageView::ImageView(QWidget *parent)
         // scrollbar drag (or pan setValue) must re-issue visible cells.
         // Hand pan already ticks; skip when m_chrome.isPanning() to avoid double work.
         if (!m_chrome.isPanning() && !isGalleryMode()) {
-            tickPrimaryTileLod(4);
+            m_displayPipeline.tickPrimaryTileLod(4);
         }
     });
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
@@ -355,7 +355,7 @@ ImageView::ImageView(QWidget *parent)
             ? GallerySoft::kDecodeWindowSettleMs
             : GallerySoft::kDecodeWindowImageMs);
         if (!m_chrome.isPanning() && !isGalleryMode()) {
-            tickPrimaryTileLod(4);
+            m_displayPipeline.tickPrimaryTileLod(4);
         }
     });
 

@@ -1712,7 +1712,7 @@ void SlideshowController::preloadSlideshowImage(const QString &path)
     if (!ThumtooCache::hasDurableTilesKnown(path)) {
         (void)ThumtooCache::scheduleTilePyramid(path);
     }
-    m_view->tickPrimaryTileLod(TileLoadCoordinator::kDefaultTickBudget);
+    m_view->hostDisplayPipeline().tickPrimaryTileLod(TileLoadCoordinator::kDefaultTickBudget);
 
     const QImage have = ImageCache::get(path);
     if (!have.isNull()) {
