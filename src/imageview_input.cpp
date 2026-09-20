@@ -128,7 +128,7 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
 }
 void ImageView::wheelEvent(QWheelEvent *event)
 {
-    if (tryWheelGalleryZoom(event) || tryWheelGalleryScroll(event)) {
+    if (m_gallery.tryWheelGalleryZoom(event) || m_gallery.tryWheelGalleryScroll(event)) {
         return;
     }
     wheelZoomViewAboutCursor(event);

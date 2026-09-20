@@ -333,7 +333,7 @@ ImageView::ImageView(QWidget *parent)
     // Scrolling moves tiles under a stationary cursor — refresh gallery HUD path.
     auto refreshHover = [this]() {
         if (isGalleryMode() && m_chrome.hasHoverViewPos()) {
-            updateGalleryHoverAt(m_chrome.hoverViewPos());
+            m_gallery.updateGalleryHoverAt(m_chrome.hoverViewPos());
         }
     };
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {

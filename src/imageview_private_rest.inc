@@ -259,7 +259,6 @@
     /** Handles 0–7 = scale corners/edges; 8–11 = rotate (T/R/B/L). */
     bool isGroupRotateHandle(int handle) const { return handle >= 8 && handle <= 11; }
     void updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers mods);
-    void updateGalleryHoverAt(const QPoint &viewPos);
     static QSizeF nativeSize(const ImageItem *item);
     void zoomViewBy(qreal factor);
 

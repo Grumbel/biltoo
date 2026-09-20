@@ -55,19 +55,19 @@
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
-    if (tryMousePressSlideshowSeek(event)
-        || tryMousePressAttention(event)
-        || tryMousePressCrop(event)
+    if (m_slideshow.tryMousePressSlideshowSeek(event)
+        || m_attentionCtrl.tryMousePressAttention(event)
+        || m_cropCtrl.tryMousePressCrop(event)
         || tryMousePressZoomRegion(event)
         || tryMousePressWorkspaceChrome(event)
         || tryMousePressImageLink(event)
         || tryMousePressTextRubber(event)
-        || tryMousePressImageEdges(event)
+        || m_image.tryMousePressEdges(event)
         || tryMousePressPan(event)
         || tryMousePressWorkspaceRotate(event)
-        || tryMousePressGalleryRight(event)
-        || tryMousePressGalleryLeft(event)
-        || tryMousePressWorkspaceSelect(event)) {
+        || m_gallery.tryMousePressGalleryRight(event)
+        || m_gallery.tryMousePressGalleryLeft(event)
+        || m_workspace.tryMousePressSelect(event)) {
         return;
     }
 
@@ -151,10 +151,10 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         return;
     }
     updateMouseMoveLinkHover(event);
-    if (tryMouseMoveAttention(event)
-        || tryMouseMoveCropDrag(event)
+    if (m_attentionCtrl.tryMouseMoveAttention(event)
+        || m_cropCtrl.tryMouseMoveCropDrag(event)
         || tryMouseMovePan(event)
-        || tryMouseMoveCropHover(event)
+        || m_cropCtrl.tryMouseMoveCropHover(event)
         || tryMouseMoveZoomRegion(event)) {
         return;
     }
@@ -170,8 +170,8 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     }
 
     m_chrome.setHoverViewPos(event->pos());
-    updateMouseMoveSlideshowSeek(event);
-    updateGalleryHoverAt(m_chrome.hoverViewPos());
+    m_slideshow.updateMouseMoveSlideshowSeek(event);
+    m_gallery.updateGalleryHoverAt(m_chrome.hoverViewPos());
     updateMouseMoveWorkspaceChromeHover(event);
 
     QGraphicsView::mouseMoveEvent(event);
@@ -241,10 +241,10 @@ bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
 }
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (tryMouseReleaseSlideshowSeek(event)
+    if (m_slideshow.tryMouseReleaseSlideshowSeek(event)
         || tryMouseReleaseTextRubber(event)
-        || tryMouseReleaseAttention(event)
-        || tryMouseReleaseCrop(event)
+        || m_attentionCtrl.tryMouseReleaseAttention(event)
+        || m_cropCtrl.tryMouseReleaseCrop(event)
         || tryMouseReleaseZoomRegion(event)
         || tryMouseReleasePageGuide(event)
         || tryMouseReleaseGroupDrag(event)
@@ -294,14 +294,15 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
 
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
-    if (tryKeyPressAttention(event)
-        || tryKeyPressCrop(event)
+    if (m_attentionCtrl.tryKeyPressAttention(event)
+        || m_cropCtrl.tryKeyPressCrop(event)
         || tryKeyPressZoomRegion(event)
         || tryKeyPressSelectAll(event)
-        || tryKeyPressImageNavigate(event)
-        || tryKeyPressGallery(event)
-        || tryKeyPressWorkspaceShear(event)
-        || tryKeyPressDeleteSelection(event)) {
+        || m_image.tryKeyPressNavigate(event)
+        || m_gallery.tryKeyPressGallery(event)
+        || m_workspace.tryKeyPressShear(event)
+        || m_gallery.tryKeyPressDeleteSelection(event)
+        || m_workspace.tryKeyPressDeleteSelection(event)) {
         return;
     }
     QGraphicsView::keyPressEvent(event);

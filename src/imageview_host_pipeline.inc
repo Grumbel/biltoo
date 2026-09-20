@@ -68,42 +68,28 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
 
     // mousePressEvent phases (return true if the event was handled)
-    bool tryMousePressSlideshowSeek(QMouseEvent *event);
-    bool tryMousePressAttention(QMouseEvent *event);
-    bool tryMousePressCrop(QMouseEvent *event);
     bool tryMousePressZoomRegion(QMouseEvent *event);
     bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressImageLink(QMouseEvent *event);
     bool tryMousePressTextRubber(QMouseEvent *event);
-    bool tryMousePressImageEdges(QMouseEvent *event);
     bool tryMousePressPan(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);
-    bool tryMousePressGalleryRight(QMouseEvent *event);
-    bool tryMousePressGalleryLeft(QMouseEvent *event);
-    bool tryMousePressWorkspaceSelect(QMouseEvent *event);
 
     // mouseMoveEvent phases
     bool tryMouseMoveTextRubber(QMouseEvent *event);
     void updateMouseMoveLinkHover(QMouseEvent *event);
-    bool tryMouseMoveAttention(QMouseEvent *event);
-    bool tryMouseMoveCropDrag(QMouseEvent *event);
     bool tryMouseMovePan(QMouseEvent *event);
-    bool tryMouseMoveCropHover(QMouseEvent *event);
     bool tryMouseMoveZoomRegion(QMouseEvent *event);
     bool tryMouseMovePageGuide(QMouseEvent *event);
     bool tryMouseMoveGroupAndHandleDrag(QMouseEvent *event);
     bool tryMouseMoveWorkspaceRotate(QMouseEvent *event);
-    void updateMouseMoveSlideshowSeek(QMouseEvent *event);
     void updateMouseMoveWorkspaceChromeHover(QMouseEvent *event);
 
     // mouseReleaseEvent phases
     void restoreToolCursor();
     void pushItemTransformUndo(ImageItem *item, const WorkspaceItemState &before,
                                const WorkspaceItemState &after, const QString &text);
-    bool tryMouseReleaseSlideshowSeek(QMouseEvent *event);
     bool tryMouseReleaseTextRubber(QMouseEvent *event);
-    bool tryMouseReleaseAttention(QMouseEvent *event);
-    bool tryMouseReleaseCrop(QMouseEvent *event);
     bool tryMouseReleaseZoomRegion(QMouseEvent *event);
     bool tryMouseReleasePageGuide(QMouseEvent *event);
     bool tryMouseReleaseGroupDrag(QMouseEvent *event);
@@ -113,16 +99,8 @@ protected:
     bool tryMouseReleaseItemDrag(QMouseEvent *event);
 
     // keyPressEvent phases
-    bool tryKeyPressAttention(QKeyEvent *event);
-    bool tryKeyPressCrop(QKeyEvent *event);
     bool tryKeyPressZoomRegion(QKeyEvent *event);
     bool tryKeyPressSelectAll(QKeyEvent *event);
-    bool tryKeyPressImageNavigate(QKeyEvent *event);
-    bool tryKeyPressGallery(QKeyEvent *event);
-    bool tryKeyPressWorkspaceShear(QKeyEvent *event);
-    bool tryKeyPressDeleteSelection(QKeyEvent *event);
 
     // wheelEvent phases
-    bool tryWheelGalleryZoom(QWheelEvent *event);
-    bool tryWheelGalleryScroll(QWheelEvent *event);
     void wheelZoomViewAboutCursor(QWheelEvent *event);

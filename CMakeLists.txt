@@ -250,7 +250,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview_workspace_chrome.cpp
   src/imageview_edge_chrome.cpp
   src/imageview_dnd.cpp
-  src/imageview_input_forwards.cpp
   src/imageview_paint.cpp
   src/imageview_paint_background.cpp
   src/imageview_slideshow_paint.cpp
