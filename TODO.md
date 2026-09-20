@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1883-packorder-overlay-storage.** ImageView stores PackOrderOverlay.
+Prior: **1882**.
+
+### Change
+- Replace `SessionPathOrder m_pathOrderBook` with `PackOrderOverlay m_pathOrderOverlay`
+- Host mutators: `clearExplicit` / `setExplicit` / `appendExplicitRow`
+- `currentPackOrder()` → `m_pathOrderOverlay.resolve(m_sessionDoc)`
+- Ctor seeds Explicit empty (`clearExplicit`) to match former empty book
+- Behaviour identical (always Explicit); no FollowDocument collapse yet
+- Docs: PATH_ORDER migration step 2 done; `git grep m_pathOrderBook` empty under src/
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1883-packorder-overlay-storage-516d734.bundle HEAD
+```
+Requires tip **1882** (base **516d734**).
+
+### Next
+- Optional FollowDocument collapse when explicit aligns with document
+- ImageView characterization harness (decode + framing)
+- Do **not** pack from SessionDocument alone until harness green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1882-optional-ccache.** Plain `nix build .#biltoo` without ccache.
 Prior: **1881**.
 

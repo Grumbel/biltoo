@@ -70,6 +70,10 @@ ImageView::ImageView(QWidget *parent)
     m_itemWorld.bindPathBook(&m_itemStateBook);
     m_itemWorld.bindSizeBook(&m_sizeBook);
 
+    // PackOrderOverlay defaults to FollowDocument; match former empty book
+    // (Explicit empty) so pack stays blank until pathOrderSetOrder / append.
+    m_pathOrderOverlay.clearExplicit();
+
     m_scene = new QGraphicsScene(this);
     // BSP indexing is fragile with frequent add/remove (Duplicate + Delete):
     // deferred paints can walk a tree that still holds freed items. Linear

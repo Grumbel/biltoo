@@ -5,7 +5,7 @@
  * Characterization for PackOrderOverlay (Tier 4 residual design type).
  *
  * Locks resolve semantics before ImageView adopts the overlay in place of
- * m_pathOrderBook. Critical invariant: Explicit-empty must suppress pack
+ * the view pack-order overlay. Critical invariant: Explicit-empty must suppress pack
  * even when SessionDocument still has membership (mode-leave / pathOrderClear).
  */
 

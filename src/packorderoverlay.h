@@ -13,31 +13,28 @@
 #include <QVector>
 
 /**
- * Future owner of Gallery pack-order state (Tier 4 residual).
+ * Owner of Gallery pack-order state on ImageView (Tier 4 residual).
  *
- * Today ImageView keeps a permanent SessionPathOrder (`m_pathOrderBook`). That
- * book cannot be deleted until multiplicity, mode-leave clear, stash, and
- * ad-hoc place are expressible without a second full ordered copy of the
- * session. PackOrderOverlay is the design vehicle for that replacement.
+ * ImageView stores a PackOrderOverlay (`m_pathOrderOverlay`) instead of a bare
+ * SessionPathOrder. Multiplicity, mode-leave clear, stash, and ad-hoc place
+ * still need Explicit mode (possibly empty) so pack does not fall through to
+ * SessionDocument membership alone.
  *
  * ## Modes
  *
  * - **FollowDocument** — resolve() yields the document membership (or empty
  *   when no document is bound). Used when pack order is known to align with
- *   session membership (post-loadFiles, no LoadAdd extras).
+ *   session membership (post-loadFiles, no LoadAdd extras). Optional collapse
+ *   target; not used by ImageView host mutators yet.
  * - **Explicit** — resolve() yields the held SessionPathOrder. The held order
  *   may be empty: pathOrderClear / mode-leave must suppress pack even while
  *   SessionDocument still has membership (see PATH_ORDER.md and the dual-model
  *   characterization test `modeLeave_clearBook_documentPackWouldRegenerateIncorrectly`).
  *
- * Writes that today target the view book (clear / setOrder / appendRow) map
- * onto Explicit mode. When the explicit order again matches the document,
- * a future migration step may optionally collapse back to FollowDocument;
- * that collapse is *not* required for correctness and is not done here.
- *
- * This type is pure data + resolve. ImageView still stores m_pathOrderBook;
- * runtime adoption is a later tip after the ImageView characterization harness
- * is green.
+ * ImageView host mutators (pathOrderClear / SetOrder / AppendRow) always write
+ * Explicit mode. When the explicit order again matches the document, a future
+ * tip may optionally collapse back to FollowDocument; that collapse is *not*
+ * required for correctness.
  *
  * See docs/PATH_ORDER.md § PackOrderOverlay and REFACTOR.md Tier 4 residual.
  */

@@ -124,18 +124,20 @@ private:
 /**
  * Where pack-order *reads* are allowed to come from (Tier 4 policy).
  *
- * - ViewBook: ImageView::m_pathOrderBook — LoadAdd multiplicity, ad-hoc place,
- *   Gallery stash. Default for all pack / LoadAdd / size-resolve readers today.
+ * - ViewBook: legacy name for explicit overlay order — LoadAdd multiplicity,
+ *   ad-hoc place, Gallery stash. Pack readers use ImageView::currentPackOrder()
+ *   (overlay resolve) rather than packOrderForRead + bare SessionPathOrder.
  * - SessionDocument: MainWindow session membership (one row per open file).
- *   Safe only when the book aligns with the document (no extra multiplicity /
- *   invalid ids). Prefer for identity lookups; not a drop-in for pack order.
+ *   Safe only when the explicit order aligns with the document (no extra
+ *   multiplicity / invalid ids). Prefer for identity lookups; not a drop-in
+ *   for pack order.
  *
- * Writes always go to the view book (pathOrderClear / SetOrder / AppendRow).
- * SessionDocument is mutated only by MainWindow session APIs.
+ * Writes always go to the overlay (pathOrderClear / SetOrder / AppendRow →
+ * Explicit). SessionDocument is mutated only by MainWindow session APIs.
  *
- * Planned replacement for permanent ViewBook storage: PackOrderOverlay
- * (src/packorderoverlay.h, tip 1881) with FollowDocument vs Explicit modes.
- * Explicit empty models pathOrderClear. See docs/PATH_ORDER.md.
+ * Storage: PackOrderOverlay on ImageView (tip 1883). Explicit empty models
+ * pathOrderClear. Optional FollowDocument collapse is a later step.
+ * See docs/PATH_ORDER.md.
  */
 enum class PackOrderReadSource {
     ViewBook,

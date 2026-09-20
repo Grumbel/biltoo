@@ -39,6 +39,7 @@
 #include "sessionbindbook.h"
 #include "sessionpathorder.h"
 #include "packorderview.h"
+#include "packorderoverlay.h"
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
@@ -238,7 +239,7 @@ public:
     ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
 
     /** Controller host: session path order used for Gallery packing. */
-    /** Path-order book: pathOrderClear / pathOrderSetOrder / pathOrderAppendRow / currentPackOrder. */
+    /** Pack-order overlay: pathOrderClear / pathOrderSetOrder / pathOrderAppendRow / currentPackOrder. */
     /** Rebuild pack order from live tiles (path∥sessionId). Id-safe. */
     /** Controller host: session appearance store (id-keyed). */
     /**
@@ -258,7 +259,7 @@ public:
     /**
      * Phase 6 Tier 4 path-order: MainWindow binds the working SessionDocument.
      * firstSessionIdForPath uses the document; LoadAdd multiplicity stays on the
-     * view path-order book (pathOrderClear must not consult the document).
+     * view pack-order overlay (pathOrderClear must not consult the document).
      */
     void bindSessionDocument(SessionDocument *doc)
     {

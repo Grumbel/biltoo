@@ -43,7 +43,7 @@
     {
         scheduleImageSizeProbe(path);
     }
-    /** Pack order for TTFP probes — PackOrderReadSource::ViewBook only. */
+    /** Pack order for TTFP probes — overlay resolve (Explicit book). */
     QStringList sizeResolvePathOrder() const override
     {
         return currentPackOrder().paths();
@@ -161,7 +161,12 @@
     GallerySizeResolve m_gallerySizeResolve;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     /** Session path list + parallel SessionImageId order (IDENTITY). */
-    SessionPathOrder m_pathOrderBook;
+    /**
+     * Pack-order overlay (Tier 4 residual step 2). Always Explicit while
+     * behaviour matches the former SessionPathOrder book; FollowDocument
+     * collapse is a later optional step. See packorderoverlay.h / PATH_ORDER.md.
+     */
+    PackOrderOverlay m_pathOrderOverlay;
 
     QUndoStack *m_undoStack = nullptr;
     bool m_preserveUndoOnDestroy = false;

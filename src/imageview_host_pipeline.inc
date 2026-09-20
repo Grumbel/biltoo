@@ -11,22 +11,22 @@
     int pathOrderOccurrences(const QString &path) const;
     bool pathOrderIsEmpty() const { return currentPackOrder().isEmpty(); }
     /**
-     * Pack source snapshot from the view path-order book (PackOrderReadSource::ViewBook).
-     * See REFACTOR.md Tier 4 inventory — SessionDocument is not a drop-in for pack.
+     * Pack source snapshot via PackOrderOverlay::resolve (Explicit book today).
+     * See REFACTOR.md Tier 4 residual — SessionDocument alone is not a pack drop-in.
      */
     PackOrderView currentPackOrder() const
     {
-        return packOrderForRead(PackOrderReadSource::ViewBook, m_pathOrderBook, m_sessionDoc);
+        return m_pathOrderOverlay.resolve(m_sessionDoc);
     }
-    /** View path-order book mutators (not SessionDocument). */
-    void pathOrderClear() { m_pathOrderBook.clear(); }
+    /** Pack-order overlay mutators (not SessionDocument). Always Explicit. */
+    void pathOrderClear() { m_pathOrderOverlay.clearExplicit(); }
     void pathOrderSetOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
     {
-        m_pathOrderBook.setOrder(paths, ids);
+        m_pathOrderOverlay.setExplicit(paths, ids);
     }
     void pathOrderAppendRow(const QString &path, SessionImageId id = kInvalidSessionImageId)
     {
-        m_pathOrderBook.appendRow(path, id);
+        m_pathOrderOverlay.appendExplicitRow(path, id);
     }
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
     void scheduleImageSizeProbe(const QString &path);

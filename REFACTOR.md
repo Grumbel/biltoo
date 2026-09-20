@@ -618,7 +618,7 @@ at least one test binary covering quality-tier and session-badge formatting.
 Finishes Phase 4 and makes the Target architecture diagram accurate.
 
 - Move `SessionAppearanceStore m_appearance` into `SessionDocument`.
-- Delete `m_pathOrderBook`; the view queries the document for path/id order.
+- Pack order lives on `PackOrderOverlay` (Explicit); optional FollowDocument collapse later. The view must not pack from SessionDocument alone until the ImageView harness is green.
 - `ImageView` asks the document for appearance on decode, per the diagram.
 - `appearanceChanged(SessionImageId)` drives ThumbnailBar and filmstrip.
 
@@ -831,11 +831,11 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
   Full offscreen ImageView open→Gallery→crop harness still open.
 - Tier 4a: **done** (biltoo-1623) — `SessionDocument` owns a `SessionAppearanceStore`
   (additive; ImageView still has live store). Char test covers doc-keyed crop.
-- Tier 4b: **done** (biltoo-1626) — view-owned `m_appearanceOwned` removed; `appearance()` requires `bindSessionAppearance`. `m_pathOrderBook` still on view.
+- Tier 4b: **done** (biltoo-1626) — view-owned `m_appearanceOwned` removed; `appearance()` requires `bindSessionAppearance`. `m_pathOrderOverlay` on view (Explicit; former book).
 - Tier 4 path-order: **in progress** (biltoo-1630) — LoadAdd multiplicity is view-book only; document for firstId identity only.
   Documented dual model in `docs/PATH_ORDER.md` + `sessionpathorder` unit test (biltoo-1663).
   MainWindow binds at construct; `SessionDocument::clear` clears appearance.
-  View keeps fallback owned store when unbound. `m_pathOrderBook` still on view.
+  View keeps fallback owned store when unbound. `m_pathOrderOverlay` on view (Explicit; former book).
 - Tier 5a: **done** (biltoo-1610) — `DisplayPipelineController` owns loadGate,
   displaySurfaces, imageFocusSurface, tileCoordinator, tile LOD timers.
   Methods stay on ImageView; soft provider + neighbor prefetch remain on view.

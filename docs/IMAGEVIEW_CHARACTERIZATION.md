@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 REFACTOR.md requires an offscreen `QTest` that drives `ImageView` through
 **open → Gallery → crop → return → Image** and asserts appearance, logical
-size, and framing before deleting `m_pathOrderBook`.
+size, and framing before collapsing to FollowDocument / document-only pack.
 
 ## Pure contracts already locked
 
@@ -30,7 +30,7 @@ transitions, framing, or Live canvas.
 1. Construct `ImageView` offscreen (`QApplication` + no show, or `QTest`).
 2. Bind `SessionDocument` appearance + document (same as MainWindow).
 3. Open two synthetic paths (temp PNGs of known size).
-4. Enter Gallery; assert path-order book aligns with document.
+4. Enter Gallery; assert pack-order overlay (Explicit) aligns with document.
 5. Crop one session id; assert `appearance().get(id)` and layout size.
 6. Return to Image on that id; assert crop still applied; sibling unchanged.
 7. LoadAdd / paste multiplicity: book size > document size; pack count follows book.
