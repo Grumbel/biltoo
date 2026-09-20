@@ -26,12 +26,11 @@
     /** Stage 2: read live ImageItem pose into a Placement record. */
     static ItemComponents::Placement placementFromItem(const ImageItem *item);
     /**
-     * Apply pose (and session DTO) after geometry undo/redo so ItemWorld
-     * Placement stays aligned with the live item.
+     * Apply pose after geometry undo/redo so live item + ItemWorld Placement align.
      */
-    void applyGeometrySessionState(ImageItem *item, const WorkspaceItemState &state);
-    /** Write Placement/appearance (or path book) without touching the live item. */
-    void persistGeometrySessionState(ImageItem *item, const WorkspaceItemState &state);
+    void applyGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl);
+    /** Write Placement (or path-book pose) without requiring a full DTO snapshot. */
+    void persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl);
 
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
     QString loadingStatusHudLine() const;

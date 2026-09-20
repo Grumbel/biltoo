@@ -514,10 +514,10 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
         ? m_view->mapToScene(m_view->viewport()->rect().center())
         : beforeBounds.center();
 
-    QVector<WorkspaceItemState> befores;
+    QVector<ItemComponents::Placement> befores;
     befores.reserve(items.size());
     for (ImageItem *item : items) {
-        befores.append(m_view->captureState(item));
+        befores.append(item->placement());
     }
 
     GalleryLayout::Params params = userParams;
@@ -574,7 +574,7 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
                 continue;
             }
             m_view->pushItemGeometryCommand(m_view->tr("Layout selection"), item, befores.at(i),
-                                    m_view->captureState(item));
+                                    item->placement());
         }
         m_view->hostUndoStack()->endMacro();
     }
@@ -583,16 +583,18 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
         if (!item) {
             continue;
         }
-        const WorkspaceItemState s = m_view->captureState(item);
+        // Layout only moves pose — Placement dual-write; do not re-stamp content tables.
+        const ItemComponents::Placement pl = item->placement();
         if (item->sessionId() != kInvalidSessionImageId) {
-            // Layout only moves pose; setPlacement is the Stage 2 write path
-            // (dual-writes DTO pose fields). Full setAppearance keeps content
-            // fields from capture in sync for undo/filmstrip.
-            m_view->itemWorld().setPlacement(
-                item->sessionId(), ItemComponents::placementFromState(s));
-            m_view->itemWorld().setAppearance(item->sessionId(), s);
+            m_view->itemWorld().setPlacement(item->sessionId(), pl);
+        } else if (!item->path().isEmpty()) {
+            WorkspaceItemState s;
+            if (const WorkspaceItemState *prev = m_view->itemWorld().getPathState(item->path())) {
+                s = *prev;
+            }
+            ItemComponents::applyPlacementToState(s, pl);
+            m_view->itemWorld().setPathState(item->path(), s);
         }
-        m_view->itemWorld().setPathState(item->path(), s);
     }
 
     m_view->updateWorkspaceSceneRect();

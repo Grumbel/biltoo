@@ -55,6 +55,6 @@
                              bool transparentBackground = true) const;
     QList<ImageItem *> transformTargets() const;
     void pushItemGeometryCommand(const QString &text, ImageItem *item,
-                                 const WorkspaceItemState &before,
-                                 const WorkspaceItemState &after);
+                                 const ItemComponents::Placement &before,
+                                 const ItemComponents::Placement &after);
 

@@ -107,33 +107,34 @@ void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
     item->applyPlacement(ItemComponents::placementFromState(state));
 }
 
-void ImageView::persistGeometrySessionState(ImageItem *item, const WorkspaceItemState &state)
+void ImageView::persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)
 {
     if (!item) {
         return;
     }
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : state.sessionId;
+    const SessionImageId sid = item->sessionId();
     if (sid != kInvalidSessionImageId) {
-        // Geometry undo/redo is pose-only. setPlacement dual-writes pose into the
-        // appearance DTO; do not setAppearance (would re-stamp crop/bake/color
-        // tables from a full captureState snapshot).
-        m_itemWorld.setPlacement(sid, ItemComponents::placementFromState(state));
+        // Pose-only; setPlacement dual-writes DTO pose fields.
+        m_itemWorld.setPlacement(sid, pl);
         return;
     }
     if (!item->path().isEmpty()) {
-        m_itemWorld.setPathState(item->path(), state);
+        WorkspaceItemState s;
+        if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
+            s = *prev;
+        }
+        ItemComponents::applyPlacementToState(s, pl);
+        m_itemWorld.setPathState(item->path(), s);
     }
 }
 
-void ImageView::applyGeometrySessionState(ImageItem *item, const WorkspaceItemState &state)
+void ImageView::applyGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)
 {
     if (!item) {
         return;
     }
-    applyState(item, state);
-    persistGeometrySessionState(item, state);
+    item->applyPlacement(pl);
+    persistGeometrySessionState(item, pl);
 }
 
 

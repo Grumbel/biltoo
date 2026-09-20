@@ -188,13 +188,13 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
     if (!item) {
         return;
     }
-    if (ItemComponents::placementNearlyEqual(
-            ItemComponents::placementFromState(before),
-            ItemComponents::placementFromState(after))) {
+    const ItemComponents::Placement b = ItemComponents::placementFromState(before);
+    const ItemComponents::Placement a = ItemComponents::placementFromState(after);
+    if (ItemComponents::placementNearlyEqual(b, a)) {
         return;
     }
-    // Single geometry undo path (persist + TransformCommand).
-    pushItemGeometryCommand(text, item, before, after);
+    // Single geometry undo path (persist + Placement command).
+    pushItemGeometryCommand(text, item, b, a);
     emit statusChanged();
 }
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)

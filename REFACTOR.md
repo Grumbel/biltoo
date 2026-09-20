@@ -1162,6 +1162,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1927: Gallery layout-switch multi-select restore by SessionImageId.
 - biltoo-1928: findItemForPath consolidates preferred-then-first path lookup.
 - biltoo-1929: persistGeometrySessionState bound-id path is Placement-only (no setAppearance).
+- biltoo-1930: geometry undo command + APIs store/apply Placement only.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

@@ -16,12 +16,12 @@
 #include <QGraphicsItem>
 #include <algorithm>
 
-/** Geometry undo/redo — friend of ImageView for private session-state APIs. */
+/** Geometry undo/redo — friend of ImageView; stores Placement only (Stage 2). */
 class ImageViewTransformGeometryCommand : public QUndoCommand {
 public:
     ImageViewTransformGeometryCommand(ImageView *view, ImageItem *item,
-                                      const WorkspaceItemState &before,
-                                      const WorkspaceItemState &after,
+                                      const ItemComponents::Placement &before,
+                                      const ItemComponents::Placement &after,
                                       const QString &label)
         : m_view(view)
         , m_item(item)
@@ -60,8 +60,8 @@ public:
 private:
     ImageView *m_view = nullptr;
     ImageItem *m_item = nullptr;
-    WorkspaceItemState m_before;
-    WorkspaceItemState m_after;
+    ItemComponents::Placement m_before;
+    ItemComponents::Placement m_after;
 };
 
 namespace {
@@ -212,8 +212,8 @@ void ImageView::raiseItem(ImageItem *item)
         return; // already top among overlapping
     }
     ImageItem *above = layer.at(target);
-    const WorkspaceItemState beforeItem = captureState(item);
-    const WorkspaceItemState beforeAbove = captureState(above);
+    const ItemComponents::Placement beforeItem = placementFromItem(item);
+    const ItemComponents::Placement beforeAbove = placementFromItem(above);
     const StackGeometry::ZStep step =
         StackGeometry::raiseStep(item->stackZ(), above->stackZ());
     {
@@ -228,9 +228,9 @@ void ImageView::raiseItem(ImageItem *item)
     }
     if (m_undoStack) {
         m_undoStack->beginMacro(tr("Raise"));
-        pushItemGeometryCommand(tr("Raise"), item, beforeItem, captureState(item));
+        pushItemGeometryCommand(tr("Raise"), item, beforeItem, placementFromItem(item));
         if (step.neighbourChanges) {
-            pushItemGeometryCommand(tr("Raise"), above, beforeAbove, captureState(above));
+            pushItemGeometryCommand(tr("Raise"), above, beforeAbove, placementFromItem(above));
         }
         m_undoStack->endMacro();
     }
@@ -249,8 +249,8 @@ void ImageView::lowerItem(ImageItem *item)
         return; // already bottom among overlapping
     }
     ImageItem *below = layer.at(target);
-    const WorkspaceItemState beforeItem = captureState(item);
-    const WorkspaceItemState beforeBelow = captureState(below);
+    const ItemComponents::Placement beforeItem = placementFromItem(item);
+    const ItemComponents::Placement beforeBelow = placementFromItem(below);
     const StackGeometry::ZStep step =
         StackGeometry::lowerStep(item->stackZ(), below->stackZ());
     {
@@ -265,9 +265,9 @@ void ImageView::lowerItem(ImageItem *item)
     }
     if (m_undoStack) {
         m_undoStack->beginMacro(tr("Lower"));
-        pushItemGeometryCommand(tr("Lower"), item, beforeItem, captureState(item));
+        pushItemGeometryCommand(tr("Lower"), item, beforeItem, placementFromItem(item));
         if (step.neighbourChanges) {
-            pushItemGeometryCommand(tr("Lower"), below, beforeBelow, captureState(below));
+            pushItemGeometryCommand(tr("Lower"), below, beforeBelow, placementFromItem(below));
         }
         m_undoStack->endMacro();
     }
@@ -335,11 +335,11 @@ void ImageView::opacityUp()
         return;
     }
     if (ImageItem *item = targetItem()) {
-        const WorkspaceItemState before = captureState(item);
+        const ItemComponents::Placement before = placementFromItem(item);
         ItemComponents::Placement pl = item->placement();
         pl.opacity = PlacementLinear::opacityAfterStep(pl.opacity, 0.1);
         item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Opacity"), item, before, captureState(item));
+        pushItemGeometryCommand(tr("Opacity"), item, before, placementFromItem(item));
         emit statusChanged();
     }
 }
@@ -350,11 +350,11 @@ void ImageView::opacityDown()
         return;
     }
     if (ImageItem *item = targetItem()) {
-        const WorkspaceItemState before = captureState(item);
+        const ItemComponents::Placement before = placementFromItem(item);
         ItemComponents::Placement pl = item->placement();
         pl.opacity = PlacementLinear::opacityAfterStep(pl.opacity, -0.1);
         item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Opacity"), item, before, captureState(item));
+        pushItemGeometryCommand(tr("Opacity"), item, before, placementFromItem(item));
         emit statusChanged();
     }
 }
@@ -365,11 +365,11 @@ void ImageView::opacityReset()
         return;
     }
     if (ImageItem *item = targetItem()) {
-        const WorkspaceItemState before = captureState(item);
+        const ItemComponents::Placement before = placementFromItem(item);
         ItemComponents::Placement pl = item->placement();
         pl.opacity = 1.0;
         item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Reset opacity"), item, before, captureState(item));
+        pushItemGeometryCommand(tr("Reset opacity"), item, before, placementFromItem(item));
         emit statusChanged();
     }
 }
@@ -399,13 +399,13 @@ void ImageView::resetItemScale()
         m_undoStack->beginMacro(tr("Reset scale"));
     }
     for (ImageItem *item : targets) {
-        const WorkspaceItemState before = captureState(item);
+        const ItemComponents::Placement before = placementFromItem(item);
         ItemComponents::Placement pl = item->placement();
         pl.scale = 1.0;
         pl.scaleY = 1.0;
         pl.shear = 0.0;
         item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Reset scale"), item, before, captureState(item));
+        pushItemGeometryCommand(tr("Reset scale"), item, before, placementFromItem(item));
     }
     if (macro) {
         m_undoStack->endMacro();
@@ -439,12 +439,12 @@ void ImageView::resetItemRotation()
         m_undoStack->beginMacro(tr("Reset rotation"));
     }
     for (ImageItem *item : targets) {
-        const WorkspaceItemState before = captureState(item);
+        const ItemComponents::Placement before = placementFromItem(item);
         ItemComponents::Placement pl = item->placement();
         pl.rotation = 0.0;
         item->applyPlacement(pl);
         commitItemSessionEdit(item);
-        pushItemGeometryCommand(tr("Reset rotation"), item, before, captureState(item));
+        pushItemGeometryCommand(tr("Reset rotation"), item, before, placementFromItem(item));
     }
     if (macro) {
         m_undoStack->endMacro();
@@ -477,11 +477,11 @@ void ImageView::resetItemShear()
         m_undoStack->beginMacro(tr("Reset shear"));
     }
     for (ImageItem *item : targets) {
-        const WorkspaceItemState before = captureState(item);
+        const ItemComponents::Placement before = placementFromItem(item);
         ItemComponents::Placement pl = item->placement();
         pl.shear = 0.0;
         item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Reset shear"), item, before, captureState(item));
+        pushItemGeometryCommand(tr("Reset shear"), item, before, placementFromItem(item));
     }
     if (macro) {
         m_undoStack->endMacro();
@@ -507,8 +507,8 @@ qreal ImageView::cardinalRotationOrZero(qreal degrees)
 }
 
 void ImageView::pushItemGeometryCommand(const QString &text, ImageItem *item,
-                                        const WorkspaceItemState &before,
-                                        const WorkspaceItemState &after)
+                                        const ItemComponents::Placement &before,
+                                        const ItemComponents::Placement &after)
 {
     if (!item) {
         return;

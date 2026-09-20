@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1930-geometry-undo-placement.** Geometry undo stores Placement only.
+Prior: **1929**.
+
+### Change
+- `ImageViewTransformGeometryCommand` stores `ItemComponents::Placement` (not fat DTO)
+- `applyGeometrySessionState` / `persistGeometrySessionState` take Placement
+- `pushItemGeometryCommand` Placement API; raise/lower/opacity/scale/rotate/shear
+  use `placementFromItem`
+- `pushItemTransformUndo` extracts Placement from drag-start DTOs
+- Workspace layout selection: befores as Placement; post-layout persist pose-only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1930-geometry-undo-placement-516d734.bundle HEAD
+```
+Requires tip **1929** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ImageItem live crop/flip demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1929-geometry-persist-placement-only.** Geometry undo writes Placement only.
 Prior: **1928**.
 
