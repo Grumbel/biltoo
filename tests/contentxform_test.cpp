@@ -52,6 +52,8 @@ private slots:
     void mapSourceRect_turn90();
     void mapDisplayRect_cropRoundTrip();
     void mapDisplayRect_freeRotExpands();
+    void sourceToDisplayTransform_matchesMapCorners();
+    void sourceToDisplayTransform_hFlipMovesAndOrients();
     void layoutSize_freeCropRotationDoesNotChangeSize();
     void mapCropThrough_freeRotationAngleTracksContentTurn();
     void layoutSize_freeRotThenContentTurn();
@@ -947,6 +949,53 @@ void ContentXformTest::mapDisplayRect_freeRotExpands()
     QVERIFY(!src.isEmpty());
     // Rotated window should cover more than the axis-aligned crop box in source.
     QVERIFY(src.width() >= 40 || src.height() >= 40);
+}
+
+void ContentXformTest::sourceToDisplayTransform_matchesMapCorners()
+{
+    // Transform must map corners like mapSourceRectToDisplay (AABB of images).
+    ContentXform::Value x;
+    x.hFlip = true;
+    x.quarterTurns = 1;
+    x.hasCrop = true;
+    x.cropRect = QRect(5, 5, 40, 30);
+    const QSize n(80, 60);
+    const QTransform T = ContentXform::sourceToDisplayTransform(n, x);
+    const QRectF src(10, 8, 16, 12);
+    const QRectF mapped = ContentXform::mapSourceRectToDisplay(src, n, x);
+    QVERIFY(!mapped.isEmpty());
+    const QPointF corners[4] = {
+        src.topLeft(), src.topRight(), src.bottomRight(), src.bottomLeft(),
+    };
+    qreal minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (const QPointF &c : corners) {
+        const QPointF p = T.map(c);
+        minX = qMin(minX, p.x());
+        maxX = qMax(maxX, p.x());
+        minY = qMin(minY, p.y());
+        maxY = qMax(maxY, p.y());
+    }
+    QVERIFY(qAbs(minX - mapped.left()) < 1e-4);
+    QVERIFY(qAbs(maxX - mapped.right()) < 1e-4);
+    QVERIFY(qAbs(minY - mapped.top()) < 1e-4);
+    QVERIFY(qAbs(maxY - mapped.bottom()) < 1e-4);
+}
+
+void ContentXformTest::sourceToDisplayTransform_hFlipMovesAndOrients()
+{
+    // Left-edge source cell must land on the right in display under hFlip;
+    // transform (not dest AABB alone) is what orienting UV relies on.
+    ContentXform::Value x;
+    x.hFlip = true;
+    const QSize n(200, 100);
+    const QTransform T = ContentXform::sourceToDisplayTransform(n, x);
+    const QPointF left(10, 50);
+    const QPointF right(190, 50);
+    const QPointF leftD = T.map(left);
+    const QPointF rightD = T.map(right);
+    QVERIFY(leftD.x() > rightD.x()); // flipped
+    QVERIFY(qAbs(leftD.x() - (200.0 - 10.0)) < 1e-4);
+    QVERIFY(qAbs(rightD.x() - (200.0 - 190.0)) < 1e-4);
 }
 
 #include "contentxform_test.moc"

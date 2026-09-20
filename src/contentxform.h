@@ -11,6 +11,7 @@
 #include <QRectF>
 #include <QSize>
 #include <QSizeF>
+#include <QTransform>
 #include <QtGlobal>
 
 /**
@@ -222,6 +223,14 @@ QRectF mapDisplayRectToSource(const QRectF &displayRect, const QSize &native,
 /** Source → post-flip/turn oriented space (no crop / free-rot). */
 QRectF mapSourceRectToOriented(const QRectF &sourceRect, const QSize &native,
                                const Value &x);
+
+/**
+ * QTransform mapping source pixel coords → display (crop-local) coords.
+ * Same pipeline as mapSourceRectToDisplay / materializeDisplay:
+ * flips → quarter turns → axis-aligned crop translate or free-rot window.
+ * Use for tile paint so UV stays source-aligned while dest follows orient.
+ */
+QTransform sourceToDisplayTransform(const QSize &native, const Value &x);
 
 } // namespace ContentXform
 

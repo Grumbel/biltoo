@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1723-tile-orient-uv.** Tile flip/rotate: orient UV via painter transform.
+Prior: **1722**.
+
+### Change
+- Bug: content flip/rotate moved tile **dest** AABBs but left source-aligned UV
+  (samples unoriented relative to soft underlay).
+- `ContentXform::sourceToDisplayTransform` — flips → turns → crop / free-rot
+- Tile paint: keep plan dest in **source** space; `setTransform(source→display)`
+  so UV matches thumtoo payloads; skip cells outside crop via mapSourceRectToDisplay
+- contentxform_test: transform matches map corners; hFlip point map
+- TILE_LOD.md orient paint rules updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1723-tile-orient-uv.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest contentxform
+- Manual: deep-zoom after H-flip / 90° rotate — tiles must match soft orient
+- Phase 6 Tier 4 harness still open
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1722-phase7-itemworld-plan.** Phase 7 ItemWorld plan + -Wshadow fix.
 Prior: **1721**.
 

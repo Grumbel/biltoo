@@ -1575,9 +1575,6 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 const QSize native = tileNativeSize();
                 const ContentXform::Value x = tileContentXform();
                 const QPointF off = offset();
-                const bool freeRot = x.hasCrop && !x.cropRect.isEmpty()
-                    && qAbs(x.cropRotation) > 1e-3;
-
                 ColorAdjustments grade = x.colorAdjust;
                 if (grade.isIdentity() && !m_colorAdjust.isIdentity()) {
                     grade = m_colorAdjust;
@@ -1587,104 +1584,55 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     return resolveGradedTile(key, grade);
                 };
 
-                if (freeRot) {
-                    // Draw tiles in oriented space under the same centre/rotate
-                    // transform as materializeDisplay (not AABB-squashed).
-                    for (tilelod::DrawCommand &cmd : plan.commands) {
-                        QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
-                                      cmd.dst_content.w, cmd.dst_content.h);
-                        QRectF ori = ContentXform::mapSourceRectToOriented(
-                            srcBox, native, x);
-                        // Outside / unmappable: skip (never fall back to source
-                        // coords — those land in crop-sized local space wrong).
-                        if (ori.isEmpty()) {
-                            cmd.dst_content = {0.0, 0.0, 0.0, 0.0};
-                            continue;
-                        }
-                        cmd.dst_content = {ori.x(), ori.y(), ori.width(), ori.height()};
+                // Tiles are source-space bitmaps (thumtoo). Dest was previously
+                // AABB-mapped to oriented/crop-local without transforming UV —
+                // flip/rotate moved the cell but left samples unoriented.
+                // Paint with source destinations under source→display transform
+                // so UV stays aligned with tile payloads (same pipeline as
+                // materializeDisplay: flips → turns → crop / free-rot).
+                for (tilelod::DrawCommand &cmd : plan.commands) {
+                    QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
+                                  cmd.dst_content.w, cmd.dst_content.h);
+                    QRectF disp = ContentXform::mapSourceRectToDisplay(
+                        srcBox, native, x);
+                    if (disp.isEmpty()) {
+                        // Outside crop / unmappable — skip.
+                        cmd.dst_content = {0.0, 0.0, 0.0, 0.0};
+                        continue;
                     }
-                    const QRect contentCrop = x.cropRect.normalized();
-                    const QRectF cr = contentRect();
-                    painter->save();
-                    painter->setClipRect(cr);
-                    painter->translate(cr.center());
-                    painter->rotate(-x.cropRotation);
-                    painter->translate(-QPointF(contentCrop.center()));
-                    tilelod::PaintDrawPlanArgs args;
-                    args.plan = &plan;
-                    args.lqip = QImage(); // soft already in display space
-                    args.smooth = tilePaintNeedsSmooth(
-                        tileDevicePerContent(),
-                        m_tileLod->session()->target_scale(), plan);
-                    args.resolve = resolve;
-                    tilelod::paint_draw_plan(painter, args);
-
-                    if (tilePlanDebugOverlayEnabled()) {
-                        paintTilePlanDebugOverlay(painter, m_tileLod->session(), plan,
-                                                 contentRect());
-                    }
-
-                    painter->restore();
-                } else {
-                    for (tilelod::DrawCommand &cmd : plan.commands) {
-                        QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
-                                      cmd.dst_content.w, cmd.dst_content.h);
-                        QRectF oriented = ContentXform::mapSourceRectToOriented(
-                            srcBox, native, x);
-                        if (oriented.isEmpty()) {
-                            cmd.dst_content = {0.0, 0.0, 0.0, 0.0};
-                            continue;
-                        }
-                        QRectF disp = oriented;
-                        if (x.hasCrop && !x.cropRect.isEmpty()) {
-                            const QRect contentCrop = x.cropRect.normalized();
-                            const QRectF local = oriented.translated(
-                                -contentCrop.x(), -contentCrop.y());
-                            const QRectF cropLocal(0.0, 0.0, contentCrop.width(),
-                                                   contentCrop.height());
-                            disp = local.intersected(cropLocal);
-                            if (disp.isEmpty() || local.width() < 1e-6
-                                || local.height() < 1e-6) {
-                                // Tile outside the crop window — do not paint.
-                                cmd.dst_content = {0.0, 0.0, 0.0, 0.0};
-                                continue;
-                            }
-                            // Partial edge cells: crop UV with the same ratio so
-                            // drawImage does not stretch the full tile into the
-                            // clipped dest (edge squish).
-                            const qreal u0 =
-                                (disp.left() - local.left()) / local.width();
-                            const qreal v0 =
-                                (disp.top() - local.top()) / local.height();
-                            const qreal uw = disp.width() / local.width();
-                            const qreal vh = disp.height() / local.height();
-                            cmd.src_uv = {cmd.src_uv.x + u0 * cmd.src_uv.w,
-                                          cmd.src_uv.y + v0 * cmd.src_uv.h,
-                                          uw * cmd.src_uv.w, vh * cmd.src_uv.h};
-                        }
-                        cmd.dst_content = {disp.x() + off.x(), disp.y() + off.y(),
-                                           disp.width(), disp.height()};
-                    }
-                    tilelod::PaintDrawPlanArgs args;
-                    args.plan = &plan;
-                    // Soft is already painted over contentRect above. Passing
-                    // it as lqip would stretch the *full* soft into every
-                    // Underlay cell (repeated mini-images in holes). Leave
-                    // empty so holes show the continuous soft underneath;
-                    // CoarserTile stand-ins still paint via resolve.
-                    args.lqip = QImage();
-                    args.smooth = tilePaintNeedsSmooth(
-                        tileDevicePerContent(),
-                        m_tileLod->session()->target_scale(), plan);
-                    args.resolve = resolve;
-                    tilelod::paint_draw_plan(painter, args);
-                    (void)under;
-
-                    if (tilePlanDebugOverlayEnabled()) {
-                        paintTilePlanDebugOverlay(painter, m_tileLod->session(), plan,
-                                                 contentRect());
-                    }
+                    // Keep dst in source space; painter transform places it.
+                    // (UV unchanged — source-aligned.)
                 }
+                const QRectF cr = contentRect();
+                painter->save();
+                painter->setClipRect(cr);
+                {
+                    QTransform toDisplay =
+                        ContentXform::sourceToDisplayTransform(native, x);
+                    toDisplay = QTransform::fromTranslate(off.x(), off.y()) * toDisplay;
+                    painter->setTransform(toDisplay, true);
+                }
+                tilelod::PaintDrawPlanArgs args;
+                args.plan = &plan;
+                // Soft is already painted over contentRect above. Passing
+                // it as lqip would stretch the *full* soft into every
+                // Underlay cell (repeated mini-images in holes). Leave
+                // empty so holes show the continuous soft underneath;
+                // CoarserTile stand-ins still paint via resolve.
+                args.lqip = QImage();
+                args.smooth = tilePaintNeedsSmooth(
+                    tileDevicePerContent(),
+                    m_tileLod->session()->target_scale(), plan);
+                args.resolve = resolve;
+                tilelod::paint_draw_plan(painter, args);
+                (void)under;
+
+                if (tilePlanDebugOverlayEnabled()) {
+                    paintTilePlanDebugOverlay(painter, m_tileLod->session(), plan,
+                                             contentRect());
+                }
+                painter->restore();
+
             }
         }
         painter->restore();

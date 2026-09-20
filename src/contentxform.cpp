@@ -476,4 +476,61 @@ QRectF mapDisplayRectToSource(const QRectF &displayRect, const QSize &native,
     return aabbFromCorners(s);
 }
 
+QTransform sourceToDisplayTransform(const QSize &native, const Value &x)
+{
+    if (!isPositiveSize(native)) {
+        return {};
+    }
+    // Compose so T.map(p) matches sourcePointToOriented then crop window.
+    // Application order: first flips, then turns, then crop (left-multiply).
+    QTransform t;
+    qreal W = native.width();
+    qreal H = native.height();
+
+    if (x.hFlip) {
+        QTransform f;
+        f.translate(W, 0.0);
+        f.scale(-1.0, 1.0);
+        t = f * t;
+    }
+    if (x.vFlip) {
+        QTransform f;
+        f.translate(0.0, H);
+        f.scale(1.0, -1.0);
+        t = f * t;
+    }
+    const int turns = normalizeQuarterTurns(x.quarterTurns);
+    for (int i = 0; i < turns; ++i) {
+        // (x,y) → (H - y, x); space (W,H) → (H,W)
+        // Qt rotate(+90): (x,y) → (-y, x); then + (H, 0) → (H - y, x).
+        QTransform r;
+        r.translate(H, 0.0);
+        r.rotate(90.0);
+        t = r * t;
+        const qreal nW = H;
+        const qreal nH = W;
+        W = nW;
+        H = nH;
+    }
+
+    if (x.hasCrop && !x.cropRect.isEmpty()) {
+        const QRect crop = x.cropRect.normalized();
+        if (hasFreeCropRotation(x)) {
+            const qreal dw = crop.width();
+            const qreal dh = crop.height();
+            const QPointF srcCenter(crop.center());
+            QTransform c;
+            c.translate(dw / 2.0, dh / 2.0);
+            c.rotate(-x.cropRotation);
+            c.translate(-srcCenter.x(), -srcCenter.y());
+            t = c * t;
+        } else {
+            QTransform c;
+            c.translate(-crop.x(), -crop.y());
+            t = c * t;
+        }
+    }
+    return t;
+}
+
 } // namespace ContentXform
