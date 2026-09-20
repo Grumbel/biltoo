@@ -523,7 +523,7 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
 
     // --- install full-frame draft pixels ---
     cancelPathRasterForCrop(path);
-    if (!full.isNull() && m_view->sampleCoversNativeLogical(path, full)) {
+    if (!full.isNull() && m_view->hostDisplayPipeline().sampleCoversNativeLogical(path, full)) {
         m_view->rememberSizeFromDecode(path, full);
         QSize logical = m_view->logicalSizeForPath(path);
         if (!isPositiveSize(logical) || m_view->isProvisionalImageSize(path)) {
@@ -531,7 +531,7 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
         }
     }
     CropSession::maybePutUnorientedHostCache(
-        path, full, unorientedSource, m_view->sampleCoversNativeLogical(path, full));
+        path, full, unorientedSource, m_view->hostDisplayPipeline().sampleCoversNativeLogical(path, full));
     const CropSession::EnterInstallSample sample =
         CropSession::prepareEnterInstallSample(full, unorientedSource, appPtr, haveApp);
 
@@ -858,7 +858,7 @@ void CropController::maybeUpgradeCropFullRaster(const QString &path, const QImag
         }
         return;
     }
-    const bool covers = m_view->sampleCoversNativeLogical(path, image);
+    const bool covers = m_view->hostDisplayPipeline().sampleCoversNativeLogical(path, image);
     if (!session().shouldAcceptFullRasterUpgrade(path, image, item, covers)) {
         return;
     }

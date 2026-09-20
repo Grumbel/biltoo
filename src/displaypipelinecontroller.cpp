@@ -259,7 +259,7 @@ void DisplayPipelineController::ensureImageModeQualityClimb(const QString &path,
         tickPrimaryTileLod(12);
         return;
     }
-    if (!sample.isNull() && m_view->sampleCoversNativeLogical(path, sample)) {
+    if (!sample.isNull() && sampleCoversNativeLogical(path, sample)) {
         return;
     }
 

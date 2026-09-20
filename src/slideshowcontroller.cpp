@@ -952,7 +952,7 @@ void SlideshowController::onSlideshowRasterReady(const QString &path, const QIma
     // Climb while the *phase buffer* is still short of target (not only when
     // the host cache edge increases).
     if (m_view->pathRasterForCoordinator()) {
-        const int target = m_view->cappedDisplayEdgeForPath(path, slideshowTargetEdge());
+        const int target = m_view->hostDisplayPipeline().cappedDisplayEdgeForPath(path, slideshowTargetEdge());
         const int need = SlideshowAtlasPolicy::needEdge(target);
         const int phaseHave =
             (phase().isFromPath(path)) ? ImageCache::longEdge(phase().fromImageRef())
@@ -1674,7 +1674,7 @@ void SlideshowController::preloadSlideshowImage(const QString &path)
     if (hud().isNavHot()) {
         return;
     }
-    const int targetEdge = m_view->cappedDisplayEdgeForPath(path, slideshowTargetEdge());
+    const int targetEdge = m_view->hostDisplayPipeline().cappedDisplayEdgeForPath(path, slideshowTargetEdge());
     const int need = SlideshowAtlasPolicy::needEdge(targetEdge);
     const QSize native = m_view->logicalSizeForPath(path);
     const QImage cached = ImageCache::get(path);

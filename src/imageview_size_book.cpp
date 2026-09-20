@@ -208,7 +208,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         if (sid == kInvalidSessionImageId && isImageMode()) {
             sid = m_sessionId.currentIdValue();
         }
-        WorkspaceItemState want = wantAppearanceForItem(item, sid);
+        WorkspaceItemState want = m_displayPipeline.wantAppearanceForItem(item, sid);
         QSize layoutSize = ContentXform::layoutSize(size, want);
         if (!(layoutSize.width() > 1 && layoutSize.height() > 1)) {
             layoutSize = size;

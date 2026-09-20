@@ -8,11 +8,6 @@
 #include "thumtoocache.h"
 #include "sessionappearance.h"
 
-WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
-                                                      SessionImageId sid) const
-{
-    return m_displayPipeline.wantAppearanceForItem(item, sid);
-}
 
 bool ImageView::applyDisplaySurfaceAction(ImageItem *item,
                                           const DisplaySurface::Action &act,
@@ -146,20 +141,8 @@ void ImageView::installImageModeSampleInPlace(ImageItem *item, const QString &pa
     m_displayPipeline.installImageModeSampleInPlace(item, path, image, kind);
 }
 
-int ImageView::cappedDisplayEdgeForPath(const QString &path, int wantEdge) const
-{
-    return m_displayPipeline.cappedDisplayEdgeForPath(path, wantEdge);
-}
 
-QImage ImageView::fullRasterForEdit(const QString &path) const
-{
-    return m_displayPipeline.fullRasterForEdit(path);
-}
 
-bool ImageView::sampleCoversNativeLogical(const QString &path, const QImage &image) const
-{
-    return m_displayPipeline.sampleCoversNativeLogical(path, image);
-}
 
 void ImageView::noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
                                                  const QImage &sample)

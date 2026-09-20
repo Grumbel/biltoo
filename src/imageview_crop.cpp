@@ -259,7 +259,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         return;
     }
     const QString path = item->path();
-    const QImage full = fullRasterForEdit(path);
+    const QImage full = m_displayPipeline.fullRasterForEdit(path);
     if (!full.isNull() && !path.isEmpty()) {
         ImageCache::put(path, full);
     }

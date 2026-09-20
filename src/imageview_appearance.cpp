@@ -62,7 +62,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     const bool needsFullSource = app->hasCrop || app->contentHFlip || app->contentVFlip
         || app->contentQuarterTurns != 0;
     if (needsFullSource) {
-        const QImage full = fullRasterForEdit(item->path());
+        const QImage full = m_displayPipeline.fullRasterForEdit(item->path());
         if (!full.isNull()) {
             m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
                                  sid);

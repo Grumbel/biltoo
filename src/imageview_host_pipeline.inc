@@ -22,8 +22,6 @@
     void scheduleImageSizeProbe(const QString &path);
     void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,
                                               const QSize &after);
-    WorkspaceItemState wantAppearanceForItem(const ImageItem *item,
-                                             SessionImageId sid = kInvalidSessionImageId) const;
     bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
     void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
                              bool haveBound, const PendingSessionBind &bound);

@@ -173,7 +173,7 @@ ImageView::ImageView(QWidget *parent)
                                 // Geometry first — LQIP must not pack from 1×1.
                                 const SessionImageId sid = item->sessionId();
                                 const WorkspaceItemState want =
-                                    wantAppearanceForItem(item, sid);
+                                    m_displayPipeline.wantAppearanceForItem(item, sid);
                                 const QSize lay = ContentXform::layoutSize(size, want);
                                 if (isPositiveSize(lay) && lay.width() > 1) {
                                     item->setIntrinsicSize(lay);
@@ -218,7 +218,7 @@ ImageView::ImageView(QWidget *parent)
                     m_slideshow.onSlideshowRasterReady(path, img);
                     // SoftDisplay only at screen-fit edge (TileSynth when tiles exist).
                     if (m_pathRaster) {
-                        const int target = cappedDisplayEdgeForPath(
+                        const int target = m_displayPipeline.cappedDisplayEdgeForPath(
                             path, m_slideshow.slideshowTargetEdge());
                         const int need = target * 7 / 10;
                         if (longEdge > 0 && longEdge < need) {

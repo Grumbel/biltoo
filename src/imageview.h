@@ -491,7 +491,6 @@ public:
      * into ImageCache. Avoids redundant full decodes on the GUI when the
      * session already holds native pixels.
      */
-    QImage fullRasterForEdit(const QString &path) const;
     bool isCropMode() const { return m_cropCtrl.active(); }
     void toggleCropMode();
 

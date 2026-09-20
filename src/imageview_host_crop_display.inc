@@ -8,7 +8,6 @@
                                     SessionImageId *sidOut) const;
     void rememberSizeFromDecode(const QString &path, const QImage &image);
     void rememberImageSize(const QString &path, const QSize &size);
-    bool sampleCoversNativeLogical(const QString &path, const QImage &image) const;
     void emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);
@@ -71,7 +70,6 @@
     SessionLoadGate &hostLoadGate() { return m_displayPipeline.loadGate(); }
     const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }
     /** PreferCache / soft climb edge cap (also used outside slideshow). */
-    int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     QSize ensureSlideshowLogicalSize(const QString &path);
     bool isProvisionalImageSize(const QString &path) const;
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
