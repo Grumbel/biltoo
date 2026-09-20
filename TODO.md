@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1927-gallery-layout-selection-by-id.** Layout-switch multi-select by session id.
+Prior: **1926**.
+
+### Change
+- Gallery layout switch: snapshot selected items' `SessionImageId` (path only if unbound)
+- Re-select via `findItemBySessionId` first; path preferred/first-match for unbound only
+- Selection anchor restored by id when bound
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1927-gallery-layout-selection-by-id-516d734.bundle HEAD
+```
+Requires tip **1926** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Phase 7 ImageItem demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1926-gallery-focus-session-id.** Gallery restore prefers session id.
 Prior: **1925**.
 

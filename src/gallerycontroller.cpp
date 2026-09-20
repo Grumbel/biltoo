@@ -294,7 +294,9 @@ void GalleryController::enter(int packagedLayoutInt)
     // Preserve multi-select when only switching Gallery layout (not entering
     // from Image/Workspace — prepareGalleryCanvas clears selection).
     QStringList selectedPaths;
+    QList<SessionImageId> selectedIds;
     QString anchorPath;
+    SessionImageId anchorId = kInvalidSessionImageId;
     const bool layoutSwitch = m_view->isGalleryMode();
 
     // Returning from Image: reattach cached tiles before packing.
@@ -317,12 +319,20 @@ void GalleryController::enter(int packagedLayoutInt)
             if (!ii || !m_view->liveItems().contains(ii) || ii->scene() != m_view->canvasScene()) {
                 continue;
             }
-            selectedPaths.append(ii->path());
+            if (ii->sessionId() != kInvalidSessionImageId) {
+                selectedIds.append(ii->sessionId());
+            } else if (!ii->path().isEmpty()) {
+                selectedPaths.append(ii->path());
+            }
         }
         if (m_selectionAnchor
             && m_view->liveItems().contains(m_selectionAnchor)
             && m_selectionAnchor->scene() == m_view->canvasScene()) {
-            anchorPath = m_selectionAnchor->path();
+            if (m_selectionAnchor->sessionId() != kInvalidSessionImageId) {
+                anchorId = m_selectionAnchor->sessionId();
+            } else {
+                anchorPath = m_selectionAnchor->path();
+            }
         } else {
             m_selectionAnchor = nullptr;
         }
@@ -399,10 +409,15 @@ void GalleryController::enter(int packagedLayoutInt)
         m_view->viewport()->update();
     }
 
-    if (layoutSwitch && !selectedPaths.isEmpty()) {
+    if (layoutSwitch && (!selectedIds.isEmpty() || !selectedPaths.isEmpty())) {
         m_view->canvasScene()->clearSelection();
+        for (const SessionImageId sid : selectedIds) {
+            if (ImageItem *item = m_view->findItemBySessionId(sid)) {
+                item->setSelected(true);
+            }
+        }
         for (const QString &path : selectedPaths) {
-            // After clearSelection: sole live match, or first if multiple (legacy).
+            // Unbound tiles: preferred path, then first-match.
             ImageItem *item = m_view->findPreferredItemForPath(path);
             if (!item) {
                 item = m_view->findItemByPath(path);
@@ -411,13 +426,15 @@ void GalleryController::enter(int packagedLayoutInt)
                 item->setSelected(true);
             }
         }
-        if (anchorPath.isEmpty()) {
-            m_selectionAnchor = nullptr;
-        } else {
+        if (anchorId != kInvalidSessionImageId) {
+            m_selectionAnchor = m_view->findItemBySessionId(anchorId);
+        } else if (!anchorPath.isEmpty()) {
             m_selectionAnchor = m_view->findPreferredItemForPath(anchorPath);
             if (!m_selectionAnchor) {
                 m_selectionAnchor = m_view->findItemByPath(anchorPath);
             }
+        } else {
+            m_selectionAnchor = nullptr;
         }
     }
 
