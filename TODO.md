@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1687-rematerialize-tu.** Split rematerialize/bake/color-grade out of appearance.cpp.
+Prior: **1686**.
+
+### Change
+- New `imageview_rematerialize.cpp`: rematerialize, async host rematerialize, bake flip/rotate, color-grade commit
+- `imageview_appearance.cpp` ~1659 → ~953 lines (store/apply/crop/propagate/targets)
+- CMake lists the new TU
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1687-rematerialize-tu.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Characterization before Tier 4 path-order / SessionAppearance store move
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1686-gallery-controller-compile.** Fix GalleryController compile errors after method moves.
 Prior: **1685**.
 
