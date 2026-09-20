@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1916-private-methods-host-docs.** Hygiene after host-surface series.
+Prior: **1915**.
+
+### Change
+- Trim excess blank lines in `imageview_private_methods.inc` (271 → 233)
+- Host include banners on `imageview.h` for crop_display / ops / pipeline
+- REFACTOR: accurate metrics (~10470 TU lines); host-surface split note;
+  intentional geometry-undo friend; drop stale `imageview_load.cpp` residual
+- No behaviour change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1916-private-methods-host-docs-516d734.bundle HEAD
+```
+Requires tip **1915** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+- Phase 7 ItemWorld residuals (design-heavy) or product work from TODO
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1915-host-bags-in-accessors.** Pure host* bags off crop_display.
 Prior: **1914**.
 

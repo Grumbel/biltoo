@@ -769,7 +769,10 @@ the stop line when Tier 4 lands.
 **Compile green** as of biltoo-1622 (controller stack links and runs).
 
 **Done (mechanical):** Tiers 0–3, 2a/2b, 5a state ownership, 6a/6b mode input
-dispatch, friend list empty, HudModel + session identity characterization tests.
+dispatch, HudModel + session identity characterization tests. Host surface
+split (1913–1915): `host_accessors` bags, `host_ops` / `host_crop_display` /
+`host_pipeline` operations. One intentional friend:
+`ImageViewTransformGeometryCommand` (geometry undo; biltoo-1911).
 
 **Still open:**
 1. **Tier 4 residual** — Appearance on `SessionDocument` (Tier 4b). Pack order
@@ -782,15 +785,16 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 2. **Tier 5** — **done** for exit size: PreferCache/install/schedule/tile LOD on
    `DisplayPipelineController` (split TUs + jobs). Soft provider and neighbor
    prefetch stay on ImageView. ImageView→pipeline thin-forward TU removed
-   (biltoo-1835–1836); residual host helpers in `imageview_load.cpp` (~60 lines).
+   (biltoo-1835–1836); `imageview_load.cpp` deleted (1895); load/path helpers in
+   canvas / size_book / pipeline TUs.
 3. **Tier 6 remainder** — input try* hop demoted (biltoo-1837: dispatch calls
    controllers directly; `imageview_input_forwards.cpp` gone). Transform chrome
-   stays on ImageView (AGENTS.md).
+   stays on ImageView (AGENTS.md). Paint/input try* decls private (1910).
 4. **Metrics** — `imageview.h` ~598 lines;
    ~26 `imageview*.cpp` TUs,
-   ~10459 lines total (down from ~21k / many more TUs at Phase 6 start).
-   1894–1908 folded thin/grab-bag TUs by domain. Further merges have weak
-   cohesion payoff; prefer green harness + public-surface narrowing.
+   ~10470 lines total (down from ~21k / many more TUs at Phase 6 start).
+   1894–1908 folded thin/grab-bag TUs by domain; 1910–1915 host-surface
+   narrowing. Further merges have weak cohesion payoff; prefer green harness.
 5. **Beyond Phase 6** — per-id component ownership and demoting `ImageItem` from
    a parallel appearance store are **Phase 7** (ItemWorld), not more Phase 6
    controller extraction. See Phase 7 below.
@@ -1143,6 +1147,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1913: findItemBySessionId + matchesLoadGeneration on host surface; ~609 lines.
 - biltoo-1914: host_ops vs host_accessors — gallery/page-guide ops off accessors file.
 - biltoo-1915: host bags (appearance/session/HUD/loadGate/…) in accessors; crop_display ops-only; ~598 lines.
+- biltoo-1916: private_methods blank trim; host include banners; REFACTOR metrics/friend/load TU notes.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

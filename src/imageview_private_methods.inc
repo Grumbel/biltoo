@@ -39,23 +39,10 @@
     /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */
     void refreshScrollBarGeometry();
 
-
-
-
-
-
-
-
-
-
-
-
     // --- completeLoadReplace phases ---
-
 
     /** Scene pixels per millimetre for the page guide (layout scale). */
     static qreal pageGuidePxPerMm();
-
 
     /**
      * Same as path-only overload, but binds each path to the parallel
@@ -83,7 +70,6 @@
     void restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,
                                            const QPointF &keptCenter, int scrollH, int scrollV);
 
-
     /** Best-effort: remember viewport centre in image-normalized coords. */
 
     void restoreStickyPanAnchor(ImageItem *item);
@@ -91,35 +77,11 @@
     /** Current view-level scale factor (workspace zoom). */
     qreal viewScale() const;
 
-
-
     /** Joined text of the selection in reading order; empty if none. */
     QString selectedText() const;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /** Invoked by ImageItem during handle interaction for live status updates. */
     Q_INVOKABLE void refreshStatus();
-
 
     /**
      * Coalesce rapid Gallery packs (e.g. sizeReady storm when opening a large

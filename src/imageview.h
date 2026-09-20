@@ -242,8 +242,9 @@ public:
     void takePendingWorkspacePath(const QString &path);
 
 
+// Crop/display ops — imageview_host_crop_display.inc
 #include "imageview_host_crop_display.inc"
-
+// Mode/canvas ops (find/destroy/gallery/page-guide) — imageview_host_ops.inc
 #include "imageview_host_ops.inc"
 
     void setViewMode(ViewMode mode);
@@ -572,8 +573,8 @@ signals:
                       const QList<qint64> &sessionIds = {},
                       const QStringList &internalPaths = {});
 public:
-    // Display pipeline / pack-order host surface (controllers).
-    // Input try* and paint phases: imageview_private_methods.inc.
+    // Pack-order + load/framing host surface (controllers).
+    // Paint/input try* phases: imageview_private_methods.inc.
 #include "imageview_host_pipeline.inc"
 
 protected:
