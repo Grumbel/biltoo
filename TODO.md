@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1875-tile-prefetch-inline-hops.** Inline thin TileNeighborPrefetchHost overrides.
+Prior: **1874**.
+
+### Change
+- Inline `viewportWidgetSize`, `prefetchDevicePixelRatio`, `tilePrefetchNavHot`
+- Keep `pathOnLiveCanvas` (live-item scan) in `imageview_load.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1875-tile-prefetch-inline-hops.bundle HEAD
+```
+Requires tip **1874** (base **1858** / `1e112d94`).
+
+### Next
+- Tier 4 dual-write design before deleting `m_pathOrderBook`
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1874-size-resolve-inline-hops.** Inline pure-hop GallerySizeResolveHost overrides.
 Prior: **1873**.
 
