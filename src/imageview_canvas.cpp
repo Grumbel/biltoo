@@ -483,3 +483,22 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
     }
     validateUniqueLiveSessionIds("rebindWorkspaceSession");
 }
+
+void ImageView::setPathOrderFromLiveItems()
+{
+    QStringList paths;
+    QVector<SessionImageId> ids;
+    paths.reserve(m_items.size());
+    ids.reserve(m_items.size());
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        paths.append(item->path());
+        ids.append(item->sessionId());
+    }
+    if (!paths.isEmpty()) {
+        pathOrderSetOrder(paths, ids);
+    }
+}
+

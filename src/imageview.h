@@ -287,6 +287,8 @@ public:
     {
         pathOrderSetOrder(pack.paths(), pack.ids());
     }
+    /** Rebuild pack order from live tiles (path∥sessionId). Id-safe. */
+    void setPathOrderFromLiveItems();
     /** Controller host: disable Image-mode fit/fill when restoring free-form. */
     void clearFitFillModes();
     /** Controller host: Image/Gallery soft reset to fit, not fill. */

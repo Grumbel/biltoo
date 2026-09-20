@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1720-pathorder-from-live.** setPathOrderFromLiveItems centralizes id-safe rebuild.
+Prior: **1719**.
+
+### Change
+- `ImageView::setPathOrderFromLiveItems()` — pack order from live path∥sessionId
+- Gallery layout-switch uses it (no local paths-only loop)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1720-pathorder-from-live.bundle HEAD
+```
+
+### Next
+- biltoo-build
+- ImageView harness → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1719-setpathorder-ids-required.** Remove paths-only setPathOrder.
 Prior: **1718**.
 
