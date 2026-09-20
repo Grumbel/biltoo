@@ -44,7 +44,7 @@ void WorkspaceController::snapshot()
             m_view->itemWorld().setAppearance(s.sessionId, s);
         }
         if (s.sessionIndex >= 0) {
-            m_view->setItemStateForPath(s.path, s);
+            m_view->itemWorld().setPathState(s.path, s);
         }
     }
     // Durable view backup when the live stash is later discarded (e.g. Gallery).
@@ -74,7 +74,7 @@ void WorkspaceController::restore()
                 continue;
             }
         }
-        const WorkspaceItemState *it = m_view->itemStateForPath(slot.path);
+        const WorkspaceItemState *it = m_view->itemWorld().getPathState(slot.path);
         if (!it) {
             continue;
         }
@@ -95,7 +95,7 @@ void WorkspaceController::restore()
     // AUDIT M27: queue every saved state (including duplicate paths) then load.
     m_view->hostDisplayPipeline().loadGate().setPendingRestoreStates(m_savedItems);
     for (const WorkspaceItemState &state : m_savedItems) {
-        m_view->setItemStateForPath(state.path, state);
+        m_view->itemWorld().setPathState(state.path, state);
         m_view->scheduleRestoreLoad(state.path);
     }
     m_view->hostFraming().clearFitFill();
@@ -210,7 +210,7 @@ void WorkspaceController::restoreStashedItems()
                 }
             }
             if (samePath == 1) {
-                if (const WorkspaceItemState *st = m_view->itemStateForPath(item->path())) {
+                if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(item->path())) {
                     pathFallback = *st;
                     app = &pathFallback;
                 }
@@ -277,7 +277,7 @@ void WorkspaceController::restoreFreeFormStates()
         const auto it = m_freeFormStates.constFind(item->path());
         if (it != m_freeFormStates.constEnd()) {
             m_view->applyState(item, *it);
-            m_view->setItemStateForPath(item->path(), *it);
+            m_view->itemWorld().setPathState(item->path(), *it);
         }
     }
     if (m_hasFreeFormViewTransform) {

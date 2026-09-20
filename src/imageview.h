@@ -265,16 +265,7 @@ public:
     {
         m_sessionDoc = doc;
     }
-    /** Controller host: path-keyed placement / unbound appearance cache. */
-    void setItemStateForPath(const QString &path, const WorkspaceItemState &state)
-    {
-        m_itemWorld.setPathState(path, state);
-    }
-
-    const WorkspaceItemState *itemStateForPath(const QString &path) const
-    {
-        return m_itemWorld.getPathState(path);
-    }
+    /** Path-keyed placement cache: itemWorld().setPathState / getPathState. */
     /** Pending workspace paths / restore: hostDisplayPipeline().loadGate(). */
     void takePendingWorkspacePath(const QString &path);
 
