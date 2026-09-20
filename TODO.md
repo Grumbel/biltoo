@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1821-drop-image-mode-item-forward.** Stage 2: drop dead ImageView imageModeItemForPath.
+Prior: **1820**.
+
+### Change
+- Removed unused `ImageView::imageModeItemForPath` thin-forward
+- Pipeline keeps `DisplayPipelineController::imageModeItemForPath`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1821-drop-image-mode-item-forward.bundle HEAD
+```
+Includes **1806–1821** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke
+- Offscreen ImageView characterization (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1820-drop-handle-tip-and-seed-forward.** Stage 2 residual cleanup.
 Prior: **1819**.
 
