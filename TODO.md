@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1739-geometry-persist-forward.** Forward geometry path persists ItemWorld.
+Prior: **1738**.
+
+### Change
+- `persistGeometrySessionState` — tables only (no live apply)
+- `pushItemGeometryCommand` / `pushItemTransformUndo` call it with `after`
+- `applyGeometrySessionState` = applyState + persist
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1739-geometry-persist-forward.bundle HEAD
+```
+
+### Next
+- biltoo-build + reset-scale / drag undo smoke
+- Characterization harness or Stage 2 continue
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1738-geometry-undo-itemworld.** Geometry undo/redo syncs ItemWorld.
 Prior: **1737**.
 

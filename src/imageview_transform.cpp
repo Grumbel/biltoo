@@ -19,7 +19,12 @@ void ImageView::pushItemGeometryCommand(const QString &text, ImageItem *item,
                                         const WorkspaceItemState &before,
                                         const WorkspaceItemState &after)
 {
-    if (!m_undoStack || !item) {
+    if (!item) {
+        return;
+    }
+    // Forward path: item already has `after` pose; keep ItemWorld Placement in sync.
+    persistGeometrySessionState(item, after);
+    if (!m_undoStack) {
         return;
     }
     class TransformCommand : public QUndoCommand {

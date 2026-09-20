@@ -127,12 +127,11 @@ void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
     applyPlacement(item, ItemComponents::placementFromState(state));
 }
 
-void ImageView::applyGeometrySessionState(ImageItem *item, const WorkspaceItemState &state)
+void ImageView::persistGeometrySessionState(ImageItem *item, const WorkspaceItemState &state)
 {
     if (!item) {
         return;
     }
-    applyState(item, state);
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : state.sessionId;
@@ -144,6 +143,15 @@ void ImageView::applyGeometrySessionState(ImageItem *item, const WorkspaceItemSt
     if (!item->path().isEmpty()) {
         m_itemWorld.setPathState(item->path(), state);
     }
+}
+
+void ImageView::applyGeometrySessionState(ImageItem *item, const WorkspaceItemState &state)
+{
+    if (!item) {
+        return;
+    }
+    applyState(item, state);
+    persistGeometrySessionState(item, state);
 }
 
 

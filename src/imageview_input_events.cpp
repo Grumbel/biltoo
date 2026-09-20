@@ -182,7 +182,7 @@ void ImageView::restoreToolCursor()
 void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState &before,
                                       const WorkspaceItemState &after, const QString &text)
 {
-    if (!item || !m_undoStack) {
+    if (!item) {
         return;
     }
     if (after.pos == before.pos
@@ -192,6 +192,10 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
         && qFuzzyCompare(after.shear + 1.0, before.shear + 1.0)
         && qFuzzyCompare(after.rotation, before.rotation)
         && after.opacity == before.opacity) {
+        return;
+    }
+    persistGeometrySessionState(item, after);
+    if (!m_undoStack) {
         return;
     }
     class TransformCommand : public QUndoCommand {

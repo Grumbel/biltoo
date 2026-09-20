@@ -963,3 +963,5 @@ Phase 1–6 rules still apply. Additions:
   (single reader for live ImageItem pose).
 - biltoo-1738: `applyGeometrySessionState` — geometry undo/redo syncs ItemWorld
   Placement + appearance (or path book); both TransformCommand sites use it.
+- biltoo-1739: `persistGeometrySessionState` on forward path of
+  pushItemGeometryCommand / pushItemTransformUndo (item already posed; tables catch up).

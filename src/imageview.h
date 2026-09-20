@@ -773,6 +773,8 @@ public:
      * Placement stays aligned with the live item.
      */
     void applyGeometrySessionState(ImageItem *item, const WorkspaceItemState &state);
+    /** Write Placement/appearance (or path book) without touching the live item. */
+    void persistGeometrySessionState(ImageItem *item, const WorkspaceItemState &state);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     /** Copy of stored appearance for @p id (empty/default if none). */
