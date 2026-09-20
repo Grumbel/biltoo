@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1702-appearance-commit-tu.** Extract appearance commit/peer sync TU.
+Prior: **1701**.
+
+### Change
+- New `imageview_appearance_commit.cpp` — syncSessionEditPeers, commitItemSessionEdit,
+  propagate/copy, targetHasContentAppearance, resetContentAppearanceForTargets,
+  updateWorkspaceSavedAppearance
+- `imageview_appearance.cpp` ~816 → ~435 (store/load/apply/persist)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1702-appearance-commit-tu.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Offscreen ImageView characterization harness (Tier 4 prerequisite)
+- Tier 4: path-order book → SessionDocument
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1701-restore-item-state.** Restore item lookup/captureState lost in layout dissolve.
 Prior: **1700**.
 

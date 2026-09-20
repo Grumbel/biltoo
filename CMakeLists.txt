@@ -142,6 +142,7 @@ add_executable(biltoo
   src/imageview_session_bind.cpp
   src/imageview_crop.cpp
   src/imageview_appearance.cpp
+  src/imageview_appearance_commit.cpp
   src/imageview_rematerialize.cpp
   src/imageview_bake.cpp
   src/imageview_item_state.cpp

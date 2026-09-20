@@ -719,6 +719,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 ### Progress log (Phase 6)
 
 - biltoo-1676..1693 (base 789df2d): mode reload ownership, layout dissolve, paint/view/input/canvas TU splits, SessionPathOrder characterization expand. Largest ImageView TUs now ~950 lines (canvas/appearance).
+- biltoo-1694..1702: further TU splits (workspace chrome, edge/dnd, crop/bake, appearance commit); include/link fixes after layout dissolve; dual-model path-order characterization. Appearance ~435 + commit ~393.
 
 - Tier 0: **done** (biltoo-1596) — privatized 190 methods with no refs outside
   `imageview*`; declarations live in `imageview_private_methods.inc` +
