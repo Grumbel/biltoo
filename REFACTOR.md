@@ -1015,3 +1015,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1767: drop/bind identity and Image-mode reset pose via applyPlacement.
 - biltoo-1768: GalleryLayout pack pose via applyPackPose / applyPlacement.
 - biltoo-1769: framing scale (and Image-mode pos) reset via applyPlacement.
+- biltoo-1770: Gallery enter / pre-pack free-form clear via applyPlacement.

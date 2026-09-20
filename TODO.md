@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1770-gallery-enter-apply-placement.** Gallery enter pose via applyPlacement.
+Prior: **1769**.
+
+### Change
+- Enter Gallery / layout-switch: opacity and free-form clear via Placement
+- Pre-pack strip of leftover Workspace tilt/flips via applyPlacement
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1770-gallery-enter-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + Gallery enter/layout smoke
+- Crop session residual or Tier 4 harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1769-framing-apply-placement.** Framing scale reset via applyPlacement.
 Prior: **1768**.
 

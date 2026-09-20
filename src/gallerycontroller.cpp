@@ -11,6 +11,7 @@
 #include "imageview_types.h"
 #include "gallerylayout.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 #include "viewtransform.h"
 #include "layoutapplyguard.h"
 #include <QElapsedTimer>
@@ -347,14 +348,18 @@ void GalleryController::enter(int packagedLayoutInt)
             continue;
         }
         m_view->applyItemModeFlags(item);
-        item->setItemOpacity(1.0);
-        // Entering Gallery from Image/Workspace: upright overview. Switching
-        // layout inside Gallery keeps user content transforms on the tiles.
-        if (!layoutSwitch) {
-            item->setItemRotation(0.0);
-            item->setItemShear(0.0);
-            item->setItemHFlip(false);
-            item->setItemVFlip(false);
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.opacity = 1.0;
+            // Entering Gallery from Image/Workspace: upright overview. Switching
+            // layout inside Gallery keeps user content transforms on the tiles.
+            if (!layoutSwitch) {
+                pl.rotation = 0.0;
+                pl.shear = 0.0;
+                pl.hFlip = false;
+                pl.vFlip = false;
+            }
+            item->applyPlacement(pl);
         }
     }
     // Explicit layout action: pack only live items (drop stale path-order holes).
@@ -1104,9 +1109,11 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         if (!item) {
             continue;
         }
-        item->setItemRotation(0.0);
-        item->setItemHFlip(false);
-        item->setItemVFlip(false);
+        ItemComponents::Placement pl = item->placement();
+        pl.rotation = 0.0;
+        pl.hFlip = false;
+        pl.vFlip = false;
+        item->applyPlacement(pl);
     }
 
     // Incremental packs (new session tiles, decode size change, F5) should keep
