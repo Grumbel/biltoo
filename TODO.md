@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1877-drop-dead-crop-display-surface.** Drop dead private crop + displaySurface decls.
+Prior: **1876**.
+
+### Change
+- Remove unused ImageView private decls for crop geometry (`cropPolygonView`,
+  `itemLocalFromView`, `mapItemLocalPolygonToView`) and pure-hop `cropRotation`
+  (owned by CropController since extraction)
+- Remove leftover `displaySurfaceStateForItem` private decl (lives on
+  DisplayPipelineController)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1877-drop-dead-crop-display-surface.bundle HEAD
+```
+Requires tip **1876** (base **1858** / `1e112d94`).
+
+### Next
+- Tier 4 dual-write design before deleting `m_pathOrderBook`
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1876-ensureLogicalSize-host.** Promote ensureLogicalSizeForPath; drop slideshow alias.
 Prior: **1875**.
 
