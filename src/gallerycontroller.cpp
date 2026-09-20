@@ -7,6 +7,7 @@
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "viewtransform.h"
+#include "layoutapplyguard.h"
 #include <QElapsedTimer>
 #include "sessionappearance.h"
 #include "biltoo_logging.h"
@@ -1067,6 +1068,135 @@ void GalleryController::updateDecodeWindow()
                     usPass1 / 1000.0, usPass2 / 1000.0, usInterest / 1000.0,
                     hostInstalled);
         }
+    }
+}
+
+
+// --- Gallery pack (applyLayout) ---
+
+void GalleryController::applyLayout(GalleryPackReason reason)
+{
+    ASSERT_GUI_THREAD();
+    if (m_view->hostLayoutApply().active()) {
+        return;
+    }
+    // Size-first open: do not pack on provisional stand-ins while probes run.
+    if (m_view->gallerySizeResolveActive()) {
+        return;
+    }
+    // Packaged packing is Gallery-only; never rearrange Workspace free-form items.
+    if (!m_view->isGalleryMode() || m_view->liveItems().isEmpty() || m_view->hostLayout().isFreeForm()) {
+        return;
+    }
+
+    if (!m_view->pathOrderIsEmpty()) {
+        m_view->reorderItemsByPaths(m_view->pathOrderPaths());
+    }
+
+    // Gallery overview is axis-aligned. Strip any leftover Workspace placement
+    // tilt/flips before packing (content 90°/flip remain in baked pixels).
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        item->setItemRotation(0.0);
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
+    }
+
+    // Incremental packs (new session tiles, decode size change, F5) should keep
+    // the user roughly in the same place. Enter / explicit layout switch still
+    // starts at the origin. Image→Gallery restore uses pendingRestore instead.
+    const bool preserveView =
+        !pendingRestore()
+        && (reason == GalleryPackReason::ContentChange
+            || reason == GalleryPackReason::SessionMutate
+            || reason == GalleryPackReason::Reload);
+    // Scene coordinates are rewritten by pack — do NOT centerOn a pre-pack
+    // scene point (that jumped the overview to the middle after crop). Keep
+    // scrollbar pixel values instead.
+    const int keptScrollH =
+        (preserveView && m_view->horizontalScrollBar()) ? m_view->horizontalScrollBar()->value() : -1;
+    const int keptScrollV =
+        (preserveView && m_view->verticalScrollBar()) ? m_view->verticalScrollBar()->value() : -1;
+
+    LayoutApplyGuard::Scoped layoutApplyScope(&m_view->hostLayoutApply());
+
+    // Packaged layouts use view pixels as scene units so images scale to the window
+    m_view->resetTransform();
+    if (!pendingRestore() && !preserveView) {
+        m_view->centerOn(0, 0);
+    }
+
+    // Reserve scrollbar space for the pack measurement. AsNeeded would let the
+    // first bar appear, shrink the viewport, and leave the fitted axis slightly
+    // oversized (dual bars). AlwaysOn only for this critical section; policy is
+    // restored after sceneRect is set so Zoom Fit/Fill can hide unused bars.
+    // m_view->hostLayoutApply() is already active — resizeEvent will not re-enter pack.
+    const auto savedHBar = m_view->horizontalScrollBarPolicy();
+    const auto savedVBar = m_view->verticalScrollBarPolicy();
+    if (savedHBar != Qt::ScrollBarAlwaysOn || savedVBar != Qt::ScrollBarAlwaysOn) {
+        m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    }
+
+    const qreal margin = GalleryLayout::Params::kDefaultMargin;
+    const qreal gap = GalleryLayout::Params::kDefaultGap;
+    const qreal availW = GalleryPackFit::packAvailAxis(m_view->viewport()->m_view->width(), margin);
+    const qreal availH = GalleryPackFit::packAvailAxis(m_view->viewport()->m_view->height(), margin);
+
+    GalleryLayout::Params params;
+    params.margin = margin;
+    params.gap = gap;
+    params.availW = availW;
+    params.availH = availH;
+    params.masonryColumns = m_view->hostLayout().masonryColumnsValue();
+    params.gridColumns = m_view->hostLayout().gridColumnsValue();
+    params.masonryRows = m_view->hostLayout().masonryRowsValue();
+    params.mode = m_view->galleryLayoutModeFromViewMode();
+
+    GalleryLayout::pack(m_view->liveItems(), params, [this](ImageItem *item) {
+        m_view->hostItemStateBook().set(item->path(), m_view->captureState(item));
+    });
+
+    const QRectF bounds = ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), margin);
+    if (m_view->canvasScene()->sceneRect() != bounds) {
+        m_view->canvasScene()->setSceneRect(bounds);
+    }
+    // Restore caller policy (AsNeeded/Off). With overshoot correction the packed
+    // fitted axis should not need a bar; AsNeeded can hide it. Still under
+    // m_view->hostLayoutApply() so a policy-driven resize does not repack.
+    if (m_view->horizontalScrollBarPolicy() != savedHBar) {
+        m_view->setHorizontalScrollBarPolicy(savedHBar);
+    }
+    if (m_view->verticalScrollBarPolicy() != savedVBar) {
+        m_view->setVerticalScrollBarPolicy(savedVBar);
+    }
+    m_view->hostFraming().armFit();
+    // Keep the guard until after statusChanged so slots cannot re-enter layout.
+    emit m_view->statusChanged();
+    // layoutApplyScope ends after this function returns (keeps guard through statusChanged)
+    // Re-apply scroll after m_view->centerOn(0,0) above when returning from Image.
+    m_view->applyPendingGalleryRestore();
+    if (preserveView) {
+        if (keptScrollH >= 0 && m_view->horizontalScrollBar()) {
+            m_view->horizontalScrollBar()->setValue(keptScrollH);
+        }
+        if (keptScrollV >= 0 && m_view->verticalScrollBar()) {
+            m_view->verticalScrollBar()->setValue(keptScrollV);
+        }
+    }
+    // Explicit column changes: debounce setInterest (was multi-second stalls).
+    // EnterGallery / Reload: run decode once now so startup is not blank until
+    // the 180ms timer; still schedule a short follow-up for late soft.
+    if (reason == GalleryPackReason::ExplicitLayout) {
+        scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowAfterPackMs);
+    } else if (reason == GalleryPackReason::EnterGallery
+               || reason == GalleryPackReason::Reload) {
+        updateDecodeWindow();
+        scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
+    } else {
+        updateDecodeWindow();
     }
 }
 

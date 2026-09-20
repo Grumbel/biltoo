@@ -723,6 +723,7 @@ public:
     bool layoutWorkspaceItems(const GalleryLayout::Params &params,
                               const QList<ImageItem *> &items = {});
     void applyPendingGalleryRestore();
+    GalleryLayout::Mode galleryLayoutModeFromViewMode() const;
     /** Gallery mode with a packaged layout. */
     bool isGalleryLayout() const { return isGalleryMode(); }
 

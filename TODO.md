@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1671-gallery-apply-layout.** Move applyLayout (Gallery pack) onto GalleryController.
+Prior: **1670**.
+
+### Change
+- `GalleryController::applyLayout(GalleryPackReason)`
+- ImageView thin-forwards
+- Host: `hostLayoutApply`, public `galleryLayoutModeFromViewMode`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1671-gallery-apply-layout.bundle HEAD
+```
+
+### Next
+- biltoo-build + Gallery layout / pack verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1670-gallery-decode-window-body.** Move updateDecodeWindow onto GalleryController.
 Prior: **1669**.
 

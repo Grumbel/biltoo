@@ -8,6 +8,7 @@
 #include <QPointF>
 #include <QString>
 #include <QStringList>
+#include "imageview_types.h"
 
 class ImageView;
 class ImageItem;
@@ -120,6 +121,7 @@ public:
     void scheduleDecodeWindowRefresh(int delayMs = 48);
     int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending = nullptr);
     void updateDecodeWindow();
+    void applyLayout(GalleryPackReason reason);
 
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
     {

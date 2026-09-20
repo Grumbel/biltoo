@@ -311,7 +311,6 @@
     /** Workspace: remove selected tiles from the canvas only (session kept). */
     void removeSelectedCanvasItems();
 
-    GalleryLayout::Mode galleryLayoutModeFromViewMode() const;
 
     /**
      * Coalesce rapid Gallery packs (e.g. sizeReady storm when opening a large

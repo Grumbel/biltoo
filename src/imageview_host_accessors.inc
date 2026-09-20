@@ -34,4 +34,6 @@
     void setPageGuideSelected(bool on);
     PerfStats &hostPerf() { return m_perf; }
     const PerfStats &hostPerf() const { return m_perf; }
+    LayoutApplyGuard &hostLayoutApply() { return m_layoutApply; }
+    const LayoutApplyGuard &hostLayoutApply() const { return m_layoutApply; }
 
