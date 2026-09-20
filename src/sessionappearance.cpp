@@ -197,7 +197,7 @@ QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
     }
 
     // 3) Crop in *post-orient* space (cropRect after mapCropThrough*).
-    // Free rotation uses the same window sample as ImageItem::cropToLocalRect.
+    // Free rotation uses the same window sample as ImageItem::materializeDisplay.
     if (state.hasCrop && !state.cropRect.isEmpty()) {
         const QSize live = out.size();
         QRect crop = scaleCropRect(state.cropRect, state.cropSourceSize, live);

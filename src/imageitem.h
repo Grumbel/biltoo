@@ -186,15 +186,6 @@ public:
     /** Bake horizontal/vertical mirror into source pixels; clears flip flags. */
     void bakeFlip(bool horizontal, bool vertical);
 
-    /**
-     * Crop displayed content to @p localRect (item coordinates, contentRect space).
-     * Bakes current H/V flips into the new source pixels and clears flip flags.
-     * Returns false if the rect is empty or outside the image.
-     */
-    bool cropToLocalRect(const QRectF &localRect,
-                         const QColor &padColor = QColor(0, 0, 0, 0),
-                         qreal rotationDegrees = 0.0);
-
     /** When false, the item cannot be selected or dragged (classic viewer). */
     void setInteractive(bool on);
     bool isInteractive() const { return m_interactive; }
@@ -230,7 +221,6 @@ public:
      * Used for fixed packaged layouts where scale is driven by the layout.
      */
     void setScaleHandlesEnabled(bool on);
-    bool scaleHandlesEnabled() const { return m_scaleHandlesEnabled; }
 
     /** Map a scene position to integer pixel coordinates, or (-1,-1) if outside. */
     QPoint pixelAtScenePos(const QPointF &scenePos) const;

@@ -272,7 +272,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     //   fight the view transform when showing a single image.
     // Logical size owns geometry — soft display pixels must not define fit.
     //
-    // Exception: a session crop bake (cropToLocalRect / materializeDisplay) sets
+    // Exception: a session crop bake (materializeDisplay / materializeDisplay) sets
     // intrinsic to the crop pixel size. Forcing full-file logicalSizeForPath here
     // immediately after Apply stretched the crop into the pre-crop box.
     //
