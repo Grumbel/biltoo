@@ -1505,3 +1505,155 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     emit statusChanged();
 }
 
+
+// --- content appearance targets (from transform) ---
+
+bool ImageView::targetHasContentAppearance() const
+{
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return false;
+    }
+    for (const ImageItem *item : targets) {
+        if (!item) {
+            continue;
+        }
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId && isImageMode()) {
+            sid = m_sessionId.currentIdValue();
+        }
+        if (sid != kInvalidSessionImageId) {
+            if (const WorkspaceItemState *app = appearance().get(sid)) {
+                if (SessionAppearance::hasContentAppearance(*app)) {
+                    return true;
+                }
+            }
+        }
+        if (SessionAppearance::liveItemHasContentMods(
+                item->sessionHasCrop(), item->contentHFlip(), item->contentVFlip())) {
+            return true;
+        }
+        if (ThumtooCache::hasContentAppearance(item->path())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+int ImageView::resetContentAppearanceForTargets()
+{
+    const QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        return 0;
+    }
+    int n = 0;
+    for (ImageItem *item : targets) {
+        if (!item) {
+            continue;
+        }
+        const QString path = item->path();
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId && isImageMode()) {
+            sid = m_sessionId.currentIdValue();
+        }
+
+        // 1) Drop durable XDG state for this content.
+        ThumtooCache::clearContentAppearance(path);
+
+        // 2) Clear session appearance content fields (keep placement).
+        if (sid != kInvalidSessionImageId) {
+            WorkspaceItemState slot = SessionAppearance::clearedContentOps(
+                appearance().value(sid));
+            slot.sessionId = sid;
+            slot.path = path;
+            // Keep color grade / pose if present.
+            appearance().set(sid, slot);
+        }
+        // Path map still holds content turns from prior bake/pack; captureState
+        // re-merges turns==0 from m_itemStateBook.byPath and can resurrect orientation.
+        if (const WorkspaceItemState *st = m_itemStateBook.get(path)) {
+            WorkspaceItemState pathSlot = SessionAppearance::clearedContentOps(*st);
+            m_itemStateBook.set(path, pathSlot);
+        }
+
+        item->setContentHFlip(false);
+        item->setContentVFlip(false);
+        item->setSessionCrop(false, QRect());
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
+
+        // Restore layout geometry to the unoriented native size (content
+        // rotate may have transposed intrinsic).
+        {
+            QSize native = ThumtooCache::cachedSize(path);
+            if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+                const QSize known = m_sizeBook.known(path);
+                if (!known.isEmpty()) {
+                    native = known;
+                }
+            }
+            if (native.isValid() && native.width() > 1 && native.height() > 1
+                && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
+                item->setIntrinsicSize(native);
+            }
+        }
+
+        // 3) Reinstall *mode-appropriate* pixels — never promote a full decode
+        // into Gallery soft tiles (that stuck tiles on native res and skipped
+        // the soft ladder forever via hasDecodedPixels()).
+        //
+        //   Gallery  → soft ladder (≤ kGalleryLadderEdge), reset soft state
+        //   Image / Workspace → full on-disk decode (user is inspecting / placing)
+        //
+        // Gallery focused tiles often already hold a *full* oriented decode
+        // (Image-mode visit or soft→full upgrade). setPreviewImage no-ops when
+        // full source is present, so identity soft would never replace the
+        // oriented pixels — Gallery + filmstrip stayed flipped while Image mode
+        // (FullSource install) looked correct. Always drop pixels first.
+        if (isGalleryMode()) {
+            gallerySoftResetPath(path);
+            item->clearDecodedPixels();
+            const int softEdge = ThumtooCache::kGalleryLadderEdge;
+            QImage soft = ImageLoader::loadThumbnail(path, softEdge);
+            if (!soft.isNull()) {
+                // Identity appearance: SoftPreview install without content bake.
+                installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview,
+                                     sid);
+            }
+            // else: decode window will refill after soft state reset
+        } else {
+            const QImage full = fullRasterForEdit(path);
+            if (!full.isNull()) {
+                installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
+                                     sid);
+            } else {
+                item->clearDecodedPixels();
+            }
+        }
+
+        if (isImageMode() && m_framing.isFitMode()) {
+            fitItem(item, currentFitAspectMode());
+        }
+
+        // Filmstrip: emit current *display* pixels (soft in Gallery, full in Image).
+        // Do not emit a separate full decode for Gallery filmstrip overrides.
+        if (sid != kInvalidSessionImageId) {
+            const QImage appearance = sessionAppearanceImage(item);
+            if (!appearance.isNull()) {
+                emit sessionAppearanceChanged(sid, path, appearance);
+            }
+        }
+        ++n;
+    }
+    if (n > 0 && isGalleryMode()) {
+        applyLayout(GalleryPackReason::ContentChange);
+        // Soft state was reset; kick the ladder for visible tiles.
+        updateGalleryDecodeWindow();
+    }
+    if (n > 0) {
+        emit statusChanged();
+    }
+    return n;
+}
+

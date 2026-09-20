@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1683-transform-canvas-split.** Canvas membership and content-appearance out of transform.cpp.
+Prior: **1682**.
+
+### Change
+- Canvas clipboard / place / remove / duplicate → `imageview_canvas.cpp`
+- `targetHasContentAppearance` / `resetContentAppearanceForTargets` → `imageview_appearance.cpp`
+- `imageview_transform.cpp` ~922 → ~524 lines (geometry/content commands, flip/rotate/z-order/opacity/reset)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1683-transform-canvas-split.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Optional: input router shrink (chrome stays on ImageView)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1682-paint-text-split.** Split text layer and chrome paint out of paint.cpp.
 Prior: **1681**.
 
