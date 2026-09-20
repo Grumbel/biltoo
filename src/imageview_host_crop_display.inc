@@ -44,8 +44,8 @@
         }
         return currentPackOrder().firstIdForPath(path);
     }
-    PathItemStateBook &hostItemStateBook() { return m_itemStateBook; }
-    const PathItemStateBook &hostItemStateBook() const { return m_itemStateBook; }
+    PathItemStateBook &hostItemStateBook() { return m_itemWorld.pathBook(); }
+    const PathItemStateBook &hostItemStateBook() const { return m_itemWorld.pathBook(); }
     HudAppearance &hostHudPrefs() { return m_hudPrefs; }
     const HudAppearance &hostHudPrefs() const { return m_hudPrefs; }
     HudFlash &hostHudFlash() { return m_hudFlash; }

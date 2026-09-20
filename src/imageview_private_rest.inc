@@ -334,6 +334,11 @@
      */
     PathItemStateBook m_itemStateBook;
     /**
+     * Phase 7 Stage 0: non-owning facade over appearance + path + size books.
+     * Bound in the ImageView ctor (path/size) and bindSessionAppearance.
+     */
+    ItemWorld m_itemWorld;
+    /**
      * Per-session-slot appearance (crop / content flip / quarter turns).
      * Keyed by session index so path duplicates stay independent value copies.
      */

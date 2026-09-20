@@ -65,6 +65,11 @@ ImageView::ImageView(QWidget *parent)
     , m_gallerySizeResolve(this, this)
     , m_tileNeighborPrefetch(this, this)
 {
+    // Phase 7 Stage 0: path/size books are owned here; appearance binds later
+    // from MainWindow (SessionDocument).
+    m_itemWorld.bindPathBook(&m_itemStateBook);
+    m_itemWorld.bindSizeBook(&m_sizeBook);
+
     m_scene = new QGraphicsScene(this);
     // BSP indexing is fragile with frequent add/remove (Duplicate + Delete):
     // deferred paints can walk a tree that still holds freed items. Linear

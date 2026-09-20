@@ -42,6 +42,7 @@
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
+#include "itemworld.h"
 #include "sessiondocument.h"
 #include "gallerycontroller.h"
 #include "slideshowcontroller.h"
@@ -300,18 +301,20 @@ public:
      */
     SessionAppearanceStore &appearance()
     {
-        Q_ASSERT(m_appearanceBound);
-        return *m_appearanceBound;
+        return m_itemWorld.appearance();
     }
     const SessionAppearanceStore &appearance() const
     {
-        Q_ASSERT(m_appearanceBound);
-        return *m_appearanceBound;
+        return m_itemWorld.appearance();
     }
+    /** Phase 7 Stage 0: facade over appearance / path-book / size-book. */
+    ItemWorld &itemWorld() { return m_itemWorld; }
+    const ItemWorld &itemWorld() const { return m_itemWorld; }
     /** Point at SessionDocument::appearance() (required before appearance()). */
     void bindSessionAppearance(SessionAppearanceStore *store)
     {
         m_appearanceBound = store;
+        m_itemWorld.bindAppearance(store);
     }
     /**
      * Phase 6 Tier 4 path-order: MainWindow binds the working SessionDocument.

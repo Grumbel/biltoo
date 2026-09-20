@@ -927,4 +927,7 @@ Phase 1–6 rules still apply. Additions:
 
 ### Progress log (Phase 7)
 
-- _(none yet — plan only as of biltoo-1722)_
+- biltoo-1725: **Stage 0** — `ItemWorld` facade (`itemworld.h`); ImageView binds
+  path/size books in ctor and appearance in `bindSessionAppearance`;
+  `appearance()` / `hostItemStateBook` route through the facade;
+  `tests/itemworld_test.cpp` locks pure pointer identity + id/path/size API.

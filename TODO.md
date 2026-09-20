@@ -2,6 +2,35 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1725-itemworld-stage0.** Phase 7 Stage 0 ItemWorld facade.
+Prior: **1724**.
+
+### Change
+- `src/itemworld.h` — non-owning facade over SessionAppearanceStore,
+  PathItemStateBook, ImageSizeBook (id/path/size accessors)
+- ImageView: bind path/size in ctor; bind appearance with SessionDocument;
+  `appearance()` / `hostItemStateBook` / `itemWorld()` go through facade
+- `tests/itemworld_test.cpp` + CTest `itemworld`
+- REFACTOR.md Phase 7 progress: Stage 0 landed
+
+No storage move, no behaviour change.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1725-itemworld-stage0.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest itemworld
+- Phase 7 Stage 1 (Crop + Attention tables) **or** Phase 6 Tier 4 path-order residual
+- Prefer routing new appearance reads/writes through `itemWorld()` before Stage 1
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1724-tile-orient-patch.** Tile flip/rot: orient UV via patch, not world T.
 Prior: **1723**.
 
