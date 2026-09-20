@@ -218,17 +218,6 @@ public:
     // Host accessors (controllers): path raster, books, prefs — imageview_host_accessors.inc
 #include "imageview_host_accessors.inc"
 
-    /** Display pipeline host: crop controller (draft freeze). */
-    CropController &hostCrop() { return m_cropCtrl; }
-    const CropController &hostCrop() const { return m_cropCtrl; }
-    AttentionController &hostAttention() { return m_attentionCtrl; }
-    const AttentionController &hostAttention() const { return m_attentionCtrl; }
-    /** Display pipeline host: text layer (loadImage side effects). */
-    TextLayerSession &hostTextLayer() { return m_textLayer; }
-    const TextLayerSession &hostTextLayer() const { return m_textLayer; }
-    /** Display pipeline host: filmstrip soft provider for image-mode pending. */
-    ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
-
     /**
      * Phase 7 Stage 0 facade (appearance / path-book / size-book).
      * Pack-order host mutators live in imageview_host_pipeline.inc

@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1915-host-bags-in-accessors.** Pure host* bags off crop_display.
+Prior: **1914**.
+
+### Change
+- Move bag/controller accessors (`hostAppearance`, `hostSessionId`, `hostCrop`,
+  `hostLoadGate`, HUD/display surfaces, `firstSessionIdForPath`, …) from
+  `imageview_host_crop_display.inc` (+ inline header) → `imageview_host_accessors.inc`
+- `host_crop_display.inc` is crop/display **operations** only
+- `imageview.h` ~598 lines
+- No behaviour change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1915-host-bags-in-accessors-516d734.bundle HEAD
+```
+Requires tip **1914** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1914-host-ops-vs-accessors.** Split ops out of host accessors.
 Prior: **1913**.
 

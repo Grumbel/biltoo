@@ -1,4 +1,5 @@
-// Crop / slideshow / display host surface (Phase 6 Tier 2b / 5c).
+// Crop / display host operations (Phase 6 Tier 2b / 5c).
+// Bag accessors live in imageview_host_accessors.inc.
 // Included from ImageView public section.
 
     // --- Crop host (Phase 6 Tier 2b CropController) ---
@@ -12,7 +13,6 @@
                                  ImageItem *item, const QImage &preferredDisplay,
                                  bool hasCrop);
 
-
     // --- Crop host extras (controller needs without friend) ---
     void cancelZoomRegion();
     void scheduleAsyncHostRematerialize(const QString &path, SessionImageId sid,
@@ -22,51 +22,15 @@
     void updateMouseInfo(const QPoint &viewPos);
     Qt::AspectRatioMode currentFitAspectMode() const;
 
-    // --- Slideshow host (Phase 6: replaces friend SlideshowController) ---
-    SessionAppearanceStore &hostAppearance() { return m_itemWorld.appearance(); }
-    const SessionAppearanceStore &hostAppearance() const { return m_itemWorld.appearance(); }
-    CanvasBackground &hostCanvasBg() { return m_canvasBg; }
-    const CanvasBackground &hostCanvasBg() const { return m_canvasBg; }
-    SessionIdentity &hostSessionId() { return m_sessionId; }
-    const SessionIdentity &hostSessionId() const { return m_sessionId; }
-    /**
-     * First SessionImageId for @p path from the MainWindow SessionDocument when
-     * bound (slideshow / identity). View path-order book is multiplicity only —
-     * use pathOrderOccurrences for LoadAdd counts, not this.
-     */
-    SessionImageId firstSessionIdForPath(const QString &path) const
-    {
-        if (m_sessionDoc) {
-            return m_sessionDoc->firstIdForPath(path);
-        }
-        return currentPackOrder().firstIdForPath(path);
-    }
-    PathItemStateBook &hostItemStateBook() { return m_itemWorld.pathBook(); }
-    const PathItemStateBook &hostItemStateBook() const { return m_itemWorld.pathBook(); }
-    HudAppearance &hostHudPrefs() { return m_hudPrefs; }
-    const HudAppearance &hostHudPrefs() const { return m_hudPrefs; }
-    HudFlash &hostHudFlash() { return m_hudFlash; }
-    const HudFlash &hostHudFlash() const { return m_hudFlash; }
-    QTimer *&hostHudFlashTimer() { return m_hudFlashTimer; }
-    QTimer *hostHudFlashTimer() const { return m_hudFlashTimer; }
-    DisplaySurfaceController &hostDisplaySurfaces() { return m_displayPipeline.displaySurfaces(); }
-    const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displayPipeline.displaySurfaces(); }
-    TileNeighborPrefetch &hostTileNeighborPrefetch() { return m_tileNeighborPrefetch; }
-    const TileNeighborPrefetch &hostTileNeighborPrefetch() const { return m_tileNeighborPrefetch; }
-    EdgeZone hostHoverEdge() const { return m_hoverEdge; }
+    // --- Display / framing host ops ---
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
-
-    // --- Display/crop host (controller access without friend) ---
     ImageItem *primaryItem() const;
     void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want);
     void attachDisplaySample(ImageItem *item, const QImage &display,
                              const WorkspaceItemState &want,
                              SessionAppearance::PixelKind kind);
     void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
-    SessionLoadGate &hostLoadGate() { return m_displayPipeline.loadGate(); }
-    const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }
     /** Resolve/cache logical pixel size for @p path (probes if needed). */
     QSize ensureLogicalSizeForPath(const QString &path);
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
     QString currentPath() const;
-

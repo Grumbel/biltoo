@@ -1,5 +1,5 @@
-// Phase 6 host accessors (controllers; prefer over friend).
-// Included from ImageView public section — see REFACTOR.md.
+// Phase 6 host accessors — bag/controller references only (prefer over friend).
+// Operations: host_ops / host_crop_display / host_pipeline. Included from ImageView public.
 
     /** Display pipeline host: PreferCache / load path raster service. */
     PathRasterService *hostPathRaster() { return m_pathRaster; }
@@ -57,3 +57,47 @@
     DisplayPipelineController &hostDisplayPipeline() { return m_displayPipeline; }
     const DisplayPipelineController &hostDisplayPipeline() const { return m_displayPipeline; }
 
+    /** Display pipeline host: crop controller (draft freeze). */
+    CropController &hostCrop() { return m_cropCtrl; }
+    const CropController &hostCrop() const { return m_cropCtrl; }
+    AttentionController &hostAttention() { return m_attentionCtrl; }
+    const AttentionController &hostAttention() const { return m_attentionCtrl; }
+    /** Display pipeline host: text layer (loadImage side effects). */
+    TextLayerSession &hostTextLayer() { return m_textLayer; }
+    const TextLayerSession &hostTextLayer() const { return m_textLayer; }
+    /** Display pipeline host: filmstrip soft provider for image-mode pending. */
+    ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
+
+    SessionAppearanceStore &hostAppearance() { return m_itemWorld.appearance(); }
+    const SessionAppearanceStore &hostAppearance() const { return m_itemWorld.appearance(); }
+    CanvasBackground &hostCanvasBg() { return m_canvasBg; }
+    const CanvasBackground &hostCanvasBg() const { return m_canvasBg; }
+    SessionIdentity &hostSessionId() { return m_sessionId; }
+    const SessionIdentity &hostSessionId() const { return m_sessionId; }
+    /**
+     * First SessionImageId for @p path from the MainWindow SessionDocument when
+     * bound (slideshow / identity). View path-order book is multiplicity only —
+     * use pathOrderOccurrences for LoadAdd counts, not this.
+     */
+    SessionImageId firstSessionIdForPath(const QString &path) const
+    {
+        if (m_sessionDoc) {
+            return m_sessionDoc->firstIdForPath(path);
+        }
+        return currentPackOrder().firstIdForPath(path);
+    }
+    PathItemStateBook &hostItemStateBook() { return m_itemWorld.pathBook(); }
+    const PathItemStateBook &hostItemStateBook() const { return m_itemWorld.pathBook(); }
+    HudAppearance &hostHudPrefs() { return m_hudPrefs; }
+    const HudAppearance &hostHudPrefs() const { return m_hudPrefs; }
+    HudFlash &hostHudFlash() { return m_hudFlash; }
+    const HudFlash &hostHudFlash() const { return m_hudFlash; }
+    QTimer *&hostHudFlashTimer() { return m_hudFlashTimer; }
+    QTimer *hostHudFlashTimer() const { return m_hudFlashTimer; }
+    DisplaySurfaceController &hostDisplaySurfaces() { return m_displayPipeline.displaySurfaces(); }
+    const DisplaySurfaceController &hostDisplaySurfaces() const { return m_displayPipeline.displaySurfaces(); }
+    TileNeighborPrefetch &hostTileNeighborPrefetch() { return m_tileNeighborPrefetch; }
+    const TileNeighborPrefetch &hostTileNeighborPrefetch() const { return m_tileNeighborPrefetch; }
+    EdgeZone hostHoverEdge() const { return m_hoverEdge; }
+    SessionLoadGate &hostLoadGate() { return m_displayPipeline.loadGate(); }
+    const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }
