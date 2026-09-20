@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1817-drop-pathorder-ref-accessors.** Tier 4 residual: drop book-ref path order APIs.
+Prior: **1816**.
+
+### Change
+- Removed unused `ImageView::pathOrder()`, `pathOrderPaths()`, `pathOrderIds()`,
+  `sessionIdOrder()` — all pack reads use `currentPackOrder()`
+- Updated PATH_ORDER.md read-path section
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1817-drop-pathorder-ref-accessors.bundle HEAD
+```
+Includes **1806–1817** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Gallery pack / LoadAdd)
+- Offscreen ImageView characterization (Tier 4 remaining blocker)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1816-drop-dead-handle-lists.** Stage 2: remove unused handleDrawSize/activeHandles.
 Prior: **1815**.
 
