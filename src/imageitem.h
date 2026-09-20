@@ -303,7 +303,6 @@ private:
     QRectF galleryClipLocal() const;
     /** Item-local centre of a handle (pre-transform local coordinates). */
     QPointF handleCenter(Handle h) const;
-    qreal handleDrawSize() const;
     /**
      * Max singular value of (view × item) linear transform: screen px per local unit
      * along the most stretched axis. Used for drawing chrome at ~constant screen size.
@@ -320,7 +319,6 @@ private:
     /** View-pixel position of an item-local point (first attached view). */
     QPointF localToViewPx(const QPointF &local) const;
     QPointF sceneToViewPx(const QPointF &scene) const;
-    QList<Handle> activeHandles() const;
 
     QString m_path;
     // Tile session mutators — DisplayPipelineController only (Stage 2).

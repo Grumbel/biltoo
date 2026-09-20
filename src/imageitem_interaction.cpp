@@ -295,12 +295,6 @@ qreal ImageItem::screenScale() const
     return ViewTransform::floorScale(sMax);
 }
 
-qreal ImageItem::handleDrawSize() const
-{
-    // Constant size in screen pixels regardless of item or view zoom
-    return ItemFrameGeometry::kHandleScreenPx / screenScale();
-}
-
 bool ImageItem::isChromeHandle(Handle h) const
 {
     return ItemHandlePolicy::isChromeHandle(h);
@@ -572,27 +566,6 @@ void ImageItem::setOpacityFromSliderPos(const QPointF &scenePos)
         pl.opacity = ItemFrameGeometry::opacityFromTrackParam(tval);
         applyPlacement(pl);
     }
-}
-
-QList<ImageItem::Handle> ImageItem::activeHandles() const
-{
-    QList<Handle> handles;
-    if (m_scaleHandlesEnabled) {
-        handles << Handle::ScaleTopLeft << Handle::ScaleTopRight
-                << Handle::ScaleBottomLeft << Handle::ScaleBottomRight
-                << Handle::ScaleTop << Handle::ScaleRight
-                << Handle::ScaleBottom << Handle::ScaleLeft
-                << Handle::ShearTop << Handle::ShearBottom
-                << Handle::ShearLeft << Handle::ShearRight;
-    }
-    handles << Handle::RotateTop << Handle::RotateRight
-            << Handle::RotateBottom << Handle::RotateLeft
-            << Handle::FlipH << Handle::FlipV
-            << Handle::Rotate90CCW << Handle::Rotate90CW
-            << Handle::Raise << Handle::Lower
-            << Handle::ResetScale << Handle::ResetRotation << Handle::ResetShear
-            << Handle::OpacitySlider;
-    return handles;
 }
 
 bool ImageItem::isUprightChromeHandle(Handle h) const
