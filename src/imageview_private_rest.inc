@@ -115,9 +115,24 @@
 
     // --- TileNeighborPrefetchHost ------------------------------------------
     bool pathOnLiveCanvas(const QString &path) const override;
-    QSize viewportWidgetSize() const override;
-    qreal prefetchDevicePixelRatio() const override;
-    bool tilePrefetchNavHot() const override;
+    QSize viewportWidgetSize() const override
+    {
+        if (const QWidget *vp = viewport()) {
+            return vp->size();
+        }
+        return {};
+    }
+    qreal prefetchDevicePixelRatio() const override
+    {
+        if (const QWidget *vp = viewport()) {
+            return vp->devicePixelRatioF();
+        }
+        return 1.0;
+    }
+    bool tilePrefetchNavHot() const override
+    {
+        return m_slideshow.hud().isNavHot();
+    }
 
     void applyProbedImageSize(const QString &path, const QSize &size);
     /** True when pack needs every aspect before the first layout (Fill modes). */
