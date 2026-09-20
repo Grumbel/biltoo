@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1813-drop-dead-item-getters.** Stage 2: remove unused ImageItem getters.
+Prior: **1812**.
+
+### Change
+- Removed dead `itemScale()`, `itemShear()`, `itemOpacity()`, `updateHandleLayout()`
+- Pose reads stay on `placement()` / `itemScaleX`/`Y` / `itemRotation` / `stackZ`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1813-drop-dead-item-getters.bundle HEAD
+```
+Includes **1806–1813** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke
+- ImageView characterization / Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1812-drop-dead-item-pose-helpers.** Stage 2: remove unused ImageItem pose helpers.
 Prior: **1811**.
 

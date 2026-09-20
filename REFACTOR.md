@@ -1060,3 +1060,4 @@ Phase 1–6 rules still apply. Additions:
   **Stage 2 tile LOD ownership treated complete** (bag, suppress, tick, drop, purge on
   DisplayPipelineController; ImageItem keeps paint/plan helpers + query predicates).
 - biltoo-1812: drop dead ImageItem zoomBy/rotateBy/toggleHFlip/toggleVFlip.
+- biltoo-1813: drop dead ImageItem itemScale/itemShear/itemOpacity/updateHandleLayout.
