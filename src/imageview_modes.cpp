@@ -345,3 +345,10 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
     m_workspace.hardReloadFromDisk();
 }
 
+void ImageView::enterGallery(LayoutMode packagedLayout)
+{
+    // Sticky Fit/Fill/1:1 is Image-mode only.
+    releaseStickyZoom();
+    m_gallery.enter(static_cast<int>(packagedLayout));
+}
+

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1897-merge-gallery-edge-tus.** Fold tiny gallery + edge chrome TUs.
+Prior: **1896**.
+
+### Change
+- `enterGallery` → `imageview_modes.cpp` (mode entry with setViewMode / pack)
+- `paintGallerySelectionFrames` → `imageview_paint.cpp`
+- Edge hover helpers → `imageview_input.cpp` (next to `edgeZoneAt`)
+- Delete `imageview_gallery.cpp`, `imageview_edge_chrome.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1897-merge-gallery-edge-tus-516d734.bundle HEAD
+```
+Requires tip **1896** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1896-merge-pack-into-modes.** Mode-dispatch pack TU → modes.
 Prior: **1895**.
 

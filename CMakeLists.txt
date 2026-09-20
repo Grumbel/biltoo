@@ -113,7 +113,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview_accessors.cpp
   src/imageview_shell_events.cpp
   src/imageview_size_book.cpp
-  src/imageview_gallery.cpp
   src/gallerycontroller.cpp
   src/slideshowcontroller.cpp
   src/slideshowcontroller.h
@@ -245,7 +244,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview_input.cpp
   src/imageview_input_events.cpp
   src/imageview_workspace_chrome.cpp
-  src/imageview_edge_chrome.cpp
   src/imageview_dnd.cpp
   src/imageview_paint.cpp
   src/imageview_paint_background.cpp
