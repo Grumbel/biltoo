@@ -291,13 +291,14 @@ the AABB of transformed corners for viewport request and draw destinations.
 **Crop / orient paint rules:**
 - `ImageItem::tileContentXform()` must carry `cropRect` (applied xform or
   session crop) — `hasCrop` alone is not enough for maps.
-- Tile **payloads stay source-oriented**. Painting applies
-  `ContentXform::sourceToDisplayTransform` (flips → turns → crop / free-rot)
-  so destinations and UV stay consistent. Mapping only the dest AABB without
-  the transform moves cells but leaves samples unoriented (bug fixed 1723).
-- Cells whose `mapSourceRectToDisplay` is empty are skipped (outside crop).
-- Soft underlay is already display-space (`materializeDisplay`); leave plan
-  `lqip` empty so holes show continuous soft, not repeated cell underlays.
+- Tile **payloads stay source-oriented**. Paint path: extract `src_uv` → orient
+  patch (flip / quarter-turn, same order as materializeDisplay) → draw into
+  dest AABB from `mapSourceRectToOriented` / crop-local (+ free-rot painter for
+  cropRotation). Do **not** use a reflective world transform for flip (empty
+  draw on the OpenGL viewport path).
+- Partial crop edge cells: crop the oriented patch with the same ratio as the
+  dest intersection (no stretch).
+- Soft underlay is already display-space; leave plan `lqip` empty.
 
 
 ## PreferCache vs tiles (biltoo-1035)

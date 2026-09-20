@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1724-tile-orient-patch.** Tile flip/rot: orient UV via patch, not world T.
+Prior: **1723**.
+
+### Change
+- 1723 used reflective `sourceToDisplayTransform` on the painter — tiles often
+  drew nothing / vanished on the GL path after flip.
+- New path: extract `src_uv` → `orientPatch` (flip/turn) → dest AABB
+  (`mapSourceRectToOriented` + crop edge crop) → `drawImage`
+- Free-rot crop still uses centre/`rotate(-θ)` painter only
+- `sourceToDisplayTransform` kept for pure tests / future
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1724-tile-orient-patch.bundle HEAD
+```
+
+### Next
+- biltoo-build; manual deep-zoom after H-flip and 90° rotate
+- Confirm soft + tiles stay aligned after rematerialize settles
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1723-tile-orient-uv.** Tile flip/rotate: orient UV via painter transform.
 Prior: **1722**.
 
