@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1863-drop-dead-private-surface.** Remove dead ImageView private decls + orphaned defs.
+Prior: **1862**.
+
+### Change
+- Drop ~16 declaration-only private methods (crop/nav/hud/session leftovers)
+- Drop ~12 orphaned def+decl pairs with zero callers (workspace remove helpers,
+  addImageAt, clearCanvasSelection, probeImageSize, …)
+- Drop stale `cropChromeLayout` / `cropHandleAt` decls (live on CropController)
+- Keep `isNavEdge` (still used by edge chrome)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1863-drop-dead-private-surface.bundle HEAD
+```
+Requires tip **1862** (base **1858** / `1e112d94`).
+
+### Next
+- Residual pure-hop / surface scan
+- Tier 4 characterization (m_pathOrderBook)
+- biltoo-build smoke
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1862-bg-hud-text-via-host.** Background/HUD/text reads via hosts.
 Prior: **1861**.
 
