@@ -3,6 +3,9 @@
 
 #include "workspacecontroller.h"
 #include "imageview.h"
+#include <QUndoStack>
+#include "gallerypackfit.h"
+#include "gallerylayout.h"
 #include "imageitem.h"
 #include "placementlinear.h"
 #include <QMouseEvent>
@@ -450,6 +453,122 @@ bool WorkspaceController::tryKeyPressShear(QKeyEvent *event)
     }
     emit m_view->statusChanged();
     event->accept();
+    return true;
+}
+
+
+// --- Workspace selection pack layout ---
+
+bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
+                                     const QList<ImageItem *> &itemsIn)
+{
+    if (!m_view->isWorkspaceMode() || !m_view->canvasScene()) {
+        return false;
+    }
+    QList<ImageItem *> items = itemsIn;
+    if (items.isEmpty()) {
+        items = m_view->transformTargets();
+    }
+    // Require an explicit multi-item or single selection on the canvas —
+    // do not fall back to “sole item” when nothing is selected in Workspace.
+    if (items.isEmpty()) {
+        for (QGraphicsItem *gi : m_view->canvasScene()->selectedItems()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                items.append(ii);
+            }
+        }
+    }
+    if (items.isEmpty()) {
+        return false;
+    }
+
+    // Preserve selection centroid so the group does not jump to the origin.
+    QRectF beforeBounds;
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        beforeBounds = beforeBounds.isNull() ? item->sceneBoundingRect()
+                                             : beforeBounds.united(item->sceneBoundingRect());
+    }
+    const QPointF beforeCenter = beforeBounds.isNull()
+        ? m_view->mapToScene(m_view->viewport()->rect().center())
+        : beforeBounds.center();
+
+    QVector<WorkspaceItemState> befores;
+    befores.reserve(items.size());
+    for (ImageItem *item : items) {
+        befores.append(m_view->captureState(item));
+    }
+
+    GalleryLayout::Params params = userParams;
+    const qreal margin = params.margin > 0 ? params.margin : 16.0;
+    params.margin = margin;
+    if (params.gap <= 0) {
+        params.gap = 12.0;
+    }
+    params.availW = GalleryPackFit::packAvailAxis(m_view->viewport()->width(), margin);
+    params.availH = GalleryPackFit::packAvailAxis(m_view->viewport()->height(), margin);
+
+    // Workspace layout is axis-aligned placement; clear free-form tilt/flips
+    // on the targets only (content bakes stay in pixels).
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        item->setItemRotation(0.0);
+        item->setItemHFlip(false);
+        item->setItemVFlip(false);
+    }
+
+    GalleryLayout::pack(items, params);
+
+    // Translate packed group so its centre matches the previous selection centre.
+    QRectF afterBounds;
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        afterBounds = afterBounds.isNull() ? item->sceneBoundingRect()
+                                           : afterBounds.united(item->sceneBoundingRect());
+    }
+    if (!afterBounds.isNull()) {
+        const QPointF delta = beforeCenter - afterBounds.center();
+        if (!delta.isNull()) {
+            for (ImageItem *item : items) {
+                if (item) {
+                    item->setPos(item->pos() + delta);
+                }
+            }
+        }
+    }
+
+    if (m_view->hostUndoStack()) {
+        m_view->hostUndoStack()->beginMacro(m_view->tr("Layout selection"));
+        for (int i = 0; i < items.size(); ++i) {
+            ImageItem *item = items.at(i);
+            if (!item) {
+                continue;
+            }
+            m_view->pushItemGeometryCommand(m_view->tr("Layout selection"), item, befores.at(i),
+                                    m_view->captureState(item));
+        }
+        m_view->hostUndoStack()->endMacro();
+    }
+
+    for (ImageItem *item : items) {
+        if (!item) {
+            continue;
+        }
+        if (item->sessionId() != kInvalidSessionImageId) {
+            m_view->appearance().set(item->sessionId(), m_view->captureState(item));
+        }
+        m_view->hostItemStateBook().set(item->path(), m_view->captureState(item));
+    }
+
+    m_view->updateWorkspaceSceneRect();
+    m_view->viewport()->update();
+    emit m_view->statusChanged();
     return true;
 }
 

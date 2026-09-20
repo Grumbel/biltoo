@@ -68,6 +68,8 @@ public:
     bool tryMousePressSelect(QMouseEvent *event);
     bool tryKeyPressDeleteSelection(QKeyEvent *event);
     bool tryKeyPressShear(QKeyEvent *event);
+    bool layoutItems(const GalleryLayout::Params &userParams,
+                     const QList<ImageItem *> &itemsIn = {});
 
 private:
     ImageView *m_view = nullptr;

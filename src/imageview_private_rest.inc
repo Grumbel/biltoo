@@ -174,7 +174,6 @@
     /** Ladder step for item cell size in device pixels. */
     int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = true) const;
     int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
-    QList<ImageItem *> transformTargets() const;
     /** Apply session crop from @p state to a freshly decoded item (no-op if none). */
     /**
      * Apply stored session appearance (crop + content bakes) for @p item's

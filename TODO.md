@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1675-workspace-layout-items.** Move layoutWorkspaceItems onto WorkspaceController.
+Prior: **1674**.
+
+### Change
+- `WorkspaceController::layoutItems` — pack selected free-form tiles, undo macro, appearance
+- ImageView thin-forwards
+- Host: `transformTargets`, `pushItemGeometryCommand`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1675-workspace-layout-items.bundle HEAD
+```
+
+### Next
+- biltoo-build + Workspace layout-selection verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1674-gallery-prepare-invalidate.** prepareCanvas + invalidateDecodes on GalleryController.
 Prior: **1673**.
 

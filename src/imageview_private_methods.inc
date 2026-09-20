@@ -363,9 +363,6 @@
     void bakeItemRotate90(ImageItem *item, int quarterTurns);
 
     /** Push geometry-only undo (pos/scale/rotation/opacity/z/item flips). */
-    void pushItemGeometryCommand(const QString &text, ImageItem *item,
-                                 const WorkspaceItemState &before,
-                                 const WorkspaceItemState &after);
 
     /** Push content bake undo (pixels + session appearance). */
     void pushItemContentCommand(const QString &text, ImageItem *item,
