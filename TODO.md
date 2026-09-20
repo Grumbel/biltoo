@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1805-contentxform-transform-corners-test.** Fix contentxform corners case.
+Prior: **1804**.
+
+### Change
+- `sourceToDisplayTransform_matchesMapCorners` used a crop that excluded the
+  oriented source AABB, so `mapSourceRectToDisplay` was empty while the
+  transform AABB was not (transform does not clip; map intersects crop)
+- Test now checks orient-only, then a crop that fully contains the oriented AABB
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1805-contentxform-transform-corners-test.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke (ctest contentxform + tile ownership)
+- ImageView characterization / Tier 4 path-order
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1804-pipeline-owns-tilelod-suppress.** Stage 2: suppress write on pipeline.
 Prior: **1803**.
 

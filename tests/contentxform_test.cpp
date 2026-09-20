@@ -953,32 +953,41 @@ void ContentXformTest::mapDisplayRect_freeRotExpands()
 
 void ContentXformTest::sourceToDisplayTransform_matchesMapCorners()
 {
-    // Transform must map corners like mapSourceRectToDisplay (AABB of images).
-    ContentXform::Value x;
-    x.hFlip = true;
-    x.quarterTurns = 1;
-    x.hasCrop = true;
-    x.cropRect = QRect(5, 5, 40, 30);
-    const QSize n(80, 60);
-    const QTransform T = ContentXform::sourceToDisplayTransform(n, x);
-    const QRectF src(10, 8, 16, 12);
-    const QRectF mapped = ContentXform::mapSourceRectToDisplay(src, n, x);
-    QVERIFY(!mapped.isEmpty());
-    const QPointF corners[4] = {
-        src.topLeft(), src.topRight(), src.bottomRight(), src.bottomLeft(),
+    // Transform AABB of corners must match mapSourceRectToDisplay when the
+    // mapped rect is not clipped by crop (transform does not intersect; map
+    // does). Orient-only case, then axis-aligned crop with source fully inside.
+    auto check = [](const ContentXform::Value &x, const QSize &n, const QRectF &src) {
+        const QTransform T = ContentXform::sourceToDisplayTransform(n, x);
+        const QRectF mapped = ContentXform::mapSourceRectToDisplay(src, n, x);
+        QVERIFY2(!mapped.isEmpty(), "source must land inside crop / frame after orient");
+        const QPointF corners[4] = {
+            src.topLeft(), src.topRight(), src.bottomRight(), src.bottomLeft(),
+        };
+        qreal minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+        for (const QPointF &c : corners) {
+            const QPointF p = T.map(c);
+            minX = qMin(minX, p.x());
+            maxX = qMax(maxX, p.x());
+            minY = qMin(minY, p.y());
+            maxY = qMax(maxY, p.y());
+        }
+        QVERIFY(qAbs(minX - mapped.left()) < 1e-4);
+        QVERIFY(qAbs(maxX - mapped.right()) < 1e-4);
+        QVERIFY(qAbs(minY - mapped.top()) < 1e-4);
+        QVERIFY(qAbs(maxY - mapped.bottom()) < 1e-4);
     };
-    qreal minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
-    for (const QPointF &c : corners) {
-        const QPointF p = T.map(c);
-        minX = qMin(minX, p.x());
-        maxX = qMax(maxX, p.x());
-        minY = qMin(minY, p.y());
-        maxY = qMax(maxY, p.y());
-    }
-    QVERIFY(qAbs(minX - mapped.left()) < 1e-4);
-    QVERIFY(qAbs(maxX - mapped.right()) < 1e-4);
-    QVERIFY(qAbs(minY - mapped.top()) < 1e-4);
-    QVERIFY(qAbs(maxY - mapped.bottom()) < 1e-4);
+
+    ContentXform::Value orient;
+    orient.hFlip = true;
+    orient.quarterTurns = 1;
+    check(orient, QSize(80, 60), QRectF(10, 8, 16, 12));
+
+    // Crop in oriented space after hFlip+90: pick source whose oriented AABB
+    // sits fully inside crop so map's intersect is a no-op (matches transform).
+    ContentXform::Value cropped = orient;
+    cropped.hasCrop = true;
+    cropped.cropRect = QRect(30, 40, 30, 40); // covers oriented ~40..52 × 54..70
+    check(cropped, QSize(80, 60), QRectF(10, 8, 16, 12));
 }
 
 void ContentXformTest::sourceToDisplayTransform_hFlipMovesAndOrients()
