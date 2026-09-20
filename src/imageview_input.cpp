@@ -142,7 +142,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
     if (isImageMode() && !m_slideshow.hud().isProgressActive()) {
         maybeClimbImageModePixelsForView();
     } else if (isWorkspaceMode()) {
-        ensureWorkspaceQualityClimb();
+        m_displayPipeline.ensureWorkspaceQualityClimb();
     }
     // Gallery: never repack from resize (session delete looked like auto-layout).
     // Still refresh the decode window: open often packs at 0×0, soft arrives

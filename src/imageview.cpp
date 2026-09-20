@@ -124,7 +124,7 @@ ImageView::ImageView(QWidget *parent)
                     near, {}, ThumtooCache::kBatchOverviewEdge,
                     ThumtooCache::kGalleryLadderEdge, primary,
                     ThumtooCache::kImageLadderEdge);
-                ensureWorkspaceQualityClimb();
+                m_displayPipeline.ensureWorkspaceQualityClimb();
             }
         }
         emit statusChanged();

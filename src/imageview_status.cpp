@@ -170,7 +170,7 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     int galleryNeed = 0;
     int galleryHave = 0;
     if (isGalleryMode()) {
-        galleryNeed = galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
+        galleryNeed = m_displayPipeline.galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
         const GallerySoftState *st = m_gallerySoftBook.get(item->path());
         galleryHave = st ? GallerySoft::maxHave(st->have, edge) : edge;
     }

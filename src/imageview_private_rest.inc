@@ -78,7 +78,6 @@
                                           const QImage &sample);
     void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
     /** One ImageLoader::load when thumtoo Full settles short of on-screen need. */
-    void scheduleImageModeNativeDecodeOnce(const QString &path);
     /** On-screen long edge (device px) for the current Image-mode item. */
     int imageModeOnScreenNeedEdge() const;
     /** PreferCache + native full when zoom leaves soft samples undersampled. */
@@ -88,14 +87,12 @@
     void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
     void applyWorkspaceLadderReady(const QString &path, int maxEdge, const QImage &image);
     /** PathRaster EscalateToFull for selected Workspace items. */
-    void ensureWorkspaceQualityClimb();
     void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
     /** Fit / slideshow zoom / motion handoff after Image-mode full replace. */
     /**
      * Image mode: drop the previous frame and show a loading/provisional tile
      * for @p path immediately (do not wait for the background decode).
      */
-    void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
     /** Bind Image-mode item to the current session cursor (id + index). */
     /** Neutral Image-mode pose (no Workspace free-form scale/rotation). */
     /** Soft pixels for pending tile: explicit preview → slideshow map → ImageCache. */
@@ -166,8 +163,6 @@
     void syncItemDisplaySurface(ImageItem *item, int hostLongEdge = -1,
                                 bool climbPending = false);
     /** Ladder step for item cell size in device pixels. */
-    int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = true) const;
-    int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
     /** Apply session crop from @p state to a freshly decoded item (no-op if none). */
     /**
      * Apply stored session appearance (crop + content bakes) for @p item's

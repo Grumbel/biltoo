@@ -319,7 +319,7 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
         requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
     if (isWorkspaceMode()) {
-        ensureWorkspaceQualityClimb();
+        m_displayPipeline.ensureWorkspaceQualityClimb();
     } else if (isImageMode()) {
         driveImageFocusSurface();
     }

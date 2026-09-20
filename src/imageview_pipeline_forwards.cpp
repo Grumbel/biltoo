@@ -104,11 +104,6 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     return m_displayPipeline.resolveImageModePendingPixels(path, preview, displayReadyOut);
 }
 
-void ImageView::installImageModePendingTile(const QString &path, const QImage &preview)
-{
-    m_displayPipeline.installImageModePendingTile(path, preview);
-}
-
 void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
 {
     m_displayPipeline.scheduleImageLoad(path, static_cast<int>(role));
@@ -129,21 +124,6 @@ void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
                                            LoadRole role)
 {
     m_displayPipeline.scheduleClassicImageDecode(path, gen, static_cast<int>(role));
-}
-
-int ImageView::itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes) const
-{
-    return m_displayPipeline.itemOnScreenNeedEdge(item, allowHighRes);
-}
-
-int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes) const
-{
-    return m_displayPipeline.galleryDisplayEdgeForItem(item, allowHighRes);
-}
-
-int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const
-{
-    return m_displayPipeline.galleryHaveEdgeFromItems(path, anyFullOut);
 }
 
 void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
@@ -175,16 +155,6 @@ void ImageView::applyWorkspaceLadderReady(const QString &path, int maxEdge,
     m_displayPipeline.applyWorkspaceLadderReady(path, maxEdge, image);
 }
 
-void ImageView::ensureWorkspaceQualityClimb()
-{
-    m_displayPipeline.ensureWorkspaceQualityClimb();
-}
-
-
-void ImageView::scheduleImageModeNativeDecodeOnce(const QString &path)
-{
-    m_displayPipeline.scheduleImageModeNativeDecodeOnce(path);
-}
 
 
 void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,

@@ -12,7 +12,6 @@
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
     void syncImageModeSceneRect(ImageItem *item);
     void frameImageModeReplaceItem(ImageItem *item, const QString &path);
-    int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut = nullptr) const;
     void captureStickyPanAnchor(ImageItem *item);
     void applyImageModeFraming(ImageItem *item);
     int pathOrderOccurrences(const QString &path) const;
