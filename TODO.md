@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1847-fix-duplicate-hostFraming.** Fix duplicate hostFraming decl.
+Prior: **1846**.
+
+### Change
+- Remove `hostFraming` from `imageview_host_crop_display.inc` (kept in
+  `imageview_host_accessors.inc`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1847-fix-duplicate-hostFraming.bundle HEAD
+```
+Requires tip **1846**.
+
+### Next
+- biltoo-build (confirm compile)
+- Residual pure-forward scan; Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1846-load-framing-via-host.** Load/framing pure hops via hosts.
 Prior: **1845**.
 
