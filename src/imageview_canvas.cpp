@@ -16,6 +16,7 @@
 #include <QPointer>
 #include <QTimer>
 #include <QUndoStack>
+#include <QGraphicsItem>
 
 void ImageView::setWorkspacePaths(const QStringList &paths)
 {

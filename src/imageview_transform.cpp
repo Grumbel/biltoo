@@ -12,6 +12,7 @@
 #include <QUndoCommand>
 #include <QUndoStack>
 #include <QtMath>
+#include <QGraphicsItem>
 
 namespace {
 

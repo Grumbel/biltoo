@@ -9,6 +9,9 @@
 
 #include <QSet>
 #include <QUndoStack>
+#include <QGraphicsItem>
+#include "imagecache.h"
+#include "contentxform.h"
 
 void ImageView::selectBySessionIndices(const QList<int> &indices)
 {

@@ -5,6 +5,8 @@
 // Real load/tile/soft host logic stays in imageview_load.cpp.
 
 #include "imageview.h"
+#include "thumtoocache.h"
+#include "sessionappearance.h"
 
 WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
 {

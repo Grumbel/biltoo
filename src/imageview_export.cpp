@@ -12,6 +12,12 @@
 
 #include <QPainter>
 #include <QImage>
+#include "imagecache.h"
+#include "imageloader.h"
+#include "biltoo_thread.h"
+#include <QMutex>
+#include <QWaitCondition>
+#include <QThreadPool>
 
 QSizeF ImageView::nativeSize(const ImageItem *item)
 {

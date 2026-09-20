@@ -8,6 +8,8 @@
 #include "viewtransform.h"
 
 #include <QPainter>
+#include "hudgeometry.h"
+#include "imageitem.h"
 
 void ImageView::paintEmptySessionInvite(QPainter &painter)
 {

@@ -32,6 +32,7 @@
 #include <QWheelEvent>
 #include <QGraphicsScene>
 #include <algorithm>
+#include <QGraphicsItem>
 
 GalleryController::GalleryController(ImageView *view)
     : m_view(view)

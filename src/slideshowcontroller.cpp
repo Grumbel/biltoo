@@ -33,6 +33,8 @@
 #include "biltoo_logging.h"
 #include "hudmodel.h"
 #include "imageloader.h"
+#include <QGraphicsItem>
+#include "thumtoocache.h"
 
 
 SlideshowController::SlideshowController(ImageView *view)

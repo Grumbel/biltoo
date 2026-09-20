@@ -13,6 +13,7 @@
 
 #include <QFileInfo>
 #include <QFontMetrics>
+#include "contentxform.h"
 
 void ImageView::refreshStatus()
 {

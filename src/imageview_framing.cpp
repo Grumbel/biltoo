@@ -12,6 +12,8 @@
 #include "toolpolicy.h"
 #include <QPointer>
 #include <QTimer>
+#include "contentxform.h"
+#include "sessionappearance.h"
 
 qreal ImageView::viewScale() const
 {

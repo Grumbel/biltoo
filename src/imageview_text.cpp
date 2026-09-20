@@ -17,6 +17,8 @@
 #include <QPainter>
 #include <QRegularExpression>
 #include <QMouseEvent>
+#include "pagepath.h"
+#include "sessionappearance.h"
 
 void ImageView::paintTextRubberBandOverlay(QPainter &painter)
 {

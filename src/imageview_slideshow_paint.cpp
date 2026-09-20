@@ -8,6 +8,8 @@
 #include "viewtransform.h"
 
 #include <QPainter>
+#include "hudgeometry.h"
+#include "slideshowclocks.h"
 
 void ImageView::paintSlideshowLetterboxComposite(QPainter &painter)
 {

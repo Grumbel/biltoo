@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1700-more-tu-includes.** Second-pass includes after TU splits.
+Prior: **1699**.
+
+### Change
+- slideshow_paint: HudGeometry, SlideshowClocks
+- group: QUndoStack
+- export: ImageCache, ImageLoader, biltoo_thread, QMutex/QWaitCondition/QThreadPool
+- hud_paint: HudGeometry, ImageItem
+- text: PagePath, SessionAppearance
+- plus proactive GraphicsItem / cache / contentxform on related TUs
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1700-more-tu-includes.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Offscreen ImageView characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1699-pathorder-test-paths.** Dual-model test: SessionDocument::paths().
 Prior: **1698**.
 

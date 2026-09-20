@@ -10,6 +10,7 @@
 #include "placementlinear.h"
 #include "grouptransformgeometry.h"
 #include <QToolTip>
+#include <QGraphicsItem>
 
 bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
 {

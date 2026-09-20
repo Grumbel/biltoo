@@ -12,6 +12,7 @@
 #include <cmath>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QUndoStack>
 
 int ImageView::groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &items) const
 {
