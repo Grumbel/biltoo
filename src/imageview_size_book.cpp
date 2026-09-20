@@ -18,6 +18,9 @@
 #include <QImageReader>
 #include <QSet>
 #include <QTimer>
+#include <QMetaObject>
+#include <QPointer>
+#include <QThreadPool>
 #include <algorithm>
 
 QSize ImageView::probeImageSize(const QString &path) const

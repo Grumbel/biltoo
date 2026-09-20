@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1708-split-link-fixes.** Fix includes/helpers after 1704–1707 splits.
+Prior: **1707**.
+
+### Change
+- `imageview_size_book.cpp`: QThreadPool, QPointer, QMetaObject
+- `imageview_transform_actions.cpp`: overlappingStack/contentOverlaps (were TU-local in transform.cpp)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1708-split-link-fixes.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- ImageView characterization → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1707-accessors-clipboard.** Accessors + clipboard TUs; ImageView.cpp under 410.
 Prior: **1706**.
 

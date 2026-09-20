@@ -3,7 +3,6 @@
 
 #include "imageview.h"
 #include "placementlinear.h"
-#include "stackgeometry.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
 #include "sessionappearance.h"
@@ -13,46 +12,6 @@
 #include <QUndoStack>
 #include <QtMath>
 #include <QGraphicsItem>
-
-namespace {
-
-/** Overlap for stacking: scene AABB of content (rotation expands the box). */
-bool contentOverlaps(const ImageItem *a, const ImageItem *b)
-{
-    if (!a || !b || a == b) {
-        return false;
-    }
-    return StackGeometry::contentOverlaps(
-        a->contentSceneRect(), a->contentScenePolygon(),
-        b->contentSceneRect(), b->contentScenePolygon());
-}
-
-/** Overlapping stack including @p item, sorted bottom → top (stable on ties). */
-QList<ImageItem *> overlappingStack(ImageItem *item, const QList<ImageItem *> &all)
-{
-    QList<ImageItem *> layer;
-    if (!item) {
-        return layer;
-    }
-    layer.append(item);
-    for (ImageItem *other : all) {
-        if (other && other != item && contentOverlaps(item, other)) {
-            layer.append(other);
-        }
-    }
-    std::sort(layer.begin(), layer.end(), [](ImageItem *a, ImageItem *b) {
-        if (StackGeometry::zLess(a->stackZ(), b->stackZ())) {
-            return true;
-        }
-        if (StackGeometry::zGreater(a->stackZ(), b->stackZ())) {
-            return false;
-        }
-        return a < b;
-    });
-    return layer;
-}
-
-} // namespace
 
 
 void ImageView::pushItemGeometryCommand(const QString &text, ImageItem *item,
