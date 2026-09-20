@@ -143,6 +143,7 @@ add_executable(biltoo
   src/imageview_crop.cpp
   src/imageview_appearance.cpp
   src/imageview_rematerialize.cpp
+  src/imageview_bake.cpp
   src/cropgeometry.cpp
   src/cropgeometry.h
   src/cropsession.cpp

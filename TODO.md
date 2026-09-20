@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1695-crop-appearance-bake.** Crop appearance with crop TU; bake out of rematerialize.
+Prior: **1694**.
+
+### Change
+- Crop store/load/apply/emit appearance → `imageview_crop.cpp`
+- New `imageview_bake.cpp` — `bakeItemRotate90` / `bakeItemFlip`
+- `imageview_appearance.cpp` ~953 → ~815; `imageview_rematerialize.cpp` ~734 → ~492
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1695-crop-appearance-bake.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Tier 4 characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1694-workspace-chrome-canvas-place.** Workspace chrome input + canvas place/add TUs.
 Prior: **1693**.
 
