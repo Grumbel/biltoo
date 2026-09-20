@@ -19,11 +19,6 @@
     void updateWorkspaceSceneRect();
     /** Queue LoadRestore for workspace rebuild from durable snapshot. */
     void scheduleRestoreLoad(const QString &path);
-    void snapshotWorkspace();
-    void discardStashedWorkspace();
-    /** Clear durable Workspace arrangement (session open ≠ project). */
-    void clearDurableWorkspaceSnapshot();
-    void snapshotFreeFormStates();
 
     /** Destroy live canvas items only; keep Workspace/Gallery stashes. */
     void clearLiveCanvas();

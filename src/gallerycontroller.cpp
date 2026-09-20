@@ -317,12 +317,12 @@ void GalleryController::enter(int packagedLayoutInt)
     }
 
     if (m_view->isWorkspaceMode()) {
-        m_view->snapshotFreeFormStates();
-        m_view->snapshotWorkspace();
+        m_view->hostWorkspace().snapshotFreeFormStates();
+        m_view->hostWorkspace().snapshot();
     }
     // Leaving Workspace/Image for Gallery: drop workspace stash (layout uses
     // live m_items or rebuilds from session paths).
-    m_view->discardStashedWorkspace();
+    m_view->hostWorkspace().discardStash();
     if (layoutSwitch) {
         // Soft reset: keep items and selection paths; only clear view zoom.
         // Drop scroll snapshot — user asked for a new layout, not return-from-Image.

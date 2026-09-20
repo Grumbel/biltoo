@@ -8,10 +8,6 @@
 #include <QScrollBar>
 #include <QtMath>
 
-void ImageView::snapshotWorkspace()
-{
-    m_workspace.snapshot();
-}
 
 bool ImageView::hasWorkspaceContent() const
 {
@@ -24,40 +20,12 @@ bool ImageView::hasWorkspaceContent() const
     return !m_workspace.savedItems().isEmpty();
 }
 
-void ImageView::restoreWorkspace()
-{
-    m_workspace.restore();
-}
 
-void ImageView::discardStashedWorkspace()
-{
-    m_workspace.discardStash();
-}
 
-void ImageView::clearDurableWorkspaceSnapshot()
-{
-    m_workspace.clearDurableSnapshot();
-}
 
-void ImageView::stashWorkspaceItems()
-{
-    m_workspace.stashItems();
-}
 
-void ImageView::restoreStashedWorkspaceItems()
-{
-    m_workspace.restoreStashedItems();
-}
 
-void ImageView::snapshotFreeFormStates()
-{
-    m_workspace.snapshotFreeFormStates();
-}
 
-void ImageView::restoreFreeFormStates()
-{
-    m_workspace.restoreFreeFormStates();
-}
 
 void ImageView::updateWorkspaceSceneRect()
 {

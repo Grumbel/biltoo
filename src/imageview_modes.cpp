@@ -214,7 +214,7 @@ void ImageView::clearWorkspace()
     // Workspace snapshot so a subsequent enter() does not resurrect the
     // previous arrangement (project load, session replace).
     clearLiveCanvas();
-    discardStashedWorkspace();
+    m_workspace.discardStash();
     m_gallery.discardStash();
     m_workspace.savedItems().clear();
     m_displayPipeline.loadGate().clearPending();

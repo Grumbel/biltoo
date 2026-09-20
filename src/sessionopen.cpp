@@ -46,8 +46,8 @@ bool prepareExpandedSession(ImageView *view,
     // projects restore Workspace content.
     if (view) {
         view->hostGallery().discardStash();
-        view->discardStashedWorkspace();
-        view->clearDurableWorkspaceSnapshot();
+        view->hostWorkspace().discardStash();
+        view->hostWorkspace().clearDurableSnapshot();
         if (clearLiveWorkspace) {
             view->clearWorkspace();
         }
