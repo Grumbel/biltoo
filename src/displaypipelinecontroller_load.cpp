@@ -44,7 +44,7 @@ void DisplayPipelineController::finishLoadAddStatus(bool refreshGalleryWindow)
 {
     emit m_view->statusChanged();
     if (refreshGalleryWindow && m_view->isGalleryMode()) {
-        m_view->scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
+        m_view->hostGallery().scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
     }
 }
 
@@ -270,9 +270,9 @@ void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChang
         }
         if (!(m_view->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
             if (sizeChanged) {
-                m_view->applyLayout(GalleryPackReason::ContentChange);
+                m_view->hostGallery().applyLayout(GalleryPackReason::ContentChange);
             } else {
-                m_view->applyLayout(GalleryPackReason::SessionMutate);
+                m_view->hostGallery().applyLayout(GalleryPackReason::SessionMutate);
             }
         }
     } else {
@@ -337,7 +337,7 @@ void DisplayPipelineController::completeLoadAdd(const QString &path, const QImag
     emit m_view->statusChanged();
     emit m_view->workspacePathsChanged();
     if (m_view->isGalleryMode()) {
-        m_view->scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
+        m_view->hostGallery().scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
     }
     if (m_view->isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
@@ -764,7 +764,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     m_view->applyState(item, app);
     if (!m_view->hostLayout().isFreeForm()
         && !(m_view->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
-        m_view->applyLayout(GalleryPackReason::SessionMutate);
+        m_view->hostGallery().applyLayout(GalleryPackReason::SessionMutate);
     }
     emit m_view->statusChanged();
     emit m_view->workspacePathsChanged();

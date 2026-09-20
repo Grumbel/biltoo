@@ -70,7 +70,7 @@ void ImageView::flipHorizontal()
         }
     }
     if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
+        m_gallery.applyLayout(GalleryPackReason::ContentChange);
     }
     emit statusChanged();
 }
@@ -88,7 +88,7 @@ void ImageView::flipVertical()
         }
     }
     if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
+        m_gallery.applyLayout(GalleryPackReason::ContentChange);
     }
     emit statusChanged();
 }
@@ -125,7 +125,7 @@ void ImageView::rotateLeft()
         rotateContentByQuarterTurns(item, -1);
     }
     if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
+        m_gallery.applyLayout(GalleryPackReason::ContentChange);
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
@@ -142,7 +142,7 @@ void ImageView::rotateRight()
         rotateContentByQuarterTurns(item, 1);
     }
     if (isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
+        m_gallery.applyLayout(GalleryPackReason::ContentChange);
     } else if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }

@@ -4,7 +4,6 @@
     // --- Display pipeline host methods (Tier 5c; was private friend surface) ---
     void clearTextSelection();
     void refreshTextLayer();
-    void scheduleGalleryStatusRefresh(int delayMs = 100);
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
     void syncImageModeSceneRect(ImageItem *item);
     void captureStickyPanAnchor(ImageItem *item);

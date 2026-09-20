@@ -144,22 +144,22 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
         // Non-fill path should have created items; recover if not.
         ensureGalleryPlaceholders();
         if (!m_items.isEmpty()) {
-            applyLayout(GalleryPackReason::EnterGallery);
-            updateGalleryDecodeWindow();
+            m_gallery.applyLayout(GalleryPackReason::EnterGallery);
+            m_gallery.updateDecodeWindow();
         }
     } else if (isGalleryMode() && !m_items.isEmpty()) {
-        applyLayout(GalleryPackReason::EnterGallery);
+        m_gallery.applyLayout(GalleryPackReason::EnterGallery);
         TtfpTrace::mark("after_applyLayout");
         // Synchronous pass1/pass2 so warm ImageCache installs before first paint.
         // (Deferred-only left cells blank until an explicit relayout.)
-        updateGalleryDecodeWindow();
+        m_gallery.updateDecodeWindow();
         TtfpTrace::mark("after_updateGalleryDecodeWindow");
         // Viewport often still 0×0 / dock settling; soft jobs land a few ms later.
         // Pulse decode window again so ladderReady installs are not the only path.
         for (int delay : {0, 50, 200}) {
             QTimer::singleShot(delay, this, [this]() {
                 if (isGalleryMode() && !m_items.isEmpty()) {
-                    updateGalleryDecodeWindow();
+                    m_gallery.updateDecodeWindow();
                 }
             });
         }

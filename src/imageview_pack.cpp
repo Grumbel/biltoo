@@ -7,22 +7,10 @@
 #include "gallerylayout.h"
 #include "gallerypackfit.h"
 
-void ImageView::scheduleGalleryStatusRefresh(int delayMs)
-{
-    m_gallery.scheduleStatusRefresh(delayMs);
-}
 
 
-void ImageView::scheduleGalleryDecodeWindowRefresh(int delayMs)
-{
-    m_gallery.scheduleDecodeWindowRefresh(delayMs);
-}
 
 
-int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending)
-{
-    return m_gallery.galleryInstallHostSoftOntoBlanks(maxInstalls, morePending);
-}
 
 
 void ImageView::publishGalleryInterest(const QStringList &interestNear,
@@ -50,10 +38,6 @@ GalleryLayout::Mode ImageView::galleryLayoutModeFromViewMode() const
     return GalleryPackFit::modeFromLayoutMode(m_layout.currentMode());
 }
 
-void ImageView::updateGalleryDecodeWindow()
-{
-    m_gallery.updateDecodeWindow();
-}
 
 
 void ImageView::setLayoutMode(LayoutMode mode)
@@ -66,28 +50,12 @@ void ImageView::setLayoutMode(LayoutMode mode)
     m_gallery.setLayoutMode(mode);
 }
 
-void ImageView::setGridColumns(int columns)
-{
-    m_gallery.setGridColumns(columns);
-}
 
 
-void ImageView::setMasonryColumns(int columns)
-{
-    m_gallery.setMasonryColumns(columns);
-}
 
 
-void ImageView::setMasonryRows(int rows)
-{
-    m_gallery.setMasonryRows(rows);
-}
 
 
-void ImageView::setGalleryRelayoutSuppressed(bool on)
-{
-    m_gallery.setRelayoutSuppressed(on);
-}
 
 void ImageView::reloadFromDisk(bool relayoutGallery)
 {
@@ -117,28 +85,11 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
 }
 
 
-void ImageView::applyLayout(GalleryPackReason reason)
-{
-    m_gallery.applyLayout(reason);
-}
-
-
-bool ImageView::layoutWorkspaceItems(const GalleryLayout::Params &userParams,
-                                     const QList<ImageItem *> &itemsIn)
-{
-    return m_workspace.layoutItems(userParams, itemsIn);
-}
 
 
 
-void ImageView::updateGallerySoftProgressHud()
-{
-    m_gallery.updateSoftProgressHud();
-}
 
 
-void ImageView::gallerySoftWatchdogTick()
-{
-    m_gallery.softWatchdogTick();
-}
+
+
 

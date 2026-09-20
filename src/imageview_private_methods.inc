@@ -328,11 +328,6 @@
     void scheduleIdleGalleryDecodes(const QStringList &rest);
 
 
-    /**
-     * Decode-window pass 1: attach ImageCache soft onto blank tiles (budgeted).
-     * @return number of installs; @p morePending if the budget was exhausted.
-     */
-    int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending);
 
     /** Coalesce statusChanged during soft climb (MainWindow is not free). */
 

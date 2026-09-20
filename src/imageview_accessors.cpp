@@ -16,7 +16,7 @@ void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
 {
     m_layoutDebounce.arm(reason);
     if (!m_layoutDebounceTimer) {
-        applyLayout(reason);
+        m_gallery.applyLayout(reason);
         return;
     }
     m_layoutDebounceTimer->start();

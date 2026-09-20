@@ -390,9 +390,9 @@ int ImageView::resetContentAppearanceForTargets()
         ++n;
     }
     if (n > 0 && isGalleryMode()) {
-        applyLayout(GalleryPackReason::ContentChange);
+        m_gallery.applyLayout(GalleryPackReason::ContentChange);
         // Soft state was reset; kick the ladder for visible tiles.
-        updateGalleryDecodeWindow();
+        m_gallery.updateDecodeWindow();
     }
     if (n > 0) {
         emit statusChanged();

@@ -1803,7 +1803,7 @@ void MainWindow::removeSessionIndicesFromModel(const QList<int> &sorted)
         // Snapshot once; each remove pins sceneRect; reassert after the churn.
         if (isGalleryMode()) {
             m_imageView->hostGallery().snapshotViewport();
-            m_imageView->setGalleryRelayoutSuppressed(true);
+            m_imageView->hostGallery().setRelayoutSuppressed(true);
         }
     }
     for (int i = sorted.size() - 1; i >= 0; --i) {
@@ -1847,7 +1847,7 @@ void MainWindow::selectIndexAfterSessionRemove(const QString &currentPath, const
         updateStatus();
         updateNavigationActions();
         if (m_imageView) {
-            m_imageView->setGalleryRelayoutSuppressed(false);
+            m_imageView->hostGallery().setRelayoutSuppressed(false);
         }
         return;
     }
@@ -1892,7 +1892,7 @@ void MainWindow::selectIndexAfterSessionRemove(const QString &currentPath, const
                 return;
             }
             v->hostGallery().reassertViewport();
-            v->setGalleryRelayoutSuppressed(false);
+            v->hostGallery().setRelayoutSuppressed(false);
         });
     }
 }
@@ -3517,7 +3517,7 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
     }
     applyThumbnailVisibility();
     if (isGalleryMode()) {
-        m_imageView->applyLayout(GalleryPackReason::SessionMutate);
+        m_imageView->hostGallery().applyLayout(GalleryPackReason::SessionMutate);
     }
     updateWorkspaceActionVisibility();
     if (statusBar()) {

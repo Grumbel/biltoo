@@ -41,7 +41,7 @@ void ImageView::zoomViewBy(qreal factor)
     // Gallery already debounced interest; Image/Workspace match that pattern
     // so continuous zoom does not issue tile work every notch.
     if (isGalleryMode()) {
-        scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowScrollMs);
+        m_gallery.scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowScrollMs);
     } else {
         m_displayPipeline.scheduleTileLodAfterInteraction(50);
     }
@@ -87,7 +87,7 @@ void ImageView::zoomReset()
         // Gallery/Workspace: one-shot identity view (sticky zoom is Image-only).
         resetTransform();
         if (isGalleryMode()) {
-            updateGalleryDecodeWindow();
+            m_gallery.updateDecodeWindow();
         }
         emit statusChanged();
         return;
@@ -135,7 +135,7 @@ void ImageView::zoomFit()
                 m_scene->setSceneRect(bounds);
                 fitInView(bounds, Qt::KeepAspectRatio);
             }
-            updateGalleryDecodeWindow();
+            m_gallery.updateDecodeWindow();
             refreshScrollBarGeometry();
             emit statusChanged();
         }
@@ -178,7 +178,7 @@ void ImageView::zoomFill()
                 m_scene->setSceneRect(bounds);
                 fitInView(bounds, Qt::KeepAspectRatioByExpanding);
             }
-            updateGalleryDecodeWindow();
+            m_gallery.updateDecodeWindow();
             refreshScrollBarGeometry();
             emit statusChanged();
         }

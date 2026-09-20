@@ -185,7 +185,7 @@ MainWindow::MainWindow(QWidget *parent)
     // ticks. Without this, tiles stay blank until scroll / ladderReady / watchdog.
     connect(m_thumbnailBar, &ThumbnailBar::loadsChanged, this, [this]() {
         if (isGalleryMode() && m_imageView) {
-            m_imageView->scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
+            m_imageView->hostGallery().scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
         }
     });
     connect(m_imageView, &ImageView::workspacePathsChanged,
@@ -2502,7 +2502,7 @@ void MainWindow::applyWorkspaceLayoutFromPanel()
     if (!m_layoutPanel || !m_imageView || !m_imageView->isWorkspaceMode()) {
         return;
     }
-    if (m_imageView->layoutWorkspaceItems(m_layoutPanel->params())) {
+    if (m_imageView->hostWorkspace().layoutItems(m_layoutPanel->params())) {
         markWorkspaceDirty();
         if (statusBar()) {
             statusBar()->showMessage(tr("Layout applied to selection."), 2500);
@@ -2962,9 +2962,9 @@ void MainWindow::readSettings()
     const int gridCols = settings.value(QStringLiteral("gridColumns"), 0).toInt();
     const int masonryRows = settings.value(QStringLiteral("masonryRows"), 3).toInt();
     if (m_imageView) {
-        m_imageView->setMasonryColumns(masonryCols);
-        m_imageView->setGridColumns(gridCols);
-        m_imageView->setMasonryRows(masonryRows);
+        m_imageView->hostGallery().setMasonryColumns(masonryCols);
+        m_imageView->hostGallery().setGridColumns(gridCols);
+        m_imageView->hostGallery().setMasonryRows(masonryRows);
     }
     if (m_masonryCountSpin) {
         const QSignalBlocker blocker(m_masonryCountSpin);

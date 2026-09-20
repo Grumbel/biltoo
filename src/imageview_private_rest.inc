@@ -122,8 +122,6 @@
     void noteGallerySizeProbeSettled(const QString &path);
     /** LQIP install + tile pyramid request for a Gallery path. */
 
-    /** Recover blank Gallery cells that never got LQIP installed. */
-    void gallerySoftWatchdogTick();
     /** Clear stale "Improving previews" centre HUD noise. */
     /** Apply session crop from @p state to a freshly decoded item (no-op if none). */
     /**

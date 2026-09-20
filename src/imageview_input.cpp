@@ -149,7 +149,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
     // into ImageCache, and without this pulse cells stay blank until F5/relayout.
     if (isGalleryMode()) {
         if (viewport() && viewport()->width() > 1 && viewport()->height() > 1) {
-            scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);
+            m_gallery.scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);
         }
         return;
     }

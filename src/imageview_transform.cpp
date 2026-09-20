@@ -99,7 +99,7 @@ void ImageView::pushItemContentCommand(const QString &text, ImageItem *item,
             // Reuse crop appearance path: pixels + content flags + geometry + session store.
             m_view->applyCropAppearance(m_item, src, st);
             if (m_view->isGalleryMode()) {
-                m_view->applyLayout(GalleryPackReason::ContentChange);
+                m_view->hostGallery().applyLayout(GalleryPackReason::ContentChange);
             }
         }
         ImageView *m_view;

@@ -344,11 +344,11 @@ void ImageView::onSizeResolveGateComplete()
         }
     }
     if (isGalleryMode() && !m_items.isEmpty() && !m_layout.isFreeForm()) {
-        applyLayout(GalleryPackReason::EnterGallery);
-        updateGalleryDecodeWindow();
+        m_gallery.applyLayout(GalleryPackReason::EnterGallery);
+        m_gallery.updateDecodeWindow();
         QTimer::singleShot(0, this, [this]() {
             if (isGalleryMode() && !m_items.isEmpty()) {
-                updateGalleryDecodeWindow();
+                m_gallery.updateDecodeWindow();
             }
         });
     }

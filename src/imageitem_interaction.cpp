@@ -827,7 +827,7 @@ void ImageItem::activateChromeHandle(Handle h)
                         iv->rotateContentByQuarterTurns(this, 1);
                     }
                     if (iv->isGalleryMode()) {
-                        iv->applyLayout(GalleryPackReason::ContentChange);
+                        iv->hostGallery().applyLayout(GalleryPackReason::ContentChange);
                     } else if (iv->isWorkspaceMode()) {
                         iv->updateWorkspaceSceneRect();
                     }

@@ -81,7 +81,7 @@ void ImageView::restoreViewportAfterSessionRemove(bool gallery, const QRectF &ke
     // pre-delete viewport centre afterward (same idea as return-from-Image).
     if (gallery && m_scene) {
         if (!m_items.isEmpty()) {
-            applyLayout(GalleryPackReason::SessionMutate);
+            m_gallery.applyLayout(GalleryPackReason::SessionMutate);
         } else if (keptSceneRect.isValid()) {
             m_scene->setSceneRect(keptSceneRect);
         }

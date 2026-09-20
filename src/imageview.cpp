@@ -100,7 +100,7 @@ ImageView::ImageView(QWidget *parent)
             // Refresh interest snapshot so FocusFull tracks the new Primary.
             // Sticky zoom is Image-mode only; Gallery uses ensureVisible for
             // keep-selection-in-view.
-            updateGalleryDecodeWindow();
+            m_gallery.updateDecodeWindow();
         }
         // Workspace: Primary = first selected; Near = remaining selection.
         if (isWorkspaceMode()) {
@@ -274,7 +274,7 @@ ImageView::ImageView(QWidget *parent)
         GalleryPackReason reason = GalleryPackReason::ContentChange;
         if (isGalleryMode() && !m_layout.isFreeForm()
             && m_layoutDebounce.take(&reason)) {
-            applyLayout(reason);
+            m_gallery.applyLayout(reason);
         }
     });
     // Colour sliders fire every tick — durable SQLite + filmstrip bake are deferred.
@@ -341,7 +341,7 @@ ImageView::ImageView(QWidget *parent)
         // Debounce: every scroll pixel used to scan all tiles + start pool
         // work and could peg a core while the user was only panning.
         // Gallery soft install needs a responsive window while LQIP→soft climbs.
-        scheduleGalleryDecodeWindowRefresh(isGalleryMode()
+        m_gallery.scheduleDecodeWindowRefresh(isGalleryMode()
             ? GallerySoft::kDecodeWindowSettleMs
             : GallerySoft::kDecodeWindowImageMs);
         // Image/Workspace deep zoom: timer may be stopped after coverage;
@@ -353,7 +353,7 @@ ImageView::ImageView(QWidget *parent)
     });
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
-        scheduleGalleryDecodeWindowRefresh(isGalleryMode()
+        m_gallery.scheduleDecodeWindowRefresh(isGalleryMode()
             ? GallerySoft::kDecodeWindowSettleMs
             : GallerySoft::kDecodeWindowImageMs);
         if (!m_chrome.isPanning() && !isGalleryMode()) {
@@ -367,7 +367,7 @@ ImageView::ImageView(QWidget *parent)
     m_gallerySoftWatchdog->setInterval(GallerySoft::kWatchdogIntervalMs);
     connect(m_gallerySoftWatchdog, &QTimer::timeout, this, [this]() {
         if (isGalleryMode()) {
-            gallerySoftWatchdogTick();
+            m_gallery.softWatchdogTick();
         }
         // ImageFocus is event-driven only (rasterImproved / load / resize climb).
         // Slideshow phase buffers: DisplaySurface::decide while transition is live.

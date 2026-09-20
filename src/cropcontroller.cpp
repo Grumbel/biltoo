@@ -125,7 +125,7 @@ void CropController::fitImageOrUpdateWorkspace(ImageItem *item)
 void CropController::relayoutAfterCropLeave(ImageItem *item)
 {
     if (m_view->isGalleryMode()) {
-        m_view->applyLayout(GalleryPackReason::ContentChange);
+        m_view->hostGallery().applyLayout(GalleryPackReason::ContentChange);
     } else {
         fitImageOrUpdateWorkspace(item);
     }

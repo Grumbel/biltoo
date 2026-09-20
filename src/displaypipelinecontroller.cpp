@@ -517,8 +517,8 @@ void DisplayPipelineController::applyGalleryLadderReady(const QString &path, int
         st->have = GallerySoft::maxHave(st->have, galleryHaveEdgeFromItems(path, nullptr));
     }
 
-    m_view->scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
-    m_view->scheduleGalleryStatusRefresh(GallerySoft::kStatusRefreshMs);
+    m_view->hostGallery().scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
+    m_view->hostGallery().scheduleStatusRefresh(GallerySoft::kStatusRefreshMs);
 }
 
 

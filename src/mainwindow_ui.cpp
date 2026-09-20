@@ -1224,14 +1224,14 @@ void MainWindow::createToolBar()
                 const auto mode = m_imageView->layoutMode();
                 if (mode == LayoutMode::MasonryRows
                     || mode == LayoutMode::MasonryRowsFill) {
-                    m_imageView->setMasonryRows(count);
+                    m_imageView->hostGallery().setMasonryRows(count);
                 } else if (mode == LayoutMode::Grid
                            || mode == LayoutMode::GridCrop
                            || mode == LayoutMode::Flow
                            || mode == LayoutMode::FlowFill) {
-                    m_imageView->setGridColumns(count);
+                    m_imageView->hostGallery().setGridColumns(count);
                 } else {
-                    m_imageView->setMasonryColumns(count);
+                    m_imageView->hostGallery().setMasonryColumns(count);
                 }
             });
 

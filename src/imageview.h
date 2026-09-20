@@ -366,11 +366,6 @@ public:
     /** Reorder canvas items to match @p paths (session / sort order). */
     void reorderItemsByPaths(const QStringList &paths);
 
-    /**
-     * While true, Gallery ignores resize/debounce-driven applyLayout (used
-     * during session delete so the pack and scroll stay put).
-     */
-    void setGalleryRelayoutSuppressed(bool on);
 
     /**
      * Reload from disk: Image mode — current session image only;
@@ -632,14 +627,6 @@ public:
 
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layout.currentMode(); }
-    void applyLayout(GalleryPackReason reason = GalleryPackReason::ExplicitLayout);
-    /**
-     * Workspace only: pack @p items (or current selection) with a packaged
-     * layout without leaving FreeForm / Workspace mode. Returns false if
-     * there is nothing to arrange.
-     */
-    bool layoutWorkspaceItems(const GalleryLayout::Params &params,
-                              const QList<ImageItem *> &items = {});
     GalleryLayout::Mode galleryLayoutModeFromViewMode() const;
     /** Gallery mode with a packaged layout. */
     bool isGalleryLayout() const { return isGalleryMode(); }
@@ -648,15 +635,9 @@ public:
     void enterGallery(LayoutMode packagedLayout);
 
 
-    /** Number of columns for LayoutMode::Masonry (images scale to fit column width). */
-    void setMasonryColumns(int columns);
     int masonryColumns() const { return m_layout.masonryColumnsValue(); }
-    /** Grid / GridCrop columns; 0 = automatic. */
-    void setGridColumns(int columns);
     int gridColumns() const { return m_layout.gridColumnsValue(); }
 
-    /** Number of rows for LayoutMode::MasonryRows (images scale to fit row height). */
-    void setMasonryRows(int rows);
     int masonryRows() const { return m_layout.masonryRowsValue(); }
 
     WorkspaceItemState captureState(const ImageItem *item) const;
@@ -717,10 +698,6 @@ public:
     void selectAllCanvasItems();
     /** In-flight LoadAdd / LoadRestore / viewport-window decodes. */
     int pendingDecodeCount() const;
-    /** Coalesce decode-window rescans (setInterest + schedule) off the hot path. */
-    void scheduleGalleryDecodeWindowRefresh(int delayMs = 48);
-    void updateGalleryDecodeWindow();
-    void updateGallerySoftProgressHud();
 signals:
     void stickyZoomChanged();
     void statusChanged();
