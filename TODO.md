@@ -2,6 +2,25 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1850-fix-crop-fitImage.** fitImageOrUpdateWorkspace via m_cropCtrl.
+Prior: **1849**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1850-fix-crop-fitImage.bundle HEAD
+```
+Requires tip **1849**.
+
+### Next
+- biltoo-build
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1849-fix-attention-pipeline-calls.** Attention/pipeline residual hosts.
 Prior: **1848**.
 

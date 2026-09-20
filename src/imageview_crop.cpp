@@ -80,7 +80,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
             rematerializeItemContent(item, app);
         }
     }
-    fitImageOrUpdateWorkspace(item);
+    m_cropCtrl.fitImageOrUpdateWorkspace(item);
 }
 
 void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
