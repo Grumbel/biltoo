@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1929-geometry-persist-placement-only.** Geometry undo writes Placement only.
+Prior: **1928**.
+
+### Change
+- `persistGeometrySessionState` for bound session ids: `setPlacement` only
+  (no `setAppearance` full DTO re-stamp)
+- Pose dual-write stays on ItemWorld::setPlacement; crop/bake/color tables
+  untouched by raise/lower/opacity/scale/rotate/shear undo
+- Unbound path-book path unchanged
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1929-geometry-persist-placement-only-516d734.bundle HEAD
+```
+Requires tip **1928** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Further ImageItem demotion of live crop/flip fields (still dual-write on install)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1928-find-item-for-path.** Consolidate preferred-then-first path lookup.
 Prior: **1927**.
 

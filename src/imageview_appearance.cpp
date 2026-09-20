@@ -116,8 +116,10 @@ void ImageView::persistGeometrySessionState(ImageItem *item, const WorkspaceItem
         ? item->sessionId()
         : state.sessionId;
     if (sid != kInvalidSessionImageId) {
+        // Geometry undo/redo is pose-only. setPlacement dual-writes pose into the
+        // appearance DTO; do not setAppearance (would re-stamp crop/bake/color
+        // tables from a full captureState snapshot).
         m_itemWorld.setPlacement(sid, ItemComponents::placementFromState(state));
-        m_itemWorld.setAppearance(sid, state);
         return;
     }
     if (!item->path().isEmpty()) {
