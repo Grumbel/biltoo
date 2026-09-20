@@ -25,8 +25,6 @@
     // --- Slideshow host (Phase 6: replaces friend SlideshowController) ---
     SessionAppearanceStore &hostAppearance() { return appearance(); }
     const SessionAppearanceStore &hostAppearance() const { return appearance(); }
-    ViewFraming &hostFraming() { return m_framing; }
-    const ViewFraming &hostFraming() const { return m_framing; }
     CanvasBackground &hostCanvasBg() { return m_canvasBg; }
     const CanvasBackground &hostCanvasBg() const { return m_canvasBg; }
     SessionIdentity &hostSessionId() { return m_sessionId; }
