@@ -155,23 +155,6 @@
     bool cropAllowExpand() const { return m_cropCtrl.session().isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
-    void paintAttentionOverlay(QPainter &painter);
-    int attentionHandleIndexAt(const QPoint &viewPos) const;
-    bool attentionHandleAt(const QPoint &viewPos) const;
-    QVector<QPointF> attentionPointsForTarget() const;
-    QPointF attentionNormForTarget() const;
-    void setAttentionPointsForTarget(const QVector<QPointF> &pts);
-    void setAttentionNormForTarget(const QPointF &norm);
-    void ensureAttentionPoint();
-    SessionImageId attentionSessionId() const;
-    /** Push undo if points changed during a drag/add gesture; clear gesture state. */
-    void attentionCommitSelectionMove();
-    void attentionDeleteSelected();
-    /** Snapshot → mutate → single undo entry (delete, detect, non-gesture edits). */
-    void pushAttentionPointsUndo(const QVector<QPointF> &before,
-                                 const QVector<QPointF> &after,
-                                 const QString &text);
-    QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace
      * angles map to 0°.

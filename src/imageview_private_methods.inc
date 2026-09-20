@@ -192,8 +192,6 @@
     qreal viewScale() const;
 
 
-    /** Re-run saliency detect on the current image (replaces all points). */
-    void detectAttentionPoint();
 
     /** Undo/redo: replace attention points on the current attention target. */
 

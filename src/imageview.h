@@ -243,6 +243,8 @@ public:
     /** Display pipeline host: crop controller (draft freeze). */
     CropController &hostCrop() { return m_cropCtrl; }
     const CropController &hostCrop() const { return m_cropCtrl; }
+    AttentionController &hostAttention() { return m_attentionCtrl; }
+    const AttentionController &hostAttention() const { return m_attentionCtrl; }
     /** Display pipeline host: text layer (loadImage side effects). */
     TextLayerSession &hostTextLayer() { return m_textLayer; }
     const TextLayerSession &hostTextLayer() const { return m_textLayer; }
@@ -463,18 +465,6 @@ public:
     bool hasTransformTargets() const;
     /** True when crop is allowed: exactly one transform target (not multi-select). */
     bool hasSingleCropTarget() const;
-
-
-    /**
-     * Attention / focus-point mode (Image mode). Multi-point overlay with
-     * standard selection: click select, Shift/Ctrl toggle, drag empty =
-     * rubber-band, Ctrl+click = insert, Del = delete, undoable edits.
-     * Primary (first) point drives slideshow Ken Burns. Auto-detects peaks
-     * when entering if none stored.
-     */
-    void setAttentionMode(bool on);
-    bool isAttentionMode() const { return m_attentionCtrl.active(); }
-    void toggleAttentionMode();
     /** Restore pixels + session crop metadata (used by crop undo/redo). */
     void applyCropAppearance(ImageItem *item, const QImage &src,
                             const WorkspaceItemState &state);

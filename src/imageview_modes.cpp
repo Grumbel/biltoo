@@ -279,7 +279,7 @@ void ImageView::setViewMode(ViewMode mode)
         m_cropCtrl.leaveCropModeInternal(false);
     }
     if (m_attentionCtrl.session().active()) {
-        setAttentionMode(false);
+        m_attentionCtrl.setAttentionMode(false);
     }
 
     const ViewMode previous = m_viewMode;

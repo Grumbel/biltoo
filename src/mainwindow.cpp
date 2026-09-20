@@ -767,8 +767,8 @@ void MainWindow::toggleCropMode()
     if (!m_imageView) {
         return;
     }
-    if (m_imageView->isAttentionMode()) {
-        m_imageView->setAttentionMode(false);
+    if (m_imageView->hostAttention().active()) {
+        m_imageView->hostAttention().setAttentionMode(false);
         if (m_attentionAct) {
             m_attentionAct->setChecked(false);
         }
@@ -1340,8 +1340,8 @@ void MainWindow::toggleAttentionMode()
         }
         openSessionIndexInImageMode(idx);
     }
-    m_imageView->setAttentionMode(want);
-    m_attentionAct->setChecked(m_imageView->isAttentionMode());
+    m_imageView->hostAttention().setAttentionMode(want);
+    m_attentionAct->setChecked(m_imageView->hostAttention().active());
 }
 
 void MainWindow::toggleThumbnailCrop()

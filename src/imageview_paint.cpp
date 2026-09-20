@@ -192,7 +192,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
         m_cropCtrl.paintCropOverlay(painter);
     }
     if (m_attentionCtrl.session().active()) {
-        paintAttentionOverlay(painter);
+        m_attentionCtrl.paintAttentionOverlay(painter);
     }
     paintWorkspaceViewportChrome(painter);
 

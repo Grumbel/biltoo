@@ -61,7 +61,6 @@
     // --- Display/crop host (controller access without friend) ---
     ImageItem *primaryItem() const;
     void applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want);
-    void restoreAttentionPoints(const QVector<QPointF> &pts);
     void attachDisplaySample(ImageItem *item, const QImage &display,
                              const WorkspaceItemState &want,
                              SessionAppearance::PixelKind kind);
