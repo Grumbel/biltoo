@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1910-privatize-paint-input-phases.** Narrow host public surface.
+Prior: **1909**.
+
+### Change
+- Move paint overlays, Qt event phase try*, and related helpers from
+  `imageview_host_pipeline.inc` (public) → `imageview_private_methods.inc`
+- Host pipeline keeps controller-facing pack-order / load / framing APIs only
+- No behaviour change (same-class TUs still call private methods)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1910-privatize-paint-input-phases-516d734.bundle HEAD
+```
+Requires tip **1909** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1909-refactor-metrics-update.** REFACTOR metrics after TU fold.
 Prior: **1908**.
 

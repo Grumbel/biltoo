@@ -1137,6 +1137,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1907: merge workspace scene/placement into canvas TU.
 - biltoo-1908: merge slideshow + HUD overlay paint into paint TU.
 - biltoo-1909: REFACTOR metrics after ImageView TU fold (1894–1908).
+- biltoo-1910: privatize paint/input try* phases off host_pipeline public surface.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

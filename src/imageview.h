@@ -660,7 +660,8 @@ public:
         return m_displayPipeline.loadGate().accepts(gen);
     }
 
-    // Host pipeline + try* phase decls — must NOT sit under public slots (moc).
+    // Display pipeline / pack-order host surface (controllers).
+    // Input try* and paint phases: imageview_private_methods.inc.
 #include "imageview_host_pipeline.inc"
 
 protected:
