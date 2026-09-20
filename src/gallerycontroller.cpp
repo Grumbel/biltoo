@@ -19,6 +19,7 @@
 
 #include <QScrollBar>
 #include <QTimer>
+#include <QUndoStack>
 #include <QSet>
 #include <QMouseEvent>
 #include <QKeyEvent>
@@ -1365,5 +1366,37 @@ void GalleryController::setMasonryRows(int rows)
         && !m_view->liveItems().isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
+}
+
+
+// --- Gallery mode canvas enter/leave helpers ---
+
+void GalleryController::prepareCanvas()
+{
+    // Drop Image-mode fit transforms and prior layout scene rects so the previous
+    // frame does not linger under the new packing (visible "ghost" between switches).
+    m_view->hostUndoStack()->clear();
+    m_view->canvasScene()->clearSelection();
+    m_view->resetTransform();
+    if (m_view->horizontalScrollBar()) {
+        m_view->horizontalScrollBar()->setValue(0);
+    }
+    if (m_view->verticalScrollBar()) {
+        m_view->verticalScrollBar()->setValue(0);
+    }
+    m_view->canvasScene()->setSceneRect(QRectF());
+    m_view->hostFraming().setFitOnly();
+    // Force a blank pass before items are re-packed.
+    m_view->viewport()->update();
+}
+
+void GalleryController::invalidateDecodes()
+{
+    // Drop scheduled markers and pending path counts so late LoadAdd results
+    // cannot create tiles after leaving Gallery. Bump generation so in-flight
+    // pool jobs are rejected in onImageLoaded.
+    m_view->gallerySoftResetAll();
+    m_view->hostDisplayPipeline().loadGate().clearPendingWorkspacePaths();
+    m_view->hostDisplayPipeline().loadGate().bumpGeneration();
 }
 

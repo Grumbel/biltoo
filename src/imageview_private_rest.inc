@@ -394,7 +394,6 @@
     ImageModeSoftProvider m_imageModeSoftProvider;
 
     PathRasterService *m_pathRaster = nullptr;
-    void gallerySoftResetAll();
     /** @deprecated Gallery always virtualizes; kept for ABI/docs only. */
     static constexpr int kGalleryVirtualThreshold = 1;
     /** Historical Gallery concurrency knob (unused after soft removal). */

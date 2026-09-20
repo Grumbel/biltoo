@@ -50,13 +50,9 @@ void ImageView::clearPendingLoads()
 
 void ImageView::invalidateGalleryDecodes()
 {
-    // Drop scheduled markers and pending path counts so late LoadAdd results
-    // cannot create tiles after leaving Gallery. Bump generation so in-flight
-    // pool jobs are rejected in onImageLoaded.
-    gallerySoftResetAll();
-    m_displayPipeline.loadGate().clearPendingWorkspacePaths();
-    m_displayPipeline.loadGate().bumpGeneration();
+    m_gallery.invalidateDecodes();
 }
+
 
 void ImageView::invalidateSessionLoads()
 {
@@ -268,22 +264,9 @@ void ImageView::prepareImageModeCanvas()
 
 void ImageView::prepareGalleryCanvas()
 {
-    // Drop Image-mode fit transforms and prior layout scene rects so the previous
-    // frame does not linger under the new packing (visible "ghost" between switches).
-    m_undoStack->clear();
-    m_scene->clearSelection();
-    resetTransform();
-    if (horizontalScrollBar()) {
-        horizontalScrollBar()->setValue(0);
-    }
-    if (verticalScrollBar()) {
-        verticalScrollBar()->setValue(0);
-    }
-    m_scene->setSceneRect(QRectF());
-    m_framing.setFitOnly();
-    // Force a blank pass before items are re-packed.
-    viewport()->update();
+    m_gallery.prepareCanvas();
 }
+
 
 void ImageView::setViewMode(ViewMode mode)
 {

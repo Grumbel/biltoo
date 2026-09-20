@@ -38,4 +38,8 @@
     const LayoutApplyGuard &hostLayoutApply() const { return m_layoutApply; }
     CentreProgress &hostCentreProgress() { return m_centreProgress; }
     const CentreProgress &hostCentreProgress() const { return m_centreProgress; }
+    QUndoStack *hostUndoStack() { return m_undoStack; }
+    const QUndoStack *hostUndoStack() const { return m_undoStack; }
+    DisplayPipelineController &hostDisplayPipeline() { return m_displayPipeline; }
+    const DisplayPipelineController &hostDisplayPipeline() const { return m_displayPipeline; }
 

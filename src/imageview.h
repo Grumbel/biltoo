@@ -821,6 +821,7 @@ public:
     void updateGalleryDecodeWindow();
     void updateGallerySoftProgressHud();
     void scheduleGalleryDecode(const QString &path);
+    void gallerySoftResetAll();
 signals:
     void stickyZoomChanged();
     void statusChanged();

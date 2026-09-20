@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1674-gallery-prepare-invalidate.** prepareCanvas + invalidateDecodes on GalleryController.
+Prior: **1673**.
+
+### Change
+- `GalleryController::prepareCanvas` — clear transform/scroll/scene before pack
+- `GalleryController::invalidateDecodes` — soft reset + load generation bump
+- Host: `hostUndoStack`, `hostDisplayPipeline`; public `gallerySoftResetAll`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1674-gallery-prepare-invalidate.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- layoutWorkspaceItems / setLayoutMode remain candidates
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1673-gallery-soft-layout-columns.** Soft watchdog, HUD, column setters on GalleryController.
 Prior: **1672**.
 
