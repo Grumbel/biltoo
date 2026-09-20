@@ -18,10 +18,6 @@ void ImageView::setImageModeSoftProvider(ImageModeSoftProvider provider)
     m_imageModeSoftProvider = std::move(provider);
 }
 
-void ImageView::prefetchTilesForPaths(const QStringList &paths, int budgetPerPath)
-{
-    m_tileNeighborPrefetch.prefetchPaths(paths, budgetPerPath);
-}
 
 bool ImageView::pathOnLiveCanvas(const QString &path) const
 {
@@ -54,7 +50,3 @@ bool ImageView::tilePrefetchNavHot() const
     return m_slideshow.hud().isNavHot();
 }
 
-void ImageView::dropTilePrefetchPath(const QString &path)
-{
-    m_tileNeighborPrefetch.dropPath(path);
-}

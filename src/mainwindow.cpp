@@ -634,7 +634,7 @@ void MainWindow::zoomReset()
             return;
         }
         m_imageView->zoomReset();
-        m_imageView->setStickyZoomKind(StickyZoomKind::Actual);
+        m_imageView->hostFraming().setStickyZoomKind(StickyZoomKind::Actual);
         m_imageView->setStickyZoomEnabled(true);
     } else {
         m_imageView->releaseStickyZoom();
@@ -653,7 +653,7 @@ void MainWindow::zoomFit()
             return;
         }
         m_imageView->zoomFit();
-        m_imageView->setStickyZoomKind(StickyZoomKind::Fit);
+        m_imageView->hostFraming().setStickyZoomKind(StickyZoomKind::Fit);
         m_imageView->setStickyZoomEnabled(true);
     } else {
         m_imageView->releaseStickyZoom();
@@ -672,7 +672,7 @@ void MainWindow::zoomFill()
             return;
         }
         m_imageView->zoomFill();
-        m_imageView->setStickyZoomKind(StickyZoomKind::Fill);
+        m_imageView->hostFraming().setStickyZoomKind(StickyZoomKind::Fill);
         m_imageView->setStickyZoomEnabled(true);
     } else {
         m_imageView->releaseStickyZoom();
@@ -2205,7 +2205,7 @@ void MainWindow::showPreferences()
         setSortMode(mode);
     }
     m_startInWorkspaceMode = dlg.startInWorkspaceMode();
-    m_imageView->setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
+    m_imageView->hostChrome().setImageModeLeftDragPan(dlg.imageModeLeftDragPan());
     m_imageView->setBackgroundColor(dlg.backgroundColor());
     m_imageView->setBackgroundColorAlt(dlg.backgroundColorAlt());
     if (m_thumbnailBar) {
@@ -2980,7 +2980,7 @@ void MainWindow::readSettings()
             settings.value(QStringLiteral("stickyZoomEnabled"), false).toBool();
         const int kind =
             settings.value(QStringLiteral("stickyZoomKind"), 0).toInt();
-        m_imageView->setStickyZoomKind(
+        m_imageView->hostFraming().setStickyZoomKind(
             static_cast<StickyZoomKind>(SlideshowClocks::clampZoomIndex(kind)));
         m_imageView->setStickyZoomEnabled(sticky);
         syncZoomModeChecks();
@@ -3046,7 +3046,7 @@ void MainWindow::readSettings()
     if (m_imageView) {
         const bool leftPan =
             settings.value(QStringLiteral("imageModeLeftDragPan"), true).toBool();
-        m_imageView->setImageModeLeftDragPan(leftPan);
+        m_imageView->hostChrome().setImageModeLeftDragPan(leftPan);
         const bool hud = settings.value(QStringLiteral("hudVisible"), false).toBool();
         m_imageView->setHudVisible(hud);
         if (m_toggleHudAct) {

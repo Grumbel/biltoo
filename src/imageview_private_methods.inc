@@ -176,8 +176,6 @@
     /** Remove the n-th canvas item with @p path (0-based, m_items order). */
     void removeWorkspacePathOccurrence(const QString &path, int occurrence);
 
-    void captureStickyZoomFromCurrentFraming();
-
     /** Image-mode framing after soft/full install (honours sticky zoom). */
 
     /** Best-effort: remember viewport centre in image-normalized coords. */

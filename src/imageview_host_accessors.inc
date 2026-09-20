@@ -17,6 +17,8 @@
     const ImageSizeBook &hostSizeBook() const { return m_sizeBook; }
     ViewFraming &hostFraming() { return m_framing; }
     const ViewFraming &hostFraming() const { return m_framing; }
+    ViewportChrome &hostChrome() { return m_chrome; }
+    const ViewportChrome &hostChrome() const { return m_chrome; }
     GallerySizeResolve &hostGallerySizeResolve() { return m_gallerySizeResolve; }
     const GallerySizeResolve &hostGallerySizeResolve() const { return m_gallerySizeResolve; }
     /** Display pipeline host: layout prefs (free-form check). */

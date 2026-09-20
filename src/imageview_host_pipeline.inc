@@ -9,8 +9,6 @@
     void captureStickyPanAnchor(ImageItem *item);
     void applyImageModeFraming(ImageItem *item);
     int pathOrderOccurrences(const QString &path) const;
-    /** Drop neighbor-prefetch slot for one path (session remove / tile purge). */
-    void dropTilePrefetchPath(const QString &path);
     bool pathOrderIsEmpty() const { return currentPackOrder().isEmpty(); }
     /** Pack source snapshot (Tier 4: currently fromBook; document when aligned). */
     PackOrderView currentPackOrder() const { return PackOrderView::fromBook(m_pathOrderBook); }

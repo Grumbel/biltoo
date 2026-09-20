@@ -1474,7 +1474,7 @@ void DisplayPipelineController::purgeTilePathRam(const QString &path)
         }
     }
     tilelod::TileLodRegistry::instance().invalidate(path);
-    m_view->dropTilePrefetchPath(path);
+    m_view->hostTileNeighborPrefetch().dropPath(path);
 }
 
 

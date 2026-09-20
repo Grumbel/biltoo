@@ -36,16 +36,8 @@ void ImageView::releaseStickyZoom()
 }
 
 
-void ImageView::captureStickyZoomFromCurrentFraming()
-{
-    m_framing.syncStickyKindFromFitFill();
-}
 
 
-void ImageView::setStickyZoomKind(StickyZoomKind kind)
-{
-    m_framing.setStickyZoomKind(kind);
-}
 
 
 void ImageView::captureStickyPanAnchor(ImageItem *item)
@@ -186,10 +178,6 @@ void ImageView::cancelZoomRegion()
 }
 
 
-void ImageView::setImageModeLeftDragPan(bool on)
-{
-    m_chrome.setImageModeLeftDragPan(on);
-}
 
 
 void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,

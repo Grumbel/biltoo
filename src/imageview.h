@@ -244,14 +244,6 @@ public:
     const TextLayerSession &hostTextLayer() const { return m_textLayer; }
     /** Display pipeline host: filmstrip soft provider for image-mode pending. */
     ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
-    /**
-     * Warm overview tiles into the process-wide path registry for off-canvas
-     * paths (Image-mode ±1 neighbors after nav settle). Controllers stay alive
-     * and are pumped on a short timer until coverage or a tick budget expires;
-     * release then leaves Succeeded tiles in the registry (1212 retain).
-     * No-op while nav-hot; schedules tile pyramid when durable unknown.
-     */
-    void prefetchTilesForPaths(const QStringList &paths, int budgetPerPath = 4);
 
     /** Controller host: session path order used for Gallery packing. */
     void clearPathOrder() { pathOrderClear(); }
@@ -408,7 +400,6 @@ public:
     void setStickyZoomEnabled(bool on);
     void releaseStickyZoom();
     bool stickyZoomEnabled() const { return m_framing.isStickyZoomEnabled(); }
-    void setStickyZoomKind(StickyZoomKind kind);
     StickyZoomKind stickyZoomKind() const { return m_framing.currentStickyZoomKind(); }
     /**
      * One-shot rubber-band zoom: next left-drag selects a region to zoom into.
@@ -433,8 +424,6 @@ public:
     void applyCropAppearance(ImageItem *item, const QImage &src,
                             const WorkspaceItemState &state);
 
-    /** When true (default), left-drag pans in Image mode. */
-    void setImageModeLeftDragPan(bool on);
 
     /** Debug: paint text/link region rects for page documents (Image mode). */
     void setShowTextRegions(bool on);

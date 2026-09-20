@@ -188,7 +188,7 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     m_items.removeAll(item);
     // Off-canvas neighbor prefetch may still hold a controller for this path.
     if (!path.isEmpty() && !pathOnLiveCanvas(path)) {
-        dropTilePrefetchPath(path);
+        m_tileNeighborPrefetch.dropPath(path);
     }
     if (QGraphicsScene *sc = item->scene()) {
         // selectionChanged → statusChanged → paint must not run mid-teardown

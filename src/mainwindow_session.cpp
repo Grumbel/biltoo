@@ -1664,7 +1664,7 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
                 if (m_currentIndex + 1 < m_session.paths().size()) {
                     nbr << m_session.paths().at(m_currentIndex + 1);
                 }
-                m_imageView->prefetchTilesForPaths(nbr, 4);
+                m_imageView->hostTileNeighborPrefetch().prefetchPaths(nbr, 4);
             });
         }
         m_slideshowNavLoadTimer->start();
