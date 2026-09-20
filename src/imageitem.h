@@ -298,9 +298,6 @@ public:
      * Clears paint residual m_activeHandle.
      */
     void endHandleInteraction(Handle continuous = Handle::None);
-    /** Paint residual: continuous handle still armed on this item. Prefer
-     * HandlePressScratch::hasContinuousHandle for interaction authority. */
-    bool hasActiveHandle() const { return m_activeHandle != Handle::None; }
 
     /** Paint transform chrome in device pixels (identity world transform). */
     void paintInteractionChrome(QPainter *painter) const;

@@ -38,8 +38,8 @@ struct HandlePressScratch {
 struct ItemInteractSession {
     bool rotating = false;
     ImageItem *rotateItem = nullptr;
+    /** Pointer angle at press (scene); mid-drag delta uses this with Placement.rotation. */
     qreal rotateStartAngle = 0.0;
-    qreal rotateItemStart = 0.0;
 
     ImageItem *handleDragItem = nullptr;
     HandlePressScratch handlePress;
@@ -53,7 +53,6 @@ struct ItemInteractSession {
         rotating = false;
         rotateItem = nullptr;
         rotateStartAngle = 0.0;
-        rotateItemStart = 0.0;
     }
 
     void clearHandleDrag()
@@ -102,15 +101,12 @@ struct ItemInteractSession {
 
     qreal currentRotateStartAngle() const { return rotateStartAngle; }
 
-    qreal currentRotateItemStart() const { return rotateItemStart; }
-
-    void beginRotate(ImageItem *item, qreal startAngle, qreal itemStart,
+    void beginRotate(ImageItem *item, qreal startAngle,
                      const WorkspaceItemState &startState)
     {
         rotating = true;
         rotateItem = item;
         rotateStartAngle = startAngle;
-        rotateItemStart = itemStart;
         dragStartState = startState;
         dragStartPlacement = ItemComponents::placementFromState(startState);
     }

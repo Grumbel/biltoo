@@ -90,8 +90,7 @@ bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
     if (!hit) {
         return false;
     }
-    m_itemInteract.beginRotate(hit, angleAt(scenePos, hit), hit->itemRotation(),
-                               captureState(hit));
+    m_itemInteract.beginRotate(hit, angleAt(scenePos, hit), captureState(hit));
     m_scene->clearSelection();
     hit->setSelected(true);
     setCursor(Qt::CrossCursor);

@@ -992,3 +992,5 @@ Phase 1–6 rules still apply. Additions:
   live reader; placementFromItem delegates; mid-drag uses press.placement.
 - biltoo-1753: ItemHandle enum extracted (itemhandle.h); HandlePressScratch typed;
   ItemHandlePolicy independent of ImageItem.
+- biltoo-1754: drop dead rotateItemStart; beginRotate three-arg; remove hasActiveHandle
+  (press authority); m_activeHandle paint residual only.

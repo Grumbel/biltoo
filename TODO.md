@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1754-rotate-start-trim.** Drop dead free-rotate start rotation.
+Prior: **1753**.
+
+### Change
+- Remove `rotateItemStart` / `currentRotateItemStart` (unused; pose is dragStartPlacement)
+- `beginRotate(item, startAngle, startState)` — three-arg
+- Remove unused `ImageItem::hasActiveHandle()` (authority is HandlePressScratch)
+- `m_activeHandle` remains paint-hot residual only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1754-rotate-start-trim.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear/rotate smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1753-itemhandle-enum.** ItemHandle extracted like CropHandle.
 Prior: **1752**.
 
