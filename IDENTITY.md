@@ -284,6 +284,7 @@ keyed.
 |-----|----------|
 | `findItemByPath(path)` | **First** canvas item with that path (deprecated for identity) |
 | `findPreferredItemForPath(path)` | Selected sole match, else sole live match; else nullptr if ambiguous |
+| `findItemForPath(path)` | Preferred, else first-match (legacy best-effort bridge) |
 | `focusGalleryItem(item)` | Exclusive-select known live item (Gallery keyboard); no path lookup |
 | `focusSessionId(id)` | Exclusive-select live item by SessionImageId (filmstrip / session cursor) |
 | Gallery `m_focusSessionId` | Return-from-Image restore prefers id over path |

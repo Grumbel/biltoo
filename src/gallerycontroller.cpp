@@ -182,11 +182,7 @@ void GalleryController::applyPendingRestore()
         focus = m_view->findItemBySessionId(m_focusSessionId);
     }
     if (!focus && !m_focusPath.isEmpty()) {
-        // Prefer selected sole match; first-match is wrong with LoadAdd duplicates.
-        focus = m_view->findPreferredItemForPath(m_focusPath);
-        if (!focus) {
-            focus = m_view->findItemByPath(m_focusPath);
-        }
+        focus = m_view->findItemForPath(m_focusPath);
     }
     if (focus) {
         focus->setSelected(true);
@@ -417,22 +413,14 @@ void GalleryController::enter(int packagedLayoutInt)
             }
         }
         for (const QString &path : selectedPaths) {
-            // Unbound tiles: preferred path, then first-match.
-            ImageItem *item = m_view->findPreferredItemForPath(path);
-            if (!item) {
-                item = m_view->findItemByPath(path);
-            }
-            if (item) {
+            if (ImageItem *item = m_view->findItemForPath(path)) {
                 item->setSelected(true);
             }
         }
         if (anchorId != kInvalidSessionImageId) {
             m_selectionAnchor = m_view->findItemBySessionId(anchorId);
         } else if (!anchorPath.isEmpty()) {
-            m_selectionAnchor = m_view->findPreferredItemForPath(anchorPath);
-            if (!m_selectionAnchor) {
-                m_selectionAnchor = m_view->findItemByPath(anchorPath);
-            }
+            m_selectionAnchor = m_view->findItemForPath(anchorPath);
         } else {
             m_selectionAnchor = nullptr;
         }

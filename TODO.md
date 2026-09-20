@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1928-find-item-for-path.** Consolidate preferred-then-first path lookup.
+Prior: **1927**.
+
+### Change
+- `ImageView::findItemForPath` — preferred, then first-match (legacy best-effort)
+- Call sites that always fell through to first-match now use the helper
+- Call sites that must stay nullptr-on-ambiguous keep `findPreferredItemForPath`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1928-find-item-for-path-516d734.bundle HEAD
+```
+Requires tip **1927** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Phase 7 ImageItem demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1927-gallery-layout-selection-by-id.** Layout-switch multi-select by session id.
 Prior: **1926**.
 

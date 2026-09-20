@@ -591,11 +591,7 @@ void ImageView::focusSessionPath(const QString &path)
         return;
     }
     // Before clearSelection so a selected duplicate wins over first-match.
-    ImageItem *item = findPreferredItemForPath(path);
-    if (!item) {
-        item = findItemByPath(path);
-    }
-    focusGalleryItem(item);
+    focusGalleryItem(findItemForPath(path));
 }
 
 
@@ -605,10 +601,7 @@ void ImageView::revealGalleryPath(const QString &path)
         return;
     }
     // Prefer the selected instance of this path when duplicates exist (LoadAdd).
-    ImageItem *item = findPreferredItemForPath(path);
-    if (!item) {
-        item = findItemByPath(path);
-    }
+    ImageItem *item = findItemForPath(path);
     if (!item) {
         return;
     }

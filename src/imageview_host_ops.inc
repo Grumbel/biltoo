@@ -16,6 +16,13 @@
      * Returns nullptr when ambiguous (multiple unselected matches) or none.
      */
     ImageItem *findPreferredItemForPath(const QString &path) const;
+    /**
+     * Best-effort path lookup: preferred, then first-match.
+     * Use when a caller must have some item for the path (legacy bridge).
+     * Prefer findItemBySessionId / findPreferredItemForPath when identity matters
+     * and nullptr-on-ambiguous is acceptable.
+     */
+    ImageItem *findItemForPath(const QString &path) const;
     /** Gallery: selected tile, else first live item (keyboard open / focus). */
     ImageItem *selectedOrFirstGalleryItem() const;
     /** Emit galleryItemFocused / sessionImageFocused for @p item. */

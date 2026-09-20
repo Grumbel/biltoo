@@ -217,6 +217,14 @@ ImageItem *ImageView::findPreferredItemForPath(const QString &path) const
     return nullptr;
 }
 
+ImageItem *ImageView::findItemForPath(const QString &path) const
+{
+    if (ImageItem *pref = findPreferredItemForPath(path)) {
+        return pref;
+    }
+    return findItemByPath(path);
+}
+
 ImageItem *ImageView::findItemBySessionIndex(int sessionIndex) const
 {
     if (sessionIndex < 0) {
