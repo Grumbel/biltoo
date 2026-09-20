@@ -998,3 +998,5 @@ Phase 1–6 rules still apply. Additions:
   isHandleDragging); chrome paint hot is hover-only.
 - biltoo-1756: drop dead m_orientation/m_fineRotation and orient APIs; placement
   rotation is sole free-rotate field.
+- biltoo-1757: ImageItem::applyPlacement single live pose writer; ImageView
+  applyPlacement thin-forwards.

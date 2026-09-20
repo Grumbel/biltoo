@@ -284,6 +284,18 @@ ItemComponents::Placement ImageItem::placement() const
     return pl;
 }
 
+void ImageItem::applyPlacement(const ItemComponents::Placement &pl)
+{
+    setPos(pl.pos);
+    setItemScale(pl.scale, pl.scaleY > 0.0 ? pl.scaleY : pl.scale);
+    setItemShear(pl.shear);
+    setItemRotation(pl.rotation);
+    setItemOpacity(pl.opacity);
+    setStackZ(pl.z);
+    setItemHFlip(pl.hFlip);
+    setItemVFlip(pl.vFlip);
+}
+
 void ImageItem::setItemScale(qreal scale)
 {
     setItemScale(scale, scale);

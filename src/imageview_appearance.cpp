@@ -108,14 +108,7 @@ void ImageView::applyPlacement(ImageItem *item, const ItemComponents::Placement 
     if (!item) {
         return;
     }
-    item->setPos(pl.pos);
-    item->setItemScale(pl.scale, pl.scaleY > 0.0 ? pl.scaleY : pl.scale);
-    item->setItemShear(pl.shear);
-    item->setItemRotation(pl.rotation);
-    item->setItemOpacity(pl.opacity);
-    item->setStackZ(pl.z);
-    item->setItemHFlip(pl.hFlip);
-    item->setItemVFlip(pl.vFlip);
+    item->applyPlacement(pl);
 }
 
 void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)

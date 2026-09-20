@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1757-item-apply-placement.** ImageItem::applyPlacement pose writer.
+Prior: **1756**.
+
+### Change
+- `ImageItem::applyPlacement(const Placement &)` — single live pose writer
+- `ImageView::applyPlacement` thin-forwards to the item
+- Pairs with `placement()` / `placementFromItem` (Stage 2 pose on the proxy)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1757-item-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + placement/undo smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1756-drop-orientation-fields.** Remove dead orient/fine-rotation API.
 Prior: **1755**.
 

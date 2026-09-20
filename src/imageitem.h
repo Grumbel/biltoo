@@ -130,6 +130,8 @@ public:
 
     /** Live Workspace pose as Placement (Stage 2 single reader for item pose). */
     ItemComponents::Placement placement() const;
+    /** Apply Workspace pose (Stage 2 single writer for item pose). */
+    void applyPlacement(const ItemComponents::Placement &pl);
     qreal itemOpacity() const { return m_opacity; }
     /** Persistent stacking order (selection may temporarily raise the item). */
     qreal stackZ() const { return m_stackZ; }
