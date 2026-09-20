@@ -5,6 +5,7 @@
 
 #include "imageview.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 #include "viewtransform.h"
 #include "viewframing.h"
 
@@ -93,7 +94,12 @@ void ImageView::zoomReset()
     }
     // Image mode 1:1 — item at native scale, view identity, then centre
     if (ImageItem *item = targetItem()) {
-        item->setItemScale(1.0);
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            item->applyPlacement(pl);
+        }
         resetTransform();
         centerOn(item);
         emit statusChanged();
@@ -145,7 +151,12 @@ void ImageView::zoomFit()
         return;
     }
     if (ImageItem *item = targetItem()) {
-        item->setItemScale(1.0);
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            item->applyPlacement(pl);
+        }
         fitItem(item, Qt::KeepAspectRatio);
         refreshScrollBarGeometry();
         emit statusChanged();
@@ -183,7 +194,12 @@ void ImageView::zoomFill()
         return;
     }
     if (ImageItem *item = targetItem()) {
-        item->setItemScale(1.0);
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            item->applyPlacement(pl);
+        }
         fitItem(item, Qt::KeepAspectRatioByExpanding);
         refreshScrollBarGeometry();
         emit statusChanged();

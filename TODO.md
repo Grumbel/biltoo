@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1769-framing-apply-placement.** Framing scale reset via applyPlacement.
+Prior: **1768**.
+
+### Change
+- Image-mode / sticky framing paths reset item scale (and Image-mode pos) via Placement
+- Preserves rotation/flips/shear while forcing native item scale for view-driven zoom
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1769-framing-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + fit/fill/1:1 smoke
+- Gallery controller residual or Tier 4 harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1768-gallery-pack-apply-placement.** Gallery pack pose via applyPlacement.
 Prior: **1767**.
 

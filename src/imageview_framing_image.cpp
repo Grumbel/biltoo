@@ -5,6 +5,7 @@
 
 #include "imageview.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 #include "viewtransform.h"
 #include "viewframing.h"
 
@@ -105,7 +106,12 @@ void ImageView::applyImageModeFraming(ImageItem *item)
             break;
         case StickyZoomKind::Actual:
             m_framing.clearFitFill();
-            item->setItemScale(1.0);
+            {
+                ItemComponents::Placement pl = item->placement();
+                pl.scale = 1.0;
+                pl.scaleY = 1.0;
+                item->applyPlacement(pl);
+            }
             resetTransform();
             centerOn(item);
             break;
@@ -140,7 +146,12 @@ void ImageView::applyImageModeFraming(ImageItem *item)
     // same zoom). Cold open with no prior capture still defaults to Fit.
     if (m_framing.hasPreservedViewScale()) {
         m_framing.clearFitFill();
-        item->setItemScale(1.0);
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            item->applyPlacement(pl);
+        }
         resetTransform();
         scale(m_framing.currentPreservedViewScale(), m_framing.currentPreservedViewScale());
         syncImageModeSceneRect(item);
@@ -309,9 +320,14 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
         applyContentLayoutSize(item, orientOnly);
     }
     if (isImageMode() || m_items.size() == 1) {
-        item->setItemScale(1.0);
-        if (isImageMode()) {
-            item->setPos(0, 0);
+        {
+            ItemComponents::Placement pl = item->placement();
+            pl.scale = 1.0;
+            pl.scaleY = 1.0;
+            if (isImageMode()) {
+                pl.pos = QPointF(0, 0);
+            }
+            item->applyPlacement(pl);
         }
         resetTransform();
         fitInView(item, mode);
