@@ -363,7 +363,7 @@ bool WorkspaceController::tryMousePressSelect(QMouseEvent *event)
                 }
             }
         }
-        if (!itemHit && m_view->pageGuideVisible()
+        if (!itemHit && m_view->hostPageGuide().isVisible()
             && m_view->pageGuideSceneRect().contains(scenePos)) {
             if (m_view->canvasScene()) {
                 m_view->canvasScene()->clearSelection();

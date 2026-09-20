@@ -273,7 +273,7 @@ void MainWindow::exportPng()
     boundsCombo->addItem(tr("Content (tight)"), 0);
     boundsCombo->addItem(tr("Page guide"), 1);
     // Default: content for ad-hoc Workspace; page guide if user turned it on.
-    if (m_imageView->isWorkspaceMode() && m_imageView->pageGuideVisible()) {
+    if (m_imageView->isWorkspaceMode() && m_imageView->hostPageGuide().isVisible()) {
         boundsCombo->setCurrentIndex(1);
     }
     layout->addRow(tr("Region:"), boundsCombo);

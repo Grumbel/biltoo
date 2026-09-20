@@ -204,8 +204,6 @@
     /** Basename of the current/target image for the bottom HUD. */
     QString hudFileName() const;
 
-    ImageMouseInfo mouseInfo() const { return m_chrome.currentMouseInfo(); }
-
 
 
     /** Coalesce statusChanged during soft climb (MainWindow is not free). */

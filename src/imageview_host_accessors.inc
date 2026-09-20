@@ -22,6 +22,9 @@
     const ViewFraming &hostFraming() const { return m_framing; }
     ViewportChrome &hostChrome() { return m_chrome; }
     const ViewportChrome &hostChrome() const { return m_chrome; }
+    /** Print page-guide session (Workspace overlay). */
+    PageGuideSession &hostPageGuide() { return m_pageGuide; }
+    const PageGuideSession &hostPageGuide() const { return m_pageGuide; }
     GallerySizeResolve &hostGallerySizeResolve() { return m_gallerySizeResolve; }
     const GallerySizeResolve &hostGallerySizeResolve() const { return m_gallerySizeResolve; }
     /** Display pipeline host: layout prefs (free-form check). */

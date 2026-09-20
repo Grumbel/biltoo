@@ -25,7 +25,7 @@
 
     /** Workspace: show a paper-sized frame (scene units) for print layout. */
     void setPageGuideVisible(bool on);
-    bool pageGuideVisible() const { return m_pageGuide.isVisible(); }
+    /** Page guide visibility: hostPageGuide().isVisible(). */
     /** Update guide size from a printer page layout (millimetres → scene px). */
     void setPageGuideFromPrinter(const QPrinter &printer);
     /** Size page guide to live content bounds (+ margin); shows the guide. */
