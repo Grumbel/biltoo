@@ -13,7 +13,6 @@
      * (Workspace duplicate: pixels already include any crop/transform bake).
      */
     /** Image-mode only: content appearance for a newly created canvas item. */
-    WorkspaceItemState appearanceForNewImageModeItem(const QString &path);
     /** Interactive / gallery / static flags for the current ViewMode. */
     /**
      * If slideshow already holds pixels for @a path, queue onImageLoaded and

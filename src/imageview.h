@@ -178,10 +178,6 @@ public:
     bool tryInstallImageModeSample(const QString &path, const QImage &image);
     bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
                                         SessionAppearance::PixelKind kind);
-    void markAppearanceSeedAttempted(SessionImageId sid);
-    void applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
-                                          const ThumtooCache::StoredContentAppearance &stored);
-
     // =====================================================================
     // Mode-controller host API
     // Used by ImageController / GalleryController / WorkspaceController.
@@ -603,9 +599,6 @@ public:
     bool hudVisible() const { return m_hudPrefs.isVisible(); }
     /** Corner marks for crop / orient / grade (default on). */
     void setContentEditMarksVisible(bool on);
-    /** Seed orient/flip/grade from path XDG for each session id (open/restart). */
-    void seedSessionAppearancesFromPaths(const QStringList &paths,
-                                         const QVector<SessionImageId> &ids);
     bool contentEditMarksVisible() const;
     void setHudFontPointSize(int pt);
     int hudFontPointSize() const { return m_hudPrefs.fontPointSizeValue(); }

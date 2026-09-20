@@ -305,7 +305,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             // Prefer host ImageCache aspect when native size is still unknown so
             // the first pack does not use a neutral 1000×1000 cell.
             const QImage hint = ImageCache::get(path);
-            ImageItem *ph = createPlaceholderItem(path, layoutSizeForPath(path, hint));
+            ImageItem *ph = m_displayPipeline.createPlaceholderItem(path, layoutSizeForPath(path, hint));
             if (ph) {
                 if (sid != kInvalidSessionImageId) {
                     ph->setSessionId(sid);

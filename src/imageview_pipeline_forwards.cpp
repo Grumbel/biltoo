@@ -8,39 +8,6 @@
 #include "thumtoocache.h"
 #include "sessionappearance.h"
 
-WorkspaceItemState ImageView::appearanceForNewImageModeItem(const QString &path)
-{
-    return m_displayPipeline.appearanceForNewImageModeItem(path);
-}
-
-ImageItem *ImageView::createItemFromImage(const QString &path, const QImage &image,
-                                          bool applyStoredSessionCrop)
-{
-    return m_displayPipeline.createItemFromImage(path, image, applyStoredSessionCrop);
-}
-
-void ImageView::seedSessionAppearancesFromPaths(const QStringList &paths,
-                                                   const QVector<SessionImageId> &ids)
-{
-    m_displayPipeline.seedSessionAppearancesFromPaths(paths, ids);
-}
-
-void ImageView::seedSessionAppearanceFromState(SessionImageId sid, const QString &path)
-{
-    m_displayPipeline.seedSessionAppearanceFromState(sid, path);
-}
-
-void ImageView::markAppearanceSeedAttempted(SessionImageId sid)
-{
-    m_displayPipeline.markAppearanceSeedAttempted(sid);
-}
-
-void ImageView::applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
-                                                 const ThumtooCache::StoredContentAppearance &stored)
-{
-    m_displayPipeline.applyStoredContentAppearanceSeed(sid, path, stored);
-}
-
 WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
                                                       SessionImageId sid) const
 {
@@ -60,21 +27,6 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
                                        SessionAppearance::PixelKind kind) const
 {
     return m_displayPipeline.canAcceptDisplaySample(item, pixels, kind);
-}
-
-ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
-{
-    return m_displayPipeline.createPlaceholderItem(path, intrinsicSize);
-}
-
-void ImageView::bindImageModeSessionCursor(ImageItem *item)
-{
-    m_displayPipeline.bindImageModeSessionCursor(item);
-}
-
-void ImageView::resetImageModeItemPlacement(ImageItem *item)
-{
-    m_displayPipeline.resetImageModeItemPlacement(item);
 }
 
 QImage ImageView::resolveImageModePendingPixels(const QString &path,

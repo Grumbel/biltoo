@@ -31,7 +31,7 @@ const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
     if (sid != kInvalidSessionImageId) {
         // Seed orient/flip/grade from path XDG when the id slot is still empty
         // (restart / first bind). Crop is never seeded from path (IDENTITY).
-        seedSessionAppearanceFromState(sid, item->path());
+        m_displayPipeline.seedSessionAppearanceFromState(sid, item->path());
         if (const WorkspaceItemState *it = m_itemWorld.getAppearance(sid)) {
             return it;
         }

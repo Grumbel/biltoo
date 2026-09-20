@@ -7,7 +7,6 @@
     bool isCropDraftLockedPath(const QString &path) const;
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void scheduleGalleryStatusRefresh(int delayMs = 100);
-    void seedSessionAppearanceFromState(SessionImageId sid, const QString &path);
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
     void syncImageModeSceneRect(ImageItem *item);
     void frameImageModeReplaceItem(ImageItem *item, const QString &path);
@@ -25,9 +24,6 @@
                                               const QSize &after);
     WorkspaceItemState wantAppearanceForItem(const ImageItem *item,
                                              SessionImageId sid = kInvalidSessionImageId) const;
-    void bindImageModeSessionCursor(ImageItem *item);
-    void resetImageModeItemPlacement(ImageItem *item);
-    ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
     void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
                              bool haveBound, const PendingSessionBind &bound);
@@ -38,8 +34,6 @@
     bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image);
     void applyStoredAppearance(ImageItem *item);
     void applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound);
-    ImageItem *createItemFromImage(const QString &path, const QImage &image,
-                                   bool applyStoredSessionCrop = true);
 
 protected:
     void wheelEvent(QWheelEvent *event) override;

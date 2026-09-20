@@ -38,7 +38,7 @@ bool prepareExpandedSession(ImageView *view,
 
     // Pull path-XDG orient/flip/grade into SessionAppearanceStore before first paint.
     if (view) {
-        view->seedSessionAppearancesFromPaths(paths, ids);
+        view->hostDisplayPipeline().seedSessionAppearancesFromPaths(paths, ids);
     }
 
     // Session open is not a Workspace document. Drop any free-form arrangement

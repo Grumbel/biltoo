@@ -1279,7 +1279,7 @@ void GalleryController::ensurePlaceholders()
         // Prefer definitive size; soft hint only if still provisional (should be rare).
         const QImage hint = ImageCache::get(path);
         const QSize sz = m_view->layoutSizeForPath(path, hint);
-        ImageItem *ph = m_view->createPlaceholderItem(path, sz);
+        ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(path, sz);
         if (ph) {
             if (sid != kInvalidSessionImageId) {
                 ph->setSessionId(sid);
