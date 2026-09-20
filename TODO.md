@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1806-tilelod-no-view-ensure.** Stage 2: no ImageView ensure in tileLodBag.
+Prior: **1805**.
+
+### Change
+- `ImageItem::tileLodBag()` uses only the pipeline-attached bag (no climb to
+  `ImageView::hostDisplayPipeline().ensureTileBag`)
+- `setPath` resets bag state only when `m_tileLodAttached` is set
+- Dropped `imageview.h` from `imageitem_tilelod.cpp`
+
+Bags are created exclusively by `DisplayPipelineController::ensureTileBag` /
+`registerItemDisplaySurface` before paint or tick.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1806-tilelod-no-view-ensure.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke (tile ownership + contentxform)
+- ImageView characterization / Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1805-contentxform-transform-corners-test.** Fix contentxform corners case.
 Prior: **1804**.
 
