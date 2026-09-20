@@ -701,11 +701,9 @@ green; full ImageView decode harness still pending.
 API removed — 1887; (6) **ImageView harness green** (decode + framing) — still
 open. Member `m_pathOrderBook` already gone under `src/`.
 
-**Safe next steps:** full offscreen ImageView characterization harness
-(decode + framing). Overlay storage + optional FollowDocument collapse are
-landed (1883–1884); pure dual-model / characterization cover the invariants
-(1885–1886). Dead `PackOrderReadSource` removed (1887). Do not pack from
-SessionDocument alone until the ImageView harness is green.
+**Safe next steps:** verify `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` builds
+and green on a Qt host (1891–1892). Then optional decode/framing assertions.
+Do not pack from SessionDocument alone until that config is trusted.
 
 
 ### Tier 5 — DisplayPipeline
@@ -775,11 +773,11 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 
 **Still open:**
 1. **Tier 4 residual** — Appearance on `SessionDocument` (Tier 4b). Pack order
-   on `PackOrderOverlay` (1883) with optional FollowDocument collapse (1884).
-   Pure characterization + dual-model overlay cases (1885–1886); dead
-   `PackOrderReadSource` removed (1887). Pack **reads** via
-   `currentPackOrder()` → `overlay.resolve`. **Blocked on** full offscreen
-   ImageView characterization (open→Gallery→crop→Image with decode/framing).
+   on `PackOrderOverlay` (1883–1884). Pure + dual-model (1885–1886); dead
+   read-source API (1887). `biltoo_lib` + optional characterization link
+   (1891). Offscreen ImageView body exercises pack/crop/LoadAdd without
+   decode wait (1892). **Still open:** decode/framing assertions; green
+   ctest with `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` on a Qt host.
    See PATH_ORDER.md / IMAGEVIEW_CHARACTERIZATION.md.
 2. **Tier 5** — **done** for exit size: PreferCache/install/schedule/tile LOD on
    `DisplayPipelineController` (split TUs + jobs). Soft provider and neighbor
@@ -788,9 +786,9 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 3. **Tier 6 remainder** — input try* hop demoted (biltoo-1837: dispatch calls
    controllers directly; `imageview_input_forwards.cpp` gone). Transform chrome
    stays on ImageView (AGENTS.md).
-4. **Metrics** — `imageview.h` ~931 lines at 0c4c246; `imageview*.cpp` ~12k
+4. **Metrics** — `imageview.h` ~670 lines (tip 1890); `imageview*.cpp` ~12k
    (down from ~21k at Phase 6 start). Host accessors from Tiers 1–5 still inflate
-   the public surface; further narrowing optional once Tier 4 lands.
+   the public surface; further narrowing optional once harness is green.
 5. **Beyond Phase 6** — per-id component ownership and demoting `ImageItem` from
    a parallel appearance store are **Phase 7** (ItemWorld), not more Phase 6
    controller extraction. See Phase 7 below.
@@ -1117,6 +1115,9 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1887: remove dead PackOrderReadSource / packOrderForRead.
 - biltoo-1888: REFACTOR Tier 4 residual docs match overlay storage.
 - biltoo-1889: REFACTOR historical path-order wording cleanup.
+- biltoo-1890: imageview.h orphan comments; drop PagePath::kMarker; CMake option note.
+- biltoo-1891: biltoo_lib STATIC; CHARACTERIZATION=ON links biltoo_lib.
+- biltoo-1892: ImageView characterization body (enterGallery, pack, crop, LoadAdd).
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1893-refactor-progress-log.** REFACTOR progress through 1892.
+Prior: **1892**.
+
+### Change
+- Progress log: biltoo-1890..1892 (header cleanup, biltoo_lib, harness body)
+- Still open / Safe next / Metrics updated for characterization link path
+- No code change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1893-refactor-progress-log-516d734.bundle HEAD
+```
+Requires tip **1892** (base **516d734**).
+
+### Next
+- Green build: default + `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON`
+- ctest imageview-characterization both configs
+- Optional decode/framing once PreferCache is stable in harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1892-imageview-harness-body.** Offscreen ImageView characterization body.
 Prior: **1891**.
 
