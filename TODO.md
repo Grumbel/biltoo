@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1807-drop-dead-tilelod-mutators.** Stage 2: remove unused ImageItem drop/invalidate.
+Prior: **1806**.
+
+### Change
+- Removed dead `ImageItem::dropTileLodSession` and `invalidateTilePathRam`
+- Session drop stays on `DisplayPipelineController::dropItemTileLodSession`
+  (bag `resetSession`); path RAM invalidate stays on `purgeTilePathRam`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1807-drop-dead-tilelod-mutators.bundle HEAD
+```
+Includes **1806–1807** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (tile ownership)
+- ImageView characterization / Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1806-tilelod-no-view-ensure.** Stage 2: no ImageView ensure in tileLodBag.
 Prior: **1805**.
 
