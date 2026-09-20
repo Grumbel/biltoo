@@ -376,7 +376,7 @@ bool WorkspaceController::tryMousePressSelect(QMouseEvent *event)
         m_view->setPageGuideSelected(false);
         m_view->forwardGraphicsViewMousePress(event);
         if (ImageItem *hit = m_view->targetItem()) {
-            m_view->hostItemInteract().beginMove(hit, m_view->captureState(hit));
+            m_view->hostItemInteract().beginMove(hit, hit->placement());
         }
         emit m_view->statusChanged();
         return true;

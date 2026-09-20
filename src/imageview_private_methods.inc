@@ -213,8 +213,8 @@
 
     // mouseReleaseEvent phases
     void restoreToolCursor();
-    void pushItemTransformUndo(ImageItem *item, const WorkspaceItemState &before,
-                               const WorkspaceItemState &after, const QString &text);
+    void pushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
+                               const ItemComponents::Placement &after, const QString &text);
     bool tryMouseReleaseTextRubber(QMouseEvent *event);
     bool tryMouseReleaseZoomRegion(QMouseEvent *event);
     bool tryMouseReleasePageGuide(QMouseEvent *event);

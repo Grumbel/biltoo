@@ -24,65 +24,52 @@ struct HandlePressScratch {
      */
     ItemHandle handle = ItemHandle::None;
 
-    /** True when beginHandleInteraction armed a continuous drag (not a chrome click). */
+    /** True when beginHandleDrag armed a continuous handle. */
     bool hasContinuousHandle() const { return handle != ItemHandle::None; }
 };
 
 /**
- * Single-item Workspace interaction: move, corner handle scale, free rotate.
- * Distinct from GroupTransformSession (multi-select).
- *
- * Phase 7 Stage 2: pose press-anchor is Placement (dragStartPlacement);
- * full WorkspaceItemState remains for geometry undo (content + pose).
- * Data members private — use accessors / begin* / end* / clear.
+ * Single-item Workspace interact scratch (move / free-rotate / handle drag).
+ * Phase 7 Stage 2: press-anchor is Placement only (no fat dragStartState DTO).
  */
-class ItemInteractSession {
+class ItemInteractSession
+{
 public:
+    void clear()
+    {
+        clearMove();
+        clearRotate();
+        clearHandleDrag();
+    }
+
+    void clearMove()
+    {
+        dragItem = nullptr;
+        dragStartPlacement = {};
+    }
+
     void clearRotate()
     {
         rotating = false;
         rotateItem = nullptr;
         rotateStartAngle = 0.0;
+        dragStartPlacement = {};
     }
 
     void clearHandleDrag()
     {
         handleDragItem = nullptr;
         handlePress = {};
-    }
-
-    void clearMove()
-    {
-        dragItem = nullptr;
-        dragStartState = {};
         dragStartPlacement = {};
     }
 
-    void clear()
-    {
-        clearRotate();
-        clearHandleDrag();
-        clearMove();
-    }
-
-    bool isRotating() const { return rotating && rotateItem; }
-
+    bool isRotating() const { return rotating; }
     bool isHandleDragging() const { return handleDragItem != nullptr; }
-
     bool isMoving() const { return dragItem != nullptr; }
 
-    bool isActive() const
-    {
-        return isRotating() || isHandleDragging() || isMoving();
-    }
-
     ImageItem *currentRotateItem() const { return rotateItem; }
-
     ImageItem *currentDragItem() const { return dragItem; }
-
     ImageItem *currentHandleDragItem() const { return handleDragItem; }
-
-    const WorkspaceItemState &currentDragStartState() const { return dragStartState; }
 
     const ItemComponents::Placement &currentDragStartPlacement() const
     {
@@ -92,23 +79,21 @@ public:
     qreal currentRotateStartAngle() const { return rotateStartAngle; }
 
     void beginRotate(ImageItem *item, qreal startAngle,
-                     const WorkspaceItemState &startState)
+                     const ItemComponents::Placement &startPlacement)
     {
         rotating = true;
         rotateItem = item;
         rotateStartAngle = startAngle;
-        dragStartState = startState;
-        dragStartPlacement = ItemComponents::placementFromState(startState);
+        dragStartPlacement = startPlacement;
     }
 
     void endRotate() { clearRotate(); }
 
-    void beginHandleDrag(ImageItem *item, const WorkspaceItemState &startState,
+    void beginHandleDrag(ImageItem *item, const ItemComponents::Placement &startPlacement,
                          const HandlePressScratch &press)
     {
         handleDragItem = item;
-        dragStartState = startState;
-        dragStartPlacement = ItemComponents::placementFromState(startState);
+        dragStartPlacement = startPlacement;
         handlePress = press;
     }
 
@@ -117,11 +102,10 @@ public:
 
     void endHandleDrag() { clearHandleDrag(); }
 
-    void beginMove(ImageItem *item, const WorkspaceItemState &startState)
+    void beginMove(ImageItem *item, const ItemComponents::Placement &startPlacement)
     {
         dragItem = item;
-        dragStartState = startState;
-        dragStartPlacement = ItemComponents::placementFromState(startState);
+        dragStartPlacement = startPlacement;
     }
 
     void endMove() { clearMove(); }
@@ -156,7 +140,6 @@ private:
     HandlePressScratch handlePress;
 
     ImageItem *dragItem = nullptr;
-    WorkspaceItemState dragStartState;
     ItemComponents::Placement dragStartPlacement;
 };
 

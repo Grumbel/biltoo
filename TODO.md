@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1931-interact-drag-start-placement.** Interact/group press-anchor is Placement only.
+Prior: **1930**.
+
+### Change
+- `ItemInteractSession`: drop fat `dragStartState`; beginMove/Rotate/HandleDrag take Placement
+- `GroupTransformSession`: drop `dragStartStates`; beginDrag takes Placement list
+- `pushItemTransformUndo` Placement API; release paths use `placementFromItem`
+- Workspace beginMove uses `hit->placement()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1931-interact-drag-start-placement-516d734.bundle HEAD
+```
+Requires tip **1930** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ImageItem live crop/flip demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1930-geometry-undo-placement.** Geometry undo stores Placement only.
 Prior: **1929**.
 

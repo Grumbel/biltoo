@@ -47,7 +47,7 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
         HandlePressScratch press;
         if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
             && press.hasContinuousHandle()) {
-            m_itemInteract.beginHandleDrag(item, captureState(item), press);
+            m_itemInteract.beginHandleDrag(item, placementFromItem(item), press);
             setPageGuideSelected(false);
             event->accept();
             return true;
@@ -91,7 +91,7 @@ bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
     if (!hit) {
         return false;
     }
-    m_itemInteract.beginRotate(hit, angleAt(scenePos, hit), captureState(hit));
+    m_itemInteract.beginRotate(hit, angleAt(scenePos, hit), placementFromItem(hit));
     m_scene->clearSelection();
     hit->setSelected(true);
     setCursor(Qt::CrossCursor);
@@ -275,8 +275,8 @@ bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
         return false;
     }
     if (m_itemInteract.currentRotateItem()) {
-        pushItemTransformUndo(m_itemInteract.currentRotateItem(), m_itemInteract.currentDragStartState(),
-                              captureState(m_itemInteract.currentRotateItem()), tr("Rotate"));
+        pushItemTransformUndo(m_itemInteract.currentRotateItem(), m_itemInteract.currentDragStartPlacement(),
+                              placementFromItem(m_itemInteract.currentRotateItem()), tr("Rotate"));
     }
     m_itemInteract.endRotate();
     restoreToolCursor();

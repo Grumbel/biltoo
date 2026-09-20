@@ -34,13 +34,13 @@ bool ImageView::beginGroupScale(int handle, const QList<ImageItem *> &items)
     if (!bounds.isValid() || bounds.isEmpty()) {
         return false;
     }
-    QList<WorkspaceItemState> states;
-    states.reserve(items.size());
+    QList<ItemComponents::Placement> placements;
+    placements.reserve(items.size());
     for (ImageItem *item : items) {
-        states.append(captureState(item));
+        placements.append(placementFromItem(item));
     }
     m_groupXform.beginDrag(handle, GroupTransformGeometry::isRotateHandle(handle),
-                           bounds, items, states);
+                           bounds, items, placements);
     return true;
 }
 
@@ -348,8 +348,8 @@ bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
             if (!item) {
                 continue;
             }
-            pushItemTransformUndo(item, m_groupXform.dragStartStateAt(i), captureState(item),
-                                  tr("Transform"));
+            pushItemTransformUndo(item, m_groupXform.dragStartPlacementAt(i),
+                                  placementFromItem(item), tr("Transform"));
         }
         m_undoStack->endMacro();
     }
@@ -368,8 +368,8 @@ bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
     }
     ImageItem *handleItem = m_itemInteract.currentHandleDragItem();
     handleItem->endHandleInteraction(m_itemInteract.handlePressRef().handle);
-    pushItemTransformUndo(handleItem, m_itemInteract.currentDragStartState(),
-                          captureState(handleItem), tr("Transform"));
+    pushItemTransformUndo(handleItem, m_itemInteract.currentDragStartPlacement(),
+                          placementFromItem(handleItem), tr("Transform"));
     m_itemInteract.endHandleDrag();
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();

@@ -182,19 +182,17 @@ void ImageView::restoreToolCursor()
 {
     setCursor(ToolPolicy::cursorFor(m_tool));
 }
-void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState &before,
-                                      const WorkspaceItemState &after, const QString &text)
+void ImageView::pushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
+                                      const ItemComponents::Placement &after, const QString &text)
 {
     if (!item) {
         return;
     }
-    const ItemComponents::Placement b = ItemComponents::placementFromState(before);
-    const ItemComponents::Placement a = ItemComponents::placementFromState(after);
-    if (ItemComponents::placementNearlyEqual(b, a)) {
+    if (ItemComponents::placementNearlyEqual(before, after)) {
         return;
     }
     // Single geometry undo path (persist + Placement command).
-    pushItemGeometryCommand(text, item, b, a);
+    pushItemGeometryCommand(text, item, before, after);
     emit statusChanged();
 }
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
@@ -234,7 +232,9 @@ bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
     if (!m_itemInteract.currentDragItem() || event->button() != Qt::LeftButton) {
         return false;
     }
-    pushItemTransformUndo(m_itemInteract.currentDragItem(), m_itemInteract.currentDragStartState(), captureState(m_itemInteract.currentDragItem()), tr("Move"));
+    pushItemTransformUndo(m_itemInteract.currentDragItem(),
+                          m_itemInteract.currentDragStartPlacement(),
+                          placementFromItem(m_itemInteract.currentDragItem()), tr("Move"));
     m_itemInteract.endMove();
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
@@ -378,7 +378,7 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
             HandlePressScratch press;
             if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
                 && press.hasContinuousHandle()) {
-                m_itemInteract.beginHandleDrag(item, captureState(item), press);
+                m_itemInteract.beginHandleDrag(item, placementFromItem(item), press);
                 event->accept();
                 return;
             }

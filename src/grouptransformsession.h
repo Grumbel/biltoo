@@ -32,7 +32,6 @@ public:
         centerStart = {};
         pressScenePos = {};
         pressAngleDeg = 0.0;
-        dragStartStates.clear();
         dragStartPlacements.clear();
         dragItems.clear();
     }
@@ -81,7 +80,7 @@ public:
     /** Start scale or rotate drag for the given handle and selection snapshot. */
     void beginDrag(int h, bool isRotate, const QRectF &bounds,
                    const QList<ImageItem *> &items,
-                   const QList<WorkspaceItemState> &states)
+                   const QList<ItemComponents::Placement> &placements)
     {
         handle = h;
         // Paint hot sticks for the drag: hover is frozen while scale/rotate active.
@@ -91,12 +90,7 @@ public:
         boundsStart = bounds;
         centerStart = bounds.center();
         dragItems = items;
-        dragStartStates = states;
-        dragStartPlacements.clear();
-        dragStartPlacements.reserve(states.size());
-        for (const WorkspaceItemState &st : states) {
-            dragStartPlacements.append(ItemComponents::placementFromState(st));
-        }
+        dragStartPlacements = placements;
     }
 
     /** Mark drag slot @p i as null (item left canvas mid-drag). */
@@ -113,9 +107,6 @@ public:
         for (int i = dragItems.size() - 1; i >= 0; --i) {
             if (!dragItems.at(i)) {
                 dragItems.removeAt(i);
-                if (i < dragStartStates.size()) {
-                    dragStartStates.removeAt(i);
-                }
                 if (i < dragStartPlacements.size()) {
                     dragStartPlacements.removeAt(i);
                 }
@@ -126,7 +117,6 @@ public:
     bool dragListsAligned() const
     {
         return !dragItems.isEmpty()
-            && dragStartStates.size() == dragItems.size()
             && dragStartPlacements.size() == dragItems.size();
     }
 
@@ -142,11 +132,6 @@ public:
         if (i >= 0 && i < dragItems.size()) {
             dragItems[i] = item;
         }
-    }
-
-    const WorkspaceItemState &dragStartStateAt(int i) const
-    {
-        return dragStartStates.at(i);
     }
 
     const ItemComponents::Placement &dragStartPlacementAt(int i) const
@@ -167,7 +152,6 @@ public:
         centerStart = {};
         pressScenePos = {};
         pressAngleDeg = 0.0;
-        dragStartStates.clear();
         dragStartPlacements.clear();
         dragItems.clear();
     }
@@ -181,7 +165,6 @@ private:
     QPointF centerStart;
     QPointF pressScenePos;
     qreal pressAngleDeg = 0.0;
-    QList<WorkspaceItemState> dragStartStates;
     QList<ItemComponents::Placement> dragStartPlacements;
     QList<ImageItem *> dragItems;
 };
