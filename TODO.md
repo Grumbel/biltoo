@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1934-gallery-pack-placement.** Gallery pack path-book write is Placement-only.
+Prior: **1933**.
+
+### Change
+- `GalleryLayout::pack` after-item callback: `setPlacement` for bound ids;
+  path-book pose merge for unbound (no `captureState`)
+- Pack no longer re-stamps crop/bake/color tables via fat path-state writes
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1934-gallery-pack-placement-516d734.bundle HEAD
+```
+Requires tip **1933** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ImageItem live crop/flip demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1933-freeform-pose-placement.** Free-form Gallery snapshot is Placement by id.
 Prior: **1932**.
 

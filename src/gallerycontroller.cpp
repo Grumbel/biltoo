@@ -1199,7 +1199,22 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     params.mode = GalleryPackFit::modeFromLayoutMode(m_view->hostLayout().currentMode());
 
     GalleryLayout::pack(m_view->liveItems(), params, [this](ImageItem *item) {
-        m_view->itemWorld().setPathState(item->path(), m_view->captureState(item));
+        if (!item) {
+            return;
+        }
+        // Pack only moves pose — Placement dual-write; no fat captureState.
+        const ItemComponents::Placement pl = item->placement();
+        if (item->sessionId() != kInvalidSessionImageId) {
+            m_view->itemWorld().setPlacement(item->sessionId(), pl);
+        } else if (!item->path().isEmpty()) {
+            WorkspaceItemState s;
+            if (const WorkspaceItemState *prev =
+                    m_view->itemWorld().getPathState(item->path())) {
+                s = *prev;
+            }
+            ItemComponents::applyPlacementToState(s, pl);
+            m_view->itemWorld().setPathState(item->path(), s);
+        }
     });
 
     const QRectF bounds = ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), margin);

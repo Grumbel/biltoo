@@ -1166,6 +1166,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1931: interact/group drag-start is Placement only (no fat DTO anchor).
 - biltoo-1932: project save workspace poses are Placement (no captureState).
 - biltoo-1933: free-form Gallery pose snapshot is Placement by session id.
+- biltoo-1934: Gallery pack after-callback is Placement-only (no captureState).
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
