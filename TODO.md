@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1824-climb-and-edge-via-pipeline.** Stage 2: quality climb + edge queries via pipeline.
+Prior: **1823**.
+
+### Change
+- `ensureWorkspaceQualityClimb` → `m_displayPipeline` at ImageView sites
+- `galleryDisplayEdgeForItem` → pipeline in status HUD
+- Dropped dead ImageView forwards: `scheduleImageModeNativeDecodeOnce`,
+  `installImageModePendingTile`, `itemOnScreenNeedEdge`, `galleryHaveEdgeFromItems`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1824-climb-and-edge-via-pipeline.bundle HEAD
+```
+Includes **1806–1824** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Workspace climb / Gallery HUD edge)
+- More pipeline hop demotions / Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1823-schedule-gallery-decode-via-pipeline.** Stage 2: scheduleGalleryDecode via pipeline.
 Prior: **1822**.
 
