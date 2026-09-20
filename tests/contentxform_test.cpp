@@ -955,11 +955,18 @@ void ContentXformTest::sourceToDisplayTransform_matchesMapCorners()
 {
     // Transform AABB of corners must match mapSourceRectToDisplay when the
     // mapped rect is not clipped by crop (transform does not intersect; map
-    // does). Orient-only case, then axis-aligned crop with source fully inside.
-    auto check = [](const ContentXform::Value &x, const QSize &n, const QRectF &src) {
-        const QTransform T = ContentXform::sourceToDisplayTransform(n, x);
-        const QRectF mapped = ContentXform::mapSourceRectToDisplay(src, n, x);
-        QVERIFY2(!mapped.isEmpty(), "source must land inside crop / frame after orient");
+    // does). QVERIFY must stay in the test body (not a nested lambda).
+    const QSize n(80, 60);
+    const QRectF src(10, 8, 16, 12);
+
+    ContentXform::Value orient;
+    orient.hFlip = true;
+    orient.quarterTurns = 1;
+
+    {
+        const QTransform T = ContentXform::sourceToDisplayTransform(n, orient);
+        const QRectF mapped = ContentXform::mapSourceRectToDisplay(src, n, orient);
+        QVERIFY2(!mapped.isEmpty(), "orient-only: source must land in oriented frame");
         const QPointF corners[4] = {
             src.topLeft(), src.topRight(), src.bottomRight(), src.bottomLeft(),
         };
@@ -971,23 +978,50 @@ void ContentXformTest::sourceToDisplayTransform_matchesMapCorners()
             minY = qMin(minY, p.y());
             maxY = qMax(maxY, p.y());
         }
-        QVERIFY(qAbs(minX - mapped.left()) < 1e-4);
-        QVERIFY(qAbs(maxX - mapped.right()) < 1e-4);
-        QVERIFY(qAbs(minY - mapped.top()) < 1e-4);
-        QVERIFY(qAbs(maxY - mapped.bottom()) < 1e-4);
-    };
+        QVERIFY2(qAbs(minX - mapped.left()) < 1e-4,
+                 qPrintable(QStringLiteral("orient left %1 vs %2").arg(minX).arg(mapped.left())));
+        QVERIFY2(qAbs(maxX - mapped.right()) < 1e-4,
+                 qPrintable(QStringLiteral("orient right %1 vs %2").arg(maxX).arg(mapped.right())));
+        QVERIFY2(qAbs(minY - mapped.top()) < 1e-4,
+                 qPrintable(QStringLiteral("orient top %1 vs %2").arg(minY).arg(mapped.top())));
+        QVERIFY2(qAbs(maxY - mapped.bottom()) < 1e-4,
+                 qPrintable(QStringLiteral("orient bottom %1 vs %2").arg(maxY).arg(mapped.bottom())));
+    }
 
-    ContentXform::Value orient;
-    orient.hFlip = true;
-    orient.quarterTurns = 1;
-    check(orient, QSize(80, 60), QRectF(10, 8, 16, 12));
-
-    // Crop in oriented space after hFlip+90: pick source whose oriented AABB
-    // sits fully inside crop so map's intersect is a no-op (matches transform).
+    // Crop in oriented space after hFlip+90: derive crop from oriented AABB so
+    // map's intersect is a no-op (matches transform).
+    const QRectF oriented = ContentXform::mapSourceRectToOriented(src, n, orient);
+    QVERIFY2(!oriented.isEmpty(), "orient AABB for crop fixture");
     ContentXform::Value cropped = orient;
     cropped.hasCrop = true;
-    cropped.cropRect = QRect(30, 40, 30, 40); // covers oriented ~40..52 × 54..70
-    check(cropped, QSize(80, 60), QRectF(10, 8, 16, 12));
+    cropped.cropRect = oriented.toRect().adjusted(-4, -4, 4, 4);
+    QVERIFY2(cropped.cropRect.contains(oriented.toRect()),
+             "crop must fully contain oriented source AABB");
+
+    {
+        const QTransform T = ContentXform::sourceToDisplayTransform(n, cropped);
+        const QRectF mapped = ContentXform::mapSourceRectToDisplay(src, n, cropped);
+        QVERIFY2(!mapped.isEmpty(), "cropped: source must land inside crop window");
+        const QPointF corners[4] = {
+            src.topLeft(), src.topRight(), src.bottomRight(), src.bottomLeft(),
+        };
+        qreal minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+        for (const QPointF &c : corners) {
+            const QPointF p = T.map(c);
+            minX = qMin(minX, p.x());
+            maxX = qMax(maxX, p.x());
+            minY = qMin(minY, p.y());
+            maxY = qMax(maxY, p.y());
+        }
+        QVERIFY2(qAbs(minX - mapped.left()) < 1e-4,
+                 qPrintable(QStringLiteral("crop left %1 vs %2").arg(minX).arg(mapped.left())));
+        QVERIFY2(qAbs(maxX - mapped.right()) < 1e-4,
+                 qPrintable(QStringLiteral("crop right %1 vs %2").arg(maxX).arg(mapped.right())));
+        QVERIFY2(qAbs(minY - mapped.top()) < 1e-4,
+                 qPrintable(QStringLiteral("crop top %1 vs %2").arg(minY).arg(mapped.top())));
+        QVERIFY2(qAbs(maxY - mapped.bottom()) < 1e-4,
+                 qPrintable(QStringLiteral("crop bottom %1 vs %2").arg(maxY).arg(mapped.bottom())));
+    }
 }
 
 void ContentXformTest::sourceToDisplayTransform_hFlipMovesAndOrients()
