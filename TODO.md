@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1768-gallery-pack-apply-placement.** Gallery pack pose via applyPlacement.
+Prior: **1767**.
+
+### Change
+- `GalleryLayout::applyPackPose` helper (center + uniform scale, shear cleared)
+- All pack modes and overshoot fit write pose via applyPlacement / applyPackPose
+- Rotation and flips preserved across pack
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1768-gallery-pack-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + gallery pack smoke
+- Framing residual or Tier 4 harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1767-drop-bind-apply-placement.** Drop/bind identity pose via applyPlacement.
 Prior: **1766**.
 

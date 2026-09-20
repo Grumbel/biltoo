@@ -5,6 +5,7 @@
 #include "viewtransform.h"
 #include "gallerypackfit.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 
 #include <QtMath>
 #include <cmath>
@@ -35,6 +36,21 @@ QSizeF layoutSize(const ImageItem *item)
         return QSizeF(ns.height(), ns.width());
     }
     return ns;
+}
+
+/** Uniform pack pose: center + scale, shear cleared; rotation/flips/z preserved. */
+void applyPackPose(ImageItem *item, const QPointF &center, qreal scale)
+{
+    if (!item) {
+        return;
+    }
+    ItemComponents::Placement pl = item->placement();
+    pl.pos = center;
+    pl.scale = scale;
+    pl.scaleY = scale;
+    pl.shear = 0.0;
+    pl.opacity = 1.0;
+    item->applyPlacement(pl);
 }
 
 void finish(ImageItem *item, const std::function<void(ImageItem *)> &afterEach)
@@ -74,11 +90,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
             const qreal scale = axisFillScale(availH, ns.height());
-            item->setItemScale(scale);
-            item->setItemShear(0.0);
             const qreal w = ns.width() * scale;
             const qreal h = ns.height() * scale;
-            item->setPos(x + w / 2.0, margin + h / 2.0);
+            applyPackPose(item, QPointF(x + w / 2.0, margin + h / 2.0), scale);
             x += w + gap;
             finish(item, afterEach);
         }
@@ -87,11 +101,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
             const qreal scale = axisFillScale(availW, ns.width());
-            item->setItemScale(scale);
-            item->setItemShear(0.0);
             const qreal w = ns.width() * scale;
             const qreal h = ns.height() * scale;
-            item->setPos(margin + w / 2.0, y + h / 2.0);
+            applyPackPose(item, QPointF(margin + w / 2.0, y + h / 2.0), scale);
             y += h + gap;
             finish(item, afterEach);
         }
@@ -108,11 +120,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             const int row = i / cols;
             const QSizeF ns = layoutSize(item);
             const qreal scale = containScale(cellW, cellH, ns.width(), ns.height());
-            item->setItemScale(scale);
-            item->setItemShear(0.0);
             const qreal cx = margin + col * (cellW + gap) + cellW / 2.0;
             const qreal cy = margin + row * (cellH + gap) + cellH / 2.0;
-            item->setPos(cx, cy);
+            applyPackPose(item, QPointF(cx, cy), scale);
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::GridCrop) {
@@ -124,12 +134,10 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             const int row = i / cols;
             const QSizeF ns = layoutSize(item);
             const qreal scale = coverScale(cell, cell, ns.width(), ns.height());
-            item->setItemScale(scale);
-            item->setItemShear(0.0);
             item->setGalleryCellSize(QSizeF(cell, cell));
             const qreal cx = margin + col * (cell + gap) + cell / 2.0;
             const qreal cy = margin + row * (cell + gap) + cell / 2.0;
-            item->setPos(cx, cy);
+            applyPackPose(item, QPointF(cx, cy), scale);
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::Masonry) {
@@ -139,8 +147,6 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
             const qreal scale = axisFillScale(colW, ns.width());
-            item->setItemScale(scale);
-            item->setItemShear(0.0);
             const qreal h = ns.height() * scale;
             int best = 0;
             for (int c = 1; c < cols; ++c) {
@@ -150,7 +156,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             }
             const qreal cx = margin + best * (colW + gap) + colW / 2.0;
             const qreal cy = margin + colHeights.at(best) + h / 2.0;
-            item->setPos(cx, cy);
+            applyPackPose(item, QPointF(cx, cy), scale);
             colHeights[best] += h + gap;
             finish(item, afterEach);
         }
@@ -161,8 +167,6 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         for (ImageItem *item : items) {
             const QSizeF ns = layoutSize(item);
             const qreal scale = axisFillScale(rowH, ns.height());
-            item->setItemScale(scale);
-            item->setItemShear(0.0);
             const qreal w = ns.width() * scale;
             int best = 0;
             for (int r = 1; r < rows; ++r) {
@@ -172,7 +176,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             }
             const qreal cx = margin + rowWidths.at(best) + w / 2.0;
             const qreal cy = margin + best * (rowH + gap) + rowH / 2.0;
-            item->setPos(cx, cy);
+            applyPackPose(item, QPointF(cx, cy), scale);
             rowWidths[best] += w + gap;
             finish(item, afterEach);
         }
@@ -221,11 +225,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             qreal y = margin;
             for (Entry &e : columns[c]) {
                 const qreal scale = e.scale * s;
-                e.item->setItemScale(scale);
-                e.item->setItemShear(0.0);
                 const qreal w = e.ns.width() * scale;
                 const qreal h = e.ns.height() * scale;
-                e.item->setPos(x + w / 2.0, y + h / 2.0);
+                applyPackPose(e.item, QPointF(x + w / 2.0, y + h / 2.0), scale);
                 y += h + gap * s;
                 finish(e.item, afterEach);
             }
@@ -274,11 +276,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             qreal x = margin;
             for (Entry &e : rowItems[r]) {
                 const qreal scale = e.scale * s;
-                e.item->setItemScale(scale);
-                e.item->setItemShear(0.0);
                 const qreal w = e.ns.width() * scale;
                 const qreal h = e.ns.height() * scale;
-                e.item->setPos(x + w / 2.0, y + h / 2.0);
+                applyPackPose(e.item, QPointF(x + w / 2.0, y + h / 2.0), scale);
                 x += w + gap * s;
                 finish(e.item, afterEach);
             }
@@ -341,11 +341,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             qreal placedH = 0.0;
             for (Entry &e : row) {
                 const qreal scale = e.scale * s;
-                e.item->setItemScale(scale);
-                e.item->setItemShear(0.0);
                 const qreal w = e.ns.width() * scale;
                 const qreal h = e.ns.height() * scale;
-                e.item->setPos(x + w / 2.0, y + h / 2.0);
+                applyPackPose(e.item, QPointF(x + w / 2.0, y + h / 2.0), scale);
                 x += w + gap * s;
                 placedH = qMax(placedH, h);
                 finish(e.item, afterEach);
@@ -360,11 +358,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
 
         auto placeScaled = [&](ImageItem *item, qreal scale, qreal xLeft, qreal yTop) {
             const QSizeF ns = layoutSize(item);
-            item->setItemScale(scale);
-            item->setItemShear(0.0);
             const qreal w = ns.width() * scale;
             const qreal h = ns.height() * scale;
-            item->setPos(xLeft + w / 2.0, yTop + h / 2.0);
+            applyPackPose(item, QPointF(xLeft + w / 2.0, yTop + h / 2.0), scale);
             finish(item, afterEach);
             return QSizeF(w, h);
         };
@@ -444,10 +440,11 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                 if (!item) {
                     continue;
                 }
-                const QPointF p = item->pos();
-                item->setPos(origin + (p - origin) * s);
-                item->setItemScale(item->itemScaleX() * s,
-                                   item->itemScaleY() * s);
+                ItemComponents::Placement pl = item->placement();
+                pl.pos = origin + (pl.pos - origin) * s;
+                pl.scale *= s;
+                pl.scaleY *= s;
+                item->applyPlacement(pl);
                 if (!item->galleryCellSize().isEmpty()) {
                     const QSizeF cs = item->galleryCellSize();
                     item->setGalleryCellSize(QSizeF(cs.width() * s, cs.height() * s));

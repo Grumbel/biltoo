@@ -1013,3 +1013,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1765: workspace free-rotate mid-drag writes via applyPlacement.
 - biltoo-1766: duplicateSelected pose via applyPlacement (Workspace copy + Gallery identity).
 - biltoo-1767: drop/bind identity and Image-mode reset pose via applyPlacement.
+- biltoo-1768: GalleryLayout pack pose via applyPackPose / applyPlacement.
