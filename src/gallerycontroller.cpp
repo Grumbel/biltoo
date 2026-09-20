@@ -15,6 +15,7 @@
 #include <QElapsedTimer>
 #include "sessionappearance.h"
 #include "biltoo_logging.h"
+#include "biltoo_thread.h"
 #include "gallerypackfit.h"
 #include "imagecache.h"
 #include "displayquality.h"
@@ -23,6 +24,7 @@
 
 #include <QScrollBar>
 #include <QTimer>
+#include <QObject>
 #include <QUndoStack>
 #include <QSet>
 #include <QMouseEvent>
@@ -924,7 +926,7 @@ void GalleryController::updateDecodeWindow()
     }
     // While sizes are still sequential, only allow blank LQIP installs from cache
     // — no tile ticks / pyramid (workers stay on ProbeSize).
-    if (gallerySizeResolveActive()) {
+    if (m_view->gallerySizeResolveActive()) {
         constexpr int kMaxInstallsDuringSizeResolve = GallerySoft::kMaxInstallsDuringSizeResolve;
         bool more = false;
         const int n = galleryInstallHostSoftOntoBlanks(kMaxInstallsDuringSizeResolve, &more);
@@ -1059,7 +1061,7 @@ void GalleryController::updateDecodeWindow()
     if (scheduled > 0 || moreInstallsPending) {
         scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
     }
-    updateGallerySoftProgressHud();
+    updateSoftProgressHud();
     if (m_view->hostPerf().isEnabled() && decodeWinTimer.isValid()) {
         m_view->hostPerf().noteDecodeWindowUs(decodeWinTimer.nsecsElapsed() / 1000);
         if (m_view->hostPerf().lastDecodeWindowSlow()) {
@@ -1147,8 +1149,8 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 
     const qreal margin = GalleryLayout::Params::kDefaultMargin;
     const qreal gap = GalleryLayout::Params::kDefaultGap;
-    const qreal availW = GalleryPackFit::packAvailAxis(m_view->viewport()->m_view->width(), margin);
-    const qreal availH = GalleryPackFit::packAvailAxis(m_view->viewport()->m_view->height(), margin);
+    const qreal availW = GalleryPackFit::packAvailAxis(m_view->viewport()->width(), margin);
+    const qreal availH = GalleryPackFit::packAvailAxis(m_view->viewport()->height(), margin);
 
     GalleryLayout::Params params;
     params.margin = margin;
@@ -1307,16 +1309,16 @@ void GalleryController::softWatchdogTick()
             continue;
         }
         if (!item->hasDisplayPixels()) {
-            scheduleGalleryDecode(item->path());
+            m_view->scheduleGalleryDecode(item->path());
             needWindow = true;
         }
     }
     if (needWindow) {
-        updateGalleryDecodeWindow();
+        updateDecodeWindow();
     } else {
         m_view->tickPrimaryTileLod(48);
     }
-    updateGallerySoftProgressHud();
+    updateSoftProgressHud();
 }
 
 void GalleryController::updateSoftProgressHud()

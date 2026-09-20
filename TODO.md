@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1686-gallery-controller-compile.** Fix GalleryController compile errors after method moves.
+Prior: **1685**.
+
+### Change
+- `#include "biltoo_thread.h"` + `#include <QObject>` (connect, ASSERT_GUI_THREAD, GUI_BUDGET_MS)
+- Unqualified ImageView-era names → controller/host: `m_view->gallerySizeResolveActive`, `updateSoftProgressHud`, `updateDecodeWindow`, `m_view->scheduleGalleryDecode`
+- Typo `viewport()->m_view->width()` → `viewport()->width()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1686-gallery-controller-compile.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1685-session-bind-tu.** Split session-bind / session-id ops out of canvas.cpp.
 Prior: **1684**.
 
