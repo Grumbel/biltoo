@@ -193,10 +193,8 @@ public:
      */
     void setCentreProgress(const QString &title, const QString &detail = QString());
     void clearCentreProgress();
-    /** Size-resolve active: hostGallerySizeResolve().active(). */
     /** Controller host: set m_viewMode + m_layout.currentMode() and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
-    /** Classic path: hostImage().classicPath() / setClassicPath / clear / take. */
     /** Open/History session barrier: bump gen, clear canvas, cancel thumtoo. */
     void invalidateSessionLoads();
     /** Controller host: scene->clear with signals blocked (stashes already detached). */
@@ -211,24 +209,13 @@ public:
     void applyModeFlagsToLiveItems();
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
     void applyToolDragMode();
-    /** Decode path off the GUI thread into the unified slideshow raster map. */
     /**
      * Logical image size for @a path (never soft-raster dimensions).
      * Lookup only: m_sizeBook, then thumtoo cache. Empty if unknown.
      * Slideshow and Image-mode framing share this.
      */
     QSize logicalSizeForPath(const QString &path) const override;
-    /**
-     * Image→viewport scale for current slideshowZoom (Fit/Fill/Actual)
-     * given logical size and viewport. Pure function of size model.
-     */
-    /**
-     * User is rapidly flipping (←/→ key-repeat) in Image mode or slideshow.
-     * Suppresses PreferCache climb, sync repaint, new ZoomBlur builds, and
-     * atlas work until settle; previous underlay is kept until replacement.
-     */
-    /** Slideshow pure-phase owns viewport — tile coordinator must not issue.
-     *  Path raster: hostPathRaster() (see imageview_host_accessors.inc). */
+    // Host accessors (controllers): path raster, books, prefs — imageview_host_accessors.inc
 #include "imageview_host_accessors.inc"
 
     /** Display pipeline host: crop controller (draft freeze). */
@@ -245,7 +232,7 @@ public:
     /**
      * Phase 7 Stage 0 facade (appearance / path-book / size-book).
      * Pack-order host mutators live in imageview_host_pipeline.inc
-     * (pathOrderClear / SetOrder / AppendRow / currentPackOrder).
+     * (pathOrderClear / SetOrder / currentPackOrder; AppendRow is private).
      */
     ItemWorld &itemWorld() { return m_itemWorld; }
     const ItemWorld &itemWorld() const { return m_itemWorld; }
@@ -266,13 +253,11 @@ public:
     void takePendingWorkspacePath(const QString &path);
 
 
-
 #include "imageview_host_crop_display.inc"
 
 #include "imageview_host_ops.inc"
 
     void setViewMode(ViewMode mode);
-
 
 
     /** Reset view/scene so Image mode is not affected by prior canvas state. */
@@ -332,9 +317,7 @@ public:
     /** How many canvas items currently show @p path. */
     int workspacePathOccurrenceCount(const QString &path) const;
     void setTool(Tool tool);
-    /** Current tool: m_tool (no pure-hop getter). */
 
-    /** Undo stack: hostUndoStack(). */
 
     void zoomIn();
     void zoomOut();
@@ -353,7 +336,6 @@ public:
     // StickyZoomKind: viewframing.h
     void setStickyZoomEnabled(bool on);
     void releaseStickyZoom();
-    /** Sticky zoom: hostFraming().isStickyZoomEnabled() / currentStickyZoomKind(). */
     /**
      * One-shot rubber-band zoom: next left-drag selects a region to zoom into.
      * Esc cancels. Bound to Z from the main window.
@@ -387,7 +369,6 @@ public:
      * Returns number of matching regions on the current page.
      */
     int setTextSearchQuery(const QString &query);
-    /** Text search query / match / fuzzy / selection / link tip: hostTextLayer(). */
     bool hasTextLayer() const;
     int textLayerRegionCount() const;
     /** Soft match for OCR noise (alnum-only + light edit distance). Default on. */
@@ -397,8 +378,6 @@ public:
 
     /** Copy selected text to the clipboard; returns false if nothing selected. */
     bool copySelectedText();
-
-    /** Image-mode left-drag pan: hostChrome().isImageModeLeftDragPan(). */
 
     void setBackgroundColor(const QColor &color);
     /**
@@ -410,7 +389,6 @@ public:
     void setBackgroundPattern(BackgroundPattern pattern);
     /** When true, checkerboard is used only in Workspace; other modes stay solid. */
     void setCheckerboardWorkspaceOnly(bool on);
-    /** Background colour / pattern / workspace / view reads: hostCanvasBg(). */
 
     /**
      * Per-Workspace background override (project state). AppDefault uses the
@@ -438,7 +416,6 @@ public:
      * use false for silent updates (e.g. slideshow auto-advance).
      */
     void setCurrentSessionId(SessionImageId id);
-    /** Current session id / index: hostSessionId().currentIdValue() / currentIndex(). */
     /** Select canvas item for @p path; ensure visible in Gallery. */
     void focusSessionPath(const QString &path);
 
@@ -446,11 +423,9 @@ public:
     void setHudVisible(bool on);
     /** Corner marks for crop / orient / grade (default on). */
     void setContentEditMarksVisible(bool on);
-    /** Content edit marks visibility: ImageItem::contentEditMarksVisible(). */
     void setHudFontPointSize(int pt);
     void setHudTextColor(const QColor &color);
     void setHudPanelColor(const QColor &color);
-    /** HUD visibility / font / colours: hostHudPrefs(). */
 
     /**
      * Brief top-left HUD action (slideshow, fit mode, …).
@@ -458,40 +433,8 @@ public:
      */
     void flashHud(const QString &action, const QString &detail = QString());
 
-    /**
-     * Slideshow dwell progress for the pinned HUD: a 1px line at the bottom of
-     * the viewport. Call with active=true and the current interval when a slide
-     * starts (or interval changes while running); active=false when the
-     * slideshow stops. The line is drawn only while the full HUD is pinned.
-     */
-    /**
-     * Overall slideshow timeline for the extended (pinned) HUD — video-player
-     * style elapsed / total and remaining. Pass totalMs<=0 to clear.
-     * Drawn only while the full HUD is pinned and a slideshow is active.
-     */
-    /** Per-cycle phase in [0,1] from host unitless clock. */
-    /** Clear residual transition overlay state (safe during pure-phase show). */
-    /** Pad colour when letterbox fill is Solid (also fallback for ZoomBlur miss). */
-    /**
-     * Freeze or continue Ken Burns without tearing down the dwell camera.
-     * Used for slideshow pause/resume (Space), not full stop.
-     */
-    /**
-     * Persistent top-left "Paused" cue while a slideshow session is paused.
-     * Independent of flashHud (which times out after ~1s). Cleared on resume/stop.
-     */
-    /** Freeze/resume dwell progress elapsed without resetting the timeline. */
-    /** Image-mode fit after leaving slideshow (Fit to window). */
-    /**
-     * Re-frame the current Image-mode item for an active slideshow:
-     * motion on → restart Ken Burns blit from slideshow zoom base; motion off →
-     * Fit / Fill / 1:1 framing only. No-op when slideshow progress is inactive.
-     */
-    /**
-     * Drop any held live-transition overlay once the next slide is fitted.
-     * Called from the LoadReplace path so the incoming frame is not cleared
-     * before the new item is on screen (avoids a one-frame flash of the old image).
-     */
+    // Slideshow dwell/timeline/phase/Ken Burns/pause cues: SlideshowController
+    // (hostSlideshow()). Not re-exported on ImageView.
 
     void raiseSelected();
     void lowerSelected();
@@ -529,7 +472,6 @@ public:
                                  const QList<int> &sessionIndices);
 
     void setLayoutMode(LayoutMode mode);
-    /** Layout mode / columns: hostLayout().currentMode() / *Value(). */
     /** Enter Gallery mode and apply the given packaged layout (not FreeForm). */
     void enterGallery(LayoutMode packagedLayout);
 
@@ -569,7 +511,6 @@ public:
     int resetContentAppearanceForTargets();
 
     QString statusText() const;
-    /** Last load error: hostSessionId().lastLoadErrorRef(). */
     QSize imageSize() const;
     int itemCount() const;
     /** Live tiles, stashed tiles, or durable snapshot — Workspace is non-empty. */
@@ -605,7 +546,6 @@ signals:
     void galleryReturnRequested();
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
-    /** Black exit veil finished — host should advance the slideshow. */
     /** Host may restart the advance timer (snapshot end / fade-black complete). */
     void slideshowDwellResumeRequested();
     /** Crop mode toggled on/off (toolbar checkable state). */

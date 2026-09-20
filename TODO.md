@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1912-imageview-h-orphan-comments.** Header hygiene after host moves.
+Prior: **1911**.
+
+### Change
+- Drop orphan `/** … */` blocks left when methods moved to host accessors /
+  SlideshowController (size-resolve, classic path, decode/raster, sticky tool
+  pointers, slideshow dwell/timeline/Ken Burns/pause cues, text-layer / chrome /
+  load-error host pointers)
+- Short host-accessors include banner; ItemWorld pack-order note (AppendRow private)
+- `imageview.h` ~616 lines (was ~676)
+- No behaviour change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1912-imageview-h-orphan-comments-516d734.bundle HEAD
+```
+Requires tip **1911** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+- Optional: further header/host-surface docs only if new orphans appear
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1911-privatize-geometry-pack-append.** Narrow host public surface further.
 Prior: **1910**.
 

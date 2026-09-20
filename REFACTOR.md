@@ -786,7 +786,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 3. **Tier 6 remainder** — input try* hop demoted (biltoo-1837: dispatch calls
    controllers directly; `imageview_input_forwards.cpp` gone). Transform chrome
    stays on ImageView (AGENTS.md).
-4. **Metrics** — `imageview.h` ~682 lines;
+4. **Metrics** — `imageview.h` ~616 lines;
    ~26 `imageview*.cpp` TUs,
    ~10459 lines total (down from ~21k / many more TUs at Phase 6 start).
    1894–1908 folded thin/grab-bag TUs by domain. Further merges have weak
@@ -1139,6 +1139,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1909: REFACTOR metrics after ImageView TU fold (1894–1908).
 - biltoo-1910: privatize paint/input try* phases off host_pipeline public surface.
 - biltoo-1911: privatize pathOrderAppendRow + geometry session state helpers; TransformGeometryCommand friend.
+- biltoo-1912: imageview.h orphan comments after host/Slideshow moves; ~616 lines.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
