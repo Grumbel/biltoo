@@ -36,14 +36,16 @@ public:
     void restoreStashedItems();
 
     void snapshotViewport();
-    void restoreViewport(const QString &focusPath = QString());
+    void restoreViewport(const QString &focusPath = QString(),
+                         SessionImageId focusId = kInvalidSessionImageId);
     void applyPendingRestore();
     void reassertViewport();
 
     /** Gallery → other mode: clear hover/anchor, stop pack; stash tiles when next is Image. */
     void onLeave(int nextMode);
     void leaveForImageMode();
-    void returnFromImage(int layoutMode, const QString &focusPath = QString());
+    void returnFromImage(int layoutMode, const QString &focusPath = QString(),
+                         SessionImageId focusId = kInvalidSessionImageId);
     void enter(int packagedLayout);
 
     bool hasStash() const { return !m_stashedItems.isEmpty(); }
@@ -72,6 +74,7 @@ public:
     int scrollV() const { return m_scrollV; }
 
     QString focusPath() const { return m_focusPath; }
+    SessionImageId focusSessionId() const { return m_focusSessionId; }
 
     /** @return true when focus path changed. */
     bool setFocusPath(const QString &path)
@@ -82,6 +85,8 @@ public:
         m_focusPath = path;
         return true;
     }
+
+    void setFocusSessionId(SessionImageId id) { m_focusSessionId = id; }
 
     ImageItem *selectionAnchor() const { return m_selectionAnchor; }
     void setSelectionAnchor(ImageItem *item) { m_selectionAnchor = item; }
@@ -161,6 +166,7 @@ private:
     QPointF m_viewCenter;
     bool m_haveViewCenter = false;
     QString m_focusPath;
+    SessionImageId m_focusSessionId = kInvalidSessionImageId;
     bool m_pendingRestore = false;
 
 

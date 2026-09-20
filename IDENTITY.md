@@ -286,6 +286,7 @@ keyed.
 | `findPreferredItemForPath(path)` | Selected sole match, else sole live match; else nullptr if ambiguous |
 | `focusGalleryItem(item)` | Exclusive-select known live item (Gallery keyboard); no path lookup |
 | `focusSessionId(id)` | Exclusive-select live item by SessionImageId (filmstrip / session cursor) |
+| Gallery `m_focusSessionId` | Return-from-Image restore prefers id over path |
 | `findItemBySessionIndex(i)` | Item bound to session index `i` |
 | `m_files.indexOf(path)` | **First** session slot with that path |
 | `createItemFromImage(..., applyStoredSessionCrop=true)` | Applies appearance from `m_sessionSlotStates[m_sessionIndex]` in Image mode if present, else **path** `m_itemStates` |

@@ -149,13 +149,17 @@ void GalleryController::snapshotViewport()
     m_haveScroll = true;
     if (ImageItem *sel = m_view->targetItem()) {
         m_focusPath = sel->path();
+        m_focusSessionId = sel->sessionId();
     }
 }
 
-void GalleryController::restoreViewport(const QString &focusPath)
+void GalleryController::restoreViewport(const QString &focusPath, SessionImageId focusId)
 {
     if (!focusPath.isEmpty()) {
         m_focusPath = focusPath;
+    }
+    if (focusId != kInvalidSessionImageId) {
+        m_focusSessionId = focusId;
     }
     m_pendingRestore = true;
     // Try immediately if already in Gallery with items; otherwise applyLayout
@@ -174,7 +178,10 @@ void GalleryController::applyPendingRestore()
     reassertViewport();
 
     ImageItem *focus = nullptr;
-    if (!m_focusPath.isEmpty()) {
+    if (m_focusSessionId != kInvalidSessionImageId) {
+        focus = m_view->findItemBySessionId(m_focusSessionId);
+    }
+    if (!focus && !m_focusPath.isEmpty()) {
         // Prefer selected sole match; first-match is wrong with LoadAdd duplicates.
         focus = m_view->findPreferredItemForPath(m_focusPath);
         if (!focus) {
@@ -268,11 +275,12 @@ void GalleryController::leaveForImageMode()
     m_view->setViewMode(ImageView::ViewMode::Image);
 }
 
-void GalleryController::returnFromImage(int layoutMode, const QString &focusPath)
+void GalleryController::returnFromImage(int layoutMode, const QString &focusPath,
+                                        SessionImageId focusId)
 {
     // Arm restore before enter/applyLayout so packs re-centre on the
     // snapshotted scene point (flags preserved across Gallery→Image leave).
-    restoreViewport(focusPath);
+    restoreViewport(focusPath, focusId);
     enter(layoutMode);
     applyPendingRestore();
 }

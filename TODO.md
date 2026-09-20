@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1926-gallery-focus-session-id.** Gallery restore prefers session id.
+Prior: **1925**.
+
+### Change
+- `GalleryController` stores `m_focusSessionId` (snapshot from targetItem)
+- `restoreViewport` / `returnFromImage` accept optional `SessionImageId`
+- `applyPendingRestore` looks up by session id first, then preferred path
+- `MainWindow::returnToGallery` passes `sessionIdAt(m_currentIndex)`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1926-gallery-focus-session-id-516d734.bundle HEAD
+```
+Requires tip **1925** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Phase 7 ImageItem demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1925-focus-session-id.** Session-id Gallery focus from MainWindow.
 Prior: **1924**.
 

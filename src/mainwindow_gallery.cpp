@@ -283,6 +283,7 @@ void MainWindow::returnToGallery()
     const QString focusPath = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
                                   ? m_session.paths().at(m_currentIndex)
                                   : QString();
+    const SessionImageId focusId = sessionIdAt(m_currentIndex);
     const LayoutMode layout = m_galleryReturnLayout;
 
     stopSlideshow();
@@ -299,16 +300,16 @@ void MainWindow::returnToGallery()
 
     // Phase 3: restore arm + enter Gallery + apply pending centre in one place.
     if (m_imageView) {
-        m_imageView->hostGallery().returnFromImage(static_cast<int>(layout), focusPath);
+        m_imageView->hostGallery().returnFromImage(static_cast<int>(layout), focusPath, focusId);
     }
     populateGalleryCanvas();
     if (m_imageView) {
         m_imageView->hostGallery().applyPendingRestore();
-        QTimer::singleShot(0, this, [this, focusPath]() {
+        QTimer::singleShot(0, this, [this, focusPath, focusId]() {
             if (!m_imageView || !m_imageView->isGalleryMode()) {
                 return;
             }
-            m_imageView->hostGallery().restoreViewport(focusPath);
+            m_imageView->hostGallery().restoreViewport(focusPath, focusId);
             m_imageView->hostGallery().applyPendingRestore();
         });
     }

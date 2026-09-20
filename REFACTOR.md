@@ -1158,6 +1158,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1923: addImage / focusSessionPath / classic paint prefer preferred-item path lookup.
 - biltoo-1924: focusGalleryItem; path focus delegates; Gallery keyboard uses item pointer.
 - biltoo-1925: focusSessionId; MainWindow session cursor prefers id over path.
+- biltoo-1926: Gallery viewport restore stores/prefers focus SessionImageId.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
