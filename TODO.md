@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1799-gallery-restore-release-tilelod.** Stage 2: gallery restore releases live bags.
+Prior: **1798**.
+
+### Change
+- `GalleryController::restoreStashedItems` drops/releases pipeline tile bags
+  before deleting residual live ImageItems
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1799-gallery-restore-release-tilelod.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke
+- ImageView characterization / Tier 4 path-order
+- Stage 2 tile-LOD ownership treated as complete pending smoke
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1798-stash-discard-release-tilelod.** Stage 2: stash discard releases bags.
 Prior: **1797**.
 

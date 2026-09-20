@@ -97,7 +97,13 @@ void GalleryController::restoreStashedItems()
     // Live canvas should be empty (Image mode held a single item that
     // clearWorkspace removes before Gallery is entered).
     for (ImageItem *item : m_view->liveItems()) {
-        if (item && item->scene()) {
+        if (!item) {
+            continue;
+        }
+        // Stage 2: release pipeline tile bag before delete.
+        m_view->hostDisplayPipeline().dropItemTileLodSession(item);
+        m_view->hostDisplayPipeline().releaseTileBag(item);
+        if (item->scene()) {
             item->scene()->removeItem(item);
         }
         delete item;

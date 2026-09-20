@@ -1044,3 +1044,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1796: local bag debug warning; dropAll resets m_tileBags entries.
 - biltoo-1797: releaseAllTileBags before scene clear / pipeline dtor.
 - biltoo-1798: gallery/workspace discardStash releases pipeline tile bags.
+- biltoo-1799: gallery restoreStashedItems releases bags for residual live items.
