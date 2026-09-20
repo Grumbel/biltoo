@@ -2,6 +2,35 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1854-gallery-placeholders-via-host.** ensureGalleryPlaceholders via gallery.
+Prior: **1853**.
+
+### Change
+- `ensureGalleryPlaceholders()` removed; callers use `m_gallery.ensurePlaceholders()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1854-gallery-placeholders-via-host.bundle HEAD
+```
+Requires tip **1853**.
+
+### Remaining pure one-liners (intentionally kept)
+- `hasDefinitiveHostSize` — GallerySizeResolveHost
+- `tilePrefetchNavHot` — TileNeighborPrefetchHost
+- `hasTextLayer` — not pure (path compare)
+- `itemCount` — natural ImageView query over `m_items`
+
+### Next
+- biltoo-build smoke
+- Phase 6 Tier 4 residual (`m_pathOrderBook`) / characterization harness
+- Phase 7 Stage 0 ItemWorld facade (when characterization gate allows)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1853-ccache-writable-dir.** Fix ccacheStdenv sandbox Permission denied.
 Prior: **1852**.
 
