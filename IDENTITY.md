@@ -489,7 +489,8 @@ appearance map / canvas bind that could still hold old ids.
 - Drop / place prefer session id; drop-duplicate allocates a new id
 - Peer crop sync by SessionImageId only (never path)
 - Uniqueness checks within live / stash lists
-- `m_sessionIdOrder` parallel to `m_pathOrder`; placeOrMove appends both
+- Session row order: `SessionDocument` (MainWindow) + Gallery-local `SessionPathOrder` (`m_pathOrderBook`) for LoadAdd multiplicity — see [docs/PATH_ORDER.md](docs/PATH_ORDER.md)
+- placeOrMove / LoadAdd append view-book rows; identity ids come from the document when bound
 
 **Path is still used only for:**
 - Decoding bytes from disk

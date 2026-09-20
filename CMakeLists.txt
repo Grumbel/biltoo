@@ -602,6 +602,14 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-sessiondocument-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME sessiondocument COMMAND biltoo-sessiondocument-test)
 
+  add_executable(biltoo-sessionpathorder-test
+    tests/sessionpathorder_test.cpp
+  )
+  target_include_directories(biltoo-sessionpathorder-test PRIVATE src)
+  target_link_libraries(biltoo-sessionpathorder-test PRIVATE Qt6::Core Qt6::Test)
+  add_test(NAME sessionpathorder COMMAND biltoo-sessionpathorder-test)
+
+
   add_executable(biltoo-sessionappearance-test
     tests/sessionappearance_test.cpp
     src/sessionappearance.cpp

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1663-path-order-docs-test.** Document path-order dual model + SessionPathOrder tests.
+Prior: **1662**.
+
+### Change
+- `docs/PATH_ORDER.md` — SessionDocument vs Gallery-local `m_pathOrderBook`
+- IDENTITY migration status points at PATH_ORDER.md
+- `tests/sessionpathorder_test.cpp` + CMake `sessionpathorder` test
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1663-path-order-docs-test.bundle HEAD
+```
+
+### Next
+- imageview.h host-API narrowing
+- biltoo-build verification
+- Tier 4 path-order delete still blocked on full characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1662-delete-selection-controllers.** Tier 6g: Delete/Backspace on Gallery/Workspace controllers.
 Prior: **1661**.
 
