@@ -20,8 +20,11 @@
         else
           versionBase;
 
+      # ccacheStdenv wraps CC/CXX with ccache (helps repeated nix builds when
+      # the daemon allows a shared cache; see nix.settings.extra-sandbox-paths).
       biltoo = pkgs.qt6Packages.callPackage ./default.nix {
         inherit version;
+        stdenv = pkgs.ccacheStdenv;
         kimageformats = pkgs.kdePackages.kimageformats;
         # Flake source of thumtoo (add_subdirectory in CMake; not a prebuilt package).
         thumtooSrc = thumtoo;
@@ -130,10 +133,19 @@
             biltooDevPreamble
             + ''
               echo "biltoo-configure: THUMTOO_SOURCE_DIR=$THUMTOO_SOURCE_DIR"
+              # Prefer ccache when the shell provides it (ccacheStdenv / packages).
+              _ccache_args=()
+              if command -v ccache >/dev/null 2>&1; then
+                _ccache_args+=(
+                  -DCMAKE_C_COMPILER_LAUNCHER=ccache
+                  -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+                )
+              fi
               cmake -S "$BILTOO_SOURCE" -B "$BILTOO_BUILD_DIR" -G Ninja \
                 -DCMAKE_BUILD_TYPE="''${CMAKE_BUILD_TYPE:-Debug}" \
                 -DBILTOO_WITH_THUMTOO=ON \
-                -DTHUMTOO_SOURCE_DIR="$THUMTOO_SOURCE_DIR"
+                -DTHUMTOO_SOURCE_DIR="$THUMTOO_SOURCE_DIR" \
+                "''${_ccache_args[@]}"
             ''
           );
 
@@ -228,12 +240,14 @@
             ''
           );
         in
-        pkgs.mkShell {
+        # ccacheStdenv: CC/CXX are ccache wrappers for out-of-tree cmake/ninja.
+        pkgs.mkShell.override { stdenv = pkgs.ccacheStdenv; } {
           inputsFrom = [ biltoo ];
           packages = (with pkgs; [
             cmake
             ninja
             gdb
+            ccache
             qt6.qttools
           ]) ++ [
             biltooConfigure
@@ -246,6 +260,13 @@
           shellHook = ''
             # Source tree (stable even if someone cds away before biltoo-run).
             export BILTOO_SOURCE="$PWD"
+
+            # Shared ccache dir for incremental biltoo-build (override with CCACHE_DIR).
+            export CCACHE_DIR="''${CCACHE_DIR:-$HOME/.cache/ccache-biltoo}"
+            mkdir -p "$CCACHE_DIR"
+            # Also bake into cmake cache on (re)configure.
+            export CMAKE_C_COMPILER_LAUNCHER=ccache
+            export CMAKE_CXX_COMPILER_LAUNCHER=ccache
 
             # Theme search: FreeDesktop wants <datadir>/icons/hicolor/...
             # Our layout is data/icons/hicolor/... so datadir = $BILTOO_SOURCE/data.
@@ -281,8 +302,9 @@
                 ;;
             esac
 
-            echo "biltoo dev shell (CMAKE_BUILD_TYPE=''${CMAKE_BUILD_TYPE:-Debug})"
+            echo "biltoo dev shell (CMAKE_BUILD_TYPE=''${CMAKE_BUILD_TYPE:-Debug}, ccacheStdenv)"
             echo "  build dir: $BILTOO_BUILD_DIR"
+            echo "  CCACHE_DIR=$CCACHE_DIR  (ccache -s for stats)"
             echo "  biltoo-configure   # cmake once; then biltoo-build is incremental"
             echo "  THUMTOO_SOURCE_DIR=$THUMTOO_SOURCE_DIR"
             echo "  version: cmake reads VERSION + .git (About → full 0.1.0-dev.N+gHASH)"
