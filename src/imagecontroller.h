@@ -38,6 +38,11 @@ public:
     bool tryKeyPressNavigate(QKeyEvent *event);
     bool tryMousePressEdges(QMouseEvent *event);
 
+    /** Soft reload focused classic path (Image mode). */
+    void reloadFromDisk();
+    /** Hard reload focused classic path — purge Store tiles then re-decode. */
+    void hardReloadFromDisk();
+
 private:
     ImageView *m_view = nullptr;
     QString m_classicPath;

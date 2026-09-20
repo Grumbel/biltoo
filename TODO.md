@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1677-image-reload-controller.** Image-mode reload/hard-reload onto ImageController.
+Prior: **1676**.
+
+### Change
+- `ImageController::reloadFromDisk` — soft reload classic path (purge tiles + LoadReplace)
+- `ImageController::hardReloadFromDisk` — Store purge + probe + LoadReplace (with or without live item)
+- `ImageView::reloadFromDisk` / `hardReloadFromDisk` thin-forward Image mode; Gallery/Workspace multi-item path unchanged
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1677-image-reload-controller.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Optional: Gallery/Workspace multi-item reload onto mode controllers
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1676-set-layout-mode-controllers.** setLayoutMode onto Gallery/Workspace controllers.
 Prior: **1675**. Base: **789df2d**.
 

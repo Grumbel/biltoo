@@ -3,6 +3,14 @@
 
 #include "imagecontroller.h"
 #include "imageview.h"
+#include "sessionbindbook.h"
+#include "imageview_types.h"
+#include <memory>
+#include <QSet>
+#include <QFileInfo>
+#include "thumtoocache.h"
+#include "imagecache.h"
+#include "imageitem.h"
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QApplication>
@@ -109,3 +117,111 @@ bool ImageController::tryMousePressEdges(QMouseEvent *event)
     return false;
 }
 
+
+void ImageController::reloadFromDisk()
+{
+    if (!hasClassicPath()) {
+        return;
+    }
+    const QString path = classicPath();
+    // Drop retained path tiles so Reload cannot paint pre-reload grid cells.
+    m_view->hostDisplayPipeline().purgeTilePathRam(path);
+    // Force a fresh decode of the focused session image only.
+    m_view->scheduleReplaceLoad(path);
+    m_view->flashHud(ImageView::tr("Reload"), QFileInfo(path).fileName());
+}
+
+void ImageController::hardReloadFromDisk()
+{
+    if (!hasClassicPath()) {
+        return;
+    }
+    QList<ImageItem *> targets;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (item && item->path() == classicPath()) {
+            targets.append(item);
+            break;
+        }
+    }
+    const QString path = classicPath();
+    if (targets.isEmpty()) {
+        // No item yet — still purge Store + process caches, then LoadReplace.
+        ImageCache::remove(path);
+        m_view->hostDisplayPipeline().purgeTilePathRam(path);
+        for (int edge : ThumtooCache::kLadderEdges) {
+            ThumtooCache::forgetPixelsSettled(path, edge);
+        }
+        m_view->flashHud(ImageView::tr("Hard reload"), QFileInfo(path).fileName());
+        ThumtooCache::purgePathDurable(path, [this, path](qint64 /*tiles*/) {
+            ThumtooCache::scheduleProbe(path);
+            m_view->scheduleReplaceLoad(path);
+            emit m_view->statusChanged();
+        });
+        return;
+    }
+
+    // Image mode with live item: same multi-item hard path restricted to targets.
+    struct ReloadBind {
+        QString path;
+        SessionImageId id = kInvalidSessionImageId;
+        int index = -1;
+    };
+    QList<ReloadBind> binds;
+    QSet<QString> paths;
+    for (ImageItem *item : targets) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        const QString p = item->path();
+        paths.insert(p);
+        ReloadBind b;
+        b.path = p;
+        b.id = item->sessionId();
+        b.index = item->sessionIndex();
+        binds.append(b);
+        m_view->gallerySoftResetPath(p);
+        item->dropTileLodSession();
+        m_view->takePendingWorkspacePath(p);
+        item->clearDecodedPixels();
+        ImageCache::remove(p);
+        for (int edge : ThumtooCache::kLadderEdges) {
+            ThumtooCache::forgetPixelsSettled(p, edge);
+        }
+    }
+    if (paths.isEmpty()) {
+        return;
+    }
+    m_view->flashHud(ImageView::tr("Hard reload"), QFileInfo(path).fileName());
+
+    auto remaining = std::make_shared<int>(paths.size());
+    auto tileTotal = std::make_shared<qint64>(0);
+    auto finish = [this, binds, tileTotal]() {
+        QSet<QString> probed;
+        for (const ReloadBind &b : binds) {
+            PendingSessionBind pending;
+            pending.path = b.path;
+            pending.id = b.id;
+            pending.index = b.index;
+            m_view->hostBindBook().append(pending);
+            if (!probed.contains(b.path)) {
+                ThumtooCache::scheduleProbe(b.path);
+                probed.insert(b.path);
+            }
+            m_view->scheduleReplaceLoad(b.path);
+        }
+        if (*tileTotal > 0) {
+            m_view->flashHud(ImageView::tr("Hard reload"),
+                             ImageView::tr("%1 Store tiles removed").arg(*tileTotal));
+        }
+        emit m_view->statusChanged();
+    };
+
+    for (const QString &p : paths) {
+        ThumtooCache::purgePathDurable(p, [remaining, tileTotal, finish](qint64 tiles) {
+            *tileTotal += tiles;
+            if (--(*remaining) == 0) {
+                finish();
+            }
+        });
+    }
+}

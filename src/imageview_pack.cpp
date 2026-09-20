@@ -120,15 +120,7 @@ void ImageView::setGalleryRelayoutSuppressed(bool on)
 void ImageView::reloadFromDisk(bool relayoutGallery)
 {
     if (isImageMode()) {
-        if (!hasClassicPath()) {
-            return;
-        }
-        const QString path = classicPath();
-        // Drop retained path tiles so Reload cannot paint pre-reload grid cells.
-        purgeTilePathRam(path);
-        // Force a fresh decode of the focused session image only.
-        scheduleImageLoad(path, LoadReplace);
-        flashHud(tr("Reload"), QFileInfo(path).fileName());
+        m_image.reloadFromDisk();
         return;
     }
 
@@ -172,39 +164,15 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
 
 void ImageView::hardReloadFromDisk(bool relayoutGallery)
 {
-    // Build the path set: Image = focused path; multi-mode = selection, else all.
-    QList<ImageItem *> targets;
     if (isImageMode()) {
-        if (!hasClassicPath()) {
-            return;
-        }
-        for (ImageItem *item : m_items) {
-            if (item && item->path() == classicPath()) {
-                targets.append(item);
-                break;
-            }
-        }
-        if (targets.isEmpty()) {
-            // No item yet — still purge Store + process caches, then LoadReplace.
-            const QString path = classicPath();
-            ImageCache::remove(path);
-            purgeTilePathRam(path);
-            for (int edge : ThumtooCache::kLadderEdges) {
-                ThumtooCache::forgetPixelsSettled(path, edge);
-            }
-            flashHud(tr("Hard reload"), QFileInfo(path).fileName());
-            ThumtooCache::purgePathDurable(path, [this, path](qint64 /*tiles*/) {
-                ThumtooCache::scheduleProbe(path);
-                scheduleImageLoad(path, LoadReplace);
-                emit statusChanged();
-            });
-            return;
-        }
-    } else {
-        targets = transformTargets();
-        if (targets.isEmpty()) {
-            targets = m_items;
-        }
+        m_image.hardReloadFromDisk();
+        return;
+    }
+
+    // Build the path set: multi-mode = selection, else all.
+    QList<ImageItem *> targets = transformTargets();
+    if (targets.isEmpty()) {
+        targets = m_items;
     }
     if (targets.isEmpty()) {
         return;
