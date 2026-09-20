@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1845-modes-size-bind-via-host.** Modes/size/bind pure hops via hosts.
+Prior: **1844**.
+
+### Change
+- Add `hostSizeBook()`, `hostFraming()`, `hostGallerySizeResolve()`
+- Route: provisional size, clearPendingLoads, fit/fill, gallery canvas/decodes,
+  size-resolve cancel, session-bind has/count/take
+- Keep `hasDefinitiveHostSize` (GallerySizeResolveHost interface)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1845-modes-size-bind-via-host.bundle HEAD
+```
+Requires tip **1844**.
+
+### Next
+- biltoo-build smoke (mode switch, size resolve, session bind)
+- Further pure-forward TUs (load/framing_image)
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1844-pack-via-host.** Gallery pack/layout pure hops via hostGallery.
 Prior: **1843**.
 
