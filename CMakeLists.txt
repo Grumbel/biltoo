@@ -229,7 +229,6 @@ set(BILTOO_LIB_SOURCES
   src/softdisplaypolicy.h
   src/softdisplaypolicy.cpp
   src/tile_load_coordinator.cpp
-  src/imageview_view.cpp
   src/imageview_framing_image.cpp
   src/imageview_status.cpp
   src/imageview_transform_actions.cpp

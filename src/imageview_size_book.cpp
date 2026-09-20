@@ -353,3 +353,34 @@ void ImageView::clearCentreProgress()
     }
 }
 
+// --- Logical size (was imageview_view.cpp) ---
+
+QSize ImageView::logicalSizeForPath(const QString &path) const
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    const QSize known = m_sizeBook.known(path);
+    if (!known.isEmpty()) {
+        return known;
+    }
+    const QSize cached = ThumtooCache::cachedSize(path);
+    if (isPositiveSize(cached)) {
+        return cached;
+    }
+    return {};
+}
+
+QSize ImageView::ensureLogicalSizeForPath(const QString &path)
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    const QSize known = logicalSizeForPath(path);
+    if (isPositiveSize(known) && !m_sizeBook.isProvisional(path)) {
+        return known;
+    }
+    // imageSizeForPath may schedule a probe and/or install thumtoo cache.
+    return imageSizeForPath(path);
+}
+

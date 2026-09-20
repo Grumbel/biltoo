@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1906-split-view-grab-bag.** Disperse imageview_view leftovers.
+Prior: **1905**.
+
+### Change
+- Tool / image-mode nav / gallery-return → `imageview_modes.cpp`
+- slideshowPadColor / content-edit marks / currentPath → `imageview_accessors.cpp`
+- logicalSizeForPath / ensureLogicalSizeForPath → `imageview_size_book.cpp`
+- Delete grab-bag `imageview_view.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1906-split-view-grab-bag-516d734.bundle HEAD
+```
+Requires tip **1905** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1905-merge-clipboard-selection.** Clipboard → selection TU.
 Prior: **1904**.
 

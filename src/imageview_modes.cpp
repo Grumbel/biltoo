@@ -352,3 +352,44 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     m_gallery.enter(static_cast<int>(packagedLayout));
 }
 
+// --- Tool / nav shell (was imageview_view.cpp) ---
+
+void ImageView::setTool(Tool tool)
+{
+    if (m_tool == tool) {
+        return;
+    }
+    m_tool = tool;
+    setCursor(ToolPolicy::cursorFor(m_tool));
+    // Workspace Select: rubber-band multi-select on empty drag (same as Gallery).
+    // Pan / Zoom keep NoDrag (view gestures are handled in mouse handlers).
+    if (isWorkspaceMode()) {
+        setDragMode(ToolPolicy::workspaceRubberBand(m_tool)
+                        ? QGraphicsView::RubberBandDrag
+                        : QGraphicsView::NoDrag);
+    }
+    emit toolChanged(m_tool);
+}
+
+void ImageView::setImageModeNavigationEnabled(bool on)
+{
+    if (!m_sessionNav.setImageModeNav(on)) {
+        return;
+    }
+    if (!on && m_hoverEdge != EdgeZone::GalleryReturn) {
+        clearHoverEdge();
+    }
+    viewport()->update();
+}
+
+void ImageView::setGalleryReturnAvailable(bool on)
+{
+    if (!m_sessionNav.setGalleryReturnAvailable(on)) {
+        return;
+    }
+    if (!on && m_hoverEdge == EdgeZone::GalleryReturn) {
+        clearHoverEdge();
+    }
+    viewport()->update();
+}
+

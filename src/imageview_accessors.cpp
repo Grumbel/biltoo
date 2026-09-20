@@ -174,3 +174,49 @@ QStringList ImageView::selectedPaths() const
     }
     return paths;
 }
+
+// --- View queries (was imageview_view.cpp) ---
+
+QColor ImageView::slideshowPadColor() const
+{
+    if (m_slideshow.settings().isSolidLetterbox()
+        && m_slideshow.settings().padColorRef().isValid()) {
+        return m_slideshow.settings().padColorRef();
+    }
+    if (m_canvasBg.primaryColor().isValid()) {
+        return m_canvasBg.primaryColor();
+    }
+    const QBrush b = backgroundBrush();
+    if (b.style() != Qt::NoBrush && b.color().isValid()) {
+        return b.color();
+    }
+    return m_slideshow.settings().padColorRef().isValid() ? m_slideshow.settings().padColorRef() : QColor(42, 42, 42);
+}
+
+void ImageView::setContentEditMarksVisible(bool on)
+{
+    ImageItem::setContentEditMarksVisible(on);
+    if (m_scene) {
+        for (ImageItem *it : m_items) {
+            if (it) {
+                it->update();
+            }
+        }
+        m_scene->update();
+    }
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+QString ImageView::currentPath() const
+{
+    if (ImageItem *item = targetItem()) {
+        return item->path();
+    }
+    if (ImageItem *item = primaryItem()) {
+        return item->path();
+    }
+    return {};
+}
+
