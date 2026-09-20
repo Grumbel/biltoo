@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1835-drop-dead-pipeline-forwards.** Stage 2: drop dead pipeline hops.
+Prior: **1834**.
+
+### Change
+- Remove dead ImageView→pipeline forwards (load-add phases, image-mode install,
+  display-surface apply, prefer-cache climb helpers, …)
+- Live routes: `imageModeOnScreenNeedEdge` → `m_displayPipeline`;
+  jobs `requestEscalateClimb` → `hostDisplayPipeline()`
+- Keep `loadImage` as sole MainWindow product forward
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1835-drop-dead-pipeline-forwards.bundle HEAD
+```
+Requires tip **1834**.
+
+### Next
+- biltoo-build smoke
+- Optional: MainWindow `loadImage` → `hostDisplayPipeline().loadImage`
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1834-query-sample-via-pipeline.** Stage 2: query/sample hops via pipeline.
 Prior: **1833**.
 
