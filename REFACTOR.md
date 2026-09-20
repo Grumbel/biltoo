@@ -1067,3 +1067,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1817: drop unused pathOrder/pathOrderPaths/pathOrderIds/sessionIdOrder; reads via currentPackOrder only.
 - biltoo-1818: drop unused pathOrderSize/pathOrderPathAt/pathOrderIdAt.
 - biltoo-1819: ImageItem handle classifiers → ItemHandlePolicy direct (drop thin wrappers).
+- biltoo-1820: drop ImageItem::handleToolTip + dead ImageView::seedEmptyWorkspaceFromReplace forward.

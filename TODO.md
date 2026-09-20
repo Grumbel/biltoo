@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1820-drop-handle-tip-and-seed-forward.** Stage 2 residual cleanup.
+Prior: **1819**.
+
+### Change
+- Removed `ImageItem::handleToolTip`; chrome uses `ItemHandlePolicy::toolTip`
+- Removed dead `ImageView::seedEmptyWorkspaceFromReplace` thin-forward
+  (pipeline owns the real method)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1820-drop-handle-tip-and-seed-forward.bundle HEAD
+```
+Includes **1806–1820** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Workspace tooltips / replace install)
+- Offscreen ImageView characterization (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1819-itemhandlepolicy-direct.** Stage 2: ImageItem uses ItemHandlePolicy directly.
 Prior: **1818**.
 
