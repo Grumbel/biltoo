@@ -1065,3 +1065,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1815: drop dead chrome helpers (deviceScaleMin, handleHitRadius, drawCornerBracket, chromeButtonSize, handleDistanceScreenPx).
 - biltoo-1816: drop dead handleDrawSize + activeHandles.
 - biltoo-1817: drop unused pathOrder/pathOrderPaths/pathOrderIds/sessionIdOrder; reads via currentPackOrder only.
+- biltoo-1818: drop unused pathOrderSize/pathOrderPathAt/pathOrderIdAt.

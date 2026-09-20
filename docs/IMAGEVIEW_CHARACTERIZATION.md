@@ -50,7 +50,7 @@ are on — full link is expensive (near-full app).
 ## Assertions (checklist)
 
 - [ ] After open: `doc.size() == 2`, unique ids
-- [ ] After Gallery enter: `pathOrderSize() == doc.size()` when no LoadAdd
+- [ ] After Gallery enter: `currentPackOrder().size() == doc.size()` when no LoadAdd
 - [ ] After crop commit: `appearance().get(sid)->hasCrop` and `itemWorld().hasCrop(sid)`
 - [ ] After return to Image: same crop; other id has no crop
 - [ ] After `pathOrderClear`: book empty, doc unchanged

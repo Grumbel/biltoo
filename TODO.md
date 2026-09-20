@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1818-drop-pathorder-index-helpers.** Tier 4 residual: drop unused pack index helpers.
+Prior: **1817**.
+
+### Change
+- Removed unused `pathOrderSize`, `pathOrderPathAt`, `pathOrderIdAt`
+- Kept `pathOrderIsEmpty`, `pathOrderOccurrences`, `currentPackOrder`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1818-drop-pathorder-index-helpers.bundle HEAD
+```
+Includes **1806–1818** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Gallery pack / LoadAdd)
+- Offscreen ImageView characterization (Tier 4 remaining blocker)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1817-drop-pathorder-ref-accessors.** Tier 4 residual: drop book-ref path order APIs.
 Prior: **1816**.
 
