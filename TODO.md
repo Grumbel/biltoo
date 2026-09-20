@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1907-merge-workspace-canvas.** Workspace scene/placement → canvas.
+Prior: **1906**.
+
+### Change
+- `hasWorkspaceContent` / `updateWorkspaceSceneRect` / `findEmptyPlacement` /
+  `defaultStateForPath` → `imageview_canvas.cpp`
+- Delete `imageview_workspace.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1907-merge-workspace-canvas-516d734.bundle HEAD
+```
+Requires tip **1906** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1906-split-view-grab-bag.** Disperse imageview_view leftovers.
 Prior: **1905**.
 
