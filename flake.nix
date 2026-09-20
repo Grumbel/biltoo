@@ -428,50 +428,64 @@
               echo "  version:  $(ccache --version 2>/dev/null | head -n1 || echo unknown)"
               echo "  CCACHE_DIR=$CCACHE_DIR"
               if [ -d "$CCACHE_DIR" ] && [ -w "$CCACHE_DIR" ]; then
-                echo "  dir:      writable OK"
+                echo "  dir:      writable OK (biltoo-build / local ninja)"
               else
                 echo "  dir:      NOT writable (or missing)"
                 echo "  fix:      mkdir -p \"$CCACHE_DIR\" && chmod u+rwx \"$CCACHE_DIR\""
               fi
               echo "  CMAKE_C_COMPILER_LAUNCHER=$CMAKE_C_COMPILER_LAUNCHER"
               echo "  CMAKE_CXX_COMPILER_LAUNCHER=$CMAKE_CXX_COMPILER_LAUNCHER"
-              # Show whether CC/CXX are ccache-wrapped (ccacheStdenv) or plain.
-              _cc="''${CC:-}"
-              _cxx="''${CXX:-}"
-              if [ -z "$_cc" ] && command -v cc >/dev/null 2>&1; then _cc=$(command -v cc); fi
-              if [ -z "$_cxx" ] && command -v c++ >/dev/null 2>&1; then _cxx=$(command -v c++); fi
-              echo "  CC=$_cc"
-              echo "  CXX=$_cxx"
-              case "$_cxx" in
-                *ccache*) echo "  compiler: ccache-wrapped (ccacheStdenv) OK" ;;
+              # Resolve real compiler path (CC/CXX may be bare names).
+              _cxx_path=""
+              if [ -n "''${CXX:-}" ]; then
+                _cxx_path=$(command -v "$CXX" 2>/dev/null || printf '%s' "$CXX")
+              elif command -v c++ >/dev/null 2>&1; then
+                _cxx_path=$(command -v c++)
+              elif command -v g++ >/dev/null 2>&1; then
+                _cxx_path=$(command -v g++)
+              fi
+              echo "  CXX path: ''${_cxx_path:-unknown}"
+              case "$_cxx_path" in
+                *ccache*) echo "  compiler: ccache-links wrapper (ccacheStdenv) OK" ;;
                 *)
-                  echo "  compiler: NOT ccache-wrapped"
-                  echo "  note:     CMAKE_*_COMPILER_LAUNCHER still routes ninja through ccache"
+                  if [ "''${CMAKE_CXX_COMPILER_LAUNCHER:-}" = ccache ]; then
+                    echo "  compiler: plain name + CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+                    echo "  path:     biltoo-build uses launcher (intended; not a failure)"
+                  else
+                    echo "  compiler: plain — set CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+                  fi
                   ;;
               esac
-              # Brief stats (non-fatal if empty cache).
               if ccache -s >/tmp/biltoo-ccache-s.$$ 2>/dev/null; then
-                echo "  stats:"
-                # Prefer modern "Hits" / "Misses" lines; fall back to first 8 lines.
-                if grep -E '^(Hits|Misses|Cache size|Files in cache|Primary)' /tmp/biltoo-ccache-s.$$ >/dev/null 2>&1; then
-                  grep -E '^(Hits|Misses|Cache size|Files in cache|Primary|Uncacheable)' /tmp/biltoo-ccache-s.$$ | sed 's/^/    /'
+                echo "  stats (local biltoo-build cache):"
+                if grep -E '^(Hits|Misses|Cache size|Files in cache|Primary|Uncacheable|Local storage)' /tmp/biltoo-ccache-s.$$ >/dev/null 2>&1; then
+                  grep -E '^(Hits|Misses|Cache size|Files in cache|Primary|Uncacheable|Local storage|  Cache size)' /tmp/biltoo-ccache-s.$$ | head -n 12 | sed 's/^/    /'
                 else
-                  head -n 8 /tmp/biltoo-ccache-s.$$ | sed 's/^/    /'
+                  head -n 10 /tmp/biltoo-ccache-s.$$ | sed 's/^/    /'
                 fi
                 rm -f /tmp/biltoo-ccache-s.$$
               else
                 echo "  stats:    (ccache -s failed — check CCACHE_DIR permissions)"
               fi
             fi
-            echo "  nix build cache:"
-            echo "    sandbox default: CCACHE_DIR=\$NIX_BUILD_TOP/.ccache (ephemeral, per-build)"
-            echo "    persistent host cache needs BOTH of:"
-            echo "      1) a writable host dir, e.g. /var/cache/ccache"
-            echo "         sudo mkdir -p /var/cache/ccache && sudo chown \"$USER\" /var/cache/ccache"
-            echo "      2) nix.conf extra-sandbox-paths (daemon restart after edit):"
-            echo "         extra-sandbox-paths = /var/cache/ccache"
-            echo "      then:  CCACHE_DIR=/var/cache/ccache nix build"
-            echo "  local biltoo-build: uses CCACHE_DIR above (no daemon change needed)"
+            echo "  nix build:"
+            _nb_mode=ephemeral
+            for _cand in /var/cache/ccache /nix/var/cache/ccache; do
+              if [ -d "$_cand" ] && [ -w "$_cand" ]; then
+                _nb_mode=shared-host
+                _nb_dir="$_cand"
+                break
+              fi
+            done
+            if [ "$_nb_mode" = shared-host ]; then
+              echo "    host dir: $_nb_dir (writable on this machine)"
+              echo "    expected log line: biltoo ccache: dir=$_nb_dir mode=shared-host"
+              echo "    (requires extra-sandbox-paths for that dir — already OK if you see shared-host)"
+            else
+              echo "    host dir: none writable under /var/cache/ccache or /nix/var/cache/ccache"
+              echo "    expected log line: biltoo ccache: dir=\$NIX_BUILD_TOP/.ccache mode=ephemeral"
+              echo "    setup: nix run .#ccache-check"
+            fi
             echo "────────────────────────────────────────────────────────"
           '';
         };
