@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1838-slideshow-via-host.** MainWindow slideshow API via hostSlideshow.
+Prior: **1837**.
+
+### Change
+- MainWindow / session / gallery → `hostSlideshow().set*` / preload / cancel
+- Drop `ImageView` slideshow setter decls + `imageview_slideshow_forwards.cpp`
+- Getters remain thin ImageView accessors over `m_slideshow.settings()` / hud
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1838-slideshow-via-host.bundle HEAD
+```
+Requires tip **1837**.
+
+### Next
+- biltoo-build smoke (slideshow start/pause/nav/seek)
+- Tier 4 characterization
+- Optional: remaining host surface narrowing
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1837-input-controller-direct.** Tier 6: input dispatch → controllers.
 Prior: **1836**.
 
