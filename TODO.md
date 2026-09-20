@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1808-pipeline-tick-self.** Stage 2: pipeline ticks itself, not via ImageView.
+Prior: **1807**.
+
+### Change
+- `DisplayPipelineController` / `_load` call `tickPrimaryTileLod` directly
+  instead of `m_view->tickPrimaryTileLod` (avoid controller → view → controller hop)
+- External hosts (Gallery/Slideshow/input) still use the ImageView thin forward
+- `tilelod::ItemBag` comment reflects pipeline ownership (no longer "later move")
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1808-pipeline-tick-self.bundle HEAD
+```
+Includes **1806–1808** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (tile ownership)
+- ImageView characterization / Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1807-drop-dead-tilelod-mutators.** Stage 2: remove unused ImageItem drop/invalidate.
 Prior: **1806**.
 
