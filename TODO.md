@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1851-fix-onImageLoaded-queue.** Fix Image mode blank after hop demotion.
+Prior: **1850**.
+
+### Change
+- `tryDeliverReplaceFromSlideshowRaster`: `queueImageLoaded` →
+  `hostDisplayPipeline().onImageLoaded` (was string invoke on removed
+  `ImageView::onImageLoaded`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1851-fix-onImageLoaded-queue.bundle HEAD
+```
+Requires tip **1850**.
+
+### Next
+- biltoo-build smoke (Image open / slideshow replace)
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1850-fix-crop-fitImage.** fitImageOrUpdateWorkspace via m_cropCtrl.
 Prior: **1849**.
 
