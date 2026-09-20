@@ -434,8 +434,8 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             const qreal d1 = QLineF(itemCentre, scenePos).length();
             if (d0 > kMinDist) {
                 const qreal f = PlacementLinear::uniformScaleFactor(d0, d1, kMinDist);
-                setItemScale(press.scaleX * f, press.scaleY * f);
-                setItemShear(press.shear);
+                setItemScale(press.placement.scale * f, press.placement.scaleY * f);
+                setItemShear(press.placement.shear);
             }
         } else {
             const QPointF anchor = press.anchorScene;
@@ -443,8 +443,8 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             const qreal d1 = QLineF(anchor, scenePos).length();
             if (d0 > kMinDist) {
                 const qreal f = PlacementLinear::uniformScaleFactor(d0, d1, kMinDist);
-                setItemScale(press.scaleX * f, press.scaleY * f);
-                setItemShear(press.shear);
+                setItemScale(press.placement.scale * f, press.placement.scaleY * f);
+                setItemShear(press.placement.shear);
                 const QPointF now = mapToScene(press.anchorLocal);
                 setPos(pos() + (anchor - now));
             }
@@ -456,12 +456,12 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
         // Image axes in *scene* at press — must match PlacementLinear/Qt (not a
         // textbook CCW formula; Qt rotate is clockwise with Y-down).
         const QTransform Lpress = PlacementLinear::make(
-            press.scaleX, press.scaleY, press.shear, press.rotation);
+            press.placement.scale, press.placement.scaleY, press.placement.shear, press.placement.rotation);
         const QPointF axisX = Lpress.map(QPointF(1.0, 0.0));
         const QPointF axisY = Lpress.map(QPointF(0.0, 1.0));
 
-        qreal sx = press.scaleX;
-        qreal sy = press.scaleY;
+        qreal sx = press.placement.scale;
+        qreal sy = press.placement.scaleY;
         const bool stretchX = (h == Handle::ScaleLeft
                                || h == Handle::ScaleRight);
 
@@ -469,9 +469,9 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             const QPointF v0 = press.scenePos - itemCentre;
             const QPointF v1 = scenePos - itemCentre;
             if (stretchX) {
-                sx = PlacementLinear::axisScaleFromProjection(press.scaleX, v0, v1, axisX);
+                sx = PlacementLinear::axisScaleFromProjection(press.placement.scale, v0, v1, axisX);
             } else {
-                sy = PlacementLinear::axisScaleFromProjection(press.scaleY, v0, v1, axisY);
+                sy = PlacementLinear::axisScaleFromProjection(press.placement.scaleY, v0, v1, axisY);
             }
         } else {
             // Anchor fixed: project (pointer - anchor) onto the stretch axis.
@@ -479,14 +479,14 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
             const QPointF v0 = press.scenePos - anchor;
             const QPointF v1 = scenePos - anchor;
             if (stretchX) {
-                sx = PlacementLinear::axisScaleFromProjection(press.scaleX, v0, v1, axisX);
+                sx = PlacementLinear::axisScaleFromProjection(press.placement.scale, v0, v1, axisX);
             } else {
-                sy = PlacementLinear::axisScaleFromProjection(press.scaleY, v0, v1, axisY);
+                sy = PlacementLinear::axisScaleFromProjection(press.placement.scaleY, v0, v1, axisY);
             }
         }
         setItemScale(sx, sy);
         // Scale-only drag must not disturb shear.
-        setItemShear(press.shear);
+        setItemShear(press.placement.shear);
         if (!fromCenter) {
             const QPointF now = mapToScene(press.anchorLocal);
             setPos(pos() + (press.anchorScene - now));
@@ -508,8 +508,8 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos, HandlePressScratch
     const QPointF anchor = press.anchorScene;
 
     QPointF e1, e2;
-    PlacementLinear::unitAxes(press.scaleX, press.scaleY, press.shear,
-                              press.rotation, &e1, &e2);
+    PlacementLinear::unitAxes(press.placement.scale, press.placement.scaleY, press.placement.shear,
+                              press.placement.rotation, &e1, &e2);
 
     const bool verticalEdge = (h == Handle::ShearLeft
                                || h == Handle::ShearRight);
@@ -527,7 +527,7 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos, HandlePressScratch
         // L·H(kx): e2_new = e2 + kx·e1 ⇒ scene move of a point with local y
         // along e1 is proportional to kx · |e1| · y (≈ sx·kx·y).
         const qreal kx = PlacementLinear::horizontalShearFromDrag(
-            press.shear, press.scaleX, yLever, len0, len1);
+            press.placement.shear, press.placement.scale, yLever, len0, len1);
         setItemShear(kx);
     } else {
         // Left / Right: vertical local shear m via L·V(m), then decompose.
@@ -541,14 +541,14 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos, HandlePressScratch
         const qreal len1 = QPointF::dotProduct(scenePos - anchor, dirY);
         // L·V(m): e1_new = e1 + m·e2 ⇒ move along e2 ∝ m · |e2| · x (≈ sy·m·x).
         const qreal m = PlacementLinear::verticalShearParamFromDrag(
-            press.scaleY, xLever, len0, len1);
+            press.placement.scaleY, xLever, len0, len1);
         // Compose vertical shear onto press axes: e1' = e1 + m·e2, e2' = e2.
         const QPointF e1n = e1 + m * e2;
         const QPointF e2n = e2;
-        qreal sx = press.scaleX;
-        qreal sy = press.scaleY;
-        qreal kx = press.shear;
-        qreal rot = press.rotation;
+        qreal sx = press.placement.scale;
+        qreal sy = press.placement.scaleY;
+        qreal kx = press.placement.shear;
+        qreal rot = press.placement.rotation;
         if (PlacementLinear::decomposeAxes(e1n, e2n, &sx, &sy, &kx, &rot)) {
             setItemScale(sx, sy); // clampScaleXY inside setItemScale
             setItemShear(kx);
@@ -2253,10 +2253,7 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
     m_activeHandle = h; // paint hot residual (interaction authority is press.handle)
     HandlePressScratch press;
     press.scenePos = scenePos;
-    press.scaleX = m_scaleX;
-    press.scaleY = m_scaleY;
-    press.shear = m_shear;
-    press.rotation = m_rotation;
+    press.placement = placement();
     press.itemPos = mapFromScene(scenePos);
     press.anchorLocal = scaleAnchorLocal(h);
     press.anchorScene = mapToScene(press.anchorLocal);
@@ -2286,7 +2283,7 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
         const qreal a0 = PlacementLinear::angleAbout(itemCentre, press.scenePos);
         const qreal a1 = PlacementLinear::angleAbout(itemCentre, scenePos);
         const qreal angle = PlacementLinear::freeRotationFromDrag(
-            press.rotation, a0, a1, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
+            press.placement.rotation, a0, a1, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
         setItemRotation(angle);
     } else if (isScaleHandle(h)) {
         applyScaleHandleDrag(scenePos, mods, press);

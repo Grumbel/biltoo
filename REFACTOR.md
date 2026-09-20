@@ -988,3 +988,5 @@ Phase 1–6 rules still apply. Additions:
   update/applyScale/applyShear read press.handle; m_activeHandle paint residual.
 - biltoo-1751: continuous-drag authority on HandlePressScratch (hasContinuousHandle);
   endHandleInteraction(Handle) from press; hasActiveHandle paint residual only.
+- biltoo-1752: HandlePressScratch pose is Placement; ImageItem::placement() single
+  live reader; placementFromItem delegates; mid-drag uses press.placement.

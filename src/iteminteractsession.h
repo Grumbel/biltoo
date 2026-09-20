@@ -12,10 +12,8 @@ class ImageItem;
 /** Handle-drag press anchors (Stage 2 interact scratch; not durable). */
 struct HandlePressScratch {
     QPointF scenePos;
-    qreal scaleX = 1.0;
-    qreal scaleY = 1.0;
-    qreal shear = 0.0;
-    qreal rotation = 0.0;
+    /** Press-time Workspace pose (scale/shear/rotation); same shape as dragStartPlacement. */
+    ItemComponents::Placement placement;
     QPointF itemPos;
     QPointF anchorScene;
     QPointF anchorLocal;

@@ -18,20 +18,10 @@
 
 ItemComponents::Placement ImageView::placementFromItem(const ImageItem *item)
 {
-    ItemComponents::Placement pl;
     if (!item) {
-        return pl;
+        return {};
     }
-    pl.pos = item->pos();
-    pl.scale = item->itemScaleX();
-    pl.scaleY = item->itemScaleY();
-    pl.shear = item->itemShear();
-    pl.rotation = item->itemRotation();
-    pl.opacity = item->itemOpacity();
-    pl.z = item->stackZ();
-    pl.hFlip = item->itemHFlip();
-    pl.vFlip = item->itemVFlip();
-    return pl;
+    return item->placement();
 }
 
 WorkspaceItemState ImageView::captureState(const ImageItem *item) const

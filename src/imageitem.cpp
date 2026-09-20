@@ -269,6 +269,21 @@ qreal ImageItem::itemScale() const
     return PlacementLinear::geometricMeanScale(m_scaleX, m_scaleY);
 }
 
+ItemComponents::Placement ImageItem::placement() const
+{
+    ItemComponents::Placement pl;
+    pl.pos = pos();
+    pl.scale = m_scaleX;
+    pl.scaleY = m_scaleY;
+    pl.shear = m_shear;
+    pl.rotation = m_rotation;
+    pl.opacity = m_opacity;
+    pl.z = m_stackZ;
+    pl.hFlip = m_hFlip;
+    pl.vFlip = m_vFlip;
+    return pl;
+}
+
 void ImageItem::setItemScale(qreal scale)
 {
     setItemScale(scale, scale);

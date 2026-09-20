@@ -156,6 +156,9 @@ public:
      * Content 90° turns are baked into pixels — not stored here.
      */
     qreal itemRotation() const { return m_rotation; }
+
+    /** Live Workspace pose as Placement (Stage 2 single reader for item pose). */
+    ItemComponents::Placement placement() const;
     /** @deprecated content is baked; always 0 after bake pipeline. */
     qreal itemOrientation() const { return m_orientation; }
     qreal itemFineRotation() const { return m_fineRotation; }

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1752-press-placement.** HandlePressScratch pose is Placement.
+Prior: **1751**.
+
+### Change
+- `HandlePressScratch` stores `ItemComponents::Placement placement` (not scaleX/Y/shear/rotation floats)
+- `ImageItem::placement()` — single live pose reader
+- `beginHandleInteraction` fills press via `placement()`
+- mid-drag scale/shear/rotate use `press.placement.*`
+- `ImageView::placementFromItem` delegates to `item->placement()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1752-press-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear/rotate smoke
+- Paint residual (m_activeHandle) or characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1751-continuous-handle-authority.** Continuous drag via HandlePressScratch.
 Prior: **1750**.
 
