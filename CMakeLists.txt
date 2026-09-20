@@ -142,6 +142,7 @@ add_executable(biltoo
   src/imageview_canvas_focus.cpp
   src/imageview_selection.cpp
   src/imageview_session_bind.cpp
+  src/imageview_session_remove.cpp
   src/imageview_crop.cpp
   src/imageview_appearance.cpp
   src/imageview_appearance_commit.cpp
@@ -234,6 +235,7 @@ add_executable(biltoo
   src/tile_load_coordinator.cpp
   src/imageview_view.cpp
   src/imageview_framing.cpp
+  src/imageview_framing_image.cpp
   src/imageview_background.cpp
   src/imageview_status.cpp
   src/imageview_transform.cpp

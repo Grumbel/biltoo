@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1705-session-remove-framing-image.** Session remove + image-mode framing TUs.
+Prior: **1704**.
+
+### Change
+- New `imageview_session_remove.cpp` — prune/remove/bind/place session ids on canvas
+- `imageview_session_bind.cpp` ~599 → ~242 (pending binds + LoadAdd place)
+- New `imageview_framing_image.cpp` — sticky zoom/pan, applyImageModeFraming, fit/ensureVisible
+- `imageview_framing.cpp` ~526 → ~208 (view zoom + scroll bars)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1705-session-remove-framing-image.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- ImageView characterization → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1704-size-book-transform-actions.** Size book + transform actions TUs.
 Prior: **1703**.
 
