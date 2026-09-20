@@ -312,7 +312,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 }
                 ph->setSessionIndex(i);
                 if (!hint.isNull()) {
-                    installDisplayPixels(ph, hint,
+                    m_displayPipeline.installDisplayPixels(ph, hint,
                                          SessionAppearance::PixelKind::SoftPreview,
                                          sid);
                 }

@@ -64,7 +64,7 @@ void ImageView::applyStoredAppearance(ImageItem *item)
     if (needsFullSource) {
         const QImage full = fullRasterForEdit(item->path());
         if (!full.isNull()) {
-            installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
+            m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
                                  sid);
             return;
         }

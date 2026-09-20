@@ -893,7 +893,7 @@ int GalleryController::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *m
             SessionAppearance::PixelKind::SoftPreview;
         const int before = shown;
         const bool hadDisplay = item->hasDisplayPixels();
-        m_view->installDisplayPixels(item, sample, kind, item->sessionId());
+        m_view->hostDisplayPipeline().installDisplayPixels(item, sample, kind, item->sessionId());
         int after = item->displayPixelLongEdge();
         if (after <= before && !hadDisplay && !sample.isNull()) {
             item->setPreviewImage(sample);
@@ -1287,7 +1287,7 @@ void GalleryController::ensurePlaceholders()
             ph->setSessionIndex(i);
             ph->setVisible(true);
             if (!hint.isNull()) {
-                m_view->installDisplayPixels(ph, hint,
+                m_view->hostDisplayPipeline().installDisplayPixels(ph, hint,
                                      SessionAppearance::PixelKind::SoftPreview,
                                      sid);
             }

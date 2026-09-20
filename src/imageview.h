@@ -785,20 +785,6 @@ public:
     void bakeItemFlip(ImageItem *item, bool horizontal, bool vertical);
 
     /**
-     * Single gate for attaching *raw* decode pixels to a session image.
-     *
-     * Sole host→display install gate (CONTENT_PIPELINE install invariant).
-     * @p pixels are unoriented host. MaterializeDisplay(host, store want) then
-     * attachDisplaySample. Multi-MP want → SoftPreview stand-in + async full.
-     * SoftPreview includes scaled crop. Layout via layoutSize(native, want).
-     * Already-baked pixels (peer copy, undo after-image, duplicate) must use
-     * attachDisplaySample only — never this function.
-     */
-    void installDisplayPixels(ImageItem *item, const QImage &pixels,
-                              SessionAppearance::PixelKind kind,
-                              SessionImageId sid);
-
-    /**
      * Rematerialize display from ImageCache / item host for @p want.
      * Soft stand-in + async full when multi-MP. Public for WorkspaceController
      * leave→enter restore when fullRasterForEdit misses.

@@ -92,7 +92,7 @@ bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const Q
     const qreal footH = before.height() * sy0;
     // Leave Gallery pack geometry on Workspace tiles.
     item->setGalleryCellSize({});
-    installDisplayPixels(item, image, SessionAppearance::PixelKind::FullSource,
+    m_displayPipeline.installDisplayPixels(item, image, SessionAppearance::PixelKind::FullSource,
                          item->sessionId());
     const QSize after = item->imageSize();
     const bool grew = before.isValid() && after.isValid()

@@ -267,7 +267,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     if (full.isNull()) {
         rematerializeItemContent(item, app);
     } else if (!tryRematerializeFromHost(item, app)) {
-        installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
+        m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
         if (!ContentXform::equal(
                 item->hasAppliedContentXform() ? item->appliedContentXform()
                                                : ContentXform::Value{},

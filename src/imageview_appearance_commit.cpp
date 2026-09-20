@@ -361,14 +361,14 @@ int ImageView::resetContentAppearanceForTargets()
             QImage soft = ImageLoader::loadThumbnail(path, softEdge);
             if (!soft.isNull()) {
                 // Identity appearance: SoftPreview install without content bake.
-                installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview,
+                m_displayPipeline.installDisplayPixels(item, soft, SessionAppearance::PixelKind::SoftPreview,
                                      sid);
             }
             // else: decode window will refill after soft state reset
         } else {
             const QImage full = fullRasterForEdit(path);
             if (!full.isNull()) {
-                installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
+                m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
                                      sid);
             } else {
                 item->clearDecodedPixels();

@@ -178,7 +178,7 @@ ImageView::ImageView(QWidget *parent)
                                 if (isPositiveSize(lay) && lay.width() > 1) {
                                     item->setIntrinsicSize(lay);
                                 }
-                                installDisplayPixels(item, lqip,
+                                m_displayPipeline.installDisplayPixels(item, lqip,
                                                      SessionAppearance::PixelKind::SoftPreview,
                                                      sid);
                             }

@@ -231,7 +231,7 @@ void WorkspaceController::restoreStashedItems()
             const QImage full = m_view->fullRasterForEdit(item->path());
             if (!full.isNull()) {
                 // Raw on-disk reload → single gate (avoids double-bake on cycle).
-                m_view->installDisplayPixels(
+                m_view->hostDisplayPipeline().installDisplayPixels(
                     item, full, SessionAppearance::PixelKind::FullSource,
                     item->sessionId());
             } else {

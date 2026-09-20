@@ -321,14 +321,6 @@
                                 const WorkspaceItemState &before,
                                 const WorkspaceItemState &after);
 
-    /**
-     * installDisplayPixels + preserveImageViewOnLogicalSizeChange.
-     * Image-mode soft→full / soft→soft in-place upgrades (no zoom jump).
-     */
-    void installDisplayPreservingView(ImageItem *item, const QImage &pixels,
-                                      SessionAppearance::PixelKind kind,
-                                      SessionImageId sid);
-
     void appendThumtooDebugStatus(QString *text, ImageItem *item) const;
 
     QString statusTextEmpty() const;

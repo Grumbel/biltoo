@@ -41,13 +41,6 @@ void ImageView::applyStoredContentAppearanceSeed(SessionImageId sid, const QStri
     m_displayPipeline.applyStoredContentAppearanceSeed(sid, path, stored);
 }
 
-void ImageView::installDisplayPreservingView(ImageItem *item, const QImage &pixels,
-                                             SessionAppearance::PixelKind kind,
-                                             SessionImageId sid)
-{
-    m_displayPipeline.installDisplayPreservingView(item, pixels, kind, sid);
-}
-
 WorkspaceItemState ImageView::wantAppearanceForItem(const ImageItem *item,
                                                       SessionImageId sid) const
 {
@@ -67,13 +60,6 @@ bool ImageView::canAcceptDisplaySample(const ImageItem *item, const QImage &pixe
                                        SessionAppearance::PixelKind kind) const
 {
     return m_displayPipeline.canAcceptDisplaySample(item, pixels, kind);
-}
-
-void ImageView::installDisplayPixels(ImageItem *item, const QImage &pixels,
-                                     SessionAppearance::PixelKind kind,
-                                     SessionImageId sid)
-{
-    m_displayPipeline.installDisplayPixels(item, pixels, kind, sid);
 }
 
 ImageItem *ImageView::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
