@@ -19,6 +19,7 @@ private slots:
     void alignsWithDocument_falseWhenLoadAdd();
     void fromBook_equals_fromDocument_whenAligned();
     void firstIdForPath_skipsInvalid();
+    void stashRestore_preservesIds();
 };
 
 void PackOrderViewTest::empty_initial()
@@ -87,6 +88,23 @@ void PackOrderViewTest::firstIdForPath_skipsInvalid()
     const PackOrderView v = PackOrderView::fromBook(book);
     QCOMPARE(v.firstIdForPath(QStringLiteral("/a.jpg")), SessionImageId(42));
     QCOMPARE(v.firstIdForPath(QStringLiteral("/missing.jpg")), kInvalidSessionImageId);
+}
+
+void PackOrderViewTest::stashRestore_preservesIds()
+{
+    // Gallery stash must round-trip paths∥ids (not paths alone).
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+    SessionPathOrder book;
+    book.setOrder(doc.paths(), doc.ids());
+    const PackOrderView stashed = PackOrderView::fromBook(book);
+
+    SessionPathOrder restored;
+    restored.setOrder(stashed.paths(), stashed.ids());
+    QCOMPARE(restored.pathList(), book.pathList());
+    QCOMPARE(restored.idList(), book.idList());
+    QCOMPARE(restored.idAt(0), doc.idAt(0));
+    QCOMPARE(restored.idAt(1), doc.idAt(1));
 }
 
 QTEST_MAIN(PackOrderViewTest)

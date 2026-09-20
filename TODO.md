@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1717-gallery-stash-packorder.** Gallery stash preserves pack paths∥ids.
+Prior: **1716**.
+
+### Change
+- GalleryController stash stores PackOrderView (not QStringList paths alone)
+- restore uses setPathOrder(paths, ids) — session ids no longer dropped
+- ImageView::pathOrder() returns by value via currentPackOrder()
+- packorderview_test: stashRestore_preservesIds
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1717-gallery-stash-packorder.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest packorderview
+- ImageView harness → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1716-session-gallery-crop-scenario.** Pure narrative scenario + REFACTOR Tier 4 status.
 Prior: **1715**.
 

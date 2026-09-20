@@ -9,6 +9,7 @@
 #include <QString>
 #include <QStringList>
 #include "imageview_types.h"
+#include "packorderview.h"
 
 class ImageView;
 class ImageItem;
@@ -149,7 +150,7 @@ private:
     ImageView *m_view = nullptr;
 
     QList<ImageItem *> m_stashedItems;
-    QStringList m_stashedPathOrder;
+    PackOrderView m_stashedPackOrder;
 
     int m_scrollH = 0;
     int m_scrollV = 0;

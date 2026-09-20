@@ -46,7 +46,7 @@ void GalleryController::discardStash()
     // empty list. Duplicates in the list would otherwise double-free.
     QList<ImageItem *> doomed = m_stashedItems;
     m_stashedItems.clear();
-    m_stashedPathOrder.clear();
+    m_stashedPackOrder = PackOrderView();
     QSet<ImageItem *> seen;
     for (ImageItem *item : doomed) {
         if (!item || seen.contains(item)) {
@@ -67,7 +67,7 @@ void GalleryController::stashItems()
     if (m_view->liveItems().isEmpty()) {
         return;
     }
-    m_stashedPathOrder = m_view->currentPackOrder().paths();
+    m_stashedPackOrder = m_view->currentPackOrder();
     m_stashedItems = m_view->liveItems();
     m_selectionAnchor = nullptr;
     m_hoverPath.clear();
@@ -100,10 +100,10 @@ void GalleryController::restoreStashedItems()
     }
     m_view->liveItems() = m_stashedItems;
     m_stashedItems.clear();
-    if (!m_stashedPathOrder.isEmpty()) {
-        m_view->setPathOrder(m_stashedPathOrder);
+    if (!m_stashedPackOrder.isEmpty()) {
+        m_view->setPathOrder(m_stashedPackOrder.paths(), m_stashedPackOrder.ids());
     }
-    m_stashedPathOrder.clear();
+    m_stashedPackOrder = PackOrderView();
     for (ImageItem *item : m_view->liveItems()) {
         if (!item) {
             continue;
