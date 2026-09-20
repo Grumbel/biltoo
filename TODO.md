@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1870-hostPageGuide.** hostPageGuide + demote pageGuideVisible; drop mouseInfo.
+Prior: **1869**.
+
+### Change
+- Add `hostPageGuide()` → `PageGuideSession`
+- External / internal visibility reads → `hostPageGuide().isVisible()` / `m_pageGuide.isVisible()`
+- Drop `pageGuideVisible()` pure-hop getter
+- Drop dead private `mouseInfo()` pure hop
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1870-hostPageGuide.bundle HEAD
+```
+Requires tip **1869** (base **1858** / `1e112d94`).
+
+### Next
+- Residual pure-hop scan
+- Tier 4 pack-order design
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1869-path-state-itemWorld.** Path-state pure hops → itemWorld.
 Prior: **1868**.
 
