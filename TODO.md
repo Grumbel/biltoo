@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1904-merge-crop-appearance.** Crop appearance helpers → appearance TU.
+Prior: **1903**.
+
+### Change
+- `storeCropAppearance` / restore / apply / emit → `imageview_appearance.cpp`
+- Delete `imageview_crop.cpp` (file even noted origin from appearance)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1904-merge-crop-appearance-516d734.bundle HEAD
+```
+Requires tip **1903** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1903-merge-color-grade.** Colour grade → appearance TU.
 Prior: **1902**.
 
