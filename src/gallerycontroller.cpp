@@ -1412,7 +1412,7 @@ void GalleryController::invalidateDecodes()
     // Drop scheduled markers and pending path counts so late LoadAdd results
     // cannot create tiles after leaving Gallery. Bump generation so in-flight
     // pool jobs are rejected in onImageLoaded.
-    m_view->gallerySoftResetAll();
+    m_view->hostDisplayPipeline().gallerySoftResetAll();
     m_view->hostDisplayPipeline().loadGate().clearPendingWorkspacePaths();
     m_view->hostDisplayPipeline().loadGate().bumpGeneration();
 }
@@ -1453,7 +1453,7 @@ void GalleryController::reloadFromDisk(bool relayout)
         if (path.isEmpty()) {
             continue;
         }
-        m_view->gallerySoftResetPath(path);
+        m_view->hostDisplayPipeline().gallerySoftResetPath(path);
         if (!purgedPaths.contains(path)) {
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
             purgedPaths.insert(path);
@@ -1503,7 +1503,7 @@ void GalleryController::hardReloadFromDisk(bool relayout)
             continue;
         }
         ++itemCount;
-        m_view->gallerySoftResetPath(path);
+        m_view->hostDisplayPipeline().gallerySoftResetPath(path);
         m_view->takePendingWorkspacePath(path);
         item->clearDecodedPixels();
         if (!pathSet.contains(path)) {

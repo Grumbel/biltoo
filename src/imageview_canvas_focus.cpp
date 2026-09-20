@@ -89,7 +89,7 @@ void ImageView::removeWorkspacePathOccurrence(const QString &path, int occurrenc
             takePendingWorkspacePath(path);
             m_displayPipeline.loadGate().removePendingScenePos(path);
             m_bindBook.removeIndexForPath(path);
-        gallerySoftResetPath(path);
+        m_displayPipeline.gallerySoftResetPath(path);
 destroyCanvasItem(item);
             emit statusChanged();
             emit workspacePathsChanged();

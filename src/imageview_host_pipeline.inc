@@ -31,7 +31,6 @@
     void resetImageModeItemPlacement(ImageItem *item);
     void driveImageFocusSurface();
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
-    void gallerySoftResetPath(const QString &path);
     bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
     void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
                              bool haveBound, const PendingSessionBind &bound);

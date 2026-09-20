@@ -635,7 +635,7 @@ void WorkspaceController::reloadFromDisk()
         if (path.isEmpty()) {
             continue;
         }
-        m_view->gallerySoftResetPath(path);
+        m_view->hostDisplayPipeline().gallerySoftResetPath(path);
         if (!purgedPaths.contains(path)) {
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
             purgedPaths.insert(path);
@@ -682,7 +682,7 @@ void WorkspaceController::hardReloadFromDisk()
             continue;
         }
         ++itemCount;
-        m_view->gallerySoftResetPath(path);
+        m_view->hostDisplayPipeline().gallerySoftResetPath(path);
         m_view->takePendingWorkspacePath(path);
         item->clearDecodedPixels();
         if (!pathSet.contains(path)) {

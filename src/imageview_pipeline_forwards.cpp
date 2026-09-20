@@ -141,16 +141,6 @@ int ImageView::galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRe
     return m_displayPipeline.galleryDisplayEdgeForItem(item, allowHighRes);
 }
 
-void ImageView::gallerySoftResetPath(const QString &path)
-{
-    m_displayPipeline.gallerySoftResetPath(path);
-}
-
-void ImageView::gallerySoftResetAll()
-{
-    m_displayPipeline.gallerySoftResetAll();
-}
-
 int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const
 {
     return m_displayPipeline.galleryHaveEdgeFromItems(path, anyFullOut);

@@ -408,7 +408,7 @@ ImageView::~ImageView()
         m_scene->clear();
         m_items.clear();
         m_displayPipeline.loadGate().clearPendingWorkspacePaths();
-        gallerySoftResetAll();
+        m_displayPipeline.gallerySoftResetAll();
         setScene(nullptr);
         delete m_scene;
         m_scene = nullptr;

@@ -104,7 +104,7 @@ QList<ImageItem *> ImageView::collectDoomedWorkspaceItems(const QStringList &pat
 void ImageView::destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed)
 {
     for (ImageItem *item : doomed) {
-        gallerySoftResetPath(item->path());
+        m_displayPipeline.gallerySoftResetPath(item->path());
         m_displayPipeline.loadGate().removePendingWorkspacePath(item->path());
         destroyCanvasItem(item);
     }
@@ -271,7 +271,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip
                     || app.contentQuarterTurns != 0) {
                     existing->clearDecodedPixels();
-                    gallerySoftResetPath(path);
+                    m_displayPipeline.gallerySoftResetPath(path);
                     takePendingWorkspacePath(path);
 
                     PendingSessionBind b;
@@ -376,7 +376,7 @@ void ImageView::removeWorkspacePath(const QString &path)
     }
     takePendingWorkspacePath(path);
     m_displayPipeline.loadGate().removePendingScenePos(path);
-        gallerySoftResetPath(path);
+        m_displayPipeline.gallerySoftResetPath(path);
     destroyCanvasItem(item);
     emit statusChanged();
     emit workspacePathsChanged();

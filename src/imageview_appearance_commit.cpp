@@ -355,7 +355,7 @@ int ImageView::resetContentAppearanceForTargets()
         // oriented pixels — Gallery + filmstrip stayed flipped while Image mode
         // (FullSource install) looked correct. Always drop pixels first.
         if (isGalleryMode()) {
-            gallerySoftResetPath(path);
+            m_displayPipeline.gallerySoftResetPath(path);
             item->clearDecodedPixels();
             const int softEdge = ThumtooCache::kGalleryLadderEdge;
             QImage soft = ImageLoader::loadThumbnail(path, softEdge);

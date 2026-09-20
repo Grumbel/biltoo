@@ -184,7 +184,7 @@ void ImageView::removeWorkspaceSessionIndex(int sessionIndex)
         m_displayPipeline.loadGate().removePendingWorkspacePath(path);
         m_displayPipeline.loadGate().removePendingScenePos(path);
         m_bindBook.removeIndexForPath(path);
-        gallerySoftResetPath(path);
+        m_displayPipeline.gallerySoftResetPath(path);
 }
     destroyCanvasItem(item);
     emit statusChanged();
@@ -217,7 +217,7 @@ void ImageView::detachCanvasSessionId(SessionImageId sessionId)
             takePendingWorkspacePath(path);
             m_displayPipeline.loadGate().removePendingScenePos(path);
             m_bindBook.removeIndexForPath(path);
-        gallerySoftResetPath(path);
+        m_displayPipeline.gallerySoftResetPath(path);
 }
         // Drop pending binds for this id only (not every same-path bind).
         m_bindBook.removeBindsForSessionId(sessionId);
