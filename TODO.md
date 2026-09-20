@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1891-biltoo-lib.** Static biltoo_lib + optional characterization link.
+Prior: **1890**.
+
+### Change
+- `add_library(biltoo_lib STATIC ${BILTOO_LIB_SOURCES})` — app core + PUBLIC deps
+- `biltoo` executable is `main.cpp` + `target_link_libraries(... biltoo_lib)`
+- `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` links characterization test to
+  `biltoo_lib` and defines `BILTOO_HAVE_IMAGEVIEW_HARNESS`
+- Default still pure scaffold (session/overlay only)
+- ImageView open→Gallery→crop body still QSKIP (next tip after green build)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1891-biltoo-lib-516d734.bundle HEAD
+```
+Requires tip **1890** (base **516d734**).
+
+### Next
+- `nix develop` / biltoo-build to verify biltoo_lib links
+- Implement ImageView characterization body under `BILTOO_HAVE_IMAGEVIEW_HARNESS`
+- Keep Explicit suppress until harness green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1890-header-cleanup.** Orphan comments, kMarker, CMake option note.
 Prior: **1889**.
 

@@ -49,10 +49,12 @@ tests/imageview_characterization.cpp
   - fixtures: temp dir with 2× solid-colour PNGs
 ```
 
-CMake pure target is always built with `Qt6Test`. Full offscreen ImageView
-link is **not wired yet**: `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` only
-warns; pure scaffold still builds. Next step is a shared target for biltoo
-link deps, then `${BILTOO_LIB_SOURCES}` + that target on the test.
+CMake pure target is always built with `Qt6Test` (default).
+
+Full harness: `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` links **`biltoo_lib`**
+(static library of `${BILTOO_LIB_SOURCES}` + the same PUBLIC deps as the app)
+and defines `BILTOO_HAVE_IMAGEVIEW_HARNESS`. The open→Gallery→crop→return
+**body** still needs to be written against that define.
 
 ## Assertions (checklist)
 

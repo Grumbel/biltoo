@@ -262,9 +262,13 @@ void ImageViewCharacterizationTest::returnToImage_cropSurvivesPathOrderClear()
 
 void ImageViewCharacterizationTest::imageView_openGalleryCropReturn_pending()
 {
-    QSKIP("Offscreen ImageView link not enabled yet "
-          "(docs/IMAGEVIEW_CHARACTERIZATION.md — near-full app objects; "
-          "BILTOO_LIB_SOURCES + BILTOO_IMAGEVIEW_CHARACTERIZATION).");
+#if defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)
+    QSKIP("biltoo_lib linked; ImageView open→Gallery→crop→return body not "
+          "implemented yet (docs/IMAGEVIEW_CHARACTERIZATION.md).");
+#else
+    QSKIP("Pure scaffold only — configure with "
+          "-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON to link biltoo_lib.");
+#endif
 }
 
 QTEST_MAIN(ImageViewCharacterizationTest)

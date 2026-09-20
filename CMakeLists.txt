@@ -333,19 +333,22 @@ set(BILTOO_LIB_SOURCES
   src/icons.qrc
 )
 
-add_executable(biltoo
-  src/main.cpp
-  ${BILTOO_LIB_SOURCES}
-)
-
-target_include_directories(biltoo PRIVATE
+# Application core as a static library so optional tests (ImageView
+# characterization) can link the same objects + deps without duplicating lists.
+add_library(biltoo_lib STATIC ${BILTOO_LIB_SOURCES})
+target_include_directories(biltoo_lib PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
+add_executable(biltoo
+  src/main.cpp
+)
+target_link_libraries(biltoo PRIVATE biltoo_lib)
+
 # Stricter diagnostics (do not promote to errors by default).
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-  target_compile_options(biltoo PRIVATE
+  target_compile_options(biltoo_lib PRIVATE
     -Wall
     -Wextra
     -Wpedantic
@@ -362,22 +365,22 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
     -Wmisleading-indentation
   )
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(biltoo PRIVATE
+    target_compile_options(biltoo_lib PRIVATE
       -Wduplicated-cond
       -Wduplicated-branches
       -Wlogical-op
     )
   endif()
 elseif(MSVC)
-  target_compile_options(biltoo PRIVATE /W4)
+  target_compile_options(biltoo_lib PRIVATE /W4)
 endif()
 
 option(BILTOO_WERROR "Treat compiler warnings as errors" OFF)
 if(BILTOO_WERROR)
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-    target_compile_options(biltoo PRIVATE -Werror)
+    target_compile_options(biltoo_lib PRIVATE -Werror)
   elseif(MSVC)
-    target_compile_options(biltoo PRIVATE /WX)
+    target_compile_options(biltoo_lib PRIVATE /WX)
   endif()
 endif()
 
@@ -424,7 +427,7 @@ else()
   message(STATUS "Biltoo optim/debug: see CMAKE_CXX_FLAGS / multi-config generator")
 endif()
 
-target_link_libraries(biltoo PRIVATE
+target_link_libraries(biltoo_lib PUBLIC
   Qt6::Core
   Qt6::Gui
   Qt6::Widgets
@@ -453,16 +456,16 @@ if(PkgConfig_FOUND)
   # those features live entirely behind thumtoo.
   pkg_check_modules(VIPS IMPORTED_TARGET vips)
   if(VIPS_FOUND)
-    target_link_libraries(biltoo PRIVATE PkgConfig::VIPS)
-    target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_VIPS=1)
+    target_link_libraries(biltoo_lib PUBLIC PkgConfig::VIPS)
+    target_compile_definitions(biltoo_lib PUBLIC BILTOO_HAVE_VIPS=1)
     set(BILTOO_FEATURE_VIPS 1)
   endif()
 
   # libexiv2 — Metadata panel Exif/IPTC/XMP. Host UI only; not thumtoo Store.
   pkg_check_modules(EXIV2 IMPORTED_TARGET exiv2)
   if(EXIV2_FOUND)
-    target_link_libraries(biltoo PRIVATE PkgConfig::EXIV2)
-    target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_EXIV2=1)
+    target_link_libraries(biltoo_lib PUBLIC PkgConfig::EXIV2)
+    target_compile_definitions(biltoo_lib PUBLIC BILTOO_HAVE_EXIV2=1)
     set(BILTOO_FEATURE_EXIV2 1)
   endif()
 
@@ -471,8 +474,8 @@ if(PkgConfig_FOUND)
   # gio-unix — GDesktopAppInfo for “default application” Preferences (Linux)
   pkg_check_modules(GIOUNIX IMPORTED_TARGET gio-unix-2.0)
   if(GIOUNIX_FOUND)
-    target_link_libraries(biltoo PRIVATE PkgConfig::GIOUNIX)
-    target_compile_definitions(biltoo PRIVATE BILTOO_HAVE_GIO=1)
+    target_link_libraries(biltoo_lib PUBLIC PkgConfig::GIOUNIX)
+    target_compile_definitions(biltoo_lib PUBLIC BILTOO_HAVE_GIO=1)
     set(BILTOO_FEATURE_GIO 1)
   endif()
 else()
@@ -496,7 +499,7 @@ unset(PROJECT_VERSION_FULL)
 add_subdirectory("${THUMTOO_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/thumtoo" EXCLUDE_FROM_ALL)
 set(PROJECT_VERSION_FULL "${_biltoo_saved_project_version_full}")
 unset(_biltoo_saved_project_version_full)
-target_link_libraries(biltoo PRIVATE thumtoo)
+target_link_libraries(biltoo_lib PUBLIC thumtoo)
 set(BILTOO_FEATURE_THUMTOO 1)
 # Archive containers are opened only through thumtoo (no biltoo ArchiveReader).
 set(BILTOO_FEATURE_ARCHIVE 1)
@@ -655,28 +658,34 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-itemworld-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME itemworld COMMAND biltoo-itemworld-test)
 
-  # Tier 4 characterization scaffold (pure session + real PNG fixtures).
-  # Full offscreen ImageView link is intentionally not enabled here yet: it needs
-  # the same link set as `biltoo` (Qt Widgets/OpenGL, thumtoo, optional vips, …).
-  # Wire with -DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON once that dep list is factored
-  # into a shared imported target (see docs/IMAGEVIEW_CHARACTERIZATION.md).
+  # Tier 4 characterization: pure scaffold by default; link biltoo_lib when
+  # -DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON (see docs/IMAGEVIEW_CHARACTERIZATION.md).
   option(BILTOO_IMAGEVIEW_CHARACTERIZATION
-         "Link full ImageView into characterization test (not implemented yet)" OFF)
+         "Link biltoo_lib into characterization test (offscreen ImageView)" OFF)
   if(BILTOO_IMAGEVIEW_CHARACTERIZATION)
-    message(WARNING
-      "BILTOO_IMAGEVIEW_CHARACTERIZATION=ON: full ImageView link is not wired yet; "
-      "building the pure scaffold only. Factor biltoo link deps into a shared "
-      "target before enabling the near-full harness.")
+    message(STATUS "ImageView characterization: linking biltoo_lib (full harness)")
+    add_executable(biltoo-imageview-characterization-test
+      tests/imageview_characterization.cpp
+    )
+    target_link_libraries(biltoo-imageview-characterization-test PRIVATE
+      biltoo_lib
+      Qt6::Test
+    )
+    target_compile_definitions(biltoo-imageview-characterization-test PRIVATE
+      BILTOO_HAVE_IMAGEVIEW_HARNESS=1
+    )
+  else()
+    message(STATUS "ImageView characterization: pure scaffold (enable with -DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON)")
+    add_executable(biltoo-imageview-characterization-test
+      tests/imageview_characterization.cpp
+      src/sessiondocument.cpp
+      src/sessionappearance.cpp
+      src/contentxform.cpp
+      src/coloradjust.cpp
+    )
+    target_include_directories(biltoo-imageview-characterization-test PRIVATE src)
+    target_link_libraries(biltoo-imageview-characterization-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   endif()
-  add_executable(biltoo-imageview-characterization-test
-    tests/imageview_characterization.cpp
-    src/sessiondocument.cpp
-    src/sessionappearance.cpp
-    src/contentxform.cpp
-    src/coloradjust.cpp
-  )
-  target_include_directories(biltoo-imageview-characterization-test PRIVATE src)
-  target_link_libraries(biltoo-imageview-characterization-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME imageview-characterization COMMAND biltoo-imageview-characterization-test)
 
   # Dual model: SessionDocument vs SessionPathOrder independence (PATH_ORDER.md).
