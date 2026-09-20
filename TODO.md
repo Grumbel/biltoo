@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1833-fix-source-display-transform.** Basis-point source→display transform.
+Prior: **1832**.
+
+### Change
+- `sourceToDisplayTransform`: affine from `sourcePointToOriented` + crop on
+  basis (0,0)/(1,0)/(0,1) — no `QTransform` multiply-order traps
+- Test: absolute orient TL (52,70) and AABB [40,52]×[54,70] on fixture
+
+### Note
+Discard any earlier 1833 bundle that used left-multiply explicit matrices
+(that still mapped TL→28,10). Reset to tip **1832** then pull this bundle.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1833-fix-source-display-transform.bundle HEAD
+```
+Requires tip **1832** (`8aab3d69`).
+
+### Next
+- `biltoo-test -R contentxform` should be 100%
+- Continue pipeline hop demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1832-biltoo-test-helper.** Dev shell: add biltoo-test (build + ctest).
 Prior: **1831**.
 
