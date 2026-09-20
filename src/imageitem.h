@@ -293,7 +293,7 @@ public:
 
     /** True when on-screen need exceeds soft max (tiles should own display). */
     bool tileLodWanted() const;
-    bool tileLodSuppressed() const { return m_tileLod.suppressed; }
+    bool tileLodSuppressed() const { return tileLodBag().suppressed; }
     /** True when at least one grid tile has arrived. */
     bool tileLodActive() const;
     /** Succeeded tiles in global path RAM (registry), even without a controller. */
@@ -370,6 +370,9 @@ private:
     void clearTileGradedCache() const;
     QImage resolveGradedTile(tilelod::TileKey const &key,
                              ColorAdjustments const &grade) const;
+    /** Single access path for tile runtime state (ownership demotion prep). */
+    tilelod::ItemBag &tileLodBag() { return m_tileLod; }
+    const tilelod::ItemBag &tileLodBag() const { return m_tileLod; }
 
     /** Deep-zoom grid tiles + plan/paint scratch (Stage 2 bag; demote later). */
     tilelod::ItemBag m_tileLod;

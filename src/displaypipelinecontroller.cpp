@@ -1364,6 +1364,16 @@ void DisplayPipelineController::dropItemTileLodSession(ImageItem *item)
     }
 }
 
+tilelod::ItemBag *DisplayPipelineController::tileLodBag(ImageItem *item)
+{
+    return item ? &item->tileLodBag() : nullptr;
+}
+
+const tilelod::ItemBag *DisplayPipelineController::tileLodBag(const ImageItem *item) const
+{
+    return item ? &item->tileLodBag() : nullptr;
+}
+
 void DisplayPipelineController::setItemTileLodSuppressed(ImageItem *item, bool on)
 {
     if (item) {

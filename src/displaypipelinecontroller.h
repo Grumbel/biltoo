@@ -6,6 +6,7 @@
 
 #include "sessionloadgate.h"
 #include "displaysurface.h"
+#include "tilelod/tile_lod_item_bag.hpp"
 #include "sessionappearance.h"
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
@@ -124,6 +125,9 @@ public:
     void purgeTilePathRam(const QString &path);
     /** Drop one item's tile session (shared path cache kept). External callers use this. */
     void dropItemTileLodSession(ImageItem *item);
+    /** Non-owning access to the item's tile bag (Stage 2 demotion prep). */
+    tilelod::ItemBag *tileLodBag(ImageItem *item);
+    const tilelod::ItemBag *tileLodBag(const ImageItem *item) const;
     /** Crop-draft freeze: suppress tile requests/paint for this item. */
     void setItemTileLodSuppressed(ImageItem *item, bool on);
     /**

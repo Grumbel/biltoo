@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1790-tilelod-bag-accessor.** Stage 2: single tileLodBag() access path.
+Prior: **1789**.
+
+### Change
+- `ImageItem::tileLodBag()` / const — sole access to the Stage 2 bag
+- All internal uses go through the accessor (not bare `m_tileLod.`)
+- `DisplayPipelineController::tileLodBag(ImageItem*)` — non-owning pipeline entry
+- Bag still owned by ImageItem; move storage next
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1790-tilelod-bag-accessor.bundle HEAD
+```
+
+### Next
+- Move ItemBag storage under DisplayPipelineController (map + item non-owning)
+- Optional full ImageView characterization link
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1789-tilelod-qfileinfo-include.** Fix imageitem_tilelod.cpp QFileInfo include.
 Prior: **1788**.
 
