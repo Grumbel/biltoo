@@ -667,11 +667,11 @@ void MainWindow::syncWorkspaceBackgroundActions()
     if (!m_imageView) {
         return;
     }
-    const WorkspaceBackground wb = m_imageView->workspaceBackground();
+    const WorkspaceBackground wb = m_imageView->hostCanvasBg().workspaceRef();
     if (m_workspaceBgDefaultAct) {
         m_workspaceBgDefaultAct->setCheckable(true);
         const bool permanentDefault = wb.isAppDefault();
-        const bool previewDefault = m_imageView->workspaceBackgroundShowDefault();
+        const bool previewDefault = m_imageView->hostCanvasBg().isWorkspaceShowDefault();
         // Only meaningful when a custom project background exists.
         m_workspaceBgDefaultAct->setEnabled(!permanentDefault);
         const QSignalBlocker blocker(m_workspaceBgDefaultAct);

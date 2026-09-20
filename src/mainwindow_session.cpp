@@ -3615,10 +3615,10 @@ void MainWindow::copyWorkspaceItems()
 {
     // Prefer page text selection in Image mode (Shift+drag regions).
     if (m_imageView && m_imageView->isImageMode()
-        && m_imageView->textSelectionCount() > 0) {
+        && m_imageView->hostTextLayer().selectionCount() > 0) {
         if (m_imageView->copySelectedText()) {
             statusBar()->showMessage(
-                tr("Copied %n text region(s)", "", m_imageView->textSelectionCount()),
+                tr("Copied %n text region(s)", "", m_imageView->hostTextLayer().selectionCount()),
                 3000);
             return;
         }
@@ -3976,7 +3976,7 @@ void MainWindow::attachWorkspaceBackgroundToDocument(ProjectDocument *doc, const
     if (!doc || !m_imageView) {
         return;
     }
-    WorkspaceBackground wb = m_imageView->workspaceBackground();
+    WorkspaceBackground wb = m_imageView->hostCanvasBg().workspaceRef();
     if (wb.isAppDefault()) {
         return;
     }
@@ -4501,13 +4501,13 @@ void MainWindow::editWorkspaceBackground()
     if (!isWorkspaceMode()) {
         enterWorkspaceMode();
     }
-    const WorkspaceBackground before = m_imageView->workspaceBackground();
+    const WorkspaceBackground before = m_imageView->hostCanvasBg().workspaceRef();
     WorkspaceBackgroundDialog dlg(this);
     dlg.setCanvasContext(/*forProject=*/true);
     dlg.setAppDefaultColors(
-        m_imageView->backgroundColor(),
-        m_imageView->backgroundColorAlt(),
-        m_imageView->backgroundPattern() == BackgroundPattern::Checkerboard);
+        m_imageView->hostCanvasBg().primaryColor(),
+        m_imageView->hostCanvasBg().altColor(),
+        m_imageView->hostCanvasBg().currentPattern() == BackgroundPattern::Checkerboard);
     dlg.setBackground(before);
     // Live canvas preview while the dialog is open; restore on cancel.
     connect(&dlg, &WorkspaceBackgroundDialog::backgroundChanged, this,
@@ -4565,13 +4565,13 @@ void MainWindow::editViewBackground()
     if (!m_imageView) {
         return;
     }
-    const WorkspaceBackground before = m_imageView->viewBackground();
+    const WorkspaceBackground before = m_imageView->hostCanvasBg().viewRef();
     WorkspaceBackgroundDialog dlg(this);
     dlg.setCanvasContext(/*forProject=*/false);
     dlg.setAppDefaultColors(
-        m_imageView->backgroundColor(),
-        m_imageView->backgroundColorAlt(),
-        m_imageView->backgroundPattern() == BackgroundPattern::Checkerboard);
+        m_imageView->hostCanvasBg().primaryColor(),
+        m_imageView->hostCanvasBg().altColor(),
+        m_imageView->hostCanvasBg().currentPattern() == BackgroundPattern::Checkerboard);
     dlg.setBackground(before);
     connect(&dlg, &WorkspaceBackgroundDialog::backgroundChanged, this,
             [this](const WorkspaceBackground &bg) {
@@ -4616,7 +4616,7 @@ void MainWindow::workspaceBackgroundDefault(bool checked)
     }
     // Permanent AppDefault: nothing to preview. Keep the control checked and
     // disabled via syncWorkspaceBackgroundActions (avoids a stuck toggle).
-    if (m_imageView->workspaceBackground().isAppDefault()) {
+    if (m_imageView->hostCanvasBg().workspaceRef().isAppDefault()) {
         m_imageView->setWorkspaceBackgroundShowDefault(false);
         syncWorkspaceBackgroundActions();
         return;

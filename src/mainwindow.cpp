@@ -160,7 +160,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_thumbnailBar = new ThumbnailBar(this);
     m_thumbnailBar->setAccessibleName(tr("Thumbnails"));
     if (m_imageView) {
-        m_thumbnailBar->setStripBackground(m_imageView->backgroundColor());
+        m_thumbnailBar->setStripBackground(m_imageView->hostCanvasBg().primaryColor());
         // Image-mode ←/→: reuse filmstrip Soft (and ImageCache) instead of LQIP
         // when the strip already decoded the path.
         m_imageView->setImageModeSoftProvider(
@@ -936,13 +936,13 @@ void MainWindow::openSearchBar()
     if (!m_searchBar || !m_searchEdit) {
         return;
     }
-    if (m_imageView && m_searchEdit->text() != m_imageView->textSearchQuery()) {
+    if (m_imageView && m_searchEdit->text() != m_imageView->hostTextLayer().searchQueryRef()) {
         QSignalBlocker block(m_searchEdit);
-        m_searchEdit->setText(m_imageView->textSearchQuery());
+        m_searchEdit->setText(m_imageView->hostTextLayer().searchQueryRef());
     }
     if (m_searchFuzzyCheck && m_imageView) {
         QSignalBlocker block(m_searchFuzzyCheck);
-        m_searchFuzzyCheck->setChecked(m_imageView->textSearchFuzzy());
+        m_searchFuzzyCheck->setChecked(m_imageView->hostTextLayer().isSearchFuzzy());
     }
     updateSearchMatchLabel();
     m_searchBar->setVisible(true);
@@ -980,7 +980,7 @@ void MainWindow::setSearchBarPinned(bool pinned)
         m_searchBar->setVisible(true);
         if (m_searchEdit && m_imageView) {
             QSignalBlocker block(m_searchEdit);
-            m_searchEdit->setText(m_imageView->textSearchQuery());
+            m_searchEdit->setText(m_imageView->hostTextLayer().searchQueryRef());
             updateSearchMatchLabel();
         }
     } else if (m_searchEdit && !m_searchEdit->hasFocus()) {
@@ -1238,7 +1238,7 @@ void MainWindow::onDocumentSearchFinished(quint64 generation, const QString &que
         }
     }
     if (m_imageView) {
-        m_docSearchPageMatchCount = m_imageView->textSearchMatchCount();
+        m_docSearchPageMatchCount = m_imageView->hostTextLayer().matchCount();
     }
     updateSearchMatchLabel();
     qWarning().noquote()
@@ -2132,14 +2132,14 @@ void MainWindow::showPreferences()
     dlg.setSortModeIndex(static_cast<int>(m_sortMode));
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
     dlg.setImageModeLeftDragPan(m_imageView->hostChrome().isImageModeLeftDragPan());
-    dlg.setBackgroundColor(m_imageView->backgroundColor());
-    dlg.setBackgroundColorAlt(m_imageView->backgroundColorAlt());
+    dlg.setBackgroundColor(m_imageView->hostCanvasBg().primaryColor());
+    dlg.setBackgroundColorAlt(m_imageView->hostCanvasBg().altColor());
     dlg.setBackgroundPatternIndex(
-        m_imageView->backgroundPattern() == BackgroundPattern::Checkerboard ? 1 : 0);
-    dlg.setCheckerboardWorkspaceOnly(m_imageView->checkerboardWorkspaceOnly());
-    dlg.setHudFontPointSize(m_imageView->hudFontPointSize());
-    dlg.setHudTextColor(m_imageView->hudTextColor());
-    dlg.setHudPanelColor(m_imageView->hudPanelColor());
+        m_imageView->hostCanvasBg().currentPattern() == BackgroundPattern::Checkerboard ? 1 : 0);
+    dlg.setCheckerboardWorkspaceOnly(m_imageView->hostCanvasBg().isCheckerWorkspaceOnly());
+    dlg.setHudFontPointSize(m_imageView->hostHudPrefs().fontPointSizeValue());
+    dlg.setHudTextColor(m_imageView->hostHudPrefs().textColorRef());
+    dlg.setHudPanelColor(m_imageView->hostHudPrefs().panelColorRef());
     dlg.setScrollBarsVisible(m_toggleScrollBarsAct && m_toggleScrollBarsAct->isChecked());
     dlg.setThumbnailLabelsVisible(m_hideThumbLabelsAct && !m_hideThumbLabelsAct->isChecked());
     dlg.setAdjustmentsPanelVisible(m_adjustmentsDock && m_adjustmentsDock->isVisible());
@@ -2515,8 +2515,8 @@ void MainWindow::updateStatus()
     if (m_tocDock && m_tocDock->isVisible()) {
         updateTocPanel();
     }
-    if (m_imageView && !m_imageView->linkHoverTip().isEmpty()) {
-        statusBar()->showMessage(m_imageView->linkHoverTip());
+    if (m_imageView && !m_imageView->hostTextLayer().linkHoverTipRef().isEmpty()) {
+        statusBar()->showMessage(m_imageView->hostTextLayer().linkHoverTipRef());
     }
 
     updateNavigationActions();
@@ -2949,7 +2949,7 @@ void MainWindow::readSettings()
                 SlideshowClocks::clampZoomIndex(
                     settings.value(QStringLiteral("slideshowZoomMode"), 0).toInt())));
         const QColor pad = QColor(settings.value(QStringLiteral("slideshowPadColor"),
-            m_imageView->backgroundColor().name(QColor::HexRgb)).toString());
+            m_imageView->hostCanvasBg().primaryColor().name(QColor::HexRgb)).toString());
         if (pad.isValid()) {
             m_imageView->hostSlideshow().setSlideshowPadColor(pad);
         }
@@ -3221,16 +3221,16 @@ void MainWindow::writeSettings()
         settings.setValue(QStringLiteral("masonryRows"),
                           m_imageView->hostLayout().masonryRowsValue());
         settings.setValue(QStringLiteral("backgroundColor"),
-                          m_imageView->backgroundColor().name(QColor::HexRgb));
+                          m_imageView->hostCanvasBg().primaryColor().name(QColor::HexRgb));
         settings.setValue(QStringLiteral("backgroundColorAlt"),
-                          m_imageView->backgroundColorAlt().name(QColor::HexRgb));
+                          m_imageView->hostCanvasBg().altColor().name(QColor::HexRgb));
         settings.setValue(QStringLiteral("backgroundPattern"),
-                          m_imageView->backgroundPattern()
+                          m_imageView->hostCanvasBg().currentPattern()
                                   == BackgroundPattern::Solid
                               ? QStringLiteral("solid")
                               : QStringLiteral("checkerboard"));
         settings.setValue(QStringLiteral("checkerboardWorkspaceOnly"),
-                          m_imageView->checkerboardWorkspaceOnly());
+                          m_imageView->hostCanvasBg().isCheckerWorkspaceOnly());
     }
     // Persist startup preference only — not the live session toggle
     settings.setValue(QStringLiteral("startInWorkspaceMode"), m_startInWorkspaceMode);
@@ -3270,12 +3270,12 @@ void MainWindow::writeSettings()
     if (m_imageView) {
         settings.setValue(QStringLiteral("imageModeLeftDragPan"),
                           m_imageView->hostChrome().isImageModeLeftDragPan());
-        settings.setValue(QStringLiteral("hudVisible"), m_imageView->hudVisible());
+        settings.setValue(QStringLiteral("hudVisible"), m_imageView->hostHudPrefs().isVisible());
         settings.setValue(QStringLiteral("contentEditMarksVisible"),
                           m_imageView->contentEditMarksVisible());
-        settings.setValue(QStringLiteral("hudFontPointSize"), m_imageView->hudFontPointSize());
-        settings.setValue(QStringLiteral("hudTextColor"), m_imageView->hudTextColor().name(QColor::HexArgb));
-        settings.setValue(QStringLiteral("hudPanelColor"), m_imageView->hudPanelColor().name(QColor::HexArgb));
+        settings.setValue(QStringLiteral("hudFontPointSize"), m_imageView->hostHudPrefs().fontPointSizeValue());
+        settings.setValue(QStringLiteral("hudTextColor"), m_imageView->hostHudPrefs().textColorRef().name(QColor::HexArgb));
+        settings.setValue(QStringLiteral("hudPanelColor"), m_imageView->hostHudPrefs().panelColorRef().name(QColor::HexArgb));
     }
     if (m_thumbnailBar) {
         settings.setValue(QStringLiteral("thumbnailLabelsVisible"),

@@ -417,46 +417,36 @@ public:
      * Returns number of matching regions on the current page.
      */
     int setTextSearchQuery(const QString &query);
-    QString textSearchQuery() const { return m_textLayer.searchQueryRef(); }
-    int textSearchMatchCount() const { return m_textLayer.matchCount(); }
+    /** Text search query / match / fuzzy / selection / link tip: hostTextLayer(). */
     bool hasTextLayer() const;
     int textLayerRegionCount() const;
     /** Soft match for OCR noise (alnum-only + light edit distance). Default on. */
     void setTextSearchFuzzy(bool on);
-    bool textSearchFuzzy() const { return m_textLayer.isSearchFuzzy(); }
     /** True if @p regionText matches @p query under the same rules as Find. */
     static bool textMatchesQuery(const QString &regionText, const QString &query, bool fuzzy);
 
-    /** Selected region indices from Shift+drag rubber-band (Image mode page docs). */
-    int textSelectionCount() const { return m_textLayer.selectionCount(); }
     /** Copy selected text to the clipboard; returns false if nothing selected. */
     bool copySelectedText();
-    /** Non-empty while the pointer is over a link region. */
-    QString linkHoverTip() const { return m_textLayer.linkHoverTipRef(); }
 
     /** Image-mode left-drag pan: hostChrome().isImageModeLeftDragPan(). */
 
     void setBackgroundColor(const QColor &color);
-    QColor backgroundColor() const { return m_canvasBg.primaryColor(); }
     /**
      * Effective solid pad colour for slideshow letterbox (Solid mode colour,
      * else Preferences background). Used when ZoomBlur cannot run.
      */
     QColor slideshowPadColor() const;
     void setBackgroundColorAlt(const QColor &color);
-    QColor backgroundColorAlt() const { return m_canvasBg.altColor(); }
     void setBackgroundPattern(BackgroundPattern pattern);
-    BackgroundPattern backgroundPattern() const { return m_canvasBg.currentPattern(); }
     /** When true, checkerboard is used only in Workspace; other modes stay solid. */
     void setCheckerboardWorkspaceOnly(bool on);
-    bool checkerboardWorkspaceOnly() const { return m_canvasBg.isCheckerWorkspaceOnly(); }
+    /** Background colour / pattern / workspace / view reads: hostCanvasBg(). */
 
     /**
      * Per-Workspace background override (project state). AppDefault uses the
      * preference colours/pattern (technical default) instead of a custom look.
      */
     void setWorkspaceBackground(const WorkspaceBackground &bg);
-    WorkspaceBackground workspaceBackground() const { return m_canvasBg.workspaceRef(); }
     void clearWorkspaceBackground(); /**< AppDefault */
     /**
      * Temporary view of the Preferences / technical background without changing
@@ -464,14 +454,12 @@ public:
      * toolbar toggle.
      */
     void setWorkspaceBackgroundShowDefault(bool on);
-    bool workspaceBackgroundShowDefault() const { return m_canvasBg.isWorkspaceShowDefault(); }
 
     /**
      * Session Gallery / Image canvas override (not Preferences, not project).
      * AppDefault follows Preferences materials. Shared across Gallery and Image.
      */
     void setViewBackground(const WorkspaceBackground &bg);
-    WorkspaceBackground viewBackground() const { return m_canvasBg.viewRef(); }
 
     /**
      * Session position for status line and HUD (index/total, 1-based display).
@@ -487,16 +475,13 @@ public:
 
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
-    bool hudVisible() const { return m_hudPrefs.isVisible(); }
     /** Corner marks for crop / orient / grade (default on). */
     void setContentEditMarksVisible(bool on);
     bool contentEditMarksVisible() const;
     void setHudFontPointSize(int pt);
-    int hudFontPointSize() const { return m_hudPrefs.fontPointSizeValue(); }
     void setHudTextColor(const QColor &color);
-    QColor hudTextColor() const { return m_hudPrefs.textColorRef(); }
     void setHudPanelColor(const QColor &color);
-    QColor hudPanelColor() const { return m_hudPrefs.panelColorRef(); }
+    /** HUD visibility / font / colours: hostHudPrefs(). */
 
     /**
      * Brief top-left HUD action (slideshow, fit mode, …).

@@ -292,7 +292,7 @@ void MainWindow::exportPng()
     // Prefer the visible Workspace/canvas background unless the user opts out.
     bool defaultTransparent = true;
     if (m_imageView->isWorkspaceMode()
-        && !m_imageView->workspaceBackground().isAppDefault()) {
+        && !m_imageView->hostCanvasBg().workspaceRef().isAppDefault()) {
         defaultTransparent = false;
     }
     transparentCheck->setChecked(defaultTransparent);
