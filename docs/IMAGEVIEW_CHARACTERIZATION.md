@@ -19,7 +19,8 @@ size, and framing before deleting `m_pathOrderBook`.
 | `pathorder-dual-model` | document vs book independence, LoadAdd, clear, gallery delete prune, aligned pack case |
 | `contentxform` | layout size, crop map through rotate |
 | `packorderview` | fromBook/fromDocument, alignsWithDocument, multiplicity |
-| `session-gallery-crop-scenario` | narrative open→Gallery→crop→return pure side |
+| `session-gallery-crop-scenario` | narrative open→Gallery→crop→return pure side; ItemWorld Crop/ContentBake presence |
+| `itemworld` | Stage 0–2 facade: dual-write, presence, clear |
 
 These do **not** replace the harness: they do not exercise decode, mode
 transitions, framing, or Live canvas.
@@ -50,7 +51,7 @@ are on — full link is expensive (near-full app).
 
 - [ ] After open: `doc.size() == 2`, unique ids
 - [ ] After Gallery enter: `pathOrderSize() == doc.size()` when no LoadAdd
-- [ ] After crop commit: `appearance().get(sid)->hasCrop`
+- [ ] After crop commit: `appearance().get(sid)->hasCrop` and `itemWorld().hasCrop(sid)`
 - [ ] After return to Image: same crop; other id has no crop
 - [ ] After `pathOrderClear`: book empty, doc unchanged
 - [ ] After LoadAdd×3 same path: `pathOrderOccurrences == 3`, `doc.count == 1`

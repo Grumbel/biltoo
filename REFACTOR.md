@@ -957,3 +957,5 @@ Phase 1–6 rules still apply. Additions:
   ContentBake + Crop components (not fat DTO field peeks).
 - biltoo-1735: `applyPlacement` + `applyState` via Placement component;
   `rememberItemState` writes setPlacement before setAppearance.
+- biltoo-1736: session-gallery-crop-scenario asserts ItemWorld Crop/ContentBake
+  presence; IMAGEVIEW_CHARACTERIZATION pure-contract table updated.

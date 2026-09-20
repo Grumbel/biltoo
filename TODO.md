@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1736-scenario-itemworld.** Scenario test asserts ItemWorld components.
+Prior: **1735**.
+
+### Change
+- session_gallery_crop_scenario: crop writes via ItemWorld; hasCrop/crop() asserts
+- New slots: cropComponentSurvivesBookClear, contentBakeIndependentPerId
+- IMAGEVIEW_CHARACTERIZATION.md pure-contract table + harness checklist
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1736-scenario-itemworld.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest session-gallery-crop-scenario itemworld
+- Offscreen ImageView characterization harness (Tier 4 gate)
+- Or further Stage 2 ImageItem demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1735-apply-placement.** applyState via Placement component.
 Prior: **1734**.
 
