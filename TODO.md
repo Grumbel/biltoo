@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1740-geometry-undo-unify.** One geometry undo entry point.
+Prior: **1739**.
+
+### Change
+- `pushItemTransformUndo` → no-op equality check then `pushItemGeometryCommand`
+- Removes duplicate TransformCommand class from input_events
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1740-geometry-undo-unify.bundle HEAD
+```
+
+### Next
+- biltoo-build + move/rotate undo smoke
+- Characterization harness or Stage 2 continue
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1739-geometry-persist-forward.** Forward geometry path persists ItemWorld.
 Prior: **1738**.
 

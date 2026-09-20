@@ -965,3 +965,5 @@ Phase 1–6 rules still apply. Additions:
   Placement + appearance (or path book); both TransformCommand sites use it.
 - biltoo-1739: `persistGeometrySessionState` on forward path of
   pushItemGeometryCommand / pushItemTransformUndo (item already posed; tables catch up).
+- biltoo-1740: `pushItemTransformUndo` delegates to `pushItemGeometryCommand`
+  (one TransformCommand implementation).

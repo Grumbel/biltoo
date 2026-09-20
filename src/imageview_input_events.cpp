@@ -194,28 +194,8 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
         && after.opacity == before.opacity) {
         return;
     }
-    persistGeometrySessionState(item, after);
-    if (!m_undoStack) {
-        return;
-    }
-    class TransformCommand : public QUndoCommand {
-    public:
-        TransformCommand(ImageView *view, ImageItem *item,
-                         const WorkspaceItemState &before,
-                         const WorkspaceItemState &after,
-                         const QString &text)
-            : m_view(view), m_item(item), m_before(before), m_after(after)
-        {
-            setText(text);
-        }
-        void undo() override { if (m_item) m_view->applyGeometrySessionState(m_item, m_before); }
-        void redo() override { if (m_item) m_view->applyGeometrySessionState(m_item, m_after); }
-    private:
-        ImageView *m_view;
-        ImageItem *m_item;
-        WorkspaceItemState m_before, m_after;
-    };
-    m_undoStack->push(new TransformCommand(this, item, before, after, text));
+    // Single geometry undo path (persist + TransformCommand).
+    pushItemGeometryCommand(text, item, before, after);
     emit statusChanged();
 }
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
