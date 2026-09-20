@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1694-workspace-chrome-canvas-place.** Workspace chrome input + canvas place/add TUs.
+Prior: **1693**.
+
+### Change
+- New `imageview_workspace_chrome.cpp` — workspace chrome/rotate try* (still ImageView-owned)
+- New `imageview_canvas_place.cpp` — addImage / placeOrMoveImageAt
+- `imageview_input.cpp` ~758 → ~499; `imageview_canvas.cpp` ~952 → ~705
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1694-workspace-chrome-canvas-place.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Tier 4 characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1693-edge-dnd-tu.** Split edge chrome and drag/drop out of input.cpp.
 Prior: **1692**.
 

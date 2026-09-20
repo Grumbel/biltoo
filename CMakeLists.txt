@@ -137,6 +137,7 @@ add_executable(biltoo
   src/imageview_modes.cpp
   src/imageview_pack.cpp
   src/imageview_canvas.cpp
+  src/imageview_canvas_place.cpp
   src/imageview_selection.cpp
   src/imageview_session_bind.cpp
   src/imageview_crop.cpp
@@ -231,6 +232,7 @@ add_executable(biltoo
   src/imageview_status.cpp
   src/imageview_transform.cpp
   src/imageview_input.cpp
+  src/imageview_workspace_chrome.cpp
   src/imageview_edge_chrome.cpp
   src/imageview_dnd.cpp
   src/imageview_input_forwards.cpp
