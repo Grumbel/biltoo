@@ -2,6 +2,36 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1885-characterization-overlay.** Pure ImageView characterization + overlay.
+Prior: **1884**.
+
+### Change
+- `tests/imageview_characterization.cpp` uses PackOrderOverlay (not bare book)
+- Gallery enter: setExplicit + tryCollapse; clear stays Explicit empty
+- Crop: ItemWorld + ContentXform::layoutSize; sibling unchanged
+- Host mutator simulation: collapse, clear, seed-on-append after collapse
+- Crop survives pathOrderClear (return-to-Image invariant)
+- ImageView step remains QSKIP (full link via BILTOO_LIB_SOURCES later)
+- IMAGEVIEW_CHARACTERIZATION.md checklist updated for pure greens
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1885-characterization-overlay-516d734.bundle HEAD
+```
+Requires tip **1884** (base **516d734**).
+
+### Next
+- Full offscreen ImageView link (`BILTOO_IMAGEVIEW_CHARACTERIZATION` +
+  `${BILTOO_LIB_SOURCES}`) when a machine can build Qt/thumtoo
+- ctest imageview-characterization + packorderoverlay
+- Do **not** delete dual-model policy until full harness green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1884-packorder-follow-collapse.** Optional FollowDocument collapse.
 Prior: **1883**.
 

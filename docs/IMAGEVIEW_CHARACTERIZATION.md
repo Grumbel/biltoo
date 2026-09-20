@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 REFACTOR.md requires an offscreen `QTest` that drives `ImageView` through
 **open → Gallery → crop → return → Image** and asserts appearance, logical
-size, and framing before collapsing to FollowDocument / document-only pack.
+size, and framing before trusting FollowDocument / document-only pack.
 
 ## Pure contracts already locked
 
@@ -19,10 +19,12 @@ size, and framing before collapsing to FollowDocument / document-only pack.
 | `pathorder-dual-model` | document vs book independence, LoadAdd, clear, gallery delete prune, aligned pack case |
 | `contentxform` | layout size, crop map through rotate |
 | `packorderview` | fromBook/fromDocument, alignsWithDocument, multiplicity |
+| `packorderoverlay` | FollowDocument / Explicit, collapse, seed-on-append |
 | `session-gallery-crop-scenario` | narrative open→Gallery→crop→return pure side; ItemWorld Crop/ContentBake presence |
 | `itemworld` | Stage 0–2 facade: dual-write, presence, clear |
+| `imageview-characterization` | PNG fixtures + overlay host-mutator simulation + layoutSize |
 
-These do **not** replace the harness: they do not exercise decode, mode
+These do **not** replace the full harness: they do not exercise decode, mode
 transitions, framing, or Live canvas.
 
 ## Harness goals
@@ -30,48 +32,58 @@ transitions, framing, or Live canvas.
 1. Construct `ImageView` offscreen (`QApplication` + no show, or `QTest`).
 2. Bind `SessionDocument` appearance + document (same as MainWindow).
 3. Open two synthetic paths (temp PNGs of known size).
-4. Enter Gallery; assert pack-order overlay (Explicit) aligns with document.
+4. Enter Gallery; assert pack-order overlay aligns with document (post-collapse
+   FollowDocument or Explicit aligned).
 5. Crop one session id; assert `appearance().get(id)` and layout size.
 6. Return to Image on that id; assert crop still applied; sibling unchanged.
-7. LoadAdd / paste multiplicity: book size > document size; pack count follows book.
+7. LoadAdd / paste multiplicity: pack size > document size; pack count follows
+   overlay explicit order.
 
 ## Suggested layout
 
 ```text
 tests/imageview_characterization.cpp
-  - links ImageView + minimal deps (or whole biltoo object list minus main)
+  - pure: always on (session + PackOrderOverlay + ItemWorld + ContentXform)
+  - full: links ${BILTOO_LIB_SOURCES} when BILTOO_IMAGEVIEW_CHARACTERIZATION=ON
   - QTEST_MAIN
   - fixtures: temp dir with 2× solid-colour PNGs
 ```
 
-CMake: only enable when `Qt6Test` and a flag `BILTOO_IMAGEVIEW_CHARACTERIZATION`
-are on — full link is expensive (near-full app).
+CMake pure target is always built with `Qt6Test`. Full offscreen ImageView
+link: optional `BILTOO_IMAGEVIEW_CHARACTERIZATION` + `${BILTOO_LIB_SOURCES}`
+(same deps as the `biltoo` executable; expensive).
 
 ## Assertions (checklist)
 
-- [ ] After open: `doc.size() == 2`, unique ids
-- [ ] After Gallery enter: `currentPackOrder().size() == doc.size()` when no LoadAdd
-- [ ] After crop commit: `appearance().get(sid)->hasCrop` and `itemWorld().hasCrop(sid)`
-- [ ] After return to Image: same crop; other id has no crop
-- [ ] After `pathOrderClear`: book empty, doc unchanged
-- [ ] After LoadAdd×3 same path: `pathOrderOccurrences == 3`, `doc.count == 1`
+### Pure (green — imageview-characterization)
 
-## Landed (pure scaffold — biltoo-1787)
+- [x] After open: `doc.size() == 2`, unique ids
+- [x] After Gallery enter simulation: overlay resolves aligned with document
+- [x] After crop commit: `itemWorld().hasCrop(sid)` + `ContentXform::layoutSize`
+- [x] Sibling id has no crop
+- [x] After `clearExplicit`: pack empty, doc unchanged
+- [x] After LoadAdd×3 same path: pack occurrences == 3, `doc.count == 1`
+- [x] Host setOrder collapses when aligned; clear stays Explicit empty
+- [x] Append after collapse seeds document membership
+- [x] Crop survives pathOrderClear (return-to-Image invariant)
 
-`tests/imageview_characterization.cpp` + `biltoo-imageview-characterization-test`:
+### Full ImageView (still pending)
 
-- Real temp PNG fixtures (known sizes)
-- After open / Gallery align / crop commit / pathOrderClear / LoadAdd multiplicity
-- `imageView_openGalleryCropReturn_pending` is `QSKIP` until offscreen ImageView links
+- [ ] Offscreen `ImageView` construct + bind document/appearance
+- [ ] Decode / soft tiles for fixture PNGs
+- [ ] `enterGallery` / mode transitions / framing
+- [ ] Live canvas crop apply + return to Image mode
 
-## CMake shared sources (biltoo-1788)
+## Landed
 
-`BILTOO_LIB_SOURCES` in the root `CMakeLists.txt` is every biltoo TU except
-`main.cpp`. The app is `add_executable(biltoo src/main.cpp ${BILTOO_LIB_SOURCES})`.
-A future full harness target can link `${BILTOO_LIB_SOURCES}` with the same
-dependency set as `biltoo` (Qt, thumtoo, …) without maintaining a second list.
+- **1787:** pure scaffold + QSKIP for ImageView step
+- **1788:** `BILTOO_LIB_SOURCES` for future full link
+- **1885:** pure harness uses `PackOrderOverlay` (post-1883/1884); layoutSize;
+  host-mutator simulation (collapse / clear / seed-append / crop survives clear)
 
 ## Until the full ImageView harness exists
 
-Keep `m_pathOrderBook`. Identity queries continue to prefer `m_sessionDoc`
-when bound (`firstSessionIdForPath`). See [PATH_ORDER.md](PATH_ORDER.md).
+Keep overlay **Explicit-only** for writes that must suppress pack; collapse is
+allowed only when order aligns with the document. Identity queries continue to
+prefer `m_sessionDoc` when bound (`firstSessionIdForPath`).
+See [PATH_ORDER.md](PATH_ORDER.md).
