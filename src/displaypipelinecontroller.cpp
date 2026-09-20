@@ -78,7 +78,7 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
         }
     }
     // Tile LOD for workspace items that need past soft max.
-    m_view->tickPrimaryTileLod(8);
+    tickPrimaryTileLod(8);
 
     for (ImageItem *ii : targets) {
         if (!ii) {
@@ -201,19 +201,19 @@ void DisplayPipelineController::requestEscalateClimb(const QString &path, int wa
     // Tiles own display: tileLodWanted or known durable pyramid — no PreferCache.
     if (ImageItem *it = imageModeItemForPath(path)) {
         if (it->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path)) {
-            m_view->tickPrimaryTileLod(12);
+            tickPrimaryTileLod(12);
             return;
         }
     }
     for (ImageItem *ii : m_view->liveItems()) {
         if (ii && ii->path() == path
             && (ii->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path))) {
-            m_view->tickPrimaryTileLod(12);
+            tickPrimaryTileLod(12);
             return;
         }
     }
     if (ThumtooCache::hasDurableTilesKnown(path)) {
-        m_view->tickPrimaryTileLod(12);
+        tickPrimaryTileLod(12);
         return;
     }
     const int edge = cappedDisplayEdgeForPath(
@@ -251,12 +251,12 @@ void DisplayPipelineController::ensureImageModeQualityClimb(const QString &path,
     const bool durable = ThumtooCache::hasDurableTilesKnown(path);
     if (ImageItem *it = imageModeItemForPath(path)) {
         if (DisplayEdgePolicy::tilesOwnDisplay(it->tileLodWanted(), durable)) {
-            m_view->tickPrimaryTileLod(12);
+            tickPrimaryTileLod(12);
             return;
         }
     }
     if (durable) {
-        m_view->tickPrimaryTileLod(12);
+        tickPrimaryTileLod(12);
         return;
     }
     if (!sample.isNull() && m_view->sampleCoversNativeLogical(path, sample)) {
@@ -451,7 +451,7 @@ void DisplayPipelineController::onLadderReady(const QString &path, int maxEdge, 
     if (m_view->isImageMode() || m_view->isWorkspaceMode() || m_view->isGalleryMode()) {
         for (ImageItem *ii : m_view->liveItems()) {
             if (ii && ii->path() == path && ii->tileLodWanted()) {
-                m_view->tickPrimaryTileLod(12);
+                tickPrimaryTileLod(12);
                 break;
             }
         }
@@ -562,7 +562,7 @@ void DisplayPipelineController::maybeClimbImageModePixelsForView()
     // Tile LOD owns deep zoom when on-screen need exceeds soft max (TILE_LOD).
     // PreferCache whole-frame climb is skipped for that band; soft/LQIP stays
     // as underlay until tiles arrive.
-    m_view->tickPrimaryTileLod(8);
+    tickPrimaryTileLod(8);
     if (item->tileLodWanted()) {
         driveImageFocusSurface();
         return;

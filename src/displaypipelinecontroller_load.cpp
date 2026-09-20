@@ -465,7 +465,7 @@ void DisplayPipelineController::scheduleSlideshowReplaceDecode(const QString &pa
             }
         }
         if (ThumtooCache::hasDurableTilesKnown(path)) {
-            m_view->tickPrimaryTileLod(12);
+            tickPrimaryTileLod(12);
             if (qualityEdge > softEdge) {
                 startDisplayQualityJob(guard, path, gen, roleInt, qualityEdge,
                                        sessionApp);
@@ -496,7 +496,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
     if (m_view->isImageMode() && !m_view->hostSlideshow().hud().isProgressActive() && !m_view->hostSlideshow().hud().isNavHot()
         && role == ImageView::LoadReplace) {
         ThumtooCache::scheduleProbe(path);
-        m_view->tickPrimaryTileLod(12);
+        tickPrimaryTileLod(12);
         Q_UNUSED(gen);
         return;
     }
@@ -513,7 +513,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
         if (m_view->isGalleryMode()) {
             scheduleGalleryDecode(path);
         }
-        m_view->tickPrimaryTileLod(12);
+        tickPrimaryTileLod(12);
         Q_UNUSED(role);
         return;
     }
@@ -528,7 +528,7 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
         if (!cached.isNull()
             && ImageCache::longEdge(cached) <= DisplayQuality::kLqipMaxEdge) {
             queuePreviewLoaded(guard, path, cached, gen, roleInt);
-            m_view->tickPrimaryTileLod(8);
+            tickPrimaryTileLod(8);
             Q_UNUSED(sessionApp);
             return;
         }

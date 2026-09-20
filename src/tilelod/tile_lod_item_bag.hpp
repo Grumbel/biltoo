@@ -5,11 +5,11 @@
 #define BILTOO_TILELOD_TILE_LOD_ITEM_BAG_HPP
 
 /**
- * Per-ImageItem tile LOD runtime state (Stage 2 demotion prep).
+ * Per-ImageItem tile LOD runtime state (Stage 2).
  *
- * Owns the TileLodController plus paint/plan scratch that used to be scattered
- * on ImageItem. The bag can later move under DisplayPipelineController keyed by
- * item/path without changing the field layout.
+ * Owned by DisplayPipelineController (map keyed by ImageItem*). ImageItem holds
+ * a non-owning attach pointer for paint/tick. Fields: TileLodController plus
+ * plan/paint scratch that used to live on ImageItem.
  */
 
 #include "tilelod/tile_lod_controller.hpp"
