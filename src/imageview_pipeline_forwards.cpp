@@ -285,11 +285,6 @@ void ImageView::installImageModeReplaceItem(const QString &path, const QImage &i
     m_displayPipeline.installImageModeReplaceItem(path, image);
 }
 
-ImageItem *ImageView::imageModeItemForPath(const QString &path) const
-{
-    return m_displayPipeline.imageModeItemForPath(path);
-}
-
 void ImageView::scheduleImageModePreferCacheClimb(const QString &path, int wantEdge)
 {
     m_displayPipeline.scheduleImageModePreferCacheClimb(path, wantEdge);
