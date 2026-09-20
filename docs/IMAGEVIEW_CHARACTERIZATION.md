@@ -19,6 +19,7 @@ size, and framing before deleting `m_pathOrderBook`.
 | `pathorder-dual-model` | document vs book independence, LoadAdd, clear, gallery delete prune, aligned pack case |
 | `contentxform` | layout size, crop map through rotate |
 | `packorderview` | fromBook/fromDocument, alignsWithDocument, multiplicity |
+| `session-gallery-crop-scenario` | narrative open→Gallery→crop→return pure side |
 
 These do **not** replace the harness: they do not exercise decode, mode
 transitions, framing, or Live canvas.

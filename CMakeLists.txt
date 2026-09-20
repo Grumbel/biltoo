@@ -660,6 +660,17 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-packorderview-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME packorderview COMMAND biltoo-packorderview-test)
 
+  add_executable(biltoo-session-gallery-crop-scenario-test
+    tests/session_gallery_crop_scenario_test.cpp
+    src/sessiondocument.cpp
+    src/sessionappearance.cpp
+    src/contentxform.cpp
+    src/coloradjust.cpp
+  )
+  target_include_directories(biltoo-session-gallery-crop-scenario-test PRIVATE src)
+  target_link_libraries(biltoo-session-gallery-crop-scenario-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME session-gallery-crop-scenario COMMAND biltoo-session-gallery-crop-scenario-test)
+
   add_executable(biltoo-sessionappearance-test
     tests/sessionappearance_test.cpp
     src/sessionappearance.cpp

@@ -701,11 +701,13 @@ the stop line when Tier 4 lands.
 dispatch, friend list empty, HudModel + session identity characterization tests.
 
 **Still open:**
-1. **Tier 4** — Move `SessionAppearanceStore` into `SessionDocument`; delete
-   view-owned `m_pathOrderBook` path list in favor of document. Blocked on
-   fuller ImageView characterization (open→Gallery→crop→Image). Document/id
-   tests exist (`sessiondocument_test`, `sessionappearance_test`; expanded
-  biltoo-1615: crop materialize, dual-model orphan, reorder-by-id).
+1. **Tier 4 residual** — Appearance already lives on `SessionDocument` (Tier 4b).
+   Delete view-owned `m_pathOrderBook` in favor of document pack order.
+   Pack **reads** already go through `PackOrderView` / `currentPackOrder()`
+   (fromBook). Blocked on offscreen ImageView characterization
+   (open→Gallery→crop→Image). Pure contracts: `sessiondocument`,
+   `sessionappearance`, `pathorder-dual-model`, `packorderview`,
+   `session-gallery-crop-scenario`. See PATH_ORDER.md / IMAGEVIEW_CHARACTERIZATION.md.
 2. **Tier 5** — **done** for exit size: PreferCache/install/schedule/tile LOD on
    `DisplayPipelineController` (split TUs + jobs). Soft provider and neighbor
    prefetch stay on ImageView. Thin forwards live in `imageview_pipeline_forwards.cpp`;
@@ -732,6 +734,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - biltoo-1713: pathOrderOccurrences + gallery stash reorder via PackOrderView; firstIdForPath on view.
 - biltoo-1714: LoadAdd reorder, canvas_place id checks, firstSessionId fallback via currentPackOrder().
 - biltoo-1715: host IsEmpty/Size/PathAt/IdAt via currentPackOrder(); PATH_ORDER read-path note.
+- biltoo-1716: session-gallery-crop-scenario pure narrative; REFACTOR Tier 4 residual clarified.
 
 - Tier 0: **done** (biltoo-1596) — privatized 190 methods with no refs outside
   `imageview*`; declarations live in `imageview_private_methods.inc` +

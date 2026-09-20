@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1716-session-gallery-crop-scenario.** Pure narrative scenario + REFACTOR Tier 4 status.
+Prior: **1715**.
+
+### Change
+- `tests/session_gallery_crop_scenario_test.cpp` — open→Gallery→crop→return pure path
+  with PackOrderView + ContentXform::layoutSize
+- REFACTOR.md Still open: appearance already on document; residual is path-order book
+- IMAGEVIEW_CHARACTERIZATION.md lists the new CTest
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1716-session-gallery-crop-scenario.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest session-gallery-crop-scenario
+- Offscreen ImageView harness → delete m_pathOrderBook
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1715-packorder-accessors.** Host size/at accessors via currentPackOrder().
 Prior: **1714**.
 
