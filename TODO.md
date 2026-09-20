@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1765-free-rotate-apply-placement.** Workspace free-rotate via applyPlacement.
+Prior: **1764**.
+
+### Change
+- `tryMouseMoveWorkspaceRotate` builds Placement from drag-start and calls applyPlacement
+- Completes Stage 2 single writer for continuous rotate (handle + Shift free-rotate)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1765-free-rotate-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + free-rotate smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1764-group-drag-apply-placement.** Group mid-drag via applyPlacement.
 Prior: **1763**.
 

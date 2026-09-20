@@ -112,7 +112,10 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
         m_itemInteract.currentRotateStartAngle(), angle,
         event->modifiers() & Qt::ControlModifier,
         event->modifiers() & Qt::ShiftModifier);
-    m_itemInteract.currentRotateItem()->setItemRotation(rot);
+    ImageItem *item = m_itemInteract.currentRotateItem();
+    ItemComponents::Placement pl = m_itemInteract.currentDragStartPlacement();
+    pl.rotation = rot;
+    item->applyPlacement(pl);
     m_framing.releaseFit();
     emit statusChanged();
     event->accept();
