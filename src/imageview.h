@@ -278,13 +278,14 @@ public:
     /** Copy of pack paths (prefer currentPackOrder() for paths∥ids). */
     QStringList pathOrder() const { return currentPackOrder().paths(); }
     void clearPathOrder() { pathOrderClear(); }
-    void setPathOrder(const QStringList &paths)
-    {
-        pathOrderSetOrder(paths, QVector<SessionImageId>());
-    }
+    /** Replace pack order (paths ∥ ids). Prefer PackOrderView overload. */
     void setPathOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
     {
         pathOrderSetOrder(paths, ids);
+    }
+    void setPathOrder(const PackOrderView &pack)
+    {
+        pathOrderSetOrder(pack.paths(), pack.ids());
     }
     /** Controller host: disable Image-mode fit/fill when restoring free-form. */
     void clearFitFillModes();

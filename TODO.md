@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1719-setpathorder-ids-required.** Remove paths-only setPathOrder.
+Prior: **1718**.
+
+### Change
+- Removed `setPathOrder(QStringList)` (cleared all SessionImageIds)
+- Added `setPathOrder(PackOrderView)`
+- Gallery stash restore uses PackOrderView overload
+- PATH_ORDER.md notes the API change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1719-setpathorder-ids-required.bundle HEAD
+```
+
+### Next
+- biltoo-build
+- ImageView harness → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1718-layout-switch-pack-ids.** Gallery layout switch keeps session ids.
 Prior: **1717**.
 

@@ -101,7 +101,7 @@ void GalleryController::restoreStashedItems()
     m_view->liveItems() = m_stashedItems;
     m_stashedItems.clear();
     if (!m_stashedPackOrder.isEmpty()) {
-        m_view->setPathOrder(m_stashedPackOrder.paths(), m_stashedPackOrder.ids());
+        m_view->setPathOrder(m_stashedPackOrder);
     }
     m_stashedPackOrder = PackOrderView();
     for (ImageItem *item : m_view->liveItems()) {

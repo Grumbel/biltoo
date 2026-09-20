@@ -737,6 +737,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - biltoo-1716: session-gallery-crop-scenario pure narrative; REFACTOR Tier 4 residual clarified.
 - biltoo-1717: Gallery stash PackOrderView (paths∥ids); pathOrder() by value.
 - biltoo-1718: Gallery layout-switch pack rebuild preserves session ids.
+- biltoo-1719: remove paths-only setPathOrder; PackOrderView overload.
 
 - Tier 0: **done** (biltoo-1596) — privatized 190 methods with no refs outside
   `imageview*`; declarations live in `imageview_private_methods.inc` +

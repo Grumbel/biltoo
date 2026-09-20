@@ -61,6 +61,8 @@ Almost all pack/LoadAdd **reads** go through `ImageView::currentPackOrder()`
 book (call-lifetime stable): `pathOrderPaths()`, `pathOrderIds()`.
 
 Mutations remain `pathOrderClear` / `SetOrder` / `AppendRow` on the book.
+Public `setPathOrder` requires paths∥ids (or `PackOrderView`); the paths-only
+overload was removed so session ids cannot be cleared by accident.
 
 ## Exit criteria (Tier 4 residual)
 
