@@ -13,6 +13,7 @@ class ImageView;
 class ImageItem;
 class QMouseEvent;
 class QWheelEvent;
+class QKeyEvent;
 class QPoint;
 
 /**
@@ -109,6 +110,7 @@ public:
     bool tryWheelGalleryScroll(QWheelEvent *event);
     bool tryMousePressGalleryRight(QMouseEvent *event);
     bool tryMousePressGalleryLeft(QMouseEvent *event);
+    bool tryKeyPressGallery(QKeyEvent *event);
 
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
     {

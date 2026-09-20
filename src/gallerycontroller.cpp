@@ -7,12 +7,14 @@
 #include "gallerylayout.h"
 #include "imageitem.h"
 #include "viewtransform.h"
+#include "workspacenavgeometry.h"
 #include "gallerysoftsm.h"
 
 #include <QScrollBar>
 #include <QTimer>
 #include <QSet>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QWheelEvent>
 #include <QGraphicsScene>
 #include <algorithm>
@@ -637,6 +639,82 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
         // Allow rubber-band start via base class when drag mode is RubberBandDrag.
         m_view->forwardGraphicsViewMousePress(event);
         return true;
+    return true;
+}
+
+
+// --- Gallery key input (Tier 6e) ---
+
+bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
+{
+    // Gallery: arrow keys move among tiles by scene position; Enter opens.
+    if (!m_view->isGalleryMode()
+        || (event->modifiers()
+            & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+        || m_view->liveItems().isEmpty()) {
+        return false;
+    }
+
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        if (ImageItem *item = m_view->selectedOrFirstGalleryItem()) {
+            if (item->sessionId() != kInvalidSessionImageId) {
+                emit m_view->sessionImageOpenRequested(item->sessionId());
+            } else if (item->sessionIndex() >= 0) {
+                emit m_view->sessionSlotOpenRequested(item->sessionIndex());
+            } else if (!item->path().isEmpty()) {
+                emit m_view->galleryItemOpenRequested(item->path());
+            }
+            event->accept();
+            return true;
+        }
+        return false;
+    }
+
+    if (event->key() == Qt::Key_Home || event->key() == Qt::Key_End) {
+        ImageItem *item = (event->key() == Qt::Key_Home)
+                              ? m_view->liveItems().first()
+                              : m_view->liveItems().last();
+        m_view->focusSessionPath(item->path());
+        m_view->emitGalleryItemFocus(item);
+        event->accept();
+        return true;
+    }
+
+    // Spatial neighbour: prefer candidates in the arrow direction, score by
+    // primary-axis distance with a cross-axis penalty (grid-friendly).
+    const int key = event->key();
+    if (key != Qt::Key_Left && key != Qt::Key_Right
+        && key != Qt::Key_Up && key != Qt::Key_Down) {
+        return false;
+    }
+    ImageItem *from = m_view->selectedOrFirstGalleryItem();
+    if (!from) {
+        from = m_view->liveItems().first();
+    }
+    const QPointF origin = from->sceneBoundingRect().center();
+    ImageItem *best = nullptr;
+    qreal bestScore = 1e300;
+    for (ImageItem *cand : m_view->liveItems()) {
+        if (!cand || cand == from) {
+            continue;
+        }
+        const QPointF c = cand->sceneBoundingRect().center();
+        const auto scored = WorkspaceNavGeometry::scoreRelative(
+            static_cast<Qt::Key>(key), origin, c);
+        if (!scored.inDirection) {
+            continue;
+        }
+        if (scored.score < bestScore) {
+            bestScore = scored.score;
+            best = cand;
+        }
+    }
+    if (!best) {
+        return false;
+    }
+    m_view->focusSessionPath(best->path());
+    m_view->emitGalleryItemFocus(best);
+    event->accept();
     return true;
 }
 

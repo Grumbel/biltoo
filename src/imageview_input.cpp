@@ -1246,76 +1246,9 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
 
 bool ImageView::tryKeyPressGallery(QKeyEvent *event)
 {
-    // Gallery: arrow keys move among tiles by scene position; Enter opens.
-    if (!isGalleryMode()
-        || (event->modifiers()
-            & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
-        || m_items.isEmpty()) {
-        return false;
-    }
-
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        if (ImageItem *item = selectedOrFirstGalleryItem()) {
-            if (item->sessionId() != kInvalidSessionImageId) {
-                emit sessionImageOpenRequested(item->sessionId());
-            } else if (item->sessionIndex() >= 0) {
-                emit sessionSlotOpenRequested(item->sessionIndex());
-            } else if (!item->path().isEmpty()) {
-                emit galleryItemOpenRequested(item->path());
-            }
-            event->accept();
-            return true;
-        }
-        return false;
-    }
-
-    if (event->key() == Qt::Key_Home || event->key() == Qt::Key_End) {
-        ImageItem *item = (event->key() == Qt::Key_Home)
-                              ? m_items.first()
-                              : m_items.last();
-        focusSessionPath(item->path());
-        emitGalleryItemFocus(item);
-        event->accept();
-        return true;
-    }
-
-    // Spatial neighbour: prefer candidates in the arrow direction, score by
-    // primary-axis distance with a cross-axis penalty (grid-friendly).
-    const int key = event->key();
-    if (key != Qt::Key_Left && key != Qt::Key_Right
-        && key != Qt::Key_Up && key != Qt::Key_Down) {
-        return false;
-    }
-    ImageItem *from = selectedOrFirstGalleryItem();
-    if (!from) {
-        from = m_items.first();
-    }
-    const QPointF origin = from->sceneBoundingRect().center();
-    ImageItem *best = nullptr;
-    qreal bestScore = 1e300;
-    for (ImageItem *cand : m_items) {
-        if (!cand || cand == from) {
-            continue;
-        }
-        const QPointF c = cand->sceneBoundingRect().center();
-        const auto scored = WorkspaceNavGeometry::scoreRelative(
-            static_cast<Qt::Key>(key), origin, c);
-        if (!scored.inDirection) {
-            continue;
-        }
-        if (scored.score < bestScore) {
-            bestScore = scored.score;
-            best = cand;
-        }
-    }
-    if (!best) {
-        return false;
-    }
-    focusSessionPath(best->path());
-    emitGalleryItemFocus(best);
-    event->accept();
-    return true;
+    return m_gallery.tryKeyPressGallery(event);
 }
+
 
 bool ImageView::tryKeyPressWorkspaceShear(QKeyEvent *event)
 {

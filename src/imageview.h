@@ -271,6 +271,8 @@ public:
     /** Display pipeline host: gallery controller (stashed items). */
     GalleryController &hostGallery() { return m_gallery; }
     const GalleryController &hostGallery() const { return m_gallery; }
+    ImageItem *selectedOrFirstGalleryItem() const;
+    void emitGalleryItemFocus(ImageItem *item);
     WorkspaceController &hostWorkspace() { return m_workspace; }
     const WorkspaceController &hostWorkspace() const { return m_workspace; }
     ItemInteractSession &hostItemInteract() { return m_itemInteract; }
@@ -1177,8 +1179,6 @@ protected:
     bool tryKeyPressZoomRegion(QKeyEvent *event);
     bool tryKeyPressSelectAll(QKeyEvent *event);
     bool tryKeyPressImageNavigate(QKeyEvent *event);
-    ImageItem *selectedOrFirstGalleryItem() const;
-    void emitGalleryItemFocus(ImageItem *item);
     bool tryKeyPressGallery(QKeyEvent *event);
     bool tryKeyPressWorkspaceShear(QKeyEvent *event);
     bool tryKeyPressDeleteSelection(QKeyEvent *event);

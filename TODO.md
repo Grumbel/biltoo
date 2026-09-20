@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1660-gallery-key-controller.** Tier 6e: Gallery key nav on GalleryController.
+Prior: **1659**.
+
+### Change
+- `GalleryController::tryKeyPressGallery` (arrows / Home / End / Enter)
+- Host: `selectedOrFirstGalleryItem()`, `emitGalleryItemFocus()` public
+- ImageView thin-forwards
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1660-gallery-key-controller.bundle HEAD
+```
+
+### Next
+- Path-order residual / imageview.h narrowing
+- biltoo-build verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1659-sessiondoc-dup-test.** Align validateUniqueIds test with replaceAll repair.
 Prior: **1658**.
 
