@@ -1048,7 +1048,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         bool navHot = false;
         if (scene() && !scene()->views().isEmpty()) {
             if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
-                navHot = iv->slideshowNavHot();
+                navHot = iv->hostSlideshow().hud().isNavHot();
             }
         }
         if (tileLodWanted() && !navHot) {

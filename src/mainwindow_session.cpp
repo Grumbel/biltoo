@@ -1688,7 +1688,7 @@ void MainWindow::finishCurrentIndexChromeUpdate()
     }
     // During rapid Image-mode ←/→ (nav hot), skip title/location bar churn —
     // settle timer will load again and chrome catches up then.
-    const bool navHot = m_imageView && m_imageView->slideshowNavHot()
+    const bool navHot = m_imageView && m_imageView->hostSlideshow().hud().isNavHot()
                         && isImageMode() && !m_slideshowAdvancing;
     if (!navHot) {
         updateWindowTitle();
@@ -2583,7 +2583,7 @@ void MainWindow::clampSlideshowTransitionToInterval()
         return;
     }
     const int cap = m_slideshowIntervalMs;
-    const int tr = m_imageView->slideshowTransitionDurationMs();
+    const int tr = m_imageView->hostSlideshow().settings().transitionDuration();
     if (cap >= 0 && tr > cap) {
         m_imageView->hostSlideshow().setSlideshowTransitionDurationMs(cap);
     }

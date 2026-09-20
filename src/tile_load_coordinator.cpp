@@ -134,11 +134,11 @@ void TileLoadCoordinator::tick(int globalBudget)
     if (!m_view || globalBudget < 0) {
         return;
     }
-    if (m_view->isSlideshowProgressActive()) {
+    if (m_view->hostSlideshow().hud().isProgressActive()) {
         return;
     }
     // Image ←/→ key-repeat: soft swap only; tile plan/issue stalls the GUI.
-    if (m_view->slideshowNavHot()) {
+    if (m_view->hostSlideshow().hud().isNavHot()) {
         return;
     }
     // Size probes first: do not compete with EnsureTiles while Gallery is still

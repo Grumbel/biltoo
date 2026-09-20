@@ -1547,15 +1547,15 @@ void MainWindow::showSlideshowSettings()
     dlg.setStartFullscreen(m_slideshowFullscreen);
     dlg.setLoop(m_slideshowLoop);
     if (m_imageView) {
-        dlg.setTransitionIndex(static_cast<int>(m_imageView->slideshowTransition()));
-        dlg.setTransitionDurationMs(m_imageView->slideshowTransitionDurationMs());
-        dlg.setMotionIndex(static_cast<int>(m_imageView->slideshowMotion()));
-        dlg.setPanZoomFactor(m_imageView->panZoomFactor());
-        dlg.setZoomIndex(static_cast<int>(m_imageView->slideshowZoom()));
-        dlg.setLetterboxFillIndex(static_cast<int>(m_imageView->slideshowLetterboxFill()));
+        dlg.setTransitionIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentTransition()));
+        dlg.setTransitionDurationMs(m_imageView->hostSlideshow().settings().transitionDuration());
+        dlg.setMotionIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentMotion()));
+        dlg.setPanZoomFactor(m_imageView->hostSlideshow().settings().currentPanZoomFactor());
+        dlg.setZoomIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentZoom()));
+        dlg.setLetterboxFillIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentLetterboxFill()));
         dlg.setPadColor(m_imageView->slideshowPadColor());
         // Solid mode stores its own colour; surface current effective pad for UI.
-        if (m_imageView->slideshowLetterboxFill()
+        if (m_imageView->hostSlideshow().settings().currentLetterboxFill()
             == SlideshowLetterboxFill::Solid) {
             // pad from setter path uses dedicated colour via slideshowPadColor
         }
@@ -1673,7 +1673,7 @@ void MainWindow::updateSlideshowFromClock()
     }
 
     const int intervalMs = SlideshowClocks::clampIntervalMs(m_slideshowIntervalMs);
-    int transitionMs = m_imageView ? m_imageView->slideshowTransitionDurationMs() : 0;
+    int transitionMs = m_imageView ? m_imageView->hostSlideshow().settings().transitionDuration() : 0;
     transitionMs = SlideshowClocks::clampTransitionMs(transitionMs, intervalMs);
     const int pureMs = intervalMs - transitionMs;
     const qreal pureFrac = SlideshowClocks::pureFrac(pureMs, intervalMs);
@@ -2121,12 +2121,12 @@ void MainWindow::showPreferences()
     dlg.setSlideshowFullscreen(m_slideshowFullscreen);
     dlg.setSlideshowLoop(m_slideshowLoop);
     if (m_imageView) {
-        dlg.setSlideshowTransitionIndex(static_cast<int>(m_imageView->slideshowTransition()));
-        dlg.setSlideshowTransitionDurationMs(m_imageView->slideshowTransitionDurationMs());
-        dlg.setSlideshowMotionIndex(static_cast<int>(m_imageView->slideshowMotion()));
-        dlg.setPanZoomFactor(m_imageView->panZoomFactor());
-        dlg.setSlideshowZoomIndex(static_cast<int>(m_imageView->slideshowZoom()));
-        dlg.setSlideshowLetterboxFillIndex(static_cast<int>(m_imageView->slideshowLetterboxFill()));
+        dlg.setSlideshowTransitionIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentTransition()));
+        dlg.setSlideshowTransitionDurationMs(m_imageView->hostSlideshow().settings().transitionDuration());
+        dlg.setSlideshowMotionIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentMotion()));
+        dlg.setPanZoomFactor(m_imageView->hostSlideshow().settings().currentPanZoomFactor());
+        dlg.setSlideshowZoomIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentZoom()));
+        dlg.setSlideshowLetterboxFillIndex(static_cast<int>(m_imageView->hostSlideshow().settings().currentLetterboxFill()));
         dlg.setSlideshowPadColor(m_imageView->slideshowPadColor());
     }
     dlg.setSortModeIndex(static_cast<int>(m_sortMode));
@@ -3199,17 +3199,17 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("slideshowIntervalMs"), m_slideshowIntervalMs);
     if (m_imageView) {
         settings.setValue(QStringLiteral("slideshowTransition"),
-                          static_cast<int>(m_imageView->slideshowTransition()));
+                          static_cast<int>(m_imageView->hostSlideshow().settings().currentTransition()));
         settings.setValue(QStringLiteral("slideshowTransitionDurationMs"),
-                          m_imageView->slideshowTransitionDurationMs());
+                          m_imageView->hostSlideshow().settings().transitionDuration());
         settings.setValue(QStringLiteral("slideshowMotion"),
-                          static_cast<int>(m_imageView->slideshowMotion()));
+                          static_cast<int>(m_imageView->hostSlideshow().settings().currentMotion()));
         settings.setValue(QStringLiteral("slideshowPanZoomFactor"),
-                          m_imageView->panZoomFactor());
+                          m_imageView->hostSlideshow().settings().currentPanZoomFactor());
         settings.setValue(QStringLiteral("slideshowZoomMode"),
-                          static_cast<int>(m_imageView->slideshowZoom()));
+                          static_cast<int>(m_imageView->hostSlideshow().settings().currentZoom()));
         settings.setValue(QStringLiteral("slideshowLetterboxFill"),
-                          static_cast<int>(m_imageView->slideshowLetterboxFill()));
+                          static_cast<int>(m_imageView->hostSlideshow().settings().currentLetterboxFill()));
         settings.setValue(QStringLiteral("slideshowPadColor"),
                           m_imageView->slideshowPadColor().name(QColor::HexRgb));
     }
