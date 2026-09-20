@@ -662,7 +662,7 @@ separate from path-order deletion.
 | `gallerycontroller` stash/restore | `currentPackOrder` / `pathOrderSetOrder` | Leave/enter Gallery | Yes — stash is view book |
 | `gallerycontroller` applyLayout / ensurePlaceholders | `pathOrderIsEmpty` / `currentPackOrder` | Reorder + pack order | Yes — may include multiplicity |
 | `gallerycontroller` leave | `pathOrderClear` | Blank book without wiping session | Yes |
-| `gallerycontroller` after mutate | `setPathOrderFromLiveItems` | Resync book from tiles | Yes |
+| `gallerycontroller` layout switch | `GalleryController::setPathOrderFromLiveItems` (private; uses `liveItems` + `pathOrderSetOrder`) | Resync book from tiles | Yes — tip 1872 moved off ImageView |
 | `workspacecontroller` leave | `pathOrderClear` | Same | Yes |
 | `displaypipelinecontroller_load` completeLoadAdd | `pathOrderOccurrences` | How many tiles for path | **Must** be book |
 | `displaypipelinecontroller_load` reorder | `currentPackOrder` | Order live items | Yes |

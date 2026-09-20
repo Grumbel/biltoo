@@ -147,6 +147,9 @@ public:
     }
 
 private:
+    /** Rebuild view path-order book from live tiles (layout switch). */
+    void setPathOrderFromLiveItems();
+
     ImageView *m_view = nullptr;
 
     QList<ImageItem *> m_stashedItems;

@@ -369,7 +369,7 @@ void GalleryController::enter(int packagedLayoutInt)
     // Explicit layout action: pack only live items (drop stale path-order holes).
     if (layoutSwitch) {
         // Drop stale pack holes; keep path∥sessionId from live tiles (id-safe).
-        m_view->setPathOrderFromLiveItems();
+        setPathOrderFromLiveItems();
     }
     // Pack now only when tiles already belong to this Gallery session:
     // layout switch inside Gallery, or restash return from Image.
@@ -1578,5 +1578,23 @@ void GalleryController::setRelayoutSuppressed(bool on)
         }
     } else if (m_view->hostGalleryRelayoutSuppress().active()) {
         m_view->hostGalleryRelayoutSuppress().push(false);
+    }
+}
+
+void GalleryController::setPathOrderFromLiveItems()
+{
+    QStringList paths;
+    QVector<SessionImageId> ids;
+    paths.reserve(m_view->liveItems().size());
+    ids.reserve(m_view->liveItems().size());
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        paths.append(item->path());
+        ids.append(item->sessionId());
+    }
+    if (!paths.isEmpty()) {
+        m_view->pathOrderSetOrder(paths, ids);
     }
 }

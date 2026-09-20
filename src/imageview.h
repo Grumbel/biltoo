@@ -240,7 +240,6 @@ public:
     /** Controller host: session path order used for Gallery packing. */
     /** Path-order book: pathOrderClear / pathOrderSetOrder / pathOrderAppendRow / currentPackOrder. */
     /** Rebuild pack order from live tiles (path∥sessionId). Id-safe. */
-    void setPathOrderFromLiveItems();
     /** Controller host: session appearance store (id-keyed). */
     /**
      * Session appearance (id-keyed). Always the SessionDocument store after
