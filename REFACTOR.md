@@ -959,3 +959,5 @@ Phase 1–6 rules still apply. Additions:
   `rememberItemState` writes setPlacement before setAppearance.
 - biltoo-1736: session-gallery-crop-scenario asserts ItemWorld Crop/ContentBake
   presence; IMAGEVIEW_CHARACTERIZATION pure-contract table updated.
+- biltoo-1737: `placementFromItem` + captureState pose via applyPlacementToState
+  (single reader for live ImageItem pose).

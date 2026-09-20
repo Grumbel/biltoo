@@ -15,22 +15,34 @@
 #include <QGraphicsItem>
 #include <QVector>
 
+
+ItemComponents::Placement ImageView::placementFromItem(const ImageItem *item)
+{
+    ItemComponents::Placement pl;
+    if (!item) {
+        return pl;
+    }
+    pl.pos = item->pos();
+    pl.scale = item->itemScaleX();
+    pl.scaleY = item->itemScaleY();
+    pl.shear = item->itemShear();
+    pl.rotation = item->itemRotation();
+    pl.opacity = item->itemOpacity();
+    pl.z = item->stackZ();
+    pl.hFlip = item->itemHFlip();
+    pl.vFlip = item->itemVFlip();
+    return pl;
+}
+
 WorkspaceItemState ImageView::captureState(const ImageItem *item) const
 {
     WorkspaceItemState s;
     s.path = item->path();
     s.sessionId = item->sessionId();
     s.sessionIndex = item->sessionIndex(); // order cache only
-    s.pos = item->pos();
-    s.scale = item->itemScaleX();
-    s.scaleY = item->itemScaleY();
-    s.shear = item->itemShear();
-    s.rotation = item->itemRotation(); // placement only
+    // Stage 2: pose via Placement helper (single place that reads item pose).
+    ItemComponents::applyPlacementToState(s, placementFromItem(item));
     s.orientation = 0.0;
-    s.opacity = item->itemOpacity();
-    s.z = item->stackZ();
-    s.hFlip = item->itemHFlip();
-    s.vFlip = item->itemVFlip();
     // Live item is authoritative for per-instance crop rect + content flips.
     // cropRotation / cropSourceSize are not stored on ImageItem — load them
     // from the session-image appearance store (or path map for unbound).

@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1737-placement-from-item.** captureState pose via placementFromItem.
+Prior: **1736**.
+
+### Change
+- `ImageView::placementFromItem` — single reader for live pose fields
+- `captureState` applies Placement via `applyPlacementToState` (no field-by-field pose copy)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1737-placement-from-item.bundle HEAD
+```
+
+### Next
+- biltoo-build
+- Offscreen ImageView characterization harness (Tier 4)
+- Or tile-LOD / interact demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1736-scenario-itemworld.** Scenario test asserts ItemWorld components.
 Prior: **1735**.
 
