@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1844-pack-via-host.** Gallery pack/layout pure hops via hostGallery.
+Prior: **1843**.
+
+### Change
+- MainWindow / pipeline / ImageView internals → `hostGallery().applyLayout` /
+  `setGridColumns` / `setMasonry*` / `scheduleDecodeWindowRefresh` /
+  `setRelayoutSuppressed` / `updateDecodeWindow` / …
+- `layoutWorkspaceItems` → `hostWorkspace().layoutItems`
+- Keep on ImageView: `setLayoutMode`, `reloadFromDisk`, `hardReloadFromDisk`,
+  decode-list helpers, `galleryLayoutModeFromViewMode`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1844-pack-via-host.bundle HEAD
+```
+Requires tip **1843**.
+
+### Next
+- biltoo-build smoke (Gallery pack, grid/masonry, layout panel)
+- Further pure-forward TUs (modes/size_book/session_bind)
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1843-workspace-via-host.** Workspace snapshot/stash via hostWorkspace.
 Prior: **1842**.
 
