@@ -145,8 +145,8 @@ QString ImageView::hudFileName() const
         }
         return name;
     }
-    if (hasClassicPath() && isImageMode()) {
-        return PagePath::displayName(classicPath());
+    if (m_image.hasClassicPath() && isImageMode()) {
+        return PagePath::displayName(m_image.classicPath());
     }
     return {};
 }
@@ -206,7 +206,7 @@ QString ImageView::statusTextEmpty() const
         : QString();
     return HudModel::emptyCanvasStatus(
         m_sessionId.hasLastLoadError(), errName,
-        hasClassicPath(), isImageMode(), isGalleryMode(), isWorkspaceMode());
+        m_image.hasClassicPath(), isImageMode(), isGalleryMode(), isWorkspaceMode());
 }
 
 QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,

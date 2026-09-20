@@ -254,14 +254,14 @@ void CropController::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
 
 void CropController::pushCropAppearanceUndo(ImageItem *item, const QString &text)
 {
-    if (!m_view->undoStack() || !item || !session().isEnterValid()) {
+    if (!m_view->hostUndoStack() || !item || !session().isEnterValid()) {
         return;
     }
     WorkspaceItemState afterSt = m_view->captureState(item);
     CropSession::fillSessionCropFromItem(&afterSt, item);
     // captureState pulls cropRotation from appearance
     // (recordSessionCrop + commitItemSessionEdit).
-    m_view->undoStack()->push(new CropAppearanceCommand(
+    m_view->hostUndoStack()->push(new CropAppearanceCommand(
         m_view, item, session().enterSourceRef(), item->sourceImage().copy(),
         session().enterStateRef(), afterSt, text));
 }

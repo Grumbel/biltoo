@@ -350,7 +350,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
         return;
     }
     if (role == ImageView::LoadAdd) {
-        m_view->addPendingWorkspacePath(path);
+        m_view->hostDisplayPipeline().loadGate().addPendingWorkspacePath(path);
     }
     // ImageView::LoadRestore pending is owned by loadGate().pendingRestoreStates() (AUDIT M27).
     // AUDIT H3a: only ImageView::LoadReplace advances the generation token so workspace
@@ -399,7 +399,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
                 const QString pathCopy = path;
                 // One frame for soft paint, then PreferCache for the settled path.
                 QTimer::singleShot(16, m_view, [this, pathCopy, soft]() {
-                    if (!m_view->isImageMode() || m_view->classicPath() != pathCopy) {
+                    if (!m_view->isImageMode() || m_view->hostImage().classicPath() != pathCopy) {
                         return;
                     }
                     if (m_view->hostSlideshow().hud().isNavHot()) {
@@ -650,7 +650,7 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
 
     // Replace navigations: drop superseded previews.
     if (role == ImageView::LoadReplace) {
-        if (generation != loadGate().generation() || path != m_view->classicPath()) {
+        if (generation != loadGate().generation() || path != m_view->hostImage().classicPath()) {
             return;
         }
         if (m_view->isImageMode()) {

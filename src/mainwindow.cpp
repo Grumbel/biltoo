@@ -857,7 +857,7 @@ void MainWindow::exportDocumentText()
     }
     QString suggested = QStringLiteral("document.txt");
     if (m_imageView) {
-        const QString path = m_imageView->classicPath();
+        const QString path = m_imageView->hostImage().classicPath();
         if (!path.isEmpty()) {
             const QString doc = PagePath::documentFilePath(path);
             if (!doc.isEmpty()) {
@@ -995,7 +995,7 @@ void MainWindow::onSearchTextChanged(const QString &text)
     }
     const bool fuzzy = !m_searchFuzzyCheck || m_searchFuzzyCheck->isChecked();
     m_imageView->setTextSearchFuzzy(fuzzy);
-    const QString path = m_imageView->classicPath();
+    const QString path = m_imageView->hostImage().classicPath();
     m_docSearchPageMatchCount = m_imageView->setTextSearchQuery(text);
     m_docSearchHitPages.clear();
     m_docSearchHitIndex = -1;
@@ -1065,9 +1065,9 @@ void MainWindow::updateSearchMatchLabel()
     } else if (pageHits > 0) {
         text = tr("%n on page", "", pageHits);
     } else if (m_imageView && !m_imageView->hasTextLayer()
-               && PagePath::isPageRef(m_imageView->classicPath())) {
+               && PagePath::isPageRef(m_imageView->hostImage().classicPath())) {
         text = tr("No text");
-    } else if (m_imageView && !PagePath::isPageRef(m_imageView->classicPath())) {
+    } else if (m_imageView && !PagePath::isPageRef(m_imageView->hostImage().classicPath())) {
         text = tr("Not a document page");
     } else {
         text = tr("No matches");
@@ -1088,7 +1088,7 @@ QStringList MainWindow::documentPagePathsForSearch() const
     if (!m_imageView) {
         return out;
     }
-    QString path = m_imageView->classicPath();
+    QString path = m_imageView->hostImage().classicPath();
     if (path.isEmpty() && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
         path = m_session.paths().at(m_currentIndex);
     }
@@ -1226,7 +1226,7 @@ void MainWindow::onDocumentSearchFinished(quint64 generation, const QString &que
     // Point at the hit for the current page when possible.
     m_docSearchHitIndex = -1;
     if (m_imageView && !hitPages.isEmpty()) {
-        const int cur = PagePath::pageNumber(m_imageView->classicPath());
+        const int cur = PagePath::pageNumber(m_imageView->hostImage().classicPath());
         for (int i = 0; i < hitPages.size(); ++i) {
             if (hitPages.at(i) == cur) {
                 m_docSearchHitIndex = i;
@@ -2296,7 +2296,7 @@ void MainWindow::updateTocPanel()
     if (!m_tocPanel || !m_imageView) {
         return;
     }
-    const QString path = m_imageView->classicPath();
+    const QString path = m_imageView->hostImage().classicPath();
     if (path.isEmpty() || (!PagePath::isPageRef(path) && !PagePath::isEpubLayoutOnly(path))) {
         // Try session path at current index
         QString sessionPath = path;
@@ -2324,7 +2324,7 @@ void MainWindow::navigateDocumentPage(int page_1based)
     if (page_1based < 1 || !m_imageView) {
         return;
     }
-    QString path = m_imageView->classicPath();
+    QString path = m_imageView->hostImage().classicPath();
     if (path.isEmpty() && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
         path = m_session.paths().at(m_currentIndex);
     }
@@ -2528,7 +2528,7 @@ void MainWindow::updateStatus()
         m_imageView->hostSlideshow().setSessionPosition(m_currentIndex, m_session.paths().size(),
                                         !m_slideshowAdvancing);
         m_imageView->setCurrentSessionId(currentSessionId());
-        const QString err = m_imageView->lastLoadError();
+        const QString err = m_imageView->hostSessionId().lastLoadErrorRef();
         if (!err.isEmpty() && statusBar()) {
             statusBar()->showMessage(
                 tr("Could not load “%1”").arg(PagePath::displayName(err)), 5000);

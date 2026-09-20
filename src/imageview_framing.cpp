@@ -213,7 +213,7 @@ void ImageView::zoomFill()
 
 void ImageView::armZoomRegion()
 {
-    if (m_items.isEmpty() && isImageMode() && !hasClassicPath()) {
+    if (m_items.isEmpty() && isImageMode() && !m_image.hasClassicPath()) {
         return;
     }
     cancelZoomRegion();

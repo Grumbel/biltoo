@@ -78,12 +78,12 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
     // Link hover: pointing hand + status tip (Image mode page docs).
     if (isImageMode() && !m_cropCtrl.session().active() && !m_attentionCtrl.session().active() && !m_textLayer.isRubberbanding()
         && !m_chrome.isPanning() && event->buttons() == Qt::NoButton
-        && PagePath::isPageRef(classicPath())) {
-        if (!m_textLayer.hasLayerRegions() || m_textLayer.layerPathRef() != classicPath()) {
+        && PagePath::isPageRef(m_image.classicPath())) {
+        if (!m_textLayer.hasLayerRegions() || m_textLayer.layerPathRef() != m_image.classicPath()) {
             const ThumtooCache::PageTextLayer cached =
-                ThumtooCache::cachedPageTextLayer(classicPath());
+                ThumtooCache::cachedPageTextLayer(m_image.classicPath());
             if (!cached.regions.isEmpty()) {
-                m_textLayer.setLayerContent(cached, classicPath());
+                m_textLayer.setLayerContent(cached, m_image.classicPath());
             }
         }
         int page = 0;

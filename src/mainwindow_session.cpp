@@ -1572,7 +1572,7 @@ bool MainWindow::refreshSameCurrentIndex(bool ensureGalleryVisible)
     if (isImageMode() && m_imageView) {
         const QString path = m_session.paths().at(m_currentIndex);
         if (m_imageView->itemCount() == 0
-            || m_imageView->classicPath() != path) {
+            || m_imageView->hostImage().classicPath() != path) {
             m_imageView->hostDisplayPipeline().loadImage(path);
         }
         return true;
@@ -1786,9 +1786,9 @@ void MainWindow::removeSessionIndices(const QList<int> &indices)
         return;
     }
 
-    if (m_imageView && m_imageView->undoStack() && !m_sessionUndoGuard) {
+    if (m_imageView && m_imageView->hostUndoStack() && !m_sessionUndoGuard) {
         // push() calls redo() → applySessionRemoveIndices
-        m_imageView->undoStack()->push(new SessionRemoveCommand(this, entries));
+        m_imageView->hostUndoStack()->push(new SessionRemoveCommand(this, entries));
         return;
     }
     applySessionRemoveIndices(sorted);
@@ -3445,8 +3445,8 @@ void MainWindow::duplicateSelected()
     if (sourceIds.isEmpty() && fallbackPaths.isEmpty()) {
         return;
     }
-    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
-        m_imageView->undoStack()->push(
+    if (m_imageView->hostUndoStack() && !m_sessionUndoGuard) {
+        m_imageView->hostUndoStack()->push(
             new SessionDuplicateCommand(this, sourceIds, fallbackPaths));
         return;
     }
@@ -3651,8 +3651,8 @@ void MainWindow::cutWorkspaceItems()
     writeWorkspaceMime(items);
     m_workspacePasteGeneration = 0;
     updatePasteActionEnabled();
-    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
-        m_imageView->undoStack()->push(new WorkspaceCutCommand(this, items));
+    if (m_imageView->hostUndoStack() && !m_sessionUndoGuard) {
+        m_imageView->hostUndoStack()->push(new WorkspaceCutCommand(this, items));
         return;
     }
     applyWorkspaceCut(items);
@@ -3723,8 +3723,8 @@ void MainWindow::pasteWorkspaceItems()
     if (items.isEmpty()) {
         return;
     }
-    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
-        m_imageView->undoStack()->push(new WorkspacePasteCommand(this, items));
+    if (m_imageView->hostUndoStack() && !m_sessionUndoGuard) {
+        m_imageView->hostUndoStack()->push(new WorkspacePasteCommand(this, items));
         return;
     }
     applyWorkspacePaste(items);
@@ -4524,8 +4524,8 @@ void MainWindow::editWorkspaceBackground()
     const WorkspaceBackground after = dlg.background();
     // Reset to before so redo applies the accepted state once.
     m_imageView->setWorkspaceBackground(before);
-    if (m_imageView->undoStack() && !m_sessionUndoGuard) {
-        m_imageView->undoStack()->push(
+    if (m_imageView->hostUndoStack() && !m_sessionUndoGuard) {
+        m_imageView->hostUndoStack()->push(
             new WorkspaceBackgroundCommand(this, before, after));
     } else {
         applyWorkspaceBackground(after);

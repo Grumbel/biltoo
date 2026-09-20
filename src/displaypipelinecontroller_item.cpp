@@ -661,7 +661,7 @@ void DisplayPipelineController::onImageLoaded(const QString &path, const QImage 
 
 bool DisplayPipelineController::loadImage(const QString &path)
 {
-    m_view->setClassicPath(path);
+    m_view->hostImage().setClassicPath(path);
     m_view->clearTextSelection();
     m_view->hostTextLayer().clearLinkHoverTip();
     if (m_view->hostTextLayer().showsRegions() || m_view->hostTextLayer().hasSearchQuery()) {

@@ -135,7 +135,7 @@ void AttentionController::pushAttentionPointsUndo(const QVector<QPointF> &before
                                         const QVector<QPointF> &after,
                                         const QString &text)
 {
-    if (!m_view->undoStack() || before == after) {
+    if (!m_view->hostUndoStack() || before == after) {
         return;
     }
     class AttentionPointsCommand : public QUndoCommand {
@@ -167,7 +167,7 @@ void AttentionController::pushAttentionPointsUndo(const QVector<QPointF> &before
         QVector<QPointF> m_before;
         QVector<QPointF> m_after;
     };
-    m_view->undoStack()->push(new AttentionPointsCommand(m_view, before, after, text));
+    m_view->hostUndoStack()->push(new AttentionPointsCommand(m_view, before, after, text));
 }
 
 void AttentionController::detectAttentionPoint()

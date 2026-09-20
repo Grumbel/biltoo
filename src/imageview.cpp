@@ -230,7 +230,7 @@ ImageView::ImageView(QWidget *parent)
                     return;
                 }
                 if (isImageMode() && !m_slideshow.hud().isProgressActive()
-                    && path == classicPath()) {
+                    && path == m_image.classicPath()) {
                     // Event-driven ImageFocus: DisplaySurface::decide (not a
                     // quality watchdog). Soft→full via Attach* / async / climb.
                     m_displayPipeline.driveImageFocusSurface();

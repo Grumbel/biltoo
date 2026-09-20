@@ -1125,7 +1125,7 @@ SessionImageId SlideshowController::sessionIdForPath(const QString &path) const
                 return m_view->hostSessionId().currentIdValue();
             }
         }
-        if (m_view->classicPath() == path || m_view->currentPath() == path) {
+        if (m_view->hostImage().classicPath() == path || m_view->currentPath() == path) {
             return m_view->hostSessionId().currentIdValue();
         }
     }

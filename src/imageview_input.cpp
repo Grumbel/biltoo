@@ -182,10 +182,10 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
     if (!isImageMode() || m_cropCtrl.session().active() || m_attentionCtrl.session().active()
         || event->button() != Qt::LeftButton
         || event->modifiers() != Qt::NoModifier
-        || !PagePath::isPageRef(classicPath())) {
+        || !PagePath::isPageRef(m_image.classicPath())) {
         return false;
     }
-    if (!m_textLayer.hasLayerRegions() || m_textLayer.layerPathRef() != classicPath()) {
+    if (!m_textLayer.hasLayerRegions() || m_textLayer.layerPathRef() != m_image.classicPath()) {
         const bool hadShow = m_textLayer.showsRegions();
         m_textLayer.setShowRegions(true);
         refreshTextLayer();

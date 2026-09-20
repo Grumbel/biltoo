@@ -211,7 +211,7 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
     // classicPath; without this, a stale session-cursor path races the real
     // target and double-click on a Workspace tile can open the wrong image.
     if (m_imageView) {
-        m_imageView->setClassicPath(path);
+        m_imageView->hostImage().setClassicPath(path);
         m_imageView->setCurrentSessionId(sid);
         m_imageView->hostSlideshow().setSessionPosition(sessionIndex, m_session.size(), false);
         m_imageView->hostGallery().leaveForImageMode();

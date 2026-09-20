@@ -60,7 +60,7 @@ void ImageView::refreshTextLayer()
     }
     // Search/outlines need a page ref; allow extract outside pure Image mode
     // (e.g. user opened Find while still on a page path).
-    const QString path = classicPath();
+    const QString path = m_image.classicPath();
     if (path.isEmpty() || !PagePath::isPageRef(path)) {
         return;
     }
@@ -130,7 +130,7 @@ int ImageView::setTextSearchQuery(const QString &query)
         return 0;
     }
     // Ensure layer is loaded for the current page.
-    if (!m_textLayer.hasRegions() || m_textLayer.layerPathRef() != classicPath()) {
+    if (!m_textLayer.hasRegions() || m_textLayer.layerPathRef() != m_image.classicPath()) {
         refreshTextLayer();
     } else {
         recomputeTextSearchMatches();
@@ -142,7 +142,7 @@ int ImageView::setTextSearchQuery(const QString &query)
 
 bool ImageView::hasTextLayer() const
 {
-    return m_textLayer.hasRegions() && m_textLayer.layerPathRef() == classicPath();
+    return m_textLayer.hasRegions() && m_textLayer.layerPathRef() == m_image.classicPath();
 }
 
 
@@ -163,14 +163,14 @@ bool ImageView::hitTextLinkAt(const QPoint &viewPos, int *pageOut, QString *uriO
     if (uriOut) {
         uriOut->clear();
     }
-    if (!isImageMode() || !PagePath::isPageRef(classicPath())) {
+    if (!isImageMode() || !PagePath::isPageRef(m_image.classicPath())) {
         return false;
     }
     ImageItem *item = primaryItem();
     if (!item || item->contentRect().isEmpty()) {
         return false;
     }
-    if (!m_textLayer.hasRegions() || m_textLayer.layerPathRef() != classicPath()) {
+    if (!m_textLayer.hasRegions() || m_textLayer.layerPathRef() != m_image.classicPath()) {
         return false;
     }
     const QSize sz = item->imageSize();
@@ -204,7 +204,7 @@ bool ImageView::hitTextLinkAt(const QPoint &viewPos, int *pageOut, QString *uriO
 
 bool ImageView::pageYUpForTextLayer() const
 {
-    const QString docPath = PagePath::documentFilePath(classicPath());
+    const QString docPath = PagePath::documentFilePath(m_image.classicPath());
     return PagePath::isDjvuFile(docPath);
 }
 
@@ -220,7 +220,7 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
     // Display size after 1–3 turns is swapped; after 4 turns QImage may drift by
     // a pixel; crop also changes imageSize(). Page text is authored against the
     // native page raster.
-    const QString path = classicPath();
+    const QString path = m_image.classicPath();
     QSize sourceSize = ThumtooCache::cachedSize(path);
     if (!sourceSize.isValid() || sourceSize.width() < 1 || sourceSize.height() < 1) {
         const QSize known = m_sizeBook.known(path);
@@ -309,7 +309,7 @@ void ImageView::finishTextRubberBand()
         return;
     }
     // Ensure text layer (refreshTextLayer skips when neither search nor outlines).
-    if (!m_textLayer.hasRegions() || m_textLayer.layerPathRef() != classicPath()) {
+    if (!m_textLayer.hasRegions() || m_textLayer.layerPathRef() != m_image.classicPath()) {
         const bool hadShow = m_textLayer.showsRegions();
         m_textLayer.setShowRegions(true);
         refreshTextLayer();
@@ -399,7 +399,7 @@ bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
         || event->button() != Qt::LeftButton
         || !(event->modifiers() & Qt::ShiftModifier)
         || (event->modifiers() & (Qt::AltModifier | Qt::ControlModifier))
-        || !PagePath::isPageRef(classicPath())) {
+        || !PagePath::isPageRef(m_image.classicPath())) {
         return false;
     }
     m_textLayer.beginRubber(event->pos());

@@ -191,12 +191,7 @@ public:
     /** Size-resolve active: hostGallerySizeResolve().active(). */
     /** Controller host: set m_viewMode + m_layout.currentMode() and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
-    /** Controller host: classic path owned by ImageController. */
-    QString classicPath() const { return m_image.classicPath(); }
-    bool hasClassicPath() const { return m_image.hasClassicPath(); }
-    void setClassicPath(const QString &path) { m_image.setClassicPath(path); }
-    void clearClassicPath() { m_image.clearClassicPath(); }
-    QString takeClassicPath() { return m_image.takeClassicPath(); }
+    /** Classic path: hostImage().classicPath() / setClassicPath / clear / take. */
     /** Open/History session barrier: bump gen, clear canvas, cancel thumtoo. */
     void invalidateSessionLoads();
     /** Controller host: scene->clear with signals blocked (stashes already detached). */
@@ -296,14 +291,8 @@ public:
     {
         return m_itemWorld.getPathState(path);
     }
-    bool hasPendingWorkspacePaths() const { return m_displayPipeline.loadGate().hasPendingWorkspacePaths(); }
-    void clearPendingWorkspacePaths() { m_displayPipeline.loadGate().clearPendingWorkspacePaths(); }
-    void addPendingWorkspacePath(const QString &path) { m_displayPipeline.loadGate().addPendingWorkspacePath(path); }
+    /** Pending workspace paths / restore: hostDisplayPipeline().loadGate(). */
     void takePendingWorkspacePath(const QString &path);
-    void setPendingRestoreStates(const QList<WorkspaceItemState> &states)
-    {
-        m_displayPipeline.loadGate().setPendingRestoreStates(states);
-    }
 
 
 
@@ -375,7 +364,7 @@ public:
     void setTool(Tool tool);
     Tool tool() const { return m_tool; }
 
-    QUndoStack *undoStack() const { return m_undoStack; }
+    /** Undo stack: hostUndoStack(). */
 
     void zoomIn();
     void zoomOut();
@@ -636,8 +625,7 @@ public:
     int resetContentAppearanceForTargets();
 
     QString statusText() const;
-    /** Path of the last failed Image-mode decode (empty if none). */
-    QString lastLoadError() const { return m_sessionId.lastLoadErrorRef(); }
+    /** Last load error: hostSessionId().lastLoadErrorRef(). */
     QSize imageSize() const;
     int itemCount() const;
     /** Live tiles, stashed tiles, or durable snapshot — Workspace is non-empty. */

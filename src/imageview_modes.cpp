@@ -67,7 +67,7 @@ void ImageView::invalidateSessionLoads()
     m_gallerySizeResolve.cancel();
     if (isImageMode()) {
         clearLiveCanvas();
-        clearClassicPath();
+        m_image.clearClassicPath();
     }
     if (isGalleryMode()) {
         clearLiveCanvas();
@@ -217,7 +217,7 @@ void ImageView::clearWorkspace()
     // Path-keyed placement is legacy for unbound tiles only; drop it so a
     // project load cannot inherit stale poses from a previous session.
     m_itemWorld.pathBook().clear();
-    clearClassicPath();
+    m_image.clearClassicPath();
     // Invalidate in-flight LoadReplace so a prior Image-mode decode cannot
     // seed the empty Workspace after this wipe (first-path unbound tile).
     m_displayPipeline.loadGate().bumpGeneration();

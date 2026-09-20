@@ -4,6 +4,9 @@
     /** Display pipeline host: PreferCache / load path raster service. */
     PathRasterService *hostPathRaster() { return m_pathRaster; }
     const PathRasterService *hostPathRaster() const { return m_pathRaster; }
+    /** Image-mode controller (classic path, enter, reload). */
+    ImageController &hostImage() { return m_image; }
+    const ImageController &hostImage() const { return m_image; }
     /** Display pipeline host: slideshow controller (nav-hot, rasters, hud). */
     SlideshowController &hostSlideshow() { return m_slideshow; }
     const SlideshowController &hostSlideshow() const { return m_slideshow; }

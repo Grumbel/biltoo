@@ -468,7 +468,7 @@ void DisplayPipelineController::upgradeImageModeFromLadder(const QString &path, 
                                            const QImage &image)
 {
     // ladderReady Image-mode path: same install policy as completeLoadReplace.
-    if (path.isEmpty() || image.isNull() || path != m_view->classicPath()) {
+    if (path.isEmpty() || image.isNull() || path != m_view->hostImage().classicPath()) {
         return;
     }
     if (const char *dbg = std::getenv("THUMTOO_DEBUG");
@@ -546,7 +546,7 @@ void DisplayPipelineController::maybeClimbImageModePixelsForView()
     if (!m_view->isImageMode() || m_view->hostSlideshow().hud().isProgressActive()) {
         return;
     }
-    ImageItem *item = imageModeItemForPath(m_view->classicPath());
+    ImageItem *item = imageModeItemForPath(m_view->hostImage().classicPath());
     if (!item) {
         item = m_view->targetItem();
     }
@@ -1295,7 +1295,7 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
     }
     // Stale navigation: only the current classic path may install.
     // Empty multi-item canvas can still seed from m_view->classicPath.
-    if (path != m_view->classicPath()) {
+    if (path != m_view->hostImage().classicPath()) {
         return;
     }
     if (image.isNull()) {

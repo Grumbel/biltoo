@@ -101,8 +101,8 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             QString path;
             if (isImageMode()) {
                 ImageItem *item = primaryItem();
-                if (!item && hasClassicPath()) {
-                    item = findItemByPath(classicPath());
+                if (!item && m_image.hasClassicPath()) {
+                    item = findItemByPath(m_image.classicPath());
                 }
                 if (item) {
                     src = item->displayImage();
@@ -111,8 +111,8 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
                     }
                     path = item->path();
                 }
-                if (path.isEmpty() && hasClassicPath()) {
-                    path = classicPath();
+                if (path.isEmpty() && m_image.hasClassicPath()) {
+                    path = m_image.classicPath();
                 }
             }
             if (!src.isNull() && viewport()) {

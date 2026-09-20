@@ -58,7 +58,7 @@ void WorkspaceController::restore()
     // clearWorkspace() also clears m_savedItems — that wiped this durable
     // snapshot and left Gallery→Workspace empty. Only drop live tiles.
     m_view->clearLiveCanvas();
-    m_view->clearPendingWorkspacePaths();
+    m_view->hostDisplayPipeline().loadGate().clearPendingWorkspacePaths();
     // Merge session appearance (crop / flip / orientation) from the live map into
     // the durable snapshot so Image-mode edits survive a full rebuild.
     for (WorkspaceItemState &slot : m_savedItems) {
@@ -93,7 +93,7 @@ void WorkspaceController::restore()
         slot.orientation = 0.0;
     }
     // AUDIT M27: queue every saved state (including duplicate paths) then load.
-    m_view->setPendingRestoreStates(m_savedItems);
+    m_view->hostDisplayPipeline().loadGate().setPendingRestoreStates(m_savedItems);
     for (const WorkspaceItemState &state : m_savedItems) {
         m_view->setItemStateForPath(state.path, state);
         m_view->scheduleRestoreLoad(state.path);

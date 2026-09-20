@@ -15,7 +15,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
 {
     // Empty session: invite the user to open or drop images.
     // Suppress while centre progress is active (archive expand / size resolve).
-    if (m_items.isEmpty() && !hasClassicPath() && !m_cropCtrl.session().active()
+    if (m_items.isEmpty() && !m_image.hasClassicPath() && !m_cropCtrl.session().active()
         && m_centreProgress.titleRef().isEmpty() && !m_gallerySizeResolve.active()) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);

@@ -429,10 +429,10 @@ void MainWindow::createActions()
     toolGroup->addAction(m_zoomToolAct);
     toolGroup->setExclusive(true);
 
-    m_undoAct = m_imageView->undoStack()->createUndoAction(this, tr("&Undo"));
+    m_undoAct = m_imageView->hostUndoStack()->createUndoAction(this, tr("&Undo"));
     m_undoAct->setShortcuts(QKeySequence::Undo);
     m_undoAct->setIcon(themeIcon(QStringLiteral("edit-undo"), QStyle::SP_ArrowBack));
-    m_redoAct = m_imageView->undoStack()->createRedoAction(this, tr("&Redo"));
+    m_redoAct = m_imageView->hostUndoStack()->createRedoAction(this, tr("&Redo"));
     m_redoAct->setShortcuts(QKeySequence::Redo);
     m_redoAct->setIcon(themeIcon(QStringLiteral("edit-redo"), QStyle::SP_ArrowForward));
 
