@@ -130,6 +130,8 @@ public:
     void setMasonryRows(int rows);
     /** Packaged Gallery layout only (FreeForm is Workspace). */
     void setLayoutMode(LayoutMode mode);
+    void reloadFromDisk(bool relayout = true);
+    void hardReloadFromDisk(bool relayout = true);
     void prepareCanvas();
     void invalidateDecodes();
 

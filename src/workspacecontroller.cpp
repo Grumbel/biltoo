@@ -2,8 +2,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspacecontroller.h"
+#include <memory>
+#include <QSet>
+#include <QFileInfo>
+#include "thumtoocache.h"
+#include "imagecache.h"
 #include "viewtransform.h"
 #include "imageview.h"
+#include "sessionbindbook.h"
 #include <QUndoStack>
 #include "gallerypackfit.h"
 #include "gallerylayout.h"
@@ -594,4 +600,125 @@ void WorkspaceController::applyFreeFormLayout()
     }
     m_view->hostFraming().releaseFit();
     emit m_view->statusChanged();
+}
+
+void WorkspaceController::reloadFromDisk()
+{
+    QSet<QString> purgedPaths;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        const QString path = item->path();
+        if (path.isEmpty()) {
+            continue;
+        }
+        m_view->gallerySoftResetPath(path);
+        if (!purgedPaths.contains(path)) {
+            m_view->hostDisplayPipeline().purgeTilePathRam(path);
+            purgedPaths.insert(path);
+        } else {
+            item->dropTileLodSession();
+        }
+        m_view->takePendingWorkspacePath(path);
+        item->clearDecodedPixels();
+        PendingSessionBind b;
+        b.path = path;
+        b.id = item->sessionId();
+        b.index = item->sessionIndex();
+        m_view->hostBindBook().append(b);
+        m_view->hostDisplayPipeline().scheduleImageLoad(path, static_cast<int>(ImageView::LoadAdd));
+    }
+    m_view->flashHud(ImageView::tr("Reload"), ImageView::tr("Workspace"));
+    emit m_view->statusChanged();
+}
+
+void WorkspaceController::hardReloadFromDisk()
+{
+    QList<ImageItem *> targets = m_view->transformTargets();
+    if (targets.isEmpty()) {
+        targets = m_view->liveItems();
+    }
+    if (targets.isEmpty()) {
+        return;
+    }
+
+    QSet<QString> pathSet;
+    struct ReloadBind {
+        QString path;
+        SessionImageId id = kInvalidSessionImageId;
+        int index = -1;
+    };
+    QList<ReloadBind> binds;
+    int itemCount = 0;
+    for (ImageItem *item : targets) {
+        if (!item) {
+            continue;
+        }
+        const QString path = item->path();
+        if (path.isEmpty()) {
+            continue;
+        }
+        ++itemCount;
+        m_view->gallerySoftResetPath(path);
+        m_view->takePendingWorkspacePath(path);
+        item->clearDecodedPixels();
+        if (!pathSet.contains(path)) {
+            ImageCache::remove(path);
+            m_view->hostDisplayPipeline().purgeTilePathRam(path);
+            for (int edge : ThumtooCache::kLadderEdges) {
+                ThumtooCache::forgetPixelsSettled(path, edge);
+            }
+            pathSet.insert(path);
+        } else {
+            item->dropTileLodSession();
+        }
+        ReloadBind b;
+        b.path = path;
+        b.id = item->sessionId();
+        b.index = item->sessionIndex();
+        binds.append(b);
+    }
+    if (pathSet.isEmpty()) {
+        return;
+    }
+    const QStringList paths = pathSet.values();
+    const QString detail = (paths.size() == 1)
+        ? QFileInfo(paths.constFirst()).fileName()
+        : ImageView::tr("%1 paths · %2 items").arg(paths.size()).arg(itemCount);
+    m_view->flashHud(ImageView::tr("Hard reload"), detail);
+
+    auto remaining = std::make_shared<int>(paths.size());
+    auto tileTotal = std::make_shared<qint64>(0);
+
+    auto finish = [this, binds, tileTotal]() {
+        QSet<QString> probed;
+        for (const ReloadBind &b : binds) {
+            PendingSessionBind pending;
+            pending.path = b.path;
+            pending.id = b.id;
+            pending.index = b.index;
+            m_view->hostBindBook().append(pending);
+            if (!probed.contains(b.path)) {
+                ThumtooCache::scheduleProbe(b.path);
+                probed.insert(b.path);
+            }
+            m_view->hostDisplayPipeline().scheduleImageLoad(
+                b.path, static_cast<int>(ImageView::LoadAdd));
+        }
+        if (*tileTotal > 0) {
+            m_view->flashHud(ImageView::tr("Hard reload"),
+                             ImageView::tr("%1 Store tiles removed").arg(*tileTotal));
+        }
+        emit m_view->statusChanged();
+    };
+
+    for (const QString &path : paths) {
+        ThumtooCache::purgePathDurable(path, [remaining, tileTotal, finish](qint64 tiles) {
+            *tileTotal += tiles;
+            if (--(*remaining) == 0) {
+                finish();
+            }
+        });
+    }
 }

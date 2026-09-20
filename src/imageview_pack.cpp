@@ -123,44 +123,13 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
         m_image.reloadFromDisk();
         return;
     }
-
-    // Gallery / Workspace: re-decode every on-canvas item in place.
-    QSet<QString> purgedPaths;
-    for (ImageItem *item : m_items) {
-        if (!item) {
-            continue;
-        }
-        const QString path = item->path();
-        if (path.isEmpty()) {
-            continue;
-        }
-        gallerySoftResetPath(path);
-        if (!purgedPaths.contains(path)) {
-            purgeTilePathRam(path);
-            purgedPaths.insert(path);
-        } else {
-            item->dropTileLodSession();
-        }
-        takePendingWorkspacePath(path);
-        item->clearDecodedPixels();
-        PendingSessionBind b;
-        b.path = path;
-        b.id = item->sessionId();
-        b.index = item->sessionIndex();
-        m_bindBook.append(b);
-        if (isGalleryMode()) {
-            scheduleGalleryDecode(path);
-        } else {
-            scheduleImageLoad(path, LoadAdd);
-        }
+    if (isGalleryMode()) {
+        m_gallery.reloadFromDisk(relayoutGallery);
+        return;
     }
-    if (isGalleryMode() && relayoutGallery) {
-        applyLayout(GalleryPackReason::Reload);
-    }
-    flashHud(tr("Reload"),
-             isGalleryMode() ? tr("Gallery") : tr("Workspace"));
-    emit statusChanged();
+    m_workspace.reloadFromDisk();
 }
+
 
 void ImageView::hardReloadFromDisk(bool relayoutGallery)
 {
@@ -168,113 +137,13 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
         m_image.hardReloadFromDisk();
         return;
     }
-
-    // Build the path set: multi-mode = selection, else all.
-    QList<ImageItem *> targets = transformTargets();
-    if (targets.isEmpty()) {
-        targets = m_items;
-    }
-    if (targets.isEmpty()) {
+    if (isGalleryMode()) {
+        m_gallery.hardReloadFromDisk(relayoutGallery);
         return;
     }
-
-    QSet<QString> pathSet;
-    struct ReloadBind {
-        QString path;
-        SessionImageId id = kInvalidSessionImageId;
-        int index = -1;
-    };
-    QList<ReloadBind> binds;
-    int itemCount = 0;
-    for (ImageItem *item : targets) {
-        if (!item) {
-            continue;
-        }
-        const QString path = item->path();
-        if (path.isEmpty()) {
-            continue;
-        }
-        ++itemCount;
-        gallerySoftResetPath(path);
-        takePendingWorkspacePath(path);
-        item->clearDecodedPixels();
-        if (!pathSet.contains(path)) {
-            ImageCache::remove(path);
-            purgeTilePathRam(path);
-            for (int edge : ThumtooCache::kLadderEdges) {
-                ThumtooCache::forgetPixelsSettled(path, edge);
-            }
-            pathSet.insert(path);
-        } else {
-            item->dropTileLodSession();
-        }
-        ReloadBind b;
-        b.path = path;
-        b.id = item->sessionId();
-        b.index = item->sessionIndex();
-        binds.append(b);
-    }
-    if (pathSet.isEmpty()) {
-        return;
-    }
-
-    // Prefer QStringList over QSet::constBegin() — avoids GCC -Wnull-dereference
-    // on QHash span access when inlining QSet iterators.
-    const QStringList paths = pathSet.values();
-    const QString detail = (paths.size() == 1)
-        ? QFileInfo(paths.constFirst()).fileName()
-        : tr("%1 paths · %2 items").arg(paths.size()).arg(itemCount);
-    flashHud(tr("Hard reload"), detail);
-
-    // Purge durable Store tiles off the GUI, then re-decode only after forget
-    // so PreferCache / tile LOD cannot re-hit the old pyramid.
-    auto remaining = std::make_shared<int>(paths.size());
-    auto tileTotal = std::make_shared<qint64>(0);
-    const bool doRelayout = relayoutGallery;
-    const bool imageMode = isImageMode();
-    const bool galleryMode = isGalleryMode();
-
-    auto finish = [this, binds, doRelayout, imageMode, galleryMode, tileTotal]() {
-        QSet<QString> probed;
-        for (const ReloadBind &b : binds) {
-            PendingSessionBind pending;
-            pending.path = b.path;
-            pending.id = b.id;
-            pending.index = b.index;
-            m_bindBook.append(pending);
-            // Size memo was cleared with the Store purge — force a fresh probe
-            // so layout / intrinsic size do not keep a pre-purge value.
-            if (!probed.contains(b.path)) {
-                ThumtooCache::scheduleProbe(b.path);
-                probed.insert(b.path);
-            }
-            if (imageMode) {
-                scheduleImageLoad(b.path, LoadReplace);
-            } else if (galleryMode) {
-                scheduleGalleryDecode(b.path);
-            } else {
-                scheduleImageLoad(b.path, LoadAdd);
-            }
-        }
-        if (galleryMode && doRelayout) {
-            applyLayout(GalleryPackReason::Reload);
-        }
-        if (*tileTotal > 0) {
-            flashHud(tr("Hard reload"),
-                     tr("%1 Store tiles removed").arg(*tileTotal));
-        }
-        emit statusChanged();
-    };
-
-    for (const QString &path : paths) {
-        ThumtooCache::purgePathDurable(path, [remaining, tileTotal, finish](qint64 tiles) {
-            *tileTotal += tiles;
-            if (--(*remaining) == 0) {
-                finish();
-            }
-        });
-    }
+    m_workspace.hardReloadFromDisk();
 }
+
 
 void ImageView::applyLayout(GalleryPackReason reason)
 {

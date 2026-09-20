@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1679-multi-reload-controllers.** Gallery/Workspace multi-item reload onto mode controllers.
+Prior: **1678**.
+
+### Change
+- `GalleryController::reloadFromDisk` / `hardReloadFromDisk` — soft + Store-purge hard reload
+- `WorkspaceController::reloadFromDisk` / `hardReloadFromDisk` — same for free-form canvas
+- `ImageView::reloadFromDisk` / `hardReloadFromDisk` pure mode routers (Image → ImageController)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1679-multi-reload-controllers.bundle HEAD
+```
+
+### Next
+- biltoo-build verification (Image / Gallery / Workspace reload + hard reload)
+- Optional: setGalleryRelayoutSuppressed onto GalleryController
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1678-moc-host-pipeline-public.** Host pipeline include must not sit under public slots.
 Prior: **1677**.
 

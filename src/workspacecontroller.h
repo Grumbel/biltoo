@@ -72,6 +72,8 @@ public:
                      const QList<ImageItem *> &itemsIn = {});
     /** ImageView::setLayoutMode(FreeForm) body — Workspace only. */
     void applyFreeFormLayout();
+    void reloadFromDisk();
+    void hardReloadFromDisk();
 
 private:
     ImageView *m_view = nullptr;
