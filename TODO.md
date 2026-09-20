@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1792-pipeline-owns-tilelod-bag.** Stage 2: pipeline owns ItemBag map.
+Prior: **1791**.
+
+### Change
+- `DisplayPipelineController::m_tileBags` — `QHash<ImageItem*, unique_ptr<ItemBag>>`
+- `ensureTileBag` / `releaseTileBag`; drop/tick/suppress call ensure
+- `ImageItem::attachTileLodBag` / `detachTileLodBag` (moves local state on attach)
+- `destroyCanvasItem` releases the bag after session drop
+- Paint may still use a local bag until first pipeline ensure
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1792-pipeline-owns-tilelod-bag.bundle HEAD
+```
+
+### Next
+- Prefer pipeline bag for paint (ensure via view) so local bag is rare
+- Optional full ImageView characterization link
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1791-tilelod-bag-unique-ptr.** Stage 2: ItemBag is lazy unique_ptr.
 Prior: **1790**.
 

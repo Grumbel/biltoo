@@ -1037,3 +1037,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
 - biltoo-1791: ItemBag lazy unique_ptr on ImageItem (move-ready).
+- biltoo-1792: DisplayPipelineController owns ItemBag map; item attach/detach.

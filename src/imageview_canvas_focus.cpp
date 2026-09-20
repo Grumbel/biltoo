@@ -157,9 +157,9 @@ void ImageView::destroyCanvasItem(ImageItem *item)
         return;
     }
     const QString path = item->path();
-    // Stage 2: drop tile session via pipeline before surface unbind / delete
-    // (explicit lifecycle; bag still lives on the item until delete).
+    // Stage 2: drop tile session and release pipeline-owned bag before delete.
     m_displayPipeline.dropItemTileLodSession(item);
+    m_displayPipeline.releaseTileBag(item);
     unregisterItemDisplaySurface(item);
     // Re-entrancy / double-destroy: after the first call the pointer is gone from
     // live and stash lists. A second call must not touch a deleted QGraphicsItem

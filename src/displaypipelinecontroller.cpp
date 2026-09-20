@@ -1359,33 +1359,76 @@ void DisplayPipelineController::scheduleTileLodAfterInteraction(int delayMs)
 
 void DisplayPipelineController::dropItemTileLodSession(ImageItem *item)
 {
-    if (item) {
-        item->dropTileLodSession();
+    if (!item) {
+        return;
     }
+    ensureTileBag(item);
+    item->dropTileLodSession();
+}
+
+tilelod::ItemBag &DisplayPipelineController::ensureTileBag(ImageItem *item)
+{
+    Q_ASSERT(item);
+    auto it = m_tileBags.find(item);
+    if (it != m_tileBags.end()) {
+        return *it.value();
+    }
+    auto bag = std::make_unique<tilelod::ItemBag>();
+    item->attachTileLodBag(bag.get());
+    tilelod::ItemBag &ref = *bag;
+    m_tileBags.insert(item, std::move(bag));
+    return ref;
+}
+
+void DisplayPipelineController::releaseTileBag(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    item->detachTileLodBag();
+    m_tileBags.remove(item);
 }
 
 tilelod::ItemBag *DisplayPipelineController::tileLodBag(ImageItem *item)
 {
-    return item ? &item->tileLodBag() : nullptr;
+    if (!item) {
+        return nullptr;
+    }
+    auto it = m_tileBags.find(item);
+    if (it == m_tileBags.end()) {
+        return nullptr;
+    }
+    return it.value().get();
 }
 
 const tilelod::ItemBag *DisplayPipelineController::tileLodBag(const ImageItem *item) const
 {
-    return item ? &item->tileLodBag() : nullptr;
+    if (!item) {
+        return nullptr;
+    }
+    auto it = m_tileBags.constFind(item);
+    if (it == m_tileBags.cend()) {
+        return nullptr;
+    }
+    return it.value().get();
 }
 
 void DisplayPipelineController::setItemTileLodSuppressed(ImageItem *item, bool on)
 {
-    if (item) {
-        item->setTileLodSuppressed(on);
+    if (!item) {
+        return;
     }
+    ensureTileBag(item);
+    item->setTileLodSuppressed(on);
 }
 
 void DisplayPipelineController::tickItemTileLod(ImageItem *item, int budget)
 {
-    if (item) {
-        item->tickTileLod(budget);
+    if (!item) {
+        return;
     }
+    ensureTileBag(item);
+    item->tickTileLod(budget);
 }
 
 void DisplayPipelineController::purgeTilePathRam(const QString &path)

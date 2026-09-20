@@ -30,6 +30,9 @@
 
 tilelod::ItemBag &ImageItem::tileLodBag()
 {
+    if (m_tileLodAttached) {
+        return *m_tileLodAttached;
+    }
     if (!m_tileLod) {
         m_tileLod = std::make_unique<tilelod::ItemBag>();
     }
@@ -38,11 +41,43 @@ tilelod::ItemBag &ImageItem::tileLodBag()
 
 const tilelod::ItemBag &ImageItem::tileLodBag() const
 {
+    if (m_tileLodAttached) {
+        return *m_tileLodAttached;
+    }
     if (!m_tileLod) {
         static const tilelod::ItemBag kEmpty;
         return kEmpty;
     }
     return *m_tileLod;
+}
+
+void ImageItem::attachTileLodBag(tilelod::ItemBag *bag)
+{
+    if (!bag) {
+        return;
+    }
+    if (m_tileLodAttached == bag) {
+        return;
+    }
+    // Move any local session state into the pipeline-owned bag.
+    if (m_tileLod) {
+        bag->controller = std::move(m_tileLod->controller);
+        bag->suppressed = m_tileLod->suppressed;
+        bag->repaintQueued = m_tileLod->repaintQueued;
+        bag->alive = std::move(m_tileLod->alive);
+        bag->lastDpc = m_tileLod->lastDpc;
+        bag->lastVisSource = m_tileLod->lastVisSource;
+        bag->lastUpdateGen = m_tileLod->lastUpdateGen;
+        bag->gradedCache.clear();
+        bag->gradeSig = 0;
+        m_tileLod.reset();
+    }
+    m_tileLodAttached = bag;
+}
+
+void ImageItem::detachTileLodBag()
+{
+    m_tileLodAttached = nullptr;
 }
 
 void ImageItem::dropTileLodSession()

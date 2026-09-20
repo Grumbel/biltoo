@@ -372,13 +372,18 @@ private:
                              ColorAdjustments const &grade) const;
     /**
      * Single access path for tile runtime state.
-     * Lazy unique_ptr: non-const creates; const returns empty sentinel if unset.
-     * Ownership can move to DisplayPipelineController later via take/attach.
+     * Prefers pipeline-attached bag; else lazy local unique_ptr.
+     * DisplayPipelineController owns the bag when attached (Stage 2).
      */
     tilelod::ItemBag &tileLodBag();
     const tilelod::ItemBag &tileLodBag() const;
+    /** Pipeline adopts ownership; moves local state into @p bag if any. */
+    void attachTileLodBag(tilelod::ItemBag *bag);
+    void detachTileLodBag();
 
-    /** Deep-zoom grid tiles + plan/paint scratch (Stage 2 bag; demote later). */
+    /** Non-owning when pipeline holds the unique_ptr in its map. */
+    tilelod::ItemBag *m_tileLodAttached = nullptr;
+    /** Local fallback until attach (or when no pipeline). */
     mutable std::unique_ptr<tilelod::ItemBag> m_tileLod;
     SessionImageId m_sessionId = kInvalidSessionImageId;
     int m_sessionIndex = -1; // list order cache only

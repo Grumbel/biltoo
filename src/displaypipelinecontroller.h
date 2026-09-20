@@ -11,6 +11,7 @@
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
 
+#include <QHash>
 #include <QTimer>
 
 #include <memory>
@@ -125,7 +126,11 @@ public:
     void purgeTilePathRam(const QString &path);
     /** Drop one item's tile session (shared path cache kept). External callers use this. */
     void dropItemTileLodSession(ImageItem *item);
-    /** Non-owning access to the item's tile bag (Stage 2 demotion prep). */
+    /** Ensure pipeline-owned bag for @p item; attaches to the item. */
+    tilelod::ItemBag &ensureTileBag(ImageItem *item);
+    /** Detach and destroy pipeline-owned bag (canvas destroy). */
+    void releaseTileBag(ImageItem *item);
+    /** Non-owning access (nullptr if never ensured). */
     tilelod::ItemBag *tileLodBag(ImageItem *item);
     const tilelod::ItemBag *tileLodBag(const ImageItem *item) const;
     /** Crop-draft freeze: suppress tile requests/paint for this item. */
@@ -183,6 +188,8 @@ private:
     DisplaySurfaceController m_displaySurfaces;
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
     std::unique_ptr<TileLoadCoordinator> m_tileCoordinator;
+    /** Stage 2: per-item tile LOD bags (owned here when attached). */
+    QHash<ImageItem *, std::unique_ptr<tilelod::ItemBag>> m_tileBags;
     QTimer *m_tileLodTimer = nullptr;
     QTimer *m_tileLodZoomDebounce = nullptr;
 };

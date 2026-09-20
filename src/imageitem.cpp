@@ -47,6 +47,13 @@ ImageItem::~ImageItem()
 {
     // Invalidate pending QTimer::singleShot from tickTileLod (queued on the
     // scene/app, not tied to this QGraphicsItem lifetime).
+    if (m_tileLodAttached) {
+        if (m_tileLodAttached->alive) {
+            *m_tileLodAttached->alive = false;
+        }
+        m_tileLodAttached->repaintQueued = false;
+        m_tileLodAttached = nullptr; // pipeline map may still hold unique_ptr until release
+    }
     if (m_tileLod && m_tileLod->alive) {
         *m_tileLod->alive = false;
     }
