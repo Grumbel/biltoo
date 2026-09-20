@@ -2,6 +2,44 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1865-ccache-write-probe.** Require real write probe for shared ccache dir.
+Prior: **1864**.
+
+### Problem
+`nix build` logged `mode=shared-host` for `/var/cache/ccache` then failed:
+`ccache: error: failed to create temporary file for .../tmp/...: Permission denied`.
+`[ -w ]` / `mkdir -p` alone accepted a dir whose `tmp/` was not writable by nixbld.
+
+### Change
+- `ccacheDirPhase` + `ccacheWrapper` extraConfig: probe create+write under `$dir/tmp`
+- Ignore pre-set `CCACHE_DIR` when not writable; fall back to `$NIX_BUILD_TOP/.ccache`
+- `biltoo-ccache-check`: report tmp/ write failure separately from dir `-w`
+
+### Host fix (for persistent hits)
+```bash
+sudo mkdir -p /var/cache/ccache/tmp
+sudo chown root:nixbld /var/cache/ccache
+sudo chmod 2775 /var/cache/ccache   # or 1777
+# nix.conf: extra-sandbox-paths = /var/cache/ccache
+sudo systemctl restart nix-daemon
+```
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1865-ccache-write-probe.bundle HEAD
+```
+Requires tip **1864** (base **1858** / `1e112d94`).
+
+### Next
+- Residual pure-hop / Tier 4 design
+- Confirm `nix build -L .` compiles after probe fallback
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1864-tier4-char-marks.** Tier 4 path-order characterization; drop dead detach + marks getter.
 Prior: **1863**.
 
