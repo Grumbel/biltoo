@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1858-ccache-diag-accuracy.** ccache diagnostic matches real nix-build setup.
+Prior: **1857**.
+
+### Change
+- Dev shell: launcher-based ccache is OK (not a failure)
+- Probe host `/var/cache/ccache` and print expected `nix build -L` log line
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1858-ccache-diag-accuracy.bundle HEAD
+```
+Requires tip **1857**.
+
+### Notes
+User already sees `biltoo ccache: dir=/var/cache/ccache mode=shared-host` — setup is correct.
+
+### Next
+- Continue hop demotion / Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1857-slideshow-getters-via-host.** Slideshow getters via hostSlideshow.
 Prior: **1856**.
 
