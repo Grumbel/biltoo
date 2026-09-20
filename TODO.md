@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1842-gallery-via-host.** Gallery transitions via hostGallery.
+Prior: **1841**.
+
+### Change
+- MainWindow / session / sessionopen → `hostGallery().discardStash` /
+  `snapshotViewport` / `restoreViewport` / `applyPendingRestore` /
+  `reassertViewport` / `leaveForImageMode` / `returnFromImage`
+- `returnToWorkspaceFromImage` → `setViewMode(Workspace)`
+- Keep `enterGallery` (releaseStickyZoom) + `paintGallerySelectionFrames`
+- Drop pure gallery forwards + `leaveGalleryForImage`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1842-gallery-via-host.bundle HEAD
+```
+Requires tip **1841**.
+
+### Next
+- biltoo-build smoke (Gallery enter/leave/return/viewport restore)
+- Workspace thin forwards if any remain
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1841-drop-dead-attention-forwards.** Drop dead ImageView attention forwards.
 Prior: **1840**.
 
