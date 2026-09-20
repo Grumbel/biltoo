@@ -4,6 +4,7 @@
 // Pending session binds, session-id canvas membership, and load-add placement.
 
 #include "imageview.h"
+#include "packorderview.h"
 #include "imageitem.h"
 #include "imagecache.h"
 #include "sessionappearance.h"
@@ -55,9 +56,10 @@ void ImageView::prunePathOrdersAfterSessionRemove(const QStringList &removedPath
         }
     }
     // Preserve prior order for unbound path slots still live.
-    for (int i = 0; i < pathOrderSize(); ++i) {
-        const QString &path = pathOrderPathAt(i);
-        const SessionImageId sid = pathOrderIdAt(i);
+    const PackOrderView pack = currentPackOrder();
+    for (int i = 0; i < pack.size(); ++i) {
+        const QString path = pack.pathAt(i);
+        const SessionImageId sid = pack.idAt(i);
         if (sid != kInvalidSessionImageId) {
             continue; // already taken from live bound tiles
         }

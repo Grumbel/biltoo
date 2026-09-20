@@ -295,7 +295,7 @@ void ImageView::scheduleSizeProbe(const QString &path)
 
 QStringList ImageView::sizeResolvePathOrder() const
 {
-    return pathOrderPaths();
+    return currentPackOrder().paths();
 }
 
 bool ImageView::sizeResolveLayoutDefersPopulate() const

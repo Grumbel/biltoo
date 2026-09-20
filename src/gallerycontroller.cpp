@@ -1099,7 +1099,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     }
 
     if (!m_view->pathOrderIsEmpty()) {
-        m_view->reorderItemsByPaths(m_view->pathOrderPaths());
+        m_view->reorderItemsByPaths(m_view->currentPackOrder().paths());
     }
 
     // Gallery overview is axis-aligned. Strip any leftover Workspace placement
@@ -1287,7 +1287,7 @@ void GalleryController::ensurePlaceholders()
             claimed.insert(ph);
         }
     }
-    m_view->reorderItemsByPaths(m_view->pathOrderPaths());
+    m_view->reorderItemsByPaths(m_view->currentPackOrder().paths());
 }
 
 

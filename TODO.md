@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1712-packorder-sites.** More pack sites walk currentPackOrder().
+Prior: **1711**.
+
+### Change
+- GalleryController reorderItemsByPaths ×2 → currentPackOrder().paths()
+- session_remove prune loop → PackOrderView
+- size_book sizeResolvePathOrder → currentPackOrder().paths()
+- canvas reorderItemsByPaths → currentPackOrder().paths()
+
+Behavior unchanged (still fromBook).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1712-packorder-sites.bundle HEAD
+```
+
+### Next
+- biltoo-build
+- ImageView harness → Tier 4 delete book
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1711-packorder-wire-accessors-fix.** Accessors ImageCache + PackOrderView wire.
 Prior: **1710**.
 
