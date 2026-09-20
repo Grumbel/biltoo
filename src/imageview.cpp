@@ -399,7 +399,7 @@ ImageView::~ImageView()
     // Scene clear emits selectionChanged; our handler calls viewport()->update().
     // That is unsafe once ~QWidget has started deleting children — tear the
     // scene down here while ImageView is still fully constructed.
-    discardStashedGallery();
+    m_gallery.discardStash();
 
     // Stage 2: detach pipeline tile bags while ImageItems are still alive.
     m_displayPipeline.releaseAllTileBags();

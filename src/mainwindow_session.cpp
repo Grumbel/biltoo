@@ -1802,7 +1802,7 @@ void MainWindow::removeSessionIndicesFromModel(const QList<int> &sorted)
         // Thumb-strip setFiles can resize the splitter → scrollbar range rebuild.
         // Snapshot once; each remove pins sceneRect; reassert after the churn.
         if (isGalleryMode()) {
-            m_imageView->snapshotGalleryViewport();
+            m_imageView->hostGallery().snapshotViewport();
             m_imageView->setGalleryRelayoutSuppressed(true);
         }
     }
@@ -1885,13 +1885,13 @@ void MainWindow::selectIndexAfterSessionRemove(const QString &currentPath, const
 
     if (m_imageView && isGalleryMode()) {
         // Immediate reassert after thumb setFiles / index updates.
-        m_imageView->reassertGalleryViewport();
+        m_imageView->hostGallery().reassertViewport();
         // Release suppress and reassert again after splitter/layout events.
         QTimer::singleShot(0, m_imageView, [v = m_imageView]() {
             if (!v) {
                 return;
             }
-            v->reassertGalleryViewport();
+            v->hostGallery().reassertViewport();
             v->setGalleryRelayoutSuppressed(false);
         });
     }

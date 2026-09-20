@@ -123,8 +123,6 @@
     /** Scene pixels per millimetre for the page guide (layout scale). */
     static qreal pageGuidePxPerMm();
 
-    /** @deprecated Prefer leaveForImageMode(); identical behaviour. */
-    void leaveGalleryForImage() { leaveForImageMode(); }
 
     ViewMode viewMode() const { return m_viewMode; }
 

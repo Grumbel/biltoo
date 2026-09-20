@@ -215,7 +215,7 @@ void ImageView::clearWorkspace()
     // previous arrangement (project load, session replace).
     clearLiveCanvas();
     discardStashedWorkspace();
-    discardStashedGallery();
+    m_gallery.discardStash();
     m_workspace.savedItems().clear();
     m_displayPipeline.loadGate().clearPending();
     m_bindBook.clear();

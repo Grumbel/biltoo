@@ -45,7 +45,7 @@ bool prepareExpandedSession(ImageView *view,
     // so Image↔Workspace does not resurrect previous tiles; only .biltoo
     // projects restore Workspace content.
     if (view) {
-        view->discardStashedGallery();
+        view->hostGallery().discardStash();
         view->discardStashedWorkspace();
         view->clearDurableWorkspaceSnapshot();
         if (clearLiveWorkspace) {

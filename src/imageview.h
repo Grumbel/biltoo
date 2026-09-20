@@ -125,7 +125,7 @@ public:
     /**
      * Arrangement of items. FreeForm is used only in Workspace mode.
      * Other values are Gallery layouts.
-     * Declared early so transition APIs (returnToGalleryFromImage, enterGallery)
+     * Declared early so transition APIs (enterGallery)
      * can take LayoutMode before the layout methods section.
      */
     // LayoutMode: imageview_types.h
@@ -334,26 +334,8 @@ public:
 
     void setViewMode(ViewMode mode);
 
-    /**
-     * Gallery or Workspace → Image (Phase 3).
-     * Gallery: snapshot viewport then stash tiles. Workspace: durable snapshot
-     * + stash (inside setViewMode). Caller loads the focused path afterward.
-     */
-    void leaveForImageMode();
 
-    /**
-     * Image → Gallery transition (Phase 3).
-     * Arms viewport restore from the leave snapshot, enters Gallery with
-     * @p layout, and applies the pending centre/scroll when possible.
-     * Caller may still populate session paths (populateGalleryCanvas).
-     */
-    void returnToGalleryFromImage(LayoutMode layout, const QString &focusPath = QString());
 
-    /**
-     * Image → Workspace transition (Phase 3).
-     * Restores stashed free-form tiles (or durable snapshot) via setViewMode.
-     */
-    void returnToWorkspaceFromImage();
     /** Reset view/scene so Image mode is not affected by prior canvas state. */
     void prepareImageModeCanvas();
     void prepareGalleryCanvas();
@@ -658,7 +640,6 @@ public:
      */
     bool layoutWorkspaceItems(const GalleryLayout::Params &params,
                               const QList<ImageItem *> &items = {});
-    void applyPendingGalleryRestore();
     GalleryLayout::Mode galleryLayoutModeFromViewMode() const;
     /** Gallery mode with a packaged layout. */
     bool isGalleryLayout() const { return isGalleryMode(); }
@@ -666,18 +647,6 @@ public:
     /** Enter Gallery mode and apply the given packaged layout (not FreeForm). */
     void enterGallery(LayoutMode packagedLayout);
 
-    /** Remember gallery scroll position (call before leaving Gallery for Image). */
-    void snapshotGalleryViewport();
-    /**
-     * After gallery items are laid out, select @p focusPath (if present) and
-     * restore the last snapshot scroll, then ensure the focused item is visible.
-     */
-    void restoreGalleryViewport(const QString &focusPath = QString());
-    /**
-     * Re-apply the last Gallery viewport snapshot (centre + scroll) without
-     * packing or ensureVisible. Used after session delete / splitter churn.
-     */
-    void reassertGalleryViewport();
 
     /** Number of columns for LayoutMode::Masonry (images scale to fit column width). */
     void setMasonryColumns(int columns);

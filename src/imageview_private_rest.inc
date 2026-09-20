@@ -180,10 +180,6 @@
     void stashWorkspaceItems();
     /** Reattach stashed Workspace tiles; no-op if empty. */
     void restoreStashedWorkspaceItems();
-    /** Detach Gallery tiles from the scene (keep decoded pixels). */
-    void stashGalleryItems();
-    /** Reattach stashed Gallery tiles; no-op if empty. */
-    void restoreStashedGalleryItems();
     void restoreFreeFormStates();
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
     /** Centre position that does not overlap existing items (viewport-aware). */

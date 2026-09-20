@@ -44,8 +44,6 @@
     /** Rasterize @p sourceSceneRect into an image of @p pixelSize. */
     QImage renderExportImage(const QSize &pixelSize, const QRectF &sourceSceneRect,
                              bool transparentBackground = true) const;
-    /** Drop cached Gallery tiles (e.g. after loading a new session). */
-    void discardStashedGallery();
     QList<ImageItem *> transformTargets() const;
     void pushItemGeometryCommand(const QString &text, ImageItem *item,
                                  const WorkspaceItemState &before,

@@ -214,7 +214,7 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
         m_imageView->setClassicPath(path);
         m_imageView->setCurrentSessionId(sid);
         m_imageView->hostSlideshow().setSessionPosition(sessionIndex, m_session.size(), false);
-        m_imageView->leaveForImageMode();
+        m_imageView->hostGallery().leaveForImageMode();
     }
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
@@ -299,17 +299,17 @@ void MainWindow::returnToGallery()
 
     // Phase 3: restore arm + enter Gallery + apply pending centre in one place.
     if (m_imageView) {
-        m_imageView->returnToGalleryFromImage(layout, focusPath);
+        m_imageView->hostGallery().returnFromImage(static_cast<int>(layout), focusPath);
     }
     populateGalleryCanvas();
     if (m_imageView) {
-        m_imageView->applyPendingGalleryRestore();
+        m_imageView->hostGallery().applyPendingRestore();
         QTimer::singleShot(0, this, [this, focusPath]() {
             if (!m_imageView || !m_imageView->isGalleryMode()) {
                 return;
             }
-            m_imageView->restoreGalleryViewport(focusPath);
-            m_imageView->applyPendingGalleryRestore();
+            m_imageView->hostGallery().restoreViewport(focusPath);
+            m_imageView->hostGallery().applyPendingRestore();
         });
     }
 
@@ -328,7 +328,7 @@ void MainWindow::returnToWorkspace()
     m_galleryReturnActive = false;
     // Phase 3: restore stashed free-form tiles (or durable snapshot) in one place.
     if (m_imageView) {
-        m_imageView->returnToWorkspaceFromImage();
+        m_imageView->setViewMode(ViewMode::Workspace);
     } else {
         enterWorkspaceMode();
     }
