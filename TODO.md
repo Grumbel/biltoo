@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1688-slideshow-forwards-pack-slim.** Slideshow thin-forwards TU; slim pack.cpp includes.
+Prior: **1687**.
+
+### Change
+- New `imageview_slideshow_forwards.cpp` — 21 thin ImageView → SlideshowController setters
+- `imageview_view.cpp` ~858 → ~753 lines
+- `imageview_pack.cpp` stripped to minimal includes (~165 → ~143)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1688-slideshow-forwards-pack-slim.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Characterization before Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1687-rematerialize-tu.** Split rematerialize/bake/color-grade out of appearance.cpp.
 Prior: **1686**.
 

@@ -1,32 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "displayquality.h"
+// Thin ImageView → Gallery/Workspace pack and reload forwards.
+
 #include "imageview.h"
-#include "tilelod/tile_lod_registry.hpp"
-#include "layoutapplyguard.h"
-#include "gallerypackfit.h"
-#include "viewtransform.h"
-#include <cstdio>
-#include <cstdlib>
-#include "biltoo_thread.h"
-#include "thumtoocache.h"
 #include "gallerylayout.h"
-#include "imageitem.h"
-#include "imageloader.h"
-#include "imagecache.h"
-#include "gallerysoftsm.h"
-
-#include <QFileInfo>
-#include <QScrollBar>
-#include <QSet>
-#include <QTimer>
-#include <QElapsedTimer>
-#include <QDateTime>
-#include <cstdio>
-#include <QUndoStack>
-
-
 
 void ImageView::scheduleGalleryStatusRefresh(int delayMs)
 {
