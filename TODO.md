@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1878-private-orphan-docs.** Strip orphaned private docblocks after extractions.
+Prior: **1877**.
+
+### Change
+- Remove orphan `/** */` blocks in `imageview_private_rest.inc` /
+  `imageview_private_methods.inc` left when methods moved to controllers
+- Keep only the last docblock immediately before each remaining declaration
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1878-private-orphan-docs.bundle HEAD
+```
+Requires tip **1877** (base **1858** / `1e112d94`).
+
+### Next
+- Tier 4 dual-write design before deleting `m_pathOrderBook`
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1877-drop-dead-crop-display-surface.** Drop dead private crop + displaySurface decls.
 Prior: **1876**.
 
