@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1872-pathOrder-from-live-to-gallery.** setPathOrderFromLiveItems → GalleryController.
+Prior: **1871**.
+
+### Change
+- Move `setPathOrderFromLiveItems` from ImageView into private GalleryController
+- Uses host `liveItems()` + `pathOrderSetOrder` only
+- Shrink ImageView path-order public surface (Tier 4 inventory updated)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1872-pathOrder-from-live-to-gallery.bundle HEAD
+```
+Requires tip **1871** (base **1858** / `1e112d94`).
+
+### Next
+- Tier 4 pack-order source policy design
+- Do not delete `m_pathOrderBook` yet
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1871-tier4-path-order-inventory.** Full path-order call-site inventory (Tier 4).
 Prior: **1870**.
 
