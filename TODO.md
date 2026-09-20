@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1874-size-resolve-inline-hops.** Inline pure-hop GallerySizeResolveHost overrides.
+Prior: **1873**.
+
+### Change
+- Inline pure hops: `hasDefinitiveHostSize`, `scheduleSizeProbe`, `sizeResolvePathOrder`,
+  `sizeResolveLayoutDefersPopulate`, `setSizeResolveProgress`
+- `sizeResolvePathOrder` documents `PackOrderReadSource::ViewBook`
+- Non-trivial handlers stay in `imageview_size_book.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1874-size-resolve-inline-hops.bundle HEAD
+```
+Requires tip **1873** (base **1858** / `1e112d94`).
+
+### Next
+- Tier 4 dual-write design before deleting `m_pathOrderBook`
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1873-packOrder-read-source.** PackOrderReadSource policy type + packOrderForRead.
 Prior: **1872**.
 
