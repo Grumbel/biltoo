@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1864-tier4-char-marks.** Tier 4 path-order characterization; drop dead detach + marks getter.
+Prior: **1863**.
+
+### Change
+- Document why `m_pathOrderBook` cannot be deleted yet (Gallery multiplicity,
+  stash, ad-hoc Workspace rows; `pathOrderOccurrences` must not consult
+  SessionDocument) — see REFACTOR.md Tier 4 residual characterization
+- Remove orphaned `detachCanvasSessionId` (decl + def, no callers)
+- Demote `contentEditMarksVisible` read to `ImageItem::`; drop ImageView getter
+  (setter remains)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1864-tier4-char-marks.bundle HEAD
+```
+Requires tip **1863** (base **1858** / `1e112d94`).
+
+### Next
+- Residual pure-hop scan
+- Tier 4 design: pack-order view without dual write (do not delete book yet)
+- biltoo-build smoke
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1863-drop-dead-private-surface.** Remove dead ImageView private decls + orphaned defs.
 Prior: **1862**.
 
