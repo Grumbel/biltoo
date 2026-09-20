@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1691-selection-tu.** Split selection/clipboard out of canvas.cpp.
+Prior: **1690**.
+
+### Change
+- New `imageview_selection.cpp` — select-by-id/path, transform targets, clipboard place/remove/duplicate
+- `imageview_canvas.cpp` ~1321 → ~952 lines (path membership, place/move, focus, destroy)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1691-selection-tu.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Characterization before Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1690-slideshow-hud-paint.** Split slideshow and HUD paint out of paint.cpp.
 Prior: **1689**.
 

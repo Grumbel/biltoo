@@ -137,6 +137,7 @@ add_executable(biltoo
   src/imageview_modes.cpp
   src/imageview_pack.cpp
   src/imageview_canvas.cpp
+  src/imageview_selection.cpp
   src/imageview_session_bind.cpp
   src/imageview_crop.cpp
   src/imageview_appearance.cpp
