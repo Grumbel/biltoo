@@ -168,9 +168,15 @@ void ImageView::raiseItem(ImageItem *item)
     const WorkspaceItemState beforeAbove = captureState(above);
     const StackGeometry::ZStep step =
         StackGeometry::raiseStep(item->stackZ(), above->stackZ());
-    item->setStackZ(step.selfZ);
+    {
+        ItemComponents::Placement pl = item->placement();
+        pl.z = step.selfZ;
+        item->applyPlacement(pl);
+    }
     if (step.neighbourChanges) {
-        above->setStackZ(step.neighbourZ);
+        ItemComponents::Placement pl = above->placement();
+        pl.z = step.neighbourZ;
+        above->applyPlacement(pl);
     }
     if (m_undoStack) {
         m_undoStack->beginMacro(tr("Raise"));
@@ -199,9 +205,15 @@ void ImageView::lowerItem(ImageItem *item)
     const WorkspaceItemState beforeBelow = captureState(below);
     const StackGeometry::ZStep step =
         StackGeometry::lowerStep(item->stackZ(), below->stackZ());
-    item->setStackZ(step.selfZ);
+    {
+        ItemComponents::Placement pl = item->placement();
+        pl.z = step.selfZ;
+        item->applyPlacement(pl);
+    }
     if (step.neighbourChanges) {
-        below->setStackZ(step.neighbourZ);
+        ItemComponents::Placement pl = below->placement();
+        pl.z = step.neighbourZ;
+        below->applyPlacement(pl);
     }
     if (m_undoStack) {
         m_undoStack->beginMacro(tr("Lower"));

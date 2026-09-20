@@ -146,7 +146,6 @@ public:
     QRectF contentSceneRect() const;
     /** Content quad in scene coordinates (respects item scale/rotation). */
     QPolygonF contentScenePolygon() const;
-    void setStackZ(qreal z);
     bool itemHFlip() const { return m_hFlip; }
     bool itemVFlip() const { return m_vFlip; }
     /**
@@ -195,20 +194,10 @@ public:
         m_sessionCropRect = has ? rect : QRect();
     }
 
-    /** Set both axes to the same factor (gallery layouts, zoom-by). */
-    void setItemScale(qreal scale);
-    void setItemScale(qreal scaleX, qreal scaleY);
-    /** Horizontal shear k; clamped. Does not touch pixels. */
-    void setItemShear(qreal shear);
-    /** Workspace placement angle (free rotate). Does not touch pixels. */
-    void setItemRotation(qreal degrees);
     /** Bake ±90° into source pixels; placement angle unchanged. */
     void bakeRotate90(int quarterTurns);
     /** Bake horizontal/vertical mirror into source pixels; clears flip flags. */
     void bakeFlip(bool horizontal, bool vertical);
-    void setItemOpacity(qreal opacity);
-    void setItemHFlip(bool on);
-    void setItemVFlip(bool on);
     void toggleHFlip();
     void toggleVFlip();
     void zoomBy(qreal factor);
@@ -448,6 +437,16 @@ private:
     bool isCornerScaleHandle(Handle h) const;
     bool isEdgeScaleHandle(Handle h) const;
     QPointF scaleAnchorLocal(Handle h) const;
+    /** Field mutators — only applyPlacement may write live pose (Stage 2). */
+    void setItemScale(qreal scale);
+    void setItemScale(qreal scaleX, qreal scaleY);
+    void setItemShear(qreal shear);
+    void setItemRotation(qreal degrees);
+    void setItemOpacity(qreal opacity);
+    void setItemHFlip(bool on);
+    void setItemVFlip(bool on);
+    void setStackZ(qreal z);
+
     void applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods,
                                HandlePressScratch &press);
     void applyShearHandleDrag(const QPointF &scenePos, HandlePressScratch &press);

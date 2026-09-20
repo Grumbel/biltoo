@@ -451,7 +451,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
                 applyPlacement(pl);
                 const QPointF now = mapToScene(press.anchorLocal);
                 pl.pos = pos() + (anchor - now);
-                setPos(pl.pos);
+                applyPlacement(pl);
             }
         }
         return;
@@ -496,7 +496,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
         if (!fromCenter) {
             const QPointF now = mapToScene(press.anchorLocal);
             pl.pos = pos() + (press.anchorScene - now);
-            setPos(pl.pos);
+            applyPlacement(pl);
         }
     }
 }
@@ -568,7 +568,7 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos, HandlePressScratch
     applyPlacement(pl);
     const QPointF now = mapToScene(press.anchorLocal);
     pl.pos = pos() + (anchor - now);
-    setPos(pl.pos);
+    applyPlacement(pl);
 }
 
 qreal ImageItem::chromeButtonSize() const

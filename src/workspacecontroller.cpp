@@ -549,7 +549,9 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
         if (!delta.isNull()) {
             for (ImageItem *item : items) {
                 if (item) {
-                    item->setPos(item->pos() + delta);
+                    ItemComponents::Placement pl = item->placement();
+                    pl.pos += delta;
+                    item->applyPlacement(pl);
                 }
             }
         }

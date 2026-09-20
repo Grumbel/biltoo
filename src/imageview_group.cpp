@@ -118,7 +118,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
             item->applyPlacement(pl);
         } else {
             // Decompose failed: still move; leave linear pose from last good frame.
-            item->setPos(newPos);
+            item->applyPlacement(pl);
         }
     }
     m_framing.releaseFit();

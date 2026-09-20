@@ -359,8 +359,10 @@ void ImageView::reorderItemsByPaths(const QStringList &paths)
     if (ordered != m_items) {
         m_items = ordered;
         for (int i = 0; i < m_items.size(); ++i) {
-            if (m_items.at(i)) {
-                m_items.at(i)->setStackZ(i);
+            if (ImageItem *it = m_items.at(i)) {
+                ItemComponents::Placement pl = it->placement();
+                pl.z = i;
+                it->applyPlacement(pl);
             }
         }
     }

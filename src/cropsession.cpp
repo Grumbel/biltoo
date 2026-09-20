@@ -272,7 +272,9 @@ void CropSession::applyScenePosDelta(ImageItem *item, const QPointF &delta)
     if (!item || !qIsFinite(delta.x()) || !qIsFinite(delta.y())) {
         return;
     }
-    item->setPos(item->pos() + delta);
+    ItemComponents::Placement pl = item->placement();
+    pl.pos += delta;
+    item->applyPlacement(pl);
 }
 
 void CropSession::seedApplyCropState(WorkspaceItemState *st, const QPointF &itemOffset,

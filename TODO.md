@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1777-privatize-placement-mutators.** Stage 2 pose write lock.
+Prior: **1776**.
+
+### Change
+- `ImageItem::{setItemScale,setItemShear,setItemRotation,setItemOpacity,setItemHFlip,setItemVFlip,setStackZ}` are **private** — only `applyPlacement` writes live pose fields
+- Residual external `setPos` / `setStackZ` sites (crop delta, group scale fallback, raise/lower, canvas reorder, layout-selection centre, handle-drag anchor correction) route through `applyPlacement`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1777-privatize-placement-mutators.bundle HEAD
+```
+
+### Next
+- biltoo-build + raise/lower / group scale / crop-drag smoke
+- Tile-LOD demotion off ImageItem, or offscreen ImageView harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1776-placement-dto-tests.** Placement↔DTO roundtrip characterization.
 Prior: **1775**.
 
