@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1894-pathorder-inline.** Inline pathOrderOccurrences on host pipeline.
+Prior: **1893**.
+
+### Change
+- `pathOrderOccurrences` is a one-liner on `currentPackOrder()` — moved to
+  `imageview_host_pipeline.inc` (same pattern as `pathOrderIsEmpty`)
+- Removed from `imageview_load.cpp` (load TU is soft-provider + pathOnLiveCanvas)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1894-pathorder-inline-516d734.bundle HEAD
+```
+Requires tip **1893** (base **516d734**).
+
+### Next
+- Green build default + `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON`
+- ctest imageview-characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1893-refactor-progress-log.** REFACTOR progress through 1892.
 Prior: **1892**.
 

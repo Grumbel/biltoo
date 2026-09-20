@@ -8,11 +8,15 @@
     void syncImageModeSceneRect(ImageItem *item);
     void captureStickyPanAnchor(ImageItem *item);
     void applyImageModeFraming(ImageItem *item);
-    int pathOrderOccurrences(const QString &path) const;
+    /** View-local pack multiplicity (never SessionDocument — pathOrderClear). */
+    int pathOrderOccurrences(const QString &path) const
+    {
+        return currentPackOrder().countPathOccurrences(path);
+    }
     bool pathOrderIsEmpty() const { return currentPackOrder().isEmpty(); }
     /**
-     * Pack source snapshot via PackOrderOverlay::resolve (Explicit book today).
-     * See REFACTOR.md Tier 4 residual — SessionDocument alone is not a pack drop-in.
+     * Pack source snapshot via PackOrderOverlay::resolve.
+     * SessionDocument alone is not a pack drop-in (PATH_ORDER.md).
      */
     PackOrderView currentPackOrder() const
     {

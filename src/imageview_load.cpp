@@ -5,15 +5,6 @@
 
 #include "imageitem.h"
 
-int ImageView::pathOrderOccurrences(const QString &path) const
-{
-    // View-local multiplicity only (Gallery pack / LoadAdd).
-    // pathOrderClear() zeros the overlay (Explicit empty) without wiping
-    // SessionDocument — consulting the document here would recreate session
-    // tiles on a blank Workspace.
-    return currentPackOrder().countPathOccurrences(path);
-}
-
 void ImageView::setImageModeSoftProvider(ImageModeSoftProvider provider)
 {
     m_imageModeSoftProvider = std::move(provider);
