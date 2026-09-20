@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1871-tier4-path-order-inventory.** Full path-order call-site inventory (Tier 4).
+Prior: **1870**.
+
+### Change
+- REFACTOR.md: complete `currentPackOrder` / `pathOrderOccurrences` / mutator inventory
+- Document which sites **must** stay book-backed (LoadAdd multiplicity, ad-hoc place)
+- Note `PackOrderView::fromDocument()` is not a drop-in
+- Host `currentPackOrder` comment points at the inventory
+- Corrected stale write-site notes (host mutators since tip 1867)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1871-tier4-path-order-inventory.bundle HEAD
+```
+Requires tip **1870** (base **1858** / `1e112d94`).
+
+### Next
+- Tier 4 design: pack-order source policy (document vs book vs overlay)
+- Do **not** delete `m_pathOrderBook` until multiplicity is modeled without dual write
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1870-hostPageGuide.** hostPageGuide + demote pageGuideVisible; drop mouseInfo.
 Prior: **1869**.
 
