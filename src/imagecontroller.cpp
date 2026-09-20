@@ -180,7 +180,7 @@ void ImageController::hardReloadFromDisk()
         b.index = item->sessionIndex();
         binds.append(b);
         m_view->gallerySoftResetPath(p);
-        item->dropTileLodSession();
+        m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         m_view->takePendingWorkspacePath(p);
         item->clearDecodedPixels();
         ImageCache::remove(p);

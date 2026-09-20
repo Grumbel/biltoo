@@ -1454,7 +1454,7 @@ void GalleryController::reloadFromDisk(bool relayout)
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
             purgedPaths.insert(path);
         } else {
-            item->dropTileLodSession();
+            m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         }
         m_view->takePendingWorkspacePath(path);
         item->clearDecodedPixels();
@@ -1510,7 +1510,7 @@ void GalleryController::hardReloadFromDisk(bool relayout)
             }
             pathSet.insert(path);
         } else {
-            item->dropTileLodSession();
+            m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         }
         ReloadBind b;
         b.path = path;

@@ -1357,6 +1357,13 @@ void DisplayPipelineController::scheduleTileLodAfterInteraction(int delayMs)
 }
 
 
+void DisplayPipelineController::dropItemTileLodSession(ImageItem *item)
+{
+    if (item) {
+        item->dropTileLodSession();
+    }
+}
+
 void DisplayPipelineController::purgeTilePathRam(const QString &path)
 {
     if (path.isEmpty()) {
@@ -1364,7 +1371,7 @@ void DisplayPipelineController::purgeTilePathRam(const QString &path)
     }
     for (ImageItem *item : m_view->liveItems()) {
         if (item && item->path() == path) {
-            item->dropTileLodSession();
+            dropItemTileLodSession(item);
         }
     }
     tilelod::TileLodRegistry::instance().invalidate(path);
@@ -1374,11 +1381,9 @@ void DisplayPipelineController::purgeTilePathRam(const QString &path)
 
 void DisplayPipelineController::dropAllTileLodSessions()
 {
-    auto dropList = [](const QList<ImageItem *> &items) {
+    auto dropList = [this](const QList<ImageItem *> &items) {
         for (ImageItem *item : items) {
-            if (item) {
-                item->dropTileLodSession();
-            }
+            dropItemTileLodSession(item);
         }
     };
     dropList(m_view->liveItems());

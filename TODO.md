@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1782-pipeline-drop-tilelod.** Stage 2: tile session drop via pipeline API.
+Prior: **1781**.
+
+### Change
+- `DisplayPipelineController::dropItemTileLodSession(ImageItem *)` — external drop entry
+- Gallery / Workspace / Image controllers route through pipeline (not `item->drop…`)
+- Pipeline purge/dropAll use the same helper
+- Item still owns `ItemBag`; crop suppress stays on the item
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1782-pipeline-drop-tilelod.bundle HEAD
+```
+
+### Next
+- Move ItemBag storage under DisplayPipelineController
+- Offscreen ImageView characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1781-tilelod-item-bag.** Stage 2: tile LOD state bag on ImageItem.
 Prior: **1780**.
 
