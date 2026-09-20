@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "gallerysoftsm.h"
 #include "toolpolicy.h"
 #include "workspacenavgeometry.h"
@@ -185,13 +186,9 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
     if (!item) {
         return;
     }
-    if (after.pos == before.pos
-        && qFuzzyCompare(after.scale, before.scale)
-        && qFuzzyCompare(after.scaleY > 0 ? after.scaleY : 1.0,
-                         before.scaleY > 0 ? before.scaleY : 1.0)
-        && qFuzzyCompare(after.shear + 1.0, before.shear + 1.0)
-        && qFuzzyCompare(after.rotation, before.rotation)
-        && after.opacity == before.opacity) {
+    if (ItemComponents::placementNearlyEqual(
+            ItemComponents::placementFromState(before),
+            ItemComponents::placementFromState(after))) {
         return;
     }
     // Single geometry undo path (persist + TransformCommand).

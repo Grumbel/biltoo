@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1741-placement-nearly-equal.** Placement-shaped geometry no-op check.
+Prior: **1740**.
+
+### Change
+- `ItemComponents::placementNearlyEqual`
+- `pushItemTransformUndo` compares Placement extracts, not raw DTO fields
+- itemworld_test covers equality
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1741-placement-nearly-equal.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest itemworld
+- Characterization harness or Stage 2 continue
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1740-geometry-undo-unify.** One geometry undo entry point.
 Prior: **1739**.
 

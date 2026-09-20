@@ -33,6 +33,7 @@ private slots:
     void setAppearance_dualWritesBakeAndColor();
     void placement_setAppearanceDualWrites();
     void setPlacement_updatesDto();
+    void placementNearlyEqual_detectsNoOp();
 };
 
 
@@ -384,6 +385,19 @@ void ItemWorldTest::setPlacement_updatesDto()
     QCOMPARE(s->pos, QPointF(5, 6));
     QCOMPARE(s->scaleY, 1.5);
     QCOMPARE(s->shear, 0.25);
+}
+
+
+void ItemWorldTest::placementNearlyEqual_detectsNoOp()
+{
+    ItemComponents::Placement a;
+    a.pos = QPointF(1, 2);
+    a.scale = 1.5;
+    a.rotation = 10.0;
+    ItemComponents::Placement b = a;
+    QVERIFY(ItemComponents::placementNearlyEqual(a, b));
+    b.pos += QPointF(0.001, 0);
+    QVERIFY(!ItemComponents::placementNearlyEqual(a, b));
 }
 
 QTEST_MAIN(ItemWorldTest)

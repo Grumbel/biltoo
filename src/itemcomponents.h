@@ -62,6 +62,19 @@ struct Placement {
     }
 };
 
+/** True when pose is unchanged for undo no-op (move/rotate release). */
+inline bool placementNearlyEqual(const Placement &a, const Placement &b)
+{
+    return a.pos == b.pos
+        && qFuzzyCompare(a.scale, b.scale)
+        && qFuzzyCompare(a.scaleY > 0.0 ? a.scaleY : 1.0, b.scaleY > 0.0 ? b.scaleY : 1.0)
+        && qFuzzyCompare(a.shear + 1.0, b.shear + 1.0)
+        && qFuzzyCompare(a.rotation, b.rotation)
+        && qFuzzyCompare(a.opacity, b.opacity)
+        && qFuzzyCompare(a.z + 1.0, b.z + 1.0)
+        && a.hFlip == b.hFlip && a.vFlip == b.vFlip;
+}
+
 /** Content orient bake (disk → flip → quarter turns), independent of placement. */
 struct ContentBake {
     int quarterTurns = 0; // 0..3

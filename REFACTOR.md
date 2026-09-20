@@ -967,3 +967,4 @@ Phase 1–6 rules still apply. Additions:
   pushItemGeometryCommand / pushItemTransformUndo (item already posed; tables catch up).
 - biltoo-1740: `pushItemTransformUndo` delegates to `pushItemGeometryCommand`
   (one TransformCommand implementation).
+- biltoo-1741: `placementNearlyEqual` — move/rotate no-op check is Placement-shaped.
