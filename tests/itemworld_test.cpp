@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 /**
- * Phase 7 Stage 0: ItemWorld is a pure facade — same storage, id-keyed API.
+ * Phase 7: ItemWorld facade (Stage 0) + Crop/Attention components (Stage 1).
  */
 
 #include "itemworld.h"
+#include "itemcomponents.h"
 
 #include <QtTest/QtTest>
 
@@ -18,6 +19,14 @@ private slots:
     void pathBook_independentOfAppearance();
     void sizeBook_noteDefinitive();
     void bind_pointsAtSameStore();
+    // Stage 1
+    void cropFromState_emptyWhenNoCrop();
+    void crop_setAppearanceDualWritesTable();
+    void setCrop_updatesDtoAndTable();
+    void setCrop_clearRemovesPresence();
+    void attention_setAndClear();
+    void removeAppearance_clearsComponents();
+    void crop_fallbackWhenDtoWrittenDirectly();
 };
 
 void ItemWorldTest::unbound_gettersAreSafe()
@@ -29,6 +38,8 @@ void ItemWorldTest::unbound_gettersAreSafe()
     QCOMPARE(world.getAppearance(1), nullptr);
     QCOMPARE(world.getPathState(QStringLiteral("/a.png")), nullptr);
     QCOMPARE(world.knownSize(QStringLiteral("/a.png")), QSize());
+    QVERIFY(world.crop(1).isEmpty());
+    QVERIFY(world.attention(1).isEmpty());
 }
 
 void ItemWorldTest::appearance_roundTripById()
@@ -46,7 +57,6 @@ void ItemWorldTest::appearance_roundTripById()
     QVERIFY(got);
     QVERIFY(got->hasCrop);
     QCOMPARE(got->cropRect, QRect(2, 4, 60, 40));
-    // Same object as the bound store.
     QCOMPARE(store.get(11)->cropRect, QRect(2, 4, 60, 40));
 
     world.removeAppearance(11);
@@ -74,7 +84,6 @@ void ItemWorldTest::pathBook_independentOfAppearance()
     QVERIFY(world.getAppearance(5));
     QVERIFY(world.getPathState(QStringLiteral("/dup.png")));
     QCOMPARE(world.getPathState(QStringLiteral("/dup.png"))->pos, QPointF(100, 200));
-    // Appearance is not path-keyed.
     QCOMPARE(world.getAppearance(5)->cropRect, QRect(1, 1, 10, 10));
 }
 
@@ -102,6 +111,134 @@ void ItemWorldTest::bind_pointsAtSameStore()
     QCOMPARE(&world.appearance(), &store);
     QCOMPARE(&world.pathBook(), &paths);
     QCOMPARE(&world.sizeBook(), &sizes);
+}
+
+void ItemWorldTest::cropFromState_emptyWhenNoCrop()
+{
+    WorkspaceItemState s;
+    QVERIFY(ItemComponents::cropFromState(s).isEmpty());
+    s.hasCrop = true;
+    s.cropRect = QRect(); // empty rect still empty component
+    QVERIFY(ItemComponents::cropFromState(s).isEmpty());
+}
+
+void ItemWorldTest::crop_setAppearanceDualWritesTable()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(10, 20, 100, 80);
+    st.cropSourceSize = QSize(800, 600);
+    st.cropRotation = 15.0;
+    world.setAppearance(3, st);
+
+    QCOMPARE(world.cropCount(), 1);
+    QVERIFY(world.hasCrop(3));
+    const ItemComponents::Crop c = world.crop(3);
+    QCOMPARE(c.rect, QRect(10, 20, 100, 80));
+    QCOMPARE(c.sourceSize, QSize(800, 600));
+    QCOMPARE(c.rotation, 15.0);
+}
+
+void ItemWorldTest::setCrop_updatesDtoAndTable()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    ItemComponents::Crop c;
+    c.rect = QRect(5, 5, 40, 30);
+    c.sourceSize = QSize(200, 100);
+    world.setCrop(9, c);
+
+    QVERIFY(world.hasCrop(9));
+    QCOMPARE(world.crop(9).rect, QRect(5, 5, 40, 30));
+    const WorkspaceItemState *s = store.get(9);
+    QVERIFY(s);
+    QVERIFY(s->hasCrop);
+    QCOMPARE(s->cropRect, QRect(5, 5, 40, 30));
+    QCOMPARE(s->cropSourceSize, QSize(200, 100));
+}
+
+void ItemWorldTest::setCrop_clearRemovesPresence()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    ItemComponents::Crop c;
+    c.rect = QRect(1, 1, 10, 10);
+    world.setCrop(2, c);
+    QCOMPARE(world.cropCount(), 1);
+
+    world.setCrop(2, ItemComponents::Crop{});
+    QVERIFY(!world.hasCrop(2));
+    QCOMPARE(world.cropCount(), 0);
+    const WorkspaceItemState *s = store.get(2);
+    QVERIFY(s);
+    QVERIFY(!s->hasCrop);
+}
+
+void ItemWorldTest::attention_setAndClear()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    ItemComponents::Attention a;
+    a.points = {QPointF(0.2, 0.3), QPointF(0.8, 0.7)};
+    world.setAttention(4, a);
+
+    QVERIFY(world.hasAttention(4));
+    QCOMPARE(world.attention(4).points.size(), 2);
+    const WorkspaceItemState *s = store.get(4);
+    QVERIFY(s);
+    QVERIFY(s->hasAttention);
+    QCOMPARE(s->attentionNorm, QPointF(0.2, 0.3));
+
+    world.setAttention(4, ItemComponents::Attention{});
+    QVERIFY(!world.hasAttention(4));
+    QCOMPARE(world.attentionCount(), 0);
+}
+
+void ItemWorldTest::removeAppearance_clearsComponents()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(1, 1, 5, 5);
+    st.hasAttention = true;
+    st.attentionPoints = {QPointF(0.5, 0.5)};
+    world.setAppearance(7, st);
+    QCOMPARE(world.cropCount(), 1);
+    QCOMPARE(world.attentionCount(), 1);
+
+    world.removeAppearance(7);
+    QCOMPARE(world.cropCount(), 0);
+    QCOMPARE(world.attentionCount(), 0);
+    QVERIFY(!store.contains(7));
+}
+
+void ItemWorldTest::crop_fallbackWhenDtoWrittenDirectly()
+{
+    // Legacy path: DTO written without ItemWorld::setAppearance.
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(3, 3, 20, 20);
+    store.set(8, st);
+    QCOMPARE(world.cropCount(), 0); // table not dual-written
+    // Fallback extract still works.
+    QCOMPARE(world.crop(8).rect, QRect(3, 3, 20, 20));
 }
 
 QTEST_MAIN(ItemWorldTest)

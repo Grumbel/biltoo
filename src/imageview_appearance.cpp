@@ -266,7 +266,8 @@ void ImageView::setSessionAppearance(SessionImageId id, const WorkspaceItemState
     if (id == kInvalidSessionImageId) {
         return;
     }
-    appearance().set(id, state);
+    // Phase 7 Stage 1: dual-write crop/attention sparse tables via ItemWorld.
+    m_itemWorld.setAppearance(id, state);
 }
 
 

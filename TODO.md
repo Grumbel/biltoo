@@ -2,6 +2,35 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1726-itemworld-crop-attention.** Phase 7 Stage 1 Crop + Attention components.
+Prior: **1725**.
+
+### Change
+- `itemcomponents.h` — Crop / Attention records + extract/apply on WorkspaceItemState
+- `ItemWorld` owns sparse `m_crops` / `m_attentions`; dual-write with DTO on
+  setAppearance / setCrop / setAttention; remove clears tables
+- `ImageView::setSessionAppearance` → `m_itemWorld.setAppearance`
+- itemworld CTest expanded (presence, clear, fallback when DTO written direct)
+
+DTO remains project/undo shape; sparse tables are runtime presence API.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1726-itemworld-crop-attention.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest itemworld
+- Route more `appearance().set` sites through `itemWorld().setAppearance` (or setCrop)
+- Stage 1 residual: ContentBake / Color tables, or Stage 2 ImageItem demotion
+- Phase 6 Tier 4 path-order residual still open
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1725-itemworld-stage0.** Phase 7 Stage 0 ItemWorld facade.
 Prior: **1724**.
 

@@ -931,3 +931,7 @@ Phase 1–6 rules still apply. Additions:
   path/size books in ctor and appearance in `bindSessionAppearance`;
   `appearance()` / `hostItemStateBook` route through the facade;
   `tests/itemworld_test.cpp` locks pure pointer identity + id/path/size API.
+- biltoo-1726: **Stage 1 (Crop + Attention)** — `itemcomponents.h` extract/apply;
+  ItemWorld owns sparse crop/attention tables dual-written with DTO on
+  `setAppearance` / `setCrop` / `setAttention`; `setSessionAppearance` routes
+  through ItemWorld; tests cover presence, clear, remove, DTO-direct fallback.
