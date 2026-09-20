@@ -4,6 +4,7 @@
 // Pending session binds, session-id canvas membership, and load-add placement.
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "imageitem.h"
 #include "imagecache.h"
 #include "sessionappearance.h"
@@ -55,14 +56,12 @@ void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBi
     // Explicit drop pose: free-form identity placement only (never revive
     // gallery pack scale/cell or a prior non-uniform footprint scale).
     item->setGalleryCellSize({});
-    item->setPos(bound.scenePos);
-    item->setItemScale(1.0, 1.0);
-    item->setItemRotation(0.0);
-    item->setItemShear(0.0);
-    item->setItemOpacity(1.0);
-    item->setItemHFlip(false);
-    item->setItemVFlip(false);
-    item->setStackZ(m_items.size() - 1);
+    {
+        ItemComponents::Placement pl;
+        pl.pos = bound.scenePos;
+        pl.z = m_items.size() - 1;
+        item->applyPlacement(pl);
+    }
     if (isWorkspaceMode()) {
         item->setInteractive(true);
         item->setScaleHandlesEnabled(true);
@@ -163,12 +162,14 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
         return;
     }
     if (isGalleryMode()) {
-        // Packed layout owns pose; keep item transform neutral.
-        item->setItemRotation(0.0);
-        item->setItemShear(0.0);
-        item->setItemHFlip(false);
-        item->setItemVFlip(false);
-        item->setItemOpacity(1.0);
+        // Packed layout owns pose; keep item transform neutral (pos/scale later).
+        ItemComponents::Placement pl = item->placement();
+        pl.rotation = 0.0;
+        pl.shear = 0.0;
+        pl.hFlip = false;
+        pl.vFlip = false;
+        pl.opacity = 1.0;
+        item->applyPlacement(pl);
         return;
     }
     if (haveBound && bound.hasScenePos) {
@@ -184,11 +185,12 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
     }
     QPointF pos;
     if (m_displayPipeline.loadGate().takePendingScenePos(path, &pos)) {
-        item->setPos(pos);
-        item->setItemScale(1.0);
-        item->setItemRotation(0.0);
-        item->setItemOpacity(1.0);
-        item->setStackZ(m_items.size() - 1);
+        {
+            ItemComponents::Placement pl;
+            pl.pos = pos;
+            pl.z = m_items.size() - 1;
+            item->applyPlacement(pl);
+        }
         return;
     }
     if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {

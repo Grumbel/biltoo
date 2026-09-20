@@ -6,6 +6,7 @@
 #include "imageview.h"
 #include "packorderview.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 #include "imagecache.h"
 #include "sessionappearance.h"
 
@@ -139,11 +140,11 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
             if (existing->scene() == m_scene) {
                 // Drop out of gallery pack geometry (cell size + pack scale).
                 existing->setGalleryCellSize({});
-                existing->setItemScale(1.0);
-                existing->setItemRotation(0.0);
-                existing->setItemShear(0.0);
-                existing->setItemOpacity(1.0);
-                existing->setPos(scenePos);
+                {
+                    ItemComponents::Placement pl;
+                    pl.pos = scenePos;
+                    existing->applyPlacement(pl);
+                }
                 if (isWorkspaceMode()) {
                     existing->setInteractive(true);
                     existing->setScaleHandlesEnabled(true);
@@ -209,14 +210,12 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
             sz = QSize(512, 512);
         }
         ImageItem *ph = new ImageItem(path, sz);
-        ph->setPos(scenePos);
         ph->setGalleryCellSize({});
-        ph->setItemScale(1.0, 1.0);
-        ph->setItemRotation(0.0);
-        ph->setItemShear(0.0);
-        ph->setItemOpacity(1.0);
-        ph->setItemHFlip(false);
-        ph->setItemVFlip(false);
+        {
+            ItemComponents::Placement pl;
+            pl.pos = scenePos;
+            ph->applyPlacement(pl);
+        }
         ph->setContentHFlip(false);
         ph->setContentVFlip(false);
         ph->setSessionCrop(false, QRect());

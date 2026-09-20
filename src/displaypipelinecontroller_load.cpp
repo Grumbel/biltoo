@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "displaypipelinecontroller.h"
+#include "itemcomponents.h"
 #include "displaypipeline_jobs.h"
 
 #include "tile_load_coordinator.h"
@@ -128,11 +129,11 @@ void DisplayPipelineController::reassertPendingBindPlacement(const QString &path
             }
             if (b.hasScenePos) {
                 item->setGalleryCellSize({});
-                item->setPos(b.scenePos);
-                item->setItemScale(1.0);
-                item->setItemRotation(0.0);
-                item->setItemShear(0.0);
-                item->setItemOpacity(1.0);
+                {
+                    ItemComponents::Placement pl;
+                    pl.pos = b.scenePos;
+                    item->applyPlacement(pl);
+                }
                 if (m_view->isWorkspaceMode()) {
                     item->setInteractive(true);
                     item->setScaleHandlesEnabled(true);

@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1767-drop-bind-apply-placement.** Drop/bind identity pose via applyPlacement.
+Prior: **1766**.
+
+### Change
+- Drop placeholder, placeOrMove existing, applyPendingBindScenePos, load-gate bind,
+  Image-mode reset, takePendingScenePos → identity Placement via applyPlacement
+- Gallery placeNewLoadAddItem neutralizes rotation/shear/flips/opacity via Placement
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1767-drop-bind-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + drop/bind smoke
+- Gallery pack / framing scale residual, or Tier 4 harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1766-duplicate-apply-placement.** Duplicate pose via applyPlacement.
 Prior: **1765**.
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "displaypipelinecontroller.h"
+#include "itemcomponents.h"
 #include "displaypipeline_jobs.h"
 
 #include "tile_load_coordinator.h"
@@ -388,9 +389,7 @@ void DisplayPipelineController::resetImageModeItemPlacement(ImageItem *item)
     // Never inherit Gallery/Workspace free-form placement or scale.
     item->setInteractive(false);
     item->setScaleHandlesEnabled(false);
-    item->setItemScale(1.0);
-    item->setPos(0, 0);
-    item->setItemRotation(0.0);
+    item->applyPlacement(ItemComponents::Placement{});
 }
 
 
