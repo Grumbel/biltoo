@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1828-install-display-pixels-via-pipeline.** Stage 2: installDisplayPixels via pipeline.
+Prior: **1827**.
+
+### Change
+- All installDisplayPixels call sites → `m_displayPipeline` / `hostDisplayPipeline()`
+- Dropped ImageView `installDisplayPixels` + dead `installDisplayPreservingView` forwards
+
+### Note (contentxform)
+- `sourceToDisplayTransform_matchesMapCorners` fixed on base **a17e27d3** (tip 1805).
+  Rebuild from tip ≥1805 / this bundle if that test still fails.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1828-install-display-pixels-via-pipeline.bundle HEAD
+```
+Includes **1806–1828** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Gallery soft install / crop / bind)
+- More hop demotions / Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1827-surface-focus-via-pipeline.** Stage 2: display surface + focus via pipeline.
 Prior: **1826**.
 

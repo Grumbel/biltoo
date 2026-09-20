@@ -1076,3 +1076,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1825: ladderReady lambda → pipeline onLadderReady; drop ladder ImageView forwards.
 - biltoo-1826: scheduleImageLoad + onImageLoaded/Preview via pipeline; drop load/replace ImageView forwards.
 - biltoo-1827: display surface register/unregister + focus drive + image-mode climb via pipeline.
+- biltoo-1828: installDisplayPixels via pipeline host; drop ImageView install + preserving-view forwards.
