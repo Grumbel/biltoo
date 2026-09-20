@@ -11,10 +11,13 @@
     int pathOrderOccurrences(const QString &path) const;
     bool pathOrderIsEmpty() const { return currentPackOrder().isEmpty(); }
     /**
-     * Pack source snapshot from the view path-order book (not SessionDocument).
-     * See REFACTOR.md Tier 4 call-site inventory — fromDocument() is not a drop-in.
+     * Pack source snapshot from the view path-order book (PackOrderReadSource::ViewBook).
+     * See REFACTOR.md Tier 4 inventory — SessionDocument is not a drop-in for pack.
      */
-    PackOrderView currentPackOrder() const { return PackOrderView::fromBook(m_pathOrderBook); }
+    PackOrderView currentPackOrder() const
+    {
+        return packOrderForRead(PackOrderReadSource::ViewBook, m_pathOrderBook, m_sessionDoc);
+    }
     /** View path-order book mutators (not SessionDocument). */
     void pathOrderClear() { m_pathOrderBook.clear(); }
     void pathOrderSetOrder(const QStringList &paths, const QVector<SessionImageId> &ids)

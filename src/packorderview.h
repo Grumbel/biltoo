@@ -23,6 +23,7 @@
  * LoadAdd multiplicity: only fromBook() can express N tiles for one session
  * path. fromDocument() always has one row per session membership.
  */
+
 class PackOrderView
 {
 public:
@@ -118,5 +119,37 @@ private:
     QStringList m_paths;
     QVector<SessionImageId> m_ids;
 };
+
+
+/**
+ * Where pack-order *reads* are allowed to come from (Tier 4 policy).
+ *
+ * - ViewBook: ImageView::m_pathOrderBook — LoadAdd multiplicity, ad-hoc place,
+ *   Gallery stash. Default for all pack / LoadAdd / size-resolve readers today.
+ * - SessionDocument: MainWindow session membership (one row per open file).
+ *   Safe only when the book aligns with the document (no extra multiplicity /
+ *   invalid ids). Prefer for identity lookups; not a drop-in for pack order.
+ *
+ * Writes always go to the view book (pathOrderClear / SetOrder / AppendRow).
+ * SessionDocument is mutated only by MainWindow session APIs.
+ */
+enum class PackOrderReadSource {
+    ViewBook,
+    SessionDocument,
+};
+
+/**
+ * Resolve a pack-order snapshot under @p source.
+ * SessionDocument source requires a non-null @p doc; otherwise falls back to book.
+ */
+inline PackOrderView packOrderForRead(PackOrderReadSource source,
+                                      const SessionPathOrder &book,
+                                      const SessionDocument *doc)
+{
+    if (source == PackOrderReadSource::SessionDocument && doc) {
+        return PackOrderView::fromDocument(*doc);
+    }
+    return PackOrderView::fromBook(book);
+}
 
 #endif // PACKORDERVIEW_H

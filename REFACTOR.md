@@ -678,7 +678,12 @@ separate from path-order deletion.
 extra multiplicity). Today Gallery pack always reads the book; switching readers to
 `fromDocument()` without a dual-write design would break LoadAdd duplicates and ad-hoc place.
 
-**Safe next steps:** introduce an explicit pack-order **source policy** (document vs book vs
+**Policy type (tip 1873):** `PackOrderReadSource` + `packOrderForRead()` in
+`packorderview.h`. `currentPackOrder()` reads `ViewBook` only. Do not switch pack
+readers to `SessionDocument` without the dual-write design below.
+
+**Safe next steps:** use the source policy when migrating Gallery pack readers;
+introduce an explicit pack-order **source policy** (document vs book vs
 overlay) owned outside ImageView; migrate Gallery pack readers only after multiplicity is
 expressed without a second full copy; only then delete `m_pathOrderBook`.
 
