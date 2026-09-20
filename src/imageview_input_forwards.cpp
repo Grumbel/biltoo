@@ -101,3 +101,29 @@ bool ImageView::tryKeyPressGallery(QKeyEvent *event)
 {
     return m_gallery.tryKeyPressGallery(event);
 }
+
+bool ImageView::tryKeyPressDeleteSelection(QKeyEvent *event)
+{
+    if (m_gallery.tryKeyPressDeleteSelection(event)) {
+        return true;
+    }
+    if (m_workspace.tryKeyPressDeleteSelection(event)) {
+        return true;
+    }
+    return false;
+}
+
+bool ImageView::tryKeyPressImageNavigate(QKeyEvent *event)
+{
+    return m_image.tryKeyPressNavigate(event);
+}
+
+bool ImageView::tryKeyPressWorkspaceShear(QKeyEvent *event)
+{
+    return m_workspace.tryKeyPressShear(event);
+}
+
+bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
+{
+    return m_image.tryMousePressEdges(event);
+}

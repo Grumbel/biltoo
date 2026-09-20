@@ -8,6 +8,7 @@
 
 class ImageView;
 class QKeyEvent;
+class QMouseEvent;
 
 /**
  * Image-mode collaborator for ImageView.
@@ -35,6 +36,7 @@ public:
 
     /** Left/Right/PageUp/PageDown session navigation (Image mode). */
     bool tryKeyPressNavigate(QKeyEvent *event);
+    bool tryMousePressEdges(QMouseEvent *event);
 
 private:
     ImageView *m_view = nullptr;

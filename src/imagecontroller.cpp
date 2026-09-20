@@ -4,6 +4,8 @@
 #include "imagecontroller.h"
 #include "imageview.h"
 #include <QKeyEvent>
+#include <QMouseEvent>
+#include <QApplication>
 
 ImageController::ImageController(ImageView *view)
     : m_view(view)
@@ -62,5 +64,48 @@ bool ImageController::tryKeyPressNavigate(QKeyEvent *event)
     default:
         return false;
     }
+}
+
+
+// --- Image mode edge chrome (Tier 6i) ---
+
+bool ImageController::tryMousePressEdges(QMouseEvent *event)
+{
+    if (!m_view->isImageMode() || event->button() != Qt::LeftButton
+        || (event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
+        return false;
+    }
+    const ImageView::EdgeZone zone = m_view->edgeZoneAt(event->pos());
+    if (zone == ImageView::EdgeZone::GalleryReturn) {
+        emit m_view->galleryReturnRequested();
+        event->accept();
+        return true;
+    }
+    if (zone == ImageView::EdgeZone::Previous) {
+        emit m_view->navigatePreviousRequested();
+        event->accept();
+        return true;
+    }
+    if (zone == ImageView::EdgeZone::Next) {
+        emit m_view->navigateNextRequested();
+        event->accept();
+        return true;
+    }
+    // Slideshow: centre click pauses / resumes. Edges stay navigation above.
+    // Ignore the second press of a double-click so we do not toggle twice.
+    if ((m_view->hostSlideshow().hud().isProgressActive() || m_view->hostSlideshow().hud().isPausedHud())
+        && zone == ImageView::EdgeZone::None) {
+        if (m_view->hostSlideshow().lastCenterClick().isValid()
+            && m_view->hostSlideshow().lastCenterClick().elapsed()
+                < QApplication::doubleClickInterval()) {
+            event->accept();
+            return true;
+        }
+        m_view->hostSlideshow().lastCenterClick().start();
+        emit m_view->slideshowTogglePauseRequested();
+        event->accept();
+        return true;
+    }
+    return false;
 }
 

@@ -763,3 +763,4 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - Tier 6f: **done** (biltoo-1661) — thin mode-controller input forwards in `imageview_input_forwards.cpp`.
 - Tier 6g: **done** (biltoo-1662) — Delete/Backspace selection on Gallery/Workspace controllers.
 - Tier 6h: **done** (biltoo-1665) — Image session nav keys + Workspace shear keys on controllers.
+- Tier 6i: **done** (biltoo-1666) — Image edge chrome press on ImageController; more input forwards TU.

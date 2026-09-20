@@ -377,45 +377,6 @@ bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
     event->accept();
     return true;
 }
-bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
-{
-    if (!isImageMode() || event->button() != Qt::LeftButton
-        || (event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
-        return false;
-    }
-    const EdgeZone zone = edgeZoneAt(event->pos());
-    if (zone == EdgeZone::GalleryReturn) {
-        emit galleryReturnRequested();
-        event->accept();
-        return true;
-    }
-    if (zone == EdgeZone::Previous) {
-        emit navigatePreviousRequested();
-        event->accept();
-        return true;
-    }
-    if (zone == EdgeZone::Next) {
-        emit navigateNextRequested();
-        event->accept();
-        return true;
-    }
-    // Slideshow: centre click pauses / resumes. Edges stay navigation above.
-    // Ignore the second press of a double-click so we do not toggle twice.
-    if ((m_slideshow.hud().isProgressActive() || m_slideshow.hud().isPausedHud())
-        && zone == EdgeZone::None) {
-        if (m_slideshow.lastCenterClick().isValid()
-            && m_slideshow.lastCenterClick().elapsed()
-                < QApplication::doubleClickInterval()) {
-            event->accept();
-            return true;
-        }
-        m_slideshow.lastCenterClick().start();
-        emit slideshowTogglePauseRequested();
-        event->accept();
-        return true;
-    }
-    return false;
-}
 bool ImageView::tryMousePressPan(QMouseEvent *event)
 {
     // Middle-button pan in any mode; Gallery also allows Alt+left pan.
@@ -1031,10 +992,6 @@ bool ImageView::tryKeyPressSelectAll(QKeyEvent *event)
     event->accept();
     return true;
 }
-bool ImageView::tryKeyPressImageNavigate(QKeyEvent *event)
-{
-    return m_image.tryKeyPressNavigate(event);
-}
 
 void ImageView::emitGalleryItemFocus(ImageItem *item)
 {
@@ -1047,21 +1004,7 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
         emit galleryItemFocused(item->path());
     }
 }
-bool ImageView::tryKeyPressWorkspaceShear(QKeyEvent *event)
-{
-    return m_workspace.tryKeyPressShear(event);
-}
 
-bool ImageView::tryKeyPressDeleteSelection(QKeyEvent *event)
-{
-    if (m_gallery.tryKeyPressDeleteSelection(event)) {
-        return true;
-    }
-    if (m_workspace.tryKeyPressDeleteSelection(event)) {
-        return true;
-    }
-    return false;
-}
 
 void ImageView::keyPressEvent(QKeyEvent *event)
 {

@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1666-image-edges-input-forwards.** Tier 6i: Image edge press on ImageController; more input forwards.
+Prior: **1665**.
+
+### Change
+- `ImageController::tryMousePressEdges` — GalleryReturn / prev-next / slideshow center pause
+- Thin forwards moved into `imageview_input_forwards.cpp`:
+  ImageNavigate, WorkspaceShear, DeleteSelection, ImageEdges
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1666-image-edges-input-forwards.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Transform chrome remains view-owned
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1665-image-workspace-key-controllers.** Tier 6h: Image nav + Workspace shear keys on controllers.
 Prior: **1664**.
 
