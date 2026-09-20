@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1873-packOrder-read-source.** PackOrderReadSource policy type + packOrderForRead.
+Prior: **1872**.
+
+### Change
+- `enum class PackOrderReadSource { ViewBook, SessionDocument }` in `packorderview.h`
+- `packOrderForRead()` helper (document source falls back to book if doc is null)
+- `currentPackOrder()` uses `ViewBook` explicitly via the helper
+- REFACTOR.md notes the typed policy (no behaviour change)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1873-packOrder-read-source.bundle HEAD
+```
+Requires tip **1872** (base **1858** / `1e112d94`).
+
+### Next
+- Migrate readers only with a dual-write design; do not delete `m_pathOrderBook`
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1872-pathOrder-from-live-to-gallery.** setPathOrderFromLiveItems → GalleryController.
 Prior: **1871**.
 
