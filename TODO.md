@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1746-handle-press-scratch.** ImageItem HandlePressScratch.
+Prior: **1745**.
+
+### Change
+- `ImageItem::HandlePressScratch` groups former m_press* fields
+- All handle-drag math uses `m_handlePress.*`
+- Cleared on `endHandleInteraction`
+
+Next demotion: move HandlePressScratch into ItemInteractSession.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1746-handle-press-scratch.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear smoke
+- Move HandlePressScratch → ItemInteractSession
+- Or characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1745-rotate-drag-placement.** Free-rotate mid-drag uses Placement.
 Prior: **1744**.
 

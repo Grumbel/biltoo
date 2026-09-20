@@ -976,3 +976,5 @@ Phase 1–6 rules still apply. Additions:
   full DTO fields).
 - biltoo-1745: free-rotate mid-drag uses `currentDragStartPlacement().rotation`;
   ImageItem `m_press*` handle anchors remain Stage 2 residual (tile LOD next).
+- biltoo-1746: ImageItem handle press fields → `HandlePressScratch m_handlePress`
+  (named Stage 2 residual; clear on endHandleInteraction).

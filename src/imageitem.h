@@ -467,16 +467,23 @@ private:
     Handle m_hoverHandle = Handle::None;
     /** Gallery: item under the mouse (no transform chrome). */
     bool m_galleryHovered = false;
-    QPointF m_pressScenePos;
-    qreal m_pressScaleX = 1.0;
-    qreal m_pressScaleY = 1.0;
-    qreal m_pressShear = 0.0;
-    qreal m_pressRotation = 0.0;
-    QPointF m_pressItemPos;
-    /** Scene position of the fixed anchor (opposite corner/edge) at press. */
-    QPointF m_pressAnchorScene;
-    /** Local-space anchor point kept fixed when not scaling from centre. */
-    QPointF m_pressAnchorLocal;
+    /**
+     * Stage 2 residual: handle-drag press anchors (move to ItemInteractSession).
+     * Not durable appearance — only valid while m_activeHandle != None.
+     */
+    struct HandlePressScratch {
+        QPointF scenePos;
+        qreal scaleX = 1.0;
+        qreal scaleY = 1.0;
+        qreal shear = 0.0;
+        qreal rotation = 0.0;
+        QPointF itemPos;
+        /** Scene position of the fixed anchor (opposite corner/edge) at press. */
+        QPointF anchorScene;
+        /** Local-space anchor point kept fixed when not scaling from centre. */
+        QPointF anchorLocal;
+    };
+    HandlePressScratch m_handlePress;
     bool isScaleHandle(Handle h) const;
     bool isShearHandle(Handle h) const;
     bool isCornerScaleHandle(Handle h) const;
