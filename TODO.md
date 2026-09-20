@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1796-tilelod-bag-fallback-guard.** Stage 2: local bag debug + dropAll map.
+Prior: **1795**.
+
+### Change
+- Debug `qWarning` when `tileLodBag()` allocates a local bag (no ImageView)
+- `dropAllTileLodSessions` also `resetSession` on every entry in `m_tileBags`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1796-tilelod-bag-fallback-guard.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke (tile ownership path)
+- ImageView characterization full link / Tier 4 path-order
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1795-tilelod-bag-unordered-map.** Fix: unordered_map for ItemBag ownership.
 Prior: **1794**.
 

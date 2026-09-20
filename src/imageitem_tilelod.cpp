@@ -21,6 +21,7 @@
 #include "viewtransform.h"
 #include "imageview.h"
 
+#include <QDebug>
 #include <QFileInfo>
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -41,6 +42,10 @@ tilelod::ItemBag &ImageItem::tileLodBag()
     }
     if (!m_tileLod) {
         m_tileLod = std::make_unique<tilelod::ItemBag>();
+#ifndef NDEBUG
+        // Stage 2: normal canvas items should hit the pipeline bag via ImageView.
+        qWarning("ImageItem::tileLodBag: local bag fallback (no ImageView on scene)");
+#endif
     }
     return *m_tileLod;
 }

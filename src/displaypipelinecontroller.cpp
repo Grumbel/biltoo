@@ -1459,6 +1459,12 @@ void DisplayPipelineController::dropAllTileLodSessions()
     dropList(m_view->liveItems());
     dropList(m_view->hostGallery().stashedItems());
     dropList(m_view->hostWorkspace().stashedItems());
+    // Reset any bag still in the map (identity-matched items above already reset).
+    for (auto &entry : m_tileBags) {
+        if (entry.second) {
+            entry.second->resetSession();
+        }
+    }
 }
 
 
