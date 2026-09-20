@@ -44,7 +44,7 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
         // pointer is over another tile's pixmap (handles are drawn on top).
         ImageItem *item = selected.first();
         if (item->beginHandleInteraction(scenePos, event->modifiers())) {
-            m_itemInteract.beginHandleDrag(item, captureState(item));
+            m_itemInteract.beginHandleDrag(item, captureState(item), item->handlePressScratch());
             setPageGuideSelected(false);
             event->accept();
             return true;

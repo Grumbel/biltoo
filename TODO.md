@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1747-handle-press-session.** HandlePressScratch dual-store on session.
+Prior: **1746**.
+
+### Change
+- `HandlePressScratch` defined in iteminteractsession.h
+- ItemInteractSession::handlePress filled by beginHandleDrag(..., press)
+- ImageItem::handlePressScratch() for the copy; mid-drag still uses item m_handlePress
+- Workspace/shell beginHandleDrag passes item->handlePressScratch()
+
+Next: thread session handlePress into updateHandleInteraction (drop item storage).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1747-handle-press-session.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale smoke
+- Pass HandlePressScratch& into updateHandleInteraction from session
+- Characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1746-handle-press-scratch.** ImageItem HandlePressScratch.
 Prior: **1745**.
 

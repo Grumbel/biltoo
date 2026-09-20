@@ -978,3 +978,5 @@ Phase 1–6 rules still apply. Additions:
   ImageItem `m_press*` handle anchors remain Stage 2 residual (tile LOD next).
 - biltoo-1746: ImageItem handle press fields → `HandlePressScratch m_handlePress`
   (named Stage 2 residual; clear on endHandleInteraction).
+- biltoo-1747: HandlePressScratch type on ItemInteractSession; dual-store —
+  session copies press at beginHandleDrag; ImageItem still owns mid-drag math.

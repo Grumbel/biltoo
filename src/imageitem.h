@@ -7,6 +7,7 @@
 #include "imageview_types.h"
 #include "coloradjust.h"
 #include "contentxform.h"
+#include "iteminteractsession.h"
 #include <QGraphicsPixmapItem>
 #include <QColor>
 #include <QImage>
@@ -310,6 +311,8 @@ public:
      */
     bool beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods);
     void updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods);
+    /** Stage 2: press scratch for interact session dual-store. */
+    const HandlePressScratch &handlePressScratch() const { return m_handlePress; }
     void endHandleInteraction();
     bool hasActiveHandle() const { return m_activeHandle != Handle::None; }
 
@@ -467,22 +470,6 @@ private:
     Handle m_hoverHandle = Handle::None;
     /** Gallery: item under the mouse (no transform chrome). */
     bool m_galleryHovered = false;
-    /**
-     * Stage 2 residual: handle-drag press anchors (move to ItemInteractSession).
-     * Not durable appearance — only valid while m_activeHandle != None.
-     */
-    struct HandlePressScratch {
-        QPointF scenePos;
-        qreal scaleX = 1.0;
-        qreal scaleY = 1.0;
-        qreal shear = 0.0;
-        qreal rotation = 0.0;
-        QPointF itemPos;
-        /** Scene position of the fixed anchor (opposite corner/edge) at press. */
-        QPointF anchorScene;
-        /** Local-space anchor point kept fixed when not scaling from centre. */
-        QPointF anchorLocal;
-    };
     HandlePressScratch m_handlePress;
     bool isScaleHandle(Handle h) const;
     bool isShearHandle(Handle h) const;

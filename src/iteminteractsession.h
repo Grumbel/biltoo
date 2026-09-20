@@ -9,6 +9,18 @@
 
 class ImageItem;
 
+/** Handle-drag press anchors (Stage 2 interact scratch; not durable). */
+struct HandlePressScratch {
+    QPointF scenePos;
+    qreal scaleX = 1.0;
+    qreal scaleY = 1.0;
+    qreal shear = 0.0;
+    qreal rotation = 0.0;
+    QPointF itemPos;
+    QPointF anchorScene;
+    QPointF anchorLocal;
+};
+
 /**
  * Single-item Workspace interaction: move, corner handle scale, free rotate.
  * Distinct from GroupTransformSession (multi-select).
@@ -23,6 +35,7 @@ struct ItemInteractSession {
     qreal rotateItemStart = 0.0;
 
     ImageItem *handleDragItem = nullptr;
+    HandlePressScratch handlePress;
 
     ImageItem *dragItem = nullptr;
     WorkspaceItemState dragStartState;
@@ -36,7 +49,11 @@ struct ItemInteractSession {
         rotateItemStart = 0.0;
     }
 
-    void clearHandleDrag() { handleDragItem = nullptr; }
+    void clearHandleDrag()
+    {
+        handleDragItem = nullptr;
+        handlePress = {};
+    }
 
     void clearMove()
     {
@@ -91,12 +108,17 @@ struct ItemInteractSession {
         dragStartPlacement = ItemComponents::placementFromState(startState);
     }
 
-    void beginHandleDrag(ImageItem *item, const WorkspaceItemState &startState)
+    void beginHandleDrag(ImageItem *item, const WorkspaceItemState &startState,
+                         const HandlePressScratch &press)
     {
         handleDragItem = item;
         dragStartState = startState;
         dragStartPlacement = ItemComponents::placementFromState(startState);
+        handlePress = press;
     }
+
+    HandlePressScratch &handlePressRef() { return handlePress; }
+    const HandlePressScratch &handlePressRef() const { return handlePress; }
 
     void endHandleDrag() { clearHandleDrag(); }
 
