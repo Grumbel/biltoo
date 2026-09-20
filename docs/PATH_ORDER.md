@@ -49,6 +49,11 @@ delete prune, aligned pack-order case, and mode-leave clear vs document.
 
 Offscreen ImageView harness plan: [IMAGEVIEW_CHARACTERIZATION.md](IMAGEVIEW_CHARACTERIZATION.md).
 
+`PackOrderView` (`src/packorderview.h`) is an immutable paths∥ids snapshot with
+`fromBook` / `fromDocument` factories. Gallery pack will eventually walk a
+`PackOrderView` so Tier 4 can switch the source without rewriting pack loops.
+Characterization: `tests/packorderview_test.cpp` (`packorderview` CTest).
+
 ## Exit criteria (Tier 4 residual)
 
 `git grep m_pathOrderBook` empty still requires an offscreen **ImageView**

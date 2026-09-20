@@ -649,6 +649,17 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-pathorder-dual-model-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME pathorder-dual-model COMMAND biltoo-pathorder-dual-model-test)
 
+  add_executable(biltoo-packorderview-test
+    tests/packorderview_test.cpp
+    src/sessiondocument.cpp
+    src/sessionappearance.cpp
+    src/contentxform.cpp
+    src/coloradjust.cpp
+  )
+  target_include_directories(biltoo-packorderview-test PRIVATE src)
+  target_link_libraries(biltoo-packorderview-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME packorderview COMMAND biltoo-packorderview-test)
+
   add_executable(biltoo-sessionappearance-test
     tests/sessionappearance_test.cpp
     src/sessionappearance.cpp

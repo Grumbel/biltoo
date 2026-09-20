@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1710-packorderview.** Pure PackOrderView for Tier 4 pack source swap.
+Prior: **1709**.
+
+### Change
+- `src/packorderview.h` — immutable paths∥ids snapshot; fromBook / fromDocument
+- `tests/packorderview_test.cpp` — multiplicity, align, equality when aligned
+- PATH_ORDER + IMAGEVIEW_CHARACTERIZATION updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1710-packorderview.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest packorderview pathorder-dual-model
+- Wire Gallery pack loops to PackOrderView (still fed from book)
+- ImageView harness → Tier 4 delete m_pathOrderBook
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1709-tier4-char-expand.** Expand dual-model tests + ImageView harness plan.
 Prior: **1708**.
 
