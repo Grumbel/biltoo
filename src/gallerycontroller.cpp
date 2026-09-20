@@ -1200,3 +1200,83 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     }
 }
 
+
+// --- Gallery placeholders ---
+
+void GalleryController::ensurePlaceholders()
+{
+    if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()) {
+        return;
+    }
+    // Only clear defer-populate. Keep size-resolve active so fill layouts still
+    // wait for finishGallerySizeResolve to pack (soft may install meanwhile).
+    m_view->hostGallerySoftBook().setDeferPopulate(false);
+    QSet<ImageItem *> claimed;
+    for (int i = 0; i < m_view->pathOrderSize(); ++i) {
+        const QString &path = m_view->pathOrderPathAt(i);
+        const SessionImageId sid = m_view->pathOrderIdAt(i);
+
+        ImageItem *existing = nullptr;
+        if (sid != kInvalidSessionImageId) {
+            existing = m_view->findItemBySessionId(sid);
+        }
+        if (!existing) {
+            for (ImageItem *item : m_view->liveItems()) {
+                if (!item || item->path() != path || claimed.contains(item)) {
+                    continue;
+                }
+                if (sid != kInvalidSessionImageId
+                    && item->sessionId() != kInvalidSessionImageId
+                    && item->sessionId() != sid) {
+                    continue;
+                }
+                existing = item;
+                break;
+            }
+        }
+        if (existing) {
+            claimed.insert(existing);
+            if (sid != kInvalidSessionImageId
+                && existing->sessionId() == kInvalidSessionImageId) {
+                existing->setSessionId(sid);
+            }
+            existing->setSessionIndex(i);
+            existing->setVisible(true);
+            // Refresh intrinsic from definitive size map.
+            const QSize sz = m_view->layoutSizeForPath(path, ImageCache::get(path));
+            if (isPositiveSize(sz) && !m_view->isProvisionalImageSize(path)) {
+                existing->setIntrinsicSize(sz);
+            }
+            continue;
+        }
+
+        if (sid != kInvalidSessionImageId || i >= 0) {
+            PendingSessionBind b;
+            b.path = path;
+            b.id = sid;
+            b.index = i;
+            m_view->hostBindBook().append(b);
+            m_view->hostBindBook().setIndexForPath(path, i);
+        }
+
+        // Prefer definitive size; soft hint only if still provisional (should be rare).
+        const QImage hint = ImageCache::get(path);
+        const QSize sz = m_view->layoutSizeForPath(path, hint);
+        ImageItem *ph = m_view->createPlaceholderItem(path, sz);
+        if (ph) {
+            if (sid != kInvalidSessionImageId) {
+                ph->setSessionId(sid);
+            }
+            ph->setSessionIndex(i);
+            ph->setVisible(true);
+            if (!hint.isNull()) {
+                m_view->installDisplayPixels(ph, hint,
+                                     SessionAppearance::PixelKind::SoftPreview,
+                                     sid);
+            }
+            claimed.insert(ph);
+        }
+    }
+    m_view->reorderItemsByPaths(m_view->pathOrderPaths());
+}
+

@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1672-gallery-ensure-placeholders.** Move ensureGalleryPlaceholders onto GalleryController.
+Prior: **1671**.
+
+### Change
+- `GalleryController::ensurePlaceholders`
+- ImageView thin-forwards
+- Public path-order size accessors (pathOrderSize / PathAt / IdAt)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1672-gallery-ensure-placeholders.bundle HEAD
+```
+
+### Next
+- biltoo-build + Gallery open / placeholder verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1671-gallery-apply-layout.** Move applyLayout (Gallery pack) onto GalleryController.
 Prior: **1670**.
 

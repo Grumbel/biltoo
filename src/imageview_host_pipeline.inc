@@ -18,6 +18,9 @@
     void applyImageModeFraming(ImageItem *item);
     int pathOrderOccurrences(const QString &path) const;
     bool pathOrderIsEmpty() const { return m_pathOrderBook.isEmpty(); }
+    int pathOrderSize() const { return m_pathOrderBook.size(); }
+    QString pathOrderPathAt(int index) const { return m_pathOrderBook.pathAt(index); }
+    SessionImageId pathOrderIdAt(int index) const { return m_pathOrderBook.idAt(index); }
     const QStringList &pathOrderPaths() const { return m_pathOrderBook.pathList(); }
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
     void scheduleImageSizeProbe(const QString &path);

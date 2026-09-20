@@ -122,6 +122,7 @@ public:
     int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending = nullptr);
     void updateDecodeWindow();
     void applyLayout(GalleryPackReason reason);
+    void ensurePlaceholders();
 
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
     {
