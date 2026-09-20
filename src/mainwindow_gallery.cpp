@@ -196,8 +196,8 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
     const SessionImageId sid = sessionIdAt(sessionIndex);
 
     // Remember where Image was opened from so Up can restore that mode.
-    if (m_imageView && m_imageView->isGalleryLayout()) {
-        m_galleryReturnLayout = m_imageView->layoutMode();
+    if (m_imageView && m_imageView->isGalleryMode()) {
+        m_galleryReturnLayout = m_imageView->hostLayout().currentMode();
         m_galleryReturnActive = true;
         m_workspaceReturnActive = false;
     } else if (m_imageView && m_imageView->isWorkspaceMode()) {
@@ -399,7 +399,7 @@ void MainWindow::updateMasonryCountControl()
     if (!m_imageView || !m_masonryCountAction) {
         return;
     }
-    const auto mode = m_imageView->layoutMode();
+    const auto mode = m_imageView->hostLayout().currentMode();
     const bool gallery = m_imageView->isGalleryMode();
     const bool masonryCols = gallery
         && (mode == LayoutMode::Masonry
@@ -422,13 +422,13 @@ void MainWindow::updateMasonryCountControl()
     }
     const QSignalBlocker blocker(m_masonryCountSpin);
     if (masonryRows) {
-        m_masonryCountSpin->setValue(m_imageView->masonryRows());
+        m_masonryCountSpin->setValue(m_imageView->hostLayout().masonryRowsValue());
     } else if (gridCols) {
         // Show effective columns (auto -> computed-looking default of current setting or 0 spin as min 1)
-        const int g = m_imageView->gridColumns();
+        const int g = m_imageView->hostLayout().gridColumnsValue();
         m_masonryCountSpin->setValue(g > 0 ? g : 3);
     } else {
-        m_masonryCountSpin->setValue(m_imageView->masonryColumns());
+        m_masonryCountSpin->setValue(m_imageView->hostLayout().masonryColumnsValue());
     }
 }
 

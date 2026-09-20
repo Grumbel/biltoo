@@ -627,8 +627,8 @@ void MainWindow::zoomReset()
 {
     // Sticky 1:1 is Image-mode only. Gallery/Workspace: one-shot view reset.
     if (m_imageView->isImageMode()) {
-        if (m_imageView->stickyZoomEnabled()
-            && m_imageView->stickyZoomKind() == StickyZoomKind::Actual) {
+        if (m_imageView->hostFraming().isStickyZoomEnabled()
+            && m_imageView->hostFraming().currentStickyZoomKind() == StickyZoomKind::Actual) {
             m_imageView->releaseStickyZoom();
             syncZoomModeChecks();
             return;
@@ -646,8 +646,8 @@ void MainWindow::zoomReset()
 void MainWindow::zoomFit()
 {
     if (m_imageView->isImageMode()) {
-        if (m_imageView->stickyZoomEnabled()
-            && m_imageView->stickyZoomKind() == StickyZoomKind::Fit) {
+        if (m_imageView->hostFraming().isStickyZoomEnabled()
+            && m_imageView->hostFraming().currentStickyZoomKind() == StickyZoomKind::Fit) {
             m_imageView->releaseStickyZoom();
             syncZoomModeChecks();
             return;
@@ -665,8 +665,8 @@ void MainWindow::zoomFit()
 void MainWindow::zoomFill()
 {
     if (m_imageView->isImageMode()) {
-        if (m_imageView->stickyZoomEnabled()
-            && m_imageView->stickyZoomKind() == StickyZoomKind::Fill) {
+        if (m_imageView->hostFraming().isStickyZoomEnabled()
+            && m_imageView->hostFraming().currentStickyZoomKind() == StickyZoomKind::Fill) {
             m_imageView->releaseStickyZoom();
             syncZoomModeChecks();
             return;
@@ -686,8 +686,8 @@ void MainWindow::syncZoomModeChecks()
     if (!m_imageView) {
         return;
     }
-    const bool sticky = m_imageView->stickyZoomEnabled();
-    const auto kind = m_imageView->stickyZoomKind();
+    const bool sticky = m_imageView->hostFraming().isStickyZoomEnabled();
+    const auto kind = m_imageView->hostFraming().currentStickyZoomKind();
     auto setCheck = [](QAction *act, bool on) {
         if (!act) {
             return;
@@ -2131,7 +2131,7 @@ void MainWindow::showPreferences()
     }
     dlg.setSortModeIndex(static_cast<int>(m_sortMode));
     dlg.setStartInWorkspaceMode(m_startInWorkspaceMode);
-    dlg.setImageModeLeftDragPan(m_imageView->imageModeLeftDragPan());
+    dlg.setImageModeLeftDragPan(m_imageView->hostChrome().isImageModeLeftDragPan());
     dlg.setBackgroundColor(m_imageView->backgroundColor());
     dlg.setBackgroundColorAlt(m_imageView->backgroundColorAlt());
     dlg.setBackgroundPatternIndex(
@@ -2156,7 +2156,7 @@ void MainWindow::showPreferences()
     {
         int layoutMode = static_cast<int>(LayoutMode::Masonry);
         if (m_imageView && m_imageView->isGalleryMode()) {
-            layoutMode = static_cast<int>(m_imageView->layoutMode());
+            layoutMode = static_cast<int>(m_imageView->hostLayout().currentMode());
         } else if (m_galleryReturnActive) {
             layoutMode = static_cast<int>(m_galleryReturnLayout);
         } else {
@@ -2968,7 +2968,7 @@ void MainWindow::readSettings()
     }
     if (m_masonryCountSpin) {
         const QSignalBlocker blocker(m_masonryCountSpin);
-        m_masonryCountSpin->setValue(m_imageView ? m_imageView->masonryColumns()
+        m_masonryCountSpin->setValue(m_imageView ? m_imageView->hostLayout().masonryColumnsValue()
                                                  : masonryCols);
     }
     m_slideshowFullscreen =
@@ -3169,9 +3169,9 @@ void MainWindow::writeSettings()
     settings.remove(QStringLiteral("windowStateQt"));
     if (m_imageView) {
         settings.setValue(QStringLiteral("stickyZoomEnabled"),
-                          m_imageView->stickyZoomEnabled());
+                          m_imageView->hostFraming().isStickyZoomEnabled());
         settings.setValue(QStringLiteral("stickyZoomKind"),
-                          static_cast<int>(m_imageView->stickyZoomKind()));
+                          static_cast<int>(m_imageView->hostFraming().currentStickyZoomKind()));
     }
     if (m_adjustmentsDock) {
         settings.setValue(QStringLiteral("adjustmentsPanelVisible"),
@@ -3217,9 +3217,9 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("slideshowLoop"), m_slideshowLoop);
     if (m_imageView) {
         settings.setValue(QStringLiteral("masonryColumns"),
-                          m_imageView->masonryColumns());
+                          m_imageView->hostLayout().masonryColumnsValue());
         settings.setValue(QStringLiteral("masonryRows"),
-                          m_imageView->masonryRows());
+                          m_imageView->hostLayout().masonryRowsValue());
         settings.setValue(QStringLiteral("backgroundColor"),
                           m_imageView->backgroundColor().name(QColor::HexRgb));
         settings.setValue(QStringLiteral("backgroundColorAlt"),
@@ -3241,13 +3241,13 @@ void MainWindow::writeSettings()
     settings.setValue(QStringLiteral("layoutPreferredInWorkspace"),
                       m_layoutPreferredInWorkspace);
     if (m_imageView) {
-        settings.setValue(QStringLiteral("gridColumns"), m_imageView->gridColumns());
-        settings.setValue(QStringLiteral("masonryColumns"), m_imageView->masonryColumns());
-        settings.setValue(QStringLiteral("masonryRows"), m_imageView->masonryRows());
+        settings.setValue(QStringLiteral("gridColumns"), m_imageView->hostLayout().gridColumnsValue());
+        settings.setValue(QStringLiteral("masonryColumns"), m_imageView->hostLayout().masonryColumnsValue());
+        settings.setValue(QStringLiteral("masonryRows"), m_imageView->hostLayout().masonryRowsValue());
     }
     if (m_imageView && m_imageView->isGalleryMode()) {
         settings.setValue(QStringLiteral("lastGalleryLayout"),
-                          static_cast<int>(m_imageView->layoutMode()));
+                          static_cast<int>(m_imageView->hostLayout().currentMode()));
     } else if (m_galleryReturnActive) {
         settings.setValue(QStringLiteral("lastGalleryLayout"),
                           static_cast<int>(m_galleryReturnLayout));
@@ -3269,7 +3269,7 @@ void MainWindow::writeSettings()
     settings.remove(QStringLiteral("centralSplitter"));
     if (m_imageView) {
         settings.setValue(QStringLiteral("imageModeLeftDragPan"),
-                          m_imageView->imageModeLeftDragPan());
+                          m_imageView->hostChrome().isImageModeLeftDragPan());
         settings.setValue(QStringLiteral("hudVisible"), m_imageView->hudVisible());
         settings.setValue(QStringLiteral("contentEditMarksVisible"),
                           m_imageView->contentEditMarksVisible());

@@ -232,7 +232,7 @@ int DisplayPipelineController::fillLiveItemsWithDecodedPixels(const QString &pat
 void DisplayPipelineController::createMissingLoadAddItems(const QString &path, const QImage &image,
                                           int have, int wanted)
 {
-    if (m_view->gallerySizeResolveActive() || m_view->hostGallerySoftBook().isDeferPopulate()) {
+    if (m_view->hostGallerySizeResolve().active() || m_view->hostGallerySoftBook().isDeferPopulate()) {
         return;
     }
     // Create missing occurrences (each duplicate is a normal separate tile).
@@ -260,7 +260,7 @@ void DisplayPipelineController::createMissingLoadAddItems(const QString &path, c
 
 void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChanged)
 {
-    if (m_view->gallerySizeResolveActive() || m_view->hostGallerySoftBook().isDeferPopulate()) {
+    if (m_view->hostGallerySizeResolve().active() || m_view->hostGallerySoftBook().isDeferPopulate()) {
         return;
     }
     if (!m_view->hostLayout().isFreeForm()) {
@@ -620,7 +620,7 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
     st.terminal = true; // no soft climb ever
     st.have = GallerySoft::maxHave(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
-    if (anyTileWanted && !m_view->gallerySizeResolveActive()) {
+    if (anyTileWanted && !m_view->hostGallerySizeResolve().active()) {
         // Size must be known before pyramid encode (expensive). Wait for resolve.
         if (!ThumtooCache::cachedSize(path).isValid()) {
             return;

@@ -286,7 +286,7 @@ void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
     }
     // Bare Gallery: skip HUD/edges/slideshow overlay pass.
     if (isGalleryMode() && !m_hudPrefs.isVisible() && !m_hudFlash.isVisible() && !m_hudFlash.isIdentityPulse()
-        && !m_slideshow.hud().isPausedHud() && !gallerySizeResolveActive()
+        && !m_slideshow.hud().isPausedHud() && !m_gallerySizeResolve.active()
         && m_centreProgress.titleRef().isEmpty()
         && m_hoverEdge == EdgeZone::None && !m_cropCtrl.session().active()
         && !m_slideshow.dwell().isMotionActive() 

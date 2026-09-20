@@ -932,7 +932,7 @@ void GalleryController::updateDecodeWindow()
     }
     // While sizes are still sequential, only allow blank LQIP installs from cache
     // — no tile ticks / pyramid (workers stay on ProbeSize).
-    if (m_view->gallerySizeResolveActive()) {
+    if (m_view->hostGallerySizeResolve().active()) {
         constexpr int kMaxInstallsDuringSizeResolve = GallerySoft::kMaxInstallsDuringSizeResolve;
         bool more = false;
         const int n = galleryInstallHostSoftOntoBlanks(kMaxInstallsDuringSizeResolve, &more);
@@ -1094,7 +1094,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         return;
     }
     // Size-first open: do not pack on provisional stand-ins while probes run.
-    if (m_view->gallerySizeResolveActive()) {
+    if (m_view->hostGallerySizeResolve().active()) {
         return;
     }
     // Packaged packing is Gallery-only; never rearrange Workspace free-form items.

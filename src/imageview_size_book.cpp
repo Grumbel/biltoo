@@ -222,7 +222,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
     if (any && isGalleryMode() && !m_layout.isFreeForm()) {
         // While the open-time size-resolve gate is active, pack once when all
         // probes settle — not on every sizeReady (avoids thrash + tiny cells).
-        if (!gallerySizeResolveActive()) {
+        if (!m_gallerySizeResolve.active()) {
             requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
         }
     } else if (any && viewport()) {
@@ -380,7 +380,7 @@ void ImageView::clearCentreProgress()
         return;
     }
     m_centreProgress.clear();
-    if (isGalleryMode() && !gallerySizeResolveActive()) {
+    if (isGalleryMode() && !m_gallerySizeResolve.active()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
     if (viewport()) {

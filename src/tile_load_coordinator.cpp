@@ -143,7 +143,7 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
     // Size probes first: do not compete with EnsureTiles while Gallery is still
     // resolving the session (thumtoo prefers tiles over ProbeSize in the queue).
-    if (m_view->gallerySizeResolveActive()) {
+    if (m_view->hostGallerySizeResolve().active()) {
         return;
     }
 

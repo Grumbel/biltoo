@@ -548,7 +548,7 @@ void MainWindow::setExpandProgressBusy(bool busy)
     if (!busy && m_imageView) {
         // finishApplyExpandedLoad clears busy *after* enterGalleryMode, which may
         // already own the centre HUD for size-resolve — do not wipe that.
-        if (!m_imageView->gallerySizeResolveActive()) {
+        if (!m_imageView->hostGallerySizeResolve().active()) {
             m_imageView->clearCentreProgress();
         }
     }
@@ -1142,7 +1142,7 @@ void MainWindow::setSortMode(SortMode mode)
 
         if (isGalleryMode()) {
             const LayoutMode layout = m_imageView
-                ? m_imageView->layoutMode()
+                ? m_imageView->hostLayout().currentMode()
                 : LayoutMode::Masonry;
             populateGalleryCanvas();
             if (m_imageView) {
@@ -1331,7 +1331,7 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
             // Cold: serial scheduleProbe (FIFO). preparePaths would flood parallel
             // ProbeSize and race EnsureTiles (thumtoo prefers tiles over sizes).
             const bool resolving =
-                m_imageView && m_imageView->gallerySizeResolveActive();
+                m_imageView && m_imageView->hostGallerySizeResolve().active();
             if (resolving && m_thumbnailBar) {
                 m_thumbnailBar->setVisibleLoadsSuspended(true);
             }
@@ -1371,7 +1371,7 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
     // Keep centre HUD while Gallery size probes still run.
     setExpandProgressBusy(false);
     if (statusBar() && statusBar()->currentMessage().startsWith(tr("Opening "))
-        && !(m_imageView && m_imageView->gallerySizeResolveActive())) {
+        && !(m_imageView && m_imageView->hostGallerySizeResolve().active())) {
         statusBar()->clearMessage();
     }
     rememberSessionHistory(m_session.paths());

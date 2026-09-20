@@ -1221,7 +1221,7 @@ void MainWindow::createToolBar()
                 if (!m_imageView) {
                     return;
                 }
-                const auto mode = m_imageView->layoutMode();
+                const auto mode = m_imageView->hostLayout().currentMode();
                 if (mode == LayoutMode::MasonryRows
                     || mode == LayoutMode::MasonryRowsFill) {
                     m_imageView->hostGallery().setMasonryRows(count);

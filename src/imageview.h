@@ -188,7 +188,7 @@ public:
      */
     void setCentreProgress(const QString &title, const QString &detail = QString());
     void clearCentreProgress();
-    bool gallerySizeResolveActive() const { return m_gallerySizeResolve.active(); }
+    /** Size-resolve active: hostGallerySizeResolve().active(). */
     /** Controller host: set m_viewMode + m_layout.currentMode() and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
     /** Controller host: classic path owned by ImageController. */
@@ -321,8 +321,6 @@ public:
     bool isGalleryMode() const { return m_viewMode == ViewMode::Gallery; }
     bool isWorkspaceMode() const { return m_viewMode == ViewMode::Workspace; }
 
-    /** @deprecated Alias for isWorkspaceMode(). */
-    bool workspaceMode() const { return isWorkspaceMode(); }
 
     /**
      * Enable left/right edge navigation affordances in Image mode.
@@ -396,8 +394,7 @@ public:
     // StickyZoomKind: viewframing.h
     void setStickyZoomEnabled(bool on);
     void releaseStickyZoom();
-    bool stickyZoomEnabled() const { return m_framing.isStickyZoomEnabled(); }
-    StickyZoomKind stickyZoomKind() const { return m_framing.currentStickyZoomKind(); }
+    /** Sticky zoom: hostFraming().isStickyZoomEnabled() / currentStickyZoomKind(). */
     /**
      * One-shot rubber-band zoom: next left-drag selects a region to zoom into.
      * Esc cancels. Bound to Z from the main window.
@@ -448,7 +445,7 @@ public:
     /** Non-empty while the pointer is over a link region. */
     QString linkHoverTip() const { return m_textLayer.linkHoverTipRef(); }
 
-    bool imageModeLeftDragPan() const { return m_chrome.isImageModeLeftDragPan(); }
+    /** Image-mode left-drag pan: hostChrome().isImageModeLeftDragPan(). */
 
     void setBackgroundColor(const QColor &color);
     QColor backgroundColor() const { return m_canvasBg.primaryColor(); }
@@ -589,18 +586,10 @@ public:
                                  const QList<int> &sessionIndices);
 
     void setLayoutMode(LayoutMode mode);
-    LayoutMode layoutMode() const { return m_layout.currentMode(); }
-    /** Gallery mode with a packaged layout. */
-    bool isGalleryLayout() const { return isGalleryMode(); }
-
+    /** Layout mode / columns: hostLayout().currentMode() / *Value(). */
     /** Enter Gallery mode and apply the given packaged layout (not FreeForm). */
     void enterGallery(LayoutMode packagedLayout);
 
-
-    int masonryColumns() const { return m_layout.masonryColumnsValue(); }
-    int gridColumns() const { return m_layout.gridColumnsValue(); }
-
-    int masonryRows() const { return m_layout.masonryRowsValue(); }
 
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);

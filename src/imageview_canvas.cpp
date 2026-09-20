@@ -128,7 +128,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
         m_items.last()->setSelected(true);
     }
 
-    if (isGalleryMode() && gallerySizeResolveActive()) {
+    if (isGalleryMode() && m_gallerySizeResolve.active()) {
         // Pack deferred until sizes settle. Keep items hidden so provisional
         // geometry is never painted (cold-open layout glitch).
         if (m_items.isEmpty() && !paths.isEmpty() && !m_gallerySoftBook.isDeferPopulate()) {
@@ -210,7 +210,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     const bool virtualize = isGalleryMode();
 
     // Cold Gallery: defer all item creation until sizes settle (finish packs once).
-    if (isGalleryMode() && m_gallerySoftBook.isDeferPopulate() && gallerySizeResolveActive()) {
+    if (isGalleryMode() && m_gallerySoftBook.isDeferPopulate() && m_gallerySizeResolve.active()) {
         // Remove any leftover live items so nothing paints at provisional size.
         for (ImageItem *item : m_items) {
             if (item) {

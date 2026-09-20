@@ -16,7 +16,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
     // Empty session: invite the user to open or drop images.
     // Suppress while centre progress is active (archive expand / size resolve).
     if (m_items.isEmpty() && !hasClassicPath() && !m_cropCtrl.session().active()
-        && m_centreProgress.titleRef().isEmpty() && !gallerySizeResolveActive()) {
+        && m_centreProgress.titleRef().isEmpty() && !m_gallerySizeResolve.active()) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         QFont titleFont = font();
@@ -86,7 +86,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     // chip during slideshow or normal Image browsing.
     const QString loadingLine = m_hudPrefs.isVisible() ? loadingStatusHudLine() : QString();
     if (m_cropCtrl.session().active() || m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_hudFlash.isIdentityPulse()
-        || m_slideshow.hud().isPausedHud() || gallerySizeResolveActive()
+        || m_slideshow.hud().isPausedHud() || m_gallerySizeResolve.active()
         || !m_centreProgress.titleRef().isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
@@ -169,7 +169,7 @@ void ImageView::paintHudPanels(QPainter &painter)
                 lines.append({m_centreProgress.detailRef(), false});
             }
             drawPanel(lines, 0, 0, false, false, true);
-        } else if (gallerySizeResolveActive() && m_gallerySizeResolve.total() > 0) {
+        } else if (m_gallerySizeResolve.active() && m_gallerySizeResolve.total() > 0) {
             // Fallback if title was cleared but gate still active.
             const int done = ViewTransform::nonNeg(
                 qint64(m_gallerySizeResolve.total())
