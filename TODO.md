@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1933-freeform-pose-placement.** Free-form Gallery snapshot is Placement by id.
+Prior: **1932**.
+
+### Change
+- `WorkspaceController` free-form snapshot: `m_freeFormById` / `m_freeFormByPath`
+  (Placement) instead of path-keyed fat `WorkspaceItemState`
+- Snapshot/restore use `item->placement()` / `applyPlacement` + `setPlacement`
+- Correct under LoadAdd duplicates (id-keyed); path only for unbound tiles
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1933-freeform-pose-placement-516d734.bundle HEAD
+```
+Requires tip **1932** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ImageItem live crop/flip demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1932-project-pose-placement.** Project save workspace poses are Placement.
 Prior: **1931**.
 

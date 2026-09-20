@@ -5,6 +5,7 @@
 #define WORKSPACECONTROLLER_H
 
 #include "imageview_types.h"
+#include "itemcomponents.h"
 #include "gallerylayout.h"
 
 #include <QHash>
@@ -60,8 +61,6 @@ public:
     QTransform stashedViewTransform() const { return m_stashedViewTransform; }
     QPointF stashedViewCenter() const { return m_stashedViewCenter; }
 
-    QHash<QString, WorkspaceItemState> &freeFormStates() { return m_freeFormStates; }
-    const QHash<QString, WorkspaceItemState> &freeFormStates() const { return m_freeFormStates; }
     bool hasFreeFormViewTransform() const { return m_hasFreeFormViewTransform; }
     QTransform freeFormViewTransform() const { return m_freeFormViewTransform; }
 
@@ -88,7 +87,9 @@ private:
     QPointF m_savedViewCenter;
     bool m_hasSavedView = false;
 
-    QHash<QString, WorkspaceItemState> m_freeFormStates;
+    /** Free-form pose while Gallery layout temporarily packs tiles. */
+    QHash<SessionImageId, ItemComponents::Placement> m_freeFormById;
+    QHash<QString, ItemComponents::Placement> m_freeFormByPath;
     QTransform m_freeFormViewTransform;
     bool m_hasFreeFormViewTransform = false;
 };

@@ -139,7 +139,8 @@ void WorkspaceController::clearDurableSnapshot()
 {
     m_savedItems.clear();
     m_hasSavedView = false;
-    m_freeFormStates.clear();
+    m_freeFormById.clear();
+    m_freeFormByPath.clear();
     m_hasFreeFormViewTransform = false;
 }
 
@@ -263,9 +264,18 @@ void WorkspaceController::restoreStashedItems()
 
 void WorkspaceController::snapshotFreeFormStates()
 {
-    m_freeFormStates.clear();
+    m_freeFormById.clear();
+    m_freeFormByPath.clear();
     for (ImageItem *item : m_view->liveItems()) {
-        m_freeFormStates.insert(item->path(), m_view->captureState(item));
+        if (!item) {
+            continue;
+        }
+        const ItemComponents::Placement pl = item->placement();
+        if (item->sessionId() != kInvalidSessionImageId) {
+            m_freeFormById.insert(item->sessionId(), pl);
+        } else if (!item->path().isEmpty()) {
+            m_freeFormByPath.insert(item->path(), pl);
+        }
     }
     m_freeFormViewTransform = m_view->transform();
     m_hasFreeFormViewTransform = true;
@@ -274,10 +284,38 @@ void WorkspaceController::snapshotFreeFormStates()
 void WorkspaceController::restoreFreeFormStates()
 {
     for (ImageItem *item : m_view->liveItems()) {
-        const auto it = m_freeFormStates.constFind(item->path());
-        if (it != m_freeFormStates.constEnd()) {
-            m_view->applyState(item, *it);
-            m_view->itemWorld().setPathState(item->path(), *it);
+        if (!item) {
+            continue;
+        }
+        ItemComponents::Placement pl;
+        bool found = false;
+        if (item->sessionId() != kInvalidSessionImageId) {
+            const auto it = m_freeFormById.constFind(item->sessionId());
+            if (it != m_freeFormById.constEnd()) {
+                pl = *it;
+                found = true;
+            }
+        }
+        if (!found && !item->path().isEmpty()) {
+            const auto it = m_freeFormByPath.constFind(item->path());
+            if (it != m_freeFormByPath.constEnd()) {
+                pl = *it;
+                found = true;
+            }
+        }
+        if (!found) {
+            continue;
+        }
+        item->applyPlacement(pl);
+        if (item->sessionId() != kInvalidSessionImageId) {
+            m_view->itemWorld().setPlacement(item->sessionId(), pl);
+        } else if (!item->path().isEmpty()) {
+            WorkspaceItemState s;
+            if (const WorkspaceItemState *prev = m_view->itemWorld().getPathState(item->path())) {
+                s = *prev;
+            }
+            ItemComponents::applyPlacementToState(s, pl);
+            m_view->itemWorld().setPathState(item->path(), s);
         }
     }
     if (m_hasFreeFormViewTransform) {
