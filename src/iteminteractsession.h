@@ -20,7 +20,7 @@ struct HandlePressScratch {
     QPointF anchorLocal;
     /**
      * Continuous handle armed at press.
-     * Mid-drag scale/shear/rotate read this, not ImageItem::m_activeHandle.
+     * Mid-drag scale/shear/rotate read this (paint hot is ImageItem hover).
      */
     ItemHandle handle = ItemHandle::None;
 

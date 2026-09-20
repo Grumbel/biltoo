@@ -1964,7 +1964,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
     QPointF rotPts[4];
     ItemFrameGeometry::rotateHandlePoints(fg, rotPts);
     auto drawRotate = [&](Handle h, const QPointF &edgeMid, const QPointF &c) {
-        const bool hot = (m_hoverHandle == h || m_activeHandle == h);
+        const bool hot = (m_hoverHandle == h);
         QPen stem(QColor(0, 160, 255), 0);
         stem.setCosmetic(true);
         stem.setWidthF(1.25);
@@ -2000,7 +2000,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         for (const Corner &co : corners) {
             // Single continuous L: two arms through the corner with RoundJoin so
             // the elbow is a smooth fillet. Stroke weight matches edge scale bars.
-            const bool hot = (m_hoverHandle == co.h || m_activeHandle == co.h);
+            const bool hot = (m_hoverHandle == co.h);
             const QPointF c = co.corner;
             const QPointF d1 = ItemFrameGeometry::unitOr(co.alongA);
             const QPointF d2 = ItemFrameGeometry::unitOr(co.alongB);
@@ -2045,7 +2045,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             {Handle::ScaleLeft, midLeft, dirLeft},
         };
         for (const EdgeBar &ed : edges) {
-            const bool hot = (m_hoverHandle == ed.h || m_activeHandle == ed.h);
+            const bool hot = (m_hoverHandle == ed.h);
             const QPointF along = ItemFrameGeometry::unitOr(ed.along);
             const QPointF perp(-along.y(), along.x());
             const qreal len = hs * (hot ? 2.4 : 1.7);
@@ -2080,7 +2080,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
             {Handle::ShearRight, shearPts[3]},
         };
         for (const ShearD &sh : shears) {
-            const bool hot = (m_hoverHandle == sh.h || m_activeHandle == sh.h);
+            const bool hot = (m_hoverHandle == sh.h);
             const qreal rad = hs * (hot ? 0.55 : 0.40);
             QPolygonF dia;
             dia << sh.c + QPointF(0, -rad)
@@ -2150,11 +2150,10 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         auto drawBtn = [&](Handle h, int index, const QString &glyph) {
             const QPointF c = centers[index];
             const bool hovered = (m_hoverHandle == h);
-            const bool active = (m_activeHandle == h);
-            const qreal rad = btnR * (hovered || active ? 1.08 : 1.0);
-            QColor fill = hovered || active ? QColor(0, 140, 255, 240) : QColor(50, 50, 50, 230);
-            QPen border(hovered || active ? QColor(255, 255, 255) : QColor(0, 160, 255));
-            border.setWidthF(hovered || active ? 1.75 : 1.0);
+            const qreal rad = btnR * (hovered ? 1.08 : 1.0);
+            QColor fill = hovered ? QColor(0, 140, 255, 240) : QColor(50, 50, 50, 230);
+            QPen border(hovered ? QColor(255, 255, 255) : QColor(0, 160, 255));
+            border.setWidthF(hovered ? 1.75 : 1.0);
             border.setCosmetic(true);
             painter->setPen(border);
             painter->setBrush(fill);
@@ -2204,8 +2203,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
         Q_UNUSED(along);
         const QPointF perp = fg.outLeft;
         const qreal thick = ItemFrameGeometry::kSliderHeightPx;
-        const bool hot = (m_hoverHandle == Handle::OpacitySlider
-                          || m_activeHandle == Handle::OpacitySlider);
+        const bool hot = (m_hoverHandle == Handle::OpacitySlider);
         const qreal tval = ItemFrameGeometry::trackParamFromOpacity(m_opacity);
         QPen trackPen(hot ? QColor(200, 180, 255) : QColor(120, 100, 160), 0);
         trackPen.setCosmetic(true);
@@ -2250,7 +2248,8 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
         activateChromeHandle(h);
         return true;
     }
-    m_activeHandle = h; // paint hot residual (interaction authority is press.handle)
+    // Paint hot sticks for the drag: hover is frozen while isHandleDragging().
+    setHoverHandle(h);
     HandlePressScratch press;
     press.scenePos = scenePos;
     press.placement = placement();
@@ -2307,7 +2306,6 @@ void ImageItem::endHandleInteraction(Handle continuous)
             }
         }
     }
-    m_activeHandle = Handle::None;
 }
 
 void ImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)

@@ -994,3 +994,5 @@ Phase 1–6 rules still apply. Additions:
   ItemHandlePolicy independent of ImageItem.
 - biltoo-1754: drop dead rotateItemStart; beginRotate three-arg; remove hasActiveHandle
   (press authority); m_activeHandle paint residual only.
+- biltoo-1755: remove m_activeHandle; continuous begin sets hover (frozen while
+  isHandleDragging); chrome paint hot is hover-only.

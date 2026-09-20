@@ -295,7 +295,6 @@ public:
     /**
      * Finish continuous handle drag. @p continuous is the press-time handle
      * (HandlePressScratch::handle); geometry commit skipped for None / OpacitySlider.
-     * Clears paint residual m_activeHandle.
      */
     void endHandleInteraction(Handle continuous = Handle::None);
 
@@ -449,7 +448,7 @@ private:
     /** Scene-space crop cell for Grid-Crop gallery; empty = no crop. */
     QSizeF m_galleryCellSize;
 
-    Handle m_activeHandle = Handle::None;
+    /** View-driven hover + continuous-drag paint hot (set at begin continuous). */
     Handle m_hoverHandle = Handle::None;
     /** Gallery: item under the mouse (no transform chrome). */
     bool m_galleryHovered = false;

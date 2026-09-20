@@ -535,7 +535,6 @@ void ImageItem::setGallerySelectable(bool on)
     m_scaleHandlesEnabled = false;
     m_galleryHovered = false;
     m_hoverHandle = Handle::None;
-    m_activeHandle = Handle::None;
     // Crop is owned by the layout; clear when leaving gallery selectable.
     if (!on) {
         m_galleryCellSize = QSizeF();

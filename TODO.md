@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1755-paint-hot-hover.** Drop m_activeHandle; continuous uses hover.
+Prior: **1754**.
+
+### Change
+- Continuous `beginHandleInteraction` calls `setHoverHandle(h)` for paint hot
+- Hover is already frozen while `isHandleDragging()` — sticks for the drag
+- Remove `ImageItem::m_activeHandle`; chrome paint hot is hover-only
+- Stage 2 interact scratch residual on ImageItem for handle drag is cleared
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1755-paint-hot-hover.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear/rotate smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1754-rotate-start-trim.** Drop dead free-rotate start rotation.
 Prior: **1753**.
 
