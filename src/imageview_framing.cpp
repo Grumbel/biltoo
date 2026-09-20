@@ -43,7 +43,7 @@ void ImageView::zoomViewBy(qreal factor)
     if (isGalleryMode()) {
         scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowScrollMs);
     } else {
-        scheduleTileLodAfterInteraction(50);
+        m_displayPipeline.scheduleTileLodAfterInteraction(50);
     }
     emit statusChanged();
 }

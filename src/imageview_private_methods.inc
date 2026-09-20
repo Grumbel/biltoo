@@ -58,49 +58,8 @@
      */
     QSize ensureLogicalSizeForPath(const QString &path);
 
-
-    /**
-     * Drop tile sessions on every live item for @p path, purge registry RAM,
-     * and cancel neighbor prefetch. Use on Reload / file-replaced.
-     */
-    void purgeTilePathRam(const QString &path);
-
-    /** Drop tile sessions on live + stashed items (before session-wide invalidateAll). */
-    void dropAllTileLodSessions();
-
-
-
-
     /** Static centre-crop cover of @p image to the current viewport size. */
     QPixmap renderCoverPixmap(const QImage &image) const;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
     QString loadingStatusHudLine() const;

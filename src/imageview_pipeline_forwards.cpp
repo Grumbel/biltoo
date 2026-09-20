@@ -358,26 +358,6 @@ int ImageView::imageModeOnScreenNeedEdge() const
     return m_displayPipeline.imageModeOnScreenNeedEdge();
 }
 
-void ImageView::scheduleTileLodAfterInteraction(int delayMs)
-{
-    m_displayPipeline.scheduleTileLodAfterInteraction(delayMs);
-}
-
-void ImageView::purgeTilePathRam(const QString &path)
-{
-    m_displayPipeline.purgeTilePathRam(path);
-}
-
-void ImageView::dropAllTileLodSessions()
-{
-    m_displayPipeline.dropAllTileLodSessions();
-}
-
-void ImageView::tickPrimaryTileLod(int budget)
-{
-    m_displayPipeline.tickPrimaryTileLod(budget);
-}
-
 void ImageView::maybeClimbImageModePixelsForView()
 {
     m_displayPipeline.maybeClimbImageModePixelsForView();

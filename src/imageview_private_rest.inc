@@ -33,12 +33,6 @@
     SessionAppearance::PixelKind pixelKindForImageModeSample(const QString &path,
                                                              const QImage &image) const;
     void scheduleImageModePreferCacheClimb(const QString &path, int wantEdge = 0);
-    /**
-     * Debounce climb + tile tick after zoom (wheel/toolbar). Avoids per-notch
-     * set_viewport/issue_requests on the GUI thread during continuous zoom.
-     * Pan still ticks immediately.
-     */
-    void scheduleTileLodAfterInteraction(int delayMs = 50);
     void installImageModeSampleInPlace(ImageItem *item, const QString &path, const QImage &image,
                                        SessionAppearance::PixelKind kind);
     /** Install/upgrade Image-mode sample; schedules PreferCache on soft. */

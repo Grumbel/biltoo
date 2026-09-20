@@ -6,12 +6,6 @@
     void applyItemModeFlags(ImageItem *item);
     /** Gallery stash restore: bake session crop/orient onto the tile if needed. */
     void rematerializeGalleryItemFromStore(ImageItem *item);
-    /**
-     * Controller host: budgeted tile pump/issue for viewport items.
-     * Prefer hostDisplayPipeline().tickPrimaryTileLod (same as drop/purge).
-     * Thin forward remains for callers that only have ImageView*.
-     */
-    void tickPrimaryTileLod(int budget = 8);
     /** @deprecated Path is not identity; prefer findItemBySessionId. */
     ImageItem *findItemByPath(const QString &path) const;
     /**
