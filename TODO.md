@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1811-drop-apply-placement-forward.** Stage 2: drop ImageView::applyPlacement.
+Prior: **1810**.
+
+### Change
+- Removed `ImageView::applyPlacement` thin-forward (only used by `applyState`)
+- `applyState` calls `item->applyPlacement(placementFromState(…))` directly
+- REFACTOR.md progress: Stage 2 tile LOD ownership complete through **1810**
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1811-drop-apply-placement-forward.bundle HEAD
+```
+Includes **1806–1811** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (tile + applyState pose)
+- ImageView characterization / Tier 4 path-order residual
+- Phase 7 Stage 2 non-tile ImageItem demotion (render proxy)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1810-drop-tile-thin-forwards.** Stage 2: remove ImageView tile thin-forwards.
 Prior: **1809**.
 

@@ -1050,3 +1050,12 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1802: drop ImageItem local m_tileLod; pipeline map is sole ItemBag owner.
 - biltoo-1803: dropItemTileLodSession / dropTileLodSession no longer ensure a bag.
 - biltoo-1804: pipeline owns tile suppress write; ImageItem setTileLodSuppressed removed.
+- biltoo-1805: contentxform sourceToDisplayTransform_matchesMapCorners fixture fix.
+- biltoo-1806: tileLodBag no ImageView ensure (attached bag only).
+- biltoo-1807: drop dead ImageItem dropTileLodSession / invalidateTilePathRam.
+- biltoo-1808: pipeline tickPrimaryTileLod without m_view hop.
+- biltoo-1809: Gallery/Slideshow/ImageView ticks via hostDisplayPipeline / m_displayPipeline.
+- biltoo-1810: drop ImageView tile thin-forwards (tick/purge/dropAll/schedule).
+- biltoo-1811: drop ImageView::applyPlacement thin-forward; applyState writes item Placement.
+  **Stage 2 tile LOD ownership treated complete** (bag, suppress, tick, drop, purge on
+  DisplayPipelineController; ImageItem keeps paint/plan helpers + query predicates).
