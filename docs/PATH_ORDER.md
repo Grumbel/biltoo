@@ -44,8 +44,10 @@ Identity for slideshow / crop / filmstrip: **`firstSessionIdForPath`** prefers
 Pure dual-model contracts are locked by `tests/pathorder_dual_model_test.cpp`
 (`pathorder-dual-model` CTest): independent mutation, LoadAdd multiplicity
 on the book only, `pathOrderClear` leaves the document intact, appearance
-survives book clear, and the open → Gallery → crop session-side id/crop
-invariants.
+survives book clear, open → Gallery → crop session-side id/crop, gallery
+delete prune, aligned pack-order case, and mode-leave clear vs document.
+
+Offscreen ImageView harness plan: [IMAGEVIEW_CHARACTERIZATION.md](IMAGEVIEW_CHARACTERIZATION.md).
 
 ## Exit criteria (Tier 4 residual)
 

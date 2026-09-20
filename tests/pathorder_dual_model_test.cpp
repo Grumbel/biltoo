@@ -33,6 +33,10 @@ private slots:
     void duplicatePath_idsIndependentAcrossModels();
     void firstId_documentVsBook();
     void openGalleryCropScenario_sessionSide();
+    void galleryDelete_prunesBookKeepsOtherAppearance();
+    void alignedPackOrder_documentMatchesBook();
+    void loadAdd_bookExceedsDocument_packUsesBook();
+    void modeLeave_clearBook_documentPackWouldRegenerateIncorrectly();
 };
 
 void PathOrderDualModelTest::independent_empty()
@@ -206,6 +210,89 @@ void PathOrderDualModelTest::openGalleryCropScenario_sessionSide()
     QVERIFY(idOneB != idOne);
     QVERIFY(!doc.appearance().contains(idOneB));
     QCOMPARE(doc.appearance().get(idOne)->cropRect, QRect(10, 20, 200, 150));
+}
+
+
+void PathOrderDualModelTest::galleryDelete_prunesBookKeepsOtherAppearance()
+{
+    // Gallery Delete: MainWindow removes from document; view prunes book rows.
+    SessionDocument doc;
+    SessionPathOrder book;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg"), QStringLiteral("/c.jpg")});
+    const SessionImageId idA = doc.idAt(0);
+    const SessionImageId idB = doc.idAt(1);
+    const SessionImageId idC = doc.idAt(2);
+    book.setOrder(doc.paths(), {idA, idB, idC});
+
+    WorkspaceItemState cropB;
+    cropB.hasCrop = true;
+    cropB.cropRect = QRect(1, 2, 30, 40);
+    doc.appearance().set(idB, cropB);
+
+    // Remove middle session row (b)
+    doc.removeAt(1);
+    book.setOrder(doc.paths(), {doc.idAt(0), doc.idAt(1)});
+
+    QCOMPARE(doc.size(), 2);
+    QCOMPARE(book.size(), 2);
+    QCOMPARE(doc.pathAt(0), QStringLiteral("/a.jpg"));
+    QCOMPARE(doc.pathAt(1), QStringLiteral("/c.jpg"));
+    QCOMPARE(book.pathAt(0), QStringLiteral("/a.jpg"));
+    QCOMPARE(book.pathAt(1), QStringLiteral("/c.jpg"));
+    // Appearance for removed id may remain as orphan until clear — crop on B
+    // must not transfer to C
+    QVERIFY(!doc.appearance().contains(idC) || !doc.appearance().get(idC)->hasCrop);
+    QCOMPARE(doc.idAt(1), idC);
+}
+
+void PathOrderDualModelTest::alignedPackOrder_documentMatchesBook()
+{
+    // Tier 4 target case: when multiplicities match, document paths/ids are a
+    // valid pack order (view could query document instead of the book).
+    SessionDocument doc;
+    SessionPathOrder book;
+    doc.setPaths({QStringLiteral("/x.jpg"), QStringLiteral("/y.jpg")});
+    book.setOrder(doc.paths(), doc.ids());
+
+    QCOMPARE(book.pathList(), doc.paths());
+    QCOMPARE(book.idList(), doc.ids());
+    QCOMPARE(book.size(), doc.size());
+}
+
+void PathOrderDualModelTest::loadAdd_bookExceedsDocument_packUsesBook()
+{
+    // After LoadAdd multiplicity, document cannot replace the book for pack.
+    SessionDocument doc;
+    SessionPathOrder book;
+    doc.append(QStringLiteral("/solo.jpg"));
+    const SessionImageId sid = doc.idAt(0);
+    book.appendRow(QStringLiteral("/solo.jpg"), sid);
+    book.appendRow(QStringLiteral("/solo.jpg"), sid);
+    book.appendRow(QStringLiteral("/solo.jpg"), sid);
+
+    QCOMPARE(doc.size(), 1);
+    QCOMPARE(book.size(), 3);
+    QVERIFY(book.size() != doc.size());
+    // Pack must walk book, not document
+    QCOMPARE(book.countPathOccurrences(QStringLiteral("/solo.jpg")), 3);
+    QCOMPARE(doc.countPathOccurrences(QStringLiteral("/solo.jpg")), 1);
+}
+
+void PathOrderDualModelTest::modeLeave_clearBook_documentPackWouldRegenerateIncorrectly()
+{
+    // Blank Workspace / mode leave: pathOrderClear. If pack consulted the
+    // document, tiles would come back — the dual-model reason the book stays.
+    SessionDocument doc;
+    SessionPathOrder book;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+    book.setOrder(doc.paths(), doc.ids());
+    book.clear();
+
+    QVERIFY(book.isEmpty());
+    QVERIFY(!doc.isEmpty());
+    // Document still has membership — must not be used as pack source here
+    QCOMPARE(doc.size(), 2);
+    QCOMPARE(book.size(), 0);
 }
 
 QTEST_MAIN(PathOrderDualModelTest)

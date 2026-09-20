@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1709-tier4-char-expand.** Expand dual-model tests + ImageView harness plan.
+Prior: **1708**.
+
+### Change
+- `tests/pathorder_dual_model_test.cpp`: gallery delete prune, aligned pack order,
+  LoadAdd book>doc, mode-leave clear vs document
+- `docs/IMAGEVIEW_CHARACTERIZATION.md`: offscreen harness goals, checklist, CMake note
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1709-tier4-char-expand.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest pathorder-dual-model
+- Implement offscreen ImageView characterization (see docs/IMAGEVIEW_CHARACTERIZATION.md)
+- Tier 4: delete m_pathOrderBook
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1708-split-link-fixes.** Fix includes/helpers after 1704–1707 splits.
 Prior: **1707**.
 
