@@ -108,7 +108,6 @@ add_executable(biltoo
   src/gallerylayout.cpp
   src/gallerylayout.h
   src/imageview.cpp
-  src/imageview_layout.cpp
   src/imageview_gallery.cpp
   src/gallerycontroller.cpp
   src/slideshowcontroller.cpp
@@ -228,6 +227,8 @@ add_executable(biltoo
   src/imageview_input.cpp
   src/imageview_input_forwards.cpp
   src/imageview_paint.cpp
+  src/imageview_pageguide.cpp
+  src/imageview_export.cpp
   src/imageview_group.cpp
   src/imageview.h
   src/imageview_types.h

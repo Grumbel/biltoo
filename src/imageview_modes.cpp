@@ -316,3 +316,28 @@ void ImageView::setViewMode(ViewMode mode)
     m_gallery.enter(static_cast<int>(layout));
 }
 
+
+// --- from imageview_layout.cpp (modes) ---
+
+void ImageView::applyItemModeFlags(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    // Strict separation:
+    //   Workspace → movable + handles
+    //   Gallery   → selectable only (open on click), no chrome
+    //   Image     → static, no selection chrome
+    if (isWorkspaceMode()) {
+        item->setInteractive(true);
+        item->setScaleHandlesEnabled(true);
+    } else if (isGalleryMode()) {
+        item->setGallerySelectable(true);
+        item->setScaleHandlesEnabled(false);
+    } else {
+        item->setGalleryCellSize({});
+        item->setInteractive(false);
+        item->setScaleHandlesEnabled(false);
+    }
+}
+

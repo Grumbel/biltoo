@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1681-dissolve-layout-tu.** Dissolve imageview_layout.cpp into focused TUs.
+Prior: **1680**.
+
+### Change
+- **Deleted** `imageview_layout.cpp` (2724-line grab-bag)
+- New: `imageview_pageguide.cpp`, `imageview_export.cpp`
+- Moves:
+  - Appearance / rematerialize / bake / color-grade → `imageview_appearance.cpp`
+  - `applyItemModeFlags` → `imageview_modes.cpp`
+  - Canvas bind/find/select/destroy/session-remove → `imageview_canvas.cpp`
+  - Page guide → pageguide; export helpers → export
+- CMake updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1681-dissolve-layout-tu.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Optional: shrink paint/input further
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1680-workspace-gallerylayout-include.** Fix GalleryLayout in workspace header; relayout suppress on Gallery.
 Prior: **1679**.
 
