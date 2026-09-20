@@ -222,26 +222,9 @@ QRectF ImageView::selectionSceneBounds(const QList<ImageItem *> &items) const
 
 void ImageView::updateGalleryHoverAt(const QPoint &viewPos)
 {
-    if (!isGalleryMode() || !m_scene) {
-        if (!m_gallery.hoverPath().isEmpty()) {
-            m_gallery.clearHoverPath();
-            viewport()->update();
-        }
-        return;
-    }
-    QString path;
-    const QPointF scenePos = mapToScene(viewPos);
-    for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            path = ii->path();
-            break;
-        }
-    }
-    if (path != m_gallery.hoverPath()) {
-        m_gallery.setHoverPath(path);
-        viewport()->update();
-    }
+    m_gallery.updateGalleryHoverAt(viewPos);
 }
+
 
 void ImageView::updateMouseInfo(const QPoint &viewPos)
 
@@ -276,82 +259,15 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 bool ImageView::tryWheelGalleryZoom(QWheelEvent *event)
 {
-    // Gallery: Ctrl+wheel zooms the view (inspection) and refreshes the soft
-    // ladder for the new on-screen cell size.
-    if (!isGalleryMode() || !(event->modifiers() & Qt::ControlModifier)) {
-        return false;
-    }
-    const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
-    releaseStickyZoom();
-    m_framing.clearFitFill();
-    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-    scale(factor, factor);
-    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-    // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
-    // each wheel notch used to rescan all tiles + setInterest + repaint
-    // every high-res soft, freezing the UI while zooming out.
-    scheduleGalleryDecodeWindowRefresh(GallerySoft::kDecodeWindowScrollMs);
-    refreshStatus();
-    event->accept();
-    return true;
+    return m_gallery.tryWheelGalleryZoom(event);
 }
+
 
 bool ImageView::tryWheelGalleryScroll(QWheelEvent *event)
 {
-    if (!isGalleryMode()) {
-        return false;
-    }
-    QScrollBar *hBar = horizontalScrollBar();
-    QScrollBar *vBar = verticalScrollBar();
-    const bool canH = hBar && hBar->maximum() > hBar->minimum();
-    const bool canV = vBar && vBar->maximum() > vBar->minimum();
-
-    int dx = 0;
-    int dy = 0;
-    if (!event->pixelDelta().isNull()) {
-        dx = event->pixelDelta().x();
-        dy = event->pixelDelta().y();
-    } else {
-        // angleDelta is in eighths of a degree; 120 ≈ one notch.
-        dx = event->angleDelta().x();
-        dy = event->angleDelta().y();
-    }
-
-    // Shift+wheel → prefer horizontal (common UI convention).
-    if (event->modifiers() & Qt::ShiftModifier) {
-        if (dx == 0 && dy != 0) {
-            dx = dy;
-            dy = 0;
-        }
-    }
-
-    // Horizontal strip layouts: vertical wheel pans sideways.
-    const bool preferHorizontalScroll =
-        m_layout.currentMode() == LayoutMode::SideBySide
-        || m_layout.currentMode() == LayoutMode::MasonryRows
-        || m_layout.currentMode() == LayoutMode::MasonryRowsFill;
-
-    if (preferHorizontalScroll && dx == 0 && dy != 0) {
-        dx = dy;
-        dy = 0;
-    } else if (dx == 0 && dy != 0 && !canV && canH) {
-        dx = dy;
-        dy = 0;
-    } else if (dy == 0 && dx != 0 && !canH && canV) {
-        dy = dx;
-        dx = 0;
-    }
-
-    if (canH && dx != 0) {
-        hBar->setValue(hBar->value() - dx);
-    }
-    if (canV && dy != 0) {
-        vBar->setValue(vBar->value() - dy);
-    }
-    // Accept even at scroll ends so the event does not fall through to zoom.
-    event->accept();
-    return true;
+    return m_gallery.tryWheelGalleryScroll(event);
 }
+
 
 void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
 {
@@ -640,159 +556,15 @@ bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
 
 bool ImageView::tryMousePressGalleryRight(QMouseEvent *event)
 {
-    // Gallery right-click: do not let QGraphicsView alter selection (that
-    // cancels multi-select before the context menu opens). If the click is on
-    // an unselected tile, select only that tile; if it is already selected,
-    // keep the current multi-select for bulk rotate/flip/delete.
-    if (!isGalleryMode() || event->button() != Qt::RightButton) {
-        return false;
-    }
-    const QPointF scenePos = mapToScene(event->pos());
-    ImageItem *hit = nullptr;
-    for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            hit = ii;
-            break;
-        }
-    }
-    if (hit && !hit->isSelected()) {
-        m_scene->clearSelection();
-        hit->setSelected(true);
-        m_gallery.setSelectionAnchor(hit);
-        if (hit->sessionId() != kInvalidSessionImageId) {
-            emit sessionImageFocused(hit->sessionId());
-        } else if (!hit->path().isEmpty()) {
-            emit galleryItemFocused(hit->path());
-        }
-        emit statusChanged();
-    }
-    event->accept();
-    return true;
+    return m_gallery.tryMousePressGalleryRight(event);
 }
+
 
 bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
 {
-    // Gallery: classic multi-select (click / Ctrl / Shift); open is double-click.
-    if (!isGalleryMode() || event->button() != Qt::LeftButton
-        || (event->modifiers() & Qt::AltModifier)) {
-        return false;
-    }
-        const QPointF scenePos = mapToScene(event->pos());
-        ImageItem *hit = nullptr;
-        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                hit = ii;
-                break;
-            }
-        }
-        // Ctrl (and Meta on platforms where that is the multi-select modifier)
-        // toggles membership without clearing the rest of the selection.
-        const bool ctrl = event->modifiers()
-                          & (Qt::ControlModifier | Qt::MetaModifier);
-        const bool shift = event->modifiers() & Qt::ShiftModifier;
-
-        if (hit && shift && m_gallery.selectionAnchor()) {
-            // Session-order range from anchor to hit (inclusive).
-            int i0 = m_items.indexOf(m_gallery.selectionAnchor());
-            int i1 = m_items.indexOf(hit);
-            if (i0 < 0) {
-                i0 = i1;
-            }
-            if (i1 < 0) {
-                i1 = i0;
-            }
-            if (i0 > i1) {
-                std::swap(i0, i1);
-            }
-            m_scene->blockSignals(true);
-            m_scene->clearSelection();
-            for (int i = i0; i <= i1 && i < m_items.size(); ++i) {
-                m_items.at(i)->setSelected(true);
-            }
-            m_scene->blockSignals(false);
-            // Selection overlay only — no item cache rebuild.
-            if (viewport()) {
-                viewport()->update();
-            }
-            emit canvasSelectionChanged();
-            if (hit->sessionId() != kInvalidSessionImageId) {
-                emit sessionImageFocused(hit->sessionId());
-            } else if (!hit->path().isEmpty()) {
-                emit galleryItemFocused(hit->path());
-            }
-            event->accept();
-            if (m_hudPrefs.isVisible() || m_hudFlash.isVisible()) {
-                emit statusChanged();
-            }
-            return true;
-        }
-
-        if (hit && ctrl) {
-            // Defensive: soft/late tiles may have lost ItemIsSelectable.
-            if (!(hit->flags() & QGraphicsItem::ItemIsSelectable)) {
-                hit->setGallerySelectable(true);
-            }
-            hit->setSelected(!hit->isSelected());
-            if (hit->isSelected()) {
-                m_gallery.setSelectionAnchor(hit);
-            }
-            hit->invalidateDeviceCache();
-            emit canvasSelectionChanged();
-            if (hit->sessionId() != kInvalidSessionImageId) {
-                emit sessionImageFocused(hit->sessionId());
-            } else if (!hit->path().isEmpty()) {
-                emit galleryItemFocused(hit->path());
-            }
-            event->accept();
-            if (m_hudPrefs.isVisible() || m_hudFlash.isVisible()) {
-                emit statusChanged();
-            }
-            return true;
-        }
-
-        if (hit) {
-            // One selectionChanged: clear+select under blocked signals so
-            // MainWindow does not run navigation/layout work twice per click.
-            if (!(hit->flags() & QGraphicsItem::ItemIsSelectable)) {
-                hit->setGallerySelectable(true);
-            }
-            const bool already = hit->isSelected()
-                && m_scene->selectedItems().size() == 1;
-            if (already) {
-                m_gallery.setSelectionAnchor(hit);
-                event->accept();
-                return true;
-            }
-            m_scene->blockSignals(true);
-            m_scene->clearSelection();
-            hit->setSelected(true);
-            m_scene->blockSignals(false);
-            // Selection overlay in drawForeground; viewport update is enough.
-            if (viewport()) {
-                viewport()->update();
-            }
-            emit canvasSelectionChanged();
-            m_gallery.setSelectionAnchor(hit);
-            if (hit->sessionId() != kInvalidSessionImageId) {
-                emit sessionImageFocused(hit->sessionId());
-            } else if (!hit->path().isEmpty()) {
-                emit galleryItemFocused(hit->path());
-            }
-            event->accept();
-            return true;
-        }
-
-        // Empty space: clear selection (keep Ctrl-additive empty no-ops).
-        if (!ctrl) {
-            m_scene->clearSelection();
-            emit canvasSelectionChanged();
-            emit statusChanged();
-        }
-        // Allow rubber-band start via base class when drag mode is RubberBandDrag.
-        QGraphicsView::mousePressEvent(event);
-        return true;
-    return true;
+    return m_gallery.tryMousePressGalleryLeft(event);
 }
+
 
 bool ImageView::tryMousePressWorkspaceSelect(QMouseEvent *event)
 {

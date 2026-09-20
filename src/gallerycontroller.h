@@ -11,6 +11,9 @@
 
 class ImageView;
 class ImageItem;
+class QMouseEvent;
+class QWheelEvent;
+class QPoint;
 
 /**
  * Gallery-mode collaborator for ImageView.
@@ -100,6 +103,13 @@ public:
         m_selectionAnchor = nullptr;
     }
 
+    // Input (Tier 6c) — ImageView thin-forwards
+    void updateGalleryHoverAt(const QPoint &viewPos);
+    bool tryWheelGalleryZoom(QWheelEvent *event);
+    bool tryWheelGalleryScroll(QWheelEvent *event);
+    bool tryMousePressGalleryRight(QMouseEvent *event);
+    bool tryMousePressGalleryLeft(QMouseEvent *event);
+
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
     {
         m_viewCenter = center;
@@ -122,6 +132,7 @@ private:
     bool m_haveViewCenter = false;
     QString m_focusPath;
     bool m_pendingRestore = false;
+
 
     ImageItem *m_selectionAnchor = nullptr;
     QString m_hoverPath;

@@ -754,5 +754,6 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
   controllers; ImageView input is thin dispatch for those modes.
 - Tier 6b: **done** (biltoo-1613) — crop/attention release+key; slideshow seek
   on controllers.
-- Tier 6: _mostly done_ (workspace/gallery/transform chrome try* remain on view;
+- Tier 6: _mostly done_ (workspace/transform chrome try* remain on view;
   transform chrome is intentionally ImageView-owned per AGENTS.md).
+- Tier 6c: **done** (biltoo-1657) — Gallery hover/wheel/press try* on GalleryController.

@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1657-gallery-input-controller.** Tier 6c: Gallery try* input on GalleryController.
+Prior: **1656**.
+
+### Change
+- `GalleryController` owns:
+  - `updateGalleryHoverAt`
+  - `tryWheelGalleryZoom` / `tryWheelGalleryScroll`
+  - `tryMousePressGalleryLeft` / `tryMousePressGalleryRight`
+- ImageView thin-forwards; `forwardGraphicsViewMousePress` for empty-canvas rubber-band
+- Wheel zoom status via `statusChanged` (refreshStatus stays private)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1657-gallery-input-controller.bundle HEAD
+```
+
+### Next
+- Workspace select/chrome try* if product need (transform chrome stays on view)
+- Path-order residual / imageview.h narrowing
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1656-pipeline-forwards-tu.** Split thin DisplayPipeline forwards out of load.cpp.
 Prior: **1655**.
 

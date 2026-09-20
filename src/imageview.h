@@ -170,6 +170,9 @@ public:
     };
 
     bool isMultiItemMode() const { return m_viewMode != ViewMode::Image; }
+    /** Gallery empty-canvas press: rubber-band via QGraphicsView base. */
+    void forwardGraphicsViewMousePress(QMouseEvent *event)
+    { QGraphicsView::mousePressEvent(event); }
     bool tryInstallImageModeSample(const QString &path, const QImage &image);
     bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
                                         SessionAppearance::PixelKind kind);
