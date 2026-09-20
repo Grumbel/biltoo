@@ -46,10 +46,6 @@ ImageItem *ImageView::targetItem() const
     return nullptr;
 }
 
-void ImageView::ensureGalleryPlaceholders()
-{
-    m_gallery.ensurePlaceholders();
-}
 
 
 // --- from imageview_layout.cpp (canvas) ---

@@ -144,8 +144,6 @@
     void finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
                                  const QVector<SessionImageId> &sessionIds);
 
-    /** Create Gallery placeholders for m_pathOrder using definitive sizes only. */
-    void ensureGalleryPlaceholders();
 
     bool galleryRelayoutSuppressed() const { return m_galleryRelayoutSuppress.active(); }
 

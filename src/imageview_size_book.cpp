@@ -309,7 +309,7 @@ void ImageView::onSizeResolveGateComplete()
     // Create tiles only now — sizes are definitive (or timed out with stand-in).
     if (m_gallerySoftBook.isDeferPopulate()) {
         m_gallerySoftBook.setDeferPopulate(false);
-        ensureGalleryPlaceholders();
+        m_gallery.ensurePlaceholders();
     } else {
         for (ImageItem *item : m_items) {
             if (item) {
@@ -324,7 +324,7 @@ void ImageView::onSizeResolveGateComplete()
         }
         // Safety: size-resolve used to refuse createPlaceholder → empty canvas.
         if (isGalleryMode() && m_items.isEmpty() && !pathOrderIsEmpty()) {
-            ensureGalleryPlaceholders();
+            m_gallery.ensurePlaceholders();
         }
     }
     if (isGalleryMode() && !m_items.isEmpty() && !m_layout.isFreeForm()) {

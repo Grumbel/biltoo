@@ -132,7 +132,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
         // Pack deferred until sizes settle. Keep items hidden so provisional
         // geometry is never painted (cold-open layout glitch).
         if (m_items.isEmpty() && !paths.isEmpty() && !m_gallerySoftBook.isDeferPopulate()) {
-            ensureGalleryPlaceholders();
+            m_gallery.ensurePlaceholders();
         }
         for (ImageItem *item : m_items) {
             if (item) {
@@ -142,7 +142,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
         // No decode window until finishGallerySizeResolve packs + shows items.
     } else if (isGalleryMode() && m_items.isEmpty() && !paths.isEmpty()) {
         // Non-fill path should have created items; recover if not.
-        ensureGalleryPlaceholders();
+        m_gallery.ensurePlaceholders();
         if (!m_items.isEmpty()) {
             m_gallery.applyLayout(GalleryPackReason::EnterGallery);
             m_gallery.updateDecodeWindow();
