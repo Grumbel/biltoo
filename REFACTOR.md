@@ -974,3 +974,5 @@ Phase 1–6 rules still apply. Additions:
   prune/align keep placement list in sync with items/states.
 - biltoo-1744: group scale/rotate mid-drag reads `dragStartPlacementAt` (not
   full DTO fields).
+- biltoo-1745: free-rotate mid-drag uses `currentDragStartPlacement().rotation`;
+  ImageItem `m_press*` handle anchors remain Stage 2 residual (tile LOD next).

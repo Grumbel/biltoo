@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1745-rotate-drag-placement.** Free-rotate mid-drag uses Placement.
+Prior: **1744**.
+
+### Change
+- `tryMouseMoveWorkspaceRotate` seeds rotation from `currentDragStartPlacement().rotation`
+- Residual Stage 2: ImageItem `m_pressScale*` / anchors for handle drag; tile LOD on item
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1745-rotate-drag-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + free-rotate smoke
+- Demote ImageItem handle press anchors → ItemInteractSession
+- Or characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1744-group-drag-use-placement.** Group mid-drag uses Placement.
 Prior: **1743**.
 

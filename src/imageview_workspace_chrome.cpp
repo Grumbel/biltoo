@@ -4,6 +4,7 @@
 // Workspace viewport chrome and free-form rotate input (ImageView-owned).
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "imageitem.h"
 
 #include <QMouseEvent>
@@ -104,8 +105,10 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
     const QPointF scenePos = mapToScene(event->pos());
     const qreal angle = angleAt(scenePos, m_itemInteract.currentRotateItem());
     // Shift is held to start free-rotate; Ctrl snaps 90°, Shift alone 45°.
+    // Stage 2: press-time placement rotation from interact session Placement.
     const qreal rot = PlacementLinear::placementRotationFromDrag(
-        m_itemInteract.currentRotateItemStart(), m_itemInteract.currentRotateStartAngle(), angle,
+        m_itemInteract.currentDragStartPlacement().rotation,
+        m_itemInteract.currentRotateStartAngle(), angle,
         event->modifiers() & Qt::ControlModifier,
         event->modifiers() & Qt::ShiftModifier);
     m_itemInteract.currentRotateItem()->setItemRotation(rot);
