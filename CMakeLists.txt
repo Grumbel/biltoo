@@ -276,6 +276,7 @@ add_executable(biltoo
   src/displaysurface.cpp
   src/displaysurface.h
   src/imageitem_interaction.cpp
+  src/imageitem_tilelod.cpp
   src/imageitem.h
   src/imageloader.cpp
   src/imageloader.h

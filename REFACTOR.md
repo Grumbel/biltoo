@@ -1025,3 +1025,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1777: privatize setItem*/setStackZ; residual setPos/setStackZ via applyPlacement.
 - biltoo-1778: itemworld test links SessionAppearanceStore (sessionappearance.cpp + deps).
 - biltoo-1779: bindSelectedSessionIds / crop stash / footprint scale via Placement.
+- biltoo-1780: imageitem_tilelod.cpp — tile LOD methods out of interaction TU.

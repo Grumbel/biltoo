@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1780-imageitem-tilelod-tu.** Stage 2: tile LOD methods own TU.
+Prior: **1779**.
+
+### Change
+- New `src/imageitem_tilelod.cpp`: drop/invalidate, plan, tick, graded cache,
+  suppress, wanted/active/covered/debug
+- Split out of `imageitem_interaction.cpp` / `imageitem.cpp` (no behaviour change)
+- Prepares TileLodController demotion off ImageItem
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1780-imageitem-tilelod-tu.bundle HEAD
+```
+
+### Next
+- Move `TileLodController` ownership toward DisplayPipelineController
+- Offscreen ImageView characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1779-bind-pose-via-placement.** Residual pose pack via Placement.
 Prior: **1778**.
 
