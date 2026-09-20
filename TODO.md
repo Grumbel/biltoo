@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1771-crop-session-apply-placement.** CropSession pose via applyPlacement.
+Prior: **1770**.
+
+### Change
+- Draft clear, enter stash, restore scale/pose, commit rotation, state apply, stash restore
+  all write Placement through applyPlacement
+- Crop rubber move still adjusts pos only (draft geometry)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1771-crop-session-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + crop enter/leave/commit smoke
+- Tier 4 characterization harness or remaining setItem* audit
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1770-gallery-enter-apply-placement.** Gallery enter pose via applyPlacement.
 Prior: **1769**.
 

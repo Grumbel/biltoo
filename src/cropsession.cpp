@@ -6,6 +6,7 @@
 #include "contentxform.h"
 #include "placementlinear.h"
 #include "imageitem.h"
+#include "itemcomponents.h"
 #include "sessionappearance.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
@@ -82,10 +83,12 @@ void CropSession::clearItemFreePlacementForDraft(ImageItem *item)
     if (!item) {
         return;
     }
-    item->setItemRotation(0.0);
-    item->setItemShear(0.0);
-    item->setItemHFlip(false);
-    item->setItemVFlip(false);
+    ItemComponents::Placement pl = item->placement();
+    pl.rotation = 0.0;
+    pl.shear = 0.0;
+    pl.hFlip = false;
+    pl.vFlip = false;
+    item->applyPlacement(pl);
 }
 
 int CropSession::fullRasterScheduleEdge(const QString &path)
@@ -291,7 +294,10 @@ void CropSession::restoreEnterScale(ImageItem *item) const
     }
     const qreal sx = enterScaleX();
     const qreal sy = enterScaleY() > 1e-6 ? enterScaleY() : sx;
-    item->setItemScale(sx, sy);
+    ItemComponents::Placement pl = item->placement();
+    pl.scale = sx;
+    pl.scaleY = sy;
+    item->applyPlacement(pl);
 }
 
 void CropSession::applyKeepEnterFlags(ImageItem *item, const WorkspaceItemState &contentOnly,
@@ -472,7 +478,9 @@ void CropSession::applyCommitPlacementRotation(ImageItem *item) const
     if (!item) {
         return;
     }
-    item->setItemRotation(currentRotation());
+    ItemComponents::Placement pl = item->placement();
+    pl.rotation = currentRotation();
+    item->applyPlacement(pl);
 }
 
 QSize CropSession::ensureApplyIntrinsicSize(ImageItem *item, qreal cropW, qreal cropH,
@@ -575,15 +583,17 @@ void CropSession::applyItemPlacementFromState(ImageItem *item,
     if (!item) {
         return;
     }
+    ItemComponents::Placement pl = item->placement();
     if (imageModeZeroPose) {
-        item->setItemRotation(0.0);
-        item->setItemShear(0.0);
+        pl.rotation = 0.0;
+        pl.shear = 0.0;
     } else {
-        item->setItemRotation(app.rotation);
-        item->setItemShear(app.shear);
+        pl.rotation = app.rotation;
+        pl.shear = app.shear;
     }
-    item->setItemHFlip(false);
-    item->setItemVFlip(false);
+    pl.hFlip = false;
+    pl.vFlip = false;
+    item->applyPlacement(pl);
 }
 
 bool CropSession::locksPath(const QString &path) const
@@ -695,8 +705,10 @@ void CropSession::restoreStashedPlacement(ImageItem *item) const
     if (!item || !hasStashedPlacement()) {
         return;
     }
-    item->setItemRotation(stashedPlacementRotation);
-    item->setItemShear(stashedPlacementShear);
+    ItemComponents::Placement pl = item->placement();
+    pl.rotation = stashedPlacementRotation;
+    pl.shear = stashedPlacementShear;
+    item->applyPlacement(pl);
 }
 
 void CropSession::setRectFromSourcePixelTrim(const QRectF &contentRect,
@@ -728,8 +740,10 @@ void CropSession::beginEnterSession(ImageItem *item, const QImage &enterSrc,
     setEnterSnapshot(enterSrc, enterSt, snapshotValid);
     stashPlacement(item->itemRotation(), item->itemShear());
     if (hasStashedPlacement()) {
-        item->setItemRotation(0.0);
-        item->setItemShear(0.0);
+        ItemComponents::Placement pl = item->placement();
+        pl.rotation = 0.0;
+        pl.shear = 0.0;
+        item->applyPlacement(pl);
     }
     // Freeze tile LOD upgrades for the draft subject (cleared on leave).
     item->setTileLodSuppressed(true);
@@ -779,10 +793,11 @@ void CropSession::restoreEnterPlacementPose(ImageItem *item) const
     if (!item || !isEnterValid()) {
         return;
     }
-    item->setPos(enterPos());
-    const qreal sx = enterScaleX();
-    const qreal sy = enterScaleY() > 0.0 ? enterScaleY() : sx;
-    item->setItemScale(sx, sy);
+    ItemComponents::Placement pl = item->placement();
+    pl.pos = enterPos();
+    pl.scale = enterScaleX();
+    pl.scaleY = enterScaleY() > 0.0 ? enterScaleY() : pl.scale;
+    item->applyPlacement(pl);
 }
 
 QRectF CropSession::expandLimits(const QRectF &contentRect) const
