@@ -1283,10 +1283,8 @@ void GalleryController::ensurePlaceholders()
             claimed.insert(ph);
         }
     }
-    {
-        const PackOrderView pack = m_view->currentPackOrder();
-        m_view->reorderItemsByPaths(pack.paths());
-    }
+    // Reuse the pack snapshot from the loop above (same generation; avoids -Wshadow).
+    m_view->reorderItemsByPaths(pack.paths());
 }
 
 
