@@ -942,3 +942,6 @@ Phase 1–6 rules still apply. Additions:
   tables on ItemWorld (dual-write with DTO; identity ⇒ absent).
 - biltoo-1729: Attention read/write via `itemWorld().attention` / `setAttention`;
   colour grade via `setColor` (path/id backfill on DTO when needed).
+- biltoo-1730: bake/crop path-book + presence via ItemWorld — `getAppearance` /
+  `getPathState` / `setPathState` in bake; crop store/load unbound path via
+  ItemWorld; crop apply seeds use `hasCrop()`.

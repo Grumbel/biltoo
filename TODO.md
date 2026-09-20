@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1730-itemworld-bake-crop-path.** Bake/crop path state via ItemWorld.
+Prior: **1729**.
+
+### Change
+- bakeRotate: placement merge via `getAppearance`; path-slot content via `setPathState`
+- bakeFlip unbound crop: `setPathState` (not raw `m_itemStateBook`)
+- storeCropAppearance / loadRestoreCropAppearance unbound path via ItemWorld
+- crop record orient lookup via `getAppearance`; apply seed uses `hasCrop()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1730-itemworld-bake-crop-path.bundle HEAD
+```
+
+### Next
+- biltoo-build + bake/crop smoke
+- Stage 2: ImageItem demotion, or Phase 6 Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1729-component-attention-color.** Use Attention + Color component APIs.
 Prior: **1728**.
 

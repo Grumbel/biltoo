@@ -86,7 +86,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.contentQuarterTurns = turns;
         if (sid != kInvalidSessionImageId) {
             // Preserve placement fields from previous appearance when present.
-            if (const WorkspaceItemState *prev = appearance().get(sid)) {
+            if (const WorkspaceItemState *prev = m_itemWorld.getAppearance(sid)) {
                 s.pos = prev->pos;
                 s.scale = prev->scale;
                 s.scaleY = prev->scaleY;
@@ -105,7 +105,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         // stale turns for any reader that still peeks at m_itemStateBook.byPath.
         {
             WorkspaceItemState pathSlot;
-            if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
+            if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {
                 pathSlot = *st;
             }
             pathSlot.path = item->path();
@@ -116,7 +116,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             pathSlot.cropRect = want.cropRect;
             pathSlot.cropRotation = want.cropRotation;
             pathSlot.cropSourceSize = want.cropSourceSize;
-            m_itemStateBook.set(item->path(), pathSlot);
+            m_itemWorld.setPathState(item->path(), pathSlot);
         }
         item->setAppliedContentXform(ContentXform::Value::fromState(s));
     }
@@ -222,7 +222,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         s.cropSourceSize = cropMap.cropSourceSize;
         s.contentHFlip = h;
         s.contentVFlip = v;
-        m_itemStateBook.set(item->path(), s);
+        m_itemWorld.setPathState(item->path(), s);
     }
 
     commitItemSessionEdit(item);

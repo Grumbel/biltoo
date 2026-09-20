@@ -214,10 +214,11 @@ void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
         return;
     }
     if (sid != kInvalidSessionImageId) {
+        // Dual-writes Crop (and other) sparse tables via ItemWorld.
         m_itemWorld.setAppearance(sid, s);
     } else {
         // Unbound only: path map is the sole store.
-        m_itemStateBook.set(item->path(), s);
+        m_itemWorld.setPathState(item->path(), s);
     }
 }
 
@@ -239,7 +240,7 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
     if (CropSession::fillAppearanceFromItemSessionCrop(app, item)) {
         return true;
     }
-    if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
+    if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {
         *app = *st;
         return true;
     }
