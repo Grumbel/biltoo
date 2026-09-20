@@ -121,7 +121,7 @@ void ImageView::scheduleReplaceLoad(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    scheduleImageLoad(path, LoadReplace);
+    m_displayPipeline.scheduleImageLoad(path, LoadReplace);
 }
 
 void ImageView::scheduleRestoreLoad(const QString &path)
@@ -129,7 +129,7 @@ void ImageView::scheduleRestoreLoad(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    scheduleImageLoad(path, LoadRestore);
+    m_displayPipeline.scheduleImageLoad(path, LoadRestore);
 }
 
 void ImageView::applyModeFlagsToLiveItems()

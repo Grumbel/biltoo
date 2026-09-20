@@ -104,28 +104,6 @@ QImage ImageView::resolveImageModePendingPixels(const QString &path,
     return m_displayPipeline.resolveImageModePendingPixels(path, preview, displayReadyOut);
 }
 
-void ImageView::scheduleImageLoad(const QString &path, LoadRole role)
-{
-    m_displayPipeline.scheduleImageLoad(path, static_cast<int>(role));
-}
-
-bool ImageView::tryDeliverReplaceFromSlideshowRaster(const QString &path, quint64 gen)
-{
-    return m_displayPipeline.tryDeliverReplaceFromSlideshowRaster(path, gen);
-}
-
-void ImageView::scheduleSlideshowReplaceDecode(const QString &path, quint64 gen,
-                                               LoadRole role)
-{
-    m_displayPipeline.scheduleSlideshowReplaceDecode(path, gen, static_cast<int>(role));
-}
-
-void ImageView::scheduleClassicImageDecode(const QString &path, quint64 gen,
-                                           LoadRole role)
-{
-    m_displayPipeline.scheduleClassicImageDecode(path, gen, static_cast<int>(role));
-}
-
 SessionAppearance::PixelKind ImageView::pixelKindForImageModeSample(
     const QString &path, const QImage &image) const
 {
@@ -133,12 +111,6 @@ SessionAppearance::PixelKind ImageView::pixelKindForImageModeSample(
 }
 
 
-
-void ImageView::onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
-                                     int role)
-{
-    m_displayPipeline.onImagePreviewLoaded(path, image, generation, role);
-}
 
 bool ImageView::takePendingRestoreState(const QString &path, WorkspaceItemState *out)
 {
@@ -278,17 +250,6 @@ int ImageView::imageModeOnScreenNeedEdge() const
 void ImageView::maybeClimbImageModePixelsForView()
 {
     m_displayPipeline.maybeClimbImageModePixelsForView();
-}
-
-void ImageView::completeLoadReplace(const QString &path, const QImage &image, quint64 generation)
-{
-    m_displayPipeline.completeLoadReplace(path, image, generation);
-}
-
-void ImageView::onImageLoaded(const QString &path, const QImage &image, quint64 generation,
-                              int role)
-{
-    m_displayPipeline.onImageLoaded(path, image, generation, role);
 }
 
 bool ImageView::loadImage(const QString &path)

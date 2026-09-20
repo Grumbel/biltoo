@@ -239,11 +239,11 @@ ImageView::ImageView(QWidget *parent)
                 // Gallery: soft may land in ImageCache via noteDelivery while the
                 // tile still shows LQIP — mirror ladderReady install.
                 if (isGalleryMode()) {
-                    onImagePreviewLoaded(path, img, m_displayPipeline.loadGate().generation(),
+                    m_displayPipeline.onImagePreviewLoaded(path, img, m_displayPipeline.loadGate().generation(),
                                          static_cast<int>(LoadAdd));
                 }
                 if (isWorkspaceMode()) {
-                    onImagePreviewLoaded(path, img, m_displayPipeline.loadGate().generation(),
+                    m_displayPipeline.onImagePreviewLoaded(path, img, m_displayPipeline.loadGate().generation(),
                                          static_cast<int>(LoadAdd));
                 }
             });

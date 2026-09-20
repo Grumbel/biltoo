@@ -28,7 +28,7 @@ bool ImageView::addImage(const QString &path)
         return true;
     }
 
-    scheduleImageLoad(path, LoadAdd);
+    m_displayPipeline.scheduleImageLoad(path, LoadAdd);
     emit statusChanged();
     return true;
 }
@@ -106,7 +106,7 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
             pathOrderAppendRow(path, kInvalidSessionImageId);
         }
     }
-    scheduleImageLoad(path, LoadAdd);
+    m_displayPipeline.scheduleImageLoad(path, LoadAdd);
     emit statusChanged();
     return true;
 }
@@ -250,7 +250,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         if (!host || !host->isWorkspaceMode()) {
             return;
         }
-        host->scheduleImageLoad(pathCopy, LoadAdd);
+        host->hostDisplayPipeline().scheduleImageLoad(pathCopy, LoadAdd);
         host->updateWorkspaceSceneRect();
         emit host->statusChanged();
         // Do not emit workspacePathsChanged here: MainWindow defers

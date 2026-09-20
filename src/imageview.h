@@ -898,18 +898,6 @@ signals:
                       const QPointF &scenePos, bool hasScenePos,
                       const QList<qint64> &sessionIds = {},
                       const QStringList &internalPaths = {});
-public slots:
-    /** Deliver a finished background decode (generation must still match). */
-    void onImageLoaded(const QString &path, const QImage &image, quint64 generation,
-                       int role);
-    /** Fast downscaled stand-in before the full decode arrives. */
-    void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
-                              int role);
-    /**
-     * thumtoo PreferCache / soft / overview delivery (GUI thread after queue).
-     * Seeds ImageCache; upgrades Image mode, slideshow, and Gallery soft state.
-     */
-
 public:
     /** True while @p gen is still the active LoadReplace generation (pool jobs). */
     bool matchesLoadGeneration(quint64 gen) const

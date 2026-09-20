@@ -282,7 +282,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                     if (isGalleryMode()) {
                         m_displayPipeline.scheduleGalleryDecode(path);
                     } else {
-                        scheduleImageLoad(path, LoadAdd);
+                        m_displayPipeline.scheduleImageLoad(path, LoadAdd);
                     }
                 } else if (SessionAppearance::hasContentAppearance(app)) {
                     rematerializeItemContent(existing, app);
@@ -319,7 +319,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 claimed.insert(ph);
             }
         } else {
-            scheduleImageLoad(path, LoadAdd);
+            m_displayPipeline.scheduleImageLoad(path, LoadAdd);
         }
     }
     TtfpTrace::mark("after_createPlaceholders");

@@ -15,16 +15,12 @@
     /** Image-mode only: content appearance for a newly created canvas item. */
     WorkspaceItemState appearanceForNewImageModeItem(const QString &path);
     /** Interactive / gallery / static flags for the current ViewMode. */
-    void scheduleImageLoad(const QString &path, LoadRole role);
     /**
      * If slideshow already holds pixels for @a path, queue onImageLoaded and
      * return true (skips a second disk decode under the hold).
      */
-    bool tryDeliverReplaceFromSlideshowRaster(const QString &path, quint64 gen);
     /** Soft preview + PreferCache quality climb while slideshow is active. */
-    void scheduleSlideshowReplaceDecode(const QString &path, quint64 gen, LoadRole role);
     /** Parallel thumbnail + full native decode for classic LoadReplace/LoadAdd. */
-    void scheduleClassicImageDecode(const QString &path, quint64 gen, LoadRole role);
     /**
      * Image mode: install sharper ladder/PreferCache pixels in place (soft→HQ).
      * Called from onLadderReady; no-op when full native already covers.

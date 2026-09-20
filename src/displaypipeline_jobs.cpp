@@ -17,7 +17,7 @@
 #include <QThreadPool>
 #include <QTimer>
 
-/** Queue onImagePreviewLoaded on the GUI thread; no-op if @a guard is gone. */
+/** Queue pipeline onImagePreviewLoaded on the GUI thread; no-op if @a guard is gone. */
 void queuePreviewLoaded(const QPointer<ImageView> &guard, const QString &path,
                         const QImage &preview, quint64 gen, int role)
 {
@@ -28,11 +28,11 @@ void queuePreviewLoaded(const QPointer<ImageView> &guard, const QString &path,
         if (!guard) {
             return;
         }
-        guard->onImagePreviewLoaded(path, preview, gen, role);
+        guard->hostDisplayPipeline().onImagePreviewLoaded(path, preview, gen, role);
     });
 }
 
-/** Queue onImageLoaded on the GUI thread; no-op if @a guard is gone. */
+/** Queue pipeline onImageLoaded on the GUI thread; no-op if @a guard is gone. */
 void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
                       const QImage &image, quint64 gen, int role)
 {
@@ -43,7 +43,7 @@ void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
         if (!guard) {
             return;
         }
-        guard->onImageLoaded(path, image, gen, role);
+        guard->hostDisplayPipeline().onImageLoaded(path, image, gen, role);
     });
 }
 

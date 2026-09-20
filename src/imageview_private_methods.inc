@@ -98,7 +98,6 @@
     /**
      * LoadReplace: Image-mode navigation install, or empty multi-item seed.
      */
-    void completeLoadReplace(const QString &path, const QImage &image, quint64 generation);
 
     /** LoadRestore: create tile from decode + claimed restore snapshot. */
     void completeLoadRestore(const QString &path, const QImage &image);

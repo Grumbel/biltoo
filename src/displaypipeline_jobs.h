@@ -12,11 +12,11 @@
 
 class ImageView;
 
-/** Queue onImagePreviewLoaded on the GUI thread; no-op if @a guard is gone. */
+/** Queue pipeline onImagePreviewLoaded on the GUI thread; no-op if @a guard is gone. */
 void queuePreviewLoaded(const QPointer<ImageView> &guard, const QString &path,
                         const QImage &preview, quint64 gen, int role);
 
-/** Queue onImageLoaded on the GUI thread; no-op if @a guard is gone. */
+/** Queue pipeline onImageLoaded on the GUI thread; no-op if @a guard is gone. */
 void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
                       const QImage &image, quint64 gen, int role);
 
