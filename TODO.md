@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1826-load-preview-via-pipeline.** Stage 2: load/preview delivery via pipeline.
+Prior: **1825**.
+
+### Change
+- `scheduleImageLoad` → `m_displayPipeline` / hostDisplayPipeline
+- Jobs queue `hostDisplayPipeline().onImagePreviewLoaded` / `onImageLoaded`
+- Dropped ImageView: onImageLoaded, onImagePreviewLoaded, scheduleImageLoad,
+  completeLoadReplace, tryDeliverReplaceFromSlideshowRaster,
+  scheduleSlideshowReplaceDecode, scheduleClassicImageDecode
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1826-load-preview-via-pipeline.bundle HEAD
+```
+Includes **1806–1826** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (open files, Gallery LoadAdd, Image replace)
+- More hop demotions / Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1825-ladder-ready-via-pipeline.** Stage 2: ladderReady → pipeline (no ImageView slot).
 Prior: **1824**.
 
