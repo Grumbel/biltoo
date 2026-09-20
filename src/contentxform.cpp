@@ -481,39 +481,18 @@ QTransform sourceToDisplayTransform(const QSize &native, const Value &x)
     if (!isPositiveSize(native)) {
         return {};
     }
-    // Compose so T.map(p) matches sourcePointToOriented then crop window.
-    // Application order: first flips, then turns, then crop (left-multiply).
-    QTransform t;
-    qreal W = native.width();
-    qreal H = native.height();
-
-    if (x.hFlip) {
-        QTransform f;
-        f.translate(W, 0.0);
-        f.scale(-1.0, 1.0);
-        t = f * t;
-    }
-    if (x.vFlip) {
-        QTransform f;
-        f.translate(0.0, H);
-        f.scale(1.0, -1.0);
-        t = f * t;
-    }
-    const int turns = normalizeQuarterTurns(x.quarterTurns);
-    for (int i = 0; i < turns; ++i) {
-        // (x,y) → (H - y, x); space (W,H) → (H,W)
-        // Qt rotate(+90): (x,y) → (-y, x); then + (H, 0) → (H - y, x).
-        QTransform r;
-        r.translate(H, 0.0);
-        r.rotate(90.0);
-        t = r * t;
-        const qreal nW = H;
-        const qreal nH = W;
-        W = nW;
-        H = nH;
-    }
-
-    if (x.hasCrop && !x.cropRect.isEmpty()) {
+    // Build the affine map from three basis points so the result cannot
+    // disagree with sourcePointToOriented (no QTransform multiply-order
+    // traps). Pipeline: flips → quarter turns → crop, same as
+    // mapSourceRectToDisplay / materializeDisplay.
+    //
+    // Prior left-multiply composition (op * t) produced turn-then-flip on
+    // hFlip+90 (TL 28,10); sourcePointToOriented is flip-then-turn (TL 52,70).
+    auto mapPoint = [&](QPointF p) -> QPointF {
+        p = sourcePointToOriented(p, native, x);
+        if (!x.hasCrop || x.cropRect.isEmpty()) {
+            return p;
+        }
         const QRect crop = x.cropRect.normalized();
         if (hasFreeCropRotation(x)) {
             const qreal dw = crop.width();
@@ -523,14 +502,23 @@ QTransform sourceToDisplayTransform(const QSize &native, const Value &x)
             c.translate(dw / 2.0, dh / 2.0);
             c.rotate(-x.cropRotation);
             c.translate(-srcCenter.x(), -srcCenter.y());
-            t = c * t;
-        } else {
-            QTransform c;
-            c.translate(-crop.x(), -crop.y());
-            t = c * t;
+            return c.map(p);
         }
-    }
-    return t;
+        return QPointF(p.x() - crop.x(), p.y() - crop.y());
+    };
+
+    const QPointF o = mapPoint(QPointF(0, 0));
+    const QPointF ox = mapPoint(QPointF(1, 0));
+    const QPointF oy = mapPoint(QPointF(0, 1));
+    // Affine: (x,y) → o + x*(ox-o) + y*(oy-o)
+    // QTransform(m11, m12, m21, m22, dx, dy):
+    //   x' = m11*x + m21*y + dx
+    //   y' = m12*x + m22*y + dy
+    const qreal m11 = ox.x() - o.x();
+    const qreal m12 = ox.y() - o.y();
+    const qreal m21 = oy.x() - o.x();
+    const qreal m22 = oy.y() - o.y();
+    return QTransform(m11, m12, m21, m22, o.x(), o.y());
 }
 
 } // namespace ContentXform

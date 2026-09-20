@@ -967,6 +967,11 @@ void ContentXformTest::sourceToDisplayTransform_matchesMapCorners()
         const QTransform T = ContentXform::sourceToDisplayTransform(n, orient);
         const QRectF mapped = ContentXform::mapSourceRectToDisplay(src, n, orient);
         QVERIFY2(!mapped.isEmpty(), "orient-only: source must land in oriented frame");
+        // hFlip then +90 on 80x60: (x,y) → (60 - y, 80 - x).
+        // TL (10,8) → (52,70); AABB of corners → [40,52] x [54,70].
+        const QPointF tl = T.map(src.topLeft());
+        QVERIFY2(qAbs(tl.x() - 52.0) < 1e-4 && qAbs(tl.y() - 70.0) < 1e-4,
+                 qPrintable(QStringLiteral("orient TL %1,%2 (want 52,70)").arg(tl.x()).arg(tl.y())));
         const QPointF corners[4] = {
             src.topLeft(), src.topRight(), src.bottomRight(), src.bottomLeft(),
         };
@@ -978,6 +983,10 @@ void ContentXformTest::sourceToDisplayTransform_matchesMapCorners()
             minY = qMin(minY, p.y());
             maxY = qMax(maxY, p.y());
         }
+        QVERIFY2(qAbs(minX - 40.0) < 1e-4 && qAbs(maxX - 52.0) < 1e-4
+                     && qAbs(minY - 54.0) < 1e-4 && qAbs(maxY - 70.0) < 1e-4,
+                 qPrintable(QStringLiteral("orient AABB %1..%2 x %3..%4")
+                                .arg(minX).arg(maxX).arg(minY).arg(maxY)));
         QVERIFY2(qAbs(minX - mapped.left()) < 1e-4,
                  qPrintable(QStringLiteral("orient left %1 vs %2").arg(minX).arg(mapped.left())));
         QVERIFY2(qAbs(maxX - mapped.right()) < 1e-4,
