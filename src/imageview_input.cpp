@@ -282,11 +282,7 @@ bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
         || event->button() != Qt::LeftButton) {
         return false;
     }
-    m_zoomRegion.beginDrag(event->pos());
-    if (!m_zoomRegion.hasRubberBand()) {
-        m_zoomRegion.setRubberBand(new QRubberBand(QRubberBand::Rectangle, viewport()));
-    }
-    m_zoomRegion.showRubberAt(m_zoomRegion.originPos());
+    m_zoomRegion.tryBeginPress(event->pos(), viewport());
     event->accept();
     return true;
 }
@@ -533,10 +529,9 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
 }
 bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
 {
-    if (!m_zoomRegion.isDragging() || !m_zoomRegion.hasRubberBand()) {
+    if (!m_zoomRegion.tryUpdateMove(event->pos())) {
         return false;
     }
-    m_zoomRegion.updateRubberTo(event->pos());
     event->accept();
     return true;
 }
@@ -848,11 +843,9 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
     if (!m_zoomRegion.isDragging()) {
         return false;
     }
-    const QRect viewRect = ViewTransform::rubberRect(m_zoomRegion.originPos(), event->pos());
-    m_zoomRegion.endDrag();
-    m_zoomRegion.hideRubber();
-    // Ignore tiny clicks — treat as cancel rather than extreme zoom.
-    if (m_zoomRegion.rubberSignificant(viewRect)) {
+    QRect viewRect;
+    // Significant rubber → fit; tiny click cancels without zooming.
+    if (m_zoomRegion.tryEndRelease(event->pos(), &viewRect)) {
         const QRectF sceneRect = mapToScene(viewRect).boundingRect();
         if (sceneRect.isValid() && !sceneRect.isEmpty()) {
             releaseStickyZoom();

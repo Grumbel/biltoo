@@ -8,12 +8,15 @@
 
 #include <QPoint>
 #include <QRect>
-
 #include <QRubberBand>
+#include <QWidget>
 
 /**
  * One-shot rubber-band zoom (Z tool): armed until drag completes or Esc.
- * QRubberBand widget is owned by ImageView (QObject parent).
+ * QRubberBand widget is owned by the view (QObject parent).
+ *
+ * tryBeginPress / tryUpdateMove / tryEndRelease own the rubber-band lifecycle;
+ * the view applies fitInView when tryEndRelease returns a significant rect.
  */
 struct ZoomRegionGesture {
     static constexpr int kMinRubberPx = 8;
@@ -47,7 +50,6 @@ struct ZoomRegionGesture {
         }
         armed = false;
         clearDrag();
-        // rubberBand lifetime stays with ImageView
         return true;
     }
 
@@ -100,6 +102,55 @@ struct ZoomRegionGesture {
             return;
         }
         rubberBand->setGeometry(ViewTransform::rubberRect(origin, pos));
+    }
+
+    /**
+     * Start a rubber-band drag. Ensures a QRubberBand parented to @p viewport.
+     * @return true when the press was consumed.
+     */
+    bool tryBeginPress(const QPoint &pos, QWidget *viewport)
+    {
+        beginDrag(pos);
+        if (!hasRubberBand() && viewport) {
+            setRubberBand(new QRubberBand(QRubberBand::Rectangle, viewport));
+        }
+        showRubberAt(originPos());
+        return true;
+    }
+
+    /** Update rubber geometry while dragging. @return true when active drag. */
+    bool tryUpdateMove(const QPoint &pos)
+    {
+        if (!isDragging() || !hasRubberBand()) {
+            return false;
+        }
+        updateRubberTo(pos);
+        return true;
+    }
+
+    /**
+     * End drag and hide rubber. If the rect is significant, writes it to
+     * @p viewRectOut and returns true so the view can fitInView; otherwise
+     * returns false (tiny click = cancel). Always ends the drag state.
+     */
+    bool tryEndRelease(const QPoint &pos, QRect *viewRectOut)
+    {
+        if (!isDragging()) {
+            return false;
+        }
+        const QRect viewRect = ViewTransform::rubberRect(originPos(), pos);
+        endDrag();
+        hideRubber();
+        if (!rubberSignificant(viewRect)) {
+            if (viewRectOut) {
+                *viewRectOut = {};
+            }
+            return false;
+        }
+        if (viewRectOut) {
+            *viewRectOut = viewRect;
+        }
+        return true;
     }
 };
 

@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1668-zoom-region-gesture-try.** Rubber-band zoom lifecycle on ZoomRegionGesture.
+Prior: **1667**.
+
+### Change
+- `ZoomRegionGesture::tryBeginPress` / `tryUpdateMove` / `tryEndRelease`
+- ImageView zoom-region try* are thin: gesture owns rubber-band; view applies fitInView
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1668-zoom-region-gesture-try.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Transform chrome remains view-owned
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1667-imageview-host-ops-inc.** Further imageview.h host ops into .inc.
 Prior: **1666**.
 
