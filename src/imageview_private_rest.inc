@@ -31,9 +31,6 @@
     QImage blockingExportDisplayForItem(const ImageItem *item) const;
     void paintHighResExportItems(QPainter *painter, const QRectF &sourceScene,
                                  const QRectF &targetRect) const;
-    DisplaySurface::State displaySurfaceStateForItem(const ImageItem *item,
-                                                     int hostLongEdge = -1,
-                                                     bool climbPending = false) const;
     /**
      * Execute a DisplaySurface::Action for @p item (climb / async / attach).
      * @p hostSample used for Attach*; empty → ImageCache::get(path).
@@ -153,10 +150,6 @@
      * @p path into the store (no-op when missing / thumtoo off).
      */
     /** Record that durable appearance was probed for @p sid (hit or miss). */
-    qreal cropRotation() const { return m_cropCtrl.session().currentRotation(); }
-    QPolygonF mapItemLocalPolygonToView(ImageItem *item, const QPolygonF &local) const;
-    QPolygonF cropPolygonView() const;
-    QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace
      * angles map to 0°.
