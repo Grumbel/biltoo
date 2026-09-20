@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1822-gallery-soft-reset-via-pipeline.** Stage 2: gallery soft reset via pipeline.
+Prior: **1821**.
+
+### Change
+- Controllers: `hostDisplayPipeline().gallerySoftResetPath/All`
+- ImageView internals: `m_displayPipeline.gallerySoftResetPath/All`
+- Removed ImageView thin-forwards and decls
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1822-gallery-soft-reset-via-pipeline.bundle HEAD
+```
+Includes **1806–1822** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Gallery soft reset / mode switch)
+- More ImageView pipeline thin-forward removals
+- Offscreen ImageView characterization (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1821-drop-image-mode-item-forward.** Stage 2: drop dead ImageView imageModeItemForPath.
 Prior: **1820**.
 
