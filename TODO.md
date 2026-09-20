@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1839-crop-via-host.** MainWindow crop mode via hostCrop.
+Prior: **1838**.
+
+### Change
+- MainWindow / session / attention → `hostCrop().cancelCrop` / `setCropMode` /
+  `active()` (was isCropMode)
+- Drop ImageView facades: setCropMode, toggleCropMode, applyCrop, cancelCrop,
+  enterCropModeFromUi, applyAutoCrop (+ private decls)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1839-crop-via-host.bundle HEAD
+```
+Requires tip **1838**.
+
+### Next
+- biltoo-build smoke (crop enter/cancel/apply from menu)
+- More imageview_crop.cpp one-liner demotion (host-only callers)
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1838-slideshow-via-host.** MainWindow slideshow API via hostSlideshow.
 Prior: **1837**.
 
