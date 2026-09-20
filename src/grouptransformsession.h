@@ -5,6 +5,7 @@
 #define GROUPTRANSFORMSESSION_H
 
 #include "imageview_types.h"
+#include "itemcomponents.h"
 
 #include <QList>
 #include <QPointF>
@@ -15,6 +16,8 @@ class ImageItem;
 /**
  * Multi-select group scale/rotate drag gesture (Workspace).
  * Handle indices: 0–7 scale, 8–11 rotate; -1 = none.
+ *
+ * Phase 7 Stage 2: dragStartPlacements mirrors pose; full states stay for undo.
  */
 class GroupTransformSession
 {
@@ -30,6 +33,7 @@ public:
         pressScenePos = {};
         pressAngleDeg = 0.0;
         dragStartStates.clear();
+        dragStartPlacements.clear();
         dragItems.clear();
     }
 
@@ -84,6 +88,11 @@ public:
         centerStart = bounds.center();
         dragItems = items;
         dragStartStates = states;
+        dragStartPlacements.clear();
+        dragStartPlacements.reserve(states.size());
+        for (const WorkspaceItemState &st : states) {
+            dragStartPlacements.append(ItemComponents::placementFromState(st));
+        }
     }
 
     /** Mark drag slot @p i as null (item left canvas mid-drag). */
@@ -103,6 +112,9 @@ public:
                 if (i < dragStartStates.size()) {
                     dragStartStates.removeAt(i);
                 }
+                if (i < dragStartPlacements.size()) {
+                    dragStartPlacements.removeAt(i);
+                }
             }
         }
     }
@@ -110,7 +122,8 @@ public:
     bool dragListsAligned() const
     {
         return !dragItems.isEmpty()
-            && dragStartStates.size() == dragItems.size();
+            && dragStartStates.size() == dragItems.size()
+            && dragStartPlacements.size() == dragItems.size();
     }
 
     int dragCount() const { return dragItems.size(); }
@@ -132,6 +145,11 @@ public:
         return dragStartStates.at(i);
     }
 
+    const ItemComponents::Placement &dragStartPlacementAt(int i) const
+    {
+        return dragStartPlacements.at(i);
+    }
+
     /** Drop active scale/rotate drag (also clears hover). */
     void endDrag()
     {
@@ -144,6 +162,7 @@ public:
         pressScenePos = {};
         pressAngleDeg = 0.0;
         dragStartStates.clear();
+        dragStartPlacements.clear();
         dragItems.clear();
     }
 
@@ -156,6 +175,7 @@ public:
     QPointF pressScenePos;
     qreal pressAngleDeg = 0.0;
     QList<WorkspaceItemState> dragStartStates;
+    QList<ItemComponents::Placement> dragStartPlacements;
     QList<ImageItem *> dragItems;
 };
 

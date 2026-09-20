@@ -970,3 +970,5 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1741: `placementNearlyEqual` — move/rotate no-op check is Placement-shaped.
 - biltoo-1742: ItemInteractSession stores `dragStartPlacement` (Stage 2 interact
   scratch); beginMove/Rotate/HandleDrag fill it from the start DTO.
+- biltoo-1743: GroupTransformSession stores parallel `dragStartPlacements`;
+  prune/align keep placement list in sync with items/states.

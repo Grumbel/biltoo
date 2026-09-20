@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1743-group-drag-placement.** GroupTransformSession drag-start Placements.
+Prior: **1742**.
+
+### Change
+- `dragStartPlacements` parallel to `dragStartStates`
+- beginDrag extracts Placement per item; pruneNullItems / endDrag / clear keep lists aligned
+- `dragStartPlacementAt(i)` accessor
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1743-group-drag-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + multi-select scale/rotate
+- Characterization harness (Tier 4)
+- Or Stage 2 tile-LOD demotion notes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1742-interact-drag-placement.** ItemInteractSession drag-start Placement.
 Prior: **1741**.
 
