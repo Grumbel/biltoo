@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1862-bg-hud-text-via-host.** Background/HUD/text reads via hosts.
+Prior: **1861**.
+
+### Change
+- MainWindow background reads → `hostCanvasBg()`
+- MainWindow HUD reads → `hostHudPrefs()`
+- MainWindow text-search/selection/link tip → `hostTextLayer()`
+- Drop pure-hop getters; keep setters and `slideshowPadColor()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1862-bg-hud-text-via-host.bundle HEAD
+```
+Requires tip **1861** (base **1858** / `1e112d94`).
+
+### Next
+- Dead private surface scan
+- Tier 4 characterization
+- biltoo-build smoke
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1861-hostImage-undo-pending.** hostImage + classicPath; undo/pending/lastError via hosts.
 Prior: **1860**.
 
