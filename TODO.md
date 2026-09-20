@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1832-biltoo-test-helper.** Dev shell: add biltoo-test (build + ctest).
+Prior: **1831**.
+
+### Change
+- `flake.nix`: `biltoo-test` → `biltoo-build` + `ctest --output-on-failure` under
+  `QT_QPA_PLATFORM=offscreen`; forwards extra args to ctest
+- `docs/ENVIRONMENT.md`: document helper
+
+### Use
+```bash
+THUMTOO_SOURCE_DIR=/path/to/thumtoo.git nix develop -L ./ -c biltoo-test
+biltoo-test -R contentxform
+```
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1832-biltoo-test-helper.bundle HEAD
+```
+Includes **1806–1832** when base is tip **1805**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1831-fix-matches-map-corners-test.** Fix ContentXform matchesMapCorners fixture.
 Prior: **1830**.
 

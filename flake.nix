@@ -203,6 +203,30 @@
               gdb --args "$BILTOO_BUILD_DIR/biltoo" "$@"
             ''
           );
+
+          # Build + ctest. Extra args are forwarded to ctest (e.g. -R contentxform).
+          biltooTest = pkgs.writeShellScriptBin "biltoo-test" (
+            biltooDevPreamble
+            + ''
+              biltoo-build || exit 1
+              if [ ! -f "$BILTOO_BUILD_DIR/CTestTestfile.cmake" ] \
+                && [ ! -f "$BILTOO_BUILD_DIR/DartConfiguration.tcl" ]; then
+                echo "biltoo-test: no CTest files in $BILTOO_BUILD_DIR (configure with tests?)" >&2
+                exit 1
+              fi
+              # Match package doCheck: headless Qt + writable XDG cache for thumtoo.
+              export QT_QPA_PLATFORM="''${QT_QPA_PLATFORM:-offscreen}"
+              export XDG_CACHE_HOME="''${XDG_CACHE_HOME:-''${TMPDIR:-/tmp}/biltoo-test-cache}"
+              mkdir -p "$XDG_CACHE_HOME"
+              # ctest must run from the build tree so test properties resolve.
+              cd "$BILTOO_BUILD_DIR"
+              if [ "$#" -eq 0 ]; then
+                ctest --output-on-failure
+              else
+                ctest --output-on-failure "$@"
+              fi
+            ''
+          );
         in
         pkgs.mkShell {
           inputsFrom = [ biltoo ];
@@ -216,6 +240,7 @@
             biltooBuild
             biltooRun
             biltooRunGdb
+            biltooTest
           ];
           CMAKE_BUILD_TYPE = "Debug";
           shellHook = ''
@@ -264,6 +289,7 @@
             echo "  biltoo-build       # incremental cmake --build (picks up thumtoo .cpp edits)"
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             echo "  biltoo-run-gdb [args]  # build + gdb --args biltoo"
+            echo "  biltoo-test [ctest args]  # build + ctest (QT_QPA_PLATFORM=offscreen)"
             echo "  nix build          # RelWithDebInfo package (wrapped)"
             echo "  nix build .#debug  # matching debug symbols"
             echo "  also: nix develop -c biltoo-run   # helpers are on PATH"

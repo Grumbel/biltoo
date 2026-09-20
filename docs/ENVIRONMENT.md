@@ -79,7 +79,7 @@ on Linux).
 ## Development shell (`nix develop`)
 
 These are set or consumed by the flake helpers (`biltoo-configure`,
-`biltoo-build`, `biltoo-run`, `biltoo-run-gdb`). They are **not** read by the
+`biltoo-build`, `biltoo-run`, `biltoo-run-gdb`, `biltoo-test`). They are **not** read by the
 application binary itself.
 
 | Variable | Effect |
@@ -90,6 +90,10 @@ application binary itself.
 | **`CMAKE_BUILD_TYPE`** | Default `Debug` in the shell. |
 | **`QT_PLUGIN_PATH`** | Unwrapped binary: Qt imageformats / iconengines plugins. |
 | **`XDG_DATA_DIRS`** | Prepends `$BILTOO_SOURCE/data` so theme icons resolve in-tree. |
+
+`biltoo-test` builds, then runs `ctest --output-on-failure` in `$BILTOO_BUILD_DIR`
+with `QT_QPA_PLATFORM=offscreen` (override if needed). Extra args are passed to
+`ctest` (example: `biltoo-test -R contentxform`).
 
 See also [AGENT-ENV.md](../AGENT-ENV.md) and [AGENTS.md](../AGENTS.md).
 
