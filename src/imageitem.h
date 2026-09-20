@@ -50,13 +50,6 @@ public:
 
     QString path() const { return m_path; }
     void setPath(const QString &path);
-    /** Drop the per-item tile session only (registry entry may stay shared). */
-    void dropTileLodSession();
-    /**
-     * Drop the per-item session and purge this path from TileLodRegistry.
-     * Prefer ImageView::purgeTilePathRam when multiple items may share the path.
-     */
-    void invalidateTilePathRam();
     /**
      * Stable session-image id (0 = unbound). Survives session insert/delete;
      * list index does not. Identity for appearance and Workspace association.
@@ -313,15 +306,8 @@ public:
     void clearTileGradedCache() const;
     QImage resolveGradedTile(tilelod::TileKey const &key,
                              ColorAdjustments const &grade) const;
-    /** Pump completions + issue up to @p budget. Only TileLoadCoordinator may pass budget>0. */
-    void tickTileLod(int budget = 8);
     /** True when on-screen need exceeds soft max (tiles should own display). */
     bool tileLodWanted() const;
-    /**
-     * Suppress tile LOD (requests + paint) for this item.
-     * Used while crop draft freezes the sample (TILE_LOD_RUNTIME.md).
-     */
-    void setTileLodSuppressed(bool on);
     bool tileLodSuppressed() const { return m_tileLod.suppressed; }
     /** True when at least one grid tile has arrived. */
     bool tileLodActive() const;
@@ -383,6 +369,14 @@ private:
     QList<Handle> activeHandles() const;
 
     QString m_path;
+    // Tile session mutators — DisplayPipelineController / CropSession only (Stage 2).
+    friend class DisplayPipelineController;
+    friend class CropSession;
+    void dropTileLodSession();
+    void invalidateTilePathRam();
+    void tickTileLod(int budget = 8);
+    void setTileLodSuppressed(bool on);
+
     /** Deep-zoom grid tiles + plan/paint scratch (Stage 2 bag; demote later). */
     tilelod::ItemBag m_tileLod;
     SessionImageId m_sessionId = kInvalidSessionImageId;

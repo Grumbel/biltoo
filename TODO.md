@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1784-privatize-tilelod-mutators.** Stage 2: tile mutators private.
+Prior: **1783**.
+
+### Change
+- `ImageItem::{dropTileLodSession,invalidateTilePathRam,tickTileLod,setTileLodSuppressed}` are **private**
+- `friend DisplayPipelineController` + `friend CropSession` (draft suppress)
+- Queries (`tileLodWanted`, active/covered/…) stay public for policy/paint
+- External code must use pipeline drop/tick/suppress APIs
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1784-privatize-tilelod-mutators.bundle HEAD
+```
+
+### Next
+- Move ItemBag storage under DisplayPipelineController
+- Offscreen ImageView characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1783-pipeline-tick-suppress-tilelod.** Stage 2: tile tick/suppress via pipeline.
 Prior: **1782**.
 
