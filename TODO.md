@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1701-restore-item-state.** Restore item lookup/captureState lost in layout dissolve.
+Prior: **1700**.
+
+### Change
+- New `imageview_item_state.cpp`: definitions dropped when `imageview_layout.cpp` was
+  dissolved (7741d56) — findItem*, captureState, sessionAppearanceValue, bake helpers,
+  pageGuidePxPerMm, selectedOrFirstGalleryItem, selectionSceneBounds
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1701-restore-item-state.bundle HEAD
+```
+
+### Next
+- biltoo-build link verification
+- Offscreen ImageView characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1700-more-tu-includes.** Second-pass includes after TU splits.
 Prior: **1699**.
 
