@@ -57,7 +57,7 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
         return {};
     }
     // Path map only when unbound (no session image id).
-    if (const WorkspaceItemState *st = m_view->hostItemStateBook().get(path)) {
+    if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(path)) {
         return *st;
     }
     return {};
@@ -80,7 +80,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
         // after restart. appearanceForNewImageModeItem seeds then returns
         // identity only if XDG has nothing.
         if (m_view->hostSessionId().hasCurrentId()
-            || m_view->hostItemStateBook().contains(path)) {
+            || m_view->itemWorld().pathBook().contains(path)) {
             app = appearanceForNewImageModeItem(path);
         }
     }
@@ -325,7 +325,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
-        if (const WorkspaceItemState *st = m_view->hostItemStateBook().get(item->path())) {
+        if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(item->path())) {
             want = *st;
         }
     }
@@ -520,7 +520,7 @@ void DisplayPipelineController::applyLegacyPathFlipsIfNeeded(ImageItem *item, co
     }
     // Content 90°/flip/crop are materialize()'d in createItemFromImage when want is set.
     // Legacy unbaked flips only if content flags not used yet.
-    const WorkspaceItemState *st = m_view->hostItemStateBook().get(path);
+    const WorkspaceItemState *st = m_view->itemWorld().getPathState(path);
     if (!st) {
         return;
     }

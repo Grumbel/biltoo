@@ -40,7 +40,7 @@ const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
         return nullptr;
     }
     // Path map only when unbound (no session image id).
-    if (const WorkspaceItemState *st = m_itemStateBook.get(item->path())) {
+    if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {
         *fallback = *st;
         return fallback;
     }
@@ -136,7 +136,7 @@ void ImageView::rememberItemState(ImageItem *item)
         }
         // Unbound legacy tile: path map is the only store.
         WorkspaceItemState s;
-        const WorkspaceItemState *prev = m_itemStateBook.get(item->path());
+        const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path());
         if (prev) {
             s = *prev;
         } else {
@@ -156,7 +156,7 @@ void ImageView::rememberItemState(ImageItem *item)
             s.cropRotation = prev->cropRotation;
             s.cropSourceSize = prev->cropSourceSize;
         }
-        m_itemStateBook.set(item->path(), s);
+        m_itemWorld.setPathState(item->path(), s);
         return;
     }
     // Workspace / Gallery: path map is legacy placement for *unbound* tiles only.
@@ -170,7 +170,7 @@ void ImageView::rememberItemState(ImageItem *item)
         m_itemWorld.setAppearance(item->sessionId(), slot);
         return;
     }
-    m_itemStateBook.set(item->path(), captureState(item));
+    m_itemWorld.setPathState(item->path(), captureState(item));
 }
 
 
@@ -222,7 +222,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
         app = m_itemWorld.getAppearance(sid);
     }
     if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
-        if (const WorkspaceItemState *st = m_itemStateBook.get(path)) {
+        if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
             fallback = *st;
             app = &fallback;
         }

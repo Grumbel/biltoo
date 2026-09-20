@@ -1161,7 +1161,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     params.mode = m_view->galleryLayoutModeFromViewMode();
 
     GalleryLayout::pack(m_view->liveItems(), params, [this](ImageItem *item) {
-        m_view->hostItemStateBook().set(item->path(), m_view->captureState(item));
+        m_view->itemWorld().setPathState(item->path(), m_view->captureState(item));
     });
 
     const QRectF bounds = ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), margin);

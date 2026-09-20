@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1733-itemworld-path-placement.** Path-book + layout pose via ItemWorld.
+Prior: **1732**.
+
+### Change
+- setItemStateForPath / itemStateForPath → ItemWorld path APIs
+- ImageView m_itemStateBook get/set/clear → itemWorld path book
+- Workspace layout selection: setPlacement + setAppearance + setPathState
+- Gallery / DisplayPipeline / Slideshow path reads via getPathState
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1733-itemworld-path-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build
+- Thin captureState; more pose-only writes use setPlacement only
+- Phase 6 Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1732-itemworld-placement.** Stage 2 start: Placement component.
 Prior: **1731**.
 

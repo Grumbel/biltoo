@@ -232,7 +232,7 @@ void ImageView::clearWorkspace()
     pathOrderClear();
     // Path-keyed placement is legacy for unbound tiles only; drop it so a
     // project load cannot inherit stale poses from a previous session.
-    m_itemStateBook.clear();
+    m_itemWorld.pathBook().clear();
     clearClassicPath();
     // Invalidate in-flight LoadReplace so a prior Image-mode decode cannot
     // seed the empty Workspace after this wipe (first-path unbound tile).

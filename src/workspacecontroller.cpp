@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspacecontroller.h"
+#include "itemcomponents.h"
 #include <memory>
 #include <QSet>
 #include <QFileInfo>
@@ -567,10 +568,16 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
         if (!item) {
             continue;
         }
+        const WorkspaceItemState s = m_view->captureState(item);
         if (item->sessionId() != kInvalidSessionImageId) {
-            m_view->itemWorld().setAppearance(item->sessionId(), m_view->captureState(item));
+            // Layout only moves pose; setPlacement is the Stage 2 write path
+            // (dual-writes DTO pose fields). Full setAppearance keeps content
+            // fields from capture in sync for undo/filmstrip.
+            m_view->itemWorld().setPlacement(
+                item->sessionId(), ItemComponents::placementFromState(s));
+            m_view->itemWorld().setAppearance(item->sessionId(), s);
         }
-        m_view->hostItemStateBook().set(item->path(), m_view->captureState(item));
+        m_view->itemWorld().setPathState(item->path(), s);
     }
 
     m_view->updateWorkspaceSceneRect();

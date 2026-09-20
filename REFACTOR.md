@@ -950,3 +950,5 @@ Phase 1–6 rules still apply. Additions:
   `appearance().get/value/contains` for DTO lookup.
 - biltoo-1732: **Stage 2 start** — Placement component + sparse table (always
   dual-written on setAppearance); captureState path-book reads via getPathState.
+- biltoo-1733: path-book accessors via ItemWorld; layout pose via setPlacement;
+  setItemStateForPath / gallery / display / slideshow path reads through facade.

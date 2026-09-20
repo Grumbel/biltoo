@@ -328,12 +328,12 @@ public:
     /** Controller host: path-keyed placement / unbound appearance cache. */
     void setItemStateForPath(const QString &path, const WorkspaceItemState &state)
     {
-        m_itemStateBook.set(path, state);
+        m_itemWorld.setPathState(path, state);
     }
 
     const WorkspaceItemState *itemStateForPath(const QString &path) const
     {
-        return m_itemStateBook.get(path);
+        return m_itemWorld.getPathState(path);
     }
     bool hasPendingWorkspacePaths() const { return m_displayPipeline.loadGate().hasPendingWorkspacePaths(); }
     void clearPendingWorkspacePaths() { m_displayPipeline.loadGate().clearPendingWorkspacePaths(); }

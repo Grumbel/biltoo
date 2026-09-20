@@ -654,7 +654,7 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
             }
         }
     }
-    if (const WorkspaceItemState *st = m_view->hostItemStateBook().get(path)) {
+    if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(path)) {
         if (SessionAppearance::hasContentAppearance(*st)) {
             *out = *st;
             return true;

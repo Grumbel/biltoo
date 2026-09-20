@@ -306,9 +306,9 @@ int ImageView::resetContentAppearanceForTargets()
         }
         // Path map still holds content turns from prior bake/pack; captureState
         // re-merges turns==0 from m_itemStateBook.byPath and can resurrect orientation.
-        if (const WorkspaceItemState *st = m_itemStateBook.get(path)) {
+        if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
             WorkspaceItemState pathSlot = SessionAppearance::clearedContentOps(*st);
-            m_itemStateBook.set(path, pathSlot);
+            m_itemWorld.setPathState(path, pathSlot);
         }
 
         item->setContentHFlip(false);

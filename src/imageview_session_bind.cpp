@@ -191,7 +191,7 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
         item->setStackZ(m_items.size() - 1);
         return;
     }
-    if (const WorkspaceItemState *st = m_itemStateBook.get(path)) {
+    if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
         applyState(item, *st);
         return;
     }
