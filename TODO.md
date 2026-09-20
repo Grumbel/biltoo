@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1697-tu-split-includes.** Restore includes after recent imageview TU splits.
+Prior: **1696**.
+
+### Change
+- Missing includes on TUs split in 1693–1695 (ImageLoader, GalleryPackFit, QPointer,
+  PlacementLinear, GroupTransformGeometry, QToolTip, ToolPolicy, QUndoStack,
+  EdgeNavPolicy, ImageItem/ImageCache/ThumtooCache, biltoo_thread, QThreadPool,
+  QScrollBar, QGraphicsItem, QObject for controller connect)
+- `dropTilePrefetchPath` moved to public host pipeline surface (DisplayPipelineController)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1697-tu-split-includes.bundle HEAD
+```
+
+### Next
+- biltoo-build verification (full binary + pathorder-dual-model test)
+- Offscreen ImageView characterization harness
+- Then Tier 4 path-order book removal
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1696-pathorder-dual-model-char.** Dual-model path-order characterization tests.
 Prior: **1695**.
 

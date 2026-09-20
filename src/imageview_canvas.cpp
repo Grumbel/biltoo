@@ -15,6 +15,7 @@
 #include <QHash>
 #include <QPointer>
 #include <QTimer>
+#include <QUndoStack>
 
 void ImageView::setWorkspacePaths(const QStringList &paths)
 {

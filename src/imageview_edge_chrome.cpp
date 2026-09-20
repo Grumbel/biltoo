@@ -4,6 +4,8 @@
 // Image-mode edge hover zones (prev/next/gallery return).
 
 #include "imageview.h"
+#include "edgenavpolicy.h"
+#include "toolpolicy.h"
 
 int ImageView::edgeZoneWidth() const
 {

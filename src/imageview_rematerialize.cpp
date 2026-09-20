@@ -13,6 +13,10 @@
 
 #include <QImage>
 #include <QTimer>
+#include "biltoo_thread.h"
+#include <QPointer>
+#include <QThreadPool>
+#include <QMetaObject>
 
 void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
                                       const WorkspaceItemState &want,

@@ -14,6 +14,7 @@
 #include "imageitem.h"
 #include "sessionappearance.h"
 #include "thumtoocache.h"
+#include "imageloader.h"
 
 const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
                                                              WorkspaceItemState *fallback,

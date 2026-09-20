@@ -17,6 +17,8 @@
     void captureStickyPanAnchor(ImageItem *item);
     void applyImageModeFraming(ImageItem *item);
     int pathOrderOccurrences(const QString &path) const;
+    /** Drop neighbor-prefetch slot for one path (session remove / tile purge). */
+    void dropTilePrefetchPath(const QString &path);
     bool pathOrderIsEmpty() const { return m_pathOrderBook.isEmpty(); }
     int pathOrderSize() const { return m_pathOrderBook.size(); }
     QString pathOrderPathAt(int index) const { return m_pathOrderBook.pathAt(index); }

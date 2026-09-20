@@ -59,9 +59,6 @@
     QSize ensureLogicalSizeForPath(const QString &path);
 
 
-    /** Drop neighbor-prefetch slot for one path (session remove). */
-    void dropTilePrefetchPath(const QString &path);
-
     /**
      * Drop tile sessions on every live item for @p path, purge registry RAM,
      * and cancel neighbor prefetch. Use on Reload / file-replaced.

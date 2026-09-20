@@ -39,6 +39,7 @@
 #include <QGraphicsItem>
 #include <QVarLengthArray>
 #include <QTimer>
+#include <QObject>
 
 
 DisplayPipelineController::DisplayPipelineController(ImageView *view)

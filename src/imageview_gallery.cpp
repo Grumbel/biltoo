@@ -3,6 +3,8 @@
 
 #include "imageview.h"
 #include <QPainter>
+#include "imageitem.h"
+#include <QGraphicsItem>
 
 void ImageView::discardStashedGallery()
 {

@@ -13,6 +13,7 @@
 #include <QHash>
 #include <QSet>
 #include <QTimer>
+#include <QScrollBar>
 
 bool ImageView::hasPendingSessionBindForPath(const QString &path) const
 {

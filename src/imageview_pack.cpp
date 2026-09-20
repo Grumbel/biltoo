@@ -5,6 +5,7 @@
 
 #include "imageview.h"
 #include "gallerylayout.h"
+#include "gallerypackfit.h"
 
 void ImageView::scheduleGalleryStatusRefresh(int delayMs)
 {

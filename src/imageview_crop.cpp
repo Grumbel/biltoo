@@ -12,6 +12,11 @@
 #include <QPointF>
 #include <QRectF>
 #include <QString>
+#include "imageitem.h"
+#include "imagecache.h"
+#include "thumtoocache.h"
+#include "sessionappearance.h"
+#include "contentxform.h"
 
 bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
 {

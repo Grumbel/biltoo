@@ -9,6 +9,8 @@
 #include "sessionappearance.h"
 
 #include <QSet>
+#include <QPointer>
+#include <QTimer>
 
 bool ImageView::addImage(const QString &path)
 {

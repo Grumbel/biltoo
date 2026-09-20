@@ -9,6 +9,9 @@
 #include "viewframing.h"
 
 #include <QScrollBar>
+#include "toolpolicy.h"
+#include <QPointer>
+#include <QTimer>
 
 qreal ImageView::viewScale() const
 {
