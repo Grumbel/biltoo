@@ -1168,6 +1168,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1933: free-form Gallery pose snapshot is Placement by session id.
 - biltoo-1934: Gallery pack after-callback is Placement-only (no captureState).
 - biltoo-1935: captureState prefers ItemWorld sparse tables for bound ids.
+- biltoo-1936: rememberItemState setAppearance-only; crop undo uses captureState alone.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

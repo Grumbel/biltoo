@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1936-remember-crop-authority.** rememberItemState / crop undo authority cleanup.
+Prior: **1935**.
+
+### Change
+- `rememberItemState` bound path: `setAppearance` only (Placement dual-write included)
+- Crop undo after-state: `captureState` alone (no `fillSessionCropFromItem` overwrite)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1936-remember-crop-authority-516d734.bundle HEAD
+```
+Requires tip **1935** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ImageItem live crop/flip demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1935-capture-state-sparse-authority.** captureState prefers ItemWorld tables.
 Prior: **1934**.
 

@@ -188,8 +188,7 @@ void ImageView::rememberItemState(ImageItem *item)
         slot.sessionId = item->sessionId();
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
-        m_itemWorld.setPlacement(item->sessionId(),
-                                 ItemComponents::placementFromState(slot));
+        // setAppearance dual-writes sparse tables including Placement.
         m_itemWorld.setAppearance(item->sessionId(), slot);
         return;
     }

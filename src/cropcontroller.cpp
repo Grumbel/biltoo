@@ -257,10 +257,8 @@ void CropController::pushCropAppearanceUndo(ImageItem *item, const QString &text
     if (!m_view->hostUndoStack() || !item || !session().isEnterValid()) {
         return;
     }
-    WorkspaceItemState afterSt = m_view->captureState(item);
-    CropSession::fillSessionCropFromItem(&afterSt, item);
-    // captureState pulls cropRotation from appearance
-    // (recordSessionCrop + commitItemSessionEdit).
+    // captureState prefers ItemWorld Crop table after storeCropAppearance.
+    const WorkspaceItemState afterSt = m_view->captureState(item);
     m_view->hostUndoStack()->push(new CropAppearanceCommand(
         m_view, item, session().enterSourceRef(), item->sourceImage().copy(),
         session().enterStateRef(), afterSt, text));
