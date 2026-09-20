@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1762-item-interact-private.** ItemInteractSession members private.
+Prior: **1761**.
+
+### Change
+- `ItemInteractSession` is a class with private data members
+- Same encapsulation as GroupTransformSession (accessor / begin* / end* / clear only)
+- `HandlePressScratch` remains a public value struct
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1762-item-interact-private.bundle HEAD
+```
+
+### Next
+- biltoo-build + single-item move/scale/rotate smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1761-group-session-private.** GroupTransformSession members private.
 Prior: **1760**.
 

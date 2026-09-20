@@ -34,20 +34,10 @@ struct HandlePressScratch {
  *
  * Phase 7 Stage 2: pose press-anchor is Placement (dragStartPlacement);
  * full WorkspaceItemState remains for geometry undo (content + pose).
+ * Data members private — use accessors / begin* / end* / clear.
  */
-struct ItemInteractSession {
-    bool rotating = false;
-    ImageItem *rotateItem = nullptr;
-    /** Pointer angle at press (scene); mid-drag delta uses this with Placement.rotation. */
-    qreal rotateStartAngle = 0.0;
-
-    ImageItem *handleDragItem = nullptr;
-    HandlePressScratch handlePress;
-
-    ImageItem *dragItem = nullptr;
-    WorkspaceItemState dragStartState;
-    ItemComponents::Placement dragStartPlacement;
-
+class ItemInteractSession {
+public:
     void clearRotate()
     {
         rotating = false;
@@ -155,6 +145,19 @@ struct ItemInteractSession {
             clearHandleDrag();
         }
     }
+
+private:
+    bool rotating = false;
+    ImageItem *rotateItem = nullptr;
+    /** Pointer angle at press (scene); mid-drag delta uses this with Placement.rotation. */
+    qreal rotateStartAngle = 0.0;
+
+    ImageItem *handleDragItem = nullptr;
+    HandlePressScratch handlePress;
+
+    ImageItem *dragItem = nullptr;
+    WorkspaceItemState dragStartState;
+    ItemComponents::Placement dragStartPlacement;
 };
 
 #endif // ITEMINTERACTSESSION_H

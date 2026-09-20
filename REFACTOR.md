@@ -1007,3 +1007,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1760: GroupTransformSession dragStartStateAt/hasDragItems; release undo and
   canvas-focus use accessors.
 - biltoo-1761: GroupTransformSession data members private (accessor-only API).
+- biltoo-1762: ItemInteractSession class with private members (parity with group session).
