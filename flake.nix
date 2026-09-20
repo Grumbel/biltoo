@@ -19,7 +19,17 @@
           (final: prev: {
             ccacheWrapper = prev.ccacheWrapper.override {
               extraConfig = ''
-                # Prefer an explicit CCACHE_DIR (host shared cache + sandbox path).
+                # nix build: HOME is /homeless-shelter (not writable). Prefer a
+                # host cache mounted via nix.conf extra-sandbox-paths; else use
+                # the ephemeral build dir (works, but no cross-build hits).
+                if [ -z "''${CCACHE_DIR:-}" ]; then
+                  for _cand in /var/cache/ccache /nix/var/cache/ccache; do
+                    if mkdir -p "$_cand" 2>/dev/null && [ -w "$_cand" ]; then
+                      export CCACHE_DIR="$_cand"
+                      break
+                    fi
+                  done
+                fi
                 if [ -z "''${CCACHE_DIR:-}" ]; then
                   if [ -n "''${NIX_BUILD_TOP:-}" ]; then
                     export CCACHE_DIR="$NIX_BUILD_TOP/.ccache"
@@ -57,6 +67,63 @@
         # these, nested CMake configure silently disables optional backends.
         thumtooBuildInputs = thumtoo.lib.mkBuildInputs pkgs;
       };
+
+      ccacheCheck = pkgs.writeShellScriptBin "biltoo-ccache-check" ''
+        set -euo pipefail
+        echo "biltoo-ccache-check — nix build ccache readiness"
+        echo ""
+        echo "What nix build needs for *persistent* hits across builds:"
+        echo "  1) A host directory writable by the Nix builder user"
+        echo "  2) That path listed in nix.conf extra-sandbox-paths"
+        echo "  3) (optional) ownership so the builder can write"
+        echo ""
+        echo "Recommended:"
+        echo "  sudo mkdir -p /var/cache/ccache"
+        echo "  sudo chown \"$USER\":nixbld /var/cache/ccache   # or chmod 1777"
+        echo "  # add to /etc/nix/nix.conf (or ~/.config/nix/nix.conf):"
+        echo "  extra-sandbox-paths = /var/cache/ccache"
+        echo "  # then restart the daemon: sudo systemctl restart nix-daemon"
+        echo ""
+        for cand in /var/cache/ccache /nix/var/cache/ccache; do
+          printf "  %s: " "$cand"
+          if [ ! -e "$cand" ]; then
+            echo "missing"
+          elif [ ! -d "$cand" ]; then
+            echo "not a directory"
+          elif [ -w "$cand" ]; then
+            echo "exists, writable OK"
+          else
+            echo "exists, NOT writable (chown/chmod)"
+          fi
+        done
+        echo ""
+        echo "nix.conf extra-sandbox-paths:"
+        if command -v nix >/dev/null 2>&1 && nix show-config >/dev/null 2>&1; then
+          _esp=$(nix show-config 2>/dev/null | sed -n 's/^extra-sandbox-paths = //p' | head -n1 || true)
+          if [ -z "$_esp" ]; then
+            echo "  (empty — host cache will NOT be visible inside the sandbox)"
+            echo "  → nix build falls back to \$NIX_BUILD_TOP/.ccache (ephemeral)"
+          else
+            echo "  $_esp"
+            case " $_esp " in
+              *"/var/cache/ccache"*|*" /nix/var/cache/ccache "*)
+                echo "  → shared path listed; nix build should use host cache if writable"
+                ;;
+              *)
+                echo "  → no /var/cache/ccache or /nix/var/cache/ccache entry"
+                echo "  → add one and restart nix-daemon"
+                ;;
+            esac
+          fi
+        else
+          echo "  (nix show-config not available)"
+        fi
+        echo ""
+        echo "Without a shared path: nix build still succeeds (ccacheStdenv +"
+        echo "ephemeral \$NIX_BUILD_TOP/.ccache) but cache dies with the build."
+        echo "With a shared path: recompile hits accumulate across nix builds."
+      '';
+
     in
     {
       packages.${system} = {
@@ -67,13 +134,25 @@
         #   gdb -ex "set debug-file-directory $(nix build --no-link --print-out-paths .#debug)/lib/debug" \
         #       $(nix build --no-link --print-out-paths)/bin/biltoo
         debug = biltoo.debug;
+        # Diagnose persistent nix-build ccache (extra-sandbox-paths + host dir).
+        #   nix run .#ccache-check
+        ccache-check = ccacheCheck;
       };
 
-      apps.${system}.default = {
-        type = "app";
-        program = "${biltoo}/bin/biltoo";
-        meta = {
-          description = "Biltoo — classic Qt image viewer (Image, Gallery, Workspace)";
+      apps.${system} = {
+        default = {
+          type = "app";
+          program = "${biltoo}/bin/biltoo";
+          meta = {
+            description = "Biltoo — classic Qt image viewer (Image, Gallery, Workspace)";
+          };
+        };
+        ccache-check = {
+          type = "app";
+          program = "${ccacheCheck}/bin/biltoo-ccache-check";
+          meta = {
+            description = "Check nix build ccache host dir + extra-sandbox-paths";
+          };
         };
       };
 

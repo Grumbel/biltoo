@@ -103,10 +103,18 @@ stdenv.mkDerivation (finalAttrs: {
   cmakeBuildType = "RelWithDebInfo";
   separateDebugInfo = true;
 
-  # ccacheStdenv: ensure a writable cache before cmake probes the compiler.
-  # (Wrapper overlay also sets this; phase keeps local/default.nix builds safe.)
+  # ccacheStdenv: writable CCACHE_DIR before cmake probes the compiler.
+  # Prefer host dirs mounted via extra-sandbox-paths for persistent nix-build hits.
   prePhases = [ "ccacheDirPhase" ];
   ccacheDirPhase = ''
+    if [ -z "''${CCACHE_DIR:-}" ]; then
+      for _cand in /var/cache/ccache /nix/var/cache/ccache; do
+        if mkdir -p "$_cand" 2>/dev/null && [ -w "$_cand" ]; then
+          export CCACHE_DIR="$_cand"
+          break
+        fi
+      done
+    fi
     if [ -z "''${CCACHE_DIR:-}" ]; then
       if [ -n "''${NIX_BUILD_TOP:-}" ]; then
         export CCACHE_DIR="$NIX_BUILD_TOP/.ccache"
@@ -115,6 +123,14 @@ stdenv.mkDerivation (finalAttrs: {
       fi
     fi
     mkdir -p "$CCACHE_DIR"
+    _mode=shared-host
+    case "$CCACHE_DIR" in
+      "$NIX_BUILD_TOP"/*) _mode=ephemeral ;;
+    esac
+    echo "biltoo ccache: dir=$CCACHE_DIR mode=$_mode"
+    if [ "$_mode" = ephemeral ]; then
+      echo "biltoo ccache: no hits across nix builds — run: nix run .#ccache-check"
+    fi
   '';
 
   # Nixpkgs Qt/KDE setup hooks inject many -DKDE_INSTALL_* and related cmake
