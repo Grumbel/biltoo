@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1689-framing-background-tu.** Split zoom/framing and background out of view.cpp.
+Prior: **1688**.
+
+### Change
+- New `imageview_framing.cpp` — zoom, fit/fill, sticky zoom/pan, image-mode framing
+- New `imageview_background.cpp` — view/workspace background color and pattern
+- `imageview_view.cpp` ~753 → ~171 lines (tool, chrome flags, logical size, currentPath)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1689-framing-background-tu.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Characterization before Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1688-slideshow-forwards-pack-slim.** Slideshow thin-forwards TU; slim pack.cpp includes.
 Prior: **1687**.
 

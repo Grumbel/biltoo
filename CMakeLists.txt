@@ -225,6 +225,8 @@ add_executable(biltoo
   src/imageview_slideshow_forwards.cpp
   src/tile_load_coordinator.cpp
   src/imageview_view.cpp
+  src/imageview_framing.cpp
+  src/imageview_background.cpp
   src/imageview_status.cpp
   src/imageview_transform.cpp
   src/imageview_input.cpp
