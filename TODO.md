@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1781-tilelod-item-bag.** Stage 2: tile LOD state bag on ImageItem.
+Prior: **1780**.
+
+### Change
+- `tilelod::ItemBag` (`src/tilelod/tile_lod_item_bag.hpp`): controller + suppress /
+  plan scratch / graded cache in one struct
+- `ImageItem::m_tileLod` is the bag; `m_tileLod.controller` is the session glue
+- `resetSession()` centralizes drop; behaviour unchanged
+- Prepares moving the bag under DisplayPipelineController
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1781-tilelod-item-bag.bundle HEAD
+```
+
+### Next
+- Key ItemBag from DisplayPipelineController (or ItemWorld) by item/id
+- Offscreen ImageView characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1780-imageitem-tilelod-tu.** Stage 2: tile LOD methods own TU.
 Prior: **1779**.
 

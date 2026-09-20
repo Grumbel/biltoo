@@ -21,7 +21,7 @@
 #include <memory>
 
 #include "tilelod/tile_types.hpp"
-namespace tilelod { class TileLodController; }
+#include "tilelod/tile_lod_item_bag.hpp"
 
 /**
  * A single image on the workspace. Owns its pixmap, source pixels (for colour
@@ -322,7 +322,7 @@ public:
      * Used while crop draft freezes the sample (TILE_LOD_RUNTIME.md).
      */
     void setTileLodSuppressed(bool on);
-    bool tileLodSuppressed() const { return m_tileLodSuppressed; }
+    bool tileLodSuppressed() const { return m_tileLod.suppressed; }
     /** True when at least one grid tile has arrived. */
     bool tileLodActive() const;
     /** Succeeded tiles in global path RAM (registry), even without a controller. */
@@ -383,20 +383,8 @@ private:
     QList<Handle> activeHandles() const;
 
     QString m_path;
-    /** Deep-zoom grid tiles (Image mode); null until first need. */
-    std::unique_ptr<tilelod::TileLodController> m_tileLod;
-    /** Crop-draft (and similar) freeze: no tile requests or paint. */
-    bool m_tileLodSuppressed = false;
-    bool m_tileLodRepaintQueued = false;
-    /** false after destruction — pending tickTileLod singleShot must not touch this. */
-    std::shared_ptr<bool> m_tileLodAlive{std::make_shared<bool>(true)};
-    double m_tileLodLastDpc = -1.0;
-    QRectF m_tileLodLastVisSource;
-    /** Last tile plan generation that triggered update() (avoid 250ms repaint spam). */
-    std::uint64_t m_tileLodLastUpdateGen = 0;
-    /** QImage cells for paint; cost ≈ KiB of rgba. Evicts LRU instead of full clear. */
-    mutable QCache<quint64, QImage> m_tileGradedCache;
-    mutable quint64 m_tileGradeSig = 0;
+    /** Deep-zoom grid tiles + plan/paint scratch (Stage 2 bag; demote later). */
+    tilelod::ItemBag m_tileLod;
     SessionImageId m_sessionId = kInvalidSessionImageId;
     int m_sessionIndex = -1; // list order cache only
     qint64 m_displaySurfaceId = 0;

@@ -47,10 +47,10 @@ ImageItem::~ImageItem()
 {
     // Invalidate pending QTimer::singleShot from tickTileLod (queued on the
     // scene/app, not tied to this QGraphicsItem lifetime).
-    if (m_tileLodAlive) {
-        *m_tileLodAlive = false;
+    if (m_tileLod.alive) {
+        *m_tileLod.alive = false;
     }
-    m_tileLodRepaintQueued = false;
+    m_tileLod.repaintQueued = false;
 }
 
 
@@ -62,17 +62,17 @@ void ImageItem::setPath(const QString &path)
     m_path = path;
     // Kill pending tickTileLod singleShot so it cannot update() after this
     // item now represents a different file (stale path identity).
-    if (m_tileLodAlive) {
-        *m_tileLodAlive = false;
+    if (m_tileLod.alive) {
+        *m_tileLod.alive = false;
     }
-    m_tileLodAlive = std::make_shared<bool>(true);
+    m_tileLod.alive = std::make_shared<bool>(true);
     // Destroy session only — SharedPathTiles stay in TileLodRegistry (1212).
-    m_tileLod.reset();
-    m_tileLodLastUpdateGen = 0;
-    // Do not clear m_tileLodSuppressed: crop-draft owns it across path binds.
-    m_tileLodRepaintQueued = false;
-    m_tileLodLastDpc = -1.0;
-    m_tileLodLastVisSource = QRectF();
+    m_tileLod.controller.reset();
+    m_tileLod.lastUpdateGen = 0;
+    // Do not clear m_tileLod.suppressed: crop-draft owns it across path binds.
+    m_tileLod.repaintQueued = false;
+    m_tileLod.lastDpc = -1.0;
+    m_tileLod.lastVisSource = QRectF();
     clearTileGradedCache();
     // Prefer this path under global LRU when the user navigates back soon.
     tilelod::TileLodRegistry::instance().touch(m_path);

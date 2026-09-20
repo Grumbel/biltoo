@@ -28,16 +28,7 @@
 
 void ImageItem::dropTileLodSession()
 {
-    if (m_tileLodAlive) {
-        *m_tileLodAlive = false;
-    }
-    m_tileLodAlive = std::make_shared<bool>(true);
-    m_tileLod.reset();
-    m_tileLodLastUpdateGen = 0;
-    m_tileLodRepaintQueued = false;
-    m_tileLodLastDpc = -1.0;
-    m_tileLodLastVisSource = QRectF();
-    clearTileGradedCache();
+    m_tileLod.resetSession();
 }
 
 void ImageItem::invalidateTilePathRam()
@@ -102,37 +93,37 @@ static quint64 colorAdjustSignature(const ColorAdjustments &g)
 
 void ImageItem::clearTileGradedCache() const
 {
-    m_tileGradedCache.clear();
-    m_tileGradeSig = 0;
+    m_tileLod.gradedCache.clear();
+    m_tileLod.gradeSig = 0;
 }
 
 QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
                                     ColorAdjustments const &grade) const
 {
-    if (!m_tileLod || !m_tileLod->session()) {
+    if (!m_tileLod.controller || !m_tileLod.controller->session()) {
         return {};
     }
-    tilelod::CacheEntry const *e = m_tileLod->session()->cache().find(key);
+    tilelod::CacheEntry const *e = m_tileLod.controller->session()->cache().find(key);
     if (!e || e->state != tilelod::TileState::Succeeded || !e->bitmap.valid()) {
         return {};
     }
     // Cache QImage conversion for identity and graded alike. Identity used to
     // re-copy every rgba8 cell on every paint frame (256²×4 per tile).
     const quint64 sig = colorAdjustSignature(grade);
-    if (sig != m_tileGradeSig) {
-        m_tileGradedCache.clear();
-        m_tileGradeSig = sig;
+    if (sig != m_tileLod.gradeSig) {
+        m_tileLod.gradedCache.clear();
+        m_tileLod.gradeSig = sig;
     }
     // ~96 MiB of rgba cell images; LRU eviction instead of nuke-at-256.
     constexpr int kGradedCacheMaxKiB = 96 * 1024;
-    if (m_tileGradedCache.maxCost() < kGradedCacheMaxKiB) {
-        m_tileGradedCache.setMaxCost(kGradedCacheMaxKiB);
+    if (m_tileLod.gradedCache.maxCost() < kGradedCacheMaxKiB) {
+        m_tileLod.gradedCache.setMaxCost(kGradedCacheMaxKiB);
     }
     // Pack scale,x,y into one key — avoid QString alloc per cell per paint.
     const quint64 ck = (static_cast<quint64>(static_cast<uint32_t>(key.scale)) << 42)
                        | (static_cast<quint64>(static_cast<uint32_t>(key.x)) << 21)
                        | static_cast<quint64>(static_cast<uint32_t>(key.y));
-    if (const QImage *hit = m_tileGradedCache.object(ck)) {
+    if (const QImage *hit = m_tileLod.gradedCache.object(ck)) {
         return *hit; // QImage is implicitly shared
     }
     QImage img = tilelod::tile_bitmap_to_qimage(e->bitmap);
@@ -144,7 +135,7 @@ QImage ImageItem::resolveGradedTile(tilelod::TileKey const &key,
     }
     const int costKiB = ImageCache::rgbaCostKiB(img);
     auto *stored = new QImage(std::move(img));
-    m_tileGradedCache.insert(ck, stored, costKiB);
+    m_tileLod.gradedCache.insert(ck, stored, costKiB);
     return *stored;
 }
 
@@ -160,22 +151,22 @@ QSize ImageItem::tileNativeSize() const
 
 void ImageItem::setTileLodSuppressed(bool on)
 {
-    if (m_tileLodSuppressed == on) {
+    if (m_tileLod.suppressed == on) {
         return;
     }
-    m_tileLodSuppressed = on;
-    if (on && m_tileLod) {
+    m_tileLod.suppressed = on;
+    if (on && m_tileLod.controller) {
         // Drop private session so paint cannot draw stale cells over the
         // crop-draft full frame; shared path cache is left intact.
-        m_tileLod.reset();
-        m_tileLodLastUpdateGen = 0;
+        m_tileLod.controller.reset();
+        m_tileLod.lastUpdateGen = 0;
         clearTileGradedCache();
     }
 }
 
 bool ImageItem::tileLodWanted() const
 {
-    if (m_tileLodSuppressed || m_path.isEmpty() || !ThumtooCache::isAvailable()) {
+    if (m_tileLod.suppressed || m_path.isEmpty() || !ThumtooCache::isAvailable()) {
         return false;
     }
     // Durable tiles are a *speed* optimization (Store hits), not a requirement.
@@ -248,24 +239,24 @@ void ImageItem::prepareTileLodPlan()
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return;
     }
-    if (!m_tileLod) {
-        m_tileLod = std::make_unique<tilelod::TileLodController>();
-        m_tileLod->setPath(m_path);
-    } else if (m_tileLod->path() != m_path) {
-        m_tileLod->setPath(m_path);
+    if (!m_tileLod.controller) {
+        m_tileLod.controller = std::make_unique<tilelod::TileLodController>();
+        m_tileLod.controller->setPath(m_path);
+    } else if (m_tileLod.controller->path() != m_path) {
+        m_tileLod.controller->setPath(m_path);
     }
     // Never plan against a controller bound to another path (global cache is
     // path-keyed; wrong bind would paint retained tiles for the wrong file).
-    if (!m_tileLod || m_tileLod->path() != m_path) {
-        m_tileLod.reset();
+    if (!m_tileLod.controller || m_tileLod.controller->path() != m_path) {
+        m_tileLod.controller.reset();
         return;
     }
     // Retained path RAM: first plan after rebind must not skip set_viewport
     // (lastDpc/vis still describe the previous file).
-    if (m_tileLod->hasRetainedTiles() && m_tileLodLastUpdateGen == 0
-        && m_tileLodLastDpc > 0.0) {
-        m_tileLodLastDpc = -1.0;
-        m_tileLodLastVisSource = QRectF();
+    if (m_tileLod.controller->hasRetainedTiles() && m_tileLod.lastUpdateGen == 0
+        && m_tileLod.lastDpc > 0.0) {
+        m_tileLod.lastDpc = -1.0;
+        m_tileLod.lastVisSource = QRectF();
     }
     // Tile grid is always full native (source) size.
     // Gallery: durable min_scale floors the plan (no encode-on-miss budget).
@@ -276,13 +267,13 @@ void ImageItem::prepareTileLodPlan()
         ? 0
         : ThumtooCache::durableTileMinScale(m_path);
     const quint64 genBefore =
-        m_tileLod->session() ? m_tileLod->session()->generation() : 0;
-    m_tileLod->setContentSize(native.width(), native.height(), minScale);
+        m_tileLod.controller->session() ? m_tileLod.controller->session()->generation() : 0;
+    m_tileLod.controller->setContentSize(native.width(), native.height(), minScale);
     // min_scale lower (1230) bumps generation but dpc/vis may be unchanged —
     // clear the skip cache so updateViewport re-plans at the new floor.
-    if (m_tileLod->session()
-        && m_tileLod->session()->generation() != genBefore) {
-        m_tileLodLastDpc = -1.0;
+    if (m_tileLod.controller->session()
+        && m_tileLod.controller->session()->generation() != genBefore) {
+        m_tileLod.lastDpc = -1.0;
     }
 
     const qreal dpc = tileDevicePerContent();
@@ -308,34 +299,34 @@ void ImageItem::prepareTileLodPlan()
     // Skip set_viewport when density and visible region are unchanged — paint
     // runs this every frame while tiles stream in; replanning is pure waste.
     // Progressive climb advances in TileSession::pump/issue (tick path), not here.
-    if (m_tileLod->session()
-        && m_tileLodLastDpc > 0.0
-        && qAbs(dpc - m_tileLodLastDpc) < 1e-4
-        && qAbs(visSource.x() - m_tileLodLastVisSource.x()) < 0.5
-        && qAbs(visSource.y() - m_tileLodLastVisSource.y()) < 0.5
-        && qAbs(visSource.width() - m_tileLodLastVisSource.width()) < 0.5
-        && qAbs(visSource.height() - m_tileLodLastVisSource.height()) < 0.5) {
+    if (m_tileLod.controller->session()
+        && m_tileLod.lastDpc > 0.0
+        && qAbs(dpc - m_tileLod.lastDpc) < 1e-4
+        && qAbs(visSource.x() - m_tileLod.lastVisSource.x()) < 0.5
+        && qAbs(visSource.y() - m_tileLod.lastVisSource.y()) < 0.5
+        && qAbs(visSource.width() - m_tileLod.lastVisSource.width()) < 0.5
+        && qAbs(visSource.height() - m_tileLod.lastVisSource.height()) < 0.5) {
         return;
     }
-    m_tileLodLastDpc = dpc;
-    m_tileLodLastVisSource = visSource;
+    m_tileLod.lastDpc = dpc;
+    m_tileLod.lastVisSource = visSource;
     // Soft is continuous base; only set once (set_has_lqip no-ops on same value).
-    m_tileLod->setHasLqip(false);
+    m_tileLod.controller->setHasLqip(false);
     // Prefetch margin in content pixels: ~one tile side of *screen* space
     // (256 device px). Enough to absorb small pans without issuing a second
     // ring of cells; not a full off-screen ring (that multiplies issue work).
     const double margin = 256.0 / qMax(1e-6, dpc);
-    m_tileLod->updateViewport(visSource, dpc, margin);
+    m_tileLod.controller->updateViewport(visSource, dpc, margin);
     // Completions arrive off the GUI; without a wake, pump never runs until the
     // next pan/scroll and new tiles never repaint (ImageView "stuck coarse").
-    if (m_tileLod->session()) {
-        std::shared_ptr<bool> alive = m_tileLodAlive;
-        m_tileLod->session()->set_wake([this, alive]() {
+    if (m_tileLod.controller->session()) {
+        std::shared_ptr<bool> alive = m_tileLod.alive;
+        m_tileLod.controller->session()->set_wake([this, alive]() {
             QTimer::singleShot(0, QCoreApplication::instance(), [this, alive]() {
-                if (!alive || !*alive || !m_tileLod) {
+                if (!alive || !*alive || !m_tileLod.controller) {
                     return;
                 }
-                const int applied = m_tileLod->tick(12);
+                const int applied = m_tileLod.controller->tick(12);
                 Q_UNUSED(applied);
                 update();
                 if (scene()) {
@@ -376,54 +367,54 @@ void ImageItem::tickTileLod(int budget)
         setCacheMode(QGraphicsItem::NoCache);
     }
     prepareTileLod();
-    if (!m_tileLod) {
+    if (!m_tileLod.controller) {
         return;
     }
-    const int applied = m_tileLod->tick(budget);
+    const int applied = m_tileLod.controller->tick(budget);
     const std::uint64_t gen =
-        m_tileLod->session() ? m_tileLod->session()->generation() : 0;
+        m_tileLod.controller->session() ? m_tileLod.controller->session()->generation() : 0;
     // Repaint only when tiles actually landed — gen-only changes every pan
     // queued a singleShot(0) storm (100% CPU, still LQIP).
     if (applied > 0) {
-        m_tileLodLastUpdateGen = gen;
+        m_tileLod.lastUpdateGen = gen;
         if (!m_interactive) {
             setCacheMode(QGraphicsItem::NoCache);
             // Keep LQIP pixmap until paint draws tiles over it — clearing
             // caused temporary disappear (blank cells while plan catches up).
         }
-        if (!m_tileLodRepaintQueued) {
-            m_tileLodRepaintQueued = true;
+        if (!m_tileLod.repaintQueued) {
+            m_tileLod.repaintQueued = true;
             QGraphicsScene *sc = scene();
             QObject *ctx = sc ? static_cast<QObject *>(sc)
                               : static_cast<QObject *>(QCoreApplication::instance());
-            std::shared_ptr<bool> alive = m_tileLodAlive;
+            std::shared_ptr<bool> alive = m_tileLod.alive;
             QTimer::singleShot(0, ctx, [this, sc, alive]() {
                 if (!alive || !*alive) {
                     return;
                 }
                 if (sc && scene() != sc) {
-                    m_tileLodRepaintQueued = false;
+                    m_tileLod.repaintQueued = false;
                     return;
                 }
-                m_tileLodRepaintQueued = false;
+                m_tileLod.repaintQueued = false;
                 update();
             });
         }
-    } else if (gen != m_tileLodLastUpdateGen) {
-        m_tileLodLastUpdateGen = gen;
+    } else if (gen != m_tileLod.lastUpdateGen) {
+        m_tileLod.lastUpdateGen = gen;
         // Plan-only change (pan): cheap mark, no pixmap clear.
         update();
-    } else if (m_tileLodLastUpdateGen == 0 && m_tileLod->hasRetainedTiles()) {
+    } else if (m_tileLod.lastUpdateGen == 0 && m_tileLod.controller->hasRetainedTiles()) {
         // A→B→A: Succeeded tiles already in shared cache — pump applied 0 but
         // paint must run once so retained cells appear without waiting for issue.
-        m_tileLodLastUpdateGen = gen ? gen : 1;
+        m_tileLod.lastUpdateGen = gen ? gen : 1;
         update();
     }
 }
 
 bool ImageItem::tileLodActive() const
 {
-    return m_tileLod && m_tileLod->enabled() && m_tileLod->hasAnyTile();
+    return m_tileLod.controller && m_tileLod.controller->enabled() && m_tileLod.controller->hasAnyTile();
 }
 
 bool ImageItem::tileLodHasPathRam() const
@@ -431,7 +422,7 @@ bool ImageItem::tileLodHasPathRam() const
     if (m_path.isEmpty()) {
         return false;
     }
-    if (m_tileLod && m_tileLod->hasRetainedTiles()) {
+    if (m_tileLod.controller && m_tileLod.controller->hasRetainedTiles()) {
         return true;
     }
     return tilelod::TileLodRegistry::instance().has_succeeded_tiles(m_path);
@@ -439,7 +430,7 @@ bool ImageItem::tileLodHasPathRam() const
 
 bool ImageItem::tileLodViewportCovered() const
 {
-    return m_tileLod && m_tileLod->viewportFullyCovered();
+    return m_tileLod.controller && m_tileLod.controller->viewportFullyCovered();
 }
 
 QString ImageItem::tileLodDebugLine() const
@@ -452,14 +443,14 @@ QString ImageItem::tileLodDebugLine() const
     }
     const int pathRam = static_cast<int>(
         tilelod::TileLodRegistry::instance().path_succeeded_count(m_path));
-    if (!m_tileLod || !m_tileLod->session()) {
+    if (!m_tileLod.controller || !m_tileLod.controller->session()) {
         return QStringLiteral("%1 wanted=1 session=0 pathRam=%2 disp=%3")
             .arg(name)
             .arg(pathRam)
             .arg(displayPixelLongEdge());
     }
     const tilelod::TileSession::DebugSnapshot s =
-        m_tileLod->session()->debug_snapshot();
+        m_tileLod.controller->session()->debug_snapshot();
     return QStringLiteral(
                "%1 tgt=%2 des=%3 max=%4 vis=%5 exact=%6 inflight=%7 "
                "cacheOk=%8 hold=%9 reached=%10 gen=%11 pathRam=%12 disp=%13")

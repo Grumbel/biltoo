@@ -1167,10 +1167,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
         if (tileLodWanted() && !navHot) {
             prepareTileLodPlan();
-            if (m_tileLod && m_tileLod->path() == m_path && m_tileLod->session()) {
+            if (m_tileLod.controller && m_tileLod.controller->path() == m_path && m_tileLod.controller->session()) {
                 const QImage under = hasDecodedPixels() ? m_source
                     : (!m_preview.isNull() ? m_preview : QImage());
-                tilelod::DrawPlan plan = m_tileLod->session()->draw_plan();
+                tilelod::DrawPlan plan = m_tileLod.controller->session()->draw_plan();
                 const QSize native = tileNativeSize();
                 const ContentXform::Value x = tileContentXform();
                 const QPointF off = offset();
@@ -1335,7 +1335,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
                 const bool smooth = tilePaintNeedsSmooth(
                     tileDevicePerContent(),
-                    m_tileLod->session()->target_scale(), plan);
+                    m_tileLod.controller->session()->target_scale(), plan);
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, smooth);
 
                 for (const TilePaintCmd &pc : paintCmds) {
@@ -1350,7 +1350,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     // Overlay still uses plan dests (source space); rebuild a
                     // display-space plan for debug when needed — source overlay
                     // is approximate under orient.
-                    paintTilePlanDebugOverlay(painter, m_tileLod->session(), plan,
+                    paintTilePlanDebugOverlay(painter, m_tileLod.controller->session(), plan,
                                              contentRect());
                 }
                 painter->restore();
