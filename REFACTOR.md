@@ -714,9 +714,12 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
    residual host helpers in `imageview_load.cpp` (~60 lines).
 3. **Tier 6 remainder** — Workspace/Gallery try* stay until product need;
    transform chrome stays on ImageView (AGENTS.md).
-4. **Metrics** — `imageview.h` ~916 lines after host ops .inc (biltoo-1667);
-   public method count still high. Host accessors from Tiers 1–5 inflate the
-   surface; further narrowing optional once Tier 4 lands.
+4. **Metrics** — `imageview.h` ~931 lines at 0c4c246; `imageview*.cpp` ~12k
+   (down from ~21k at Phase 6 start). Host accessors from Tiers 1–5 still inflate
+   the public surface; further narrowing optional once Tier 4 lands.
+5. **Beyond Phase 6** — per-id component ownership and demoting `ImageItem` from
+   a parallel appearance store are **Phase 7** (ItemWorld), not more Phase 6
+   controller extraction. See Phase 7 below.
 
 ### Progress log (Phase 6)
 
@@ -787,3 +790,141 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - Tier 6g: **done** (biltoo-1662) — Delete/Backspace selection on Gallery/Workspace controllers.
 - Tier 6h: **done** (biltoo-1665) — Image session nav keys + Workspace shear keys on controllers.
 - Tier 6i: **done** (biltoo-1666) — Image edge chrome press on ImageController; more input forwards TU.
+
+## Phase 7 — ItemWorld / data-oriented components (proposed)
+
+Phase 6 largely landed: controllers own behaviour, pure geometry helpers exist,
+characterization tests expanded (14 CTest binaries including dual-model and
+session-gallery-crop-scenario). Measured at **0c4c246** (tip 1721):
+
+| Metric | Phase 6 start (8427e69) | Now (0c4c246) |
+|--------|------------------------:|--------------:|
+| `imageview*.cpp` lines | ~21,043 | ~12,077 |
+| `imageview.h` | 1,924 | ~931 |
+| Controllers | none | Slideshow / Crop / Attention / DisplayPipeline / Gallery / Workspace / Image |
+| Test binaries | 7 | 14 |
+
+That changes what “go ECS” means. The tree is already **~70% ECS-shaped by
+accident** — not Bevy, not a rewrite. Data-oriented here means: **one owner per
+fact**, flat keyed tables, stateless transforms. Pitch is **single source of
+truth**, not cache locality or SoA speed.
+
+### Already present (map to ECS vocabulary)
+
+| ECS concept | What exists today |
+|-------------|-------------------|
+| **Entity id** | `SessionImageId` — normative per IDENTITY.md |
+| **Component stores** | `SessionAppearanceStore` (`QHash<SessionImageId, WorkspaceItemState>`), `PathItemStateBook`, `ImageSizeBook`, `GallerySoftBook`, `PendingItemAppearanceBook`, DisplaySurface bindings |
+| **Systems** | `ContentXform`, `CropGeometry`, `GalleryLayout`, `AttentionGeometry`, `PlacementLinear`, `ItemFrameGeometry`, `HudModel` — largely stateless functions over data |
+
+### The two structural problems left
+
+1. **`WorkspaceItemState` is a fat god-component.** One struct holds identity,
+   Workspace pose, content bake flags, crop, attention, and color. Optional
+   sub-records use bool flags (`hasCrop`, `hasAttention`) plus duplicated
+   flip fields (`hFlip` / `contentHFlip`). Optional-by-bool inside a fat
+   struct is exactly what component **presence** replaces. `syncAttentionPrimary()`
+   exists only to keep primary and list copies aligned inside the same struct.
+
+2. **The same per-item facts live in three places.**
+   - `SessionAppearanceStore` keyed by id
+   - `PathItemStateBook` keyed by path (Workspace unbound / placement cache)
+   - `ImageItem` members (scale, shear, rotation, session crop rect, color,
+     content flips, press-anchor scratch, tile-LOD cache, …)
+
+   Gluing those copies is why `captureState` appears widely (dozens of call
+   sites across appearance, bake, crop, transform, workspace chrome, …). The
+   *Current pain* rows for duplicate paths, crop identity, and gallery reorder
+   losing ids are **sync bugs between these copies** — the same class of bug
+   Phase 6 Tier 4 residual (`m_pathOrderBook` vs `SessionDocument`) addresses
+   for pack order.
+
+### What this phase is not
+
+- **Do not replace `QGraphicsScene`.** It owns hit-testing, z-order, viewport
+  culling, and repaint regions. Replacing it is a product rewrite, not a cleanup.
+- **Do not build a system scheduler.** Qt is event-driven; there is no frame
+  tick to schedule against. Systems fire from signals, timers, and input — that
+  stays.
+- **Do not introduce archetype / chunk / SoA storage for performance.** At a
+  few thousand items, AoS→SoA is not the bottleneck; decode and tile LOD are.
+  Stage 5 (storage) is last, or never, and only if measured.
+
+### Stages
+
+Cohesion order. One tip (or small tip series) per boundary; behaviour frozen;
+characterization extended before storage changes.
+
+| Stage | Work | Notes |
+|------:|------|-------|
+| **0** | **`ItemWorld` facade** | One type wrapping existing stores behind id-keyed accessors. No storage change, no behaviour change. Later stages mutate *inside* the facade. |
+| **1** | **Split the god-component** | `WorkspaceItemState` remains the **project-file DTO** (`projectfile.cpp` serializes it; `projectfile_roundtrip` pins the shape). Runtime gets separate tables (see below). |
+| **2** | **Demote `ImageItem` to a render proxy** | Highest payoff. Item keeps what Qt needs to draw (pixmap, surface id, transform derived from Placement). Interaction scratch → `ItemInteractSession` (already exists). Tile-LOD cache → runtime-only table under `DisplayPipelineController`. Collapse `captureState` fan-out into Placement / component writes. |
+| **3** | **Systems as free functions** | Entry points: `system(ItemWorld&, std::span<const SessionImageId>)` (or equivalent). GalleryLayout / ContentXform already lean this way; remove `ImageItem*` from pure transforms where possible. |
+| **4** | **Persistence split** | Tag each table persistent vs derived. Project save walks only persistent tables. Today the distinction is implicit (`includePose` flags, path-book vs appearance). |
+| **5** | **Storage (optional)** | Dense index + contiguous arrays *behind* `ItemWorld`. Only if profiled. |
+
+#### Stage 1 runtime tables (sketch)
+
+```text
+dense:   Placement  { pos, scaleX, scaleY, shear, rotation, z, hFlip, vFlip }
+         Render     { opacity }
+         SourceSize { QSize }              // = ImageSizeBook (already exists)
+sparse:  ContentBake { quarterTurns, hFlip, vFlip }
+         Crop        { rect, sourceSize, rotation }
+         Attention   { points }
+         Color       { ColorAdjustments }
+```
+
+The three `hasX` bools become **presence in a sparse table**.
+`syncAttentionPrimary()` disappears with the duplicated primary/list fields.
+
+### Sequencing
+
+- **Stage 2 is the valuable one; Stage 1 is its prerequisite.**
+- Early payoff, lower risk: Stage 0 → Stage 1 for **Crop and Attention only**.
+  Those already have controllers, pure geometry (`CropGeometry`,
+  `AttentionGeometry`), and characterization coverage — safest components to
+  lift out of the fat struct first.
+- **Placement last** — every mode touches it.
+- **Phase 6 Tier 4 residual is not replaced by Phase 7.** Deleting
+  `m_pathOrderBook` still needs the offscreen ImageView harness
+  ([docs/IMAGEVIEW_CHARACTERIZATION.md](docs/IMAGEVIEW_CHARACTERIZATION.md)).
+  Pack order is a session-list authority problem; Phase 7 is per-id component
+  ownership. They can proceed in parallel once Stage 0 exists, but do not
+  conflate the two exit criteria.
+
+### Characterization
+
+`tests/session_gallery_crop_scenario_test.cpp` and the dual-model suite are the
+right harness spine. Before Stage 1 lands runtime tables, extend pure tests to
+assert **component presence** (crop/attention keyed by id) rather than only
+fat-struct fields. Offscreen ImageView harness remains the gate for live
+decode/framing assertions (Phase 6 Tier 4).
+
+### Rules (additions)
+
+Phase 1–6 rules still apply. Additions:
+
+- No behaviour change without a failing scenario or explicit product decision.
+- Do not rename or reshape the on-disk / project `WorkspaceItemState` DTO until
+  Stage 4 has a migration story; runtime tables may differ earlier.
+- Do not touch `QGraphicsScene` ownership or introduce a frame scheduler.
+- Prefer deleting sync paths (`captureState` fan-out, path-book write-through for
+  bound ids) over new mirror flags.
+- Ship Stage 0 as a pure facade tip before any table split.
+
+### Exit criteria (whole phase)
+
+- One authoritative owner per persisted fact keyed by `SessionImageId` (pose
+  may remain Workspace-mode-scoped; content/crop/attention/color are id-keyed).
+- `ImageItem` is a render + hit-test proxy, not a parallel appearance database.
+- Project save walks explicitly tagged persistent tables.
+- `git grep captureState` is thin (host snapshot for DTO only) or gone from
+  interaction hot paths.
+- Phase 6 Tier 4 residual still tracked separately until
+  `git grep m_pathOrderBook` is empty.
+
+### Progress log (Phase 7)
+
+- _(none yet — plan only as of biltoo-1722)_

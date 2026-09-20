@@ -2,6 +2,35 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1722-phase7-itemworld-plan.** Phase 7 ItemWorld plan + -Wshadow fix.
+Prior: **1721**.
+
+### Change
+- REFACTOR.md: **Phase 7 — ItemWorld / data-oriented components** (proposed)
+  - Maps existing stores/helpers to ECS vocabulary (entity = SessionImageId)
+  - Two residual problems: fat `WorkspaceItemState`, triple-copy of per-item facts
+  - Explicit non-goals: no QGraphicsScene replace, no system scheduler, no SoA-for-speed
+  - Stages 0–5 (facade → split components → ImageItem proxy → systems → persistence → optional storage)
+  - Sequencing: Stage 0, then Crop/Attention Stage 1 first; Placement last
+  - Does not replace Phase 6 Tier 4 residual (`m_pathOrderBook`)
+- gallerycontroller: ensurePlaceholders reuses outer PackOrderView for reorder (fixes -Wshadow)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1722-phase7-itemworld-plan.bundle HEAD
+```
+
+### Next
+- biltoo-build (confirm -Wshadow gone)
+- Phase 6 Tier 4: ImageView characterization harness (still the pack-order gate)
+- Phase 7 Stage 0: ItemWorld facade (when ready; optional parallel after Stage 0 sketch)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1721-packorder-dangling-fix.** Bind PackOrderView locals (dangling refs).
 Prior: **1720**.
 
