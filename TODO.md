@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1848-fix-demotion-call-sites.** Residual demotion call-site fixes.
+Prior: **1847**.
+
+### Change
+- GalleryController → self `applyLayout` / `scheduleDecodeWindowRefresh` /
+  `applyPendingRestore`
+- `setViewMode(ImageView::ViewMode::Workspace)`
+- `setSlideshowProgress(false, 0)` arity
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1848-fix-demotion-call-sites.bundle HEAD
+```
+Requires tip **1847**.
+
+### Next
+- biltoo-build (full compile)
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1847-fix-duplicate-hostFraming.** Fix duplicate hostFraming decl.
 Prior: **1846**.
 
