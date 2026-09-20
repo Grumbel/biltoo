@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1902-merge-canvas-focus.** Canvas focus/destroy → canvas TU.
+Prior: **1901**.
+
+### Change
+- `primaryItem` / `targetItem` / focus / reveal / `destroyCanvasItem` →
+  `imageview_canvas.cpp`
+- Delete `imageview_canvas_focus.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1902-merge-canvas-focus-516d734.bundle HEAD
+```
+Requires tip **1901** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1901-merge-framing-tus.** Unify view + image-mode framing TUs.
 Prior: **1900**.
 

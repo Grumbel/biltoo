@@ -1127,6 +1127,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1899: merge shell_events + dnd into input_events.
 - biltoo-1900: merge background settings into paint_background.
 - biltoo-1901: merge imageview_framing into framing_image.
+- biltoo-1902: merge canvas_focus into canvas TU.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
