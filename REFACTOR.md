@@ -636,41 +636,45 @@ without them.
 duplicate paths, Gallery remove, and crop-in-Image-mode unchanged.
 
 
-### Tier 4 residual characterization (2026-09-20 / tips 1864, 1871)
+### Tier 4 residual characterization (2026-09-20 / tips 1864–1887)
 
-`ImageView::m_pathOrderBook` (`SessionPathOrder`) is **not** yet deletable.
+`ImageView::m_pathOrderBook` is **gone** (replaced by `m_pathOrderOverlay`,
+1883). Remaining gate is **semantic**: do not pack from SessionDocument alone
+until the full offscreen ImageView harness is green.
 
 | Concern | Owner today | Notes |
 |---------|-------------|-------|
 | Session path list + ids | `SessionDocument` (`MainWindow::m_session`) | Source of truth for open files |
 | Gallery pack / LoadAdd multiplicity | `m_pathOrderOverlay` on `ImageView` | `pathOrderOccurrences` must **not** consult the document when Explicit empty (blank Workspace would recreate session tiles — see `imageview_load.cpp`) |
-| Gallery leave/enter stash | `GalleryController::m_stashedPackOrder` | Snapshot of view book, not the document |
+| Gallery leave/enter stash | `GalleryController::m_stashedPackOrder` | Snapshot of pack order, not the document |
 | Ad-hoc Workspace place | `pathOrderAppendRow` from canvas place | Rows may exist with invalid session id |
 
-**Host mutators (tip 1867):** `pathOrderClear` / `pathOrderSetOrder` / `pathOrderAppendRow` /
-`currentPackOrder` / `pathOrderOccurrences` / `pathOrderIsEmpty` live on the public host
-pipeline. `setPathOrderFromLiveItems()` rebuilds the book from live canvas tiles.
+**Host mutators (tip 1867 / 1883–1884):** `pathOrderClear` / `pathOrderSetOrder` /
+`pathOrderAppendRow` / `currentPackOrder` / `pathOrderOccurrences` /
+`pathOrderIsEmpty` live on the public host pipeline (overlay Explicit;
+setOrder may collapse when aligned). `setPathOrderFromLiveItems()` rebuilds
+from live canvas tiles.
 
-**Bound document:** `bindSessionDocument` routes `firstSessionIdForPath` to the document when
-bound; pack multiplicity stays on the view book. Appearance store migration (Tier 4b) is
-separate from path-order deletion.
+**Bound document:** `bindSessionDocument` routes `firstSessionIdForPath` to the
+document when bound; pack multiplicity stays on the overlay. Appearance store
+migration (Tier 4b) is done separately.
 
-#### Call-site inventory (tip 1871)
+#### Call-site inventory (tip 1871; storage = overlay since 1883)
 
-| Site | API | Role | Book-only? |
-|------|-----|------|------------|
-| `gallerycontroller` stash/restore | `currentPackOrder` / `pathOrderSetOrder` | Leave/enter Gallery | Yes — stash is view book |
+| Site | API | Role | Overlay-only? |
+|------|-----|------|---------------|
+| `gallerycontroller` stash/restore | `currentPackOrder` / `pathOrderSetOrder` | Leave/enter Gallery | Yes — stash is pack order |
 | `gallerycontroller` applyLayout / ensurePlaceholders | `pathOrderIsEmpty` / `currentPackOrder` | Reorder + pack order | Yes — may include multiplicity |
-| `gallerycontroller` leave | `pathOrderClear` | Blank book without wiping session | Yes |
-| `gallerycontroller` layout switch | `GalleryController::setPathOrderFromLiveItems` (private; uses `liveItems` + `pathOrderSetOrder`) | Resync book from tiles | Yes — tip 1872 moved off ImageView |
+| `gallerycontroller` leave | `pathOrderClear` | Explicit empty without wiping session | Yes |
+| `gallerycontroller` layout switch | `GalleryController::setPathOrderFromLiveItems` (private; uses `liveItems` + `pathOrderSetOrder`) | Resync from tiles | Yes — tip 1872 moved off ImageView |
 | `workspacecontroller` leave | `pathOrderClear` | Same | Yes |
-| `displaypipelinecontroller_load` completeLoadAdd | `pathOrderOccurrences` | How many tiles for path | **Must** be book |
+| `displaypipelinecontroller_load` completeLoadAdd | `pathOrderOccurrences` | How many tiles for path | **Must** be overlay |
 | `displaypipelinecontroller_load` reorder | `currentPackOrder` | Order live items | Yes |
 | `imageview_canvas` / `canvas_place` | `pathOrderSetOrder` / `AppendRow` / `currentPackOrder` | Session place + ad-hoc | Yes — invalid ids OK |
 | `imageview_modes` enter transitions | `pathOrderClear` | Mode switch | Yes |
 | `imageview_session_remove` | `currentPackOrder` / `pathOrderSetOrder` | Prune book rows | Yes |
 | `imageview_size_book` sizeResolvePathOrder | `currentPackOrder` | Probe order | Yes |
-| `imageview_load` pathOrderOccurrences | book count | LoadAdd multiplicity | **Must** be book |
+| `imageview_load` pathOrderOccurrences | book count | LoadAdd multiplicity | **Must** be overlay |
 | `firstSessionIdForPath` | doc then book | Identity lookup | Doc preferred |
 
 `PackOrderView::fromDocument()` is valid only when the book **aligns** with the document
@@ -691,9 +695,10 @@ blank while document membership remains). Pure tests:
 green; full ImageView decode harness still pending.
 
 **Migration (do not skip):** (1) design type + pure tests — done 1881;
-(2) adopt storage — replace member with overlay, mutators as wrappers;
-(3) optional FollowDocument collapse when aligned; (4) ImageView harness green;
-(5) then `git grep m_pathOrderBook` empty.
+(2) adopt storage — done 1883; (3) optional FollowDocument collapse — done 1884;
+(4) pure characterization / dual-model — done 1885–1886; (5) dead read-source
+API removed — 1887; (6) **ImageView harness green** (decode + framing) — still
+open. Member `m_pathOrderBook` already gone under `src/`.
 
 **Safe next steps:** full offscreen ImageView characterization harness
 (decode + framing). Overlay storage + optional FollowDocument collapse are
@@ -770,13 +775,11 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 **Still open:**
 1. **Tier 4 residual** — Appearance on `SessionDocument` (Tier 4b). Pack order
    on `PackOrderOverlay` (1883) with optional FollowDocument collapse (1884).
-   Pure characterization expanded (1885). Full offscreen ImageView harness still
-   required before trusting document-only pack without Explicit suppress.
-   Pack **reads** already go through `PackOrderView` / `currentPackOrder()`
-   (fromBook). Blocked on offscreen ImageView characterization
-   (open→Gallery→crop→Image). Pure contracts: `sessiondocument`,
-   `sessionappearance`, `pathorder-dual-model`, `packorderview`,
-   `session-gallery-crop-scenario`. See PATH_ORDER.md / IMAGEVIEW_CHARACTERIZATION.md.
+   Pure characterization + dual-model overlay cases (1885–1886); dead
+   `PackOrderReadSource` removed (1887). Pack **reads** via
+   `currentPackOrder()` → `overlay.resolve`. **Blocked on** full offscreen
+   ImageView characterization (open→Gallery→crop→Image with decode/framing).
+   See PATH_ORDER.md / IMAGEVIEW_CHARACTERIZATION.md.
 2. **Tier 5** — **done** for exit size: PreferCache/install/schedule/tile LOD on
    `DisplayPipelineController` (split TUs + jobs). Soft provider and neighbor
    prefetch stay on ImageView. ImageView→pipeline thin-forward TU removed
@@ -957,12 +960,12 @@ The three `hasX` bools become **presence in a sparse table**.
   `AttentionGeometry`), and characterization coverage — safest components to
   lift out of the fat struct first.
 - **Placement last** — every mode touches it.
-- **Phase 6 Tier 4 residual is not replaced by Phase 7.** Deleting
-  `m_pathOrderBook` still needs the offscreen ImageView harness
-  ([docs/IMAGEVIEW_CHARACTERIZATION.md](docs/IMAGEVIEW_CHARACTERIZATION.md)).
+- **Phase 6 Tier 4 residual is not replaced by Phase 7.** Overlay storage is
+  in place; trusting document-only pack still needs the offscreen ImageView
+  harness ([docs/IMAGEVIEW_CHARACTERIZATION.md](docs/IMAGEVIEW_CHARACTERIZATION.md)).
   Pack order is a session-list authority problem; Phase 7 is per-id component
-  ownership. They can proceed in parallel once Stage 0 exists, but do not
-  conflate the two exit criteria.
+  ownership. They can proceed in parallel, but do not conflate the two exit
+  criteria.
 
 ### Characterization
 
@@ -992,8 +995,8 @@ Phase 1–6 rules still apply. Additions:
 - Project save walks explicitly tagged persistent tables.
 - `git grep captureState` is thin (host snapshot for DTO only) or gone from
   interaction hot paths.
-- Phase 6 Tier 4 residual still tracked separately until
-  `git grep m_pathOrderBook` is empty.
+- Phase 6 Tier 4 residual still tracked separately until the full ImageView
+  characterization harness is green (member `m_pathOrderBook` already gone).
 
 ### Progress log (Phase 7)
 

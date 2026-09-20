@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1888-refactor-tier4-docs.** REFACTOR Tier 4 residual matches overlay.
+Prior: **1887**.
+
+### Change
+- REFACTOR.md: `m_pathOrderBook` is gone; remaining gate is full ImageView harness
+- Residual characterization, call-site inventory, migration steps, Still open,
+  Phase 7 notes updated for PackOrderOverlay (1883–1887)
+- No code change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1888-refactor-tier4-docs-516d734.bundle HEAD
+```
+Requires tip **1887** (base **516d734**).
+
+### Next
+- Full offscreen ImageView characterization when Qt/thumtoo available
+- Optional: further `imageview.h` public-surface narrowing (metrics)
+- Keep Explicit suppress until full harness green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1887-drop-packorder-read-source.** Remove dead PackOrderReadSource.
 Prior: **1886**.
 
