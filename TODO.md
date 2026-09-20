@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1829-create-seed-via-pipeline.** Stage 2: placeholder create + appearance seed via pipeline.
+Prior: **1828**.
+
+### Change
+- `createPlaceholderItem`, `seedSessionAppearancesFromPaths`,
+  `seedSessionAppearanceFromState` → pipeline host
+- Dropped dead ImageView: `createItemFromImage`, `appearanceForNewImageModeItem`,
+  `markAppearanceSeedAttempted`, `applyStoredContentAppearanceSeed`,
+  `bindImageModeSessionCursor`, `resetImageModeItemPlacement`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1829-create-seed-via-pipeline.bundle HEAD
+```
+Includes **1806–1829** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (session open / Gallery placeholders)
+- Remaining pipeline_forwards demotion / Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1828-install-display-pixels-via-pipeline.** Stage 2: installDisplayPixels via pipeline.
 Prior: **1827**.
 
