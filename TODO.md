@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1925-focus-session-id.** Session-id Gallery focus from MainWindow.
+Prior: **1924**.
+
+### Change
+- `ImageView::focusSessionId(SessionImageId)` → `findItemBySessionId` + `focusGalleryItem`
+- MainWindow filmstrip / same-index refresh / cursor publish: prefer session-id
+  focus when the live tile is bound; path fallback otherwise
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1925-focus-session-id-516d734.bundle HEAD
+```
+Requires tip **1924** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Phase 7 ImageItem demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1924-focus-gallery-item.** Item-pointer focus for Gallery keyboard nav.
 Prior: **1923**.
 

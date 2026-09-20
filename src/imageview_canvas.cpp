@@ -577,6 +577,14 @@ void ImageView::focusGalleryItem(ImageItem *item)
     }
 }
 
+void ImageView::focusSessionId(SessionImageId sessionId)
+{
+    if (sessionId == kInvalidSessionImageId) {
+        return;
+    }
+    focusGalleryItem(findItemBySessionId(sessionId));
+}
+
 void ImageView::focusSessionPath(const QString &path)
 {
     if (path.isEmpty()) {

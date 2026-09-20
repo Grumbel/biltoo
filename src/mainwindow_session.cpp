@@ -1148,7 +1148,13 @@ void MainWindow::setSortMode(SortMode mode)
             if (m_imageView) {
                 m_imageView->enterGallery(layout);
                 if (!current.isEmpty()) {
-                    m_imageView->focusSessionPath(current);
+                    const SessionImageId sid = sessionIdAt(m_currentIndex);
+                    if (sid != kInvalidSessionImageId
+                        && m_imageView->findItemBySessionId(sid)) {
+                        m_imageView->focusSessionId(sid);
+                    } else {
+                        m_imageView->focusSessionPath(current);
+                    }
                 }
             }
         } else if (isWorkspaceMode() && m_imageView) {
@@ -1579,7 +1585,13 @@ bool MainWindow::refreshSameCurrentIndex(bool ensureGalleryVisible)
     }
     if (isGalleryMode() && m_imageView && ensureGalleryVisible) {
         // Filmstrip re-click of the current row: still select the gallery tile.
-        m_imageView->focusSessionPath(m_session.paths().at(m_currentIndex));
+        const SessionImageId sid = sessionIdAt(m_currentIndex);
+        if (sid != kInvalidSessionImageId
+            && m_imageView->findItemBySessionId(sid)) {
+            m_imageView->focusSessionId(sid);
+        } else {
+            m_imageView->focusSessionPath(m_session.paths().at(m_currentIndex));
+        }
         return true;
     }
     return true;
@@ -1673,10 +1685,22 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
         // scroll it into view. Gallery view clicks pass false — selection was
         // already applied there; do not clear Ctrl/Shift multi-select.
         if (ensureGalleryVisible) {
-            m_imageView->focusSessionPath(path);
+            const SessionImageId sid = sessionIdAt(m_currentIndex);
+            if (sid != kInvalidSessionImageId
+                && m_imageView->findItemBySessionId(sid)) {
+                m_imageView->focusSessionId(sid);
+            } else {
+                m_imageView->focusSessionPath(path);
+            }
         }
     } else if (m_imageView) {
-        m_imageView->focusSessionPath(path);
+        const SessionImageId sid = sessionIdAt(m_currentIndex);
+        if (sid != kInvalidSessionImageId
+            && m_imageView->findItemBySessionId(sid)) {
+            m_imageView->focusSessionId(sid);
+        } else {
+            m_imageView->focusSessionPath(path);
+        }
     }
 }
 

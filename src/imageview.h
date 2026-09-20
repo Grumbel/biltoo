@@ -410,6 +410,8 @@ public:
      * Prefer this when the live ImageItem is already known (keyboard nav).
      */
     void focusGalleryItem(ImageItem *item);
+    /** Exclusive-select live item bound to @p sessionId (identity-correct). */
+    void focusSessionId(SessionImageId sessionId);
     /** Select preferred/first canvas item for @p path; ensure visible in Gallery. */
     void focusSessionPath(const QString &path);
 
