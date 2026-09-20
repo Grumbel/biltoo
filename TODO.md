@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1812-drop-dead-item-pose-helpers.** Stage 2: remove unused ImageItem pose helpers.
+Prior: **1811**.
+
+### Change
+- Removed dead `ImageItem::{zoomBy,rotateBy,toggleHFlip,toggleVFlip}` (no call sites)
+- Live pose remains `applyPlacement`; content flips remain `bakeFlip` / interaction chrome
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1812-drop-dead-item-pose-helpers.bundle HEAD
+```
+Includes **1806–1812** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke
+- ImageView characterization / Tier 4 path-order residual
+- Phase 7 Stage 2 non-tile demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1811-drop-apply-placement-forward.** Stage 2: drop ImageView::applyPlacement.
 Prior: **1810**.
 
