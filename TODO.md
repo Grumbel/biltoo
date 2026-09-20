@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1887-drop-packorder-read-source.** Remove dead PackOrderReadSource.
+Prior: **1886**.
+
+### Change
+- Delete unused `PackOrderReadSource` enum and `packOrderForRead()` helper
+- Pack reads are only `currentPackOrder()` → `PackOrderOverlay::resolve`
+- PATH_ORDER / REFACTOR / PackOrderView comments aligned with overlay storage
+- No behaviour change (helpers had zero call sites after 1883)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1887-drop-packorder-read-source-516d734.bundle HEAD
+```
+Requires tip **1886** (base **516d734**).
+
+### Next
+- Full offscreen ImageView characterization when Qt/thumtoo available
+- ctest packorderview + pathorder-dual-model + imageview-characterization
+- Keep Explicit suppress until full harness green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1886-dual-model-overlay.** Dual-model tests cover PackOrderOverlay.
 Prior: **1885**.
 

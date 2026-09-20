@@ -15,13 +15,13 @@
 /**
  * Immutable snapshot of pack order (paths ∥ ids).
  *
- * Tier 4 prep: Gallery pack / placeholders walk a PackOrderView instead of
- * reaching into SessionPathOrder or SessionDocument directly. Until the
- * ImageView harness lands, the view is still filled from the path-order book;
- * when multiplicities match the document, fromDocument() is valid.
+ * Gallery pack / placeholders walk a PackOrderView instead of reaching into
+ * SessionPathOrder or SessionDocument directly. ImageView fills the snapshot
+ * via PackOrderOverlay::resolve (Explicit book, or FollowDocument when
+ * collapsed and aligned).
  *
- * LoadAdd multiplicity: only fromBook() can express N tiles for one session
- * path. fromDocument() always has one row per session membership.
+ * LoadAdd multiplicity: only fromBook() / Explicit overlay can express N tiles
+ * for one session path. fromDocument() always has one row per membership.
  */
 
 class PackOrderView
@@ -122,40 +122,11 @@ private:
 
 
 /**
- * Where pack-order *reads* are allowed to come from (Tier 4 policy).
- *
- * - ViewBook: legacy name for explicit overlay order — LoadAdd multiplicity,
- *   ad-hoc place, Gallery stash. Pack readers use ImageView::currentPackOrder()
- *   (overlay resolve) rather than packOrderForRead + bare SessionPathOrder.
- * - SessionDocument: MainWindow session membership (one row per open file).
- *   Safe only when the explicit order aligns with the document (no extra
- *   multiplicity / invalid ids). Prefer for identity lookups; not a drop-in
- *   for pack order.
- *
- * Writes always go to the overlay (pathOrderClear / SetOrder / AppendRow →
- * Explicit). SessionDocument is mutated only by MainWindow session APIs.
- *
- * Storage: PackOrderOverlay on ImageView (tip 1883). Explicit empty models
- * pathOrderClear. Optional FollowDocument collapse is a later step.
- * See docs/PATH_ORDER.md.
+ * Pack-order *reads* (Tier 4 policy): ImageView::currentPackOrder() →
+ * PackOrderOverlay::resolve(m_sessionDoc). SessionDocument membership alone
+ * is not a pack drop-in (Explicit-empty / LoadAdd multiplicity). Identity
+ * lookups may use the document; writes go through pathOrderClear / SetOrder /
+ * AppendRow on the overlay. See docs/PATH_ORDER.md.
  */
-enum class PackOrderReadSource {
-    ViewBook,
-    SessionDocument,
-};
-
-/**
- * Resolve a pack-order snapshot under @p source.
- * SessionDocument source requires a non-null @p doc; otherwise falls back to book.
- */
-inline PackOrderView packOrderForRead(PackOrderReadSource source,
-                                      const SessionPathOrder &book,
-                                      const SessionDocument *doc)
-{
-    if (source == PackOrderReadSource::SessionDocument && doc) {
-        return PackOrderView::fromDocument(*doc);
-    }
-    return PackOrderView::fromBook(book);
-}
 
 #endif // PACKORDERVIEW_H

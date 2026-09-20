@@ -643,7 +643,7 @@ duplicate paths, Gallery remove, and crop-in-Image-mode unchanged.
 | Concern | Owner today | Notes |
 |---------|-------------|-------|
 | Session path list + ids | `SessionDocument` (`MainWindow::m_session`) | Source of truth for open files |
-| Gallery pack / LoadAdd multiplicity | `m_pathOrderBook` on `ImageView` | `pathOrderOccurrences` must **not** consult the document (blank Workspace would recreate session tiles — see `imageview_load.cpp`) |
+| Gallery pack / LoadAdd multiplicity | `m_pathOrderOverlay` on `ImageView` | `pathOrderOccurrences` must **not** consult the document when Explicit empty (blank Workspace would recreate session tiles — see `imageview_load.cpp`) |
 | Gallery leave/enter stash | `GalleryController::m_stashedPackOrder` | Snapshot of view book, not the document |
 | Ad-hoc Workspace place | `pathOrderAppendRow` from canvas place | Rows may exist with invalid session id |
 
@@ -678,7 +678,8 @@ separate from path-order deletion.
 extra multiplicity). Today Gallery pack always reads the book; switching readers to
 `fromDocument()` without a dual-write design would break LoadAdd duplicates and ad-hoc place.
 
-**Policy type (tip 1873):** `PackOrderReadSource` + `packOrderForRead()` in
+**Policy type (tip 1873, removed 1887):** former `PackOrderReadSource` +
+`packOrderForRead()` — pack reads now only via overlay resolve. Historical:
 `packorderview.h`. `currentPackOrder()` reads `ViewBook` only. Do not switch pack
 readers to `SessionDocument` without the dual-write design below.
 
@@ -686,17 +687,19 @@ readers to `SessionDocument` without the dual-write design below.
 FollowDocument vs Explicit modes. Explicit empty models `pathOrderClear` (pack
 blank while document membership remains). Pure tests:
 `tests/packorderoverlay_test.cpp`. Normative write-up: [docs/PATH_ORDER.md](docs/PATH_ORDER.md)
-§ PackOrderOverlay. ImageView still stores `m_pathOrderBook`; runtime adoption
-is a later tip.
+§ PackOrderOverlay. ImageView stores `m_pathOrderOverlay` (1883+); pure harness
+green; full ImageView decode harness still pending.
 
 **Migration (do not skip):** (1) design type + pure tests — done 1881;
 (2) adopt storage — replace member with overlay, mutators as wrappers;
 (3) optional FollowDocument collapse when aligned; (4) ImageView harness green;
 (5) then `git grep m_pathOrderBook` empty.
 
-**Safe next steps:** adopt overlay storage behind existing host mutators
-(behaviour-identical Explicit mode); keep pack readers on ViewBook until
-harness is green; only then delete `m_pathOrderBook`.
+**Safe next steps:** full offscreen ImageView characterization harness
+(decode + framing). Overlay storage + optional FollowDocument collapse are
+landed (1883–1884); pure dual-model / characterization cover the invariants
+(1885–1886). Dead `PackOrderReadSource` removed (1887). Do not pack from
+SessionDocument alone until the ImageView harness is green.
 
 
 ### Tier 5 — DisplayPipeline
@@ -1107,6 +1110,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1884: tryCollapseToFollowDocument on aligned setOrder; seed-on-append.
 - biltoo-1885: imageview-characterization pure overlay host simulation.
 - biltoo-1886: pathorder-dual-model overlay dual-model cases.
+- biltoo-1887: remove dead PackOrderReadSource / packOrderForRead.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

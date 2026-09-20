@@ -5,7 +5,7 @@
 | Authority | Type | Owner | Role |
 |-----------|------|-------|------|
 | **SessionDocument** | paths + `SessionImageId`s | MainWindow | Session membership, filmstrip, identity, appearance key |
-| **ImageView `m_pathOrderBook`** (`SessionPathOrder`) | paths + parallel ids | ImageView (Gallery-local) | Canvas row multiplicity for Gallery pack and **LoadAdd** |
+| **ImageView `m_pathOrderOverlay`** (`PackOrderOverlay`) | Explicit paths∥ids or FollowDocument | ImageView (Gallery-local) | Canvas row multiplicity for Gallery pack and **LoadAdd**; Explicit empty = mode-leave suppress |
 
 They are **not** the same object. After dual-write was stopped (Tier 4 path-order),
 mutations to the view book no longer write through to `SessionDocument`, and
@@ -54,20 +54,20 @@ Offscreen ImageView harness plan: [IMAGEVIEW_CHARACTERIZATION.md](IMAGEVIEW_CHAR
 `PackOrderView` so Tier 4 can switch the source without rewriting pack loops.
 Characterization: `tests/packorderview_test.cpp` (`packorderview` CTest).
 
-## Read path (post-1714)
+## Read path (post-1883)
 
-All pack/LoadAdd **reads** go through `ImageView::currentPackOrder()`
-(`PackOrderView::fromBook` via `packOrderForRead(PackOrderReadSource::ViewBook, …)`).
-Book-reference accessors (`pathOrderPaths` / `pathOrderIds`) were removed
-(biltoo-1817).
+All pack/LoadAdd **reads** go through `ImageView::currentPackOrder()` →
+`m_pathOrderOverlay.resolve(m_sessionDoc)`. Book-reference accessors
+(`pathOrderPaths` / `pathOrderIds`) were removed (biltoo-1817). Dead
+`PackOrderReadSource` / `packOrderForRead` removed (1887).
 
-Mutations remain `pathOrderClear` / `SetOrder` / `AppendRow` on the book.
-Public `setPathOrder` requires paths∥ids (or `PackOrderView`); the paths-only
-overload was removed so session ids cannot be cleared by accident.
+Mutations: `pathOrderClear` / `SetOrder` / `AppendRow` on the overlay
+(Explicit; setOrder may collapse when aligned). Public `setPathOrder` requires
+paths∥ids (or `PackOrderView`).
 
-## PackOrderOverlay (design — tip 1881)
+## PackOrderOverlay (tips 1881–1884)
 
-Replacement vehicle for `m_pathOrderBook`. Header: `src/packorderoverlay.h`.
+Owner of view pack-order state. Header: `src/packorderoverlay.h`.
 Characterization: `tests/packorderoverlay_test.cpp` (`packorderoverlay` CTest).
 
 ### Modes
@@ -119,12 +119,13 @@ Until step 4, do **not** switch pack readers to `SessionDocument` alone
 ### Read policy
 
 Pack / LoadAdd / size-resolve readers use `ImageView::currentPackOrder()` →
-`m_pathOrderOverlay.resolve(m_sessionDoc)` (Explicit book today).
+`m_pathOrderOverlay.resolve(m_sessionDoc)` (FollowDocument when collapsed and
+aligned; Explicit otherwise, including Explicit empty after pathOrderClear).
 
-`PackOrderReadSource` (in `packorderview.h`) remains for pure helpers:
-
-- `ViewBook` — legacy name for explicit order snapshots
-- `SessionDocument` — identity / membership only; **not** a pack drop-in
+SessionDocument membership alone is **not** a pack drop-in. Identity lookups
+may use the document (`firstSessionIdForPath`). The old `PackOrderReadSource` /
+`packOrderForRead` helpers were removed (1887); all pack reads go through the
+overlay.
 
 ## Exit criteria (Tier 4 residual)
 
