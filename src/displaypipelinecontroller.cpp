@@ -88,7 +88,7 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
         if (path.isEmpty()) {
             continue;
         }
-        if (m_view->isCropDraftLockedPath(path)) {
+        if (m_view->hostCrop().isCropDraftLockedPath(path)) {
             continue;
         }
         // Deep zoom: tiles own display; skip PreferCache whole-frame climb.
@@ -195,7 +195,7 @@ void DisplayPipelineController::requestEscalateClimb(const QString &path, int wa
     if (!m_view->hostPathRaster() || path.isEmpty() || m_view->hostSlideshow().hud().isNavHot()) {
         return;
     }
-    if (m_view->isCropDraftLockedPath(path)) {
+    if (m_view->hostCrop().isCropDraftLockedPath(path)) {
         return;
     }
     // Tiles own display: tileLodWanted or known durable pyramid — no PreferCache.
@@ -241,7 +241,7 @@ void DisplayPipelineController::ensureImageModeQualityClimb(const QString &path,
     if (path.isEmpty() || m_view->hostSlideshow().hud().isNavHot() || !m_view->hostPathRaster()) {
         return;
     }
-    if (m_view->isCropDraftLockedPath(path)) {
+    if (m_view->hostCrop().isCropDraftLockedPath(path)) {
         return;
     }
     if (m_view->hostSlideshow().hud().isProgressActive()) {
@@ -356,7 +356,7 @@ bool DisplayPipelineController::tryInstallImageModeSampleBaked(const QString &pa
     if (!m_view->isImageMode() || path.isEmpty() || image.isNull()) {
         return false;
     }
-    if (m_view->isCropDraftLockedPath(path)) {
+    if (m_view->hostCrop().isCropDraftLockedPath(path)) {
         return false;
     }
     if (ImageItem *cur = imageModeItemForPath(path)) {
@@ -442,7 +442,7 @@ void DisplayPipelineController::onLadderReady(const QString &path, int maxEdge, 
 
     // Crop may be open in Image or Workspace on a provisional sample.
     if (!image.isNull()) {
-        m_view->maybeUpgradeCropFullRaster(path, image);
+        m_view->hostCrop().maybeUpgradeCropFullRaster(path, image);
     }
 
     // PreferCache/FocusFull may have co-built durable tiles; wake tile LOD only
@@ -555,7 +555,7 @@ void DisplayPipelineController::maybeClimbImageModePixelsForView()
     }
     const QString path = item->path();
     // Crop draft freezes the sample — do not schedule soft↔full climb.
-    if (m_view->isCropDraftLockedPath(path)) {
+    if (m_view->hostCrop().isCropDraftLockedPath(path)) {
         return;
     }
 
@@ -885,7 +885,7 @@ bool DisplayPipelineController::canAcceptDisplaySample(const ImageItem *item, co
             item->displayPixelLongEdge(), incoming, DisplayQuality::kLqipMaxEdge);
     }
     DisplaySurface::State ds = displaySurfaceStateForItem(item, incoming, false);
-    if (m_view->isCropDraftLockedItem(item) || m_view->isCropDraftLockedPath(item->path())) {
+    if (m_view->hostCrop().isCropDraftLockedItem(item) || m_view->hostCrop().isCropDraftLockedPath(item->path())) {
         ds.frozen = true;
     }
     const DisplaySurface::Action act = DisplaySurface::decide(ds);
@@ -913,7 +913,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     const QString path = item->path();
     // Crop draft owns the live sample — ladder/async must not replace it
     // (store want still has crop → wrong bake; soft↔full thrash).
-    if (m_view->isCropDraftLockedItem(item) || m_view->isCropDraftLockedPath(path)) {
+    if (m_view->hostCrop().isCropDraftLockedItem(item) || m_view->hostCrop().isCropDraftLockedPath(path)) {
         return;
     }
     if (!canAcceptDisplaySample(item, pixels, kind)) {
@@ -1045,7 +1045,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     if (m_view->hostSlideshow().hud().isProgressActive()) {
         return;
     }
-    if (m_view->isCropDraftLockedPath(path)) {
+    if (m_view->hostCrop().isCropDraftLockedPath(path)) {
         return;
     }
 

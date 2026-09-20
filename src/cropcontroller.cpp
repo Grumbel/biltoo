@@ -842,7 +842,7 @@ void CropController::requestCropFullRaster(const QString &path)
             guard.data(),
             [guard, path, decoded, gen]() {
                 if (ImageView *const host = guard.data()) {
-                    host->onPoolCropFullRasterDecoded(path, decoded, gen);
+                    host->hostCrop().onPoolCropFullRasterDecoded(path, decoded, gen);
                 }
             },
             Qt::QueuedConnection);

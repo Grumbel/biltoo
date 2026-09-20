@@ -83,7 +83,7 @@ TileLoadCoordinator::collectCandidates(const QRectF &sceneVis) const
         if (!ii || ii->path().isEmpty()) {
             continue;
         }
-        if (m_view->isCropDraftLockedItem(ii) || ii->tileLodSuppressed()) {
+        if (m_view->hostCrop().isCropDraftLockedItem(ii) || ii->tileLodSuppressed()) {
             continue;
         }
         // Gallery packed cell: screen long edge without re-entering tileLodWanted.

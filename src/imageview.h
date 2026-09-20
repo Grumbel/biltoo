@@ -248,8 +248,6 @@ public:
     const TextLayerSession &hostTextLayer() const { return m_textLayer; }
     /** Display pipeline host: filmstrip soft provider for image-mode pending. */
     ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
-    /** Crop draft owns the live sample — no ladder/install/rematerialize. */
-    bool isCropDraftLockedItem(const ImageItem *item) const;
     /**
      * Warm overview tiles into the process-wide path registry for off-canvas
      * paths (Image-mode ±1 neighbors after nav settle). Controllers stay alive

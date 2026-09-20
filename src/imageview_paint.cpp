@@ -189,7 +189,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     // Painting here keeps handles a constant on-screen size under any view or
     // item scale — the same coordinate space as edge affordances and the HUD.
     if (m_cropCtrl.session().active()) {
-        paintCropOverlay(painter);
+        m_cropCtrl.paintCropOverlay(painter);
     }
     if (m_attentionCtrl.session().active()) {
         paintAttentionOverlay(painter);

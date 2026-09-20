@@ -4,8 +4,6 @@
     // --- Display pipeline host methods (Tier 5c; was private friend surface) ---
     void clearTextSelection();
     void refreshTextLayer();
-    bool isCropDraftLockedPath(const QString &path) const;
-    void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void scheduleGalleryStatusRefresh(int delayMs = 100);
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
     void syncImageModeSceneRect(ImageItem *item);

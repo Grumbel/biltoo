@@ -197,8 +197,6 @@
 
     /** Undo/redo: replace attention points on the current attention target. */
 
-    /** Shrink draft to non-background content (margin trim). */
-    void requestCropViewportUpdate();
 
 
     bool showTextRegions() const { return m_textLayer.showsRegions(); }

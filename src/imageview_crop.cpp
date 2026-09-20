@@ -3,14 +3,7 @@
 
 #include "imageview.h"
 
-#include "crophandle.h"
-#include "cropflash.h"
-
 #include <QImage>
-#include <QPainter>
-#include <QPoint>
-#include <QPointF>
-#include <QRectF>
 #include <QString>
 #include "imageitem.h"
 #include "imagecache.h"
@@ -18,168 +11,6 @@
 #include "sessionappearance.h"
 #include "contentxform.h"
 
-bool ImageView::isCropDraftLockedItem(const ImageItem *item) const
-{
-    return m_cropCtrl.isCropDraftLockedItem(item);
-}
-
-bool ImageView::isCropDraftLockedPath(const QString &path) const
-{
-    return m_cropCtrl.isCropDraftLockedPath(path);
-}
-
-void ImageView::cancelPathRasterForCrop(const QString &path)
-{
-    m_cropCtrl.cancelPathRasterForCrop(path);
-}
-
-void ImageView::fitImageOrUpdateWorkspace(ImageItem *item)
-{
-    m_cropCtrl.fitImageOrUpdateWorkspace(item);
-}
-
-void ImageView::relayoutAfterCropLeave(ImageItem *item)
-{
-    m_cropCtrl.relayoutAfterCropLeave(item);
-}
-
-void ImageView::ensureCropRectValid()
-{
-    m_cropCtrl.ensureCropRectValid();
-}
-
-void ImageView::alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor)
-{
-    m_cropCtrl.alignItemCenterToScene(item, sceneAnchor);
-}
-
-
-void ImageView::requestCropViewportUpdate()
-{
-    m_cropCtrl.requestCropViewportUpdate();
-}
-
-
-void ImageView::flashCropHud(const CropFlash::Hud &hud)
-{
-    m_cropCtrl.flashCropHud(hud);
-}
-
-
-
-SessionImageId ImageView::cropRecordSessionId(const ImageItem *item) const
-{
-    return m_cropCtrl.cropRecordSessionId(item);
-}
-
-void ImageView::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
-{
-    m_cropCtrl.recordSessionCrop(item, localCrop);
-}
-
-void ImageView::pushCropAppearanceUndo(ImageItem *item, const QString &text)
-{
-    m_cropCtrl.pushCropAppearanceUndo(item, text);
-}
-
-bool ImageView::applyCropCommit(ImageItem *item)
-{
-    return m_cropCtrl.applyCropCommit(item);
-}
-
-void ImageView::leaveCropModeInternal(bool apply)
-{
-    m_cropCtrl.leaveCropModeInternal(apply);
-}
-
-
-
-bool ImageView::prepareCropModeFullImage(ImageItem *item)
-{
-    return m_cropCtrl.prepareCropModeFullImage(item);
-}
-
-QRectF ImageView::cropRectView() const
-{
-    return m_cropCtrl.cropRectView();
-}
-
-void ImageView::beginCropHandleDrag(CropHandle h, const QPoint &viewPos)
-{
-    m_cropCtrl.beginCropHandleDrag(h, viewPos);
-}
-
-void ImageView::cropKeyboardMods(bool *shiftHeld, bool *ctrlHeld)
-{
-    m_cropCtrl.cropKeyboardMods(shiftHeld, ctrlHeld);
-}
-
-void ImageView::updateCropHandleDrag(const QPoint &viewPos)
-{
-    m_cropCtrl.updateCropHandleDrag(viewPos);
-}
-
-void ImageView::endCropHandleDrag()
-{
-    m_cropCtrl.endCropHandleDrag();
-}
-
-bool ImageView::contentLocalContains(ImageItem *item, const QPointF &local) const
-{
-    return m_cropCtrl.contentLocalContains(item, local);
-}
-
-void ImageView::beginCropRubberBand(const QPoint &viewPos)
-{
-    m_cropCtrl.beginCropRubberBand(viewPos);
-}
-
-void ImageView::updateCropRubberBand(const QPoint &viewPos)
-{
-    m_cropCtrl.updateCropRubberBand(viewPos);
-}
-
-void ImageView::finishCropRubberBand()
-{
-    m_cropCtrl.finishCropRubberBand();
-}
-
-void ImageView::endCropRubberBand()
-{
-    m_cropCtrl.endCropRubberBand();
-}
-
-void ImageView::paintCropOverlay(QPainter &painter)
-{
-    m_cropCtrl.paintCropOverlay(painter);
-}
-
-void ImageView::onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
-                                            quint64 gen)
-{
-    m_cropCtrl.onPoolCropFullRasterDecoded(path, decoded, gen);
-}
-
-void ImageView::requestCropFullRaster(const QString &path)
-{
-    m_cropCtrl.requestCropFullRaster(path);
-}
-
-void ImageView::maybeUpgradeCropFullRaster(const QString &path, const QImage &image)
-{
-    m_cropCtrl.maybeUpgradeCropFullRaster(path, image);
-}
-
-
-ImageItem *ImageView::cropSessionBoundItem() const
-{
-    return m_cropCtrl.cropSessionBoundItem();
-}
-
-ImageItem *ImageView::cropTargetItem() const
-{
-    return m_cropCtrl.cropTargetItem();
-}
 
 // --- from src/imageview_appearance.cpp ---
 
@@ -197,7 +28,6 @@ void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
         m_itemWorld.setPathState(item->path(), s);
     }
 }
-
 
 bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *app,
                                           SessionImageId *sidOut) const
@@ -222,7 +52,6 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
     }
     return false;
 }
-
 
 void ImageView::restoreSessionCropAppearance(ImageItem *item)
 {
@@ -253,7 +82,6 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     }
     fitImageOrUpdateWorkspace(item);
 }
-
 
 void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
                                     const WorkspaceItemState &state)
@@ -302,7 +130,6 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     }
     emit statusChanged();
 }
-
 
 void ImageView::emitCropApplyAppearance(SessionImageId sid, const QString &path,
                                            ImageItem *item, const QImage &preferredDisplay,

@@ -731,7 +731,7 @@ void DisplayPipelineController::syncImageFocusSurfaceState()
     const bool pending =
         m_view->hostPathRaster() && !path.isEmpty() && m_view->hostPathRaster()->isClimbPending(path);
     syncItemDisplaySurface(item, -1, pending);
-    if (m_view->hostCrop().session().isDraftSampleFrozen() && m_view->isCropDraftLockedPath(path)) {
+    if (m_view->hostCrop().session().isDraftSampleFrozen() && m_view->hostCrop().isCropDraftLockedPath(path)) {
         displaySurfaces().setFrozen(imageFocusSurfaceRef(), true);
     }
 }

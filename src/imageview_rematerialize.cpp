@@ -69,7 +69,7 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
         return;
     }
     // Crop draft owns the live sample — pure rematerialize must not soft↔full.
-    if (isCropDraftLockedItem(item)) {
+    if (m_cropCtrl.isCropDraftLockedItem(item)) {
         return;
     }
     if (tryRematerializeFromHost(item, want)) {
@@ -157,7 +157,7 @@ bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemSta
     if (!item) {
         return false;
     }
-    if (isCropDraftLockedItem(item)) {
+    if (m_cropCtrl.isCropDraftLockedItem(item)) {
         return false;
     }
     const QString path = item->path();
@@ -224,7 +224,7 @@ void ImageView::scheduleAsyncHostRematerialize(const QString &path, SessionImage
     if (path.isEmpty()) {
         return;
     }
-    if (isCropDraftLockedPath(path)) {
+    if (m_cropCtrl.isCropDraftLockedPath(path)) {
         return;
     }
     const QImage hostProbe = ImageCache::get(path);
@@ -271,7 +271,7 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
         return;
     }
     // Crop draft owns the target item — do not reinstall over orient-only draft.
-    if (isCropDraftLockedPath(path)) {
+    if (m_cropCtrl.isCropDraftLockedPath(path)) {
         return;
     }
     ImageItem *item = nullptr;

@@ -127,7 +127,7 @@ void ImageView::flushColorAdjustCommit()
         return;
     }
     // Crop draft freezes pixels; colour commit waits until crop exits.
-    if (isCropDraftLockedItem(item)) {
+    if (m_cropCtrl.isCropDraftLockedItem(item)) {
         return;
     }
     // Full rematerialize from host (async when multi-MP). Do **not** write

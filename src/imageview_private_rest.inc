@@ -144,22 +144,10 @@
      * @p path into the store (no-op when missing / thumtoo off).
      */
     /** Record that durable appearance was probed for @p sid (hit or miss). */
-    /**
-     * Map item-local draft rect to source pixel rect of the *current* pixmap,
-     * then compose into original on-disk coordinates in @p state.
-     */
-    void recordSessionCrop(ImageItem *item, const QRectF &localCrop);
 
     // CropHandle is defined in cropsession.h
-    ImageItem *cropTargetItem() const;
-    ImageItem *cropSessionBoundItem() const;
-    SessionImageId cropRecordSessionId(const ImageItem *item) const;
-    void fitImageOrUpdateWorkspace(ImageItem *item);
-    void ensureCropRectValid();
     QRectF cropRectItemLocal() const { return m_cropCtrl.session().currentRect(); }
     qreal cropRotation() const { return m_cropCtrl.session().currentRotation(); }
-    /** Crop corners in item-local space (rotation about rect centre). */
-    QRectF cropRectView() const;
     QPolygonF mapItemLocalPolygonToView(ImageItem *item, const QPolygonF &local) const;
     QPolygonF cropPolygonView() const;
     /** Viewport chrome button rects under the draft frame (empty when inactive). */
@@ -167,7 +155,6 @@
     bool cropAllowExpand() const { return m_cropCtrl.session().isAllowExpand(); }
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
-    void paintCropOverlay(QPainter &painter);
     void paintAttentionOverlay(QPainter &painter);
     int attentionHandleIndexAt(const QPoint &viewPos) const;
     bool attentionHandleAt(const QPoint &viewPos) const;
@@ -185,36 +172,11 @@
                                  const QVector<QPointF> &after,
                                  const QString &text);
     QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
-    void cropKeyboardMods(bool *shiftHeld, bool *ctrlHeld);
-    void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
-    void updateCropHandleDrag(const QPoint &viewPos);
-    void endCropHandleDrag();
-    bool contentLocalContains(ImageItem *item, const QPointF &local) const;
-    void finishCropRubberBand();
-    void beginCropRubberBand(const QPoint &viewPos);
-    void updateCropRubberBand(const QPoint &viewPos);
-    void endCropRubberBand();
-    void leaveCropModeInternal(bool apply);
-    /** Schedule thumtoo full / pool decode while crop shows a provisional sample. */
-    void requestCropFullRaster(const QString &path);
-    /** Upgrade crop source when native full arrives for m_cropCtrl.session().awaitingFullPath. */
-    void pushCropAppearanceUndo(ImageItem *item, const QString &text);
-    void relayoutAfterCropLeave(ImageItem *item);
-    void flashCropHud(const CropFlash::Hud &hud);
-    bool applyCropCommit(ImageItem *item);
     /**
      * Image mode: keep only multiples of 90° from session state; free Workspace
      * angles map to 0°.
      */
     static qreal cardinalRotationOrZero(qreal degrees);
-    /**
-     * Enter crop: show full on-disk pixels with prior crop as the draft rect
-     * so the region can grow. Returns false if the image cannot be prepared.
-     */
-    bool prepareCropModeFullImage(ImageItem *item);
-    void cancelPathRasterForCrop(const QString &path);
-    /** Workspace: shift item so local origin (image centre) maps to @p sceneAnchor. */
-    void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
     /**
      * After logical size change on the Image-mode target: keep on-screen framing
      * when aspect is stable (soft→full / probe magnitude). Refit only if aspect
