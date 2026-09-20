@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1794-register-ensure-tilelod-bag.** Stage 2: surface register ensures bag.
+Prior: **1793**.
+
+### Change
+- `registerItemDisplaySurface` calls `ensureTileBag(item)` after bind
+- Bag exists before first paint for newly registered canvas items
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1794-register-ensure-tilelod-bag.bundle HEAD
+```
+
+### Next
+- Optional full ImageView characterization link
+- Tier 4 path-order book / residual Stage 2 captureState
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1793-tilelod-bag-via-view.** Stage 2: paint path ensures pipeline bag.
 Prior: **1792**.
 

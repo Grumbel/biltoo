@@ -807,6 +807,8 @@ void DisplayPipelineController::registerItemDisplaySurface(ImageItem *item)
     const DisplaySurface::SurfaceId id = displaySurfaces().bind(
         kind, item->path(), item->sessionId());
     item->setDisplaySurfaceId(id);
+    // Stage 2: pipeline bag ready before first paint/tick (avoids local fallback).
+    ensureTileBag(item);
 }
 
 

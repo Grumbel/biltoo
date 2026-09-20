@@ -1039,3 +1039,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1791: ItemBag lazy unique_ptr on ImageItem (move-ready).
 - biltoo-1792: DisplayPipelineController owns ItemBag map; item attach/detach.
 - biltoo-1793: tileLodBag() ensures pipeline bag via ImageView when on scene.
+- biltoo-1794: registerItemDisplaySurface ensures pipeline tile bag.
