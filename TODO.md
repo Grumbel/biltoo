@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1758-group-paint-hot-hover.** Group transform paint hot via hover.
+Prior: **1757**.
+
+### Change
+- `GroupTransformSession::beginDrag` sets `hoverHandle = handle` so hot sticks
+- `isHandleHot` is hover-only (view freezes hover while scale/rotate active)
+- `handle` remains interaction authority for mid-drag math
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1758-group-paint-hot-hover.bundle HEAD
+```
+
+### Next
+- biltoo-build + multi-select scale/rotate smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1757-item-apply-placement.** ImageItem::applyPlacement pose writer.
 Prior: **1756**.
 

@@ -1000,3 +1000,5 @@ Phase 1–6 rules still apply. Additions:
   rotation is sole free-rotate field.
 - biltoo-1757: ImageItem::applyPlacement single live pose writer; ImageView
   applyPlacement thin-forwards.
+- biltoo-1758: GroupTransformSession paint hot via hover (beginDrag sticks
+  hoverHandle); isHandleHot hover-only; handle stays mid-drag authority.

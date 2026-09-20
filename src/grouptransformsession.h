@@ -43,9 +43,10 @@ public:
 
     bool isRotateDrag() const { return rotateDrag; }
 
+    /** Paint hot: hover only (beginDrag sticks hover; view freezes it while active). */
     bool isHandleHot(int id) const
     {
-        return hoverHandle == id || handle == id;
+        return hoverHandle == id;
     }
 
     bool hasHoverHandle() const { return hoverHandle != -1; }
@@ -82,6 +83,8 @@ public:
                    const QList<WorkspaceItemState> &states)
     {
         handle = h;
+        // Paint hot sticks for the drag: hover is frozen while scale/rotate active.
+        hoverHandle = h;
         scaleDrag = !isRotate;
         rotateDrag = isRotate;
         boundsStart = bounds;
