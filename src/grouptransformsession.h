@@ -154,6 +154,13 @@ public:
         return dragStartPlacements.at(i);
     }
 
+    const WorkspaceItemState &dragStartStateAt(int i) const
+    {
+        return dragStartStates.at(i);
+    }
+
+    bool hasDragItems() const { return !dragItems.isEmpty(); }
+
     /** Drop active scale/rotate drag (also clears hover). */
     void endDrag()
     {

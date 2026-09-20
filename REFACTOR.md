@@ -1004,3 +1004,5 @@ Phase 1–6 rules still apply. Additions:
   hoverHandle); isHandleHot hover-only; handle stays mid-drag authority.
 - biltoo-1759: GroupTransformSession::currentHandle(); drop unused hasActiveHandle;
   updateGroupScale reads accessor.
+- biltoo-1760: GroupTransformSession dragStartStateAt/hasDragItems; release undo and
+  canvas-focus use accessors.

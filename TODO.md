@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1760-group-drag-accessors.** Group drag list accessors.
+Prior: **1759**.
+
+### Change
+- `dragStartStateAt` / `hasDragItems` on GroupTransformSession
+- Release undo + canvas-focus use accessors (no public dragItems/dragStartStates reads)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1760-group-drag-accessors.bundle HEAD
+```
+
+### Next
+- biltoo-build + multi-select scale/rotate undo smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1759-group-current-handle.** GroupTransformSession::currentHandle.
 Prior: **1758**.
 

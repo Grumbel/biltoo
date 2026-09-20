@@ -333,15 +333,15 @@ bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
     if (!(m_groupXform.isScaleDrag() || m_groupXform.isRotateDrag()) || event->button() != Qt::LeftButton) {
         return false;
     }
-    if (m_undoStack && !m_groupXform.dragItems.isEmpty()) {
+    if (m_undoStack && m_groupXform.hasDragItems()) {
         m_undoStack->beginMacro(m_groupXform.isRotateDrag() ? tr("Rotate selection")
                                                   : tr("Scale selection"));
-        for (int i = 0; i < m_groupXform.dragItems.size(); ++i) {
+        for (int i = 0; i < m_groupXform.dragCount(); ++i) {
             ImageItem *item = m_groupXform.dragItemAt(i);
-            if (!item || i >= m_groupXform.dragStartStates.size()) {
+            if (!item) {
                 continue;
             }
-            pushItemTransformUndo(item, m_groupXform.dragStartStates.at(i), captureState(item),
+            pushItemTransformUndo(item, m_groupXform.dragStartStateAt(i), captureState(item),
                                   tr("Transform"));
         }
         m_undoStack->endMacro();
