@@ -469,4 +469,13 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
     validateUniqueLiveSessionIds("rebindWorkspaceSession");
 }
 
+bool ImageView::pathOnLiveCanvas(const QString &path) const
+{
+    for (const ImageItem *ii : m_items) {
+        if (ii && ii->path() == path) {
+            return true;
+        }
+    }
+    return false;
+}
 

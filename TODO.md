@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1895-drop-imageview-load.** Delete residual imageview_load.cpp.
+Prior: **1894**.
+
+### Change
+- `setImageModeSoftProvider` inlined next to `hostImageModeSoftProvider`
+- `pathOnLiveCanvas` moved to `imageview_canvas.cpp` (owns `m_items`)
+- Removed `src/imageview_load.cpp` from tree and `BILTOO_LIB_SOURCES`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1895-drop-imageview-load-516d734.bundle HEAD
+```
+Requires tip **1894** (base **516d734**).
+
+### Next
+- Green build default + CHARACTERIZATION=ON
+- ctest imageview-characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1894-pathorder-inline.** Inline pathOrderOccurrences on host pipeline.
 Prior: **1893**.
 

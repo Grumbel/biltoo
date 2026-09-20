@@ -235,7 +235,6 @@ set(BILTOO_LIB_SOURCES
   src/motionscrollchrome.h
   src/softdisplaypolicy.h
   src/softdisplaypolicy.cpp
-  src/imageview_load.cpp
   src/tile_load_coordinator.cpp
   src/imageview_view.cpp
   src/imageview_framing.cpp

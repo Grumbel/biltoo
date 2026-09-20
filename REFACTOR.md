@@ -1120,6 +1120,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1892: ImageView characterization body (enterGallery, pack, crop, LoadAdd).
 - biltoo-1893: REFACTOR progress log through 1892.
 - biltoo-1894: pathOrderOccurrences inline on host pipeline.
+- biltoo-1895: delete imageview_load.cpp; pathOnLiveCanvas → canvas TU.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

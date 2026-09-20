@@ -66,6 +66,7 @@
 
 namespace tilelod { class TileLodController; }
 #include <functional>
+#include <utility>
 #include <QVector>
 #include <QList>
 #include <QImage>
@@ -139,7 +140,10 @@ public:
      */
     using ImageModeSoftProvider =
         std::function<QImage(const QString &path, SessionImageId sid, bool *displayReady)>;
-    void setImageModeSoftProvider(ImageModeSoftProvider provider);
+    void setImageModeSoftProvider(ImageModeSoftProvider provider)
+    {
+        m_imageModeSoftProvider = std::move(provider);
+    }
 
     ~ImageView() override;
     bool addImage(const QString &path);
