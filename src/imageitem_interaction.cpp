@@ -295,36 +295,6 @@ qreal ImageItem::screenScale() const
     return ViewTransform::floorScale(sMax);
 }
 
-bool ImageItem::isChromeHandle(Handle h) const
-{
-    return ItemHandlePolicy::isChromeHandle(h);
-}
-
-bool ImageItem::isRotateHandle(Handle h) const
-{
-    return ItemHandlePolicy::isRotateHandle(h);
-}
-
-bool ImageItem::isCornerScaleHandle(Handle h) const
-{
-    return ItemHandlePolicy::isCornerScaleHandle(h);
-}
-
-bool ImageItem::isEdgeScaleHandle(Handle h) const
-{
-    return ItemHandlePolicy::isEdgeScaleHandle(h);
-}
-
-bool ImageItem::isScaleHandle(Handle h) const
-{
-    return ItemHandlePolicy::isScaleHandle(h);
-}
-
-bool ImageItem::isShearHandle(Handle h) const
-{
-    return ItemHandlePolicy::isShearHandle(h);
-}
-
 QPointF ImageItem::scaleAnchorLocal(Handle h) const
 {
     // Opposite corner/edge — kept fixed when not scaling from the centre.
@@ -382,7 +352,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     const Handle h = press.handle;
     ItemComponents::Placement pl = press.placement;
 
-    if (isCornerScaleHandle(h)) {
+    if (ItemHandlePolicy::isCornerScaleHandle(h)) {
         if (fromCenter) {
             const qreal d0 = QLineF(itemCentre, press.scenePos).length();
             const qreal d1 = QLineF(itemCentre, scenePos).length();
@@ -409,7 +379,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
         return;
     }
 
-    if (isEdgeScaleHandle(h)) {
+    if (ItemHandlePolicy::isEdgeScaleHandle(h)) {
         // Image axes in *scene* at press — must match PlacementLinear/Qt (not a
         // textbook CCW formula; Qt rotate is clockwise with Y-down).
         const QTransform Lpress = PlacementLinear::make(
@@ -566,11 +536,6 @@ void ImageItem::setOpacityFromSliderPos(const QPointF &scenePos)
         pl.opacity = ItemFrameGeometry::opacityFromTrackParam(tval);
         applyPlacement(pl);
     }
-}
-
-bool ImageItem::isUprightChromeHandle(Handle h) const
-{
-    return ItemHandlePolicy::isUprightChromeHandle(h);
 }
 
 QPointF ImageItem::handleCenter(Handle h) const
@@ -1793,7 +1758,7 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
     }
     if (h == Handle::OpacitySlider) {
         setOpacityFromSliderPos(scenePos);
-    } else if (isRotateHandle(h)) {
+    } else if (ItemHandlePolicy::isRotateHandle(h)) {
         const QPointF itemCentre = this->scenePos();
         // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
         const qreal a0 = PlacementLinear::angleAbout(itemCentre, press.scenePos);
@@ -1802,9 +1767,9 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
         pl.rotation = PlacementLinear::freeRotationFromDrag(
             press.placement.rotation, a0, a1, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
         applyPlacement(pl);
-    } else if (isScaleHandle(h)) {
+    } else if (ItemHandlePolicy::isScaleHandle(h)) {
         applyScaleHandleDrag(scenePos, mods, press);
-    } else if (isShearHandle(h)) {
+    } else if (ItemHandlePolicy::isShearHandle(h)) {
         applyShearHandleDrag(scenePos, press);
     }
     notifyViewStatus();

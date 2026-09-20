@@ -308,11 +308,7 @@ private:
      * along the most stretched axis. Used for drawing chrome at ~constant screen size.
      */
     qreal screenScale() const;
-    bool isChromeHandle(Handle h) const;
-    bool isRotateHandle(Handle h) const;
     void paintInteractionChrome(QPainter *painter, const QRectF &localRect) const;
-    /** Raise/Lower keep screen-upright glyphs (counter-rotated when painting). */
-    bool isUprightChromeHandle(Handle h) const;
     void activateChromeHandle(Handle h);
     QRectF opacitySliderRect() const;
     void setOpacityFromSliderPos(const QPointF &scenePos);
@@ -380,10 +376,6 @@ private:
     Handle m_hoverHandle = Handle::None;
     /** Gallery: item under the mouse (no transform chrome). */
     bool m_galleryHovered = false;
-    bool isScaleHandle(Handle h) const;
-    bool isShearHandle(Handle h) const;
-    bool isCornerScaleHandle(Handle h) const;
-    bool isEdgeScaleHandle(Handle h) const;
     QPointF scaleAnchorLocal(Handle h) const;
     /** Field mutators — only applyPlacement may write live pose (Stage 2). */
     void setItemScale(qreal scale);
