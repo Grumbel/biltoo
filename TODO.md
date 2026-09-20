@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1849-fix-attention-pipeline-calls.** Attention/pipeline residual hosts.
+Prior: **1848**.
+
+### Change
+- `restoreAttentionPoints` → `hostAttention()`
+- `tryInstallImageModeSample` → `hostDisplayPipeline()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1849-fix-attention-pipeline-calls.bundle HEAD
+```
+Requires tip **1848**.
+
+### Next
+- biltoo-build
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1848-fix-demotion-call-sites.** Residual demotion call-site fixes.
 Prior: **1847**.
 
