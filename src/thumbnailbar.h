@@ -147,10 +147,6 @@ public:
     /** Multi-select session paths for Workspace canvas membership (not app ViewMode). */
     void setMultiSelectEnabled(bool on);
     bool multiSelectEnabled() const { return m_multiSelect; }
-    /** @deprecated Use setMultiSelectEnabled. */
-    void setWorkspaceMode(bool on) { setMultiSelectEnabled(on); }
-    /** @deprecated Use multiSelectEnabled. */
-    bool workspaceMode() const { return multiSelectEnabled(); }
 
     QList<int> selectedIndices() const;
     void setSelectedIndices(const QList<int> &indices);

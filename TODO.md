@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1889-refactor-tier4-wording.** REFACTOR historical path-order wording.
+Prior: **1888**.
+
+### Change
+- Historical "second copy" finding annotated as fixed (overlay + Tier 4b)
+- Dual-write / ViewBook policy paragraphs aligned with overlay resolve
+- Call-site inventory wording (pack rows, not book)
+- Drop deprecated ThumbnailBar::setWorkspaceMode / workspaceMode (zero callers;
+  multiSelectEnabled is the only API)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1889-refactor-tier4-wording-516d734.bundle HEAD
+```
+Requires tip **1888** (base **516d734**).
+
+### Next
+- Full offscreen ImageView characterization when Qt/thumtoo available
+- Optional imageview.h public-surface narrowing
+- Keep Explicit suppress until full harness green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1888-refactor-tier4-docs.** REFACTOR Tier 4 residual matches overlay.
 Prior: **1887**.
 

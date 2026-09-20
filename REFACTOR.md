@@ -522,10 +522,11 @@ Two specific findings:
 
 - `imageview_view.cpp` (3,390 lines) is **65% slideshow** by line count, with
   HUD text and zoom/framing stapled on. Three unrelated subsystems, one file.
-- `ImageView::m_pathOrderBook` (`SessionPathOrder`: paths + parallel
-  `SessionImageId`s) is a **second copy of `SessionDocument`'s data**, and
-  `m_appearance` still lives on the view. The Target architecture diagram above
-  shows appearance owned by `SessionDocument`; that diagram is not yet true.
+- ~~`ImageView::m_pathOrderBook`~~ was a **second copy of `SessionDocument`'s
+  data** (fixed: `m_pathOrderOverlay`, tips 1883–1884; Explicit empty still
+  dual-model for mode-leave / LoadAdd). Appearance now lives on
+  `SessionDocument` (Tier 4b). Full ImageView harness still open before
+  document-only pack is trusted.
 
 ### Extraction ladder
 
@@ -672,20 +673,20 @@ migration (Tier 4b) is done separately.
 | `displaypipelinecontroller_load` reorder | `currentPackOrder` | Order live items | Yes |
 | `imageview_canvas` / `canvas_place` | `pathOrderSetOrder` / `AppendRow` / `currentPackOrder` | Session place + ad-hoc | Yes — invalid ids OK |
 | `imageview_modes` enter transitions | `pathOrderClear` | Mode switch | Yes |
-| `imageview_session_remove` | `currentPackOrder` / `pathOrderSetOrder` | Prune book rows | Yes |
+| `imageview_session_remove` | `currentPackOrder` / `pathOrderSetOrder` | Prune pack rows | Yes |
 | `imageview_size_book` sizeResolvePathOrder | `currentPackOrder` | Probe order | Yes |
-| `imageview_load` pathOrderOccurrences | book count | LoadAdd multiplicity | **Must** be overlay |
-| `firstSessionIdForPath` | doc then book | Identity lookup | Doc preferred |
+| `imageview_load` pathOrderOccurrences | overlay count | LoadAdd multiplicity | **Must** be overlay |
+| `firstSessionIdForPath` | doc then overlay | Identity lookup | Doc preferred |
 
-`PackOrderView::fromDocument()` is valid only when the book **aligns** with the document
-(`alignsWithDocument`) **and** there are no ad-hoc Workspace rows (invalid session ids /
-extra multiplicity). Today Gallery pack always reads the book; switching readers to
-`fromDocument()` without a dual-write design would break LoadAdd duplicates and ad-hoc place.
+`PackOrderView::fromDocument()` is valid only when pack **aligns** with the
+document (`alignsWithDocument`) **and** there are no ad-hoc Workspace rows
+(invalid session ids / extra multiplicity). Gallery pack reads
+`currentPackOrder()` → overlay resolve (Explicit or FollowDocument when
+collapsed). Do not use SessionDocument alone for pack while Explicit empty /
+LoadAdd multiplicity still matter.
 
 **Policy type (tip 1873, removed 1887):** former `PackOrderReadSource` +
-`packOrderForRead()` — pack reads now only via overlay resolve. Historical:
-`packorderview.h`. `currentPackOrder()` reads `ViewBook` only. Do not switch pack
-readers to `SessionDocument` without the dual-write design below.
+`packOrderForRead()` — pack reads now only via overlay resolve.
 
 **PackOrderOverlay (tip 1881):** design type in `src/packorderoverlay.h` with
 FollowDocument vs Explicit modes. Explicit empty models `pathOrderClear` (pack
@@ -909,7 +910,7 @@ truth**, not cache locality or SoA speed.
    sites across appearance, bake, crop, transform, workspace chrome, …). The
    *Current pain* rows for duplicate paths, crop identity, and gallery reorder
    losing ids are **sync bugs between these copies** — the same class of bug
-   Phase 6 Tier 4 residual (`m_pathOrderBook` vs `SessionDocument`) addresses
+   Phase 6 Tier 4 residual (pack overlay vs `SessionDocument` dual-model) addresses
    for pack order.
 
 ### What this phase is not
@@ -1114,6 +1115,8 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1885: imageview-characterization pure overlay host simulation.
 - biltoo-1886: pathorder-dual-model overlay dual-model cases.
 - biltoo-1887: remove dead PackOrderReadSource / packOrderForRead.
+- biltoo-1888: REFACTOR Tier 4 residual docs match overlay storage.
+- biltoo-1889: REFACTOR historical path-order wording cleanup.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
