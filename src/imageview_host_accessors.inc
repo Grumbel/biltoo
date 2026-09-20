@@ -32,3 +32,6 @@
     ItemInteractSession &hostItemInteract() { return m_itemInteract; }
     const ItemInteractSession &hostItemInteract() const { return m_itemInteract; }
     void setPageGuideSelected(bool on);
+    PerfStats &hostPerf() { return m_perf; }
+    const PerfStats &hostPerf() const { return m_perf; }
+

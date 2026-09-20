@@ -159,7 +159,6 @@
     static bool layoutDefersPopulateUntilSizes(LayoutMode mode);
     void noteGallerySizeProbeSettled(const QString &path);
     /** LQIP install + tile pyramid request for a Gallery path. */
-    void scheduleGalleryDecode(const QString &path);
 
     /** Recover blank Gallery cells that never got LQIP installed. */
     void gallerySoftWatchdogTick();

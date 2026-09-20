@@ -118,6 +118,8 @@ public:
     void scheduleStatusRefresh(int delayMs = 100);
     /** Debounced viewport soft/LQIP decode window (scroll/climb). */
     void scheduleDecodeWindowRefresh(int delayMs = 48);
+    int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending = nullptr);
+    void updateDecodeWindow();
 
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
     {

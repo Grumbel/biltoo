@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1670-gallery-decode-window-body.** Move updateDecodeWindow onto GalleryController.
+Prior: **1669**.
+
+### Change
+- `GalleryController::updateDecodeWindow` + `galleryInstallHostSoftOntoBlanks`
+- Schedule timers already on controller (1669); timer callback calls local update
+- ImageView thin-forwards; host: `hostPerf`, public `scheduleGalleryDecode`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1670-gallery-decode-window-body.bundle HEAD
+```
+
+### Next
+- biltoo-build + Gallery soft/scroll verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1669-gallery-decode-timers.** Gallery decode/status schedule timers on GalleryController.
 Prior: **1668**.
 
