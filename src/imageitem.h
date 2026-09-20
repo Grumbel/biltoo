@@ -190,10 +190,6 @@ public:
     void bakeRotate90(int quarterTurns);
     /** Bake horizontal/vertical mirror into source pixels; clears flip flags. */
     void bakeFlip(bool horizontal, bool vertical);
-    void toggleHFlip();
-    void toggleVFlip();
-    void zoomBy(qreal factor);
-    void rotateBy(qreal degrees);
 
     /**
      * Crop displayed content to @p localRect (item coordinates, contentRect space).

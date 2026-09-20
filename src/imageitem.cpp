@@ -415,22 +415,6 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
     invalidateDeviceCache();
 }
 
-void ImageItem::zoomBy(qreal factor)
-{
-    ItemComponents::Placement pl = placement();
-    pl.scale *= factor;
-    pl.scaleY *= factor;
-    applyPlacement(pl);
-}
-
-void ImageItem::rotateBy(qreal degrees)
-{
-    // Generic spin (shortcuts): total-angle change via Placement writer.
-    ItemComponents::Placement pl = placement();
-    pl.rotation = PlacementLinear::normalizeDegrees(pl.rotation + degrees);
-    applyPlacement(pl);
-}
-
 void ImageItem::setItemOpacity(qreal opacity)
 {
     m_opacity = PlacementLinear::clampOpacity(opacity);
@@ -484,16 +468,6 @@ void ImageItem::setItemVFlip(bool on)
     updateDisplayedPixmap();
     prepareGeometryChange();
     update();
-}
-
-void ImageItem::toggleHFlip()
-{
-    bakeFlip(true, false);
-}
-
-void ImageItem::toggleVFlip()
-{
-    bakeFlip(false, true);
 }
 
 void ImageItem::setInteractive(bool on)
