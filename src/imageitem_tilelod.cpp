@@ -33,6 +33,12 @@ tilelod::ItemBag &ImageItem::tileLodBag()
     if (m_tileLodAttached) {
         return *m_tileLodAttached;
     }
+    // Prefer pipeline-owned bag when this item is on an ImageView scene.
+    if (scene() && !scene()->views().isEmpty()) {
+        if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
+            return iv->hostDisplayPipeline().ensureTileBag(this);
+        }
+    }
     if (!m_tileLod) {
         m_tileLod = std::make_unique<tilelod::ItemBag>();
     }

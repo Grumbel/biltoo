@@ -372,8 +372,8 @@ private:
                              ColorAdjustments const &grade) const;
     /**
      * Single access path for tile runtime state.
-     * Prefers pipeline-attached bag; else lazy local unique_ptr.
-     * DisplayPipelineController owns the bag when attached (Stage 2).
+     * Prefer pipeline-owned bag (ensure via ImageView when on scene);
+     * else local unique_ptr fallback.
      */
     tilelod::ItemBag &tileLodBag();
     const tilelod::ItemBag &tileLodBag() const;

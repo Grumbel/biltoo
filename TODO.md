@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1793-tilelod-bag-via-view.** Stage 2: paint path ensures pipeline bag.
+Prior: **1792**.
+
+### Change
+- `ImageItem::tileLodBag()` prefers `ImageView::hostDisplayPipeline().ensureTileBag(this)`
+  when the item is on a scene with an ImageView
+- Local unique_ptr only when no view (tests / detached items)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1793-tilelod-bag-via-view.bundle HEAD
+```
+
+### Next
+- Optional full ImageView characterization link
+- Residual Stage 2 / Tier 4 path-order book demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1792-pipeline-owns-tilelod-bag.** Stage 2: pipeline owns ItemBag map.
 Prior: **1791**.
 
