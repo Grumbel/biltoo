@@ -103,10 +103,9 @@ stdenv.mkDerivation (finalAttrs: {
   cmakeBuildType = "RelWithDebInfo";
   separateDebugInfo = true;
 
-  # ccacheStdenv: writable CCACHE_DIR before cmake probes the compiler.
-  # Prefer host dirs mounted via extra-sandbox-paths for persistent nix-build hits.
-  # Must *write* a probe file: [ -w ] / mkdir -p alone is not enough when tmp/
-  # is owned by another uid (common host /var/cache/ccache layout).
+  # ccacheStdenv: shared host CCACHE_DIR only (no ephemeral fallback).
+  # Must *write* a probe under dir/tmp — [ -w ] alone misses wrong tmp/ ownership.
+  # Fail the build if no shared path is usable; fix host perms rather than hide it.
   prePhases = [ "ccacheDirPhase" ];
   ccacheDirPhase = ''
     _biltoo_ccache_usable() {
@@ -121,12 +120,11 @@ stdenv.mkDerivation (finalAttrs: {
     }
 
     _chosen=""
-    # Honour pre-set CCACHE_DIR only if actually writable inside the sandbox.
     if [ -n "''${CCACHE_DIR:-}" ] && _biltoo_ccache_usable "$CCACHE_DIR"; then
       _chosen="$CCACHE_DIR"
     else
       if [ -n "''${CCACHE_DIR:-}" ]; then
-        echo "biltoo ccache: ignoring unwritable CCACHE_DIR=$CCACHE_DIR"
+        echo "biltoo ccache: pre-set CCACHE_DIR=$CCACHE_DIR is not writable in the sandbox"
       fi
       for _cand in /var/cache/ccache /nix/var/cache/ccache; do
         if _biltoo_ccache_usable "$_cand"; then
@@ -136,29 +134,19 @@ stdenv.mkDerivation (finalAttrs: {
       done
     fi
     if [ -z "$_chosen" ]; then
-      if [ -n "''${NIX_BUILD_TOP:-}" ]; then
-        _chosen="$NIX_BUILD_TOP/.ccache"
-      else
-        _chosen="''${XDG_CACHE_HOME:-''${HOME:-/tmp}/.cache}/ccache-biltoo"
-      fi
+      echo "biltoo ccache: FATAL — no writable shared cache (no ephemeral fallback)"
+      echo "biltoo ccache: candidates: /var/cache/ccache /nix/var/cache/ccache (or CCACHE_DIR)"
+      echo "biltoo ccache: fix host:"
+      echo "  sudo mkdir -p /var/cache/ccache/tmp"
+      echo "  sudo chown root:nixbld /var/cache/ccache"
+      echo "  sudo chmod 2775 /var/cache/ccache   # or 1777"
+      echo "  # nix.conf: extra-sandbox-paths = /var/cache/ccache"
+      echo "  sudo systemctl restart nix-daemon"
+      echo "biltoo ccache: diagnose: nix run .#ccache-check"
+      exit 1
     fi
     export CCACHE_DIR="$_chosen"
-    mkdir -p "$CCACHE_DIR/tmp"
-    if ! _biltoo_ccache_usable "$CCACHE_DIR"; then
-      # Last resort: always-writable build top (should not fail).
-      export CCACHE_DIR="$NIX_BUILD_TOP/.ccache"
-      mkdir -p "$CCACHE_DIR/tmp"
-    fi
-    _mode=shared-host
-    case "$CCACHE_DIR" in
-      "$NIX_BUILD_TOP"/*) _mode=ephemeral ;;
-    esac
-    echo "biltoo ccache: dir=$CCACHE_DIR mode=$_mode"
-    if [ "$_mode" = ephemeral ]; then
-      echo "biltoo ccache: no hits across nix builds — run: nix run .#ccache-check"
-      echo "biltoo ccache: tip: sudo chown root:nixbld /var/cache/ccache && sudo chmod 2775 /var/cache/ccache"
-      echo "biltoo ccache:      (or chmod 1777) and ensure extra-sandbox-paths lists the dir"
-    fi
+    echo "biltoo ccache: dir=$CCACHE_DIR mode=shared-host"
   '';
 
   # Nixpkgs Qt/KDE setup hooks inject many -DKDE_INSTALL_* and related cmake

@@ -19,11 +19,8 @@
           (final: prev: {
             ccacheWrapper = prev.ccacheWrapper.override {
               extraConfig = ''
-                # nix build: HOME is /homeless-shelter (not writable). Prefer a
-                # host cache mounted via nix.conf extra-sandbox-paths; else use
-                # the ephemeral build dir (works, but no cross-build hits).
-                # Probe real write access — [ -w ] alone misses tmp/ owned by
-                # another uid (ccache then fails with Permission denied).
+                # Shared host cache only (no ephemeral fallback). HOME under
+                # nix build is /homeless-shelter. Probe real write under dir/tmp.
                 _biltoo_ccache_usable() {
                   local d="$1"
                   mkdir -p "$d/tmp" 2>/dev/null || return 1
@@ -46,14 +43,11 @@
                   done
                 fi
                 if [ -z "$_chosen" ]; then
-                  if [ -n "''${NIX_BUILD_TOP:-}" ]; then
-                    _chosen="$NIX_BUILD_TOP/.ccache"
-                  else
-                    _chosen="''${XDG_CACHE_HOME:-''${HOME:-/tmp}/.cache}/ccache-biltoo"
-                  fi
+                  echo "ccache: FATAL — no writable shared CCACHE_DIR (no ephemeral fallback)" >&2
+                  echo "ccache: fix /var/cache/ccache perms + extra-sandbox-paths; nix run .#ccache-check" >&2
+                  exit 1
                 fi
                 export CCACHE_DIR="$_chosen"
-                mkdir -p "$CCACHE_DIR/tmp" || true
                 export CCACHE_COMPRESS=1
               '';
             };
@@ -121,7 +115,7 @@
           _esp=$(nix show-config 2>/dev/null | sed -n 's/^extra-sandbox-paths = //p' | head -n1 || true)
           if [ -z "$_esp" ]; then
             echo "  (empty — host cache will NOT be visible inside the sandbox)"
-            echo "  → nix build falls back to \$NIX_BUILD_TOP/.ccache (ephemeral)"
+            echo "  → nix build will FAIL (no ephemeral fallback)"
           else
             echo "  $_esp"
             case " $_esp " in
@@ -138,9 +132,8 @@
           echo "  (nix show-config not available)"
         fi
         echo ""
-        echo "Without a shared path: nix build still succeeds (ccacheStdenv +"
-        echo "ephemeral \$NIX_BUILD_TOP/.ccache) but cache dies with the build."
-        echo "With a shared path: recompile hits accumulate across nix builds."
+        echo "Without a writable shared path: nix build FAILS (no ephemeral fallback)."
+        echo "With a writable shared path + extra-sandbox-paths: hits accumulate."
       '';
 
     in
@@ -487,22 +480,21 @@
                 echo "  stats:    (ccache -s failed — check CCACHE_DIR permissions)"
               fi
             fi
-            echo "  nix build:"
-            _nb_mode=ephemeral
+            echo "  nix build (shared host only — no ephemeral fallback):"
+            _nb_ok=
             for _cand in /var/cache/ccache /nix/var/cache/ccache; do
-              if [ -d "$_cand" ] && [ -w "$_cand" ]; then
-                _nb_mode=shared-host
-                _nb_dir="$_cand"
+              if mkdir -p "$_cand/tmp" 2>/dev/null && ( : >"$_cand/tmp/.biltoo-write-test.$$" ) 2>/dev/null; then
+                rm -f "$_cand/tmp/.biltoo-write-test.$$" 2>/dev/null || true
+                _nb_ok="$_cand"
                 break
               fi
             done
-            if [ "$_nb_mode" = shared-host ]; then
-              echo "    host dir: $_nb_dir (writable on this machine)"
-              echo "    expected log line: biltoo ccache: dir=$_nb_dir mode=shared-host"
-              echo "    (requires extra-sandbox-paths for that dir — already OK if you see shared-host)"
+            if [ -n "$_nb_ok" ]; then
+              echo "    host dir: $_nb_ok (writable probe OK)"
+              echo "    expected log line: biltoo ccache: dir=$_nb_ok mode=shared-host"
+              echo "    (requires extra-sandbox-paths for that dir)"
             else
-              echo "    host dir: none writable under /var/cache/ccache or /nix/var/cache/ccache"
-              echo "    expected log line: biltoo ccache: dir=\$NIX_BUILD_TOP/.ccache mode=ephemeral"
+              echo "    host dir: NONE writable — nix build will FAIL"
               echo "    setup: nix run .#ccache-check"
             fi
             echo "────────────────────────────────────────────────────────"
