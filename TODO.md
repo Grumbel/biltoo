@@ -2,6 +2,35 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1879-restore-private-members.** Restore ImageView members deleted by 1878 orphan strip.
+Prior: **1878**.
+
+### Change
+- Tip 1878 orphan-doc strip removed real private members and method decls that
+  sat between orphan comments (not only comments)
+- Restore: `m_sessionDoc`, `m_centreProgress`, `m_zoomRegion`, `m_itemInteract`,
+  `m_tileNeighborPrefetch`, `m_perf`, `m_gallerySoftWatchdog`,
+  `m_layoutDebounceTimer`, `m_layoutDebounce`, `kMaxIdleGalleryDecodes`
+- Restore method decls: `validateUniqueLiveSessionIds`, bake/content helpers,
+  `hudFileName`
+- Fixes compile: host accessors and ImageView ctor/dtor see members again
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1879-restore-private-members.bundle HEAD
+```
+Requires tip **1878** (base **1858** / `1e112d94`).
+
+### Next
+- Tier 4 dual-write / PackOrderOverlay design before deleting `m_pathOrderBook`
+- nix build after ccache host perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1878-private-orphan-docs.** Strip orphaned private docblocks after extractions.
 Prior: **1877**.
 

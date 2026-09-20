@@ -148,11 +148,15 @@
      */
     ItemWorld m_itemWorld;
     SessionAppearanceStore *m_appearanceBound = nullptr;
+    /** Non-owning SessionDocument (MainWindow); preferred for membership queries. */
+    SessionDocument *m_sessionDoc = nullptr;
     /**
      * Path → native pixel size + provisional / probe-scheduled sets.
      * Dimensions are a property of the file; safe to key by path (not id).
      */
     ImageSizeBook m_sizeBook;
+    /** Centre HUD progress (expand / size resolve / sort). */
+    CentreProgress m_centreProgress;
     /** Packaged-layout size gate (timers + pending); canvas finish via Host. */
     GallerySizeResolve m_gallerySizeResolve;
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
@@ -191,12 +195,18 @@
     PathRasterService *m_pathRaster = nullptr;
     static constexpr int kGalleryVirtualThreshold = 1;
     static constexpr int kMaxConcurrentGalleryDecodes = 8;
+    /** Off-screen soft-decodes while visible work is idle (≤ free slots). */
+    static constexpr int kMaxIdleGalleryDecodes = 2;
     // --- LoadAdd pending-bind helpers ---
 
     SessionBindBook m_bindBook;
     /** Content appearance staged by Duplicate until bindSelectedSessionIds. */
     PendingItemAppearanceBook m_pendingAppearance;
     ViewportChrome m_chrome;
+    /** One-shot rubber-band zoom (Z). */
+    ZoomRegionGesture m_zoomRegion;
+
+    ItemInteractSession m_itemInteract;
 
     /** Multi-select group scale/rotate gesture (Workspace). */
     GroupTransformSession m_groupXform;
@@ -205,5 +215,14 @@
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
     GalleryRelayoutSuppress m_galleryRelayoutSuppress;
     QTimer *m_statusRefreshTimer = nullptr;
+    /** Off-canvas neighbor tile prefetch (session-replace clears). */
+    TileNeighborPrefetch m_tileNeighborPrefetch;
+    /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
+    PerfStats m_perf;
+
+    QTimer *m_gallerySoftWatchdog = nullptr;
+    QTimer *m_layoutDebounceTimer = nullptr;
+    LayoutDebounce m_layoutDebounce;
+    /** Debounce colour-slider durable write + filmstrip (see setTargetColorAdjustments). */
     QTimer *m_colorAdjustCommitTimer = nullptr;
     ColorAdjustCommit m_colorAdjustCommit;

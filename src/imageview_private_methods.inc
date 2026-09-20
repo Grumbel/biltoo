@@ -11,6 +11,8 @@
             || zone == EdgeZone::GalleryReturn;
     }
 
+    /** qCritical if two live/stashed items share one SessionImageId. */
+    bool validateUniqueLiveSessionIds(const char *context = nullptr) const;
 
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
     QString loadingStatusHudLine() const;
@@ -137,6 +139,19 @@
 
     void flushColorAdjustCommit();
 
+    /** Bake ±90° content into pixels and session state (not placement). */
+    WorkspaceItemState captureContentBakeBeforeState(ImageItem *item) const;
+
+    SessionImageId resolveContentEditSessionId(ImageItem *item) const;
+
+    WorkspaceItemState appearanceCropMapForEdit(ImageItem *item,
+                                                const WorkspaceItemState &fallback,
+                                                SessionImageId sid) const;
+
+    void persistDurableContentAppearance(ImageItem *item, const WorkspaceItemState &s,
+                                         const char *debugTag);
+
+    void bakeItemRotate90(ImageItem *item, int quarterTurns);
 
     /** Push content bake undo (pixels + session appearance). */
     void pushItemContentCommand(const QString &text, ImageItem *item,
@@ -158,6 +173,9 @@
 
     /** User-facing quality of pixels currently shown for @p item. */
     QString pixelQualityLabel(const ImageItem *item) const;
+
+    /** Basename of the current/target image for the bottom HUD. */
+    QString hudFileName() const;
 
 
 
