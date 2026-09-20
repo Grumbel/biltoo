@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1706-input-paint-shell-events.** Input routers, paint background, shell events TUs.
+Prior: **1705**.
+
+### Change
+- New `imageview_input_events.cpp` — mouse/key event routers + release/key handlers
+- `imageview_input.cpp` ~501 → ~228 (edge, wheel, tryPress helpers)
+- New `imageview_paint_background.cpp` — canvas background + drawBackground/Foreground
+- `imageview_paint.cpp` ~501 → ~224 (edge affordances, overlays, paintEvent)
+- New `imageview_shell_events.cpp` — double-click + leaveEvent
+- `imageview.cpp` ~703 → ~573
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1706-input-paint-shell-events.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- ImageView characterization → Tier 4 (higher value than further slices)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1705-session-remove-framing-image.** Session remove + image-mode framing TUs.
 Prior: **1704**.
 
