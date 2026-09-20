@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1861-hostImage-undo-pending.** hostImage + classicPath; undo/pending/lastError via hosts.
+Prior: **1860**.
+
+### Change
+- Add `hostImage()` → `ImageController`
+- External classic path → `hostImage()`; ImageView internals → `m_image`
+- Drop ImageView classic-path pure-hop API
+- `undoStack()` → `hostUndoStack()` (MainWindow, crop, attention)
+- Pending path / restore → `hostDisplayPipeline().loadGate()`
+- `lastLoadError()` → `hostSessionId().lastLoadErrorRef()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1861-hostImage-undo-pending.bundle HEAD
+```
+Requires tip **1860** (base **1858** / `1e112d94`).
+
+### Next
+- Background / HUD / text pure hops via hostCanvasBg / hostHudPrefs / hostTextLayer
+- Dead private surface scan
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1860-sticky-layout-via-host.** Sticky/layout/chrome/size-resolve reads via hosts.
 Prior: **1859**.
 
