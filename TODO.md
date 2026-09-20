@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1786-privatize-tilelod-helpers.** Stage 2: tile plan/paint helpers private.
+Prior: **1785**.
+
+### Change
+- `prepareTileLod` / `prepareTileLodPlan` / `tileDevicePerContent` / `tileContentXform` /
+  `tileNativeSize` / `clearTileGradedCache` / `resolveGradedTile` are **private**
+- Only ImageItem paint + tick (and friends for mutators) use them
+- Public surface remains policy queries + `tileLodDebugLine`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1786-privatize-tilelod-helpers.bundle HEAD
+```
+
+### Next
+- Move ItemBag storage under DisplayPipelineController
+- Offscreen ImageView characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1785-destroy-drop-tilelod.** Stage 2: destroy drops tile session via pipeline.
 Prior: **1784**.
 

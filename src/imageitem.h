@@ -291,21 +291,6 @@ public:
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
-    /**
-     * Ensure tile session + viewport from current view (no requests).
-     * Safe during paint; does not issue network/worker work beyond state.
-     */
-    void prepareTileLod();
-    /** Update viewport/plan only (no issue_requests). Safe from paint. */
-    void prepareTileLodPlan();
-    /** screenScale × viewport devicePixelRatioF. */
-    qreal tileDevicePerContent() const;
-    ContentXform::Value tileContentXform() const;
-    QSize tileNativeSize() const;
-    /** Paint-time graded tile images (raw stays in shared RAM cache). */
-    void clearTileGradedCache() const;
-    QImage resolveGradedTile(tilelod::TileKey const &key,
-                             ColorAdjustments const &grade) const;
     /** True when on-screen need exceeds soft max (tiles should own display). */
     bool tileLodWanted() const;
     bool tileLodSuppressed() const { return m_tileLod.suppressed; }
@@ -376,6 +361,15 @@ private:
     void invalidateTilePathRam();
     void tickTileLod(int budget = 8);
     void setTileLodSuppressed(bool on);
+    /** Plan/paint helpers (ImageItem paint + tick only). */
+    void prepareTileLod();
+    void prepareTileLodPlan();
+    qreal tileDevicePerContent() const;
+    ContentXform::Value tileContentXform() const;
+    QSize tileNativeSize() const;
+    void clearTileGradedCache() const;
+    QImage resolveGradedTile(tilelod::TileKey const &key,
+                             ColorAdjustments const &grade) const;
 
     /** Deep-zoom grid tiles + plan/paint scratch (Stage 2 bag; demote later). */
     tilelod::ItemBag m_tileLod;
