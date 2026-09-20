@@ -247,44 +247,8 @@ int ImageView::imageModeOnScreenNeedEdge() const
     return m_displayPipeline.imageModeOnScreenNeedEdge();
 }
 
-void ImageView::maybeClimbImageModePixelsForView()
-{
-    m_displayPipeline.maybeClimbImageModePixelsForView();
-}
-
 bool ImageView::loadImage(const QString &path)
 {
     return m_displayPipeline.loadImage(path);
-}
-
-void ImageView::ensureImageFocusSurface()
-{
-    m_displayPipeline.ensureImageFocusSurface();
-}
-
-void ImageView::syncImageFocusSurfaceState()
-{
-    m_displayPipeline.syncImageFocusSurfaceState();
-}
-
-void ImageView::driveImageFocusSurface()
-{
-    m_displayPipeline.driveImageFocusSurface();
-}
-
-void ImageView::registerItemDisplaySurface(ImageItem *item)
-{
-    m_displayPipeline.registerItemDisplaySurface(item);
-}
-
-void ImageView::unregisterItemDisplaySurface(ImageItem *item)
-{
-    m_displayPipeline.unregisterItemDisplaySurface(item);
-}
-
-void ImageView::syncItemDisplaySurface(ImageItem *item, int hostLongEdge,
-                                       bool climbPending)
-{
-    m_displayPipeline.syncItemDisplaySurface(item, hostLongEdge, climbPending);
 }
 

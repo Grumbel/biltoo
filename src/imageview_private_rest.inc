@@ -76,7 +76,6 @@
     /** On-screen long edge (device px) for the current Image-mode item. */
     int imageModeOnScreenNeedEdge() const;
     /** PreferCache + native full when zoom leaves soft samples undersampled. */
-    void maybeClimbImageModePixelsForView();
     /** Gallery soft state + install path for a ladderReady delivery. */
     /** PathRaster EscalateToFull for selected Workspace items. */
     void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
@@ -146,15 +145,6 @@
     /** Recover blank Gallery cells that never got LQIP installed. */
     void gallerySoftWatchdogTick();
     /** Clear stale "Improving previews" centre HUD noise. */
-    /** Bind/sync ImageFocus surface (aliases primary item surface id). */
-    void ensureImageFocusSurface();
-    /** Bind/unbind DisplaySurface for a canvas item (Gallery/Workspace/Image). */
-    void registerItemDisplaySurface(ImageItem *item);
-    void unregisterItemDisplaySurface(ImageItem *item);
-    /** Push live item state into the bound surface (register if needed). */
-    void syncItemDisplaySurface(ImageItem *item, int hostLongEdge = -1,
-                                bool climbPending = false);
-    /** Ladder step for item cell size in device pixels. */
     /** Apply session crop from @p state to a freshly decoded item (no-op if none). */
     /**
      * Apply stored session appearance (crop + content bakes) for @p item's

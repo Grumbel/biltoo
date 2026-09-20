@@ -231,7 +231,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         }
         m_items.append(ph);
         applyItemModeFlags(ph);
-        registerItemDisplaySurface(ph);
+        m_displayPipeline.registerItemDisplaySurface(ph);
         if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
             dbg && dbg[0] != '\0' && dbg[0] != '0') {
             fprintf(stderr,

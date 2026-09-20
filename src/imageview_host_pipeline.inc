@@ -7,7 +7,6 @@
     bool isCropDraftLockedPath(const QString &path) const;
     void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
     void scheduleGalleryStatusRefresh(int delayMs = 100);
-    void syncImageFocusSurfaceState();
     void seedSessionAppearanceFromState(SessionImageId sid, const QString &path);
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
     void syncImageModeSceneRect(ImageItem *item);
@@ -28,7 +27,6 @@
                                              SessionImageId sid = kInvalidSessionImageId) const;
     void bindImageModeSessionCursor(ImageItem *item);
     void resetImageModeItemPlacement(ImageItem *item);
-    void driveImageFocusSurface();
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
     bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
     void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,

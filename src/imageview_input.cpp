@@ -140,7 +140,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
         return;
     }
     if (isImageMode() && !m_slideshow.hud().isProgressActive()) {
-        maybeClimbImageModePixelsForView();
+        m_displayPipeline.maybeClimbImageModePixelsForView();
     } else if (isWorkspaceMode()) {
         m_displayPipeline.ensureWorkspaceQualityClimb();
     }

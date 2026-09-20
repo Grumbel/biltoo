@@ -321,7 +321,7 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     if (isWorkspaceMode()) {
         m_displayPipeline.ensureWorkspaceQualityClimb();
     } else if (isImageMode()) {
-        driveImageFocusSurface();
+        m_displayPipeline.driveImageFocusSurface();
     }
     if (viewport()) {
         viewport()->update();

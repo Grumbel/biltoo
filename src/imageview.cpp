@@ -233,7 +233,7 @@ ImageView::ImageView(QWidget *parent)
                     && path == classicPath()) {
                     // Event-driven ImageFocus: DisplaySurface::decide (not a
                     // quality watchdog). Soft→full via Attach* / async / climb.
-                    driveImageFocusSurface();
+                    m_displayPipeline.driveImageFocusSurface();
                     emit statusChanged();
                 }
                 // Gallery: soft may land in ImageCache via noteDelivery while the
