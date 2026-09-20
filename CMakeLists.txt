@@ -140,7 +140,6 @@ set(BILTOO_LIB_SOURCES
   src/imagecontroller.h
   src/imageview_workspace.cpp
   src/imageview_modes.cpp
-  src/imageview_pack.cpp
   src/imageview_canvas.cpp
   src/imageview_canvas_place.cpp
   src/imageview_canvas_focus.cpp

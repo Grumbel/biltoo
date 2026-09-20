@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1896-merge-pack-into-modes.** Mode-dispatch pack TU → modes.
+Prior: **1895**.
+
+### Change
+- Move `setLayoutMode` / `reloadFromDisk` / `hardReloadFromDisk` into
+  `imageview_modes.cpp` (same mode-dispatch family as `setViewMode`)
+- Delete `src/imageview_pack.cpp`; drop from `BILTOO_LIB_SOURCES`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1896-merge-pack-into-modes-516d734.bundle HEAD
+```
+Requires tip **1895** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1895-drop-imageview-load.** Delete residual imageview_load.cpp.
 Prior: **1894**.
 
