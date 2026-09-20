@@ -359,8 +359,6 @@ private:
     QString m_path;
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
-    void dropTileLodSession();
-    void invalidateTilePathRam();
     void tickTileLod(int budget = 8);
     /** Plan/paint helpers (ImageItem paint + tick only). */
     void prepareTileLod();

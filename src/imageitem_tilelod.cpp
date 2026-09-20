@@ -66,22 +66,6 @@ void ImageItem::detachTileLodBag()
     m_tileLodAttached = nullptr;
 }
 
-void ImageItem::dropTileLodSession()
-{
-    // Only reset when a pipeline bag is attached — do not ensure/orphan.
-    if (m_tileLodAttached) {
-        m_tileLodAttached->resetSession();
-    }
-}
-
-void ImageItem::invalidateTilePathRam()
-{
-    dropTileLodSession();
-    if (!m_path.isEmpty()) {
-        tilelod::TileLodRegistry::instance().invalidate(m_path);
-    }
-}
-
 qreal ImageItem::tileDevicePerContent() const
 {
     // Logical view scale × widget devicePixelRatio (Retina / fractional DPI).
