@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1665-image-workspace-key-controllers.** Tier 6h: Image nav + Workspace shear keys on controllers.
+Prior: **1664**.
+
+### Change
+- `ImageController::tryKeyPressNavigate` — Left/Right/Page/Backspace session nav
+- `WorkspaceController::tryKeyPressShear` — Alt+[ / ] / 0 shear
+- ImageView thin-forwards
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1665-image-workspace-key-controllers.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Further public-surface narrowing as needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1664-imageview-host-incs.** Narrow imageview.h via host API .inc includes.
 Prior: **1663**.
 

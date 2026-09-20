@@ -1033,30 +1033,9 @@ bool ImageView::tryKeyPressSelectAll(QKeyEvent *event)
 }
 bool ImageView::tryKeyPressImageNavigate(QKeyEvent *event)
 {
-    // Image mode: Left/Right (and friends) navigate the session. QGraphicsView
-    // would otherwise scroll the viewport when the image is zoomed or the view
-    // has focus (typical in fullscreen), swallowing the QAction shortcuts.
-    if (!isImageMode()
-        || (event->modifiers()
-            & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
-        return false;
-    }
-    switch (event->key()) {
-    case Qt::Key_Left:
-    case Qt::Key_PageUp:
-    case Qt::Key_Backspace:
-        emit navigatePreviousRequested();
-        event->accept();
-        return true;
-    case Qt::Key_Right:
-    case Qt::Key_PageDown:
-        emit navigateNextRequested();
-        event->accept();
-        return true;
-    default:
-        return false;
-    }
+    return m_image.tryKeyPressNavigate(event);
 }
+
 void ImageView::emitGalleryItemFocus(ImageItem *item)
 {
     if (!item) {
@@ -1070,45 +1049,9 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
 }
 bool ImageView::tryKeyPressWorkspaceShear(QKeyEvent *event)
 {
-    // Workspace: Alt+[ / Alt+] nudge horizontal shear; Alt+0 resets shear.
-    if (!isWorkspaceMode()
-        || !(event->modifiers() & Qt::AltModifier)
-        || (event->modifiers() & Qt::ControlModifier)) {
-        return false;
-    }
-    const int key = event->key();
-    if (key != Qt::Key_BracketLeft && key != Qt::Key_BracketRight
-        && key != Qt::Key_0) {
-        return false;
-    }
-    const QList<QGraphicsItem *> selected =
-        m_scene ? m_scene->selectedItems() : QList<QGraphicsItem *>();
-    QList<ImageItem *> targets;
-    for (QGraphicsItem *gi : selected) {
-        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-            if (m_items.contains(item)) {
-                targets.append(item);
-            }
-        }
-    }
-    if (targets.isEmpty()) {
-        return false;
-    }
-    const qreal step = PlacementLinear::shearStepFromModifiers(
-        event->modifiers() & Qt::ShiftModifier);
-    for (ImageItem *item : targets) {
-        if (key == Qt::Key_0) {
-            item->setItemShear(0.0);
-        } else {
-            item->setItemShear(PlacementLinear::shearAfterKey(
-                item->itemShear(), step, key == Qt::Key_BracketRight));
-        }
-        commitItemSessionEdit(item);
-    }
-    emit statusChanged();
-    event->accept();
-    return true;
+    return m_workspace.tryKeyPressShear(event);
 }
+
 bool ImageView::tryKeyPressDeleteSelection(QKeyEvent *event)
 {
     if (m_gallery.tryKeyPressDeleteSelection(event)) {

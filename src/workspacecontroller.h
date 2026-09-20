@@ -67,6 +67,7 @@ public:
     /** Select tool: item hit / page-guide / rubber-band (Tier 6d). */
     bool tryMousePressSelect(QMouseEvent *event);
     bool tryKeyPressDeleteSelection(QKeyEvent *event);
+    bool tryKeyPressShear(QKeyEvent *event);
 
 private:
     ImageView *m_view = nullptr;

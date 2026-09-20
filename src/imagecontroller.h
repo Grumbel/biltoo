@@ -7,6 +7,7 @@
 #include <QString>
 
 class ImageView;
+class QKeyEvent;
 
 /**
  * Image-mode collaborator for ImageView.
@@ -31,6 +32,9 @@ public:
     void clearClassicPath() { m_classicPath.clear(); }
     /** Return classic path and clear it (Image enter). */
     QString takeClassicPath();
+
+    /** Left/Right/PageUp/PageDown session navigation (Image mode). */
+    bool tryKeyPressNavigate(QKeyEvent *event);
 
 private:
     ImageView *m_view = nullptr;

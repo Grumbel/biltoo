@@ -3,6 +3,7 @@
 
 #include "imagecontroller.h"
 #include "imageview.h"
+#include <QKeyEvent>
 
 ImageController::ImageController(ImageView *view)
     : m_view(view)
@@ -33,3 +34,33 @@ void ImageController::enter()
     m_view->scheduleReplaceLoad(path);
     emit m_view->statusChanged();
 }
+
+// --- Image mode session keys (Tier 6h) ---
+
+bool ImageController::tryKeyPressNavigate(QKeyEvent *event)
+{
+    // Image mode: Left/Right (and friends) navigate the session. QGraphicsView
+    // would otherwise scroll the viewport when the image is zoomed or the view
+    // has focus (typical in fullscreen), swallowing the QAction shortcuts.
+    if (!m_view->isImageMode()
+        || (event->modifiers()
+            & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
+        return false;
+    }
+    switch (event->key()) {
+    case Qt::Key_Left:
+    case Qt::Key_PageUp:
+    case Qt::Key_Backspace:
+        emit m_view->navigatePreviousRequested();
+        event->accept();
+        return true;
+    case Qt::Key_Right:
+    case Qt::Key_PageDown:
+        emit m_view->navigateNextRequested();
+        event->accept();
+        return true;
+    default:
+        return false;
+    }
+}
+

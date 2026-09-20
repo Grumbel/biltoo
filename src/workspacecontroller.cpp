@@ -4,10 +4,12 @@
 #include "workspacecontroller.h"
 #include "imageview.h"
 #include "imageitem.h"
+#include "placementlinear.h"
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QGraphicsScene>
 #include "imageitem.h"
+#include "placementlinear.h"
 #include "imageloader.h"
 #include "sessionappearance.h"
 
@@ -402,6 +404,51 @@ bool WorkspaceController::tryKeyPressDeleteSelection(QKeyEvent *event)
     }
     emit m_view->statusChanged();
     emit m_view->workspacePathsChanged();
+    event->accept();
+    return true;
+}
+
+
+// --- Workspace shear keys (Tier 6h) ---
+
+bool WorkspaceController::tryKeyPressShear(QKeyEvent *event)
+{
+    // Workspace: Alt+[ / Alt+] nudge horizontal shear; Alt+0 resets shear.
+    if (!m_view->isWorkspaceMode()
+        || !(event->modifiers() & Qt::AltModifier)
+        || (event->modifiers() & Qt::ControlModifier)) {
+        return false;
+    }
+    const int key = event->key();
+    if (key != Qt::Key_BracketLeft && key != Qt::Key_BracketRight
+        && key != Qt::Key_0) {
+        return false;
+    }
+    const QList<QGraphicsItem *> selected =
+        m_view->canvasScene() ? m_view->canvasScene()->selectedItems() : QList<QGraphicsItem *>();
+    QList<ImageItem *> targets;
+    for (QGraphicsItem *gi : selected) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (m_view->liveItems().contains(item)) {
+                targets.append(item);
+            }
+        }
+    }
+    if (targets.isEmpty()) {
+        return false;
+    }
+    const qreal step = PlacementLinear::shearStepFromModifiers(
+        event->modifiers() & Qt::ShiftModifier);
+    for (ImageItem *item : targets) {
+        if (key == Qt::Key_0) {
+            item->setItemShear(0.0);
+        } else {
+            item->setItemShear(PlacementLinear::shearAfterKey(
+                item->itemShear(), step, key == Qt::Key_BracketRight));
+        }
+        m_view->commitItemSessionEdit(item);
+    }
+    emit m_view->statusChanged();
     event->accept();
     return true;
 }
