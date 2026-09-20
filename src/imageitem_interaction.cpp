@@ -295,31 +295,10 @@ qreal ImageItem::screenScale() const
     return ViewTransform::floorScale(sMax);
 }
 
-qreal ImageItem::deviceScaleMin() const
-{
-    // Min stretch of local→view: local radius covering a screen-pixel disc
-    // under rotation / anisotropic scale (critical for shape() and delivery).
-    QTransform t = transform();
-    if (scene()) {
-        const QList<QGraphicsView *> views = scene()->views();
-        if (!views.isEmpty() && views.first()) {
-            t = views.first()->transform() * t;
-        }
-    }
-    qreal sMax = 1.0, sMin = 1.0;
-    PlacementLinear::singularValues2x2(t.m11(), t.m12(), t.m21(), t.m22(), &sMax, &sMin);
-    return sMin;
-}
-
 qreal ImageItem::handleDrawSize() const
 {
     // Constant size in screen pixels regardless of item or view zoom
     return ItemFrameGeometry::kHandleScreenPx / screenScale();
-}
-
-qreal ImageItem::handleHitRadius() const
-{
-    return handleDrawSize() * 1.2;
 }
 
 bool ImageItem::isChromeHandle(Handle h) const
@@ -390,21 +369,6 @@ QPointF ImageItem::scaleAnchorLocal(Handle h) const
         break;
     }
     return PlacementLinear::contentAnchorPoint(contentRect(), anchor);
-}
-
-void ImageItem::drawCornerBracket(QPainter *painter, const QPointF &c,
-                                   qreal dx, qreal dy, qreal armPx, bool hot) const
-{
-    // @p dx/@p dy are unit directions in *device* space along the visual edges.
-    QPen pen(hot ? QColor(255, 255, 255) : QColor(0, 160, 255), 0);
-    pen.setCosmetic(true);
-    pen.setWidthF(hot ? 2.5 : 2.0);
-    pen.setCapStyle(Qt::SquareCap);
-    pen.setJoinStyle(Qt::MiterJoin);
-    painter->setPen(pen);
-    painter->setBrush(Qt::NoBrush);
-    painter->drawLine(c + QPointF(dx * armPx, dy * 0.0), c);
-    painter->drawLine(c, c + QPointF(dx * 0.0, dy * armPx));
 }
 
 void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods,
@@ -565,11 +529,6 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos, HandlePressScratch
     applyPlacement(pl);
 }
 
-qreal ImageItem::chromeButtonSize() const
-{
-    return ItemFrameGeometry::kChromeBtnScreenPx / screenScale();
-}
-
 QRectF ImageItem::opacitySliderRect() const
 {
     // Approximate local rect for legacy callers only. Paint / hit / drag use
@@ -639,11 +598,6 @@ QList<ImageItem::Handle> ImageItem::activeHandles() const
 bool ImageItem::isUprightChromeHandle(Handle h) const
 {
     return ItemHandlePolicy::isUprightChromeHandle(h);
-}
-
-qreal ImageItem::handleDistanceScreenPx(Handle h, const QPointF &itemPos) const
-{
-    return QLineF(localToViewPx(handleCenter(h)), localToViewPx(itemPos)).length();
 }
 
 QPointF ImageItem::handleCenter(Handle h) const

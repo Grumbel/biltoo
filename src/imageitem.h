@@ -303,31 +303,19 @@ private:
     QRectF galleryClipLocal() const;
     /** Item-local centre of a handle (pre-transform local coordinates). */
     QPointF handleCenter(Handle h) const;
-    /** Hit radius in item-local units for scale/rotate handles. */
-    qreal handleHitRadius() const;
     qreal handleDrawSize() const;
     /**
      * Max singular value of (view × item) linear transform: screen px per local unit
      * along the most stretched axis. Used for drawing chrome at ~constant screen size.
      */
     qreal screenScale() const;
-    /**
-     * Min singular value of (view × item): local radius that still covers a given
-     * screen-pixel hit target under rotation / anisotropic scale.
-     */
-    qreal deviceScaleMin() const;
     bool isChromeHandle(Handle h) const;
     bool isRotateHandle(Handle h) const;
-    void drawCornerBracket(QPainter *painter, const QPointF &deviceCentre,
-                           qreal dx, qreal dy, qreal armPx, bool hot) const;
     void paintInteractionChrome(QPainter *painter, const QRectF &localRect) const;
     /** Raise/Lower keep screen-upright glyphs (counter-rotated when painting). */
     bool isUprightChromeHandle(Handle h) const;
     void activateChromeHandle(Handle h);
     QRectF opacitySliderRect() const;
-    qreal chromeButtonSize() const;
-    /** Distance in screen pixels from itemPos to handle centre. */
-    qreal handleDistanceScreenPx(Handle h, const QPointF &itemPos) const;
     void setOpacityFromSliderPos(const QPointF &scenePos);
     /** View-pixel position of an item-local point (first attached view). */
     QPointF localToViewPx(const QPointF &local) const;
