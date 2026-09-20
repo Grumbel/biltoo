@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1809-tick-via-pipeline-host.** Stage 2: hosts tick via hostDisplayPipeline.
+Prior: **1808**.
+
+### Change
+- GalleryController / SlideshowController: `hostDisplayPipeline().tickPrimaryTileLod`
+  (same pattern as drop/purge)
+- ImageView ctor/input: `m_displayPipeline.tickPrimaryTileLod` (no self thin hop)
+- Keep `ImageView::tickPrimaryTileLod` as thin host API
+- TileLoadCoordinator comment points at DisplayPipelineController
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1809-tick-via-pipeline-host.bundle HEAD
+```
+Includes **1806–1809** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (tile ownership)
+- ImageView characterization / Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1808-pipeline-tick-self.** Stage 2: pipeline ticks itself, not via ImageView.
 Prior: **1807**.
 
