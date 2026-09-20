@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1734-capturestate-components.** captureState reads ContentBake + Crop components.
+Prior: **1733**.
+
+### Change
+- Bound captureState: content turns/flips and crop meta from `contentBake()` / `crop()`
+- captureContentBakeBeforeState: bake from component (not DTO fields)
+- appearanceCropMapForEdit: appearanceValue + overlay Crop/ContentBake
+
+Live ImageItem remains authority for pose and live crop rect / content flips on the item.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1734-capturestate-components.bundle HEAD
+```
+
+### Next
+- biltoo-build + rotate/crop/gallery smoke (4th rotate regression)
+- Phase 6 Tier 4 path-order residual, or further Stage 2 ImageItem demotion
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1733-itemworld-path-placement.** Path-book + layout pose via ItemWorld.
 Prior: **1732**.
 

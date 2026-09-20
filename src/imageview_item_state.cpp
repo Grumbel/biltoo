@@ -7,6 +7,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "contentxform.h"
+#include "itemcomponents.h"
 #include "sessionappearance.h"
 #include "selectiongeometry.h"
 #include "pageguidegeometry.h"
@@ -42,25 +43,27 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = m_itemWorld.getAppearance(sid)) {
-            s.cropRotation = app->cropRotation;
-            s.cropSourceSize = app->cropSourceSize;
-            // Appearance store is sole content-orient authority for bound ids
-            // (ContentXform ground truth). Never fall back to path map when
-            // turns==0 — that resurrected stale 1..3 after a full 360° and
-            // corrupted Gallery on the 4th rotate (commit → captureState →
-            // m_appearance overwrite).
+        // Phase 7: prefer sparse components over fat DTO field reads.
+        // ContentBake is sole orient authority for bound ids (never path map).
+        if (m_itemWorld.hasAppearance(sid) || m_itemWorld.hasContentBake(sid)
+            || m_itemWorld.hasCrop(sid)) {
+            const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid);
             s.contentQuarterTurns =
-                ContentXform::normalizeQuarterTurns(app->contentQuarterTurns);
-            if (!s.contentHFlip && app->contentHFlip) {
+                ContentXform::normalizeQuarterTurns(bake.quarterTurns);
+            if (!s.contentHFlip && bake.hFlip) {
                 s.contentHFlip = true;
             }
-            if (!s.contentVFlip && app->contentVFlip) {
+            if (!s.contentVFlip && bake.vFlip) {
                 s.contentVFlip = true;
             }
-            if (!s.hasCrop && app->hasCrop) {
-                s.hasCrop = app->hasCrop;
-                s.cropRect = app->cropRect;
+            const ItemComponents::Crop crop = m_itemWorld.crop(sid);
+            if (!crop.isEmpty()) {
+                s.cropRotation = crop.rotation;
+                s.cropSourceSize = crop.sourceSize;
+                if (!s.hasCrop) {
+                    s.hasCrop = true;
+                    s.cropRect = crop.rect;
+                }
             }
         } else if (item->hasAppliedContentXform()) {
             // Store empty but live fingerprint exists (mid-edit).
@@ -68,8 +71,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
             s.contentHFlip = item->appliedContentXform().hFlip;
             s.contentVFlip = item->appliedContentXform().vFlip;
         }
-        // Bound session image: path map is placement-only. Do not read content
-        // turns/crop meta from m_itemStateBook.byPath.
+        // Bound session image: path map is placement-only.
     } else {
         // Unbound tile: path map may hold content orient.
         if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
@@ -128,12 +130,11 @@ WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) con
         return beforeSt;
     }
     if (sid0 != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = m_itemWorld.getAppearance(sid0)) {
-            beforeSt.contentQuarterTurns =
-                ContentXform::normalizeQuarterTurns(it->contentQuarterTurns);
-            beforeSt.contentHFlip = it->contentHFlip;
-            beforeSt.contentVFlip = it->contentVFlip;
-        }
+        const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid0);
+        beforeSt.contentQuarterTurns =
+            ContentXform::normalizeQuarterTurns(bake.quarterTurns);
+        beforeSt.contentHFlip = bake.hFlip;
+        beforeSt.contentVFlip = bake.vFlip;
     }
     return beforeSt;
 }
@@ -153,10 +154,15 @@ WorkspaceItemState ImageView::appearanceCropMapForEdit(ImageItem *item,
 {
     Q_UNUSED(item);
     WorkspaceItemState cropMap = fallback;
-    if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = m_itemWorld.getAppearance(sid)) {
-            cropMap = *it;
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
+        cropMap = m_itemWorld.appearanceValue(sid);
+        // Overlay sparse crop when present (presence API).
+        const ItemComponents::Crop crop = m_itemWorld.crop(sid);
+        if (!crop.isEmpty()) {
+            ItemComponents::applyCropToState(cropMap, crop);
         }
+        const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid);
+        ItemComponents::applyContentBakeToState(cropMap, bake);
     }
     return cropMap;
 }

@@ -952,3 +952,6 @@ Phase 1–6 rules still apply. Additions:
   dual-written on setAppearance); captureState path-book reads via getPathState.
 - biltoo-1733: path-book accessors via ItemWorld; layout pose via setPlacement;
   setItemStateForPath / gallery / display / slideshow path reads through facade.
+- biltoo-1734: thin captureState / captureContentBakeBeforeState /
+  appearanceCropMapForEdit — bound content orient and crop meta from sparse
+  ContentBake + Crop components (not fat DTO field peeks).
