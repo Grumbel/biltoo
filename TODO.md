@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1776-placement-dto-tests.** Placement↔DTO roundtrip characterization.
+Prior: **1775**.
+
+### Change
+- `placementFromState_roundTrip` — full pose field extract/apply
+- `applyPlacementToState_preservesNonPose` — crop/bake/color/path/id untouched
+- Pins Stage 2 Placement as the pose bridge without ImageView
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1776-placement-dto-tests.bundle HEAD
+```
+
+### Next
+- biltoo-build + `ctest -R itemworld`
+- Tile-LOD demotion or offscreen ImageView harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1775-item-zoom-rotate-placement.** ImageItem zoomBy/rotateBy via applyPlacement.
 Prior: **1774**.
 

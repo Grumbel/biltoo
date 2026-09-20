@@ -34,6 +34,9 @@ private slots:
     void placement_setAppearanceDualWrites();
     void setPlacement_updatesDto();
     void placementNearlyEqual_detectsNoOp();
+    // Stage 2: Placement ↔ WorkspaceItemState bridge
+    void placementFromState_roundTrip();
+    void applyPlacementToState_preservesNonPose();
 };
 
 
@@ -398,6 +401,77 @@ void ItemWorldTest::placementNearlyEqual_detectsNoOp()
     QVERIFY(ItemComponents::placementNearlyEqual(a, b));
     b.pos += QPointF(0.001, 0);
     QVERIFY(!ItemComponents::placementNearlyEqual(a, b));
+}
+
+void ItemWorldTest::placementFromState_roundTrip()
+{
+    WorkspaceItemState s;
+    s.pos = QPointF(3, 4);
+    s.scale = 1.25;
+    s.scaleY = 0.8;
+    s.shear = 0.15;
+    s.rotation = 33.0;
+    s.opacity = 0.7;
+    s.z = 2.5;
+    s.hFlip = true;
+    s.vFlip = false;
+    s.hasCrop = true;
+    s.cropRect = QRect(1, 2, 10, 20);
+
+    const ItemComponents::Placement pl = ItemComponents::placementFromState(s);
+    QCOMPARE(pl.pos, QPointF(3, 4));
+    QCOMPARE(pl.scale, 1.25);
+    QCOMPARE(pl.scaleY, 0.8);
+    QCOMPARE(pl.shear, 0.15);
+    QCOMPARE(pl.rotation, 33.0);
+    QCOMPARE(pl.opacity, 0.7);
+    QCOMPARE(pl.z, 2.5);
+    QVERIFY(pl.hFlip);
+    QVERIFY(!pl.vFlip);
+
+    WorkspaceItemState out;
+    out.hasCrop = true;
+    out.cropRect = QRect(9, 9, 1, 1);
+    ItemComponents::applyPlacementToState(out, pl);
+    QCOMPARE(out.pos, pl.pos);
+    QCOMPARE(out.scale, pl.scale);
+    QCOMPARE(out.scaleY, pl.scaleY);
+    QCOMPARE(out.shear, pl.shear);
+    QCOMPARE(out.rotation, pl.rotation);
+    QCOMPARE(out.opacity, pl.opacity);
+    QCOMPARE(out.z, pl.z);
+    QCOMPARE(out.hFlip, pl.hFlip);
+    QCOMPARE(out.vFlip, pl.vFlip);
+    // Non-pose fields untouched by applyPlacementToState
+    QVERIFY(out.hasCrop);
+    QCOMPARE(out.cropRect, QRect(9, 9, 1, 1));
+}
+
+void ItemWorldTest::applyPlacementToState_preservesNonPose()
+{
+    WorkspaceItemState s;
+    s.path = QStringLiteral("/x.png");
+    s.sessionId = 42;
+    s.contentQuarterTurns = 1;
+    s.contentHFlip = true;
+    s.hasCrop = true;
+    s.cropRect = QRect(0, 0, 5, 5);
+    s.colorAdjust.saturation = 40;
+
+    ItemComponents::Placement pl;
+    pl.pos = QPointF(10, 20);
+    pl.scale = 2.0;
+    ItemComponents::applyPlacementToState(s, pl);
+
+    QCOMPARE(s.pos, QPointF(10, 20));
+    QCOMPARE(s.scale, 2.0);
+    QCOMPARE(s.path, QStringLiteral("/x.png"));
+    QCOMPARE(s.sessionId, SessionImageId(42));
+    QCOMPARE(s.contentQuarterTurns, 1);
+    QVERIFY(s.contentHFlip);
+    QVERIFY(s.hasCrop);
+    QCOMPARE(s.cropRect, QRect(0, 0, 5, 5));
+    QCOMPARE(s.colorAdjust.saturation, 40);
 }
 
 QTEST_MAIN(ItemWorldTest)
