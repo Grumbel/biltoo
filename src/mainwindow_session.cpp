@@ -1593,7 +1593,7 @@ void MainWindow::publishSessionCursorForIndex(int index)
     // HUD identity pulse only in Image mode (Gallery pulse forced a full
     // viewport repaint of every tile on each click).
     const bool pulse = !m_slideshowAdvancing && isImageMode();
-    m_imageView->setSessionPosition(index, m_session.paths().size(), pulse);
+    m_imageView->hostSlideshow().setSessionPosition(index, m_session.paths().size(), pulse);
     m_imageView->setCurrentSessionId(currentSessionId());
 }
 
@@ -1609,7 +1609,7 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
         if (isSlideshowSession()) {
             if (m_imageView) {
                 // User ←/→: nav-hot until quiet. Auto-advance is not key-repeat.
-                m_imageView->setSlideshowNavHot(!m_slideshowAdvancing);
+                m_imageView->hostSlideshow().setSlideshowNavHot(!m_slideshowAdvancing);
             }
             // User ←/→: onSlideshowUserNavigated already setSlideshowPhase (soft).
             // Settle: clear nav-hot and re-arm full phase quality once.
@@ -1622,14 +1622,14 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
                         if (!m_imageView || !isSlideshowSession()) {
                             return;
                         }
-                        m_imageView->setSlideshowNavHot(false);
+                        m_imageView->hostSlideshow().setSlideshowNavHot(false);
                         if (m_currentIndex < 0
                             || m_currentIndex >= m_session.paths().size()) {
                             return;
                         }
                         // Re-arm dwell quality (atlas / phase upgrade / blur)
                         // for the settled path only — not every keystroke.
-                        m_imageView->setSlideshowPhase(
+                        m_imageView->hostSlideshow().setSlideshowPhase(
                             m_session.paths().at(m_currentIndex), QString(), -1.0);
                     });
                 }
@@ -1638,7 +1638,7 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
             return;
         }
         // Key-repeat: soft install every step; PreferCache only after quiet settle.
-        m_imageView->setSlideshowNavHot(true);
+        m_imageView->hostSlideshow().setSlideshowNavHot(true);
         m_imageView->hostDisplayPipeline().loadImage(path);
         if (!m_slideshowNavLoadTimer) {
             m_slideshowNavLoadTimer = new QTimer(this);
@@ -1653,7 +1653,7 @@ void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureG
                     || m_currentIndex >= m_session.paths().size()) {
                     return;
                 }
-                m_imageView->setSlideshowNavHot(false);
+                m_imageView->hostSlideshow().setSlideshowNavHot(false);
                 // Full load + PreferCache climb for the settled index only.
                 m_imageView->hostDisplayPipeline().loadImage(m_session.paths().at(m_currentIndex));
                 // ±1 neighbors: overview tiles into global path RAM (1212 retain).
@@ -1703,7 +1703,7 @@ void MainWindow::finishCurrentIndexChromeUpdate()
             m_statusLabel->setText(m_imageView->statusText());
         }
         if (m_imageView) {
-            m_imageView->setSessionPosition(m_currentIndex, m_session.paths().size(),
+            m_imageView->hostSlideshow().setSessionPosition(m_currentIndex, m_session.paths().size(),
                                             !m_slideshowAdvancing && !navHot);
             m_imageView->setCurrentSessionId(currentSessionId());
         }
@@ -1733,7 +1733,7 @@ void MainWindow::setCurrentIndex(int index, bool ensureGalleryVisible)
     // Paused slideshow: clear transition overlay so the newly loaded image is
     // visible (hold/live layers otherwise mask LoadReplace).
     if (m_slideshowPaused && m_imageView) {
-        m_imageView->cancelSlideshowTransition();
+        m_imageView->hostSlideshow().cancelSlideshowTransition();
         m_slideshowPendingToIndex = -1;
         m_slideshowPreloadToIdx = -1;
     }
@@ -2585,7 +2585,7 @@ void MainWindow::clampSlideshowTransitionToInterval()
     const int cap = m_slideshowIntervalMs;
     const int tr = m_imageView->slideshowTransitionDurationMs();
     if (cap >= 0 && tr > cap) {
-        m_imageView->setSlideshowTransitionDurationMs(cap);
+        m_imageView->hostSlideshow().setSlideshowTransitionDurationMs(cap);
     }
 }
 
@@ -2607,9 +2607,9 @@ void MainWindow::rearmSlideshowAfterIntervalChange(int oldInterval)
     m_slideshowTransitionCycle = -1;
     if (m_imageView) {
         // Interval-only when already active (no progress-clock restart).
-        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        m_imageView->hostSlideshow().setSlideshowProgress(true, m_slideshowIntervalMs);
         // Retarget motion duration; keep dwell atlas and phase images.
-        m_imageView->reapplySlideshowFraming();
+        m_imageView->hostSlideshow().reapplySlideshowFraming();
     }
     if (!m_slideshowPaused) {
         updateSlideshowFromClock();
@@ -2784,8 +2784,8 @@ void MainWindow::onSlideshowUserNavigated()
                 }
                 const int n = m_session.paths().size();
                 const int i = m_currentIndex;
-                m_imageView->preloadSlideshowImage(m_session.paths().at((i + 1) % n));
-                m_imageView->preloadSlideshowImage(
+                m_imageView->hostSlideshow().preloadSlideshowImage(m_session.paths().at((i + 1) % n));
+                m_imageView->hostSlideshow().preloadSlideshowImage(
                     m_session.paths().at((i - 1 + n) % n));
             });
         }
@@ -2793,7 +2793,7 @@ void MainWindow::onSlideshowUserNavigated()
         m_slideshowPreloadTimer->start();
     }
 
-    m_imageView->cancelSlideshowTransition();
+    m_imageView->hostSlideshow().cancelSlideshowTransition();
     m_slideshowPendingToIndex = -1;
     m_slideshowPreloadToIdx = -1;
     m_slideshowTransitionCycle = -1;
@@ -2808,7 +2808,7 @@ void MainWindow::onSlideshowUserNavigated()
     if (n > 0) {
         const qint64 totalMs = qint64(n) * qint64(intervalMs);
         const qint64 at = qint64(m_slideshowBaseIndex) * qint64(intervalMs);
-        m_imageView->setSlideshowTimeline(at, totalMs);
+        m_imageView->hostSlideshow().setSlideshowTimeline(at, totalMs);
     }
 
     if (!m_slideshowPaused) {
@@ -2816,20 +2816,20 @@ void MainWindow::onSlideshowUserNavigated()
         // Force pure phase to the navigated path so a mid-transition fade
         // cannot leave the previous slide on screen for a tick under ←/→.
         if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-            m_imageView->setSlideshowPhase(m_session.paths().at(m_currentIndex),
+            m_imageView->hostSlideshow().setSlideshowPhase(m_session.paths().at(m_currentIndex),
                                            QString(), -1.0);
         }
     } else {
         // Clock is frozen while paused, so updateSlideshowFromClock will not
         // push a new pure phase. Drive the composite to the navigated slide
         // or the screen stays on the previous m_slideshow.phase().fromImage until unpause.
-        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        m_imageView->hostSlideshow().setSlideshowProgress(true, m_slideshowIntervalMs);
         if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-            m_imageView->setSlideshowPhase(m_session.paths().at(m_currentIndex),
+            m_imageView->hostSlideshow().setSlideshowPhase(m_session.paths().at(m_currentIndex),
                                            QString(), -1.0);
         }
-        m_imageView->setSlideshowMotionPaused(true);
-        m_imageView->setSlideshowPausedHud(true);
+        m_imageView->hostSlideshow().setSlideshowMotionPaused(true);
+        m_imageView->hostSlideshow().setSlideshowPausedHud(true);
     }
     updateSlideshowActionUi();
 }
@@ -2884,24 +2884,24 @@ void MainWindow::startSlideshow()
     }
     armSlideshowCursorHide();
     if (m_imageView) {
-        m_imageView->setSlideshowMotionPaused(false);
-        m_imageView->setSlideshowPausedHud(false);
-        m_imageView->setSlideshowProgress(true, m_slideshowIntervalMs);
+        m_imageView->hostSlideshow().setSlideshowMotionPaused(false);
+        m_imageView->hostSlideshow().setSlideshowPausedHud(false);
+        m_imageView->hostSlideshow().setSlideshowProgress(true, m_slideshowIntervalMs);
         // Arm pure phase *before* framing/motion so the first paint is oriented
         // ContentXform sample — not an unoriented dwell underlay stand-in.
         if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-            m_imageView->setSlideshowPhase(
+            m_imageView->hostSlideshow().setSlideshowPhase(
                 m_session.paths().at(m_currentIndex), QString(), -1.0);
         }
         // Frame + start dwell motion AFTER phase arm so prepareSlideshowMotionDwell
         // can reuse the oriented phase buffer.
-        m_imageView->reapplySlideshowFraming();
+        m_imageView->hostSlideshow().reapplySlideshowFraming();
         if (m_session.paths().size() > 1) {
             int n = (m_currentIndex + 1) % m_session.paths().size();
             if (n < 0) {
                 n = 0;
             }
-            m_imageView->preloadSlideshowImage(m_session.paths().at(n));
+            m_imageView->hostSlideshow().preloadSlideshowImage(m_session.paths().at(n));
         }
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
@@ -2940,9 +2940,9 @@ void MainWindow::seekSlideshowFraction(qreal fraction)
     const qint64 elapsedMs = SlideshowClocks::timelineElapsedMs(
         m_slideshowPosition, intervalMs, totalMs);
     if (m_imageView) {
-        m_imageView->cancelSlideshowTransition();
-        m_imageView->setSlideshowTimeline(elapsedMs, totalMs);
-        m_imageView->setSlideshowCycleProgress(phaseT);
+        m_imageView->hostSlideshow().cancelSlideshowTransition();
+        m_imageView->hostSlideshow().setSlideshowTimeline(elapsedMs, totalMs);
+        m_imageView->hostSlideshow().setSlideshowCycleProgress(phaseT);
     }
     if (idx != m_currentIndex && !m_slideshowAdvancing) {
         m_slideshowAdvancing = true;
@@ -2952,8 +2952,8 @@ void MainWindow::seekSlideshowFraction(qreal fraction)
     if (!m_slideshowPaused) {
         updateSlideshowFromClock();
     } else if (m_imageView && idx >= 0 && idx < n) {
-        m_imageView->setSlideshowPhase(m_session.paths().at(idx), QString(), -1.0);
-        m_imageView->setSlideshowMotionPaused(true);
+        m_imageView->hostSlideshow().setSlideshowPhase(m_session.paths().at(idx), QString(), -1.0);
+        m_imageView->hostSlideshow().setSlideshowMotionPaused(true);
     }
 }
 
@@ -2980,10 +2980,10 @@ void MainWindow::pauseSlideshow()
     if (m_imageView) {
         // Drop any in-flight live/snapshot overlay so ←/→ can show the new
         // image immediately (otherwise the hold layer masks LoadReplace).
-        m_imageView->cancelSlideshowTransition();
-        m_imageView->setSlideshowMotionPaused(true);
-        m_imageView->setSlideshowProgressPaused(true);
-        m_imageView->setSlideshowPausedHud(true);
+        m_imageView->hostSlideshow().cancelSlideshowTransition();
+        m_imageView->hostSlideshow().setSlideshowMotionPaused(true);
+        m_imageView->hostSlideshow().setSlideshowProgressPaused(true);
+        m_imageView->hostSlideshow().setSlideshowPausedHud(true);
     }
     updateScrollBarPolicyForMode();
     updateSlideshowActionUi();
@@ -3003,9 +3003,9 @@ void MainWindow::resumeSlideshow()
     m_slideshowClock.start();
     m_slideshowClockRunning = true;
     if (m_imageView) {
-        m_imageView->setSlideshowMotionPaused(false);
-        m_imageView->setSlideshowPausedHud(false);
-        m_imageView->setSlideshowProgressPaused(false);
+        m_imageView->hostSlideshow().setSlideshowMotionPaused(false);
+        m_imageView->hostSlideshow().setSlideshowPausedHud(false);
+        m_imageView->hostSlideshow().setSlideshowProgressPaused(false);
         m_imageView->flashHud(tr("▶  Slideshow"),
                               formatSlideshowInterval(m_slideshowIntervalMs));
     }
@@ -3021,7 +3021,7 @@ void MainWindow::resumeSlideshow()
 void MainWindow::stopSlideshow()
 {
     if (m_imageView) {
-        m_imageView->setSlideshowNavHot(false);
+        m_imageView->hostSlideshow().setSlideshowNavHot(false);
     }
     if (m_thumbnailBar) {
         m_thumbnailBar->setVisibleLoadsSuspended(false);
@@ -3048,16 +3048,16 @@ void MainWindow::stopSlideshow()
         m_cursorHideTimer->stop();
     }
     if (m_imageView) {
-        m_imageView->setSlideshowMotionPaused(false);
-        m_imageView->setSlideshowPausedHud(false);
-        m_imageView->cancelSlideshowTransition();
-        m_imageView->cancelSlideshowMotion();
+        m_imageView->hostSlideshow().setSlideshowMotionPaused(false);
+        m_imageView->hostSlideshow().setSlideshowPausedHud(false);
+        m_imageView->hostSlideshow().cancelSlideshowTransition();
+        m_imageView->hostSlideshow().cancelSlideshowMotion();
     }
     showSlideshowCursor();
     qApp->removeEventFilter(this);
     updateSlideshowActionUi();
     if (m_imageView) {
-        m_imageView->setSlideshowProgress(false);
+        m_imageView->hostSlideshow().setSlideshowProgress(false);
         // Slideshow advances the session index without loadImage (pure phase owns
         // the viewport). Leaving without a canvas load left Image mode on the
         // pre-show tile. Session flags are already cleared so LoadReplace runs.
@@ -3065,10 +3065,10 @@ void MainWindow::stopSlideshow()
             && m_currentIndex >= 0
             && m_currentIndex < m_session.paths().size()) {
             m_imageView->hostDisplayPipeline().loadImage(m_session.paths().at(m_currentIndex));
-            m_imageView->restoreImageFramingAfterSlideshow();
+            m_imageView->hostSlideshow().restoreImageFramingAfterSlideshow();
             m_imageView->flashHud(tr("■  Slideshow stopped"));
         } else if (announce) {
-            m_imageView->restoreImageFramingAfterSlideshow();
+            m_imageView->hostSlideshow().restoreImageFramingAfterSlideshow();
             m_imageView->flashHud(tr("■  Slideshow stopped"));
         }
     }

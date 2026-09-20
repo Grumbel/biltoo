@@ -218,7 +218,6 @@ public:
     /** Controller host: Workspace/Gallery rubber-band vs pan drag mode from tool. */
     void applyToolDragMode();
     /** Decode path off the GUI thread into the unified slideshow raster map. */
-    void preloadSlideshowImage(const QString &path);
     /**
      * Logical image size for @a path (never soft-raster dimensions).
      * Lookup only: m_sizeBook, then thumtoo cache. Empty if unknown.
@@ -234,7 +233,6 @@ public:
      * Suppresses PreferCache climb, sync repaint, new ZoomBlur builds, and
      * atlas work until settle; previous underlay is kept until replacement.
      */
-    void setSlideshowNavHot(bool hot);
     bool slideshowNavHot() const { return m_slideshow.hud().isNavHot(); }
     /** Slideshow pure-phase owns viewport — tile coordinator must not issue. */
     bool isSlideshowProgressActive() const { return m_slideshow.hud().isProgressActive(); }
@@ -576,7 +574,6 @@ public:
      * @p pulseIdentity briefly shows filename/badge without a pinned HUD (H);
      * use false for silent updates (e.g. slideshow auto-advance).
      */
-    void setSessionPosition(int index, int total, bool pulseIdentity = true);
     void setCurrentSessionId(SessionImageId id);
     SessionImageId currentSessionId() const { return m_sessionId.currentIdValue(); }
     /** Select canvas item for @p path; ensure visible in Gallery. */
@@ -608,57 +605,39 @@ public:
      * starts (or interval changes while running); active=false when the
      * slideshow stops. The line is drawn only while the full HUD is pinned.
      */
-    void setSlideshowProgress(bool active, int intervalMs = 0);
     /**
      * Overall slideshow timeline for the extended (pinned) HUD — video-player
      * style elapsed / total and remaining. Pass totalMs<=0 to clear.
      * Drawn only while the full HUD is pinned and a slideshow is active.
      */
-    void setSlideshowTimeline(qint64 elapsedMs, qint64 totalMs);
     /** Per-cycle phase in [0,1] from host unitless clock. */
-    void setSlideshowCycleProgress(qreal phase01);
 
-    void setSlideshowTransition(SlideshowTransition kind);
     SlideshowTransition slideshowTransition() const { return m_slideshow.settings().currentTransition(); }
-    void setSlideshowTransitionDurationMs(int ms);
     int slideshowTransitionDurationMs() const { return m_slideshow.settings().transitionDuration(); }
     /** Clear residual transition overlay state (safe during pure-phase show). */
-    void cancelSlideshowTransition();
 
-    void setSlideshowMotion(SlideshowMotion mode);
     SlideshowMotion slideshowMotion() const { return m_slideshow.settings().currentMotion(); }
-    void setPanZoomFactor(qreal factor);
     qreal panZoomFactor() const { return m_slideshow.settings().currentPanZoomFactor(); }
 
-    void setSlideshowZoom(SlideshowZoom mode);
     SlideshowZoom slideshowZoom() const { return m_slideshow.settings().currentZoom(); }
 
-    void setSlideshowLetterboxFill(SlideshowLetterboxFill mode);
     SlideshowLetterboxFill slideshowLetterboxFill() const { return m_slideshow.settings().currentLetterboxFill(); }
     /** Pad colour when letterbox fill is Solid (also fallback for ZoomBlur miss). */
-    void setSlideshowPadColor(const QColor &color);
-    void cancelSlideshowMotion();
     /**
      * Freeze or continue Ken Burns without tearing down the dwell camera.
      * Used for slideshow pause/resume (Space), not full stop.
      */
-    void setSlideshowMotionPaused(bool paused);
     /**
      * Persistent top-left "Paused" cue while a slideshow session is paused.
      * Independent of flashHud (which times out after ~1s). Cleared on resume/stop.
      */
-    void setSlideshowPausedHud(bool on);
     /** Freeze/resume dwell progress elapsed without resetting the timeline. */
-    void setSlideshowProgressPaused(bool paused);
     /** Image-mode fit after leaving slideshow (Fit to window). */
-    void restoreImageFramingAfterSlideshow();
     /**
      * Re-frame the current Image-mode item for an active slideshow:
      * motion on → restart Ken Burns blit from slideshow zoom base; motion off →
      * Fit / Fill / 1:1 framing only. No-op when slideshow progress is inactive.
      */
-    void reapplySlideshowFraming();
-    void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
     /**
      * Drop any held live-transition overlay once the next slide is fitted.
      * Called from the LoadReplace path so the incoming frame is not cleared

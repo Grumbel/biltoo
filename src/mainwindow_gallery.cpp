@@ -213,7 +213,7 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
     if (m_imageView) {
         m_imageView->setClassicPath(path);
         m_imageView->setCurrentSessionId(sid);
-        m_imageView->setSessionPosition(sessionIndex, m_session.size(), false);
+        m_imageView->hostSlideshow().setSessionPosition(sessionIndex, m_session.size(), false);
         m_imageView->leaveForImageMode();
     }
     if (m_thumbnailBar) {
