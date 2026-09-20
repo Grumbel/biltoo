@@ -1070,3 +1070,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1820: drop ImageItem::handleToolTip + dead ImageView::seedEmptyWorkspaceFromReplace forward.
 - biltoo-1821: drop dead ImageView::imageModeItemForPath thin-forward.
 - biltoo-1822: gallerySoftResetPath/All via pipeline host; drop ImageView thin-forwards.
+- biltoo-1823: scheduleGalleryDecode via pipeline; drop ImageView thin-forward.

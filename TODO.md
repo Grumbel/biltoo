@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1823-schedule-gallery-decode-via-pipeline.** Stage 2: scheduleGalleryDecode via pipeline.
+Prior: **1822**.
+
+### Change
+- GalleryController / ImageView canvas → pipeline `scheduleGalleryDecode`
+- Removed ImageView thin-forward; `scheduleGalleryDecodeWindowRefresh` stays on ImageView
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1823-schedule-gallery-decode-via-pipeline.bundle HEAD
+```
+Includes **1806–1823** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Gallery scroll / pack decode)
+- More pipeline hop demotions
+- Offscreen ImageView characterization (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1822-gallery-soft-reset-via-pipeline.** Stage 2: gallery soft reset via pipeline.
 Prior: **1821**.
 
