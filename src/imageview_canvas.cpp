@@ -280,7 +280,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                     b.index = i;
                     m_bindBook.append(b);
                     if (isGalleryMode()) {
-                        scheduleGalleryDecode(path);
+                        m_displayPipeline.scheduleGalleryDecode(path);
                     } else {
                         scheduleImageLoad(path, LoadAdd);
                     }

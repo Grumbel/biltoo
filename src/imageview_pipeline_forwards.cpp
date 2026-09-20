@@ -146,11 +146,6 @@ int ImageView::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) c
     return m_displayPipeline.galleryHaveEdgeFromItems(path, anyFullOut);
 }
 
-void ImageView::scheduleGalleryDecode(const QString &path)
-{
-    m_displayPipeline.scheduleGalleryDecode(path);
-}
-
 void ImageView::onLadderReady(const QString &path, int maxEdge, const QImage &image)
 {
     m_displayPipeline.onLadderReady(path, maxEdge, image);

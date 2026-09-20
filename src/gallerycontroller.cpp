@@ -1026,7 +1026,7 @@ void GalleryController::updateDecodeWindow()
             scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
             break;
         }
-        m_view->scheduleGalleryDecode(path);
+        m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
         ++scheduled;
     }
     if (m_view->hostPerf().isEnabled()) {
@@ -1320,7 +1320,7 @@ void GalleryController::softWatchdogTick()
             continue;
         }
         if (!item->hasDisplayPixels()) {
-            m_view->scheduleGalleryDecode(item->path());
+            m_view->hostDisplayPipeline().scheduleGalleryDecode(item->path());
             needWindow = true;
         }
     }
@@ -1467,7 +1467,7 @@ void GalleryController::reloadFromDisk(bool relayout)
         b.id = item->sessionId();
         b.index = item->sessionIndex();
         m_view->hostBindBook().append(b);
-        m_view->scheduleGalleryDecode(path);
+        m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
     }
     if (relayout) {
         applyLayout(GalleryPackReason::Reload);
@@ -1547,7 +1547,7 @@ void GalleryController::hardReloadFromDisk(bool relayout)
                 ThumtooCache::scheduleProbe(b.path);
                 probed.insert(b.path);
             }
-            m_view->scheduleGalleryDecode(b.path);
+            m_view->hostDisplayPipeline().scheduleGalleryDecode(b.path);
         }
         if (doRelayout) {
             applyLayout(GalleryPackReason::Reload);

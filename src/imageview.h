@@ -836,7 +836,6 @@ public:
     void scheduleGalleryDecodeWindowRefresh(int delayMs = 48);
     void updateGalleryDecodeWindow();
     void updateGallerySoftProgressHud();
-    void scheduleGalleryDecode(const QString &path);
 signals:
     void stickyZoomChanged();
     void statusChanged();
