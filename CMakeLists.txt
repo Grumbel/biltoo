@@ -638,9 +638,13 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-sessionpathorder-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME sessionpathorder COMMAND biltoo-sessionpathorder-test)
 
-  # Phase 7 Stage 0: ItemWorld facade (header-only; no behaviour change).
+  # Phase 7 Stage 0–2: ItemWorld facade + Placement characterization.
+  # Links SessionAppearanceStore (ItemWorld dual-writes DTO + sparse tables).
   add_executable(biltoo-itemworld-test
     tests/itemworld_test.cpp
+    src/sessionappearance.cpp
+    src/contentxform.cpp
+    src/coloradjust.cpp
   )
   target_include_directories(biltoo-itemworld-test PRIVATE src)
   target_link_libraries(biltoo-itemworld-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)

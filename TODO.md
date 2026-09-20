@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1778-itemworld-link-sessionappearance.** Fix itemworld test link.
+Prior: **1777** (`bf2e64a`).
+
+### Change
+- `biltoo-itemworld-test` links `sessionappearance.cpp` + `contentxform.cpp` +
+  `coloradjust.cpp` (same set as sessiondocument / sessionappearance tests)
+- Fixes undefined `SessionAppearanceStore::{get,set,remove,contains,clear}`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1778-itemworld-link-sessionappearance.bundle HEAD
+```
+
+### Next
+- `ctest -R itemworld` (and related pure tests)
+- Tile-LOD demotion or offscreen ImageView harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1777-privatize-placement-mutators.** Stage 2 pose write lock.
 Prior: **1776**.
 

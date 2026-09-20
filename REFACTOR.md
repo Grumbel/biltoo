@@ -1023,3 +1023,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1775: ImageItem::zoomBy/rotateBy via applyPlacement.
 - biltoo-1776: placementFromState/applyPlacementToState pure characterization tests.
 - biltoo-1777: privatize setItem*/setStackZ; residual setPos/setStackZ via applyPlacement.
+- biltoo-1778: itemworld test links SessionAppearanceStore (sessionappearance.cpp + deps).
