@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1678-moc-host-pipeline-public.** Host pipeline include must not sit under public slots.
+Prior: **1677**.
+
+### Change
+- Close `public slots:` after `onImageLoaded` / preview / ladder only
+- Re-open `public:` for `matchesLoadGeneration` + `#include "imageview_host_pipeline.inc"`
+- Event overrides after the include stay under `protected:`
+- Fixes moc "Parse error at }" (host helpers / `QImage()` defaults were parsed as slots)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1678-moc-host-pipeline-public.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Optional: multi-item Gallery/Workspace reload onto mode controllers
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1677-image-reload-controller.** Image-mode reload/hard-reload onto ImageController.
 Prior: **1676**.
 

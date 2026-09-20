@@ -896,14 +896,18 @@ public slots:
      * Seeds ImageCache; upgrades Image mode, slideshow, and Gallery soft state.
      */
     void onLadderReady(const QString &path, int maxEdge, const QImage &image);
+
+public:
     /** True while @p gen is still the active LoadReplace generation (pool jobs). */
     bool matchesLoadGeneration(quint64 gen) const
     {
         return m_displayPipeline.loadGate().accepts(gen);
     }
 
+    // Host pipeline + try* phase decls — must NOT sit under public slots (moc).
 #include "imageview_host_pipeline.inc"
 
+protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
@@ -913,6 +917,7 @@ public slots:
     void dropEvent(QDropEvent *event) override;
     /** Forward drag/drop from the OpenGL viewport to the view handlers. */
     bool viewportEvent(QEvent *event) override;
+
 private:
     // Phase 6 Tier 0: privatized methods — see REFACTOR.md / imageview_private_methods.inc
 #include "imageview_private_methods.inc"
