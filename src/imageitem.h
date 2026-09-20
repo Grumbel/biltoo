@@ -373,7 +373,7 @@ private:
                              ColorAdjustments const &grade) const;
     /**
      * Single access path for tile runtime state.
-     * Pipeline-owned bag only (ensure via ImageView when on scene).
+     * Pipeline-owned bag only (attached by DisplayPipelineController).
      */
     tilelod::ItemBag &tileLodBag();
     const tilelod::ItemBag &tileLodBag() const;

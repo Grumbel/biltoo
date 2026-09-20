@@ -67,11 +67,9 @@ void ImageItem::setPath(const QString &path)
     m_path = path;
     // Kill pending tickTileLod singleShot so it cannot update() after this
     // item now represents a different file (stale path identity). Only when a
-    // pipeline bag is attached or can be ensured via the scene's ImageView.
-    if (m_tileLodAttached
-        || (scene() && !scene()->views().isEmpty()
-            && qobject_cast<ImageView *>(scene()->views().first()))) {
-        tilelod::ItemBag &bag = tileLodBag();
+    // pipeline bag is already attached (no ensure via ImageView).
+    if (m_tileLodAttached) {
+        tilelod::ItemBag &bag = *m_tileLodAttached;
         if (bag.alive) {
             *bag.alive = false;
         }

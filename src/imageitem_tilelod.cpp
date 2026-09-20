@@ -19,7 +19,6 @@
 #include <QCoreApplication>
 #include "placementlinear.h"
 #include "viewtransform.h"
-#include "imageview.h"
 
 #include <QDebug>
 #include <QFileInfo>
@@ -34,15 +33,10 @@ tilelod::ItemBag &ImageItem::tileLodBag()
     if (m_tileLodAttached) {
         return *m_tileLodAttached;
     }
-    // Pipeline owns the bag: ensure via ImageView when this item is on its scene.
-    if (scene() && !scene()->views().isEmpty()) {
-        if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
-            return iv->hostDisplayPipeline().ensureTileBag(this);
-        }
-    }
+    // Stage 2: bags live only in DisplayPipelineController. registerItemDisplaySurface
+    // / ensureTileBag attach before paint or tick; do not climb back to ImageView.
 #ifndef NDEBUG
-    // Stage 2: canvas items must register with DisplayPipelineController first.
-    qWarning("ImageItem::tileLodBag: no pipeline bag (item not on ImageView scene)");
+    qWarning("ImageItem::tileLodBag: no pipeline bag (item not registered)");
     Q_ASSERT(false && "ImageItem::tileLodBag requires pipeline-owned bag");
 #endif
     // Last-resort read/write sink for off-scene construction paths; not retained.
