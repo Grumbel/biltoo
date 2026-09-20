@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-1773-chrome-flip-apply-placement**.
-Latest tip: **biltoo-1773-chrome-flip-apply-placement**. Next bundle number: **1774**
+Latest agent handoff: **TODO.md → biltoo-1774-fix-dup-drag-start-state**.
+Latest tip: **biltoo-1774-fix-dup-drag-start-state**. Next bundle number: **1775**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

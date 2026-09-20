@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1774-fix-dup-drag-start-state.** Drop duplicate dragStartStateAt.
+Prior: **1773**.
+
+### Change
+- Remove duplicate `GroupTransformSession::dragStartStateAt` (pre-existing + tip 1760)
+- Restores clean compile of group transform session header
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1774-fix-dup-drag-start-state.bundle HEAD
+```
+
+### Next
+- biltoo-build + group scale/rotate smoke
+- Tier 4 characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1773-chrome-flip-apply-placement.** Chrome reset, flips, opacity slider via applyPlacement.
 Prior: **1772**.
 
