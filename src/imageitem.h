@@ -108,12 +108,8 @@ public:
     void setPreviewImage(const QImage &preview);
     void clearDecodedPixels();
 
-    /** Uniform scale factor (geometric mean of X/Y); prefer itemScaleX/Y when anisotropic. */
-    qreal itemScale() const;
     qreal itemScaleX() const { return m_scaleX; }
     qreal itemScaleY() const { return m_scaleY; }
-    /** Horizontal shear factor k in R·H·S (0 = no shear). */
-    qreal itemShear() const { return m_shear; }
     /**
      * Workspace *placement* rotation only (free-rotate handle).
      * Content 90° turns are baked into pixels — not stored here.
@@ -124,7 +120,6 @@ public:
     ItemComponents::Placement placement() const;
     /** Apply Workspace pose (Stage 2 single writer for item pose). */
     void applyPlacement(const ItemComponents::Placement &pl);
-    qreal itemOpacity() const { return m_opacity; }
     /** Persistent stacking order (selection may temporarily raise the item). */
     qreal stackZ() const { return m_stackZ; }
     /** Item-local pixmap/content rect (no chrome pad). */
@@ -243,9 +238,6 @@ public:
 
     /** Which handle (if any) is under the given item-local position. */
     Handle handleAt(const QPointF &itemPos) const;
-
-    /** Call after view zoom so handle hit areas/bounds stay correct. */
-    void updateHandleLayout();
 
     /** True when a scale/rotate/chrome handle is under item-local @p itemPos. */
     bool hasHandleAt(const QPointF &itemPos) const;

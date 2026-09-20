@@ -251,12 +251,6 @@ void ImageItem::clearDecodedPixels()
     update();
 }
 
-qreal ImageItem::itemScale() const
-{
-    // Geometric mean keeps a single % meaningful when axes differ slightly.
-    return PlacementLinear::geometricMeanScale(m_scaleX, m_scaleY);
-}
-
 ItemComponents::Placement ImageItem::placement() const
 {
     ItemComponents::Placement pl;

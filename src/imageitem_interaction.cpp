@@ -322,12 +322,6 @@ qreal ImageItem::handleHitRadius() const
     return handleDrawSize() * 1.2;
 }
 
-void ImageItem::updateHandleLayout()
-{
-    prepareGeometryChange();
-    update();
-}
-
 bool ImageItem::isChromeHandle(Handle h) const
 {
     return ItemHandlePolicy::isChromeHandle(h);
