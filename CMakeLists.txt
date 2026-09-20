@@ -138,12 +138,14 @@ add_executable(biltoo
   src/imageview_pack.cpp
   src/imageview_canvas.cpp
   src/imageview_canvas_place.cpp
+  src/imageview_canvas_focus.cpp
   src/imageview_selection.cpp
   src/imageview_session_bind.cpp
   src/imageview_crop.cpp
   src/imageview_appearance.cpp
   src/imageview_appearance_commit.cpp
   src/imageview_rematerialize.cpp
+  src/imageview_color_grade.cpp
   src/imageview_bake.cpp
   src/imageview_item_state.cpp
   src/cropgeometry.cpp

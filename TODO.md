@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1703-canvas-focus-color-grade.** Canvas focus + color-grade TUs.
+Prior: **1702**.
+
+### Change
+- New `imageview_canvas_focus.cpp` — primary/target, placeholders, focus/reveal, destroyCanvasItem
+- `imageview_canvas.cpp` ~707 → ~485 (path membership / rebind)
+- New `imageview_color_grade.cpp` — interactive grade + commit flush
+- `imageview_rematerialize.cpp` ~496 → ~329
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1703-canvas-focus-color-grade.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- ImageView characterization harness → Tier 4 path-order
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1702-appearance-commit-tu.** Extract appearance commit/peer sync TU.
 Prior: **1701**.
 
