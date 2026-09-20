@@ -119,6 +119,11 @@ public:
     void gallerySoftResetAll();
     int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const;
     void scheduleGalleryDecode(const QString &path);
+
+    void scheduleTileLodAfterInteraction(int delayMs = 50);
+    void purgeTilePathRam(const QString &path);
+    void dropAllTileLodSessions();
+    void tickPrimaryTileLod(int budget = 8);
     void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role);
     bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);

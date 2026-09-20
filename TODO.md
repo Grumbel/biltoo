@@ -2,6 +2,35 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1655-tile-lod-on-controller.** Move tile LOD pump to DisplayPipelineController.
+Prior: **1654**.
+
+### Change
+- `DisplayPipelineController` owns:
+  - `tickPrimaryTileLod`
+  - `scheduleTileLodAfterInteraction`
+  - `purgeTilePathRam`
+  - `dropAllTileLodSessions`
+- ImageView thin-forwards; timers parented to the view QObject
+- `hostWorkspace()` accessor (stash drop path)
+- `imageview_load.cpp` ~537 lines (Tier 5 exit was &lt;800)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1655-tile-lod-on-controller.bundle HEAD
+```
+
+### Next
+- Path-order dual-write audit / Tier 4 path-order residual
+- Shrink `imageview.h` (&lt;1000) via host-API consolidation
+- Tier 6 remainder (workspace/gallery try* as needed)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1654-tile-lod-release-shadow.** Rename in-flight loop key in release().
 Prior: **1653**.
 

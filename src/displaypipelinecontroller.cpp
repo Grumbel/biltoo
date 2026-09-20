@@ -5,6 +5,7 @@
 #include "displaypipeline_jobs.h"
 
 #include "tile_load_coordinator.h"
+#include "tilelod/tile_lod_registry.hpp"
 
 #include "imageview.h"
 #include "imageitem.h"
@@ -1330,5 +1331,101 @@ ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path,
     registerItemDisplaySurface(item);
     return item;
 }
+
+
+
+void DisplayPipelineController::scheduleTileLodAfterInteraction(int delayMs)
+{
+    if (!tileLodZoomDebounce()) {
+        tileLodZoomDebounce() = new QTimer(m_view);
+        tileLodZoomDebounce()->setSingleShot(true);
+        connect(tileLodZoomDebounce(), &QTimer::timeout, m_view, [this]() {
+            if (m_view->isGalleryMode()) {
+                tickPrimaryTileLod(8);
+                return;
+            }
+            if (m_view->isImageMode()) {
+                maybeClimbImageModePixelsForView();
+            } else if (m_view->isWorkspaceMode()) {
+                ensureWorkspaceQualityClimb();
+            }
+        });
+    }
+    tileLodZoomDebounce()->setInterval(ViewTransform::nonNegMs(delayMs));
+    tileLodZoomDebounce()->start();
+}
+
+
+void DisplayPipelineController::purgeTilePathRam(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    for (ImageItem *item : m_view->liveItems()) {
+        if (item && item->path() == path) {
+            item->dropTileLodSession();
+        }
+    }
+    tilelod::TileLodRegistry::instance().invalidate(path);
+    m_view->dropTilePrefetchPath(path);
+}
+
+
+void DisplayPipelineController::dropAllTileLodSessions()
+{
+    auto dropList = [](const QList<ImageItem *> &items) {
+        for (ImageItem *item : items) {
+            if (item) {
+                item->dropTileLodSession();
+            }
+        }
+    };
+    dropList(m_view->liveItems());
+    dropList(m_view->hostGallery().stashedItems());
+    dropList(m_view->hostWorkspace().stashedItems());
+}
+
+
+void DisplayPipelineController::tickPrimaryTileLod(int budget)
+{
+    ASSERT_GUI_THREAD();
+    // Key-repeat: do not plan/issue tiles — soft underlay only until settle.
+    if (m_view->hostSlideshow().hud().isNavHot()) {
+        return;
+    }
+    if (!tileCoordinator()) {
+        tileCoordinator() = std::make_unique<TileLoadCoordinator>(m_view);
+    }
+    tileCoordinator()->tick(budget);
+
+    // Image/Workspace: keep issuing until every tileLodWanted item is covered.
+    // Without a re-arm, only the first budget of center keys climbed to target
+    // scale; outer cells stayed one level coarse until a scroll forced a tick.
+    bool needMore = false;
+    for (ImageItem *ii : m_view->liveItems()) {
+        if (!ii || !ii->tileLodWanted()) {
+            continue;
+        }
+        if (!ii->tileLodViewportCovered()) {
+            needMore = true;
+            break;
+        }
+    }
+    if (!needMore) {
+        return;
+    }
+    if (!tileLodTimer()) {
+        tileLodTimer() = new QTimer(m_view);
+        tileLodTimer()->setSingleShot(true);
+        connect(tileLodTimer(), &QTimer::timeout, m_view, [this]() {
+            // Image focus: higher budget so density climb is not starved.
+            tickPrimaryTileLod(m_view->isGalleryMode() ? 48 : 32);
+        });
+    }
+    if (!tileLodTimer()->isActive()) {
+        tileLodTimer()->start(16);
+    }
+}
+
 
 

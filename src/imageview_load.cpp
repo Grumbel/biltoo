@@ -423,23 +423,7 @@ int ImageView::imageModeOnScreenNeedEdge() const
 
 void ImageView::scheduleTileLodAfterInteraction(int delayMs)
 {
-    if (!m_displayPipeline.tileLodZoomDebounce()) {
-        m_displayPipeline.tileLodZoomDebounce() = new QTimer(this);
-        m_displayPipeline.tileLodZoomDebounce()->setSingleShot(true);
-        connect(m_displayPipeline.tileLodZoomDebounce(), &QTimer::timeout, this, [this]() {
-            if (isGalleryMode()) {
-                tickPrimaryTileLod(8);
-                return;
-            }
-            if (isImageMode()) {
-                maybeClimbImageModePixelsForView();
-            } else if (isWorkspaceMode()) {
-                ensureWorkspaceQualityClimb();
-            }
-        });
-    }
-    m_displayPipeline.tileLodZoomDebounce()->setInterval(ViewTransform::nonNegMs(delayMs));
-    m_displayPipeline.tileLodZoomDebounce()->start();
+    m_displayPipeline.scheduleTileLodAfterInteraction(delayMs);
 }
 
 void ImageView::prefetchTilesForPaths(const QStringList &paths, int budgetPerPath)
@@ -486,73 +470,18 @@ void ImageView::dropTilePrefetchPath(const QString &path)
 
 void ImageView::purgeTilePathRam(const QString &path)
 {
-    if (path.isEmpty()) {
-        return;
-    }
-    for (ImageItem *item : m_items) {
-        if (item && item->path() == path) {
-            item->dropTileLodSession();
-        }
-    }
-    tilelod::TileLodRegistry::instance().invalidate(path);
-    dropTilePrefetchPath(path);
+    m_displayPipeline.purgeTilePathRam(path);
 }
 
 void ImageView::dropAllTileLodSessions()
 {
-    auto dropList = [](const QList<ImageItem *> &items) {
-        for (ImageItem *item : items) {
-            if (item) {
-                item->dropTileLodSession();
-            }
-        }
-    };
-    dropList(m_items);
-    dropList(m_gallery.stashedItems());
-    dropList(m_workspace.stashedItems());
+    m_displayPipeline.dropAllTileLodSessions();
 }
 
 void ImageView::tickPrimaryTileLod(int budget)
 {
-    ASSERT_GUI_THREAD();
-    // Key-repeat: do not plan/issue tiles — soft underlay only until settle.
-    if (m_slideshow.hud().isNavHot()) {
-        return;
-    }
-    if (!m_displayPipeline.tileCoordinator()) {
-        m_displayPipeline.tileCoordinator() = std::make_unique<TileLoadCoordinator>(this);
-    }
-    m_displayPipeline.tileCoordinator()->tick(budget);
-
-    // Image/Workspace: keep issuing until every tileLodWanted item is covered.
-    // Without a re-arm, only the first budget of center keys climbed to target
-    // scale; outer cells stayed one level coarse until a scroll forced a tick.
-    bool needMore = false;
-    for (ImageItem *ii : m_items) {
-        if (!ii || !ii->tileLodWanted()) {
-            continue;
-        }
-        if (!ii->tileLodViewportCovered()) {
-            needMore = true;
-            break;
-        }
-    }
-    if (!needMore) {
-        return;
-    }
-    if (!m_displayPipeline.tileLodTimer()) {
-        m_displayPipeline.tileLodTimer() = new QTimer(this);
-        m_displayPipeline.tileLodTimer()->setSingleShot(true);
-        connect(m_displayPipeline.tileLodTimer(), &QTimer::timeout, this, [this]() {
-            // Image focus: higher budget so density climb is not starved.
-            tickPrimaryTileLod(isGalleryMode() ? 48 : 32);
-        });
-    }
-    if (!m_displayPipeline.tileLodTimer()->isActive()) {
-        m_displayPipeline.tileLodTimer()->start(16);
-    }
+    m_displayPipeline.tickPrimaryTileLod(budget);
 }
-
 
 void ImageView::maybeClimbImageModePixelsForView()
 {

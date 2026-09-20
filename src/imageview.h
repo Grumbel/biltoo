@@ -268,6 +268,8 @@ public:
     /** Display pipeline host: gallery controller (stashed items). */
     GalleryController &hostGallery() { return m_gallery; }
     const GalleryController &hostGallery() const { return m_gallery; }
+    WorkspaceController &hostWorkspace() { return m_workspace; }
+    const WorkspaceController &hostWorkspace() const { return m_workspace; }
     /** Display pipeline host: crop controller (draft freeze). */
     CropController &hostCrop() { return m_cropCtrl; }
     const CropController &hostCrop() const { return m_cropCtrl; }
