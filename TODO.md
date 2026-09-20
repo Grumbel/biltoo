@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1860-sticky-layout-via-host.** Sticky/layout/chrome/size-resolve reads via hosts.
+Prior: **1859**.
+
+### Change
+- MainWindow sticky zoom → `hostFraming()`
+- MainWindow layout mode / columns → `hostLayout()`
+- MainWindow pan pref → `hostChrome().isImageModeLeftDragPan()`
+- Controllers / tile coordinator / ImageView internals: size-resolve →
+  `hostGallerySizeResolve().active()` / `m_gallerySizeResolve.active()`
+- Drop pure-hop getters and aliases `workspaceMode` / `isGalleryLayout`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1860-sticky-layout-via-host.bundle HEAD
+```
+Requires tip **1859** (base **1858** / `1e112d94`).
+
+### Next
+- classicPath via hostImage; bg/HUD/text/undo pure hops
+- Tier 4 characterization
+- biltoo-build smoke
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1859-pathRaster-pack-hops.** pathRaster + dead pack forwards; layout-mode hop.
 Prior: **1858**.
 
