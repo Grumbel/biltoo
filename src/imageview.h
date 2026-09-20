@@ -536,16 +536,6 @@ public:
 
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
-    /** Stage 2: apply Workspace pose only (Placement component). */
-    /** Stage 2: read live ImageItem pose into a Placement record. */
-    static ItemComponents::Placement placementFromItem(const ImageItem *item);
-    /**
-     * Apply pose (and session DTO) after geometry undo/redo so ItemWorld
-     * Placement stays aligned with the live item.
-     */
-    void applyGeometrySessionState(ImageItem *item, const WorkspaceItemState &state);
-    /** Write Placement/appearance (or path book) without touching the live item. */
-    void persistGeometrySessionState(ImageItem *item, const WorkspaceItemState &state);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     /** Copy of stored appearance for @p id (empty/default if none). */
@@ -676,6 +666,9 @@ protected:
     bool viewportEvent(QEvent *event) override;
 
 private:
+    /** Geometry undo command (transform_actions); needs private session-state APIs. */
+    friend class ImageViewTransformGeometryCommand;
+
     // Phase 6 Tier 0: privatized methods — see REFACTOR.md / imageview_private_methods.inc
 #include "imageview_private_methods.inc"
 #include "imageview_private_rest.inc"

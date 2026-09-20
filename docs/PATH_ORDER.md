@@ -31,7 +31,7 @@ membership queries for identity prefer the document when bound.
 | Event | Document | View book |
 |-------|----------|-----------|
 | `loadFiles` / expand | `setPaths` / `replaceAll` | `setWorkspacePaths` → `pathOrderSetOrder` |
-| Gallery paste / place | MainWindow may `append` | `pathOrderAppendRow` in `addImageForSession` |
+| Gallery paste / place | MainWindow may `append` | private `pathOrderAppendRow` in `addImageForSession` |
 | Gallery Delete (bound) | MainWindow remove | prune / setOrder after remove |
 | Mode leave / clear | unchanged or clear | `pathOrderClear` (local only) |
 | `rebindWorkspaceSession` | source of truth for ids | **does not** rewrite the book |
@@ -61,7 +61,7 @@ All pack/LoadAdd **reads** go through `ImageView::currentPackOrder()` →
 (`pathOrderPaths` / `pathOrderIds`) were removed (biltoo-1817). Dead
 `PackOrderReadSource` / `packOrderForRead` removed (1887).
 
-Mutations: `pathOrderClear` / `SetOrder` / `AppendRow` on the overlay
+Mutations: public `pathOrderClear` / `SetOrder`; private `pathOrderAppendRow` on the overlay
 (Explicit; setOrder may collapse when aligned). Public `setPathOrder` requires
 paths∥ids (or `PackOrderView`).
 
@@ -88,7 +88,7 @@ would regenerate session tiles — the dual-model reason the book still exists.
 |-------------------|---------|
 | `pathOrderClear()` | `clearExplicit()` → Explicit + empty |
 | `pathOrderSetOrder(paths, ids)` | `setExplicit` + `tryCollapseToFollowDocument` |
-| `pathOrderAppendRow(path, id)` | `appendExplicitRow(path, id, m_sessionDoc)` (seed on promote) |
+| `pathOrderAppendRow(path, id)` (private) | `appendExplicitRow(path, id, m_sessionDoc)` (seed on promote) |
 | `currentPackOrder()` | `m_pathOrderOverlay.resolve(m_sessionDoc)` |
 | `pathOrderOccurrences(path)` | `countPathOccurrences(path, m_sessionDoc)` |
 | Stash snapshot | `PackOrderView` of `resolve(...)`; restore via `setExplicit` |

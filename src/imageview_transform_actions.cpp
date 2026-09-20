@@ -16,6 +16,54 @@
 #include <QGraphicsItem>
 #include <algorithm>
 
+/** Geometry undo/redo — friend of ImageView for private session-state APIs. */
+class ImageViewTransformGeometryCommand : public QUndoCommand {
+public:
+    ImageViewTransformGeometryCommand(ImageView *view, ImageItem *item,
+                                      const WorkspaceItemState &before,
+                                      const WorkspaceItemState &after,
+                                      const QString &label)
+        : m_view(view)
+        , m_item(item)
+        , m_before(before)
+        , m_after(after)
+    {
+        setText(label);
+    }
+
+    void undo() override
+    {
+        if (!m_view || !m_item) {
+            return;
+        }
+        m_view->applyGeometrySessionState(m_item, m_before);
+        if (m_view->isWorkspaceMode()) {
+            m_view->updateWorkspaceSceneRect();
+        }
+        m_view->viewport()->update();
+        emit m_view->statusChanged();
+    }
+
+    void redo() override
+    {
+        if (!m_view || !m_item) {
+            return;
+        }
+        m_view->applyGeometrySessionState(m_item, m_after);
+        if (m_view->isWorkspaceMode()) {
+            m_view->updateWorkspaceSceneRect();
+        }
+        m_view->viewport()->update();
+        emit m_view->statusChanged();
+    }
+
+private:
+    ImageView *m_view = nullptr;
+    ImageItem *m_item = nullptr;
+    WorkspaceItemState m_before;
+    WorkspaceItemState m_after;
+};
+
 namespace {
 
 /** Overlap for stacking: scene AABB of content (rotation expands the box). */
@@ -470,45 +518,8 @@ void ImageView::pushItemGeometryCommand(const QString &text, ImageItem *item,
     if (!m_undoStack) {
         return;
     }
-    class TransformCommand : public QUndoCommand {
-    public:
-        TransformCommand(ImageView *view, ImageItem *it,
-                         const WorkspaceItemState &b, const WorkspaceItemState &a,
-                         const QString &label)
-            : m_view(view), m_item(it), m_before(b), m_after(a)
-        {
-            setText(label);
-        }
-        void undo() override
-        {
-            if (!m_view || !m_item) {
-                return;
-            }
-            m_view->applyGeometrySessionState(m_item, m_before);
-            if (m_view->isWorkspaceMode()) {
-                m_view->updateWorkspaceSceneRect();
-            }
-            m_view->viewport()->update();
-            emit m_view->statusChanged();
-        }
-        void redo() override
-        {
-            if (!m_view || !m_item) {
-                return;
-            }
-            m_view->applyGeometrySessionState(m_item, m_after);
-            if (m_view->isWorkspaceMode()) {
-                m_view->updateWorkspaceSceneRect();
-            }
-            m_view->viewport()->update();
-            emit m_view->statusChanged();
-        }
-    private:
-        ImageView *m_view;
-        ImageItem *m_item;
-        WorkspaceItemState m_before, m_after;
-    };
-    m_undoStack->push(new TransformCommand(this, item, before, after, text));
+    m_undoStack->push(
+        new ImageViewTransformGeometryCommand(this, item, before, after, text));
 }
 
 void ImageView::pushItemContentCommand(const QString &text, ImageItem *item,

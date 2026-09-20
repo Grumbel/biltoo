@@ -1,5 +1,32 @@
 # TODO / agent handoff
 
+## Status (2026-09-21)
+
+**Tip: biltoo-1911-privatize-geometry-pack-append.** Narrow host public surface further.
+Prior: **1910**.
+
+### Change
+- `pathOrderAppendRow` → private (place/addImageForSession only; controllers use clear/setOrder)
+- `placementFromItem` / `applyGeometrySessionState` / `persistGeometrySessionState` → private
+- Geometry undo: `ImageViewTransformGeometryCommand` friend of ImageView (was local class)
+- PATH_ORDER.md notes private append
+- No behaviour change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1911-privatize-geometry-pack-append-516d734.bundle HEAD
+```
+Requires tip **1910** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+- Optional further host-API narrowing if more imageview-only public methods appear
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-20)
 
 **Tip: biltoo-1910-privatize-paint-input-phases.** Narrow host public surface.
