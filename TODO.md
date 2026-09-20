@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1837-input-controller-direct.** Tier 6: input dispatch → controllers.
+Prior: **1836**.
+
+### Change
+- `imageview_input_events.cpp` / `imageview_input.cpp`: call `m_gallery` /
+  `m_cropCtrl` / `m_attentionCtrl` / `m_slideshow` / `m_workspace` / `m_image`
+  try* APIs directly
+- Drop `imageview_input_forwards.cpp` + host decls
+- Shell input (chrome, pan, edges, zoom region) stays on ImageView
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1837-input-controller-direct.bundle HEAD
+```
+Requires tip **1836**.
+
+### Next
+- biltoo-build smoke (mouse/key in Gallery/Workspace/crop)
+- Tier 4 characterization (offscreen ImageView)
+- Update REFACTOR Tier 5/6 notes (forwards TUs gone)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1836-loadimage-via-pipeline.** Stage 2: loadImage via pipeline (last forward).
 Prior: **1835**.
 

@@ -710,10 +710,11 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
    `session-gallery-crop-scenario`. See PATH_ORDER.md / IMAGEVIEW_CHARACTERIZATION.md.
 2. **Tier 5** — **done** for exit size: PreferCache/install/schedule/tile LOD on
    `DisplayPipelineController` (split TUs + jobs). Soft provider and neighbor
-   prefetch stay on ImageView. Thin forwards live in `imageview_pipeline_forwards.cpp`;
-   residual host helpers in `imageview_load.cpp` (~60 lines).
-3. **Tier 6 remainder** — Workspace/Gallery try* stay until product need;
-   transform chrome stays on ImageView (AGENTS.md).
+   prefetch stay on ImageView. ImageView→pipeline thin-forward TU removed
+   (biltoo-1835–1836); residual host helpers in `imageview_load.cpp` (~60 lines).
+3. **Tier 6 remainder** — input try* hop demoted (biltoo-1837: dispatch calls
+   controllers directly; `imageview_input_forwards.cpp` gone). Transform chrome
+   stays on ImageView (AGENTS.md).
 4. **Metrics** — `imageview.h` ~931 lines at 0c4c246; `imageview*.cpp` ~12k
    (down from ~21k at Phase 6 start). Host accessors from Tiers 1–5 still inflate
    the public surface; further narrowing optional once Tier 4 lands.
