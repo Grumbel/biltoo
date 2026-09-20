@@ -220,6 +220,7 @@ add_executable(biltoo
   src/softdisplaypolicy.cpp
   src/imageview_attention.cpp
   src/imageview_load.cpp
+  src/imageview_pipeline_forwards.cpp
   src/tile_load_coordinator.cpp
   src/imageview_view.cpp
   src/imageview_status.cpp

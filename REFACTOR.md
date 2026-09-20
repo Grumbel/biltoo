@@ -706,9 +706,10 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
    fuller ImageView characterization (open→Gallery→crop→Image). Document/id
    tests exist (`sessiondocument_test`, `sessionappearance_test`; expanded
   biltoo-1615: crop materialize, dual-model orphan, reorder-by-id).
-2. **Tier 5b** — Move PreferCache climb / install methods off
-   `imageview_load.cpp` (~3k lines) onto `DisplayPipelineController`. Soft
-   provider and neighbor prefetch still on ImageView.
+2. **Tier 5** — **done** for exit size: PreferCache/install/schedule/tile LOD on
+   `DisplayPipelineController` (split TUs + jobs). Soft provider and neighbor
+   prefetch stay on ImageView. Thin forwards live in `imageview_pipeline_forwards.cpp`;
+   residual host helpers in `imageview_load.cpp` (~60 lines).
 3. **Tier 6 remainder** — Workspace/Gallery try* stay until product need;
    transform chrome stays on ImageView (AGENTS.md).
 4. **Metrics** — `imageview.h` ~1050 lines / ~200 public methods vs targets
@@ -748,6 +749,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
   Methods stay on ImageView; soft provider + neighbor prefetch remain on view.
 - Tier 5b: **exit size met** (biltoo-1646); Tier 5c: **friend removed** (biltoo-1648); controller split into core/load/item TUs (biltoo-1649); shared jobs (1650); compile fixes (1651–1654).
 - Tier 5d: **tile LOD pump on controller** (biltoo-1655) — `tickPrimaryTileLod` / schedule / purge / dropAll; `imageview_load.cpp` ~537 lines.
+- Tier 5e: **forwards TU** (biltoo-1656) — thin pipeline forwards in `imageview_pipeline_forwards.cpp`; load.cpp residual only.
 - Tier 6a: **done** (biltoo-1612) — crop/attention mouse try* handlers on
   controllers; ImageView input is thin dispatch for those modes.
 - Tier 6b: **done** (biltoo-1613) — crop/attention release+key; slideshow seek

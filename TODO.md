@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1656-pipeline-forwards-tu.** Split thin DisplayPipeline forwards out of load.cpp.
+Prior: **1655**.
+
+### Change
+- New `src/imageview_pipeline_forwards.cpp` — all thin `ImageView` →
+  `DisplayPipelineController` one-liner forwards (Tier 5 surface)
+- `imageview_load.cpp` retains only residual host helpers:
+  path-order multiplicity, soft provider, neighbor-prefetch hooks (~60 lines)
+- CMakeLists lists the new source
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1656-pipeline-forwards-tu.bundle HEAD
+```
+
+### Next
+- Path-order dual-write audit / Tier 4 path-order residual (`m_pathOrderBook`)
+- Shrink `imageview.h` public surface
+- Tier 6 remainder as needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1655-tile-lod-on-controller.** Move tile LOD pump to DisplayPipelineController.
 Prior: **1654**.
 
