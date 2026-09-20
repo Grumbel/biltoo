@@ -1373,12 +1373,12 @@ tilelod::ItemBag &DisplayPipelineController::ensureTileBag(ImageItem *item)
     Q_ASSERT(item);
     auto it = m_tileBags.find(item);
     if (it != m_tileBags.end()) {
-        return *it.value();
+        return *it->second;
     }
     auto bag = std::make_unique<tilelod::ItemBag>();
     item->attachTileLodBag(bag.get());
     tilelod::ItemBag &ref = *bag;
-    m_tileBags.insert(item, std::move(bag));
+    m_tileBags.emplace(item, std::move(bag));
     return ref;
 }
 
@@ -1388,7 +1388,7 @@ void DisplayPipelineController::releaseTileBag(ImageItem *item)
         return;
     }
     item->detachTileLodBag();
-    m_tileBags.remove(item);
+    m_tileBags.erase(item);
 }
 
 tilelod::ItemBag *DisplayPipelineController::tileLodBag(ImageItem *item)
@@ -1400,7 +1400,7 @@ tilelod::ItemBag *DisplayPipelineController::tileLodBag(ImageItem *item)
     if (it == m_tileBags.end()) {
         return nullptr;
     }
-    return it.value().get();
+    return it->second.get();
 }
 
 const tilelod::ItemBag *DisplayPipelineController::tileLodBag(const ImageItem *item) const
@@ -1408,11 +1408,12 @@ const tilelod::ItemBag *DisplayPipelineController::tileLodBag(const ImageItem *i
     if (!item) {
         return nullptr;
     }
-    auto it = m_tileBags.constFind(item);
-    if (it == m_tileBags.cend()) {
+    // Key is non-const ImageItem*; identity lookup only.
+    auto it = m_tileBags.find(const_cast<ImageItem *>(item));
+    if (it == m_tileBags.end()) {
         return nullptr;
     }
-    return it.value().get();
+    return it->second.get();
 }
 
 void DisplayPipelineController::setItemTileLodSuppressed(ImageItem *item, bool on)

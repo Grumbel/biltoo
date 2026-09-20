@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1795-tilelod-bag-unordered-map.** Fix: unordered_map for ItemBag ownership.
+Prior: **1794**.
+
+### Change
+- `m_tileBags` is `std::unordered_map` (QHash cannot hold `unique_ptr` values)
+- Const `tileLodBag` uses `const_cast` for identity lookup of non-const keys
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1795-tilelod-bag-unordered-map.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke
+- Optional ImageView characterization / Tier 4 residuals
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1794-register-ensure-tilelod-bag.** Stage 2: surface register ensures bag.
 Prior: **1793**.
 

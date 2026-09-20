@@ -11,10 +11,10 @@
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
 
-#include <QHash>
 #include <QTimer>
 
 #include <memory>
+#include <unordered_map>
 
 class ImageView;
 class ImageItem;
@@ -189,7 +189,7 @@ private:
     DisplaySurface::SurfaceId m_imageFocusSurface = DisplaySurface::kInvalidSurfaceId;
     std::unique_ptr<TileLoadCoordinator> m_tileCoordinator;
     /** Stage 2: per-item tile LOD bags (owned here when attached). */
-    QHash<ImageItem *, std::unique_ptr<tilelod::ItemBag>> m_tileBags;
+    std::unordered_map<ImageItem *, std::unique_ptr<tilelod::ItemBag>> m_tileBags;
     QTimer *m_tileLodTimer = nullptr;
     QTimer *m_tileLodZoomDebounce = nullptr;
 };
