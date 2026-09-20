@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1918-contentbake-color-survive-pathorder-clear.** Phase 7 pure characterization.
+Prior: **1917**.
+
+### Change
+- Pure characterization: ContentBake and Color grade survive `pathOrderClear`;
+  sibling ids stay clean (Stage 1 components, id-keyed)
+- IMAGEVIEW_CHARACTERIZATION.md checklist updated
+- No behaviour change (tests + docs only)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1918-contentbake-color-survive-pathorder-clear-516d734.bundle HEAD
+```
+Requires tip **1917** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1917-placement-survives-pathorder-clear.** Phase 7 pure characterization.
 Prior: **1916**.
 

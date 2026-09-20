@@ -71,6 +71,8 @@ asserts LoadAdd multiplicity — without waiting on decode.
 - [x] Append after collapse seeds document membership
 - [x] Crop survives pathOrderClear (return-to-Image invariant)
 - [x] Placement survives pathOrderClear; sibling id has no placement
+- [x] ContentBake survives pathOrderClear; sibling clean
+- [x] Color grade survives pathOrderClear; sibling clean
 
 ### Full ImageView (`BILTOO_HAVE_IMAGEVIEW_HARNESS`)
 

@@ -49,6 +49,8 @@ private slots:
     void hostMutators_appendAfterCollapse_seedsMembership();
     void returnToImage_cropSurvivesPathOrderClear();
     void returnToImage_placementSurvivesPathOrderClear();
+    void returnToImage_contentBakeSurvivesPathOrderClear();
+    void returnToImage_colorSurvivesPathOrderClear();
 
     void imageView_openGalleryCropReturn();
 
@@ -290,6 +292,68 @@ void ImageViewCharacterizationTest::returnToImage_placementSurvivesPathOrderClea
     QCOMPARE(got.pos, QPointF(120.0, 80.0));
     QVERIFY(qFuzzyCompare(got.scale, 1.25));
     QVERIFY(qFuzzyCompare(got.rotation, 15.0));
+    QVERIFY(overlay.resolve(&doc).isEmpty());
+    QCOMPARE(doc.size(), 2);
+}
+
+/** Stage 1: ContentBake is id-keyed; path-order clear must not drop orient bake. */
+void ImageViewCharacterizationTest::returnToImage_contentBakeSurvivesPathOrderClear()
+{
+    SessionDocument doc;
+    doc.setPaths({m_pathA, m_pathB});
+    const SessionImageId focus = doc.idAt(0);
+    const SessionImageId other = doc.idAt(1);
+
+    ItemWorld world;
+    world.bindAppearance(&doc.appearance());
+
+    ItemComponents::ContentBake bake;
+    bake.quarterTurns = 1;
+    bake.hFlip = true;
+    world.setContentBake(focus, bake);
+
+    QVERIFY(world.hasContentBake(focus));
+    QVERIFY(!world.hasContentBake(other));
+
+    PackOrderOverlay overlay;
+    overlay.setExplicit(doc.paths(), doc.ids());
+    overlay.clearExplicit();
+
+    QVERIFY(world.hasContentBake(focus));
+    QVERIFY(!world.hasContentBake(other));
+    QCOMPARE(world.contentBake(focus).quarterTurns, 1);
+    QVERIFY(world.contentBake(focus).hFlip);
+    QVERIFY(overlay.resolve(&doc).isEmpty());
+    QCOMPARE(doc.size(), 2);
+}
+
+/** Stage 1: Color grade is id-keyed; path-order clear must not drop grade. */
+void ImageViewCharacterizationTest::returnToImage_colorSurvivesPathOrderClear()
+{
+    SessionDocument doc;
+    doc.setPaths({m_pathA, m_pathB});
+    const SessionImageId focus = doc.idAt(0);
+    const SessionImageId other = doc.idAt(1);
+
+    ItemWorld world;
+    world.bindAppearance(&doc.appearance());
+
+    ItemComponents::Color c;
+    c.grade.brightness = -12;
+    c.grade.contrast = 115;
+    world.setColor(focus, c);
+
+    QVERIFY(world.hasColor(focus));
+    QVERIFY(!world.hasColor(other));
+
+    PackOrderOverlay overlay;
+    overlay.setExplicit(doc.paths(), doc.ids());
+    overlay.clearExplicit();
+
+    QVERIFY(world.hasColor(focus));
+    QVERIFY(!world.hasColor(other));
+    QCOMPARE(world.color(focus).grade.brightness, -12);
+    QCOMPARE(world.color(focus).grade.contrast, 115);
     QVERIFY(overlay.resolve(&doc).isEmpty());
     QCOMPARE(doc.size(), 2);
 }
