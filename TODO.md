@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1667-imageview-host-ops-inc.** Further imageview.h host ops into .inc.
+Prior: **1666**.
+
+### Change
+- `imageview_host_ops.inc` — Controller host operations (tickPrimaryTileLod,
+  destroyCanvasItem, page guide, clearLiveCanvas, …)
+- `imageview.h` ~916 lines (product mode API stays in the main header)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1667-imageview-host-ops-inc.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Transform chrome / pack soft remain view-owned by design
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1666-image-edges-input-forwards.** Tier 6i: Image edge press on ImageController; more input forwards.
 Prior: **1665**.
 

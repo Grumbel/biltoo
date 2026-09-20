@@ -712,7 +712,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
    residual host helpers in `imageview_load.cpp` (~60 lines).
 3. **Tier 6 remainder** — Workspace/Gallery try* stay until product need;
    transform chrome stays on ImageView (AGENTS.md).
-4. **Metrics** — `imageview.h` ~966 lines after host .inc split (biltoo-1664);
+4. **Metrics** — `imageview.h` ~916 lines after host ops .inc (biltoo-1667);
    public method count still high. Host accessors from Tiers 1–5 inflate the
    surface; further narrowing optional once Tier 4 lands.
 
