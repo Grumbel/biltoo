@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1901-merge-framing-tus.** Unify view + image-mode framing TUs.
+Prior: **1900**.
+
+### Change
+- View zoom/fit/fill from `imageview_framing.cpp` → `imageview_framing_image.cpp`
+- Delete `imageview_framing.cpp` (same domain header as framing_image)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1901-merge-framing-tus-516d734.bundle HEAD
+```
+Requires tip **1900** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1900-merge-background-settings.** Background setters → paint_background.
 Prior: **1899**.
 
