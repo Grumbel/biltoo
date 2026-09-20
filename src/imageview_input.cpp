@@ -54,12 +54,10 @@ int ImageView::edgeZoneWidth() const
 {
     return EdgeNavPolicy::zoneWidth(width());
 }
-
 int ImageView::edgeZoneHeight() const
 {
     return EdgeNavPolicy::zoneHeight(height());
 }
-
 ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
 {
     if (!isImageMode()) {
@@ -85,7 +83,6 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
         return EdgeZone::None;
     }
 }
-
 bool ImageView::setHoverEdge(EdgeZone zone)
 {
     if (zone == m_hoverEdge) {
@@ -102,15 +99,10 @@ bool ImageView::setHoverEdge(EdgeZone zone)
     }
     return true;
 }
-
 void ImageView::updateHoverEdge(const QPoint &viewPos)
 {
     (void)setHoverEdge(edgeZoneAt(viewPos));
 }
-
-
-
-
 bool ImageView::viewportEvent(QEvent *event)
 {
     // Viewport is a QOpenGLWidget; it receives drag/drop when acceptDrops is
@@ -130,7 +122,6 @@ bool ImageView::viewportEvent(QEvent *event)
     }
     return QGraphicsView::viewportEvent(event);
 }
-
 void ImageView::dragEnterEvent(QDragEnterEvent *event)
 {
     if (event->mimeData()
@@ -141,7 +132,6 @@ void ImageView::dragEnterEvent(QDragEnterEvent *event)
         event->ignore();
     }
 }
-
 void ImageView::dragMoveEvent(QDragMoveEvent *event)
 {
     if (event->mimeData()
@@ -152,7 +142,6 @@ void ImageView::dragMoveEvent(QDragMoveEvent *event)
         event->ignore();
     }
 }
-
 void ImageView::dropEvent(QDropEvent *event)
 {
     if (!event->mimeData()) {
@@ -197,35 +186,6 @@ void ImageView::dropEvent(QDropEvent *event)
                       /*hasScenePos=*/true, sessionIds, internalPaths);
     event->acceptProposedAction();
 }
-
-
-
-
-
-QRectF ImageView::selectionSceneBounds(const QList<ImageItem *> &items) const
-{
-    QVector<QRectF> rects;
-    rects.reserve(items.size());
-    for (ImageItem *item : items) {
-        if (item) {
-            rects.append(item->contentSceneRect());
-        }
-    }
-    return SelectionGeometry::unionContentAabbs(rects);
-}
-
-
-
-
-
-
-
-void ImageView::updateGalleryHoverAt(const QPoint &viewPos)
-{
-    m_gallery.updateGalleryHoverAt(viewPos);
-}
-
-
 void ImageView::updateMouseInfo(const QPoint &viewPos)
 
 {
@@ -256,19 +216,6 @@ void ImageView::updateMouseInfo(const QPoint &viewPos)
         emit mouseInfoChanged(m_chrome.currentMouseInfo());
     }
 }
-
-bool ImageView::tryWheelGalleryZoom(QWheelEvent *event)
-{
-    return m_gallery.tryWheelGalleryZoom(event);
-}
-
-
-bool ImageView::tryWheelGalleryScroll(QWheelEvent *event)
-{
-    return m_gallery.tryWheelGalleryScroll(event);
-}
-
-
 void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
 {
     const qreal factor = ViewTransform::wheelZoomFactor(event->angleDelta().y());
@@ -288,7 +235,6 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     emit statusChanged();
     event->accept();
 }
-
 void ImageView::wheelEvent(QWheelEvent *event)
 {
     if (tryWheelGalleryZoom(event) || tryWheelGalleryScroll(event)) {
@@ -296,7 +242,6 @@ void ImageView::wheelEvent(QWheelEvent *event)
     }
     wheelZoomViewAboutCursor(event);
 }
-
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
@@ -331,22 +276,6 @@ void ImageView::resizeEvent(QResizeEvent *event)
         fitItem(m_items.first(), currentFitAspectMode());
     }
 }
-
-bool ImageView::tryMousePressSlideshowSeek(QMouseEvent *event)
-{
-    return m_slideshow.tryMousePressSlideshowSeek(event);
-}
-
-bool ImageView::tryMousePressAttention(QMouseEvent *event)
-{
-    return m_attentionCtrl.tryMousePressAttention(event);
-}
-
-bool ImageView::tryMousePressCrop(QMouseEvent *event)
-{
-    return m_cropCtrl.tryMousePressCrop(event);
-}
-
 bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
 {
     if (!(m_zoomRegion.isArmed() || (isWorkspaceMode() && m_tool == Tool::Zoom))
@@ -361,7 +290,6 @@ bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
 {
     if (!isWorkspaceMode() || event->button() != Qt::LeftButton
@@ -410,7 +338,6 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
     // No handle hit — fall through to move/select / clear.
     return false;
 }
-
 bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 {
     if (!isImageMode() || m_cropCtrl.session().active() || m_attentionCtrl.session().active()
@@ -434,7 +361,6 @@ bool ImageView::tryMousePressImageLink(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
 {
     if (!isImageMode() || m_cropCtrl.session().active() || m_attentionCtrl.session().active()
@@ -451,7 +377,6 @@ bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
 {
     if (!isImageMode() || event->button() != Qt::LeftButton
@@ -491,7 +416,6 @@ bool ImageView::tryMousePressImageEdges(QMouseEvent *event)
     }
     return false;
 }
-
 bool ImageView::tryMousePressPan(QMouseEvent *event)
 {
     // Middle-button pan in any mode; Gallery also allows Alt+left pan.
@@ -518,7 +442,6 @@ bool ImageView::tryMousePressPan(QMouseEvent *event)
     }
     return false;
 }
-
 bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
 {
     // Workspace only: Shift + left button free-rotates (unless the press is on
@@ -553,25 +476,6 @@ bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
     event->accept();
     return true;
 }
-
-bool ImageView::tryMousePressGalleryRight(QMouseEvent *event)
-{
-    return m_gallery.tryMousePressGalleryRight(event);
-}
-
-
-bool ImageView::tryMousePressGalleryLeft(QMouseEvent *event)
-{
-    return m_gallery.tryMousePressGalleryLeft(event);
-}
-
-
-bool ImageView::tryMousePressWorkspaceSelect(QMouseEvent *event)
-{
-    return m_workspace.tryMousePressSelect(event);
-}
-
-
 void ImageView::mousePressEvent(QMouseEvent *event)
 {
     if (tryMousePressSlideshowSeek(event)
@@ -592,7 +496,6 @@ void ImageView::mousePressEvent(QMouseEvent *event)
 
     QGraphicsView::mousePressEvent(event);
 }
-
 bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
 {
     if (!m_textLayer.isRubberbanding() || !(event->buttons() & Qt::LeftButton)) {
@@ -603,7 +506,6 @@ bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
 {
     // Link hover: pointing hand + status tip (Image mode page docs).
@@ -642,17 +544,6 @@ void ImageView::updateMouseMoveLinkHover(QMouseEvent *event)
         emit statusChanged();
     }
 }
-
-bool ImageView::tryMouseMoveAttention(QMouseEvent *event)
-{
-    return m_attentionCtrl.tryMouseMoveAttention(event);
-}
-
-bool ImageView::tryMouseMoveCropDrag(QMouseEvent *event)
-{
-    return m_cropCtrl.tryMouseMoveCropDrag(event);
-}
-
 bool ImageView::tryMouseMovePan(QMouseEvent *event)
 {
     if (!m_chrome.isPanning()) {
@@ -679,12 +570,6 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
     event->accept();
     return true;
 }
-
-bool ImageView::tryMouseMoveCropHover(QMouseEvent *event)
-{
-    return m_cropCtrl.tryMouseMoveCropHover(event);
-}
-
 bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
 {
     if (!m_zoomRegion.isDragging() || !m_zoomRegion.hasRubberBand()) {
@@ -694,7 +579,6 @@ bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
 {
     if (m_pageGuide.isDragging()) {
@@ -731,7 +615,6 @@ bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
     }
     return false;
 }
-
 bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
 {
     if (m_groupXform.isScaleDrag()) {
@@ -755,7 +638,6 @@ bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
     }
     return false;
 }
-
 bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
 {
     if (!m_itemInteract.isRotating()) {
@@ -774,12 +656,6 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
     event->accept();
     return true;
 }
-
-void ImageView::updateMouseMoveSlideshowSeek(QMouseEvent *event)
-{
-    m_slideshow.updateMouseMoveSlideshowSeek(event);
-}
-
 void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
 {
     // Workspace: drive handle hover from the view so highlight matches the
@@ -925,7 +801,6 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
     }
 
 }
-
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
     if (tryMouseMoveTextRubber(event)) {
@@ -957,12 +832,10 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
 
     QGraphicsView::mouseMoveEvent(event);
 }
-
 void ImageView::restoreToolCursor()
 {
     setCursor(ToolPolicy::cursorFor(m_tool));
 }
-
 void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState &before,
                                       const WorkspaceItemState &after, const QString &text)
 {
@@ -998,12 +871,6 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
     m_undoStack->push(new TransformCommand(this, item, before, after, text));
     emit statusChanged();
 }
-
-bool ImageView::tryMouseReleaseSlideshowSeek(QMouseEvent *event)
-{
-    return m_slideshow.tryMouseReleaseSlideshowSeek(event);
-}
-
 bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
 {
     if (!m_textLayer.isRubberbanding() || event->button() != Qt::LeftButton) {
@@ -1015,17 +882,6 @@ bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
     event->accept();
     return true;
 }
-
-bool ImageView::tryMouseReleaseAttention(QMouseEvent *event)
-{
-    return m_attentionCtrl.tryMouseReleaseAttention(event);
-}
-
-bool ImageView::tryMouseReleaseCrop(QMouseEvent *event)
-{
-    return m_cropCtrl.tryMouseReleaseCrop(event);
-}
-
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 {
     if (!m_zoomRegion.isDragging()) {
@@ -1048,7 +904,6 @@ bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
 {
     if (!m_pageGuide.isDragging() || event->button() != Qt::LeftButton) {
@@ -1058,7 +913,6 @@ bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
 {
     if (!(m_groupXform.isScaleDrag() || m_groupXform.isRotateDrag()) || event->button() != Qt::LeftButton) {
@@ -1084,7 +938,6 @@ bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
 {
     if (!m_itemInteract.isHandleDragging() || event->button() != Qt::LeftButton) {
@@ -1101,7 +954,6 @@ bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
 {
     if (!m_itemInteract.isRotating() || event->button() != Qt::LeftButton) {
@@ -1116,7 +968,6 @@ bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMouseReleasePan(QMouseEvent *event)
 {
     if (!m_chrome.isPanning()
@@ -1129,7 +980,6 @@ bool ImageView::tryMouseReleasePan(QMouseEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
 {
     if (!m_itemInteract.currentDragItem() || event->button() != Qt::LeftButton) {
@@ -1142,7 +992,6 @@ bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
     }
     return false; // fall through to base class
 }
-
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
     if (tryMouseReleaseSlideshowSeek(event)
@@ -1160,17 +1009,6 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
     tryMouseReleaseItemDrag(event);
     QGraphicsView::mouseReleaseEvent(event);
 }
-
-bool ImageView::tryKeyPressAttention(QKeyEvent *event)
-{
-    return m_attentionCtrl.tryKeyPressAttention(event);
-}
-
-bool ImageView::tryKeyPressCrop(QKeyEvent *event)
-{
-    return m_cropCtrl.tryKeyPressCrop(event);
-}
-
 bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
 {
     if (event->key() != Qt::Key_Escape || !(m_zoomRegion.isActive())) {
@@ -1180,7 +1018,6 @@ bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryKeyPressSelectAll(QKeyEvent *event)
 {
     // Gallery / Workspace: Ctrl+A selects every live tile (standard multi-select).
@@ -1194,7 +1031,6 @@ bool ImageView::tryKeyPressSelectAll(QKeyEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryKeyPressImageNavigate(QKeyEvent *event)
 {
     // Image mode: Left/Right (and friends) navigate the session. QGraphicsView
@@ -1221,17 +1057,6 @@ bool ImageView::tryKeyPressImageNavigate(QKeyEvent *event)
         return false;
     }
 }
-
-ImageItem *ImageView::selectedOrFirstGalleryItem() const
-{
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            return ii;
-        }
-    }
-    return m_items.isEmpty() ? nullptr : m_items.first();
-}
-
 void ImageView::emitGalleryItemFocus(ImageItem *item)
 {
     if (!item) {
@@ -1243,13 +1068,6 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
         emit galleryItemFocused(item->path());
     }
 }
-
-bool ImageView::tryKeyPressGallery(QKeyEvent *event)
-{
-    return m_gallery.tryKeyPressGallery(event);
-}
-
-
 bool ImageView::tryKeyPressWorkspaceShear(QKeyEvent *event)
 {
     // Workspace: Alt+[ / Alt+] nudge horizontal shear; Alt+0 resets shear.
@@ -1291,7 +1109,6 @@ bool ImageView::tryKeyPressWorkspaceShear(QKeyEvent *event)
     event->accept();
     return true;
 }
-
 bool ImageView::tryKeyPressDeleteSelection(QKeyEvent *event)
 {
     if (event->key() != Qt::Key_Delete
@@ -1357,7 +1174,6 @@ bool ImageView::tryKeyPressDeleteSelection(QKeyEvent *event)
     }
     return false;
 }
-
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
     if (tryKeyPressAttention(event)

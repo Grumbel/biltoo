@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1661-input-forwards-tu.** Split thin mode-controller input forwards into own TU.
+Prior: **1660**.
+
+### Change
+- New `src/imageview_input_forwards.cpp` — thin ImageView → Gallery / Crop /
+  Attention / Slideshow / Workspace Select forwards
+- `imageview_input.cpp` keeps shell input (chrome, pan, edges, zoom region, DND)
+- CMakeLists lists the new source
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1661-input-forwards-tu.bundle HEAD
+```
+
+### Next
+- Path-order residual / imageview.h narrowing
+- biltoo-build verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1660-gallery-key-controller.** Tier 6e: Gallery key nav on GalleryController.
 Prior: **1659**.
 

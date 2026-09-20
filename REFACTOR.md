@@ -759,3 +759,4 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - Tier 6c: **done** (biltoo-1657) — Gallery hover/wheel/press try* on GalleryController.
 - Tier 6d: **done** (biltoo-1658) — Workspace Select press on WorkspaceController; chrome/rotate remain view-owned.
 - Tier 6e: **done** (biltoo-1660) — Gallery key nav (arrows/Home/End/Enter) on GalleryController.
+- Tier 6f: **done** (biltoo-1661) — thin mode-controller input forwards in `imageview_input_forwards.cpp`.
