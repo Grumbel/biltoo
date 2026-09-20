@@ -955,3 +955,5 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1734: thin captureState / captureContentBakeBeforeState /
   appearanceCropMapForEdit — bound content orient and crop meta from sparse
   ContentBake + Crop components (not fat DTO field peeks).
+- biltoo-1735: `applyPlacement` + `applyState` via Placement component;
+  `rememberItemState` writes setPlacement before setAppearance.

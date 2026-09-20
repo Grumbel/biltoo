@@ -5,6 +5,7 @@
 // Crop draft enter/leave/bake stays in imageview_crop.cpp.
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "cropsession.h"
 #include "imagecache.h"
 #include "contentxform.h"
@@ -102,18 +103,28 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
 
 // --- from imageview_layout.cpp (appearance) ---
 
+void ImageView::applyPlacement(ImageItem *item, const ItemComponents::Placement &pl)
+{
+    if (!item) {
+        return;
+    }
+    item->setPos(pl.pos);
+    item->setItemScale(pl.scale, pl.scaleY > 0.0 ? pl.scaleY : pl.scale);
+    item->setItemShear(pl.shear);
+    item->setItemRotation(pl.rotation);
+    item->setItemOpacity(pl.opacity);
+    item->setStackZ(pl.z);
+    item->setItemHFlip(pl.hFlip);
+    item->setItemVFlip(pl.vFlip);
+}
+
 void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
 {
-    item->setPos(state.pos);
-    item->setItemScale(state.scale, state.scaleY > 0.0 ? state.scaleY : state.scale);
-    item->setItemShear(state.shear);
-    item->setItemRotation(state.rotation);
-    item->setItemOpacity(state.opacity);
-    item->setStackZ(state.z);
-    item->setItemHFlip(state.hFlip);
-    item->setItemVFlip(state.vFlip);
-    // Content pixels/applied are set at install (installDisplayPixels / attachDisplaySample),
-    // not here — otherwise a second apply would crop already-cropped display.
+    if (!item) {
+        return;
+    }
+    // Stage 2: pose is Placement; content pixels stay on install paths only.
+    applyPlacement(item, ItemComponents::placementFromState(state));
 }
 
 
@@ -167,6 +178,8 @@ void ImageView::rememberItemState(ImageItem *item)
         slot.sessionId = item->sessionId();
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
+        m_itemWorld.setPlacement(item->sessionId(),
+                                 ItemComponents::placementFromState(slot));
         m_itemWorld.setAppearance(item->sessionId(), slot);
         return;
     }

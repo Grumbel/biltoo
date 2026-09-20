@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1735-apply-placement.** applyState via Placement component.
+Prior: **1734**.
+
+### Change
+- `ImageView::applyPlacement(Item, Placement)` — pose only
+- `applyState` → `applyPlacement(placementFromState(state))`
+- `rememberItemState` (Workspace/Gallery bound): setPlacement then setAppearance
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1735-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + layout/undo smoke
+- Phase 6 Tier 4 path-order residual (needs ImageView characterization harness)
+- Or further ImageItem demotion (tile LOD / interact scratch)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1734-capturestate-components.** captureState reads ContentBake + Crop components.
 Prior: **1733**.
 
