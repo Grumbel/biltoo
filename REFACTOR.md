@@ -1034,3 +1034,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1786: privatize tile plan/paint helpers on ImageItem.
 - biltoo-1787: imageview characterization pure scaffold (PNG fixtures + QSKIP for ImageView).
 - biltoo-1788: BILTOO_LIB_SOURCES shared list (app + future ImageView harness).
+- biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).

@@ -21,6 +21,7 @@
 #include "viewtransform.h"
 #include "imageview.h"
 
+#include <QFileInfo>
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QMetaObject>

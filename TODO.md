@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1789-tilelod-qfileinfo-include.** Fix imageitem_tilelod.cpp QFileInfo include.
+Prior: **1788**.
+
+### Change
+- `#include <QFileInfo>` in `src/imageitem_tilelod.cpp` (needed after TU split for
+  `tileLodDebugLine`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1789-tilelod-qfileinfo-include.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke (tile LOD TU + itemworld-test)
+- Optional full ImageView characterization link
+- Move ItemBag under DisplayPipelineController
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1788-cmake-lib-sources.** Shared BILTOO_LIB_SOURCES for app + harness.
 Prior: **1787**.
 
