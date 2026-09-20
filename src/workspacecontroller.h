@@ -5,6 +5,7 @@
 #define WORKSPACECONTROLLER_H
 
 #include "imageview_types.h"
+#include "gallerylayout.h"
 
 #include <QHash>
 #include <QList>

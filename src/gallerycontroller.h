@@ -132,6 +132,7 @@ public:
     void setLayoutMode(LayoutMode mode);
     void reloadFromDisk(bool relayout = true);
     void hardReloadFromDisk(bool relayout = true);
+    void setRelayoutSuppressed(bool on);
     void prepareCanvas();
     void invalidateDecodes();
 

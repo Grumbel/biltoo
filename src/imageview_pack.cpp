@@ -107,14 +107,7 @@ void ImageView::setMasonryRows(int rows)
 
 void ImageView::setGalleryRelayoutSuppressed(bool on)
 {
-    if (on) {
-        m_galleryRelayoutSuppress.push(true);
-        if (m_layoutDebounceTimer) {
-            m_layoutDebounceTimer->stop();
-        }
-    } else if (m_galleryRelayoutSuppress.active()) {
-        m_galleryRelayoutSuppress.push(false);
-    }
+    m_gallery.setRelayoutSuppressed(on);
 }
 
 void ImageView::reloadFromDisk(bool relayoutGallery)

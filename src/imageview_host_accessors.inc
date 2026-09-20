@@ -36,6 +36,9 @@
     const PerfStats &hostPerf() const { return m_perf; }
     LayoutApplyGuard &hostLayoutApply() { return m_layoutApply; }
     const LayoutApplyGuard &hostLayoutApply() const { return m_layoutApply; }
+    /** Gallery pack debounce single-shot timer (may be null until first use). */
+    QTimer *&hostLayoutDebounceTimer() { return m_layoutDebounceTimer; }
+    QTimer *hostLayoutDebounceTimer() const { return m_layoutDebounceTimer; }
     CentreProgress &hostCentreProgress() { return m_centreProgress; }
     const CentreProgress &hostCentreProgress() const { return m_centreProgress; }
     QUndoStack *hostUndoStack() { return m_undoStack; }

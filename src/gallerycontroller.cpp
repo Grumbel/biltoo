@@ -1555,3 +1555,15 @@ void GalleryController::hardReloadFromDisk(bool relayout)
         });
     }
 }
+
+void GalleryController::setRelayoutSuppressed(bool on)
+{
+    if (on) {
+        m_view->hostGalleryRelayoutSuppress().push(true);
+        if (m_view->hostLayoutDebounceTimer()) {
+            m_view->hostLayoutDebounceTimer()->stop();
+        }
+    } else if (m_view->hostGalleryRelayoutSuppress().active()) {
+        m_view->hostGalleryRelayoutSuppress().push(false);
+    }
+}

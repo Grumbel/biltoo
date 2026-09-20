@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1680-workspace-gallerylayout-include.** Fix GalleryLayout in workspace header; relayout suppress on Gallery.
+Prior: **1679**.
+
+### Change
+- `#include "gallerylayout.h"` in `workspacecontroller.h` (fixes `GalleryLayout::Params` incomplete type when included from `imageview.h`)
+- `GalleryController::setRelayoutSuppressed` + `hostLayoutDebounceTimer` accessor
+- `ImageView::setGalleryRelayoutSuppressed` thin-forwards
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1680-workspace-gallerylayout-include.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1679-multi-reload-controllers.** Gallery/Workspace multi-item reload onto mode controllers.
 Prior: **1678**.
 
