@@ -415,7 +415,6 @@
 
     void scheduleIdleGalleryDecodes(const QStringList &rest);
 
-    void updateGalleryDecodeWindow();
 
     /**
      * Decode-window pass 1: attach ImageCache soft onto blank tiles (budgeted).

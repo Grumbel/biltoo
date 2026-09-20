@@ -14,6 +14,7 @@ class ImageItem;
 class QMouseEvent;
 class QWheelEvent;
 class QKeyEvent;
+class QTimer;
 class QPoint;
 
 /**
@@ -113,6 +114,11 @@ public:
     bool tryKeyPressGallery(QKeyEvent *event);
     bool tryKeyPressDeleteSelection(QKeyEvent *event);
 
+    /** Debounced HUD/status refresh while soft installs progress. */
+    void scheduleStatusRefresh(int delayMs = 100);
+    /** Debounced viewport soft/LQIP decode window (scroll/climb). */
+    void scheduleDecodeWindowRefresh(int delayMs = 48);
+
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
     {
         m_viewCenter = center;
@@ -139,6 +145,9 @@ private:
 
     ImageItem *m_selectionAnchor = nullptr;
     QString m_hoverPath;
+
+    QTimer *m_statusRefreshTimer = nullptr;
+    QTimer *m_decodeScrollTimer = nullptr;
 };
 
 #endif // GALLERYCONTROLLER_H

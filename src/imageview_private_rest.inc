@@ -164,7 +164,6 @@
     /** Recover blank Gallery cells that never got LQIP installed. */
     void gallerySoftWatchdogTick();
     /** Clear stale "Improving previews" centre HUD noise. */
-    void updateGallerySoftProgressHud();
     /** Bind/sync ImageFocus surface (aliases primary item surface id). */
     void ensureImageFocusSurface();
     /** Bind/unbind DisplaySurface for a canvas item (Gallery/Workspace/Image). */
@@ -424,8 +423,6 @@
     LayoutApplyGuard m_layoutApply;
     /** Nested suppress: Gallery delete must not repack via resizeEvent. */
     GalleryRelayoutSuppress m_galleryRelayoutSuppress;
-    QTimer *m_galleryDecodeScrollTimer = nullptr;
-    QTimer *m_galleryStatusRefreshTimer = nullptr;
     QTimer *m_statusRefreshTimer = nullptr;
     /** Pump tile LOD while zoomed (Image mode). */
     /** Single-shot: coalesce zoom notches before climb/tick. */

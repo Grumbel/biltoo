@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1669-gallery-decode-timers.** Gallery decode/status schedule timers on GalleryController.
+Prior: **1668**.
+
+### Change
+- `GalleryController::scheduleStatusRefresh` / `scheduleDecodeWindowRefresh`
+- Timers owned by GalleryController (parented to the view QObject)
+- ImageView thin-forwards; `updateGalleryDecodeWindow` / soft HUD remain on view
+- Public host: `updateGalleryDecodeWindow`, `updateGallerySoftProgressHud`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1669-gallery-decode-timers.bundle HEAD
+```
+
+### Next
+- Optionally move updateGalleryDecodeWindow body onto GalleryController
+- biltoo-build verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1668-zoom-region-gesture-try.** Rubber-band zoom lifecycle on ZoomRegionGesture.
 Prior: **1667**.
 

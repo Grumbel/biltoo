@@ -30,42 +30,15 @@
 
 void ImageView::scheduleGalleryStatusRefresh(int delayMs)
 {
-    if (!isGalleryMode()) {
-        emit statusChanged();
-        return;
-    }
-    if (!m_galleryStatusRefreshTimer) {
-        m_galleryStatusRefreshTimer = new QTimer(this);
-        m_galleryStatusRefreshTimer->setSingleShot(true);
-        connect(m_galleryStatusRefreshTimer, &QTimer::timeout, this, [this]() {
-            if (isGalleryMode()) {
-                updateGallerySoftProgressHud();
-                emit statusChanged();
-            }
-        });
-    }
-    m_galleryStatusRefreshTimer->setInterval(ViewTransform::nonNegMs(delayMs));
-    m_galleryStatusRefreshTimer->start();
+    m_gallery.scheduleStatusRefresh(delayMs);
 }
+
 
 void ImageView::scheduleGalleryDecodeWindowRefresh(int delayMs)
 {
-    if (!isGalleryMode()) {
-        return;
-    }
-    if (!m_galleryDecodeScrollTimer) {
-        m_galleryDecodeScrollTimer = new QTimer(this);
-        m_galleryDecodeScrollTimer->setSingleShot(true);
-        connect(m_galleryDecodeScrollTimer, &QTimer::timeout, this, [this]() {
-            if (isGalleryMode()) {
-                updateGalleryDecodeWindow();
-            }
-        });
-    }
-    // Restart with the requested delay (climb uses short; scroll may use longer).
-    m_galleryDecodeScrollTimer->setInterval(ViewTransform::nonNegMs(delayMs));
-    m_galleryDecodeScrollTimer->start();
+    m_gallery.scheduleDecodeWindowRefresh(delayMs);
 }
+
 
 int ImageView::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending)
 {

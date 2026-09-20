@@ -817,6 +817,8 @@ public:
     int pendingDecodeCount() const;
     /** Coalesce decode-window rescans (setInterest + schedule) off the hot path. */
     void scheduleGalleryDecodeWindowRefresh(int delayMs = 48);
+    void updateGalleryDecodeWindow();
+    void updateGallerySoftProgressHud();
 signals:
     void stickyZoomChanged();
     void statusChanged();
