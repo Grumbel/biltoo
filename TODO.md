@@ -2,6 +2,36 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1884-packorder-follow-collapse.** Optional FollowDocument collapse.
+Prior: **1883**.
+
+### Change
+- `PackOrderOverlay::tryCollapseToFollowDocument` — collapse when Explicit
+  order aligns with document membership
+- `pathOrderSetOrder` → setExplicit + tryCollapse
+- `pathOrderClear` still Explicit empty (must not follow populated document)
+- `appendExplicitRow(..., seedDoc)` seeds from document when promoting out of
+  FollowDocument (LoadAdd must not drop membership)
+- Pure tests: collapse align / reject multiplicity / reject empty-vs-doc /
+  seed-on-promote
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1884-packorder-follow-collapse-516d734.bundle HEAD
+```
+Requires tip **1883** (base **516d734**).
+
+### Next
+- ImageView characterization harness (decode + framing)
+- Do **not** rely on document-only pack without harness green
+- ctest packorderoverlay when Qt available
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1883-packorder-overlay-storage.** ImageView stores PackOrderOverlay.
 Prior: **1882**.
 

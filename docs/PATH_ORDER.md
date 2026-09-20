@@ -87,8 +87,8 @@ would regenerate session tiles — the dual-model reason the book still exists.
 | Today (ImageView) | Overlay |
 |-------------------|---------|
 | `pathOrderClear()` | `clearExplicit()` → Explicit + empty |
-| `pathOrderSetOrder(paths, ids)` | `setExplicit(paths, ids)` |
-| `pathOrderAppendRow(path, id)` | `appendExplicitRow(path, id)` (promotes from FollowDocument) |
+| `pathOrderSetOrder(paths, ids)` | `setExplicit` + `tryCollapseToFollowDocument` |
+| `pathOrderAppendRow(path, id)` | `appendExplicitRow(path, id, m_sessionDoc)` (seed on promote) |
 | `currentPackOrder()` | `m_pathOrderOverlay.resolve(m_sessionDoc)` |
 | `pathOrderOccurrences(path)` | `countPathOccurrences(path, m_sessionDoc)` |
 | Stash snapshot | `PackOrderView` of `resolve(...)`; restore via `setExplicit` |
@@ -102,13 +102,16 @@ would regenerate session tiles — the dual-model reason the book still exists.
    host mutators are thin wrappers (`clearExplicit` / `setExplicit` /
    `appendExplicitRow`). Behaviour identical (always Explicit, seeded like
    the former empty book via `clearExplicit()` in the ImageView ctor).
-3. **Optional collapse** — when explicit order aligns with document, switch
-   to FollowDocument (storage savings only; not required for correctness).
+3. **Optional collapse** (1884) — `pathOrderSetOrder` calls
+   `tryCollapseToFollowDocument` when the new order aligns with the bound
+   document. `pathOrderClear` stays Explicit empty. `appendExplicitRow` seeds
+   from the document when promoting out of FollowDocument so membership is
+   not dropped on LoadAdd.
 4. **ImageView harness green** — open → Gallery → crop → return → Image with
    decode + framing ([IMAGEVIEW_CHARACTERIZATION.md](IMAGEVIEW_CHARACTERIZATION.md)).
 5. **Drop dual-model residual** — pack readers use overlay resolve only;
-   no bare `SessionPathOrder` member on the view (member already gone in
-   step 2; remaining work is policy + harness confidence).
+   policy confidence after harness (no bare `SessionPathOrder` member since
+   step 2).
 
 Until step 4, do **not** switch pack readers to `SessionDocument` alone
 (Explicit-empty / mode-leave must still suppress pack).

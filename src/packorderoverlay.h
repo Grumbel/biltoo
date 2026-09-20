@@ -31,10 +31,10 @@
  *   SessionDocument still has membership (see PATH_ORDER.md and the dual-model
  *   characterization test `modeLeave_clearBook_documentPackWouldRegenerateIncorrectly`).
  *
- * ImageView host mutators (pathOrderClear / SetOrder / AppendRow) always write
- * Explicit mode. When the explicit order again matches the document, a future
- * tip may optionally collapse back to FollowDocument; that collapse is *not*
- * required for correctness.
+ * ImageView host mutators: clear/set/append write Explicit; pathOrderSetOrder
+ * may tryCollapseToFollowDocument when the new order aligns with the bound
+ * document. pathOrderClear stays Explicit empty (must not follow membership).
+ * Collapse is storage-only — not required for correctness.
  *
  * See docs/PATH_ORDER.md § PackOrderOverlay and REFACTOR.md Tier 4 residual.
  */
@@ -101,18 +101,42 @@ public:
         setExplicit(view.paths(), view.ids());
     }
 
+    /**
+     * Append one explicit row. If currently FollowDocument, promote to Explicit
+     * seeded from @p seedDoc (when non-null) so existing membership is not
+     * dropped before the append (LoadAdd / ad-hoc place after collapse).
+     */
     void appendExplicitRow(const QString &path,
-                           SessionImageId id = kInvalidSessionImageId)
+                           SessionImageId id = kInvalidSessionImageId,
+                           const SessionDocument *seedDoc = nullptr)
     {
         if (m_mode != Mode::Explicit) {
-            // Promote from FollowDocument: caller is adding a row that may
-            // break alignment (LoadAdd / ad-hoc). Start from empty explicit
-            // and append; callers that need document rows first must seed
-            // via setExplicit(fromDocument) themselves.
             m_mode = Mode::Explicit;
-            m_order.clear();
+            if (seedDoc) {
+                m_order.setOrder(seedDoc->paths(), seedDoc->ids());
+            } else {
+                m_order.clear();
+            }
         }
         m_order.appendRow(path, id);
+    }
+
+    /**
+     * If Explicit order aligns with @p doc membership, switch to FollowDocument
+     * (drop the held copy). No-op when misaligned, empty-suppress vs non-empty
+     * doc, or @p doc is null. Storage savings only — not required for correctness.
+     * @return true if collapsed.
+     */
+    bool tryCollapseToFollowDocument(const SessionDocument *doc)
+    {
+        if (m_mode != Mode::Explicit || !doc) {
+            return false;
+        }
+        if (!PackOrderView::fromBook(m_order).alignsWithDocument(*doc)) {
+            return false;
+        }
+        followDocument();
+        return true;
     }
 
     /** Held order; only meaningful when isExplicit(). */

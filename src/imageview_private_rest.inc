@@ -162,9 +162,9 @@
     // Soft/display samples: ImageCache only (docs/PIXEL_HOST_CACHE.md).
     /** Session path list + parallel SessionImageId order (IDENTITY). */
     /**
-     * Pack-order overlay (Tier 4 residual step 2). Always Explicit while
-     * behaviour matches the former SessionPathOrder book; FollowDocument
-     * collapse is a later optional step. See packorderoverlay.h / PATH_ORDER.md.
+     * Pack-order overlay (Tier 4 residual). Host setOrder may collapse to
+     * FollowDocument when aligned; clear stays Explicit empty. See
+     * packorderoverlay.h / PATH_ORDER.md.
      */
     PackOrderOverlay m_pathOrderOverlay;
 

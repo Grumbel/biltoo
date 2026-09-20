@@ -4,9 +4,9 @@
 /**
  * Characterization for PackOrderOverlay (Tier 4 residual design type).
  *
- * Locks resolve semantics before ImageView adopts the overlay in place of
- * the view pack-order overlay. Critical invariant: Explicit-empty must suppress pack
- * even when SessionDocument still has membership (mode-leave / pathOrderClear).
+ * Locks resolve / collapse semantics for ImageView pack-order overlay.
+ * Critical invariant: Explicit-empty must suppress pack even when
+ * SessionDocument still has membership (mode-leave / pathOrderClear).
  */
 
 #include "packorderoverlay.h"
@@ -25,6 +25,11 @@ private slots:
     void setExplicit_fromPackOrderView();
     void countPathOccurrences_respectsMode();
     void followDocument_afterExplicit_dropsHeldOrder();
+    void appendExplicitRow_seedsFromDocumentWhenPromoting();
+    void tryCollapse_whenAligned();
+    void tryCollapse_rejectsMultiplicity();
+    void tryCollapse_rejectsExplicitEmptyVsPopulatedDoc();
+    void tryCollapse_noopWithoutDoc();
 };
 
 void PackOrderOverlayTest::default_followDocument_emptyWithoutDoc()
@@ -133,6 +138,72 @@ void PackOrderOverlayTest::followDocument_afterExplicit_dropsHeldOrder()
     o.followDocument();
     QCOMPARE(o.mode(), PackOrderOverlay::Mode::FollowDocument);
     QVERIFY(o.explicitOrder().isEmpty());
+}
+
+
+void PackOrderOverlayTest::appendExplicitRow_seedsFromDocumentWhenPromoting()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+
+    PackOrderOverlay o;
+    o.followDocument();
+    o.appendExplicitRow(QStringLiteral("/c.jpg"), kInvalidSessionImageId, &doc);
+
+    QVERIFY(o.isExplicit());
+    QCOMPARE(o.explicitSize(), 3);
+    QCOMPARE(o.resolve(&doc).pathAt(0), QStringLiteral("/a.jpg"));
+    QCOMPARE(o.resolve(&doc).pathAt(2), QStringLiteral("/c.jpg"));
+    QVERIFY(!o.resolve(&doc).alignsWithDocument(doc));
+}
+
+void PackOrderOverlayTest::tryCollapse_whenAligned()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+
+    PackOrderOverlay o;
+    o.setExplicit(doc.paths(), doc.ids());
+    QVERIFY(o.isExplicit());
+    QVERIFY(o.tryCollapseToFollowDocument(&doc));
+    QCOMPARE(o.mode(), PackOrderOverlay::Mode::FollowDocument);
+    QVERIFY(o.resolve(&doc).alignsWithDocument(doc));
+    // Second call: already FollowDocument → no-op
+    QVERIFY(!o.tryCollapseToFollowDocument(&doc));
+}
+
+void PackOrderOverlayTest::tryCollapse_rejectsMultiplicity()
+{
+    SessionDocument doc;
+    doc.append(QStringLiteral("/solo.jpg"));
+    const SessionImageId sid = doc.idAt(0);
+
+    PackOrderOverlay o;
+    o.setExplicit({QStringLiteral("/solo.jpg"), QStringLiteral("/solo.jpg")},
+                  {sid, sid});
+    QVERIFY(!o.tryCollapseToFollowDocument(&doc));
+    QVERIFY(o.isExplicit());
+    QCOMPARE(o.resolve(&doc).size(), 2);
+}
+
+void PackOrderOverlayTest::tryCollapse_rejectsExplicitEmptyVsPopulatedDoc()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg")});
+
+    PackOrderOverlay o;
+    o.clearExplicit();
+    QVERIFY(!o.tryCollapseToFollowDocument(&doc));
+    QVERIFY(o.isExplicitEmpty());
+    QVERIFY(o.resolve(&doc).isEmpty());
+}
+
+void PackOrderOverlayTest::tryCollapse_noopWithoutDoc()
+{
+    PackOrderOverlay o;
+    o.setExplicit({QStringLiteral("/x.jpg")}, {kInvalidSessionImageId});
+    QVERIFY(!o.tryCollapseToFollowDocument(nullptr));
+    QVERIFY(o.isExplicit());
 }
 
 QTEST_MAIN(PackOrderOverlayTest)
