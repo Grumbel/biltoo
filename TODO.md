@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1814-drop-dead-crop-local.** Stage 2: remove unused ImageItem::cropToLocalRect.
+Prior: **1813**.
+
+### Change
+- Removed dead `ImageItem::cropToLocalRect` (~90 lines); crop bake is
+  `SessionAppearance::materializeDisplay` / Apply path
+- Removed unused `scaleHandlesEnabled()` getter (setter + field remain)
+- Comments that named cropToLocalRect now say materializeDisplay
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1814-drop-dead-crop-local.bundle HEAD
+```
+Includes **1806–1814** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (crop Apply)
+- ImageView characterization / Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1813-drop-dead-item-getters.** Stage 2: remove unused ImageItem getters.
 Prior: **1812**.
 
