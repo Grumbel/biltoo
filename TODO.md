@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1825-ladder-ready-via-pipeline.** Stage 2: ladderReady → pipeline (no ImageView slot).
+Prior: **1824**.
+
+### Change
+- `ThumtooCache::ladderReady` connects via lambda → `m_displayPipeline.onLadderReady`
+- Dropped ImageView: `onLadderReady`, `upgradeImageModeFromLadder`,
+  `applyGalleryLadderReady`, `applyWorkspaceLadderReady`, `ensureImageModeQualityClimb`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1825-ladder-ready-via-pipeline.bundle HEAD
+```
+Includes **1806–1825** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Gallery/Workspace ladder soft install)
+- More pipeline hop demotions / Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1824-climb-and-edge-via-pipeline.** Stage 2: quality climb + edge queries via pipeline.
 Prior: **1823**.
 

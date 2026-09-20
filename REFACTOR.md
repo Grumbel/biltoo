@@ -1073,3 +1073,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1823: scheduleGalleryDecode via pipeline; drop ImageView thin-forward.
 - biltoo-1824: ensureWorkspaceQualityClimb + galleryDisplayEdgeForItem via pipeline;
   drop dead native-decode/pending-tile/edge ImageView forwards.
+- biltoo-1825: ladderReady lambda → pipeline onLadderReady; drop ladder ImageView forwards.
