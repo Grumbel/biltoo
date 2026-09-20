@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1827-surface-focus-via-pipeline.** Stage 2: display surface + focus via pipeline.
+Prior: **1826**.
+
+### Change
+- `register/unregisterItemDisplaySurface`, `driveImageFocusSurface`,
+  `maybeClimbImageModePixelsForView` → `m_displayPipeline`
+- Dropped dead ImageView: `ensureImageFocusSurface`, `syncImageFocusSurfaceState`,
+  `syncItemDisplaySurface` thin-forwards
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1827-surface-focus-via-pipeline.bundle HEAD
+```
+Includes **1806–1827** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (Gallery place / focus / zoom climb)
+- installDisplayPixels hop demotion / Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1826-load-preview-via-pipeline.** Stage 2: load/preview delivery via pipeline.
 Prior: **1825**.
 
