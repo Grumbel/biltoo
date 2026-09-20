@@ -288,7 +288,7 @@
 
             # Shared ccache dir for incremental biltoo-build (override with CCACHE_DIR).
             export CCACHE_DIR="''${CCACHE_DIR:-$HOME/.cache/ccache-biltoo}"
-            mkdir -p "$CCACHE_DIR"
+            mkdir -p "$CCACHE_DIR" 2>/dev/null || true
             # Also bake into cmake cache on (re)configure.
             export CMAKE_C_COMPILER_LAUNCHER=ccache
             export CMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -329,17 +329,71 @@
 
             echo "biltoo dev shell (CMAKE_BUILD_TYPE=''${CMAKE_BUILD_TYPE:-Debug}, ccacheStdenv)"
             echo "  build dir: $BILTOO_BUILD_DIR"
-            echo "  CCACHE_DIR=$CCACHE_DIR  (ccache -s for stats)"
-            echo "  biltoo-configure   # cmake once; then biltoo-build is incremental"
             echo "  THUMTOO_SOURCE_DIR=$THUMTOO_SOURCE_DIR"
             echo "  version: cmake reads VERSION + .git (About → full 0.1.0-dev.N+gHASH)"
+            echo "  biltoo-configure   # cmake once; then biltoo-build is incremental"
             echo "  biltoo-build       # incremental cmake --build (picks up thumtoo .cpp edits)"
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             echo "  biltoo-run-gdb [args]  # build + gdb --args biltoo"
             echo "  biltoo-test [ctest args]  # build + ctest (QT_QPA_PLATFORM=offscreen)"
-            echo "  nix build          # RelWithDebInfo package (wrapped)"
+            echo "  nix build          # RelWithDebInfo package (wrapped, ccacheStdenv)"
             echo "  nix build .#debug  # matching debug symbols"
             echo "  also: nix develop -c biltoo-run   # helpers are on PATH"
+            echo ""
+            echo "── ccache ──────────────────────────────────────────────"
+            if ! command -v ccache >/dev/null 2>&1; then
+              echo "  status:   ccache NOT on PATH (unexpected with ccacheStdenv)"
+              echo "  fix:      re-enter the shell: nix develop"
+            else
+              echo "  binary:   $(command -v ccache)"
+              echo "  version:  $(ccache --version 2>/dev/null | head -n1 || echo unknown)"
+              echo "  CCACHE_DIR=$CCACHE_DIR"
+              if [ -d "$CCACHE_DIR" ] && [ -w "$CCACHE_DIR" ]; then
+                echo "  dir:      writable OK"
+              else
+                echo "  dir:      NOT writable (or missing)"
+                echo "  fix:      mkdir -p \"$CCACHE_DIR\" && chmod u+rwx \"$CCACHE_DIR\""
+              fi
+              echo "  CMAKE_C_COMPILER_LAUNCHER=$CMAKE_C_COMPILER_LAUNCHER"
+              echo "  CMAKE_CXX_COMPILER_LAUNCHER=$CMAKE_CXX_COMPILER_LAUNCHER"
+              # Show whether CC/CXX are ccache-wrapped (ccacheStdenv) or plain.
+              _cc="''${CC:-}"
+              _cxx="''${CXX:-}"
+              if [ -z "$_cc" ] && command -v cc >/dev/null 2>&1; then _cc=$(command -v cc); fi
+              if [ -z "$_cxx" ] && command -v c++ >/dev/null 2>&1; then _cxx=$(command -v c++); fi
+              echo "  CC=$_cc"
+              echo "  CXX=$_cxx"
+              case "$_cxx" in
+                *ccache*) echo "  compiler: ccache-wrapped (ccacheStdenv) OK" ;;
+                *)
+                  echo "  compiler: NOT ccache-wrapped"
+                  echo "  note:     CMAKE_*_COMPILER_LAUNCHER still routes ninja through ccache"
+                  ;;
+              esac
+              # Brief stats (non-fatal if empty cache).
+              if ccache -s >/tmp/biltoo-ccache-s.$$ 2>/dev/null; then
+                echo "  stats:"
+                # Prefer modern "Hits" / "Misses" lines; fall back to first 8 lines.
+                if grep -E '^(Hits|Misses|Cache size|Files in cache|Primary)' /tmp/biltoo-ccache-s.$$ >/dev/null 2>&1; then
+                  grep -E '^(Hits|Misses|Cache size|Files in cache|Primary|Uncacheable)' /tmp/biltoo-ccache-s.$$ | sed 's/^/    /'
+                else
+                  head -n 8 /tmp/biltoo-ccache-s.$$ | sed 's/^/    /'
+                fi
+                rm -f /tmp/biltoo-ccache-s.$$
+              else
+                echo "  stats:    (ccache -s failed — check CCACHE_DIR permissions)"
+              fi
+            fi
+            echo "  nix build cache:"
+            echo "    sandbox default: CCACHE_DIR=\$NIX_BUILD_TOP/.ccache (ephemeral, per-build)"
+            echo "    persistent host cache needs BOTH of:"
+            echo "      1) a writable host dir, e.g. /var/cache/ccache"
+            echo "         sudo mkdir -p /var/cache/ccache && sudo chown \"$USER\" /var/cache/ccache"
+            echo "      2) nix.conf extra-sandbox-paths (daemon restart after edit):"
+            echo "         extra-sandbox-paths = /var/cache/ccache"
+            echo "      then:  CCACHE_DIR=/var/cache/ccache nix build"
+            echo "  local biltoo-build: uses CCACHE_DIR above (no daemon change needed)"
+            echo "────────────────────────────────────────────────────────"
           '';
         };
     };
