@@ -1369,8 +1369,10 @@ void DisplayPipelineController::dropItemTileLodSession(ImageItem *item)
     if (!item) {
         return;
     }
-    ensureTileBag(item);
-    item->dropTileLodSession();
+    // Stage 2: do not ensure a bag just to drop it (destroy/purge paths).
+    if (auto it = m_tileBags.find(item); it != m_tileBags.end() && it->second) {
+        it->second->resetSession();
+    }
 }
 
 tilelod::ItemBag &DisplayPipelineController::ensureTileBag(ImageItem *item)

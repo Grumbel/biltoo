@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1803-drop-tilelod-no-ensure.** Stage 2: drop session without ensure.
+Prior: **1802**.
+
+### Change
+- `DisplayPipelineController::dropItemTileLodSession` resets an existing bag only
+  (no `ensureTileBag` on destroy/purge)
+- `ImageItem::dropTileLodSession` resets only when `m_tileLodAttached` is set
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1803-drop-tilelod-no-ensure.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke (tile ownership / destroy path)
+- ImageView characterization / Tier 4 path-order
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1802-drop-local-tilelod-bag.** Stage 2: pipeline-only ItemBag.
 Prior: **1801**.
 

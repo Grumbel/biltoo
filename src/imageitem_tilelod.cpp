@@ -74,7 +74,10 @@ void ImageItem::detachTileLodBag()
 
 void ImageItem::dropTileLodSession()
 {
-    tileLodBag().resetSession();
+    // Only reset when a pipeline bag is attached — do not ensure/orphan.
+    if (m_tileLodAttached) {
+        m_tileLodAttached->resetSession();
+    }
 }
 
 void ImageItem::invalidateTilePathRam()

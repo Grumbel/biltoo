@@ -1048,3 +1048,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1800: gallery restore residual via destroyCanvasItem; discardStash unregisters display surface.
 - biltoo-1801: crop tile LOD suppress via pipeline; CropSession no longer friends ImageItem tile mutators.
 - biltoo-1802: drop ImageItem local m_tileLod; pipeline map is sole ItemBag owner.
+- biltoo-1803: dropItemTileLodSession / dropTileLodSession no longer ensure a bag.

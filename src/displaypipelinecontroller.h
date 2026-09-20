@@ -125,7 +125,7 @@ public:
 
     void scheduleTileLodAfterInteraction(int delayMs = 50);
     void purgeTilePathRam(const QString &path);
-    /** Drop one item's tile session (shared path cache kept). External callers use this. */
+    /** Drop one item's tile session if a bag exists (shared path cache kept). No ensure. */
     void dropItemTileLodSession(ImageItem *item);
     /** Ensure pipeline-owned bag for @p item; attaches to the item. */
     tilelod::ItemBag &ensureTileBag(ImageItem *item);
