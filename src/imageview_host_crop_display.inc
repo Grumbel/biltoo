@@ -23,8 +23,8 @@
     Qt::AspectRatioMode currentFitAspectMode() const;
 
     // --- Slideshow host (Phase 6: replaces friend SlideshowController) ---
-    SessionAppearanceStore &hostAppearance() { return appearance(); }
-    const SessionAppearanceStore &hostAppearance() const { return appearance(); }
+    SessionAppearanceStore &hostAppearance() { return m_itemWorld.appearance(); }
+    const SessionAppearanceStore &hostAppearance() const { return m_itemWorld.appearance(); }
     CanvasBackground &hostCanvasBg() { return m_canvasBg; }
     const CanvasBackground &hostCanvasBg() const { return m_canvasBg; }
     SessionIdentity &hostSessionId() { return m_sessionId; }

@@ -246,18 +246,11 @@ public:
      * Session appearance (id-keyed). Always the SessionDocument store after
      * Phase 6 Tier 4b — call bindSessionAppearance before any appearance use.
      */
-    SessionAppearanceStore &appearance()
-    {
-        return m_itemWorld.appearance();
-    }
-    const SessionAppearanceStore &appearance() const
-    {
-        return m_itemWorld.appearance();
-    }
+    /** Appearance store: hostAppearance() / itemWorld().appearance(). */
     /** Phase 7 Stage 0: facade over appearance / path-book / size-book. */
     ItemWorld &itemWorld() { return m_itemWorld; }
     const ItemWorld &itemWorld() const { return m_itemWorld; }
-    /** Point at SessionDocument::appearance() (required before appearance()). */
+    /** Point at SessionDocument appearance (required before hostAppearance()). */
     void bindSessionAppearance(SessionAppearanceStore *store)
     {
         m_appearanceBound = store;
@@ -351,9 +344,8 @@ public:
     void bindSelectedSessionIds(const QList<SessionImageId> &ids);
     /** How many canvas items currently show @p path. */
     int workspacePathOccurrenceCount(const QString &path) const;
-
     void setTool(Tool tool);
-    Tool tool() const { return m_tool; }
+    /** Current tool: m_tool (no pure-hop getter). */
 
     /** Undo stack: hostUndoStack(). */
 
@@ -459,10 +451,9 @@ public:
      * use false for silent updates (e.g. slideshow auto-advance).
      */
     void setCurrentSessionId(SessionImageId id);
-    SessionImageId currentSessionId() const { return m_sessionId.currentIdValue(); }
+    /** Current session id / index: hostSessionId().currentIdValue() / currentIndex(). */
     /** Select canvas item for @p path; ensure visible in Gallery. */
     void focusSessionPath(const QString &path);
-    int sessionIndex() const { return m_sessionId.currentIndex(); }
 
     /** Pin the on-image HUD overlay (filename, zoom, …). */
     void setHudVisible(bool on);
