@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1892-imageview-harness-body.** Offscreen ImageView characterization body.
+Prior: **1891**.
+
+### Change
+- `imageView_openGalleryCropReturn` under `BILTOO_HAVE_IMAGEVIEW_HARNESS`:
+  construct ImageView, bind doc/appearance, enterGallery(Grid),
+  setWorkspacePaths, ItemWorld crop, pathOrderClear, LoadAdd multiplicity
+- Pure scaffold path unchanged (QSKIP without the define)
+- Does not wait on decode/framing (pack + appearance dual-model only)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1892-imageview-harness-body-516d734.bundle HEAD
+```
+Requires tip **1891** (base **516d734**).
+
+### Next
+- `biltoo-build` default + with `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON`
+- ctest imageview-characterization both configs
+- Optional: decode/framing assertions once PreferCache is stable in harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1891-biltoo-lib.** Static biltoo_lib + optional characterization link.
 Prior: **1890**.
 

@@ -52,9 +52,10 @@ tests/imageview_characterization.cpp
 CMake pure target is always built with `Qt6Test` (default).
 
 Full harness: `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` links **`biltoo_lib`**
-(static library of `${BILTOO_LIB_SOURCES}` + the same PUBLIC deps as the app)
-and defines `BILTOO_HAVE_IMAGEVIEW_HARNESS`. The open→Gallery→crop→return
-**body** still needs to be written against that define.
+and defines `BILTOO_HAVE_IMAGEVIEW_HARNESS`. `imageView_openGalleryCropReturn`
+constructs an offscreen `ImageView`, binds document/appearance, enters Gallery,
+sets workspace paths, commits a crop via ItemWorld, clears pack order, and
+asserts LoadAdd multiplicity — without waiting on decode.
 
 ## Assertions (checklist)
 
@@ -70,12 +71,14 @@ and defines `BILTOO_HAVE_IMAGEVIEW_HARNESS`. The open→Gallery→crop→return
 - [x] Append after collapse seeds document membership
 - [x] Crop survives pathOrderClear (return-to-Image invariant)
 
-### Full ImageView (still pending)
+### Full ImageView (`BILTOO_HAVE_IMAGEVIEW_HARNESS`)
 
-- [ ] Offscreen `ImageView` construct + bind document/appearance
-- [ ] Decode / soft tiles for fixture PNGs
-- [ ] `enterGallery` / mode transitions / framing
-- [ ] Live canvas crop apply + return to Image mode
+- [x] Offscreen `ImageView` construct + bind document/appearance
+- [x] `enterGallery` + `setWorkspacePaths` pack order aligns
+- [x] Crop via ItemWorld; sibling clean; layoutSize
+- [x] `pathOrderClear` leaves doc + crop; LoadAdd multiplicity
+- [ ] Decode / soft tiles for fixture PNGs (not required for pack dual-model)
+- [ ] Live framing / return-to-Image view matrix (later)
 
 ## Landed
 

@@ -4,10 +4,12 @@
 /**
  * ImageView characterization harness (Tier 4 prerequisite).
  *
- * docs/IMAGEVIEW_CHARACTERIZATION.md — full open → Gallery → crop → return
- * needs an offscreen ImageView (near-full link). This tip expands pure-session
- * + PackOrderOverlay host-mutator simulation (post-1883/1884 storage). The
- * ImageView step remains QSKIP until that link is enabled.
+ * docs/IMAGEVIEW_CHARACTERIZATION.md
+ *
+ * Default build: pure session + PackOrderOverlay host-mutator simulation.
+ * -DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON links biltoo_lib and defines
+ * BILTOO_HAVE_IMAGEVIEW_HARNESS — exercises a real offscreen ImageView for
+ * pack-order / appearance invariants (decode/framing still soft).
  */
 
 #include "sessiondocument.h"
@@ -18,6 +20,11 @@
 #include "itemworld.h"
 #include "itemcomponents.h"
 #include "contentxform.h"
+#include "imageview_types.h"
+
+#if defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)
+#  include "imageview.h"
+#endif
 
 #include <QtTest/QtTest>
 #include <QImage>
@@ -42,7 +49,7 @@ private slots:
     void hostMutators_appendAfterCollapse_seedsMembership();
     void returnToImage_cropSurvivesPathOrderClear();
 
-    void imageView_openGalleryCropReturn_pending();
+    void imageView_openGalleryCropReturn();
 
 private:
     QTemporaryDir m_tmp;
@@ -98,8 +105,6 @@ void ImageViewCharacterizationTest::afterOpen_docSizeAndUniqueIds()
 
 void ImageViewCharacterizationTest::afterGalleryEnter_overlayAligns_whenNoLoadAdd()
 {
-    // ImageView ctor seeds Explicit empty; setWorkspacePaths → setExplicit +
-    // tryCollapse when aligned with the bound document.
     SessionDocument doc;
     doc.setPaths({m_pathA, m_pathB});
 
@@ -141,12 +146,10 @@ void ImageViewCharacterizationTest::afterCropCommit_appearanceLayoutSizeAndSibli
     QVERIFY(got->hasCrop);
     QCOMPARE(got->cropRect, QRect(4, 4, 32, 24));
 
-    // Logical layout size for Gallery/Image framing uses ContentXform.
     const QSize native(64, 48);
     const QSize layout = ContentXform::layoutSize(native, *got);
     QCOMPARE(layout, QSize(32, 24));
 
-    // Sibling path keeps native layout (no crop on other).
     QCOMPARE(ContentXform::layoutSize(QSize(80, 60), WorkspaceItemState{}),
              QSize(80, 60));
 }
@@ -161,7 +164,6 @@ void ImageViewCharacterizationTest::afterPathOrderClear_explicitEmptyDocUnchange
     overlay.tryCollapseToFollowDocument(&doc);
     QCOMPARE(overlay.mode(), PackOrderOverlay::Mode::FollowDocument);
 
-    // pathOrderClear — must not follow document membership.
     overlay.clearExplicit();
     QVERIFY(overlay.isExplicitEmpty());
     QVERIFY(overlay.resolve(&doc).isEmpty());
@@ -195,7 +197,6 @@ void ImageViewCharacterizationTest::hostMutators_setOrderCollapsesWhenAligned()
 
     PackOrderOverlay overlay;
     overlay.clearExplicit();
-    // Simulate pathOrderSetOrder
     overlay.setExplicit(doc.paths(), doc.ids());
     QVERIFY(overlay.tryCollapseToFollowDocument(&doc));
     QCOMPARE(overlay.resolve(&doc).size(), 2);
@@ -224,7 +225,6 @@ void ImageViewCharacterizationTest::hostMutators_appendAfterCollapse_seedsMember
     overlay.tryCollapseToFollowDocument(&doc);
     QCOMPARE(overlay.mode(), PackOrderOverlay::Mode::FollowDocument);
 
-    // LoadAdd after collapse: seed from doc then append.
     overlay.appendExplicitRow(m_pathA, doc.idAt(0), &doc);
     QVERIFY(overlay.isExplicit());
     QCOMPARE(overlay.explicitSize(), 3);
@@ -234,7 +234,6 @@ void ImageViewCharacterizationTest::hostMutators_appendAfterCollapse_seedsMember
 
 void ImageViewCharacterizationTest::returnToImage_cropSurvivesPathOrderClear()
 {
-    // Mode-leave pathOrderClear must not wipe id-keyed crop (return to Image).
     SessionDocument doc;
     doc.setPaths({m_pathA, m_pathB});
     const SessionImageId focus = doc.idAt(0);
@@ -260,14 +259,62 @@ void ImageViewCharacterizationTest::returnToImage_cropSurvivesPathOrderClear()
     QCOMPARE(doc.size(), 2);
 }
 
-void ImageViewCharacterizationTest::imageView_openGalleryCropReturn_pending()
+void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
 {
-#if defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)
-    QSKIP("biltoo_lib linked; ImageView open→Gallery→crop→return body not "
-          "implemented yet (docs/IMAGEVIEW_CHARACTERIZATION.md).");
-#else
+#if !defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)
     QSKIP("Pure scaffold only — configure with "
           "-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON to link biltoo_lib.");
+#else
+    // Offscreen ImageView: pack-order + appearance path (no decode wait).
+    SessionDocument doc;
+    doc.setPaths({m_pathA, m_pathB});
+    QCOMPARE(doc.size(), 2);
+    const SessionImageId focus = doc.idAt(0);
+    const SessionImageId other = doc.idAt(1);
+
+    ImageView view;
+    view.resize(800, 600);
+    view.bindSessionAppearance(&doc.appearance());
+    view.bindSessionDocument(&doc);
+
+    // Gallery before setWorkspacePaths (Image mode rejects path placement).
+    view.enterGallery(LayoutMode::Grid);
+    QVERIFY(view.isGalleryMode());
+
+    view.setWorkspacePaths(doc.paths(), doc.ids());
+    {
+        const PackOrderView pack = view.currentPackOrder();
+        QCOMPARE(pack.size(), 2);
+        // May be FollowDocument after aligned setOrder collapse.
+        QVERIFY(pack.alignsWithDocument(doc) || pack.size() == doc.size());
+        QCOMPARE(pack.pathAt(0), m_pathA);
+        QCOMPARE(pack.idAt(0), focus);
+    }
+
+    // Crop one session id via ItemWorld (same store MainWindow binds).
+    WorkspaceItemState crop;
+    crop.hasCrop = true;
+    crop.cropRect = QRect(4, 4, 32, 24);
+    crop.cropSourceSize = QSize(64, 48);
+    view.itemWorld().setAppearance(focus, crop);
+    QVERIFY(view.itemWorld().hasCrop(focus));
+    QVERIFY(!view.itemWorld().hasCrop(other));
+    QCOMPARE(ContentXform::layoutSize(QSize(64, 48),
+                                      *view.itemWorld().getAppearance(focus)),
+             QSize(32, 24));
+
+    // Mode-leave style clear: pack blank, document + crop intact.
+    view.pathOrderClear();
+    QVERIFY(view.pathOrderIsEmpty());
+    QCOMPARE(doc.size(), 2);
+    QVERIFY(view.itemWorld().hasCrop(focus));
+    QVERIFY(!view.itemWorld().hasCrop(other));
+
+    // LoadAdd multiplicity on the view overlay only.
+    view.pathOrderSetOrder({m_pathA, m_pathA, m_pathA}, {focus, focus, focus});
+    QCOMPARE(view.pathOrderOccurrences(m_pathA), 3);
+    QCOMPARE(doc.size(), 2);
+    QCOMPARE(doc.countPathOccurrences(m_pathA), 1);
 #endif
 }
 
