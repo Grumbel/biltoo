@@ -47,10 +47,12 @@ ImageItem::~ImageItem()
 {
     // Invalidate pending QTimer::singleShot from tickTileLod (queued on the
     // scene/app, not tied to this QGraphicsItem lifetime).
-    if (tileLodBag().alive) {
-        *tileLodBag().alive = false;
+    if (m_tileLod && m_tileLod->alive) {
+        *m_tileLod->alive = false;
     }
-    tileLodBag().repaintQueued = false;
+    if (m_tileLod) {
+        m_tileLod->repaintQueued = false;
+    }
 }
 
 

@@ -370,12 +370,16 @@ private:
     void clearTileGradedCache() const;
     QImage resolveGradedTile(tilelod::TileKey const &key,
                              ColorAdjustments const &grade) const;
-    /** Single access path for tile runtime state (ownership demotion prep). */
-    tilelod::ItemBag &tileLodBag() { return m_tileLod; }
-    const tilelod::ItemBag &tileLodBag() const { return m_tileLod; }
+    /**
+     * Single access path for tile runtime state.
+     * Lazy unique_ptr: non-const creates; const returns empty sentinel if unset.
+     * Ownership can move to DisplayPipelineController later via take/attach.
+     */
+    tilelod::ItemBag &tileLodBag();
+    const tilelod::ItemBag &tileLodBag() const;
 
     /** Deep-zoom grid tiles + plan/paint scratch (Stage 2 bag; demote later). */
-    tilelod::ItemBag m_tileLod;
+    mutable std::unique_ptr<tilelod::ItemBag> m_tileLod;
     SessionImageId m_sessionId = kInvalidSessionImageId;
     int m_sessionIndex = -1; // list order cache only
     qint64 m_displaySurfaceId = 0;

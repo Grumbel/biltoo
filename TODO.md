@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1791-tilelod-bag-unique-ptr.** Stage 2: ItemBag is lazy unique_ptr.
+Prior: **1790**.
+
+### Change
+- `m_tileLod` is `unique_ptr<ItemBag>` (mutable); non-const `tileLodBag()` creates
+- Const `tileLodBag()` returns empty sentinel when unset (no allocation)
+- Dtor touches bag only if allocated
+- Prepares `std::move` of the bag into DisplayPipelineController storage
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1791-tilelod-bag-unique-ptr.bundle HEAD
+```
+
+### Next
+- Pipeline-owned map + item non-owning attach/detach
+- Optional full ImageView characterization link
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1790-tilelod-bag-accessor.** Stage 2: single tileLodBag() access path.
 Prior: **1789**.
 

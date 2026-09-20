@@ -27,6 +27,24 @@
 #include <QMetaObject>
 #include <QTimer>
 
+
+tilelod::ItemBag &ImageItem::tileLodBag()
+{
+    if (!m_tileLod) {
+        m_tileLod = std::make_unique<tilelod::ItemBag>();
+    }
+    return *m_tileLod;
+}
+
+const tilelod::ItemBag &ImageItem::tileLodBag() const
+{
+    if (!m_tileLod) {
+        static const tilelod::ItemBag kEmpty;
+        return kEmpty;
+    }
+    return *m_tileLod;
+}
+
 void ImageItem::dropTileLodSession()
 {
     tileLodBag().resetSession();
