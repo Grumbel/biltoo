@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1914-host-ops-vs-accessors.** Split ops out of host accessors.
+Prior: **1913**.
+
+### Change
+- Move `selectedOrFirstGalleryItem`, `emitGalleryItemFocus`, `setPageGuideSelected`
+  from `imageview_host_accessors.inc` → `imageview_host_ops.inc`
+- Accessors file is bag/controller references only; ops sit with find/destroy host API
+- No behaviour change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1914-host-ops-vs-accessors-516d734.bundle HEAD
+```
+Requires tip **1913** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1913-host-identity-loadgen-surface.** Host surface cohesion.
 Prior: **1912**.
 

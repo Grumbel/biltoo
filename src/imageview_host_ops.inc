@@ -16,6 +16,12 @@
      * Returns nullptr when ambiguous (multiple unselected matches) or none.
      */
     ImageItem *findPreferredItemForPath(const QString &path) const;
+    /** Gallery: selected tile, else first live item (keyboard open / focus). */
+    ImageItem *selectedOrFirstGalleryItem() const;
+    /** Emit galleryItemFocused / sessionImageFocused for @p item. */
+    void emitGalleryItemFocus(ImageItem *item);
+    /** Page-guide selection chrome (Workspace print frame). */
+    void setPageGuideSelected(bool on);
     ImageItem *targetItem() const;
     void destroyCanvasItem(ImageItem *item);
     void updateWorkspaceSceneRect();

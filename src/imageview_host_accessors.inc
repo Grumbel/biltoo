@@ -39,13 +39,10 @@
     /** Display pipeline host: gallery controller (stashed items). */
     GalleryController &hostGallery() { return m_gallery; }
     const GalleryController &hostGallery() const { return m_gallery; }
-    ImageItem *selectedOrFirstGalleryItem() const;
-    void emitGalleryItemFocus(ImageItem *item);
     WorkspaceController &hostWorkspace() { return m_workspace; }
     const WorkspaceController &hostWorkspace() const { return m_workspace; }
     ItemInteractSession &hostItemInteract() { return m_itemInteract; }
     const ItemInteractSession &hostItemInteract() const { return m_itemInteract; }
-    void setPageGuideSelected(bool on);
     PerfStats &hostPerf() { return m_perf; }
     const PerfStats &hostPerf() const { return m_perf; }
     LayoutApplyGuard &hostLayoutApply() { return m_layoutApply; }
