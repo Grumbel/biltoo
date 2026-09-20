@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1843-workspace-via-host.** Workspace snapshot/stash via hostWorkspace.
+Prior: **1842**.
+
+### Change
+- GalleryController / sessionopen / modes → `hostWorkspace().snapshot` /
+  `discardStash` / `clearDurableSnapshot` / `snapshotFreeFormStates`
+- Drop pure ImageView workspace forwards
+- Keep geometry: `updateWorkspaceSceneRect`, `findEmptyPlacement`,
+  `defaultStateForPath`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1843-workspace-via-host.bundle HEAD
+```
+Requires tip **1842**.
+
+### Next
+- biltoo-build smoke (Workspace leave/enter/stash, session open wipe)
+- `imageview_pack.cpp` pure gallery pack forwards (setGridColumns, applyLayout, …)
+- Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1842-gallery-via-host.** Gallery transitions via hostGallery.
 Prior: **1841**.
 
