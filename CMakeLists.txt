@@ -651,6 +651,19 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-itemworld-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME itemworld COMMAND biltoo-itemworld-test)
 
+  # Tier 4 characterization scaffold (pure session + real PNG fixtures).
+  # Full offscreen ImageView link is a later tip (BILTOO_IMAGEVIEW_CHARACTERIZATION).
+  add_executable(biltoo-imageview-characterization-test
+    tests/imageview_characterization.cpp
+    src/sessiondocument.cpp
+    src/sessionappearance.cpp
+    src/contentxform.cpp
+    src/coloradjust.cpp
+  )
+  target_include_directories(biltoo-imageview-characterization-test PRIVATE src)
+  target_link_libraries(biltoo-imageview-characterization-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME imageview-characterization COMMAND biltoo-imageview-characterization-test)
+
   # Dual model: SessionDocument vs SessionPathOrder independence (PATH_ORDER.md).
   add_executable(biltoo-pathorder-dual-model-test
     tests/pathorder_dual_model_test.cpp

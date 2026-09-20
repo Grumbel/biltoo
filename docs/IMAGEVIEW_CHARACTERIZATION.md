@@ -56,7 +56,15 @@ are on — full link is expensive (near-full app).
 - [ ] After `pathOrderClear`: book empty, doc unchanged
 - [ ] After LoadAdd×3 same path: `pathOrderOccurrences == 3`, `doc.count == 1`
 
-## Until the harness exists
+## Landed (pure scaffold — biltoo-1787)
+
+`tests/imageview_characterization.cpp` + `biltoo-imageview-characterization-test`:
+
+- Real temp PNG fixtures (known sizes)
+- After open / Gallery align / crop commit / pathOrderClear / LoadAdd multiplicity
+- `imageView_openGalleryCropReturn_pending` is `QSKIP` until offscreen ImageView links
+
+## Until the full ImageView harness exists
 
 Keep `m_pathOrderBook`. Identity queries continue to prefer `m_sessionDoc`
 when bound (`firstSessionIdForPath`). See [PATH_ORDER.md](PATH_ORDER.md).

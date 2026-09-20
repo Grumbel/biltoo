@@ -1032,3 +1032,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1784: privatize ImageItem tile mutators; friend pipeline + CropSession.
 - biltoo-1785: destroyCanvasItem drops tile session via pipeline before delete.
 - biltoo-1786: privatize tile plan/paint helpers on ImageItem.
+- biltoo-1787: imageview characterization pure scaffold (PNG fixtures + QSKIP for ImageView).

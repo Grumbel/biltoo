@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1787-imageview-characterization-scaffold.** Tier 4 pure harness scaffold.
+Prior: **1786**.
+
+### Change
+- `tests/imageview_characterization.cpp` — real PNG fixtures + pure session checklist
+- CMake target `biltoo-imageview-characterization-test` / `ctest -R imageview-characterization`
+- ImageView open→Gallery→crop→return still `QSKIP` (near-full link next)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1787-imageview-characterization-scaffold.bundle HEAD
+```
+
+### Next
+- Enable offscreen ImageView link (object list / lib extract)
+- Move ItemBag under DisplayPipelineController
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1786-privatize-tilelod-helpers.** Stage 2: tile plan/paint helpers private.
 Prior: **1785**.
 
