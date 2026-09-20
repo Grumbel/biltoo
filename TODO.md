@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1834-query-sample-via-pipeline.** Stage 2: query/sample hops via pipeline.
+Prior: **1833**.
+
+### Change
+- Call sites → `m_displayPipeline` / `hostDisplayPipeline()` for
+  `wantAppearanceForItem`, `fullRasterForEdit`, `sampleCoversNativeLogical`,
+  `cappedDisplayEdgeForPath`
+- Drop ImageView forwards + host decls (pipeline / crop surface)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1834-query-sample-via-pipeline.bundle HEAD
+```
+Requires tip **1833**.
+
+### Next
+- biltoo-build smoke
+- Remaining pipeline_forwards demotion / Tier 4 characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1833-fix-source-display-transform.** Basis-point source→display transform.
 Prior: **1832**.
 
