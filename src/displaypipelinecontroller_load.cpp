@@ -430,11 +430,7 @@ bool DisplayPipelineController::tryDeliverReplaceFromSlideshowRaster(const QStri
         return false;
     }
     const QPointer<ImageView> guard(m_view);
-    QMetaObject::invokeMethod(guard, "onImageLoaded", Qt::QueuedConnection,
-                              Q_ARG(QString, path),
-                              Q_ARG(QImage, ready),
-                              Q_ARG(quint64, gen),
-                              Q_ARG(int, static_cast<int>(ImageView::LoadReplace)));
+    queueImageLoaded(guard, path, ready, gen, static_cast<int>(ImageView::LoadReplace));
     return true;
 }
 
