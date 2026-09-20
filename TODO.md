@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1763-handle-drag-apply-placement.** Mid-drag scale/shear/rotate via applyPlacement.
+Prior: **1762**.
+
+### Change
+- `applyScaleHandleDrag` / `applyShearHandleDrag` build Placement and call `applyPlacement`
+- Continuous rotate mid-drag same path
+- Stage 2 single live pose writer on handle-drag interaction
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1763-handle-drag-apply-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear/rotate smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1762-item-interact-private.** ItemInteractSession members private.
 Prior: **1761**.
 
