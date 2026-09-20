@@ -43,15 +43,7 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
     }
 }
 
-void ImageView::clearPendingLoads()
-{
-    m_displayPipeline.loadGate().clearPending();
-}
 
-void ImageView::invalidateGalleryDecodes()
-{
-    m_gallery.invalidateDecodes();
-}
 
 
 void ImageView::invalidateSessionLoads()
@@ -63,7 +55,7 @@ void ImageView::invalidateSessionLoads()
     if (m_displayPipeline.tileCoordinator()) {
         m_displayPipeline.tileCoordinator()->clearPreferCancelled();
     }
-    clearPendingLoads();
+    m_displayPipeline.loadGate().clearPending();
     m_displayPipeline.gallerySoftResetAll();
     m_slideshow.phase().clearRasterQueues();
     m_slideshow.phase().bumpPhaseUpgradeGeneration();
@@ -72,7 +64,7 @@ void ImageView::invalidateSessionLoads()
     // Drop logical-size memory so the size-first gate re-probes (stale square
     // stand-ins must not skip resolve on the next open).
     m_sizeBook.clear();
-    cancelGallerySizeResolve();
+    m_gallerySizeResolve.cancel();
     if (isImageMode()) {
         clearLiveCanvas();
         clearClassicPath();
@@ -161,15 +153,7 @@ void ImageView::applyToolDragMode()
                     : QGraphicsView::NoDrag);
 }
 
-void ImageView::clearFitFillModes()
-{
-    m_framing.clearFitFill();
-}
 
-void ImageView::enableFitMode()
-{
-    m_framing.setFitOnly();
-}
 
 
 
@@ -223,7 +207,7 @@ void ImageView::clearWorkspace()
     m_displayPipeline.gallerySoftResetAll();
     m_sizeBook.clear();
     m_gallerySoftBook.setDeferPopulate(false);
-    cancelGallerySizeResolve();
+    m_gallerySizeResolve.cancel();
     ImageCache::clear();
     m_tileNeighborPrefetch.clear();
     m_displayPipeline.dropAllTileLodSessions();
@@ -262,10 +246,6 @@ void ImageView::prepareImageModeCanvas()
     m_framing.setFitOnly();
 }
 
-void ImageView::prepareGalleryCanvas()
-{
-    m_gallery.prepareCanvas();
-}
 
 
 void ImageView::setViewMode(ViewMode mode)

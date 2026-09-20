@@ -13,6 +13,12 @@
     /** Display pipeline host: pending session binds. */
     SessionBindBook &hostBindBook() { return m_bindBook; }
     const SessionBindBook &hostBindBook() const { return m_bindBook; }
+    ImageSizeBook &hostSizeBook() { return m_sizeBook; }
+    const ImageSizeBook &hostSizeBook() const { return m_sizeBook; }
+    ViewFraming &hostFraming() { return m_framing; }
+    const ViewFraming &hostFraming() const { return m_framing; }
+    GallerySizeResolve &hostGallerySizeResolve() { return m_gallerySizeResolve; }
+    const GallerySizeResolve &hostGallerySizeResolve() const { return m_gallerySizeResolve; }
     /** Display pipeline host: layout prefs (free-form check). */
     LayoutPrefs &hostLayout() { return m_layout; }
     const LayoutPrefs &hostLayout() const { return m_layout; }

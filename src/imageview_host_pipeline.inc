@@ -18,11 +18,9 @@
     void scheduleImageSizeProbe(const QString &path);
     void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,
                                               const QSize &after);
-    bool takePendingSessionBind(const QString &path, PendingSessionBind *out);
     void placeNewLoadAddItem(ImageItem *item, const QString &path, const QImage &image,
                              bool haveBound, const PendingSessionBind &bound);
     void purgeSatisfiedPendingBinds(const QString &path);
-    int countPendingSessionBinds(const QString &path) const;
     bool takePendingSessionBindForNewItem(const QString &path, ImageItem *item,
                                           PendingSessionBind *out);
     bool installFullPreservingWorkspaceFootprint(ImageItem *item, const QImage &image);

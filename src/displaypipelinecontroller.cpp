@@ -310,7 +310,7 @@ int DisplayPipelineController::cappedDisplayEdgeForPath(const QString &path, int
 {
     int nativeLong = 0;
     const QSize logical = m_view->logicalSizeForPath(path);
-    if (isPositiveSize(logical) && !m_view->isProvisionalImageSize(path)) {
+    if (isPositiveSize(logical) && !m_view->hostSizeBook().isProvisional(path)) {
         nativeLong = ContentXform::longEdge(logical);
     }
     return DisplayEdgePolicy::cappedDisplayEdge(wantEdge, nativeLong);
@@ -322,7 +322,7 @@ bool DisplayPipelineController::sampleCoversNativeLogical(const QString &path, c
     int nativeLong = 0;
     bool nativeKnown = false;
     const QSize logical = m_view->logicalSizeForPath(path);
-    if (isPositiveSize(logical) && !m_view->isProvisionalImageSize(path)) {
+    if (isPositiveSize(logical) && !m_view->hostSizeBook().isProvisional(path)) {
         nativeLong = ContentXform::longEdge(logical);
         nativeKnown = nativeLong > 0;
     }
@@ -1181,12 +1181,12 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         const QSize known = m_view->logicalSizeForPath(path);
         QSize targetSize = item->imageSize();
         if (isPositiveSize(known) && known.width() > 1 && known.height() > 1
-            && !m_view->isProvisionalImageSize(path)) {
+            && !m_view->hostSizeBook().isProvisional(path)) {
             targetSize = ContentXform::layoutSize(known, want);
         }
         int didFit = 0;
         if (isPositiveSize(targetSize) && targetSize.width() > 1
-            && !m_view->isProvisionalImageSize(path)) {
+            && !m_view->hostSizeBook().isProvisional(path)) {
             item->setIntrinsicSize(targetSize);
             const bool needFit =
                 sizeBefore.width() <= 1

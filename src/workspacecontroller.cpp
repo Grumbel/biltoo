@@ -98,7 +98,7 @@ void WorkspaceController::restore()
         m_view->setItemStateForPath(state.path, state);
         m_view->scheduleRestoreLoad(state.path);
     }
-    m_view->clearFitFillModes();
+    m_view->hostFraming().clearFitFill();
     // Apply zoom before scene-rect expansion; pan after range is valid.
     if (m_hasSavedView) {
         m_view->setTransform(m_savedViewTransform);
@@ -247,7 +247,7 @@ void WorkspaceController::restoreStashedItems()
             m_view->rematerializeItemContent(item, *app);
         }
     }
-    m_view->clearFitFillModes();
+    m_view->hostFraming().clearFitFill();
     // Order: zoom → expand sceneRect for the new scale → pan to saved centre.
     // updateWorkspaceSceneRect alone would leave scrollbars at Image-mode zeros.
     if (m_hasStashedView) {
@@ -325,7 +325,7 @@ void WorkspaceController::enter(int previousMode)
         m_view->clearLiveCanvas();
         // Drop gallery pathOrder / in-flight LoadAdd so background Gallery
         // decodes cannot recreate session tiles on this blank canvas.
-        m_view->invalidateGalleryDecodes();
+        m_view->hostGallery().invalidateDecodes();
         m_view->clearPathOrder();
         m_view->applyModeFlagsToLiveItems();
     }

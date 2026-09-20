@@ -16,16 +16,8 @@
 #include <QTimer>
 #include <QScrollBar>
 
-bool ImageView::hasPendingSessionBindForPath(const QString &path) const
-{
-    return m_bindBook.hasBindForPath(path);
-}
 
 
-int ImageView::countPendingSessionBinds(const QString &path) const
-{
-    return m_bindBook.countBindsForPath(path);
-}
 
 
 void ImageView::purgeSatisfiedPendingBinds(const QString &path)
@@ -42,10 +34,6 @@ void ImageView::purgeSatisfiedPendingBinds(const QString &path)
 }
 
 
-bool ImageView::takePendingSessionBind(const QString &path, PendingSessionBind *out)
-{
-    return m_bindBook.takeBind(path, out);
-}
 
 
 void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBind &bound)

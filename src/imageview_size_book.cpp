@@ -73,10 +73,6 @@ void ImageView::rememberSizeFromDecode(const QString &path, const QImage &image)
     rememberImageSize(path, image.size());
 }
 
-bool ImageView::isProvisionalImageSize(const QString &path) const
-{
-    return m_sizeBook.isProvisional(path);
-}
 
 QSize ImageView::imageSizeForPath(const QString &path)
 {
@@ -107,7 +103,7 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
     // (wrong aspect / tiny box) was replaced by the size probe.
     Q_UNUSED(previewHint);
     const QSize known = logicalSizeForPath(path);
-    if (isPositiveSize(known) && !isProvisionalImageSize(path)) {
+    if (isPositiveSize(known) && !m_sizeBook.isProvisional(path)) {
         return known;
     }
     if (!path.isEmpty()) {
@@ -262,20 +258,8 @@ bool ImageView::layoutDefersPopulateUntilSizes(LayoutMode mode)
     }
 }
 
-bool ImageView::startGallerySizeResolveIfNeeded(const QStringList &paths)
-{
-    return m_gallerySizeResolve.startIfNeeded(paths);
-}
 
-void ImageView::noteGallerySizeProbeSettled(const QString &path)
-{
-    m_gallerySizeResolve.noteProbeSettled(path);
-}
 
-void ImageView::cancelGallerySizeResolve()
-{
-    m_gallerySizeResolve.cancel();
-}
 
 bool ImageView::hasDefinitiveHostSize(const QString &path) const
 {
@@ -330,7 +314,7 @@ void ImageView::onSizeResolveGateComplete()
         for (ImageItem *item : m_items) {
             if (item) {
                 item->setVisible(true);
-                if (!isProvisionalImageSize(item->path())) {
+                if (!m_sizeBook.isProvisional(item->path())) {
                     const QSize sz = layoutSizeForPath(item->path());
                     if (isPositiveSize(sz)) {
                         item->setIntrinsicSize(sz);

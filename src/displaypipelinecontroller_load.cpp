@@ -165,7 +165,7 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
             continue;
         }
         PendingSessionBind bound;
-        if (!m_view->takePendingSessionBind(path, &bound)) {
+        if (!m_view->hostBindBook().takeBind(path, &bound)) {
             break;
         }
         if (bound.id != kInvalidSessionImageId) {
@@ -317,7 +317,7 @@ void DisplayPipelineController::completeLoadAdd(const QString &path, const QImag
 
     claimUnboundItemsForPendingBinds(path, image);
 
-    const int pendingBinds = m_view->countPendingSessionBinds(path);
+    const int pendingBinds = m_view->hostBindBook().countBindsForPath(path);
 
     bool sizeChanged = false;
     int have = fillLiveItemsWithDecodedPixels(path, image, &sizeChanged);
@@ -586,7 +586,7 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
     }
     // Gallery: LQIP placeholder + tiles only. Soft PreferCache is removed.
 
-    if (m_view->isProvisionalImageSize(path) || !ThumtooCache::cachedSize(path).isValid()) {
+    if (m_view->hostSizeBook().isProvisional(path) || !ThumtooCache::cachedSize(path).isValid()) {
         m_view->scheduleImageSizeProbe(path);
     }
 

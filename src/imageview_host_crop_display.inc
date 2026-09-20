@@ -69,7 +69,6 @@
     const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }
     /** PreferCache / soft climb edge cap (also used outside slideshow). */
     QSize ensureSlideshowLogicalSize(const QString &path);
-    bool isProvisionalImageSize(const QString &path) const;
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
     QString currentPath() const;
 

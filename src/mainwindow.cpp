@@ -575,7 +575,7 @@ void MainWindow::syncThumbnailCanvasMembership()
         }
         // Paste / drop still decoding: a PendingSessionBind owns the next id.
         // Allocating here created phantom filmstrip rows that could not drag.
-        if (m_imageView->hasPendingSessionBindForPath(path)) {
+        if (m_imageView->hostBindBook().hasBindForPath(path)) {
             continue;
         }
         const SessionImageId id = allocSessionId();

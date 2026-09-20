@@ -87,7 +87,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     }
     // Logical size only from probe / map — never sample (LQIP/soft) dims.
     QSize native = m_view->layoutSizeForPath(path, QImage());
-    if (m_view->isProvisionalImageSize(path)
+    if (m_view->hostSizeBook().isProvisional(path)
         || !isPositiveSize(native) || native.width() <= 1 || native.height() <= 1) {
         // Cold: 1×1 until sizeReady; soft install must not invent geometry.
         native = QSize(1, 1);

@@ -324,7 +324,7 @@ void SlideshowController::applySlideshowZoomFraming(ImageItem *item)
     }
     const QString path = item->path();
     QSize logical = m_view->ensureSlideshowLogicalSize(path);
-    if (isPositiveSize(logical) && !m_view->isProvisionalImageSize(path)) {
+    if (isPositiveSize(logical) && !m_view->hostSizeBook().isProvisional(path)) {
         // File-native → ContentXform layout when phase orient is applied (same
         // rule as resolveMotionLogicalSize / paintMotionCover).
         WorkspaceItemState app;

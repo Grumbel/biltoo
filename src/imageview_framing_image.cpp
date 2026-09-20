@@ -299,7 +299,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     if (!path.isEmpty() && !item->sessionHasCrop() && !cropDraft) {
         const QSize fileNative = ensureLogicalSizeForPath(path);
         if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
-            && !isProvisionalImageSize(path)) {
+            && !m_sizeBook.isProvisional(path)) {
             const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
                 ? item->sessionId()
                 : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);

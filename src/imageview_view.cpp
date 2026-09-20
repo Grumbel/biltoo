@@ -151,7 +151,7 @@ QSize ImageView::ensureLogicalSizeForPath(const QString &path)
         return {};
     }
     const QSize known = logicalSizeForPath(path);
-    if (isPositiveSize(known) && !isProvisionalImageSize(path)) {
+    if (isPositiveSize(known) && !m_sizeBook.isProvisional(path)) {
         return known;
     }
     // imageSizeForPath may schedule a probe and/or install thumtoo cache.

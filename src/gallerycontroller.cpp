@@ -232,7 +232,7 @@ void GalleryController::onLeave(int nextMode)
     // Stop deferred packs immediately — a pending 0ms debounce after
     // scrollbar/thumb resize must not re-enter applyLayout while we tear down.
     m_view->stopDeferredPacking();
-    m_view->cancelGallerySizeResolve();
+    m_view->hostGallerySizeResolve().cancel();
     m_pendingRestore = false;
     // Gallery → Image: keep scroll/centre snapshot from snapshotViewport()
     // (called just before setViewMode) so return-to-Gallery can restore it.
@@ -248,7 +248,7 @@ void GalleryController::onLeave(int nextMode)
         // packed live tiles. Leaving them caused drops to "move" grid tiles
         // (same SessionImageId) or keep gallery scale/cell size on the
         // free-form canvas.
-        m_view->invalidateGalleryDecodes();
+        m_view->hostGallery().invalidateDecodes();
         m_view->clearLiveCanvas();
         m_view->clearPathOrder();
     }
@@ -330,14 +330,14 @@ void GalleryController::enter(int packagedLayoutInt)
         m_haveViewCenter = false;
         m_pendingRestore = false;
         m_view->resetTransform();
-        m_view->enableFitMode();  // layout-switch soft reset
+        m_view->hostFraming().setFitOnly();  // layout-switch soft reset
     } else {
         // Clear residual Image/Workspace view state. Drop previous-mode tiles
         // when there is no Gallery stash to restore — otherwise the Image
         // single-item (or free-form Workspace poses) remain visible until
         // populateGalleryCanvas rebuilds, and used to be packed into a
         // nonsense layout for a frame (cold open glitch).
-        m_view->prepareGalleryCanvas();
+        m_view->hostGallery().prepareCanvas();
         if (!restoredStash) {
             m_view->clearLiveCanvas();
         }
@@ -1261,7 +1261,7 @@ void GalleryController::ensurePlaceholders()
             existing->setVisible(true);
             // Refresh intrinsic from definitive size map.
             const QSize sz = m_view->layoutSizeForPath(path, ImageCache::get(path));
-            if (isPositiveSize(sz) && !m_view->isProvisionalImageSize(path)) {
+            if (isPositiveSize(sz) && !m_view->hostSizeBook().isProvisional(path)) {
                 existing->setIntrinsicSize(sz);
             }
             continue;

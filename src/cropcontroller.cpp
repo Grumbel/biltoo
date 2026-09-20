@@ -235,7 +235,7 @@ void CropController::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         (sid != kInvalidSessionImageId) ? m_view->itemWorld().getAppearance(sid) : nullptr;
     QSize fileNative = m_view->logicalSizeForPath(item->path());
     if (!isPositiveSize(fileNative) || fileNative.width() <= 1
-        || m_view->isProvisionalImageSize(item->path())) {
+        || m_view->hostSizeBook().isProvisional(item->path())) {
         fileNative = {};
     }
     const QSize cropBasis = CropSession::cropBasisSize(
@@ -526,7 +526,7 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
     if (!full.isNull() && m_view->hostDisplayPipeline().sampleCoversNativeLogical(path, full)) {
         m_view->rememberSizeFromDecode(path, full);
         QSize logical = m_view->logicalSizeForPath(path);
-        if (!isPositiveSize(logical) || m_view->isProvisionalImageSize(path)) {
+        if (!isPositiveSize(logical) || m_view->hostSizeBook().isProvisional(path)) {
             m_view->rememberImageSize(path, full.size());
         }
     }

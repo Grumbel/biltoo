@@ -194,7 +194,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // Gallery size-first: probe all unknown sizes before creating tiles so the
     // first pack never uses 1024² stand-ins (first cell stuck square until reload).
     if (isGalleryMode() && !paths.isEmpty()
-        && startGallerySizeResolveIfNeeded(paths)) {
+        && m_gallerySizeResolve.startIfNeeded(paths)) {
         // Probes in flight — pack once in finishGallerySizeResolve with real sizes.
         TtfpTrace::mark("gallery_size_resolve_await_sizes");
         m_gallerySoftBook.setDeferPopulate(true);

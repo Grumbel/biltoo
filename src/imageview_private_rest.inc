@@ -109,17 +109,8 @@
     bool tilePrefetchNavHot() const override;
 
     void applyProbedImageSize(const QString &path, const QSize &size);
-    /**
-     * Gallery open size probes: schedule probes for paths still missing a
-     * definitive size. Returns true only when the current layout must defer
-     * populate until all sizes settle (Fill / FlowFill). Grid and ordinary
-     * masonry pack immediately with provisional sizes; probes still run and
-     * sizeReady debounces a repack.
-     */
-    bool startGallerySizeResolveIfNeeded(const QStringList &paths);
     /** True when pack needs every aspect before the first layout (Fill modes). */
     static bool layoutDefersPopulateUntilSizes(LayoutMode mode);
-    void noteGallerySizeProbeSettled(const QString &path);
     /** LQIP install + tile pyramid request for a Gallery path. */
 
     /** Clear stale "Improving previews" centre HUD noise. */

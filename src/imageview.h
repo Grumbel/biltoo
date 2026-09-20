@@ -182,8 +182,6 @@ public:
     void clearInteractionState();
     /** Controller host: stop layout debounce and clear applyingLayout. */
     void stopDeferredPacking();
-    /** Controller host: drop open-time Gallery size-resolve gate (mode leave). */
-    void cancelGallerySizeResolve();
     /**
      * Centre viewport progress (archive expand, size resolve, sort probes).
      * Suppresses the empty-session invite while set. Cleared with clearCentreProgress().
@@ -199,10 +197,6 @@ public:
     void setClassicPath(const QString &path) { m_image.setClassicPath(path); }
     void clearClassicPath() { m_image.clearClassicPath(); }
     QString takeClassicPath() { return m_image.takeClassicPath(); }
-    /** Controller host: drop in-flight workspace/gallery pending load queues. */
-    void clearPendingLoads();
-    /** Cancel in-flight Gallery window decodes (mode leave / empty Workspace). */
-    void invalidateGalleryDecodes();
     /** Open/History session barrier: bump gen, clear canvas, cancel thumtoo. */
     void invalidateSessionLoads();
     /** Controller host: scene->clear with signals blocked (stashes already detached). */
@@ -272,10 +266,6 @@ public:
     }
     /** Rebuild pack order from live tiles (path∥sessionId). Id-safe. */
     void setPathOrderFromLiveItems();
-    /** Controller host: disable Image-mode fit/fill when restoring free-form. */
-    void clearFitFillModes();
-    /** Controller host: Image/Gallery soft reset to fit, not fill. */
-    void enableFitMode();
     /** Controller host: session appearance store (id-keyed). */
     /**
      * Session appearance (id-keyed). Always the SessionDocument store after
@@ -338,7 +328,6 @@ public:
 
     /** Reset view/scene so Image mode is not affected by prior canvas state. */
     void prepareImageModeCanvas();
-    void prepareGalleryCanvas();
     bool isImageMode() const { return m_viewMode == ViewMode::Image; }
     bool isGalleryMode() const { return m_viewMode == ViewMode::Gallery; }
     bool isWorkspaceMode() const { return m_viewMode == ViewMode::Workspace; }
@@ -388,8 +377,6 @@ public:
      */
     void revealGalleryPath(const QString &path);
     ImageItem *findItemBySessionId(SessionImageId sessionId) const;
-    /** True while LoadAdd still has an unbound PendingSessionBind for @p path. */
-    bool hasPendingSessionBindForPath(const QString &path) const;
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Assign sequential session indices to currently selected items starting at @p first. */
     void bindSelectedSessionIndices(int firstSessionIndex);

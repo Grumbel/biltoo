@@ -39,7 +39,7 @@ void ImageController::enter()
     const QString path = takeClassicPath();
     // Clear live canvas only — do not discard stashes.
     m_view->clearLiveCanvas();
-    m_view->clearPendingLoads();
+    m_view->hostDisplayPipeline().loadGate().clearPending();
     m_view->clearSceneKeepingStashes();
     m_view->scheduleReplaceLoad(path);
     emit m_view->statusChanged();
