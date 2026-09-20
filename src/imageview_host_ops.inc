@@ -8,6 +8,8 @@
     void rematerializeGalleryItemFromStore(ImageItem *item);
     /** @deprecated Path is not identity; prefer findItemBySessionId. */
     ImageItem *findItemByPath(const QString &path) const;
+    /** Live canvas item bound to @p sessionId, or nullptr. */
+    ImageItem *findItemBySessionId(SessionImageId sessionId) const;
     /**
      * Resolve a path to a live item without always taking the first match.
      * Prefer a selected item with that path, else the sole live match.
@@ -25,7 +27,6 @@
 
     /** Workspace: show a paper-sized frame (scene units) for print layout. */
     void setPageGuideVisible(bool on);
-    /** Page guide visibility: hostPageGuide().isVisible(). */
     /** Update guide size from a printer page layout (millimetres → scene px). */
     void setPageGuideFromPrinter(const QPrinter &printer);
     /** Size page guide to live content bounds (+ margin); shows the guide. */

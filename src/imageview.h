@@ -308,7 +308,6 @@ public:
      * (focusSessionPath exclusive-selects — for keyboard nav.)
      */
     void revealGalleryPath(const QString &path);
-    ImageItem *findItemBySessionId(SessionImageId sessionId) const;
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Assign sequential session indices to currently selected items starting at @p first. */
     void bindSelectedSessionIndices(int firstSessionIndex);
@@ -584,12 +583,6 @@ signals:
                       const QList<qint64> &sessionIds = {},
                       const QStringList &internalPaths = {});
 public:
-    /** True while @p gen is still the active LoadReplace generation (pool jobs). */
-    bool matchesLoadGeneration(quint64 gen) const
-    {
-        return m_displayPipeline.loadGate().accepts(gen);
-    }
-
     // Display pipeline / pack-order host surface (controllers).
     // Input try* and paint phases: imageview_private_methods.inc.
 #include "imageview_host_pipeline.inc"

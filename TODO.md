@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1913-host-identity-loadgen-surface.** Host surface cohesion.
+Prior: **1912**.
+
+### Change
+- `findItemBySessionId` next to deprecated `findItemByPath` in `host_ops.inc`
+- `matchesLoadGeneration` moved into `host_pipeline.inc` (with other host APIs)
+- Drop orphan page-guide visibility comment in `host_ops.inc`
+- `imageview.h` ~609 lines
+- No behaviour change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1913-host-identity-loadgen-surface-516d734.bundle HEAD
+```
+Requires tip **1912** (base **516d734**).
+
+### Next
+- Green build + CHARACTERIZATION=ON
+- ctest imageview-characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1912-imageview-h-orphan-comments.** Header hygiene after host moves.
 Prior: **1911**.
 

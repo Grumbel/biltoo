@@ -1,7 +1,12 @@
 // Display pipeline host methods (Tier 5c; was private friend surface).
-// Included from ImageView public section (after public slots).
+// Included from ImageView public section (after signals).
 
     // --- Display pipeline host methods (Tier 5c; was private friend surface) ---
+    /** True while @p gen is still the active LoadReplace generation (pool jobs). */
+    bool matchesLoadGeneration(quint64 gen) const
+    {
+        return m_displayPipeline.loadGate().accepts(gen);
+    }
     void clearTextSelection();
     void refreshTextLayer();
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
