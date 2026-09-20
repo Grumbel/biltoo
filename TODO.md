@@ -2,6 +2,33 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1867-pathOrder-host-mutators.** Path-order mutators on host pipeline; drop pure hops.
+Prior: **1866**.
+
+### Change
+- Promote `pathOrderClear` / `pathOrderSetOrder` / `pathOrderAppendRow` to
+  `imageview_host_pipeline.inc` (public host surface)
+- Drop `clearPathOrder` / `setPathOrder` pure-hop facades
+- Gallery / Workspace controllers call host mutators directly
+- Remove dead private pure hops `viewMode()` / `galleryReturnAvailable()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1867-pathOrder-host-mutators.bundle HEAD
+```
+Requires tip **1866** (base **1858** / `1e112d94`).
+
+### Next
+- Residual pure-hop scan
+- Tier 4 design (pack-order vs SessionDocument; book not deleted yet)
+- nix build after host ccache perms
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1866-ccache-no-fallback.** Shared host ccache only; fail if unusable.
 Prior: **1865**.
 
