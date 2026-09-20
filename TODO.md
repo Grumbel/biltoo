@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1738-geometry-undo-itemworld.** Geometry undo/redo syncs ItemWorld.
+Prior: **1737**.
+
+### Change
+- `applyGeometrySessionState` — applyState + setPlacement/setAppearance (or path)
+- TransformCommand in imageview_transform.cpp and imageview_input_events.cpp
+  use it so sparse Placement stays aligned after undo/redo
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1738-geometry-undo-itemworld.bundle HEAD
+```
+
+### Next
+- biltoo-build + layout undo smoke
+- Characterization harness or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1737-placement-from-item.** captureState pose via placementFromItem.
 Prior: **1736**.
 

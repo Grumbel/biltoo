@@ -961,3 +961,5 @@ Phase 1–6 rules still apply. Additions:
   presence; IMAGEVIEW_CHARACTERIZATION pure-contract table updated.
 - biltoo-1737: `placementFromItem` + captureState pose via applyPlacementToState
   (single reader for live ImageItem pose).
+- biltoo-1738: `applyGeometrySessionState` — geometry undo/redo syncs ItemWorld
+  Placement + appearance (or path book); both TransformCommand sites use it.

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "placementlinear.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
@@ -35,7 +36,7 @@ void ImageView::pushItemGeometryCommand(const QString &text, ImageItem *item,
             if (!m_view || !m_item) {
                 return;
             }
-            m_view->applyState(m_item, m_before);
+            m_view->applyGeometrySessionState(m_item, m_before);
             if (m_view->isWorkspaceMode()) {
                 m_view->updateWorkspaceSceneRect();
             }
@@ -47,7 +48,7 @@ void ImageView::pushItemGeometryCommand(const QString &text, ImageItem *item,
             if (!m_view || !m_item) {
                 return;
             }
-            m_view->applyState(m_item, m_after);
+            m_view->applyGeometrySessionState(m_item, m_after);
             if (m_view->isWorkspaceMode()) {
                 m_view->updateWorkspaceSceneRect();
             }

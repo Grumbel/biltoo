@@ -204,8 +204,8 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const WorkspaceItemState 
         {
             setText(text);
         }
-        void undo() override { if (m_item) m_view->applyState(m_item, m_before); }
-        void redo() override { if (m_item) m_view->applyState(m_item, m_after); }
+        void undo() override { if (m_item) m_view->applyGeometrySessionState(m_item, m_before); }
+        void redo() override { if (m_item) m_view->applyGeometrySessionState(m_item, m_after); }
     private:
         ImageView *m_view;
         ImageItem *m_item;

@@ -768,6 +768,11 @@ public:
     void applyPlacement(ImageItem *item, const ItemComponents::Placement &placement);
     /** Stage 2: read live ImageItem pose into a Placement record. */
     static ItemComponents::Placement placementFromItem(const ImageItem *item);
+    /**
+     * Apply pose (and session DTO) after geometry undo/redo so ItemWorld
+     * Placement stays aligned with the live item.
+     */
+    void applyGeometrySessionState(ImageItem *item, const WorkspaceItemState &state);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     /** Copy of stored appearance for @p id (empty/default if none). */
