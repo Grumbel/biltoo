@@ -136,10 +136,6 @@ QSize ImageView::logicalSizeForPath(const QString &path) const
     return {};
 }
 
-QSize ImageView::ensureSlideshowLogicalSize(const QString &path)
-{
-    return ensureLogicalSizeForPath(path);
-}
 
 QSize ImageView::ensureLogicalSizeForPath(const QString &path)
 {

@@ -323,7 +323,7 @@ void SlideshowController::applySlideshowZoomFraming(ImageItem *item)
         item->applyPlacement(pl);
     }
     const QString path = item->path();
-    QSize logical = m_view->ensureSlideshowLogicalSize(path);
+    QSize logical = m_view->ensureLogicalSizeForPath(path);
     if (isPositiveSize(logical) && !m_view->hostSizeBook().isProvisional(path)) {
         // File-native → ContentXform layout when phase orient is applied (same
         // rule as resolveMotionLogicalSize / paintMotionCover).
@@ -1308,7 +1308,7 @@ void SlideshowController::startSlideshowFromPhase(const QString &fromPath)
         }
     }
     if (!fromPath.isEmpty()) {
-        (void)m_view->ensureSlideshowLogicalSize(fromPath);
+        (void)m_view->ensureLogicalSizeForPath(fromPath);
         if (!phase().hasFromImage()
             || ImageCache::longEdge(phase().fromImageRef())
                    < SlideshowAtlasPolicy::needEdge(slideshowTargetEdge())) {
@@ -1422,7 +1422,7 @@ void SlideshowController::armSlideshowToPhase(const QString &toPath)
     }
     phase().setToPath(toPath);
     bindSlideshowPhaseSurface(&phase().toSurfaceRef(), toPath);
-    (void)m_view->ensureSlideshowLogicalSize(toPath);
+    (void)m_view->ensureLogicalSizeForPath(toPath);
     phase().setToImage(slideshowSampleUnoriented(toPath), false);
     if (!phase().hasToImage()) {
         phase().setToImage(ImageCache::clampToMaxEdge(

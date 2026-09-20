@@ -65,8 +65,8 @@
     void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
     SessionLoadGate &hostLoadGate() { return m_displayPipeline.loadGate(); }
     const SessionLoadGate &hostLoadGate() const { return m_displayPipeline.loadGate(); }
-    /** PreferCache / soft climb edge cap (also used outside slideshow). */
-    QSize ensureSlideshowLogicalSize(const QString &path);
+    /** Resolve/cache logical pixel size for @p path (probes if needed). */
+    QSize ensureLogicalSizeForPath(const QString &path);
     void fitItem(ImageItem *item, Qt::AspectRatioMode mode = Qt::KeepAspectRatio);
     QString currentPath() const;
 

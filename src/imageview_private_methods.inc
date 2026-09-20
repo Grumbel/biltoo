@@ -19,7 +19,6 @@
      * Ensure logical size is known (may schedule async probe).
      * Phase entry, fit, and framing call this before geometry.
      */
-    QSize ensureLogicalSizeForPath(const QString &path);
 
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
     QString loadingStatusHudLine() const;
