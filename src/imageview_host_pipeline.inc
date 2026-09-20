@@ -10,7 +10,10 @@
     void applyImageModeFraming(ImageItem *item);
     int pathOrderOccurrences(const QString &path) const;
     bool pathOrderIsEmpty() const { return currentPackOrder().isEmpty(); }
-    /** Pack source snapshot (Tier 4: currently fromBook; document when aligned). */
+    /**
+     * Pack source snapshot from the view path-order book (not SessionDocument).
+     * See REFACTOR.md Tier 4 call-site inventory — fromDocument() is not a drop-in.
+     */
     PackOrderView currentPackOrder() const { return PackOrderView::fromBook(m_pathOrderBook); }
     /** View path-order book mutators (not SessionDocument). */
     void pathOrderClear() { m_pathOrderBook.clear(); }

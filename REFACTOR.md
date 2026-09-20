@@ -636,7 +636,7 @@ without them.
 duplicate paths, Gallery remove, and crop-in-Image-mode unchanged.
 
 
-### Tier 4 residual characterization (2026-09-20 / tip 1864)
+### Tier 4 residual characterization (2026-09-20 / tips 1864, 1871)
 
 `ImageView::m_pathOrderBook` (`SessionPathOrder`) is **not** yet deletable.
 
@@ -647,11 +647,40 @@ duplicate paths, Gallery remove, and crop-in-Image-mode unchanged.
 | Gallery leave/enter stash | `GalleryController::m_stashedPackOrder` | Snapshot of view book, not the document |
 | Ad-hoc Workspace place | `pathOrderAppendRow` from canvas place | Rows may exist with invalid session id |
 
-**Write sites (view book):** `pathOrderClear` / `pathOrderSetOrder` / `pathOrderAppendRow` (private); public `clearPathOrder` / `setPathOrder` / `setPathOrderFromLiveItems` used by Gallery/Workspace controllers and ImageView canvas.
+**Host mutators (tip 1867):** `pathOrderClear` / `pathOrderSetOrder` / `pathOrderAppendRow` /
+`currentPackOrder` / `pathOrderOccurrences` / `pathOrderIsEmpty` live on the public host
+pipeline. `setPathOrderFromLiveItems()` rebuilds the book from live canvas tiles.
 
-**Bound document:** `bindSessionDocument` already routes some identity lookups (`firstIdForPath`). Appearance store migration (Tier 4b comment in `mainwindow.cpp`) is separate from path-order deletion.
+**Bound document:** `bindSessionDocument` routes `firstSessionIdForPath` to the document when
+bound; pack multiplicity stays on the view book. Appearance store migration (Tier 4b) is
+separate from path-order deletion.
 
-**Safe next steps (not this tip):** inventory every `currentPackOrder` / `pathOrderOccurrences` call; design a pack-order view that can be fed from the document **or** a transient Workspace overlay without dual write; only then delete `m_pathOrderBook`.
+#### Call-site inventory (tip 1871)
+
+| Site | API | Role | Book-only? |
+|------|-----|------|------------|
+| `gallerycontroller` stash/restore | `currentPackOrder` / `pathOrderSetOrder` | Leave/enter Gallery | Yes — stash is view book |
+| `gallerycontroller` applyLayout / ensurePlaceholders | `pathOrderIsEmpty` / `currentPackOrder` | Reorder + pack order | Yes — may include multiplicity |
+| `gallerycontroller` leave | `pathOrderClear` | Blank book without wiping session | Yes |
+| `gallerycontroller` after mutate | `setPathOrderFromLiveItems` | Resync book from tiles | Yes |
+| `workspacecontroller` leave | `pathOrderClear` | Same | Yes |
+| `displaypipelinecontroller_load` completeLoadAdd | `pathOrderOccurrences` | How many tiles for path | **Must** be book |
+| `displaypipelinecontroller_load` reorder | `currentPackOrder` | Order live items | Yes |
+| `imageview_canvas` / `canvas_place` | `pathOrderSetOrder` / `AppendRow` / `currentPackOrder` | Session place + ad-hoc | Yes — invalid ids OK |
+| `imageview_modes` enter transitions | `pathOrderClear` | Mode switch | Yes |
+| `imageview_session_remove` | `currentPackOrder` / `pathOrderSetOrder` | Prune book rows | Yes |
+| `imageview_size_book` sizeResolvePathOrder | `currentPackOrder` | Probe order | Yes |
+| `imageview_load` pathOrderOccurrences | book count | LoadAdd multiplicity | **Must** be book |
+| `firstSessionIdForPath` | doc then book | Identity lookup | Doc preferred |
+
+`PackOrderView::fromDocument()` is valid only when the book **aligns** with the document
+(`alignsWithDocument`) **and** there are no ad-hoc Workspace rows (invalid session ids /
+extra multiplicity). Today Gallery pack always reads the book; switching readers to
+`fromDocument()` without a dual-write design would break LoadAdd duplicates and ad-hoc place.
+
+**Safe next steps:** introduce an explicit pack-order **source policy** (document vs book vs
+overlay) owned outside ImageView; migrate Gallery pack readers only after multiplicity is
+expressed without a second full copy; only then delete `m_pathOrderBook`.
 
 
 ### Tier 5 — DisplayPipeline
