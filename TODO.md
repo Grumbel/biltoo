@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1935-capture-state-sparse-authority.** captureState prefers ItemWorld tables.
+Prior: **1934**.
+
+### Change
+- Bound-id `captureState`: Crop / ContentBake / Color / Attention from ItemWorld
+  sparse tables when present; live ImageItem is fallback only
+- Unbound path unchanged (item + path book)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1935-capture-state-sparse-authority-516d734.bundle HEAD
+```
+Requires tip **1934** (base **516d734**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ImageItem live crop/flip demotion (dual-write install still required)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1934-gallery-pack-placement.** Gallery pack path-book write is Placement-only.
 Prior: **1933**.
 

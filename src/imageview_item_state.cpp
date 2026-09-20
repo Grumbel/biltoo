@@ -33,48 +33,53 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     // Stage 2: pose via Placement helper (single place that reads item pose).
     ItemComponents::applyPlacementToState(s, placementFromItem(item));
     s.orientation = 0.0;
-    // Live item is authoritative for per-instance crop rect + content flips.
-    // cropRotation / cropSourceSize are not stored on ImageItem — load them
-    // from the session-image appearance store (or path map for unbound).
-    s.hasCrop = item->sessionHasCrop();
-    s.cropRect = item->sessionCropRect();
-    s.contentHFlip = item->contentHFlip();
-    s.contentVFlip = item->contentVFlip();
-    s.colorAdjust = item->colorAdjustments();
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
-        // Phase 7: prefer sparse components over fat DTO field reads.
-        // ContentBake is sole orient authority for bound ids (never path map).
-        if (m_itemWorld.hasAppearance(sid) || m_itemWorld.hasContentBake(sid)
-            || m_itemWorld.hasCrop(sid)) {
+        // Phase 7 Stage 1: sparse tables are authority for bound ids when present.
+        // Live ImageItem remains fallback while dual-write install paths exist.
+        if (m_itemWorld.hasCrop(sid)) {
+            const ItemComponents::Crop crop = m_itemWorld.crop(sid);
+            s.hasCrop = !crop.isEmpty();
+            s.cropRect = crop.rect;
+            s.cropRotation = crop.rotation;
+            s.cropSourceSize = crop.sourceSize;
+        } else {
+            s.hasCrop = item->sessionHasCrop();
+            s.cropRect = item->sessionCropRect();
+        }
+        if (m_itemWorld.hasContentBake(sid)) {
             const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid);
             s.contentQuarterTurns =
                 ContentXform::normalizeQuarterTurns(bake.quarterTurns);
-            if (!s.contentHFlip && bake.hFlip) {
-                s.contentHFlip = true;
-            }
-            if (!s.contentVFlip && bake.vFlip) {
-                s.contentVFlip = true;
-            }
-            const ItemComponents::Crop crop = m_itemWorld.crop(sid);
-            if (!crop.isEmpty()) {
-                s.cropRotation = crop.rotation;
-                s.cropSourceSize = crop.sourceSize;
-                if (!s.hasCrop) {
-                    s.hasCrop = true;
-                    s.cropRect = crop.rect;
-                }
-            }
+            s.contentHFlip = bake.hFlip;
+            s.contentVFlip = bake.vFlip;
         } else if (item->hasAppliedContentXform()) {
-            // Store empty but live fingerprint exists (mid-edit).
             s.contentQuarterTurns = item->appliedContentXform().quarterTurns;
             s.contentHFlip = item->appliedContentXform().hFlip;
             s.contentVFlip = item->appliedContentXform().vFlip;
+        } else {
+            s.contentHFlip = item->contentHFlip();
+            s.contentVFlip = item->contentVFlip();
+        }
+        if (m_itemWorld.hasColor(sid)) {
+            s.colorAdjust = m_itemWorld.color(sid).grade;
+        } else {
+            s.colorAdjust = item->colorAdjustments();
+        }
+        if (m_itemWorld.hasAttention(sid)) {
+            s.attentionPoints = m_itemWorld.attention(sid);
+            s.syncAttentionPrimary();
         }
         // Bound session image: path map is placement-only.
     } else {
+        // Live item for unbound crop/flips; path map may hold orient extras.
+        s.hasCrop = item->sessionHasCrop();
+        s.cropRect = item->sessionCropRect();
+        s.contentHFlip = item->contentHFlip();
+        s.contentVFlip = item->contentVFlip();
+        s.colorAdjust = item->colorAdjustments();
         // Unbound tile: path map may hold content orient.
         if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
             s.contentQuarterTurns =
