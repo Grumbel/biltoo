@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1749-end-rotate.** ItemInteractSession::endRotate alias.
+Prior: **1748**.
+
+### Change
+- Add `endRotate() { clearRotate(); }` to match `endMove` / `endHandleDrag`
+- Fixes build: tryMouseReleaseWorkspaceRotate called missing endRotate
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1749-end-rotate.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear/rotate smoke
+- Characterization harness (Tier 4) or tile-LOD residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1748-handle-press-owned.** Handle press scratch only on interact session.
 Prior: **1747**.
 

@@ -982,3 +982,5 @@ Phase 1–6 rules still apply. Additions:
   session copies press at beginHandleDrag; ImageItem still owns mid-drag math.
 - biltoo-1748: handle press owned only by ItemInteractSession; updateHandle /
   applyScale/Shear take HandlePressScratch&; ImageItem m_handlePress removed.
+- biltoo-1749: ItemInteractSession::endRotate() alias (parity with endMove /
+  endHandleDrag); fixes free-rotate mouse release build break.

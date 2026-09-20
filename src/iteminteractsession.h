@@ -108,6 +108,8 @@ struct ItemInteractSession {
         dragStartPlacement = ItemComponents::placementFromState(startState);
     }
 
+    void endRotate() { clearRotate(); }
+
     void beginHandleDrag(ImageItem *item, const WorkspaceItemState &startState,
                          const HandlePressScratch &press)
     {
