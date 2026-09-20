@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "grouptransformgeometry.h"
 #include "pageguidegeometry.h"
 #include "imageitem.h"
@@ -75,24 +76,24 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
 
     for (int i = 0; i < m_groupXform.dragCount(); ++i) {
         ImageItem *item = m_groupXform.dragItemAt(i);
-        const WorkspaceItemState &st = m_groupXform.dragStartStateAt(i);
+        const ItemComponents::Placement &pl = m_groupXform.dragStartPlacementAt(i);
         if (!item || !m_items.contains(item)) {
             continue;
         }
-        const QPointF rel = st.pos - anchor;
+        const QPointF rel = pl.pos - anchor;
         const QPointF newPos = anchor + QPointF(rel.x() * sx, rel.y() * sy);
         if (!qIsFinite(newPos.x()) || !qIsFinite(newPos.y())) {
             continue;
         }
         item->setPos(newPos);
 
-        const qreal baseX = st.scale > 0 ? st.scale : 1.0;
-        const qreal baseY = st.scaleY > 0 ? st.scaleY : baseX;
+        const qreal baseX = pl.scale > 0 ? pl.scale : 1.0;
+        const qreal baseY = pl.scaleY > 0 ? pl.scaleY : baseX;
         if (!anisotropic) {
             // Uniform scene scale: scales only; rotation and shear stay from press.
             item->setItemScale(baseX * sx, baseY * sy);
-            item->setItemShear(st.shear);
-            item->setItemRotation(st.rotation);
+            item->setItemShear(pl.shear);
+            item->setItemRotation(pl.rotation);
             continue;
         }
         // Anisotropic: scale the *scene* images of local axes (e.x *= sx, e.y *= sy),
@@ -100,13 +101,13 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
         // broken fallthrough that applied scene sx/sy as local scales (axis mix-up
         // on rotated tiles).
         QPointF e1, e2;
-        PlacementLinear::unitAxes(baseX, baseY, st.shear, st.rotation, &e1, &e2);
+        PlacementLinear::unitAxes(baseX, baseY, pl.shear, pl.rotation, &e1, &e2);
         e1 = QPointF(e1.x() * sx, e1.y() * sy);
         e2 = QPointF(e2.x() * sx, e2.y() * sy);
         qreal nx = baseX;
         qreal ny = baseY;
-        qreal nk = st.shear;
-        qreal nrot = st.rotation;
+        qreal nk = pl.shear;
+        qreal nrot = pl.rotation;
         if (PlacementLinear::decomposeAxes(e1, e2, &nx, &ny, &nk, &nrot)) {
             PlacementLinear::clampScaleXY(&nx, &ny);
             item->setItemScale(nx, ny);
@@ -153,17 +154,17 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
 
     for (int i = 0; i < m_groupXform.dragCount(); ++i) {
         ImageItem *item = m_groupXform.dragItemAt(i);
-        const WorkspaceItemState &st = m_groupXform.dragStartStateAt(i);
+        const ItemComponents::Placement &pl = m_groupXform.dragStartPlacementAt(i);
         if (!item || !m_items.contains(item)) {
             continue;
         }
         // Orbit position around group centre; add the same delta to placement angle.
-        const QPointF newPos = GroupTransformGeometry::orbitPoint(centre, st.pos, delta);
+        const QPointF newPos = GroupTransformGeometry::orbitPoint(centre, pl.pos, delta);
         if (!qIsFinite(newPos.x()) || !qIsFinite(newPos.y())) {
             continue;
         }
         item->setPos(newPos);
-        item->setItemRotation(st.rotation + delta);
+        item->setItemRotation(pl.rotation + delta);
     }
     m_framing.releaseFit();
     emit statusChanged();

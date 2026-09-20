@@ -972,3 +972,5 @@ Phase 1–6 rules still apply. Additions:
   scratch); beginMove/Rotate/HandleDrag fill it from the start DTO.
 - biltoo-1743: GroupTransformSession stores parallel `dragStartPlacements`;
   prune/align keep placement list in sync with items/states.
+- biltoo-1744: group scale/rotate mid-drag reads `dragStartPlacementAt` (not
+  full DTO fields).

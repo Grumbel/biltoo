@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1744-group-drag-use-placement.** Group mid-drag uses Placement.
+Prior: **1743**.
+
+### Change
+- updateGroupScale / updateGroupRotate: pose from `dragStartPlacementAt(i)`
+- Full `dragStartStates` still used for geometry undo on release
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1744-group-drag-use-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + multi-select anisotropic scale smoke
+- Characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1743-group-drag-placement.** GroupTransformSession drag-start Placements.
 Prior: **1742**.
 
