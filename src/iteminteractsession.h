@@ -5,12 +5,16 @@
 #define ITEMINTERACTSESSION_H
 
 #include "imageview_types.h"
+#include "itemcomponents.h"
 
 class ImageItem;
 
 /**
  * Single-item Workspace interaction: move, corner handle scale, free rotate.
  * Distinct from GroupTransformSession (multi-select).
+ *
+ * Phase 7 Stage 2: pose press-anchor is Placement (dragStartPlacement);
+ * full WorkspaceItemState remains for geometry undo (content + pose).
  */
 struct ItemInteractSession {
     bool rotating = false;
@@ -22,6 +26,7 @@ struct ItemInteractSession {
 
     ImageItem *dragItem = nullptr;
     WorkspaceItemState dragStartState;
+    ItemComponents::Placement dragStartPlacement;
 
     void clearRotate()
     {
@@ -37,6 +42,7 @@ struct ItemInteractSession {
     {
         dragItem = nullptr;
         dragStartState = {};
+        dragStartPlacement = {};
     }
 
     void clear()
@@ -65,6 +71,11 @@ struct ItemInteractSession {
 
     const WorkspaceItemState &currentDragStartState() const { return dragStartState; }
 
+    const ItemComponents::Placement &currentDragStartPlacement() const
+    {
+        return dragStartPlacement;
+    }
+
     qreal currentRotateStartAngle() const { return rotateStartAngle; }
 
     qreal currentRotateItemStart() const { return rotateItemStart; }
@@ -77,28 +88,23 @@ struct ItemInteractSession {
         rotateStartAngle = startAngle;
         rotateItemStart = itemStart;
         dragStartState = startState;
+        dragStartPlacement = ItemComponents::placementFromState(startState);
     }
-
-    void endRotate() { clearRotate(); }
 
     void beginHandleDrag(ImageItem *item, const WorkspaceItemState &startState)
     {
         handleDragItem = item;
-        dragItem = item;
         dragStartState = startState;
+        dragStartPlacement = ItemComponents::placementFromState(startState);
     }
 
-    void endHandleDrag()
-    {
-        handleDragItem = nullptr;
-        dragItem = nullptr;
-        // keep dragStartState until caller has pushed undo
-    }
+    void endHandleDrag() { clearHandleDrag(); }
 
     void beginMove(ImageItem *item, const WorkspaceItemState &startState)
     {
         dragItem = item;
         dragStartState = startState;
+        dragStartPlacement = ItemComponents::placementFromState(startState);
     }
 
     void endMove() { clearMove(); }

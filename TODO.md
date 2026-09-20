@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1742-interact-drag-placement.** ItemInteractSession drag-start Placement.
+Prior: **1741**.
+
+### Change
+- `dragStartPlacement` + `currentDragStartPlacement()`
+- beginMove / beginRotate / beginHandleDrag set Placement from start state
+- clearMove resets Placement
+- Full `dragStartState` kept for geometry undo
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1742-interact-drag-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build
+- Call sites may prefer currentDragStartPlacement for pose-only logic
+- Characterization harness (Tier 4)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1741-placement-nearly-equal.** Placement-shaped geometry no-op check.
 Prior: **1740**.
 
