@@ -2,6 +2,42 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1856-nix-build-ccache.** Persistent nix-build ccache path selection.
+Prior: **1855**.
+
+### Change
+- Wrapper + `ccacheDirPhase`: try `/var/cache/ccache`, `/nix/var/cache/ccache`
+  when writable in the sandbox; else `$NIX_BUILD_TOP/.ccache`
+- Build log: `biltoo ccache: dir=… mode=shared-host|ephemeral`
+- `nix run .#ccache-check` — host dir + `extra-sandbox-paths` readiness
+
+### Persistent setup
+```bash
+sudo mkdir -p /var/cache/ccache
+sudo chown "$USER":nixbld /var/cache/ccache   # or chmod 1777
+# nix.conf:
+extra-sandbox-paths = /var/cache/ccache
+# restart nix-daemon, then:
+nix run .#ccache-check
+nix build
+```
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1856-nix-build-ccache.bundle HEAD
+```
+Requires tip **1855**.
+
+### Next
+- Verify `nix build` log shows shared-host when sandbox path is set
+- Phase 6 Tier 4 residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1855-ccache-startup-diag.** ccache status printed on `nix develop`.
 Prior: **1854**.
 
