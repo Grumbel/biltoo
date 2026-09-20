@@ -319,8 +319,8 @@ bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
         return true;
     }
     if (m_itemInteract.isHandleDragging() && m_itemInteract.currentHandleDragItem()->hasActiveHandle()) {
-        m_itemInteract.currentHandleDragItem()->updateHandleInteraction(mapToScene(event->pos()),
-                                                    event->modifiers());
+        m_itemInteract.currentHandleDragItem()->updateHandleInteraction(
+            mapToScene(event->pos()), event->modifiers(), m_itemInteract.handlePressRef());
         viewport()->update(); // live chrome while scaling/rotating
         event->accept();
         return true;

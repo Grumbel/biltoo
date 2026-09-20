@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1748-handle-press-owned.** Handle press scratch only on interact session.
+Prior: **1747**.
+
+### Change
+- beginHandleInteraction writes outPress; continuous drag only if hasActiveHandle()
+- updateHandleInteraction / applyScaleHandleDrag / applyShearHandleDrag take HandlePressScratch&
+- group mid-drag passes m_itemInteract.handlePressRef()
+- ImageItem no longer stores m_handlePress
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1748-handle-press-owned.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear/rotate smoke
+- Characterization harness (Tier 4) or tile-LOD residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1747-handle-press-session.** HandlePressScratch dual-store on session.
 Prior: **1746**.
 

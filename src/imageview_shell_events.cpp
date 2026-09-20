@@ -74,8 +74,10 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         }
         if (selected.size() == 1) {
             ImageItem *item = selected.first();
-            if (item->beginHandleInteraction(scenePos, event->modifiers())) {
-                m_itemInteract.beginHandleDrag(item, captureState(item), item->handlePressScratch());
+            HandlePressScratch press;
+            if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
+                && item->hasActiveHandle()) {
+                m_itemInteract.beginHandleDrag(item, captureState(item), press);
                 event->accept();
                 return;
             }

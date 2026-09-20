@@ -980,3 +980,5 @@ Phase 1–6 rules still apply. Additions:
   (named Stage 2 residual; clear on endHandleInteraction).
 - biltoo-1747: HandlePressScratch type on ItemInteractSession; dual-store —
   session copies press at beginHandleDrag; ImageItem still owns mid-drag math.
+- biltoo-1748: handle press owned only by ItemInteractSession; updateHandle /
+  applyScale/Shear take HandlePressScratch&; ImageItem m_handlePress removed.

@@ -309,10 +309,15 @@ public:
      * Used so rotated / anisotropically scaled chrome stays hittable even when
      * shape() alone would miss the device-space controls.
      */
-    bool beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods);
-    void updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods);
-    /** Stage 2: press scratch for interact session dual-store. */
-    const HandlePressScratch &handlePressScratch() const { return m_handlePress; }
+    /**
+     * Start continuous handle drag. Writes press scratch to @p outPress when
+     * a scale/shear/rotate/opacity handle is armed (hasActiveHandle()).
+     * One-shot chrome buttons (flip/raise/…) return true without arming drag.
+     */
+    bool beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods,
+                                HandlePressScratch *outPress = nullptr);
+    void updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods,
+                                 HandlePressScratch &press);
     void endHandleInteraction();
     bool hasActiveHandle() const { return m_activeHandle != Handle::None; }
 
@@ -470,14 +475,14 @@ private:
     Handle m_hoverHandle = Handle::None;
     /** Gallery: item under the mouse (no transform chrome). */
     bool m_galleryHovered = false;
-    HandlePressScratch m_handlePress;
     bool isScaleHandle(Handle h) const;
     bool isShearHandle(Handle h) const;
     bool isCornerScaleHandle(Handle h) const;
     bool isEdgeScaleHandle(Handle h) const;
     QPointF scaleAnchorLocal(Handle h) const;
-    void applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods);
-    void applyShearHandleDrag(const QPointF &scenePos);
+    void applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifiers mods,
+                               HandlePressScratch &press);
+    void applyShearHandleDrag(const QPointF &scenePos, HandlePressScratch &press);
 };
 
 #endif // IMAGEITEM_H
