@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1759-group-current-handle.** GroupTransformSession::currentHandle.
+Prior: **1758**.
+
+### Change
+- Remove unused `hasActiveHandle()`
+- Add `currentHandle()` for mid-drag handle index
+- `updateGroupScale` uses `currentHandle()` (not public field read)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1759-group-current-handle.bundle HEAD
+```
+
+### Next
+- biltoo-build + multi-select scale smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1758-group-paint-hot-hover.** Group transform paint hot via hover.
 Prior: **1757**.
 

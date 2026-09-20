@@ -63,7 +63,7 @@ void ImageView::updateGroupScale(const QPointF &scenePos, Qt::KeyboardModifiers 
     }
     const GroupTransformGeometry::ScaleFactors sf =
         GroupTransformGeometry::scaleFactorsFromDrag(
-            scenePos, m_groupXform.boundsStartRect(), m_groupXform.handle,
+            scenePos, m_groupXform.boundsStartRect(), m_groupXform.currentHandle(),
             mods & Qt::ShiftModifier);
     if (!sf.valid) {
         return;

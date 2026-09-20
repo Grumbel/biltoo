@@ -1002,3 +1002,5 @@ Phase 1–6 rules still apply. Additions:
   applyPlacement thin-forwards.
 - biltoo-1758: GroupTransformSession paint hot via hover (beginDrag sticks
   hoverHandle); isHandleHot hover-only; handle stays mid-drag authority.
+- biltoo-1759: GroupTransformSession::currentHandle(); drop unused hasActiveHandle;
+  updateGroupScale reads accessor.

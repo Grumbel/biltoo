@@ -51,7 +51,8 @@ public:
 
     bool hasHoverHandle() const { return hoverHandle != -1; }
 
-    bool hasActiveHandle() const { return handle != -1; }
+    /** Active continuous handle index during scale/rotate (-1 if idle). */
+    int currentHandle() const { return handle; }
 
     const QPointF &centerStartPoint() const { return centerStart; }
 
