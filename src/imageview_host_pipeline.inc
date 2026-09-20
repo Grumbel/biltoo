@@ -12,6 +12,16 @@
     bool pathOrderIsEmpty() const { return currentPackOrder().isEmpty(); }
     /** Pack source snapshot (Tier 4: currently fromBook; document when aligned). */
     PackOrderView currentPackOrder() const { return PackOrderView::fromBook(m_pathOrderBook); }
+    /** View path-order book mutators (not SessionDocument). */
+    void pathOrderClear() { m_pathOrderBook.clear(); }
+    void pathOrderSetOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
+    {
+        m_pathOrderBook.setOrder(paths, ids);
+    }
+    void pathOrderAppendRow(const QString &path, SessionImageId id = kInvalidSessionImageId)
+    {
+        m_pathOrderBook.appendRow(path, id);
+    }
     QSize layoutSizeForPath(const QString &path, const QImage &previewHint = QImage());
     void scheduleImageSizeProbe(const QString &path);
     void preserveImageViewOnLogicalSizeChange(ImageItem *item, const QSize &before,

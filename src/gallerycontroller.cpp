@@ -106,7 +106,7 @@ void GalleryController::restoreStashedItems()
     m_view->liveItems() = m_stashedItems;
     m_stashedItems.clear();
     if (!m_stashedPackOrder.isEmpty()) {
-        m_view->setPathOrder(m_stashedPackOrder);
+        m_view->pathOrderSetOrder(m_stashedPackOrder.paths(), m_stashedPackOrder.ids());
     }
     m_stashedPackOrder = PackOrderView();
     for (ImageItem *item : m_view->liveItems()) {
@@ -250,7 +250,7 @@ void GalleryController::onLeave(int nextMode)
         // free-form canvas.
         m_view->hostGallery().invalidateDecodes();
         m_view->clearLiveCanvas();
-        m_view->clearPathOrder();
+        m_view->pathOrderClear();
     }
 }
 

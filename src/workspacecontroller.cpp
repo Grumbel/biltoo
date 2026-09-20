@@ -326,7 +326,7 @@ void WorkspaceController::enter(int previousMode)
         // Drop gallery pathOrder / in-flight LoadAdd so background Gallery
         // decodes cannot recreate session tiles on this blank canvas.
         m_view->hostGallery().invalidateDecodes();
-        m_view->clearPathOrder();
+        m_view->pathOrderClear();
         m_view->applyModeFlagsToLiveItems();
     }
     // Always clear canvas selection on enter — restored stash may keep old

@@ -24,31 +24,6 @@
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
     QString loadingStatusHudLine() const;
 
-
-
-
-
-    /** How many times @a path appears in session path order (duplicate tiles). */
-
-    /**
-     * View-local path order (Gallery pack / LoadAdd multiplicity).
-     * All reads go through these accessors so Tier 4 can swap the backing store.
-     * SessionDocument remains MainWindow-owned — mutations never clear/append it
-     * (Gallery leave clears the book without wiping the session).
-     */
-    void pathOrderClear()
-    {
-        m_pathOrderBook.clear();
-    }
-    void pathOrderSetOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
-    {
-        m_pathOrderBook.setOrder(paths, ids);
-    }
-    void pathOrderAppendRow(const QString &path, SessionImageId id = kInvalidSessionImageId)
-    {
-        m_pathOrderBook.appendRow(path, id);
-    }
-
     /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */
     void refreshScrollBarGeometry();
 
@@ -80,11 +55,6 @@
     /** Scene pixels per millimetre for the page guide (layout scale). */
     static qreal pageGuidePxPerMm();
 
-
-    ViewMode viewMode() const { return m_viewMode; }
-
-
-    bool galleryReturnAvailable() const { return m_sessionNav.isGalleryReturnAvailable(); }
 
     /**
      * Same as path-only overload, but binds each path to the parallel

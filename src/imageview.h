@@ -238,16 +238,7 @@ public:
     ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
 
     /** Controller host: session path order used for Gallery packing. */
-    void clearPathOrder() { pathOrderClear(); }
-    /** Replace pack order (paths ∥ ids). Prefer PackOrderView overload. */
-    void setPathOrder(const QStringList &paths, const QVector<SessionImageId> &ids)
-    {
-        pathOrderSetOrder(paths, ids);
-    }
-    void setPathOrder(const PackOrderView &pack)
-    {
-        pathOrderSetOrder(pack.paths(), pack.ids());
-    }
+    /** Path-order book: pathOrderClear / pathOrderSetOrder / pathOrderAppendRow / currentPackOrder. */
     /** Rebuild pack order from live tiles (path∥sessionId). Id-safe. */
     void setPathOrderFromLiveItems();
     /** Controller host: session appearance store (id-keyed). */
@@ -275,7 +266,7 @@ public:
     /**
      * Phase 6 Tier 4 path-order: MainWindow binds the working SessionDocument.
      * firstSessionIdForPath uses the document; LoadAdd multiplicity stays on the
-     * view path-order book (clearPathOrder must not consult the document).
+     * view path-order book (pathOrderClear must not consult the document).
      */
     void bindSessionDocument(SessionDocument *doc)
     {
