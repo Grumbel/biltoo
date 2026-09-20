@@ -103,21 +103,13 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
 
 // --- from imageview_layout.cpp (appearance) ---
 
-void ImageView::applyPlacement(ImageItem *item, const ItemComponents::Placement &pl)
-{
-    if (!item) {
-        return;
-    }
-    item->applyPlacement(pl);
-}
-
 void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
 {
     if (!item) {
         return;
     }
     // Stage 2: pose is Placement; content pixels stay on install paths only.
-    applyPlacement(item, ItemComponents::placementFromState(state));
+    item->applyPlacement(ItemComponents::placementFromState(state));
 }
 
 void ImageView::persistGeometrySessionState(ImageItem *item, const WorkspaceItemState &state)

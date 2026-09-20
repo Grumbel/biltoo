@@ -765,7 +765,6 @@ public:
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
     /** Stage 2: apply Workspace pose only (Placement component). */
-    void applyPlacement(ImageItem *item, const ItemComponents::Placement &placement);
     /** Stage 2: read live ImageItem pose into a Placement record. */
     static ItemComponents::Placement placementFromItem(const ImageItem *item);
     /**
