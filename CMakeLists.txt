@@ -227,6 +227,7 @@ add_executable(biltoo
   src/imageview_input.cpp
   src/imageview_input_forwards.cpp
   src/imageview_paint.cpp
+  src/imageview_text.cpp
   src/imageview_pageguide.cpp
   src/imageview_export.cpp
   src/imageview_group.cpp

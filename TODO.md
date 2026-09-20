@@ -2,6 +2,32 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1682-paint-text-split.** Split text layer and chrome paint out of paint.cpp.
+Prior: **1681**.
+
+### Change
+- New `imageview_text.cpp`: text regions, search, rubber-band, selection clipboard
+- `paintPageGuideHandles` → `imageview_pageguide.cpp`
+- `paintGroupSelectionChrome` → `imageview_group.cpp`
+- `paintGallerySelectionFrames` → `imageview_gallery.cpp`
+- `imageview_paint.cpp` ~1533 → ~940 lines (overlays + HUD + background remain)
+- CMake lists `imageview_text.cpp`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1682-paint-text-split.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- Optional: shrink `imageview_input.cpp` (transform chrome stays on ImageView)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1681-dissolve-layout-tu.** Dissolve imageview_layout.cpp into focused TUs.
 Prior: **1680**.
 

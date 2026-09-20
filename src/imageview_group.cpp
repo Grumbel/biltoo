@@ -3,12 +3,14 @@
 
 #include "imageview.h"
 #include "grouptransformgeometry.h"
+#include "pageguidegeometry.h"
 #include "imageitem.h"
 #include "placementlinear.h"
 
 #include <QTransform>
 #include <QtMath>
 #include <cmath>
+#include <QPainter>
 
 int ImageView::groupHandleAt(const QPoint &viewPos, const QList<ImageItem *> &items) const
 {
@@ -164,3 +166,135 @@ void ImageView::updateGroupRotate(const QPointF &scenePos, Qt::KeyboardModifiers
     m_framing.releaseFit();
     emit statusChanged();
 }
+
+// --- selection chrome paint (from paint.cpp) ---
+
+void ImageView::paintGroupSelectionChrome(QPainter *painter, const QList<ImageItem *> &items) const
+{
+    if (!painter) {
+        return;
+    }
+    const QRectF sceneBounds = selectionSceneBounds(items);
+    if (!sceneBounds.isValid() || sceneBounds.isEmpty()) {
+        return;
+    }
+    const QRect viewRect = mapFromScene(sceneBounds).boundingRect();
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    // Group chrome: violet family so it is distinct from single-select blue
+    // and crop amber.
+    const QColor frameCol(150, 90, 220, 220);
+    const QColor handleFill(180, 120, 255, 240);
+    const QColor handleFillHot(210, 160, 255, 255);
+    const QColor handleEdge(80, 40, 140);
+    const QColor rotFill(200, 140, 255);
+    const QColor rotFillHot(255, 230, 120);
+
+    QPen framePen(frameCol, 0);
+    framePen.setCosmetic(true);
+    framePen.setWidthF(1.75);
+    painter->setPen(framePen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(viewRect);
+
+    QPointF pts[8];
+    PageGuideGeometry::handlePoints(viewRect, pts);
+    // Corners 0,2,4,6: rounded line-arc-line; edges 1,3,5,7: short bars.
+    auto unit = [](QPointF v) {
+        const qreal len = qHypot(v.x(), v.y());
+        return len > 1e-6 ? v / len : QPointF(1, 0);
+    };
+    auto drawCorner = [&](const QPointF &c, const QPointF &alongA, const QPointF &alongB, int id) {
+        const bool hot = m_groupXform.isHandleHot(id);
+        const QPointF d1 = unit(alongA);
+        const QPointF d2 = unit(alongB);
+        const qreal hs = hot ? 12.0 : 10.0;
+        const qreal arm = hs * 1.35;
+        const qreal thick = hs * (hot ? 0.48 : 0.36);
+        QPainterPath path;
+        path.moveTo(c + d1 * arm);
+        path.lineTo(c);
+        path.lineTo(c + d2 * arm);
+        QPen hp(hot ? QColor(255, 255, 255) : handleEdge, 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(thick);
+        hp.setCapStyle(Qt::RoundCap);
+        hp.setJoinStyle(Qt::RoundJoin);
+        painter->setPen(hp);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawPath(path);
+        if (hot) {
+            QPen glow(handleFill, 0);
+            glow.setCosmetic(true);
+            glow.setWidthF(thick * 0.55);
+            glow.setCapStyle(Qt::RoundCap);
+            glow.setJoinStyle(Qt::RoundJoin);
+            painter->setPen(glow);
+            painter->drawPath(path);
+        }
+    };
+    auto drawEdgeBar = [&](const QPointF &mid, const QPointF &along, int id) {
+        const bool hot = m_groupXform.isHandleHot(id);
+        const QPointF a = unit(along);
+        const QPointF perp(-a.y(), a.x());
+        const qreal hs = hot ? 12.0 : 10.0;
+        const qreal len = hs * 1.8;
+        const qreal thick = hs * 0.35;
+        QPen hp(hot ? QColor(255, 255, 255) : handleEdge, 0);
+        hp.setCosmetic(true);
+        hp.setWidthF(hot ? 1.6 : 1.15);
+        painter->setPen(hp);
+        painter->setBrush(hot ? handleFillHot : handleFill);
+        QPolygonF bar;
+        bar << mid + a * (len / 2) + perp * (thick / 2)
+            << mid - a * (len / 2) + perp * (thick / 2)
+            << mid - a * (len / 2) - perp * (thick / 2)
+            << mid + a * (len / 2) - perp * (thick / 2);
+        painter->drawPolygon(bar);
+        painter->setBrush(Qt::NoBrush);
+    };
+    // pts: 0 TL, 1 T, 2 TR, 3 R, 4 BR, 5 B, 6 BL, 7 L
+    drawCorner(pts[0], QPointF(1, 0), QPointF(0, 1), 0);
+    drawEdgeBar(pts[1], QPointF(1, 0), 1);
+    drawCorner(pts[2], QPointF(-1, 0), QPointF(0, 1), 2);
+    drawEdgeBar(pts[3], QPointF(0, 1), 3);
+    drawCorner(pts[4], QPointF(-1, 0), QPointF(0, -1), 4);
+    drawEdgeBar(pts[5], QPointF(1, 0), 5);
+    drawCorner(pts[6], QPointF(1, 0), QPointF(0, -1), 6);
+    drawEdgeBar(pts[7], QPointF(0, 1), 7);
+
+    // Rotate knobs outside mid-edges (same offset language as single-item).
+    constexpr qreal kRotateOffset = 28.0;
+    const QPointF rot[4] = {
+        QPointF(viewRect.center().x(), viewRect.top() - kRotateOffset),
+        QPointF(viewRect.right() + kRotateOffset, viewRect.center().y()),
+        QPointF(viewRect.center().x(), viewRect.bottom() + kRotateOffset),
+        QPointF(viewRect.left() - kRotateOffset, viewRect.center().y()),
+    };
+    const QPointF edgeMid[4] = {
+        QPointF(viewRect.center().x(), viewRect.top()),
+        QPointF(viewRect.right(), viewRect.center().y()),
+        QPointF(viewRect.center().x(), viewRect.bottom()),
+        QPointF(viewRect.left(), viewRect.center().y()),
+    };
+    QPen stem(frameCol, 0);
+    stem.setCosmetic(true);
+    stem.setWidthF(1.25);
+    for (int i = 0; i < 4; ++i) {
+        const int handleId = 8 + i;
+        const bool hot = m_groupXform.isHandleHot(handleId);
+        painter->setPen(stem);
+        painter->drawLine(edgeMid[i], rot[i]);
+        const qreal rad = hot ? 7.0 : 5.0;
+        painter->setBrush(hot ? rotFillHot : rotFill);
+        QPen rp(hot ? QColor(255, 255, 255) : handleEdge, 0);
+        rp.setCosmetic(true);
+        rp.setWidthF(hot ? 1.6 : 1.15);
+        painter->setPen(rp);
+        painter->drawEllipse(rot[i], rad, rad);
+    }
+
+    painter->restore();
+}
+
