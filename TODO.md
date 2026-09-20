@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1801-crop-tilelod-via-pipeline.** Stage 2: crop tile suppress via pipeline.
+Prior: **1800**.
+
+### Change
+- Crop enter/leave tile LOD suppress goes through `DisplayPipelineController`
+  (`CropController`), not `CropSession` → `ImageItem` mutators
+- Removed `CropSession::releaseAllTileLod` / `releaseTargetTileLod`
+- Dropped `friend class CropSession` on `ImageItem` (pipeline is sole friend)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1801-crop-tilelod-via-pipeline.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke
+- ImageView characterization / Tier 4 path-order
+- Optional: drop local `ImageItem::m_tileLod` fallback once smoke confirms pipeline bags
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1800-stash-teardown-destroy-surface.** Stage 2: stash teardown parity.
 Prior: **1799**.
 

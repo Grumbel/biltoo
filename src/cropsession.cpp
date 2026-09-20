@@ -521,13 +521,6 @@ CropSession::ApplyHostStatus CropSession::classifyApplyHost(const QImage &host,
     return ApplyHostStatus::NoPixels;
 }
 
-void CropSession::releaseAllTileLod(ImageItem *boundByIdFallback)
-{
-    releaseTargetTileLod();
-    if (!target() && boundByIdFallback) {
-        boundByIdFallback->setTileLodSuppressed(false);
-    }
-}
 
 SessionAppearance::PixelKind CropSession::applyPixelKind(bool multiMp)
 {
@@ -751,16 +744,10 @@ void CropSession::beginEnterSession(ImageItem *item, const QImage &enterSrc,
         pl.shear = 0.0;
         item->applyPlacement(pl);
     }
-    // Freeze tile LOD upgrades for the draft subject (cleared on leave).
-    item->setTileLodSuppressed(true);
+    // Tile LOD suppress is owned by CropController via DisplayPipelineController
+    // (Stage 2: CropSession does not touch item tile mutators).
 }
 
-void CropSession::releaseTargetTileLod()
-{
-    if (targetItem) {
-        targetItem->setTileLodSuppressed(false);
-    }
-}
 
 QRect CropSession::sourceSearchRectFromDraft(const QRectF &contentRect,
                                              const QSize &srcSize) const

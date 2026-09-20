@@ -1046,3 +1046,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1798: gallery/workspace discardStash releases pipeline tile bags.
 - biltoo-1799: gallery restoreStashedItems releases bags for residual live items.
 - biltoo-1800: gallery restore residual via destroyCanvasItem; discardStash unregisters display surface.
+- biltoo-1801: crop tile LOD suppress via pipeline; CropSession no longer friends ImageItem tile mutators.

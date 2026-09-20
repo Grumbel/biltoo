@@ -216,8 +216,6 @@ public:
     static ApplyHostStatus classifyApplyHost(const QImage &host, bool hostFromCache,
                                              const ImageItem *item);
 
-    void releaseAllTileLod(ImageItem *boundByIdFallback);
-
     static SessionAppearance::PixelKind applyPixelKind(bool multiMp);
 
     /** Fill hasCrop/cropRect/content flips from the live item session crop. */
@@ -406,8 +404,8 @@ public:
 
     /**
      * Bind target, enter snapshot, and zero placement rotation for crop grips.
-     * Host owns PathRaster suspend (CropPathRaster) and full-frame install.
-     * Suppresses tile LOD on the bound item until leave.
+     * Host owns PathRaster suspend (CropPathRaster), full-frame install, and
+     * tile LOD suppress via DisplayPipelineController (Stage 2).
      */
     void beginEnterSession(ImageItem *item, const QImage &enterSrc,
                            const WorkspaceItemState &enterSt, bool snapshotValid);
@@ -796,9 +794,6 @@ public:
      * Full leave / session wipe: inactive, no target, no enter stash, no pending
      * full rematerialize. Does not touch ImageItem pixels.
      */
-    /** Clear tile LOD suppress on the bound target pointer (if any). */
-    void releaseTargetTileLod();
-
     void clear()
     {
         mode = false;

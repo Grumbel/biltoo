@@ -386,7 +386,10 @@ void CropController::leaveCropModeInternal(bool apply)
         }
     }
     cancelPathRasterForCrop(subjectPath);
-    session().releaseAllTileLod(cropSessionBoundItem());
+    // Stage 2: pipeline owns tile suppress (cleared on leave / abort).
+    if (ImageItem *bound = cropSessionBoundItem()) {
+        m_view->hostDisplayPipeline().setItemTileLodSuppressed(bound, false);
+    }
     QString pendingPath;
     SessionImageId pendingSid = kInvalidSessionImageId;
     WorkspaceItemState pendingWant;
@@ -437,6 +440,8 @@ bool CropController::enterCropModeFromUi()
         CropSession::seedEnterCropFlags(&enterSt, item);
         session().beginEnterSession(item, enterSrc, enterSt,
                                  !enterSrc.isNull() || item->hasDisplayPixels());
+        // Stage 2: freeze tile LOD via pipeline (cleared on leave / abort).
+        m_view->hostDisplayPipeline().setItemTileLodSuppressed(item, true);
         cancelPathRasterForCrop(session().draftPathRef());
     }
     // Workspace: displayed image centre so the crop frame can stay fixed.

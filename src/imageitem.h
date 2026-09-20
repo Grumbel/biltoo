@@ -354,9 +354,8 @@ private:
     QList<Handle> activeHandles() const;
 
     QString m_path;
-    // Tile session mutators — DisplayPipelineController / CropSession only (Stage 2).
+    // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
-    friend class CropSession;
     void dropTileLodSession();
     void invalidateTilePathRam();
     void tickTileLod(int budget = 8);
