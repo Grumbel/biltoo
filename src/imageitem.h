@@ -130,9 +130,6 @@ public:
 
     /** Live Workspace pose as Placement (Stage 2 single reader for item pose). */
     ItemComponents::Placement placement() const;
-    /** @deprecated content is baked; always 0 after bake pipeline. */
-    qreal itemOrientation() const { return m_orientation; }
-    qreal itemFineRotation() const { return m_fineRotation; }
     qreal itemOpacity() const { return m_opacity; }
     /** Persistent stacking order (selection may temporarily raise the item). */
     qreal stackZ() const { return m_stackZ; }
@@ -207,10 +204,6 @@ public:
     void bakeRotate90(int quarterTurns);
     /** Bake horizontal/vertical mirror into source pixels; clears flip flags. */
     void bakeFlip(bool horizontal, bool vertical);
-    /** @deprecated use bakeRotate90 */
-    void rotateOrientationBy(qreal degrees);
-    void setOrientation(qreal degrees);
-    void setFineRotation(qreal degrees);
     void setItemOpacity(qreal opacity);
     void setItemHFlip(bool on);
     void setItemVFlip(bool on);
@@ -427,10 +420,6 @@ private:
     qreal m_scaleY = 1.0;
     qreal m_shear = 0.0;
     qreal m_rotation = 0.0;
-    /** Cardinal base (multiples of 90). */
-    qreal m_orientation = 0.0;
-    /** Free tilt relative to orientation (Workspace). */
-    qreal m_fineRotation = 0.0;
     qreal m_opacity = 1.0;
     qreal m_stackZ = 0.0;
     bool m_hFlip = false;

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1756-drop-orientation-fields.** Remove dead orient/fine-rotation API.
+Prior: **1755**.
+
+### Change
+- Remove `m_orientation` / `m_fineRotation` (always 0 / mirror of m_rotation)
+- Remove `itemOrientation` / `itemFineRotation` / `setOrientation` / `setFineRotation`
+- Remove unused `rotateOrientationBy` (legacy alias for bakeRotate90)
+- Placement rotation remains the sole free-rotate field
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1756-drop-orientation-fields.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle rotate smoke
+- Characterization harness (Tier 4) or further Stage 2
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1755-paint-hot-hover.** Drop m_activeHandle; continuous uses hover.
 Prior: **1754**.
 

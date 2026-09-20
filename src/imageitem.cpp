@@ -310,8 +310,6 @@ void ImageItem::setItemRotation(qreal degrees)
 {
     // Placement only — never content. Content 90° turns use bakeRotate90().
     m_rotation = PlacementLinear::normalizeDegrees(degrees);
-    m_orientation = 0.0;
-    m_fineRotation = m_rotation;
     applyLocalTransform();
     prepareGeometryChange();
 }
@@ -415,28 +413,6 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
     }
     applyLocalTransform();
     invalidateDeviceCache();
-}
-
-void ImageItem::rotateOrientationBy(qreal degrees)
-{
-    // Legacy: treat as content bake (±90 only).
-    const int steps = qRound(degrees / 90.0);
-    if (steps != 0) {
-        bakeRotate90(steps);
-    }
-}
-
-void ImageItem::setOrientation(qreal degrees)
-{
-    Q_UNUSED(degrees);
-    // Content orientation is pixel data; no separate transform.
-    m_orientation = 0.0;
-}
-
-void ImageItem::setFineRotation(qreal degrees)
-{
-    // Alias: free-rotate is placement rotation.
-    setItemRotation(degrees);
 }
 
 void ImageItem::zoomBy(qreal factor)

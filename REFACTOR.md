@@ -996,3 +996,5 @@ Phase 1–6 rules still apply. Additions:
   (press authority); m_activeHandle paint residual only.
 - biltoo-1755: remove m_activeHandle; continuous begin sets hover (frozen while
   isHandleDragging); chrome paint hot is hover-only.
+- biltoo-1756: drop dead m_orientation/m_fineRotation and orient APIs; placement
+  rotation is sole free-rotate field.
