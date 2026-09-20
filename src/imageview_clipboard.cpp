@@ -53,7 +53,7 @@ void ImageView::duplicateSelected()
 
         WorkspaceItemState content;
         if (src->sessionId() != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = appearance().get(src->sessionId())) {
+            if (const WorkspaceItemState *app = m_itemWorld.getAppearance(src->sessionId())) {
                 content = *app;
             }
         }
@@ -128,7 +128,7 @@ QList<WorkspaceItemState> ImageView::captureSelectedWorkspaceClipboard() const
         s.sessionId = item->sessionId();
         // Prefer store for content meta not fully on the item (cropRotation, …).
         if (item->sessionId() != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = appearance().get(item->sessionId())) {
+            if (const WorkspaceItemState *app = m_itemWorld.getAppearance(item->sessionId())) {
                 s.cropRotation = app->cropRotation;
                 s.cropSourceSize = app->cropSourceSize;
                 s.contentQuarterTurns = app->contentQuarterTurns;

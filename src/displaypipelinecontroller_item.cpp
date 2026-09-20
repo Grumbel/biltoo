@@ -50,7 +50,7 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
     // would bake the navigated image's crop into every newly decoded tile.
     if (m_view->hostSessionId().hasCurrentId()) {
         seedSessionAppearanceFromState(m_view->hostSessionId().currentIdValue(), path);
-        if (const WorkspaceItemState *sit = m_view->appearance().get(m_view->hostSessionId().currentIdValue())) {
+        if (const WorkspaceItemState *sit = m_view->itemWorld().getAppearance(m_view->hostSessionId().currentIdValue())) {
             return *sit;
         }
         // Bound session image with no appearance entry = full frame, no path fallback.
@@ -75,7 +75,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     WorkspaceItemState app;
     if (applyStoredSessionCrop && m_view->isImageMode()) {
         // Always attempt seed from path XDG when bound. The old gate
-        // !(haveId && !m_view->appearance().get(id)) *skipped* seed when the slot was
+        // !(haveId && !m_view->itemWorld().getAppearance(id)) *skipped* seed when the slot was
         // empty — which is exactly when durable rotate/flip must be loaded
         // after restart. appearanceForNewImageModeItem seeds then returns
         // identity only if XDG has nothing.
@@ -249,10 +249,10 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
     // Worker path may not have marked attempted yet; mark here so paint does not
     // re-drive locatorId via wantAppearanceForItem.
     m_view->appearance().markSeedAttempted(sid);
-    if (m_view->appearance().contains(sid)) {
+    if (m_view->itemWorld().hasAppearance(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.
-        if (const WorkspaceItemState *cur = m_view->appearance().get(sid)) {
+        if (const WorkspaceItemState *cur = m_view->itemWorld().getAppearance(sid)) {
             if (SessionAppearance::hasContentAppearance(*cur)) {
                 return;
             }
@@ -309,7 +309,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         id = m_view->hostSessionId().currentIdValue();
     }
     if (id != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = m_view->appearance().get(id)) {
+        if (const WorkspaceItemState *app = m_view->itemWorld().getAppearance(id)) {
             want = *app;
         }
         // Cold open / ←→: id slot often empty until first seed. Path XDG holds
@@ -320,7 +320,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             && !item->path().isEmpty()) {
             const_cast<DisplayPipelineController *>(this)->seedSessionAppearanceFromState(
                 id, item->path());
-            if (const WorkspaceItemState *app = m_view->appearance().get(id)) {
+            if (const WorkspaceItemState *app = m_view->itemWorld().getAppearance(id)) {
                 want = *app;
             }
         }
@@ -454,7 +454,7 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
 
     WorkspaceItemState want;
     if (m_view->hostSessionId().hasCurrentId()) {
-        if (const WorkspaceItemState *st = m_view->appearance().get(m_view->hostSessionId().currentIdValue())) {
+        if (const WorkspaceItemState *st = m_view->itemWorld().getAppearance(m_view->hostSessionId().currentIdValue())) {
             want = *st;
         }
     }

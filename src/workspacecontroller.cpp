@@ -62,7 +62,7 @@ void WorkspaceController::restore()
     // the durable snapshot so Image-mode edits survive a full rebuild.
     for (WorkspaceItemState &slot : m_savedItems) {
         if (slot.sessionId != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *sit = m_view->appearance().get(slot.sessionId)) {
+            if (const WorkspaceItemState *sit = m_view->itemWorld().getAppearance(slot.sessionId)) {
                 slot.hasCrop = sit->hasCrop;
                 slot.cropRect = sit->cropRect;
                 slot.hFlip = sit->hFlip;
@@ -188,7 +188,7 @@ void WorkspaceController::restoreStashedItems()
         const WorkspaceItemState *app = nullptr;
         WorkspaceItemState pathFallback;
         if (item->sessionId() != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *sit = m_view->appearance().get(item->sessionId())) {
+            if (const WorkspaceItemState *sit = m_view->itemWorld().getAppearance(item->sessionId())) {
                 app = sit;
             }
         }

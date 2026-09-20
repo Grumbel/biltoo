@@ -31,7 +31,7 @@ const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
         // Seed orient/flip/grade from path XDG when the id slot is still empty
         // (restart / first bind). Crop is never seeded from path (IDENTITY).
         seedSessionAppearanceFromState(sid, item->path());
-        if (const WorkspaceItemState *it = appearance().get(sid)) {
+        if (const WorkspaceItemState *it = m_itemWorld.getAppearance(sid)) {
             return it;
         }
         // Bound with no durable content after seed = full frame.
@@ -90,7 +90,7 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
     if (!st || sid == kInvalidSessionImageId) {
         return false;
     }
-    if (const WorkspaceItemState *it = appearance().get(sid)) {
+    if (const WorkspaceItemState *it = m_itemWorld.getAppearance(sid)) {
         *st = *it;
         return true;
     }
@@ -219,7 +219,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
     const WorkspaceItemState *app = nullptr;
     WorkspaceItemState fallback;
     if (sid != kInvalidSessionImageId) {
-        app = appearance().get(sid);
+        app = m_itemWorld.getAppearance(sid);
     }
     if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
         if (const WorkspaceItemState *st = m_itemStateBook.get(path)) {
@@ -257,7 +257,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
 
 bool ImageView::hasSessionAppearance(SessionImageId id) const
 {
-    return id != kInvalidSessionImageId && appearance().contains(id);
+    return id != kInvalidSessionImageId && m_itemWorld.hasAppearance(id);
 }
 
 

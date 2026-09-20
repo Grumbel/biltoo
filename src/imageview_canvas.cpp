@@ -261,7 +261,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             existing->setSessionIndex(i);
             if (newlyBoundId && existing->hasDecodedPixels()
                 && sid != kInvalidSessionImageId) {
-                const WorkspaceItemState *appPtr = appearance().get(sid);
+                const WorkspaceItemState *appPtr = m_itemWorld.getAppearance(sid);
                 if (!appPtr) {
                     continue;
                 }

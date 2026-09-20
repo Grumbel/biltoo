@@ -115,8 +115,8 @@ void ImageView::flushColorAdjustCommit()
         item = m_items.first();
     }
     WorkspaceItemState want;
-    if (sid != kInvalidSessionImageId && appearance().contains(sid)) {
-        want = appearance().value(sid);
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
+        want = m_itemWorld.appearanceValue(sid);
     } else if (item) {
         want = captureState(item);
         want.colorAdjust = item->colorAdjustments();
@@ -163,8 +163,8 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     if (sid == kInvalidSessionImageId && isImageMode()) {
         sid = m_sessionId.currentIdValue();
     }
-    WorkspaceItemState slot = (sid != kInvalidSessionImageId && appearance().contains(sid))
-        ? appearance().value(sid)
+    WorkspaceItemState slot = (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid))
+        ? m_itemWorld.appearanceValue(sid)
         : captureState(item);
     slot.sessionId = (sid != kInvalidSessionImageId) ? sid : slot.sessionId;
     slot.path = item->path().isEmpty() ? slot.path : item->path();

@@ -78,6 +78,19 @@ public:
         return m_appearance->get(id);
     }
 
+    bool hasAppearance(SessionImageId id) const
+    {
+        return getAppearance(id) != nullptr;
+    }
+
+    WorkspaceItemState appearanceValue(SessionImageId id) const
+    {
+        if (const WorkspaceItemState *p = getAppearance(id)) {
+            return *p;
+        }
+        return {};
+    }
+
     void setAppearance(SessionImageId id, const WorkspaceItemState &state)
     {
         if (!m_appearance || id == kInvalidSessionImageId) {

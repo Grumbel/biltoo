@@ -945,3 +945,6 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1730: bake/crop path-book + presence via ItemWorld — `getAppearance` /
   `getPathState` / `setPathState` in bake; crop store/load unbound path via
   ItemWorld; crop apply seeds use `hasCrop()`.
+- biltoo-1731: all appearance **reads** via ItemWorld — `getAppearance` /
+  `hasAppearance` / `appearanceValue`; controllers and ImageView no longer call
+  `appearance().get/value/contains` for DTO lookup.

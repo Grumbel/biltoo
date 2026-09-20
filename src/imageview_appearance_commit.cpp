@@ -71,7 +71,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
             // as install (layout + applied + chrome) — do not put into ImageCache.
             WorkspaceItemState want;
             if (sessionId != kInvalidSessionImageId) {
-                if (const WorkspaceItemState *st = appearance().get(sessionId)) {
+                if (const WorkspaceItemState *st = m_itemWorld.getAppearance(sessionId)) {
                     want = *st;
                 }
             }
@@ -84,7 +84,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
                 : SessionAppearance::PixelKind::SoftPreview;
             attachDisplaySample(other, baked, want, kind);
         } else if (sessionId != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *st = appearance().get(sessionId)) {
+            if (const WorkspaceItemState *st = m_itemWorld.getAppearance(sessionId)) {
                 applyContentLayoutSize(other, *st);
             }
         }
@@ -104,7 +104,7 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
     if (sessionId == kInvalidSessionImageId) {
         return;
     }
-    const WorkspaceItemState *st = appearance().get(sessionId);
+    const WorkspaceItemState *st = m_itemWorld.getAppearance(sessionId);
     if (!st) {
         return;
     }
@@ -161,8 +161,8 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
         if (!appearanceImage.isNull()) {
             emit sessionAppearanceChanged(sid, item->path(), appearanceImage);
             if (item->sessionHasCrop()
-                || (appearance().contains(sid)
-                    && appearance().value(sid).hasCrop)) {
+                || (m_itemWorld.hasAppearance(sid)
+                    && m_itemWorld.appearanceValue(sid).hasCrop)) {
                 emit sessionCropApplied(sid, item->path(), appearanceImage, /*hasCrop=*/true);
             }
         }
@@ -192,7 +192,7 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
     // Prefer the session store; fall back to a live donor tile so drop-duplicate
     // from a graded filmstrip row still carries crop / bakes / colour grade.
     WorkspaceItemState dst;
-    if (const WorkspaceItemState *src = appearance().get(fromId)) {
+    if (const WorkspaceItemState *src = m_itemWorld.getAppearance(fromId)) {
         dst = *src;
     } else {
         ImageItem *donor = findItemBySessionId(fromId);
@@ -257,7 +257,7 @@ bool ImageView::targetHasContentAppearance() const
             sid = m_sessionId.currentIdValue();
         }
         if (sid != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = appearance().get(sid)) {
+            if (const WorkspaceItemState *app = m_itemWorld.getAppearance(sid)) {
                 if (SessionAppearance::hasContentAppearance(*app)) {
                     return true;
                 }
@@ -298,7 +298,7 @@ int ImageView::resetContentAppearanceForTargets()
         // 2) Clear session appearance content fields (keep placement).
         if (sid != kInvalidSessionImageId) {
             WorkspaceItemState slot = SessionAppearance::clearedContentOps(
-                appearance().value(sid));
+                m_itemWorld.appearanceValue(sid));
             slot.sessionId = sid;
             slot.path = path;
             // Keep color grade / pose if present.

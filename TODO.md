@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1731-itemworld-appearance-reads.** All appearance DTO reads via ItemWorld.
+Prior: **1730**.
+
+### Change
+- ItemWorld: `hasAppearance`, `appearanceValue`
+- ImageView + DisplayPipeline / Workspace / Slideshow: `appearance().get/value/contains`
+  → `itemWorld().getAppearance/hasAppearance/appearanceValue`
+- Seed-attempted flags still on SessionAppearanceStore (not component data)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1731-itemworld-appearance-reads.bundle HEAD
+```
+
+### Next
+- biltoo-build + ctest itemworld
+- Stage 2: ImageItem demotion, or Phase 6 Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1730-itemworld-bake-crop-path.** Bake/crop path state via ItemWorld.
 Prior: **1729**.
 

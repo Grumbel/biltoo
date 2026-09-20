@@ -42,7 +42,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = appearance().get(sid)) {
+        if (const WorkspaceItemState *app = m_itemWorld.getAppearance(sid)) {
             s.cropRotation = app->cropRotation;
             s.cropSourceSize = app->cropSourceSize;
             // Appearance store is sole content-orient authority for bound ids
@@ -100,7 +100,7 @@ WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
     if (id == kInvalidSessionImageId) {
         return {};
     }
-    return appearance().value(id);
+    return m_itemWorld.appearanceValue(id);
 }
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
@@ -128,7 +128,7 @@ WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) con
         return beforeSt;
     }
     if (sid0 != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = appearance().get(sid0)) {
+        if (const WorkspaceItemState *it = m_itemWorld.getAppearance(sid0)) {
             beforeSt.contentQuarterTurns =
                 ContentXform::normalizeQuarterTurns(it->contentQuarterTurns);
             beforeSt.contentHFlip = it->contentHFlip;
@@ -154,7 +154,7 @@ WorkspaceItemState ImageView::appearanceCropMapForEdit(ImageItem *item,
     Q_UNUSED(item);
     WorkspaceItemState cropMap = fallback;
     if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *it = appearance().get(sid)) {
+        if (const WorkspaceItemState *it = m_itemWorld.getAppearance(sid)) {
             cropMap = *it;
         }
     }
