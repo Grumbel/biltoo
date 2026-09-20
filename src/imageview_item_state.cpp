@@ -69,7 +69,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
             s.colorAdjust = item->colorAdjustments();
         }
         if (m_itemWorld.hasAttention(sid)) {
-            s.attentionPoints = m_itemWorld.attention(sid);
+            s.attentionPoints = m_itemWorld.attention(sid).points;
             s.syncAttentionPrimary();
         }
         // Bound session image: path map is placement-only.
