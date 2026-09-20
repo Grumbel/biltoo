@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1836-loadimage-via-pipeline.** Stage 2: loadImage via pipeline (last forward).
+Prior: **1835**.
+
+### Change
+- MainWindow / session → `hostDisplayPipeline().loadImage`
+- Drop `ImageView::loadImage` and `imageview_pipeline_forwards.cpp` (CMake too)
+- ImageView→pipeline thin-forward TU is gone
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1836-loadimage-via-pipeline.bundle HEAD
+```
+Requires tip **1835**.
+
+### Next
+- biltoo-build smoke (Image open / nav / slideshow settle)
+- Tier 4 characterization (offscreen ImageView harness)
+- Further host-API narrowing optional
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1835-drop-dead-pipeline-forwards.** Stage 2: drop dead pipeline hops.
 Prior: **1834**.
 
