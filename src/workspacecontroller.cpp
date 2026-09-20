@@ -5,6 +5,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QGraphicsScene>
 #include "imageitem.h"
 #include "imageloader.h"
@@ -357,5 +358,51 @@ bool WorkspaceController::tryMousePressSelect(QMouseEvent *event)
         }
         emit m_view->statusChanged();
         return true;
+}
+
+
+// --- Workspace delete selection (Tier 6g) ---
+
+bool WorkspaceController::tryKeyPressDeleteSelection(QKeyEvent *event)
+{
+    if (!m_view->isWorkspaceMode()) {
+        return false;
+    }
+    if (event->key() != Qt::Key_Delete
+        && !(event->key() == Qt::Key_Backspace && m_view->isMultiItemMode())) {
+        return false;
+    }
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return false;
+    }
+    const QList<QGraphicsItem *> selected = scene->selectedItems();
+    // Workspace: hide from canvas only; session membership stays.
+    // Destroy by item pointer (same path may exist twice after Duplicate).
+    QList<ImageItem *> toRemove;
+    for (QGraphicsItem *gi : selected) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (m_view->liveItems().contains(item)) {
+                toRemove.append(item);
+            }
+        }
+    }
+    if (toRemove.isEmpty()) {
+        return false;
+    }
+    m_view->setUpdatesEnabled(false);
+    scene->blockSignals(true);
+    for (ImageItem *item : toRemove) {
+        m_view->destroyCanvasItem(item);
+    }
+    scene->blockSignals(false);
+    m_view->setUpdatesEnabled(true);
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+    emit m_view->statusChanged();
+    emit m_view->workspacePathsChanged();
+    event->accept();
+    return true;
 }
 

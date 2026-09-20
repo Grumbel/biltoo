@@ -718,3 +718,48 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
     return true;
 }
 
+
+// --- Gallery delete selection (Tier 6g) ---
+
+bool GalleryController::tryKeyPressDeleteSelection(QKeyEvent *event)
+{
+    if (!m_view->isGalleryMode()) {
+        return false;
+    }
+    if (event->key() != Qt::Key_Delete
+        && !(event->key() == Qt::Key_Backspace && m_view->isMultiItemMode())) {
+        return false;
+    }
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return false;
+    }
+    const QList<QGraphicsItem *> selected = scene->selectedItems();
+    QVector<SessionImageId> removeIds;
+    QStringList removePaths;
+    for (QGraphicsItem *gi : selected) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (!m_view->liveItems().contains(item)) {
+                continue;
+            }
+            if (item->sessionId() != kInvalidSessionImageId) {
+                removeIds.append(item->sessionId());
+            } else if (!item->path().isEmpty()) {
+                removePaths.append(item->path());
+            }
+        }
+    }
+    if (removeIds.isEmpty() && removePaths.isEmpty()) {
+        return false;
+    }
+    // Gallery tiles are the session — remove by id when bound.
+    if (!removeIds.isEmpty()) {
+        emit m_view->sessionRemoveIdsRequested(removeIds);
+    }
+    if (!removePaths.isEmpty()) {
+        emit m_view->sessionRemovePathsRequested(removePaths);
+    }
+    event->accept();
+    return true;
+}
+

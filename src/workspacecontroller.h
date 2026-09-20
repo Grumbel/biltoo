@@ -15,6 +15,7 @@
 class ImageView;
 class ImageItem;
 class QMouseEvent;
+class QKeyEvent;
 
 /**
  * Workspace-mode collaborator for ImageView.
@@ -65,6 +66,7 @@ public:
 
     /** Select tool: item hit / page-guide / rubber-band (Tier 6d). */
     bool tryMousePressSelect(QMouseEvent *event);
+    bool tryKeyPressDeleteSelection(QKeyEvent *event);
 
 private:
     ImageView *m_view = nullptr;

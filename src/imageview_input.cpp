@@ -1111,69 +1111,15 @@ bool ImageView::tryKeyPressWorkspaceShear(QKeyEvent *event)
 }
 bool ImageView::tryKeyPressDeleteSelection(QKeyEvent *event)
 {
-    if (event->key() != Qt::Key_Delete
-        && !(event->key() == Qt::Key_Backspace && isMultiItemMode())) {
-        return false;
-    }
-    const QList<QGraphicsItem *> selected = m_scene->selectedItems();
-    QVector<SessionImageId> removeIds;
-    QStringList removePaths;
-    for (QGraphicsItem *gi : selected) {
-        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-            if (!m_items.contains(item)) {
-                continue;
-            }
-            if (item->sessionId() != kInvalidSessionImageId) {
-                removeIds.append(item->sessionId());
-            } else if (!item->path().isEmpty()) {
-                removePaths.append(item->path());
-            }
-        }
-    }
-    if (removeIds.isEmpty() && removePaths.isEmpty()) {
-        return false;
-    }
-    if (isGalleryMode()) {
-        // Gallery tiles are the session — remove by id when bound.
-        if (!removeIds.isEmpty()) {
-            emit sessionRemoveIdsRequested(removeIds);
-        }
-        if (!removePaths.isEmpty()) {
-            emit sessionRemovePathsRequested(removePaths);
-        }
-        event->accept();
+    if (m_gallery.tryKeyPressDeleteSelection(event)) {
         return true;
     }
-    if (isWorkspaceMode()) {
-        // Workspace: hide from canvas only; session membership stays.
-        // Destroy by item pointer (same path may exist twice after Duplicate).
-        QList<ImageItem *> toRemove;
-        for (QGraphicsItem *gi : selected) {
-            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (m_items.contains(item)) {
-                    toRemove.append(item);
-                }
-            }
-        }
-        setUpdatesEnabled(false);
-        if (m_scene) {
-            m_scene->blockSignals(true);
-        }
-        for (ImageItem *item : toRemove) {
-            destroyCanvasItem(item);
-        }
-        if (m_scene) {
-            m_scene->blockSignals(false);
-        }
-        setUpdatesEnabled(true);
-        viewport()->update();
-        emit statusChanged();
-        emit workspacePathsChanged();
-        event->accept();
+    if (m_workspace.tryKeyPressDeleteSelection(event)) {
         return true;
     }
     return false;
 }
+
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
     if (tryKeyPressAttention(event)

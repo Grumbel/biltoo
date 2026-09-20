@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1662-delete-selection-controllers.** Tier 6g: Delete/Backspace on Gallery/Workspace controllers.
+Prior: **1661**.
+
+### Change
+- `GalleryController::tryKeyPressDeleteSelection` — session remove by id/path
+- `WorkspaceController::tryKeyPressDeleteSelection` — canvas-only destroy
+- ImageView dispatches by mode (thin)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1662-delete-selection-controllers.bundle HEAD
+```
+
+### Next
+- Path-order residual / imageview.h narrowing
+- biltoo-build verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1661-input-forwards-tu.** Split thin mode-controller input forwards into own TU.
 Prior: **1660**.
 

@@ -111,6 +111,7 @@ public:
     bool tryMousePressGalleryRight(QMouseEvent *event);
     bool tryMousePressGalleryLeft(QMouseEvent *event);
     bool tryKeyPressGallery(QKeyEvent *event);
+    bool tryKeyPressDeleteSelection(QKeyEvent *event);
 
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
     {
