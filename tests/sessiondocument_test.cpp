@@ -100,10 +100,14 @@ void SessionDocumentTest::indexOfId_and_path()
 
 void SessionDocumentTest::validateUniqueIds_detectsDuplicate()
 {
+    // replaceAll is the legacy recovery path: it must not leave duplicate ids
+    // in the document. validateUniqueIds is defense-in-depth after mutations.
     SessionDocument doc;
     doc.replaceAll({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")},
-                   {1, 1}); // forced duplicate (legacy recovery path)
-    QVERIFY(!doc.validateUniqueIds("dup ids"));
+                   {1, 1}); // would-be duplicate — repaired in place
+    QVERIFY(doc.validateUniqueIds("after replaceAll repair"));
+    QVERIFY(doc.idAt(0) != doc.idAt(1));
+    QCOMPARE(doc.idAt(0), SessionImageId(1));
 }
 
 void SessionDocumentTest::insert_middle_shiftsIds()

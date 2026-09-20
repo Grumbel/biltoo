@@ -2,6 +2,29 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1659-sessiondoc-dup-test.** Align validateUniqueIds test with replaceAll repair.
+Prior: **1658**.
+
+### Change
+- `SessionDocument::replaceAll` reallocates later slots with repeated ids (by design)
+- Test `validateUniqueIds_detectsDuplicate` now asserts post-repair uniqueness
+  (was expecting stale pre-dedup failure)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1659-sessiondoc-dup-test.bundle HEAD
+```
+
+### Next
+- Path-order residual / imageview.h narrowing
+- biltoo-build verification
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1658-workspace-select-controller.** Tier 6d: Workspace Select press on WorkspaceController.
 Prior: **1657**.
 
