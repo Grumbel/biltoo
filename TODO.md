@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1804-pipeline-owns-tilelod-suppress.** Stage 2: suppress write on pipeline.
+Prior: **1803**.
+
+### Change
+- `DisplayPipelineController::setItemTileLodSuppressed` writes `bag.suppressed`
+  and drops the private session / graded cache (no ImageItem mutator)
+- Removed `ImageItem::setTileLodSuppressed`
+- `tileLodSuppressed()` / `tileLodWanted()` read attached bag only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1804-pipeline-owns-tilelod-suppress.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke (crop enter/leave tile suppress)
+- ImageView characterization / Tier 4 path-order
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1803-drop-tilelod-no-ensure.** Stage 2: drop session without ensure.
 Prior: **1802**.
 

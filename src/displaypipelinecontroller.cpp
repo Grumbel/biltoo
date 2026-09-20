@@ -1438,8 +1438,20 @@ void DisplayPipelineController::setItemTileLodSuppressed(ImageItem *item, bool o
     if (!item) {
         return;
     }
-    ensureTileBag(item);
-    item->setTileLodSuppressed(on);
+    // Stage 2: pipeline writes bag.suppressed; item is not a parallel authority.
+    tilelod::ItemBag &bag = ensureTileBag(item);
+    if (bag.suppressed == on) {
+        return;
+    }
+    bag.suppressed = on;
+    if (on && bag.controller) {
+        // Drop private session so paint cannot draw stale cells over the
+        // crop-draft full frame; shared path cache is left intact.
+        bag.controller.reset();
+        bag.lastUpdateGen = 0;
+        bag.gradedCache.clear();
+        bag.gradeSig = 0;
+    }
 }
 
 void DisplayPipelineController::tickItemTileLod(ImageItem *item, int budget)

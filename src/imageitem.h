@@ -292,7 +292,11 @@ public:
 
     /** True when on-screen need exceeds soft max (tiles should own display). */
     bool tileLodWanted() const;
-    bool tileLodSuppressed() const { return tileLodBag().suppressed; }
+    /** True when pipeline bag is suppressed (crop draft, etc.). */
+    bool tileLodSuppressed() const
+    {
+        return m_tileLodAttached && m_tileLodAttached->suppressed;
+    }
     /** True when at least one grid tile has arrived. */
     bool tileLodActive() const;
     /** Succeeded tiles in global path RAM (registry), even without a controller. */
@@ -358,7 +362,6 @@ private:
     void dropTileLodSession();
     void invalidateTilePathRam();
     void tickTileLod(int budget = 8);
-    void setTileLodSuppressed(bool on);
     /** Plan/paint helpers (ImageItem paint + tick only). */
     void prepareTileLod();
     void prepareTileLodPlan();

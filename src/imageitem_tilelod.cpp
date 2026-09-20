@@ -198,24 +198,9 @@ QSize ImageItem::tileNativeSize() const
     return imageSize();
 }
 
-void ImageItem::setTileLodSuppressed(bool on)
-{
-    if (tileLodBag().suppressed == on) {
-        return;
-    }
-    tileLodBag().suppressed = on;
-    if (on && tileLodBag().controller) {
-        // Drop private session so paint cannot draw stale cells over the
-        // crop-draft full frame; shared path cache is left intact.
-        tileLodBag().controller.reset();
-        tileLodBag().lastUpdateGen = 0;
-        clearTileGradedCache();
-    }
-}
-
 bool ImageItem::tileLodWanted() const
 {
-    if (tileLodBag().suppressed || m_path.isEmpty() || !ThumtooCache::isAvailable()) {
+    if (tileLodSuppressed() || m_path.isEmpty() || !ThumtooCache::isAvailable()) {
         return false;
     }
     // Durable tiles are a *speed* optimization (Store hits), not a requirement.
