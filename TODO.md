@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1810-drop-tile-thin-forwards.** Stage 2: remove ImageView tile thin-forwards.
+Prior: **1809**.
+
+### Change
+- Removed `ImageView::{tickPrimaryTileLod,purgeTilePathRam,dropAllTileLodSessions,
+  scheduleTileLodAfterInteraction}` (declarations + pipeline_forwards bodies)
+- ImageView framing/input/modes call `m_displayPipeline.…` directly
+- Controllers already use `hostDisplayPipeline()` (1809)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1810-drop-tile-thin-forwards.bundle HEAD
+```
+Includes **1806–1810** when base is tip **1805**.
+
+### Next
+- biltoo-build smoke (tile ownership)
+- ImageView characterization / Tier 4 path-order residual
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1809-tick-via-pipeline-host.** Stage 2: hosts tick via hostDisplayPipeline.
 Prior: **1808**.
 
