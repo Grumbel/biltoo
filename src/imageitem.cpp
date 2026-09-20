@@ -429,13 +429,18 @@ void ImageItem::bakeFlip(bool horizontal, bool vertical)
 
 void ImageItem::zoomBy(qreal factor)
 {
-    setItemScale(m_scaleX * factor, m_scaleY * factor);
+    ItemComponents::Placement pl = placement();
+    pl.scale *= factor;
+    pl.scaleY *= factor;
+    applyPlacement(pl);
 }
 
 void ImageItem::rotateBy(qreal degrees)
 {
-    // Generic spin (shortcuts): treat as total-angle change and re-decompose.
-    setItemRotation(m_rotation + degrees);
+    // Generic spin (shortcuts): total-angle change via Placement writer.
+    ItemComponents::Placement pl = placement();
+    pl.rotation = PlacementLinear::normalizeDegrees(pl.rotation + degrees);
+    applyPlacement(pl);
 }
 
 void ImageItem::setItemOpacity(qreal opacity)

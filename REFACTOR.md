@@ -1020,3 +1020,4 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1772: transform commands, workspace shear/layout, slideshow, footprint via applyPlacement.
 - biltoo-1773: chrome reset handles, opacity slider, placement flips via applyPlacement.
 - biltoo-1774: fix duplicate GroupTransformSession::dragStartStateAt declaration.
+- biltoo-1775: ImageItem::zoomBy/rotateBy via applyPlacement.

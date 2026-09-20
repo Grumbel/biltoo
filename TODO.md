@@ -2,6 +2,28 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1775-item-zoom-rotate-placement.** ImageItem zoomBy/rotateBy via applyPlacement.
+Prior: **1774**.
+
+### Change
+- `zoomBy` / `rotateBy` update Placement and call applyPlacement
+- Completes convenience mutators on the render proxy for the Stage 2 writer
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1775-item-zoom-rotate-placement.bundle HEAD
+```
+
+### Next
+- biltoo-build + shortcut zoom/rotate smoke
+- Tile-LOD table demotion or Tier 4 harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1774-fix-dup-drag-start-state.** Drop duplicate dragStartStateAt.
 Prior: **1773**.
 
