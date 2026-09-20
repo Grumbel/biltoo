@@ -276,8 +276,6 @@ public:
     void prefetchTilesForPaths(const QStringList &paths, int budgetPerPath = 4);
 
     /** Controller host: session path order used for Gallery packing. */
-    /** Copy of pack paths (prefer currentPackOrder() for paths∥ids). */
-    QStringList pathOrder() const { return currentPackOrder().paths(); }
     void clearPathOrder() { pathOrderClear(); }
     /** Replace pack order (paths ∥ ids). Prefer PackOrderView overload. */
     void setPathOrder(const QStringList &paths, const QVector<SessionImageId> &ids)

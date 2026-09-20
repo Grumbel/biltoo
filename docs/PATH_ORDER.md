@@ -19,9 +19,9 @@ membership queries for identity prefer the document when bound.
    Consulting the document after `pathOrderClear()` would recreate tiles on a
    blank Workspace.
 
-2. **Gallery pack order** — `applyLayout` / placeholders walk `pathOrderPaths()`
-   / ids. Order can be pruned to live tiles without rewriting MainWindow session
-   membership (session delete still goes through document + MainWindow).
+2. **Gallery pack order** — `applyLayout` / placeholders walk `currentPackOrder()`
+   (paths ∥ ids). Order can be pruned to live tiles without rewriting MainWindow
+   session membership (session delete still goes through document + MainWindow).
 
 3. **Stash** — Gallery stash snapshots path order with tiles; restore puts the
    book back without touching `SessionDocument`.
@@ -56,9 +56,9 @@ Characterization: `tests/packorderview_test.cpp` (`packorderview` CTest).
 
 ## Read path (post-1714)
 
-Almost all pack/LoadAdd **reads** go through `ImageView::currentPackOrder()`
-(`PackOrderView::fromBook`). Exceptions that still return references into the
-book (call-lifetime stable): `pathOrderPaths()`, `pathOrderIds()`.
+All pack/LoadAdd **reads** go through `ImageView::currentPackOrder()`
+(`PackOrderView::fromBook`). Book-reference accessors (`pathOrderPaths` /
+`pathOrderIds`) were removed (biltoo-1817).
 
 Mutations remain `pathOrderClear` / `SetOrder` / `AppendRow` on the book.
 Public `setPathOrder` requires paths∥ids (or `PackOrderView`); the paths-only

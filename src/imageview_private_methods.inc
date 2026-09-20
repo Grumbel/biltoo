@@ -76,11 +76,6 @@
      * SessionDocument remains MainWindow-owned — mutations never clear/append it
      * (Gallery leave clears the book without wiping the session).
      */
-    /** Reference into the book. Prefer currentPackOrder().ids() for new code. */
-    const QVector<SessionImageId> &pathOrderIds() const { return m_pathOrderBook.idList(); }
-
-    const QVector<SessionImageId> &sessionIdOrder() const { return pathOrderIds(); }
-
     void pathOrderClear()
     {
         m_pathOrderBook.clear();
