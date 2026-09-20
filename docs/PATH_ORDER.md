@@ -42,7 +42,7 @@ Identity for slideshow / crop / filmstrip: **`firstSessionIdForPath`** prefers
 ## Characterization
 
 Pure dual-model contracts are locked by `tests/pathorder_dual_model_test.cpp`
-(`pathorder-dual-model` CTest): independent mutation, LoadAdd multiplicity
+(`pathorder-dual-model (book + PackOrderOverlay cases)` CTest): independent mutation, LoadAdd multiplicity
 on the book only, `pathOrderClear` leaves the document intact, appearance
 survives book clear, open → Gallery → crop session-side id/crop, gallery
 delete prune, aligned pack-order case, and mode-leave clear vs document.

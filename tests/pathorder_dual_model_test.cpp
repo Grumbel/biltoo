@@ -4,19 +4,21 @@
 /**
  * Characterization for the path-order dual model (docs/PATH_ORDER.md).
  *
- * SessionDocument (membership + appearance key) and SessionPathOrder
- * (Gallery-local pack / LoadAdd slots) must stay independent until Tier 4
- * replaces the view book. These tests lock the invariants any merge must
- * preserve — including the open → Gallery → crop → Image scenario's pure
- * session side.
+ * SessionDocument (membership + appearance key) and pack-order storage
+ * (SessionPathOrder / PackOrderOverlay — Gallery LoadAdd / mode-leave) must
+ * stay independent until Tier 4 residual is fully trusted. These tests lock
+ * the invariants any merge must preserve — including the open → Gallery →
+ * crop → Image scenario's pure session side.
  *
  * Full ImageView offscreen harness (decode + framing) still requires a build
- * environment; see TODO.md tip biltoo-1696.
+ * environment; see docs/IMAGEVIEW_CHARACTERIZATION.md.
  */
 
 #include "sessiondocument.h"
 #include "sessionpathorder.h"
 #include "sessionappearance.h"
+#include "packorderoverlay.h"
+#include "packorderview.h"
 
 #include <QtTest/QtTest>
 
@@ -37,6 +39,11 @@ private slots:
     void alignedPackOrder_documentMatchesBook();
     void loadAdd_bookExceedsDocument_packUsesBook();
     void modeLeave_clearBook_documentPackWouldRegenerateIncorrectly();
+    // PackOrderOverlay as the view pack side (post-1883 storage)
+    void overlay_modeLeave_clearSuppressesDocumentPack();
+    void overlay_loadAdd_exceedsDocument();
+    void overlay_aligned_collapseFollowsDocument();
+    void overlay_collapseRejectedWhenClearedAgainstPopulatedDoc();
 };
 
 void PathOrderDualModelTest::independent_empty()
@@ -293,6 +300,69 @@ void PathOrderDualModelTest::modeLeave_clearBook_documentPackWouldRegenerateInco
     // Document still has membership — must not be used as pack source here
     QCOMPARE(doc.size(), 2);
     QCOMPARE(book.size(), 0);
+}
+
+
+void PathOrderDualModelTest::overlay_modeLeave_clearSuppressesDocumentPack()
+{
+    // Same dual-model reason as the bare book: after clearExplicit, pack must
+    // stay blank while SessionDocument still lists open files.
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+
+    PackOrderOverlay overlay;
+    overlay.setExplicit(doc.paths(), doc.ids());
+    QCOMPARE(overlay.resolve(&doc).size(), 2);
+
+    overlay.clearExplicit();
+    QVERIFY(overlay.isExplicitEmpty());
+    QVERIFY(overlay.resolve(&doc).isEmpty());
+    QCOMPARE(doc.size(), 2);
+    QVERIFY(!PackOrderView::fromDocument(doc).isEmpty());
+}
+
+void PathOrderDualModelTest::overlay_loadAdd_exceedsDocument()
+{
+    SessionDocument doc;
+    doc.append(QStringLiteral("/solo.jpg"));
+    const SessionImageId sid = doc.idAt(0);
+
+    PackOrderOverlay overlay;
+    overlay.setExplicit({QStringLiteral("/solo.jpg"), QStringLiteral("/solo.jpg"),
+                         QStringLiteral("/solo.jpg")},
+                        {sid, sid, sid});
+    QVERIFY(!overlay.tryCollapseToFollowDocument(&doc));
+    QCOMPARE(overlay.resolve(&doc).size(), 3);
+    QCOMPARE(doc.size(), 1);
+}
+
+void PathOrderDualModelTest::overlay_aligned_collapseFollowsDocument()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/x.jpg"), QStringLiteral("/y.jpg")});
+
+    PackOrderOverlay overlay;
+    overlay.setExplicit(doc.paths(), doc.ids());
+    QVERIFY(overlay.tryCollapseToFollowDocument(&doc));
+    QCOMPARE(overlay.mode(), PackOrderOverlay::Mode::FollowDocument);
+    QVERIFY(overlay.resolve(&doc).alignsWithDocument(doc));
+
+    // Document membership remains the pack source while FollowDocument.
+    doc.setPaths({QStringLiteral("/x.jpg")});
+    QCOMPARE(overlay.resolve(&doc).size(), 1);
+    QCOMPARE(overlay.resolve(&doc).pathAt(0), QStringLiteral("/x.jpg"));
+}
+
+void PathOrderDualModelTest::overlay_collapseRejectedWhenClearedAgainstPopulatedDoc()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg")});
+
+    PackOrderOverlay overlay;
+    overlay.clearExplicit();
+    QVERIFY(!overlay.tryCollapseToFollowDocument(&doc));
+    QVERIFY(overlay.isExplicitEmpty());
+    QVERIFY(overlay.resolve(&doc).isEmpty());
 }
 
 QTEST_MAIN(PathOrderDualModelTest)

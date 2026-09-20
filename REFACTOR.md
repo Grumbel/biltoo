@@ -765,8 +765,10 @@ the stop line when Tier 4 lands.
 dispatch, friend list empty, HudModel + session identity characterization tests.
 
 **Still open:**
-1. **Tier 4 residual** — Appearance already lives on `SessionDocument` (Tier 4b).
-   Delete view-owned `m_pathOrderBook` in favor of document pack order.
+1. **Tier 4 residual** — Appearance on `SessionDocument` (Tier 4b). Pack order
+   on `PackOrderOverlay` (1883) with optional FollowDocument collapse (1884).
+   Pure characterization expanded (1885). Full offscreen ImageView harness still
+   required before trusting document-only pack without Explicit suppress.
    Pack **reads** already go through `PackOrderView` / `currentPackOrder()`
    (fromBook). Blocked on offscreen ImageView characterization
    (open→Gallery→crop→Image). Pure contracts: `sessiondocument`,
@@ -1099,6 +1101,13 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1786: privatize tile plan/paint helpers on ImageItem.
 - biltoo-1787: imageview characterization pure scaffold (PNG fixtures + QSKIP for ImageView).
 - biltoo-1788: BILTOO_LIB_SOURCES shared list (app + future ImageView harness).
+- biltoo-1881: PackOrderOverlay design type + pure tests.
+- biltoo-1882: optional nix ccache via `.#biltoo.withCcache`.
+- biltoo-1883: ImageView stores PackOrderOverlay (host mutators Explicit).
+- biltoo-1884: tryCollapseToFollowDocument on aligned setOrder; seed-on-append.
+- biltoo-1885: imageview-characterization pure overlay host simulation.
+- biltoo-1886: pathorder-dual-model overlay dual-model cases.
+
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
 - biltoo-1791: ItemBag lazy unique_ptr on ImageItem (move-ready).

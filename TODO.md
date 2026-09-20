@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1886-dual-model-overlay.** Dual-model tests cover PackOrderOverlay.
+Prior: **1885**.
+
+### Change
+- `pathorder_dual_model_test`: overlay mode-leave clear, LoadAdd multiplicity,
+  aligned collapse (FollowDocument tracks document), collapse rejected when
+  Explicit empty vs populated document
+- REFACTOR.md progress log 1881–1886
+- Pure dual-model invariants locked for overlay storage (not only bare book)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1886-dual-model-overlay-516d734.bundle HEAD
+```
+Requires tip **1885** (base **516d734**).
+
+### Next
+- Full offscreen ImageView characterization (`BILTOO_IMAGEVIEW_CHARACTERIZATION`
+  + `${BILTOO_LIB_SOURCES}`) when Qt/thumtoo build is available
+- ctest pathorder-dual-model + packorderoverlay + imageview-characterization
+- Do **not** drop Explicit suppress / dual-model policy until full harness green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1885-characterization-overlay.** Pure ImageView characterization + overlay.
 Prior: **1884**.
 
