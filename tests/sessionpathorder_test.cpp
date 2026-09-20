@@ -19,6 +19,10 @@ private slots:
     void setOrder_alignsIds();
     void firstIdForPath_skipsInvalid();
     void clear_empties();
+    void pathList_and_idList_parallel();
+    void setOrder_trimsExtraIds();
+    void pathAt_idAt_outOfRange();
+    void duplicatePaths_independentSlots();
 };
 
 void SessionPathOrderTest::empty_initial()
@@ -68,6 +72,49 @@ void SessionPathOrderTest::clear_empties()
     book.clear();
     QVERIFY(book.isEmpty());
     QCOMPARE(book.countPathOccurrences(QStringLiteral("/a.jpg")), 0);
+}
+
+void SessionPathOrderTest::pathList_and_idList_parallel()
+{
+    SessionPathOrder book;
+    book.appendRow(QStringLiteral("/a.jpg"), 10);
+    book.appendRow(QStringLiteral("/b.jpg"), 20);
+    QCOMPARE(book.pathList().size(), book.idList().size());
+    QCOMPARE(book.pathList().at(0), QStringLiteral("/a.jpg"));
+    QCOMPARE(book.idList().at(1), SessionImageId(20));
+}
+
+void SessionPathOrderTest::setOrder_trimsExtraIds()
+{
+    SessionPathOrder book;
+    book.setOrder({QStringLiteral("/only.jpg")},
+                  {SessionImageId(1), SessionImageId(2), SessionImageId(3)});
+    QCOMPARE(book.size(), 1);
+    QCOMPARE(book.idAt(0), SessionImageId(1));
+    QCOMPARE(book.idList().size(), 1);
+}
+
+void SessionPathOrderTest::pathAt_idAt_outOfRange()
+{
+    SessionPathOrder book;
+    book.appendRow(QStringLiteral("/a.jpg"), 7);
+    QCOMPARE(book.pathAt(-1), QString());
+    QCOMPARE(book.pathAt(99), QString());
+    QCOMPARE(book.idAt(-1), kInvalidSessionImageId);
+    QCOMPARE(book.idAt(99), kInvalidSessionImageId);
+}
+
+void SessionPathOrderTest::duplicatePaths_independentSlots()
+{
+    // Multiplicity is Gallery-local: same path, distinct rows/ids.
+    SessionPathOrder book;
+    book.appendRow(QStringLiteral("/dup.jpg"), 1);
+    book.appendRow(QStringLiteral("/dup.jpg"), 2);
+    book.appendRow(QStringLiteral("/dup.jpg"), 3);
+    QCOMPARE(book.countPathOccurrences(QStringLiteral("/dup.jpg")), 3);
+    QCOMPARE(book.idAt(0), SessionImageId(1));
+    QCOMPARE(book.idAt(2), SessionImageId(3));
+    QCOMPARE(book.firstIdForPath(QStringLiteral("/dup.jpg")), SessionImageId(1));
 }
 
 QTEST_MAIN(SessionPathOrderTest)

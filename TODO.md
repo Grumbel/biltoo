@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1692-path-order-characterization.** Expand SessionPathOrder characterization tests.
+Prior: **1691**.
+
+### Change
+- `tests/sessionpathorder_test.cpp`: pathList/idList parallel, setOrder trim, OOB accessors, duplicate-path independent slots
+- Documents Gallery multiplicity contract needed before Tier 4 (book → document)
+
+### Dual-write audit (live sites)
+- `pathOrderSetOrder` / `pathOrderAppendRow` — `imageview_canvas.cpp` (workspace path set / add)
+- `pathOrderClear` — `imageview_modes.cpp`
+- `pathOrderSetOrder` pruned — `imageview_session_bind.cpp`
+- Read-only: `imageview_load.cpp` countPathOccurrences via book
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1692-path-order-characterization.bundle HEAD
+```
+
+### Next
+- biltoo-build + run sessionpathorder_test
+- Tier 4 still blocked on fuller ImageView open→Gallery→crop→Image harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1691-selection-tu.** Split selection/clipboard out of canvas.cpp.
 Prior: **1690**.
 
