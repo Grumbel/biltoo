@@ -984,3 +984,5 @@ Phase 1–6 rules still apply. Additions:
   applyScale/Shear take HandlePressScratch&; ImageItem m_handlePress removed.
 - biltoo-1749: ItemInteractSession::endRotate() alias (parity with endMove /
   endHandleDrag); fixes free-rotate mouse release build break.
+- biltoo-1750: HandlePressScratch::handle owns continuous handle for mid-drag;
+  update/applyScale/applyShear read press.handle; m_activeHandle paint residual.

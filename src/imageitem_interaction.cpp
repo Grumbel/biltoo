@@ -427,7 +427,8 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     const QPointF itemCentre = this->scenePos();
     constexpr qreal kMinDist = 1.0; // scene px; below this ignore the sample
 
-    if (isCornerScaleHandle(m_activeHandle)) {
+    const Handle h = static_cast<Handle>(press.handle);
+    if (isCornerScaleHandle(h)) {
         if (fromCenter) {
             const qreal d0 = QLineF(itemCentre, press.scenePos).length();
             const qreal d1 = QLineF(itemCentre, scenePos).length();
@@ -451,7 +452,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
         return;
     }
 
-    if (isEdgeScaleHandle(m_activeHandle)) {
+    if (isEdgeScaleHandle(h)) {
         // Image axes in *scene* at press — must match PlacementLinear/Qt (not a
         // textbook CCW formula; Qt rotate is clockwise with Y-down).
         const QTransform Lpress = PlacementLinear::make(
@@ -461,8 +462,8 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
 
         qreal sx = press.scaleX;
         qreal sy = press.scaleY;
-        const bool stretchX = (m_activeHandle == Handle::ScaleLeft
-                               || m_activeHandle == Handle::ScaleRight);
+        const bool stretchX = (h == Handle::ScaleLeft
+                               || h == Handle::ScaleRight);
 
         if (fromCenter) {
             const QPointF v0 = press.scenePos - itemCentre;
@@ -502,15 +503,16 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos, HandlePressScratch
     //
     // Horizontal: H(kx) maps (x,y)→(x+kx·y, y); e2' = e2 + kx·e1 (via L·H).
     // Vertical:   V(m)  maps (x,y)→(x, y+m·x); e1' = e1 + m·e2  (via L·V).
-    const QPointF gripLocal = handleCenter(m_activeHandle);
+    const Handle h = static_cast<Handle>(press.handle);
+    const QPointF gripLocal = handleCenter(h);
     const QPointF anchor = press.anchorScene;
 
     QPointF e1, e2;
     PlacementLinear::unitAxes(press.scaleX, press.scaleY, press.shear,
                               press.rotation, &e1, &e2);
 
-    const bool verticalEdge = (m_activeHandle == Handle::ShearLeft
-                               || m_activeHandle == Handle::ShearRight);
+    const bool verticalEdge = (h == Handle::ShearLeft
+                               || h == Handle::ShearRight);
 
     if (!verticalEdge) {
         // Top / Bottom: edit horizontal shear kx. Motion along local +X.
@@ -2248,7 +2250,7 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
         activateChromeHandle(h);
         return true;
     }
-    m_activeHandle = h;
+    m_activeHandle = h; // paint hot + hasActiveHandle until Stage 2 residual clears
     HandlePressScratch press;
     press.scenePos = scenePos;
     press.scaleX = m_scaleX;
@@ -2258,6 +2260,7 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
     press.itemPos = mapFromScene(scenePos);
     press.anchorLocal = scaleAnchorLocal(h);
     press.anchorScene = mapToScene(press.anchorLocal);
+    press.handle = static_cast<int>(h);
     if (outPress) {
         *outPress = press;
     }
@@ -2271,12 +2274,13 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
 void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods,
                                           HandlePressScratch &press)
 {
-    if (m_activeHandle == Handle::None) {
+    const Handle h = static_cast<Handle>(press.handle);
+    if (h == Handle::None) {
         return;
     }
-    if (m_activeHandle == Handle::OpacitySlider) {
+    if (h == Handle::OpacitySlider) {
         setOpacityFromSliderPos(scenePos);
-    } else if (isRotateHandle(m_activeHandle)) {
+    } else if (isRotateHandle(h)) {
         const QPointF itemCentre = this->scenePos();
         // Ctrl → 45° (includes 90°); Shift (alone or with Ctrl) → 15°.
         const qreal a0 = PlacementLinear::angleAbout(itemCentre, press.scenePos);
@@ -2284,9 +2288,9 @@ void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardMod
         const qreal angle = PlacementLinear::freeRotationFromDrag(
             press.rotation, a0, a1, mods & Qt::ShiftModifier, mods & Qt::ControlModifier);
         setItemRotation(angle);
-    } else if (isScaleHandle(m_activeHandle)) {
+    } else if (isScaleHandle(h)) {
         applyScaleHandleDrag(scenePos, mods, press);
-    } else if (isShearHandle(m_activeHandle)) {
+    } else if (isShearHandle(h)) {
         applyShearHandleDrag(scenePos, press);
     }
     notifyViewStatus();

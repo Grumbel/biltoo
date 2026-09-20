@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1750-handle-press-handle.** Continuous handle on HandlePressScratch.
+Prior: **1749**.
+
+### Change
+- `HandlePressScratch::handle` — ImageItem::Handle as int at press
+- `updateHandleInteraction` / `applyScaleHandleDrag` / `applyShearHandleDrag`
+  dispatch from `press.handle` (not `m_activeHandle`)
+- `m_activeHandle` remains paint-hot + hasActiveHandle residual for Stage 2
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1750-handle-press-handle.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear/rotate smoke
+- Demote m_activeHandle (paint/hot residual) or characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1749-end-rotate.** ItemInteractSession::endRotate alias.
 Prior: **1748**.
 
