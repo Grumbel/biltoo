@@ -1169,7 +1169,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     params.masonryColumns = m_view->hostLayout().masonryColumnsValue();
     params.gridColumns = m_view->hostLayout().gridColumnsValue();
     params.masonryRows = m_view->hostLayout().masonryRowsValue();
-    params.mode = m_view->galleryLayoutModeFromViewMode();
+    params.mode = GalleryPackFit::modeFromLayoutMode(m_view->hostLayout().currentMode());
 
     GalleryLayout::pack(m_view->liveItems(), params, [this](ImageItem *item) {
         m_view->itemWorld().setPathState(item->path(), m_view->captureState(item));

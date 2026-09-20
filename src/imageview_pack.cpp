@@ -1,44 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Thin ImageView → Gallery/Workspace pack and reload forwards.
+// ImageView mode-dispatch for layout and reload (not pure single-controller hops).
 
 #include "imageview.h"
-#include "gallerylayout.h"
-#include "gallerypackfit.h"
-
-
-
-
-
-
-
-void ImageView::publishGalleryInterest(const QStringList &interestNear,
-                                       const QStringList &interestRest)
-{
-    // Gallery drives tiles via TileLoadCoordinator + scheduleTilePyramid only
-    // when durable coverage is missing. setInterest Primary used to enqueue
-    // FocusFull pyramids (and soft PreferCache) every decode window — that
-    // reintroduced multi-second worker load after we stopped unconditional
-    // scheduleTilePyramid. Interest is unused for Gallery.
-    Q_UNUSED(interestNear);
-    Q_UNUSED(interestRest);
-}
-
-void ImageView::scheduleIdleGalleryDecodes(const QStringList &rest)
-{
-    // Soft PreferCache is removed from Gallery. Off-screen work is tiles via
-    // the coordinator when cells enter the viewport — no idle soft climb.
-    Q_UNUSED(rest);
-}
-
-
-GalleryLayout::Mode ImageView::galleryLayoutModeFromViewMode() const
-{
-    return GalleryPackFit::modeFromLayoutMode(m_layout.currentMode());
-}
-
-
 
 void ImageView::setLayoutMode(LayoutMode mode)
 {
@@ -49,13 +14,6 @@ void ImageView::setLayoutMode(LayoutMode mode)
     }
     m_gallery.setLayoutMode(mode);
 }
-
-
-
-
-
-
-
 
 void ImageView::reloadFromDisk(bool relayoutGallery)
 {
@@ -70,7 +28,6 @@ void ImageView::reloadFromDisk(bool relayoutGallery)
     m_workspace.reloadFromDisk();
 }
 
-
 void ImageView::hardReloadFromDisk(bool relayoutGallery)
 {
     if (isImageMode()) {
@@ -83,13 +40,3 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
     }
     m_workspace.hardReloadFromDisk();
 }
-
-
-
-
-
-
-
-
-
-

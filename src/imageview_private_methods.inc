@@ -317,12 +317,6 @@
     /** Clear canvas selection. */
     void clearCanvasSelection();
 
-    /** No-op: Gallery does not use setInterest (tiles + LQIP only). */
-    void publishGalleryInterest(const QStringList &interestNear,
-                                const QStringList &interestRest);
-
-    void scheduleIdleGalleryDecodes(const QStringList &rest);
-
 
 
     /** Coalesce statusChanged during soft climb (MainWindow is not free). */

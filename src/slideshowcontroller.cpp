@@ -951,7 +951,7 @@ void SlideshowController::onSlideshowRasterReady(const QString &path, const QIma
 
     // Climb while the *phase buffer* is still short of target (not only when
     // the host cache edge increases).
-    if (m_view->pathRasterForCoordinator()) {
+    if (m_view->hostPathRaster()) {
         const int target = m_view->hostDisplayPipeline().cappedDisplayEdgeForPath(path, slideshowTargetEdge());
         const int need = SlideshowAtlasPolicy::needEdge(target);
         const int phaseHave =
@@ -960,7 +960,7 @@ void SlideshowController::onSlideshowRasterReady(const QString &path, const QIma
         if (phaseHave < need || incoming < need) {
             const auto policy =
                 PathRasterService::ClimbPolicy::SoftDisplay;
-            m_view->pathRasterForCoordinator()->ensure(path, target, m_view->logicalSizeForPath(path), policy);
+            m_view->hostPathRaster()->ensure(path, target, m_view->logicalSizeForPath(path), policy);
         }
     }
 }
@@ -1013,7 +1013,7 @@ void SlideshowController::slideshowPhaseSurfaceTick()
         const int target = slideshowTargetEdge();
         const int hostEdge = DisplayQuality::hostLongEdge(path);
         const bool pending =
-            m_view->pathRasterForCoordinator() && m_view->pathRasterForCoordinator()->isClimbPending(path);
+            m_view->hostPathRaster() && m_view->hostPathRaster()->isClimbPending(path);
         m_view->hostDisplaySurfaces().setNeed(*sid, target);
         m_view->hostDisplaySurfaces().setHostLongEdge(*sid, hostEdge);
         m_view->hostDisplaySurfaces().setClimbPending(*sid, pending);
@@ -1037,10 +1037,10 @@ void SlideshowController::slideshowPhaseSurfaceTick()
             }
             return;
         }
-        if (act.type == AT::ScheduleClimb && m_view->pathRasterForCoordinator()) {
+        if (act.type == AT::ScheduleClimb && m_view->hostPathRaster()) {
             const auto policy =
                 PathRasterService::ClimbPolicy::SoftDisplay;
-            m_view->pathRasterForCoordinator()->ensure(
+            m_view->hostPathRaster()->ensure(
                 path, target, m_view->logicalSizeForPath(path), policy);
         }
     };
@@ -1091,10 +1091,10 @@ QImage SlideshowController::slideshowSoftPlaceholder(const QString &path)
     if (soft.isNull()) {
         // LQIP/cache miss: PathRaster SoftDisplay → TileSynth or pyramid.
         // Fallback without PathRaster: same (never PreferCache soft encode).
-        if (m_view->pathRasterForCoordinator()) {
+        if (m_view->hostPathRaster()) {
             const auto policy =
                 PathRasterService::ClimbPolicy::SoftDisplay;
-            m_view->pathRasterForCoordinator()->ensure(path, edge, m_view->logicalSizeForPath(path), policy);
+            m_view->hostPathRaster()->ensure(path, edge, m_view->logicalSizeForPath(path), policy);
         } else if (ThumtooCache::isAvailable()) {
             (void)ThumtooCache::scheduleTileSynthOrPyramid(
                 path, ThumtooCache::kGalleryLadderEdge);
@@ -1648,8 +1648,8 @@ void SlideshowController::finishSlideshowPreload(const QString &path, const QIma
     // Legacy pool-preload completion — climb is owned by PathRasterService.
     phase().removeRasterInflight(path);
     if (!image.isNull()) {
-        if (m_view->pathRasterForCoordinator()) {
-            m_view->pathRasterForCoordinator()->noteDelivery(path, 0, image);
+        if (m_view->hostPathRaster()) {
+            m_view->hostPathRaster()->noteDelivery(path, 0, image);
         } else {
             ImageCache::put(path, image);
         }
@@ -1667,7 +1667,7 @@ void SlideshowController::finishSlideshowPreload(const QString &path, const QIma
 
 void SlideshowController::preloadSlideshowImage(const QString &path)
 {
-    if (path.isEmpty() || !m_view->pathRasterForCoordinator()) {
+    if (path.isEmpty() || !m_view->hostPathRaster()) {
         return;
     }
     // User key-repeat: no PathRaster EscalateToFull per visited path.
@@ -1687,14 +1687,14 @@ void SlideshowController::preloadSlideshowImage(const QString &path)
         }
         return;
     }
-    if (m_view->pathRasterForCoordinator()->isClimbPending(path)) {
+    if (m_view->hostPathRaster()->isClimbPending(path)) {
         if (!cached.isNull()) {
             onSlideshowRasterReady(path, cached);
         }
         return;
     }
     // PreferCache plateau with Full already done for this want — stop.
-    if (m_view->pathRasterForCoordinator()->isGaveUp(path) && !m_view->pathRasterForCoordinator()->isClimbPending(path)) {
+    if (m_view->hostPathRaster()->isGaveUp(path) && !m_view->hostPathRaster()->isClimbPending(path)) {
         // SoftDisplay plateau — do not escalate to Full native.
     }
 
@@ -1705,7 +1705,7 @@ void SlideshowController::preloadSlideshowImage(const QString &path)
 
     // SoftDisplay only: PreferCache/TileSynth at screen-fit edge. Never Full
     // native whole-frame (that pulled multi-MP samples for every slide).
-    m_view->pathRasterForCoordinator()->ensure(path, targetEdge, native,
+    m_view->hostPathRaster()->ensure(path, targetEdge, native,
                          PathRasterService::ClimbPolicy::SoftDisplay);
     // Warm durable tiles into the shared path TileMemoryCache (TileLodRegistry)
     // so SoftDisplay TileSynth and later Image/Gallery views reuse them.

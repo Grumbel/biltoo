@@ -191,7 +191,7 @@ void TileLoadCoordinator::tick(int globalBudget)
 
     QList<ImageItem *> issueTargets;
     issueTargets.reserve(cands.size());
-    PathRasterService *pathRaster = m_view->pathRasterForCoordinator();
+    PathRasterService *pathRaster = m_view->hostPathRaster();
 
     for (const Cand &c : cands) {
         if (wall.elapsed() >= kWallMs) {

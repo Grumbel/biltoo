@@ -227,9 +227,8 @@ public:
      * Suppresses PreferCache climb, sync repaint, new ZoomBlur builds, and
      * atlas work until settle; previous underlay is kept until replacement.
      */
-    /** Slideshow pure-phase owns viewport — tile coordinator must not issue. */
-    /** PathRasterService for PreferCache cancel when tiles issue (coordinator). */
-    PathRasterService *pathRasterForCoordinator() { return m_pathRaster; }
+    /** Slideshow pure-phase owns viewport — tile coordinator must not issue.
+     *  Path raster: hostPathRaster() (see imageview_host_accessors.inc). */
 #include "imageview_host_accessors.inc"
 
     /** Display pipeline host: crop controller (draft freeze). */
@@ -591,7 +590,6 @@ public:
 
     void setLayoutMode(LayoutMode mode);
     LayoutMode layoutMode() const { return m_layout.currentMode(); }
-    GalleryLayout::Mode galleryLayoutModeFromViewMode() const;
     /** Gallery mode with a packaged layout. */
     bool isGalleryLayout() const { return isGalleryMode(); }
 

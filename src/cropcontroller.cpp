@@ -106,7 +106,7 @@ bool CropController::isCropDraftLockedPath(const QString &path) const
 
 void CropController::cancelPathRasterForCrop(const QString &path)
 {
-    CropPathRaster::suspend(m_view->pathRasterForCoordinator(), path);
+    CropPathRaster::suspend(m_view->hostPathRaster(), path);
 }
 
 void CropController::fitImageOrUpdateWorkspace(ImageItem *item)
