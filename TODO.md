@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1753-itemhandle-enum.** ItemHandle extracted like CropHandle.
+Prior: **1752**.
+
+### Change
+- `itemhandle.h` — top-level `enum class ItemHandle` (Workspace chrome)
+- `ImageItem::Handle` is `using Handle = ItemHandle`
+- `HandlePressScratch::handle` is `ItemHandle` (no int / static_cast)
+- `ItemHandlePolicy` takes `ItemHandle` (no imageitem.h include)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1753-itemhandle-enum.bundle HEAD
+```
+
+### Next
+- biltoo-build + handle scale/shear/rotate smoke
+- Paint residual (m_activeHandle) or characterization harness
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1752-press-placement.** HandlePressScratch pose is Placement.
 Prior: **1751**.
 

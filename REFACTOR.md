@@ -990,3 +990,5 @@ Phase 1–6 rules still apply. Additions:
   endHandleInteraction(Handle) from press; hasActiveHandle paint residual only.
 - biltoo-1752: HandlePressScratch pose is Placement; ImageItem::placement() single
   live reader; placementFromItem delegates; mid-drag uses press.placement.
+- biltoo-1753: ItemHandle enum extracted (itemhandle.h); HandlePressScratch typed;
+  ItemHandlePolicy independent of ImageItem.

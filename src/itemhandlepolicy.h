@@ -4,26 +4,26 @@
 #ifndef ITEMHANDLEPOLICY_H
 #define ITEMHANDLEPOLICY_H
 
-#include "imageitem.h"
+#include "itemhandle.h"
 
 #include <QString>
 
 /**
- * Pure classification of ImageItem::Handle values.
+ * Pure classification of ItemHandle values.
  * No item or view state — shared by interaction, cursors, and tooltips.
  */
 namespace ItemHandlePolicy {
 
-bool isChromeHandle(ImageItem::Handle h);
-bool isRotateHandle(ImageItem::Handle h);
-bool isCornerScaleHandle(ImageItem::Handle h);
-bool isEdgeScaleHandle(ImageItem::Handle h);
-bool isScaleHandle(ImageItem::Handle h);
-bool isShearHandle(ImageItem::Handle h);
-bool isUprightChromeHandle(ImageItem::Handle h);
+bool isChromeHandle(ItemHandle h);
+bool isRotateHandle(ItemHandle h);
+bool isCornerScaleHandle(ItemHandle h);
+bool isEdgeScaleHandle(ItemHandle h);
+bool isScaleHandle(ItemHandle h);
+bool isShearHandle(ItemHandle h);
+bool isUprightChromeHandle(ItemHandle h);
 
 /** Localised tooltip for a handle (context "ImageItem"). */
-QString toolTip(ImageItem::Handle h);
+QString toolTip(ItemHandle h);
 
 } // namespace ItemHandlePolicy
 

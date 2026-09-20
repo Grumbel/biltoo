@@ -8,6 +8,7 @@
 #include "coloradjust.h"
 #include "contentxform.h"
 #include "iteminteractsession.h"
+#include "itemhandle.h"
 #include <QGraphicsPixmapItem>
 #include <QColor>
 #include <QImage>
@@ -37,38 +38,8 @@ public:
     enum { Type = UserType + 1 };
     int type() const override { return Type; }
 
-    enum class Handle {
-        None,
-        ScaleTopLeft,
-        ScaleTopRight,
-        ScaleBottomLeft,
-        ScaleBottomRight,
-        /** Edge stretch (non-uniform): change only one axis. */
-        ScaleTop,
-        ScaleRight,
-        ScaleBottom,
-        ScaleLeft,
-        /** Shear along local X (parallelogram); H(k) in R·H·S. */
-        ShearTop,
-        ShearBottom,
-        ShearLeft,
-        ShearRight,
-        RotateTop,
-        RotateRight,
-        RotateBottom,
-        RotateLeft,
-        FlipH,
-        FlipV,
-        /** 90° object rotation (Workspace chrome). */
-        Rotate90CCW,
-        Rotate90CW,
-        Raise,
-        Lower,
-        ResetScale,
-        ResetRotation,
-        ResetShear,
-        OpacitySlider
-    };
+    /** Workspace chrome handle; type lives in itemhandle.h (Stage 2 share). */
+    using Handle = ItemHandle;
 
     explicit ImageItem(const QString &path, const QImage &image,
                        QGraphicsItem *parent = nullptr);

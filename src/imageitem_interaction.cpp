@@ -427,7 +427,7 @@ void ImageItem::applyScaleHandleDrag(const QPointF &scenePos, Qt::KeyboardModifi
     const QPointF itemCentre = this->scenePos();
     constexpr qreal kMinDist = 1.0; // scene px; below this ignore the sample
 
-    const Handle h = static_cast<Handle>(press.handle);
+    const Handle h = press.handle;
     if (isCornerScaleHandle(h)) {
         if (fromCenter) {
             const qreal d0 = QLineF(itemCentre, press.scenePos).length();
@@ -503,7 +503,7 @@ void ImageItem::applyShearHandleDrag(const QPointF &scenePos, HandlePressScratch
     //
     // Horizontal: H(kx) maps (x,y)→(x+kx·y, y); e2' = e2 + kx·e1 (via L·H).
     // Vertical:   V(m)  maps (x,y)→(x, y+m·x); e1' = e1 + m·e2  (via L·V).
-    const Handle h = static_cast<Handle>(press.handle);
+    const Handle h = press.handle;
     const QPointF gripLocal = handleCenter(h);
     const QPointF anchor = press.anchorScene;
 
@@ -2257,7 +2257,7 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
     press.itemPos = mapFromScene(scenePos);
     press.anchorLocal = scaleAnchorLocal(h);
     press.anchorScene = mapToScene(press.anchorLocal);
-    press.handle = static_cast<int>(h);
+    press.handle = h;
     if (outPress) {
         *outPress = press;
     }
@@ -2271,7 +2271,7 @@ bool ImageItem::beginHandleInteraction(const QPointF &scenePos, Qt::KeyboardModi
 void ImageItem::updateHandleInteraction(const QPointF &scenePos, Qt::KeyboardModifiers mods,
                                           HandlePressScratch &press)
 {
-    const Handle h = static_cast<Handle>(press.handle);
+    const Handle h = press.handle;
     if (h == Handle::None) {
         return;
     }

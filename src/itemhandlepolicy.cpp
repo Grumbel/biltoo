@@ -7,54 +7,54 @@
 
 namespace ItemHandlePolicy {
 
-bool isChromeHandle(ImageItem::Handle h)
+bool isChromeHandle(ItemHandle h)
 {
-    return h == ImageItem::Handle::FlipH || h == ImageItem::Handle::FlipV
-        || h == ImageItem::Handle::Rotate90CCW || h == ImageItem::Handle::Rotate90CW
-        || h == ImageItem::Handle::Raise || h == ImageItem::Handle::Lower
-        || h == ImageItem::Handle::ResetScale || h == ImageItem::Handle::ResetRotation
-        || h == ImageItem::Handle::ResetShear
-        || h == ImageItem::Handle::OpacitySlider;
+    return h == ItemHandle::FlipH || h == ItemHandle::FlipV
+        || h == ItemHandle::Rotate90CCW || h == ItemHandle::Rotate90CW
+        || h == ItemHandle::Raise || h == ItemHandle::Lower
+        || h == ItemHandle::ResetScale || h == ItemHandle::ResetRotation
+        || h == ItemHandle::ResetShear
+        || h == ItemHandle::OpacitySlider;
 }
 
-bool isRotateHandle(ImageItem::Handle h)
+bool isRotateHandle(ItemHandle h)
 {
-    return h == ImageItem::Handle::RotateTop || h == ImageItem::Handle::RotateRight
-        || h == ImageItem::Handle::RotateBottom || h == ImageItem::Handle::RotateLeft;
+    return h == ItemHandle::RotateTop || h == ItemHandle::RotateRight
+        || h == ItemHandle::RotateBottom || h == ItemHandle::RotateLeft;
 }
 
-bool isCornerScaleHandle(ImageItem::Handle h)
+bool isCornerScaleHandle(ItemHandle h)
 {
-    return h == ImageItem::Handle::ScaleTopLeft || h == ImageItem::Handle::ScaleTopRight
-        || h == ImageItem::Handle::ScaleBottomLeft || h == ImageItem::Handle::ScaleBottomRight;
+    return h == ItemHandle::ScaleTopLeft || h == ItemHandle::ScaleTopRight
+        || h == ItemHandle::ScaleBottomLeft || h == ItemHandle::ScaleBottomRight;
 }
 
-bool isEdgeScaleHandle(ImageItem::Handle h)
+bool isEdgeScaleHandle(ItemHandle h)
 {
-    return h == ImageItem::Handle::ScaleTop || h == ImageItem::Handle::ScaleRight
-        || h == ImageItem::Handle::ScaleBottom || h == ImageItem::Handle::ScaleLeft;
+    return h == ItemHandle::ScaleTop || h == ItemHandle::ScaleRight
+        || h == ItemHandle::ScaleBottom || h == ItemHandle::ScaleLeft;
 }
 
-bool isScaleHandle(ImageItem::Handle h)
+bool isScaleHandle(ItemHandle h)
 {
     return isCornerScaleHandle(h) || isEdgeScaleHandle(h);
 }
 
-bool isShearHandle(ImageItem::Handle h)
+bool isShearHandle(ItemHandle h)
 {
-    return h == ImageItem::Handle::ShearTop || h == ImageItem::Handle::ShearBottom
-        || h == ImageItem::Handle::ShearLeft || h == ImageItem::Handle::ShearRight;
+    return h == ItemHandle::ShearTop || h == ItemHandle::ShearBottom
+        || h == ItemHandle::ShearLeft || h == ItemHandle::ShearRight;
 }
 
-bool isUprightChromeHandle(ImageItem::Handle h)
+bool isUprightChromeHandle(ItemHandle h)
 {
     // Raise/Lower glyphs stay screen-upright so "up" always means raise.
-    return h == ImageItem::Handle::Raise || h == ImageItem::Handle::Lower;
+    return h == ItemHandle::Raise || h == ItemHandle::Lower;
 }
 
-QString toolTip(ImageItem::Handle h)
+QString toolTip(ItemHandle h)
 {
-    using H = ImageItem::Handle;
+    using H = ItemHandle;
     switch (h) {
     case H::None:
         return {};

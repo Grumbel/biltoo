@@ -360,9 +360,7 @@ bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
         return false;
     }
     ImageItem *handleItem = m_itemInteract.currentHandleDragItem();
-    const ImageItem::Handle continuous =
-        static_cast<ImageItem::Handle>(m_itemInteract.handlePressRef().handle);
-    handleItem->endHandleInteraction(continuous);
+    handleItem->endHandleInteraction(m_itemInteract.handlePressRef().handle);
     pushItemTransformUndo(handleItem, m_itemInteract.currentDragStartState(),
                           captureState(handleItem), tr("Transform"));
     m_itemInteract.endHandleDrag();
