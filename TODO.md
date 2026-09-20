@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1704-size-book-transform-actions.** Size book + transform actions TUs.
+Prior: **1703**.
+
+### Change
+- New `imageview_size_book.cpp` — size probes, layoutSizeForPath, GallerySizeResolve host,
+  centre progress (~402 lines from imageview.cpp)
+- `imageview.cpp` ~1083 → ~703 (ctor/dtor, pack debounce, accessors, mouse events)
+- New `imageview_transform_actions.cpp` — flip/rotate/raise/opacity/reset actions
+- `imageview_transform.cpp` ~525 → ~146 (geometry/content undo push helpers only)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1704-size-book-transform-actions.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- ImageView characterization → Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1703-canvas-focus-color-grade.** Canvas focus + color-grade TUs.
 Prior: **1702**.
 
