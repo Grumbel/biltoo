@@ -105,24 +105,50 @@ stdenv.mkDerivation (finalAttrs: {
 
   # ccacheStdenv: writable CCACHE_DIR before cmake probes the compiler.
   # Prefer host dirs mounted via extra-sandbox-paths for persistent nix-build hits.
+  # Must *write* a probe file: [ -w ] / mkdir -p alone is not enough when tmp/
+  # is owned by another uid (common host /var/cache/ccache layout).
   prePhases = [ "ccacheDirPhase" ];
   ccacheDirPhase = ''
-    if [ -z "''${CCACHE_DIR:-}" ]; then
+    _biltoo_ccache_usable() {
+      local d="$1"
+      mkdir -p "$d/tmp" 2>/dev/null || return 1
+      local probe="$d/tmp/.biltoo-write-test.$$"
+      if ! ( : >"$probe" ) 2>/dev/null; then
+        return 1
+      fi
+      rm -f "$probe" 2>/dev/null || true
+      return 0
+    }
+
+    _chosen=""
+    # Honour pre-set CCACHE_DIR only if actually writable inside the sandbox.
+    if [ -n "''${CCACHE_DIR:-}" ] && _biltoo_ccache_usable "$CCACHE_DIR"; then
+      _chosen="$CCACHE_DIR"
+    else
+      if [ -n "''${CCACHE_DIR:-}" ]; then
+        echo "biltoo ccache: ignoring unwritable CCACHE_DIR=$CCACHE_DIR"
+      fi
       for _cand in /var/cache/ccache /nix/var/cache/ccache; do
-        if mkdir -p "$_cand" 2>/dev/null && [ -w "$_cand" ]; then
-          export CCACHE_DIR="$_cand"
+        if _biltoo_ccache_usable "$_cand"; then
+          _chosen="$_cand"
           break
         fi
       done
     fi
-    if [ -z "''${CCACHE_DIR:-}" ]; then
+    if [ -z "$_chosen" ]; then
       if [ -n "''${NIX_BUILD_TOP:-}" ]; then
-        export CCACHE_DIR="$NIX_BUILD_TOP/.ccache"
+        _chosen="$NIX_BUILD_TOP/.ccache"
       else
-        export CCACHE_DIR="''${XDG_CACHE_HOME:-''${HOME:-/tmp}/.cache}/ccache-biltoo"
+        _chosen="''${XDG_CACHE_HOME:-''${HOME:-/tmp}/.cache}/ccache-biltoo"
       fi
     fi
-    mkdir -p "$CCACHE_DIR"
+    export CCACHE_DIR="$_chosen"
+    mkdir -p "$CCACHE_DIR/tmp"
+    if ! _biltoo_ccache_usable "$CCACHE_DIR"; then
+      # Last resort: always-writable build top (should not fail).
+      export CCACHE_DIR="$NIX_BUILD_TOP/.ccache"
+      mkdir -p "$CCACHE_DIR/tmp"
+    fi
     _mode=shared-host
     case "$CCACHE_DIR" in
       "$NIX_BUILD_TOP"/*) _mode=ephemeral ;;
@@ -130,6 +156,8 @@ stdenv.mkDerivation (finalAttrs: {
     echo "biltoo ccache: dir=$CCACHE_DIR mode=$_mode"
     if [ "$_mode" = ephemeral ]; then
       echo "biltoo ccache: no hits across nix builds — run: nix run .#ccache-check"
+      echo "biltoo ccache: tip: sudo chown root:nixbld /var/cache/ccache && sudo chmod 2775 /var/cache/ccache"
+      echo "biltoo ccache:      (or chmod 1777) and ensure extra-sandbox-paths lists the dir"
     fi
   '';
 

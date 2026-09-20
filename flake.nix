@@ -22,22 +22,38 @@
                 # nix build: HOME is /homeless-shelter (not writable). Prefer a
                 # host cache mounted via nix.conf extra-sandbox-paths; else use
                 # the ephemeral build dir (works, but no cross-build hits).
-                if [ -z "''${CCACHE_DIR:-}" ]; then
+                # Probe real write access — [ -w ] alone misses tmp/ owned by
+                # another uid (ccache then fails with Permission denied).
+                _biltoo_ccache_usable() {
+                  local d="$1"
+                  mkdir -p "$d/tmp" 2>/dev/null || return 1
+                  local probe="$d/tmp/.biltoo-write-test.$$"
+                  if ! ( : >"$probe" ) 2>/dev/null; then
+                    return 1
+                  fi
+                  rm -f "$probe" 2>/dev/null || true
+                  return 0
+                }
+                _chosen=""
+                if [ -n "''${CCACHE_DIR:-}" ] && _biltoo_ccache_usable "$CCACHE_DIR"; then
+                  _chosen="$CCACHE_DIR"
+                else
                   for _cand in /var/cache/ccache /nix/var/cache/ccache; do
-                    if mkdir -p "$_cand" 2>/dev/null && [ -w "$_cand" ]; then
-                      export CCACHE_DIR="$_cand"
+                    if _biltoo_ccache_usable "$_cand"; then
+                      _chosen="$_cand"
                       break
                     fi
                   done
                 fi
-                if [ -z "''${CCACHE_DIR:-}" ]; then
+                if [ -z "$_chosen" ]; then
                   if [ -n "''${NIX_BUILD_TOP:-}" ]; then
-                    export CCACHE_DIR="$NIX_BUILD_TOP/.ccache"
+                    _chosen="$NIX_BUILD_TOP/.ccache"
                   else
-                    export CCACHE_DIR="''${XDG_CACHE_HOME:-''${HOME:-/tmp}/.cache}/ccache-biltoo"
+                    _chosen="''${XDG_CACHE_HOME:-''${HOME:-/tmp}/.cache}/ccache-biltoo"
                   fi
                 fi
-                mkdir -p "$CCACHE_DIR" || true
+                export CCACHE_DIR="$_chosen"
+                mkdir -p "$CCACHE_DIR/tmp" || true
                 export CCACHE_COMPRESS=1
               '';
             };
@@ -90,8 +106,11 @@
             echo "missing"
           elif [ ! -d "$cand" ]; then
             echo "not a directory"
+          elif mkdir -p "$cand/tmp" 2>/dev/null && ( : >"$cand/tmp/.biltoo-write-test.$$" ) 2>/dev/null; then
+            rm -f "$cand/tmp/.biltoo-write-test.$$" 2>/dev/null || true
+            echo "exists, writable OK (tmp/ create+write)"
           elif [ -w "$cand" ]; then
-            echo "exists, writable OK"
+            echo "exists, dir -w but cannot write tmp/ (chown/chmod 2775 or 1777; fix tmp/ ownership)"
           else
             echo "exists, NOT writable (chown/chmod)"
           fi
