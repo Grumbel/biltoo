@@ -18,7 +18,6 @@
 #include <QPolygonF>
 #include <QRect>
 #include <cstdint>
-#include <memory>
 
 #include "tilelod/tile_types.hpp"
 #include "tilelod/tile_lod_item_bag.hpp"
@@ -371,19 +370,16 @@ private:
                              ColorAdjustments const &grade) const;
     /**
      * Single access path for tile runtime state.
-     * Prefer pipeline-owned bag (ensure via ImageView when on scene);
-     * else local unique_ptr fallback.
+     * Pipeline-owned bag only (ensure via ImageView when on scene).
      */
     tilelod::ItemBag &tileLodBag();
     const tilelod::ItemBag &tileLodBag() const;
-    /** Pipeline adopts ownership; moves local state into @p bag if any. */
+    /** Non-owning pointer to pipeline map entry. */
     void attachTileLodBag(tilelod::ItemBag *bag);
     void detachTileLodBag();
 
     /** Non-owning when pipeline holds the unique_ptr in its map. */
     tilelod::ItemBag *m_tileLodAttached = nullptr;
-    /** Local fallback until attach (or when no pipeline). */
-    mutable std::unique_ptr<tilelod::ItemBag> m_tileLod;
     SessionImageId m_sessionId = kInvalidSessionImageId;
     int m_sessionIndex = -1; // list order cache only
     qint64 m_displaySurfaceId = 0;

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
+#include "imageview.h"
 #include "cropgeometry.h"
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
@@ -46,19 +47,14 @@ bool ImageItem::contentEditMarksVisible()
 ImageItem::~ImageItem()
 {
     // Invalidate pending QTimer::singleShot from tickTileLod (queued on the
-    // scene/app, not tied to this QGraphicsItem lifetime).
+    // scene/app, not tied to this QGraphicsItem lifetime). Pipeline still owns
+    // the bag unique_ptr until releaseTileBag / releaseAllTileBags.
     if (m_tileLodAttached) {
         if (m_tileLodAttached->alive) {
             *m_tileLodAttached->alive = false;
         }
         m_tileLodAttached->repaintQueued = false;
-        m_tileLodAttached = nullptr; // pipeline map may still hold unique_ptr until release
-    }
-    if (m_tileLod && m_tileLod->alive) {
-        *m_tileLod->alive = false;
-    }
-    if (m_tileLod) {
-        m_tileLod->repaintQueued = false;
+        m_tileLodAttached = nullptr;
     }
 }
 
@@ -70,19 +66,25 @@ void ImageItem::setPath(const QString &path)
     }
     m_path = path;
     // Kill pending tickTileLod singleShot so it cannot update() after this
-    // item now represents a different file (stale path identity).
-    if (tileLodBag().alive) {
-        *tileLodBag().alive = false;
+    // item now represents a different file (stale path identity). Only when a
+    // pipeline bag is attached or can be ensured via the scene's ImageView.
+    if (m_tileLodAttached
+        || (scene() && !scene()->views().isEmpty()
+            && qobject_cast<ImageView *>(scene()->views().first()))) {
+        tilelod::ItemBag &bag = tileLodBag();
+        if (bag.alive) {
+            *bag.alive = false;
+        }
+        bag.alive = std::make_shared<bool>(true);
+        // Destroy session only — SharedPathTiles stay in TileLodRegistry (1212).
+        bag.controller.reset();
+        bag.lastUpdateGen = 0;
+        // Do not clear bag.suppressed: crop-draft owns it across path binds.
+        bag.repaintQueued = false;
+        bag.lastDpc = -1.0;
+        bag.lastVisSource = QRectF();
+        clearTileGradedCache();
     }
-    tileLodBag().alive = std::make_shared<bool>(true);
-    // Destroy session only — SharedPathTiles stay in TileLodRegistry (1212).
-    tileLodBag().controller.reset();
-    tileLodBag().lastUpdateGen = 0;
-    // Do not clear tileLodBag().suppressed: crop-draft owns it across path binds.
-    tileLodBag().repaintQueued = false;
-    tileLodBag().lastDpc = -1.0;
-    tileLodBag().lastVisSource = QRectF();
-    clearTileGradedCache();
     // Prefer this path under global LRU when the user navigates back soon.
     tilelod::TileLodRegistry::instance().touch(m_path);
 }

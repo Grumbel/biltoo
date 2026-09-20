@@ -2,6 +2,31 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1802-drop-local-tilelod-bag.** Stage 2: pipeline-only ItemBag.
+Prior: **1801**.
+
+### Change
+- Removed `ImageItem::m_tileLod` local unique_ptr fallback
+- `tileLodBag()` uses attached pipeline bag, else `ensureTileBag` via ImageView;
+  off-scene paths get a debug assert + static orphan sink
+- `attachTileLodBag` is attach-only (no local-state migration)
+- `setPath` resets session only when a pipeline bag is available
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1802-drop-local-tilelod-bag.bundle HEAD
+```
+
+### Next
+- biltoo-build smoke (tile ownership path)
+- ImageView characterization / Tier 4 path-order
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1801-crop-tilelod-via-pipeline.** Stage 2: crop tile suppress via pipeline.
 Prior: **1800**.
 

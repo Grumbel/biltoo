@@ -34,20 +34,20 @@ tilelod::ItemBag &ImageItem::tileLodBag()
     if (m_tileLodAttached) {
         return *m_tileLodAttached;
     }
-    // Prefer pipeline-owned bag when this item is on an ImageView scene.
+    // Pipeline owns the bag: ensure via ImageView when this item is on its scene.
     if (scene() && !scene()->views().isEmpty()) {
         if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
             return iv->hostDisplayPipeline().ensureTileBag(this);
         }
     }
-    if (!m_tileLod) {
-        m_tileLod = std::make_unique<tilelod::ItemBag>();
 #ifndef NDEBUG
-        // Stage 2: normal canvas items should hit the pipeline bag via ImageView.
-        qWarning("ImageItem::tileLodBag: local bag fallback (no ImageView on scene)");
+    // Stage 2: canvas items must register with DisplayPipelineController first.
+    qWarning("ImageItem::tileLodBag: no pipeline bag (item not on ImageView scene)");
+    Q_ASSERT(false && "ImageItem::tileLodBag requires pipeline-owned bag");
 #endif
-    }
-    return *m_tileLod;
+    // Last-resort read/write sink for off-scene construction paths; not retained.
+    static tilelod::ItemBag s_orphan;
+    return s_orphan;
 }
 
 const tilelod::ItemBag &ImageItem::tileLodBag() const
@@ -55,33 +55,14 @@ const tilelod::ItemBag &ImageItem::tileLodBag() const
     if (m_tileLodAttached) {
         return *m_tileLodAttached;
     }
-    if (!m_tileLod) {
-        static const tilelod::ItemBag kEmpty;
-        return kEmpty;
-    }
-    return *m_tileLod;
+    static const tilelod::ItemBag kEmpty;
+    return kEmpty;
 }
 
 void ImageItem::attachTileLodBag(tilelod::ItemBag *bag)
 {
     if (!bag) {
         return;
-    }
-    if (m_tileLodAttached == bag) {
-        return;
-    }
-    // Move any local session state into the pipeline-owned bag.
-    if (m_tileLod) {
-        bag->controller = std::move(m_tileLod->controller);
-        bag->suppressed = m_tileLod->suppressed;
-        bag->repaintQueued = m_tileLod->repaintQueued;
-        bag->alive = std::move(m_tileLod->alive);
-        bag->lastDpc = m_tileLod->lastDpc;
-        bag->lastVisSource = m_tileLod->lastVisSource;
-        bag->lastUpdateGen = m_tileLod->lastUpdateGen;
-        bag->gradedCache.clear();
-        bag->gradeSig = 0;
-        m_tileLod.reset();
     }
     m_tileLodAttached = bag;
 }
