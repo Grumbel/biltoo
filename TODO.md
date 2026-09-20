@@ -2,6 +2,42 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1866-ccache-no-fallback.** Shared host ccache only; fail if unusable.
+Prior: **1865**.
+
+### Change
+- Remove ephemeral `$NIX_BUILD_TOP/.ccache` fallback from `ccacheDirPhase` and
+  `ccacheWrapper`
+- Build **fails** with fix instructions when no candidate is writable
+- Diagnostics / ccache-check updated to match
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1866-ccache-no-fallback.bundle HEAD
+```
+Requires tip **1865** (base **1858** / `1e112d94`).
+
+### Host setup (required for nix build)
+```bash
+sudo mkdir -p /var/cache/ccache/tmp
+sudo chown root:nixbld /var/cache/ccache
+sudo chmod 2775 /var/cache/ccache   # or 1777
+# nix.conf: extra-sandbox-paths = /var/cache/ccache
+sudo systemctl restart nix-daemon
+nix run .#ccache-check
+nix build -L .
+```
+
+### Next
+- Residual pure-hop / Tier 4 design
+- Confirm nix build after host perms fixed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1865-ccache-write-probe.** Require real write probe for shared ccache dir.
 Prior: **1864**.
 
