@@ -724,6 +724,7 @@ dispatch, friend list empty, HudModel + session identity characterization tests.
 - biltoo-1704: size book/GallerySizeResolve host + transform actions (imageview.cpp ~703, transform helpers ~146).
 - biltoo-1705: session remove/bind split + image-mode framing TU (session_bind ~242, framing ~208).
 - biltoo-1706: input event routers, paint background, shell double-click/leave (input ~228, paint ~224, imageview.cpp ~573).
+- biltoo-1707: accessors + clipboard TUs; imageview.cpp ~408 (ctor/dtor). Pure slice series complete — characterization/Tier 4 next.
 
 - Tier 0: **done** (biltoo-1596) — privatized 190 methods with no refs outside
   `imageview*`; declarations live in `imageview_private_methods.inc` +

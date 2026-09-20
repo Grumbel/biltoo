@@ -2,6 +2,30 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1707-accessors-clipboard.** Accessors + clipboard TUs; ImageView.cpp under 410.
+Prior: **1706**.
+
+### Change
+- New `imageview_accessors.cpp` — pack debounce, pendingDecodeCount, itemPaths/selectedPaths
+- `imageview.cpp` ~573 → ~408 (ctor/dtor only)
+- New `imageview_clipboard.cpp` — duplicate, clipboard capture/place, removeSelected
+- `imageview_selection.cpp` ~398 → ~209 (select/transformTargets only)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1707-accessors-clipboard.bundle HEAD
+```
+
+### Next
+- biltoo-build verification
+- **Stop pure slices** — start ImageView characterization harness for Tier 4
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1706-input-paint-shell-events.** Input routers, paint background, shell events TUs.
 Prior: **1705**.
 

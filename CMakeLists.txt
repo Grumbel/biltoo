@@ -108,6 +108,7 @@ add_executable(biltoo
   src/gallerylayout.cpp
   src/gallerylayout.h
   src/imageview.cpp
+  src/imageview_accessors.cpp
   src/imageview_shell_events.cpp
   src/imageview_size_book.cpp
   src/imageview_gallery.cpp
@@ -142,6 +143,7 @@ add_executable(biltoo
   src/imageview_canvas_place.cpp
   src/imageview_canvas_focus.cpp
   src/imageview_selection.cpp
+  src/imageview_clipboard.cpp
   src/imageview_session_bind.cpp
   src/imageview_session_remove.cpp
   src/imageview_crop.cpp
