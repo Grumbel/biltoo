@@ -9,47 +9,54 @@
   outputs = { self, nixpkgs, thumtoo }:
     let
       system = "x86_64-linux";
+      # Default pkgs: no ccache overlay. Plain `nix build .#biltoo` must not
+      # require a host shared cache or extra-sandbox-paths.
+      pkgs = import nixpkgs { inherit system; };
+
       # ccacheStdenv's wrapper must not use $HOME/.ccache: under `nix build` the
       # sandbox sets HOME=/homeless-shelter (not writable) → "ccache: error:
       # Permission denied" on the first compiler probe. Point the wrapper at a
-      # writable dir; keep host override via CCACHE_DIR for extra-sandbox-paths.
-      pkgs = import nixpkgs {
+      # writable shared host dir (see .#ccache-check). Used only by
+      # packages.biltoo.withCcache.
+      ccacheWrapperExtraConfig = ''
+        # Shared host cache only (no ephemeral fallback). HOME under
+        # nix build is /homeless-shelter. Probe real write under dir/tmp.
+        _biltoo_ccache_usable() {
+          local d="$1"
+          mkdir -p "$d/tmp" 2>/dev/null || return 1
+          local probe="$d/tmp/.biltoo-write-test.$$"
+          if ! ( : >"$probe" ) 2>/dev/null; then
+            return 1
+          fi
+          rm -f "$probe" 2>/dev/null || true
+          return 0
+        }
+        _chosen=""
+        if [ -n "''${CCACHE_DIR:-}" ] && _biltoo_ccache_usable "$CCACHE_DIR"; then
+          _chosen="$CCACHE_DIR"
+        else
+          for _cand in /var/cache/ccache /nix/var/cache/ccache; do
+            if _biltoo_ccache_usable "$_cand"; then
+              _chosen="$_cand"
+              break
+            fi
+          done
+        fi
+        if [ -z "$_chosen" ]; then
+          echo "ccache: FATAL — no writable shared CCACHE_DIR (no ephemeral fallback)" >&2
+          echo "ccache: fix /var/cache/ccache perms + extra-sandbox-paths; nix run .#ccache-check" >&2
+          echo "ccache: or build without ccache: nix build .#biltoo" >&2
+          exit 1
+        fi
+        export CCACHE_DIR="$_chosen"
+        export CCACHE_COMPRESS=1
+      '';
+      pkgsCcache = import nixpkgs {
         inherit system;
         overlays = [
           (final: prev: {
             ccacheWrapper = prev.ccacheWrapper.override {
-              extraConfig = ''
-                # Shared host cache only (no ephemeral fallback). HOME under
-                # nix build is /homeless-shelter. Probe real write under dir/tmp.
-                _biltoo_ccache_usable() {
-                  local d="$1"
-                  mkdir -p "$d/tmp" 2>/dev/null || return 1
-                  local probe="$d/tmp/.biltoo-write-test.$$"
-                  if ! ( : >"$probe" ) 2>/dev/null; then
-                    return 1
-                  fi
-                  rm -f "$probe" 2>/dev/null || true
-                  return 0
-                }
-                _chosen=""
-                if [ -n "''${CCACHE_DIR:-}" ] && _biltoo_ccache_usable "$CCACHE_DIR"; then
-                  _chosen="$CCACHE_DIR"
-                else
-                  for _cand in /var/cache/ccache /nix/var/cache/ccache; do
-                    if _biltoo_ccache_usable "$_cand"; then
-                      _chosen="$_cand"
-                      break
-                    fi
-                  done
-                fi
-                if [ -z "$_chosen" ]; then
-                  echo "ccache: FATAL — no writable shared CCACHE_DIR (no ephemeral fallback)" >&2
-                  echo "ccache: fix /var/cache/ccache perms + extra-sandbox-paths; nix run .#ccache-check" >&2
-                  exit 1
-                fi
-                export CCACHE_DIR="$_chosen"
-                export CCACHE_COMPRESS=1
-              '';
+              extraConfig = ccacheWrapperExtraConfig;
             };
           })
         ];
@@ -64,19 +71,38 @@
         else
           versionBase;
 
-      # ccacheStdenv: CC/CXX via ccacheWrapper (overlay sets a writable CCACHE_DIR
-      # inside the sandbox). For a persistent host cache across nix builds, set
-      # CCACHE_DIR to a path listed in nix.conf extra-sandbox-paths.
-      biltoo = pkgs.qt6Packages.callPackage ./default.nix {
+      biltooArgs = pkgsSet: {
         inherit version;
-        stdenv = pkgs.ccacheStdenv;
-        kimageformats = pkgs.kdePackages.kimageformats;
+        kimageformats = pkgsSet.kdePackages.kimageformats;
         # Flake source of thumtoo (add_subdirectory in CMake; not a prebuilt package).
         thumtooSrc = thumtoo;
         # Same pkg-config deps as standalone thumtoo (libunarr, mupdf, …). Without
         # these, nested CMake configure silently disables optional backends.
-        thumtooBuildInputs = thumtoo.lib.mkBuildInputs pkgs;
+        thumtooBuildInputs = thumtoo.lib.mkBuildInputs pkgsSet;
       };
+
+      # Default package: stock stdenv, no ccache requirement.
+      biltooPlain = pkgs.qt6Packages.callPackage ./default.nix (
+        (biltooArgs pkgs) // {
+          enableCcache = false;
+        }
+      );
+
+      # Optional: ccacheStdenv + shared host CCACHE_DIR (extra-sandbox-paths).
+      #   nix build .#biltoo.withCcache
+      biltooWithCcache = pkgsCcache.qt6Packages.callPackage ./default.nix (
+        (biltooArgs pkgsCcache) // {
+          stdenv = pkgsCcache.ccacheStdenv;
+          enableCcache = true;
+        }
+      );
+
+      # Expose withCcache on the default attr path (passthru).
+      biltoo = biltooPlain.overrideAttrs (old: {
+        passthru = (old.passthru or { }) // {
+          withCcache = biltooWithCcache;
+        };
+      });
 
       ccacheCheck = pkgs.writeShellScriptBin "biltoo-ccache-check" ''
         set -euo pipefail
@@ -132,21 +158,28 @@
           echo "  (nix show-config not available)"
         fi
         echo ""
-        echo "Without a writable shared path: nix build FAILS (no ephemeral fallback)."
-        echo "With a writable shared path + extra-sandbox-paths: hits accumulate."
+        echo "Without a writable shared path: nix build .#biltoo.withCcache FAILS (no ephemeral fallback)."
+        echo "Plain nix build .#biltoo does not use ccache and needs no shared host dir."
+        echo "With a writable shared path + extra-sandbox-paths: withCcache hits accumulate."
       '';
 
     in
     {
       packages.${system} = {
         default = biltoo;
+        # Plain build (no ccache / no shared host cache required).
+        #   nix build .#biltoo
         biltoo = biltoo;
+        # Optional ccacheStdenv + shared host CCACHE_DIR:
+        #   nix build .#biltoo.withCcache
+        #   (also: packages.biltoo.withCcache / .#biltoo.withCcache)
         # Separate debug output from the package (ELF debuginfo under lib/debug).
         #   nix build .#debug
         #   gdb -ex "set debug-file-directory $(nix build --no-link --print-out-paths .#debug)/lib/debug" \
         #       $(nix build --no-link --print-out-paths)/bin/biltoo
         debug = biltoo.debug;
-        # Diagnose persistent nix-build ccache (extra-sandbox-paths + host dir).
+        # Diagnose persistent nix-build ccache for .#biltoo.withCcache
+        # (extra-sandbox-paths + host dir).
         #   nix run .#ccache-check
         ccache-check = ccacheCheck;
       };
@@ -427,7 +460,8 @@
             echo "  biltoo-run [args]  # build + run out-of-tree binary"
             echo "  biltoo-run-gdb [args]  # build + gdb --args biltoo"
             echo "  biltoo-test [ctest args]  # build + ctest (QT_QPA_PLATFORM=offscreen)"
-            echo "  nix build          # RelWithDebInfo package (wrapped, ccacheStdenv)"
+            echo "  nix build .#biltoo            # RelWithDebInfo (no ccache)"
+            echo "  nix build .#biltoo.withCcache  # same + shared-host ccache"
             echo "  nix build .#debug  # matching debug symbols"
             echo "  also: nix develop -c biltoo-run   # helpers are on PATH"
             echo ""
@@ -480,7 +514,7 @@
                 echo "  stats:    (ccache -s failed — check CCACHE_DIR permissions)"
               fi
             fi
-            echo "  nix build (shared host only — no ephemeral fallback):"
+            echo "  nix build .#biltoo.withCcache (shared host only — no ephemeral fallback):"
             _nb_ok=
             for _cand in /var/cache/ccache /nix/var/cache/ccache; do
               if mkdir -p "$_cand/tmp" 2>/dev/null && ( : >"$_cand/tmp/.biltoo-write-test.$$" ) 2>/dev/null; then
@@ -494,8 +528,9 @@
               echo "    expected log line: biltoo ccache: dir=$_nb_ok mode=shared-host"
               echo "    (requires extra-sandbox-paths for that dir)"
             else
-              echo "    host dir: NONE writable — nix build will FAIL"
-              echo "    setup: nix run .#ccache-check"
+              echo "    host dir: NONE writable — .#biltoo.withCcache will FAIL"
+              echo "    plain:   nix build .#biltoo (no ccache, always OK)"
+              echo "    setup:   nix run .#ccache-check"
             fi
             echo "────────────────────────────────────────────────────────"
           '';

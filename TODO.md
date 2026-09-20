@@ -2,6 +2,34 @@
 
 ## Status (2026-09-20)
 
+**Tip: biltoo-1882-optional-ccache.** Plain `nix build .#biltoo` without ccache.
+Prior: **1881**.
+
+### Change
+- `default.nix`: `enableCcache ? false`; `ccacheDirPhase` only when true
+- `flake.nix`: default `pkgs` has no ccache overlay; `biltoo` uses stock stdenv
+- Optional: `nix build .#biltoo.withCcache` (passthru) uses `pkgsCcache` +
+  `ccacheStdenv` + shared host `CCACHE_DIR` (same fatal probe as before)
+- `nix flake check` / `.#biltoo` / `.#default` no longer require host ccache
+- Dev shell still uses local `ccacheStdenv` for out-of-tree `biltoo-build`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1882-optional-ccache-516d734.bundle HEAD
+```
+Requires tip **1881** / base **516d734**.
+
+### Next
+- Adopt PackOrderOverlay storage behind existing host mutators (step 2)
+- ImageView characterization harness (decode + framing)
+- Do **not** delete `m_pathOrderBook` until harness green
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-20)
+
 **Tip: biltoo-1881-pack-order-overlay-design.** PackOrderOverlay design type + pure tests.
 Prior: **1880**.
 

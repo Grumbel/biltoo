@@ -38,6 +38,9 @@
 , openjpeg
 , libhwy
 , version ? "0.1.0-dev"
+  # When true (flake .#biltoo.withCcache): require ccacheStdenv + shared host
+  # CCACHE_DIR. Default false so plain `nix build .#biltoo` needs no host cache.
+, enableCcache ? false
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -103,11 +106,12 @@ stdenv.mkDerivation (finalAttrs: {
   cmakeBuildType = "RelWithDebInfo";
   separateDebugInfo = true;
 
-  # ccacheStdenv: shared host CCACHE_DIR only (no ephemeral fallback).
-  # Must *write* a probe under dir/tmp — [ -w ] alone misses wrong tmp/ ownership.
-  # Fail the build if no shared path is usable; fix host perms rather than hide it.
-  prePhases = [ "ccacheDirPhase" ];
-  ccacheDirPhase = ''
+  # Optional shared-host ccache (flake .#biltoo.withCcache / enableCcache=true).
+  # Shared host CCACHE_DIR only (no ephemeral fallback). Must *write* a probe
+  # under dir/tmp — [ -w ] alone misses wrong tmp/ ownership. Fail the build if
+  # no shared path is usable; fix host perms rather than hide it.
+  prePhases = lib.optionals enableCcache [ "ccacheDirPhase" ];
+  ccacheDirPhase = lib.optionalString enableCcache ''
     _biltoo_ccache_usable() {
       local d="$1"
       mkdir -p "$d/tmp" 2>/dev/null || return 1
@@ -143,6 +147,7 @@ stdenv.mkDerivation (finalAttrs: {
       echo "  # nix.conf: extra-sandbox-paths = /var/cache/ccache"
       echo "  sudo systemctl restart nix-daemon"
       echo "biltoo ccache: diagnose: nix run .#ccache-check"
+      echo "biltoo ccache: or build without ccache: nix build .#biltoo"
       exit 1
     fi
     export CCACHE_DIR="$_chosen"
