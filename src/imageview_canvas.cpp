@@ -22,11 +22,6 @@
 #include <QUndoStack>
 #include <QGraphicsItem>
 
-void ImageView::setWorkspacePaths(const QStringList &paths)
-{
-    setWorkspacePaths(paths, {});
-}
-
 QList<ImageItem *> ImageView::collectDoomedWorkspaceItems(const QStringList &paths,
                                                           const QVector<SessionImageId> &sessionIds) const
 {

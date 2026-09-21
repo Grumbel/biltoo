@@ -14,26 +14,6 @@
 #include <QPointer>
 #include <QTimer>
 
-bool ImageView::addImage(const QString &path)
-{
-    if (isImageMode()) {
-        return false;
-    }
-
-    if (ImageItem *existing = findItemForPath(path)) {
-        m_scene->clearSelection();
-        existing->setSelected(true);
-        ensureVisibleItem(existing);
-        emit statusChanged();
-        return true;
-    }
-
-    m_displayPipeline.scheduleImageLoad(path, LoadAdd);
-    emit statusChanged();
-    return true;
-}
-
-
 bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId,
                                      int sessionIndex)
 {
@@ -110,14 +90,6 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
     emit statusChanged();
     return true;
 }
-
-
-bool ImageView::addImageForSession(const QString &path, int sessionIndex)
-{
-    return addImageForSession(path, kInvalidSessionImageId, sessionIndex);
-}
-
-
 
 
 bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
@@ -252,8 +224,4 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
 }
 
 
-bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos)
-{
-    return placeOrMoveImageAt(path, scenePos, kInvalidSessionImageId, -1);
-}
 

@@ -1356,7 +1356,9 @@ void MainWindow::ensureMultiImageMode()
     m_thumbnailBar->setMultiSelectEnabled(true);
     if (m_imageView->itemCount() == 0
         && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-        m_imageView->addImage(m_session.paths().at(m_currentIndex));
+        // Always bind the session row — path-only addImage left an unbound tile.
+        m_imageView->addImageForSession(m_session.paths().at(m_currentIndex),
+                                        sessionIdAt(m_currentIndex), m_currentIndex);
     }
     syncThumbnailWorkspaceSelection();
     if (m_session.paths().size() > 1

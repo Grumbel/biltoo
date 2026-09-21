@@ -147,15 +147,15 @@ public:
     }
 
     ~ImageView() override;
-    bool addImage(const QString &path);
-    /** Add (or select) the canvas instance bound to @p sessionIndex. */
-    bool addImageForSession(const QString &path, int sessionIndex);
+    /**
+     * Add (or select) the canvas instance bound to @p sessionId / @p sessionIndex.
+     * SessionImageId is required — path alone is not identity (IDENTITY.md).
+     */
     bool addImageForSession(const QString &path, SessionImageId sessionId, int sessionIndex);
     /**
-     * Workspace: place @p path at @p scenePos. If the path is already on the
-     * canvas, a new instance is created (duplicate) — the original is not moved.
+     * Workspace: place @p path at @p scenePos for @p sessionId. If that session
+     * image is already on the canvas, move it; otherwise create a bound tile.
      */
-    bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos);
     bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
                             SessionImageId sessionId, int sessionIndex);
     /**
@@ -282,12 +282,13 @@ public:
     void setGalleryReturnAvailable(bool on);
 
     /**
-     * Show exactly the given paths on the workspace. Images already present
-     * keep their live transform; newly added ones restore saved state or get
-     * a default placement. Images no longer listed are removed from the
-     * scene after their state is saved.
+     * Show exactly the given session rows on the workspace. @p sessionIds must
+     * align with @p paths (one id per path). Images already present keep their
+     * live transform; newly added ones restore saved state or get a default
+     * placement. Images no longer listed are removed after their state is saved.
+     * Path-only rebuild is removed — callers pass session ids so duplicate
+     * paths stay distinct (IDENTITY.md).
      */
-    void setWorkspacePaths(const QStringList &paths);
     void setWorkspacePaths(const QStringList &paths,
                            const QVector<SessionImageId> &sessionIds);
     /** Reorder canvas items to match @p paths (session / sort order). */

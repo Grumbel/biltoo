@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2108-drop-path-only-placement-apis.** SESSION residual: remove path-only placement overloads.
+Prior: **2107**.
+
+### Change
+- Remove `ImageView::addImage(path)`, index-only `addImageForSession`, path-only
+  `placeOrMoveImageAt`, and path-only `setWorkspacePaths` — callers must pass
+  `SessionImageId`
+- Fix `ensureMultiImageMode` to `addImageForSession` + `sessionIdAt` (missed in 2107)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2108-drop-path-only-placement-apis-e77da63.bundle HEAD
+```
+Requires tip **2107** (base **e77da63**); includes 1938–2108.
+
+### Next
+- SESSION residual: path map still written for unbound-only tiles; temporary
+  unbound during duplicate-before-bind
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2107-unbound-tile-placement-bind-id.** SESSION residual: placement paths bind SessionImageId.
 Prior: **2106**.
 

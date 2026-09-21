@@ -107,13 +107,14 @@ unbound and edits will not propagate correctly in Workspace).
 
 ### High priority
 
-1. **Unbound tiles (`sessionId == 0`) — production paths tightened (biltoo-2107)**  
-   `seedEmptyWorkspaceFromReplace`, `ensureMultiImageMode`, and
-   `syncCanvasFromThumbnailSelection` now bind `SessionImageId`. Workspace
+1. **Unbound tiles (`sessionId == 0`) — path-only placement APIs removed (biltoo-2108)**  
+   Removed `addImage(path)`, index-only `addImageForSession`, path-only
+   `placeOrMoveImageAt`, and path-only `setWorkspacePaths`. Remaining entry
+   points require `SessionImageId`. `ensureMultiImageMode` binds via
+   `addImageForSession` (completed in 2108; intended in 2107). Workspace
    edits on unbound tiles **still** do not write `m_sessionAppearance` and
-   **do not** sync (by design after 024). Residual: path-only overloads of
-   `addImage` / `placeOrMoveImageAt` / `setWorkspacePaths(paths)` remain for
-   tests/legacy; callers must prefer the id-aware APIs.
+   **do not** sync (by design after 024). Residual: temporary unbound tiles
+   during duplicate-before-bind, and path map for unbound-only content.
 
 2. **Open-by-path still exists (fallback only)**  
    Gallery open / double-click prefer `sessionImageOpenRequested(id)` then
@@ -122,7 +123,7 @@ unbound and edits will not propagate correctly in Workspace).
    Sort / append / remove / slideshow start prefer `SessionImageId` over
    `paths().indexOf` (biltoo-2105). Workspace filmstrip selection restore after
    append prefers live `itemSessionIds()` (biltoo-2106). Empty-workspace
-   LoadReplace seed and bulk selection→canvas now bind ids (biltoo-2107).
+   LoadReplace seed and bulk selection→canvas bind ids (biltoo-2107/2108).
 
 3. **Path map (`PathItemStateBook`) — write/read hygiene largely in place**  
    Bound content is stripped on `setPathState` (IDENTITY 2069–2071).
@@ -139,11 +140,10 @@ unbound and edits will not propagate correctly in Workspace).
    `restoreSessionEntries` re-inserts the same id. Redo resolves rows by id
    (index is fallback only).
 
-6. **`setWorkspacePaths(paths)` path-only**  
-   Gallery/session rebuild uses id-aware `setWorkspacePaths(paths, ids)` from
-   MainWindow. Path-only overload remains; `syncCanvasFromThumbnailSelection`
-   now passes ids (biltoo-2107). Path duplicates in Gallery packing are still
-   underspecified long-term (DOMAIN: one object per session image).
+6. **`setWorkspacePaths(paths)` path-only — removed (biltoo-2108)**  
+   Only `setWorkspacePaths(paths, ids)` remains. Path duplicates in Gallery
+   packing are still underspecified long-term (DOMAIN: one object per session
+   image — packing by id).
 
 ### Medium
 

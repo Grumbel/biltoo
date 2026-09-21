@@ -44,9 +44,8 @@
     static qreal pageGuidePxPerMm();
 
     /**
-     * Same as path-only overload, but binds each path to the parallel
-     * @p sessionIds entry (stable SessionImageId). Gallery/Workspace loads
-     * then apply per-id crop/flip/rotate from appearance().
+     * Choose live tiles to remove when setWorkspacePaths rebuilds membership.
+     * Prefer SessionImageId; path occurrence counts only for unbound leftovers.
      */
     QList<ImageItem *> collectDoomedWorkspaceItems(const QStringList &paths,
                                                    const QVector<SessionImageId> &sessionIds) const;
