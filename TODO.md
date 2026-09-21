@@ -2,6 +2,28 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2064-stage4b-write-api-docs-test-names.** Stage 4b write API map; drop dual-write test names.
+Prior: **2063**.
+
+### Change
+- REFACTOR Stage 4b: residual write APIs documented (merge / component / clear / setAppearance)
+- `itemworld_test` slot names no longer say dualWrite / DTO / fat
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2064-stage4b-write-api-docs-test-names-e77da63.bundle HEAD
+```
+Requires tip **2063** (base **e77da63**); includes 1938–2064.
+
+### Next
+- Phase 7 Stage 2 residual / Phase 6 Tier 4 decode-framing when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2063-capturestate-no-legacy-lag.** captureState drops sparse-incomplete live fill.
 Prior: **2062**.
 

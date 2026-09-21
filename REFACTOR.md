@@ -1043,14 +1043,7 @@ Ids are never recycled (`IDENTITY`). Content is sparse-only (no fat DTO mirror).
 `sessiondocument_test` (seeds), `itemworld_test` (sparse content).
 
 
-**Stage 4b status: complete** (tip 2051 — product: nested sparse, no v1 compat)
-
-Prerequisites already in place:
-
-- Sparse-prefer store reads (`appearanceValue`, `hasDurableAppearance`)
-- Freeze policy (`freezeItemAppearance`) so interaction freezes do not depend on fat lag
-- Project/clipboard boundary builds DTOs from sparse-prefer values
-- Load path dual-fills sparse tables via `setAppearance`
+**Stage 4b status: complete** (tips 2051–2063 — product: nested sparse, no v1 compat)
 
 Stage 4b delivered (product: no backward compatibility):
 
@@ -1058,6 +1051,20 @@ Stage 4b delivered (product: no backward compatibility):
 2. Nested on-disk shape: `crop` / `attention` / `bake` / `color` / `placement` objects
 3. Component mutators + `setAppearance` sparse-only; `appearanceValue` assembles from sparse
 4. `SessionSeedBook` is seed-attempt only (no fat `WorkspaceItemState` map)
+5. Write-path hygiene (2060–2063): `mergeContentFromState` (XDG seed), crop/bake
+   component writes, `clearContentComponents` (Reset Content), `captureState` without
+   live gap-fill; `setAppearance` preserves existing Placement on identity pose
+
+**Runtime write APIs (single source of truth)**
+
+| Intent | API |
+|--------|-----|
+| Full replace (load / bind / snapshot) | `setAppearance` |
+| Content upsert (XDG seed) | `mergeContentFromState` |
+| Crop commit / orient bake | `setCrop` + `setContentBake` |
+| Content reset | `clearContentComponents` |
+| Pose only | `setPlacement` |
+| Attention / color | `setAttention` / `setColor` |
 
 **Sequencing relative to Stages 0–3**
 

@@ -22,17 +22,17 @@ private slots:
     void bind_pointsAtSameStore();
     // Stage 1
     void cropFromState_emptyWhenNoCrop();
-    void crop_setAppearanceDualWritesTable();
-    void setCrop_updatesDtoAndTable();
+    void crop_setAppearanceWritesTable();
+    void setCrop_updatesSparseTable();
     void setCrop_clearRemovesPresence();
     void attention_setAndClear();
     void removeAppearance_clearsComponents();
     void crop_fallbackWhenDtoWrittenDirectly();
-    void clearAppearance_clearsDtoAndTables();
+    void clearAppearance_clearsSparseTables();
     void contentBake_setAndClear();
     void color_setAndClear();
-    void setAppearance_dualWritesBakeAndColor();
-    void placement_setAppearanceDualWrites();
+    void setAppearance_writesBakeAndColor();
+    void placement_setAppearanceWritesPose();
     void setPlacement_updatesDto();
     void placementNearlyEqual_detectsNoOp();
     // Stage 2: Placement ↔ WorkspaceItemState bridge
@@ -42,10 +42,10 @@ private slots:
     void setPathState_stripsCropWhenBound();
     // Stage 2 residual: durable presence (fat | sparse)
     void hasDurableAppearance_emptyAndAfterSparse();
-    void hasDurableAppearance_fatOnlyCrop();
-    void appearanceValue_sparseCropWinsOverStaleFat();
+    void hasDurableAppearance_seedOnlyNotDurable();
+    void appearanceValue_sparseCropWins();
     // Stage 4b readiness: sparse survives fat removal (dual-write lag)
-    void hasDurableAppearance_sparseOnlyAfterFatRemoved();
+    void hasDurableAppearance_sparseOnly();
     void setAppearance_preservesExistingPlacement();
     void mergeContentFromState_doesNotClearSiblings();
     void clearContentComponents_keepsAttentionAndPlacement();
@@ -139,7 +139,7 @@ void ItemWorldTest::cropFromState_emptyWhenNoCrop()
     QVERIFY(ItemComponents::cropFromState(s).isEmpty());
 }
 
-void ItemWorldTest::crop_setAppearanceDualWritesTable()
+void ItemWorldTest::crop_setAppearanceWritesTable()
 {
     ItemWorld world;
 
@@ -158,7 +158,7 @@ void ItemWorldTest::crop_setAppearanceDualWritesTable()
     QCOMPARE(c.rotation, 15.0);
 }
 
-void ItemWorldTest::setCrop_updatesDtoAndTable()
+void ItemWorldTest::setCrop_updatesSparseTable()
 {
     ItemWorld world;
 
@@ -228,7 +228,7 @@ void ItemWorldTest::removeAppearance_clearsComponents()
 
 void ItemWorldTest::crop_fallbackWhenDtoWrittenDirectly()
 {
-    // Stage 4b residual: seed book is not content; sparse empty until setAppearance.
+    // Seed book is not content; sparse empty until setAppearance.
     SessionSeedBook seeds;
     ItemWorld world;
     seeds.markSeedAttempted(8);
@@ -239,7 +239,7 @@ void ItemWorldTest::crop_fallbackWhenDtoWrittenDirectly()
     QVERIFY(seeds.seedAttempted(8));
 }
 
-void ItemWorldTest::clearAppearance_clearsDtoAndTables()
+void ItemWorldTest::clearAppearance_clearsSparseTables()
 {
     ItemWorld world;
 
@@ -304,7 +304,7 @@ void ItemWorldTest::color_setAndClear()
     QCOMPARE(world.colorCount(), 0);
 }
 
-void ItemWorldTest::setAppearance_dualWritesBakeAndColor()
+void ItemWorldTest::setAppearance_writesBakeAndColor()
 {
     ItemWorld world;
 
@@ -320,7 +320,7 @@ void ItemWorldTest::setAppearance_dualWritesBakeAndColor()
 }
 
 
-void ItemWorldTest::placement_setAppearanceDualWrites()
+void ItemWorldTest::placement_setAppearanceWritesPose()
 {
     ItemWorld world;
 
@@ -462,7 +462,7 @@ void ItemWorldTest::hasDurableAppearance_emptyAndAfterSparse()
     QVERIFY(world.hasPlacement(2));
 }
 
-void ItemWorldTest::hasDurableAppearance_fatOnlyCrop()
+void ItemWorldTest::hasDurableAppearance_seedOnlyNotDurable()
 {
     // Seed flag alone is not durable content appearance.
     SessionSeedBook seeds;
@@ -475,7 +475,7 @@ void ItemWorldTest::hasDurableAppearance_fatOnlyCrop()
     QVERIFY(seeds.seedAttempted(9));
 }
 
-void ItemWorldTest::appearanceValue_sparseCropWinsOverStaleFat()
+void ItemWorldTest::appearanceValue_sparseCropWins()
 {
     ItemWorld world;
 
@@ -498,9 +498,9 @@ void ItemWorldTest::appearanceValue_sparseCropWinsOverStaleFat()
 }
 
 
-void ItemWorldTest::hasDurableAppearance_sparseOnlyAfterFatRemoved()
+void ItemWorldTest::hasDurableAppearance_sparseOnly()
 {
-    // Stage 4b readiness: store-read must not require the fat dual-write mirror.
+    // Store-read uses sparse tables only.
     ItemWorld world;
 
     ItemComponents::Crop c;
