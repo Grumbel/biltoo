@@ -65,13 +65,21 @@ void ImageController::enter()
                 continue;
             }
             if (cand->hasDisplayPixels()) {
-                ImageCache::put(path.isEmpty() ? cand->path() : path,
-                                cand->displayImage());
+                // ImageCache must stay host-raw. Display samples may already
+                // carry applied ContentXform; putting them in the cache made
+                // installDisplayPixels materialize want again (double rotate).
+                // pendingTile takes display-ready soft from the stash instead.
+                if (!m_view->itemHasAppliedContentXform(cand)) {
+                    ImageCache::put(path.isEmpty() ? cand->path() : path,
+                                    cand->displayImage());
+                }
                 return true;
             }
             if (!cand->pixmap().isNull()) {
-                ImageCache::put(path.isEmpty() ? cand->path() : path,
-                                cand->pixmap().toImage());
+                if (!m_view->itemHasAppliedContentXform(cand)) {
+                    ImageCache::put(path.isEmpty() ? cand->path() : path,
+                                    cand->pixmap().toImage());
+                }
                 return true;
             }
         }

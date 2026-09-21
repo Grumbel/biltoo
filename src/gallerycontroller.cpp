@@ -241,22 +241,25 @@ void GalleryController::onLeave(int nextMode)
     m_view->stopDeferredPacking();
     m_view->hostGallerySizeResolve().cancel();
     m_pendingRestore = false;
-    // Gallery → Image: keep scroll/centre snapshot from snapshotViewport()
-    // (called just before setViewMode) so return-to-Gallery can restore it.
-    // Any other leave path drops the snapshot.
-    if (next == ImageView::ViewMode::Image) {
-        // Keep tiles + decoded pixels for a fast return to Gallery.
+    // Gallery → Image or Workspace: keep pack in Gallery stash (off-scene).
+    // Do not destroy tiles — return restores the same cells (no rebuild flicker).
+    // Workspace free-form tiles live in Workspace stash; these must never be
+    // mixed (MODE_OWNERSHIP). Gallery::enter restores only Gallery stash.
+    if (next == ImageView::ViewMode::Image
+        || next == ImageView::ViewMode::Workspace) {
+        // Image: keep scroll snapshot from snapshotViewport() when armed.
+        // Workspace: drop scroll snapshot (free-form camera is separate).
+        if (next == ImageView::ViewMode::Workspace) {
+            m_haveScroll = false;
+            m_haveViewCenter = false;
+            m_pendingRestore = false;
+        }
         stashItems();
     } else {
-        // Gallery → Workspace / other: discard the pack. Shared ImageCache /
-        // thumtoo tile RAM makes populateGalleryCanvas rebuild cheap. Stashing
-        // the pack into Gallery stash caused Gallery::enter (from Workspace)
-        // to restore grid tiles onto live, then Workspace.stashItems to capture
-        // those grid tiles as the free-form arrangement.
         m_haveScroll = false;
         m_haveViewCenter = false;
         m_view->hostGallery().invalidateDecodes();
-        discardStash(); // drop any stale Image-return stash
+        discardStash();
         m_view->clearLiveCanvas();
         m_view->pathOrderClear();
     }
@@ -315,11 +318,12 @@ void GalleryController::enter(int packagedLayoutInt, int previousModeInt)
     const bool layoutSwitch = (previous == ImageView::ViewMode::Gallery)
         && m_view->isGalleryMode();
 
-    // Restore Gallery stash only when returning from Image. Stash from a prior
-    // Image visit must not be reattached when entering from Workspace (that
-    // put packed cells on the Workspace canvas via a later workspace stash).
+    // Restore Gallery stash when returning from Image or Workspace. Pack lives
+    // only in Gallery m_stashedItems — never in Workspace stash — so this does
+    // not put grid cells onto the free-form canvas.
     const bool restoredStash = !layoutSwitch
-        && previous == ImageView::ViewMode::Image
+        && (previous == ImageView::ViewMode::Image
+            || previous == ImageView::ViewMode::Workspace)
         && !m_stashedItems.isEmpty();
     const bool holdPaint = restoredStash;
     if (holdPaint && m_view->viewport()) {

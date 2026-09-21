@@ -2,6 +2,39 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2165-orient-seed-gallery-stash.** Workspace→Image rotation double-bake;
+Gallery pack survives Workspace without full rebuild flicker.
+
+### Rotation (double / missing)
+
+`ImageController::enter` seeded `ImageCache` with stash `displayImage()` which may
+already include applied ContentXform. `installDisplayPixels` treats cache as
+host-raw and materializes store want again → double rotate (or inconsistent).
+
+**Fix:** only seed ImageCache when the stash tile has **no** applied content xform.
+Display-ready soft comes from `resolveImageModePendingPixels` → stash path.
+
+### Gallery flicker on mode switch
+
+Gallery→Workspace **destroyed** the pack (`clearLiveCanvas` + invalidate). Return
+rebuilt 57 placeholders → soft climb → flicker.
+
+**Fix:** stash Gallery pack for both Image and Workspace leave; restore on enter
+from either. Workspace free-form stays in Workspace stash only.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2165-orient-seed-gallery-stash-e77da63.bundle HEAD
+```
+
+Next: **2166** — QA rotated Workspace double-click Image; Gallery↔Workspace no blank flash.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2164-find-session-id-live-only.** Individual Gallery tiles missing
 after placing the same session image on Workspace.
 

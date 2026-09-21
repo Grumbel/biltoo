@@ -47,8 +47,8 @@ duplicates) of those rows on a free-form canvas. Placing on Workspace must
 | Workspace → Image | `snapshot` + **stash all** free-form tiles (pointers stay in Workspace stash) | Clear live; `loadImage(classicPath)` underlay from LQIP / ImageCache / filmstrip sample / tiles |
 | Image → Workspace | **Central detach** destroys Image underlay | Restore Workspace pointer stash; if empty, durable `LoadRestore` |
 | Gallery → Image | Stash packed cells | `loadImage`; return restores Gallery stash |
-| Gallery → Workspace | Discard pack + clear live | Restore Workspace stash / durable |
-| Workspace → Gallery | Stash free-form | Discard residual live; **`populateGalleryCanvas` full session** |
+| Gallery → Workspace | **Stash pack** (Gallery stash only) | Restore Workspace stash / durable |
+| Workspace → Gallery | Stash free-form | Restore Gallery stash if present; else populate |
 | Image → Gallery | **Central detach** destroys Image underlay | Prefer Gallery pointer stash; else **`populateGalleryCanvas`** |
 
 ### Gallery empty defense (Workspace → Gallery)
