@@ -335,3 +335,28 @@ QRectF ImageView::selectionSceneBounds(const QList<ImageItem *> &items) const
     return SelectionGeometry::unionContentAabbs(rects);
 }
 
+
+void ImageView::flushAppliedContentToItemWorld()
+{
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        if (!itemHasAppliedContentXform(item)) {
+            continue;
+        }
+        WorkspaceItemState s = sessionAppearanceValue(sid);
+        itemAppliedContentXform(item).applyToState(s);
+        s.sessionId = sid;
+        s.path = item->path();
+        m_itemWorld.setContentBake(sid, ItemComponents::contentBakeFromState(s));
+        m_itemWorld.setCrop(sid, ItemComponents::cropFromState(s));
+        if (!s.colorAdjust.isIdentity() || m_itemWorld.hasColor(sid)) {
+            m_itemWorld.setColor(sid, ItemComponents::colorFromState(s));
+        }
+    }
+}

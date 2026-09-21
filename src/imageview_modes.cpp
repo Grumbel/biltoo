@@ -298,6 +298,8 @@ void ImageView::setViewMode(ViewMode mode)
     }
 
     const ViewMode previous = m_viewMode;
+    // Mid-edit applied ContentXform must hit ItemWorld before leave (ECS #4).
+    flushAppliedContentToItemWorld();
     biltooModeDbg("setViewMode %d→%d live=%d wstash=%d gstash=%d",
                   static_cast<int>(previous), static_cast<int>(mode),
                   itemCount(),

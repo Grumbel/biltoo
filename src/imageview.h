@@ -708,6 +708,8 @@ protected:
     bool viewportEvent(QEvent *event) override;
 
 private:
+    void flushAppliedContentToItemWorld();
+
     /** Geometry undo command (transform_actions); needs private session-state APIs. */
     friend class ImageViewTransformGeometryCommand;
 

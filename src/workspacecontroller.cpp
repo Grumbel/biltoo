@@ -70,14 +70,27 @@ void WorkspaceController::restore()
     for (WorkspaceItemState &slot : m_savedItems) {
         if (slot.sessionId != kInvalidSessionImageId) {
             if (m_view->itemWorld().hasDurableAppearance(slot.sessionId)) {
+                // Pose from snapshot; content only from ItemWorld (ECS_GUI_BYPASSES #5).
                 const WorkspaceItemState sit = m_view->sessionAppearanceValue(slot.sessionId);
-                slot.hasCrop = sit.hasCrop;
-                slot.cropRect = sit.cropRect;
-                slot.hFlip = sit.hFlip;
-                slot.vFlip = sit.vFlip;
-                slot.contentQuarterTurns = sit.contentQuarterTurns;
-                slot.contentHFlip = sit.contentHFlip;
-                slot.contentVFlip = sit.contentVFlip;
+                const QPointF pos = slot.pos;
+                const qreal scale = slot.scale;
+                const qreal scaleY = slot.scaleY;
+                const qreal rotation = slot.rotation;
+                const qreal opacity = slot.opacity;
+                const qreal z = slot.z;
+                const int sessionIndex = slot.sessionIndex;
+                const QString path = slot.path;
+                const SessionImageId sid = slot.sessionId;
+                slot = sit;
+                slot.pos = pos;
+                slot.scale = scale;
+                slot.scaleY = scaleY;
+                slot.rotation = rotation;
+                slot.opacity = opacity;
+                slot.z = z;
+                slot.sessionIndex = sessionIndex;
+                slot.path = path;
+                slot.sessionId = sid;
                 continue;
             }
             // Bound but no appearance yet: leave identity; pipeline XDG seed

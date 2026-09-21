@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2177-ecs-restore-flush.** Workspace restore content = ItemWorld only;
+flush applied ContentXform into ItemWorld on every mode leave.
+
+### ECS work list
+
+- [x] 2174 Mode-stash soft not Image underlay
+- [x] 2176 Filmstrip displayReady ignored for Image; no filmstrip→ImageCache
+- [x] 2177 Workspace restore: pose snapshot, full content from ItemWorld
+- [x] 2177 flushAppliedContentToItemWorld on setViewMode before onLeave
+- [x] 2177 ImageCache host-raw contract documented on class
+- [ ] Full ImageCache::put site audit (gallery LQIP scale is host-ok)
+- [ ] Ban incremental bakeRotate90 when host exists (already prefers rematerialize)
+- [ ] Filmstrip override = paint cache only after ItemWorld commit
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2177-ecs-restore-flush-e77da63.bundle HEAD
+```
+
+Next: **2178**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2176-image-orient-host-only.** Image underlay no longer uses filmstrip
 displayReady overrides; always host-raw + ItemWorld materialize.
 
