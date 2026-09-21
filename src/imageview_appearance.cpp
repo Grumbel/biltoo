@@ -165,6 +165,8 @@ void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
         return;
     }
     item->setSessionId(id);
+    // Stage 2 residual: list-order cache follows document when the id is bound.
+    refreshSessionIndexCache(item);
 }
 
 void ImageView::setItemSessionIndex(ImageItem *item, int index)

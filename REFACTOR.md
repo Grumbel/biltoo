@@ -1078,7 +1078,7 @@ Stage 4b delivered (product: no backward compatibility):
 | `m_colorAdjust` | Live grade for paint + slider lag | Keep until grade is applied only via rematerialize; interaction lag needs a host-side scratch |
 | Applied `ContentXform` fingerprint | Mid-edit content authority | Keep on item (or move to a runtime-only table under DisplayPipeline) |
 | Live pose (`m_scaleX`… via `applyPlacement`) | QGraphicsItem transform | Keep; durable copy is ItemWorld Placement |
-| `sessionIndex` cache | List-order mirror | Prefer `sessionListIndex` / document; refresh after `setSessionId` (2067); cache remains for unbound / O(1) hints |
+| `sessionIndex` cache | List-order mirror | Prefer `sessionListIndex` / document; `refreshSessionIndexCache` after `setSessionId` (2067, 2078); cache remains for unbound / O(1) hints |
 | Tile LOD bag pointer | Runtime decode | Already pipeline-owned bag |
 | `PendingItemAppearanceBook` | Duplicate→bind staging | GUI-only; destination is `setAppearance` on bind |
 | `PathItemStateBook` | Unbound content + placement | Bound content stripped on write (2069); bound reads sparse+XDG (2070–2071) |
@@ -1449,6 +1449,9 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2049: Stage 2 residual — SessionDocument::removeAt drops fat appearance
   for the removed id (defense in depth; sparse still via ItemWorld).
 - biltoo-2050: Docs — session appearance lifecycle table (Open/Sort/Remove/Wipe).
+- biltoo-2067: Stage 2 residual — refresh sessionIndex cache from document after setSessionId.
+- biltoo-2078: Stage 2 residual — `refreshSessionIndexCache` consolidates list-order
+  cache stamp after setSessionId; bind/LoadAdd no longer gate on cache==-1.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
@@ -1470,7 +1473,7 @@ hygiene (2022–2025).
 | Live pose | `placement()` reader; `applyPlacement` private (+ `GalleryLayout::applyItemPlacement`) |
 | Interaction snapshot | `captureState` = store seed + live pose / applied ContentXform / grade |
 | Pixels / intrinsic / path / session stamps | Host / pipeline private mutators |
-| List order | `sessionListIndex` (document) over deprecated `sessionIndex` cache |
+| List order | `sessionListIndex` (document); stamp via `refreshSessionIndexCache` (2078) |
 
 Dual-write on store **writes** remains so fat DTO serialization stays aligned;
 store **reads** prefer sparse via the choke point. Stage 4a save/load/clipboard

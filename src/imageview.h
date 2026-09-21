@@ -164,6 +164,13 @@ public:
      * List position is not identity (IDENTITY.md) — use sessionId for that.
      */
     int sessionListIndex(const ImageItem *item) const;
+    /**
+     * Stamp ImageItem list-order cache from sessionListIndex when known.
+     * Stage 2 residual: call after setSessionId so the cache cannot lag
+     * document order. Returns the stamped index, or -1 when unbound/unknown
+     * (does not clear an existing unbound cache hint).
+     */
+    int refreshSessionIndexCache(ImageItem *item);
     QList<int> selectedSessionIndices() const;
     void selectBySessionIndices(const QList<int> &indices);
     /** SessionImageIds of selected canvas items (skips unbound). */

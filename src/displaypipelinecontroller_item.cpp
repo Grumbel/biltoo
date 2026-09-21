@@ -404,10 +404,8 @@ void DisplayPipelineController::bindImageModeSessionCursor(ImageItem *item)
     if (m_view->hostSessionId().hasCurrentId()) {
         item->setSessionId(m_view->hostSessionId().currentIdValue());
         // Prefer document list order over SessionId cursor index cache.
-        const int listIdx = m_view->sessionListIndex(item);
-        if (listIdx >= 0) {
-            item->setSessionIndex(listIdx);
-        } else if (m_view->hostSessionId().currentIndex() >= 0) {
+        if (m_view->refreshSessionIndexCache(item) < 0
+            && m_view->hostSessionId().currentIndex() >= 0) {
             item->setSessionIndex(m_view->hostSessionId().currentIndex());
         }
     } else if (m_view->hostSessionId().currentIndex() >= 0) {

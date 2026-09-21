@@ -142,13 +142,10 @@ void DisplayPipelineController::reassertPendingBindPlacement(const QString &path
             if (b.id != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
                 item->setSessionId(b.id);
             }
-            if (item->sessionIndex() < 0) {
-                const int listIdx = m_view->sessionListIndex(item);
-                if (listIdx >= 0) {
-                    item->setSessionIndex(listIdx);
-                } else if (b.index >= 0) {
-                    item->setSessionIndex(b.index);
-                }
+            // Always prefer document order after bind — do not gate on cache==-1
+            // (stale positive index can lag after reorder; Stage 2 residual).
+            if (m_view->refreshSessionIndexCache(item) < 0 && b.index >= 0) {
+                item->setSessionIndex(b.index);
             }
             break;
         }
@@ -179,8 +176,9 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
         // Prefer document list index after id bind; PendingSessionBind.index is
         // the schedule-time fallback.
         if (bound.id != kInvalidSessionImageId) {
-            const int listIdx = m_view->sessionListIndex(existing);
-            existing->setSessionIndex(listIdx >= 0 ? listIdx : bound.index);
+            if (m_view->refreshSessionIndexCache(existing) < 0 && bound.index >= 0) {
+                existing->setSessionIndex(bound.index);
+            }
         } else if (bound.index >= 0) {
             existing->setSessionIndex(bound.index);
         }
@@ -759,13 +757,8 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     }
     // List-order cache: prefer document position for the bound id; fall back to
     // snapshot index only when the id is unbound / not in the session list.
-    {
-        const int listIdx = m_view->sessionListIndex(item);
-        if (listIdx >= 0) {
-            item->setSessionIndex(listIdx);
-        } else if (state.sessionIndex >= 0) {
-            item->setSessionIndex(state.sessionIndex);
-        }
+    if (m_view->refreshSessionIndexCache(item) < 0 && state.sessionIndex >= 0) {
+        item->setSessionIndex(state.sessionIndex);
     }
     // Host is in ImageCache / item. Materialize store want (soft stand-in +
     // async multi-MP). Do not bake chrome-only on multi-MP — cannot

@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2078-sessionindex-cache-refresh-helper.** Stage 2 residual: refreshSessionIndexCache after setSessionId.
+Prior: **2077**.
+
+### Change
+- `ImageView::refreshSessionIndexCache(item)` — single stamp path: document
+  order via `sessionListIndex` when bound
+- Bind / LoadAdd / Image-mode attach / place / setItemSessionId use the helper
+- Load path no longer gates refresh on `sessionIndex() < 0` (stale positive
+  cache could lag after reorder)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2078-sessionindex-cache-refresh-helper-e77da63.bundle HEAD
+```
+Requires tip **2077** (base **e77da63**); includes 1938–2078.
+
+### Next
+- Stage 2: further sessionIndex residual or ContentXform runtime table
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2077-seedbook-comment-hygiene.** SessionSeedBook is seed-attempt only in comments.
 Prior: **2076**.
 

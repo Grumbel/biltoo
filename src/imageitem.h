@@ -68,7 +68,8 @@ public:
     /**
      * @deprecated List-order cache only — shifts on insert/delete.
      * Prefer sessionId() for identity; ImageView::sessionListIndex() for list
-     * position (resolves via SessionDocument when bound).
+     * position (resolves via SessionDocument when bound). After setSessionId,
+     * call ImageView::refreshSessionIndexCache so the mirror cannot lag.
      */
     int sessionIndex() const { return m_sessionIndex; }
     /** DisplaySurfaceController id (0 = unbound). Host install policy key. */

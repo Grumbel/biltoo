@@ -232,6 +232,20 @@ int ImageView::sessionListIndex(const ImageItem *item) const
     return item->sessionIndex();
 }
 
+int ImageView::refreshSessionIndexCache(ImageItem *item)
+{
+    if (!item) {
+        return -1;
+    }
+    // Document order when bound; otherwise leave any unbound cache hint as-is.
+    const int listIdx = sessionListIndex(item);
+    if (listIdx >= 0) {
+        item->setSessionIndex(listIdx);
+        return listIdx;
+    }
+    return -1;
+}
+
 ImageItem *ImageView::findItemBySessionIndex(int sessionIndex) const
 {
     if (sessionIndex < 0) {
