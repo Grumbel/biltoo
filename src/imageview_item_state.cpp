@@ -30,7 +30,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     WorkspaceItemState s;
     s.path = item->path();
     s.sessionId = item->sessionId();
-    s.sessionIndex = item->sessionIndex(); // order cache only
+    s.sessionIndex = sessionListIndex(item); // document order when bound
     // Stage 2: pose via Placement helper (single place that reads item pose).
     ItemComponents::applyPlacementToState(s, placementFromItem(item));
     s.orientation = 0.0;
@@ -123,7 +123,32 @@ WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
     if (id == kInvalidSessionImageId) {
         return {};
     }
-    return m_itemWorld.appearanceValue(id);
+    WorkspaceItemState s = m_itemWorld.appearanceValue(id);
+    // Sparse tables are store authority; fat DTO may lag when only a partial
+    // component write ran. Prefer sparse presence for each fact.
+    if (m_itemWorld.hasCrop(id)) {
+        const ItemComponents::Crop c = m_itemWorld.crop(id);
+        s.hasCrop = !c.isEmpty();
+        s.cropRect = c.rect;
+        s.cropSourceSize = c.sourceSize;
+        s.cropRotation = c.rotation;
+    }
+    if (m_itemWorld.hasContentBake(id)) {
+        const ItemComponents::ContentBake b = m_itemWorld.contentBake(id);
+        s.contentHFlip = b.hFlip;
+        s.contentVFlip = b.vFlip;
+        s.contentQuarterTurns = b.quarterTurns;
+    }
+    s.colorAdjust = m_itemWorld.color(id).grade;
+    if (m_itemWorld.hasAttention(id)) {
+        const ItemComponents::Attention a = m_itemWorld.attention(id);
+        s.attentionPoints = a.points;
+        s.syncAttentionPrimary();
+    }
+    if (m_itemWorld.hasPlacement(id)) {
+        ItemComponents::applyPlacementToState(s, m_itemWorld.placement(id));
+    }
+    return s;
 }
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const

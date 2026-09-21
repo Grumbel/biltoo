@@ -1223,6 +1223,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1977: Reset / clearedContentOps clear colour grade (align help + hasContentAppearance).
 - biltoo-1978: sessionListIndex from SessionDocument; find/select by index prefer id.
 - biltoo-1979: MainWindow/controllers/open paths use sessionListIndex for list order.
+- biltoo-1980: sessionAppearanceValue sparse-prefer choke; captureState uses sessionListIndex.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

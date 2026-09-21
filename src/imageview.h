@@ -508,6 +508,10 @@ public:
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     /** Copy of stored appearance for @p id (empty/default if none). */
+    /**
+     * Bound appearance for @p id. Sparse Crop/ContentBake/Color/Attention/Placement
+     * override the fat DTO when present (store-read authority).
+     */
     WorkspaceItemState sessionAppearanceValue(SessionImageId id) const;
     bool hasSessionAppearance(SessionImageId id) const;
     /** Restore appearance after session undo (store only; no canvas mutate). */

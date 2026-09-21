@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1980-sparse-store-read-choke.** sessionAppearanceValue prefers sparse tables.
+Prior: **1979**.
+
+### Change
+- `sessionAppearanceValue(id)` merges sparse Crop/ContentBake/Color/Attention/Placement
+  over the fat DTO (single store-read choke point for text, crops, etc.)
+- `captureState` writes `sessionListIndex(item)` for list-order cache accuracy
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1980-sparse-store-read-choke-e77da63.bundle HEAD
+```
+Requires tip **1979** (base **e77da63**); includes 1938–1980.
+
+### Next
+- Characterization re-check (Reset + list-index + sparse read series)
+- Further ImageItem surface trim if needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1979-session-list-index-call-sites.** Route list-index readers through sessionListIndex.
 Prior: **1978**.
 
