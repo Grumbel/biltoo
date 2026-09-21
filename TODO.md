@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2045-clear-workspace-sparse.** Stage 2 residual: clearWorkspace clears ItemWorld sparse with session wipe.
+Prior: **2044**.
+
+### Change
+- `ImageView::clearWorkspace` calls `itemWorld().clearAppearance()` so sparse
+  tables cannot lag after `SessionDocument::clear()` (fat-only)
+- Comments on `SessionDocument::clear` / `appearance()` document the split
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2045-clear-workspace-sparse-e77da63.bundle HEAD
+```
+Requires tip **2044** (base **e77da63**); includes 1938–2045.
+
+### Next
+- **Stage 4b** only with explicit product decision (format version + dual-write drop)
+- Phase 6 Tier 4: decode/framing characterization when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2044-sparse-only-lag-test.** Stage 4b prep: sparse survives fat removal.
 Prior: **2043**.
 

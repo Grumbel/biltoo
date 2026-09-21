@@ -66,6 +66,8 @@ public:
     /**
      * Phase 6 Tier 4: sole SessionAppearanceStore for the session.
      * ImageView binds via bindSessionAppearance; no view-owned store remains.
+     * clear() wipes this fat store only — ItemWorld sparse tables are cleared
+     * by ImageView::clearWorkspace / clearAppearance.
      */
     SessionAppearanceStore &appearance() { return m_appearance; }
     const SessionAppearanceStore &appearance() const { return m_appearance; }

@@ -85,6 +85,8 @@ void SessionDocument::clearPaths()
 void SessionDocument::clear()
 {
     clearPaths();
+    // Fat DTO only. Callers that bind ItemWorld must also clearAppearance()
+    // (ImageView::clearWorkspace does). Sparse tables are not owned here.
     m_appearance.clear();
 }
 
