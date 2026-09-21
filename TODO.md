@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2202-no-displayready-bake-without-host.** Image soft underlay still
+attached displayReady pixels when ItemWorld had content ops but host-raw was
+missing — unverified bake vs want fingerprint.
+
+### Fix
+- When displayReady + content want + no host: skip attach; layout from want only
+- Identity want: still allow displayReady soft attach
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2202-no-displayready-bake-without-host-e77da63.bundle HEAD
+```
+
+Next: **2203**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2201-remove-incremental-item-bake.** Remove dead ImageItem::bakeRotate90
 and bakeFlip (unused after 2200). Content orient is absolute materialize only.
 

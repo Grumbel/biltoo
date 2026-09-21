@@ -1234,12 +1234,11 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             if (!host.isNull()) {
                 installDisplayPixels(item, host, SessionAppearance::PixelKind::SoftPreview,
                                      item->sessionId());
-            } else {
-                // No host-raw: attach bake and apply want fingerprint/layout only.
-                m_view->attachDisplaySample(item, pixels, want,
-                                    SessionAppearance::PixelKind::SoftPreview);
             }
+            // No host-raw: do NOT attach displayReady bake (ECS_GUI_BYPASSES #1).
+            // Layout still follows want below; decode will fill pixels from host.
         } else if (displayReady) {
+            // Identity want: filmstrip/host soft is safe to attach as underlay.
             m_view->attachDisplaySample(item, pixels, want,
                                 SessionAppearance::PixelKind::SoftPreview);
         } else {

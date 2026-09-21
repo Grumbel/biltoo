@@ -165,7 +165,7 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 
 | # | Issue | Status |
 |---|--------|--------|
-| 1 | Image underlay trusts filmstrip displayReady | **2176** reject displayReady; materialize host-raw + ItemWorld |
+| 1 | Image underlay trusts filmstrip displayReady | **2176** reject override as ready; **2202** never attach displayReady bake when want has content and host missing |
 | 2 | Filmstrip pixel override parallel store | Override after rotate; **2179** cold paint from ItemWorld |
 | 3 | ImageCache host-raw contract | **2176–2178** see IMAGECACHE_PUT_AUDIT.md |
 | 4 | Applied ContentXform vs store at leave | **2177** flush on setViewMode |
