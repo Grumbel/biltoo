@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2175-ecs-gui-bypass-audit.** Full inventory of GUI paths that do not
+solely respect ItemWorld / SessionImageId ground truth.
+
+See **docs/ECS_GUI_BYPASSES.md**.
+
+### Highest risk remaining
+
+1. Filmstrip session-id **pixel** override as Image displayReady soft (can lag store)
+2. Workspace **m_savedItems** content fields vs live ItemWorld on restore
+3. Incremental **bakeRotate90** without host
+4. ImageCache contamination (host-raw contract)
+5. Applied ContentXform mid-edit vs store at mode leave
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2175-ecs-gui-bypass-audit-e77da63.bundle HEAD
+```
+
+Next: **2176** — pick #1 or #2 and eliminate the parallel authority.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2174-image-underlay-one-path.** Workspace→Image orient was random
 because underlay soft came from Workspace stash (content-baked) while
 Gallery→Image used a different soft order.
