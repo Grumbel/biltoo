@@ -34,6 +34,8 @@ public:
     QString pathAt(int index) const;
     SessionImageId idAt(int index) const;
     int indexOfId(SessionImageId id) const;
+    /** True when @p id is a non-invalid row in the session list. */
+    bool hasId(SessionImageId id) const { return indexOfId(id) >= 0; }
     int indexOfPath(const QString &path) const;
     /** Last index of @p path (duplicate-safe). -1 if absent. */
     int lastIndexOfPath(const QString &path) const;

@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2135-canvas-focus-split.** Canvas focus/destroy TU split; SessionDocument::hasId.
+Prior: **2134**.
+
+### Change
+- Split `imageview_canvas.cpp` → membership core + `imageview_canvas_focus.cpp`
+  (focus / reveal / destroy / Workspace scene; core 519 lines, under 800)
+- `SessionDocument::hasId` inline; restore-session path uses it
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2135-canvas-focus-split-e77da63.bundle HEAD
+```
+Requires tip **2134** (base **e77da63**); includes 1938–2135.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Optional: more MainWindow → SessionDocument helpers
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2134-appearance-split-indices-for-ids.** Appearance TU split + SessionDocument indicesForIds.
 Prior: **2133**.
 

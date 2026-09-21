@@ -2018,7 +2018,7 @@ void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entrie
     m_sessionUndoGuard = true;
     for (const auto &e : sorted) {
         // Identity is SessionImageId — skip if already present (duplicate-safe).
-        if (e.id != kInvalidSessionImageId && m_session.indexOfId(e.id) >= 0) {
+        if (e.id != kInvalidSessionImageId && m_session.hasId(e.id)) {
             continue;
         }
         const int idx = ViewTransform::clampInsertIndex(e.index, m_session.size());

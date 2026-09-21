@@ -1546,6 +1546,9 @@ SessionDocument; MainWindow remove + append-chrome path fallbacks call them.
 **biltoo-2134:** Split appearance TU (core / color grade / crop appearance);
 `SessionDocument::indicesForIds`; appearance core 595 lines (under 800).
 
+**biltoo-2135:** Split canvas TU (membership core / focus+destroy+scene);
+`SessionDocument::hasId`; canvas core 519 lines (under 800).
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live
