@@ -333,12 +333,13 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             want = *st;
         }
     }
-    // Phase 7: applied ContentXform is mid-edit authority (same as captureState).
-    if (m_view->itemHasAppliedContentXform(item)) {
-        m_view->itemAppliedContentXform(item).applyToState(want);
+    // Mid-edit authority is applied on *this* live ImageItem only — never the
+    // ItemWorld residual applied table (that outlived Workspace→Image and overrode
+    // sparse contentBake). Durable ground truth is contentBake/crop sparse.
+    if (item->hasAppliedContentXform()) {
+        item->tileContentXform().applyToState(want);
     } else if (id != kInvalidSessionImageId) {
-        // No applied fingerprint: fill empty DTO fields from ItemWorld sparse
-        // Crop / ContentBake sparse fill when no applied fingerprint (1966+).
+        // Fill empty DTO fields from ItemWorld sparse contentBake/crop.
         ContentXform::Value sparse;
         if (m_view->itemWorld().hasContentBake(id)) {
             const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);

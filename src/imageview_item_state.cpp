@@ -338,6 +338,10 @@ QRectF ImageView::selectionSceneBounds(const QList<ImageItem *> &items) const
 
 void ImageView::flushAppliedContentToItemWorld()
 {
+    // Applied ContentXform is mid-edit *presentation* state. Sparse contentBake
+    // / crop are the durable ground truth. Before mode leave: commit applied →
+    // sparse, then clear ItemWorld applied residual so the next mode's underlay
+    // materializes from contentBake only (not a stale dual-write fingerprint).
     for (ImageItem *item : m_items) {
         if (!item) {
             continue;
@@ -346,11 +350,17 @@ void ImageView::flushAppliedContentToItemWorld()
         if (sid == kInvalidSessionImageId) {
             continue;
         }
-        if (!itemHasAppliedContentXform(item)) {
+        // Prefer item-local applied (this presentation); fall back to ItemWorld residual.
+        ContentXform::Value applied;
+        if (item->hasAppliedContentXform()) {
+            applied = item->tileContentXform();
+        } else if (m_itemWorld.hasAppliedContentXform(sid)) {
+            applied = m_itemWorld.appliedContentXform(sid);
+        } else {
             continue;
         }
         WorkspaceItemState s = sessionAppearanceValue(sid);
-        itemAppliedContentXform(item).applyToState(s);
+        applied.applyToState(s);
         s.sessionId = sid;
         s.path = item->path();
         m_itemWorld.setContentBake(sid, ItemComponents::contentBakeFromState(s));
@@ -358,5 +368,6 @@ void ImageView::flushAppliedContentToItemWorld()
         if (!s.colorAdjust.isIdentity() || m_itemWorld.hasColor(sid)) {
             m_itemWorld.setColor(sid, ItemComponents::colorFromState(s));
         }
+        m_itemWorld.clearAppliedContentXform(sid);
     }
 }

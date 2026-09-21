@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2180-applied-xform-presentation-only.** Root cause of ImageView
+wrong rotation: ItemWorld residual *applied* ContentXform overrode sparse
+contentBake on underlay materialize after Workspace→Image.
+
+### Fix
+
+- Applied is presentation-local on ImageItem only (not ItemWorld residual for want)
+- flush on mode leave: commit applied → contentBake/crop, clear ItemWorld applied
+- wantAppearanceForItem uses item-local applied only; else sparse
+
+See docs/CONTENTXFORM_AUTHORITY.md.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2180-applied-xform-presentation-only-e77da63.bundle HEAD
+```
+
+Next: **2181**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2179-filmstrip-itemworld-paint.** Filmstrip cold cell paint uses
 ItemWorld content ops via ContentAppearanceProvider (not path-only XDG).
 

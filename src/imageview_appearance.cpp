@@ -171,14 +171,9 @@ void ImageView::clearLiveContentMeta(ImageItem *item)
 
 bool ImageView::itemHasAppliedContentXform(const ImageItem *item) const
 {
-    if (!item) {
-        return false;
-    }
-    const SessionImageId sid = item->sessionId();
-    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppliedContentXform(sid)) {
-        return true;
-    }
-    return item->hasAppliedContentXform();
+    // Applied is presentation-local on the ImageItem. ItemWorld applied residual
+    // must not count — it outlived mode leave and poisoned Image underlay want.
+    return item && item->hasAppliedContentXform();
 }
 
 ContentXform::Value ImageView::itemAppliedContentXform(const ImageItem *item) const
@@ -186,12 +181,12 @@ ContentXform::Value ImageView::itemAppliedContentXform(const ImageItem *item) co
     if (!item) {
         return {};
     }
-    const SessionImageId sid = item->sessionId();
-    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppliedContentXform(sid)) {
-        return m_itemWorld.appliedContentXform(sid);
+    if (item->hasAppliedContentXform()) {
+        return item->tileContentXform();
     }
-    return item->tileContentXform();
+    return {};
 }
+
 
 ColorAdjustments ImageView::itemLiveColor(const ImageItem *item) const
 {
