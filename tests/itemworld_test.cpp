@@ -64,25 +64,22 @@ void ItemWorldTest::unbound_gettersAreSafe()
 
 void ItemWorldTest::appearance_roundTripById()
 {
-    SessionAppearanceStore store;
     ItemWorld world;
-    world.bindAppearance(&store);
 
     WorkspaceItemState st;
     st.hasCrop = true;
     st.cropRect = QRect(2, 4, 60, 40);
     world.setAppearance(11, st);
 
-    QVERIFY(world.hasAppearance(11));
+    QVERIFY(world.hasAppearance(11)); // durable sparse
+    QVERIFY(world.hasDurableAppearance(11));
     const WorkspaceItemState got = world.appearanceValue(11);
     QVERIFY(got.hasCrop);
     QCOMPARE(got.sessionId, SessionImageId(11));
     QCOMPARE(got.cropRect, QRect(2, 4, 60, 40));
-    QCOMPARE(store.get(11)->cropRect, QRect(2, 4, 60, 40));
-    QCOMPARE(store.get(11)->sessionId, SessionImageId(11));
 
     world.removeAppearance(11);
-    QVERIFY(!store.contains(11));
+    QVERIFY(!world.hasDurableAppearance(11));
 }
 
 void ItemWorldTest::pathBook_independentOfAppearance()
@@ -472,10 +469,10 @@ void ItemWorldTest::hasDurableAppearance_emptyAndAfterSparse()
     ItemComponents::Color c;
     c.grade.brightness = 12;
     world.setColor(1, c);
-    // Stage 4b: sparse Color alone is durable; fat may be empty.
+    // Stage 4b residual: sparse Color alone is durable; hasAppearance aliases it.
     QVERIFY(world.hasDurableAppearance(1));
     QVERIFY(world.hasColor(1));
-    QVERIFY(!world.hasAppearance(1)); // fat not dual-written
+    QVERIFY(world.hasAppearance(1));
 
     world.clearAppearance();
     QVERIFY(!world.hasDurableAppearance(1));
@@ -489,7 +486,7 @@ void ItemWorldTest::hasDurableAppearance_emptyAndAfterSparse()
 
 void ItemWorldTest::hasDurableAppearance_fatOnlyCrop()
 {
-    // Stage 4b: fat-only rows without sparse components are not durable content.
+    // Stage 4b residual: fat-only rows are not durable; hasAppearance ≡ durable.
     SessionAppearanceStore store;
     ItemWorld world;
     world.bindAppearance(&store);
@@ -499,8 +496,9 @@ void ItemWorldTest::hasDurableAppearance_fatOnlyCrop()
     st.cropRect = QRect(4, 5, 30, 20);
     store.set(9, st);
     QCOMPARE(world.cropCount(), 0);
-    QVERIFY(world.hasAppearance(9)); // fat row exists
-    QVERIFY(!world.hasDurableAppearance(9)); // no sparse tables
+    QVERIFY(world.getAppearance(9) != nullptr); // fat row still in store
+    QVERIFY(!world.hasAppearance(9)); // alias of durable — sparse empty
+    QVERIFY(!world.hasDurableAppearance(9));
     QVERIFY(!world.appearanceValue(9).hasCrop);
 }
 
@@ -540,7 +538,7 @@ void ItemWorldTest::hasDurableAppearance_sparseOnlyAfterFatRemoved()
     c.rect = QRect(1, 2, 30, 40);
     c.sourceSize = QSize(100, 80);
     world.setCrop(11, c);
-    QVERIFY(!world.hasAppearance(11)); // no dual-write
+    QVERIFY(world.hasAppearance(11)); // durable sparse
     QVERIFY(world.hasDurableAppearance(11));
     QVERIFY(world.hasCrop(11));
 
@@ -565,7 +563,7 @@ void ItemWorldTest::sparseWrite_stampsSessionIdOnDto()
     c.grade.brightness = 10;
     world.setColor(42, c);
 
-    QVERIFY(!world.hasAppearance(42)); // no fat dual-write
+    QVERIFY(world.hasAppearance(42)); // durable sparse
     QCOMPARE(world.appearanceValue(42).sessionId, SessionImageId(42));
     QVERIFY(world.hasColor(42));
 

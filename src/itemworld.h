@@ -25,8 +25,8 @@
  *     appearanceValue rebuilds from sparse tables (no dual-write lag).
  *   Derived only — applied ContentXform, tile LOD, soft pixels, sessionIndex.
  *
- * Stage 4b: setCrop / setColor / … write sparse tables only. setAppearance still
- * fills sparse + fat for load. Project/clipboard assemble via appearanceValue.
+ * Stage 4b residual: setCrop / setColor / setAppearance write sparse only.
+ * Fat SessionAppearanceStore is seedAttempted + SessionDocument lifecycle only.
  *
  * Entity key for content appearance: SessionImageId (IDENTITY.md).
  */
@@ -75,9 +75,8 @@ public:
     }
 
     /**
-     * Fat dual-write mirror pointer (Stage 4b will drop this as authority).
-     * For store reads prefer appearanceValue / hasDurableAppearance — never
-     * treat a null getAppearance as "no durable content".
+     * Fat DTO row if present (SessionDocument lifecycle / seed store only).
+     * Prefer appearanceValue / hasDurableAppearance for store-read gates.
      */
     const WorkspaceItemState *getAppearance(SessionImageId id) const
     {
@@ -87,15 +86,9 @@ public:
         return m_appearance->get(id);
     }
 
-    /** Fat DTO row present only — use hasDurableAppearance for store-read gates. */
-    bool hasAppearance(SessionImageId id) const
-    {
-        return getAppearance(id) != nullptr;
-    }
-
     /**
      * True when any persistent sparse table has a row for @p id.
-     * Stage 4b: fat DTO alone is not durable (assemble-only / load cache).
+     * Stage 4b residual: fat DTO alone is not durable.
      */
     bool hasDurableAppearance(SessionImageId id) const
     {
@@ -104,6 +97,15 @@ public:
         }
         return hasCrop(id) || hasContentBake(id) || hasColor(id)
             || hasAttention(id) || hasPlacement(id);
+    }
+
+    /**
+     * Alias for hasDurableAppearance (setAppearance no longer writes fat).
+     * Prefer hasDurableAppearance in new code.
+     */
+    bool hasAppearance(SessionImageId id) const
+    {
+        return hasDurableAppearance(id);
     }
 
     /**
@@ -144,14 +146,17 @@ public:
         return s;
     }
 
+    /**
+     * Load / full-replace: write sparse component tables only (Stage 4b residual).
+     * Does not require a bound fat store; appearanceValue assembles from sparse.
+     */
     void setAppearance(SessionImageId id, const WorkspaceItemState &state)
     {
-        if (!m_appearance || id == kInvalidSessionImageId) {
+        if (id == kInvalidSessionImageId) {
             return;
         }
         WorkspaceItemState s = state;
         s.sessionId = id;
-        m_appearance->set(id, s);
         syncComponentsFromState(id, s);
     }
 

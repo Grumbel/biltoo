@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2053-setappearance-sparse-only.** Stage 4b residual: setAppearance no longer writes fat DTO.
+Prior: **2052**.
+
+### Change
+- `ItemWorld::setAppearance` writes sparse tables only (no fat dual-write)
+- `hasAppearance` aliases `hasDurableAppearance`
+- Fat `SessionAppearanceStore` remains for seedAttempted + SessionDocument lifecycle
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2053-setappearance-sparse-only-e77da63.bundle HEAD
+```
+Requires tip **2052** (base **e77da63**); includes 1938–2053.
+
+### Next
+- Optional: detach seedAttempted from SessionAppearanceStore / drop fat m_byId
+- Phase 6 Tier 4: decode/framing when prioritized
+- Phase 7 further ImageItem demotion when needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2052-stage4b-nested-sparse-format.** Stage 4b: nested project/clipboard appearance; drop dual-write.
 Prior: **2051** (gallerylayout-rows-test-dual).
 
