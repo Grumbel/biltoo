@@ -483,15 +483,6 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         return pixels;
     }
 
-    WorkspaceItemState want;
-    if (m_view->hostSessionId().hasCurrentId()) {
-        const SessionImageId curId = m_view->hostSessionId().currentIdValue();
-        if (m_view->itemWorld().hasDurableAppearance(curId)) {
-            want = m_view->sessionAppearanceValue(curId);
-        }
-    }
-    const ContentXform::Value wantX = ContentXform::Value::fromState(want);
-
     // Soft still on mode-stashed tiles (Gallery or Workspace). Opening Image
     // from Workspace left an empty view because only Gallery stash was scanned
     // while Workspace onLeave holds the live tiles with decoded soft.

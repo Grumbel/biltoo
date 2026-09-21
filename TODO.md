@@ -2,6 +2,23 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2155-unused-wantx.** Remove unused `want`/`wantX` in
+`resolveImageModePendingPixels` (warning after sameId-always soft accept).
+Prior: **2154**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2155-unused-wantx-e77da63.bundle HEAD
+```
+
+Next bundle: **2156**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2154-central-mode-switch.** Mode switch ownership fixed at the root.
 Prior: **2153** (Gallery→Workspace stash was harmful — reverted).
 
