@@ -26,6 +26,7 @@ private slots:
     void packPoses_sideBySideAndVertical();
     void packPoses_gridAndGridCrop();
     void packPoses_masonryAndMasonryRows();
+    void packPoses_flowAndFlowFill();
 };
 
 void GalleryLayoutTest::axesSwap_cardinalAndDiagonal()
@@ -208,6 +209,25 @@ void GalleryLayoutTest::packPoses_masonryAndMasonryRows()
     QCOMPARE(rows.at(0).center.y(), 25.0); // row0
     QCOMPARE(rows.at(1).center.y(), 85.0); // row1
     QCOMPARE(rows.at(2).center.y(), 25.0); // shorter row0
+}
+
+void GalleryLayoutTest::packPoses_flowAndFlowFill()
+{
+    // targetW for cols=2, availW=110, gap=10 → cellAxisLength = 50.
+    // Three 50×40 tiles: first row holds two (50+10+50=110), third wraps.
+    const QVector<QSizeF> three{QSizeF(50, 40), QSizeF(50, 40), QSizeF(50, 40)};
+    const auto flow = GalleryLayout::packPosesFlow(three, 0.0, 10.0, 110.0, 2, false);
+    QCOMPARE(flow.size(), 3);
+    QCOMPARE(flow.at(0).scale, 1.0);
+    QCOMPARE(flow.at(0).center, QPointF(25.0, 20.0));
+    QCOMPARE(flow.at(1).center, QPointF(85.0, 20.0));
+    QCOMPARE(flow.at(2).center, QPointF(25.0, 70.0)); // y = 40 + 10 + 20
+
+    // FlowFill: single-tile row stretched to full width → scale 110/50 = 2.2
+    const auto fill = GalleryLayout::packPosesFlow({QSizeF(50, 40)}, 0.0, 10.0, 110.0, 2, true);
+    QCOMPARE(fill.size(), 1);
+    QVERIFY(qAbs(fill.at(0).scale - 2.2) < 1e-9);
+    QVERIFY(qAbs(fill.at(0).center.x() - 55.0) < 1e-9); // w=110, centre 55
 }
 
 QTEST_MAIN(GalleryLayoutTest)

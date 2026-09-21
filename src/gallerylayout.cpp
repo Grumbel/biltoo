@@ -306,69 +306,21 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         }
     } else if (params.mode == Mode::Flow || params.mode == Mode::FlowFill) {
         // Order-preserving wrap: L→R then T→B. Width budget from columns.
-        const bool fill = (params.mode == Mode::FlowFill);
-        const int cols = resolvedFlowColumns(params.gridColumns);
-        const qreal layoutW = availW;
-        const qreal targetW = cellAxisLength(layoutW, gap, cols);
-
-        struct Entry {
-            ImageItem *item = nullptr;
-            QSizeF ns;
-            qreal scale = 1.0;
-            qreal w = 0.0;
-            qreal h = 0.0;
-        };
-        QVector<QVector<Entry>> rows;
-        QVector<Entry> cur;
-        qreal rowW = 0.0;
-        qreal rowH = 0.0;
-
-        auto flushRow = [&]() {
-            if (cur.isEmpty()) {
-                return;
-            }
-            rows.append(cur);
-            cur.clear();
-            rowW = 0.0;
-            rowH = 0.0;
-        };
-
+        QVector<QSizeF> sizes;
+        sizes.reserve(n);
         for (ImageItem *item : items) {
-            const QSizeF ns = layoutSize(item);
-            const qreal scale = axisFillScale(targetW, ns.width());
-            const qreal w = ns.width() * scale;
-            const qreal h = ns.height() * scale;
-            if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
-                flushRow();
-            }
-            cur.append(Entry{item, ns, scale, w, h});
-            rowW += (cur.size() == 1 ? w : gap + w);
-            rowH = qMax(rowH, h);
+            sizes.append(layoutSize(item));
         }
-        flushRow();
-
-        qreal y = margin;
-        for (QVector<Entry> &row : rows) {
-            qreal contentW = 0.0;
-            qreal contentH = 0.0;
-            for (const Entry &e : row) {
-                contentW += e.w;
-                contentH = qMax(contentH, e.h);
+        const QVector<PackPose> poses = packPosesFlow(
+            sizes, margin, gap, availW, params.gridColumns,
+            params.mode == Mode::FlowFill);
+        for (int i = 0; i < n; ++i) {
+            ImageItem *item = items.at(i);
+            if (!item || i >= poses.size()) {
+                continue;
             }
-            contentW += gap * ViewTransform::nonNeg(qint64(row.size()) - 1);
-            const qreal s = (fill && contentW > 1e-6) ? (layoutW / contentW) : 1.0;
-            qreal x = margin;
-            qreal placedH = 0.0;
-            for (Entry &e : row) {
-                const qreal scale = e.scale * s;
-                const qreal w = e.ns.width() * scale;
-                const qreal h = e.ns.height() * scale;
-                applyPackPose(e.item, QPointF(x + w / 2.0, y + h / 2.0), scale);
-                x += w + gap * s;
-                placedH = qMax(placedH, h);
-                finish(e.item, afterEach);
-            }
-            y += placedH + gap;
+            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
+            finish(item, afterEach);
         }
     } else if (params.mode == Mode::Facing) {
         // Cover alone, then height-matched pairs (verso | recto), stacked.

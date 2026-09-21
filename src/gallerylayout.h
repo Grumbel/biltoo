@@ -324,6 +324,77 @@ inline QVector<PackPose> packPosesMasonryRows(const QVector<QSizeF> &layoutSizes
 }
 
 /**
+ * Flow / FlowFill: order-preserving wrap L→R then T→B.
+ * Initial scale fills target column width; @p fill stretches each row to layoutW.
+ */
+inline QVector<PackPose> packPosesFlow(const QVector<QSizeF> &layoutSizes,
+                                       qreal margin, qreal gap, qreal availW,
+                                       int gridColumns, bool fill)
+{
+    const int cols = resolvedFlowColumns(gridColumns);
+    const qreal layoutW = availW;
+    const qreal targetW = cellAxisLength(layoutW, gap, cols);
+
+    struct Entry {
+        QSizeF ns;
+        qreal scale = 1.0;
+        qreal w = 0.0;
+        qreal h = 0.0;
+    };
+    QVector<QVector<Entry>> rows;
+    QVector<Entry> cur;
+    qreal rowW = 0.0;
+
+    auto flushRow = [&]() {
+        if (cur.isEmpty()) {
+            return;
+        }
+        rows.append(cur);
+        cur.clear();
+        rowW = 0.0;
+    };
+
+    for (const QSizeF &ns : layoutSizes) {
+        const qreal scale = axisFillScale(targetW, ns.width());
+        const qreal w = ns.width() * scale;
+        const qreal h = ns.height() * scale;
+        if (!cur.isEmpty() && rowW + gap + w > layoutW + 1e-6) {
+            flushRow();
+        }
+        cur.append(Entry{ns, scale, w, h});
+        rowW += (cur.size() == 1 ? w : gap + w);
+    }
+    flushRow();
+
+    QVector<PackPose> out;
+    out.reserve(layoutSizes.size());
+    qreal y = margin;
+    for (const QVector<Entry> &row : rows) {
+        qreal contentW = 0.0;
+        for (const Entry &e : row) {
+            contentW += e.w;
+        }
+        contentW += gap * ViewTransform::nonNeg(qint64(row.size()) - 1);
+        const qreal s = (fill && contentW > 1e-6) ? (layoutW / contentW) : 1.0;
+        qreal x = margin;
+        qreal placedH = 0.0;
+        for (const Entry &e : row) {
+            const qreal scale = e.scale * s;
+            const qreal w = e.ns.width() * scale;
+            const qreal h = e.ns.height() * scale;
+            PackPose p;
+            p.scale = scale;
+            p.center = QPointF(x + w / 2.0, y + h / 2.0);
+            out.append(p);
+            x += w + gap * s;
+            placedH = qMax(placedH, h);
+        }
+        y += placedH + gap;
+    }
+    return out;
+}
+
+/**
  * Arrange @p items in scene coordinates. Clears gallery crop except for GridCrop.
  * @p afterEach is invoked after each item is placed (e.g. to snapshot state).
  */
