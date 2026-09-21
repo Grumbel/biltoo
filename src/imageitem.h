@@ -135,12 +135,6 @@ public:
     QPolygonF contentScenePolygon() const;
     bool itemHFlip() const { return m_hFlip; }
     bool itemVFlip() const { return m_vFlip; }
-    /**
-     * Dual-write install only (ImageView::syncLiveContentMetaFromState).
-     * Read live content meta via tileContentXform() — not these fields.
-     */
-    void setContentHFlip(bool on) { m_contentHFlip = on; }
-    void setContentVFlip(bool on) { m_contentVFlip = on; }
     void setColorAdjustments(const ColorAdjustments &adj);
     /** Store grade for HUD without rebuilding the display pixmap. */
     void setColorAdjustmentsRecord(const ColorAdjustments &adj);
@@ -166,12 +160,12 @@ public:
     }
     bool hasAppliedContentXform() const { return m_hasAppliedContentXform; }
 
-    /** Dual-write install only — read via tileContentXform(). */
-    void setSessionCrop(bool has, const QRect &rect)
-    {
-        m_sessionHasCrop = has;
-        m_sessionCropRect = has ? rect : QRect();
-    }
+    /**
+     * Single live content-meta reader for tile plan, chrome, and host capture.
+     * Prefers applied ContentXform; falls back to dual-write session fields
+     * (pixel-clear gaps). Dual-write install is ImageView-only (private setters).
+     */
+    ContentXform::Value tileContentXform() const;
 
     /** Bake ±90° into source pixels; placement angle unchanged. */
     void bakeRotate90(int quarterTurns);
@@ -308,13 +302,20 @@ private:
     QString m_path;
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
+    // Dual-write session crop/flip install — ImageView::syncLiveContentMetaFromState only.
+    friend class ImageView;
+    void setContentHFlip(bool on) { m_contentHFlip = on; }
+    void setContentVFlip(bool on) { m_contentVFlip = on; }
+    void setSessionCrop(bool has, const QRect &rect)
+    {
+        m_sessionHasCrop = has;
+        m_sessionCropRect = has ? rect : QRect();
+    }
     void tickTileLod(int budget = 8);
     /** Plan/paint helpers (ImageItem paint + tick only). */
     void prepareTileLod();
     void prepareTileLodPlan();
     qreal tileDevicePerContent() const;
-    /** Live content meta for tile plan + chrome (applied xform, else session dual-write). */
-    ContentXform::Value tileContentXform() const;
     QSize tileNativeSize() const;
     void clearTileGradedCache() const;
     QImage resolveGradedTile(tilelod::TileKey const &key,

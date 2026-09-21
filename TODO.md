@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1950-private-dual-write-setters.** Private dual-write setters; public tileContentXform.
+Prior: **1949**.
+
+### Change
+- `tileContentXform()` is public (live content-meta reader for host/chrome/tile)
+- `setSessionCrop` / `setContentHFlip` / `setContentVFlip` are private;
+  `friend class ImageView` for dual-write install only
+- ImageItem methods may still call private setters on `this` (no-view flip path)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1950-private-dual-write-setters-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1950.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Dual-write session fields remain lag fallback inside tileContentXform (pixel-clear gaps)
+- Later: drop session fields once applied covers those gaps
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1949-drop-session-content-getters.** Remove unused session crop/flip getters.
 Prior: **1948**.
 
