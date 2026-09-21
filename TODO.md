@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2047-setpaths-appearance-tests.** Stage 2 residual: characterize setPaths vs replaceAll appearance.
+Prior: **2046**.
+
+### Change
+- `setPaths_clearsAppearance` — prior fat rows gone after Open-style replace
+- `replaceAll_keepsAppearance` — sort/reorder keeps crop on same SessionImageId
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2047-setpaths-appearance-tests-e77da63.bundle HEAD
+```
+Requires tip **2046** (base **e77da63**); includes 1938–2047.
+
+### Next
+- **Stage 4b** only with explicit product decision
+- Phase 6 Tier 4: decode/framing when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2046-setpaths-clear-appearance.** Stage 2 residual: session Open/Replace clears fat + sparse appearance.
 Prior: **2045**.
 

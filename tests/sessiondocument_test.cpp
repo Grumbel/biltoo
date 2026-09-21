@@ -6,6 +6,7 @@
  *
  * Locks path/id alignment, alloc never-reuse, and duplicate-path identity —
  * the contract Appearance-into-SessionDocument must preserve.
+ * setPaths clears fat appearance (Open/Replace); replaceAll keeps it (sort).
  */
 
 #include "sessiondocument.h"
@@ -28,6 +29,9 @@ private slots:
     void clearPaths_keepsAppearance();
     void countPath_and_firstId();
     void appearance_on_document();
+    // Stage 2 residual (2046): setPaths orphans prior ids; replaceAll keeps them
+    void setPaths_clearsAppearance();
+    void replaceAll_keepsAppearance();
 };
 
 void SessionDocumentTest::empty_initial()
@@ -174,6 +178,42 @@ void SessionDocumentTest::appearance_on_document()
     doc.clear();
     QVERIFY(doc.isEmpty());
     QVERIFY(!doc.appearance().contains(id));
+}
+
+void SessionDocumentTest::setPaths_clearsAppearance()
+{
+    SessionDocument doc;
+    doc.append(QStringLiteral("/old.jpg"));
+    const SessionImageId oldId = doc.idAt(0);
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(1, 1, 10, 10);
+    doc.appearance().set(oldId, st);
+    QVERIFY(doc.appearance().contains(oldId));
+
+    doc.setPaths({QStringLiteral("/new.jpg")});
+    QVERIFY(!doc.appearance().contains(oldId));
+    // New id has no appearance until seeded.
+    QVERIFY(!doc.appearance().contains(doc.idAt(0)));
+}
+
+void SessionDocumentTest::replaceAll_keepsAppearance()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+    const SessionImageId idA = doc.idAt(0);
+    const SessionImageId idB = doc.idAt(1);
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(5, 5, 20, 20);
+    doc.appearance().set(idA, st);
+
+    // Swap order; same ids — appearance must survive.
+    doc.replaceAll({QStringLiteral("/b.jpg"), QStringLiteral("/a.jpg")}, {idB, idA});
+    QCOMPARE(doc.idAt(0), idB);
+    QCOMPARE(doc.idAt(1), idA);
+    QVERIFY(doc.appearance().contains(idA));
+    QCOMPARE(doc.appearance().get(idA)->cropRect, QRect(5, 5, 20, 20));
 }
 
 QTEST_MAIN(SessionDocumentTest)
