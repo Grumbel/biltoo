@@ -1049,7 +1049,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     : (!m_preview.isNull() ? m_preview : QImage());
                 tilelod::DrawPlan plan = tileLodBag().controller->session()->draw_plan();
                 const QSize native = tileNativeSize();
-                const ContentXform::Value x = tileContentXform();
+                const ContentXform::Value x = liveContentXformForPaint();
                 const QPointF off = offset();
                 const bool freeRot = x.hasCrop && !x.cropRect.isEmpty()
                     && qAbs(x.cropRotation) > 1e-3;
@@ -1058,8 +1058,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                     || (ContentXform::normalizeQuarterTurns(x.quarterTurns) != 0);
 
                 ColorAdjustments grade = x.colorAdjust;
-                if (grade.isIdentity() && !m_colorAdjust.isIdentity()) {
-                    grade = m_colorAdjust;
+                if (grade.isIdentity()) {
+                    grade = liveColorForPaint();
                 }
                 auto resolve = [this, grade](tilelod::TileKey const &key,
                                              tilelod::TileBitmap const &) -> QImage {
@@ -1267,9 +1267,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->restore();
         };
 
-        // Crop / orient marks: single live content-meta reader (tileContentXform
-        // is applied ContentXform when present).
-        const ContentXform::Value contentMarks = tileContentXform();
+        // Crop / orient marks: host-preferring applied ContentXform (Stage 2).
+        const ContentXform::Value contentMarks = liveContentXformForPaint();
         if (contentMarks.hasCrop) {
             drawCornerFold(QPointF(r.right(), r.bottom()),
                            QPointF(-fold, 0), QPointF(0, -fold),
@@ -1286,7 +1285,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         }
 
         // Grade: coral fold, slightly inset from bottom-left when orient also set.
-        const bool grade = !m_colorAdjust.isIdentity();
+        const bool grade = !liveColorForPaint().isIdentity();
         if (grade) {
             const qreal inset = orient ? fold * 0.55 : 0.0;
             drawCornerFold(QPointF(r.left() + inset, r.bottom()),
@@ -1633,10 +1632,10 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
                               Qt::AlignCenter, glyph);
         };
 
-        // Source flags via tileContentXform (applied ContentXform).
+        // Source flags via host-preferring applied ContentXform (Stage 2).
         // Chrome labels are display axes: after odd turns H↔V, so light the
         // conjugated pair or FlipH looks like FlipV after a 90° rotate.
-        const ContentXform::Value chromeX = tileContentXform();
+        const ContentXform::Value chromeX = liveContentXformForPaint();
         int turns = chromeX.quarterTurns % 4;
         if (turns < 0) {
             turns += 4;

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2093-paint-prefer-host-helpers.** Stage 2 residual: paint chrome/tile LOD prefer ImageView host helpers.
+Prior: **2092**.
+
+### Change
+- `ImageItem::liveContentXformForPaint` / `liveColorForPaint` — when on a view,
+  prefer `itemAppliedContentXform` / `itemLiveColor` (ItemWorld when bound)
+- Chrome marks, flip chrome, tile LOD plan/grade use the paint helpers
+- Detached items still use item mirrors
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2093-paint-prefer-host-helpers-e77da63.bundle HEAD
+```
+Requires tip **2092** (base **e77da63**); includes 1938–2093.
+
+### Next
+- Stage 2: further paint residual if any; host residual largely complete
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2092-liveColorLag-characterization.** Stage 2 residual: pure characterization for liveColorLag; demotion status through 2091.
 Prior: **2091**.
 

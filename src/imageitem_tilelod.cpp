@@ -19,6 +19,7 @@
 #include <QCoreApplication>
 #include "placementlinear.h"
 #include "viewtransform.h"
+#include "imageview.h"
 
 #include <QDebug>
 #include <QFileInfo>
@@ -93,6 +94,26 @@ ContentXform::Value ImageItem::tileContentXform() const
         return m_appliedContentXform;
     }
     return {};
+}
+
+ContentXform::Value ImageItem::liveContentXformForPaint() const
+{
+    if (scene() && !scene()->views().isEmpty()) {
+        if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
+            return iv->itemAppliedContentXform(this);
+        }
+    }
+    return tileContentXform();
+}
+
+ColorAdjustments ImageItem::liveColorForPaint() const
+{
+    if (scene() && !scene()->views().isEmpty()) {
+        if (auto *iv = qobject_cast<ImageView *>(scene()->views().first())) {
+            return iv->itemLiveColor(this);
+        }
+    }
+    return m_colorAdjust;
 }
 
 
@@ -297,7 +318,7 @@ void ImageItem::prepareTileLodPlan()
     }
     // Item local → display content (0..layout); then → source for the planner.
     const QRectF visDisplay = visLocal.translated(-offset());
-    const ContentXform::Value x = tileContentXform();
+    const ContentXform::Value x = liveContentXformForPaint();
     QRectF visSource = ContentXform::mapDisplayRectToSource(visDisplay, native, x);
     if (visSource.isEmpty()) {
         // Identity xform: display == source when layout matches native.

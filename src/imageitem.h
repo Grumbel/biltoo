@@ -273,6 +273,13 @@ private:
     void setColorAdjustments(const ColorAdjustments &adj);
     /** Store grade without rebuilding the display pixmap. */
     void setColorAdjustmentsRecord(const ColorAdjustments &adj);
+    /**
+     * Paint / tile LOD: prefer ImageView host helpers when on a view (ItemWorld
+     * when bound); fall back to item mirrors when detached.
+     */
+    ContentXform::Value liveContentXformForPaint() const;
+    ColorAdjustments liveColorForPaint() const;
+
     void setAppliedContentXform(const ContentXform::Value &x)
     {
         m_appliedContentXform = x;
