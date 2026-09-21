@@ -95,9 +95,9 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
                     fitted.width(), fitted.height());
                 painter->save();
                 painter->translate(target.center());
-                painter->rotate(item->itemRotation());
-                painter->scale(item->itemHFlip() ? -1.0 : 1.0,
-                               item->itemVFlip() ? -1.0 : 1.0);
+                const ItemComponents::Placement pl = item->placement();
+                painter->rotate(pl.rotation);
+                painter->scale(pl.hFlip ? -1.0 : 1.0, pl.vFlip ? -1.0 : 1.0);
                 painter->translate(-target.center());
                 painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
                 painter->drawImage(target, img);

@@ -223,16 +223,19 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     if (img.isNull()) {
         return {};
     }
-    // Legacy live flip flags (should be empty after bake).
-    if (item->itemHFlip() || item->itemVFlip()) {
-        Qt::Orientations axes;
-        if (item->itemHFlip()) {
-            axes |= Qt::Horizontal;
+    // Placement display flips (should be empty after content bake into pixels).
+    {
+        const ItemComponents::Placement pl = item->placement();
+        if (pl.hFlip || pl.vFlip) {
+            Qt::Orientations axes;
+            if (pl.hFlip) {
+                axes |= Qt::Horizontal;
+            }
+            if (pl.vFlip) {
+                axes |= Qt::Vertical;
+            }
+            img = img.flipped(axes);
         }
-        if (item->itemVFlip()) {
-            axes |= Qt::Vertical;
-        }
-        img = img.flipped(axes);
     }
     // Live grade only when display is still unbaked host (no applied xform).
     // Re-applying on a materialize bake double-grades the filmstrip override.

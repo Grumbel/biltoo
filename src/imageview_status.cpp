@@ -353,15 +353,18 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
     if (qAbs(item->itemRotation()) > 0.5) {
         text += tr(" · Rot %1°").arg(qRound(item->itemRotation()));
     }
-    if (item->itemHFlip() || item->itemVFlip()) {
-        QStringList flips;
-        if (item->itemHFlip()) {
-            flips << tr("H");
+    {
+        const ItemComponents::Placement pl = item->placement();
+        if (pl.hFlip || pl.vFlip) {
+            QStringList flips;
+            if (pl.hFlip) {
+                flips << tr("H");
+            }
+            if (pl.vFlip) {
+                flips << tr("V");
+            }
+            text += tr(" · Flip %1").arg(flips.join(QLatin1Char('+')));
         }
-        if (item->itemVFlip()) {
-            flips << tr("V");
-        }
-        text += tr(" · Flip %1").arg(flips.join(QLatin1Char('+')));
     }
     if (targetHasContentAppearance()) {
         text += tr(" · Edited");

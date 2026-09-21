@@ -22,8 +22,9 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
     // fallback here — that would push this item's pixels onto another tile.
     const SessionImageId sessionId = item->sessionId();
     const QImage src = item->sourceImage();
-    const bool hFlip = item->itemHFlip();
-    const bool vFlip = item->itemVFlip();
+    const ItemComponents::Placement itemPl = item->placement();
+    const bool hFlip = itemPl.hFlip;
+    const bool vFlip = itemPl.vFlip;
 
     QList<ImageItem *> peers;
     auto collect = [&](const QList<ImageItem *> &list) {
@@ -114,8 +115,9 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
         return;
     }
     const QString path = item->path();
-    const bool hFlip = item->itemHFlip();
-    const bool vFlip = item->itemVFlip();
+    const ItemComponents::Placement itemPl = item->placement();
+    const bool hFlip = itemPl.hFlip;
+    const bool vFlip = itemPl.vFlip;
     for (WorkspaceItemState &slot : m_workspace.savedItems()) {
         if (slot.sessionId != sessionId) {
             continue;

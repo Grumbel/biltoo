@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1969-placement-flip-drop-applied-alias.** Placement flips + drop applied alias.
+Prior: **1968**.
+
+### Change
+- Drop public `itemHFlip` / `itemVFlip`; readers use `placement().hFlip/vFlip`
+- Drop public `appliedContentXform()` alias — only `tileContentXform()` +
+  `hasAppliedContentXform()` remain for content-meta reads
+- Call sites updated (crop record, filmstrip appearance, peer sync, page guide,
+  status chrome)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1969-placement-flip-drop-applied-alias-e77da63.bundle HEAD
+```
+Requires tip **1968** (base **e77da63**); includes 1938–1969.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host (priority)
+- Optional: route status/page-guide scale+rotation through `placement()` for one
+  pose reader (itemScaleX/Y/itemRotation remain as cheap field getters)
+- Color sparse-table readers where fat DTO is redundant
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1968-privatize-bake-tile-content.** Private bake + tileContentXform authority.
 Prior: **1967**.
 

@@ -133,8 +133,6 @@ public:
     QRectF contentSceneRect() const;
     /** Content quad in scene coordinates (respects item scale/rotation). */
     QPolygonF contentScenePolygon() const;
-    bool itemHFlip() const { return m_hFlip; }
-    bool itemVFlip() const { return m_vFlip; }
     /** Live grade for paint/HUD; mutators are ImageView-only (syncLiveColorFromState). */
     ColorAdjustments colorAdjustments() const { return m_colorAdjust; }
 
@@ -148,15 +146,9 @@ public:
     /**
      * Single live content-meta reader for tile plan, chrome, and host capture.
      * Applied ContentXform only (empty when identity-cleared). Install mutators
-     * are ImageView-only (private). Prefer this over appliedContentXform().
+     * are ImageView-only (private).
      */
     ContentXform::Value tileContentXform() const;
-
-    /**
-     * Same as tileContentXform() — retained name for call sites that mean
-     * "fingerprint on the sample" (gated on hasAppliedContentXform).
-     */
-    ContentXform::Value appliedContentXform() const { return tileContentXform(); }
 
     /** When false, the item cannot be selected or dragged (classic viewer). */
     void setInteractive(bool on);

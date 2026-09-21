@@ -1208,6 +1208,8 @@ Phase 1–6 rules still apply. Additions:
   sparse fill without dead tileContentXform call; crop-locked color flush re-schedules.
 - biltoo-1968: privatize bakeRotate90/bakeFlip; appliedContentXform → tileContentXform
   alias; call sites prefer tileContentXform; setTargetColor docs live vs ItemWorld.
+- biltoo-1969: drop public itemHFlip/VFlip and appliedContentXform alias; placement()
+  is sole pose-flip reader; tileContentXform sole content-meta value reader.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

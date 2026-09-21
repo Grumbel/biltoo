@@ -223,10 +223,11 @@ void CropController::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     // Crop mode always edits the full on-disk image — store absolute source rect.
     // Map through active flips so cropRect is in unflipped source space
     // (materializeDisplay bakes flips into pixels and clears the flags).
+    const ItemComponents::Placement cropPl = item->placement();
     CropSession::RecordGeometry rec = session().computeRecordGeometry(
         localCrop, item->contentRect(), item->offset(),
         item->imageSize().width(), item->imageSize().height(),
-        item->itemHFlip(), item->itemVFlip());
+        cropPl.hFlip, cropPl.vFlip);
     if (!rec.valid()) {
         return;
     }
