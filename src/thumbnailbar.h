@@ -316,6 +316,7 @@ private:
     int m_thumbSize = kDefaultThumbSize;
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;
+    LayoutAspectProvider m_layoutAspectProvider;
     QStringList m_files;
     DisplaySurfaceController m_displaySurfaces;
     /** Parallel to m_files: surface id per row (0 = unbound). */

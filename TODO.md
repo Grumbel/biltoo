@@ -2,6 +2,22 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2173-fix-layout-aspect-member.** Compile fix: declare
+`m_layoutAspectProvider` in ThumbnailBar private section.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2173-fix-layout-aspect-member-e77da63.bundle HEAD
+```
+
+Next: **2174**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2172-layout-triple-check.** Triple-check of layout ground truth.
 
 ### Triple-check findings
