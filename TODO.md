@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2128-audit-m16-m27-sessionid.** AUDIT M16/M27 marked fixed via SessionImageId.
+Prior: **2127**.
+
+### Change
+- AUDIT.md: M16 / M27 narrative updated (id-keyed duplicate canvas + persistence)
+- SESSION.md: residual 11 + QPointer -Wnull-dereference host pattern note
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2128-audit-m16-m27-sessionid-e77da63.bundle HEAD
+```
+Requires tip **2127** (base **e77da63**); includes 1938–2128.
+
+### Next
+- Runtime QA: duplicate × membership × flip × project; leave/return Workspace
+- Medium: opacity/HiDPI polish
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2127-duplicate-shortfall-format.** Fix -Wformat on duplicateSelected shortfall log.
 Prior: **2126**.
 

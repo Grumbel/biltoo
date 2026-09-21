@@ -344,7 +344,7 @@ Preferences dialog: standard `QDialog` + buttons; ApplicationShortcuts may still
 
 | ID | Severity | Issue |
 |----|----------|--------|
-| M16 | Medium | **`findItemByPath` prevents second canvas object with same path.** `duplicateSelected` must use a distinct identity or path key — if duplicates share path, restore/add skips. Verify duplicate implementation allows two items same path. |
+| M16 | Fixed (SessionImageId) | **Was:** `findItemByPath` collapsed same-path tiles. **Now:** canvas allows multiple items per path; identity is `SessionImageId` (duplicate allocates a new id; restore/reorder prefer id — SESSION 2109–2123). `findItemByPath` remains first-match legacy only. |
 | L16 | Low | Gallery item hover cursor is PointingHand though primary action is select not open — mild HIG mismatch (hand usually means open/navigate). |
 | L17 | Low | `zoomViewBy` comment still says packaged layouts skip zoom; wheel path contradicts — comment debt. |
 
@@ -873,8 +873,8 @@ Implementation:
 
 | ID | Severity | Issue |
 |----|----------|--------|
-| **M27** | Medium | **Duplicates are first-class on the canvas but second-class in persistence.** Leaving Workspace and returning may restore only one object per path; the other transform is lost or merged via hash. Matches earlier M16 theme. |
-| M27b | Low | `snapshotWorkspace` list + hash dual structure is easy to desync when editing one path only. |
+| **M27** | Fixed (SessionImageId) | **Was:** path-keyed workspace snapshot collapsed duplicates. **Now:** snapshot/restore and LoadRestore use id-keyed appearance + pending binds (see also status table “M27 Fixed”). Runtime smoke still welcome. |
+| M27b | Low | `snapshotWorkspace` list + hash dual structure — prefer id lists; path hash is unbound/legacy only. |
 
 ---
 

@@ -159,16 +159,18 @@ Optional follow-ups: runtime QA of ladder upgrade under Gallery scroll + Image f
    Largely done; re-check after large/small frame transitions and HiDPI.
 
 9. **`-Wnull-dereference`**  
-   May still appear from Qt `QPointer` inlines depending on GCC version; local
-   `guard.data()` pattern used in thumbnail jobs.
+   Qt `QPointer` inlines may still warn depending on GCC version. Host pattern:
+   capture `QPointer`, check `if (!guard)` in worker and again in the GUI
+   lambda before `guard->…` / `guard.data()` (displaypipeline_jobs, MainWindow
+   search, rematerialize). Treat new warnings as pattern misses, not model bugs.
 
 ### Low / docs
 
 10. **IDENTITY.md §1** updated for SessionDocument + SessionImageId
     (biltoo-2126); §0 remains the product model. Prefer SESSION.md for
     “what to do next”.
-11. **AUDIT.md H2p / M27** partially addressed by ids; mark fixed when
-    verified at runtime.
+11. **AUDIT.md M16 / M27** marked fixed via SessionImageId (biltoo-2128);
+    runtime smoke still welcome (duplicate → leave Workspace → return).
 12. **TODO.md 0.1.0** still lists broad stabilize items — fold identity
     acceptance tests into that list.
 
