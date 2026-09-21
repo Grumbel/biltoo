@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2052-stage4b-nested-sparse-format.** Stage 4b: nested project/clipboard appearance; drop dual-write.
+Prior: **2051** (gallerylayout-rows-test-dual).
+
+### Change
+- Project + clipboard format **version ≥ 2**: nested `crop` / `attention` / `bake` /
+  `color` / `placement` objects (no flat v1 keys; load rejects version < 2)
+- ItemWorld component mutators write sparse tables only; `appearanceValue`
+  assembles from sparse; fat DTO is setAppearance/load cache only
+- Tests + REFACTOR Stage 4b exit criteria
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2052-stage4b-nested-sparse-format-e77da63.bundle HEAD
+```
+Requires tip **2051** (base **e77da63**); includes 1938–2052.
+
+### Next
+- Phase 6 Tier 4: decode/framing when prioritized
+- Phase 7 further ImageItem demotion when needed
+- Optional: remove residual fat SessionAppearanceStore readers if any remain
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2051-gallerylayout-rows-test-dual.** Fix GalleryLayoutTest MasonryRows / MasonryRowsFill expectations.
 Prior: **2050**.
 
@@ -18,7 +45,7 @@ git pull --ff-only /path/to/biltoo-2051-gallerylayout-rows-test-dual-e77da63.bun
 Requires tip **2050** (base **e77da63**); includes 1938–2051.
 
 ### Next
-- **Stage 4b** only with explicit product decision (format version + dual-write drop)
+- Stage 4b continued on this line (tip 2052+)
 - Phase 6 Tier 4: decode/framing when prioritized
 - Phase 7 line otherwise at a natural pause
 

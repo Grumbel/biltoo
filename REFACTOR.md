@@ -1042,7 +1042,7 @@ Ids are never recycled (`IDENTITY`). Orphaned fat/sparse rows are a dual-authori
 leak; the table above is the contract tests in `sessiondocument_test` lock.
 
 
-**Stage 4b readiness (not started — needs product format-version decision)**
+**Stage 4b status: complete** (tip 2051 — product: nested sparse, no v1 compat)
 
 Prerequisites already in place:
 
@@ -1051,11 +1051,11 @@ Prerequisites already in place:
 - Project/clipboard boundary builds DTOs from sparse-prefer values
 - Load path dual-fills sparse tables via `setAppearance`
 
-Stage 4b still requires:
+Stage 4b delivered (product: no backward compatibility):
 
-1. Bump `projectFormat` / version field with a documented reader for old flat DTO JSON
-2. Optional sparse on-disk shape (`"crop": {...}`, `"placement": {...}`) or keep flat keys with sparse-only runtime
-3. Only then remove dual-write from ItemWorld mutators (fat DTO becomes load/save assemble-only)
+1. Project + clipboard `version` ≥ 2; load rejects `< 2`
+2. Nested on-disk shape: `crop` / `attention` / `bake` / `color` / `placement` objects
+3. Component mutators sparse-only; `appearanceValue` assembles from sparse; fat is setAppearance/load cache only
 
 **Sequencing relative to Stages 0–3**
 
@@ -1108,7 +1108,7 @@ Phase 1–6 rules still apply. Additions:
 - [x] Project save walks explicitly tagged persistent tables (Stage 4a sparse-prefer).
 - [x] `git grep captureState` is thin (2042): definition, `freezeItemAppearance`
   fallback, and crop-enter undo baseline only — not interaction hot paths.
-- [ ] Stage 4b: format version + drop dual-write (blocked on product decision).
+- [x] Stage 4b: format version ≥ 2 nested sparse + drop dual-write (no v1 reader).
 - Phase 6 Tier 4 residual still tracked separately ([docs/IMAGEVIEW_CHARACTERIZATION.md](docs/IMAGEVIEW_CHARACTERIZATION.md));
   pure + offscreen harness largely green; decode/framing soft.
 
