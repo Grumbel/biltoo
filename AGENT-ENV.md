@@ -52,6 +52,8 @@ nix develop -c bash -c '
 Includes Stage 1–2 id-keyed component × `pathOrderClear` locks (Crop, Placement,
 ContentBake, Color, Attention).
 
+**Full harness green (2026-09-21, tip 1972/1973):** host with Qt 6.11.2 — `ctest` 18/18; direct offscreen characterization **17 passed, 0 skipped** including `imageView_openGalleryCropReturn`.
+
 **Memory:** ~1 GiB host RAM needs `-j1` (parallel `g++` OOMs). Full
 `biltoo_lib` + CHARACTERIZATION=ON is multi-minute at `-j1` and may still OOM
 linking large TUs — prefer a machine with more RAM/swap for the full harness.

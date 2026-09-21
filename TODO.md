@@ -2,6 +2,36 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1973-char-green-color-sparse.** CHARACTERIZATION green + Color sparse prefer.
+Prior: **1972**.
+
+### Change
+- **CHARACTERIZATION=ON verified green** on host (Qt 6.11.2 / nixos):
+  - CMake: `ImageView characterization: linking biltoo_lib (full harness)`
+  - `ctest`: 18/18 passed
+  - Direct: `QT_QPA_PLATFORM=offscreen ./biltoo-imageview-characterization-test`
+    → **17 passed, 0 failed, 0 skipped** including `imageView_openGalleryCropReturn`
+  - Expected QWARN: `QOpenGLWidget is not supported on this platform` (offscreen)
+- `wantAppearance`: stored grade from `ItemWorld::color(id)` (sparse Color table
+  authority) before live-grade override
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1973-char-green-color-sparse-e77da63.bundle HEAD
+```
+Requires tip **1972** (base **e77da63**); includes 1938–1973.
+
+### Next
+- Prefer sparse Color at more durable-write / filmstrip sites where fat DTO is
+  only a dual-write mirror
+- Further ImageItem public-surface trim (e.g. sessionIndex deprecation cleanup)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1972-private-pixel-install.** Private ImageItem pixel install mutators.
 Prior: **1971**.
 

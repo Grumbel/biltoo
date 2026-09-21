@@ -349,6 +349,12 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         }
         SessionAppearance::fillEmptyContentFlags(want, sparse);
     }
+    // ItemWorld Color is persistence authority for stored grade (sparse table;
+    // falls back to fat DTO when the sparse entry is absent). Prefer it over a
+    // stale DTO field when both exist.
+    if (id != kInvalidSessionImageId) {
+        want.colorAdjust = m_view->itemWorld().color(id).grade;
+    }
     // Live grade leads ItemWorld during slider drag; keep store grade when live
     // is still identity (cold open / path-change before seed install).
     {
