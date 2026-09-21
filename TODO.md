@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1976-sparse-color-filmstrip-attach.** Sparse Color on filmstrip + attach + load.
+Prior: **1975**.
+
+### Change
+- `imageWithSessionAppearance`: materialize with `ItemWorld::color(sid)` grade;
+  grade-only sparse presence still paints (null-safe when DTO absent)
+- `attachDisplaySample`: if want grade is identity but sparse Color is set, install
+  sparse grade onto the live item
+- Load/session-mutate rematerialize: prefer sparse Color grade before gate
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1976-sparse-color-filmstrip-attach-e77da63.bundle HEAD
+```
+Requires tip **1975** (base **e77da63**); includes 1938–1976.
+
+### Next
+- sessionIndex deprecation cleanup (list-order cache only)
+- Audit Reset path: currently keeps color grade by design — confirm product intent
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1975-sparse-color-content-presence.** Sparse Color in content presence + install.
 Prior: **1974**.
 

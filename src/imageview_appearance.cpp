@@ -299,13 +299,25 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
             app = &fallback;
         }
     }
-    if (!app || !SessionAppearance::hasContentAppearance(*app)) {
+    // Prefer sparse Color grade for filmstrip / soft paint. Grade-only sparse
+    // presence still materializes when the fat DTO has no other content ops.
+    WorkspaceItemState paint;
+    if (app) {
+        paint = *app;
+    } else if (sid == kInvalidSessionImageId || !m_itemWorld.hasColor(sid)) {
+        return src;
+    }
+    if (sid != kInvalidSessionImageId) {
+        paint.colorAdjust = m_itemWorld.color(sid).grade;
+        paint.sessionId = sid;
+    }
+    if (!SessionAppearance::hasContentAppearance(paint) && paint.colorAdjust.isIdentity()) {
         return src;
     }
     // Single pipeline — SoftPreview scales crop into soft pixel space
     // (SessionAppearance::materializeDisplay contract). Never strip crop.
     const QImage out = SessionAppearance::materializeDisplay(
-        src, *app, SessionAppearance::PixelKind::SoftPreview);
+        src, paint, SessionAppearance::PixelKind::SoftPreview);
     return out.isNull() ? src : out;
 }
 

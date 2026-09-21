@@ -1219,6 +1219,7 @@ Phase 1–6 rules still apply. Additions:
   wantAppearance prefers ItemWorld::color(id) for stored grade.
 - biltoo-1974: sparse Color prefer on durable persist + flushColorAdjustCommit store base.
 - biltoo-1975: targetHasContentAppearance includes hasColor; createItem prefers sparse grade.
+- biltoo-1976: filmstrip imageWithSessionAppearance + attachDisplaySample + load prefer sparse Color.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

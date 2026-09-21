@@ -753,9 +753,18 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     // Host is in ImageCache / item. Materialize store want (soft stand-in +
     // async multi-MP). Do not bake chrome-only on multi-MP — cannot
     // bake crop on the GUI and used to claim applied == want without pixels.
-    if (SessionAppearance::hasContentAppearance(app)
-        || !app.colorAdjust.isIdentity()) {
-        m_view->rematerializeItemContent(item, app);
+    {
+        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+            ? item->sessionId()
+            : state.sessionId;
+        if (sid != kInvalidSessionImageId) {
+            app.colorAdjust = m_view->itemWorld().color(sid).grade;
+        }
+        if (SessionAppearance::hasContentAppearance(app)
+            || !app.colorAdjust.isIdentity()
+            || (sid != kInvalidSessionImageId && m_view->itemWorld().hasColor(sid))) {
+            m_view->rematerializeItemContent(item, app);
+        }
     }
     m_view->applyState(item, app);
     if (!m_view->hostLayout().isFreeForm()

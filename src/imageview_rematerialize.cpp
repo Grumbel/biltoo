@@ -56,7 +56,16 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
     }
 
     syncLiveContentMetaFromState(item, want);
-    syncLiveColorFromState(item, want.colorAdjust);
+    {
+        ColorAdjustments grade = want.colorAdjust;
+        const SessionImageId sid = item->sessionId();
+        // Cold install: want may lack grade while sparse Color already holds it.
+        if (sid != kInvalidSessionImageId && grade.isIdentity()
+            && m_itemWorld.hasColor(sid)) {
+            grade = m_itemWorld.color(sid).grade;
+        }
+        syncLiveColorFromState(item, grade);
+    }
 }
 
 
