@@ -59,8 +59,9 @@ void WorkspaceController::restore()
     // snapshot and left Gallery→Workspace empty. Only drop live tiles.
     m_view->clearLiveCanvas();
     m_view->hostDisplayPipeline().loadGate().clearPendingWorkspacePaths();
-    // Merge session appearance (crop / flip / orientation) from the live map into
-    // the durable snapshot so Image-mode edits survive a full rebuild.
+    // Merge live store into the durable snapshot so Image-mode edits survive
+    // a full rebuild. Bound: appearance by id (crop never from path). Unbound:
+    // path map may hold crop + orient.
     for (WorkspaceItemState &slot : m_savedItems) {
         if (slot.sessionId != kInvalidSessionImageId) {
             if (m_view->itemWorld().hasAppearance(slot.sessionId)) {
@@ -74,14 +75,22 @@ void WorkspaceController::restore()
                 slot.contentVFlip = sit.contentVFlip;
                 continue;
             }
+            // Bound but no appearance yet: path may seed orient/flip only.
+            if (const WorkspaceItemState *it = m_view->itemWorld().getPathState(slot.path)) {
+                slot.contentQuarterTurns = it->contentQuarterTurns;
+                slot.contentHFlip = it->contentHFlip;
+                slot.contentVFlip = it->contentVFlip;
+                slot.orientation = 0.0;
+            }
+            continue;
         }
         const WorkspaceItemState *it = m_view->itemWorld().getPathState(slot.path);
         if (!it) {
             continue;
         }
-        // Path-level appearance only for matching bound session slots (legacy).
-        if (slot.sessionIndex < 0 || it->sessionIndex < 0
-            || slot.sessionIndex != it->sessionIndex) {
+        // Unbound path row: require matching list index when both sides have one.
+        if (slot.sessionIndex >= 0 && it->sessionIndex >= 0
+            && slot.sessionIndex != it->sessionIndex) {
             continue;
         }
         slot.hasCrop = it->hasCrop;

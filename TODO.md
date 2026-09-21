@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2012-bound-no-path-crop-read.** Bound slots never take crop from path map on read.
+Prior: **2011**.
+
+### Change
+1. **Workspace restore merge** — bound without appearance: orient/flip from path only;
+   crop only from `sessionAppearanceValue`. Unbound still merges full path state.
+2. **imageWithSessionAppearance** — when falling back to path map for a bound id,
+   copy orient/flip only (never replace the paint state with path crop).
+
+Pairs with write-side guards (2009–2011).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2012-bound-no-path-crop-read-e77da63.bundle HEAD
+```
+Requires tip **2011** (base **e77da63**); includes 1938–2012.
+
+### Next
+- Stage 4 / build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2011-setPathState-strip-bound-crop.** Central IDENTITY guard on path map writes.
 Prior: **2010**.
 

@@ -306,8 +306,23 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
     }
     if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
         if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
-            fallback = *st;
-            app = &fallback;
+            if (sid != kInvalidSessionImageId) {
+                // Bound: orient/flip path hint only — never adopt path crop.
+                if (!app) {
+                    fallback = {};
+                    fallback.path = path;
+                    fallback.sessionId = sid;
+                } else {
+                    fallback = *app;
+                }
+                fallback.contentHFlip = st->contentHFlip;
+                fallback.contentVFlip = st->contentVFlip;
+                fallback.contentQuarterTurns = st->contentQuarterTurns;
+                app = &fallback;
+            } else {
+                fallback = *st;
+                app = &fallback;
+            }
         }
     }
     // Durable XDG appearance when session store is empty (slideshow may paint a
