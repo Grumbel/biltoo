@@ -1396,6 +1396,8 @@ Phase 1–6 rules still apply. Additions:
   captureState only definition, freeze fallback, crop enter.
 - biltoo-2043: Docs — Stage 4a exit criteria checked complete; Stage 4b readiness
   checklist (format version still blocked on product decision).
+- biltoo-2044: Stage 4b prep — sparse-only after fat remove characterization;
+  getAppearance/hasAppearance marked non-authority for store reads.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

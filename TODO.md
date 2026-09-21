@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2044-sparse-only-lag-test.** Stage 4b prep: sparse survives fat removal.
+Prior: **2043**.
+
+### Change
+- `hasDurableAppearance_sparseOnlyAfterFatRemoved` — fat `store.remove` leaves
+  sparse crop; `appearanceValue` still returns crop
+- `getAppearance` / `hasAppearance` docs: not store-read authority
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2044-sparse-only-lag-test-e77da63.bundle HEAD
+```
+Requires tip **2043** (base **e77da63**); includes 1938–2044.
+
+### Next
+- **Stage 4b** only with explicit product decision (format version + dual-write drop)
+- Phase 6 Tier 4: decode/framing characterization when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2043-stage4a-complete-4b-ready.** Docs: Stage 4a complete; Stage 4b readiness checklist.
 Prior: **2042**.
 

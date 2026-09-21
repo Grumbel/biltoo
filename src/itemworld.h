@@ -80,7 +80,11 @@ public:
         return *m_sizeBook;
     }
 
-    /** Id-keyed content appearance DTO (writes dual-write sparse component tables). */
+    /**
+     * Fat dual-write mirror pointer (Stage 4b will drop this as authority).
+     * For store reads prefer appearanceValue / hasDurableAppearance — never
+     * treat a null getAppearance as "no durable content".
+     */
     const WorkspaceItemState *getAppearance(SessionImageId id) const
     {
         if (!m_appearance || id == kInvalidSessionImageId) {
@@ -89,6 +93,7 @@ public:
         return m_appearance->get(id);
     }
 
+    /** Fat DTO row present only — use hasDurableAppearance for store-read gates. */
     bool hasAppearance(SessionImageId id) const
     {
         return getAppearance(id) != nullptr;

@@ -43,6 +43,8 @@ private slots:
     void hasDurableAppearance_emptyAndAfterSparse();
     void hasDurableAppearance_fatOnlyCrop();
     void appearanceValue_sparseCropWinsOverStaleFat();
+    // Stage 4b readiness: sparse survives fat removal (dual-write lag)
+    void hasDurableAppearance_sparseOnlyAfterFatRemoved();
 };
 
 
@@ -550,6 +552,34 @@ void ItemWorldTest::appearanceValue_sparseCropWinsOverStaleFat()
     QCOMPARE(v.cropRect, QRect(2, 3, 40, 50));
     QCOMPARE(v.cropSourceSize, QSize(100, 100));
     QVERIFY(world.hasDurableAppearance(11));
+}
+
+
+void ItemWorldTest::hasDurableAppearance_sparseOnlyAfterFatRemoved()
+{
+    // Stage 4b readiness: store-read must not require the fat dual-write mirror.
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    ItemComponents::Crop c;
+    c.rect = QRect(1, 2, 30, 40);
+    c.sourceSize = QSize(100, 80);
+    world.setCrop(11, c);
+    QVERIFY(world.hasAppearance(11));
+    QVERIFY(world.hasDurableAppearance(11));
+    QVERIFY(world.hasCrop(11));
+
+    // Simulate dual-write lag / partial clear: fat row gone, sparse remains.
+    store.remove(11);
+    QVERIFY(!world.hasAppearance(11));
+    QVERIFY(world.hasCrop(11));
+    QVERIFY(world.hasDurableAppearance(11));
+
+    const WorkspaceItemState v = world.appearanceValue(11);
+    QVERIFY(v.hasCrop);
+    QCOMPARE(v.cropRect, QRect(1, 2, 30, 40));
+    QCOMPARE(v.sessionId, SessionImageId(11));
 }
 
 QTEST_MAIN(ItemWorldTest)
