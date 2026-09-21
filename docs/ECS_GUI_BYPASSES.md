@@ -171,5 +171,5 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 | 4 | Applied ContentXform vs store at leave | **2177** flush on setViewMode; **2203** clearLiveContentMeta after flush (no applied on stash) |
 | 5 | Workspace m_savedItems / freeze→Color | **2177** restore; **2194** snapshot Placement-only; **2195** rememberItemState Placement-only; persist/bind keep durable Color over lag |
 | 6 | Incremental bakeRotate90 | **2178** disk host first; **2200** no incremental — clear pixels + async when host missing |
-| 7 | Path/XDG seed | **2198–2199** unbound soft/layout; **2205** Image underlay never path-XDG-seeds (session open / Gallery only) |
+| 7 | Path/XDG seed / orient authority | **2205** Image no path-XDG seed; **2208–2210** withoutContentOrient + hasContentOrient + wantAppearance strip |
 

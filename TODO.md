@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2210-want-appearance-orient-strip.** wantAppearanceForItem is the
+common choke for materialize/layout DTO. After sparse fill, strip orient when
+the id has no contentBake/crop and the live item has no mid-edit applied.
+
+### Fix
+- wantAppearanceForItem: withoutContentOrient when !hasContentOrient (no applied)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2210-want-appearance-orient-strip-e77da63.bundle HEAD
+```
+
+Next: **2211**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2209-has-content-orient-layout-strip.** Orient authority cleanup:
 
 1. ItemWorld::hasContentOrient(sid) — contentBake or crop sparse

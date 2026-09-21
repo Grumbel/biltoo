@@ -388,6 +388,10 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             sparse.cropRect = crop.rect;
         }
         SessionAppearance::fillEmptyContentFlags(want, sparse);
+        // Placement/color-only durable row is not content orient (2205–2209).
+        if (!m_view->itemWorld().hasContentOrient(id)) {
+            want = SessionAppearance::withoutContentOrient(want);
+        }
     }
     // ItemWorld Color is persistence authority for stored grade (sparse table;
     // sparse tables only). Prefer it over a
