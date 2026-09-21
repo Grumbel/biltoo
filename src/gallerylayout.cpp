@@ -106,41 +106,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         sizes.append(layoutSize(item));
     }
 
-    QVector<PackPose> poses;
-    switch (params.mode) {
-    case Mode::SideBySide:
-        poses = packPosesSideBySide(sizes, margin, gap, availH);
-        break;
-    case Mode::Vertical:
-        poses = packPosesVertical(sizes, margin, gap, availW);
-        break;
-    case Mode::Grid:
-        poses = packPosesGrid(sizes, margin, gap, availW, params.gridColumns);
-        break;
-    case Mode::GridCrop:
-        poses = packPosesGridCrop(sizes, margin, gap, availW, params.gridColumns);
-        break;
-    case Mode::Masonry:
-        poses = packPosesMasonry(sizes, margin, gap, availW, params.masonryColumns);
-        break;
-    case Mode::MasonryRows:
-        poses = packPosesMasonryRows(sizes, margin, gap, availH, params.masonryRows);
-        break;
-    case Mode::MasonryFill:
-        poses = packPosesMasonryFill(sizes, margin, gap, availW, params.masonryColumns);
-        break;
-    case Mode::MasonryRowsFill:
-        poses = packPosesMasonryRowsFill(sizes, margin, gap, availH, params.masonryRows);
-        break;
-    case Mode::Flow:
-    case Mode::FlowFill:
-        poses = packPosesFlow(sizes, margin, gap, availW, params.gridColumns,
-                              params.mode == Mode::FlowFill);
-        break;
-    case Mode::Facing:
-        poses = packPosesFacing(sizes, margin, gap, availW, availH);
-        break;
-    }
+    const QVector<PackPose> poses = packPosesForMode(params.mode, sizes, params);
 
     for (int i = 0; i < n; ++i) {
         ImageItem *item = items.at(i);

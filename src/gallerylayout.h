@@ -606,6 +606,43 @@ inline QVector<PackPose> packPosesMasonryRowsFill(const QVector<QSizeF> &layoutS
 }
 
 /**
+ * Dispatch pure pack poses for @p mode (Stage 3 single entry for tests + pack).
+ */
+inline QVector<PackPose> packPosesForMode(Mode mode, const QVector<QSizeF> &layoutSizes,
+                                          const Params &params)
+{
+    const qreal margin = params.margin;
+    const qreal gap = params.gap;
+    const qreal availW = params.availW;
+    const qreal availH = params.availH;
+    switch (mode) {
+    case Mode::SideBySide:
+        return packPosesSideBySide(layoutSizes, margin, gap, availH);
+    case Mode::Vertical:
+        return packPosesVertical(layoutSizes, margin, gap, availW);
+    case Mode::Grid:
+        return packPosesGrid(layoutSizes, margin, gap, availW, params.gridColumns);
+    case Mode::GridCrop:
+        return packPosesGridCrop(layoutSizes, margin, gap, availW, params.gridColumns);
+    case Mode::Masonry:
+        return packPosesMasonry(layoutSizes, margin, gap, availW, params.masonryColumns);
+    case Mode::MasonryRows:
+        return packPosesMasonryRows(layoutSizes, margin, gap, availH, params.masonryRows);
+    case Mode::MasonryFill:
+        return packPosesMasonryFill(layoutSizes, margin, gap, availW, params.masonryColumns);
+    case Mode::MasonryRowsFill:
+        return packPosesMasonryRowsFill(layoutSizes, margin, gap, availH, params.masonryRows);
+    case Mode::Flow:
+        return packPosesFlow(layoutSizes, margin, gap, availW, params.gridColumns, false);
+    case Mode::FlowFill:
+        return packPosesFlow(layoutSizes, margin, gap, availW, params.gridColumns, true);
+    case Mode::Facing:
+        return packPosesFacing(layoutSizes, margin, gap, availW, availH);
+    }
+    return {};
+}
+
+/**
  * Arrange @p items in scene coordinates. Clears gallery crop except for GridCrop.
  * @p afterEach is invoked after each item is placed (e.g. to snapshot state).
  */

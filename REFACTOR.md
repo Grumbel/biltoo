@@ -1373,6 +1373,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2039: Stage 3 residual — pack() single switch + apply loop (DRY).
 - biltoo-2040: Stage 2 residual — crop record/afterSt/apply seed use freezeItemAppearance;
   Stage 3 GalleryLayout pack marked complete.
+- biltoo-2041: Stage 3 residual — packPosesForMode pure dispatcher shared by pack + tests.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

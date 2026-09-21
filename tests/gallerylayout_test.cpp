@@ -29,6 +29,7 @@ private slots:
     void packPoses_flowAndFlowFill();
     void packPoses_facing();
     void packPoses_masonryFillAndRowsFill();
+    void packPosesForMode_dispatches();
 };
 
 void GalleryLayoutTest::axesSwap_cardinalAndDiagonal()
@@ -279,6 +280,30 @@ void GalleryLayoutTest::packPoses_masonryFillAndRowsFill()
     QCOMPARE(rows.size(), 2);
     QCOMPARE(rows.at(0).scale, 1.0);
     QCOMPARE(rows.at(1).scale, 2.0);
+}
+
+void GalleryLayoutTest::packPosesForMode_dispatches()
+{
+    const QVector<QSizeF> sizes{QSizeF(50, 50), QSizeF(50, 50)};
+    GalleryLayout::Params p;
+    p.margin = 0.0;
+    p.gap = 10.0;
+    p.availW = 110.0;
+    p.availH = 100.0;
+    p.gridColumns = 2;
+    p.masonryColumns = 2;
+
+    const auto via = GalleryLayout::packPosesForMode(GalleryLayout::Mode::Grid, sizes, p);
+    const auto direct = GalleryLayout::packPosesGrid(sizes, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(via.size(), direct.size());
+    QCOMPARE(via.at(0).center, direct.at(0).center);
+    QCOMPARE(via.at(1).center, direct.at(1).center);
+
+    const auto flowVia = GalleryLayout::packPosesForMode(GalleryLayout::Mode::FlowFill, sizes, p);
+    const auto flowDirect =
+        GalleryLayout::packPosesFlow(sizes, 0.0, 10.0, 110.0, 2, true);
+    QCOMPARE(flowVia.size(), flowDirect.size());
+    QCOMPARE(flowVia.at(0).scale, flowDirect.at(0).scale);
 }
 
 QTEST_MAIN(GalleryLayoutTest)

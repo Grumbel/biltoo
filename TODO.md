@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2041-pack-poses-for-mode.** Stage 3 residual: pure packPosesForMode dispatcher.
+Prior: **2040**.
+
+### Change
+- `GalleryLayout::packPosesForMode(mode, sizes, params)` — single pure entry
+- `pack` uses it instead of an inline switch
+- Test: Grid and FlowFill match mode-specific helpers
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2041-pack-poses-for-mode-e77da63.bundle HEAD
+```
+Requires tip **2040** (base **e77da63**); includes 1938–2041.
+
+### Next
+- Remaining direct `captureState`: unbound path-map, crop enter, color unbound,
+  content-bake before, loadRestore without store (intentional)
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2040-crop-freeze-stage3-done.** Stage 2 residual crop freezes + Stage 3 GalleryLayout pack complete.
 Prior: **2039**.
 
