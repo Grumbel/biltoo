@@ -80,9 +80,11 @@ Workspace “duplicate into session” is represented.
 
 - Live `QGraphicsPixmapItem` subclass on `ImageView`’s scene.
 - Holds **decoded pixels** (`m_source` / pixmap) and **transforms**.
-- Binding to a session slot: `ImageItem::m_sessionIndex`
-  - `>= 0` → bound to that session index
-  - `-1` → unbound (canvas-only, or not yet rebound)
+- Binding to a session image:
+  - **Identity:** `ImageItem::sessionId()` (`SessionImageId`; 0 = unbound)
+  - **List order:** `ImageView::sessionListIndex(item)` (SessionDocument when bound)
+  - `ImageItem::sessionIndex()` is a **deprecated list-order cache** only
+    (shifts on insert/delete; may lag after reorder — tips 1998–2002)
 
 **One path, many canvas objects is allowed** in Workspace (DOMAIN: duplicate
 selection → same path, independent transforms). Gallery DOMAIN text still says
@@ -98,7 +100,8 @@ duplicates, which is an unresolved tension for Gallery packing.
 | Field | Meaning |
 |-------|---------|
 | `m_path` | Source file path |
-| `m_sessionIndex` | Bound session slot, or -1 |
+| `m_sessionId` | Stable session-image id (0 = unbound) — appearance / peer key |
+| `m_sessionIndex` | Deprecated list-order cache only; prefer `sessionListIndex()` |
 | `m_source` / pixmap | **Current displayed pixels** (may already include crop/flip/90° bake) |
 | `m_sessionHasCrop` / `m_sessionCropRect` | Crop in **on-disk** pixel coordinates (metadata) |
 | `m_contentHFlip` / `m_contentVFlip` | Net content flips vs on-disk (after crop), for chrome indicators |

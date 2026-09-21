@@ -324,9 +324,9 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             && !item->path().isEmpty()) {
             const_cast<DisplayPipelineController *>(this)->seedSessionAppearanceFromState(
                 id, item->path());
-        if (m_view->itemWorld().hasAppearance(id)) {
-            want = m_view->sessionAppearanceValue(id);
-        }
+            if (m_view->itemWorld().hasAppearance(id)) {
+                want = m_view->sessionAppearanceValue(id);
+            }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(item->path())) {

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2015-identity-sessionId-docs.** IDENTITY.md: sessionId identity; sessionIndex cache-only.
+Prior: **2014**.
+
+### Change
+- `IDENTITY.md` §1.3 / field table: identity is `sessionId`; list order via
+  `sessionListIndex`; `sessionIndex` marked deprecated cache (tips 1998–2002)
+- `wantAppearanceForItem`: fix nested brace indentation after path XDG seed
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2015-identity-sessionId-docs-e77da63.bundle HEAD
+```
+Requires tip **2014** (base **e77da63**); includes 1938–2015.
+
+### Next
+- Stage 4 project-format migration (design)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2014-identity-path-map-docs.** IDENTITY.md documents path-map crop rules (2009–2013).
 Prior: **2013**.
 
