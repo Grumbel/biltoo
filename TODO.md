@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2011-setPathState-strip-bound-crop.** Central IDENTITY guard on path map writes.
+Prior: **2010**.
+
+### Change
+`ItemWorld::setPathState`: if the state carries a bound `SessionImageId` and
+crop fields are set, **strip crop** before writing the path book. Orient/flip
+path hints may remain. Unbound states keep crop.
+
+Test: `setPathState_stripsCropWhenBound`.
+
+Call sites (snapshot / restore / bake) already avoid bound crop; this is the
+safety net so a future caller cannot reintroduce the leak.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2011-setPathState-strip-bound-crop-e77da63.bundle HEAD
+```
+Requires tip **2010** (base **e77da63**); includes 1938–2011.
+
+### Next
+- Stage 4 project-format migration (design)
+- Full build + characterization (+ itemworld_test)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2010-path-map-no-bound-crop.** Path map never carries crop for bound session ids.
 Prior: **2009**.
 

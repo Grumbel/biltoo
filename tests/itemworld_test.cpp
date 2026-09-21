@@ -38,6 +38,7 @@ private slots:
     void placementFromState_roundTrip();
     void applyPlacementToState_preservesNonPose();
     void sparseWrite_stampsSessionIdOnDto();
+    void setPathState_stripsCropWhenBound();
 };
 
 
@@ -499,6 +500,38 @@ void ItemWorldTest::sparseWrite_stampsSessionIdOnDto()
     world.setPlacement(42, pl);
     QCOMPARE(world.appearanceValue(42).sessionId, SessionImageId(42));
     QCOMPARE(world.appearanceValue(42).pos, QPointF(10, 20));
+}
+
+
+void ItemWorldTest::setPathState_stripsCropWhenBound()
+{
+    PathItemStateBook paths;
+    ItemWorld world;
+    world.bindPathBook(&paths);
+
+    WorkspaceItemState bound;
+    bound.sessionId = 7;
+    bound.path = QStringLiteral("/dup.png");
+    bound.hasCrop = true;
+    bound.cropRect = QRect(1, 2, 30, 40);
+    bound.contentHFlip = true;
+    world.setPathState(QStringLiteral("/dup.png"), bound);
+
+    const WorkspaceItemState *got = world.getPathState(QStringLiteral("/dup.png"));
+    QVERIFY(got);
+    QVERIFY(!got->hasCrop);
+    QVERIFY(got->cropRect.isEmpty());
+    QVERIFY(got->contentHFlip); // orient path hint may remain
+
+    WorkspaceItemState unbound;
+    unbound.path = QStringLiteral("/solo.png");
+    unbound.hasCrop = true;
+    unbound.cropRect = QRect(5, 5, 10, 10);
+    world.setPathState(QStringLiteral("/solo.png"), unbound);
+    const WorkspaceItemState *u = world.getPathState(QStringLiteral("/solo.png"));
+    QVERIFY(u);
+    QVERIFY(u->hasCrop);
+    QCOMPARE(u->cropRect, QRect(5, 5, 10, 10));
 }
 
 #include "itemworld_test.moc"

@@ -346,9 +346,24 @@ public:
         return m_pathBook->get(path);
     }
 
+    /**
+     * Path-keyed store for unbound tiles and orient/flip path hints.
+     * IDENTITY: when @p state carries a bound SessionImageId, crop fields are
+     * stripped before write — crop is id-keyed only (duplicates share a path).
+     */
     void setPathState(const QString &path, const WorkspaceItemState &state)
     {
         if (!m_pathBook || path.isEmpty()) {
+            return;
+        }
+        if (state.sessionId != kInvalidSessionImageId
+            && (state.hasCrop || !state.cropRect.isEmpty())) {
+            WorkspaceItemState s = state;
+            s.hasCrop = false;
+            s.cropRect = QRect();
+            s.cropRotation = 0.0;
+            s.cropSourceSize = QSize();
+            m_pathBook->set(path, s);
             return;
         }
         m_pathBook->set(path, state);
