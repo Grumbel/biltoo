@@ -17,8 +17,8 @@
  * WorkspaceItemState DTO (project file / undo still use the full struct).
  *
  * Presence replaces hasCrop / hasAttention / non-identity grade / non-zero bake.
- * Pure extract/apply helpers keep the DTO and runtime tables synchronized
- * until Stage 4 persistence split.
+ * Pure extract/apply helpers bridge DTO ↔ sparse tables at load (setAppearance)
+ * and project/clipboard assemble (appearanceValue). Stage 4b: no dual-write.
  */
 namespace ItemComponents {
 

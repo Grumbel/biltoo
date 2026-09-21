@@ -13,26 +13,20 @@
 #include <QString>
 
 /**
- * Facade over per-item stores (Phase 7 / REFACTOR.md Stage 4).
+ * Facade over per-item stores (Phase 7 / REFACTOR.md Stage 4b).
  *
  * Owns sparse tables (Crop, Attention, ContentBake, Color, Placement) and
  * non-owning links to SessionAppearanceStore, PathItemStateBook, ImageSizeBook.
  *
- * Persistence tags (REFACTOR.md Stage 4 design):
+ * Persistence tags (REFACTOR.md Stage 4):
  *   Persistent — SessionDocument paths/ids; sparse Crop / ContentBake / Color /
  *     Attention; Placement (Workspace-scoped pose); path book only for unbound.
- *   Derived mirror — fat WorkspaceItemState (dual-write until Stage 4b format).
+ *   Assemble-only — fat WorkspaceItemState written by setAppearance (load path);
+ *     appearanceValue rebuilds from sparse tables (no dual-write lag).
  *   Derived only — applied ContentXform, tile LOD, soft pixels, sessionIndex.
  *
- * Writes: setAppearance / setCrop / setColor / … dual-write sparse + fat DTO so
- * project serialization and legacy readers stay consistent.
- * Reads: prefer ImageView::sessionAppearanceValue (sparse-first choke point) or
- * component accessors (crop(), color(), …). ImageItem is a render/hit-test proxy
- * — not a parallel live database.
- *
- * Project/clipboard boundary (Stage 4a): build DTO from appearanceValue /
- * sessionAppearanceValue (+ live pose when needed), never from a raw fat
- * pointer alone. Load always goes through setAppearance (dual-fills sparse).
+ * Stage 4b: setCrop / setColor / … write sparse tables only. setAppearance still
+ * fills sparse + fat for load. Project/clipboard assemble via appearanceValue.
  *
  * Entity key for content appearance: SessionImageId (IDENTITY.md).
  */
@@ -100,24 +94,21 @@ public:
     }
 
     /**
-     * True when any persistent table has a row for @p id (fat DTO and/or sparse
-     * Crop / ContentBake / Color / Placement). Prefer this over hasAppearance
-     * alone when deciding whether sessionAppearanceValue is meaningful — sparse
-     * dual-write lag must not look like "no appearance".
+     * True when any persistent sparse table has a row for @p id.
+     * Stage 4b: fat DTO alone is not durable (assemble-only / load cache).
      */
     bool hasDurableAppearance(SessionImageId id) const
     {
         if (id == kInvalidSessionImageId) {
             return false;
         }
-        return hasAppearance(id) || hasCrop(id) || hasContentBake(id)
-            || hasColor(id) || hasPlacement(id);
+        return hasCrop(id) || hasContentBake(id) || hasColor(id)
+            || hasAttention(id) || hasPlacement(id);
     }
 
     /**
-     * Store-read authority: fat DTO with sparse Crop/ContentBake/Color/Attention/
-     * Placement overlaid when present (same policy as ImageView::sessionAppearanceValue).
-     * Prefer this (or sessionAppearanceValue) over dereferencing getAppearance().
+     * Store-read authority: assemble WorkspaceItemState from sparse tables only
+     * (Stage 4b). Same policy as ImageView::sessionAppearanceValue.
      */
     WorkspaceItemState appearanceValue(SessionImageId id) const
     {
@@ -125,13 +116,7 @@ public:
             return {};
         }
         WorkspaceItemState s;
-        if (const WorkspaceItemState *p = getAppearance(id)) {
-            s = *p;
-        }
-        // Always surface the lookup key (sparse-only or partial dual-write).
         s.sessionId = id;
-        // Sparse tables win when a partial component write ran without a full
-        // setAppearance refresh of every fat field.
         if (hasCrop(id)) {
             const ItemComponents::Crop c = crop(id);
             s.hasCrop = !c.isEmpty();
@@ -145,7 +130,9 @@ public:
             s.contentVFlip = b.vFlip;
             s.contentQuarterTurns = b.quarterTurns;
         }
-        s.colorAdjust = color(id).grade;
+        if (hasColor(id)) {
+            s.colorAdjust = color(id).grade;
+        }
         if (hasAttention(id)) {
             const ItemComponents::Attention a = attention(id);
             s.attentionPoints = a.points;
@@ -202,20 +189,12 @@ public:
         if (id == kInvalidSessionImageId) {
             return {};
         }
-        const auto it = m_crops.constFind(id);
-        if (it != m_crops.cend()) {
-            return it.value();
-        }
-        // Fallback when DTO was written without going through setAppearance.
-        if (const WorkspaceItemState *s = getAppearance(id)) {
-            return ItemComponents::cropFromState(*s);
-        }
-        return {};
+        return m_crops.value(id);
     }
 
     void setCrop(SessionImageId id, const ItemComponents::Crop &c)
     {
-        if (!m_appearance || id == kInvalidSessionImageId) {
+        if (id == kInvalidSessionImageId) {
             return;
         }
         if (c.isEmpty()) {
@@ -223,9 +202,6 @@ public:
         } else {
             m_crops.insert(id, c);
         }
-        WorkspaceItemState s = dtoForWrite(id);
-        ItemComponents::applyCropToState(s, c);
-        m_appearance->set(id, s);
     }
 
     bool hasCrop(SessionImageId id) const { return !crop(id).isEmpty(); }
@@ -236,19 +212,12 @@ public:
         if (id == kInvalidSessionImageId) {
             return {};
         }
-        const auto it = m_attentions.constFind(id);
-        if (it != m_attentions.cend()) {
-            return it.value();
-        }
-        if (const WorkspaceItemState *s = getAppearance(id)) {
-            return ItemComponents::attentionFromState(*s);
-        }
-        return {};
+        return m_attentions.value(id);
     }
 
     void setAttention(SessionImageId id, const ItemComponents::Attention &a)
     {
-        if (!m_appearance || id == kInvalidSessionImageId) {
+        if (id == kInvalidSessionImageId) {
             return;
         }
         if (a.isEmpty()) {
@@ -256,9 +225,6 @@ public:
         } else {
             m_attentions.insert(id, a);
         }
-        WorkspaceItemState s = dtoForWrite(id);
-        ItemComponents::applyAttentionToState(s, a);
-        m_appearance->set(id, s);
     }
 
     bool hasAttention(SessionImageId id) const { return !attention(id).isEmpty(); }
@@ -269,19 +235,12 @@ public:
         if (id == kInvalidSessionImageId) {
             return {};
         }
-        const auto it = m_contentBakes.constFind(id);
-        if (it != m_contentBakes.cend()) {
-            return it.value();
-        }
-        if (const WorkspaceItemState *s = getAppearance(id)) {
-            return ItemComponents::contentBakeFromState(*s);
-        }
-        return {};
+        return m_contentBakes.value(id);
     }
 
     void setContentBake(SessionImageId id, const ItemComponents::ContentBake &b)
     {
-        if (!m_appearance || id == kInvalidSessionImageId) {
+        if (id == kInvalidSessionImageId) {
             return;
         }
         if (b.isIdentity()) {
@@ -289,9 +248,6 @@ public:
         } else {
             m_contentBakes.insert(id, b);
         }
-        WorkspaceItemState s = dtoForWrite(id);
-        ItemComponents::applyContentBakeToState(s, b);
-        m_appearance->set(id, s);
     }
 
     bool hasContentBake(SessionImageId id) const
@@ -305,19 +261,12 @@ public:
         if (id == kInvalidSessionImageId) {
             return {};
         }
-        const auto it = m_colors.constFind(id);
-        if (it != m_colors.cend()) {
-            return it.value();
-        }
-        if (const WorkspaceItemState *s = getAppearance(id)) {
-            return ItemComponents::colorFromState(*s);
-        }
-        return {};
+        return m_colors.value(id);
     }
 
     void setColor(SessionImageId id, const ItemComponents::Color &c)
     {
-        if (!m_appearance || id == kInvalidSessionImageId) {
+        if (id == kInvalidSessionImageId) {
             return;
         }
         if (c.isIdentity()) {
@@ -325,9 +274,6 @@ public:
         } else {
             m_colors.insert(id, c);
         }
-        WorkspaceItemState s = dtoForWrite(id);
-        ItemComponents::applyColorToState(s, c);
-        m_appearance->set(id, s);
     }
 
     bool hasColor(SessionImageId id) const { return !color(id).isIdentity(); }
@@ -341,25 +287,15 @@ public:
         if (id == kInvalidSessionImageId) {
             return {};
         }
-        const auto it = m_placements.constFind(id);
-        if (it != m_placements.cend()) {
-            return it.value();
-        }
-        if (const WorkspaceItemState *s = getAppearance(id)) {
-            return ItemComponents::placementFromState(*s);
-        }
-        return {};
+        return m_placements.value(id);
     }
 
     void setPlacement(SessionImageId id, const ItemComponents::Placement &pl)
     {
-        if (!m_appearance || id == kInvalidSessionImageId) {
+        if (id == kInvalidSessionImageId) {
             return;
         }
         m_placements.insert(id, pl);
-        WorkspaceItemState s = dtoForWrite(id);
-        ItemComponents::applyPlacementToState(s, pl);
-        m_appearance->set(id, s);
     }
 
     bool hasPlacement(SessionImageId id) const
@@ -422,19 +358,6 @@ public:
     int placementCount() const { return m_placements.size(); }
 
 private:
-    /** Fat DTO base for sparse dual-write: copy existing or empty, always stamp id. */
-    WorkspaceItemState dtoForWrite(SessionImageId id) const
-    {
-        WorkspaceItemState s;
-        if (m_appearance) {
-            if (const WorkspaceItemState *cur = m_appearance->get(id)) {
-                s = *cur;
-            }
-        }
-        s.sessionId = id;
-        return s;
-    }
-
     void syncComponentsFromState(SessionImageId id, const WorkspaceItemState &state)
     {
         const ItemComponents::Crop c = ItemComponents::cropFromState(state);
@@ -461,12 +384,12 @@ private:
         } else {
             m_colors.insert(id, col);
         }
-        // Placement: always dual-write (identity pose is still a placed item).
+        // Placement: always present once setAppearance (identity pose still placed).
         m_placements.insert(id, ItemComponents::placementFromState(state));
     }
 
-    // Linked stores (not owned). Fat DTO is a derived dual-write mirror until 4b.
-    SessionAppearanceStore *m_appearance = nullptr; // derived mirror + legacy
+    // Linked stores (not owned). Fat DTO is load/setAppearance assemble cache only.
+    SessionAppearanceStore *m_appearance = nullptr; // setAppearance / legacy readers
     PathItemStateBook *m_pathBook = nullptr;        // persistent unbound only
     ImageSizeBook *m_sizeBook = nullptr;            // derived (host probe)
 
