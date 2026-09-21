@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2024-color-crop-store-read.** Stage 2 residual: color adjust + crop undo use sparse-prefer store when bound.
+Prior: **2023**.
+
+### Change
+- `flushColorAdjustCommit` / `setTargetColorAdjustments`: bound id →
+  `sessionAppearanceValue` (not gated on fat `hasAppearance`); unbound →
+  `captureState`
+- `CropController::pushCropAppearanceUndo`: after store write, bound after-image
+  from `sessionAppearanceValue` + live pose/grade; unbound still `captureState`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2024-color-crop-store-read-e77da63.bundle HEAD
+```
+Requires tip **2023** (base **e77da63**); includes 1938–2024.
+
+### Next
+- Remaining `captureState`: remember/persist freeze, crop enter, bind/duplicate,
+  workspace snapshot (interaction-legitimate)
+- Optional characterization: pose-only vs content-only rows
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2023-bake-want-live-pose.** Stage 2 residual: bake/crop record no longer rebuild via captureState when want is known.
 Prior: **2022**.
 
