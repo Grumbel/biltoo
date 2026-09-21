@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2065-stage4-closed-imageitem-residual.** Stage 4 residual closed; ImageItem residual inventory.
+Prior: **2064**.
+
+### Change
+- REFACTOR: Stage 4 residual closed (2051–2064); Stage 2 ImageItem residual table
+  (paint grade, applied ContentXform, pose, sessionIndex cache, tile LOD)
+- Stale `getAppearance` seed comment updated for mergeContentFromState
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2065-stage4-closed-imageitem-residual-e77da63.bundle HEAD
+```
+Requires tip **2064** (base **e77da63**); includes 1938–2065.
+
+### Next
+- **Phase 7 Stage 2:** pick one ImageItem residual row (e.g. sessionIndex cache
+  call-site reduction, or applied-ContentXform runtime table)
+- **Phase 6 Tier 4:** decode/framing characterization soft items
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2064-stage4b-write-api-docs-test-names.** Stage 4b write API map; drop dual-write test names.
 Prior: **2063**.
 

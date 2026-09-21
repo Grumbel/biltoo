@@ -76,11 +76,10 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     // never QPixmap::fromImage of multi-MP in ImageItem(path, image).
     WorkspaceItemState app;
     if (applyStoredSessionCrop && m_view->isImageMode()) {
-        // Always attempt seed from path XDG when bound. The old gate
-        // !(haveId && !m_view->itemWorld().getAppearance(id)) *skipped* seed when the slot was
-        // empty — which is exactly when durable rotate/flip must be loaded
-        // after restart. appearanceForNewImageModeItem seeds then returns
-        // identity only if XDG has nothing.
+        // Always attempt seed from path XDG when bound. Skipping seed when
+        // durable appearance was already empty blocked post-restart orient
+        // reload. appearanceForNewImageModeItem seeds via mergeContentFromState
+        // then returns identity only if XDG has nothing.
         if (m_view->hostSessionId().hasCurrentId()
             || m_view->itemWorld().pathBook().contains(path)) {
             app = appearanceForNewImageModeItem(path);

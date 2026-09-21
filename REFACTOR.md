@@ -1066,6 +1066,21 @@ Stage 4b delivered (product: no backward compatibility):
 | Pose only | `setPlacement` |
 | Attention / color | `setAttention` / `setColor` |
 
+**Stage 4 residual: closed** (tips 2051–2064). Further tips only for regressions.
+
+### Stage 2 residual — `ImageItem` still holds (intentional render proxy)
+
+| Member / concern | Role | Demotion notes |
+|------------------|------|----------------|
+| Pixmap / preview / intrinsic size | Qt paint | Keep |
+| `m_colorAdjust` | Live grade for paint + slider lag | Keep until grade is applied only via rematerialize; interaction lag needs a host-side scratch |
+| Applied `ContentXform` fingerprint | Mid-edit content authority | Keep on item (or move to a runtime-only table under DisplayPipeline) |
+| Live pose (`m_scaleX`… via `applyPlacement`) | QGraphicsItem transform | Keep; durable copy is ItemWorld Placement |
+| `sessionIndex` cache | List-order mirror | Prefer `sessionListIndex` / document; cache remains for unbound / O(1) hints |
+| Tile LOD bag pointer | Runtime decode | Already pipeline-owned bag |
+| `PendingItemAppearanceBook` | Duplicate→bind staging | GUI-only; destination is `setAppearance` on bind |
+
+
 **Sequencing relative to Stages 0–3**
 
 Stages 0–2 are largely landed (facade, sparse tables, ImageItem demotion).
