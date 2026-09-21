@@ -271,7 +271,7 @@ void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChang
     if (!m_view->hostLayout().isFreeForm()) {
         if (!m_view->pathOrderIsEmpty()) {
             const PackOrderView pack = m_view->currentPackOrder();
-            m_view->reorderItemsByPaths(pack.paths());
+            m_view->reorderItemsByPaths(pack.paths(), pack.ids());
         }
         if (!(m_view->isGalleryMode() && m_view->hostGalleryRelayoutSuppress().active())) {
             if (sizeChanged) {

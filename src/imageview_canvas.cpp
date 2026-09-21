@@ -115,7 +115,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     TtfpTrace::mark("finishSetWorkspacePaths");
     // Keep canvas order aligned with session/sort order (not async load order).
     const PackOrderView pack = currentPackOrder();
-    reorderItemsByPaths(pack.paths());
+    reorderItemsByPaths(pack.paths(), pack.ids());
 
     if (haveIds) {
         rebindWorkspaceSession(paths, sessionIds);
@@ -335,7 +335,8 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
 
 
 
-void ImageView::reorderItemsByPaths(const QStringList &paths)
+void ImageView::reorderItemsByPaths(const QStringList &paths,
+                                    const QVector<SessionImageId> &ids)
 {
     if (m_items.isEmpty() || paths.isEmpty()) {
         return;
@@ -343,17 +344,32 @@ void ImageView::reorderItemsByPaths(const QStringList &paths)
     QList<ImageItem *> ordered;
     ordered.reserve(m_items.size());
     QSet<ImageItem *> seen;
-    // One path-order slot → one distinct live item. findItemByPath alone would
-    // re-pick the same pointer for duplicate paths and leave m_items with
-    // duplicate entries (double-free / UAF on destroy).
-    for (const QString &path : paths) {
-        for (ImageItem *item : m_items) {
-            if (!item || item->path() != path || seen.contains(item)) {
-                continue;
+    // Prefer SessionImageId when parallel ids are present so duplicate paths
+    // map to distinct tiles. Path first-unseen is unbound / legacy only.
+    const int n = paths.size();
+    for (int i = 0; i < n; ++i) {
+        ImageItem *picked = nullptr;
+        const SessionImageId sid = (i < ids.size()) ? ids.at(i) : kInvalidSessionImageId;
+        if (sid != kInvalidSessionImageId) {
+            if (ImageItem *byId = findItemBySessionId(sid)) {
+                if (!seen.contains(byId)) {
+                    picked = byId;
+                }
             }
-            ordered.append(item);
-            seen.insert(item);
-            break;
+        }
+        if (!picked) {
+            const QString &path = paths.at(i);
+            for (ImageItem *item : m_items) {
+                if (!item || item->path() != path || seen.contains(item)) {
+                    continue;
+                }
+                picked = item;
+                break;
+            }
+        }
+        if (picked) {
+            ordered.append(picked);
+            seen.insert(picked);
         }
     }
     for (ImageItem *item : m_items) {

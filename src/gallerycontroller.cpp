@@ -124,7 +124,7 @@ void GalleryController::restoreStashedItems()
     }
     {
         const PackOrderView pack = m_view->currentPackOrder();
-        m_view->reorderItemsByPaths(pack.paths());
+        m_view->reorderItemsByPaths(pack.paths(), pack.ids());
     }
     // Image-mode navigation may have filled global path RAM; bind/paint without
     // waiting for the next decode-window timer.
@@ -1127,7 +1127,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 
     if (!m_view->pathOrderIsEmpty()) {
         const PackOrderView pack = m_view->currentPackOrder();
-        m_view->reorderItemsByPaths(pack.paths());
+        m_view->reorderItemsByPaths(pack.paths(), pack.ids());
     }
 
     // Gallery overview is axis-aligned. Strip any leftover Workspace placement
@@ -1342,7 +1342,7 @@ void GalleryController::ensurePlaceholders()
         }
     }
     // Reuse the pack snapshot from the loop above (same generation; avoids -Wshadow).
-    m_view->reorderItemsByPaths(pack.paths());
+    m_view->reorderItemsByPaths(pack.paths(), pack.ids());
 }
 
 

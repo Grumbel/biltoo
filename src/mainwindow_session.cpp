@@ -1167,7 +1167,7 @@ void MainWindow::setSortMode(SortMode mode)
                 }
             }
         } else if (isWorkspaceMode() && m_imageView) {
-            m_imageView->reorderItemsByPaths(m_session.paths());
+            m_imageView->reorderItemsByPaths(m_session.paths(), m_session.ids());
         }
 
         applyThumbnailVisibility();

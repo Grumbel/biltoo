@@ -291,8 +291,13 @@ public:
      */
     void setWorkspacePaths(const QStringList &paths,
                            const QVector<SessionImageId> &sessionIds);
-    /** Reorder canvas items to match @p paths (session / sort order). */
-    void reorderItemsByPaths(const QStringList &paths);
+    /**
+     * Reorder canvas items to match session/pack order. When @p ids align with
+     * @p paths, prefer findItemBySessionId so duplicate paths stay distinct
+     * (IDENTITY). Path first-unseen is fallback for unbound rows only.
+     */
+    void reorderItemsByPaths(const QStringList &paths,
+                             const QVector<SessionImageId> &ids = {});
 
 
     /**

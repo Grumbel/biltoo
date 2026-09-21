@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2113-reorder-prefer-sessionId.** SESSION residual: pack/canvas reorder prefers SessionImageId.
+Prior: **2112**.
+
+### Change
+- `reorderItemsByPaths(paths, ids)`: when parallel ids are present, pick tiles by
+  `findItemBySessionId` so duplicate paths stay distinct; path first-unseen only
+  for unbound rows
+- All Gallery/LoadAdd/sort call sites pass `pack.ids()` / `m_session.ids()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2113-reorder-prefer-sessionId-e77da63.bundle HEAD
+```
+Requires tip **2112** (base **e77da63**); includes 1938–2113.
+
+### Next
+- SESSION residual: path open/remove only when unbound without list index
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2112-gallery-slot-focus-remove.** SESSION residual: Gallery focus/remove prefer list index over path.
 Prior: **2111**.
 

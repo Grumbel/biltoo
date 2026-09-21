@@ -143,9 +143,9 @@ unbound and edits will not propagate correctly in Workspace).
    (index is fallback only).
 
 6. **`setWorkspacePaths(paths)` path-only — removed (biltoo-2108)**  
-   Only `setWorkspacePaths(paths, ids)` remains. Path duplicates in Gallery
-   packing are still underspecified long-term (DOMAIN: one object per session
-   image — packing by id).
+   Only `setWorkspacePaths(paths, ids)` remains. Gallery/canvas reorder prefers
+   SessionImageId via `reorderItemsByPaths(paths, ids)` (biltoo-2113); path
+   first-unseen remains unbound fallback.
 
 ### Medium
 
