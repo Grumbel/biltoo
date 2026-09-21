@@ -133,36 +133,39 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::Grid) {
-        const int cols = resolvedColumns(n, params.gridColumns);
         // Width-driven square cells; vertical scroll. Fewer columns → larger tiles.
-        // Previously cellH packed all rows into availH, which shrank tiles as
-        // column count decreased (more rows into the same window height).
-        const qreal cellW = cellAxisLength(availW, gap, cols);
-        const qreal cellH = cellW;
+        QVector<QSizeF> sizes;
+        sizes.reserve(n);
+        for (ImageItem *item : items) {
+            sizes.append(layoutSize(item));
+        }
+        const QVector<PackPose> poses =
+            packPosesGrid(sizes, margin, gap, availW, params.gridColumns);
         for (int i = 0; i < n; ++i) {
             ImageItem *item = items.at(i);
-            const int col = i % cols;
-            const int row = i / cols;
-            const QSizeF ns = layoutSize(item);
-            const qreal scale = containScale(cellW, cellH, ns.width(), ns.height());
-            const qreal cx = margin + col * (cellW + gap) + cellW / 2.0;
-            const qreal cy = margin + row * (cellH + gap) + cellH / 2.0;
-            applyPackPose(item, QPointF(cx, cy), scale);
+            if (!item || i >= poses.size()) {
+                continue;
+            }
+            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::GridCrop) {
-        const int cols = resolvedColumns(n, params.gridColumns);
-        const qreal cell = cellAxisLength(availW, gap, cols);
+        QVector<QSizeF> sizes;
+        sizes.reserve(n);
+        for (ImageItem *item : items) {
+            sizes.append(layoutSize(item));
+        }
+        const QVector<PackPose> poses =
+            packPosesGridCrop(sizes, margin, gap, availW, params.gridColumns);
         for (int i = 0; i < n; ++i) {
             ImageItem *item = items.at(i);
-            const int col = i % cols;
-            const int row = i / cols;
-            const QSizeF ns = layoutSize(item);
-            const qreal scale = coverScale(cell, cell, ns.width(), ns.height());
-            setItemGalleryCellSize(item, QSizeF(cell, cell));
-            const qreal cx = margin + col * (cell + gap) + cell / 2.0;
-            const qreal cy = margin + row * (cell + gap) + cell / 2.0;
-            applyPackPose(item, QPointF(cx, cy), scale);
+            if (!item || i >= poses.size()) {
+                continue;
+            }
+            if (!poses.at(i).cellSize.isEmpty()) {
+                setItemGalleryCellSize(item, poses.at(i).cellSize);
+            }
+            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::Masonry) {

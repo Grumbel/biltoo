@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2034-pack-poses-grid.** Stage 3: pure Grid / GridCrop pack data plane.
+Prior: **2033**.
+
+### Change
+- `packPosesGrid` — square cells, contain scale
+- `packPosesGridCrop` — cover scale + `PackPose::cellSize`
+- `pack` Grid/GridCrop gather sizes → pure poses → apply
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2034-pack-poses-grid-e77da63.bundle HEAD
+```
+Requires tip **2033** (base **e77da63**); includes 1938–2034.
+
+### Next
+- Stage 3: Masonry / Flow packPoses* when needed
+- Remaining direct `captureState`: unbound, crop enter, mid-edit content-bake
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2033-pack-poses-side-vertical.** Stage 3: pure SideBySide/Vertical pack data plane.
 Prior: **2032**.
 

@@ -24,6 +24,7 @@ private slots:
     void packFit_scaledDisplaySizeAndCenteredBounds();
     void layout_resolvedColumnsAndAxisFill();
     void packPoses_sideBySideAndVertical();
+    void packPoses_gridAndGridCrop();
 };
 
 void GalleryLayoutTest::axesSwap_cardinalAndDiagonal()
@@ -154,6 +155,36 @@ void GalleryLayoutTest::packPoses_sideBySideAndVertical()
     QCOMPARE(tall.size(), 1);
     QCOMPARE(tall.at(0).scale, 2.0);
     QCOMPARE(tall.at(0).center, QPointF(40.0, 50.0)); // w=80, h=100
+}
+
+void GalleryLayoutTest::packPoses_gridAndGridCrop()
+{
+    // 4 equal 50×50 tiles; 2 columns; availW=110 gap=10 → cell=50.
+    const QVector<QSizeF> four{QSizeF(50, 50), QSizeF(50, 50), QSizeF(50, 50),
+                               QSizeF(50, 50)};
+    const auto grid = GalleryLayout::packPosesGrid(four, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(grid.size(), 4);
+    QCOMPARE(grid.at(0).center, QPointF(25.0, 25.0));
+    QCOMPARE(grid.at(1).center, QPointF(85.0, 25.0)); // 50+10+25
+    QCOMPARE(grid.at(2).center, QPointF(25.0, 85.0));
+    QCOMPARE(grid.at(3).center, QPointF(85.0, 85.0));
+    QCOMPARE(grid.at(0).scale, 1.0);
+    QVERIFY(grid.at(0).cellSize.isEmpty());
+
+    // Wider tile must contain-scale down.
+    const auto wide = GalleryLayout::packPosesGrid({QSizeF(100, 50)}, 0.0, 0.0, 50.0, 1);
+    QCOMPARE(wide.size(), 1);
+    QCOMPARE(wide.at(0).scale, 0.5); // 50/100
+
+    const auto crop = GalleryLayout::packPosesGridCrop(four, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(crop.size(), 4);
+    QCOMPARE(crop.at(0).cellSize, QSizeF(50.0, 50.0));
+    // Cover of 50×50 into 50×50 cell → scale 1.
+    QCOMPARE(crop.at(0).scale, 1.0);
+    // Tall content cover-scales up.
+    const auto tall = GalleryLayout::packPosesGridCrop({QSizeF(25, 50)}, 0.0, 0.0, 50.0, 1);
+    QCOMPARE(tall.at(0).scale, 2.0); // cover: max(50/25, 50/50)=2
+    QCOMPARE(tall.at(0).cellSize, QSizeF(50.0, 50.0));
 }
 
 QTEST_MAIN(GalleryLayoutTest)

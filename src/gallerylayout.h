@@ -156,6 +156,8 @@ inline qreal axisFillScale(qreal cellAxis, qreal nativeAxis)
 struct PackPose {
     QPointF center;
     qreal scale = 1.0;
+    /** Non-empty for GridCrop (gallery cell clip); empty clears cell size. */
+    QSizeF cellSize;
 };
 
 /**
@@ -199,6 +201,59 @@ inline QVector<PackPose> packPosesVertical(const QVector<QSizeF> &layoutSizes,
         p.scale = scale;
         out.append(p);
         y += h + gap;
+    }
+    return out;
+}
+
+/**
+ * Grid: square cells from width / columns; contain scale; vertical scroll.
+ * @p gridColumns 0 → ceil(√n).
+ */
+inline QVector<PackPose> packPosesGrid(const QVector<QSizeF> &layoutSizes,
+                                       qreal margin, qreal gap, qreal availW,
+                                       int gridColumns)
+{
+    const int n = layoutSizes.size();
+    const int cols = resolvedColumns(n, gridColumns);
+    const qreal cellW = cellAxisLength(availW, gap, cols);
+    const qreal cellH = cellW;
+    QVector<PackPose> out;
+    out.reserve(n);
+    for (int i = 0; i < n; ++i) {
+        const QSizeF &ns = layoutSizes.at(i);
+        const int col = i % cols;
+        const int row = i / cols;
+        PackPose p;
+        p.scale = containScale(cellW, cellH, ns.width(), ns.height());
+        p.center = QPointF(margin + col * (cellW + gap) + cellW / 2.0,
+                           margin + row * (cellH + gap) + cellH / 2.0);
+        out.append(p);
+    }
+    return out;
+}
+
+/**
+ * GridCrop: square cells, cover scale, cellSize set for gallery clip.
+ */
+inline QVector<PackPose> packPosesGridCrop(const QVector<QSizeF> &layoutSizes,
+                                           qreal margin, qreal gap, qreal availW,
+                                           int gridColumns)
+{
+    const int n = layoutSizes.size();
+    const int cols = resolvedColumns(n, gridColumns);
+    const qreal cell = cellAxisLength(availW, gap, cols);
+    QVector<PackPose> out;
+    out.reserve(n);
+    for (int i = 0; i < n; ++i) {
+        const QSizeF &ns = layoutSizes.at(i);
+        const int col = i % cols;
+        const int row = i / cols;
+        PackPose p;
+        p.scale = coverScale(cell, cell, ns.width(), ns.height());
+        p.center = QPointF(margin + col * (cell + gap) + cell / 2.0,
+                           margin + row * (cell + gap) + cell / 2.0);
+        p.cellSize = QSizeF(cell, cell);
+        out.append(p);
     }
     return out;
 }
