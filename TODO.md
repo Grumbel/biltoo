@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2124-session-residual-prefercache-notes.** SESSION residual: identity high-pri closed; PreferCache ladder notes.
+Prior: **2123**.
+
+### Change
+- SESSION.md §5: mark high-priority identity residuals largely closed (2104–2123)
+- PreferCache / thumtoo ladder characterization table (edges, schedule APIs,
+  SoftPreview vs FullSource, durable tiles gate)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2124-session-residual-prefercache-notes-e77da63.bundle HEAD
+```
+Requires tip **2123** (base **e77da63**); includes 1938–2124.
+
+### Next
+- Runtime QA: duplicate × membership × flip × project; ladder under Gallery scroll
+- Optional: fold PreferCache host rules into SIZE.md
+- Medium: opacity/HiDPI polish, -Wnull-dereference
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2123-indexOfPathPreferId.** SESSION residual: shared path→index prefers SessionImageId.
 Prior: **2122**.
 

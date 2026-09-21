@@ -105,57 +105,49 @@ unbound and edits will not propagate correctly in Workspace).
 
 ## 5. Known residual issues / incomplete work
 
-### High priority
+### High priority — largely closed (2104–2123)
 
-1. **Unbound tiles (`sessionId == 0`) — duplicate binds on create (biltoo-2109)**  
-   Path-only placement APIs removed (2108). `duplicateSelected` takes
-   pre-allocated `SessionImageId`s and binds each copy immediately (no
-   unbound window before membership update). Workspace edits on unbound
-   tiles **still** do not write appearance / sync (by design after 024).
-   `PendingItemAppearanceBook` is collision/shortfall recovery only
-   (biltoo-2116); `bindSelectedSessionIds` remains for that recovery.
+Identity placement, open/focus/remove/reveal, reorder, and path→index resolution
+prefer **SessionImageId → list index → path**. Remaining path use is intentional
+last-resort for fully unbound rows (no id at all).
 
-2. **Open-by-path still exists (fallback only)**  
-   Tile open goes through `emitItemOpenInImageMode`: id → list index → path
-   (biltoo-2114). Gallery focus matches open: live canvas index as pack-aligned
-   slot hint when list cache is empty (biltoo-2115). Path remove maps successive
-   path occurrences to successive session rows (biltoo-2115).
-   Filmstrip Gallery reveal prefers `revealGallerySessionId` (biltoo-2117);
-   path reveal remains unbound fallback.
-   Gallery layout-switch multi-select restore: id → list index → path
-   (biltoo-2118). Image-mode `primaryItem` prefers current SessionImageId
-   (biltoo-2119); classic path is last resort for paint/reload.
-   Workspace filmstrip path restore after append uses occurrence mapping
-   (biltoo-2120) when ids are missing.
-   Path→index resolution goes through `indexOfPathPreferId` (firstIdForPath then
-   `paths().indexOf`; biltoo-2121–2123) for focus, open, sort, append, remove,
-   and drop cursor.
-   Sort / append / remove / slideshow start prefer `SessionImageId` over
-   `paths().indexOf` (biltoo-2105). Workspace filmstrip selection restore after
-   append prefers live `itemSessionIds()` (biltoo-2106). Empty-workspace
-   LoadReplace seed and bulk selection→canvas bind ids (biltoo-2107/2108).
-   Image-mode drop focus prefers filmstrip `sessionIds`, else
-   `lastIndexOfPath` / `firstIdForPath` (biltoo-2111). Residual: pure path index only when the session row itself is unbound
-   (no id at all).
+1. **Unbound tiles** — closed for normal create paths (2108–2109, 2116).  
+   Workspace edits on unbound tiles still skip appearance sync (by design).  
+   `PendingItemAppearanceBook` / `bindSelectedSessionIds` = collision recovery only.
 
-3. **Path map (`PathItemStateBook`) — bound writes are a no-op (biltoo-2110)**  
-   `ItemWorld::setPathState` ignores states that carry a bound SessionImageId
-   (was strip-content-and-still-write). Unbound tiles remain the only path-book
-   clients. Call sites already branch on `sessionId` before writing.
+2. **Open-by-path** — fallback only; see `emitItemOpenInImageMode`,
+   `indexOfPathPreferId`, Gallery focus/remove/reveal (2112–2123).  
+   Residual: pure `paths().indexOf` only when the session row has no id.
 
-4. **Filmstrip path-only override signal — fixed (biltoo-2104)**  
-   Path-only `sessionAppearanceChanged` / `sessionCropApplied` overloads removed;
-   only id-keyed signals remain (MainWindow already connected the id overloads).
+3. **Path map** — bound writes no-op (2110). Unbound tiles remain path-book clients.
 
-5. **Session undo remove/restore** — **fixed**  
-   `SessionEntrySnapshot` stores `SessionImageId` + appearance; undo
-   `restoreSessionEntries` re-inserts the same id. Redo resolves rows by id
-   (index is fallback only).
+4. **Filmstrip path-only override signals** — fixed (2104).
 
-6. **`setWorkspacePaths(paths)` path-only — removed (biltoo-2108)**  
-   Only `setWorkspacePaths(paths, ids)` remains. Gallery/canvas reorder prefers
-   SessionImageId via `reorderItemsByPaths(paths, ids)` (biltoo-2113); path
-   first-unseen remains unbound fallback.
+5. **Session undo remove/restore** — fixed (id-keyed snapshots).
+
+6. **`setWorkspacePaths(paths)` path-only** — removed (2108); reorder prefers id (2113).
+
+### PreferCache / thumtoo ladder (characterization, 2124)
+
+Durable decode climbs a fixed edge ladder (`ThumtooCache::kLadderEdges`:
+128…8192). Product hosts should prefer **display/overview** schedules over
+legacy soft PreferCache encode:
+
+| Band | Edge (approx.) | API / role |
+|------|----------------|------------|
+| Soft / filmstrip | ≤ soft max (~512) | SoftPreview; LQIP / soft ladder |
+| Gallery soft max | `kGalleryLadderEdge` | SoftPreview until native coverage |
+| Batch overview | above soft, ≤ batch | `scheduleOverviewPixels` |
+| Display PreferCache | up to `kImageLadderEdge` (8192) | `scheduleDisplayPixels` → `ladderReady` |
+| Native / full | covers logical size | `FullSource`; `request_full_pixels` |
+
+Classification uses **delivered** long edge (`classifyImageModeSample`), not the
+request edge. Soft samples stay SoftPreview so PreferCache/native can upgrade.
+Tiles: after `durableTilesReady`, tile LOD owns display past soft max; PreferCache
+TileSynth needs known durable tiles (`hasDurableTilesKnown`).
+
+Optional follow-ups: runtime QA of ladder upgrade under Gallery scroll + Image
+focus; document host “do not call `schedulePixels` from product UI” in SIZE.md.
 
 ### Medium
 
