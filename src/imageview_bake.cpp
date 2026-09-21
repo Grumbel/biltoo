@@ -93,8 +93,13 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             }
         }
         if (!gotDisplay) {
-            // Truly no host: incremental last resort (will be replaced async).
-            item->bakeRotate90(quarterTurns);
+            // No host-raw: never incremental-transform display (ECS_GUI_BYPASSES #7).
+            // Absolute want is already on the applied fingerprint via
+            // syncLiveContentMetaFromState; drop pixels so paint does not show
+            // a mismatched orient until async host rematerialize completes.
+            if (item->hasDisplayPixels()) {
+                item->clearDecodedPixels();
+            }
         }
         applyContentLayoutSize(item, want);
         scheduleAsyncHostRematerialize(path, sid, want);
@@ -229,7 +234,10 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
             }
         }
         if (!gotDisplay) {
-            item->bakeFlip(horizontal, vertical);
+            // No host-raw: never incremental-transform display (ECS_GUI_BYPASSES #7).
+            if (item->hasDisplayPixels()) {
+                item->clearDecodedPixels();
+            }
         }
         syncLiveContentMetaFromState(item, want);
         scheduleAsyncHostRematerialize(path, sid, want);

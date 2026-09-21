@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2200-no-incremental-bake.** ECS continue: when host-raw is missing,
+bakeItemRotate90 / bakeItemFlip still did ImageItem incremental transform on
+display pixels (fingerprint vs pixels desync until async).
+
+### Fix
+- No host: clear display pixels; keep absolute want on applied + ItemWorld;
+  scheduleAsyncHostRematerialize only (no bakeRotate90 / bakeFlip on display)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2200-no-incremental-bake-e77da63.bundle HEAD
+```
+
+Next: **2201**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2199-filmstrip-bound-no-path-xdg-layout.** Filmstrip layoutAspectForRow
 still applied path XDG orient for bound rows when the host provider missed
 (ItemWorld empty) — cell aspect desynced from Image underlay.
