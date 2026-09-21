@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2033-pack-poses-side-vertical.** Stage 3: pure SideBySide/Vertical pack data plane.
+Prior: **2032**.
+
+### Change
+- `GalleryLayout::PackPose` + `packPosesSideBySide` / `packPosesVertical`
+- `pack` SideBySide/Vertical gather layout sizes → pure poses → applyPackPose
+- Tests: two-tile spacing, height-fill scale
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2033-pack-poses-side-vertical-e77da63.bundle HEAD
+```
+Requires tip **2032** (base **e77da63**); includes 1938–2033.
+
+### Next
+- Stage 3: Grid / Masonry / Flow packPoses* when needed
+- Remaining direct `captureState`: unbound, crop enter, mid-edit content-bake
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2032-pack-bounds-pure.** Stage 3: pure display size + tile bounds for pack overshoot.
 Prior: **2031**.
 

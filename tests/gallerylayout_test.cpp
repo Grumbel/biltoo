@@ -23,6 +23,7 @@ private slots:
     void packFit_modeFromLayoutMode();
     void packFit_scaledDisplaySizeAndCenteredBounds();
     void layout_resolvedColumnsAndAxisFill();
+    void packPoses_sideBySideAndVertical();
 };
 
 void GalleryLayoutTest::axesSwap_cardinalAndDiagonal()
@@ -129,6 +130,30 @@ void GalleryLayoutTest::layout_resolvedColumnsAndAxisFill()
     QCOMPARE(GalleryLayout::axisFillScale(100.0, 50.0), 2.0);
     QCOMPARE(GalleryLayout::axisFillScale(100.0, 0.0), 100.0); // native floored at 1
     QCOMPARE(GalleryLayout::cellAxisLength(100.0, 10.0, 3), (100.0 - 20.0) / 3.0);
+}
+
+void GalleryLayoutTest::packPoses_sideBySideAndVertical()
+{
+    // Two tiles 100×50; availH=50 → scale 1; gap 10, margin 0.
+    const QVector<QSizeF> sizes{QSizeF(100, 50), QSizeF(100, 50)};
+    const auto side = GalleryLayout::packPosesSideBySide(sizes, 0.0, 10.0, 50.0);
+    QCOMPARE(side.size(), 2);
+    QCOMPARE(side.at(0).scale, 1.0);
+    QCOMPARE(side.at(0).center, QPointF(50.0, 25.0));
+    QCOMPARE(side.at(1).center, QPointF(160.0, 25.0)); // 100 + 10 + 50
+
+    // Vertical: availW=100 → scale 1 for 100-wide tiles.
+    const auto vert = GalleryLayout::packPosesVertical(sizes, 0.0, 10.0, 100.0);
+    QCOMPARE(vert.size(), 2);
+    QCOMPARE(vert.at(0).scale, 1.0);
+    QCOMPARE(vert.at(0).center, QPointF(50.0, 25.0));
+    QCOMPARE(vert.at(1).center, QPointF(50.0, 85.0)); // 50 + 10 + 25
+
+    // Height fill: availH=100 for 50-tall → scale 2.
+    const auto tall = GalleryLayout::packPosesSideBySide({QSizeF(40, 50)}, 0.0, 0.0, 100.0);
+    QCOMPARE(tall.size(), 1);
+    QCOMPARE(tall.at(0).scale, 2.0);
+    QCOMPARE(tall.at(0).center, QPointF(40.0, 50.0)); // w=80, h=100
 }
 
 QTEST_MAIN(GalleryLayoutTest)

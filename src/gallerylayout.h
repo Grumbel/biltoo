@@ -5,6 +5,7 @@
 #define GALLERYLAYOUT_H
 
 #include <QList>
+#include <QVector>
 #include <QSizeF>
 #include "itemcomponents.h"
 #include <cmath>
@@ -149,6 +150,57 @@ inline qreal axisFillScale(qreal cellAxis, qreal nativeAxis)
 {
     const qreal na = nativeAxis > 1.0 ? nativeAxis : 1.0;
     return cellAxis / na;
+}
+
+/** Centre + uniform scale for one packed tile (Stage 3 pure data plane). */
+struct PackPose {
+    QPointF center;
+    qreal scale = 1.0;
+};
+
+/**
+ * SideBySide: height fills @p availH; tiles march left→right from @p margin.
+ * @p layoutSizes are rotation-aware pack sizes (see layoutSizeForNative).
+ */
+inline QVector<PackPose> packPosesSideBySide(const QVector<QSizeF> &layoutSizes,
+                                              qreal margin, qreal gap, qreal availH)
+{
+    QVector<PackPose> out;
+    out.reserve(layoutSizes.size());
+    qreal x = margin;
+    for (const QSizeF &ns : layoutSizes) {
+        const qreal scale = axisFillScale(availH, ns.height());
+        const qreal w = ns.width() * scale;
+        const qreal h = ns.height() * scale;
+        PackPose p;
+        p.center = QPointF(x + w / 2.0, margin + h / 2.0);
+        p.scale = scale;
+        out.append(p);
+        x += w + gap;
+    }
+    return out;
+}
+
+/**
+ * Vertical: width fills @p availW; tiles march top→bottom from @p margin.
+ */
+inline QVector<PackPose> packPosesVertical(const QVector<QSizeF> &layoutSizes,
+                                           qreal margin, qreal gap, qreal availW)
+{
+    QVector<PackPose> out;
+    out.reserve(layoutSizes.size());
+    qreal y = margin;
+    for (const QSizeF &ns : layoutSizes) {
+        const qreal scale = axisFillScale(availW, ns.width());
+        const qreal w = ns.width() * scale;
+        const qreal h = ns.height() * scale;
+        PackPose p;
+        p.center = QPointF(margin + w / 2.0, y + h / 2.0);
+        p.scale = scale;
+        out.append(p);
+        y += h + gap;
+    }
+    return out;
 }
 
 /**

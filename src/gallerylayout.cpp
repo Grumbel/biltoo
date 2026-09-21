@@ -101,25 +101,35 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     }
 
     if (params.mode == Mode::SideBySide) {
-        qreal x = margin;
+        QVector<QSizeF> sizes;
+        sizes.reserve(n);
         for (ImageItem *item : items) {
-            const QSizeF ns = layoutSize(item);
-            const qreal scale = axisFillScale(availH, ns.height());
-            const qreal w = ns.width() * scale;
-            const qreal h = ns.height() * scale;
-            applyPackPose(item, QPointF(x + w / 2.0, margin + h / 2.0), scale);
-            x += w + gap;
+            sizes.append(layoutSize(item));
+        }
+        const QVector<PackPose> poses =
+            packPosesSideBySide(sizes, margin, gap, availH);
+        for (int i = 0; i < n; ++i) {
+            ImageItem *item = items.at(i);
+            if (!item || i >= poses.size()) {
+                continue;
+            }
+            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::Vertical) {
-        qreal y = margin;
+        QVector<QSizeF> sizes;
+        sizes.reserve(n);
         for (ImageItem *item : items) {
-            const QSizeF ns = layoutSize(item);
-            const qreal scale = axisFillScale(availW, ns.width());
-            const qreal w = ns.width() * scale;
-            const qreal h = ns.height() * scale;
-            applyPackPose(item, QPointF(margin + w / 2.0, y + h / 2.0), scale);
-            y += h + gap;
+            sizes.append(layoutSize(item));
+        }
+        const QVector<PackPose> poses =
+            packPosesVertical(sizes, margin, gap, availW);
+        for (int i = 0; i < n; ++i) {
+            ImageItem *item = items.at(i);
+            if (!item || i >= poses.size()) {
+                continue;
+            }
+            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::Grid) {
