@@ -323,12 +323,11 @@ void ImageView::rememberItemState(ImageItem *item)
     // Workspace / Gallery: path map is legacy placement for *unbound* tiles only.
     // Bound session images: placement + content live in ItemWorld sparse tables (by id).
     // Never write pose by path — duplicates would steal each other's layout.
+    // Pose-only for bound: freeze carries live color lag; setAppearance would
+    // promote lag into durable Color (2194 / ECS_GUI_BYPASSES #5). Content commits
+    // go through persistSessionAppearanceSlot / crop / bake paths.
     if (item->sessionId() != kInvalidSessionImageId) {
-        WorkspaceItemState slot = freezeItemAppearance(item);
-        slot.sessionId = item->sessionId();
-        slot.sessionIndex = sessionListIndex(item);
-        slot.path = item->path();
-        m_itemWorld.setAppearance(item->sessionId(), slot);
+        m_itemWorld.setPlacement(item->sessionId(), placementFromItem(item));
         return;
     }
     m_itemWorld.setPathState(item->path(), freezeItemAppearance(item));
@@ -535,10 +534,14 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         slot.sessionId = sid;
         slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();
+        // freeze may carry live color lag in colorAdjust. Durable Color is
+        // written only by setTargetColorAdjustments — never promote lag here.
+        if (m_itemWorld.hasColor(sid)) {
+            slot.colorAdjust = m_itemWorld.color(sid).grade;
+        }
         // Full freeze replace into sparse tables (placement preserved when
-        // identity — tip 2059).
+        // identity — tip 2059). Color field is durable (above), not lag.
         m_itemWorld.setAppearance(sid, slot);
-        // Sparse Color is store authority for durable grade fields.
         slot.colorAdjust = m_itemWorld.color(sid).grade;
         contentSlot = slot;
         haveContentSlot = true;

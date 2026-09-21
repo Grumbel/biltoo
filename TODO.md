@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2195-freeze-no-lag-promote.** Continue ECS: rememberItemState for
+bound tiles used freeze→setAppearance (live lag → durable Color). Same class as
+2194 Workspace snapshot.
+
+### Fix
+- rememberItemState (Gallery/Workspace bound): setPlacement only
+- persistSessionAppearanceSlot: keep durable Color when hasColor
+- bindSelectedSessionIds: same durable Color guard
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2195-freeze-no-lag-promote-e77da63.bundle HEAD
+```
+
+Next: **2196**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2194-workspace-snapshot-placement-only.** ECS continue: Workspace
 onLeave snapshot called setAppearance(freeze) which carried live color lag into
 durable Color. flushApplied already ran; content is on ItemWorld. Snapshot must
