@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2009-workspace-snapshot-path-unbound-only.** Snapshot path map only for unbound tiles.
+Prior: **2008**.
+
+### Problem
+`WorkspaceController::snapshot` wrote the full `captureState` (including crop) to
+the **path map** whenever `sessionIndex >= 0`, even for **bound** session ids —
+leaking id-keyed crop onto a shared path (IDENTITY). Unbound tiles with
+`sessionIndex == -1` never got a path-map entry.
+
+### Change
+- Bound → `setAppearance(sessionId, …)` only
+- Unbound with non-empty path → `setPathState(path, …)` only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2009-workspace-snapshot-path-unbound-only-e77da63.bundle HEAD
+```
+Requires tip **2008** (base **e77da63**); includes 1938–2009.
+
+### Next
+- Stage 4 project-format migration (design)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2008-appearanceValue-sessionId.** Read/write paths always surface sessionId on fat DTO.
 Prior: **2007**.
 

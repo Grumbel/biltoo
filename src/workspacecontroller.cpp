@@ -38,12 +38,12 @@ void WorkspaceController::snapshot()
     for (ImageItem *item : m_view->liveItems()) {
         const WorkspaceItemState s = m_view->captureState(item);
         m_savedItems.append(s);
-        // Path map is session/Image appearance only; unbound duplicates stay
-        // in the list and must not collapse into a single path entry.
+        // Bound: appearance by SessionImageId only (IDENTITY — crop must not
+        // land on the path map for duplicates that share a file).
+        // Unbound: path map is the sole store (even when sessionIndex is -1).
         if (s.sessionId != kInvalidSessionImageId) {
             m_view->itemWorld().setAppearance(s.sessionId, s);
-        }
-        if (s.sessionIndex >= 0) {
+        } else if (!s.path.isEmpty()) {
             m_view->itemWorld().setPathState(s.path, s);
         }
     }

@@ -1249,6 +1249,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2006: captureState path-map sessionIndex only for unbound items.
 - biltoo-2007: ItemWorld dtoForWrite stamps sessionId on every sparse dual-write.
 - biltoo-2008: appearanceValue/setAppearance always stamp sessionId; sparse write test.
+- biltoo-2009: workspace snapshot path map only for unbound (no bound crop leak).
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
