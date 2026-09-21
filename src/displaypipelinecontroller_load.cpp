@@ -502,6 +502,40 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
         return;
     }
 
+    // Workspace LoadRestore must create tiles via completeLoadRestore. The
+    // ordinary Gallery/Workspace path only upgrades existing items (tiles /
+    // LQIP); with an empty canvas after durable snapshot rebuild that left
+    // Workspace permanently blank after mode switch (tip 2147). Soft preview
+    // jobs only queue onImagePreviewLoaded — that path never creates items —
+    // so always queueImageLoaded here (cache hit or soft worker).
+    if (role == static_cast<int>(ImageView::LoadRestore) && m_view->isWorkspaceMode()) {
+        const QPointer<ImageView> guard(m_view);
+        const int roleInt = static_cast<int>(role);
+        const QImage cached = ImageCache::get(path);
+        if (!cached.isNull()) {
+            queueImageLoaded(guard, path, cached, gen, roleInt);
+            return;
+        }
+        ThumtooCache::scheduleProbe(path);
+        QThreadPool::globalInstance()->start(
+            [guard, path, roleInt, gen]() {
+                if (!guard || !guard->matchesLoadGeneration(gen)) {
+                    return;
+                }
+                QImage preview = loadSoftPreviewPixels(path, 0);
+                if (preview.isNull()) {
+                    preview = ImageLoader::loadThumbnail(path, ThumtooCache::kGalleryLadderEdge);
+                }
+                if (preview.isNull()) {
+                    return;
+                }
+                ImageCache::put(path, preview);
+                queueImageLoaded(guard, path, preview, gen, roleInt);
+            },
+            2);
+        return;
+    }
+
     // Gallery / Workspace: LQIP from ImageCache + tiles. Never SoftOnly job.
     if (m_view->isGalleryMode() || m_view->isWorkspaceMode()) {
         ThumtooCache::scheduleProbe(path);

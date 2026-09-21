@@ -1574,6 +1574,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2147:** Workspace cross-mode restore is durable-only; filmstrip XDG orient on ladder/surface.
 
+**biltoo-2148:** Workspace LoadRestore delivers images so completeLoadRestore creates tiles.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

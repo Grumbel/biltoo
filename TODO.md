@@ -2,6 +2,39 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2148-workspace-loadrestore-deliver.** Workspace LoadRestore actually creates tiles.
+Prior: **2147**.
+
+### Root cause (empty Workspace after mode switch)
+2147 switched cross-mode return to durable `m_savedItems` + `scheduleRestoreLoad`
+(LoadRestore). But `scheduleClassicImageDecode` for Workspace only upgraded
+*existing* items (LQIP/tiles) and never called `queueImageLoaded` with
+LoadRestore — so `completeLoadRestore` never ran and the canvas stayed empty.
+
+### Fix
+Workspace + LoadRestore: deliver via `queueImageLoaded` (ImageCache hit, or a
+soft-preview worker that also `queueImageLoaded`). That invokes
+`completeLoadRestore` → `createItemFromImage` + placement from the snapshot.
+
+Filmstrip orient on load: confirmed fixed (2147).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2148-workspace-loadrestore-deliver-e77da63.bundle HEAD
+```
+Requires tip **2147** (base **e77da63**); includes 1938–2148.
+
+### Next (runtime QA)
+- Workspace → Image → Workspace (tiles return with poses)
+- Workspace → Gallery → Workspace
+- If *Gallery mode* is still empty after switch, report separately (different path: setWorkspacePaths / size-resolve)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2147-workspace-durable-filmstrip-orient.** Durable Workspace restore; filmstrip orient on all install paths.
 Prior: **2146**.
 
