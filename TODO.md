@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2206-image-create-layout-matches-install.** Image underlay create
+computed intrinsic via appearanceForNewImageModeItem without the same
+placement-only orient strip that installDisplayPixels applies — layout could
+transpose while paint stayed identity.
+
+### Fix
+- createItemFromImage (Image mode): strip orient/crop when no contentBake/crop
+- resolveImageModePendingPixels comments aligned with 2204 host-only soft sources
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2206-image-create-layout-matches-install-e77da63.bundle HEAD
+```
+
+Next: **2207**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2205-image-no-path-xdg-seed.** Image underlay still path-XDG-seeded
 via appearanceForNewImageModeItem / wantAppearanceForItem / resolveStoredAppearance
 even though installDisplayPixels refuses XDG. That wrote orient into contentBake

@@ -93,13 +93,24 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     // never QPixmap::fromImage of multi-MP in ImageItem(path, image).
     WorkspaceItemState app;
     if (applyStoredSessionCrop && m_view->isImageMode()) {
-        // Always attempt seed from path XDG when bound. Skipping seed when
-        // durable appearance was already empty blocked post-restart orient
-        // reload. appearanceForNewImageModeItem seeds via mergeContentFromState
-        // then returns identity only if XDG has nothing.
+        // ItemWorld only (2205 — no path-XDG seed on Image underlay create).
         if (m_view->hostSessionId().hasCurrentId()
             || m_view->itemWorld().pathBook().contains(path)) {
             app = appearanceForNewImageModeItem(path);
+        }
+        // Match installDisplayPixels: placement-only durable row is not content
+        // orient — layout must not transpose while paint stays identity.
+        const SessionImageId sidLayout = m_view->hostSessionId().currentIdValue();
+        if (sidLayout != kInvalidSessionImageId
+            && !m_view->itemWorld().hasContentBake(sidLayout)
+            && !m_view->itemWorld().hasCrop(sidLayout)) {
+            app.contentQuarterTurns = 0;
+            app.contentHFlip = false;
+            app.contentVFlip = false;
+            app.hasCrop = false;
+            app.cropRect = QRect();
+            app.cropSourceSize = QSize();
+            app.cropRotation = 0.0;
         }
     }
     // Logical size only from probe / map — never sample (LQIP/soft) dims.
@@ -501,11 +512,12 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
     // be content-baked and disagreed with ItemWorld or host-raw cache (random
     // double/wrong orient when opening from Workspace).
     //
-    // Sources (process memory only):
-    // 1) Explicit preview / slideshow raster
-    // 2) Filmstrip session-id override → displayReady (baked for that id)
-    // 3) Filmstrip/ImageCache/LQIP → host-raw → installDisplayPixels materializes
-    //    ItemWorld want
+    // Sources (process memory only, host-raw):
+    // 1) Explicit preview (ladder soft)
+    // 2) Slideshow raster (ImageCache host)
+    // 3) Filmstrip host soft (ready=false only — 2204 never returns id override)
+    // 4) ImageCache / LQIP
+    // Orient always from ItemWorld via installDisplayPixels materialize.
     if (displayReadyOut) {
         *displayReadyOut = false;
     }
@@ -517,18 +529,14 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         return pixels;
     }
 
-    // Filmstrip session-id override is a GUI pixel cache (ECS_GUI_BYPASSES #2).
-    // It is not verified against ItemWorld and caused random Image orient when
-    // treated as displayReady. Only accept host-raw strip samples (ready=false).
-    // Orient always comes from ItemWorld via installDisplayPixels materialize.
     if (m_view->hostImageModeSoftProvider()) {
         bool ready = false;
         pixels = m_view->hostImageModeSoftProvider()(
             path, m_view->hostSessionId().currentIdValue(), &ready);
+        // ready=true would be content-baked override — discard (ECS #1/#2).
         if (!pixels.isNull() && !ready) {
             return pixels;
         }
-        // displayReady override discarded — fall through to ImageCache/LQIP.
         pixels = QImage();
     }
     pixels = ImageCache::get(path);
