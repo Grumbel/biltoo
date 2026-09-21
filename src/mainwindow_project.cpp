@@ -37,6 +37,44 @@
 
 // Project save/load, recent projects, Workspace background (split from mainwindow_session).
 
+namespace {
+
+class WorkspaceBackgroundCommand : public QUndoCommand {
+public:
+    WorkspaceBackgroundCommand(MainWindow *mw,
+                               const WorkspaceBackground &before,
+                               const WorkspaceBackground &after)
+        : QUndoCommand(QObject::tr("Workspace background"))
+        , m_mw(mw)
+        , m_before(before)
+        , m_after(after)
+    {
+    }
+
+    void undo() override
+    {
+        if (m_mw) {
+            m_mw->applyWorkspaceBackground(m_before);
+        }
+    }
+
+    void redo() override
+    {
+        if (m_mw) {
+            m_mw->applyWorkspaceBackground(m_after);
+        }
+    }
+
+private:
+    MainWindow *m_mw = nullptr;
+    WorkspaceBackground m_before;
+    WorkspaceBackground m_after;
+};
+
+/** Undoable Workspace cut (canvas only; session rows kept). */
+
+} // namespace
+
 void MainWindow::saveProject()
 {
     if (m_projectPath.isEmpty()) {

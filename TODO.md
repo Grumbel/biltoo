@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2139-mainwindow-clipboard-split.** Clipboard/history TU; fix project undo command visibility.
+Prior: **2138**.
+
+### Change
+- `mainwindow_clipboard.cpp` — history, duplicate, Workspace cut/paste/clipboard MIME
+- Undo commands colocated with their TUs (Duplicate/Cut/Paste with clipboard;
+  WorkspaceBackgroundCommand with project — fixes latent ODR/visibility break from 2138)
+- `mainwindow_session.cpp` ~2340 lines (load/sort/nav/open); SessionRemoveCommand stays here
+- CMake updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2139-mainwindow-clipboard-split-e77da63.bundle HEAD
+```
+Requires tip **2138** (base **e77da63**); includes 1938–2139.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Optional: extract expand path helpers to pure sessionexpand
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2138-mainwindow-slideshow-project-split.** Split slideshow + project TUs from mainwindow_session.
 Prior: **2137**.
 

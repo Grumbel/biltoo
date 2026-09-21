@@ -1556,6 +1556,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2138:** mainwindow_session split — slideshow + project TUs (~2967 / 777 / 897).
 
+**biltoo-2139:** clipboard/history TU; WorkspaceBackgroundCommand moved into project TU.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live
