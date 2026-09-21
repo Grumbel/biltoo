@@ -837,7 +837,7 @@ void ImageItem::activateChromeHandle(Handle h)
             }
         }
         // Fallback without a view: bake pixels and install applied fingerprint
-        // only (lag dual-write is seeded on clearDecodedPixels).
+        // only (lag fields are seeded on clearDecodedPixels).
         ContentXform::Value x = tileContentXform();
         if (h == Handle::FlipH) {
             bakeFlip(true, false);
@@ -1282,7 +1282,7 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         };
 
         // Crop / orient marks: single live content-meta reader (tileContentXform
-        // prefers applied ContentXform, else session crop/flip dual-write fields).
+        // prefers applied ContentXform, else lag fields after clearDecodedPixels).
         const ContentXform::Value contentMarks = tileContentXform();
         if (contentMarks.hasCrop) {
             drawCornerFold(QPointF(r.right(), r.bottom()),
@@ -1647,7 +1647,7 @@ void ImageItem::paintInteractionChrome(QPainter *painter, const QRectF &localRec
                               Qt::AlignCenter, glyph);
         };
 
-        // Source flags via tileContentXform (applied xform, else session dual-write).
+        // Source flags via tileContentXform (applied xform, else lag after pixel clear).
         // Chrome labels are display axes: after odd turns H↔V, so light the
         // conjugated pair or FlipH looks like FlipV after a 90° rotate.
         const ContentXform::Value chromeX = tileContentXform();

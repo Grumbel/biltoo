@@ -188,7 +188,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     want.contentQuarterTurns = cropMap.contentQuarterTurns;
 
     // Prefer pure rematerialize from unoriented host; else incremental + async.
-    // Single dual-write for live chrome (replaces ad-hoc crop/flip sets).
+    // Install applied ContentXform fingerprint (syncLiveContentMetaFromState).
     syncLiveContentMetaFromState(item, want);
     if (!tryRematerializeFromHost(item, want)) {
         item->bakeFlip(horizontal, vertical);

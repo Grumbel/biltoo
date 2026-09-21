@@ -322,7 +322,7 @@ int ImageView::resetContentAppearanceForTargets()
             m_itemWorld.setPathState(path, pathSlot);
         }
 
-        // Identity: clear dual-write session fields and applied fingerprint together.
+        // Identity: clear lag content-meta fields and applied fingerprint together.
         clearLiveContentMeta(item);
         {
             ItemComponents::Placement pl = item->placement();

@@ -1195,6 +1195,11 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1960: captureState prefers applied ContentXform over sparse tables; drop commit force digs.
 - biltoo-1961: wantAppearanceForItem prefers applied/tileContentXform; lag-fill only without applied.
 - biltoo-1962: mergeLiveContentLagFlags (no applied path); framing single tileContentXform read.
+- **Content-meta Stage 2 demotion (1938–1962):** ImageItem is no longer a parallel
+  crop/flip store. Authority: ItemWorld sparse tables (bound) + applied ContentXform
+  mid-edit; live read via `tileContentXform`; install via `syncLiveContentMetaFromState`;
+  lag fields only for pixel-clear chrome gaps (`seedContentMetaLagFromApplied`).
+  Color parallel live grade remains (`syncLiveColorFromState` / private mutators).
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

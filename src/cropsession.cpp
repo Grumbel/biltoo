@@ -420,8 +420,8 @@ void CropSession::clearItemPixelsForDraftReinstall(ImageItem *item)
     if (!item) {
         return;
     }
-    // clearDecodedPixels already clears applied; dual-write session fields remain
-    // as tileContentXform lag fallback until syncLiveContentMetaFromState.
+    // clearDecodedPixels already clears applied and seeds lag fields for
+    // tileContentXform until the next syncLiveContentMetaFromState.
     item->clearDecodedPixels();
 }
 

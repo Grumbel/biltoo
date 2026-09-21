@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1963-content-meta-stage2-docs.** Content-meta Stage 2 status + comment cleanup.
+Prior: **1962**.
+
+### Change
+- Comments: "dual-write" → lag/applied language for content-meta paths
+- REFACTOR progress: content-meta Stage 2 demotion (1938–1962) summarized —
+  ItemItem is not a parallel crop/flip store; lag only for pixel-clear gaps;
+  color parallel live grade remains
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1963-content-meta-stage2-docs-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1963.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host (priority gate for further demotion)
+- Optional: drop content-meta lag fields if chrome tolerates applied-empty gaps
+- Color: still parallel `m_colorAdjust` on ImageItem (ItemWorld Color is bound authority)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1962-live-content-lag-merge.** Lag-fill merge without applied path.
 Prior: **1961**.
 
