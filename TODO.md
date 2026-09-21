@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2201-remove-incremental-item-bake.** Remove dead ImageItem::bakeRotate90
+and bakeFlip (unused after 2200). Content orient is absolute materialize only.
+
+### Fix
+- Delete ImageItem incremental bake methods + declarations
+- sessionappearance.h: document absolute materialize only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2201-remove-incremental-item-bake-e77da63.bundle HEAD
+```
+
+Next: **2202**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2200-no-incremental-bake.** ECS continue: when host-raw is missing,
 bakeItemRotate90 / bakeItemFlip still did ImageItem incremental transform on
 display pixels (fingerprint vs pixels desync until async).

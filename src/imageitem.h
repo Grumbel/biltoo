@@ -295,10 +295,6 @@ private:
         m_hasAppliedContentXform = false;
         clearTileGradedCache();
     }
-    /** Bake ±90° into source pixels; placement angle unchanged. ImageView + self. */
-    void bakeRotate90(int quarterTurns);
-    /** Bake horizontal/vertical mirror into source pixels; clears flip flags. */
-    void bakeFlip(bool horizontal, bool vertical);
     void tickTileLod(int budget = 8);
     /** Plan/paint helpers (ImageItem paint + tick only). */
     void prepareTileLod();

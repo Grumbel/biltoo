@@ -305,111 +305,11 @@ void ImageItem::setItemShear(qreal shear)
 
 void ImageItem::setItemRotation(qreal degrees)
 {
-    // Placement only — never content. Content 90° turns use bakeRotate90().
+    // Placement only — never content. Content orient is absolute materialize
+    // from host-raw via ImageView::bakeItemRotate90 (ItemWorld contentBake).
     m_rotation = PlacementLinear::normalizeDegrees(degrees);
     applyLocalTransform();
     prepareGeometryChange();
-}
-
-void ImageItem::bakeRotate90(int quarterTurns)
-{
-    if (quarterTurns == 0) {
-        return;
-    }
-    quarterTurns %= 4;
-    if (quarterTurns < 0) {
-        quarterTurns += 4;
-    }
-    if (quarterTurns == 0) {
-        return;
-    }
-    // Gallery soft tiles often have only m_preview (m_source null). Bake must
-    // still transform displayed pixels so content rotate is visible before
-    // rematerializeItemContent / installDisplayPixels replaces from host.
-    if (m_source.isNull() && m_preview.isNull()) {
-        return;
-    }
-    prepareGeometryChange();
-    QTransform xform;
-    xform.rotate(90.0 * quarterTurns);
-    if (!m_source.isNull()) {
-        m_source = m_source.transformed(xform, Qt::SmoothTransformation);
-    }
-    if (!m_preview.isNull()) {
-        m_preview = m_preview.transformed(xform, Qt::SmoothTransformation);
-    }
-    // Layout follows content orientation via intrinsic transpose — never adopt
-    // sample pixel size as logical size.
-    const bool swapAxes = (quarterTurns % 2) != 0;
-    if (swapAxes && m_intrinsicSize.isValid()
-        && m_intrinsicSize.width() > 0 && m_intrinsicSize.height() > 0) {
-        m_intrinsicSize.transpose();
-    }
-    {
-        const QSize s = imageSize();
-        setOffset(-s.width() / 2.0, -s.height() / 2.0);
-    }
-    // Flips stay as flags or already baked; keep placement angle.
-    updateDisplayedPixmap();
-    if (!m_interactive) {
-        syncGalleryScrollCache();
-    }
-    applyLocalTransform();
-    invalidateDeviceCache();
-}
-
-void ImageItem::bakeFlip(bool horizontal, bool vertical)
-{
-    if (!horizontal && !vertical) {
-        return;
-    }
-    // Soft Gallery tiles: m_source is empty, paint draws m_preview. Transform
-    // both so the user sees the flip immediately; host rematerialize / install
-    // later replaces from unoriented ImageCache.
-    if (m_source.isNull() && m_preview.isNull()) {
-        return;
-    }
-    prepareGeometryChange();
-    auto axesFrom = [](bool h, bool v) {
-        Qt::Orientations axes;
-        if (h) {
-            axes |= Qt::Horizontal;
-        }
-        if (v) {
-            axes |= Qt::Vertical;
-        }
-        return axes;
-    };
-    const Qt::Orientations axes = axesFrom(horizontal, vertical);
-    if (!m_source.isNull() && axes) {
-        m_source = m_source.flipped(axes);
-    }
-    if (!m_preview.isNull() && axes) {
-        m_preview = m_preview.flipped(axes);
-    }
-    // Bake any pending display flips into the same op.
-    if (m_hFlip || m_vFlip) {
-        const Qt::Orientations axes2 = axesFrom(m_hFlip, m_vFlip);
-        if (!m_source.isNull() && axes2) {
-            m_source = m_source.flipped(axes2);
-        }
-        if (!m_preview.isNull() && axes2) {
-            m_preview = m_preview.flipped(axes2);
-        }
-    }
-    m_hFlip = false;
-    m_vFlip = false;
-    // Flip keeps width/height; re-sync offset from logical size only.
-    {
-        const QSize s = imageSize();
-        setOffset(-s.width() / 2.0, -s.height() / 2.0);
-    }
-    updateDisplayedPixmap();
-    if (!m_interactive) {
-        syncGalleryScrollCache();
-    }
-    applyLocalTransform();
-    invalidateDeviceCache();
 }
 
 void ImageItem::setItemOpacity(qreal opacity)

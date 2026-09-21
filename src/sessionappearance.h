@@ -66,16 +66,15 @@ inline bool needsRematerialize(const ContentXform::Value &applied, const Content
 /**
  * Sole pixel pipeline: raw decode → display pixels.
  *
- * Order (matches live bakeFlip / bakeRotate90, then crop in post-bake space):
+ * Order (absolute content ops, then crop in post-bake space):
  *   1. contentHFlip / contentVFlip
  *   2. contentQuarterTurns (QImage::trueMatrix + rotate)
  *   3. cropRect (post-orient space; scaled via cropSourceSize)
  *   4. color grade
  *
  * Call this for every QImage that came from disk/ladder/cache before display.
- * Never call twice on the same pixels. Live incremental bakeFlip/bakeRotate90
- * still mutate an already-materialized item and update session state; the next
- * install from raw uses this function with the updated absolute state.
+ * Never call twice on the same pixels. Content orient is always absolute
+ * materialize(host-raw, want) — never incremental transform on display pixels.
  */
 QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,
                           PixelKind kind);
@@ -90,7 +89,7 @@ QRect scaleCropRect(const QRect &crop, const QSize &recorded, const QSize &live)
 void mapCropThroughContentFlip(WorkspaceItemState &state, bool horizontal, bool vertical);
 
 /**
- * Map stored crop geometry through content 90° steps (same sign as bakeRotate90).
+ * Map stored crop geometry through content 90° steps (same sign as content 90° materialize).
  * Updates cropRect, cropSourceSize, and cropRotation.
  */
 void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns);
@@ -102,7 +101,7 @@ void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns);
  * Order matches the *live* post-bake image the user sees (crop UI stores
  * cropRect in post-content space; see enterCropMode / recordSessionCrop):
  *   1. Content horizontal / vertical flip about @p sourceSize
- *   2. Content quarter-turns clockwise (0..3), same matrix as bakeRotate90
+ *   2. Content quarter-turns clockwise (0..3), same matrix as content 90° materialize
  *   3. Session crop (cropRect in cropSourceSize → oriented size)
  *
  * @p sourceSize is the unoriented full-page raster size (native / probe).
