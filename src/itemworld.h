@@ -84,12 +84,44 @@ public:
         return getAppearance(id) != nullptr;
     }
 
+    /**
+     * Store-read authority: fat DTO with sparse Crop/ContentBake/Color/Attention/
+     * Placement overlaid when present (same policy as ImageView::sessionAppearanceValue).
+     * Prefer this (or sessionAppearanceValue) over dereferencing getAppearance().
+     */
     WorkspaceItemState appearanceValue(SessionImageId id) const
     {
+        WorkspaceItemState s;
         if (const WorkspaceItemState *p = getAppearance(id)) {
-            return *p;
+            s = *p;
+        } else if (id == kInvalidSessionImageId) {
+            return {};
         }
-        return {};
+        // Sparse tables win when a partial component write ran without a full
+        // setAppearance refresh of every fat field.
+        if (hasCrop(id)) {
+            const ItemComponents::Crop c = crop(id);
+            s.hasCrop = !c.isEmpty();
+            s.cropRect = c.rect;
+            s.cropSourceSize = c.sourceSize;
+            s.cropRotation = c.rotation;
+        }
+        if (hasContentBake(id)) {
+            const ItemComponents::ContentBake b = contentBake(id);
+            s.contentHFlip = b.hFlip;
+            s.contentVFlip = b.vFlip;
+            s.contentQuarterTurns = b.quarterTurns;
+        }
+        s.colorAdjust = color(id).grade;
+        if (hasAttention(id)) {
+            const ItemComponents::Attention a = attention(id);
+            s.attentionPoints = a.points;
+            s.syncAttentionPrimary();
+        }
+        if (hasPlacement(id)) {
+            ItemComponents::applyPlacementToState(s, placement(id));
+        }
+        return s;
     }
 
     void setAppearance(SessionImageId id, const WorkspaceItemState &state)

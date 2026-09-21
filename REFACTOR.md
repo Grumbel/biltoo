@@ -1235,6 +1235,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1989: privatize applyPlacement; GalleryLayout::applyItemPlacement; fix cell-size recursion.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
+- biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
 
 ### ImageItem demotion status (through biltoo-1990)
 

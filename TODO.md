@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1992-itemworld-sparse-appearanceValue.** Sparse-prefer on ItemWorld::appearanceValue.
+Prior: **1991**.
+
+### Change
+- `ItemWorld::appearanceValue` merges sparse Crop/ContentBake/Color/Attention/Placement
+  over the fat DTO (facade-level store-read authority)
+- `sessionAppearanceValue` is a thin wrapper — one policy, one place
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1992-itemworld-sparse-appearanceValue-e77da63.bundle HEAD
+```
+Requires tip **1991** (base **e77da63**); includes 1938–1992.
+
+### Next
+- Characterization + full build
+- Prefer appearanceValue over getAppearance* for any remaining value reads
+- Optional: Stage 4 persistence split / drop dual-write later
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1991-private-content-edit-marks.** Content-edit marks via ImageView only.
 Prior: **1990**.
 
