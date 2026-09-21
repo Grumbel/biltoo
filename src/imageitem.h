@@ -30,7 +30,7 @@
  * (pose). Durable content lives in ItemWorld sparse tables —
  * ImageView::sessionAppearanceValue is the store-read path. All mutators are
  * private (friends: ImageView, DisplayPipelineController, CropSession,
- * GalleryController, GalleryLayout helpers). Public surface is readers,
+ * GalleryController, ImageController, GalleryLayout helpers). Public surface is readers,
  * interaction handlers, and paint chrome for the view.
  *
  * Geometry (pixmap + item transform) is independent of interaction chrome.
@@ -246,6 +246,7 @@ private:
     friend class DisplayPipelineController;
     friend class CropSession;
     friend class GalleryController;
+    friend class ImageController;
     friend void GalleryLayout::setItemGalleryCellSize(ImageItem *item, const QSizeF &sceneSize);
     friend void GalleryLayout::applyItemPlacement(ImageItem *item, const ItemComponents::Placement &pl);
     // Content-meta / color install — ImageView syncLive* helpers.

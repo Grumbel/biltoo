@@ -2,6 +2,23 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2157-imagecontroller-friend.** ImageController is a friend of
+ImageItem so enter() can promote a stashed tile (private mutators).
+Prior: **2156**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2157-imagecontroller-friend-e77da63.bundle HEAD
+```
+
+Next: **2158**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2156-promote-image-gallery-populate.**
 Prior: **2155**.
 
