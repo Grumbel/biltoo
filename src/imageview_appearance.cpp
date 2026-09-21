@@ -185,28 +185,10 @@ void ImageView::rememberItemState(ImageItem *item)
             // Leave path-map placement untouched; do not last-write crop/flip by path.
             return;
         }
-        // Unbound legacy tile: path map is the only store.
-        WorkspaceItemState s;
-        const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path());
-        if (prev) {
-            s = *prev;
-        } else {
-            s.path = item->path();
-        }
-        s.sessionIndex = item->sessionIndex() >= 0 ? item->sessionIndex() : s.sessionIndex;
-        s.hFlip = item->itemHFlip();
-        s.vFlip = item->itemVFlip();
-        s.orientation = 0.0;
-        s.hasCrop = item->sessionHasCrop();
-        s.cropRect = item->sessionCropRect();
-        s.contentHFlip = item->contentHFlip();
-        s.contentVFlip = item->contentVFlip();
-        s.colorAdjust = item->colorAdjustments();
-        if (prev) {
-            s.contentQuarterTurns = prev->contentQuarterTurns;
-            s.cropRotation = prev->cropRotation;
-            s.cropSourceSize = prev->cropSourceSize;
-        }
+        // Unbound legacy tile: path map is the only store. captureState already
+        // reads live crop/flip and merges path-book orient extras.
+        WorkspaceItemState s = captureState(item);
+        s.path = item->path();
         m_itemWorld.setPathState(item->path(), s);
         return;
     }
@@ -427,11 +409,8 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         haveContentSlot = true;
     } else {
         // Unbound tile: still persist content-hash state for the file.
+        // captureState already pulls live crop/flip (no second dig into item).
         contentSlot = captureState(item);
-        contentSlot.contentHFlip = item->contentHFlip();
-        contentSlot.contentVFlip = item->contentVFlip();
-        contentSlot.hasCrop = item->sessionHasCrop();
-        contentSlot.cropRect = item->sessionCropRect();
         haveContentSlot = true;
     }
     if (haveContentSlot) {
@@ -481,8 +460,11 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
             // Id-keyed only — path signals paint every filmstrip row with
             // the same file (IDENTITY.md).
             emit sessionAppearanceChanged(sid, item->path(), appearance);
-            emit sessionCropApplied(sid, item->path(), appearance,
-                                    item->sessionHasCrop());
+            const bool hasCrop = m_itemWorld.hasCrop(sid)
+                || (m_itemWorld.hasAppearance(sid)
+                    && m_itemWorld.appearanceValue(sid).hasCrop)
+                || item->sessionHasCrop();
+            emit sessionCropApplied(sid, item->path(), appearance, hasCrop);
         }
     }
 }

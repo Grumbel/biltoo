@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1942-unbound-capture-state.** Unbound remember/persist use captureState only.
+Prior: **1941**.
+
+### Change
+- Image-mode unbound `rememberItemState`: path-book write via `captureState` (no ad-hoc item digs)
+- Unbound `persistSessionAppearanceSlot`: drop redundant crop/flip overwrite of captureState
+- `sessionCropApplied` emit prefers ItemWorld hasCrop
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1942-unbound-capture-state-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1942.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- paint/tile-LOD still read live item fields (dual-write install remains)
+- captureState unbound path still falls back to live item (correct)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1941-want-appearance-itemworld.** wantAppearance live merge prefers ItemWorld.
 Prior: **1940**.
 
