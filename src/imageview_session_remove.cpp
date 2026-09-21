@@ -171,6 +171,8 @@ void ImageView::bindSelectedSessionIndices(int firstSessionIndex)
 
 void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
 {
+    // Recovery path only: normal Duplicate binds on create (biltoo-2109).
+    // Still used if a tile was left unbound after an id collision / shortfall.
     int i = 0;
     for (ImageItem *item : m_items) {
         if (!item->isSelected()) {

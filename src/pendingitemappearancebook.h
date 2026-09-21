@@ -11,9 +11,10 @@
 class ImageItem;
 
 /**
- * Content appearance staged when a tile is created without a SessionImageId
- * yet (legacy path). Duplicate normally binds on create (biltoo-2109);
- * bindSelectedSessionIds still consumes any leftover staged rows.
+ * Content appearance staged when a tile cannot bind its SessionImageId on
+ * create (id already owned by another live tile — corruption / race).
+ * Normal Duplicate binds on create (biltoo-2109); this book is collision
+ * recovery only. bindSelectedSessionIds may still consume staged rows.
  * Keys are live ImageItem pointers (GUI-only); cleared on session wipe.
  */
 class PendingItemAppearanceBook

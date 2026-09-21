@@ -112,7 +112,8 @@ unbound and edits will not propagate correctly in Workspace).
    pre-allocated `SessionImageId`s and binds each copy immediately (no
    unbound window before membership update). Workspace edits on unbound
    tiles **still** do not write appearance / sync (by design after 024).
-   Residual: `PendingItemAppearanceBook` for any legacy create-without-id path.
+   `PendingItemAppearanceBook` is collision/shortfall recovery only
+   (biltoo-2116); `bindSelectedSessionIds` remains for that recovery.
 
 2. **Open-by-path still exists (fallback only)**  
    Tile open goes through `emitItemOpenInImageMode`: id → list index → path

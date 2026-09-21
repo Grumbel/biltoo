@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2116-pending-appearance-collision-only.** SESSION residual: PendingItemAppearance is collision recovery only.
+Prior: **2115**.
+
+### Change
+- `PendingItemAppearanceBook`: document as id-collision / shortfall recovery only
+- `duplicateSelected`: qCritical when newIds shorter than sources or id missing
+- `bindSelectedSessionIds`: recovery-path comment (not normal Duplicate)
+- `applyDuplicate`: explicit empty-path skip with qCritical
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2116-pending-appearance-collision-only-e77da63.bundle HEAD
+```
+Requires tip **2115** (base **e77da63**); includes 1938–2116.
+
+### Next
+- SESSION residual: path open only when unbound without list/live index
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2115-gallery-focus-live-index-path-remove.** SESSION residual: Gallery focus live-index + occurrence-aware path remove.
 Prior: **2114**.
 

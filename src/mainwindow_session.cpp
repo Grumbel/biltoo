@@ -3572,6 +3572,8 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
     }
 
     // Paths of the tiles we are about to copy (after id-based reselect).
+    // One session row per selected path entry (including duplicate paths);
+    // empty paths are skipped — those tiles cannot join the session list.
     const QStringList sourcePaths = m_imageView->selectedPaths();
     if (sourcePaths.isEmpty()) {
         return newIds;
@@ -3581,11 +3583,13 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
     // (no unbound window between duplicateSelected and bindSelectedSessionIds).
     const int firstNew = m_session.paths().size();
     for (const QString &path : sourcePaths) {
-        if (!path.isEmpty()) {
-            const SessionImageId id = allocSessionId();
-            m_session.append(path, id);
-            newIds.append(id);
+        if (path.isEmpty()) {
+            qCritical("applyDuplicate: selected tile has empty path — no session row");
+            continue;
         }
+        const SessionImageId id = allocSessionId();
+        m_session.append(path, id);
+        newIds.append(id);
     }
     if (m_session.paths().size() == firstNew || newIds.isEmpty()) {
         return {};

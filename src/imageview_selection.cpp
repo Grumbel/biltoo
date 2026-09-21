@@ -228,6 +228,10 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
     if (sources.isEmpty()) {
         return;
     }
+    if (newIds.size() < sources.size()) {
+        qCritical("duplicateSelected: newIds size %d < sources %d — shortfall tiles stay unbound",
+                  newIds.size(), sources.size());
+    }
 
     m_scene->clearSelection();
     int idIdx = 0;
@@ -326,7 +330,10 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
                 }
             }
         } else {
-            // No id supplied: stage for a later bindSelectedSessionIds (legacy).
+            // Id missing or shortfall vs sources — programming error; stage so a
+            // later bindSelectedSessionIds can still recover appearance.
+            qCritical("duplicateSelected: no SessionImageId for copy path=%s — stage pending",
+                      qPrintable(copy->path()));
             m_pendingAppearance.insert(copy, content);
         }
         if (sessionIdx >= 0) {

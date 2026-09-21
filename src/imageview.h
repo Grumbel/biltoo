@@ -323,7 +323,10 @@ public:
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Assign sequential session indices to currently selected items starting at @p first. */
     void bindSelectedSessionIndices(int firstSessionIndex);
-    /** Bind selected canvas items to stable session ids (same order). */
+    /**
+     * Recovery: bind selected unbound tiles to @p ids (order of selection walk).
+     * Normal Duplicate binds on create; prefer that path.
+     */
     void bindSelectedSessionIds(const QList<SessionImageId> &ids);
     /** How many canvas items currently show @p path. */
     int workspacePathOccurrenceCount(const QString &path) const;
