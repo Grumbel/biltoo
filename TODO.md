@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1941-want-appearance-itemworld.** wantAppearance live merge prefers ItemWorld.
+Prior: **1940**.
+
+### Change
+- `wantAppearanceForItem`: lag-fill flips/crop from ItemWorld ContentBake/Crop when
+  bound; live ImageItem fields remain fallback
+- Docs on `mergeAppliedAndLiveFlags` + path-change comment
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1941-want-appearance-itemworld-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1941.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- paint/tile-LOD still read live item fields (dual-write install remains)
+- Optional: unbound path-book readers still dig live item in remember/commit
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1940-crop-draft-live-meta.** Crop draft enter uses clearLiveContentMeta.
 Prior: **1939**.
 

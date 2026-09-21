@@ -332,11 +332,28 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     const ContentXform::Value applied =
         item->hasAppliedContentXform() ? item->appliedContentXform()
                                        : ContentXform::Value{};
+    // Phase 7: prefer ItemWorld sparse tables for lag-fill when bound. Live
+    // ImageItem fields remain fallback while dual-write install still runs.
+    bool liveHFlip = item->contentHFlip();
+    bool liveVFlip = item->contentVFlip();
+    bool liveHasCrop = item->sessionHasCrop();
+    QRect liveCropRect = item->sessionCropRect();
+    if (id != kInvalidSessionImageId) {
+        if (m_view->itemWorld().hasContentBake(id)) {
+            const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);
+            liveHFlip = bake.hFlip;
+            liveVFlip = bake.vFlip;
+        }
+        if (m_view->itemWorld().hasCrop(id)) {
+            const ItemComponents::Crop crop = m_view->itemWorld().crop(id);
+            liveHasCrop = !crop.isEmpty();
+            liveCropRect = crop.rect;
+        }
+    }
     SessionAppearance::mergeAppliedAndLiveFlags(
         want,
         item->hasAppliedContentXform() ? &applied : nullptr,
-        item->contentHFlip(), item->contentVFlip(),
-        item->sessionHasCrop(), item->sessionCropRect());
+        liveHFlip, liveVFlip, liveHasCrop, liveCropRect);
     return want;
 }
 

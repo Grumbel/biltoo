@@ -143,9 +143,9 @@ bool liveItemHasContentMods(bool sessionHasCrop, bool contentHFlip, bool content
 
 
 /**
- * Overlay applied ContentXform and live item flags onto a store/path slot.
+ * Overlay applied ContentXform and lag-fill flags onto a store/path slot.
  * Applied fingerprint wins when store lagged a live edit; live flips/crop
- * fill empty store fields only.
+ * (prefer ItemWorld sparse tables when bound) fill empty store fields only.
  */
 void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
                               const ContentXform::Value *appliedOrNull,

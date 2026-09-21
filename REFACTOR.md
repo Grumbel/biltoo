@@ -1173,6 +1173,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1938: syncLiveContentMetaFromState / clearLiveContentMeta — single dual-write install for live crop/flip; bound content-mods prefer ItemWorld.
 - biltoo-1939: residual crop/flip readers prefer ItemWorld; drop seedEnterCropFlags; selection/bind no longer overwrite captureState from item.
 - biltoo-1940: crop draft enter clears live meta via clearLiveContentMeta; drop applyKeep/EnterDraftFlags + fillAppearanceFromItemSessionCrop; framing draft uses live session crop only.
+- biltoo-1941: wantAppearanceForItem lag-fill prefers ItemWorld ContentBake/Crop; live item fields fallback only.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

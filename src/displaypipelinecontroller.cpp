@@ -1136,8 +1136,8 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         }
         item->setPath(path);
         bindImageModeSessionCursor(item);
-        // Path change: drop prior sample AND content chrome. m_view->wantAppearanceForItem
-        // merges item->sessionHasCrop / contentHFlip when the store slot is empty;
+        // Path change: drop prior sample AND content chrome. wantAppearanceForItem
+        // merges ItemWorld Crop/ContentBake (live item fallback) when the store slot is empty;
         // leaking the previous image's crop into the new soft is the ←/→ stretch.
         if (pathChanged) {
             // Soft OR full. hasDecodedPixels is full-only; leaving prior soft
