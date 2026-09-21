@@ -191,6 +191,48 @@ MainWindow::MainWindow(QWidget *parent)
                 // Same API as Gallery/Workspace/Image placeholders.
                 return m_imageView->contentLayoutSize(path, sid);
             });
+        // Filmstrip cell *pixels* content ops from ItemWorld (not path-only XDG).
+        m_thumbnailBar->setContentAppearanceProvider(
+            [this](SessionImageId sid, const QString &path) -> WorkspaceItemState {
+                WorkspaceItemState want;
+                if (!m_imageView || path.isEmpty()) {
+                    return want;
+                }
+                if (sid != kInvalidSessionImageId
+                    && m_imageView->hasSessionAppearance(sid)) {
+                    want = m_imageView->sessionAppearanceValue(sid);
+                }
+                // Bound empty ItemWorld: XDG orient only (same as contentLayoutSize).
+                if (!SessionAppearance::hasContentAppearance(want)
+                    && want.colorAdjust.isIdentity()) {
+                    ThumtooCache::StoredContentAppearance stored;
+                    if (ThumtooCache::loadContentAppearance(path, &stored)
+                        && !stored.isIdentity()) {
+                        want.contentHFlip = stored.contentHFlip;
+                        want.contentVFlip = stored.contentVFlip;
+                        want.contentQuarterTurns = stored.contentQuarterTurns;
+                        if (sid == kInvalidSessionImageId) {
+                            want.hasCrop = stored.hasCrop;
+                            want.cropRect = stored.cropRect;
+                            want.cropSourceSize = stored.cropSourceSize;
+                            want.cropRotation = stored.cropRotation;
+                        }
+                        if (stored.hasGrade) {
+                            want.colorAdjust.brightness = stored.gradeBrightness;
+                            want.colorAdjust.contrast =
+                                stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
+                            want.colorAdjust.saturation =
+                                stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
+                            want.colorAdjust.hue = stored.gradeHue;
+                            want.colorAdjust.gamma = stored.gradeGamma <= 0
+                                ? 1.0
+                                : (stored.gradeGamma / 100.0);
+                            want.colorAdjust.invert = stored.gradeInvert;
+                        }
+                    }
+                }
+                return want;
+            });
         // Image-mode ←/→: reuse filmstrip Soft (and ImageCache) instead of LQIP
         // when the strip already decoded the path.
         m_imageView->setImageModeSoftProvider(

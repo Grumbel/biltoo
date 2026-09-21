@@ -123,6 +123,17 @@ public:
     {
         m_layoutAspectProvider = std::move(provider);
     }
+    /**
+     * Content ops for filmstrip cell paint (ItemWorld for bound SessionImageId).
+     * Host binds sessionAppearanceValue + XDG orient fallback. Pixmap overrides
+     * remain display-ready cache after rotate; cold cells use this.
+     */
+    using ContentAppearanceProvider =
+        std::function<WorkspaceItemState(SessionImageId sessionId, const QString &path)>;
+    void setContentAppearanceProvider(ContentAppearanceProvider provider)
+    {
+        m_contentAppearanceProvider = std::move(provider);
+    }
     void setCurrentIndex(int index);
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
     void setVisibleLoadsSuspended(bool on);
@@ -280,9 +291,11 @@ private:
     void updateCenteringMargins();
     int labelBandHeight() const;
     int thumbSizeFromBarExtent(int extent) const;
-    QImage makeThumbnail(const QString &path, int maxSize) const;
-    /** Apply durable XDG orient/grade (bound) or full appearance (unbound). */
-    QImage applyStoredAppearanceToThumb(const QString &path, const QImage &src) const;
+    QImage makeThumbnail(const QString &path, int maxSize,
+                         SessionImageId sessionId = kInvalidSessionImageId) const;
+    /** Apply ItemWorld/XDG content ops for filmstrip cell paint. */
+    QImage applyStoredAppearanceToThumb(const QString &path, const QImage &src,
+                                        SessionImageId sessionId = kInvalidSessionImageId) const;
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
     /**
      * Filmstrip sharpness: LQIP is cache-only; PreferCache only when durable
@@ -317,6 +330,7 @@ private:
     int m_decodedSize = 0;
     Qt::Orientation m_orientation = Qt::Horizontal;
     LayoutAspectProvider m_layoutAspectProvider;
+    ContentAppearanceProvider m_contentAppearanceProvider;
     QStringList m_files;
     DisplaySurfaceController m_displaySurfaces;
     /** Parallel to m_files: surface id per row (0 = unbound). */

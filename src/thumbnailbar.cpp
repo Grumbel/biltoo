@@ -542,14 +542,17 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                         if (!bar || gen != bar->m_generation.load()) {
                             return;
                         }
+                        const SessionImageId rowSid =
+                            (i < bar->m_sessionIds.size()) ? bar->m_sessionIds.at(i)
+                                                          : kInvalidSessionImageId;
                         QImage image = delivered;
                         if (image.isNull()
                             || qMax(image.width(), image.height()) < decodeSize) {
-                            image = bar->makeThumbnail(path, decodeSize);
+                            image = bar->makeThumbnail(path, decodeSize, rowSid);
                         } else {
-                            // Ladder samples are unoriented source — apply XDG
-                            // orient/grade (and unbound crop) like makeThumbnail.
-                            image = bar->applyStoredAppearanceToThumb(path, image);
+                            // Ladder samples are unoriented host — apply ItemWorld
+                            // (XDG fallback) content ops like makeThumbnail.
+                            image = bar->applyStoredAppearanceToThumb(path, image, rowSid);
                             image = bar->prepareThumbnailFromImage(image, decodeSize);
                         }
                         bar = guard.data();
@@ -1267,49 +1270,46 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
 }
 
 
-QImage ThumbnailBar::applyStoredAppearanceToThumb(const QString &path, const QImage &src) const
+QImage ThumbnailBar::applyStoredAppearanceToThumb(const QString &path, const QImage &src,
+                                                  SessionImageId sessionId) const
 {
     if (src.isNull() || path.isEmpty()) {
         return src;
     }
-    // Bound rows: orient + grade only (never path crop — IDENTITY duplicates).
-    // Unbound rows: full stored appearance including crop.
-    bool anySessionId = false;
-    for (SessionImageId id : m_sessionIds) {
-        if (id != kInvalidSessionImageId) {
-            anySessionId = true;
-            break;
+    WorkspaceItemState st;
+    if (m_contentAppearanceProvider) {
+        st = m_contentAppearanceProvider(sessionId, path);
+    }
+    // Fallback: path XDG when provider empty (unbound / cold before ItemWorld seed).
+    if (!SessionAppearance::hasContentAppearance(st) && st.colorAdjust.isIdentity()) {
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
+            st.contentHFlip = stored.contentHFlip;
+            st.contentVFlip = stored.contentVFlip;
+            st.contentQuarterTurns = stored.contentQuarterTurns;
+            // Bound: orient/grade only — never path crop (IDENTITY).
+            if (sessionId == kInvalidSessionImageId) {
+                st.hasCrop = stored.hasCrop;
+                st.cropRect = stored.cropRect;
+                st.cropSourceSize = stored.cropSourceSize;
+                st.cropRotation = stored.cropRotation;
+            }
+            if (stored.hasGrade) {
+                st.colorAdjust.brightness = stored.gradeBrightness;
+                st.colorAdjust.contrast =
+                    stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
+                st.colorAdjust.saturation =
+                    stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
+                st.colorAdjust.hue = stored.gradeHue;
+                st.colorAdjust.gamma = stored.gradeGamma <= 0
+                    ? 1.0
+                    : (stored.gradeGamma / 100.0);
+                st.colorAdjust.invert = stored.gradeInvert;
+            }
         }
     }
-    ThumtooCache::StoredContentAppearance stored;
-    if (!ThumtooCache::loadContentAppearance(path, &stored) || stored.isIdentity()) {
-        return src;
-    }
-    WorkspaceItemState st;
-    st.contentHFlip = stored.contentHFlip;
-    st.contentVFlip = stored.contentVFlip;
-    st.contentQuarterTurns = stored.contentQuarterTurns;
-    if (!anySessionId) {
-        st.hasCrop = stored.hasCrop;
-        st.cropRect = stored.cropRect;
-        st.cropSourceSize = stored.cropSourceSize;
-        st.cropRotation = stored.cropRotation;
-    }
-    if (stored.hasGrade) {
-        st.colorAdjust.brightness = stored.gradeBrightness;
-        st.colorAdjust.contrast =
-            stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
-        st.colorAdjust.saturation =
-            stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
-        st.colorAdjust.hue = stored.gradeHue;
-        st.colorAdjust.gamma = stored.gradeGamma <= 0
-            ? 1.0
-            : (stored.gradeGamma / 100.0);
-        st.colorAdjust.invert = stored.gradeInvert;
-    }
-    const bool hasOrient = st.contentHFlip || st.contentVFlip
-        || st.contentQuarterTurns != 0 || !st.colorAdjust.isIdentity()
-        || st.hasCrop;
+    const bool hasOrient = SessionAppearance::hasContentAppearance(st)
+        || !st.colorAdjust.isIdentity();
     if (!hasOrient) {
         return src;
     }
@@ -1317,7 +1317,8 @@ QImage ThumbnailBar::applyStoredAppearanceToThumb(const QString &path, const QIm
         src, st, SessionAppearance::PixelKind::SoftPreview);
 }
 
-QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
+QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize,
+                                   SessionImageId sessionId) const
 {
     // Process-memory only. Soft / classic loadThumbnail encode is removed for
     // filmstrip — sharpness is tiles (TileSynth) after LQIP underlay.
@@ -1328,7 +1329,7 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
     if (image.isNull()) {
         return {};
     }
-    image = applyStoredAppearanceToThumb(path, image);
+    image = applyStoredAppearanceToThumb(path, image, sessionId);
     return prepareThumbnailFromImage(image, maxSize);
 }
 
@@ -1818,7 +1819,10 @@ void ThumbnailBar::filmstripSurfaceTick()
         if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
             const QImage host = ImageCache::get(path);
             if (!host.isNull()) {
-                QImage oriented = applyStoredAppearanceToThumb(path, host);
+                const SessionImageId rowSid =
+                    (i < m_sessionIds.size()) ? m_sessionIds.at(i)
+                                              : kInvalidSessionImageId;
+                QImage oriented = applyStoredAppearanceToThumb(path, host, rowSid);
                 const QImage thumb = prepareThumbnailFromImage(oriented, decodeSize);
                 if (!thumb.isNull()) {
                     const int newShown = qMax(thumb.width(), thumb.height());
@@ -2029,7 +2033,10 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 fprintf(stderr, "biltoo/filmstrip: makeThumbnail row=%d edge=%d path=%s\n",
                         i, decodeSize, qPrintable(path));
             }
-            const QImage image = bar->makeThumbnail(path, decodeSize);
+            const SessionImageId rowSid =
+                (i < bar->m_sessionIds.size()) ? bar->m_sessionIds.at(i)
+                                              : kInvalidSessionImageId;
+            const QImage image = bar->makeThumbnail(path, decodeSize, rowSid);
             bar = guard.data();
             if (!bar || gen != bar->m_generation.load()) {
                 return;

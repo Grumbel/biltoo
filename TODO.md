@@ -2,6 +2,28 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2179-filmstrip-itemworld-paint.** Filmstrip cold cell paint uses
+ItemWorld content ops via ContentAppearanceProvider (not path-only XDG).
+
+### ECS work list
+
+- [x] 2174–2178 underlay, restore, flush, bake host, ImageCache audit
+- [x] 2179 Filmstrip applyStoredAppearanceToThumb → ItemWorld provider
+- [ ] Optional: debug assert on ImageCache::put of baked samples
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2179-filmstrip-itemworld-paint-e77da63.bundle HEAD
+```
+
+Next: **2180**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2178-bake-host-disk.** Content rotate/flip: load host-raw from disk
 before any incremental bake; ImageCache put audit documented.
 
