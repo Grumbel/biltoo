@@ -135,9 +135,7 @@ public:
     QPolygonF contentScenePolygon() const;
     bool itemHFlip() const { return m_hFlip; }
     bool itemVFlip() const { return m_vFlip; }
-    void setColorAdjustments(const ColorAdjustments &adj);
-    /** Store grade for HUD without rebuilding the display pixmap. */
-    void setColorAdjustmentsRecord(const ColorAdjustments &adj);
+    /** Live grade for paint/HUD; mutators are ImageView-only (syncLiveColorFromState). */
     ColorAdjustments colorAdjustments() const { return m_colorAdjust; }
 
     /**
@@ -291,9 +289,12 @@ private:
     QString m_path;
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
-    // Content-meta install — ImageView::syncLiveContentMetaFromState / clearLiveContentMeta.
+    // Content-meta / color install — ImageView syncLive* helpers.
     // Session lag fields (m_content*Flip / m_session*) are internal only.
     friend class ImageView;
+    void setColorAdjustments(const ColorAdjustments &adj);
+    /** Store grade without rebuilding the display pixmap. */
+    void setColorAdjustmentsRecord(const ColorAdjustments &adj);
     void setAppliedContentXform(const ContentXform::Value &x)
     {
         m_appliedContentXform = x;

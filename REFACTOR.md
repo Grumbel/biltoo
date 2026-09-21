@@ -1190,6 +1190,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1955: clearLiveContentMeta always identity (lag+applied); no-view flip applied-only.
 - biltoo-1956: seedContentMetaLagFromApplied / clearContentMetaLag; drop private dual-write setters.
 - biltoo-1957: syncLiveColorFromState centralizes live grade install; liveItemHasContentMods takes ContentXform.
+- biltoo-1958: setColorAdjustments/Record private (friend ImageView); writers only via syncLiveColorFromState.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

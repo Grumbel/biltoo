@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1958-private-color-mutators.** Private ImageItem color mutators.
+Prior: **1957**.
+
+### Change
+- `setColorAdjustments` / `setColorAdjustmentsRecord` private with `friend ImageView`
+- Public `colorAdjustments()` retained for HUD / capture / chrome
+- Writers only via `syncLiveColorFromState`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1958-private-color-mutators-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1958.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ItemWorld Color remains bound authority; live grade on ImageItem for paint
+- Content-meta lag fields remain for pixel-clear chrome gaps
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1957-sync-live-color.** Centralized live color install helper.
 Prior: **1956**.
 
