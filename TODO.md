@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2010-path-map-no-bound-crop.** Path map never carries crop for bound session ids.
+Prior: **2009**.
+
+### Change
+1. **Workspace restore** — `setPathState` only for unbound saved items (pending
+   restore list still carries full state per tile; bound appearance already in store)
+2. **bakeRotate path map** — orient/flip only when bound; clear crop fields on
+   the path slot; unbound may still store crop on the path map
+
+Continues IDENTITY: crop is SessionImageId-keyed; path must not leak crop across
+duplicates.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2010-path-map-no-bound-crop-e77da63.bundle HEAD
+```
+Requires tip **2009** (base **e77da63**); includes 1938–2010.
+
+### Next
+- Audit remaining setPathState sites for bound crop
+- Stage 4 / build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2009-workspace-snapshot-path-unbound-only.** Snapshot path map only for unbound tiles.
 Prior: **2008**.
 

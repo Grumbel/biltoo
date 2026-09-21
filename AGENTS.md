@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2009-workspace-snapshot-path-unbound-only**.
-Latest tip: **biltoo-2009-workspace-snapshot-path-unbound-only**. Next bundle number: **2010**
+Latest agent handoff: **TODO.md → biltoo-2010-path-map-no-bound-crop**.
+Latest tip: **biltoo-2010-path-map-no-bound-crop**. Next bundle number: **2011**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

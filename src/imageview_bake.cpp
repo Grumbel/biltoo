@@ -111,10 +111,18 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             pathSlot.contentQuarterTurns = turns;
             pathSlot.contentHFlip = want.contentHFlip;
             pathSlot.contentVFlip = want.contentVFlip;
-            pathSlot.hasCrop = want.hasCrop;
-            pathSlot.cropRect = want.cropRect;
-            pathSlot.cropRotation = want.cropRotation;
-            pathSlot.cropSourceSize = want.cropSourceSize;
+            // Crop is id-keyed when bound (IDENTITY — path may be shared).
+            if (sid == kInvalidSessionImageId) {
+                pathSlot.hasCrop = want.hasCrop;
+                pathSlot.cropRect = want.cropRect;
+                pathSlot.cropRotation = want.cropRotation;
+                pathSlot.cropSourceSize = want.cropSourceSize;
+            } else {
+                pathSlot.hasCrop = false;
+                pathSlot.cropRect = QRect();
+                pathSlot.cropRotation = 0.0;
+                pathSlot.cropSourceSize = QSize();
+            }
             m_itemWorld.setPathState(item->path(), pathSlot);
         }
         // Applied fingerprint already set by syncLiveContentMetaFromState(want)

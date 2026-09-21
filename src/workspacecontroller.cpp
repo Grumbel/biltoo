@@ -96,7 +96,11 @@ void WorkspaceController::restore()
     // AUDIT M27: queue every saved state (including duplicate paths) then load.
     m_view->hostDisplayPipeline().loadGate().setPendingRestoreStates(m_savedItems);
     for (const WorkspaceItemState &state : m_savedItems) {
-        m_view->itemWorld().setPathState(state.path, state);
+        // Bound content lives on appearance by id (already written in snapshot).
+        // Path map only for unbound — avoid last-duplicate crop leak on shared path.
+        if (state.sessionId == kInvalidSessionImageId && !state.path.isEmpty()) {
+            m_view->itemWorld().setPathState(state.path, state);
+        }
         m_view->scheduleRestoreLoad(state.path);
     }
     m_view->hostFraming().clearFitFill();
