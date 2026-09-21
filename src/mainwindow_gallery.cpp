@@ -215,12 +215,22 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
         m_imageView->setCurrentSessionId(sid);
         m_imageView->hostSlideshow().setSessionPosition(sessionIndex, m_session.size(), false);
         m_imageView->hostGallery().leaveForImageMode();
+        // enter() already loadImage(path); re-affirm after setCurrentIndex chrome
+        // so a same-index refresh cannot leave a blank canvas (classicPath kept).
     }
     if (m_thumbnailBar) {
         m_thumbnailBar->setMultiSelectEnabled(false);
         m_thumbnailBar->selectNoneThumbs();
     }
     setCurrentIndex(sessionIndex);
+    // Guarantee Image canvas has the target after mode switch (Workspace
+    // double-click left empty when only enter's scheduleReplaceLoad ran).
+    if (m_imageView && m_imageView->isImageMode() && !path.isEmpty()) {
+        if (m_imageView->itemCount() == 0
+            || m_imageView->hostImage().classicPath() != path) {
+            m_imageView->hostDisplayPipeline().loadImage(path);
+        }
+    }
     updateUpToGalleryAction();
     updateWorkspaceActionVisibility();
 }

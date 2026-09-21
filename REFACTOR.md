@@ -1578,6 +1578,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2149:** Image enter keeps classicPath so completeLoadReplace accepts Workspace open.
 
+**biltoo-2150:** Image LoadReplace soft delivery; Workspace stash-first then durable.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

@@ -2,6 +2,39 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2150-image-open-soft-workspace-stash.** Image open soft delivery; Workspace stash-first.
+Prior: **2149**.
+
+### Bugs reported
+1. Workspace double-click → still empty Image view
+2. Images on Workspace “removed from gallery” (possible side effect of
+   discardStash-first durable rebuild)
+
+### Fixes
+1. **ImageController::enter** uses `loadImage(path)` (keeps classicPath, full path)
+2. **Image mode LoadReplace** in `scheduleClassicImageDecode`: if no display
+   pixels, deliver soft/LQIP via `queueImageLoaded` (not probe/tiles only)
+3. **openSessionIndexInImageMode** re-loads if canvas still empty after switch
+4. **Workspace enter** prefers pointer-stash reattach; durable LoadRestore only
+   if live is still empty (no discardStash before trying reattach)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2150-image-open-soft-workspace-stash-e77da63.bundle HEAD
+```
+Requires tip **2149** (base **e77da63**); includes 1938–2150.
+
+### Next (runtime QA)
+- Workspace double-click tile → Image shows image
+- Gallery still shows full session after Workspace placement
+- Workspace leave/re-enter keeps arrangement
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2149-image-enter-classic-path.** Keep classicPath on Image enter (Workspace double-click).
 Prior: **2148**.
 

@@ -37,16 +37,17 @@ void ImageController::enter()
     // leaveForImageMode). Do not pick live Workspace/Gallery items — that
     // re-decodes a random tile before setCurrentIndex runs.
     //
-    // Keep classicPath set (do not take/clear). completeLoadReplace rejects any
-    // sample whose path != classicPath; clearing here left Workspace→Image with
-    // an empty canvas (placeholder maybe created, then HQ/soft install dropped).
+    // Keep classicPath set. Use loadImage (not scheduleReplaceLoad alone) so
+    // classicPath is re-affirmed and the full Image-mode soft/tile path runs.
+    // scheduleReplaceLoad alone + Image-mode classic decode (probe/tiles only)
+    // left Workspace→Image blank when ImageCache had no soft sample.
     const QString path = classicPath();
     // Clear live canvas only — do not discard stashes.
     m_view->clearLiveCanvas();
     m_view->hostDisplayPipeline().loadGate().clearPending();
     m_view->clearSceneKeepingStashes();
     if (!path.isEmpty()) {
-        m_view->scheduleReplaceLoad(path);
+        m_view->hostDisplayPipeline().loadImage(path);
     }
     emit m_view->statusChanged();
 }

@@ -388,26 +388,28 @@ void WorkspaceController::enter(int previousMode)
     m_view->applyToolDragMode();
     bool keepViewTransform = false;
 
-    // Cross-mode return (Image/Gallery → Workspace): durable m_savedItems is the
-    // source of truth. Pointer stash can be invalidated by scene teardown in
-    // Image enter (clearSceneKeepingStashes / clearLiveCanvas); reattaching
-    // dangling ImageItem* produced an empty canvas. Always rebuild from the
-    // snapshot taken in onLeave (while tiles were still live).
+    // Cross-mode return: prefer live pointer stash (fast, no re-decode) when
+    // present; Image enter no longer deletes stashed tiles via scene clear.
+    // If stash is empty or reattach leaves no live tiles, fall back to durable
+    // m_savedItems via LoadRestore. Do not discardStash before trying reattach.
     if (previous == ImageView::ViewMode::Image
         || previous == ImageView::ViewMode::Gallery) {
-        discardStash(); // free any stashed tiles; do not reattach pointers
-        if (!m_savedItems.isEmpty()) {
+        if (!m_stashedItems.isEmpty()) {
+            restoreStashedItems();
+            keepViewTransform = true;
+        }
+        if (m_view->liveItems().isEmpty() && !m_savedItems.isEmpty()) {
+            discardStash(); // only free residual stash if we must rebuild
             const bool hadSavedView = m_hasSavedView;
             restore();
-            keepViewTransform = hadSavedView;
-        } else {
+            keepViewTransform = hadSavedView || keepViewTransform;
+        } else if (m_view->liveItems().isEmpty()) {
             m_view->clearLiveCanvas();
             m_view->hostGallery().invalidateDecodes();
             m_view->pathOrderClear();
             m_view->applyModeFlagsToLiveItems();
         }
     } else if (!m_stashedItems.isEmpty()) {
-        // Same-mode edge path only.
         restoreStashedItems();
         keepViewTransform = true;
     } else if (!m_savedItems.isEmpty()) {

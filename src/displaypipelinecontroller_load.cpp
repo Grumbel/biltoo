@@ -492,11 +492,44 @@ void DisplayPipelineController::scheduleSlideshowReplaceDecode(const QString &pa
 
 void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, quint64 gen, int role)
 {
-    // Image mode: LQIP/cache underlay only if already present, then tiles.
-    // No SoftOnly encode and no PreferCache/Full climb in parallel with tiles.
-    if (m_view->isImageMode() && !m_view->hostSlideshow().hud().isProgressActive() && !m_view->hostSlideshow().hud().isNavHot()
-        && role == ImageView::LoadReplace) {
+    // Image mode LoadReplace: soft underlay + tiles. If the canvas has no
+    // display pixels yet (Workspace→Image after clearLiveCanvas), deliver a
+    // soft/LQIP sample via queueImageLoaded so completeLoadReplace /
+    // tryInstallImageModeSample can create or fill the item. Probe/tiles alone
+    // left an empty Image view when ImageCache had no prior soft sample.
+    if (m_view->isImageMode() && !m_view->hostSlideshow().hud().isProgressActive()
+        && !m_view->hostSlideshow().hud().isNavHot()
+        && role == static_cast<int>(ImageView::LoadReplace)) {
         ThumtooCache::scheduleProbe(path);
+        ImageItem *it = imageModeItemForPath(path);
+        const bool needSoft = !it || !it->hasDisplayPixels()
+            || it->displayPixelLongEdge() <= 0;
+        if (needSoft) {
+            const QPointer<ImageView> guard(m_view);
+            const int roleInt = static_cast<int>(role);
+            QImage cached = ImageCache::get(path);
+            if (!cached.isNull()) {
+                queueImageLoaded(guard, path, cached, gen, roleInt);
+            } else {
+                QThreadPool::globalInstance()->start(
+                    [guard, path, roleInt, gen]() {
+                        if (!guard || !guard->matchesLoadGeneration(gen)) {
+                            return;
+                        }
+                        QImage preview = loadSoftPreviewPixels(path, 0);
+                        if (preview.isNull()) {
+                            preview = ImageLoader::loadThumbnail(
+                                path, ThumtooCache::kGalleryLadderEdge);
+                        }
+                        if (preview.isNull()) {
+                            return;
+                        }
+                        ImageCache::put(path, preview);
+                        queueImageLoaded(guard, path, preview, gen, roleInt);
+                    },
+                    2);
+            }
+        }
         tickPrimaryTileLod(12);
         Q_UNUSED(gen);
         return;
