@@ -50,46 +50,10 @@ void ImageController::enter()
                   static_cast<int>(m_view->hostGallery().stashedItems().size()),
                   m_view->hostGallerySoftBook().isDeferPopulate() ? 1 : 0);
 
-    // Seed ImageCache from stashed tiles' display samples (copy only).
-    // Workspace tiles may be tile-LOD-only with no soft buffer — then filmstrip
-    // / LQIP / tile path in loadImage must supply the underlay.
-    auto seedFrom = [&](const QList<ImageItem *> &stash) {
-        for (ImageItem *cand : stash) {
-            if (!cand) {
-                continue;
-            }
-            const bool idMatch = (wantId != kInvalidSessionImageId
-                                  && cand->sessionId() == wantId);
-            const bool pathMatch = (!path.isEmpty() && cand->path() == path);
-            if (!idMatch && !pathMatch) {
-                continue;
-            }
-            if (cand->hasDisplayPixels()) {
-                // ImageCache must stay host-raw. Display samples may already
-                // carry applied ContentXform; putting them in the cache made
-                // installDisplayPixels materialize want again (double rotate).
-                // pendingTile takes display-ready soft from the stash instead.
-                if (!m_view->itemHasAppliedContentXform(cand)) {
-                    ImageCache::put(path.isEmpty() ? cand->path() : path,
-                                    cand->displayImage());
-                }
-                return true;
-            }
-            if (!cand->pixmap().isNull()) {
-                if (!m_view->itemHasAppliedContentXform(cand)) {
-                    ImageCache::put(path.isEmpty() ? cand->path() : path,
-                                    cand->pixmap().toImage());
-                }
-                return true;
-            }
-        }
-        return false;
-    };
-    if (!path.isEmpty()) {
-        if (!seedFrom(m_view->hostWorkspace().stashedItems())) {
-            seedFrom(m_view->hostGallery().stashedItems());
-        }
-    }
+    // Do NOT seed ImageCache from Gallery/Workspace stash display samples.
+    // Mode-stash soft may be content-baked; ImageCache is host-raw only.
+    // Workspace→Image and Gallery→Image share one path: loadImage → host-raw
+    // (cache/LQIP/filmstrip) + installDisplayPixels materialize from ItemWorld.
 
     m_view->clearLiveCanvas();
     m_view->hostDisplayPipeline().loadGate().clearPending();

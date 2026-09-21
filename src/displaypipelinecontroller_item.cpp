@@ -437,16 +437,17 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
                                                 const QImage &preview,
                                                 bool *displayReadyOut) const
 {
-    // Image-mode soft sources (process memory only).
+    // Image-mode underlay soft — independent of previous ViewMode.
+    // Workspace→Image and Gallery→Image must share this path (MODE_OWNERSHIP /
+    // structural). Mode-stash display samples are NOT sources: they may already
+    // be content-baked and disagreed with ItemWorld or host-raw cache (random
+    // double/wrong orient when opening from Workspace).
     //
-    // Order matters for Workspace→Image orientation:
-    // 1) Explicit preview / slideshow
-    // 2) Same-session mode-stash soft (may already be content-baked → displayReady)
-    // 3) Filmstrip session override (displayReady) or host-raw strip/cache/LQIP
-    //
-    // Path-shared ImageCache must not win over same-session oriented stash soft:
-    // that forced installDisplayPixels to treat baked pixels as host-raw (double
-    // rotate) or skip store want when sources disagreed.
+    // Sources (process memory only):
+    // 1) Explicit preview / slideshow raster
+    // 2) Filmstrip session-id override → displayReady (baked for that id)
+    // 3) Filmstrip/ImageCache/LQIP → host-raw → installDisplayPixels materializes
+    //    ItemWorld want
     if (displayReadyOut) {
         *displayReadyOut = false;
     }
@@ -454,43 +455,6 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         return preview;
     }
     QImage pixels = m_view->hostSlideshow().slideshowRaster(path);
-    if (!pixels.isNull()) {
-        return pixels;
-    }
-
-    auto tryStashSoft = [&](const QList<ImageItem *> &stash) -> QImage {
-        for (ImageItem *cand : stash) {
-            if (!cand || cand->path() != path || !cand->hasDisplayPixels()) {
-                continue;
-            }
-            QImage px = cand->displayImage();
-            if (px.isNull()) {
-                continue;
-            }
-            const bool sameId = (m_view->hostSessionId().hasCurrentId()
-                                 && cand->sessionId() == m_view->hostSessionId().currentIdValue());
-            const bool hasApplied = m_view->itemHasAppliedContentXform(cand);
-            if (sameId) {
-                if (displayReadyOut) {
-                    *displayReadyOut = hasApplied;
-                }
-                return px;
-            }
-            // Path-only: host-raw only (avoid double-bake of another id's crop).
-            if (!hasApplied
-                || ContentXform::equal(m_view->itemAppliedContentXform(cand),
-                                       ContentXform::Value{})) {
-                return px;
-            }
-        }
-        return {};
-    };
-    // Workspace first — open Image from Workspace is the common oriented path.
-    pixels = tryStashSoft(m_view->hostWorkspace().stashedItems());
-    if (!pixels.isNull()) {
-        return pixels;
-    }
-    pixels = tryStashSoft(m_view->hostGallery().stashedItems());
     if (!pixels.isNull()) {
         return pixels;
     }

@@ -146,4 +146,14 @@ a guarantee of a single `ImageItem*` process-wide.
 cell for every session row even when Workspace stash already holds that id.
 Session remove uses `collectItemsForSessionId` (live + both stashes).
 
+## Image underlay (one path)
+
+`ImageController::enter` + `loadImage` / `resolveImageModePendingPixels` must not
+branch on previous mode. Gallery and Workspace stashes stay off-scene for return;
+they are **not** soft sources for the Image underlay.
+
+Underlay pixels: filmstrip id override (displayReady) or host-raw cache/LQIP,
+then `installDisplayPixels` materializes **ItemWorld** want for the current
+`SessionImageId`. That is the only orientation authority.
+
 

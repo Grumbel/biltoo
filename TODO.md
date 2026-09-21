@@ -2,6 +2,37 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2174-image-underlay-one-path.** Workspace→Image orient was random
+because underlay soft came from Workspace stash (content-baked) while
+Gallery→Image used a different soft order.
+
+### Structural bug
+
+Image underlay resolution branched on previous mode (Workspace stash first,
+seedFrom into ImageCache). Same `ImageController::enter` must not care whether
+the previous mode was Gallery or Workspace.
+
+### Fix
+
+- Remove stash `seedFrom` from `ImageController::enter`
+- Remove Gallery/Workspace stash soft from `resolveImageModePendingPixels`
+- Sources: preview / slideshow / filmstrip / ImageCache / LQIP only
+- Orient only via ItemWorld through `installDisplayPixels` (or filmstrip id
+  override displayReady)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2174-image-underlay-one-path-e77da63.bundle HEAD
+```
+
+Next: **2175** — QA Workspace R-rotate → double-click Image (stable).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2173-fix-layout-aspect-member.** Compile fix: declare
 `m_layoutAspectProvider` in ThumbnailBar private section.
 
