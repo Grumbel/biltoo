@@ -86,11 +86,11 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
     if (!st || sid == kInvalidSessionImageId) {
         return false;
     }
-    if (const WorkspaceItemState *it = m_itemWorld.getAppearance(sid)) {
-        *st = *it;
-        return true;
+    if (!m_itemWorld.hasAppearance(sid)) {
+        return false;
     }
-    return false;
+    *st = sessionAppearanceValue(sid);
+    return true;
 }
 
 

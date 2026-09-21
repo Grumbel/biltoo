@@ -181,8 +181,8 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
                              bound.id != kInvalidSessionImageId
                                  ? bound.id
                                  : existing->sessionId());
-        if (bound.id != kInvalidSessionImageId && m_view->itemWorld().getAppearance(bound.id)) {
-            m_view->applyState(existing, *m_view->itemWorld().getAppearance(bound.id));
+        if (bound.id != kInvalidSessionImageId && m_view->itemWorld().hasAppearance(bound.id)) {
+            m_view->applyState(existing, m_view->sessionAppearanceValue(bound.id));
         }
         // Explicit drop position wins over restored gallery/workspace pose.
         m_view->applyPendingBindScenePos(existing, bound);

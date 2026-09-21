@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1982-more-store-readers-sparse-choke.** More store readers via sessionAppearanceValue.
+Prior: **1981**.
+
+### Change
+- cropMap / rematerialize / selection clipboard / workspace restore+stash /
+  load bind / slideshow / updateWorkspaceSaved / loadSessionAppearance
+- Drop redundant appearanceValue.hasCrop in session_remove
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1982-more-store-readers-sparse-choke-e77da63.bundle HEAD
+```
+Requires tip **1981** (base **e77da63**); includes 1938–1982.
+
+### Next
+- Characterization re-check
+- Remaining getAppearance mainly presence checks and dual-write re-reads
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1981-store-readers-via-sessionAppearanceValue.** Route store readers through choke point.
 Prior: **1980**.
 

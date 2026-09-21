@@ -141,19 +141,22 @@ void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
     if (sid == kInvalidSessionImageId) {
         return;
     }
-    const WorkspaceItemState *st = m_itemWorld.getAppearance(sid);
-    if (!st || !SessionAppearance::hasContentAppearance(*st)) {
+    if (!m_itemWorld.hasAppearance(sid)) {
         return;
     }
-    const ContentXform::Value want = ContentXform::Value::fromState(*st);
+    const WorkspaceItemState st = sessionAppearanceValue(sid);
+    if (!SessionAppearance::hasContentAppearance(st)) {
+        return;
+    }
+    const ContentXform::Value want = ContentXform::Value::fromState(st);
     const ContentXform::Value applied = item->tileContentXform();
     if (item->hasAppliedContentXform() && ContentXform::equal(applied, want)
         && item->hasDisplayPixels()) {
         // Applied matches store; still fix layout if intrinsic is full-frame.
-        applyContentLayoutSize(item, *st);
+        applyContentLayoutSize(item, st);
         return;
     }
-    rematerializeItemContent(item, *st);
+    rematerializeItemContent(item, st);
 }
 
 
@@ -296,11 +299,10 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     }
     const ContentXform::Value wantX = ContentXform::Value::fromState(want);
     // Discard stale worker result if the store moved on for this session id.
-    if (sid != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *cur = m_itemWorld.getAppearance(sid)) {
-            if (!ContentXform::equal(ContentXform::Value::fromState(*cur), wantX)) {
-                return;
-            }
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
+        const WorkspaceItemState cur = sessionAppearanceValue(sid);
+        if (!ContentXform::equal(ContentXform::Value::fromState(cur), wantX)) {
+            return;
         }
     }
     // Already settled FullSource for this want at ≥ this resolution — skip.

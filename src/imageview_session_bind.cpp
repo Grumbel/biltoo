@@ -175,7 +175,7 @@ void ImageView::placeNewLoadAddItem(ImageItem *item, const QString &path,
     if (haveBound && bound.id != kInvalidSessionImageId
         && m_itemWorld.getAppearance(bound.id)) {
         // Thumbnail membership toggle: restore last Workspace pose.
-        applyState(item, *m_itemWorld.getAppearance(bound.id));
+        applyState(item, sessionAppearanceValue(bound.id));
         return;
     }
     QPointF pos;

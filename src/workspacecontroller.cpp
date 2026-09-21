@@ -63,14 +63,15 @@ void WorkspaceController::restore()
     // the durable snapshot so Image-mode edits survive a full rebuild.
     for (WorkspaceItemState &slot : m_savedItems) {
         if (slot.sessionId != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *sit = m_view->itemWorld().getAppearance(slot.sessionId)) {
-                slot.hasCrop = sit->hasCrop;
-                slot.cropRect = sit->cropRect;
-                slot.hFlip = sit->hFlip;
-                slot.vFlip = sit->vFlip;
-                slot.contentQuarterTurns = sit->contentQuarterTurns;
-                slot.contentHFlip = sit->contentHFlip;
-                slot.contentVFlip = sit->contentVFlip;
+            if (m_view->itemWorld().hasAppearance(slot.sessionId)) {
+                const WorkspaceItemState sit = m_view->sessionAppearanceValue(slot.sessionId);
+                slot.hasCrop = sit.hasCrop;
+                slot.cropRect = sit.cropRect;
+                slot.hFlip = sit.hFlip;
+                slot.vFlip = sit.vFlip;
+                slot.contentQuarterTurns = sit.contentQuarterTurns;
+                slot.contentHFlip = sit.contentHFlip;
+                slot.contentVFlip = sit.contentVFlip;
                 continue;
             }
         }
@@ -196,14 +197,14 @@ void WorkspaceController::restoreStashedItems()
         m_view->applyItemModeFlags(item);
         // Prefer per-session-slot appearance (value copy for this slot).
         // Fall back to path map only for the sole instance of a path.
-        const WorkspaceItemState *app = nullptr;
-        WorkspaceItemState pathFallback;
-        if (item->sessionId() != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *sit = m_view->itemWorld().getAppearance(item->sessionId())) {
-                app = sit;
-            }
+        WorkspaceItemState app;
+        bool haveApp = false;
+        if (item->sessionId() != kInvalidSessionImageId
+            && m_view->itemWorld().hasAppearance(item->sessionId())) {
+            app = m_view->sessionAppearanceValue(item->sessionId());
+            haveApp = true;
         }
-        if (!app) {
+        if (!haveApp) {
             int samePath = 0;
             for (ImageItem *peer : m_view->liveItems()) {
                 if (peer && peer->path() == item->path()) {
@@ -212,12 +213,12 @@ void WorkspaceController::restoreStashedItems()
             }
             if (samePath == 1) {
                 if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(item->path())) {
-                    pathFallback = *st;
-                    app = &pathFallback;
+                    app = *st;
+                    haveApp = true;
                 }
             }
         }
-        if (!app) {
+        if (!haveApp) {
             continue;
         }
         // content ops require full on-disk host for crop / content
@@ -225,8 +226,8 @@ void WorkspaceController::restoreStashedItems()
         // pixels (peer sync while in Image mode). Reloading only on size
         // mismatch alternated wrong/correct every Workspace↔Image cycle:
         // match → skip reload → double-crop → mismatch → reload → OK → …
-        const bool needsFullSource = app->hasCrop || app->contentQuarterTurns != 0
-            || app->contentHFlip || app->contentVFlip
+        const bool needsFullSource = app.hasCrop || app.contentQuarterTurns != 0
+            || app.contentHFlip || app.contentVFlip
             || item->sourceImage().isNull();
         if (needsFullSource) {
             const QImage full = m_view->hostDisplayPipeline().fullRasterForEdit(item->path());
@@ -239,13 +240,13 @@ void WorkspaceController::restoreStashedItems()
                 // No full host: rematerialize from ImageCache soft/host (stand-in
                 // + async). Do not chrome-only on multi-MP — cannot
                 // bake crop on the GUI and must not claim applied == want.
-                m_view->rematerializeItemContent(item, *app);
+                m_view->rematerializeItemContent(item, app);
             }
         } else {
             // Grade-only (or content already on soft): rematerialize so multi-MP
             // still gets grade via soft stand-in + async. A chrome-only path
             // alone leaves multi-MP grade as chrome-only without a bake.
-            m_view->rematerializeItemContent(item, *app);
+            m_view->rematerializeItemContent(item, app);
         }
     }
     m_view->hostFraming().clearFitFill();

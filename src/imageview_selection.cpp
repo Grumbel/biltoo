@@ -300,14 +300,14 @@ QList<WorkspaceItemState> ImageView::captureSelectedWorkspaceClipboard() const
         s.path = item->path();
         s.sessionId = item->sessionId();
         // Prefer store for content meta not fully on the item (cropRotation, …).
-        if (item->sessionId() != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = m_itemWorld.getAppearance(item->sessionId())) {
-                s.cropRotation = app->cropRotation;
-                s.cropSourceSize = app->cropSourceSize;
-                s.contentQuarterTurns = app->contentQuarterTurns;
-                if (s.colorAdjust.isIdentity() && !app->colorAdjust.isIdentity()) {
-                    s.colorAdjust = app->colorAdjust;
-                }
+        if (item->sessionId() != kInvalidSessionImageId
+            && m_itemWorld.hasAppearance(item->sessionId())) {
+            const WorkspaceItemState app = sessionAppearanceValue(item->sessionId());
+            s.cropRotation = app.cropRotation;
+            s.cropSourceSize = app.cropSourceSize;
+            s.contentQuarterTurns = app.contentQuarterTurns;
+            if (s.colorAdjust.isIdentity() && !app.colorAdjust.isIdentity()) {
+                s.colorAdjust = app.colorAdjust;
             }
         }
         out.append(s);

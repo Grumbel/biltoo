@@ -215,9 +215,7 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
             emit sessionAppearanceChanged(id, item->path(), appearance);
-            const bool hasCrop = m_itemWorld.hasCrop(id)
-                || (m_itemWorld.hasAppearance(id)
-                    && m_itemWorld.appearanceValue(id).hasCrop);
+            const bool hasCrop = m_itemWorld.hasCrop(id);
             emit sessionCropApplied(id, item->path(), appearance, hasCrop);
         }
     }

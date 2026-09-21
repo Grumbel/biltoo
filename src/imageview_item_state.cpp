@@ -176,18 +176,11 @@ WorkspaceItemState ImageView::appearanceCropMapForEdit(ImageItem *item,
                                                        SessionImageId sid) const
 {
     Q_UNUSED(item);
-    WorkspaceItemState cropMap = fallback;
     if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
-        cropMap = m_itemWorld.appearanceValue(sid);
-        // Overlay sparse crop when present (presence API).
-        const ItemComponents::Crop crop = m_itemWorld.crop(sid);
-        if (!crop.isEmpty()) {
-            ItemComponents::applyCropToState(cropMap, crop);
-        }
-        const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid);
-        ItemComponents::applyContentBakeToState(cropMap, bake);
+        // Sparse-prefer store read (sessionAppearanceValue choke point).
+        return sessionAppearanceValue(sid);
     }
-    return cropMap;
+    return fallback;
 }
 
 ImageItem *ImageView::findItemByPath(const QString &path) const

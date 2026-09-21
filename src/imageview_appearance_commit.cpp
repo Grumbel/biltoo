@@ -106,10 +106,10 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
     if (sessionId == kInvalidSessionImageId) {
         return;
     }
-    const WorkspaceItemState *st = m_itemWorld.getAppearance(sessionId);
-    if (!st) {
+    if (!m_itemWorld.hasAppearance(sessionId)) {
         return;
     }
+    const WorkspaceItemState st = sessionAppearanceValue(sessionId);
     const QString path = item->path();
     const ItemComponents::Placement itemPl = item->placement();
     const bool hFlip = itemPl.hFlip;
@@ -118,13 +118,13 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
         if (slot.sessionId != sessionId) {
             continue;
         }
-        slot.hasCrop = st->hasCrop;
-        slot.cropRect = st->cropRect;
+        slot.hasCrop = st.hasCrop;
+        slot.cropRect = st.cropRect;
         slot.hFlip = hFlip;
         slot.vFlip = vFlip;
-        slot.contentQuarterTurns = st->contentQuarterTurns;
-        slot.contentHFlip = st->contentHFlip;
-        slot.contentVFlip = st->contentVFlip;
+        slot.contentQuarterTurns = st.contentQuarterTurns;
+        slot.contentHFlip = st.contentHFlip;
+        slot.contentVFlip = st.contentVFlip;
         slot.orientation = 0.0;
         slot.sessionId = sessionId;
         slot.path = path;
