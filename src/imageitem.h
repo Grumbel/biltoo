@@ -31,6 +31,10 @@
  * device/viewport pixels so anisotropic scale never stretches the controls.
  * Hit-testing compares view-pixel distances to the same logical handle centres.
  */
+namespace GalleryLayout {
+void setItemGalleryCellSize(class ImageItem *item, const QSizeF &sceneSize);
+}
+
 class ImageItem : public QGraphicsPixmapItem
 {
 public:
@@ -140,7 +144,6 @@ public:
      * Gallery Grid-Crop: visible area is a centred cell of this size in *scene*
      * units (after item scale). Empty size clears cropping.
      */
-    void setGalleryCellSize(const QSizeF &sceneSize);
     QSizeF galleryCellSize() const { return m_galleryCellSize; }
 
     /**
@@ -243,6 +246,7 @@ private:
     friend class DisplayPipelineController;
     friend class CropSession;
     friend class GalleryController;
+    friend void GalleryLayout::setItemGalleryCellSize(ImageItem *item, const QSizeF &sceneSize);
     // Content-meta / color install — ImageView syncLive* helpers.
     friend class ImageView;
     // Pixel install — ImageView / DisplayPipelineController only (Stage 2).
@@ -254,6 +258,7 @@ private:
     void invalidateDeviceCache();
     void setScaleHandlesEnabled(bool on);
     void setHoverHandle(Handle h);
+    void setGalleryCellSize(const QSizeF &sceneSize);
     void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
     void setIntrinsicSize(const QSize &size);
     void setSourceImage(const QImage &image);

@@ -14,6 +14,14 @@
 
 namespace GalleryLayout {
 
+void setItemGalleryCellSize(ImageItem *item, const QSizeF &sceneSize)
+{
+    if (!item) {
+        return;
+    }
+    setItemGalleryCellSize(item, sceneSize);
+}
+
 namespace {
 
 QSizeF nativeSize(const ImageItem *item)
@@ -84,7 +92,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         pl.opacity = 1.0;
         item->applyPlacement(pl);
         if (params.mode != Mode::GridCrop) {
-            item->setGalleryCellSize({});
+            setItemGalleryCellSize(item, {});
         }
     }
 
@@ -137,7 +145,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             const int row = i / cols;
             const QSizeF ns = layoutSize(item);
             const qreal scale = coverScale(cell, cell, ns.width(), ns.height());
-            item->setGalleryCellSize(QSizeF(cell, cell));
+            setItemGalleryCellSize(item, QSizeF(cell, cell));
             const qreal cx = margin + col * (cell + gap) + cell / 2.0;
             const qreal cy = margin + row * (cell + gap) + cell / 2.0;
             applyPackPose(item, QPointF(cx, cy), scale);
@@ -451,7 +459,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                 item->applyPlacement(pl);
                 if (!item->galleryCellSize().isEmpty()) {
                     const QSizeF cs = item->galleryCellSize();
-                    item->setGalleryCellSize(QSizeF(cs.width() * s, cs.height() * s));
+                    setItemGalleryCellSize(item, QSizeF(cs.width() * s, cs.height() * s));
                 }
             }
             if (afterEach) {

@@ -1231,6 +1231,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1985: privatize setIntrinsicSize + setDisplaySurfaceId; host setItemIntrinsicSize.
 - biltoo-1986: privatize setPath + setSessionId/Index; host + GalleryController friend.
 - biltoo-1987: privatize setInteractive/GallerySelectable/ScaleHandles/Hover/invalidateDeviceCache.
+- biltoo-1988: privatize setGalleryCellSize; GalleryLayout::setItemGalleryCellSize friend helper.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

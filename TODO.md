@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1988-private-gallery-cell-size.** Privatize setGalleryCellSize via GalleryLayout helper.
+Prior: **1987**.
+
+### Change
+- `ImageItem::setGalleryCellSize` private
+- `GalleryLayout::setItemGalleryCellSize` friend helper for pure pack code
+- ImageView / pipeline keep direct access via friendship
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1988-private-gallery-cell-size-e77da63.bundle HEAD
+```
+Requires tip **1987** (base **e77da63**); includes 1938–1988.
+
+### Next
+- Characterization re-check
+- Remaining public mutators: `applyPlacement`, `setContentEditMarksVisible`
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1987-private-interaction-chrome.** Privatize interaction chrome mutators.
 Prior: **1986**.
 

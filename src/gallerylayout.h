@@ -5,6 +5,7 @@
 #define GALLERYLAYOUT_H
 
 #include <QList>
+#include <QSizeF>
 #include <cmath>
 #include "viewtransform.h"
 #include <functional>
@@ -16,6 +17,9 @@ class ImageItem;
  * Mutates item scale, position, and optional crop cell size.
  */
 namespace GalleryLayout {
+
+/** Writes ImageItem gallery cell size (ImageItem mutator is private). */
+void setItemGalleryCellSize(ImageItem *item, const QSizeF &sceneSize);
 
 /**
  * True when item rotation is nearer ±90°/±270° than axis-aligned — pack
