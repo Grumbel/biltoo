@@ -400,7 +400,9 @@ void ImageView::flushAppliedContentToItemWorld()
         m_itemWorld.setContentBake(sid, ItemComponents::contentBakeFromState(s));
         m_itemWorld.setCrop(sid, ItemComponents::cropFromState(s));
         // Intentionally no setColor — applied.colorAdjust is not durable authority.
-        m_itemWorld.clearAppliedContentXform(sid);
+        // Drop live applied on the tile so stash/restore cannot treat mid-edit
+        // fingerprint as parallel authority (ECS_GUI_BYPASSES #4 / #6).
+        clearLiveContentMeta(item);
     }
     m_itemWorld.clearAllAppliedContentXforms();
 }

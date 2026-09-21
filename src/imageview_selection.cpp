@@ -265,6 +265,11 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
         // Freeze policy: store + live when durable and not mid-edit.
         WorkspaceItemState content = freezeItemAppearance(src);
         content.path = src->path();
+        // freeze may carry live color lag; durable Color is store authority.
+        if (src->sessionId() != kInvalidSessionImageId
+            && m_itemWorld.hasColor(src->sessionId())) {
+            content.colorAdjust = m_itemWorld.color(src->sessionId()).grade;
+        }
 
         QSize intrinsic = src->imageSize();
         if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {

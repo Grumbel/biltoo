@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2203-flush-clears-live-applied.** After flushApplied → contentBake,
+live tiles still kept applied fingerprints into mode stash. clearLiveContentMeta
+after each flush so stash is presentation-only (ItemWorld is content authority).
+
+Also: duplicateSelected freeze no longer promotes live color lag over durable Color.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2203-flush-clears-live-applied-e77da63.bundle HEAD
+```
+
+Next: **2204**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2202-no-displayready-bake-without-host.** Image soft underlay still
 attached displayReady pixels when ItemWorld had content ops but host-raw was
 missing — unverified bake vs want fingerprint.
