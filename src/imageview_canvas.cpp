@@ -262,7 +262,10 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             if (newlyBoundId) {
                 existing->setSessionId(sid);
             }
-            existing->setSessionIndex(i);
+            // sessionIndex is session-list order, not pack row (Stage 2 residual).
+            if (refreshSessionIndexCache(existing) < 0) {
+                existing->setSessionIndex(i);
+            }
             if (newlyBoundId && existing->hasDecodedPixels()
                 && sid != kInvalidSessionImageId) {
                 if (!m_itemWorld.hasDurableAppearance(sid)) {
@@ -313,7 +316,10 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 if (sid != kInvalidSessionImageId) {
                     ph->setSessionId(sid);
                 }
-                ph->setSessionIndex(i);
+                // List-order cache from document when bound; pack i only unbound hint.
+                if (refreshSessionIndexCache(ph) < 0) {
+                    ph->setSessionIndex(i);
+                }
                 if (!hint.isNull()) {
                     m_displayPipeline.installDisplayPixels(ph, hint,
                                          SessionAppearance::PixelKind::SoftPreview,

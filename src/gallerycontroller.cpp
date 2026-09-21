@@ -1302,7 +1302,11 @@ void GalleryController::ensurePlaceholders()
                 && existing->sessionId() == kInvalidSessionImageId) {
                 existing->setSessionId(sid);
             }
-            existing->setSessionIndex(i);
+            // sessionIndex is session-list order, not pack row (IDENTITY / Stage 2).
+            // Pack multiplicity shares one document index; unbound keeps pack hint.
+            if (m_view->refreshSessionIndexCache(existing) < 0) {
+                existing->setSessionIndex(i);
+            }
             existing->setVisible(true);
             // Refresh intrinsic from definitive size map.
             const QSize sz = m_view->layoutSizeForPath(path, ImageCache::get(path));
@@ -1329,7 +1333,10 @@ void GalleryController::ensurePlaceholders()
             if (sid != kInvalidSessionImageId) {
                 ph->setSessionId(sid);
             }
-            ph->setSessionIndex(i);
+            // List-order cache from document when bound; pack i only unbound hint.
+            if (m_view->refreshSessionIndexCache(ph) < 0) {
+                ph->setSessionIndex(i);
+            }
             ph->setVisible(true);
             if (!hint.isNull()) {
                 m_view->hostDisplayPipeline().installDisplayPixels(ph, hint,

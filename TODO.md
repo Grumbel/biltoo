@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2079-sessionindex-not-pack-order.** Stage 2 residual: sessionIndex is list order, not pack row.
+Prior: **2078**.
+
+### Change
+- Gallery ensurePlaceholders + setWorkspacePaths placeholders: after setSessionId,
+  stamp list-order cache via `refreshSessionIndexCache` (document)
+- Pack loop index `i` only as unbound fallback — pack multiplicity must not
+  overwrite session list index with pack row
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2079-sessionindex-not-pack-order-e77da63.bundle HEAD
+```
+Requires tip **2078** (base **e77da63**); includes 1938–2079.
+
+### Next
+- Stage 2: ContentXform runtime table or further sessionIndex residual
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2078-sessionindex-cache-refresh-helper.** Stage 2 residual: refreshSessionIndexCache after setSessionId.
 Prior: **2077**.
 
