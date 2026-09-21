@@ -2,6 +2,36 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2149-image-enter-classic-path.** Keep classicPath on Image enter (Workspace double-click).
+Prior: **2148**.
+
+### Bug
+Workspace double-click → Image showed an empty view; Gallery → Image worked.
+`ImageController::enter` called `takeClassicPath()` which **cleared** the path
+before async decode finished. `completeLoadReplace` then rejected the sample
+(`path != classicPath()`). Gallery often recovered via a later `loadImage` that
+re-sets classicPath; Workspace double-click could leave a blank canvas.
+
+### Fix
+Keep `classicPath` through enter; only `scheduleReplaceLoad` when non-empty.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2149-image-enter-classic-path-e77da63.bundle HEAD
+```
+Requires tip **2148** (base **e77da63**); includes 1938–2149.
+
+### Next (runtime QA)
+- Workspace double-click tile → Image shows the image
+- Gallery tile open still works
+- Workspace leave/re-enter still keeps tiles
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2148-workspace-loadrestore-deliver.** Workspace LoadRestore actually creates tiles.
 Prior: **2147**.
 

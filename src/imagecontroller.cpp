@@ -36,12 +36,18 @@ void ImageController::enter()
     // Prefer explicit classic path (MainWindow pins the open target before
     // leaveForImageMode). Do not pick live Workspace/Gallery items — that
     // re-decodes a random tile before setCurrentIndex runs.
-    const QString path = takeClassicPath();
+    //
+    // Keep classicPath set (do not take/clear). completeLoadReplace rejects any
+    // sample whose path != classicPath; clearing here left Workspace→Image with
+    // an empty canvas (placeholder maybe created, then HQ/soft install dropped).
+    const QString path = classicPath();
     // Clear live canvas only — do not discard stashes.
     m_view->clearLiveCanvas();
     m_view->hostDisplayPipeline().loadGate().clearPending();
     m_view->clearSceneKeepingStashes();
-    m_view->scheduleReplaceLoad(path);
+    if (!path.isEmpty()) {
+        m_view->scheduleReplaceLoad(path);
+    }
     emit m_view->statusChanged();
 }
 
