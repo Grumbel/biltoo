@@ -34,6 +34,11 @@ WorkspaceController::WorkspaceController(ImageView *view)
 
 void WorkspaceController::snapshot()
 {
+    // Re-entrant leave (Workspace onLeave then Gallery enter while mode is still
+    // Workspace) must not wipe a durable snapshot already taken from live tiles.
+    if (m_view->liveItems().isEmpty()) {
+        return;
+    }
     m_savedItems.clear();
     for (ImageItem *item : m_view->liveItems()) {
         const WorkspaceItemState s = m_view->freezeItemAppearance(item);
@@ -154,6 +159,11 @@ void WorkspaceController::clearDurableSnapshot()
 
 void WorkspaceController::stashItems()
 {
+    // Live canvas already empty: keep any existing stash (Workspace onLeave
+    // already moved tiles off-scene; Gallery enter must not discard them).
+    if (m_view->liveItems().isEmpty()) {
+        return;
+    }
     // Replace any previous workspace stash (e.g. nested mode switches).
     discardStash();
     // Zoom lives in the view matrix; pan lives in scrollbars — capture both.
@@ -161,9 +171,6 @@ void WorkspaceController::stashItems()
     m_stashedViewTransform = m_view->transform();
     m_stashedViewCenter = m_view->mapToScene(m_view->viewport()->rect().center());
     m_hasStashedView = true;
-    if (m_view->liveItems().isEmpty()) {
-        return;
-    }
     m_stashedItems = m_view->liveItems();
     m_view->clearInteractionState();
     for (ImageItem *item : m_stashedItems) {

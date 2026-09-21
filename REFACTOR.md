@@ -1568,6 +1568,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2144:** sessionsort test links archivepath (PagePath→ArchivePath).
 
+**biltoo-2145:** Workspace re-entrant stash/snapshot no-op; filmstrip XDG orient on bound rows.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

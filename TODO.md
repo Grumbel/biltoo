@@ -2,6 +2,38 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2145-workspace-stash-filmstrip-orient.** Workspace re-enter stash fix; filmstrip XDG orient on startup.
+Prior: **2144**.
+
+### Bugs fixed
+1. **Workspace leave/re-enter emptied the canvas** — `WorkspaceController::snapshot` /
+   `stashItems` ran twice on Workspace→Gallery (`onLeave` then `GalleryController::enter`
+   while mode was still Workspace). The second pass saw an empty live list, cleared
+   `m_savedItems`, and `discardStash()` destroyed the real tiles. Both now no-op when
+   live items are already empty so the durable snapshot + stash survive.
+2. **Filmstrip ignored durable orient on cold open** — `makeThumbnail` skipped path XDG
+   whenever any SessionImageId was present, waiting for `sessionAppearanceChanged`.
+   Bound rows now apply **orient/grade only** from XDG until an id override arrives
+   (still never path crop on bound rows).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2145-workspace-stash-filmstrip-orient-e77da63.bundle HEAD
+```
+Requires tip **2144** (base **e77da63**); includes 1938–2145.
+
+### Next
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Runtime QA: filmstrip shows content-rotated images from XDG on cold open
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2144-sessionsort-test-link.** Link archivepath into sessionsort test.
 Prior: **2143**.
 

@@ -1295,10 +1295,9 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
     if (image.isNull()) {
         return {};
     }
-    // Path-keyed XDG appearance is only a hint for *unbound* rows. When the
-    // strip has SessionImageIds; appearance is ItemWorld sparse tables
-    // and arrives via id overrides — never bake path state onto a bound row
-    // (last crop on a path would leak to every duplicate / overwrite id crop).
+    // XDG path appearance until an id override arrives via sessionAppearanceChanged.
+    // Bound rows: orient / grade only — never path crop (would leak across
+    // duplicates that share a file). Unbound rows: full stored appearance.
     bool anySessionId = false;
     for (SessionImageId id : m_sessionIds) {
         if (id != kInvalidSessionImageId) {
@@ -1306,29 +1305,36 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
             break;
         }
     }
-    if (!anySessionId) {
-        ThumtooCache::StoredContentAppearance stored;
-        if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
-            WorkspaceItemState st;
-            st.contentHFlip = stored.contentHFlip;
-            st.contentVFlip = stored.contentVFlip;
-            st.contentQuarterTurns = stored.contentQuarterTurns;
+    ThumtooCache::StoredContentAppearance stored;
+    if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
+        WorkspaceItemState st;
+        st.contentHFlip = stored.contentHFlip;
+        st.contentVFlip = stored.contentVFlip;
+        st.contentQuarterTurns = stored.contentQuarterTurns;
+        if (!anySessionId) {
             st.hasCrop = stored.hasCrop;
             st.cropRect = stored.cropRect;
             st.cropSourceSize = stored.cropSourceSize;
             st.cropRotation = stored.cropRotation;
-            if (stored.hasGrade) {
-                st.colorAdjust.brightness = stored.gradeBrightness;
-                st.colorAdjust.contrast =
-                    stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
-                st.colorAdjust.saturation =
-                    stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
-                st.colorAdjust.hue = stored.gradeHue;
-                st.colorAdjust.gamma = stored.gradeGamma <= 0
-                    ? 1.0
-                    : (stored.gradeGamma / 100.0);
-                st.colorAdjust.invert = stored.gradeInvert;
-            }
+        }
+        if (stored.hasGrade) {
+            st.colorAdjust.brightness = stored.gradeBrightness;
+            st.colorAdjust.contrast =
+                stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
+            st.colorAdjust.saturation =
+                stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
+            st.colorAdjust.hue = stored.gradeHue;
+            st.colorAdjust.gamma = stored.gradeGamma <= 0
+                ? 1.0
+                : (stored.gradeGamma / 100.0);
+            st.colorAdjust.invert = stored.gradeInvert;
+        }
+        const bool orientOnly = anySessionId
+            && !st.hasCrop
+            && (st.contentHFlip || st.contentVFlip || st.contentQuarterTurns != 0
+                || !st.colorAdjust.isIdentity());
+        const bool fullUnbound = !anySessionId && !stored.isIdentity();
+        if (orientOnly || fullUnbound) {
             image = SessionAppearance::applyContentToImage(
                 image, st, SessionAppearance::PixelKind::SoftPreview);
         }
