@@ -1560,6 +1560,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2140:** SessionExpand pure path expansion (PDF/EPUB/archive/dir).
 
+**biltoo-2141:** mainwindow_sort + mainwindow_nav TUs; session core ~1137 lines.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

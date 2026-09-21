@@ -1,0 +1,432 @@
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "mainwindow_includes.h"
+#include "slideshowclocks.h"
+#include "viewtransform.h"
+#include <QtMath>
+#include <algorithm>
+#include "thumtoocache.h"
+#include "sessionopen.h"
+#include "sessionsort.h"
+#include "sessionexpand.h"
+#include "ttfp_trace.h"
+#include "projectfile.h"
+#include "archivepath.h"
+#include "pagepath.h"
+#include "epublayoutdialog.h"
+#include "workspacebackgrounddialog.h"
+#include "imageitem.h"
+#include "imagecache.h"
+#include <QFileInfo>
+#include <QUrl>
+#include <QPointer>
+#include <QThreadPool>
+#include <QElapsedTimer>
+#include <QTimer>
+#include <QHash>
+#include <QSet>
+#include <QDebug>
+
+#include <QClipboard>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QVector>
+
+#include <functional>
+
+// Session list sort chrome (split from mainwindow_session).
+
+void MainWindow::sortFileList()
+{
+    if (m_session.paths().size() <= 1) {
+        return;
+    }
+    if (sortModeNeedsImageProbe()) {
+        // MTime/FileSize/size probes must not run on the GUI thread.
+        sortFileListWithProbesInBackground();
+        return;
+    }
+    sortFileListSync();
+}
+
+bool MainWindow::sortModeNeedsImageProbe() const
+{
+    // Any sort that needs per-path disk or decode work must not run on the GUI
+    // (GUI_THREAD_AUDIT G1). Name-only sort stays sync.
+    return SessionSort::modeNeedsImageProbe(m_sortMode);
+}
+
+bool MainWindow::sessionLooksLikePagedDocument(const QStringList &paths)
+{
+    return SessionSort::looksLikePagedDocument(paths);
+}
+
+LayoutMode MainWindow::initialGalleryLayoutForOpen() const
+{
+    if (sessionLooksLikePagedDocument(m_session.paths())) {
+        return LayoutMode::Flow;
+    }
+    return m_galleryReturnLayout;
+}
+
+
+void MainWindow::sortFileListSync()
+{
+    if (m_session.paths().size() <= 1) {
+        return;
+    }
+    m_session.ensureIdsAligned();
+
+    const QStringList paths = m_session.paths();
+    SortMode mode = m_sortMode;
+    QHash<QString, qint64> mtimes;
+    QHash<QString, qint64> fsizes;
+
+    if (mode == SortMode::MTime || mode == SortMode::FileSize) {
+        // Prefer background path (sortModeNeedsImageProbe). If still here,
+        // snapshot metadata once — never QFileInfo inside a comparator loop.
+        for (const QString &p : paths) {
+            const QFileInfo fi(p);
+            mtimes.insert(p, fi.lastModified().toMSecsSinceEpoch());
+            fsizes.insert(p, fi.size());
+        }
+    } else if (mode == SortMode::Width || mode == SortMode::Height
+               || mode == SortMode::PixelCount || mode == SortMode::AspectRatio) {
+        // Probe modes must use sortFileListWithProbesInBackground; basename
+        // fallback if we are still on the sync path.
+        mode = SortMode::Name;
+    }
+
+    const QVector<int> order = SessionSort::orderIndices(mode, paths, {}, mtimes, fsizes);
+    QStringList newFiles;
+    QVector<SessionImageId> newIds;
+    newFiles.reserve(order.size());
+    newIds.reserve(order.size());
+    for (int i : order) {
+        newFiles.append(m_session.paths().at(i));
+        newIds.append(m_session.ids().at(i));
+    }
+    m_session.replaceAll(newFiles, newIds);
+}
+
+void MainWindow::applySortedSessionOrder(const QStringList &newFiles,
+                                         const QVector<SessionImageId> &newIds,
+                                         const std::function<void()> &onDone)
+{
+    m_session.replaceAll(newFiles, newIds);
+    setExpandProgressBusy(false);
+    if (statusBar()) {
+        statusBar()->clearMessage();
+    }
+    if (onDone) {
+        onDone();
+    }
+}
+
+QVector<int> MainWindow::computeSortOrderIndices(
+    SortMode mode,
+    const QStringList &paths,
+    const QHash<QString, QSize> &sizes,
+    const QHash<QString, qint64> &mtimes,
+    const QHash<QString, qint64> &fsizes)
+{
+    return SessionSort::orderIndices(mode, paths, sizes, mtimes, fsizes);
+}
+
+void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> &onDone)
+{
+    if (m_session.paths().size() <= 1) {
+        if (onDone) {
+            onDone();
+        }
+        return;
+    }
+    const quint64 gen = ++m_sortGeneration;
+    const SortMode mode = m_sortMode;
+    const QStringList paths = m_session.paths();
+    const QVector<SessionImageId> ids = m_session.ids();
+
+    const bool diskMeta = (mode == SortMode::MTime || mode == SortMode::FileSize);
+    // Progress HUD is started only if the worker finds cache misses (warm index
+    // completes with no "Reading file info…" flash).
+
+    const QPointer<MainWindow> guard(this);
+    QThreadPool::globalInstance()->start([guard, gen, mode, paths, ids, onDone, diskMeta]() {
+        QHash<QString, QSize> sizes;
+        QHash<QString, qint64> mtimes;
+        QHash<QString, qint64> fsizes;
+        if (diskMeta) {
+            mtimes.reserve(paths.size());
+            fsizes.reserve(paths.size());
+        } else {
+            sizes.reserve(paths.size());
+        }
+
+        // Pass 1 — Store / cache only (no source I/O, no revalidate).
+        QVector<int> missIdx;
+        missIdx.reserve(paths.size());
+        for (int i = 0; i < paths.size(); ++i) {
+            MainWindow *const window = guard.data();
+            if (!window || gen != window->m_sortGeneration) {
+                return;
+            }
+            const QString &path = paths.at(i);
+            if (diskMeta) {
+                qint64 stSize = -1;
+                qint64 stMtimeNs = -1;
+                if (ThumtooCache::cachedFileStat(path, &stSize, &stMtimeNs)
+                    && (stSize >= 0 || stMtimeNs >= 0)) {
+                    mtimes.insert(path, stMtimeNs >= 0 ? stMtimeNs / 1000000 : 0);
+                    fsizes.insert(path, stSize >= 0 ? stSize : 0);
+                } else {
+                    missIdx.append(i);
+                }
+            } else {
+                const QSize sz = ImageLoader::probeSize(path);
+                if (sz.isValid()) {
+                    sizes.insert(path, sz);
+                } else {
+                    missIdx.append(i);
+                }
+            }
+        }
+
+        if (missIdx.isEmpty()) {
+            const QVector<int> order = MainWindow::computeSortOrderIndices(
+                mode, paths, sizes, mtimes, fsizes);
+            QStringList newFiles;
+            QVector<SessionImageId> newIds;
+            newFiles.reserve(order.size());
+            newIds.reserve(order.size());
+            for (int i : order) {
+                newFiles.append(paths.at(i));
+                newIds.append(ids.at(i));
+            }
+            QMetaObject::invokeMethod(guard.data(), [guard, gen, newFiles, newIds, onDone]() {
+                MainWindow *const window = guard.data();
+                if (!window || gen != window->m_sortGeneration) {
+                    return;
+                }
+                window->setExpandProgressBusy(false);
+                window->applySortedSessionOrder(newFiles, newIds, onDone);
+            }, Qt::QueuedConnection);
+            return;
+        }
+
+        QElapsedTimer clock;
+        clock.start();
+        qint64 lastUi = -1000;
+        const int total = paths.size();
+        const int cached = total - missIdx.size();
+        {
+            const bool meta = diskMeta;
+            QMetaObject::invokeMethod(guard.data(), [guard, gen, total, meta, cached]() {
+                MainWindow *const host = guard.data();
+                if (!host || gen != host->m_sortGeneration) {
+                    return;
+                }
+                host->setExpandProgress(
+                    cached, total,
+                    meta ? MainWindow::tr("Reading file info… %1/%2").arg(cached).arg(total)
+                         : MainWindow::tr("Measuring images… %1/%2").arg(cached).arg(total));
+            }, Qt::QueuedConnection);
+        }
+
+        for (int mi = 0; mi < missIdx.size(); ++mi) {
+            MainWindow *const window = guard.data();
+            if (!window || gen != window->m_sortGeneration) {
+                return;
+            }
+            const int i = missIdx.at(mi);
+            const QString &path = paths.at(i);
+            if (diskMeta) {
+                const QFileInfo fi(path);
+                mtimes.insert(path, fi.lastModified().toMSecsSinceEpoch());
+                fsizes.insert(path, fi.size());
+            } else if (!sizes.contains(path)) {
+                sizes.insert(path, ImageLoader::probeSize(path));
+            }
+            const qint64 now = clock.elapsed();
+            if (now - lastUi >= 250 || mi + 1 == missIdx.size()) {
+                lastUi = now;
+                const int done = cached + mi + 1;
+                const bool meta = diskMeta;
+                QMetaObject::invokeMethod(guard.data(), [guard, gen, done, total, meta]() {
+                    MainWindow *const host = guard.data();
+                    if (!host || gen != host->m_sortGeneration) {
+                        return;
+                    }
+                    host->setExpandProgress(
+                        done, total,
+                        meta ? MainWindow::tr("Reading file info… %1/%2").arg(done).arg(total)
+                             : MainWindow::tr("Measuring images… %1/%2").arg(done).arg(total));
+                }, Qt::QueuedConnection);
+            }
+        }
+
+        const QVector<int> order = MainWindow::computeSortOrderIndices(
+            mode, paths, sizes, mtimes, fsizes);
+
+        QStringList newFiles;
+        QVector<SessionImageId> newIds;
+        newFiles.reserve(order.size());
+        newIds.reserve(order.size());
+        for (int i : order) {
+            newFiles.append(paths.at(i));
+            newIds.append(ids.at(i));
+        }
+
+        QMetaObject::invokeMethod(guard.data(), [guard, gen, newFiles, newIds, onDone]() {
+            MainWindow *const window = guard.data();
+            if (!window || gen != window->m_sortGeneration) {
+                return;
+            }
+            window->applySortedSessionOrder(newFiles, newIds, onDone);
+        }, Qt::QueuedConnection);
+    });
+}
+
+void MainWindow::setSortMode(SortMode mode)
+{
+    m_sortMode = mode;
+    if (m_sortNameAct) {
+        m_sortNameAct->setChecked(mode == SortMode::Name);
+    }
+    if (m_sortPathAct) {
+        m_sortPathAct->setChecked(mode == SortMode::Path);
+    }
+    if (m_sortAspectAct) {
+        m_sortAspectAct->setChecked(mode == SortMode::AspectRatio);
+    }
+    if (m_sortShuffleAct) {
+        m_sortShuffleAct->setChecked(mode == SortMode::Shuffle);
+    }
+    if (m_sortMTimeAct) {
+        m_sortMTimeAct->setChecked(mode == SortMode::MTime);
+    }
+    if (m_sortFileSizeAct) {
+        m_sortFileSizeAct->setChecked(mode == SortMode::FileSize);
+    }
+    if (m_sortWidthAct) {
+        m_sortWidthAct->setChecked(mode == SortMode::Width);
+    }
+    if (m_sortHeightAct) {
+        m_sortHeightAct->setChecked(mode == SortMode::Height);
+    }
+    if (m_sortPixelCountAct) {
+        m_sortPixelCountAct->setChecked(mode == SortMode::PixelCount);
+    }
+
+    if (m_session.paths().isEmpty()) {
+        return;
+    }
+
+    const SessionImageId currentId = currentSessionId();
+    const QString current = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                                ? m_session.paths().at(m_currentIndex)
+                                : QString();
+
+    auto applyUi = [this, currentId, current]() {
+        m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
+        if (isWorkspaceMode()) {
+            m_thumbnailBar->setMultiSelectEnabled(true);
+            syncThumbnailWorkspaceSelection();
+        }
+
+        // Prefer SessionImageId so duplicate paths keep the focused row after sort.
+        int newIndex = 0;
+        if (currentId != kInvalidSessionImageId) {
+            newIndex = indexOfSessionId(currentId);
+        }
+        if (newIndex < 0 && !current.isEmpty()) {
+            newIndex = indexOfPathPreferId(current);
+        }
+        if (newIndex < 0) {
+            newIndex = 0;
+        }
+        m_currentIndex = -1; // force reload of Image mode cursor
+        setCurrentIndex(newIndex);
+
+        if (isGalleryMode()) {
+            const LayoutMode layout = m_imageView
+                ? m_imageView->hostLayout().currentMode()
+                : LayoutMode::Masonry;
+            populateGalleryCanvas();
+            if (m_imageView) {
+                m_imageView->enterGallery(layout);
+                if (currentId != kInvalidSessionImageId
+                    && m_imageView->findItemBySessionId(currentId)) {
+                    m_imageView->focusSessionId(currentId);
+                } else if (!current.isEmpty()) {
+                    const SessionImageId sid = sessionIdAt(m_currentIndex);
+                    if (sid != kInvalidSessionImageId
+                        && m_imageView->findItemBySessionId(sid)) {
+                        m_imageView->focusSessionId(sid);
+                    } else {
+                        m_imageView->focusSessionPath(current);
+                    }
+                }
+            }
+        } else if (isWorkspaceMode() && m_imageView) {
+            m_imageView->reorderItemsByPaths(m_session.paths(), m_session.ids());
+        }
+
+        applyThumbnailVisibility();
+    };
+
+    if (sortModeNeedsImageProbe()) {
+        sortFileListWithProbesInBackground(applyUi);
+    } else {
+        sortFileListSync();
+        applyUi();
+    }
+}
+
+void MainWindow::sortByName()
+{
+    setSortMode(SortMode::Name);
+}
+
+void MainWindow::sortByPath()
+{
+    setSortMode(SortMode::Path);
+}
+
+void MainWindow::sortByMTime()
+{
+    setSortMode(SortMode::MTime);
+}
+
+void MainWindow::sortByFileSize()
+{
+    setSortMode(SortMode::FileSize);
+}
+
+void MainWindow::sortByWidth()
+{
+    setSortMode(SortMode::Width);
+}
+
+void MainWindow::sortByHeight()
+{
+    setSortMode(SortMode::Height);
+}
+
+void MainWindow::sortByPixelCount()
+{
+    setSortMode(SortMode::PixelCount);
+}
+
+void MainWindow::sortByAspectRatio()
+{
+    setSortMode(SortMode::AspectRatio);
+}
+
+void MainWindow::sortByShuffle()
+{
+    // Always re-apply: Shuffle is intentional non-deterministic.
+    setSortMode(SortMode::Shuffle);
+}
+

@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2141-mainwindow-sort-nav-split.** Sort and navigation TUs split from mainwindow_session.
+Prior: **2140**.
+
+### Change
+- `mainwindow_sort.cpp` — sortFileList / sortBy* / probe sort (~432 lines)
+- `mainwindow_nav.cpp` — nav actions, location bar, EPUB/PDF helpers, open/go (~615 lines)
+- `mainwindow_session.cpp` — expand, load/append, cursor, remove (~1137 lines, was ~2104)
+- Mechanical split; CMake updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2141-mainwindow-sort-nav-split-e77da63.bundle HEAD
+```
+Requires tip **2140** (base **e77da63**); includes 1938–2141.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2140-sessionexpand-pure.** SessionExpand path expansion extracted from MainWindow.
 Prior: **2139**.
 

@@ -100,6 +100,8 @@ set(BILTOO_LIB_SOURCES
   src/mainwindow_ui.cpp
   src/mainwindow_gallery.cpp
   src/mainwindow_session.cpp
+  src/mainwindow_sort.cpp
+  src/mainwindow_nav.cpp
   src/mainwindow_slideshow.cpp
   src/mainwindow_clipboard.cpp
   src/mainwindow_project.cpp
