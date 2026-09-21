@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2122-sort-append-firstIdForPath.** SESSION residual: sort/append/remove cursor via firstIdForPath.
+Prior: **2121**.
+
+### Change
+- Sort UI, finishExpandedAppendChrome, and post-remove cursor restore: after
+  current SessionImageId, try `firstIdForPath` before `paths().indexOf`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2122-sort-append-firstIdForPath-e77da63.bundle HEAD
+```
+Requires tip **2121** (base **e77da63**); includes 1938–2122.
+
+### Next
+- SESSION residual: pure path index only for fully unbound session rows
+- Optional: PreferCache / thumtoo ladder characterization
+- Runtime QA: duplicate × membership × flip × project round-trip
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2121-path-fallback-firstIdForPath.** SESSION residual: path focus/open prefer firstIdForPath.
 Prior: **2120**.
 

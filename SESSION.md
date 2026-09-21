@@ -128,14 +128,15 @@ unbound and edits will not propagate correctly in Workspace).
    Workspace filmstrip path restore after append uses occurrence mapping
    (biltoo-2120) when ids are missing.
    Path focus/open without a live preferred tile uses `firstIdForPath` before
-   `paths().indexOf` (biltoo-2121).
+   `paths().indexOf` (biltoo-2121). Sort/append/remove cursor restore uses the
+   same firstIdForPath step (biltoo-2122).
    Sort / append / remove / slideshow start prefer `SessionImageId` over
    `paths().indexOf` (biltoo-2105). Workspace filmstrip selection restore after
    append prefers live `itemSessionIds()` (biltoo-2106). Empty-workspace
    LoadReplace seed and bulk selection→canvas bind ids (biltoo-2107/2108).
    Image-mode drop focus prefers filmstrip `sessionIds`, else
-   `lastIndexOfPath` / `firstIdForPath` (biltoo-2111). Residual: pure path
-   index only when the session row itself is unbound (no id at all).
+   `lastIndexOfPath` / `firstIdForPath` (biltoo-2111). Residual: pure path index only when the session row itself is unbound
+   (no id at all).
 
 3. **Path map (`PathItemStateBook`) — bound writes are a no-op (biltoo-2110)**  
    `ItemWorld::setPathState` ignores states that carry a bound SessionImageId

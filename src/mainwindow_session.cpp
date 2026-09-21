@@ -1138,7 +1138,13 @@ void MainWindow::setSortMode(SortMode mode)
             newIndex = indexOfSessionId(currentId);
         }
         if (newIndex < 0 && !current.isEmpty()) {
-            newIndex = m_session.paths().indexOf(current);
+            const SessionImageId sid = m_session.firstIdForPath(current);
+            if (sid != kInvalidSessionImageId) {
+                newIndex = indexOfSessionId(sid);
+            }
+            if (newIndex < 0) {
+                newIndex = m_session.paths().indexOf(current);
+            }
         }
         if (newIndex < 0) {
             newIndex = 0;
@@ -1514,7 +1520,13 @@ void MainWindow::finishExpandedAppendChrome(SessionImageId currentId, const QStr
         newIndex = indexOfSessionId(currentId);
     }
     if (newIndex < 0 && !currentPath.isEmpty()) {
-        newIndex = m_session.paths().indexOf(currentPath);
+        const SessionImageId sid = m_session.firstIdForPath(currentPath);
+        if (sid != kInvalidSessionImageId) {
+            newIndex = indexOfSessionId(sid);
+        }
+        if (newIndex < 0) {
+            newIndex = m_session.paths().indexOf(currentPath);
+        }
     }
     if (newIndex < 0) {
         newIndex = 0;
@@ -1941,7 +1953,13 @@ void MainWindow::selectIndexAfterSessionRemove(SessionImageId currentId, const Q
         newIndex = indexOfSessionId(currentId);
     }
     if (newIndex < 0 && !currentPath.isEmpty()) {
-        newIndex = m_session.paths().indexOf(currentPath);
+        const SessionImageId sid = m_session.firstIdForPath(currentPath);
+        if (sid != kInvalidSessionImageId) {
+            newIndex = indexOfSessionId(sid);
+        }
+        if (newIndex < 0) {
+            newIndex = m_session.paths().indexOf(currentPath);
+        }
     }
     if (newIndex < 0) {
         newIndex = ViewTransform::clampIndex(sorted.first(), m_session.paths().size());
