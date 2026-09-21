@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2051-gallerylayout-rows-test-dual.** Fix GalleryLayoutTest MasonryRows / MasonryRowsFill expectations.
+Prior: **2050**.
+
+### Change
+- `packPoses_masonryAndMasonryRows` / `packPoses_masonryFillAndRowsFill`: use
+  width-varying equal-height sizes for row duals (transpose of column cases)
+- Axis-fill on row height changes width when heights differ; prior expectations
+  assumed column dual placement/scales with non-transpose sizes
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2051-gallerylayout-rows-test-dual-e77da63.bundle HEAD
+```
+Requires tip **2050** (base **e77da63**); includes 1938–2051.
+
+### Next
+- **Stage 4b** only with explicit product decision (format version + dual-write drop)
+- Phase 6 Tier 4: decode/framing when prioritized
+- Phase 7 line otherwise at a natural pause
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2050-session-appearance-lifecycle.** Docs: session appearance lifecycle table (Stage 2 residual complete).
 Prior: **2049**.
 
