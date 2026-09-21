@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2129-session-checklist-handoff.** SESSION checklist + bundle index for residual series.
+Prior: **2128**.
+
+### Change
+- SESSION.md §6: bundle index rows for 2104–2128 residual identity series
+- §7 checklist: runtime QA primary; identity code path closed notes
+- Residual 12: 0.1.0 identity acceptance already checked off
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2129-session-checklist-handoff-e77da63.bundle HEAD
+```
+Requires tip **2128** (base **e77da63**); includes 1938–2129.
+
+### Next
+- Runtime QA (see SESSION.md §7)
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2128-audit-m16-m27-sessionid.** AUDIT M16/M27 marked fixed via SessionImageId.
 Prior: **2127**.
 

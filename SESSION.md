@@ -171,8 +171,8 @@ Optional follow-ups: runtime QA of ladder upgrade under Gallery scroll + Image f
     “what to do next”.
 11. **AUDIT.md M16 / M27** marked fixed via SessionImageId (biltoo-2128);
     runtime smoke still welcome (duplicate → leave Workspace → return).
-12. **TODO.md 0.1.0** still lists broad stabilize items — fold identity
-    acceptance tests into that list.
+12. **TODO.md 0.1.0** identity acceptance checkboxes already marked done;
+    remaining 0.1.0 items are stabilize/smoke, not SessionImageId API gaps.
 
 ---
 
@@ -188,21 +188,26 @@ Optional follow-ups: runtime QA of ladder upgrade under Gallery scroll + Image f
 | 020–022 | Compiler warnings + fixes |
 | 023 | Nix `libsysprof-capture` |
 | 024 | **Strict id-only peer sync**; drop-duplicate binds id |
+| 2104–2109 | Filmstrip id signals; path open prefer id; placement bind; drop path-only APIs; duplicate bind on create |
+| 2110–2115 | Path map bound no-op; drop focus id; Gallery slot focus/remove; reorder by id; open helper; focus live index |
+| 2116–2123 | Pending collision-only; Gallery reveal id; layout-select index; primaryItem id; filmstrip occurrence; firstIdForPath / `indexOfPathPreferId` |
+| 2124–2128 | PreferCache notes + SIZE host rules; IDENTITY §1; -Wformat; AUDIT M16/M27 |
 
 ---
 
 ## 7. Suggested next session checklist
 
-1. Runtime: duplicate → flip one → drop-duplicate → flip one → Image crop each.
-2. Grep for remaining **identity hazards**:
-   - `m_itemStates.constFind` / `findItemByPath` used for appearance or open
-   - `indexOf(path)` for navigation into Image mode
-   - `clearWorkspace()` on Image-mode load paths (should be `clearLiveCanvas`)
-3. Gallery: open tile when path is duplicated — pass session id (double-click
-   already prefers `sessionImageOpenRequested` / slot index).
-4. Session remove undo by id — done (see §5).
-5. Optional: stop writing path appearance entirely once readers are gone.
-6. Mark AUDIT M16/M27 resolved after verification.
+1. **Runtime QA (primary remaining work):**
+   - Duplicate → flip one → drop-duplicate → flip one → Image crop each
+   - Leave Workspace → return (id-keyed snapshot restore)
+   - Gallery layout switch with multi-select + duplicate paths
+   - PreferCache ladder under Gallery scroll + Image focus
+2. **Identity hazards (code path largely closed 2104–2128):**
+   - `findItemByPath` / path map: unbound / legacy only — do not use for appearance
+   - Navigation/open: prefer SessionImageId / `indexOfPathPreferId` (not bare `indexOf`)
+   - Image LoadReplace uses `clearLiveCanvas`; `clearWorkspace` only for full session wipe
+3. Path appearance writes: only unbound tiles (`setPathState` no-op when bound).
+4. Medium polish: opacity track after large/small frame + HiDPI (runtime re-check).
 
 ---
 
