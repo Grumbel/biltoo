@@ -586,6 +586,8 @@ public:
     /** Live tiles, stashed tiles, or durable snapshot — Workspace is non-empty. */
     bool hasWorkspaceContent() const;
     QStringList itemPaths() const;
+    /** Live canvas SessionImageIds (parallel to itemPaths; invalid when unbound). */
+    QVector<SessionImageId> itemSessionIds() const;
     /** Paths of selected canvas items (Gallery/Workspace). Image mode: current path. */
     QStringList selectedPaths() const;
     /** Select every live canvas tile (Gallery / Workspace). No-op in Image mode. */

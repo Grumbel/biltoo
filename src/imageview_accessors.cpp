@@ -155,6 +155,16 @@ QStringList ImageView::itemPaths() const
     return paths;
 }
 
+QVector<SessionImageId> ImageView::itemSessionIds() const
+{
+    QVector<SessionImageId> ids;
+    ids.reserve(m_items.size());
+    for (ImageItem *item : m_items) {
+        ids.append(item ? item->sessionId() : kInvalidSessionImageId);
+    }
+    return ids;
+}
+
 QStringList ImageView::selectedPaths() const
 {
     QStringList paths;

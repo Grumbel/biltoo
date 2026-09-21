@@ -491,7 +491,8 @@ private:
     void applyExpandedLoad(const QStringList &images, int startAt);
     void applyExpandedAppend(const QStringList &images);
     void finishExpandedAppendChrome(SessionImageId currentId, const QString &currentPath,
-                                    const QStringList &workspacePaths);
+                                    const QStringList &workspacePaths,
+                                    const QVector<SessionImageId> &workspaceIds);
     void finishApplyExpandedLoad(int startAt);
     void finishApplyExpandedAppend();
     void setExpandProgress(int current, int total, const QString &message);

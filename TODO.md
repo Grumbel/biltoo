@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2106-workspace-selection-prefer-sessionIds.** SESSION residual: workspace selection restore by SessionImageId.
+Prior: **2105**.
+
+### Change
+- `ImageView::itemSessionIds()` parallel to `itemPaths()`
+- `finishExpandedAppendChrome` restores filmstrip multi-select from live
+  workspace SessionImageIds first (path indexOf fallback)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2106-workspace-selection-prefer-sessionIds-e77da63.bundle HEAD
+```
+Requires tip **2105** (base **e77da63**); includes 1938–2106.
+
+### Next
+- SESSION residual: unbound tile placement that never receives an id
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2105-prefer-sessionId-over-path-indexOf.** SESSION residual: prefer SessionImageId over paths().indexOf.
 Prior: **2104**.
 

@@ -118,7 +118,9 @@ unbound and edits will not propagate correctly in Workspace).
    `sessionSlotOpenRequested(index)`; path-only is unbound fallback.
    `showPathInImageMode` prefers live preferred item + session id.
    Sort / append / remove / slideshow start prefer `SessionImageId` over
-   `paths().indexOf` (biltoo-2105). Remaining: a few path-only rebuild helpers.
+   `paths().indexOf` (biltoo-2105). Workspace filmstrip selection restore after
+   append prefers live `itemSessionIds()` (biltoo-2106). Remaining: unbound
+   tile placement paths that never receive an id.
 
 3. **Path map (`PathItemStateBook`) — write/read hygiene largely in place**  
    Bound content is stripped on `setPathState` (IDENTITY 2069–2071).

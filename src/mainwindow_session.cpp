@@ -24,6 +24,7 @@
 #include <QElapsedTimer>
 #include <QTimer>
 #include <QHash>
+#include <QSet>
 #include <QDebug>
 
 #include <QClipboard>
@@ -1456,18 +1457,32 @@ void MainWindow::appendFiles(const QStringList &paths)
 }
 
 void MainWindow::finishExpandedAppendChrome(SessionImageId currentId, const QString &currentPath,
-                                            const QStringList &workspacePaths)
+                                            const QStringList &workspacePaths,
+                                            const QVector<SessionImageId> &workspaceIds)
 {
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
         syncThumbnailWorkspaceSelection();
-        if (m_thumbnailBar->selectedIndices().isEmpty() && !workspacePaths.isEmpty()) {
+        if (m_thumbnailBar->selectedIndices().isEmpty()
+            && (!workspaceIds.isEmpty() || !workspacePaths.isEmpty())) {
+            // Prefer SessionImageId so duplicate paths restore the correct rows.
             QList<int> indices;
-            for (const QString &path : workspacePaths) {
-                const int idx = m_session.paths().indexOf(path);
-                if (idx >= 0) {
+            QSet<int> seen;
+            const int n = qMax(workspaceIds.size(), workspacePaths.size());
+            for (int i = 0; i < n; ++i) {
+                int idx = -1;
+                if (i < workspaceIds.size()
+                    && workspaceIds.at(i) != kInvalidSessionImageId) {
+                    idx = indexOfSessionId(workspaceIds.at(i));
+                }
+                if (idx < 0 && i < workspacePaths.size()
+                    && !workspacePaths.at(i).isEmpty()) {
+                    idx = m_session.paths().indexOf(workspacePaths.at(i));
+                }
+                if (idx >= 0 && !seen.contains(idx)) {
                     indices.append(idx);
+                    seen.insert(idx);
                 }
             }
             m_thumbnailBar->setSelectedIndices(indices);
@@ -1551,11 +1566,15 @@ void MainWindow::applyExpandedAppend(const QStringList &images)
         return;
     }
 
-    // Paths currently on the workspace (selection must be restored after setFiles)
-    const QStringList workspacePaths = isWorkspaceMode() ? m_imageView->itemPaths() : QStringList();
+    // Workspace selection restore after setFiles: prefer SessionImageId (duplicates).
+    const QStringList workspacePaths =
+        isWorkspaceMode() && m_imageView ? m_imageView->itemPaths() : QStringList();
+    const QVector<SessionImageId> workspaceIds =
+        isWorkspaceMode() && m_imageView ? m_imageView->itemSessionIds()
+                                         : QVector<SessionImageId>();
 
-    auto finish = [this, currentId, currentPath, workspacePaths]() {
-        finishExpandedAppendChrome(currentId, currentPath, workspacePaths);
+    auto finish = [this, currentId, currentPath, workspacePaths, workspaceIds]() {
+        finishExpandedAppendChrome(currentId, currentPath, workspacePaths, workspaceIds);
     };
 
     if (sortModeNeedsImageProbe()) {
