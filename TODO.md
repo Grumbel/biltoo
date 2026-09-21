@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1977-reset-clears-color-grade.** Reset clears colour grade (aligned with help).
+Prior: **1976**.
+
+### Change
+- `SessionAppearance::clearedContentOps` zeros `colorAdjust` (was keeping grade)
+- `resetContentAppearanceForTargets`: setAppearance dual-writes sparse Color
+  identity; `syncLiveColorFromState` clears live grade
+- Reset dialog copy mentions colour grade (matches help text)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1977-reset-clears-color-grade-e77da63.bundle HEAD
+```
+Requires tip **1976** (base **e77da63**); includes 1938–1977.
+
+### Next
+- sessionIndex deprecation cleanup (list-order cache only)
+- Characterization re-check after Reset/color change
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1976-sparse-color-filmstrip-attach.** Sparse Color on filmstrip + attach + load.
 Prior: **1975**.
 

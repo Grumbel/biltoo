@@ -312,6 +312,9 @@ WorkspaceItemState clearedContentOps(const WorkspaceItemState &state)
     out.contentQuarterTurns = 0;
     out.cropSourceSize = QSize();
     out.cropRotation = 0.0;
+    // Colour grade is part of content appearance (hasContentAppearance /
+    // Reset Content Appearance help text).
+    out.colorAdjust = {};
     return out;
 }
 

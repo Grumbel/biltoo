@@ -307,13 +307,14 @@ int ImageView::resetContentAppearanceForTargets()
         // 1) Drop durable XDG state for this content.
         ThumtooCache::clearContentAppearance(path);
 
-        // 2) Clear session appearance content fields (keep placement).
+        // 2) Clear session appearance content fields (keep placement pose).
+        // clearedContentOps also zeros colour grade; setAppearance dual-writes
+        // sparse Crop / ContentBake / Color (identity ⇒ remove).
         if (sid != kInvalidSessionImageId) {
             WorkspaceItemState slot = SessionAppearance::clearedContentOps(
                 m_itemWorld.appearanceValue(sid));
             slot.sessionId = sid;
             slot.path = path;
-            // Keep color grade / pose if present.
             m_itemWorld.setAppearance(sid, slot);
         }
         // Path map still holds content turns from prior bake/pack; captureState
@@ -323,8 +324,9 @@ int ImageView::resetContentAppearanceForTargets()
             m_itemWorld.setPathState(path, pathSlot);
         }
 
-        // Identity: drop applied ContentXform fingerprint.
+        // Identity: drop applied ContentXform fingerprint and live grade.
         clearLiveContentMeta(item);
+        syncLiveColorFromState(item, ColorAdjustments{});
         {
             ItemComponents::Placement pl = item->placement();
             pl.hFlip = false;

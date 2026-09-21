@@ -739,11 +739,11 @@ void MainWindow::resetContentAppearance()
     QMessageBox box(this);
     box.setIcon(QMessageBox::Warning);
     box.setWindowTitle(tr("Reset content appearance?"));
-    box.setText(tr("Discard flip, rotation, and crop for the selected image(s)?"));
+    box.setText(tr("Discard flip, rotation, crop, and colour grade for the selected image(s)?"));
     box.setInformativeText(
         tr("The original files are never modified. This clears the local "
-           "orientation saved for those files and restores the on-disk pixels "
-           "in this session."));
+           "content appearance saved for those files and restores the on-disk "
+           "pixels in this session."));
     QPushButton *resetBtn = box.addButton(tr("Reset"), QMessageBox::DestructiveRole);
     QPushButton *cancelBtn = box.addButton(QMessageBox::Cancel);
     box.setDefaultButton(cancelBtn);
