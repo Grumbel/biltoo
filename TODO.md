@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2028-freeze-store-live.** Stage 2 residual: remember/persist/snapshot prefer store+live when not mid-edit.
+Prior: **2027**.
+
+### Change
+- `rememberItemState` (bound Workspace/Gallery): store + live pose/grade unless
+  `hasAppliedContentXform`
+- `persistSessionAppearanceSlot` (bound): same policy
+- `WorkspaceController::snapshot`: same policy before writing id/path stores
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2028-freeze-store-live-e77da63.bundle HEAD
+```
+Requires tip **2027** (base **e77da63**); includes 1938–2028.
+
+### Next
+- Remaining `captureState`: crop enter/undo unbound, bind/duplicate, mid-edit paths
+- Stage 4b later: format version + drop dual-write (not now)
+- Stage 3 incremental when needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2027-projectfile-pose-content-rows.** Stage 4a characterization: pose-only vs content-only project rows.
 Prior: **2026**.
 

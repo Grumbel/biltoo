@@ -242,12 +242,22 @@ void ImageView::rememberItemState(ImageItem *item)
     // Bound session images: placement + content live in m_appearance (by id).
     // Never write pose by path — duplicates would steal each other's layout.
     if (item->sessionId() != kInvalidSessionImageId) {
-        WorkspaceItemState slot = captureState(item);
-        slot.sessionId = item->sessionId();
-        // captureState already set sessionIndex via sessionListIndex (document).
+        // Stage 2: store + live overlays when not mid-edit; captureState when
+        // applied ContentXform is interaction authority.
+        WorkspaceItemState slot;
+        const SessionImageId id = item->sessionId();
+        if (!item->hasAppliedContentXform()
+            && m_itemWorld.hasDurableAppearance(id)) {
+            slot = sessionAppearanceValue(id);
+            ItemComponents::applyPlacementToState(slot, placementFromItem(item));
+            slot.colorAdjust = item->colorAdjustments();
+        } else {
+            slot = captureState(item);
+        }
+        slot.sessionId = id;
+        slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();
-        // setAppearance dual-writes sparse tables (Crop/ContentBake/Color/Placement).
-        m_itemWorld.setAppearance(item->sessionId(), slot);
+        m_itemWorld.setAppearance(id, slot);
         return;
     }
     m_itemWorld.setPathState(item->path(), captureState(item));
@@ -462,12 +472,19 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         if (item->sessionId() == kInvalidSessionImageId) {
             item->setSessionId(sid);
         }
-        WorkspaceItemState slot = captureState(item);
+        // Stage 2: mid-edit applied ContentXform → captureState; else store + live.
+        WorkspaceItemState slot;
+        if (item->hasAppliedContentXform()
+            || !m_itemWorld.hasDurableAppearance(sid)) {
+            slot = captureState(item);
+        } else {
+            slot = sessionAppearanceValue(sid);
+            ItemComponents::applyPlacementToState(slot, placementFromItem(item));
+            slot.colorAdjust = item->colorAdjustments();
+        }
         slot.sessionId = sid;
-        // sessionIndex from captureState / sessionListIndex — do not restamp cache.
+        slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();
-        // captureState prefers applied ContentXform when present (mid-edit
-        // authority; full-circle identity stays zero).
         m_itemWorld.setAppearance(sid, slot);
         // Sparse Color is store authority after dual-write; prefer it for durable
         // grade fields so the fat DTO is not the only reader.
@@ -476,7 +493,6 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         haveContentSlot = true;
     } else {
         // Unbound tile: still persist content-hash state for the file.
-        // captureState already pulls live crop/flip (no second dig into item).
         contentSlot = captureState(item);
         haveContentSlot = true;
     }
