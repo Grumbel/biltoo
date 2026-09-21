@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2125-size-prefercache-host-rules.** Fold PreferCache host rules into SIZE.md.
+Prior: **2124**.
+
+### Change
+- SIZE.md: PreferCache host schedule API choice, classification, edge caps
+- SESSION.md: point residual follow-up at SIZE.md (done)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2125-size-prefercache-host-rules-e77da63.bundle HEAD
+```
+Requires tip **2124** (base **e77da63**); includes 1938–2125.
+
+### Next
+- Runtime QA: duplicate × membership × flip × project; ladder under Gallery scroll
+- Medium: opacity/HiDPI polish, -Wnull-dereference
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2124-session-residual-prefercache-notes.** SESSION residual: identity high-pri closed; PreferCache ladder notes.
 Prior: **2123**.
 

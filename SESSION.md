@@ -146,8 +146,8 @@ request edge. Soft samples stay SoftPreview so PreferCache/native can upgrade.
 Tiles: after `durableTilesReady`, tile LOD owns display past soft max; PreferCache
 TileSynth needs known durable tiles (`hasDurableTilesKnown`).
 
-Optional follow-ups: runtime QA of ladder upgrade under Gallery scroll + Image
-focus; document host “do not call `schedulePixels` from product UI” in SIZE.md.
+PreferCache host schedule rules folded into SIZE.md (biltoo-2125).
+Optional follow-ups: runtime QA of ladder upgrade under Gallery scroll + Image focus.
 
 ### Medium
 

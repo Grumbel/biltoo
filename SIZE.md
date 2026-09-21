@@ -74,3 +74,38 @@ Logical `contentRect` is fixed by the size probe. LQIP / soft / full are texture
 only: **stretch samples to the full contentRect**. Do not letterbox previews into
 a smaller dest — that looks like the image “grows” when a better sample arrives.
 
+## PreferCache host rules (biltoo-2124 / 2125)
+
+Soft and PreferCache rasters are **samples** (see Authority above). Hosts must
+not treat ladder edges as geometry.
+
+### Schedule API choice
+
+| Situation | Call |
+|-----------|------|
+| Soft-band encode (legacy PreferCache name) | **Do not call** `ThumtooCache::schedulePixels` from product UI |
+| Display climb with durable tiles known | `scheduleDisplayPixels` (→ `ladderReady`) |
+| Overview band (above soft, ≤ batch) | `scheduleOverviewPixels` |
+| No durable tiles yet | `scheduleTilePyramid` + LQIP; PreferCache TileSynth only after `hasDurableTilesKnown` / `durableTilesReady` |
+| Native coverage | Full decode path; classify as `FullSource` when sample covers logical size |
+
+### Classification
+
+`classifyImageModeSample` uses the **delivered** long edge, not the request edge:
+
+- ≤ gallery soft ladder → `SoftPreview` (native / PreferCache may still upgrade)
+- Covers logical native → `FullSource`
+- PreferCache display band without proven native → `FullSource` for paint; HUD still uses `sampleCoversNativeLogical`
+
+### Edge caps
+
+- Ladder: `kLadderEdges` 128…8192 (`kImageLadderEdge` interim display max)
+- Request edges capped at known native long edge (`cappedDisplayEdgeForPath`)
+- Soft max (~512) and gallery soft edge gate when SoftPreview must not block upgrade
+
+### Cross-refs
+
+- SESSION.md §5 PreferCache / thumtoo ladder table
+- `ThumtooCache` façade in `thumtoocache.h`
+- Tile LOD owns display past soft max once durable tiles exist
+
