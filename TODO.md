@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1987-private-interaction-chrome.** Privatize interaction chrome mutators.
+Prior: **1986**.
+
+### Change
+- Private: `setInteractive`, `setGallerySelectable`, `setScaleHandlesEnabled`,
+  `setHoverHandle`, `invalidateDeviceCache`
+- Still public: `setGalleryCellSize` (pure GalleryLayout namespace has no host)
+- Friends ImageView / GalleryController / pipeline cover all call sites
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1987-private-interaction-chrome-e77da63.bundle HEAD
+```
+Requires tip **1986** (base **e77da63**); includes 1938–1987.
+
+### Next
+- Characterization re-check
+- Optional: thread host callback into GalleryLayout to privatize setGalleryCellSize
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1986-private-path-session-stamps.** Privatize path + session id/index stamps.
 Prior: **1985**.
 

@@ -127,20 +127,7 @@ public:
     ContentXform::Value tileContentXform() const;
 
     /** When false, the item cannot be selected or dragged (classic viewer). */
-    void setInteractive(bool on);
     bool isInteractive() const { return m_interactive; }
-
-    /**
-     * Gallery (packaged) layout: selectable but not movable; no on-canvas chrome.
-     * Free-form workspace uses setInteractive(true) instead.
-     */
-    void setGallerySelectable(bool on);
-    /**
-     * Rebuild item paint cache after selection/content change.
-     * Gallery uses ItemCoordinateCache (survives view scroll); this toggles
-     * the mode so the next paint is not frozen.
-     */
-    void invalidateDeviceCache();
 
     /**
      * Gallery scroll path: bake display sample into QPixmap and enable
@@ -160,7 +147,6 @@ public:
      * When false, corner scale (resize) handles are neither drawn nor hit-tested.
      * Used for fixed packaged layouts where scale is driven by the layout.
      */
-    void setScaleHandlesEnabled(bool on);
 
     /** Map a scene position to integer pixel coordinates, or (-1,-1) if outside. */
     QPoint pixelAtScenePos(const QPointF &scenePos) const;
@@ -200,7 +186,6 @@ public:
     static void setContentEditMarksVisible(bool on);
     static bool contentEditMarksVisible();
     /** View-driven hover highlight for chrome (keeps highlight in sync with hits). */
-    void setHoverHandle(Handle h);
     Handle hoverHandle() const { return m_hoverHandle; }
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
@@ -264,6 +249,11 @@ private:
     void setPath(const QString &path);
     void setSessionId(SessionImageId id) { m_sessionId = id; }
     void setSessionIndex(int index) { m_sessionIndex = index; }
+    void setInteractive(bool on);
+    void setGallerySelectable(bool on);
+    void invalidateDeviceCache();
+    void setScaleHandlesEnabled(bool on);
+    void setHoverHandle(Handle h);
     void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
     void setIntrinsicSize(const QSize &size);
     void setSourceImage(const QImage &image);
