@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1955-identity-clear-applied-only-noview.** Identity clear; no-view applied-only.
+Prior: **1954**.
+
+### Change
+- `clearLiveContentMeta(item)` always clears lag dual-write + applied (drop bool)
+- No-view handle flip/rotate: install applied fingerprint only (no lag dual-write write)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1955-identity-clear-applied-only-noview-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1955.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Lag dual-write only written by clearDecodedPixels seed path
+- Later: drop lag fields if chrome can tolerate applied-empty gaps
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1954-applied-install-lag-seed.** Applied-only install; lag dual-write on pixel clear.
 Prior: **1953**.
 

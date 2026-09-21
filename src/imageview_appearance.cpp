@@ -117,18 +117,16 @@ void ImageView::syncLiveContentMetaFromState(ImageItem *item, const WorkspaceIte
     item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }
 
-void ImageView::clearLiveContentMeta(ImageItem *item, bool clearAppliedXform)
+void ImageView::clearLiveContentMeta(ImageItem *item)
 {
     if (!item) {
         return;
     }
-    // Clear lag dual-write fields; optionally drop applied fingerprint (identity).
+    // Identity: clear lag dual-write fields and applied fingerprint together.
     item->setSessionCrop(false, QRect());
     item->setContentHFlip(false);
     item->setContentVFlip(false);
-    if (clearAppliedXform) {
-        item->clearAppliedContentXform();
-    }
+    item->clearAppliedContentXform();
 }
 
 void ImageView::persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)

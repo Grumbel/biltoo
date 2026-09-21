@@ -208,7 +208,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
             pl.pos = scenePos;
             ph->applyPlacement(pl);
         }
-        clearLiveContentMeta(ph, true);
+        clearLiveContentMeta(ph);
         if (sessionId != kInvalidSessionImageId) {
             ph->setSessionId(sessionId);
         }

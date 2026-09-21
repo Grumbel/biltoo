@@ -836,8 +836,8 @@ void ImageItem::activateChromeHandle(Handle h)
                 }
             }
         }
-        // Fallback without a view: bake pixels and keep dual-write / applied
-        // content meta aligned (tileContentXform is the live reader).
+        // Fallback without a view: bake pixels and install applied fingerprint
+        // only (lag dual-write is seeded on clearDecodedPixels).
         ContentXform::Value x = tileContentXform();
         if (h == Handle::FlipH) {
             bakeFlip(true, false);
@@ -852,8 +852,6 @@ void ImageItem::activateChromeHandle(Handle h)
             bakeRotate90(1);
             x.quarterTurns = ContentXform::normalizeQuarterTurns(x.quarterTurns + 1);
         }
-        setContentHFlip(x.hFlip);
-        setContentVFlip(x.vFlip);
         setAppliedContentXform(x);
         break;
     }

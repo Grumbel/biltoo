@@ -481,11 +481,9 @@ public:
      */
     void syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state);
     /**
-     * Clear lag dual-write session crop/flip fields.
-     * Pass clearAppliedXform=true for identity path-change / reset so
-     * tileContentXform does not keep a stale applied fingerprint.
+     * Identity clear: drop lag dual-write session fields and applied fingerprint.
      */
-    void clearLiveContentMeta(ImageItem *item, bool clearAppliedXform = false);
+    void clearLiveContentMeta(ImageItem *item);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     /** Copy of stored appearance for @p id (empty/default if none). */

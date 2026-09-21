@@ -327,7 +327,7 @@ int ImageView::resetContentAppearanceForTargets()
         }
 
         // Identity: clear dual-write session fields and applied fingerprint together.
-        clearLiveContentMeta(item, true);
+        clearLiveContentMeta(item);
         {
             ItemComponents::Placement pl = item->placement();
             pl.hFlip = false;
