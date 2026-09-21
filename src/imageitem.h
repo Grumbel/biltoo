@@ -144,26 +144,15 @@ public:
      * Content xform that was applied to the current display sample.
      * Compared on install so rematerialize is driven by data, not aspect heuristics.
      * Primary live content-meta path is tileContentXform() (applied first).
+     * Mutators are private (ImageView dual-write install / ImageItem self).
      */
     ContentXform::Value appliedContentXform() const { return m_appliedContentXform; }
-    void setAppliedContentXform(const ContentXform::Value &x)
-    {
-        m_appliedContentXform = x;
-        m_hasAppliedContentXform = true;
-        clearTileGradedCache();
-    }
-    void clearAppliedContentXform()
-    {
-        m_appliedContentXform = {};
-        m_hasAppliedContentXform = false;
-        clearTileGradedCache();
-    }
     bool hasAppliedContentXform() const { return m_hasAppliedContentXform; }
 
     /**
      * Single live content-meta reader for tile plan, chrome, and host capture.
      * Prefers applied ContentXform; falls back to dual-write session fields
-     * (pixel-clear gaps). Dual-write install is ImageView-only (private setters).
+     * (pixel-clear gaps). Install mutators are ImageView-only (private).
      */
     ContentXform::Value tileContentXform() const;
 
@@ -302,7 +291,7 @@ private:
     QString m_path;
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
-    // Dual-write session crop/flip install — ImageView::syncLiveContentMetaFromState only.
+    // Content-meta install — ImageView::syncLiveContentMetaFromState / clearLiveContentMeta.
     friend class ImageView;
     void setContentHFlip(bool on) { m_contentHFlip = on; }
     void setContentVFlip(bool on) { m_contentVFlip = on; }
@@ -310,6 +299,18 @@ private:
     {
         m_sessionHasCrop = has;
         m_sessionCropRect = has ? rect : QRect();
+    }
+    void setAppliedContentXform(const ContentXform::Value &x)
+    {
+        m_appliedContentXform = x;
+        m_hasAppliedContentXform = true;
+        clearTileGradedCache();
+    }
+    void clearAppliedContentXform()
+    {
+        m_appliedContentXform = {};
+        m_hasAppliedContentXform = false;
+        clearTileGradedCache();
     }
     void tickTileLod(int budget = 8);
     /** Plan/paint helpers (ImageItem paint + tick only). */

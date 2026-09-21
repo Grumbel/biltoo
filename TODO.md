@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1953-private-applied-mutators.** Private set/clearAppliedContentXform.
+Prior: **1952**.
+
+### Change
+- `setAppliedContentXform` / `clearAppliedContentXform` private with `friend ImageView`
+- Public getters `appliedContentXform` / `hasAppliedContentXform` retained for readers
+- Writers: dual-write install, clearDecodedPixels, no-view flip (ImageItem self)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1953-private-applied-mutators-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1953.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Dual-write session fields remain lag fallback after pixel clear until next install
+- Later: drop session dual-write fields if chrome can tolerate applied-empty gaps
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1952-bake-no-redundant-applied.** Bake path relies on syncLive for applied.
 Prior: **1951**.
 
