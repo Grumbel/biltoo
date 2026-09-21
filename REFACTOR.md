@@ -1180,6 +1180,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1945: captureState/framing/wantAppearance/CropSession live digs via tileContentXform; corner marks completed.
 - biltoo-1946: no-view flip/rotate fallback via tileContentXform + setters; session fields only dual-write install + tileContentXform.
 - biltoo-1947: syncLiveContentMetaFromState always sets applied ContentXform (primary tileContentXform path).
+- biltoo-1948: identity clear (reset / path-change) drops applied with session dual-write fields.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

@@ -480,7 +480,11 @@ public:
      * tileContentXform prefers applied xform, then session dual-write fields.
      */
     void syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state);
-    /** Clear live ImageItem crop/content-flip chrome (identity). */
+    /**
+     * Clear live ImageItem crop/content-flip dual-write fields.
+     * Pass clearAppliedXform=true for identity path-change / reset so
+     * tileContentXform does not keep a stale applied fingerprint.
+     */
     void clearLiveContentMeta(ImageItem *item, bool clearAppliedXform = false);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);

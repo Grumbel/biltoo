@@ -326,7 +326,8 @@ int ImageView::resetContentAppearanceForTargets()
             m_itemWorld.setPathState(path, pathSlot);
         }
 
-        clearLiveContentMeta(item, false);
+        // Identity: clear dual-write session fields and applied fingerprint together.
+        clearLiveContentMeta(item, true);
         {
             ItemComponents::Placement pl = item->placement();
             pl.hFlip = false;

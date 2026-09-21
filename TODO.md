@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1948-identity-clear-applied.** Identity clears drop applied with session fields.
+Prior: **1947**.
+
+### Change
+- Reset content appearance: `clearLiveContentMeta(item, true)`
+- Image-mode path change (cold + warm): single clear with applied (no separate
+  `clearAppliedContentXform`)
+- Document when to pass `clearAppliedXform=true`
+- Draft enter still clears session crop only then sets applied from wantX
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1948-identity-clear-applied-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1948.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Session dual-write fields remain lag fallback inside tileContentXform
+- Later: drop session fields once applied is universal after install
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1947-sync-always-applied-xform.** Dual-write install always sets applied xform.
 Prior: **1946**.
 
