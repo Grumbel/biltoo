@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2105-prefer-sessionId-over-path-indexOf.** SESSION residual: prefer SessionImageId over paths().indexOf.
+Prior: **2104**.
+
+### Change
+- Sort reorder, append chrome, post-remove selection, and slideshow Gallery→Image
+  resolve the focused row by `SessionImageId` first; path `indexOf` is fallback
+- Avoids first-match wrong row when duplicate paths exist
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2105-prefer-sessionId-over-path-indexOf-e77da63.bundle HEAD
+```
+Requires tip **2104** (base **e77da63**); includes 1938–2105.
+
+### Next
+- SESSION residual: unbound tile assignment; remaining path-only rebuild helpers
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2104-drop-path-only-filmstrip-signals.** SESSION residual: drop path-only filmstrip appearance signals.
 Prior: **2103**.
 

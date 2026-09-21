@@ -116,8 +116,9 @@ unbound and edits will not propagate correctly in Workspace).
 2. **Open-by-path still exists (fallback only)**  
    Gallery open / double-click prefer `sessionImageOpenRequested(id)` then
    `sessionSlotOpenRequested(index)`; path-only is unbound fallback.
-   `showPathInImageMode` prefers live preferred item + session id. Remaining:
-   some MainWindow session rebuild paths still use `paths().indexOf` (first match).
+   `showPathInImageMode` prefers live preferred item + session id.
+   Sort / append / remove / slideshow start prefer `SessionImageId` over
+   `paths().indexOf` (biltoo-2105). Remaining: a few path-only rebuild helpers.
 
 3. **Path map (`PathItemStateBook`) — write/read hygiene largely in place**  
    Bound content is stripped on `setPathState` (IDENTITY 2069–2071).

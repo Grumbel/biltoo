@@ -84,7 +84,8 @@ public:
     void applySessionRemoveIndices(const QList<int> &indices);
     void removeSessionIndicesFromModel(const QList<int> &sorted);
     void refreshSessionUiAfterRemove();
-    void selectIndexAfterSessionRemove(const QString &currentPath, const QList<int> &sorted);
+    void selectIndexAfterSessionRemove(SessionImageId currentId, const QString &currentPath,
+                                       const QList<int> &sorted);
     void restoreSessionEntries(const QList<SessionEntrySnapshot> &entries);
     /** Canvas + session duplicate; returns new SessionImageIds (for undo). */
     QVector<SessionImageId> applyDuplicate(const QList<SessionImageId> &sourceIds,
@@ -489,7 +490,7 @@ private:
     void setExpandProgressBusy(bool busy);
     void applyExpandedLoad(const QStringList &images, int startAt);
     void applyExpandedAppend(const QStringList &images);
-    void finishExpandedAppendChrome(const QString &current,
+    void finishExpandedAppendChrome(SessionImageId currentId, const QString &currentPath,
                                     const QStringList &workspacePaths);
     void finishApplyExpandedLoad(int startAt);
     void finishApplyExpandedAppend();

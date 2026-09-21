@@ -1119,23 +1119,28 @@ void MainWindow::setSortMode(SortMode mode)
         return;
     }
 
+    const SessionImageId currentId = currentSessionId();
     const QString current = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
                                 ? m_session.paths().at(m_currentIndex)
                                 : QString();
 
-    auto applyUi = [this, current]() {
+    auto applyUi = [this, currentId, current]() {
         m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
         if (isWorkspaceMode()) {
             m_thumbnailBar->setMultiSelectEnabled(true);
             syncThumbnailWorkspaceSelection();
         }
 
+        // Prefer SessionImageId so duplicate paths keep the focused row after sort.
         int newIndex = 0;
-        if (!current.isEmpty()) {
+        if (currentId != kInvalidSessionImageId) {
+            newIndex = indexOfSessionId(currentId);
+        }
+        if (newIndex < 0 && !current.isEmpty()) {
             newIndex = m_session.paths().indexOf(current);
-            if (newIndex < 0) {
-                newIndex = 0;
-            }
+        }
+        if (newIndex < 0) {
+            newIndex = 0;
         }
         m_currentIndex = -1; // force reload of Image mode cursor
         setCurrentIndex(newIndex);
@@ -1147,7 +1152,10 @@ void MainWindow::setSortMode(SortMode mode)
             populateGalleryCanvas();
             if (m_imageView) {
                 m_imageView->enterGallery(layout);
-                if (!current.isEmpty()) {
+                if (currentId != kInvalidSessionImageId
+                    && m_imageView->findItemBySessionId(currentId)) {
+                    m_imageView->focusSessionId(currentId);
+                } else if (!current.isEmpty()) {
                     const SessionImageId sid = sessionIdAt(m_currentIndex);
                     if (sid != kInvalidSessionImageId
                         && m_imageView->findItemBySessionId(sid)) {
@@ -1447,7 +1455,7 @@ void MainWindow::appendFiles(const QStringList &paths)
     applyExpandedAppend(images);
 }
 
-void MainWindow::finishExpandedAppendChrome(const QString &current,
+void MainWindow::finishExpandedAppendChrome(SessionImageId currentId, const QString &currentPath,
                                             const QStringList &workspacePaths)
 {
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
@@ -1468,12 +1476,16 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
     applyThumbnailVisibility();
     updateWorkspaceActionVisibility();
 
+    // Prefer SessionImageId so duplicate paths keep the focused row after append/sort.
     int newIndex = 0;
-    if (!current.isEmpty()) {
-        newIndex = m_session.paths().indexOf(current);
-        if (newIndex < 0) {
-            newIndex = 0;
-        }
+    if (currentId != kInvalidSessionImageId) {
+        newIndex = indexOfSessionId(currentId);
+    }
+    if (newIndex < 0 && !currentPath.isEmpty()) {
+        newIndex = m_session.paths().indexOf(currentPath);
+    }
+    if (newIndex < 0) {
+        newIndex = 0;
     }
 
     if (isWorkspaceMode()) {
@@ -1520,9 +1532,10 @@ void MainWindow::finishExpandedAppendChrome(const QString &current,
 
 void MainWindow::applyExpandedAppend(const QStringList &images)
 {
-    const QString current = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
-                                ? m_session.paths().at(m_currentIndex)
-                                : QString();
+    const SessionImageId currentId = currentSessionId();
+    const QString currentPath = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
+                                    ? m_session.paths().at(m_currentIndex)
+                                    : QString();
 
     // Deduplicate while preserving order of existing entries
     QSet<QString> seen(m_session.paths().begin(), m_session.paths().end());
@@ -1541,8 +1554,8 @@ void MainWindow::applyExpandedAppend(const QStringList &images)
     // Paths currently on the workspace (selection must be restored after setFiles)
     const QStringList workspacePaths = isWorkspaceMode() ? m_imageView->itemPaths() : QStringList();
 
-    auto finish = [this, current, workspacePaths]() {
-        finishExpandedAppendChrome(current, workspacePaths);
+    auto finish = [this, currentId, currentPath, workspacePaths]() {
+        finishExpandedAppendChrome(currentId, currentPath, workspacePaths);
     };
 
     if (sortModeNeedsImageProbe()) {
@@ -1867,7 +1880,8 @@ void MainWindow::refreshSessionUiAfterRemove()
     applyThumbnailVisibility();
 }
 
-void MainWindow::selectIndexAfterSessionRemove(const QString &currentPath, const QList<int> &sorted)
+void MainWindow::selectIndexAfterSessionRemove(SessionImageId currentId, const QString &currentPath,
+                                               const QList<int> &sorted)
 {
     if (m_session.paths().isEmpty()) {
         m_currentIndex = -1;
@@ -1885,8 +1899,12 @@ void MainWindow::selectIndexAfterSessionRemove(const QString &currentPath, const
         return;
     }
 
-    int newIndex = 0;
-    if (!currentPath.isEmpty()) {
+    // Prefer SessionImageId when the focused row was not removed.
+    int newIndex = -1;
+    if (currentId != kInvalidSessionImageId) {
+        newIndex = indexOfSessionId(currentId);
+    }
+    if (newIndex < 0 && !currentPath.isEmpty()) {
         newIndex = m_session.paths().indexOf(currentPath);
     }
     if (newIndex < 0) {
@@ -1942,6 +1960,7 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     std::sort(sorted.begin(), sorted.end());
     sorted.erase(std::unique(sorted.begin(), sorted.end()), sorted.end());
 
+    const SessionImageId currentId = currentSessionId();
     const QString currentPath = (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size())
                                     ? m_session.paths().at(m_currentIndex)
                                     : QString();
@@ -1950,7 +1969,7 @@ void MainWindow::applySessionRemoveIndices(const QList<int> &indices)
     // (and one more event-loop tick) so setCurrentIndex / status updates cannot repack.
     removeSessionIndicesFromModel(sorted);
     refreshSessionUiAfterRemove();
-    selectIndexAfterSessionRemove(currentPath, sorted);
+    selectIndexAfterSessionRemove(currentId, currentPath, sorted);
 }
 
 
@@ -2881,18 +2900,23 @@ void MainWindow::startSlideshow()
     }
     // Gallery: open the focused session image in Image mode, then advance.
     if (isGalleryMode()) {
-        QString path;
-        if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-            path = m_session.paths().at(m_currentIndex);
-        } else if (!m_session.paths().isEmpty()) {
-            path = m_session.paths().first();
+        const SessionImageId sid = currentSessionId();
+        if (sid != kInvalidSessionImageId) {
+            openSessionImageInImageMode(sid);
+        } else {
+            QString path;
+            if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
+                path = m_session.paths().at(m_currentIndex);
+            } else if (!m_session.paths().isEmpty()) {
+                path = m_session.paths().first();
+            }
+            if (path.isEmpty()) {
+                m_slideshowPaused = false;
+                updateSlideshowActionUi();
+                return;
+            }
+            showPathInImageMode(path);
         }
-        if (path.isEmpty()) {
-            m_slideshowPaused = false;
-            updateSlideshowActionUi();
-            return;
-        }
-        showPathInImageMode(path);
     }
     m_slideshowOwnsFullscreen = false;
     if (m_slideshowFullscreen && !isFullScreen()) {
