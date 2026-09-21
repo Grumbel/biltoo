@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2131-workspace-gallery-stash-drop-orient.** Workspace survives Gallery; drop seeds content orient.
+Prior: **2130**.
+
+### Change
+- Workspace→Gallery: stash free-form tiles (enterGallery path too — bypasses onLeave)
+- Gallery enter no longer discardStash() (was destroying permanent arrangement)
+- Workspace enter: restore stash from Gallery as well as Image
+- placeOrMoveImageAt: mergeContentFromState when XDG/session want has orient so
+  LoadAdd materializes rotated pixels (not only the oriented box)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2131-workspace-gallery-stash-drop-orient-e77da63.bundle HEAD
+```
+Requires tip **2130** (base **e77da63**); includes 1938–2131.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2130-drop-oriented-layout-size.** Filmstrip→Workspace drop uses content-oriented layout size.
 Prior: **2129**.
 

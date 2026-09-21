@@ -199,6 +199,16 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
                 if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
                     sz = lay;
                 }
+                // Ensure ItemWorld has content ops so LoadAdd installDisplayPixels
+                // materializes oriented pixels (not only the box). XDG/session
+                // size above is not enough if seed was marked attempted empty.
+                if (sessionId != kInvalidSessionImageId
+                    && !m_itemWorld.hasContentBake(sessionId)) {
+                    want.path = path;
+                    want.sessionId = sessionId;
+                    m_itemWorld.mergeContentFromState(sessionId, want);
+                    hostSeedBook().clearSeedAttempted(sessionId);
+                }
             }
         }
         ImageItem *ph = new ImageItem(path, sz);

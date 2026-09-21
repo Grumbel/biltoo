@@ -349,10 +349,13 @@ void GalleryController::enter(int packagedLayoutInt)
     if (m_view->isWorkspaceMode()) {
         m_view->hostWorkspace().snapshotFreeFormStates();
         m_view->hostWorkspace().snapshot();
+        // enterGallery bypasses setViewMode → Workspace onLeave never runs.
+        // Stash free-form tiles so Gallery→Workspace can reattach without
+        // depending only on async LoadRestore (which left an empty canvas).
+        m_view->hostWorkspace().stashItems();
     }
-    // Leaving Workspace/Image for Gallery: drop workspace stash (layout uses
-    // live m_items or rebuilds from session paths).
-    m_view->hostWorkspace().discardStash();
+    // Do not discardStash(): permanent Workspace arrangement must survive
+    // Gallery. Gallery packs from session paths / pathOrder, not live tiles.
     if (layoutSwitch) {
         // Soft reset: keep items and selection paths; only clear view zoom.
         // Drop scroll snapshot — user asked for a new layout, not return-from-Image.

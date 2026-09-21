@@ -338,14 +338,13 @@ void WorkspaceController::onLeave(int nextMode)
 {
     const auto next = static_cast<ImageView::ViewMode>(nextMode);
     // Durable placement + appearance backup for rebuild if the live stash is
-    // later discarded (e.g. entering Gallery).
+    // later discarded.
     snapshot();
-    if (next == ImageView::ViewMode::Image) {
+    if (next == ImageView::ViewMode::Image || next == ImageView::ViewMode::Gallery) {
         // Keep free-form tiles + pixels + view for a fast return to Workspace.
+        // Gallery packs from session paths; stashed tiles stay off-scene.
         stashItems();
     }
-    // Gallery path: GalleryController::enter discards the workspace stash after
-    // packing from live items / session paths.
 }
 
 void WorkspaceController::enter(int previousMode)
@@ -354,8 +353,12 @@ void WorkspaceController::enter(int previousMode)
     m_view->setActiveMode(ImageView::ViewMode::Workspace, LayoutMode::FreeForm);
     m_view->applyToolDragMode();
     bool keepViewTransform = false;
-    if (previous == ImageView::ViewMode::Image && !m_stashedItems.isEmpty()) {
-        // Fast path: reattach live items (no re-decode).
+    if ((previous == ImageView::ViewMode::Image
+         || previous == ImageView::ViewMode::Gallery)
+        && !m_stashedItems.isEmpty()) {
+        // Fast path: reattach live items (no re-decode). Covers Workspace→Image
+        // and Workspace→Gallery→Workspace (enterGallery also stashes; must not
+        // discardStash on Gallery enter).
         restoreStashedItems();
         keepViewTransform = true; // stashed view includes user zoom
     } else if (!m_savedItems.isEmpty()) {
