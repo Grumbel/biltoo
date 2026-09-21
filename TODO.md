@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2192-flush-no-color-promote.** Durable Color still became lag
+brightness 5 after Gallery→Image. attachDisplaySample stamps applied fingerprint
+with want.colorAdjust (often live lag); flush preferred item applied and
+promoted lag into ItemWorld Color.
+
+### Fix
+- flushApplied: never setColor from applied; always restore durable colorAdjust
+- Applied remains orient/crop mid-edit only for durable writes
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2192-flush-no-color-promote-e77da63.bundle HEAD
+```
+
+Next: **2193**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2191-flush-preserve-durable-color.** Characterization: after
 Gallery→Image, durable Color brightness became 5 (live lag) or was wiped.
 flushAppliedContentToItemWorld called applied.applyToState which always overwrites

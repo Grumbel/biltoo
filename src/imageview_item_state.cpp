@@ -378,18 +378,17 @@ void ImageView::flushAppliedContentToItemWorld()
             continue;
         }
         WorkspaceItemState s = sessionAppearanceValue(sid);
-        // applyToState overwrites every field. Applied residuals often carry identity
-        // colorAdjust / no crop while only orient is mid-edit — must not wipe durable
-        // Color (brightness 8) or Crop when those were not part of the edit.
+        // applyToState overwrites every field. Applied is orient/crop mid-edit
+        // fingerprint (and paint may mirror live lag into applied.colorAdjust via
+        // attachDisplaySample). Durable Color is only written by the grade commit
+        // path (setTargetColorAdjustments) — never promote applied.colorAdjust.
         const ColorAdjustments durableColor = s.colorAdjust;
         const bool hadCrop = s.hasCrop;
         const QRect durableCropRect = s.cropRect;
         const QSize durableCropSource = s.cropSourceSize;
         const qreal durableCropRot = s.cropRotation;
         applied.applyToState(s);
-        if (applied.colorAdjust.isIdentity()) {
-            s.colorAdjust = durableColor;
-        }
+        s.colorAdjust = durableColor;
         if (!applied.hasCrop && hadCrop) {
             s.hasCrop = true;
             s.cropRect = durableCropRect;
@@ -400,9 +399,7 @@ void ImageView::flushAppliedContentToItemWorld()
         s.path = item->path();
         m_itemWorld.setContentBake(sid, ItemComponents::contentBakeFromState(s));
         m_itemWorld.setCrop(sid, ItemComponents::cropFromState(s));
-        if (!s.colorAdjust.isIdentity() || m_itemWorld.hasColor(sid)) {
-            m_itemWorld.setColor(sid, ItemComponents::colorFromState(s));
-        }
+        // Intentionally no setColor — applied.colorAdjust is not durable authority.
         m_itemWorld.clearAppliedContentXform(sid);
     }
     m_itemWorld.clearAllAppliedContentXforms();
