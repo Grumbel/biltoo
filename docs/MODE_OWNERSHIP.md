@@ -83,3 +83,27 @@ reintroduce “soft worker” as the primary Image open path; use cache + tiles.
    any (copy, do not move the item); `loadImage(path)` → LQIP/host sample +
    tile climb.
 4. Return to Workspace: `restoreStashedItems()` still has every tile.
+
+## Structural invariants (enforced)
+
+1. **Session membership ≠ canvas.** `m_session` is the only list of which images
+   exist. Gallery pack is a *view* of the session and may be rebuilt. It must
+   never be emptied by hiding tiles under size-resolve or by destroying stashed
+   pointers from another mode.
+2. **Mode stashes are exclusive owners of off-scene `ImageItem*`.**
+   `clearLiveCanvas` must not `delete` a pointer still listed in Workspace or
+   Gallery `m_stashedItems` (assert + skip).
+3. **Size-resolve must not `setVisible(false)` on live Gallery tiles.** Defer
+   only *creation* of new provisional cells; existing/restored tiles stay visible.
+4. **Image mode always has an underlay for non-empty `classicPath`.** After
+   `loadImage`, if `itemCount()==0`, force placeholder + frame.
+5. **Never `prepareImageModeCanvas` after an Image underlay exists** — it zeros
+   `sceneRect` and leaves the view blank.
+
+## Tile grid vs content rect
+
+Tile LOD plans in **file-native** pixel space. `contentRect` / intrinsic size
+are **layout** (oriented). `tileNativeSize()` must not fall back to oriented
+`imageSize()` when ContentXform has quarter-turns or flips — that paints
+unrotated tile patches inside a rotated layout box.
+

@@ -186,6 +186,17 @@ void ImageView::clearLiveCanvas()
     if (m_undoStack) {
         m_undoStack->clear();
     }
+    QSet<ImageItem *> protectedStash;
+    for (ImageItem *item : m_workspace.stashedItems()) {
+        if (item) {
+            protectedStash.insert(item);
+        }
+    }
+    for (ImageItem *item : m_gallery.stashedItems()) {
+        if (item) {
+            protectedStash.insert(item);
+        }
+    }
     // Snapshot unique pointers — m_items must never hold duplicates, but if it
     // does, destroying by index while mutating the list is unsafe.
     QList<ImageItem *> doomed;
@@ -193,6 +204,14 @@ void ImageView::clearLiveCanvas()
     for (ImageItem *item : m_items) {
         if (item && !seen.contains(item)) {
             seen.insert(item);
+            // Structural: never free a pointer that mode-stash still owns.
+            if (protectedStash.contains(item)) {
+                biltooModeDbg("clearLiveCanvas SKIP stashed ptr path=%s",
+                              qPrintable(item->path()));
+                Q_ASSERT_X(false, "clearLiveCanvas",
+                           "live list holds a mode-stashed ImageItem* — ownership bug");
+                continue;
+            }
             doomed.append(item);
         }
     }

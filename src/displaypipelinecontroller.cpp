@@ -1244,7 +1244,9 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
     installDisplayPixels(item, pixels, SessionAppearance::PixelKind::SoftPreview,
                          m_view->hostSessionId().currentIdValue());
     resetImageModeItemPlacement(item);
-    m_view->prepareImageModeCanvas();
+    // Do not prepareImageModeCanvas() here — it zeros sceneRect after the item
+    // exists (same class of empty ImageView as the cold-placeholder path).
+    m_view->syncImageModeSceneRect(item);
     m_view->applyImageModeFraming(item);
     m_view->setUpdatesEnabled(true);
     if (m_view->viewport()) {

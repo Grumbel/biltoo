@@ -188,7 +188,16 @@ QSize ImageItem::tileNativeSize() const
     if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
         return cached;
     }
-    // Fall back to layout size when native unknown (identity xform only).
+    // Layout imageSize() is *oriented* content size. Tile grid is always
+    // file-native. Using layout as native when ContentXform has quarter-turns
+    // makes plan densites and UV maps mismatch the oriented contentRect
+    // (tiles look unrotated / wrong aspect inside a correct box).
+    const ContentXform::Value x = liveContentXformForPaint();
+    if (ContentXform::normalizeQuarterTurns(x.quarterTurns) != 0
+        || x.hFlip || x.vFlip) {
+        return {};
+    }
+    // Identity xform only: layout size matches native probe.
     return imageSize();
 }
 

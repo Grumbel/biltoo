@@ -11,6 +11,7 @@
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "imageitem.h"
+#include "sessionappearance.h"
 #include "biltoo_logging.h"
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -91,6 +92,26 @@ void ImageController::enter()
         m_view->hostDisplayPipeline().loadImage(path);
     } else {
         biltooModeDbg("Image::enter EMPTY classicPath — no loadImage");
+    }
+    // Structural guarantee: Image mode always has an underlay for classicPath.
+    // loadImage / pendingTile must not leave live empty (prior: sceneRect wipe
+    // or createPlaceholder refused).
+    if (!path.isEmpty() && m_view->itemCount() == 0) {
+        biltooModeDbg("Image::enter FORCE underlay path=%s",
+                      qPrintable(QFileInfo(path).fileName()));
+        const QSize sz = m_view->layoutSizeForPath(path, ImageCache::get(path));
+        ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(path, sz);
+        if (ph) {
+            m_view->hostDisplayPipeline().bindImageModeSessionCursor(ph);
+            m_view->syncImageModeSceneRect(ph);
+            m_view->applyImageModeFraming(ph);
+            const QImage cached = ImageCache::get(path);
+            if (!cached.isNull()) {
+                m_view->hostDisplayPipeline().installDisplayPixels(
+                    ph, cached, SessionAppearance::PixelKind::SoftPreview,
+                    wantId);
+            }
+        }
     }
     biltooModeDbg("Image::enter done live=%d hasPixels=%d path=%s",
                   m_view->itemCount(),

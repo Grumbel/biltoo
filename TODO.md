@@ -2,6 +2,38 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2162-structural-canvas-ownership.** Structural fixes, not cosmetics.
+
+### Root causes (re-traced)
+
+1. **Gallery "disappears" after Image/Workspace return:** restored stash tiles
+   were fed into `setWorkspacePaths` → size-resolve active → **every live tile
+   `setVisible(false)`**. That is not membership change; it is a visibility
+   trap. Fixed: never hide under size-resolve; only defer *new* creation.
+2. **Image empty (remaining path):** soft install path still called
+   `prepareImageModeCanvas()` after creating the underlay (zeros sceneRect).
+   Fixed + Image::enter **forces** underlay if still empty after loadImage.
+3. **clearLiveCanvas could free mode-stashed pointers** if a pointer leaked into
+   live. Fixed: skip + Q_ASSERT.
+4. **Workspace tile content vs contentRect:** `tileNativeSize()` fell back to
+   oriented `imageSize()` when native unknown → tile grid planned at layout
+   size while bitmaps are file-native. Fixed: no oriented fallback when xform
+   has turns/flips.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2162-structural-canvas-ownership-e77da63.bundle HEAD
+```
+
+Next: **2163** — runtime with BILTOO_MODE_DEBUG; if assert fires, that is the
+ownership bug.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2161-mode-debug-format.** Cast `QList::size()` (`qsizetype`) to `int`
 in `biltooModeDbg` format args (Wformat on Qt 6 / 64-bit).
 

@@ -208,12 +208,14 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // on this path.
     const bool virtualize = isGalleryMode();
 
-    // Cold Gallery: defer all item creation until sizes settle (finish packs once).
+    // Cold Gallery: defer *new* item creation until sizes settle (finish packs
+    // once). NEVER hide existing live tiles — that made Gallery look empty after
+    // Image/Workspace return (restored stash → setWorkspacePaths → hide forever
+    // until finish/cancel). Membership is session; visibility is not a size gate.
     if (isGalleryMode() && m_gallerySoftBook.isDeferPopulate() && m_gallerySizeResolve.active()) {
-        // Remove any leftover live items so nothing paints at provisional size.
         for (ImageItem *item : m_items) {
-            if (item) {
-                item->setVisible(false);
+            if (item && !item->isVisible()) {
+                item->setVisible(true);
             }
         }
         validateUniqueLiveSessionIds("setWorkspacePaths");
