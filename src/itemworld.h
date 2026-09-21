@@ -132,6 +132,35 @@ public:
         syncComponentsFromState(id, s);
     }
 
+    /**
+     * Upsert content components present in @p state; never remove siblings.
+     * Empty crop / identity bake / identity color / empty attention are skipped
+     * (not treated as clears). Placement is never touched. Use for XDG seed and
+     * orient bake paths that must not wipe attention or Workspace pose.
+     */
+    void mergeContentFromState(SessionImageId id, const WorkspaceItemState &state)
+    {
+        if (id == kInvalidSessionImageId) {
+            return;
+        }
+        const ItemComponents::Crop c = ItemComponents::cropFromState(state);
+        if (!c.isEmpty()) {
+            m_crops.insert(id, c);
+        }
+        const ItemComponents::Attention a = ItemComponents::attentionFromState(state);
+        if (!a.isEmpty()) {
+            m_attentions.insert(id, a);
+        }
+        const ItemComponents::ContentBake b = ItemComponents::contentBakeFromState(state);
+        if (!b.isIdentity()) {
+            m_contentBakes.insert(id, b);
+        }
+        const ItemComponents::Color col = ItemComponents::colorFromState(state);
+        if (!col.isIdentity()) {
+            m_colors.insert(id, col);
+        }
+    }
+
     void removeAppearance(SessionImageId id)
     {
         if (id == kInvalidSessionImageId) {

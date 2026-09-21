@@ -312,7 +312,10 @@ bool CropController::applyCropCommit(ImageItem *item)
             st = m_view->freezeItemAppearance(item);
             session().seedApplyCropState(&st, item->offset(), item->imageSize());
             if (sid != kInvalidSessionImageId) {
-                m_view->itemWorld().setAppearance(sid, st);
+                // Crop seed only — do not clear attention/color/placement.
+                m_view->itemWorld().setCrop(sid, ItemComponents::cropFromState(st));
+                m_view->itemWorld().setContentBake(
+                    sid, ItemComponents::contentBakeFromState(st));
             }
         }
         CropSession::ApplyBakeResult baked =

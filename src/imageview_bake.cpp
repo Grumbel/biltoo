@@ -84,21 +84,9 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.orientation = 0.0;
         s.contentQuarterTurns = turns;
         if (sid != kInvalidSessionImageId) {
-            // Preserve placement fields from previous appearance when present.
-            if (m_itemWorld.hasDurableAppearance(sid)) {
-                const WorkspaceItemState prev = sessionAppearanceValue(sid);
-                s.pos = prev.pos;
-                s.scale = prev.scale;
-                s.scaleY = prev.scaleY;
-                s.shear = prev.shear;
-                s.rotation = prev.rotation;
-                s.opacity = prev.opacity;
-                s.z = prev.z;
-                s.hFlip = prev.hFlip;
-                s.vFlip = prev.vFlip;
-                s.sessionIndex = prev.sessionIndex;
-            }
-            m_itemWorld.setAppearance(sid, s);
+            // Content bake/crop only — do not re-sync attention/color/placement.
+            m_itemWorld.setContentBake(sid, ItemComponents::contentBakeFromState(s));
+            m_itemWorld.setCrop(sid, ItemComponents::cropFromState(s));
             persistDurableContentAppearance(item, s, "bakeRotate");
         }
         // Keep path map content fields in sync so pack afterEach cannot leave
@@ -139,7 +127,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     }
 
     // Undo after-image: absolute content from want; live pose from the item.
-    // Do not rebuild via captureState — store already matches want after setAppearance.
+    // Do not rebuild via captureState — sparse bake/crop already match want.
     WorkspaceItemState afterSt = want;
     ItemComponents::applyPlacementToState(afterSt, placementFromItem(item));
     afterSt.sessionId = beforeSt.sessionId;
@@ -204,12 +192,11 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     applyContentLayoutSize(item, want);
 
     if (sid != kInvalidSessionImageId) {
-        // Absolute content from want; live pose from the item (same boundary as
-        // project save / captureState overlays).
+        // Content bake/crop only — do not re-sync attention/color/placement.
         WorkspaceItemState s = want;
         s.sessionId = sid;
-        ItemComponents::applyPlacementToState(s, placementFromItem(item));
-        m_itemWorld.setAppearance(sid, s);
+        m_itemWorld.setContentBake(sid, ItemComponents::contentBakeFromState(s));
+        m_itemWorld.setCrop(sid, ItemComponents::cropFromState(s));
         persistDurableContentAppearance(item, s, "bakeFlip");
     } else if (cropMap.hasCrop) {
         WorkspaceItemState s = want;

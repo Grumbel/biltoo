@@ -47,6 +47,7 @@ private slots:
     // Stage 4b readiness: sparse survives fat removal (dual-write lag)
     void hasDurableAppearance_sparseOnlyAfterFatRemoved();
     void setAppearance_preservesExistingPlacement();
+    void mergeContentFromState_doesNotClearSiblings();
 };
 
 
@@ -600,6 +601,38 @@ void ItemWorldTest::setPathState_stripsCropWhenBound()
     QVERIFY(u);
     QVERIFY(u->hasCrop);
     QCOMPARE(u->cropRect, QRect(5, 5, 10, 10));
+}
+
+
+void ItemWorldTest::mergeContentFromState_doesNotClearSiblings()
+{
+    ItemWorld world;
+    ItemComponents::Attention att;
+    att.points = {QPointF(0.25, 0.75)};
+    world.setAttention(3, att);
+    ItemComponents::Placement pl;
+    pl.pos = QPointF(11, 22);
+    world.setPlacement(3, pl);
+
+    WorkspaceItemState seed;
+    seed.contentHFlip = true;
+    seed.colorAdjust.brightness = 15;
+    world.mergeContentFromState(3, seed);
+
+    QVERIFY(world.hasContentBake(3));
+    QVERIFY(world.contentBake(3).hFlip);
+    QVERIFY(world.hasColor(3));
+    QCOMPARE(world.color(3).grade.brightness, 15);
+    // Siblings preserved
+    QVERIFY(world.hasAttention(3));
+    QCOMPARE(world.attention(3).points.size(), 1);
+    QVERIFY(world.hasPlacement(3));
+    QCOMPARE(world.placement(3).pos, QPointF(11, 22));
+
+    // Empty merge does not clear bake
+    world.mergeContentFromState(3, WorkspaceItemState{});
+    QVERIFY(world.hasContentBake(3));
+    QVERIFY(world.hasColor(3));
 }
 
 QTEST_MAIN(ItemWorldTest)

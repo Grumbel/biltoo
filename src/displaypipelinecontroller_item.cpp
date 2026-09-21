@@ -276,7 +276,8 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
             stored.gradeBrightness, stored.gradeContrast, stored.gradeSaturation,
             stored.gradeHue, stored.gradeGamma, stored.gradeInvert);
     }
-    m_view->itemWorld().setAppearance(sid, seed);
+    // Upsert orient/grade only — must not clear attention or Placement.
+    m_view->itemWorld().mergeContentFromState(sid, seed);
 }
 
 

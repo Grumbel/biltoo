@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2061-merge-content-from-state.** Content upsert API; seed/bake no longer clear siblings.
+Prior: **2060**.
+
+### Change
+- `ItemWorld::mergeContentFromState` — upsert non-empty content components only
+- XDG appearance seed uses merge (not full setAppearance)
+- bake rotate/flip write setContentBake + setCrop only
+- crop apply seed uses setCrop + setContentBake
+- Test: mergeContentFromState_doesNotClearSiblings
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2061-merge-content-from-state-e77da63.bundle HEAD
+```
+Requires tip **2060** (base **e77da63**); includes 1938–2061.
+
+### Next
+- Remaining full setAppearance sites are intentional full-replace (project load,
+  workspace snapshot, bind, content reset)
+- Phase 7 Stage 2 / Phase 6 Tier 4 when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2060-store-crop-component-writes.** storeCropAppearance writes crop+bake only.
 Prior: **2059**.
 
