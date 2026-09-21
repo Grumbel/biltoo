@@ -641,12 +641,12 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-itemworld-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME itemworld COMMAND biltoo-itemworld-test)
 
-  # Tier 4 characterization: pure scaffold by default; link biltoo_lib when
-  # -DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON (see docs/IMAGEVIEW_CHARACTERIZATION.md).
+  # Tier 4 characterization: full ImageView harness by default (links biltoo_lib).
+  # OFF = pure scaffold only (low-RAM escape hatch). See docs/IMAGEVIEW_CHARACTERIZATION.md.
   option(BILTOO_IMAGEVIEW_CHARACTERIZATION
-         "Link biltoo_lib into characterization test (offscreen ImageView)" OFF)
+         "Link biltoo_lib into characterization test (offscreen ImageView)" ON)
   if(BILTOO_IMAGEVIEW_CHARACTERIZATION)
-    message(STATUS "ImageView characterization: linking biltoo_lib (full harness)")
+    message(STATUS "ImageView characterization: full harness (biltoo_lib)")
     add_executable(biltoo-imageview-characterization-test
       tests/imageview_characterization.cpp
     )
@@ -658,7 +658,7 @@ if(Qt6Test_FOUND)
       BILTOO_HAVE_IMAGEVIEW_HARNESS=1
     )
   else()
-    message(STATUS "ImageView characterization: pure scaffold (enable with -DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON)")
+    message(STATUS "ImageView characterization: pure scaffold only (-DBILTOO_IMAGEVIEW_CHARACTERIZATION=OFF)")
     add_executable(biltoo-imageview-characterization-test
       tests/imageview_characterization.cpp
       src/sessiondocument.cpp

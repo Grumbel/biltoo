@@ -701,7 +701,7 @@ green; full ImageView decode harness still pending.
 API removed — 1887; (6) **ImageView harness green** (decode + framing) — still
 open. Member `m_pathOrderBook` already gone under `src/`.
 
-**Safe next steps:** verify `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` builds
+**Safe next steps:** characterization defaults to full harness (`biltoo_lib`);
 and green on a Qt host (1891–1892). Then optional decode/framing assertions.
 Do not pack from SessionDocument alone until that config is trusted.
 
@@ -777,12 +777,12 @@ split (1913–1915): `host_accessors` bags, `host_ops` / `host_crop_display` /
 **Still open:**
 1. **Tier 4 residual** — Appearance on `SessionDocument` (Tier 4b). Pack order
    on `PackOrderOverlay` (1883–1884). Pure + dual-model (1885–1886); dead
-   read-source API (1887). `biltoo_lib` + optional characterization link
-   (1891). Offscreen ImageView body exercises pack/crop/LoadAdd without
-   decode wait (1892). **Pure scaffold green** (1921: 16 pass / 1 skip on Qt 6.11). **Still open:**
-   full harness decode/framing; green ctest with
-   `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` (needs RAM for biltoo_lib).
-   See PATH_ORDER.md / IMAGEVIEW_CHARACTERIZATION.md.
+   read-source API (1887). `biltoo_lib` + characterization full harness (1891;
+   default ON since 1996). Offscreen ImageView body exercises pack/crop/LoadAdd
+   without decode wait (1892). **Full harness green** (1973: 17 pass / 0 skip).
+   **Still open:** optional decode/framing assertions. Low-RAM: configure with
+   `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=OFF`. See PATH_ORDER.md /
+   IMAGEVIEW_CHARACTERIZATION.md.
 2. **Tier 5** — **done** for exit size: PreferCache/install/schedule/tile LOD on
    `DisplayPipelineController` (split TUs + jobs). Soft provider and neighbor
    prefetch stay on ImageView. ImageView→pipeline thin-forward TU removed
@@ -1236,6 +1236,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1993: SlideshowController + WorkspaceController use GalleryLayout::applyItemPlacement (no new friends).
 - biltoo-1994: Q_INIT_RESOURCE(icons) — static biltoo_lib RCC must be forced into the exe.
 - biltoo-1995: privatize syncGalleryScrollCache; tests value-read via appearanceValue.
+- biltoo-1996: BILTOO_IMAGEVIEW_CHARACTERIZATION defaults ON (full harness).
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

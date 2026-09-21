@@ -43,27 +43,24 @@ transitions, framing, or Live canvas.
 
 ```text
 tests/imageview_characterization.cpp
-  - pure: always on (session + PackOrderOverlay + ItemWorld + ContentXform)
-  - full: links ${BILTOO_LIB_SOURCES} when BILTOO_IMAGEVIEW_CHARACTERIZATION=ON
+  - pure cases: session + PackOrderOverlay + ItemWorld + ContentXform
+  - full cases: offscreen ImageView (default CMake; BILTOO_HAVE_IMAGEVIEW_HARNESS)
   - QTEST_MAIN
   - fixtures: temp dir with 2× solid-colour PNGs
 ```
 
-CMake pure target is always built with `Qt6Test` (default).
-
-Full harness: `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON` links **`biltoo_lib`**
-and defines `BILTOO_HAVE_IMAGEVIEW_HARNESS`. `imageView_openGalleryCropReturn`
-constructs an offscreen `ImageView`, binds document/appearance, enters Gallery,
-sets workspace paths, commits a crop via ItemWorld, clears pack order, and
-asserts LoadAdd multiplicity — without waiting on decode.
+Default CMake links **`biltoo_lib`** and defines `BILTOO_HAVE_IMAGEVIEW_HARNESS`.
+Escape hatch: `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=OFF` builds the pure scaffold
+only (ImageView slots QSKIP). `imageView_openGalleryCropReturn` constructs an
+offscreen `ImageView`, binds document/appearance, enters Gallery, sets workspace
+paths, commits a crop via ItemWorld, clears pack order, and asserts LoadAdd
+multiplicity — without waiting on decode.
 
 ## Assertions (checklist)
 
-### Pure (green — imageview-characterization)
+### Pure (always run)
 
-Verified 2026-09-21 on Qt 6.11 (`nix develop`, pure scaffold, offscreen):
-**16 passed, 0 failed, 1 skipped** (full ImageView slot skips without
-`-DBILTOO_IMAGEVIEW_CHARACTERIZATION=ON`). See AGENT-ENV.md for commands.
+Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 
 
 - [x] After open: `doc.size() == 2`, unique ids

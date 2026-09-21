@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1996-characterization-default-on.** Full ImageView characterization by default.
+Prior: **1995**.
+
+### Change
+- `BILTOO_IMAGEVIEW_CHARACTERIZATION` defaults **ON** (links `biltoo_lib`, full harness)
+- OFF remains as a low-RAM pure-scaffold escape hatch
+- Docs (AGENT-ENV, IMAGEVIEW_CHARACTERIZATION, REFACTOR) match — no more “enable with -D…”
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1996-characterization-default-on-e77da63.bundle HEAD
+```
+Requires tip **1995** (base **e77da63**); includes 1938–1996.
+
+### Next
+- Full build + characterization green on default configure
+- Optional: Stage 4 dual-write reduction
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1995-private-gallery-scroll-cache.** Privatize syncGalleryScrollCache; tests use appearanceValue.
 Prior: **1994**.
 

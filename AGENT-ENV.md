@@ -32,31 +32,26 @@ minimum is 6.9 via nixpkgs.
 
 See biltoo tip **353** and thumtoo tip **121** for the end-of-session stack.
 
-## Characterization (pure scaffold) — verified 2026-09-21
+## Characterization — verified 2026-09-21
 
-With `nix develop` (Qt 6.11 from flake) and default CMake (no
-`BILTOO_IMAGEVIEW_CHARACTERIZATION`):
+Default CMake links the **full** offscreen ImageView harness (`biltoo_lib`).
+Low-RAM escape hatch: `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=OFF` (pure scaffold;
+ImageView cases QSKIP).
 
 ```bash
 nix develop -c bash -c '
   export BILTOO_BUILD_DIR=/tmp/biltoo-build
-  biltoo-configure   # or cmake -S . -B "$BILTOO_BUILD_DIR"
+  biltoo-configure
   cmake --build "$BILTOO_BUILD_DIR" -j1 --target biltoo-imageview-characterization-test
   QT_QPA_PLATFORM=offscreen "$BILTOO_BUILD_DIR/biltoo-imageview-characterization-test"
 '
 ```
 
-**Result (tip 1920 tree):** 16 passed, 0 failed, 1 skipped
-(`imageView_openGalleryCropReturn` skips without CHARACTERIZATION=ON).
+**Result (tip 1972/1973, Qt 6.11.2):** `ctest` 18/18; characterization **17 passed,
+0 skipped** including `imageView_openGalleryCropReturn`.
 
-Includes Stage 1–2 id-keyed component × `pathOrderClear` locks (Crop, Placement,
-ContentBake, Color, Attention).
+**Memory:** ~1 GiB hosts need `-j1` (parallel `g++` OOMs). Linking `biltoo_lib`
+into the test is multi-minute at `-j1` and may still OOM — prefer more RAM/swap,
+or configure with `-DBILTOO_IMAGEVIEW_CHARACTERIZATION=OFF`.
 
-**Full harness green (2026-09-21, tip 1972/1973):** host with Qt 6.11.2 — `ctest` 18/18; direct offscreen characterization **17 passed, 0 skipped** including `imageView_openGalleryCropReturn`.
-
-**Memory:** ~1 GiB host RAM needs `-j1` (parallel `g++` OOMs). Full
-`biltoo_lib` + CHARACTERIZATION=ON is multi-minute at `-j1` and may still OOM
-linking large TUs — prefer a machine with more RAM/swap for the full harness.
-
-**System Qt 6.4 (Ubuntu Noble):** cannot build pure scaffold —
-`QImage::flipped` and `QThread::isMainThread` need newer Qt (project min 6.9).
+**System Qt 6.4 (Ubuntu Noble):** not supported — project minimum is Qt ≥ 6.9.
