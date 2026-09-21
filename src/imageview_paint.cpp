@@ -160,7 +160,9 @@ void ImageView::paintWorkspaceViewportChrome(QPainter &painter)
             }
         }
         std::sort(selected.begin(), selected.end(),
-                  [](ImageItem *a, ImageItem *b) { return a->stackZ() < b->stackZ(); });
+                  [](ImageItem *a, ImageItem *b) {
+                      return a->placement().z < b->placement().z;
+                  });
         if (selected.size() == 1) {
             selected.first()->paintInteractionChrome(&painter);
         } else if (selected.size() > 1) {

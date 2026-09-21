@@ -193,7 +193,9 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
             ImageItem *hoverOwner = nullptr;
             ImageItem::Handle hoverH = ImageItem::Handle::None;
             std::sort(candidates.begin(), candidates.end(),
-                      [](ImageItem *a, ImageItem *b) { return a->stackZ() > b->stackZ(); });
+                      [](ImageItem *a, ImageItem *b) {
+                          return a->placement().z > b->placement().z;
+                      });
             for (ImageItem *item : candidates) {
                 const ImageItem::Handle h = item->handleAt(item->mapFromScene(scenePos));
                 if (h != ImageItem::Handle::None) {

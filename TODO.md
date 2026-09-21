@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1971-drop-stackz-field-getter.** Drop public stackZ(); placement().z only.
+Prior: **1970**.
+
+### Change
+- Remove public `stackZ()`; all z-order readers use `placement().z`
+- Raise/lower, paint chrome sort, workspace hover, and duplicate offset use Placement
+- ImageItem public pose surface is now only `placement()` / `applyPlacement()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1971-drop-stackz-field-getter-e77da63.bundle HEAD
+```
+Requires tip **1970** (base **e77da63**); includes 1938–1971.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host (priority)
+- Privatize setSourceImage/setPreviewImage/clearDecodedPixels behind
+  DisplayPipeline / ImageView install paths
+- Color sparse-table readers where fat DTO is redundant
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1970-placement-sole-pose-reader.** placement() sole pose reader.
 Prior: **1969**.
 

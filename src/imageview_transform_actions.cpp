@@ -91,10 +91,12 @@ QList<ImageItem *> overlappingStack(ImageItem *item, const QList<ImageItem *> &a
         }
     }
     std::sort(layer.begin(), layer.end(), [](ImageItem *a, ImageItem *b) {
-        if (StackGeometry::zLess(a->stackZ(), b->stackZ())) {
+        const qreal za = a->placement().z;
+        const qreal zb = b->placement().z;
+        if (StackGeometry::zLess(za, zb)) {
             return true;
         }
-        if (StackGeometry::zGreater(a->stackZ(), b->stackZ())) {
+        if (StackGeometry::zGreater(za, zb)) {
             return false;
         }
         return a < b;
@@ -215,7 +217,7 @@ void ImageView::raiseItem(ImageItem *item)
     const ItemComponents::Placement beforeItem = placementFromItem(item);
     const ItemComponents::Placement beforeAbove = placementFromItem(above);
     const StackGeometry::ZStep step =
-        StackGeometry::raiseStep(item->stackZ(), above->stackZ());
+        StackGeometry::raiseStep(item->placement().z, above->placement().z);
     {
         ItemComponents::Placement pl = item->placement();
         pl.z = step.selfZ;
@@ -252,7 +254,7 @@ void ImageView::lowerItem(ImageItem *item)
     const ItemComponents::Placement beforeItem = placementFromItem(item);
     const ItemComponents::Placement beforeBelow = placementFromItem(below);
     const StackGeometry::ZStep step =
-        StackGeometry::lowerStep(item->stackZ(), below->stackZ());
+        StackGeometry::lowerStep(item->placement().z, below->placement().z);
     {
         ItemComponents::Placement pl = item->placement();
         pl.z = step.selfZ;
@@ -294,8 +296,10 @@ void ImageView::raiseSelected()
     }
     std::sort(sel.begin(), sel.end(),
               [](ImageItem *a, ImageItem *b) {
-                  return StackGeometry::zGreater(a->stackZ(), b->stackZ())
-                      || (qFuzzyCompare(a->stackZ(), b->stackZ()) && a > b);
+                  const qreal za = a->placement().z;
+                  const qreal zb = b->placement().z;
+                  return StackGeometry::zGreater(za, zb)
+                      || (qFuzzyCompare(za, zb) && a > b);
               });
     for (ImageItem *item : sel) {
         raiseItem(item);
@@ -321,8 +325,10 @@ void ImageView::lowerSelected()
     }
     std::sort(sel.begin(), sel.end(),
               [](ImageItem *a, ImageItem *b) {
-                  return StackGeometry::zLess(a->stackZ(), b->stackZ())
-                      || (qFuzzyCompare(a->stackZ(), b->stackZ()) && a < b);
+                  const qreal za = a->placement().z;
+                  const qreal zb = b->placement().z;
+                  return StackGeometry::zLess(za, zb)
+                      || (qFuzzyCompare(za, zb) && a < b);
               });
     for (ImageItem *item : sel) {
         lowerItem(item);

@@ -116,11 +116,6 @@ public:
     ItemComponents::Placement placement() const;
     /** Apply Workspace pose (Stage 2 single writer for item pose). */
     void applyPlacement(const ItemComponents::Placement &pl);
-    /**
-     * Persistent stacking order (selection may temporarily raise the item).
-     * Cheap field getter for z-order sorts; also available as placement().z.
-     */
-    qreal stackZ() const { return m_stackZ; }
     /** Item-local pixmap/content rect (no chrome pad). */
     QRectF contentRect() const;
     /**

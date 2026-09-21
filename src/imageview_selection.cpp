@@ -265,7 +265,7 @@ void ImageView::duplicateSelected()
         if (isWorkspaceMode()) {
             ItemComponents::Placement pl = src->placement();
             pl.pos += QPointF(40.0, 40.0); // visible beside the original
-            pl.z = src->stackZ() + 0.01;
+            pl.z += 0.01;
             copy->applyPlacement(pl);
         } else {
             // Gallery: upright tile; MainWindow packs after binding session ids.
