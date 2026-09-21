@@ -79,6 +79,7 @@ Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 - [x] Applied ContentXform runtime table survives pathOrderClear; not durable; clearAppearance drops it
 - [x] Live colour lag runtime table survives pathOrderClear; not durable Color; clearAppearance drops it
 - [x] ViewFraming defaults, fit/fill transitions, sticky pan norms (pure)
+- [x] ViewTransform uniformFitScale / padded / fitRectCentered (pure)
 
 ### Full ImageView (`BILTOO_HAVE_IMAGEVIEW_HARNESS`)
 
@@ -89,9 +90,10 @@ Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 - [x] Applied ContentXform + liveColorLag on focus; siblings clean; survive pathOrderClear
 - [x] Soft install (fixture PNG → SoftPreview) without async decode wait; sibling clean
 - [x] ViewFraming defaults on offscreen ImageView construct
+- [x] prepareImageModeCanvas resets view scale to 1 + Fit; fitItem yields positive view scale
 - [x] `pathOrderClear` leaves doc + all id-keyed components; LoadAdd multiplicity
 - [ ] Full async decode / PreferCache ladder (optional; not required for pack dual-model)
-- [ ] Live framing / return-to-Image view matrix (later; pure ViewFraming locked)
+- [ ] Full return-to-Image navigate + sticky pan restore (later; pure + canvas prep locked)
 
 ## Landed
 

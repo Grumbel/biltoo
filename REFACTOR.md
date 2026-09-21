@@ -1491,6 +1491,8 @@ Phase 1–6 rules still apply. Additions:
   ImageView harness applied ContentXform + liveColorLag survive pathOrderClear.
 - biltoo-2096: Phase 6 Tier 4 residual — soft install characterization (fixture
   PNG SoftPreview, no async wait); ViewFraming defaults on offscreen construct.
+- biltoo-2097: Phase 6 Tier 4 residual — ViewTransform pure fit/pad; harness
+  prepareImageModeCanvas + fitItem framing scale asserts.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

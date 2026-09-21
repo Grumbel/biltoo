@@ -21,6 +21,7 @@
 #include "itemcomponents.h"
 #include "contentxform.h"
 #include "viewframing.h"
+#include "viewtransform.h"
 #include "imageview_types.h"
 
 #if defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)
@@ -57,6 +58,7 @@ private slots:
     void returnToImage_liveColorLagSurvivesPathOrderClear();
     void viewFraming_defaultsAndFitFill();
     void viewFraming_stickyPanNorms();
+    void viewTransform_uniformFitAndPadded();
 
     void imageView_openGalleryCropReturn();
 
@@ -512,6 +514,26 @@ void ImageViewCharacterizationTest::viewFraming_stickyPanNorms()
     QVERIFY(f.stickyPanNormPoint().y() <= 1.0);
 }
 
+/** Phase 6 Tier 4 residual: pure ViewTransform fit scale and padded bounds. */
+void ImageViewCharacterizationTest::viewTransform_uniformFitAndPadded()
+{
+    QCOMPARE(ViewTransform::uniformFitScale(200.0, 100.0, 100.0, 50.0), 2.0);
+    QCOMPARE(ViewTransform::uniformFitScale(100.0, 100.0, 200.0, 100.0), 0.5);
+    // Zero content width is floored to 1 so scale stays finite.
+    QCOMPARE(ViewTransform::uniformFitScale(100.0, 100.0, 0.0, 50.0), 2.0);
+
+    const QRectF bounds(10.0, 20.0, 40.0, 30.0);
+    const QRectF pad = ViewTransform::padded(bounds, 5.0);
+    QCOMPARE(pad, QRectF(5.0, 15.0, 50.0, 40.0));
+    QVERIFY(ViewTransform::padded(QRectF(), 8.0).isEmpty());
+
+    const QRectF fitted = ViewTransform::fitRectCentered(QRectF(0, 0, 200, 100),
+                                                         QSizeF(50, 50));
+    QCOMPARE(fitted.width(), 100.0);
+    QCOMPARE(fitted.height(), 100.0);
+    QCOMPARE(fitted.center(), QPointF(100.0, 50.0));
+}
+
 void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
 {
 #if !defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)
@@ -607,6 +629,17 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         if (ImageItem *otherItem = view.findItemBySessionId(other)) {
             QVERIFY(!otherItem->hasDisplayPixels());
         }
+
+        // Live framing residual: Image-mode canvas prep resets view matrix + Fit.
+        view.prepareImageModeCanvas();
+        QVERIFY(view.hostFraming().isFitMode());
+        QVERIFY(!view.hostFraming().isFillMode());
+        QCOMPARE(ViewTransform::scaleFrom(view.transform()), 1.0);
+
+        // fitItem uses view matrix for framing (DOMAIN); scale > 0 after fit.
+        view.fitItem(focusItem, Qt::KeepAspectRatio);
+        QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
+        QVERIFY(view.hostFraming().isFitMode());
     }
 
     // Mode-leave style clear: pack blank; all id-keyed components intact.

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2097-framing-viewtransform-characterization.** Phase 6 Tier 4 residual: ViewTransform pure + live fitItem framing.
+Prior: **2096**.
+
+### Change
+- Pure: `viewTransform_uniformFitAndPadded`
+- ImageView harness: `prepareImageModeCanvas` resets scale + Fit; `fitItem`
+  yields positive view scale under SoftPreview + crop want
+- Checklist updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2097-framing-viewtransform-characterization-e77da63.bundle HEAD
+```
+Requires tip **2096** (base **e77da63**); includes 1938–2097.
+
+### Next
+- Phase 6 Tier 4: full async decode / PreferCache ladder (optional)
+- Phase 6 Tier 4: full return-to-Image navigate + sticky pan restore (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2096-soft-install-characterization.** Phase 6 Tier 4 residual: soft install without async decode; framing defaults on view.
 Prior: **2095**.
 
