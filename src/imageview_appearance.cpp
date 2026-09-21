@@ -201,6 +201,12 @@ void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
     item->setSessionId(id);
     // Stage 2 residual: list-order cache follows document when the id is bound.
     refreshSessionIndexCache(item);
+    // Migrate applied ContentXform mirror into ItemWorld when binding so
+    // itemAppliedContentXform prefers the runtime table after late bind
+    // (content was applied while unbound).
+    if (id != kInvalidSessionImageId && item->hasAppliedContentXform()) {
+        m_itemWorld.setAppliedContentXform(id, item->tileContentXform());
+    }
 }
 
 void ImageView::setItemSessionIndex(ImageItem *item, int index)

@@ -202,9 +202,8 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
             // Freeze policy for bind seed (store + live when durable, not mid-edit).
             slot = freezeItemAppearance(item);
         }
-        item->setSessionId(id);
-        // List-order cache must follow document for the new id (Stage 2 residual).
-        refreshSessionIndexCache(item);
+        // setItemSessionId: list-order refresh + applied→ItemWorld migrate (2083).
+        setItemSessionId(item, id);
         // Live placement from the canvas item (Duplicate offsets, scales, …).
         ItemComponents::applyPlacementToState(slot, item->placement());
         // Content/color already from freeze/pending; do not overwrite

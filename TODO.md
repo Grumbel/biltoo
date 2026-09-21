@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2083-bind-migrate-applied-contentxform.** Stage 2 residual: migrate applied ContentXform to ItemWorld on bind; pipeline stash uses helpers.
+Prior: **2082**.
+
+### Change
+- `setItemSessionId`: when binding, copy item applied mirror into ItemWorld
+- `bindSelectedSessionIds` uses `setItemSessionId` (list-order + applied migrate)
+- DisplayPipeline stash pixel path uses `itemHas/itemAppliedContentXform`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2083-bind-migrate-applied-contentxform-e77da63.bundle HEAD
+```
+Requires tip **2082** (base **e77da63**); includes 1938–2083.
+
+### Next
+- Stage 2: paint-grade lag residual, or further ImageItem applied demotion
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2082-cropsession-applied-from-view.** Stage 2 residual: CropSession takes applied ContentXform from ImageView helpers.
 Prior: **2081**.
 

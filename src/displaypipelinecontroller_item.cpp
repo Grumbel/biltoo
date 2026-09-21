@@ -338,7 +338,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         m_view->itemAppliedContentXform(item).applyToState(want);
     } else if (id != kInvalidSessionImageId) {
         // No applied fingerprint: fill empty DTO fields from ItemWorld sparse
-        // Crop / ContentBake (tileContentXform is applied-only after 1966).
+        // Crop / ContentBake sparse fill when no applied fingerprint (1966+).
         ContentXform::Value sparse;
         if (m_view->itemWorld().hasContentBake(id)) {
             const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);
@@ -503,8 +503,9 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         }
         const bool sameId = (m_view->hostSessionId().hasCurrentId()
                              && cand->sessionId() == m_view->hostSessionId().currentIdValue());
-        const bool hasApplied = cand->hasAppliedContentXform();
-        const ContentXform::Value applied = cand->tileContentXform();
+        // Stage 2: ItemWorld when bound (stashed tiles still dual-written).
+        const bool hasApplied = m_view->itemHasAppliedContentXform(cand);
+        const ContentXform::Value applied = m_view->itemAppliedContentXform(cand);
         // Display-ready: same session row and bake already matches store want.
         if (sameId && hasApplied && ContentXform::equal(applied, wantX)) {
             if (displayReadyOut) {
