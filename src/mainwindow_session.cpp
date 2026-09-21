@@ -2059,15 +2059,35 @@ void MainWindow::removeSessionIds(const QVector<SessionImageId> &ids)
 
 void MainWindow::removeSessionPaths(const QStringList &paths)
 {
-    // Path-only fallback (first match per path). Prefer removeSessionIds.
+    // Path-only fallback when list index is unknown. Prefer removeSessionIds /
+    // removeSessionIndices. When the same path appears more than once in
+    // @p paths, map to successive session occurrences (not always the first).
     if (paths.isEmpty() || m_session.isEmpty()) {
         return;
     }
     QList<int> indices;
+    QHash<QString, int> pathOccurrence;
+    const QStringList &sessionPaths = m_session.paths();
     for (const QString &path : paths) {
-        const int idx = m_session.paths().indexOf(path);
-        if (idx >= 0) {
-            indices.append(idx);
+        if (path.isEmpty()) {
+            continue;
+        }
+        const int wantOcc = pathOccurrence.value(path, 0);
+        pathOccurrence[path] = wantOcc + 1;
+        int seen = 0;
+        int found = -1;
+        for (int i = 0; i < sessionPaths.size(); ++i) {
+            if (sessionPaths.at(i) != path) {
+                continue;
+            }
+            if (seen == wantOcc) {
+                found = i;
+                break;
+            }
+            ++seen;
+        }
+        if (found >= 0 && !indices.contains(found)) {
+            indices.append(found);
         }
     }
     removeSessionIndices(indices);

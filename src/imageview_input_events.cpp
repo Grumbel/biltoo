@@ -290,8 +290,15 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
         emit sessionImageFocused(item->sessionId());
         return;
     }
-    // Unbound but list-order known: prefer slot over path first-match.
-    const int listIdx = sessionListIndex(item);
+    // Unbound: list-order cache, then Gallery live index (pack-aligned after reorder).
+    int listIdx = sessionListIndex(item);
+    if (listIdx < 0 && isGalleryMode()) {
+        const int live = m_items.indexOf(item);
+        if (live >= 0
+            && (!m_sessionDoc || live < m_sessionDoc->size())) {
+            listIdx = live;
+        }
+    }
     if (listIdx >= 0) {
         emit sessionSlotFocused(listIdx);
         return;

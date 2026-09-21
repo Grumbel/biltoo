@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2115-gallery-focus-live-index-path-remove.** SESSION residual: Gallery focus live-index + occurrence-aware path remove.
+Prior: **2114**.
+
+### Change
+- `emitGalleryItemFocus`: Gallery unbound without list cache uses live canvas
+  index as pack-aligned slot (same as open)
+- `removeSessionPaths`: successive path occurrences map to successive session
+  rows (not always first-match)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2115-gallery-focus-live-index-path-remove-e77da63.bundle HEAD
+```
+Requires tip **2114** (base **e77da63**); includes 1938–2115.
+
+### Next
+- SESSION residual: path open only when unbound without list/live index;
+  PendingItemAppearanceBook for rare create-without-id
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2114-emit-item-open-in-image-mode.** SESSION residual: unified tile open id→slot→path.
 Prior: **2113**.
 
