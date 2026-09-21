@@ -1339,6 +1339,8 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2020: Stage 4 design — persistent vs derived tags, 4a/4b migration.
 - biltoo-2021: Stage 4a — project/clipboard boundary via sessionAppearanceValue;
   ItemWorld persistence tags; load dual-fills via setSessionAppearance.
+- biltoo-2022: Stage 2 residual — captureState seeds from sessionAppearanceValue;
+  loadRestoreCropAppearance durable crop via store read.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

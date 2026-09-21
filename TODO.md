@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2022-capturestate-store-seed.** Stage 2 residual: captureState seeds from sparse-prefer store.
+Prior: **2021**.
+
+### Change
+- `captureState` builds durable content via `sessionAppearanceValue` for bound ids,
+  then overlays live pose / applied ContentXform / grade (no parallel sparse merge)
+- `loadRestoreCropAppearance` uses `sessionAppearanceValue` when ItemWorld has crop
+  (live tile xform still uses `captureState`)
+- `ImageView::captureState` API comment: durable reads → sessionAppearanceValue
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2022-capturestate-store-seed-e77da63.bundle HEAD
+```
+Requires tip **2021** (base **e77da63**); includes 1938–2022.
+
+### Next
+- Further thin `captureState` call sites where only durable store is needed
+- Optional: characterization scenario pose-only vs content-only rows
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2021-stage4a-persistence-boundary.** Stage 4a project/clipboard sparse-prefer boundary.
 Prior: **2020**.
 
