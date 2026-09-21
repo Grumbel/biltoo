@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2119-primary-item-prefer-sessionId.** SESSION residual: Image-mode primaryItem prefers SessionImageId.
+Prior: **2118**.
+
+### Change
+- `primaryItem()`: in Image mode, return the tile bound to
+  `m_sessionId.currentIdValue()` before first-in-list
+- Content-blur paint and Image hard-reload use that resolution; classic path
+  remains last resort
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2119-primary-item-prefer-sessionId-e77da63.bundle HEAD
+```
+Requires tip **2118** (base **e77da63**); includes 1938–2119.
+
+### Next
+- SESSION residual: path open/reveal only when unbound without list/live index
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2118-gallery-layout-select-list-index.** SESSION residual: Gallery layout-switch selection id→index→path.
 Prior: **2117**.
 

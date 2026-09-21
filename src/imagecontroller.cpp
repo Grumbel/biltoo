@@ -137,10 +137,14 @@ void ImageController::hardReloadFromDisk()
         return;
     }
     QList<ImageItem *> targets;
-    for (ImageItem *item : m_view->liveItems()) {
-        if (item && item->path() == classicPath()) {
-            targets.append(item);
-            break;
+    if (ImageItem *primary = m_view->primaryItem()) {
+        targets.append(primary);
+    } else {
+        for (ImageItem *item : m_view->liveItems()) {
+            if (item && item->path() == classicPath()) {
+                targets.append(item);
+                break;
+            }
         }
     }
     const QString path = classicPath();

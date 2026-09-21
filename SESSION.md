@@ -123,7 +123,8 @@ unbound and edits will not propagate correctly in Workspace).
    Filmstrip Gallery reveal prefers `revealGallerySessionId` (biltoo-2117);
    path reveal remains unbound fallback.
    Gallery layout-switch multi-select restore: id → list index → path
-   (biltoo-2118).
+   (biltoo-2118). Image-mode `primaryItem` prefers current SessionImageId
+   (biltoo-2119); classic path is last resort for paint/reload.
    `showPathInImageMode` prefers live preferred item + session id.
    Sort / append / remove / slideshow start prefer `SessionImageId` over
    `paths().indexOf` (biltoo-2105). Workspace filmstrip selection restore after

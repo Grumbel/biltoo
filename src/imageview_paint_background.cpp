@@ -101,6 +101,12 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
             QString path;
             if (isImageMode()) {
                 ImageItem *item = primaryItem();
+                if (!item) {
+                    const SessionImageId sid = m_sessionId.currentIdValue();
+                    if (sid != kInvalidSessionImageId) {
+                        item = findItemBySessionId(sid);
+                    }
+                }
                 if (!item && m_image.hasClassicPath()) {
                     item = findItemForPath(m_image.classicPath());
                 }
