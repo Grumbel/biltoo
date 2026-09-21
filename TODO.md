@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2193-lag-settles-to-durable.** After mode leave + Image install,
+liveColorLag is re-seeded from durable Color (attachDisplaySample →
+syncLiveColorFromState). Mid-edit lag 5 does not survive; settles to durable 8.
+
+### Fix
+- Characterization: expect lag brightness 8 after underlay install
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2193-lag-settles-to-durable-e77da63.bundle HEAD
+```
+
+Next: **2194**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2192-flush-no-color-promote.** Durable Color still became lag
 brightness 5 after Gallery→Image. attachDisplaySample stamps applied fingerprint
 with want.colorAdjust (often live lag); flush preferred item applied and

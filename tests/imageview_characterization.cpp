@@ -773,15 +773,16 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     QVERIFY(view.itemWorld().hasAttention(focus));
     QVERIFY(!view.itemWorld().hasAppliedContentXform(focus));
     QVERIFY(view.itemWorld().hasLiveColorLag(focus));
-    QCOMPARE(view.itemWorld().liveColorLag(focus).brightness, 5);
+    // Mid-edit lag (brightness 5) does not outlive mode leave: underlay install
+    // re-seeds live lag from durable Color via attachDisplaySample /
+    // syncLiveColorFromState. Lag settles to durable grade (8).
+    QCOMPARE(view.itemWorld().liveColorLag(focus).brightness, 8);
     // Content isolation: sibling must not share focus crop/bake/color/attention.
     QVERIFY(!view.itemWorld().hasCrop(other));
     QVERIFY(!view.itemWorld().hasContentBake(other));
     QVERIFY(!view.itemWorld().hasColor(other));
     QVERIFY(!view.itemWorld().hasAttention(other));
     QVERIFY(!view.itemWorld().hasAppliedContentXform(other));
-    // setItemSessionId stamps liveColorLag for every bound tile (identity grade
-    // is still a table row). Only the explicit lag on focus is the isolation story.
     // Gallery pack may leave Placement on the sibling — not a content leak.
     QCOMPARE(view.itemWorld().placement(focus).pos, QPointF(40.0, 60.0));
     // contentBake may include flushed applied (turns) — at least non-identity.
