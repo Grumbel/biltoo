@@ -67,7 +67,7 @@ ImageView::ImageView(QWidget *parent)
 {
     // Phase 7 Stage 0: path/size books are owned here; appearance binds later
     // from MainWindow (SessionDocument).
-    m_itemWorld.bindPathBook(&m_itemStateBook);
+    m_itemWorld.bindPathBook(&m_pathStateBook);
     m_itemWorld.bindSizeBook(&m_sizeBook);
 
     // PackOrderOverlay defaults to FollowDocument; match former empty book

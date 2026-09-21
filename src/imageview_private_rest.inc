@@ -141,7 +141,8 @@
      * Bound session images: content appearance is ItemWorld sparse tables only.
      * Path map remains Workspace free-placement cache and unbound fallback.
      */
-    PathItemStateBook m_itemStateBook;
+    /** Unbound content + placement (bound content is ItemWorld sparse). */
+    PathItemStateBook m_pathStateBook;
     /**
      * Phase 7 Stage 0: non-owning facade over appearance + path + size books.
      * Bound in the ImageView ctor (path/size) and bindSessionSeedBook.

@@ -2,6 +2,25 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2076-pathbook-rename-filmstrip-override-helper.** Path book rename; filmstrip override helper.
+Prior: **2075**.
+
+### Change
+- `ImageView::m_itemStateBook` → `m_pathStateBook` (path-keyed unbound store only)
+- `ThumbnailBar::rowHasAppearanceOverride` shared by sizeReady + primeGeometryFromCache
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2076-pathbook-rename-filmstrip-override-helper-e77da63.bundle HEAD
+```
+Requires tip **2075** (base **e77da63**); includes 1938–2076.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2075-sizeReady-skip-appearance-override.** sizeReady must not reset oriented filmstrip aspect.
 Prior: **2074**.
 

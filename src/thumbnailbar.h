@@ -233,6 +233,8 @@ private:
     /** Visible FilmstripCell recovery via bound surface evaluate. */
     void filmstripSurfaceTick();
     void rebindFilmstripSurfaces();
+    /** True when session-id or path appearance override owns this row's aspect. */
+    bool rowHasAppearanceOverride(int row) const;
     /** Apply native pixel size as letterbox aspect on a row (sizeHint + role). */
     void applyNativeAspect(QListWidgetItem *item, const QSize &native);
     /** Cache-first sizes for all rows; scheduleProbe for misses. */

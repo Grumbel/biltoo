@@ -469,16 +469,8 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     if (!it) {
                         continue;
                     }
-                    // Appearance override owns oriented/crop aspect — do not
-                    // reset the cell to unoriented native (tip 2074).
-                    if (i < m_sessionIds.size()) {
-                        const SessionImageId sid = m_sessionIds.at(i);
-                        if (sid != kInvalidSessionImageId
-                            && m_sessionIdImageOverrides.contains(sid)) {
-                            continue;
-                        }
-                    }
-                    if (m_sessionImageOverrides.contains(path)) {
+                    // Appearance override owns oriented/crop aspect (2074/2075).
+                    if (rowHasAppearanceOverride(i)) {
                         continue;
                     }
                     // Durable size even if LQIP already painted. Skipping when
@@ -2167,6 +2159,22 @@ void ThumbnailBar::clearPressState()
 }
 
 
+bool ThumbnailBar::rowHasAppearanceOverride(int row) const
+{
+    if (row < 0 || row >= m_files.size()) {
+        return false;
+    }
+    if (row < m_sessionIds.size()) {
+        const SessionImageId sid = m_sessionIds.at(row);
+        if (sid != kInvalidSessionImageId
+            && m_sessionIdImageOverrides.contains(sid)) {
+            return true;
+        }
+    }
+    const QString &path = m_files.at(row);
+    return !path.isEmpty() && m_sessionImageOverrides.contains(path);
+}
+
 void ThumbnailBar::applyNativeAspect(QListWidgetItem *item, const QSize &native)
 {
     if (!item || !m_delegate || m_cropToSquare) {
@@ -2191,8 +2199,9 @@ void ThumbnailBar::primeGeometryFromCache()
         if (!it || i >= m_files.size()) {
             continue;
         }
-        // Already have a real thumb — setThumbnailIcon owns aspect.
-        if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()) {
+        // Already have a real thumb or appearance override — those own aspect.
+        if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()
+            || rowHasAppearanceOverride(i)) {
             continue;
         }
         const QString &path = m_files.at(i);
