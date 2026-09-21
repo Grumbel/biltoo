@@ -28,16 +28,15 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     WorkspaceItemState cropMap = appearanceCropMapForEdit(item, beforeSt, sid);
     SessionAppearance::mapCropThroughContentRotate90(cropMap, quarterTurns);
 
-    // Absolute want after this edit.
+    // Absolute want after this edit. Flips/grade come from beforeSt
+    // (captureContentBakeBeforeState → ItemWorld/applied xform), not a second
+    // dig into live ImageItem fields.
     WorkspaceItemState want = beforeSt;
     want.contentQuarterTurns = turns;
     want.hasCrop = cropMap.hasCrop;
     want.cropRect = cropMap.cropRect;
     want.cropRotation = cropMap.cropRotation;
     want.cropSourceSize = cropMap.cropSourceSize;
-    want.contentHFlip = item->contentHFlip();
-    want.contentVFlip = item->contentVFlip();
-    want.colorAdjust = item->colorAdjustments();
     // Dual-write live chrome once want is absolute (ItemWorld updated below).
     syncLiveContentMetaFromState(item, want, false);
 

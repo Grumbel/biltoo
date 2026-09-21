@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1943-bake-before-state-authority.** Bake rotate want from beforeSt only.
+Prior: **1942**.
+
+### Change
+- `bakeItemRotate90`: absolute want flips/grade from `captureContentBakeBeforeState`
+  (ItemWorld / applied xform) — no second dig into live ImageItem fields
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1943-bake-before-state-authority-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1943.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- paint/tile-LOD still read live item fields (dual-write install remains)
+- captureState unbound + wantAppearance item fallback remain intentional
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1942-unbound-capture-state.** Unbound remember/persist use captureState only.
 Prior: **1941**.
 
