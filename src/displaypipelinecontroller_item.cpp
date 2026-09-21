@@ -333,11 +333,12 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         item->hasAppliedContentXform() ? item->appliedContentXform()
                                        : ContentXform::Value{};
     // Phase 7: prefer ItemWorld sparse tables for lag-fill when bound. Live
-    // ImageItem fields remain fallback while dual-write install still runs.
-    bool liveHFlip = item->contentHFlip();
-    bool liveVFlip = item->contentVFlip();
-    bool liveHasCrop = item->sessionHasCrop();
-    QRect liveCropRect = item->sessionCropRect();
+    // dual-write / applied xform via tileContentXform as item fallback.
+    ContentXform::Value liveX = item->tileContentXform();
+    bool liveHFlip = liveX.hFlip;
+    bool liveVFlip = liveX.vFlip;
+    bool liveHasCrop = liveX.hasCrop;
+    QRect liveCropRect = liveX.cropRect;
     if (id != kInvalidSessionImageId) {
         if (m_view->itemWorld().hasContentBake(id)) {
             const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);

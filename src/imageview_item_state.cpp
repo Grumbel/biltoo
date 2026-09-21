@@ -46,8 +46,10 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
             s.cropRotation = crop.rotation;
             s.cropSourceSize = crop.sourceSize;
         } else {
-            s.hasCrop = item->sessionHasCrop();
-            s.cropRect = item->sessionCropRect();
+            // Live dual-write / applied xform via single item reader.
+            const ContentXform::Value live = item->tileContentXform();
+            s.hasCrop = live.hasCrop;
+            s.cropRect = live.cropRect;
         }
         if (m_itemWorld.hasContentBake(sid)) {
             const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid);
@@ -55,13 +57,12 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
                 ContentXform::normalizeQuarterTurns(bake.quarterTurns);
             s.contentHFlip = bake.hFlip;
             s.contentVFlip = bake.vFlip;
-        } else if (item->hasAppliedContentXform()) {
-            s.contentQuarterTurns = item->appliedContentXform().quarterTurns;
-            s.contentHFlip = item->appliedContentXform().hFlip;
-            s.contentVFlip = item->appliedContentXform().vFlip;
         } else {
-            s.contentHFlip = item->contentHFlip();
-            s.contentVFlip = item->contentVFlip();
+            const ContentXform::Value live = item->tileContentXform();
+            s.contentQuarterTurns =
+                ContentXform::normalizeQuarterTurns(live.quarterTurns);
+            s.contentHFlip = live.hFlip;
+            s.contentVFlip = live.vFlip;
         }
         if (m_itemWorld.hasColor(sid)) {
             s.colorAdjust = m_itemWorld.color(sid).grade;
@@ -74,13 +75,14 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         }
         // Bound session image: path map is placement-only.
     } else {
-        // Live item for unbound crop/flips; path map may hold orient extras.
-        s.hasCrop = item->sessionHasCrop();
-        s.cropRect = item->sessionCropRect();
-        s.contentHFlip = item->contentHFlip();
-        s.contentVFlip = item->contentVFlip();
+        // Unbound: live dual-write / applied xform via tileContentXform; path map
+        // may hold orient extras (quarter turns / crop source).
+        const ContentXform::Value live = item->tileContentXform();
+        s.hasCrop = live.hasCrop;
+        s.cropRect = live.cropRect;
+        s.contentHFlip = live.hFlip;
+        s.contentVFlip = live.vFlip;
         s.colorAdjust = item->colorAdjustments();
-        // Unbound tile: path map may hold content orient.
         if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
             s.contentQuarterTurns =
                 ContentXform::normalizeQuarterTurns(prev->contentQuarterTurns);
@@ -89,8 +91,9 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
             if (s.sessionIndex < 0 && prev->sessionIndex >= 0) {
                 s.sessionIndex = prev->sessionIndex;
             }
-        } else if (item->hasAppliedContentXform()) {
-            s.contentQuarterTurns = item->appliedContentXform().quarterTurns;
+        } else if (live.quarterTurns != 0) {
+            s.contentQuarterTurns =
+                ContentXform::normalizeQuarterTurns(live.quarterTurns);
         }
     }
     // Placement path-map hint for session index only (bound or unbound).

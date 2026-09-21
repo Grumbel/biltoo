@@ -463,7 +463,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
             const bool hasCrop = m_itemWorld.hasCrop(sid)
                 || (m_itemWorld.hasAppearance(sid)
                     && m_itemWorld.appearanceValue(sid).hasCrop)
-                || item->sessionHasCrop();
+                || item->tileContentXform().hasCrop;
             emit sessionCropApplied(sid, item->path(), appearance, hasCrop);
         }
     }
@@ -681,7 +681,7 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
         *app = captureState(item);
         return true;
     }
-    if (item->sessionHasCrop()) {
+    if (item->tileContentXform().hasCrop) {
         *app = captureState(item);
         return true;
     }

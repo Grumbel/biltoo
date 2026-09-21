@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1945-tile-content-xform-readers.** Live content readers via tileContentXform.
+Prior: **1944**.
+
+### Change
+- Corner crop/orient marks (missed in 1944) via `tileContentXform`
+- `captureState` live fallbacks (bound + unbound) via `tileContentXform`
+- Framing draft, loadRestore, sessionCropApplied, targetHasContentAppearance,
+  wantAppearance item lag-fill, CropSession enter/orient via `tileContentXform`
+- Remaining external digs: dual-write install, no-view flip fallback toggles, debug
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1945-tile-content-xform-readers-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1945.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Dual-write install still required for tileContentXform session-field fallback
+- Optional: no-view handle flip path still toggles m_contentHFlip directly
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1944-tile-content-xform-chrome.** Chrome marks via tileContentXform.
 Prior: **1943**.
 

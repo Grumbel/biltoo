@@ -168,7 +168,7 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
             if (m_itemWorld.hasCrop(sid)
                 || (m_itemWorld.hasAppearance(sid)
                     && m_itemWorld.appearanceValue(sid).hasCrop)
-                || item->sessionHasCrop()) {
+                || item->tileContentXform().hasCrop) {
                 emit sessionCropApplied(sid, item->path(), appearanceImage, /*hasCrop=*/true);
             }
         }
@@ -275,9 +275,12 @@ bool ImageView::targetHasContentAppearance() const
                 return true;
             }
         }
-        if (SessionAppearance::liveItemHasContentMods(
-                item->sessionHasCrop(), item->contentHFlip(), item->contentVFlip())) {
-            return true;
+        {
+            const ContentXform::Value live = item->tileContentXform();
+            if (SessionAppearance::liveItemHasContentMods(
+                    live.hasCrop, live.hFlip, live.vFlip)) {
+                return true;
+            }
         }
         if (ThumtooCache::hasContentAppearance(item->path())) {
             return true;

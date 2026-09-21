@@ -63,7 +63,7 @@ bool CropSession::canKeepDisplayForEnter(const ImageItem *item,
                                          const WorkspaceItemState &contentOnly,
                                          bool hadPriorCrop, bool needGeomBake)
 {
-    if (!item || hadPriorCrop || !item->hasDisplayPixels() || item->sessionHasCrop()) {
+    if (!item || hadPriorCrop || !item->hasDisplayPixels() || item->tileContentXform().hasCrop) {
         return false;
     }
     if (item->displayPixelLongEdge() < ContentXform::kGuiMaterializeMaxEdge) {
@@ -317,10 +317,11 @@ QSize CropSession::cropBasisSize(const QSize &imageSize, const QSize &fileNative
         orientOnly.contentHFlip = orientFromAppearance->contentHFlip;
         orientOnly.contentVFlip = orientFromAppearance->contentVFlip;
     } else if (item) {
-        orientOnly.contentHFlip = item->contentHFlip();
-        orientOnly.contentVFlip = item->contentVFlip();
-        orientOnly.contentQuarterTurns = item->hasAppliedContentXform()
-            ? item->appliedContentXform().quarterTurns : 0;
+        const ContentXform::Value live = item->tileContentXform();
+        orientOnly.contentHFlip = live.hFlip;
+        orientOnly.contentVFlip = live.vFlip;
+        orientOnly.contentQuarterTurns =
+            ContentXform::normalizeQuarterTurns(live.quarterTurns);
     }
     const QSize oriented = ContentXform::layoutSize(fileNative, orientOnly);
     if (oriented.width() > 1 && oriented.height() > 0) {

@@ -1276,20 +1276,18 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             painter->restore();
         };
 
-        // Crop: yellow fold, bottom-right.
-        if (m_sessionHasCrop
-            || (m_hasAppliedContentXform && m_appliedContentXform.hasCrop)) {
+        // Crop / orient marks: single live content-meta reader (tileContentXform
+        // prefers applied ContentXform, else session crop/flip dual-write fields).
+        const ContentXform::Value contentMarks = tileContentXform();
+        if (contentMarks.hasCrop) {
             drawCornerFold(QPointF(r.right(), r.bottom()),
                            QPointF(-fold, 0), QPointF(0, -fold),
                            QColor(242, 196, 40), QColor(200, 150, 20));
         }
 
         // Orient (flip / 90°): cyan fold, bottom-left.
-        bool orient = m_contentHFlip || m_contentVFlip;
-        if (m_hasAppliedContentXform) {
-            const ContentXform::Value &x = m_appliedContentXform;
-            orient = orient || x.hFlip || x.vFlip || x.quarterTurns != 0;
-        }
+        const bool orient = contentMarks.hFlip || contentMarks.vFlip
+            || contentMarks.quarterTurns != 0;
         if (orient) {
             drawCornerFold(QPointF(r.left(), r.bottom()),
                            QPointF(fold, 0), QPointF(0, -fold),
