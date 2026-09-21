@@ -2,6 +2,36 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2004-commit-no-double-setAppearance.** Bound commit skips rememberItemState.
+Prior: **2003**.
+
+### Problem
+`commitItemSessionEdit` called `rememberItemState` then `persistSessionAppearanceSlot`.
+For a bound session id both paths `setAppearance` the same fat DTO (double dual-write).
+
+### Change
+- Bound (`sessionId` set): only `persistSessionAppearanceSlot` (setAppearance + durable)
+- Unbound: still `rememberItemState` for path-map, then persist for durable/content-hash
+
+Image-mode bound remains a no-op in `rememberItemState` either way.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2004-commit-no-double-setAppearance-e77da63.bundle HEAD
+```
+Requires tip **2003** (base **e77da63**); includes 1938–2004.
+
+### Next
+- destroy/remove still full-snapshot via rememberItemState (intentional)
+- Stage 4 project-format migration (design)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2003-pose-only-persistGeometry.** Drop/move pose uses setPlacement, not setAppearance.
 Prior: **2002**.
 

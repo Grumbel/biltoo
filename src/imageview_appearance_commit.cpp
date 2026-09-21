@@ -137,7 +137,12 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     if (!item) {
         return;
     }
-    rememberItemState(item);
+    // Bound session id: persistSessionAppearanceSlot is the single setAppearance
+    // + durable write. rememberItemState would dual-write the same fat DTO again.
+    // Unbound: path-map still needs rememberItemState (Workspace/Gallery/Image).
+    if (item->sessionId() == kInvalidSessionImageId) {
+        rememberItemState(item);
+    }
     persistSessionAppearanceSlot(item);
     validateUniqueLiveSessionIds("commitItemSessionEdit");
     syncSessionEditPeers(item);
