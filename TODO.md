@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2039-pack-apply-dry.** Stage 3 residual: pack() single switch + apply loop.
+Prior: **2038**.
+
+### Change
+- `GalleryLayout::pack` gathers layout sizes once, dispatches `packPoses*` by mode,
+  applies poses (cellSize + centre + scale) in one loop
+- Removes per-mode copy-paste apply blocks
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2039-pack-apply-dry-e77da63.bundle HEAD
+```
+Requires tip **2038** (base **e77da63**); includes 1938–2039.
+
+### Next
+- Remaining direct `captureState`: unbound, crop enter, mid-edit content-bake
+- Stage 4b later: format version + drop dual-write (not now)
+- Stage 3 largely complete for GalleryLayout pack
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2038-pack-poses-masonry-fill.** Stage 3: pure MasonryFill / MasonryRowsFill; all pack modes pure-pose.
 Prior: **2037**.
 

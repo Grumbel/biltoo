@@ -1370,6 +1370,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2037: Stage 3 — packPosesFacing pure data plane (cover + pairs).
 - biltoo-2038: Stage 3 — packPosesMasonryFill / MasonryRowsFill pure data plane;
   all GalleryLayout pack modes now pure-pose + apply.
+- biltoo-2039: Stage 3 residual — pack() single switch + apply loop (DRY).
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

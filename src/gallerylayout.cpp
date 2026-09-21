@@ -100,178 +100,61 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         }
     }
 
-    if (params.mode == Mode::SideBySide) {
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses =
-            packPosesSideBySide(sizes, margin, gap, availH);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::Vertical) {
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses =
-            packPosesVertical(sizes, margin, gap, availW);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::Grid) {
-        // Width-driven square cells; vertical scroll. Fewer columns → larger tiles.
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses =
-            packPosesGrid(sizes, margin, gap, availW, params.gridColumns);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::GridCrop) {
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses =
-            packPosesGridCrop(sizes, margin, gap, availW, params.gridColumns);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            if (!poses.at(i).cellSize.isEmpty()) {
-                setItemGalleryCellSize(item, poses.at(i).cellSize);
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::Masonry) {
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses =
-            packPosesMasonry(sizes, margin, gap, availW, params.masonryColumns);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::MasonryRows) {
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses =
-            packPosesMasonryRows(sizes, margin, gap, availH, params.masonryRows);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::MasonryFill) {
-        // Column masonry, then scale each column so heights match (clean rectangle).
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses =
-            packPosesMasonryFill(sizes, margin, gap, availW, params.masonryColumns);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::MasonryRowsFill) {
-        // Row masonry, then scale each row so widths match (clean rectangle).
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses =
-            packPosesMasonryRowsFill(sizes, margin, gap, availH, params.masonryRows);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::Flow || params.mode == Mode::FlowFill) {
-        // Order-preserving wrap: L→R then T→B. Width budget from columns.
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses = packPosesFlow(
-            sizes, margin, gap, availW, params.gridColumns,
-            params.mode == Mode::FlowFill);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
-    } else if (params.mode == Mode::Facing) {
-        // Cover alone, then height-matched pairs (verso | recto), stacked.
-        QVector<QSizeF> sizes;
-        sizes.reserve(n);
-        for (ImageItem *item : items) {
-            sizes.append(layoutSize(item));
-        }
-        const QVector<PackPose> poses =
-            packPosesFacing(sizes, margin, gap, availW, availH);
-        for (int i = 0; i < n; ++i) {
-            ImageItem *item = items.at(i);
-            if (!item || i >= poses.size()) {
-                continue;
-            }
-            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
-            finish(item, afterEach);
-        }
+    QVector<QSizeF> sizes;
+    sizes.reserve(n);
+    for (ImageItem *item : items) {
+        sizes.append(layoutSize(item));
     }
 
-    // Floating-point packing can leave the fitted axis a fraction of a pixel
+    QVector<PackPose> poses;
+    switch (params.mode) {
+    case Mode::SideBySide:
+        poses = packPosesSideBySide(sizes, margin, gap, availH);
+        break;
+    case Mode::Vertical:
+        poses = packPosesVertical(sizes, margin, gap, availW);
+        break;
+    case Mode::Grid:
+        poses = packPosesGrid(sizes, margin, gap, availW, params.gridColumns);
+        break;
+    case Mode::GridCrop:
+        poses = packPosesGridCrop(sizes, margin, gap, availW, params.gridColumns);
+        break;
+    case Mode::Masonry:
+        poses = packPosesMasonry(sizes, margin, gap, availW, params.masonryColumns);
+        break;
+    case Mode::MasonryRows:
+        poses = packPosesMasonryRows(sizes, margin, gap, availH, params.masonryRows);
+        break;
+    case Mode::MasonryFill:
+        poses = packPosesMasonryFill(sizes, margin, gap, availW, params.masonryColumns);
+        break;
+    case Mode::MasonryRowsFill:
+        poses = packPosesMasonryRowsFill(sizes, margin, gap, availH, params.masonryRows);
+        break;
+    case Mode::Flow:
+    case Mode::FlowFill:
+        poses = packPosesFlow(sizes, margin, gap, availW, params.gridColumns,
+                              params.mode == Mode::FlowFill);
+        break;
+    case Mode::Facing:
+        poses = packPosesFacing(sizes, margin, gap, availW, availH);
+        break;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        ImageItem *item = items.at(i);
+        if (!item || i >= poses.size()) {
+            continue;
+        }
+        if (!poses.at(i).cellSize.isEmpty()) {
+            setItemGalleryCellSize(item, poses.at(i).cellSize);
+        }
+        applyPackPose(item, poses.at(i).center, poses.at(i).scale);
+        finish(item, afterEach);
+    }
+
+        // Floating-point packing can leave the fitted axis a fraction of a pixel
     // over target → dual scrollbars. GalleryPackFit corrects uniform overshoot.
     qreal targetW = -1.0;
     qreal targetH = -1.0;
