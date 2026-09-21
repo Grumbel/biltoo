@@ -43,3 +43,13 @@ input to `ContentXform::layoutSize`, or via `contentLayoutSize`.
 - Path crop as layout for **bound** `SessionImageId` rows
 - `layoutSizeForPath` alone as pack/placeholder intrinsic for oriented rows
 - Tile LOD treating oriented `imageSize()` as file-native (`tileNativeSize`)
+
+## Residual / intentional
+
+| Case | Notes |
+|------|--------|
+| `resetContentAppearance` → native intrinsic | Intentional un-orient |
+| Gallery pack `layoutSize(item)` | Uses `imageSize()` (must already be content layout) + placement rotation (Gallery keeps 0) |
+| `tileNativeSize` empty + content xform | Do **not** fall back to oriented `imageSize()` for tile plan |
+| Soft/`displayImage` size | Never layout authority |
+

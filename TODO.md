@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2172-layout-triple-check.** Triple-check of layout ground truth.
+
+### Triple-check findings
+
+**Already correct:** install/applyContentLayoutSize, createItemFromImage, Duplicate,
+applyProbedImageSize, size-resolve gate (native+want), pendingTile targetSize
+(after 2171), createPlaceholder callers (contentLayoutSize), appearance reset
+to native (intentional).
+
+**Fixed residual:** `tileLodWanted` / `prepareTileLodPlan` fell back to oriented
+`imageSize()` when `tileNativeSize()` returned empty — undoing tileNativeSize
+protection (wrong tile grid for content-oriented tiles).
+
+**By design:** Gallery pack reads `imageSize()` (expects content layout already
+on intrinsic); placement rotation only for free-form (Gallery zeros it).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2172-layout-triple-check-e77da63.bundle HEAD
+```
+
+Next: **2173**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2171-layout-audit.** Double-check of layout ground truth; closed gaps.
 
 ### Audit results

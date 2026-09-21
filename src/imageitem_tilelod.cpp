@@ -210,11 +210,16 @@ bool ImageItem::tileLodWanted() const
     // Interactive request_tiles encodes on miss (JPEG DCT shrink for scale>0).
     // Requiring hasDurableTiles forced PreferCache/Full whole-frame climbs
     // (often →2048) before any tile cell could run — redundant with the tile path.
-    // Prefer thumtoo size; fall back to layout imageSize so Gallery can enter
-    // the tile band before the size probe completes (otherwise LQIP forever).
+    // Prefer thumtoo file-native size. Fall back to imageSize only when content
+    // xform is identity (layout size == native). Never use oriented layout as
+    // tile-grid native (UV / density mismatch — see tileNativeSize).
     QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
-        native = imageSize();
+        const ContentXform::Value x = liveContentXformForPaint();
+        if (ContentXform::normalizeQuarterTurns(x.quarterTurns) == 0
+            && !x.hFlip && !x.vFlip) {
+            native = imageSize();
+        }
     }
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return false;
@@ -271,7 +276,11 @@ void ImageItem::prepareTileLodPlan()
     }
     QSize native = tileNativeSize();
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
-        native = imageSize();
+        const ContentXform::Value x = liveContentXformForPaint();
+        if (ContentXform::normalizeQuarterTurns(x.quarterTurns) == 0
+            && !x.hFlip && !x.vFlip) {
+            native = imageSize();
+        }
     }
     if (!native.isValid() || native.width() < 1 || native.height() < 1) {
         return;
