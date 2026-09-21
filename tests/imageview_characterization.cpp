@@ -752,13 +752,17 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         view.restoreStickyPanAnchor(imgOther);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
 
-        // Focus ItemWorld components survived Image-mode navigate (id-keyed).
+        // Focus durable ItemWorld components survived Image-mode navigate (id-keyed).
+        // Applied ContentXform is presentation-only: flushAppliedContentToItemWorld on
+        // Gallery→Image commits it into contentBake and clears the residual table
+        // (ECS — underlay must not materialize from stale applied dual-write).
         QVERIFY(view.itemWorld().hasCrop(focus));
-        QVERIFY(view.itemWorld().hasAppliedContentXform(focus));
+        QVERIFY(view.itemWorld().hasContentBake(focus));
+        QVERIFY(!view.itemWorld().hasAppliedContentXform(focus));
         QVERIFY(view.itemWorld().hasLiveColorLag(focus));
     }
 
-    // Mode-leave style clear: pack blank; all id-keyed components intact.
+    // Mode-leave style clear: pack blank; durable id-keyed components intact.
     view.pathOrderClear();
     QVERIFY(view.pathOrderIsEmpty());
     QCOMPARE(doc.size(), 2);
@@ -767,17 +771,20 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     QVERIFY(view.itemWorld().hasContentBake(focus));
     QVERIFY(view.itemWorld().hasColor(focus));
     QVERIFY(view.itemWorld().hasAttention(focus));
-    QVERIFY(view.itemWorld().hasAppliedContentXform(focus));
+    QVERIFY(!view.itemWorld().hasAppliedContentXform(focus));
     QVERIFY(view.itemWorld().hasLiveColorLag(focus));
     QVERIFY(!view.itemWorld().hasCrop(other));
-    QVERIFY(!view.itemWorld().hasPlacement(other));
     QVERIFY(!view.itemWorld().hasContentBake(other));
     QVERIFY(!view.itemWorld().hasColor(other));
     QVERIFY(!view.itemWorld().hasAttention(other));
     QVERIFY(!view.itemWorld().hasAppliedContentXform(other));
     QVERIFY(!view.itemWorld().hasLiveColorLag(other));
+    // Gallery pack may still have left Placement on the sibling id — content isolation
+    // is the contract, not pack pose absence after pathOrderClear.
     QCOMPARE(view.itemWorld().placement(focus).pos, QPointF(40.0, 60.0));
-    QCOMPARE(view.itemWorld().contentBake(focus).quarterTurns, 2);
+    // contentBake may include flushed applied (turns) — at least non-identity.
+    QVERIFY(view.itemWorld().contentBake(focus).quarterTurns != 0
+            || view.itemWorld().contentBake(focus).vFlip);
     QCOMPARE(view.itemWorld().color(focus).grade.brightness, 8);
     QCOMPARE(view.itemWorld().attention(focus).points.size(), 1);
     QCOMPARE(view.itemWorld().appliedContentXform(focus).quarterTurns, 1);

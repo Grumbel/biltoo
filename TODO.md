@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2189-characterization-applied-flush.** imageView_openGalleryCropReturn
+still failed: expected hasAppliedContentXform after Gallery→Image. Applied is
+presentation-only; setViewMode flushes into contentBake and clears residuals.
+
+### Fix
+- Assert applied cleared after mode leave; durable crop/bake/color/attention remain
+- Sibling placement after pack is not isolation failure
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2189-characterization-applied-flush-e77da63.bundle HEAD
+```
+
+Next: **2190**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2188-natural-sort-gallery-test.** sessionsort still failed: Qt
 QCollator numeric mode is a no-op without ICU. Characterization: size prime
 created tiles; Gallery pack writes Placement for every live row so
