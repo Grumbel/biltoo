@@ -85,7 +85,7 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
     // Host must be unoriented. Never bake from preview/display — that double-applies
     // crop when the tile already shows a soft crop (Gallery after Image crop).
     QImage raw = path.isEmpty() ? QImage() : ImageCache::get(path);
-    if (raw.isNull() && item->hasDecodedPixels() && !item->hasAppliedContentXform()) {
+    if (raw.isNull() && item->hasDecodedPixels() && !itemHasAppliedContentXform(item)) {
         // FullSource without applied xform is still host-shaped (rare).
         raw = item->sourceImage();
     }
@@ -149,8 +149,8 @@ void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
         return;
     }
     const ContentXform::Value want = ContentXform::Value::fromState(st);
-    const ContentXform::Value applied = item->tileContentXform();
-    if (item->hasAppliedContentXform() && ContentXform::equal(applied, want)
+    const ContentXform::Value applied = itemAppliedContentXform(item);
+    if (itemHasAppliedContentXform(item) && ContentXform::equal(applied, want)
         && item->hasDisplayPixels()) {
         // Applied matches store; still fix layout if intrinsic is full-frame.
         applyContentLayoutSize(item, st);
@@ -308,8 +308,8 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     // Already settled FullSource for this want at ≥ this resolution — skip.
     // Soft (or soft-sized) FullSource with applied identity used to match and
     // discard Prefer/Full async bakes permanently.
-    if (item->hasDecodedPixels() && item->hasAppliedContentXform()
-        && ContentXform::equal(item->tileContentXform(), wantX)
+    if (item->hasDecodedPixels() && itemHasAppliedContentXform(item)
+        && ContentXform::equal(itemAppliedContentXform(item), wantX)
         && !item->shouldUpgradeDisplayTo(ImageCache::longEdge(display))) {
         return;
     }

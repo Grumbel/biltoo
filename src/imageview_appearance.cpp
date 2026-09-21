@@ -153,6 +153,30 @@ void ImageView::clearLiveContentMeta(ImageItem *item)
     }
 }
 
+bool ImageView::itemHasAppliedContentXform(const ImageItem *item) const
+{
+    if (!item) {
+        return false;
+    }
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppliedContentXform(sid)) {
+        return true;
+    }
+    return item->hasAppliedContentXform();
+}
+
+ContentXform::Value ImageView::itemAppliedContentXform(const ImageItem *item) const
+{
+    if (!item) {
+        return {};
+    }
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppliedContentXform(sid)) {
+        return m_itemWorld.appliedContentXform(sid);
+    }
+    return item->tileContentXform();
+}
+
 void ImageView::clearItemDecodedPixels(ImageItem *item)
 {
     if (!item) {
@@ -293,7 +317,7 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     }
     // Live grade only when display is still unbaked host (no applied xform).
     // Re-applying on a materialize bake double-grades the filmstrip override.
-    if (!item->hasAppliedContentXform()) {
+    if (!itemHasAppliedContentXform(item)) {
         const ColorAdjustments adj = item->colorAdjustments();
         if (!adj.isIdentity()) {
             img = applyColorAdjustments(img, adj);
@@ -524,7 +548,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
             // the same file (IDENTITY.md).
             emit sessionAppearanceChanged(sid, item->path(), appearance);
             const bool hasCrop = m_itemWorld.hasCrop(sid)
-                || item->tileContentXform().hasCrop;
+                || itemAppliedContentXform(item).hasCrop;
             emit sessionCropApplied(sid, item->path(), appearance, hasCrop);
         }
     }
@@ -541,7 +565,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
     // (no orient/crop/grade bake). Avoids materializeDisplay on the GUI.
     const bool contentGeom = want.hasCrop || want.contentHFlip || want.contentVFlip
         || want.contentQuarterTurns != 0;
-    if (!contentGeom && item->hasDecodedPixels() && !item->hasAppliedContentXform()) {
+    if (!contentGeom && item->hasDecodedPixels() && !itemHasAppliedContentXform(item)) {
         syncLiveColorFromState(item, want.colorAdjust, true);
         const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
@@ -557,7 +581,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
 
     const QString path = item->path();
     QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
-    if (host.isNull() && item->hasDecodedPixels() && !item->hasAppliedContentXform()) {
+    if (host.isNull() && item->hasDecodedPixels() && !itemHasAppliedContentXform(item)) {
         host = item->sourceImage();
     }
     if (host.isNull()) {
@@ -728,7 +752,7 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
         *app = sessionAppearanceValue(sid);
         return true;
     }
-    if (item->tileContentXform().hasCrop) {
+    if (itemAppliedContentXform(item).hasCrop) {
         *app = freezeItemAppearance(item);
         return true;
     }
@@ -762,7 +786,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         rematerializeItemContent(item, app);
     } else if (!tryRematerializeFromHost(item, app)) {
         m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
-        if (!ContentXform::equal(item->tileContentXform(),
+        if (!ContentXform::equal(itemAppliedContentXform(item),
                                  ContentXform::Value::fromState(app))) {
             rematerializeItemContent(item, app);
         }

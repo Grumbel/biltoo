@@ -40,7 +40,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     } else {
         // Unbound: live applied via tileContentXform; path map may hold
         // orient extras (quarter turns / crop source).
-        const ContentXform::Value live = item->tileContentXform();
+        const ContentXform::Value live = itemAppliedContentXform(item);
         s.hasCrop = live.hasCrop;
         s.cropRect = live.cropRect;
         s.contentHFlip = live.hFlip;
@@ -71,8 +71,8 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         // (Gallery full-circle rotate must not resurrect turns). Without an
         // applied fingerprint, Stage 4b sparse assembly is sole content truth —
         // no legacy live-xform gap fill.
-        if (item->hasAppliedContentXform()) {
-            const ContentXform::Value live = item->tileContentXform();
+        if (itemHasAppliedContentXform(item)) {
+            const ContentXform::Value live = itemAppliedContentXform(item);
             s.hasCrop = live.hasCrop;
             s.cropRect = live.cropRect;
             s.cropSourceSize = live.cropSourceSize;
@@ -110,7 +110,7 @@ WorkspaceItemState ImageView::freezeItemAppearance(const ImageItem *item) const
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId
-        && !item->hasAppliedContentXform()
+        && !itemHasAppliedContentXform(item)
         && m_itemWorld.hasDurableAppearance(sid)) {
         WorkspaceItemState s = sessionAppearanceValue(sid);
         ItemComponents::applyPlacementToState(s, placementFromItem(item));

@@ -124,6 +124,8 @@ public:
      * True when an applied ContentXform fingerprint is installed (even identity).
      * Distinct from tileContentXform() fields: host-raw samples have no applied
      * fingerprint and may take live colour grade without rematerialize.
+     * Host/controller logic should prefer ImageView::itemHasAppliedContentXform
+     * (ItemWorld when bound); this mirror is for paint and unbound tiles.
      */
     bool hasAppliedContentXform() const { return m_hasAppliedContentXform; }
 

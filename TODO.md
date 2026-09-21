@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2081-applied-contentxform-prefer-itemworld.** Stage 2 residual: prefer ItemWorld applied reads when bound.
+Prior: **2080**.
+
+### Change
+- `ImageView::itemHasAppliedContentXform` / `itemAppliedContentXform` prefer
+  ItemWorld runtime table when bound; ImageItem mirror for unbound / paint
+- ImageView, DisplayPipeline, crop controller readers migrated to helpers
+- CropSession static helpers keep item mirror (dual-written; no view pointer)
+- ImageItem paint/chrome still uses `tileContentXform()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2081-applied-contentxform-prefer-itemworld-e77da63.bundle HEAD
+```
+Requires tip **2080** (base **e77da63**); includes 1938–2081.
+
+### Next
+- Stage 2: further demote ImageItem applied mirror, or paint-grade lag residual
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2080-itemworld-applied-contentxform.** Stage 2 residual: ItemWorld runtime applied ContentXform table.
 Prior: **2079**.
 

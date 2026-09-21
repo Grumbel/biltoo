@@ -519,6 +519,13 @@ public:
      */
     void clearLiveContentMeta(ImageItem *item);
     /**
+     * Applied ContentXform fingerprint for @p item.
+     * Prefer ItemWorld runtime table when bound (Stage 2 residual 2081);
+     * fall back to ImageItem mirror (paint / unbound).
+     */
+    bool itemHasAppliedContentXform(const ImageItem *item) const;
+    ContentXform::Value itemAppliedContentXform(const ImageItem *item) const;
+    /**
      * Clear display pixels on @p item (keeps applied ContentXform fingerprint).
      * Sole external clear path — ImageItem::clearDecodedPixels is private.
      */

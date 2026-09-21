@@ -76,8 +76,8 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
                 want = sessionAppearanceValue(sessionId);
             }
             // Applied fingerprint is mid-edit authority when store slot is empty.
-            if (!SessionAppearance::hasContentAppearance(want) && item->hasAppliedContentXform()) {
-                item->tileContentXform().applyToState(want);
+            if (!SessionAppearance::hasContentAppearance(want) && itemHasAppliedContentXform(item)) {
+                itemAppliedContentXform(item).applyToState(want);
             }
             const auto kind = !src.isNull()
                 ? SessionAppearance::PixelKind::FullSource
@@ -168,7 +168,7 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
         if (!appearanceImage.isNull()) {
             emit sessionAppearanceChanged(sid, item->path(), appearanceImage);
             if (m_itemWorld.hasCrop(sid)
-                || item->tileContentXform().hasCrop) {
+                || itemAppliedContentXform(item).hasCrop) {
                 emit sessionCropApplied(sid, item->path(), appearanceImage, /*hasCrop=*/true);
             }
         }
@@ -273,7 +273,7 @@ bool ImageView::targetHasContentAppearance() const
                 return true;
             }
         }
-        if (SessionAppearance::liveItemHasContentMods(item->tileContentXform())) {
+        if (SessionAppearance::liveItemHasContentMods(itemAppliedContentXform(item))) {
             return true;
         }
         if (ThumtooCache::hasContentAppearance(item->path())) {

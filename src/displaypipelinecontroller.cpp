@@ -614,8 +614,8 @@ DisplaySurface::State DisplayPipelineController::displaySurfaceStateForItem(cons
         ds.attachedKind = item->hasDecodedPixels()
             ? DisplaySurface::AttachedKind::FullSource
             : DisplaySurface::AttachedKind::SoftPreview;
-        if (item->hasAppliedContentXform()) {
-            ds.applied = item->tileContentXform();
+        if (m_view->itemHasAppliedContentXform(item)) {
+            ds.applied = m_view->itemAppliedContentXform(item);
         }
     }
     if (m_view->isImageMode()) {

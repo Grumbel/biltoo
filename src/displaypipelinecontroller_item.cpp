@@ -334,8 +334,8 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         }
     }
     // Phase 7: applied ContentXform is mid-edit authority (same as captureState).
-    if (item->hasAppliedContentXform()) {
-        item->tileContentXform().applyToState(want);
+    if (m_view->itemHasAppliedContentXform(item)) {
+        m_view->itemAppliedContentXform(item).applyToState(want);
     } else if (id != kInvalidSessionImageId) {
         // No applied fingerprint: fill empty DTO fields from ItemWorld sparse
         // Crop / ContentBake (tileContentXform is applied-only after 1966).
