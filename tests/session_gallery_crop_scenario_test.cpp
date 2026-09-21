@@ -75,12 +75,12 @@ void SessionGalleryCropScenarioTest::cropFocused_layoutSizeShrinks()
     QCOMPARE(world.crop(focus).rect, QRect(10, 20, 200, 100));
     QCOMPARE(world.crop(focus).sourceSize, QSize(800, 600));
 
-    const WorkspaceItemState *got = world.getAppearance(focus);
-    QVERIFY(got);
-    QVERIFY(got->hasCrop);
+    QVERIFY(world.hasAppearance(focus));
+    const WorkspaceItemState got = world.appearanceValue(focus);
+    QVERIFY(got.hasCrop);
 
     // Post-crop layout long edge is the crop rect long edge (no orient).
-    const QSize layout = ContentXform::layoutSize(QSize(800, 600), *got);
+    const QSize layout = ContentXform::layoutSize(QSize(800, 600), got);
     QCOMPARE(layout, QSize(200, 100));
     QVERIFY(layout.width() < 800);
 }

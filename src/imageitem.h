@@ -139,13 +139,6 @@ public:
     bool isInteractive() const { return m_interactive; }
 
     /**
-     * Gallery scroll path: bake display sample into QPixmap and enable
-     * ItemCoordinateCache so OpenGL+scroll does not re-stretch soft every frame.
-     * No-op for interactive (Workspace) items. Tile-LOD cells stay NoCache.
-     */
-    void syncGalleryScrollCache();
-
-    /**
      * Gallery Grid-Crop: visible area is a centred cell of this size in *scene*
      * units (after item scale). Empty size clears cropping.
      */
@@ -226,6 +219,12 @@ private:
     void updateDisplayedPixmap();
     void refreshStackingOrder();
     void notifyViewStatus();
+    /**
+     * Gallery scroll path: bake display sample into QPixmap and enable
+     * ItemCoordinateCache so OpenGL+scroll does not re-stretch soft every frame.
+     * No-op for interactive (Workspace) items. Tile-LOD cells stay NoCache.
+     */
+    void syncGalleryScrollCache();
     /** Local clip rect for gallery crop, or empty if none. */
     QRectF galleryClipLocal() const;
     /** Item-local centre of a handle (pre-transform local coordinates). */

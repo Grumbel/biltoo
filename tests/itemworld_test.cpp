@@ -65,10 +65,10 @@ void ItemWorldTest::appearance_roundTripById()
     st.cropRect = QRect(2, 4, 60, 40);
     world.setAppearance(11, st);
 
-    const WorkspaceItemState *got = world.getAppearance(11);
-    QVERIFY(got);
-    QVERIFY(got->hasCrop);
-    QCOMPARE(got->cropRect, QRect(2, 4, 60, 40));
+    QVERIFY(world.hasAppearance(11));
+    const WorkspaceItemState got = world.appearanceValue(11);
+    QVERIFY(got.hasCrop);
+    QCOMPARE(got.cropRect, QRect(2, 4, 60, 40));
     QCOMPARE(store.get(11)->cropRect, QRect(2, 4, 60, 40));
 
     world.removeAppearance(11);
@@ -93,10 +93,10 @@ void ItemWorldTest::pathBook_independentOfAppearance()
     place.scale = 1.5;
     world.setPathState(QStringLiteral("/dup.png"), place);
 
-    QVERIFY(world.getAppearance(5));
+    QVERIFY(world.hasAppearance(5));
     QVERIFY(world.getPathState(QStringLiteral("/dup.png")));
     QCOMPARE(world.getPathState(QStringLiteral("/dup.png"))->pos, QPointF(100, 200));
-    QCOMPARE(world.getAppearance(5)->cropRect, QRect(1, 1, 10, 10));
+    QCOMPARE(world.appearanceValue(5).cropRect, QRect(1, 1, 10, 10));
 }
 
 void ItemWorldTest::sizeBook_noteDefinitive()

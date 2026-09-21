@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1995-private-gallery-scroll-cache.** Privatize syncGalleryScrollCache; tests use appearanceValue.
+Prior: **1994**.
+
+### Change
+- `ImageItem::syncGalleryScrollCache` private (only ImageItem / tilelod TU callers)
+- Characterization, scenario, and ItemWorld tests read values via `appearanceValue`
+  (presence still via `hasAppearance` / `getAppearance` nullptr)
+- Completes the “prefer appearanceValue for value reads” tip item for tests
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1995-private-gallery-scroll-cache-e77da63.bundle HEAD
+```
+Requires tip **1994** (base **e77da63**); includes 1938–1995.
+
+### Next
+- Full build + characterization green
+- Optional: Stage 4 persistence split / drop dual-write later
+- Optional: further ImageItem public surface audit (chrome paint stays public for ImageView)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1994-qinit-icons-resource.** Q_INIT_RESOURCE for static-lib icons.qrc.
 Prior: **1993**.
 

@@ -145,13 +145,13 @@ void ImageViewCharacterizationTest::afterCropCommit_appearanceLayoutSizeAndSibli
 
     QVERIFY(world.hasCrop(focus));
     QVERIFY(!world.hasCrop(other));
-    const WorkspaceItemState *got = world.getAppearance(focus);
-    QVERIFY(got);
-    QVERIFY(got->hasCrop);
-    QCOMPARE(got->cropRect, QRect(4, 4, 32, 24));
+    QVERIFY(world.hasAppearance(focus));
+    const WorkspaceItemState got = world.appearanceValue(focus);
+    QVERIFY(got.hasCrop);
+    QCOMPARE(got.cropRect, QRect(4, 4, 32, 24));
 
     const QSize native(64, 48);
-    const QSize layout = ContentXform::layoutSize(native, *got);
+    const QSize layout = ContentXform::layoutSize(native, got);
     QCOMPARE(layout, QSize(32, 24));
 
     QCOMPARE(ContentXform::layoutSize(QSize(80, 60), WorkspaceItemState{}),
@@ -258,7 +258,7 @@ void ImageViewCharacterizationTest::returnToImage_cropSurvivesPathOrderClear()
 
     QVERIFY(world.hasCrop(focus));
     QVERIFY(!world.hasCrop(other));
-    QCOMPARE(world.getAppearance(focus)->cropRect, QRect(8, 8, 16, 12));
+    QCOMPARE(world.appearanceValue(focus).cropRect, QRect(8, 8, 16, 12));
     QVERIFY(overlay.resolve(&doc).isEmpty());
     QCOMPARE(doc.size(), 2);
 }
@@ -455,7 +455,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     QVERIFY(!view.itemWorld().hasCrop(other));
     QVERIFY(!view.itemWorld().hasPlacement(other));
     QCOMPARE(ContentXform::layoutSize(QSize(64, 48),
-                                      *view.itemWorld().getAppearance(focus)),
+                                      view.itemWorld().appearanceValue(focus)),
              QSize(32, 24));
 
     // Mode-leave style clear: pack blank; all id-keyed components intact.

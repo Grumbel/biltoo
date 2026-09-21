@@ -1235,6 +1235,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1989: privatize applyPlacement; GalleryLayout::applyItemPlacement; fix cell-size recursion.
 - biltoo-1993: SlideshowController + WorkspaceController use GalleryLayout::applyItemPlacement (no new friends).
 - biltoo-1994: Q_INIT_RESOURCE(icons) — static biltoo_lib RCC must be forced into the exe.
+- biltoo-1995: privatize syncGalleryScrollCache; tests value-read via appearanceValue.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
