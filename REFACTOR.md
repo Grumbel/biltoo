@@ -1183,6 +1183,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1948: identity clear (reset / path-change) drops applied with session dual-write fields.
 - biltoo-1949: drop unused session crop/flip getters; dual-write setters install-only; reads via tileContentXform.
 - biltoo-1950: tileContentXform public; dual-write setters private (friend ImageView).
+- biltoo-1951: crop draft enter via syncLiveContentMetaFromState(contentOnly); document pixel-clear dual-write lag.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

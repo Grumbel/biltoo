@@ -420,8 +420,9 @@ void CropSession::clearItemPixelsForDraftReinstall(ImageItem *item)
     if (!item) {
         return;
     }
+    // clearDecodedPixels already clears applied; dual-write session fields remain
+    // as tileContentXform lag fallback until syncLiveContentMetaFromState.
     item->clearDecodedPixels();
-    item->clearAppliedContentXform();
 }
 
 bool CropSession::maybePutUnorientedHostCache(const QString &path, const QImage &full,

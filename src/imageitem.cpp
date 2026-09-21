@@ -247,6 +247,9 @@ void ImageItem::clearDecodedPixels()
     if (!m_interactive) {
         setCacheMode(QGraphicsItem::NoCache);
     }
+    // Applied fingerprint tracks the *current* sample. Dual-write session
+    // crop/flip fields (private, ImageView install) remain as tileContentXform
+    // lag fallback for chrome until the next syncLiveContentMetaFromState.
     clearAppliedContentXform();
     update();
 }

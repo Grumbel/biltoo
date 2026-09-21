@@ -539,11 +539,11 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
     // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
     if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
                                             sample.needGeomBake)) {
-        // Draft chrome: clear live session crop via single dual-write helper.
+        // Draft chrome: contentOnly is withoutCrop — dual-write + applied via
+        // single install (no separate clearLive / setApplied).
         CropSession::clearItemFreePlacementForDraft(item);
-        m_view->clearLiveContentMeta(item, false);
+        m_view->syncLiveContentMetaFromState(item, contentOnly);
         item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
-        item->setAppliedContentXform(wantX);
         m_view->applyContentLayoutSize(item, contentOnly);
         session().markShowingFullImage();
         CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);
@@ -555,8 +555,7 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
         CropSession::clearItemPixelsForDraftReinstall(item);
         m_view->attachDisplaySample(item, sample.display, contentOnly, sample.kind);
         m_view->applyContentLayoutSize(item, contentOnly);
-        m_view->clearLiveContentMeta(item, false);
-        item->setAppliedContentXform(wantX);
+        m_view->syncLiveContentMetaFromState(item, contentOnly);
         CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
                                   sample.display.width(), sample.display.height(),
                                   item->tileContentXform().hasCrop, contentOnly.contentQuarterTurns);

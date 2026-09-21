@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1951-draft-enter-sync-live.** Crop draft enter via syncLiveContentMetaFromState.
+Prior: **1950**.
+
+### Change
+- Crop draft keep/reinstall: `syncLiveContentMetaFromState(item, contentOnly)` instead of
+  clearLiveContentMeta + setAppliedContentXform (contentOnly is withoutCrop)
+- `clearItemPixelsForDraftReinstall`: only clearDecodedPixels (applied already cleared there)
+- Document dual-write lag fallback on `clearDecodedPixels`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1951-draft-enter-sync-live-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1951.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Dual-write session fields remain lag fallback after pixel clear until next install
+- Later: drop session fields if chrome can tolerate applied-empty gaps
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1950-private-dual-write-setters.** Private dual-write setters; public tileContentXform.
 Prior: **1949**.
 
