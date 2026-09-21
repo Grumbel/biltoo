@@ -95,6 +95,21 @@ public:
     }
 
     /**
+     * True when any persistent table has a row for @p id (fat DTO and/or sparse
+     * Crop / ContentBake / Color / Placement). Prefer this over hasAppearance
+     * alone when deciding whether sessionAppearanceValue is meaningful — sparse
+     * dual-write lag must not look like "no appearance".
+     */
+    bool hasDurableAppearance(SessionImageId id) const
+    {
+        if (id == kInvalidSessionImageId) {
+            return false;
+        }
+        return hasAppearance(id) || hasCrop(id) || hasContentBake(id)
+            || hasColor(id) || hasPlacement(id);
+    }
+
+    /**
      * Store-read authority: fat DTO with sparse Crop/ContentBake/Color/Attention/
      * Placement overlaid when present (same policy as ImageView::sessionAppearanceValue).
      * Prefer this (or sessionAppearanceValue) over dereferencing getAppearance().

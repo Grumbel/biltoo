@@ -301,8 +301,15 @@ QList<WorkspaceItemState> ImageView::captureSelectedWorkspaceClipboard() const
         // lead the Placement table mid-gesture). Unbound falls back to captureState.
         const SessionImageId sid = item->sessionId();
         WorkspaceItemState s;
-        if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
-            s = sessionAppearanceValue(sid);
+        if (sid != kInvalidSessionImageId) {
+            // Bound: sparse-prefer store even when fat DTO lag (hasDurable).
+            // Mid-edit applied ContentXform still wins via captureState only when
+            // there is no durable row yet.
+            if (m_itemWorld.hasDurableAppearance(sid)) {
+                s = sessionAppearanceValue(sid);
+            } else {
+                s = captureState(item);
+            }
         } else {
             s = captureState(item);
         }

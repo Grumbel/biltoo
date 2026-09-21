@@ -45,7 +45,7 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
             if (existing->scene() == m_scene) {
                 // Re-apply store so an early-return does not leave a bare tile
                 // (seed / prior decode without pose or content appearance).
-                if (m_itemWorld.hasAppearance(sessionId)) {
+                if (m_itemWorld.hasDurableAppearance(sessionId)) {
                     applyStoredAppearance(existing);
                     applyState(existing, sessionAppearanceValue(sessionId));
                 }
@@ -63,7 +63,7 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
                 existing->setSessionId(sessionId);
             }
             if (sessionId != kInvalidSessionImageId) {
-                if (m_itemWorld.hasAppearance(sessionId)) {
+                if (m_itemWorld.hasDurableAppearance(sessionId)) {
                     applyStoredAppearance(existing);
                     applyState(existing, sessionAppearanceValue(sessionId));
                 }

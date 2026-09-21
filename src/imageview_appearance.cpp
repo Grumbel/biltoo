@@ -40,7 +40,7 @@ const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
         // Seed orient/flip/grade from path XDG when the id slot is still empty
         // (restart / first bind). Crop is never seeded from path (IDENTITY).
         m_displayPipeline.seedSessionAppearanceFromState(sid, item->path());
-        if (m_itemWorld.hasAppearance(sid)) {
+        if (m_itemWorld.hasDurableAppearance(sid)) {
             // Always copy through sessionAppearanceValue so sparse Crop/Color/…
             // override a lagging fat DTO (store-read authority).
             *fallback = sessionAppearanceValue(sid);
@@ -89,7 +89,8 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
     if (!st || sid == kInvalidSessionImageId) {
         return false;
     }
-    if (!m_itemWorld.hasAppearance(sid)) {
+    // Sparse-only rows count (Stage 2 — do not require fat DTO presence).
+    if (!m_itemWorld.hasDurableAppearance(sid)) {
         return false;
     }
     *st = sessionAppearanceValue(sid);
@@ -300,7 +301,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
     }
     const WorkspaceItemState *app = nullptr;
     WorkspaceItemState fallback;
-    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasDurableAppearance(sid)) {
         fallback = sessionAppearanceValue(sid);
         app = &fallback;
     }
@@ -367,7 +368,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
 
 bool ImageView::hasSessionAppearance(SessionImageId id) const
 {
-    return id != kInvalidSessionImageId && m_itemWorld.hasAppearance(id);
+    return id != kInvalidSessionImageId && m_itemWorld.hasDurableAppearance(id);
 }
 
 
@@ -689,7 +690,7 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
         m_itemWorld.setColor(sid, c);
         // setColor dual-writes the fat DTO and stamps sessionId (dtoForWrite).
         // Path is not known to ItemWorld — fill once if still empty.
-        if (m_itemWorld.hasAppearance(sid)) {
+        if (m_itemWorld.hasDurableAppearance(sid)) {
             slot = sessionAppearanceValue(sid);
             if (slot.path.isEmpty() && !item->path().isEmpty()) {
                 slot.path = item->path();

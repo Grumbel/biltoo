@@ -141,7 +141,7 @@ void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
     if (sid == kInvalidSessionImageId) {
         return;
     }
-    if (!m_itemWorld.hasAppearance(sid)) {
+    if (!m_itemWorld.hasDurableAppearance(sid)) {
         return;
     }
     const WorkspaceItemState st = sessionAppearanceValue(sid);
@@ -299,7 +299,7 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     }
     const ContentXform::Value wantX = ContentXform::Value::fromState(want);
     // Discard stale worker result if the store moved on for this session id.
-    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasDurableAppearance(sid)) {
         const WorkspaceItemState cur = sessionAppearanceValue(sid);
         if (!ContentXform::equal(ContentXform::Value::fromState(cur), wantX)) {
             return;

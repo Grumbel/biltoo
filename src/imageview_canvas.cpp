@@ -265,7 +265,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             existing->setSessionIndex(i);
             if (newlyBoundId && existing->hasDecodedPixels()
                 && sid != kInvalidSessionImageId) {
-                if (!m_itemWorld.hasAppearance(sid)) {
+                if (!m_itemWorld.hasDurableAppearance(sid)) {
                     continue;
                 }
                 const WorkspaceItemState app = sessionAppearanceValue(sid);

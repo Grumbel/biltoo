@@ -64,7 +64,7 @@ void WorkspaceController::restore()
     // path map may hold crop + orient.
     for (WorkspaceItemState &slot : m_savedItems) {
         if (slot.sessionId != kInvalidSessionImageId) {
-            if (m_view->itemWorld().hasAppearance(slot.sessionId)) {
+            if (m_view->itemWorld().hasDurableAppearance(slot.sessionId)) {
                 const WorkspaceItemState sit = m_view->sessionAppearanceValue(slot.sessionId);
                 slot.hasCrop = sit.hasCrop;
                 slot.cropRect = sit.cropRect;
@@ -213,7 +213,7 @@ void WorkspaceController::restoreStashedItems()
         WorkspaceItemState app;
         bool haveApp = false;
         if (item->sessionId() != kInvalidSessionImageId
-            && m_view->itemWorld().hasAppearance(item->sessionId())) {
+            && m_view->itemWorld().hasDurableAppearance(item->sessionId())) {
             app = m_view->sessionAppearanceValue(item->sessionId());
             haveApp = true;
         }

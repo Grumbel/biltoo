@@ -191,7 +191,7 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
                              bound.id != kInvalidSessionImageId
                                  ? bound.id
                                  : existing->sessionId());
-        if (bound.id != kInvalidSessionImageId && m_view->itemWorld().hasAppearance(bound.id)) {
+        if (bound.id != kInvalidSessionImageId && m_view->itemWorld().hasDurableAppearance(bound.id)) {
             m_view->applyState(existing, m_view->sessionAppearanceValue(bound.id));
         }
         // Explicit drop position wins over restored gallery/workspace pose.
@@ -746,7 +746,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     WorkspaceItemState app = state;
     if (state.sessionId != kInvalidSessionImageId) {
         item->setSessionId(state.sessionId);
-        if (m_view->itemWorld().hasAppearance(state.sessionId)) {
+        if (m_view->itemWorld().hasDurableAppearance(state.sessionId)) {
             app = m_view->sessionAppearanceValue(state.sessionId);
             // Keep placement from the snapshot.
             app.pos = state.pos;

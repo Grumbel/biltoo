@@ -85,7 +85,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.contentQuarterTurns = turns;
         if (sid != kInvalidSessionImageId) {
             // Preserve placement fields from previous appearance when present.
-            if (m_itemWorld.hasAppearance(sid)) {
+            if (m_itemWorld.hasDurableAppearance(sid)) {
                 const WorkspaceItemState prev = sessionAppearanceValue(sid);
                 s.pos = prev.pos;
                 s.scale = prev.scale;

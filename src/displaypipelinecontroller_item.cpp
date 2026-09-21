@@ -52,7 +52,7 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
     if (m_view->hostSessionId().hasCurrentId()) {
         const SessionImageId curId = m_view->hostSessionId().currentIdValue();
         seedSessionAppearanceFromState(curId, path);
-        if (m_view->itemWorld().hasAppearance(curId)) {
+        if (m_view->itemWorld().hasDurableAppearance(curId)) {
             return m_view->sessionAppearanceValue(curId);
         }
         // Bound session image with no appearance entry = full frame, no path fallback.
@@ -255,7 +255,7 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
     // Worker path may not have marked attempted yet; mark here so paint does not
     // re-drive locatorId via wantAppearanceForItem.
     m_view->hostAppearance().markSeedAttempted(sid);
-    if (m_view->itemWorld().hasAppearance(sid)) {
+    if (m_view->itemWorld().hasDurableAppearance(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.
         if (SessionAppearance::hasContentAppearance(m_view->sessionAppearanceValue(sid))) {
@@ -313,7 +313,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         id = m_view->hostSessionId().currentIdValue();
     }
     if (id != kInvalidSessionImageId) {
-        if (m_view->itemWorld().hasAppearance(id)) {
+        if (m_view->itemWorld().hasDurableAppearance(id)) {
             want = m_view->sessionAppearanceValue(id);
         }
         // Cold open / ←→: id slot often empty until first seed. Path XDG holds
@@ -324,7 +324,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             && !item->path().isEmpty()) {
             const_cast<DisplayPipelineController *>(this)->seedSessionAppearanceFromState(
                 id, item->path());
-            if (m_view->itemWorld().hasAppearance(id)) {
+            if (m_view->itemWorld().hasDurableAppearance(id)) {
                 want = m_view->sessionAppearanceValue(id);
             }
         }
@@ -483,7 +483,7 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
     WorkspaceItemState want;
     if (m_view->hostSessionId().hasCurrentId()) {
         const SessionImageId curId = m_view->hostSessionId().currentIdValue();
-        if (m_view->itemWorld().hasAppearance(curId)) {
+        if (m_view->itemWorld().hasDurableAppearance(curId)) {
             want = m_view->sessionAppearanceValue(curId);
         }
     }

@@ -145,7 +145,7 @@ WorkspaceItemState ImageView::appearanceCropMapForEdit(ImageItem *item,
                                                        SessionImageId sid) const
 {
     Q_UNUSED(item);
-    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasDurableAppearance(sid)) {
         // Sparse-prefer store read (sessionAppearanceValue choke point).
         return sessionAppearanceValue(sid);
     }

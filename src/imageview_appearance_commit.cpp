@@ -106,7 +106,7 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
     if (sessionId == kInvalidSessionImageId) {
         return;
     }
-    if (!m_itemWorld.hasAppearance(sessionId)) {
+    if (!m_itemWorld.hasDurableAppearance(sessionId)) {
         return;
     }
     const WorkspaceItemState st = sessionAppearanceValue(sessionId);
@@ -199,7 +199,7 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
     // Prefer the session store; fall back to a live donor tile so drop-duplicate
     // from a graded filmstrip row still carries crop / bakes / colour grade.
     WorkspaceItemState dst;
-    if (m_itemWorld.hasAppearance(fromId)) {
+    if (m_itemWorld.hasDurableAppearance(fromId)) {
         dst = sessionAppearanceValue(fromId);
     } else {
         ImageItem *donor = findItemBySessionId(fromId);
@@ -269,7 +269,7 @@ bool ImageView::targetHasContentAppearance() const
                 || m_itemWorld.hasColor(sid)) {
                 return true;
             }
-            if (m_itemWorld.hasAppearance(sid)
+            if (m_itemWorld.hasDurableAppearance(sid)
                 && SessionAppearance::hasContentAppearance(sessionAppearanceValue(sid))) {
                 return true;
             }

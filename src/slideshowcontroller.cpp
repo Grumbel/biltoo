@@ -560,7 +560,7 @@ bool SlideshowController::tryApplyAttentionMotionBiases(uint seed, const QImage 
     if (ImageItem *item = m_view->targetItem()) {
         const SessionImageId sid = item->sessionId();
         if (sid != kInvalidSessionImageId) {
-            if (m_view->itemWorld().hasAppearance(sid)) {
+            if (m_view->itemWorld().hasDurableAppearance(sid)) {
                 const WorkspaceItemState st = m_view->sessionAppearanceValue(sid);
                 if (st.hasAttention) {
                     att01 = st.attentionNorm;
@@ -654,7 +654,7 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
     }
     *out = {};
     const SessionImageId sid = sessionIdForPath(path);
-    if (sid != kInvalidSessionImageId && m_view->itemWorld().hasAppearance(sid)) {
+    if (sid != kInvalidSessionImageId && m_view->itemWorld().hasDurableAppearance(sid)) {
         const WorkspaceItemState app = m_view->sessionAppearanceValue(sid);
         if (SessionAppearance::hasContentAppearance(app)) {
             *out = app;
