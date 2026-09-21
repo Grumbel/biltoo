@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2144-sessionsort-test-link.** Link archivepath into sessionsort test.
+Prior: **2143**.
+
+### Change
+- `biltoo-sessionsort-test` also compiles `src/archivepath.cpp` — `PagePath::displayName`
+  and related helpers call `ArchivePath` (undefined reference without it)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2144-sessionsort-test-link-e77da63.bundle HEAD
+```
+Requires tip **2143** (base **e77da63**); includes 1938–2144.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2143-session-remove-snapshot.** Session remove TU; SessionEntrySnapshot on document.
 Prior: **2142**.
 

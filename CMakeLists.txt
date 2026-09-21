@@ -651,6 +651,7 @@ if(Qt6Test_FOUND)
     tests/sessionsort_test.cpp
     src/sessionsort.cpp
     src/pagepath.cpp
+    src/archivepath.cpp
   )
   target_include_directories(biltoo-sessionsort-test PRIVATE src)
   target_link_libraries(biltoo-sessionsort-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
