@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2077-seedbook-comment-hygiene.** SessionSeedBook is seed-attempt only in comments.
+Prior: **2076**.
+
+### Change
+- Correct stale comments that attributed crop/grade content to SessionSeedBook
+  (content is ItemWorld sparse + XDG orient seed)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2077-seedbook-comment-hygiene-e77da63.bundle HEAD
+```
+Requires tip **2076** (base **e77da63**); includes 1938–2077.
+
+### Next
+- Stage 2: ContentXform runtime table or sessionIndex demotion
+- Phase 6 Tier 4: decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2076-pathbook-rename-filmstrip-override-helper.** Path book rename; filmstrip override helper.
 Prior: **2075**.
 

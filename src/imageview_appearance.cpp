@@ -452,6 +452,8 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         slot.sessionId = sid;
         slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();
+        // Full freeze replace into sparse tables (placement preserved when
+        // identity — tip 2059).
         m_itemWorld.setAppearance(sid, slot);
         // Sparse Color is store authority for durable grade fields.
         slot.colorAdjust = m_itemWorld.color(sid).grade;
@@ -464,7 +466,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
     }
     if (haveContentSlot) {
         // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
-        // Bound: orient/flip only — crop lives in SessionSeedBook by id.
+        // Bound: orient/flip/grade only in XDG — crop lives in ItemWorld sparse by id.
         // Unbound: may include crop (legacy single-instance path edit).
         // Writing identity deletes the SQLite row; intentional clear goes
         // through clearContentAppearance (Reset / undo-to-identity).
@@ -622,8 +624,8 @@ void ImageView::flushColorAdjustCommit()
     // is already updated on setTargetColorAdjustments).
     want.colorAdjust = item->colorAdjustments();
     // Full rematerialize from host (async when multi-MP). Do **not** write
-    // grade into thumtoo durable appearance — SessionSeedBook / project
-    // already own it; path cache is for orient/crop hints, not slider spam.
+    // grade into path-keyed XDG on every slider tick — ItemWorld Color + project
+    // own durable grade; XDG is for orient/flip seed, not slider spam.
     rematerializeItemContent(item, want);
     // Gallery: same session id may be stashed while Image mode edits — the
     // live tile update covers Image/Gallery focus; filmstrip uses the emit.
