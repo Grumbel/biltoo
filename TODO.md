@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2107-unbound-tile-placement-bind-id.** SESSION residual: placement paths bind SessionImageId.
+Prior: **2106**.
+
+### Change
+- `seedEmptyWorkspaceFromReplace` binds `hostSessionId` current id (and index)
+  so empty multi-item LoadReplace no longer seeds an unbound tile
+- `ensureMultiImageMode` uses `addImageForSession` with `sessionIdAt` instead of
+  path-only `addImage`
+- `syncCanvasFromThumbnailSelection` passes parallel `SessionImageId`s into
+  `setWorkspacePaths(paths, ids)`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2107-unbound-tile-placement-bind-id-e77da63.bundle HEAD
+```
+Requires tip **2106** (base **e77da63**); includes 1938–2107.
+
+### Next
+- SESSION residual: path-only overloads (`addImage` / `placeOrMoveImageAt` /
+  `setWorkspacePaths(paths)`) still exist for legacy; prefer id APIs
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2106-workspace-selection-prefer-sessionIds.** SESSION residual: workspace selection restore by SessionImageId.
 Prior: **2105**.
 

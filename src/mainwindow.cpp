@@ -538,12 +538,15 @@ void MainWindow::syncCanvasFromThumbnailSelection()
     // Kept for callers that still expect a bulk "selection → canvas" path
     // (e.g. future context-menu actions). Not used for ordinary clicks.
     QStringList paths;
+    QVector<SessionImageId> ids;
     for (int idx : m_thumbnailBar->selectedIndices()) {
         if (idx >= 0 && idx < m_session.paths().size()) {
             paths.append(m_session.paths().at(idx));
+            ids.append(sessionIdAt(idx));
         }
     }
-    m_imageView->setWorkspacePaths(paths);
+    // Prefer id-aware rebuild so duplicate paths each keep their session image.
+    m_imageView->setWorkspacePaths(paths, ids);
     updateStatus();
 }
 

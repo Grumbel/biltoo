@@ -589,6 +589,22 @@ void DisplayPipelineController::seedEmptyWorkspaceFromReplace(const QString &pat
     if (!item) {
         return;
     }
+    // Bind the navigated session image so the seed tile is never unbound.
+    // LoadReplace on an empty multi-item canvas is session navigation, not an
+    // ad-hoc path place — hostSessionId is the cursor identity.
+    if (m_view->hostSessionId().hasCurrentId()) {
+        const SessionImageId sid = m_view->hostSessionId().currentIdValue();
+        m_view->setItemSessionId(item, sid);
+        if (m_view->sessionListIndex(item) < 0
+            && m_view->hostSessionId().currentIndex() >= 0) {
+            item->setSessionIndex(m_view->hostSessionId().currentIndex());
+        }
+        if (m_view->itemWorld().hasDurableAppearance(sid)) {
+            m_view->applyState(item, m_view->sessionAppearanceValue(sid));
+        }
+    } else if (m_view->hostSessionId().currentIndex() >= 0) {
+        item->setSessionIndex(m_view->hostSessionId().currentIndex());
+    }
     item->setSelected(true);
     m_view->hostFraming().armFit();
     m_view->fitItem(item, m_view->currentFitAspectMode());
