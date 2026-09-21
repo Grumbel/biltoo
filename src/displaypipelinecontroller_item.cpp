@@ -50,13 +50,28 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
     // its own session id *after* creation. Applying m_view->hostSessionId().currentIdValue() here
     // would bake the navigated image's crop into every newly decoded tile.
     if (m_view->hostSessionId().hasCurrentId()) {
-        const SessionImageId curId = m_view->hostSessionId().currentIdValue();
-        seedSessionAppearanceFromState(curId, path);
-        if (m_view->itemWorld().hasDurableAppearance(curId)) {
-            return m_view->sessionAppearanceValue(curId);
+        SessionImageId curId = m_view->hostSessionId().currentIdValue();
+        // Align id with path before any path-XDG seed (seed writes into ItemWorld
+        // under sid — wrong pairing poisons contentBake for the other row).
+        if (SessionDocument *doc = m_view->sessionDocument()) {
+            const int docIdx = doc->indexOfId(curId);
+            if (docIdx >= 0 && !path.isEmpty() && doc->paths().at(docIdx) != path) {
+                const int byPath = doc->indexOfPathPreferId(path);
+                if (byPath >= 0) {
+                    curId = doc->idAt(byPath);
+                } else {
+                    curId = kInvalidSessionImageId;
+                }
+            }
         }
-        // Bound session image with no appearance entry = full frame, no path fallback.
-        return {};
+        if (curId != kInvalidSessionImageId) {
+            seedSessionAppearanceFromState(curId, path);
+            if (m_view->itemWorld().hasDurableAppearance(curId)) {
+                return m_view->sessionAppearanceValue(curId);
+            }
+            // Bound session image with no appearance entry = full frame, no path fallback.
+            return {};
+        }
     }
     // Path map only when unbound (no session image id).
     if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(path)) {
@@ -219,6 +234,19 @@ void DisplayPipelineController::seedSessionAppearanceFromState(SessionImageId si
 {
     if (sid == kInvalidSessionImageId || path.isEmpty()) {
         return;
+    }
+    // Never write path-keyed XDG orient into a SessionImageId that the document
+    // binds to a different path (wrong id + seed = permanent contentBake leak).
+    if (SessionDocument *doc = m_view->sessionDocument()) {
+        const int docIdx = doc->indexOfId(sid);
+        if (docIdx >= 0 && doc->paths().at(docIdx) != path) {
+            qCritical("seedSessionAppearanceFromState: refuse sid=%lld path=%s "
+                      "(document path is %s)",
+                      static_cast<long long>(sid),
+                      qPrintable(path),
+                      qPrintable(doc->paths().at(docIdx)));
+            return;
+        }
     }
     // One attempt per session id — archive/miss paths must not re-hit locatorId
     // on every paint via wantAppearanceForItem.
@@ -402,32 +430,37 @@ void DisplayPipelineController::bindImageModeSessionCursor(ImageItem *item)
         return;
     }
     // Image-mode crop/flip targets the matching Workspace session slot.
-    // Refuse to bind a SessionImageId whose document path is not this underlay —
-    // that is the path/id mismatch that applied the wrong contentBake (log:
-    // path=002.jpg id=1 turns=2 from id=1's bake).
+    // If hostSessionId points at a different document path than this underlay,
+    // resolve the id for the underlay path (do not leave unbound or bind wrong).
     if (m_view->hostSessionId().hasCurrentId()) {
-        const SessionImageId sid = m_view->hostSessionId().currentIdValue();
-        bool bind = true;
+        SessionImageId sid = m_view->hostSessionId().currentIdValue();
+        int listIdx = m_view->hostSessionId().currentIndex();
         if (SessionDocument *doc = m_view->sessionDocument()) {
             const int docIdx = doc->indexOfId(sid);
             if (docIdx >= 0 && !item->path().isEmpty()
                 && doc->paths().at(docIdx) != item->path()) {
-                qCritical("bindImageModeSessionCursor: refuse sid=%lld for path=%s "
-                          "(document path is %s)",
+                qCritical("bindImageModeSessionCursor: fixup sid=%lld for path=%s "
+                          "(was document path %s)",
                           static_cast<long long>(sid),
                           qPrintable(item->path()),
                           qPrintable(doc->paths().at(docIdx)));
-                bind = false;
+                const int byPath = doc->indexOfPathPreferId(item->path());
+                if (byPath >= 0) {
+                    sid = doc->idAt(byPath);
+                    listIdx = byPath;
+                    m_view->setCurrentSessionId(sid);
+                } else {
+                    sid = kInvalidSessionImageId;
+                }
             }
         }
-        if (bind) {
+        if (sid != kInvalidSessionImageId) {
             m_view->setItemSessionId(item, sid);
-            if (m_view->sessionListIndex(item) < 0
-                && m_view->hostSessionId().currentIndex() >= 0) {
-                item->setSessionIndex(m_view->hostSessionId().currentIndex());
+            if (m_view->sessionListIndex(item) < 0 && listIdx >= 0) {
+                item->setSessionIndex(listIdx);
             }
-        } else if (m_view->hostSessionId().currentIndex() >= 0) {
-            item->setSessionIndex(m_view->hostSessionId().currentIndex());
+        } else if (listIdx >= 0) {
+            item->setSessionIndex(listIdx);
         }
     } else if (m_view->hostSessionId().currentIndex() >= 0) {
         item->setSessionIndex(m_view->hostSessionId().currentIndex());

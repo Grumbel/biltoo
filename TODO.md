@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2186-session-cursor-cleanup.** Follow-up to 2185: same class of
+path↔SessionImageId lag beyond Workspace→Image open.
+
+### Cleanup / hardening
+- `updateStatus`: Image mode publishes id from classicPath when it disagrees with
+  lagging `m_currentIndex` (statusChanged can no longer clobber a pinned open)
+- `navigateDocumentPage`: use `setCurrentIndex` (not raw m_currentIndex + loadImage)
+- Filmstrip Workspace selection: publish `setCurrentSessionId` when index moves
+- `emitGalleryItemFocus` shares path↔id guard with open (`sessionIdMatchesPath`)
+- `seedSessionAppearanceFromState` / bind / install / appearanceForNewImageModeItem:
+  refuse or fixup path/id mismatch (seed must not poison contentBake)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2186-session-cursor-cleanup-e77da63.bundle HEAD
+```
+
+Next: **2187**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2185-image-enter-session-id-pin.** ImageView rotation wrong: open
 002.jpg with id=1 (and reverse) so contentBake turns from the other row applied.
 Root: `m_currentIndex` still pointed at the previous row while `leaveForImageMode`

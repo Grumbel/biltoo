@@ -572,6 +572,14 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
         const int idx = sel.last();
         if (idx != m_currentIndex && idx >= 0 && idx < m_session.paths().size()) {
             m_currentIndex = idx;
+            // Keep ImageView session cursor aligned (filmstrip multi-select does not
+            // call setCurrentIndex). Image mode underlay is inactive here, but a
+            // later openSession must not inherit a lagging hostSessionId.
+            if (m_imageView) {
+                m_imageView->setCurrentSessionId(sessionIdAt(idx));
+                m_imageView->hostSlideshow().setSessionPosition(
+                    idx, m_session.paths().size(), false);
+            }
             // Invalidate so updateStatus → updateMetadataPanel refreshes when visible.
             if (m_metadataPanel) {
                 m_metadataPath.clear();
@@ -2410,11 +2418,10 @@ void MainWindow::navigateDocumentPage(int page_1based)
             continue;
         }
         if (PagePath::documentFilePath(p) == doc && PagePath::pageNumber(p) == page_1based) {
-            // Navigate session index — reuse existing go-to if any.
+            // Full session cursor (index + SessionImageId + classicPath) — do not
+            // assign m_currentIndex alone (lags setCurrentSessionId / loadImage).
             if (i != m_currentIndex) {
-                m_currentIndex = i;
-                m_imageView->hostDisplayPipeline().loadImage(p);
-                updateStatus();
+                setCurrentIndex(i);
                 updateTocPanel();
             }
             return;
@@ -2597,7 +2604,33 @@ void MainWindow::updateStatus()
         // Silent while the slideshow timer advances; user Next/Prev still pulse.
         m_imageView->hostSlideshow().setSessionPosition(m_currentIndex, m_session.paths().size(),
                                         !m_slideshowAdvancing);
-        m_imageView->setCurrentSessionId(currentSessionId());
+        // Image mode identity follows classicPath when it is set. statusChanged from
+        // Image::enter used to call this while m_currentIndex still lagged the open
+        // target and reverted setCurrentSessionId — wrong contentBake on install.
+        SessionImageId publishId = currentSessionId();
+        if (isImageMode()) {
+            const QString classic = m_imageView->hostImage().classicPath();
+            if (!classic.isEmpty()) {
+                const SessionImageId pinned = m_imageView->hostSessionId().currentIdValue();
+                if (pinned != kInvalidSessionImageId) {
+                    const int pinIdx = indexOfSessionId(pinned);
+                    if (pinIdx >= 0 && m_session.paths().at(pinIdx) == classic) {
+                        publishId = pinned;
+                    } else {
+                        const int byPath = indexOfPathPreferId(classic);
+                        if (byPath >= 0) {
+                            publishId = sessionIdAt(byPath);
+                        }
+                    }
+                } else {
+                    const int byPath = indexOfPathPreferId(classic);
+                    if (byPath >= 0) {
+                        publishId = sessionIdAt(byPath);
+                    }
+                }
+            }
+        }
+        m_imageView->setCurrentSessionId(publishId);
         const QString err = m_imageView->hostSessionId().lastLoadErrorRef();
         if (!err.isEmpty() && statusBar()) {
             statusBar()->showMessage(

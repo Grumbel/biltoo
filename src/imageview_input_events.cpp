@@ -286,11 +286,14 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
     if (!item) {
         return;
     }
-    if (item->sessionId() != kInvalidSessionImageId) {
+    // Same path↔id guard as emitItemOpenInImageMode: a scrubbed/stale SessionImageId
+    // must not move the session cursor to another document row.
+    if (item->sessionId() != kInvalidSessionImageId
+        && sessionIdMatchesPath(item->sessionId(), item->path())) {
         emit sessionImageFocused(item->sessionId());
         return;
     }
-    // Unbound: list-order cache, then Gallery live index (pack-aligned after reorder).
+    // Unbound or id/path conflict: list-order cache, then Gallery live index.
     int listIdx = sessionListIndex(item);
     if (listIdx < 0 && isGalleryMode()) {
         const int live = m_items.indexOf(item);
@@ -298,6 +301,9 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
             && (!m_sessionDoc || live < m_sessionDoc->size())) {
             listIdx = live;
         }
+    }
+    if (listIdx < 0 && m_sessionDoc && !item->path().isEmpty()) {
+        listIdx = m_sessionDoc->indexOfPathPreferId(item->path());
     }
     if (listIdx >= 0) {
         emit sessionSlotFocused(listIdx);
@@ -317,21 +323,10 @@ void ImageView::emitItemOpenInImageMode(ImageItem *item)
     // session document. After setItemSessionId conflict scrub, a tile can keep
     // a stale id that belongs to another path — opening by that id would load
     // the wrong file while classicPath may still be set from a prior pin.
-    if (item->sessionId() != kInvalidSessionImageId) {
-        bool idOk = true;
-        if (m_sessionDoc) {
-            const int docIdx = m_sessionDoc->indexOfId(item->sessionId());
-            if (docIdx < 0) {
-                idOk = false;
-            } else if (!item->path().isEmpty()
-                       && m_sessionDoc->paths().at(docIdx) != item->path()) {
-                idOk = false;
-            }
-        }
-        if (idOk) {
-            emit sessionImageOpenRequested(item->sessionId());
-            return;
-        }
+    if (item->sessionId() != kInvalidSessionImageId
+        && sessionIdMatchesPath(item->sessionId(), item->path())) {
+        emit sessionImageOpenRequested(item->sessionId());
+        return;
     }
     int listIdx = sessionListIndex(item);
     // Gallery pack order aligns live canvas with session rows after reorder.

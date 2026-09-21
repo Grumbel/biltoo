@@ -932,13 +932,12 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
             sid = m_view->hostSessionId().currentIdValue();
         }
     }
-    // Image mode: drop a sid whose document path is not this underlay — otherwise
-    // materialize pulls the wrong contentBake (path=002.jpg + sid=1 → turns from 001).
+    // Image mode: never materialize under a sid whose document path ≠ underlay path.
     if (m_view->isImageMode() && sid != kInvalidSessionImageId && !path.isEmpty()) {
         if (SessionDocument *doc = m_view->sessionDocument()) {
             const int docIdx = doc->indexOfId(sid);
             if (docIdx >= 0 && doc->paths().at(docIdx) != path) {
-                qCritical("installDisplayPixels: drop sid=%lld for path=%s "
+                qCritical("installDisplayPixels: fixup sid=%lld for path=%s "
                           "(document maps id to %s)",
                           static_cast<long long>(sid),
                           qPrintable(path),
@@ -949,6 +948,12 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
                     const int itemIdx = doc->indexOfId(itemSid);
                     if (itemIdx < 0 || doc->paths().at(itemIdx) == path) {
                         sid = itemSid;
+                    }
+                }
+                if (sid == kInvalidSessionImageId) {
+                    const int byPath = doc->indexOfPathPreferId(path);
+                    if (byPath >= 0) {
+                        sid = doc->idAt(byPath);
                     }
                 }
             }

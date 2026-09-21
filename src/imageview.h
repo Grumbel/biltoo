@@ -165,6 +165,11 @@ public:
      */
     int sessionListIndex(const ImageItem *item) const;
     /**
+     * True when @p id is invalid, unbound in the document, or the document row
+     * for @p id has path @p path. False when id is bound to a different path.
+     */
+    bool sessionIdMatchesPath(SessionImageId id, const QString &path) const;
+    /**
      * Stamp list-order cache from document when bound; clear to -1 when unbound.
      * Pack-row hints must be restamped by the caller after refresh.
      * Stage 2 residual: call after setSessionId so the cache cannot lag

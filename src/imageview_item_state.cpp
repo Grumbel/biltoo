@@ -232,6 +232,24 @@ int ImageView::sessionListIndex(const ImageItem *item) const
     return item->sessionIndex();
 }
 
+bool ImageView::sessionIdMatchesPath(SessionImageId id, const QString &path) const
+{
+    if (id == kInvalidSessionImageId) {
+        return true;
+    }
+    if (!m_sessionDoc) {
+        return true;
+    }
+    const int docIdx = m_sessionDoc->indexOfId(id);
+    if (docIdx < 0) {
+        return false;
+    }
+    if (path.isEmpty()) {
+        return true;
+    }
+    return m_sessionDoc->paths().at(docIdx) == path;
+}
+
 int ImageView::refreshSessionIndexCache(ImageItem *item)
 {
     if (!item) {
