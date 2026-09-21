@@ -236,7 +236,9 @@ QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
         m_bindBook.removeIndexForPath(path);
         // destroyCanvasItem clears selection anchor / drag pointers and
         // removes from m_items and both stashes (safe if already only in one).
-        destroyCanvasItem(item);
+        // persistState=false: caller already removeAppearance for this id —
+        // rememberItemState would setAppearance and undo the delete.
+        destroyCanvasItem(item, false);
     }
     return removedPaths;
 }

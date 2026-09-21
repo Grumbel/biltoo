@@ -2,6 +2,37 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2005-destroy-persistState-flag.** destroyCanvasItem cannot re-seed removed appearance.
+Prior: **2004**.
+
+### Problem
+`removeWorkspaceSessionId` called `removeAppearance` then `destroyCanvasItem` →
+`rememberItemState` → `setAppearance`, **re-inserting** the fat DTO that was
+just deleted.
+
+### Change
+- `destroyCanvasItem(item, bool persistState = true)`
+- Default `true`: snapshot via `rememberItemState` (hide-from-canvas, keep session)
+- `destroySessionIdItems` passes `false` after session-id appearance removal
+- `removeCanvasSessionIds` drops a redundant outer `rememberItemState` (destroy
+  still persists once)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2005-destroy-persistState-flag-e77da63.bundle HEAD
+```
+Requires tip **2004** (base **e77da63**); includes 1938–2005.
+
+### Next
+- Stage 4 project-format migration (design)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2004-commit-no-double-setAppearance.** Bound commit skips rememberItemState.
 Prior: **2003**.
 

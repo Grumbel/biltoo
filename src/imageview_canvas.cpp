@@ -629,7 +629,7 @@ void ImageView::revealGalleryPath(const QString &path)
 }
 
 
-void ImageView::destroyCanvasItem(ImageItem *item)
+void ImageView::destroyCanvasItem(ImageItem *item, bool persistState)
 {
     if (!item) {
         return;
@@ -662,7 +662,12 @@ void ImageView::destroyCanvasItem(ImageItem *item)
     m_gallery.stashedItems().removeAll(item);
     m_workspace.stashedItems().removeAll(item);
 
-    rememberItemState(item);
+    // Default: snapshot bound appearance/pose before the tile is gone.
+    // Session-id *delete* paths pass persistState=false after removeAppearance
+    // so this cannot re-insert the DTO that was just cleared.
+    if (persistState) {
+        rememberItemState(item);
+    }
     m_items.removeAll(item);
     // Off-canvas neighbor prefetch may still hold a controller for this path.
     if (!path.isEmpty() && !pathOnLiveCanvas(path)) {

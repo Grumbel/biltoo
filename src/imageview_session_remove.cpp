@@ -245,7 +245,7 @@ void ImageView::removeCanvasSessionIds(const QList<SessionImageId> &ids)
         m_scene->blockSignals(true);
     }
     for (ImageItem *item : toRemove) {
-        rememberItemState(item);
+        // destroyCanvasItem(persistState=true) snapshots via rememberItemState.
         destroyCanvasItem(item);
     }
     if (m_scene) {
