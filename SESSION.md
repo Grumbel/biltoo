@@ -164,8 +164,9 @@ Optional follow-ups: runtime QA of ladder upgrade under Gallery scroll + Image f
 
 ### Low / docs
 
-10. **IDENTITY.md §1+** still describes some pre-id implementation detail;
-    §0 is the intended model. Prefer this SESSION.md for “what to do next”.
+10. **IDENTITY.md §1** updated for SessionDocument + SessionImageId
+    (biltoo-2126); §0 remains the product model. Prefer SESSION.md for
+    “what to do next”.
 11. **AUDIT.md H2p / M27** partially addressed by ids; mark fixed when
     verified at runtime.
 12. **TODO.md 0.1.0** still lists broad stabilize items — fold identity

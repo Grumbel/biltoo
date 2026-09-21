@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2126-identity-section1-sessiondocument.** IDENTITY.md §1 matches SessionDocument + SessionImageId.
+Prior: **2125**.
+
+### Change
+- IDENTITY.md §1.2: SessionDocument paths∥ids (not legacy m_files); index is order
+- §1.1 / §1.3: path = decode source; canvas bind by SessionImageId
+- Handoff pointer: 2104–2125 status + SIZE.md PreferCache rules
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2126-identity-section1-sessiondocument-e77da63.bundle HEAD
+```
+Requires tip **2125** (base **e77da63**); includes 1938–2126.
+
+### Next
+- Runtime QA: duplicate × membership × flip × project; ladder under Gallery scroll
+- Medium: opacity/HiDPI polish, -Wnull-dereference
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2125-size-prefercache-host-rules.** Fold PreferCache host rules into SIZE.md.
 Prior: **2124**.
 

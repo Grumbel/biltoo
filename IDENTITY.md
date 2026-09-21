@@ -51,8 +51,8 @@ id per session image) must be.
 
 ## 1. Three layers in the current code
 
-The code uses these three layers. Crop/flip/rotate bugs almost always come
-from treating **path** as identity when **session slot** should be.
+Crop/flip/rotate bugs almost always come from treating **path** as identity
+when **`SessionImageId`** should be. List index is order only.
 
 ### 1.1 Filesystem path (`QString`)
 
@@ -60,21 +60,23 @@ from treating **path** as identity when **session slot** should be.
 - **Not** canonicalized (`QFileInfo::canonicalFilePath` is not applied).
 - Same file opened via two different strings is two different paths.
 - Same path string may appear **more than once** in the session list.
+- Path is the **decode source** only — not appearance or selection identity
+  for bound rows (see Migration status below).
 
-### 1.2 Session slot (`int` index into `MainWindow::m_files`)
+### 1.2 Session document row (`SessionDocument`)
 
-- `MainWindow::m_files` is an **ordered** `QStringList`.
-- Index `i` means “the i-th entry in the user’s working set”.
-- **Duplicates are first-class session entries**: `Ctrl+D` appends another
-  copy of the same path string at a new index (does not go through
-  `appendFiles()`, which deduplicates).
-- Navigation cursor: `MainWindow::m_currentIndex` +
-  `ImageView::setSessionPosition(index, total)`.
-- Filmstrip rows are 1:1 with session indices (`ThumbnailBar::m_files`).
-
-**Domain wording:** DOMAIN calls the session “an ordered list of image paths”.
-Implementation allows the same path string at multiple indices; that is how
-Workspace “duplicate into session” is represented.
+- Parallel **`paths()` ∥ `ids()`** lists; each row is a first-class session image.
+- **Identity:** `SessionImageId` (`qint64`, never 0, never reused within the
+  document lifetime — §14).
+- **Order:** list index `0 … n-1` for navigation, filmstrip, and pack; indices
+  shift on insert/delete/sort.
+- **Duplicates:** `Ctrl+D` / `applyDuplicate` allocates a **new** id and appends
+  another row with the same path string.
+- Navigation cursor: `MainWindow::m_currentIndex` into the document; resolve
+  appearance and canvas tiles by `sessionIdAt(index)` / `indexOfSessionId`.
+- Filmstrip is 1:1 with document rows (`setSession(paths, ids)`).
+- Path→index last resort: `indexOfPathPreferId` (first bound id for path, else
+  `paths().indexOf`).
 
 ### 1.3 Canvas object (`ImageItem *`)
 
@@ -82,14 +84,13 @@ Workspace “duplicate into session” is represented.
 - Holds **decoded pixels** (`m_source` / pixmap) and **transforms**.
 - Binding to a session image:
   - **Identity:** `ImageItem::sessionId()` (`SessionImageId`; 0 = unbound)
-  - **List order:** `ImageView::sessionListIndex(item)` (SessionDocument when bound)
-  - `ImageItem::sessionIndex()` is a **deprecated list-order cache** only
-    (shifts on insert/delete; may lag after reorder — tips 1998–2002)
+  - **List order:** `ImageView::sessionListIndex(item)` (document when bound)
+  - `ImageItem::sessionIndex()` is a **list-order cache** only (may lag after
+    reorder; restamped by Gallery pack / rebind)
 
-**One path, many canvas objects is allowed** in Workspace (DOMAIN: duplicate
-selection → same path, independent transforms). Gallery DOMAIN text still says
-“one object per session path”; the session list can still contain path
-duplicates, which is an unresolved tension for Gallery packing.
+**One path, many canvas objects is allowed** in Workspace (duplicate selection
+→ same path, independent transforms and ids). Gallery pack/reorder prefer ids
+(`reorderItemsByPaths(paths, ids)`); path first-unseen is unbound fallback.
 
 ---
 
@@ -394,6 +395,12 @@ ownership table above).
 - Treating `ImageItem::sessionIndex` as identity (list-order cache only)
 
 Latest tip / bundle index: [TODO.md](TODO.md). Broader session notes: [SESSION.md](SESSION.md).
+
+**Implementation status (2104–2125):** bound tiles use SessionImageId for
+placement, open/focus/remove/reveal, reorder, and path→index resolution.
+Path remains last-resort for fully unbound rows and decode-only uses.
+PreferCache host rules: [SIZE.md](SIZE.md).
+
 
 
 ---
