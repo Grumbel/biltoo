@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2057-stage4-residual-docs-gap.** Stage 4 residual hygiene: seed-book docs + unused gap.
+Prior: **2056**.
+
+### Change
+- `gallerylayout.cpp`: drop unused `gap` local (warning from pack())
+- REFACTOR: lifecycle table is SessionSeedBook + ItemWorld sparse (not fat DTO)
+- Phase 7 "Already present" / dual-store narrative updated for Stage 4b
+- IMAGEVIEW_CHARACTERIZATION checklist wording matches sparse/seed APIs
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2057-stage4-residual-docs-gap-e77da63.bundle HEAD
+```
+Requires tip **2056** (base **e77da63**); includes 1938–2057.
+
+### Next
+- Phase 7 Stage 2 residual: further ImageItem demotion (color paint copy, etc.)
+- Phase 6 Tier 4: decode/framing characterization when prioritized
+- Phase 7 Stage 3 systems as needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2056-projectfile-nested-json-tests.** Align projectfile_roundtrip with Stage 4b nested JSON.
 Prior: **2055**.
 

@@ -13,8 +13,8 @@ size, and framing before trusting FollowDocument / document-only pack.
 
 | Test | Covers |
 |------|--------|
-| `sessiondocument` | path/id alignment, never-reuse, appearance ownership |
-| `sessionappearance` | id-keyed crop, materialize, dual-path independence |
+| `sessiondocument` | path/id alignment, never-reuse, seed-book lifecycle |
+| `sessionappearance` | materialize helpers + seed book; content via ItemWorld |
 | `sessionpathorder` | multiplicity, setOrder trim, OOB |
 | `pathorder-dual-model` | document vs book independence, LoadAdd, clear, gallery delete prune, aligned pack case |
 | `contentxform` | layout size, crop map through rotate |
@@ -34,7 +34,7 @@ transitions, framing, or Live canvas.
 3. Open two synthetic paths (temp PNGs of known size).
 4. Enter Gallery; assert pack-order overlay aligns with document (post-collapse
    FollowDocument or Explicit aligned).
-5. Crop one session id; assert `appearance().get(id)` and layout size.
+5. Crop one session id; assert `itemWorld().hasCrop(id)` and layout size.
 6. Return to Image on that id; assert crop still applied; sibling unchanged.
 7. LoadAdd / paste multiplicity: pack size > document size; pack count follows
    overlay explicit order.

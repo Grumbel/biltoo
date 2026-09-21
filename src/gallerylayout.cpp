@@ -82,7 +82,6 @@ void pack(const QList<ImageItem *> &items, const Params &params,
     }
 
     const qreal margin = params.margin;
-    const qreal gap = params.gap;
     const qreal availW = params.availW;
     const qreal availH = params.availH;
     const int n = items.size();

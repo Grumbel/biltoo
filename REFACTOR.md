@@ -893,7 +893,7 @@ truth**, not cache locality or SoA speed.
 | ECS concept | What exists today |
 |-------------|-------------------|
 | **Entity id** | `SessionImageId` — normative per IDENTITY.md |
-| **Component stores** | `SessionAppearanceStore` (`QHash<SessionImageId, WorkspaceItemState>`), `PathItemStateBook`, `ImageSizeBook`, `GallerySoftBook`, `PendingItemAppearanceBook`, DisplaySurface bindings |
+| **Component stores** | `ItemWorld` sparse tables (Crop / Attention / ContentBake / Color / Placement), `SessionSeedBook` (seed attempts), `PathItemStateBook`, `ImageSizeBook`, `GallerySoftBook`, `PendingItemAppearanceBook`, DisplaySurface bindings |
 | **Systems** | `ContentXform`, `CropGeometry`, `GalleryLayout`, `AttentionGeometry`, `PlacementLinear`, `ItemFrameGeometry`, `HudModel` — largely stateless functions over data |
 
 ### The two structural problems left
@@ -905,11 +905,11 @@ truth**, not cache locality or SoA speed.
    struct is exactly what component **presence** replaces. `syncAttentionPrimary()`
    exists only to keep primary and list copies aligned inside the same struct.
 
-2. **The same per-item facts live in three places.**
-   - `SessionAppearanceStore` keyed by id
+2. **The same per-item facts live in fewer places (Stage 4b reduced this).**
+   - `ItemWorld` sparse tables keyed by id (durable content + Workspace placement)
    - `PathItemStateBook` keyed by path (Workspace unbound / placement cache)
-   - `ImageItem` members (scale, shear, rotation, session crop rect, color,
-     content flips, press-anchor scratch, tile-LOD cache, …)
+   - `ImageItem` members still hold applied ContentXform, live pose, color paint
+     copy, press-anchor scratch, tile-LOD cache — Stage 2 residual demotion
 
    Gluing those copies is why `captureState` appears widely (dozens of call
    sites across appearance, bake, crop, transform, workspace chrome, …). The
@@ -1028,18 +1028,19 @@ versioned project format that no longer needs the mirror for round-trip.
 
 **Stage 4a status: complete** (tips 2020–2027 + store-read hygiene 2022–2042).
 
-**Session appearance lifecycle (Stage 2 residual, tips 2045–2049)**
+**Session appearance lifecycle (Stage 2 residual → Stage 4b residual)**
 
-| Operation | Fat DTO (`SessionAppearanceStore`) | Sparse (`ItemWorld`) |
-|-----------|--------------------------------------|----------------------|
+| Operation | Seed book (`SessionSeedBook`) | Sparse content (`ItemWorld`) |
+|-----------|-------------------------------|------------------------------|
 | Open / Replace (`setPaths` + `applyExpandedLoad`) | cleared in `setPaths` | `clearAppearance` in `applyExpandedLoad` |
 | newSession / project wipe (`clear` + `clearWorkspace`) | `SessionDocument::clear` | `clearWorkspace` → `clearAppearance` |
 | Sort / reorder (`replaceAll`) | **kept** (same ids) | **kept** |
-| Remove row (`removeAt` + view) | `removeAt` drops id row | `removeAppearance` (Image) or `removeWorkspaceSessionId` (W/G) |
+| Remove row (`removeAt` + view) | `removeAt` drops seed flag | `removeAppearance` (Image) or `removeWorkspaceSessionId` (W/G) |
 | `clearPaths` only | **kept** (intentional; paths empty) | caller must clear if full wipe |
 
-Ids are never recycled (`IDENTITY`). Orphaned fat/sparse rows are a dual-authority
-leak; the table above is the contract tests in `sessiondocument_test` lock.
+Ids are never recycled (`IDENTITY`). Content is sparse-only (no fat DTO mirror).
+`SessionSeedBook` tracks XDG seed attempts only. Contract tests:
+`sessiondocument_test` (seeds), `itemworld_test` (sparse content).
 
 
 **Stage 4b status: complete** (tip 2051 — product: nested sparse, no v1 compat)
@@ -1055,7 +1056,8 @@ Stage 4b delivered (product: no backward compatibility):
 
 1. Project + clipboard `version` ≥ 2; load rejects `< 2`
 2. Nested on-disk shape: `crop` / `attention` / `bake` / `color` / `placement` objects
-3. Component mutators sparse-only; `appearanceValue` assembles from sparse; fat is setAppearance/load cache only
+3. Component mutators + `setAppearance` sparse-only; `appearanceValue` assembles from sparse
+4. `SessionSeedBook` is seed-attempt only (no fat `WorkspaceItemState` map)
 
 **Sequencing relative to Stages 0–3**
 
