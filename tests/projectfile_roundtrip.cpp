@@ -222,11 +222,18 @@ void ProjectFileRoundTripTest::appearanceJson_colorGrade()
     s.z = 7.0;
 
     const QJsonObject o = ProjectFile::appearanceToJson(s, /*includePose=*/true);
-    QVERIFY(o.contains(QStringLiteral("colorBrightness")));
-    QVERIFY(o.contains(QStringLiteral("colorContrast")));
-    QVERIFY(o.contains(QStringLiteral("colorSaturation")));
-    QVERIFY(o.contains(QStringLiteral("colorHue")));
-    QVERIFY(o.contains(QStringLiteral("colorGamma")));
+    // Stage 4b: nested sparse objects (no flat v1 keys).
+    QVERIFY(o.contains(QStringLiteral("color")));
+    const QJsonObject color = o.value(QStringLiteral("color")).toObject();
+    QCOMPARE(color.value(QStringLiteral("brightness")).toInt(), -20);
+    QCOMPARE(color.value(QStringLiteral("contrast")).toInt(), 140);
+    QCOMPARE(color.value(QStringLiteral("saturation")).toInt(), 80);
+    QCOMPARE(color.value(QStringLiteral("hue")).toInt(), 15);
+    QVERIFY(nearlyEqual(color.value(QStringLiteral("gamma")).toDouble(), 1.35));
+    QVERIFY(o.contains(QStringLiteral("crop")));
+    QVERIFY(o.contains(QStringLiteral("bake")));
+    QVERIFY(o.contains(QStringLiteral("placement")));
+    QVERIFY(!o.contains(QStringLiteral("colorBrightness")));
 
     const WorkspaceItemState back = ProjectFile::appearanceFromJson(o);
     QVERIFY(colorAdjustEqual(back.colorAdjust, s.colorAdjust));
@@ -507,15 +514,17 @@ void ProjectFileRoundTripTest::appearanceJson_contentOnly_omitsPoseKeys()
     s.rotation = 15.0;
 
     const QJsonObject o = ProjectFile::appearanceToJson(s, /*includePose=*/false);
-    QVERIFY(o.contains(QStringLiteral("hasCrop")));
-    QVERIFY(o.contains(QStringLiteral("contentQuarterTurns")));
-    QVERIFY(o.contains(QStringLiteral("contentHFlip")));
-    QVERIFY(o.contains(QStringLiteral("colorContrast")));
+    // Nested content keys; placement omitted when includePose=false.
+    QVERIFY(o.contains(QStringLiteral("crop")));
+    QVERIFY(o.contains(QStringLiteral("bake")));
+    const QJsonObject bake = o.value(QStringLiteral("bake")).toObject();
+    QCOMPARE(bake.value(QStringLiteral("quarterTurns")).toInt(), 1);
+    QVERIFY(bake.value(QStringLiteral("hFlip")).toBool());
+    QVERIFY(o.contains(QStringLiteral("color")));
+    QVERIFY(!o.contains(QStringLiteral("placement")));
+    QVERIFY(!o.contains(QStringLiteral("hasCrop")));
     QVERIFY(!o.contains(QStringLiteral("x")));
-    QVERIFY(!o.contains(QStringLiteral("y")));
     QVERIFY(!o.contains(QStringLiteral("scaleX")));
-    QVERIFY(!o.contains(QStringLiteral("rotation")));
-    QVERIFY(!o.contains(QStringLiteral("opacity")));
 
     const WorkspaceItemState back = ProjectFile::appearanceFromJson(o);
     QVERIFY(appearanceEqual(s, back, /*pose=*/false));
@@ -541,17 +550,20 @@ void ProjectFileRoundTripTest::appearanceJson_poseOnly_identityContent()
     QVERIFY(s.colorAdjust.isIdentity());
 
     const QJsonObject o = ProjectFile::appearanceToJson(s, /*includePose=*/true);
+    QVERIFY(!o.contains(QStringLiteral("crop")));
+    QVERIFY(!o.contains(QStringLiteral("bake")));
+    QVERIFY(!o.contains(QStringLiteral("color")));
+    QVERIFY(o.contains(QStringLiteral("placement")));
+    const QJsonObject pl = o.value(QStringLiteral("placement")).toObject();
+    QVERIFY(nearlyEqual(pl.value(QStringLiteral("x")).toDouble(), 120.5));
+    QVERIFY(nearlyEqual(pl.value(QStringLiteral("y")).toDouble(), -40.25));
+    QVERIFY(nearlyEqual(pl.value(QStringLiteral("scaleX")).toDouble(), 0.75));
+    QVERIFY(nearlyEqual(pl.value(QStringLiteral("scaleY")).toDouble(), 0.8));
+    QVERIFY(nearlyEqual(pl.value(QStringLiteral("shear")).toDouble(), 0.05));
+    QVERIFY(nearlyEqual(pl.value(QStringLiteral("rotation")).toDouble(), -12.0));
+    QVERIFY(pl.value(QStringLiteral("hFlip")).toBool());
     QVERIFY(!o.contains(QStringLiteral("hasCrop")));
-    QVERIFY(!o.contains(QStringLiteral("contentQuarterTurns")));
-    QVERIFY(!o.contains(QStringLiteral("contentHFlip")));
-    QVERIFY(!o.contains(QStringLiteral("colorBrightness")));
-    QVERIFY(o.contains(QStringLiteral("x")));
-    QVERIFY(o.contains(QStringLiteral("y")));
-    QVERIFY(o.contains(QStringLiteral("scaleX")));
-    QVERIFY(o.contains(QStringLiteral("scaleY")));
-    QVERIFY(o.contains(QStringLiteral("shear")));
-    QVERIFY(o.contains(QStringLiteral("rotation")));
-    QVERIFY(o.contains(QStringLiteral("hFlip")));
+    QVERIFY(!o.contains(QStringLiteral("x"))); // pose keys live under placement
 
     const WorkspaceItemState back = ProjectFile::appearanceFromJson(o);
     QVERIFY(appearanceEqual(s, back, /*pose=*/true));

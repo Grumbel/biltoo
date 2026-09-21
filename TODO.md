@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2056-projectfile-nested-json-tests.** Align projectfile_roundtrip with Stage 4b nested JSON.
+Prior: **2055**.
+
+### Change
+- `appearanceJson_colorGrade` / `_contentOnly_omitsPoseKeys` / `_poseOnly_identityContent`
+  assert nested `crop` / `bake` / `color` / `placement` keys (not flat v1)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2056-projectfile-nested-json-tests-e77da63.bundle HEAD
+```
+Requires tip **2055** (base **e77da63**); includes 1938–2056.
+
+### Next
+- Phase 6 Tier 4: decode/framing when prioritized
+- Phase 7 further ImageItem demotion when needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2055-session-seed-book-rename.** Rename SessionAppearanceStore → SessionSeedBook.
 Prior: **2054**.
 
