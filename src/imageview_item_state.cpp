@@ -27,20 +27,50 @@ ItemComponents::Placement ImageView::placementFromItem(const ImageItem *item)
 
 WorkspaceItemState ImageView::captureState(const ImageItem *item) const
 {
-    WorkspaceItemState s;
-    s.path = item->path();
-    s.sessionId = item->sessionId();
-    s.sessionIndex = sessionListIndex(item); // document order when bound
-    // Stage 2: pose via Placement helper (single place that reads item pose).
-    ItemComponents::applyPlacementToState(s, placementFromItem(item));
-    s.orientation = 0.0;
+    // Interaction snapshot: durable content from sparse-prefer store (Stage 2 /
+    // Stage 4a), then live pose / applied ContentXform / grade overlays.
+    // Prefer sessionAppearanceValue for bound content so captureState does not
+    // re-implement the ItemWorld merge policy.
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+
+    WorkspaceItemState s;
     if (sid != kInvalidSessionImageId) {
-        // Phase 7: when applied ContentXform is present, it is mid-edit authority
-        // over sparse tables (Gallery full-circle rotate must not resurrect turns).
-        // Otherwise sparse tables, then live applied via tileContentXform.
+        s = sessionAppearanceValue(sid);
+    } else {
+        // Unbound: live applied via tileContentXform; path map may hold
+        // orient extras (quarter turns / crop source).
+        const ContentXform::Value live = item->tileContentXform();
+        s.hasCrop = live.hasCrop;
+        s.cropRect = live.cropRect;
+        s.contentHFlip = live.hFlip;
+        s.contentVFlip = live.vFlip;
+        if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
+            s.contentQuarterTurns =
+                ContentXform::normalizeQuarterTurns(prev->contentQuarterTurns);
+            s.cropRotation = prev->cropRotation;
+            s.cropSourceSize = prev->cropSourceSize;
+            if (prev->hasCrop && !s.hasCrop) {
+                s.hasCrop = true;
+                s.cropRect = prev->cropRect;
+            }
+        } else if (live.quarterTurns != 0) {
+            s.contentQuarterTurns =
+                ContentXform::normalizeQuarterTurns(live.quarterTurns);
+        }
+    }
+
+    s.path = item->path();
+    s.sessionId = sid != kInvalidSessionImageId ? sid : item->sessionId();
+    s.sessionIndex = sessionListIndex(item); // document order when bound
+    s.orientation = 0.0;
+    // Live pose always wins (interaction may lead the Placement table).
+    ItemComponents::applyPlacementToState(s, placementFromItem(item));
+
+    if (sid != kInvalidSessionImageId) {
+        // Phase 7: applied ContentXform is mid-edit authority over sparse tables
+        // (Gallery full-circle rotate must not resurrect turns).
         if (item->hasAppliedContentXform()) {
             const ContentXform::Value live = item->tileContentXform();
             s.hasCrop = live.hasCrop;
@@ -52,25 +82,13 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
             s.contentHFlip = live.hFlip;
             s.contentVFlip = live.vFlip;
         } else {
-            if (m_itemWorld.hasCrop(sid)) {
-                const ItemComponents::Crop crop = m_itemWorld.crop(sid);
-                s.hasCrop = !crop.isEmpty();
-                s.cropRect = crop.rect;
-                s.cropRotation = crop.rotation;
-                s.cropSourceSize = crop.sourceSize;
-            } else {
-                const ContentXform::Value live = item->tileContentXform();
+            // Sparse incomplete: fill gaps from live tile xform (legacy lag).
+            const ContentXform::Value live = item->tileContentXform();
+            if (!m_itemWorld.hasCrop(sid)) {
                 s.hasCrop = live.hasCrop;
                 s.cropRect = live.cropRect;
             }
-            if (m_itemWorld.hasContentBake(sid)) {
-                const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid);
-                s.contentQuarterTurns =
-                    ContentXform::normalizeQuarterTurns(bake.quarterTurns);
-                s.contentHFlip = bake.hFlip;
-                s.contentVFlip = bake.vFlip;
-            } else {
-                const ContentXform::Value live = item->tileContentXform();
+            if (!m_itemWorld.hasContentBake(sid)) {
                 s.contentQuarterTurns =
                     ContentXform::normalizeQuarterTurns(live.quarterTurns);
                 s.contentHFlip = live.hFlip;
@@ -78,32 +96,12 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
             }
         }
         // Live grade is interaction authority (slider may lead ItemWorld Color
-        // until flushColorAdjustCommit). Same idea as pose-from-item.
+        // until flushColorAdjustCommit).
         s.colorAdjust = item->colorAdjustments();
-        if (m_itemWorld.hasAttention(sid)) {
-            s.attentionPoints = m_itemWorld.attention(sid).points;
-            s.syncAttentionPrimary();
-        }
-        // Bound session image: path map is placement-only.
     } else {
-        // Unbound: live applied via tileContentXform; path map may hold
-        // orient extras (quarter turns / crop source).
-        const ContentXform::Value live = item->tileContentXform();
-        s.hasCrop = live.hasCrop;
-        s.cropRect = live.cropRect;
-        s.contentHFlip = live.hFlip;
-        s.contentVFlip = live.vFlip;
         s.colorAdjust = item->colorAdjustments();
-        if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
-            s.contentQuarterTurns =
-                ContentXform::normalizeQuarterTurns(prev->contentQuarterTurns);
-            s.cropRotation = prev->cropRotation;
-            s.cropSourceSize = prev->cropSourceSize;
-        } else if (live.quarterTurns != 0) {
-            s.contentQuarterTurns =
-                ContentXform::normalizeQuarterTurns(live.quarterTurns);
-        }
     }
+
     // Path-map list-index hint: unbound tiles only. Bound ids use
     // sessionListIndex / SessionDocument — do not adopt a stale path-book index.
     if (s.sessionIndex < 0 && item->sessionId() == kInvalidSessionImageId) {

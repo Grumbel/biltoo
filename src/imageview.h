@@ -479,6 +479,12 @@ public:
     void enterGallery(LayoutMode packagedLayout);
 
 
+    /**
+     * Interaction snapshot of a live tile: sparse-prefer store content
+     * (sessionAppearanceValue) plus live pose / applied ContentXform / grade.
+     * For durable reads prefer sessionAppearanceValue; use captureState when
+     * mid-edit live authority must win (undo, crop draft, Workspace snapshot).
+     */
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
     /**

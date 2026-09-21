@@ -739,10 +739,10 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
     if (loadSessionAppearance(sid, app)) {
         return true;
     }
-    // captureState prefers ItemWorld Crop/ContentBake for bound ids; live item
-    // is fallback (covers unbound session crop still on the tile).
+    // Stage 2 / 4a: durable crop from sparse-prefer store, not a parallel
+    // captureState rebuild. Live applied xform still uses captureState.
     if (sid != kInvalidSessionImageId && m_itemWorld.hasCrop(sid)) {
-        *app = captureState(item);
+        *app = sessionAppearanceValue(sid);
         return true;
     }
     if (item->tileContentXform().hasCrop) {
