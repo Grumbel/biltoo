@@ -633,13 +633,10 @@ void ImageView::flushColorAdjustCommit()
         scheduleColorAdjustCommit(sid, path.isEmpty() ? item->path() : path);
         return;
     }
-    WorkspaceItemState want;
-    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
-        // Sparse-prefer store read (sessionAppearanceValue choke point).
-        want = sessionAppearanceValue(sid);
-    } else {
-        want = captureState(item);
-    }
+    // Stage 2: bound → sparse-prefer store (works sparse-only); unbound → live.
+    WorkspaceItemState want = (sid != kInvalidSessionImageId)
+        ? sessionAppearanceValue(sid)
+        : captureState(item);
     // Flush always prefers live grade (interaction authority; ItemWorld Color
     // is already updated on setTargetColorAdjustments).
     want.colorAdjust = item->colorAdjustments();
@@ -676,7 +673,8 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     if (sid == kInvalidSessionImageId && isImageMode()) {
         sid = m_sessionId.currentIdValue();
     }
-    WorkspaceItemState slot = (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid))
+    // Stage 2: any bound id uses sparse-prefer store (not only fat hasAppearance).
+    WorkspaceItemState slot = (sid != kInvalidSessionImageId)
         ? sessionAppearanceValue(sid)
         : captureState(item);
     slot.sessionId = (sid != kInvalidSessionImageId) ? sid : slot.sessionId;

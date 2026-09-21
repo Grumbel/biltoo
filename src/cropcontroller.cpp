@@ -273,8 +273,19 @@ void CropController::pushCropAppearanceUndo(ImageItem *item, const QString &text
     if (!m_view->hostUndoStack() || !item || !session().isEnterValid()) {
         return;
     }
-    // Interaction snapshot after storeCropAppearance (undo after-image).
-    const WorkspaceItemState afterSt = m_view->captureState(item);
+    // After storeCropAppearance the store holds the new crop; seed from sparse-prefer
+    // read and overlay live pose (same boundary as bake want+live). Unbound: captureState.
+    WorkspaceItemState afterSt;
+    const SessionImageId sid = cropRecordSessionId(item);
+    if (sid != kInvalidSessionImageId) {
+        afterSt = m_view->sessionAppearanceValue(sid);
+        ItemComponents::applyPlacementToState(afterSt, item->placement());
+        afterSt.colorAdjust = item->colorAdjustments();
+        afterSt.sessionId = sid;
+        afterSt.path = item->path();
+    } else {
+        afterSt = m_view->captureState(item);
+    }
     m_view->hostUndoStack()->push(new CropAppearanceCommand(
         m_view, item, session().enterSourceRef(), item->sourceImage().copy(),
         session().enterStateRef(), afterSt, text));
