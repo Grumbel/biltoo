@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1985-private-intrinsic-display-surface.** Privatize intrinsic size + display surface id.
+Prior: **1984**.
+
+### Change
+- `ImageItem::setIntrinsicSize` / `setDisplaySurfaceId` private
+- Host `ImageView::setItemIntrinsicSize` for Gallery / Slideshow
+- Friend `CropSession` for crop commit intrinsic repair
+- Pipeline already friend for display surface bind
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1985-private-intrinsic-display-surface-e77da63.bundle HEAD
+```
+Requires tip **1984** (base **e77da63**); includes 1938–1985.
+
+### Next
+- Characterization re-check
+- Further ImageItem surface trim if warranted
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1984-resolveStored-sparse-prefer.** resolveStoredAppearance + filmstrip sparse prefer.
 Prior: **1983**.
 

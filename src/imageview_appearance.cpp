@@ -150,6 +150,14 @@ void ImageView::clearItemDecodedPixels(ImageItem *item)
     item->clearDecodedPixels();
 }
 
+void ImageView::setItemIntrinsicSize(ImageItem *item, const QSize &size)
+{
+    if (!item) {
+        return;
+    }
+    item->setIntrinsicSize(size);
+}
+
 void ImageView::setItemPreviewImage(ImageItem *item, const QImage &preview)
 {
     if (!item) {

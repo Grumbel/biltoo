@@ -64,13 +64,11 @@ public:
     void setSessionIndex(int index) { m_sessionIndex = index; }
     /** DisplaySurfaceController id (0 = unbound). Host install policy key. */
     qint64 displaySurfaceId() const { return m_displaySurfaceId; }
-    void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
     QSize imageSize() const;
     /**
      * Set logical layout size (probe / layout / crop). Does not touch pixels.
      * Always applied — samples never block this write.
      */
-    void setIntrinsicSize(const QSize &size);
     const QImage &sourceImage() const { return m_source; }
     /**
      * Active display sample: full source when decoded, else soft preview.
@@ -261,9 +259,12 @@ private:
     QString m_path;
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
+    friend class CropSession;
     // Content-meta / color install — ImageView syncLive* helpers.
     friend class ImageView;
     // Pixel install — ImageView / DisplayPipelineController only (Stage 2).
+    void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
+    void setIntrinsicSize(const QSize &size);
     void setSourceImage(const QImage &image);
     void setSourceImageReady(const QImage &image);
     void setPreviewImage(const QImage &preview);

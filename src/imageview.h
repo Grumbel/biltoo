@@ -500,6 +500,8 @@ public:
      * Sole external clear path — ImageItem::clearDecodedPixels is private.
      */
     void clearItemDecodedPixels(ImageItem *item);
+    /** Host path for logical layout size (ImageItem::setIntrinsicSize is private). */
+    void setItemIntrinsicSize(ImageItem *item, const QSize &size);
     /**
      * Soft stand-in when install left no display pixels (Gallery soft path).
      * Sole external setPreviewImage path.

@@ -1307,7 +1307,7 @@ void GalleryController::ensurePlaceholders()
             // Refresh intrinsic from definitive size map.
             const QSize sz = m_view->layoutSizeForPath(path, ImageCache::get(path));
             if (isPositiveSize(sz) && !m_view->hostSizeBook().isProvisional(path)) {
-                existing->setIntrinsicSize(sz);
+                m_view->setItemIntrinsicSize(existing, sz);
             }
             continue;
         }
