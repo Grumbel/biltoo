@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2017-identity-mode-edit-docs.** IDENTITY.md mode/duplicate/edit pipeline current.
+Prior: **2016**.
+
+### Change
+`IDENTITY.md` §§3–5 rewritten for SessionImageId + ItemWorld:
+- Image open prefers id / document row; path-only is first-match
+- Duplicate allocates a new id; bind by id
+- Bake/crop/commit write ItemWorld; peer sync by id only
+- Propagation diagram no longer references m_sessionSlotStates / m_itemStates
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2017-identity-mode-edit-docs-e77da63.bundle HEAD
+```
+Requires tip **2016** (base **e77da63**); includes 1938–2017.
+
+### Next
+- Stage 4 / build + characterization
+- Optional: further IDENTITY historical narrative trim
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2016-identity-itemworld-current.** IDENTITY.md §2 reflects ItemWorld, not legacy maps.
 Prior: **2015**.
 

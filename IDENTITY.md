@@ -157,33 +157,29 @@ Writes: `setAppearance` / component setters (dual-write fat DTO until Stage 4).
 Common paths:
 
 1. **Filmstrip / `setCurrentIndex(i)`**  
-   - Sets cursor to `i`, loads `m_files[i]`.  
-   - `ImageView::m_sessionIndex` updated via `setSessionPosition`.  
-   - Image-mode `LoadReplace` creates one item and (current tip) sets
-     `item->setSessionIndex(m_sessionIndex)`.
+   - Sets cursor to document row `i`, loads that path + `SessionImageId`.  
+   - `ImageView` session cursor updated via `setSessionPosition` / host SessionId.  
+   - Image-mode `LoadReplace` creates one item bound to the current `SessionImageId`.
 
-2. **`showPathInImageMode(path)`**  
-   - Resolves `idx = m_files.indexOf(path)` → **first** occurrence only.  
-   - Wrong for path duplicates: always opens the earliest slot.
+2. **Path-only open** (`showPathInImageMode` / similar)  
+   - Resolving by path alone is **first occurrence** — wrong for path duplicates.  
+   - Prefer id- or index-keyed open APIs.
 
-3. **`sessionSlotOpenRequested(sessionIndex)`** (Workspace double-click when
-   item is bound)  
-   - Opens that index via `setCurrentIndex(sessionIndex)`.  
-   - Correct for bound duplicates **if** the canvas item’s `sessionIndex`
-     is still accurate.
+3. **`sessionSlotOpenRequested(sessionIndex)`** (Workspace double-click)  
+   - Opens document row via `setCurrentIndex`.  
+   - Prefer the item’s `sessionId` when present; `sessionIndex` cache may lag.
 
-4. **Gallery open** still emits path-only `galleryItemOpenRequested(path)`.
+4. **Gallery open** should prefer session id when the tile is bound.
 
-While in Image mode, Workspace tiles are **stashed** (`m_stashedWorkspaceItems`):
-detached from the scene but kept alive with their pixels and `sessionIndex`.
+While in Image mode, Workspace tiles are **stashed**: detached but kept alive
+with pixels and **`sessionId`** (list-order cache may be refreshed on rebind).
 
 ### 3.2 Returning to Workspace
 
-- Prefer `restoreStashedWorkspaceItems()` (reattach live items).
-- Else rebuild from `m_savedWorkspace` / `LoadRestore`.
-- Stash restore may rebuild pixels from `m_sessionSlotStates` or path map when
-  size/metadata disagree — secondary path; primary intent is that
-  `commitItemSessionEdit` already updated stashed peers in place.
+- Prefer restore of stashed items (reattach live tiles).
+- Else rebuild from WorkspaceController saved items / `LoadRestore`.
+- Peer appearance is already on ItemWorld by `SessionImageId`; stash restore
+  must not re-apply path-map crop to bound ids (tips 2009–2013).
 
 ---
 
@@ -192,30 +188,26 @@ detached from the scene but kept alive with their pixels and `sessionIndex`.
 ### 4.1 User action: `MainWindow::duplicateSelected`
 
 1. `ImageView::duplicateSelected()`  
-   - For each selected canvas item, `createItemFromImage(path, sourceImage,
-     applyStoredSessionCrop=false)` → **new object**, pixels copied as-is.  
-   - Copies placement (scale, rotation, opacity, z, offset pos).  
-   - Current tip also copies content flip flags and session crop metadata.  
-   - New items remain selected; **sessionIndex not set here**.
+   - For each selected canvas item, create a new tile with copied pixels/placement.  
+   - New items remain selected; they receive a **new** `SessionImageId` when
+     MainWindow appends a session row (never copy the source id).
 
-2. MainWindow appends each source path again onto `m_files` (allows duplicates).
+2. MainWindow appends each source path again onto the session document (allows
+   path duplicates) and allocates a fresh id.
 
-3. `bindSelectedSessionIndices(firstNew)` assigns new indices to the still-
-   selected copies and seeds `m_sessionSlotStates`.
+3. Bind selected tiles to the new ids (`bindSelectedSessionIds` / document order).
 
-4. Filmstrip `setFiles(m_files)`; canvas membership badges refreshed.
+4. Filmstrip and canvas membership refresh from the document.
 
-**Identity result:** two session slots, same path string, two canvas objects,
-each bound to a different `sessionIndex`, each holding its own pixel buffer
-(value copy at duplicate time).
+**Identity result:** two session rows, same path string, two canvas objects,
+each with a **distinct** `SessionImageId` and independent appearance in ItemWorld.
 
 ### 4.2 Other ways to get a second canvas object with the same path
 
-- `addImageForSession(path, sessionIndex)` if that index is not yet on canvas:
-  may clone pixels from `findItemByPath` (first match) with
-  `applyStoredSessionCrop=false`, then `setSessionIndex`.
-- `placeOrMoveImageAt` / drop: may create another instance at
-  `sessionIndex = -1` until rebind.
+- `addImageForSession` / place with a session id: prefer id-keyed lookup
+  (`findItemBySessionId`); path-first lookup is first-match only.
+- `placeOrMoveImageAt` / drop: new tiles start unbound until document bind
+  assigns a `SessionImageId` (list-order cache updated via `sessionListIndex`).
 
 ### 4.3 What duplication does **not** do
 
@@ -237,43 +229,33 @@ each bound to a different `sessionIndex`, each holding its own pixel buffer
 
 ### 5.2 Bake path (flip / ±90°)
 
-1. `bakeItemFlip` / `bakeItemRotate90` mutate the **item’s** pixels.
-2. Update content flags and **path-keyed** `m_itemStates` (and quarter turns).
+1. `bakeItemFlip` / `bakeItemRotate90` update applied ContentXform + pixels.
+2. Bound: `ItemWorld::setAppearance` / sparse ContentBake (and path orient hint
+   without crop — tip 2010).
 3. `commitItemSessionEdit(item)`:
-   - `rememberItemState` (Image mode merges into path map carefully; Workspace
-     uses `captureState`)
-   - If `sessionIndex >= 0`: write `m_sessionSlotStates[sessionIndex]`, emit
-     path-keyed filmstrip override
-   - **Sync** to other live/stashed/gallery items **only if**
-     `other->sessionIndex() == sessionIndex` (same path required), with a
-     sole-path fallback for Image mode when no bound peer exists
+   - Bound: `persistSessionAppearanceSlot` (single `setAppearance` + durable)
+   - Unbound: path map via `rememberItemState`
+   - Peer sync by **`SessionImageId` only** (never path)
 
 ### 5.3 Crop path
 
-1. Enter crop: load full on-disk image onto the target item; draft rect from
-   prior session crop metadata.
-2. Apply: `recordSessionCrop` (item metadata + path map if bound),
-   `cropToLocalRect` (bake pixels), `commitItemSessionEdit`.
-3. Undo (if pushed) restores pre-enter snapshot via `applyCropAppearance`.
+1. Enter crop: full on-disk image on the locked crop target (id + item).
+2. Apply: store crop on ItemWorld by id (not path for bound), bake pixels,
+   `commitItemSessionEdit`.
+3. Undo restores pre-enter appearance via ItemWorld / crop session snapshot.
 
 ### 5.4 Image mode → Workspace propagation (intended)
 
 ```
-Image-mode item (sessionIndex = N)
+Image-mode item (sessionId = S)
         │ commitItemSessionEdit
-        ├─► m_sessionSlotStates[N]     (value copy of appearance fields)
-        ├─► m_itemStates[path]         (path collapse — last slot wins)
-        ├─► filmstrip override[path]   (all rows with path)
-        └─► for each stashed/live peer with sessionIndex == N:
-                setSourceImage / content flags / session crop  (value copy)
+        ├─► ItemWorld appearance[S]     (sparse + fat DTO dual-write)
+        ├─► filmstrip override by id    (not path-wide when ids present)
+        └─► peers with sessionId == S:  rematerialize / sync appearance
 ```
 
-**If the Image-mode item’s `sessionIndex` is wrong or -1, stashed Workspace
-tiles do not update.** Filmstrip may still change because signals are path-
-keyed.
-
-**If the user opened Image mode via path (`indexOf`), they may be editing slot
-0 while looking at a duplicate that was slot 1 on the canvas.**
+**If the Image-mode item has no `SessionImageId`, peers do not update by id.**
+Path-only open remains unsafe for path duplicates (prefer id-keyed open).
 
 ---
 
