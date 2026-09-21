@@ -2,6 +2,28 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2187-test-sessionsort-gallery-size.** CI: sessionsort + imageview
+characterization failures (not regressions of the 2185/2186 identity pin).
+
+### Fix
+- SessionSort Name/Path: QCollator(QLocale::c()) so numeric order is stable
+  without process locale / Fontconfig (b1 < b2 < b10)
+- imageView_openGalleryCropReturn: rememberImageSize before setWorkspacePaths so
+  GallerySizeResolve does not defer populate (empty live canvas → focusItem null)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2187-test-sessionsort-gallery-size-e77da63.bundle HEAD
+```
+
+Next: **2188**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2186-session-cursor-cleanup.** Follow-up to 2185: same class of
 path↔SessionImageId lag beyond Workspace→Image open.
 

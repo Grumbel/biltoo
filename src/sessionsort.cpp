@@ -6,12 +6,27 @@
 #include "pagepath.h"
 
 #include <QCollator>
+#include <QLocale>
 #include <QtMath>
 
 #include <algorithm>
 #include <random>
 
 namespace SessionSort {
+
+namespace {
+
+/** Numeric, case-insensitive collator with C locale — independent of process
+ *  locale / missing Fontconfig in headless CI (otherwise b10 can sort before b2). */
+QCollator sessionNameCollator()
+{
+    QCollator collator(QLocale::c());
+    collator.setNumericMode(true);
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    return collator;
+}
+
+} // namespace
 
 bool modeNeedsImageProbe(Mode mode)
 {
@@ -44,16 +59,12 @@ QVector<int> orderIndices(Mode mode,
                           const QHash<QString, qint64> &fsizes)
 {
     auto nameLess = [](const QString &a, const QString &b) {
-        QCollator collator;
-        collator.setNumericMode(true);
-        collator.setCaseSensitivity(Qt::CaseInsensitive);
-        return collator.compare(PagePath::displayName(a), PagePath::displayName(b)) < 0;
+        return sessionNameCollator().compare(
+                   PagePath::displayName(a), PagePath::displayName(b))
+            < 0;
     };
     auto pathLess = [](const QString &a, const QString &b) {
-        QCollator collator;
-        collator.setNumericMode(true);
-        collator.setCaseSensitivity(Qt::CaseInsensitive);
-        return collator.compare(a, b) < 0;
+        return sessionNameCollator().compare(a, b) < 0;
     };
 
     QVector<int> order(paths.size());

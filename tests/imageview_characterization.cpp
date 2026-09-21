@@ -569,6 +569,12 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     view.enterGallery(LayoutMode::Grid);
     QVERIFY(view.isGalleryMode());
 
+    // Prime definitive sizes so GallerySizeResolve does not defer populate.
+    // Without this, setWorkspacePaths returns with an empty live canvas until
+    // async probes finish (headless CI: focusItem == nullptr).
+    view.rememberImageSize(m_pathA, QSize(64, 48));
+    view.rememberImageSize(m_pathB, QSize(80, 60));
+
     view.setWorkspacePaths(doc.paths(), doc.ids());
     {
         const PackOrderView pack = view.currentPackOrder();
@@ -578,6 +584,8 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         QCOMPARE(pack.pathAt(0), m_pathA);
         QCOMPARE(pack.idAt(0), focus);
     }
+    QVERIFY2(view.findItemBySessionId(focus) != nullptr,
+             "Gallery tiles must exist after setWorkspacePaths with primed sizes");
 
     // Id-keyed components via ItemWorld (same store MainWindow binds).
     WorkspaceItemState crop;
