@@ -84,9 +84,9 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         }
         // Live grade is interaction authority (slider may lead ItemWorld Color
         // until flushColorAdjustCommit).
-        s.colorAdjust = item->colorAdjustments();
+        s.colorAdjust = itemLiveColor(item);
     } else {
-        s.colorAdjust = item->colorAdjustments();
+        s.colorAdjust = itemLiveColor(item);
     }
 
     // Path-map list-index hint: unbound tiles only. Bound ids use
@@ -114,7 +114,7 @@ WorkspaceItemState ImageView::freezeItemAppearance(const ImageItem *item) const
         && m_itemWorld.hasDurableAppearance(sid)) {
         WorkspaceItemState s = sessionAppearanceValue(sid);
         ItemComponents::applyPlacementToState(s, placementFromItem(item));
-        s.colorAdjust = item->colorAdjustments();
+        s.colorAdjust = itemLiveColor(item);
         s.path = item->path();
         s.sessionId = sid;
         s.sessionIndex = sessionListIndex(item);

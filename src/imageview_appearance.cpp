@@ -177,6 +177,15 @@ ContentXform::Value ImageView::itemAppliedContentXform(const ImageItem *item) co
     return item->tileContentXform();
 }
 
+ColorAdjustments ImageView::itemLiveColor(const ImageItem *item) const
+{
+    if (!item) {
+        return {};
+    }
+    // Live lag is always the item mirror (slider may lead ItemWorld Color).
+    return item->colorAdjustments();
+}
+
 void ImageView::clearItemDecodedPixels(ImageItem *item)
 {
     if (!item) {
@@ -324,7 +333,7 @@ QImage ImageView::sessionAppearanceImage(const ImageItem *item) const
     // Live grade only when display is still unbaked host (no applied xform).
     // Re-applying on a materialize bake double-grades the filmstrip override.
     if (!itemHasAppliedContentXform(item)) {
-        const ColorAdjustments adj = item->colorAdjustments();
+        const ColorAdjustments adj = itemLiveColor(item);
         if (!adj.isIdentity()) {
             img = applyColorAdjustments(img, adj);
         }
@@ -664,7 +673,7 @@ void ImageView::flushColorAdjustCommit()
     WorkspaceItemState want = freezeItemAppearance(item);
     // Flush always prefers live grade (interaction authority; ItemWorld Color
     // is already updated on setTargetColorAdjustments).
-    want.colorAdjust = item->colorAdjustments();
+    want.colorAdjust = itemLiveColor(item);
     // Full rematerialize from host (async when multi-MP). Do **not** write
     // grade into path-keyed XDG on every slider tick — ItemWorld Color + project
     // own durable grade; XDG is for orient/flip seed, not slider spam.

@@ -362,7 +362,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     // Live grade leads ItemWorld during slider drag; keep store grade when live
     // is still identity (cold open / path-change before seed install).
     {
-        const ColorAdjustments liveGrade = item->colorAdjustments();
+        const ColorAdjustments liveGrade = m_view->itemLiveColor(item);
         if (!liveGrade.isIdentity() || want.colorAdjust.isIdentity()) {
             want.colorAdjust = liveGrade;
         }

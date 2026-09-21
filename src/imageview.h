@@ -526,6 +526,13 @@ public:
     bool itemHasAppliedContentXform(const ImageItem *item) const;
     ContentXform::Value itemAppliedContentXform(const ImageItem *item) const;
     /**
+     * Live colour grade for @p item (slider / paint lag).
+     * Stage 2 residual: interaction authority is always the ImageItem mirror;
+     * durable grade is ItemWorld Color (setTargetColorAdjustments / project).
+     * Use this helper in host logic instead of digging item->colorAdjustments().
+     */
+    ColorAdjustments itemLiveColor(const ImageItem *item) const;
+    /**
      * Clear display pixels on @p item (keeps applied ContentXform fingerprint).
      * Sole external clear path — ImageItem::clearDecodedPixels is private.
      */

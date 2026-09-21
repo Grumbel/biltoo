@@ -249,6 +249,7 @@ private:
     friend class ImageView;
     // Pixel install — ImageView / DisplayPipelineController only (Stage 2).
     void setPath(const QString &path);
+    /** Valid ids: only ImageView::setItemSessionId (list-order + applied migrate). */
     void setSessionId(SessionImageId id) { m_sessionId = id; }
     void setSessionIndex(int index) { m_sessionIndex = index; }
     void setInteractive(bool on);

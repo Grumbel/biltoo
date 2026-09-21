@@ -1075,7 +1075,7 @@ Stage 4b delivered (product: no backward compatibility):
 | Member / concern | Role | Demotion notes |
 |------------------|------|----------------|
 | Pixmap / preview / intrinsic size | Qt paint | Keep |
-| `m_colorAdjust` | Live grade for paint + slider lag | Keep until grade is applied only via rematerialize; interaction lag needs a host-side scratch |
+| `m_colorAdjust` | Live grade for paint + slider lag | Keep on item; host reads via `itemLiveColor` (2085); durable is ItemWorld Color |
 | Applied `ContentXform` fingerprint | Mid-edit content authority | ItemWorld when bound (2080–2084); all valid binds via setItemSessionId; ImageItem mirror for paint / unbound |
 | Live pose (`m_scaleX`… via `applyPlacement`) | QGraphicsItem transform | Keep; durable copy is ItemWorld Placement |
 | `sessionIndex` cache | List-order mirror | Prefer `sessionListIndex` / document; `refreshSessionIndexCache` after `setSessionId` (2067–2079); never pack row; unbound may keep pack hint |
@@ -1464,6 +1464,8 @@ Phase 1–6 rules still apply. Additions:
   bind; bindSelectedSessionIds uses setItemSessionId; pipeline stash uses helpers.
 - biltoo-2084: Stage 2 residual — all valid-id binds route through setItemSessionId
   (load/gallery/canvas/place/cursor); unbind keeps setSessionId(invalid).
+- biltoo-2085: Stage 2 residual — itemLiveColor helper for live grade reads;
+  durable Color stays ItemWorld; setSessionId docs valid-id via setItemSessionId.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

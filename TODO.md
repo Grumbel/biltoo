@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2085-itemLiveColor-helper.** Stage 2 residual: itemLiveColor for paint-grade lag reads.
+Prior: **2084**.
+
+### Change
+- `ImageView::itemLiveColor(item)` — live grade (slider/paint lag) is always the
+  ImageItem mirror; durable grade remains ItemWorld Color
+- captureState / freeze / flush / appearance / pipeline host reads use the helper
+- `ImageItem::setSessionId` docs: valid ids only via `setItemSessionId`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2085-itemLiveColor-helper-e77da63.bundle HEAD
+```
+Requires tip **2084** (base **e77da63**); includes 1938–2085.
+
+### Next
+- Stage 2: further ImageItem applied/paint demotion, or host-side color scratch
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2084-setItemSessionId-all-binds.** Stage 2 residual: all valid-id binds go through setItemSessionId.
 Prior: **2083**.
 
