@@ -232,15 +232,27 @@ ImageItem *ImageView::findItemBySessionIndex(int sessionIndex) const
     if (sessionIndex < 0) {
         return nullptr;
     }
-    // Prefer the SessionImageId at this list slot (cache may lag after reorder).
+    // Document owns list slots when bound. A stale ImageItem::sessionIndex cache
+    // must not return a different tile after reorder.
     if (m_sessionDoc && sessionIndex < m_sessionDoc->size()) {
         const SessionImageId id = m_sessionDoc->idAt(sessionIndex);
         if (id != kInvalidSessionImageId) {
-            if (ImageItem *byId = findItemBySessionId(id)) {
-                return byId;
+            // Only the live tile with this id; nullptr if not on canvas yet.
+            return findItemBySessionId(id);
+        }
+        // No id at this row — allow cache match only when path agrees.
+        const QString path = m_sessionDoc->pathAt(sessionIndex);
+        for (ImageItem *item : m_items) {
+            if (!item || item->sessionIndex() != sessionIndex) {
+                continue;
+            }
+            if (path.isEmpty() || item->path() == path) {
+                return item;
             }
         }
+        return nullptr;
     }
+    // No document: list-order cache is the only signal.
     for (ImageItem *item : m_items) {
         if (item && item->sessionIndex() == sessionIndex) {
             return item;

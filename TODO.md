@@ -2,6 +2,36 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2002-findItemBySessionIndex-doc-first.** Document-owned slots never match stale cache.
+Prior: **2001**.
+
+### Problem
+`findItemBySessionIndex` preferred document id, but if that id was not on the
+canvas it fell through to `ImageItem::sessionIndex()` cache — which can still
+point at a list row after reorder and return the **wrong** tile.
+
+### Change
+- Document slot with a valid `SessionImageId` → `findItemBySessionId` only
+  (nullptr if not on canvas)
+- Document slot without id → cache match only when path agrees with the list row
+- No document → cache-only fallback (unchanged)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2002-findItemBySessionIndex-doc-first-e77da63.bundle HEAD
+```
+Requires tip **2001** (base **e77da63**); includes 1938–2002.
+
+### Next
+- Optional: Stage 4 dual-write / project-format migration (design required)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2001-bind-book-sessionListIndex.** Pending bind applies list index from document.
 Prior: **2000**.
 
