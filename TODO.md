@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2037-pack-poses-facing.** Stage 3: pure Facing pack data plane.
+Prior: **2036**.
+
+### Change
+- `packPosesFacing` — cover contain, then height-matched verso|recto pairs
+- `pack` Facing gathers sizes → pure poses → apply
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2037-pack-poses-facing-e77da63.bundle HEAD
+```
+Requires tip **2036** (base **e77da63**); includes 1938–2037.
+
+### Next
+- Stage 3: MasonryFill / MasonryRowsFill packPoses* when needed
+- Remaining direct `captureState`: unbound, crop enter, mid-edit content-bake
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2036-pack-poses-flow.** Stage 3: pure Flow / FlowFill pack data plane.
 Prior: **2035**.
 

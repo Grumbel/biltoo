@@ -27,6 +27,7 @@ private slots:
     void packPoses_gridAndGridCrop();
     void packPoses_masonryAndMasonryRows();
     void packPoses_flowAndFlowFill();
+    void packPoses_facing();
 };
 
 void GalleryLayoutTest::axesSwap_cardinalAndDiagonal()
@@ -228,6 +229,27 @@ void GalleryLayoutTest::packPoses_flowAndFlowFill()
     QCOMPARE(fill.size(), 1);
     QVERIFY(qAbs(fill.at(0).scale - 2.2) < 1e-9);
     QVERIFY(qAbs(fill.at(0).center.x() - 55.0) < 1e-9); // w=110, centre 55
+}
+
+void GalleryLayoutTest::packPoses_facing()
+{
+    // Cover only: 100×50 into 200×100 → contain scale 2.
+    const auto cover = GalleryLayout::packPosesFacing({QSizeF(100, 50)}, 0.0, 10.0, 200.0, 100.0);
+    QCOMPARE(cover.size(), 1);
+    QCOMPARE(cover.at(0).scale, 2.0);
+    QCOMPARE(cover.at(0).center, QPointF(100.0, 50.0));
+
+    // Cover + pair: three equal 50×50; avail 110×200 gap 10 → halfW=50.
+    // Cover scale contain(110,200,50,50)=2.2; pair scales to halfW.
+    const QVector<QSizeF> three{QSizeF(50, 50), QSizeF(50, 50), QSizeF(50, 50)};
+    const auto f = GalleryLayout::packPosesFacing(three, 0.0, 10.0, 110.0, 200.0);
+    QCOMPARE(f.size(), 3);
+    QVERIFY(qAbs(f.at(0).scale - 2.2) < 1e-9);
+    // Pair: scaleL = scaleR = 1 for 50 into halfW=50 with matching heights.
+    QCOMPARE(f.at(1).scale, 1.0);
+    QCOMPARE(f.at(2).scale, 1.0);
+    QCOMPARE(f.at(1).center.x(), 25.0);
+    QCOMPARE(f.at(2).center.x(), 85.0); // 50+10+25
 }
 
 QTEST_MAIN(GalleryLayoutTest)

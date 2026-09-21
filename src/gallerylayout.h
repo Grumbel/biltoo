@@ -395,6 +395,83 @@ inline QVector<PackPose> packPosesFlow(const QVector<QSizeF> &layoutSizes,
 }
 
 /**
+ * Facing: cover alone (contain in avail), then height-matched pairs (verso|recto).
+ */
+inline QVector<PackPose> packPosesFacing(const QVector<QSizeF> &layoutSizes,
+                                         qreal margin, qreal gap,
+                                         qreal availW, qreal availH)
+{
+    const int n = layoutSizes.size();
+    QVector<PackPose> out;
+    out.reserve(n);
+    if (n <= 0) {
+        return out;
+    }
+
+    const qreal pairGap = gap;
+    qreal y = margin;
+    int i = 0;
+
+    // Cover: contain in full avail.
+    {
+        const QSizeF &ns = layoutSizes.at(0);
+        const qreal scale = containScale(availW, availH, ns.width(), ns.height());
+        const qreal w = ns.width() * scale;
+        const qreal h = ns.height() * scale;
+        PackPose p;
+        p.scale = scale;
+        p.center = QPointF(margin + w / 2.0, y + h / 2.0);
+        out.append(p);
+        y += h + gap;
+        i = 1;
+    }
+
+    const qreal halfW = (availW - pairGap) / 2.0;
+    while (i < n) {
+        const QSizeF &nsL = layoutSizes.at(i);
+        const bool hasRight = (i + 1 < n);
+        qreal scaleL = axisFillScale(halfW, nsL.width());
+        qreal scaleR = scaleL;
+        if (hasRight) {
+            const QSizeF &nsR = layoutSizes.at(i + 1);
+            const qreal hFromL = nsL.height() * axisFillScale(halfW, nsL.width());
+            const qreal hFromR = nsR.height() * axisFillScale(halfW, nsR.width());
+            const qreal targetH = qMin(hFromL, hFromR);
+            scaleL = axisFillScale(targetH, nsL.height());
+            scaleR = axisFillScale(targetH, nsR.height());
+            if (nsL.width() * scaleL > halfW) {
+                scaleL = axisFillScale(halfW, nsL.width());
+            }
+            if (nsR.width() * scaleR > halfW) {
+                scaleR = axisFillScale(halfW, nsR.width());
+            }
+        }
+        const qreal wL = nsL.width() * scaleL;
+        const qreal hL = nsL.height() * scaleL;
+        PackPose left;
+        left.scale = scaleL;
+        left.center = QPointF(margin + wL / 2.0, y + hL / 2.0);
+        out.append(left);
+        qreal rowH = hL;
+        if (hasRight) {
+            const QSizeF &nsR = layoutSizes.at(i + 1);
+            const qreal wR = nsR.width() * scaleR;
+            const qreal hR = nsR.height() * scaleR;
+            PackPose right;
+            right.scale = scaleR;
+            right.center = QPointF(margin + halfW + pairGap + wR / 2.0, y + hR / 2.0);
+            out.append(right);
+            rowH = qMax(rowH, hR);
+            i += 2;
+        } else {
+            i += 1;
+        }
+        y += rowH + gap;
+    }
+    return out;
+}
+
+/**
  * Arrange @p items in scene coordinates. Clears gallery crop except for GridCrop.
  * @p afterEach is invoked after each item is placed (e.g. to snapshot state).
  */

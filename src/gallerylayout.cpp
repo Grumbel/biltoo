@@ -324,59 +324,20 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         }
     } else if (params.mode == Mode::Facing) {
         // Cover alone, then height-matched pairs (verso | recto), stacked.
-        const qreal pairGap = gap;
-        qreal y = margin;
-        int i = 0;
-
-        auto placeScaled = [&](ImageItem *item, qreal scale, qreal xLeft, qreal yTop) {
-            const QSizeF ns = layoutSize(item);
-            const qreal w = ns.width() * scale;
-            const qreal h = ns.height() * scale;
-            applyPackPose(item, QPointF(xLeft + w / 2.0, yTop + h / 2.0), scale);
-            finish(item, afterEach);
-            return QSizeF(w, h);
-        };
-
-        if (n >= 1) {
-            const QSizeF ns = layoutSize(items.at(0));
-            const qreal scale = containScale(availW, availH, ns.width(), ns.height());
-            const QSizeF sz = placeScaled(items.at(0), scale, margin, y);
-            y += sz.height() + gap;
-            i = 1;
+        QVector<QSizeF> sizes;
+        sizes.reserve(n);
+        for (ImageItem *item : items) {
+            sizes.append(layoutSize(item));
         }
-        const qreal halfW = (availW - pairGap) / 2.0;
-        while (i < n) {
-            ImageItem *left = items.at(i);
-            ImageItem *right = (i + 1 < n) ? items.at(i + 1) : nullptr;
-            const QSizeF nsL = layoutSize(left);
-            qreal scaleL = axisFillScale(halfW, nsL.width());
-            qreal scaleR = scaleL;
-            if (right) {
-                const QSizeF nsR = layoutSize(right);
-                // Shared height: min of height-from-halfW for each page.
-                const qreal hFromL = nsL.height() * axisFillScale(halfW, nsL.width());
-                const qreal hFromR = nsR.height() * axisFillScale(halfW, nsR.width());
-                const qreal targetH = qMin(hFromL, hFromR);
-                scaleL = axisFillScale(targetH, nsL.height());
-                scaleR = axisFillScale(targetH, nsR.height());
-                if (nsL.width() * scaleL > halfW) {
-                    scaleL = axisFillScale(halfW, nsL.width());
-                }
-                if (nsR.width() * scaleR > halfW) {
-                    scaleR = axisFillScale(halfW, nsR.width());
-                }
+        const QVector<PackPose> poses =
+            packPosesFacing(sizes, margin, gap, availW, availH);
+        for (int i = 0; i < n; ++i) {
+            ImageItem *item = items.at(i);
+            if (!item || i >= poses.size()) {
+                continue;
             }
-            const QSizeF szL = placeScaled(left, scaleL, margin, y);
-            qreal rowH = szL.height();
-            if (right) {
-                const QSizeF szR = placeScaled(right, scaleR,
-                    margin + halfW + pairGap, y);
-                rowH = qMax(rowH, szR.height());
-                i += 2;
-            } else {
-                i += 1;
-            }
-            y += rowH + gap;
+            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
+            finish(item, afterEach);
         }
     }
 
