@@ -1028,6 +1028,20 @@ versioned project format that no longer needs the mirror for round-trip.
 
 **Stage 4a status: complete** (tips 2020–2027 + store-read hygiene 2022–2042).
 
+**Session appearance lifecycle (Stage 2 residual, tips 2045–2049)**
+
+| Operation | Fat DTO (`SessionAppearanceStore`) | Sparse (`ItemWorld`) |
+|-----------|--------------------------------------|----------------------|
+| Open / Replace (`setPaths` + `applyExpandedLoad`) | cleared in `setPaths` | `clearAppearance` in `applyExpandedLoad` |
+| newSession / project wipe (`clear` + `clearWorkspace`) | `SessionDocument::clear` | `clearWorkspace` → `clearAppearance` |
+| Sort / reorder (`replaceAll`) | **kept** (same ids) | **kept** |
+| Remove row (`removeAt` + view) | `removeAt` drops id row | `removeAppearance` (Image) or `removeWorkspaceSessionId` (W/G) |
+| `clearPaths` only | **kept** (intentional; paths empty) | caller must clear if full wipe |
+
+Ids are never recycled (`IDENTITY`). Orphaned fat/sparse rows are a dual-authority
+leak; the table above is the contract tests in `sessiondocument_test` lock.
+
+
 **Stage 4b readiness (not started — needs product format-version decision)**
 
 Prerequisites already in place:
@@ -1407,6 +1421,7 @@ Phase 1–6 rules still apply. Additions:
   appearance (was only Workspace/Gallery via removeWorkspaceSessionId).
 - biltoo-2049: Stage 2 residual — SessionDocument::removeAt drops fat appearance
   for the removed id (defense in depth; sparse still via ItemWorld).
+- biltoo-2050: Docs — session appearance lifecycle table (Open/Sort/Remove/Wipe).
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

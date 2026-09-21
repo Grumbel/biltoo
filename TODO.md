@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2050-session-appearance-lifecycle.** Docs: session appearance lifecycle table (Stage 2 residual complete).
+Prior: **2049**.
+
+### Change
+- REFACTOR: Open/Replace, Wipe, Sort, Remove, clearPaths ownership matrix
+  (fat vs sparse) covering tips 2045–2049
+- Stage 2 residual session-lifecycle hygiene treated complete
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2050-session-appearance-lifecycle-e77da63.bundle HEAD
+```
+Requires tip **2049** (base **e77da63**); includes 1938–2050.
+
+### Next
+- **Stage 4b** only with explicit product decision (format version + dual-write drop)
+- Phase 6 Tier 4: decode/framing when prioritized
+- Phase 7 line otherwise at a natural pause
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2049-removeat-clears-appearance.** Stage 2 residual: SessionDocument::removeAt drops fat appearance.
 Prior: **2048**.
 
