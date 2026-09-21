@@ -114,6 +114,28 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     return s;
 }
 
+WorkspaceItemState ImageView::freezeItemAppearance(const ImageItem *item) const
+{
+    if (!item) {
+        return {};
+    }
+    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
+        ? item->sessionId()
+        : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+    if (sid != kInvalidSessionImageId
+        && !item->hasAppliedContentXform()
+        && m_itemWorld.hasDurableAppearance(sid)) {
+        WorkspaceItemState s = sessionAppearanceValue(sid);
+        ItemComponents::applyPlacementToState(s, placementFromItem(item));
+        s.colorAdjust = item->colorAdjustments();
+        s.path = item->path();
+        s.sessionId = sid;
+        s.sessionIndex = sessionListIndex(item);
+        return s;
+    }
+    return captureState(item);
+}
+
 WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
 {
     // Sparse-prefer merge lives on ItemWorld::appearanceValue (single facade policy).

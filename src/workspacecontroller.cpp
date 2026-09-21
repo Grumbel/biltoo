@@ -36,21 +36,7 @@ void WorkspaceController::snapshot()
 {
     m_savedItems.clear();
     for (ImageItem *item : m_view->liveItems()) {
-        // Stage 2: prefer sparse-prefer store + live pose/grade when not mid-edit.
-        WorkspaceItemState s;
-        const SessionImageId sid = item->sessionId();
-        if (sid != kInvalidSessionImageId
-            && !item->hasAppliedContentXform()
-            && m_view->itemWorld().hasDurableAppearance(sid)) {
-            s = m_view->sessionAppearanceValue(sid);
-            ItemComponents::applyPlacementToState(s, item->placement());
-            s.colorAdjust = item->colorAdjustments();
-            s.path = item->path();
-            s.sessionId = sid;
-            s.sessionIndex = m_view->sessionListIndex(item);
-        } else {
-            s = m_view->captureState(item);
-        }
+        const WorkspaceItemState s = m_view->freezeItemAppearance(item);
         m_savedItems.append(s);
         // Bound: appearance by SessionImageId only (IDENTITY — crop must not
         // land on the path map for duplicates that share a file).

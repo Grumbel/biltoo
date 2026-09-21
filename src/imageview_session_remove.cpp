@@ -199,13 +199,13 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
             // was fully synced — apply it so the tile and sessionAppearanceImage match.
             syncLiveColorFromState(item, slot.colorAdjust, true);
         } else {
-            // captureState prefers ItemWorld sparse tables for bound ids.
-            slot = captureState(item);
+            // Freeze policy for bind seed (store + live when durable, not mid-edit).
+            slot = freezeItemAppearance(item);
         }
         item->setSessionId(id);
         // Live placement from the canvas item (Duplicate offsets, scales, …).
         ItemComponents::applyPlacementToState(slot, item->placement());
-        // Content/color already from captureState or pending; do not overwrite
+        // Content/color already from freeze/pending; do not overwrite
         // ItemWorld authority with a second live dig.
         slot.sessionId = id;
         // Document list order (not the deprecated ImageItem cache).

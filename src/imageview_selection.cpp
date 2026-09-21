@@ -244,9 +244,8 @@ void ImageView::duplicateSelected()
             continue;
         }
 
-        // captureState prefers ItemWorld sparse tables; live tileContentXform /
-        // colorAdjustments only when tables empty. No second dig into the item.
-        WorkspaceItemState content = captureState(src);
+        // Freeze policy: store + live when durable and not mid-edit.
+        WorkspaceItemState content = freezeItemAppearance(src);
         content.path = src->path();
 
         QSize intrinsic = src->imageSize();
@@ -296,24 +295,9 @@ QList<WorkspaceItemState> ImageView::captureSelectedWorkspaceClipboard() const
         if (!item || !m_items.contains(item)) {
             continue;
         }
-        // Stage 4a: same persistence boundary as project save — content from
-        // sparse-prefer sessionAppearanceValue; pose from the live item (may
-        // lead the Placement table mid-gesture). Unbound falls back to captureState.
+        // Stage 4a / 2: freeze policy (store + live when durable, not mid-edit).
         const SessionImageId sid = item->sessionId();
-        WorkspaceItemState s;
-        if (sid != kInvalidSessionImageId) {
-            // Bound: sparse-prefer store even when fat DTO lag (hasDurable).
-            // Mid-edit applied ContentXform still wins via captureState only when
-            // there is no durable row yet.
-            if (m_itemWorld.hasDurableAppearance(sid)) {
-                s = sessionAppearanceValue(sid);
-            } else {
-                s = captureState(item);
-            }
-        } else {
-            s = captureState(item);
-        }
-        ItemComponents::applyPlacementToState(s, placementFromItem(item));
+        WorkspaceItemState s = freezeItemAppearance(item);
         s.path = item->path();
         s.sessionId = sid;
         out.append(s);

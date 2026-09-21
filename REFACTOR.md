@@ -1353,6 +1353,8 @@ Phase 1–6 rules still apply. Additions:
   rows (appearanceToJson includePose + mixed project save/load).
 - biltoo-2028: Stage 2 residual — remember/persist/workspace snapshot use store +
   live overlays when not mid-edit (applied ContentXform still captureState).
+- biltoo-2029: Stage 2 residual — ImageView::freezeItemAppearance consolidates
+  store+live freeze policy; remember/persist/snapshot/bind/duplicate/clipboard.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
@@ -1381,9 +1383,10 @@ store **reads** prefer sparse via the choke point. Stage 4a save/load/clipboard
 build DTOs from sparse-prefer reads; Stage 4b may drop dual-write when the
 project format no longer needs the fat DTO mirror.
 
-`captureState` remaining call sites are intentional interaction freezes
-(crop enter/undo unbound, bind/duplicate, mid-edit applied ContentXform paths).
-remember/persist/workspace snapshot prefer store + live when not mid-edit (2028).
+Freeze policy is `freezeItemAppearance` (2029): store + live when durable and
+not mid-edit; else `captureState`. Remaining direct `captureState` call sites:
+unbound path-map, crop enter/undo unbound, color unbound, content-bake before,
+donor fallback without durable row.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

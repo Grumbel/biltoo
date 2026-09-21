@@ -242,22 +242,11 @@ void ImageView::rememberItemState(ImageItem *item)
     // Bound session images: placement + content live in m_appearance (by id).
     // Never write pose by path — duplicates would steal each other's layout.
     if (item->sessionId() != kInvalidSessionImageId) {
-        // Stage 2: store + live overlays when not mid-edit; captureState when
-        // applied ContentXform is interaction authority.
-        WorkspaceItemState slot;
-        const SessionImageId id = item->sessionId();
-        if (!item->hasAppliedContentXform()
-            && m_itemWorld.hasDurableAppearance(id)) {
-            slot = sessionAppearanceValue(id);
-            ItemComponents::applyPlacementToState(slot, placementFromItem(item));
-            slot.colorAdjust = item->colorAdjustments();
-        } else {
-            slot = captureState(item);
-        }
-        slot.sessionId = id;
+        WorkspaceItemState slot = freezeItemAppearance(item);
+        slot.sessionId = item->sessionId();
         slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();
-        m_itemWorld.setAppearance(id, slot);
+        m_itemWorld.setAppearance(item->sessionId(), slot);
         return;
     }
     m_itemWorld.setPathState(item->path(), captureState(item));
@@ -472,16 +461,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         if (item->sessionId() == kInvalidSessionImageId) {
             item->setSessionId(sid);
         }
-        // Stage 2: mid-edit applied ContentXform → captureState; else store + live.
-        WorkspaceItemState slot;
-        if (item->hasAppliedContentXform()
-            || !m_itemWorld.hasDurableAppearance(sid)) {
-            slot = captureState(item);
-        } else {
-            slot = sessionAppearanceValue(sid);
-            ItemComponents::applyPlacementToState(slot, placementFromItem(item));
-            slot.colorAdjust = item->colorAdjustments();
-        }
+        WorkspaceItemState slot = freezeItemAppearance(item);
         slot.sessionId = sid;
         slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();

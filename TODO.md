@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2029-freeze-item-appearance.** Stage 2 residual: freezeItemAppearance consolidates store+live freeze policy.
+Prior: **2028**.
+
+### Change
+- `ImageView::freezeItemAppearance` — durable + not mid-edit →
+  `sessionAppearanceValue` + live pose/grade; else `captureState`
+- Call sites: remember, persist, workspace snapshot, bind, duplicate, clipboard
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2029-freeze-item-appearance-e77da63.bundle HEAD
+```
+Requires tip **2028** (base **e77da63**); includes 1938–2029.
+
+### Next
+- Remaining direct `captureState`: unbound, crop enter, mid-edit content-bake
+- Stage 4b later: format version + drop dual-write (not now)
+- Stage 3 incremental when needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2028-freeze-store-live.** Stage 2 residual: remember/persist/snapshot prefer store+live when not mid-edit.
 Prior: **2027**.
 

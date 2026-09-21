@@ -483,9 +483,15 @@ public:
      * Interaction snapshot of a live tile: sparse-prefer store content
      * (sessionAppearanceValue) plus live pose / applied ContentXform / grade.
      * For durable reads prefer sessionAppearanceValue; use captureState when
-     * mid-edit live authority must win (undo, crop draft, Workspace snapshot).
+     * mid-edit live authority must win (undo, crop draft).
      */
     WorkspaceItemState captureState(const ImageItem *item) const;
+    /**
+     * Freeze path for mode leave / persist / remove undo: store + live pose/grade
+     * when durable appearance exists and applied ContentXform is absent; otherwise
+     * captureState (mid-edit or unbound). Prefer this over ad-hoc store+live.
+     */
+    WorkspaceItemState freezeItemAppearance(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
     /**
      * Install applied ContentXform fingerprint on the live ImageItem.
