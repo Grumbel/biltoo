@@ -2,6 +2,28 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2063-capturestate-no-legacy-lag.** captureState drops sparse-incomplete live fill.
+Prior: **2062**.
+
+### Change
+- Bound captureState: without applied ContentXform, sparse assembly is sole content
+  truth (no “fill gaps from live tile” dual-write lag path)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2063-capturestate-no-legacy-lag-e77da63.bundle HEAD
+```
+Requires tip **2062** (base **e77da63**); includes 1938–2063.
+
+### Next
+- Phase 7 Stage 2 residual / Phase 6 Tier 4 when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2062-clear-content-components.** Reset Content Appearance clears crop/bake/color only.
 Prior: **2061**.
 

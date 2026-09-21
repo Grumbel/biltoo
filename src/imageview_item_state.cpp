@@ -27,10 +27,9 @@ ItemComponents::Placement ImageView::placementFromItem(const ImageItem *item)
 
 WorkspaceItemState ImageView::captureState(const ImageItem *item) const
 {
-    // Interaction snapshot: durable content from sparse-prefer store (Stage 2 /
-    // Stage 4a), then live pose / applied ContentXform / grade overlays.
-    // Prefer sessionAppearanceValue for bound content so captureState does not
-    // re-implement the ItemWorld merge policy.
+    // Interaction snapshot: durable content from ItemWorld sparse tables
+    // (Stage 4b), then live pose / applied ContentXform / grade overlays.
+    // Bound content starts from sessionAppearanceValue (single merge policy).
     const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
@@ -69,8 +68,10 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     ItemComponents::applyPlacementToState(s, placementFromItem(item));
 
     if (sid != kInvalidSessionImageId) {
-        // Phase 7: applied ContentXform is mid-edit authority over sparse tables
-        // (Gallery full-circle rotate must not resurrect turns).
+        // Applied ContentXform is mid-edit authority over sparse tables
+        // (Gallery full-circle rotate must not resurrect turns). Without an
+        // applied fingerprint, Stage 4b sparse assembly is sole content truth —
+        // no legacy live-xform gap fill.
         if (item->hasAppliedContentXform()) {
             const ContentXform::Value live = item->tileContentXform();
             s.hasCrop = live.hasCrop;
@@ -81,19 +82,6 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
                 ContentXform::normalizeQuarterTurns(live.quarterTurns);
             s.contentHFlip = live.hFlip;
             s.contentVFlip = live.vFlip;
-        } else {
-            // Sparse incomplete: fill gaps from live tile xform (legacy lag).
-            const ContentXform::Value live = item->tileContentXform();
-            if (!m_itemWorld.hasCrop(sid)) {
-                s.hasCrop = live.hasCrop;
-                s.cropRect = live.cropRect;
-            }
-            if (!m_itemWorld.hasContentBake(sid)) {
-                s.contentQuarterTurns =
-                    ContentXform::normalizeQuarterTurns(live.quarterTurns);
-                s.contentHFlip = live.hFlip;
-                s.contentVFlip = live.vFlip;
-            }
         }
         // Live grade is interaction authority (slider may lead ItemWorld Color
         // until flushColorAdjustCommit).
