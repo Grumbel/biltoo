@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2038-pack-poses-masonry-fill.** Stage 3: pure MasonryFill / MasonryRowsFill; all pack modes pure-pose.
+Prior: **2037**.
+
+### Change
+- `packPosesMasonryFill` / `packPosesMasonryRowsFill` — two-pass band fill
+- Poses returned in input order (index-tracked through band assignment)
+- All GalleryLayout pack modes are now pure data plane + ImageItem apply
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2038-pack-poses-masonry-fill-e77da63.bundle HEAD
+```
+Requires tip **2037** (base **e77da63**); includes 1938–2038.
+
+### Next
+- Stage 3 residual: optional pack apply helper DRY; or move on
+- Remaining direct `captureState`: unbound, crop enter, mid-edit content-bake
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2037-pack-poses-facing.** Stage 3: pure Facing pack data plane.
 Prior: **2036**.
 

@@ -28,6 +28,7 @@ private slots:
     void packPoses_masonryAndMasonryRows();
     void packPoses_flowAndFlowFill();
     void packPoses_facing();
+    void packPoses_masonryFillAndRowsFill();
 };
 
 void GalleryLayoutTest::axesSwap_cardinalAndDiagonal()
@@ -250,6 +251,34 @@ void GalleryLayoutTest::packPoses_facing()
     QCOMPARE(f.at(2).scale, 1.0);
     QCOMPARE(f.at(1).center.x(), 25.0);
     QCOMPARE(f.at(2).center.x(), 85.0); // 50+10+25
+}
+
+void GalleryLayoutTest::packPoses_masonryFillAndRowsFill()
+{
+    // Two equal tiles, 2 columns → both columns height-match with scale 1.
+    const QVector<QSizeF> two{QSizeF(50, 40), QSizeF(50, 40)};
+    const auto fill = GalleryLayout::packPosesMasonryFill(two, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(fill.size(), 2);
+    QCOMPARE(fill.at(0).scale, 1.0);
+    QCOMPARE(fill.at(1).scale, 1.0);
+    QCOMPARE(fill.at(0).center.x(), 25.0);
+    QCOMPARE(fill.at(1).center.x(), 85.0);
+
+    // Unequal heights: tall column stretches short one so bottoms align.
+    // col0: 80, col1: 40 → col1 s=2; scales 1*2 and base.
+    const QVector<QSizeF> uneven{QSizeF(50, 80), QSizeF(50, 40)};
+    const auto u = GalleryLayout::packPosesMasonryFill(uneven, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(u.size(), 2);
+    QCOMPARE(u.at(0).scale, 1.0);
+    QCOMPARE(u.at(1).scale, 2.0);
+    // col1 centre y: h/2 = 40 after scale
+    QCOMPARE(u.at(1).center.y(), 40.0);
+
+    // RowsFill: mirror on width.
+    const auto rows = GalleryLayout::packPosesMasonryRowsFill(uneven, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(rows.size(), 2);
+    QCOMPARE(rows.at(0).scale, 1.0);
+    QCOMPARE(rows.at(1).scale, 2.0);
 }
 
 QTEST_MAIN(GalleryLayoutTest)

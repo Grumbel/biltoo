@@ -472,6 +472,140 @@ inline QVector<PackPose> packPosesFacing(const QVector<QSizeF> &layoutSizes,
 }
 
 /**
+ * MasonryFill: column masonry then uniform scale per column so heights match.
+ * Poses are returned in @p layoutSizes order (same as pack input).
+ */
+inline QVector<PackPose> packPosesMasonryFill(const QVector<QSizeF> &layoutSizes,
+                                              qreal margin, qreal gap, qreal availW,
+                                              int masonryColumns)
+{
+    const int n = layoutSizes.size();
+    QVector<PackPose> out(n);
+    if (n <= 0) {
+        return out;
+    }
+    const int cols = resolvedBandCount(masonryColumns, n);
+    const qreal colW = cellAxisLength(availW, gap, cols);
+    struct Entry {
+        int index = 0;
+        QSizeF ns;
+        qreal scale = 1.0;
+        qreal h = 0.0;
+    };
+    QVector<QVector<Entry>> columns(cols);
+    QVector<qreal> colHeights(cols, 0.0);
+    for (int i = 0; i < n; ++i) {
+        const QSizeF &ns = layoutSizes.at(i);
+        const qreal scale = axisFillScale(colW, ns.width());
+        const qreal h = ns.height() * scale;
+        int best = 0;
+        for (int c = 1; c < cols; ++c) {
+            if (colHeights.at(c) < colHeights.at(best)) {
+                best = c;
+            }
+        }
+        columns[best].append(Entry{i, ns, scale, h});
+        colHeights[best] += h + gap;
+    }
+    qreal maxH = 0.0;
+    for (int c = 0; c < cols; ++c) {
+        if (columns.at(c).isEmpty()) {
+            continue;
+        }
+        maxH = qMax(maxH, colHeights.at(c) - gap);
+    }
+    qreal x = margin;
+    for (int c = 0; c < cols; ++c) {
+        if (columns.at(c).isEmpty()) {
+            continue;
+        }
+        const qreal colH = colHeights.at(c) - gap;
+        const qreal s = (colH > 1e-6) ? (maxH / colH) : 1.0;
+        const qreal colWidth = colW * s;
+        qreal y = margin;
+        for (const Entry &e : columns.at(c)) {
+            const qreal scale = e.scale * s;
+            const qreal w = e.ns.width() * scale;
+            const qreal h = e.ns.height() * scale;
+            PackPose p;
+            p.scale = scale;
+            p.center = QPointF(x + w / 2.0, y + h / 2.0);
+            out[e.index] = p;
+            y += h + gap * s;
+        }
+        x += colWidth + gap;
+    }
+    return out;
+}
+
+/**
+ * MasonryRowsFill: row masonry then uniform scale per row so widths match.
+ * Poses are returned in @p layoutSizes order.
+ */
+inline QVector<PackPose> packPosesMasonryRowsFill(const QVector<QSizeF> &layoutSizes,
+                                                  qreal margin, qreal gap, qreal availH,
+                                                  int masonryRows)
+{
+    const int n = layoutSizes.size();
+    QVector<PackPose> out(n);
+    if (n <= 0) {
+        return out;
+    }
+    const int rows = resolvedBandCount(masonryRows, n);
+    const qreal rowH = cellAxisLength(availH, gap, rows);
+    struct Entry {
+        int index = 0;
+        QSizeF ns;
+        qreal scale = 1.0;
+        qreal w = 0.0;
+    };
+    QVector<QVector<Entry>> rowItems(rows);
+    QVector<qreal> rowWidths(rows, 0.0);
+    for (int i = 0; i < n; ++i) {
+        const QSizeF &ns = layoutSizes.at(i);
+        const qreal scale = axisFillScale(rowH, ns.height());
+        const qreal w = ns.width() * scale;
+        int best = 0;
+        for (int r = 1; r < rows; ++r) {
+            if (rowWidths.at(r) < rowWidths.at(best)) {
+                best = r;
+            }
+        }
+        rowItems[best].append(Entry{i, ns, scale, w});
+        rowWidths[best] += w + gap;
+    }
+    qreal maxW = 0.0;
+    for (int r = 0; r < rows; ++r) {
+        if (rowItems.at(r).isEmpty()) {
+            continue;
+        }
+        maxW = qMax(maxW, rowWidths.at(r) - gap);
+    }
+    qreal y = margin;
+    for (int r = 0; r < rows; ++r) {
+        if (rowItems.at(r).isEmpty()) {
+            continue;
+        }
+        const qreal rowW = rowWidths.at(r) - gap;
+        const qreal s = (rowW > 1e-6) ? (maxW / rowW) : 1.0;
+        const qreal rowHeight = rowH * s;
+        qreal x = margin;
+        for (const Entry &e : rowItems.at(r)) {
+            const qreal scale = e.scale * s;
+            const qreal w = e.ns.width() * scale;
+            const qreal h = e.ns.height() * scale;
+            PackPose p;
+            p.scale = scale;
+            p.center = QPointF(x + w / 2.0, y + h / 2.0);
+            out[e.index] = p;
+            x += w + gap * s;
+        }
+        y += rowHeight + gap;
+    }
+    return out;
+}
+
+/**
  * Arrange @p items in scene coordinates. Clears gallery crop except for GridCrop.
  * @p afterEach is invoked after each item is placed (e.g. to snapshot state).
  */

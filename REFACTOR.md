@@ -939,7 +939,7 @@ characterization extended before storage changes.
 | **0** | **`ItemWorld` facade** | One type wrapping existing stores behind id-keyed accessors. No storage change, no behaviour change. Later stages mutate *inside* the facade. |
 | **1** | **Split the god-component** | `WorkspaceItemState` remains the **project-file DTO** (`projectfile.cpp` serializes it; `projectfile_roundtrip` pins the shape). Runtime gets separate tables (see below). |
 | **2** | **Demote `ImageItem` to a render proxy** | Highest payoff. Item keeps what Qt needs to draw (pixmap, surface id, transform derived from Placement). Interaction scratch → `ItemInteractSession` (already exists). Tile-LOD cache → runtime-only table under `DisplayPipelineController`. Collapse `captureState` fan-out into Placement / component writes. |
-| **3** | **Systems as free functions** | Entry points: `system(ItemWorld&, std::span<const SessionImageId>)` (or equivalent). GalleryLayout / ContentXform already lean this way; remove `ImageItem*` from pure transforms where possible. `layoutSizeForNative` (2030), SideBySide/Vertical `packPoses*` (2033) pure; other modes + apply still via ImageItem friends. |
+| **3** | **Systems as free functions** | Entry points: `system(ItemWorld&, std::span<const SessionImageId>)` (or equivalent). GalleryLayout / ContentXform already lean this way; remove `ImageItem*` from pure transforms where possible. All `packPoses*` modes pure (2033–2038); pack only applies via ImageItem friends. |
 | **4** | **Persistence split** | Tag each table persistent vs derived. Project save walks only persistent tables. Design: see **Stage 4 design** below (tip 2020). |
 | **5** | **Storage (optional)** | Dense index + contiguous arrays *behind* `ItemWorld`. Only if profiled. |
 
@@ -1368,6 +1368,8 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2035: Stage 3 — packPosesMasonry / packPosesMasonryRows pure data plane.
 - biltoo-2036: Stage 3 — packPosesFlow (Flow / FlowFill) pure data plane.
 - biltoo-2037: Stage 3 — packPosesFacing pure data plane (cover + pairs).
+- biltoo-2038: Stage 3 — packPosesMasonryFill / MasonryRowsFill pure data plane;
+  all GalleryLayout pack modes now pure-pose + apply.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
