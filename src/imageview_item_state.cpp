@@ -99,16 +99,14 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
                 ContentXform::normalizeQuarterTurns(prev->contentQuarterTurns);
             s.cropRotation = prev->cropRotation;
             s.cropSourceSize = prev->cropSourceSize;
-            if (s.sessionIndex < 0 && prev->sessionIndex >= 0) {
-                s.sessionIndex = prev->sessionIndex;
-            }
         } else if (live.quarterTurns != 0) {
             s.contentQuarterTurns =
                 ContentXform::normalizeQuarterTurns(live.quarterTurns);
         }
     }
-    // Placement path-map hint for session index only (bound or unbound).
-    if (s.sessionIndex < 0) {
+    // Path-map list-index hint: unbound tiles only. Bound ids use
+    // sessionListIndex / SessionDocument — do not adopt a stale path-book index.
+    if (s.sessionIndex < 0 && item->sessionId() == kInvalidSessionImageId) {
         if (const WorkspaceItemState *prev = m_itemWorld.getPathState(item->path())) {
             if (prev->sessionIndex >= 0) {
                 s.sessionIndex = prev->sessionIndex;

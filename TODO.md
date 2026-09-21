@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2006-captureState-index-unbound-only.** Path-map sessionIndex hint only when unbound.
+Prior: **2005**.
+
+### Change
+`captureState`: path-book `sessionIndex` is adopted only when the item has no
+`SessionImageId`. Bound tiles keep document order from `sessionListIndex` (or
+−1 if the id is not in the list) — never a stale path-map row index.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2006-captureState-index-unbound-only-e77da63.bundle HEAD
+```
+Requires tip **2005** (base **e77da63**); includes 1938–2006.
+
+### Next
+- Stage 4 project-format migration (design)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2005-destroy-persistState-flag.** destroyCanvasItem cannot re-seed removed appearance.
 Prior: **2004**.
 
