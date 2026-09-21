@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2071-workspace-unstash-path-unbound-only.** Workspace unstash path content only when unbound.
+Prior: **2070**.
+
+### Change
+- Workspace unstash: path-map content fallback only for unbound tiles
+- Stale path-resurrect comments updated after 2069/2070
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2071-workspace-unstash-path-unbound-only-e77da63.bundle HEAD
+```
+Requires tip **2070** (base **e77da63**); includes 1938–2071.
+
+### Next
+- Phase 7 Stage 2: ContentXform runtime table
+- Phase 6 Tier 4: decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2070-bound-skip-path-content-reads.** Bound content readers use sparse + XDG only.
 Prior: **2069**.
 

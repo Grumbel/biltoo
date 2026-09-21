@@ -211,7 +211,9 @@ void WorkspaceController::restoreStashedItems()
             app = m_view->sessionAppearanceValue(item->sessionId());
             haveApp = true;
         }
-        if (!haveApp) {
+        // Unbound only: path map may hold content. Bound without durable row
+        // waits for XDG seed on next materialize (path content stripped — 2069).
+        if (!haveApp && item->sessionId() == kInvalidSessionImageId) {
             int samePath = 0;
             for (ImageItem *peer : m_view->liveItems()) {
                 if (peer && peer->path() == item->path()) {

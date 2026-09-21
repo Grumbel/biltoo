@@ -502,7 +502,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
     }
     if (sid != kInvalidSessionImageId) {
         // Bound: do not last-write appearance onto the path map (duplicates
-        // share a path). Placement remains in m_itemStateBook.byPath from Workspace
+        // share a path). Placement remains in path book from Workspace
         // rememberItemState / snapshot only.
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {

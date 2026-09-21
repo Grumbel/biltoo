@@ -308,8 +308,8 @@ int ImageView::resetContentAppearanceForTargets()
         if (sid != kInvalidSessionImageId) {
             m_itemWorld.clearContentComponents(sid);
         }
-        // Path map still holds content turns from prior bake/pack; captureState
-        // re-merges turns==0 from m_itemStateBook.byPath and can resurrect orientation.
+        // Unbound path map may still hold content; clear so captureState cannot
+        // resurrect orient after Reset Content Appearance.
         if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
             WorkspaceItemState pathSlot = SessionAppearance::clearedContentOps(*st);
             m_itemWorld.setPathState(path, pathSlot);
