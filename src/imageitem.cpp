@@ -233,22 +233,6 @@ void ImageItem::setPreviewImage(const QImage &preview)
     update();
 }
 
-void ImageItem::seedContentMetaLagFromApplied()
-{
-    if (!m_hasAppliedContentXform) {
-        return;
-    }
-    m_contentHFlip = m_appliedContentXform.hFlip;
-    m_contentVFlip = m_appliedContentXform.vFlip;
-    if (m_appliedContentXform.hasCrop && !m_appliedContentXform.cropRect.isEmpty()) {
-        m_sessionHasCrop = true;
-        m_sessionCropRect = m_appliedContentXform.cropRect;
-    } else {
-        m_sessionHasCrop = false;
-        m_sessionCropRect = QRect();
-    }
-}
-
 void ImageItem::clearContentMetaLag()
 {
     m_contentHFlip = false;
@@ -271,10 +255,10 @@ void ImageItem::clearDecodedPixels()
     if (!m_interactive) {
         setCacheMode(QGraphicsItem::NoCache);
     }
-    // Applied tracks the *current* sample. Seed lag fields so tileContentXform
-    // still reports crop/flip chrome across the pixel gap.
-    seedContentMetaLagFromApplied();
-    clearAppliedContentXform();
+    // Keep applied ContentXform across the pixel gap: it is the session content
+    // fingerprint (tileContentXform / chrome), not a claim that pixels are
+    // currently present. attachDisplaySample / syncLive reassert or replace it.
+    // Identity path-change uses clearLiveContentMeta to drop applied + lag.
     update();
 }
 

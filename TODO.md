@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1965-applied-survives-pixel-clear.** Applied ContentXform survives clearDecodedPixels.
+Prior: **1964**.
+
+### Change
+- `clearDecodedPixels` no longer clears applied or seeds lag fields
+- Applied is the session content fingerprint across soft/pixel gaps
+- Identity path-change still uses `clearLiveContentMeta` (lag + applied)
+- Drop dead `seedContentMetaLagFromApplied`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1965-applied-survives-pixel-clear-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1965.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host (priority)
+- Lag fields only cleared on identity; rarely non-zero now — candidate to drop
+- Color: live interaction authority; ItemWorld Color persistence
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1964-live-color-capture-authority.** Live color grade is capture/want authority.
 Prior: **1963**.
 

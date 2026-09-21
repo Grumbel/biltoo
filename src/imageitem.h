@@ -307,9 +307,7 @@ private:
         m_hasAppliedContentXform = false;
         clearTileGradedCache();
     }
-    /** Seed lag crop/flip from applied before clearDecodedPixels drops applied. */
-    void seedContentMetaLagFromApplied();
-    /** Clear lag crop/flip fields (identity clearLiveContentMeta). */
+    /** Clear lag crop/flip fields (identity clearLiveContentMeta residual). */
     void clearContentMetaLag();
     void tickTileLod(int budget = 8);
     /** Plan/paint helpers (ImageItem paint + tick only). */

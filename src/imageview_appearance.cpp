@@ -112,8 +112,8 @@ void ImageView::syncLiveContentMetaFromState(ImageItem *item, const WorkspaceIte
     if (!item) {
         return;
     }
-    // Phase 7 Stage 2: applied ContentXform is the live fingerprint.
-    // Session lag fields are seeded on clearDecodedPixels only.
+    // Phase 7 Stage 2: applied ContentXform is the live fingerprint (survives
+    // clearDecodedPixels; identity clear uses clearLiveContentMeta).
     item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }
 

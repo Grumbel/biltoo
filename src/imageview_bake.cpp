@@ -117,7 +117,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             m_itemWorld.setPathState(item->path(), pathSlot);
         }
         // Applied fingerprint already set by syncLiveContentMetaFromState(want)
-        // and re-asserted by attachDisplaySample after any soft clearDecodedPixels.
+        // (survives soft clearDecodedPixels; attachDisplaySample reasserts).
     }
 
     commitItemSessionEdit(item);

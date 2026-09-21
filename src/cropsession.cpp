@@ -420,8 +420,8 @@ void CropSession::clearItemPixelsForDraftReinstall(ImageItem *item)
     if (!item) {
         return;
     }
-    // clearDecodedPixels already clears applied and seeds lag fields for
-    // tileContentXform until the next syncLiveContentMetaFromState.
+    // clearDecodedPixels keeps applied ContentXform (session fingerprint).
+    // Draft reinstall reasserts via syncLiveContentMetaFromState(contentOnly).
     item->clearDecodedPixels();
 }
 
