@@ -2,6 +2,37 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1999-sessionIndex-cache-from-document.** Stamp list-order cache from sessionListIndex on restore/bind.
+Prior: **1998**.
+
+### Change
+`DisplayPipelineController` load/restore paths that refresh `ImageItem::sessionIndex`
+now prefer `sessionListIndex` (document position for the bound id) and only fall
+back to snapshot / `PendingSessionBind.index` when the id is not in the list:
+
+- `completeLoadRestore`
+- `claimUnboundItemsForPendingBinds`
+- pending-bind apply on decode
+
+Pairs with 1998 (durable slots no longer restamp from the cache).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1999-sessionIndex-cache-from-document-e77da63.bundle HEAD
+```
+Requires tip **1998** (base **e77da63**); includes 1938–1999.
+
+### Next
+- Optional: canvas rebind still uses cache for unbound path matching (harder)
+- Optional: Stage 4 dual-write reduction
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1998-sessionIndex-no-restamp.** Durable slots use sessionListIndex, not item cache.
 Prior: **1997**.
 
