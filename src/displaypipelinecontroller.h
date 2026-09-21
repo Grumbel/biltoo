@@ -174,7 +174,6 @@ public:
                                          bool *displayReadyOut) const;
     SessionAppearance::PixelKind pixelKindForImageModeSample(const QString &path,
                                                              const QImage &image) const;
-    void applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path);
     void frameImageModeReplaceItem(ImageItem *item, const QString &path);
     void seedEmptyWorkspaceFromReplace(const QString &path, const QImage &image);
     ImageItem *imageModeItemForPath(const QString &path) const;

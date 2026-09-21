@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2068-drop-legacy-path-placement-flips.** Remove Image-mode path-book placement flip residual.
+Prior: **2067**.
+
+### Change
+- Drop `applyLegacyPathFlipsIfNeeded` — Image-mode content flips come from
+  sparse/XDG materialize in `createItemFromImage`; path-book placement hFlip was
+  a pre–Stage 4 dual residual after `resetImageModeItemPlacement`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2068-drop-legacy-path-placement-flips-e77da63.bundle HEAD
+```
+Requires tip **2067** (base **e77da63**); includes 1938–2068.
+
+### Next
+- Phase 7 Stage 2: ContentXform runtime table or further path-book content strip
+- Phase 6 Tier 4: decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2067-sessionindex-cache-from-doc.** Refresh sessionIndex cache from document after setSessionId.
 Prior: **2066**.
 

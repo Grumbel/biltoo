@@ -546,26 +546,6 @@ SessionAppearance::PixelKind DisplayPipelineController::pixelKindForImageModeSam
 }
 
 
-void DisplayPipelineController::applyLegacyPathFlipsIfNeeded(ImageItem *item, const QString &path)
-{
-    if (!item || path.isEmpty()) {
-        return;
-    }
-    // Content 90°/flip/crop are materialize()'d in createItemFromImage when want is set.
-    // Legacy unbaked flips only if content flags not used yet.
-    const WorkspaceItemState *st = m_view->itemWorld().getPathState(path);
-    if (!st) {
-        return;
-    }
-    if (!st->contentHFlip && !st->contentVFlip) {
-        ItemComponents::Placement pl = item->placement();
-        pl.hFlip = st->hFlip;
-        pl.vFlip = st->vFlip;
-        item->applyPlacement(pl);
-    }
-}
-
-
 void DisplayPipelineController::frameImageModeReplaceItem(ImageItem *item, const QString &path)
 {
     if (!item) {

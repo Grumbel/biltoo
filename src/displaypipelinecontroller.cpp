@@ -1272,7 +1272,8 @@ void DisplayPipelineController::installImageModeReplaceItem(const QString &path,
     // m_view->createItemFromImage materializes host × store want (install invariant).
     bindImageModeSessionCursor(item);
     resetImageModeItemPlacement(item);
-    applyLegacyPathFlipsIfNeeded(item, path);
+    // Content flips/crop are materialised in createItemFromImage from sparse/XDG.
+    // Do not re-apply path-book placement hFlip (pre–Stage 4 dual residual).
     m_view->prepareImageModeCanvas();
     frameImageModeReplaceItem(item, path);
     m_view->setUpdatesEnabled(true);
