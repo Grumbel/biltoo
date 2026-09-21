@@ -692,18 +692,35 @@ void ItemWorldTest::appliedContentXform_runtimeOnly()
     ContentXform::Value x;
     x.quarterTurns = 2;
     x.vFlip = true;
+    x.colorAdjust.brightness = 12;
+    x.colorAdjust.contrast = 110;
     world.setAppliedContentXform(9, x);
 
     QVERIFY(world.hasAppliedContentXform(9));
     QCOMPARE(world.appliedContentXform(9).quarterTurns, 2);
     QVERIFY(world.appliedContentXform(9).vFlip);
+    QCOMPARE(world.appliedContentXform(9).colorAdjust.brightness, 12);
+    QCOMPARE(world.appliedContentXform(9).colorAdjust.contrast, 110);
     // Not durable appearance — project/clipboard must not require it.
     QVERIFY(!world.hasDurableAppearance(9));
     QVERIFY(!world.hasCrop(9));
     QVERIFY(!world.hasContentBake(9));
+    QVERIFY(!world.hasColor(9)); // durable Color table is separate
 
     world.clearAppliedContentXform(9);
     QVERIFY(!world.hasAppliedContentXform(9));
+
+    // removeAppearance drops the runtime fingerprint with sparse tables.
+    world.setAppliedContentXform(9, x);
+    world.removeAppearance(9);
+    QVERIFY(!world.hasAppliedContentXform(9));
+
+    // clearAppearance drops all runtime fingerprints.
+    world.setAppliedContentXform(9, x);
+    world.setAppliedContentXform(11, x);
+    world.clearAppearance();
+    QVERIFY(!world.hasAppliedContentXform(9));
+    QVERIFY(!world.hasAppliedContentXform(11));
 
     // Unbound id is a no-op.
     world.setAppliedContentXform(kInvalidSessionImageId, x);

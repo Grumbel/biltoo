@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2090-applied-colorAdjust-test-demotion-status.** Stage 2 residual: applied colorAdjust test + demotion status through 2089.
+Prior: **2089**.
+
+### Change
+- `appliedContentXform_runtimeOnly` asserts colorAdjust round-trip; not durable
+  Color; removeAppearance / clearAppearance drop runtime fingerprints
+- REFACTOR demotion status + sequencing: Stage 2 **host** residual largely
+  complete (2080–2089); paint mirror / m_colorAdjust lag remain intentional
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2090-applied-colorAdjust-test-demotion-status-e77da63.bundle HEAD
+```
+Requires tip **2089** (base **e77da63**); includes 1938–2090.
+
+### Next
+- Stage 2: paint mirror residual (intentional on item), or host-side color scratch
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2089-refreshSessionIndex-clear-unbound.** Stage 2 residual: unbound clears list-order cache.
 Prior: **2088**.
 

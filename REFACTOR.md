@@ -1087,9 +1087,11 @@ Stage 4b delivered (product: no backward compatibility):
 **Sequencing relative to Stages 0–4**
 
 Stages 0–4b are complete (facade, sparse tables, nested format, path-book IDENTITY).
-Stage 3 remains incremental. Remaining Stage 2 work is ImageItem render-proxy
-demotion (paint-grade lag, applied ContentXform, sessionIndex cache). Phase 6
-Tier 4 decode/framing is independent.
+Stage 3 remains incremental. Stage 2 **host** residual for applied ContentXform,
+sessionIndex cache, and live-grade helpers is largely complete (2080–2089).
+ImageItem still holds intentional render-proxy state (pixmap, paint mirror of
+applied ContentXform, m_colorAdjust lag, live pose). Phase 6 Tier 4
+decode/framing is independent.
 
 ### Sequencing
 
@@ -1474,11 +1476,13 @@ Phase 1–6 rules still apply. Additions:
   ContentXform.colorAdjust (item + ItemWorld) for paint/tile LOD coherence.
 - biltoo-2089: Stage 2 residual — refreshSessionIndexCache clears sessionIndex
   when unbound; demote duplicate id via setItemSessionId(invalid).
+- biltoo-2090: Stage 2 residual — applied colorAdjust test coverage;
+  demotion status / sequencing through 2089 (host residual largely complete).
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
 
-### ImageItem demotion status (through biltoo-2086)
+### ImageItem demotion status (through biltoo-2089)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live
 in ItemWorld / SessionDocument. Public surface is readers, interaction handlers,
@@ -1487,18 +1491,19 @@ DisplayPipelineController, CropSession, GalleryController, GalleryLayout helpers
 Completed: path/session stamps, interactive/chrome flags, cell size, placement,
 content-edit marks, gallery scroll cache (1985–1995); Stage 2 residual store-read
 hygiene (2022–2025); applied ContentXform runtime table + host helpers (2080–2084);
-live grade via `itemLiveColor` (2085–2086).
+live grade via `itemLiveColor` (2085–2086); applied colorAdjust dual-sync (2088);
+sessionIndex unbound clear (2089).
 
 | Concern | Authority |
 |---------|-----------|
 | Crop / orient / grade / attention | ItemWorld sparse tables; read via `sessionAppearanceValue` / `appearanceValue` |
-| Applied ContentXform (mid-edit) | ItemWorld runtime table when bound (2080–2084); `itemAppliedContentXform`; paint mirror on item |
+| Applied ContentXform (mid-edit) | ItemWorld runtime table when bound (2080–2084); `itemAppliedContentXform`; paint mirror on item; colorAdjust dual-synced (2088) |
 | Live colour grade (slider lag) | ImageItem `m_colorAdjust`; host via `itemLiveColor` (2085–2086); durable is ItemWorld Color |
 | Store presence | `hasDurableAppearance` (fat **or** sparse) — not fat-only `hasAppearance` |
 | Live pose | `placement()` reader; `applyPlacement` private (+ `GalleryLayout::applyItemPlacement`) |
 | Interaction snapshot | `captureState` = store seed + live pose / applied ContentXform / grade |
 | Pixels / intrinsic / path / session stamps | Host / pipeline private mutators; valid ids via `setItemSessionId` |
-| List order | `sessionListIndex` (document); stamp via `refreshSessionIndexCache` (2078–2079) |
+| List order | `sessionListIndex` (document); `refreshSessionIndexCache` clears unbound (2078–2089) |
 
 Dual-write on store **writes** remains so fat DTO serialization stays aligned;
 store **reads** prefer sparse via the choke point. Stage 4a save/load/clipboard
