@@ -167,19 +167,8 @@ MainWindow::MainWindow(QWidget *parent)
                         }
                     }
                 }
-                // No live preferred tile: still prefer a bound session row for
-                // this path over paths().indexOf alone.
-                {
-                    const SessionImageId sid = m_session.firstIdForPath(path);
-                    if (sid != kInvalidSessionImageId) {
-                        const int idx = indexOfSessionId(sid);
-                        if (idx >= 0) {
-                            apply(idx);
-                            return;
-                        }
-                    }
-                }
-                apply(m_session.paths().indexOf(path));
+                // No live preferred tile: bound session row, else pure path index.
+                apply(indexOfPathPreferId(path));
             });
     connect(m_imageView, &ImageView::filesDropped,
             this, &MainWindow::onFilesDropped);
@@ -3606,7 +3595,7 @@ void MainWindow::handleImageModeDrop(const QStringList &paths, bool fromInternal
                 idx = indexOfSessionId(sid);
             }
             if (idx < 0) {
-                idx = m_session.paths().indexOf(focus);
+                idx = indexOfPathPreferId(focus);
             }
         }
     }

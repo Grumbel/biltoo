@@ -127,9 +127,9 @@ unbound and edits will not propagate correctly in Workspace).
    (biltoo-2119); classic path is last resort for paint/reload.
    Workspace filmstrip path restore after append uses occurrence mapping
    (biltoo-2120) when ids are missing.
-   Path focus/open without a live preferred tile uses `firstIdForPath` before
-   `paths().indexOf` (biltoo-2121). Sort/append/remove cursor restore uses the
-   same firstIdForPath step (biltoo-2122).
+   Path→index resolution goes through `indexOfPathPreferId` (firstIdForPath then
+   `paths().indexOf`; biltoo-2121–2123) for focus, open, sort, append, remove,
+   and drop cursor.
    Sort / append / remove / slideshow start prefer `SessionImageId` over
    `paths().indexOf` (biltoo-2105). Workspace filmstrip selection restore after
    append prefers live `itemSessionIds()` (biltoo-2106). Empty-workspace

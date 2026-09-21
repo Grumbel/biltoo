@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2123-indexOfPathPreferId.** SESSION residual: shared path→index prefers SessionImageId.
+Prior: **2122**.
+
+### Change
+- `MainWindow::indexOfPathPreferId`: firstIdForPath → paths().indexOf
+- Sort/append/remove, galleryItemFocused, showPathInImageMode, and image-mode
+  drop focus use the helper for last-resort path resolution
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2123-indexOfPathPreferId-e77da63.bundle HEAD
+```
+Requires tip **2122** (base **e77da63**); includes 1938–2123.
+
+### Next
+- SESSION residual: pure path index only for fully unbound session rows (via helper)
+- Optional: PreferCache / thumtoo ladder characterization
+- Runtime QA: duplicate × membership × flip × project round-trip
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2122-sort-append-firstIdForPath.** SESSION residual: sort/append/remove cursor via firstIdForPath.
 Prior: **2121**.
 

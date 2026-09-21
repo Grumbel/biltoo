@@ -1138,13 +1138,7 @@ void MainWindow::setSortMode(SortMode mode)
             newIndex = indexOfSessionId(currentId);
         }
         if (newIndex < 0 && !current.isEmpty()) {
-            const SessionImageId sid = m_session.firstIdForPath(current);
-            if (sid != kInvalidSessionImageId) {
-                newIndex = indexOfSessionId(sid);
-            }
-            if (newIndex < 0) {
-                newIndex = m_session.paths().indexOf(current);
-            }
+            newIndex = indexOfPathPreferId(current);
         }
         if (newIndex < 0) {
             newIndex = 0;
@@ -1520,13 +1514,7 @@ void MainWindow::finishExpandedAppendChrome(SessionImageId currentId, const QStr
         newIndex = indexOfSessionId(currentId);
     }
     if (newIndex < 0 && !currentPath.isEmpty()) {
-        const SessionImageId sid = m_session.firstIdForPath(currentPath);
-        if (sid != kInvalidSessionImageId) {
-            newIndex = indexOfSessionId(sid);
-        }
-        if (newIndex < 0) {
-            newIndex = m_session.paths().indexOf(currentPath);
-        }
+        newIndex = indexOfPathPreferId(currentPath);
     }
     if (newIndex < 0) {
         newIndex = 0;
@@ -1630,6 +1618,21 @@ SessionImageId MainWindow::sessionIdAt(int index) const
 int MainWindow::indexOfSessionId(SessionImageId id) const
 {
     return m_session.indexOfId(id);
+}
+
+int MainWindow::indexOfPathPreferId(const QString &path) const
+{
+    if (path.isEmpty() || m_session.isEmpty()) {
+        return -1;
+    }
+    const SessionImageId sid = m_session.firstIdForPath(path);
+    if (sid != kInvalidSessionImageId) {
+        const int idx = indexOfSessionId(sid);
+        if (idx >= 0) {
+            return idx;
+        }
+    }
+    return m_session.paths().indexOf(path);
 }
 
 SessionImageId MainWindow::currentSessionId() const
@@ -1953,13 +1956,7 @@ void MainWindow::selectIndexAfterSessionRemove(SessionImageId currentId, const Q
         newIndex = indexOfSessionId(currentId);
     }
     if (newIndex < 0 && !currentPath.isEmpty()) {
-        const SessionImageId sid = m_session.firstIdForPath(currentPath);
-        if (sid != kInvalidSessionImageId) {
-            newIndex = indexOfSessionId(sid);
-        }
-        if (newIndex < 0) {
-            newIndex = m_session.paths().indexOf(currentPath);
-        }
+        newIndex = indexOfPathPreferId(currentPath);
     }
     if (newIndex < 0) {
         newIndex = ViewTransform::clampIndex(sorted.first(), m_session.paths().size());

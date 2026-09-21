@@ -362,6 +362,11 @@ private slots:
     void removeSessionIndices(const QList<int> &indices);
     SessionImageId sessionIdAt(int index) const;
     int indexOfSessionId(SessionImageId id) const;
+    /**
+     * Session list index for @p path: first bound SessionImageId for the path,
+     * else paths().indexOf (fully unbound rows only).
+     */
+    int indexOfPathPreferId(const QString &path) const;
     SessionImageId currentSessionId() const;
     SessionImageId allocSessionId();
     void removeSessionPaths(const QStringList &paths);
