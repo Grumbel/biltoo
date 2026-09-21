@@ -313,9 +313,25 @@ void ImageView::emitItemOpenInImageMode(ImageItem *item)
     if (!item) {
         return;
     }
+    // Prefer SessionImageId only when it still matches this tile's path in the
+    // session document. After setItemSessionId conflict scrub, a tile can keep
+    // a stale id that belongs to another path — opening by that id would load
+    // the wrong file while classicPath may still be set from a prior pin.
     if (item->sessionId() != kInvalidSessionImageId) {
-        emit sessionImageOpenRequested(item->sessionId());
-        return;
+        bool idOk = true;
+        if (m_sessionDoc) {
+            const int docIdx = m_sessionDoc->indexOfId(item->sessionId());
+            if (docIdx < 0) {
+                idOk = false;
+            } else if (!item->path().isEmpty()
+                       && m_sessionDoc->paths().at(docIdx) != item->path()) {
+                idOk = false;
+            }
+        }
+        if (idOk) {
+            emit sessionImageOpenRequested(item->sessionId());
+            return;
+        }
     }
     int listIdx = sessionListIndex(item);
     // Gallery pack order aligns live canvas with session rows after reorder.
@@ -325,6 +341,10 @@ void ImageView::emitItemOpenInImageMode(ImageItem *item)
             && (!m_sessionDoc || live < m_sessionDoc->size())) {
             listIdx = live;
         }
+    }
+    // Unbound or id/path conflict: prefer document row by list cache, then path.
+    if (listIdx < 0 && m_sessionDoc && !item->path().isEmpty()) {
+        listIdx = m_sessionDoc->indexOfPathPreferId(item->path());
     }
     if (listIdx >= 0) {
         emit sessionSlotOpenRequested(listIdx);

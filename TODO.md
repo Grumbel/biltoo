@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2185-image-enter-session-id-pin.** ImageView rotation wrong: open
+002.jpg with id=1 (and reverse) so contentBake turns from the other row applied.
+Root: `m_currentIndex` still pointed at the previous row while `leaveForImageMode`
+→ Image::enter → statusChanged → updateStatus → setCurrentSessionId(sessionIdAt
+m_currentIndex) reverted the pinned sid; async install then materialize wrong want.
+
+### Fix
+- openSessionIndexInImageMode: set `m_currentIndex` before leaveForImageMode
+- publishSessionCursorForIndex: use sessionIdAt(index), not currentSessionId()
+- emitItemOpenInImageMode: refuse stale id whose document path ≠ tile path
+- bindImageModeSessionCursor / installDisplayPixels: refuse path/id mismatch
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2185-image-enter-session-id-pin-e77da63.bundle HEAD
+```
+
+Next: **2186**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2184-session-id-path-identity.** Log showed sid=2 on both 001.jpg
 and 002.jpg (peer sync refuse). setItemSessionId unbinds conflicting tiles;
 Workspace place no longer XDG-seeds contentBake; saved-appearance update is

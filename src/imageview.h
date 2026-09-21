@@ -262,6 +262,7 @@ public:
     {
         m_sessionDoc = doc;
     }
+    SessionDocument *sessionDocument() const { return m_sessionDoc; }
     void takePendingWorkspacePath(const QString &path);
 
 

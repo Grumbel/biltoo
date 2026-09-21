@@ -464,7 +464,9 @@ void MainWindow::publishSessionCursorForIndex(int index)
     // viewport repaint of every tile on each click).
     const bool pulse = !m_slideshowAdvancing && isImageMode();
     m_imageView->hostSlideshow().setSessionPosition(index, m_session.paths().size(), pulse);
-    m_imageView->setCurrentSessionId(currentSessionId());
+    // Use the *argument* index — not m_currentIndex — so callers that publish
+    // a target before mutating m_currentIndex cannot pin the wrong SessionImageId.
+    m_imageView->setCurrentSessionId(sessionIdAt(index));
 }
 
 void MainWindow::applyCurrentIndexCanvasChange(const QString &path, bool ensureGalleryVisible)

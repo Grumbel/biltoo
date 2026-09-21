@@ -402,10 +402,31 @@ void DisplayPipelineController::bindImageModeSessionCursor(ImageItem *item)
         return;
     }
     // Image-mode crop/flip targets the matching Workspace session slot.
+    // Refuse to bind a SessionImageId whose document path is not this underlay —
+    // that is the path/id mismatch that applied the wrong contentBake (log:
+    // path=002.jpg id=1 turns=2 from id=1's bake).
     if (m_view->hostSessionId().hasCurrentId()) {
-        m_view->setItemSessionId(item, m_view->hostSessionId().currentIdValue());
-        if (m_view->sessionListIndex(item) < 0
-            && m_view->hostSessionId().currentIndex() >= 0) {
+        const SessionImageId sid = m_view->hostSessionId().currentIdValue();
+        bool bind = true;
+        if (SessionDocument *doc = m_view->sessionDocument()) {
+            const int docIdx = doc->indexOfId(sid);
+            if (docIdx >= 0 && !item->path().isEmpty()
+                && doc->paths().at(docIdx) != item->path()) {
+                qCritical("bindImageModeSessionCursor: refuse sid=%lld for path=%s "
+                          "(document path is %s)",
+                          static_cast<long long>(sid),
+                          qPrintable(item->path()),
+                          qPrintable(doc->paths().at(docIdx)));
+                bind = false;
+            }
+        }
+        if (bind) {
+            m_view->setItemSessionId(item, sid);
+            if (m_view->sessionListIndex(item) < 0
+                && m_view->hostSessionId().currentIndex() >= 0) {
+                item->setSessionIndex(m_view->hostSessionId().currentIndex());
+            }
+        } else if (m_view->hostSessionId().currentIndex() >= 0) {
             item->setSessionIndex(m_view->hostSessionId().currentIndex());
         }
     } else if (m_view->hostSessionId().currentIndex() >= 0) {

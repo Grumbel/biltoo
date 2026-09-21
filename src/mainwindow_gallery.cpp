@@ -241,6 +241,13 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
     // Pin the target *before* leaveForImageMode. ImageController::enter loads
     // classicPath; without this, a stale session-cursor path races the real
     // target and double-click on a Workspace tile can open the wrong image.
+    //
+    // Also pin m_currentIndex *before* leave: Image::enter emits statusChanged →
+    // updateStatus → setCurrentSessionId(currentSessionId()) which reads
+    // sessionIdAt(m_currentIndex). If m_currentIndex still points at the previous
+    // row, that reverts the pinned sid and Image install materializes the wrong
+    // contentBake (log: path=002.jpg id=1 turns from id=1).
+    m_currentIndex = sessionIndex;
     if (m_imageView) {
         m_imageView->hostImage().setClassicPath(path);
         m_imageView->setCurrentSessionId(sid);

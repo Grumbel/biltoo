@@ -932,6 +932,28 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
             sid = m_view->hostSessionId().currentIdValue();
         }
     }
+    // Image mode: drop a sid whose document path is not this underlay — otherwise
+    // materialize pulls the wrong contentBake (path=002.jpg + sid=1 → turns from 001).
+    if (m_view->isImageMode() && sid != kInvalidSessionImageId && !path.isEmpty()) {
+        if (SessionDocument *doc = m_view->sessionDocument()) {
+            const int docIdx = doc->indexOfId(sid);
+            if (docIdx >= 0 && doc->paths().at(docIdx) != path) {
+                qCritical("installDisplayPixels: drop sid=%lld for path=%s "
+                          "(document maps id to %s)",
+                          static_cast<long long>(sid),
+                          qPrintable(path),
+                          qPrintable(doc->paths().at(docIdx)));
+                sid = kInvalidSessionImageId;
+                const SessionImageId itemSid = item->sessionId();
+                if (itemSid != kInvalidSessionImageId) {
+                    const int itemIdx = doc->indexOfId(itemSid);
+                    if (itemIdx < 0 || doc->paths().at(itemIdx) == path) {
+                        sid = itemSid;
+                    }
+                }
+            }
+        }
+    }
     // Image underlay: do NOT seed XDG here. Path XDG seed on first Image open
     // wrote orient into contentBake when only Workspace Placement existed —
     // host stayed unrotated on Workspace, Image materialize then rotated
