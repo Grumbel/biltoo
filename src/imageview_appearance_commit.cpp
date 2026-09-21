@@ -76,9 +76,9 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
                     want = *st;
                 }
             }
+            // Applied fingerprint is mid-edit authority when store slot is empty.
             if (!SessionAppearance::hasContentAppearance(want) && item->hasAppliedContentXform()) {
-                ContentXform::Value x = item->appliedContentXform();
-                x.applyToState(want);
+                item->tileContentXform().applyToState(want);
             }
             const auto kind = !src.isNull()
                 ? SessionAppearance::PixelKind::FullSource

@@ -329,11 +329,12 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             want = *st;
         }
     }
-    const ContentXform::Value applied =
-        item->hasAppliedContentXform() ? item->appliedContentXform()
-                                       : ContentXform::Value{};
-    // Phase 7: prefer ItemWorld sparse tables for lag-fill when bound. Live
-    // dual-write / applied xform via tileContentXform as item fallback.
+    // Phase 7: applied ContentXform is mid-edit authority (same as captureState).
+    if (item->hasAppliedContentXform()) {
+        item->tileContentXform().applyToState(want);
+        return want;
+    }
+    // No applied: lag-fill empty store from sparse tables, else tileContentXform lag.
     ContentXform::Value liveX = item->tileContentXform();
     bool liveHFlip = liveX.hFlip;
     bool liveVFlip = liveX.vFlip;
@@ -352,9 +353,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         }
     }
     SessionAppearance::mergeAppliedAndLiveFlags(
-        want,
-        item->hasAppliedContentXform() ? &applied : nullptr,
-        liveHFlip, liveVFlip, liveHasCrop, liveCropRect);
+        want, nullptr, liveHFlip, liveVFlip, liveHasCrop, liveCropRect);
     return want;
 }
 

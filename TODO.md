@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1961-want-appearance-applied-authority.** wantAppearance prefers applied like captureState.
+Prior: **1960**.
+
+### Change
+- `wantAppearanceForItem`: when applied present, `tileContentXform().applyToState(want)` and return
+- Lag-fill merge only when no applied (sparse tables / lag fields)
+- Sibling bake attach uses `tileContentXform().applyToState` (not raw applied dig)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1961-want-appearance-applied-authority-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1961.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Content-meta lag fields remain for pixel-clear chrome gaps
+- Color still parallel live grade on ImageItem for paint/HUD
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1960-capture-applied-authority.** captureState prefers applied when present.
 Prior: **1959**.
 
