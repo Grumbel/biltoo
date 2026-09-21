@@ -61,7 +61,7 @@ public:
     void replaceAll(const QStringList &paths, const QVector<SessionImageId> &ids);
     void append(const QString &path, SessionImageId id = kInvalidSessionImageId);
     void insert(int index, const QString &path, SessionImageId id = kInvalidSessionImageId);
-    /** Remove path/id at index; also drops fat appearance for that id. */
+    /** Remove path/id at index; also drops seed flag for that id. */
     void removeAt(int index);
     /** Pad or trim ids to match paths (legacy recovery only). */
     void ensureIdsAligned();
@@ -69,10 +69,9 @@ public:
     bool validateUniqueIds(const char *context = nullptr) const;
 
     /**
-     * Phase 6 Tier 4: sole SessionAppearanceStore for the session.
-     * ImageView binds via bindSessionAppearance; no view-owned store remains.
-     * clear() wipes this fat store only — ItemWorld sparse tables are cleared
-     * by ImageView::clearWorkspace / clearAppearance.
+     * Seed-attempt book for the session (Stage 4b residual).
+     * ImageView binds via bindSessionAppearance → hostAppearance().
+     * Content appearance is ItemWorld sparse tables; clear() only resets seeds.
      */
     SessionAppearanceStore &appearance() { return m_appearance; }
     const SessionAppearanceStore &appearance() const { return m_appearance; }

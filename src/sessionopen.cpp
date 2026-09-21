@@ -36,7 +36,7 @@ bool prepareExpandedSession(ImageView *view,
     }
     TtfpTrace::mark("after_invalidateSessionLoads");
 
-    // Pull path-XDG orient/flip/grade into SessionAppearanceStore before first paint.
+    // Pull path-XDG orient/flip/grade into ItemWorld sparse tables before first paint.
     if (view) {
         view->hostDisplayPipeline().seedSessionAppearancesFromPaths(paths, ids);
     }

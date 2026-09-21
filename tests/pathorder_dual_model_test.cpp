@@ -15,6 +15,7 @@
  */
 
 #include "sessiondocument.h"
+#include "itemworld.h"
 #include "sessionpathorder.h"
 #include "sessionappearance.h"
 #include "packorderoverlay.h"
@@ -116,17 +117,18 @@ void PathOrderDualModelTest::appearance_survivesBookClear()
 {
     SessionDocument doc;
     SessionPathOrder book;
+    ItemWorld world;
     doc.append(QStringLiteral("/a.jpg"));
     const SessionImageId id = doc.idAt(0);
     WorkspaceItemState st;
     st.hasCrop = true;
     st.cropRect = QRect(5, 5, 80, 60);
-    doc.appearance().set(id, st);
+    world.setAppearance(id, st);
     book.appendRow(QStringLiteral("/a.jpg"), id);
 
     book.clear();
-    QVERIFY(doc.appearance().contains(id));
-    QCOMPARE(doc.appearance().get(id)->cropRect, QRect(5, 5, 80, 60));
+    QVERIFY(world.hasCrop(id));
+    QCOMPARE(world.appearanceValue(id).cropRect, QRect(5, 5, 80, 60));
 }
 
 void PathOrderDualModelTest::duplicatePath_idsIndependentAcrossModels()
@@ -157,10 +159,11 @@ void PathOrderDualModelTest::duplicatePath_idsIndependentAcrossModels()
     WorkspaceItemState crop1;
     crop1.hasCrop = true;
     crop1.cropRect = QRect(20, 20, 10, 10);
-    doc.appearance().set(id0, crop0);
-    doc.appearance().set(id1, crop1);
-    QCOMPARE(doc.appearance().get(id0)->cropRect, QRect(0, 0, 10, 10));
-    QCOMPARE(doc.appearance().get(id1)->cropRect, QRect(20, 20, 10, 10));
+    ItemWorld world;
+    world.setAppearance(id0, crop0);
+    world.setAppearance(id1, crop1);
+    QCOMPARE(world.appearanceValue(id0).cropRect, QRect(0, 0, 10, 10));
+    QCOMPARE(world.appearanceValue(id1).cropRect, QRect(20, 20, 10, 10));
 }
 
 void PathOrderDualModelTest::firstId_documentVsBook()
@@ -203,20 +206,21 @@ void PathOrderDualModelTest::openGalleryCropScenario_sessionSide()
     crop.hasCrop = true;
     crop.cropRect = QRect(10, 20, 200, 150);
     crop.cropSourceSize = QSize(800, 600);
-    doc.appearance().set(idOne, crop);
+    ItemWorld world;
+    world.setAppearance(idOne, crop);
 
     // return to Image: book may clear or stay; appearance must stick on id
     book.clear();
-    QVERIFY(doc.appearance().contains(idOne));
-    QCOMPARE(doc.appearance().get(idOne)->cropRect, QRect(10, 20, 200, 150));
-    QVERIFY(!doc.appearance().contains(idTwo));
+    QVERIFY(world.hasCrop(idOne));
+    QCOMPARE(world.appearanceValue(idOne).cropRect, QRect(10, 20, 200, 150));
+    QVERIFY(!world.hasCrop(idTwo));
 
     // sibling path unchanged; duplicate path would keep independent slots
     doc.append(QStringLiteral("/one.jpg"));
     const SessionImageId idOneB = doc.idAt(2);
     QVERIFY(idOneB != idOne);
-    QVERIFY(!doc.appearance().contains(idOneB));
-    QCOMPARE(doc.appearance().get(idOne)->cropRect, QRect(10, 20, 200, 150));
+    QVERIFY(!world.hasCrop(idOneB));
+    QCOMPARE(world.appearanceValue(idOne).cropRect, QRect(10, 20, 200, 150));
 }
 
 
@@ -234,7 +238,8 @@ void PathOrderDualModelTest::galleryDelete_prunesBookKeepsOtherAppearance()
     WorkspaceItemState cropB;
     cropB.hasCrop = true;
     cropB.cropRect = QRect(1, 2, 30, 40);
-    doc.appearance().set(idB, cropB);
+    ItemWorld world;
+    world.setAppearance(idB, cropB);
 
     // Remove middle session row (b)
     doc.removeAt(1);
@@ -246,9 +251,10 @@ void PathOrderDualModelTest::galleryDelete_prunesBookKeepsOtherAppearance()
     QCOMPARE(doc.pathAt(1), QStringLiteral("/c.jpg"));
     QCOMPARE(book.pathAt(0), QStringLiteral("/a.jpg"));
     QCOMPARE(book.pathAt(1), QStringLiteral("/c.jpg"));
-    // Appearance for removed id may remain as orphan until clear — crop on B
-    // must not transfer to C
-    QVERIFY(!doc.appearance().contains(idC) || !doc.appearance().get(idC)->hasCrop);
+    // Sparse appearance for removed id may remain as orphan until clearAppearance —
+    // crop on B must not transfer to C
+    QVERIFY(!world.hasCrop(idC));
+    QCOMPARE(world.appearanceValue(idB).cropRect, QRect(1, 2, 30, 40));
     QCOMPARE(doc.idAt(1), idC);
 }
 

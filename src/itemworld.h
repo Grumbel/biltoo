@@ -7,7 +7,6 @@
 #include "imagesizebook.h"
 #include "itemcomponents.h"
 #include "pathitemstatebook.h"
-#include "sessionappearance.h"
 
 #include <QHash>
 #include <QString>
@@ -16,41 +15,27 @@
  * Facade over per-item stores (Phase 7 / REFACTOR.md Stage 4b).
  *
  * Owns sparse tables (Crop, Attention, ContentBake, Color, Placement) and
- * non-owning links to SessionAppearanceStore, PathItemStateBook, ImageSizeBook.
+ * non-owning links to PathItemStateBook and ImageSizeBook.
  *
- * Persistence tags (REFACTOR.md Stage 4):
+ * Persistence tags (REFACTOR.md Stage 4b):
  *   Persistent — SessionDocument paths/ids; sparse Crop / ContentBake / Color /
  *     Attention; Placement (Workspace-scoped pose); path book only for unbound.
- *   Assemble-only — fat WorkspaceItemState written by setAppearance (load path);
- *     appearanceValue rebuilds from sparse tables (no dual-write lag).
  *   Derived only — applied ContentXform, tile LOD, soft pixels, sessionIndex.
+ *   Seed book — SessionAppearanceStore (seedAttempted only; not content).
  *
- * Stage 4b residual: setCrop / setColor / setAppearance write sparse only.
- * Fat SessionAppearanceStore is seedAttempted + SessionDocument lifecycle only.
+ * setCrop / setColor / setAppearance write sparse tables only.
+ * appearanceValue assembles WorkspaceItemState for project/clipboard.
  *
  * Entity key for content appearance: SessionImageId (IDENTITY.md).
  */
 class ItemWorld
 {
 public:
-    void bindAppearance(SessionAppearanceStore *store) { m_appearance = store; }
     void bindPathBook(PathItemStateBook *book) { m_pathBook = book; }
     void bindSizeBook(ImageSizeBook *book) { m_sizeBook = book; }
 
-    bool hasAppearanceBound() const { return m_appearance != nullptr; }
     bool hasPathBookBound() const { return m_pathBook != nullptr; }
     bool hasSizeBookBound() const { return m_sizeBook != nullptr; }
-
-    SessionAppearanceStore &appearance()
-    {
-        Q_ASSERT(m_appearance);
-        return *m_appearance;
-    }
-    const SessionAppearanceStore &appearance() const
-    {
-        Q_ASSERT(m_appearance);
-        return *m_appearance;
-    }
 
     PathItemStateBook &pathBook()
     {
@@ -72,18 +57,6 @@ public:
     {
         Q_ASSERT(m_sizeBook);
         return *m_sizeBook;
-    }
-
-    /**
-     * Fat DTO row if present (SessionDocument lifecycle / seed store only).
-     * Prefer appearanceValue / hasDurableAppearance for store-read gates.
-     */
-    const WorkspaceItemState *getAppearance(SessionImageId id) const
-    {
-        if (!m_appearance || id == kInvalidSessionImageId) {
-            return nullptr;
-        }
-        return m_appearance->get(id);
     }
 
     /**
@@ -165,9 +138,6 @@ public:
         if (id == kInvalidSessionImageId) {
             return;
         }
-        if (m_appearance) {
-            m_appearance->remove(id);
-        }
         m_crops.remove(id);
         m_attentions.remove(id);
         m_contentBakes.remove(id);
@@ -175,12 +145,9 @@ public:
         m_placements.remove(id);
     }
 
-    /** Clear DTO store and sparse component tables. */
+    /** Clear sparse component tables. */
     void clearAppearance()
     {
-        if (m_appearance) {
-            m_appearance->clear();
-        }
         m_crops.clear();
         m_attentions.clear();
         m_contentBakes.clear();
@@ -393,8 +360,7 @@ private:
         m_placements.insert(id, ItemComponents::placementFromState(state));
     }
 
-    // Linked stores (not owned). Fat DTO is load/setAppearance assemble cache only.
-    SessionAppearanceStore *m_appearance = nullptr; // setAppearance / legacy readers
+    // Linked stores (not owned).
     PathItemStateBook *m_pathBook = nullptr;        // persistent unbound only
     ImageSizeBook *m_sizeBook = nullptr;            // derived (host probe)
 

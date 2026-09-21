@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2054-seed-only-appearance-store.** Drop fat SessionAppearanceStore m_byId; seed book only.
+Prior: **2053**.
+
+### Change
+- `SessionAppearanceStore` is seed-attempt book only (no WorkspaceItemState map)
+- `ItemWorld` no longer binds a fat store; content is sparse tables exclusively
+- `hostAppearance()` reads SessionDocument seed book via `m_appearanceBound`
+- Tests: document/pathorder/sessionappearance use seeds + ItemWorld for content
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2054-seed-only-appearance-store-e77da63.bundle HEAD
+```
+Requires tip **2053** (base **e77da63**); includes 1938–2054.
+
+### Next
+- Rename SessionAppearanceStore → SessionSeedBook when convenient
+- Phase 6 Tier 4: decode/framing when prioritized
+- Phase 7 further ImageItem demotion when needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2053-setappearance-sparse-only.** Stage 4b residual: setAppearance no longer writes fat DTO.
 Prior: **2052**.
 

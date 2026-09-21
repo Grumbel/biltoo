@@ -1287,7 +1287,7 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
         return {};
     }
     // Path-keyed XDG appearance is only a hint for *unbound* rows. When the
-    // strip has SessionImageIds, appearance is owned by SessionAppearanceStore
+    // strip has SessionImageIds; appearance is ItemWorld sparse tables
     // and arrives via id overrides — never bake path state onto a bound row
     // (last crop on a path would leak to every duplicate / overwrite id crop).
     bool anySessionId = false;

@@ -32,7 +32,7 @@ void beginReplace(ImageView *view, ThumbnailBar *filmstrip);
 /**
  * Second barrier after expand+sort, before first paint of the new session list.
  * - invalidateSessionLoads again (async expand may have raced the first barrier)
- * - seed SessionAppearanceStore from path XDG data
+ * - seed path-XDG orient into ItemWorld sparse tables
  * - drop Gallery/Workspace stashes (session open is not a .biltoo project)
  * - optionally clear live Workspace canvas when already in Workspace mode
  * - schedule process size/LQIP/durable-tile memo warm

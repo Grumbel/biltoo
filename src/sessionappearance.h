@@ -173,19 +173,20 @@ WorkspaceItemState clearedContentOps(const WorkspaceItemState &state);
  *
  * Path-keyed maps on ImageView remain legacy fallbacks for unbound tiles only.
  */
+/**
+ * Per-session seed-attempt book (Stage 4b residual).
+ *
+ * Formerly also held a fat WorkspaceItemState dual-write mirror. Content
+ * appearance lives in ItemWorld sparse tables; project/clipboard assemble via
+ * appearanceValue. This store only tracks "XDG/path seed already attempted"
+ * so paint paths do not re-hit locatorId every frame.
+ */
 class SessionAppearanceStore
 {
 public:
-    const WorkspaceItemState *get(SessionImageId id) const;
-    WorkspaceItemState value(SessionImageId id) const;
-    bool contains(SessionImageId id) const;
-    void set(SessionImageId id, const WorkspaceItemState &state);
-    void remove(SessionImageId id);
-    /** Take state for @p id; false if none. */
-    bool take(SessionImageId id, WorkspaceItemState *out);
     void clear();
-    int size() const { return m_byId.size(); }
-    bool isEmpty() const { return m_byId.isEmpty(); }
+    int size() const { return m_seedAttempted.size(); }
+    bool isEmpty() const { return m_seedAttempted.isEmpty(); }
 
     /**
      * Durable XDG seed attempts (once per session id). Prevents archive/miss
@@ -194,9 +195,10 @@ public:
     bool seedAttempted(SessionImageId id) const;
     void markSeedAttempted(SessionImageId id);
     void clearSeedAttempted(SessionImageId id);
+    /** Drop seed flag for @p id (session row remove). */
+    void remove(SessionImageId id);
 
 private:
-    QHash<SessionImageId, WorkspaceItemState> m_byId;
     QSet<SessionImageId> m_seedAttempted;
 };
 

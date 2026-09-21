@@ -141,15 +141,14 @@ void SessionDocumentTest::clear_empties()
 
 void SessionDocumentTest::clearPaths_keepsAppearance()
 {
+    // clearPaths does not clear seed book (full wipe is clear()).
     SessionDocument doc;
     doc.append(QStringLiteral("/a.jpg"));
     const SessionImageId id = doc.idAt(0);
-    WorkspaceItemState st;
-    st.hasCrop = true;
-    doc.appearance().set(id, st);
+    doc.appearance().markSeedAttempted(id);
     doc.clearPaths();
     QVERIFY(doc.isEmpty());
-    QVERIFY(doc.appearance().contains(id));
+    QVERIFY(doc.appearance().seedAttempted(id));
 }
 
 void SessionDocumentTest::countPath_and_firstId()
@@ -169,16 +168,12 @@ void SessionDocumentTest::appearance_on_document()
     SessionDocument doc;
     doc.append(QStringLiteral("/a.jpg"));
     const SessionImageId id = doc.idAt(0);
-    WorkspaceItemState st;
-    st.hasCrop = true;
-    st.cropRect = QRect(2, 3, 40, 50);
-    doc.appearance().set(id, st);
-    QVERIFY(doc.appearance().contains(id));
-    QCOMPARE(doc.appearance().get(id)->cropRect, QRect(2, 3, 40, 50));
-    // Tier 4b: clear() drops path list and appearance together.
+    doc.appearance().markSeedAttempted(id);
+    QVERIFY(doc.appearance().seedAttempted(id));
+    // clear() drops path list and seed book together.
     doc.clear();
     QVERIFY(doc.isEmpty());
-    QVERIFY(!doc.appearance().contains(id));
+    QVERIFY(!doc.appearance().seedAttempted(id));
 }
 
 void SessionDocumentTest::setPaths_clearsAppearance()
@@ -186,16 +181,12 @@ void SessionDocumentTest::setPaths_clearsAppearance()
     SessionDocument doc;
     doc.append(QStringLiteral("/old.jpg"));
     const SessionImageId oldId = doc.idAt(0);
-    WorkspaceItemState st;
-    st.hasCrop = true;
-    st.cropRect = QRect(1, 1, 10, 10);
-    doc.appearance().set(oldId, st);
-    QVERIFY(doc.appearance().contains(oldId));
+    doc.appearance().markSeedAttempted(oldId);
+    QVERIFY(doc.appearance().seedAttempted(oldId));
 
     doc.setPaths({QStringLiteral("/new.jpg")});
-    QVERIFY(!doc.appearance().contains(oldId));
-    // New id has no appearance until seeded.
-    QVERIFY(!doc.appearance().contains(doc.idAt(0)));
+    QVERIFY(!doc.appearance().seedAttempted(oldId));
+    QVERIFY(!doc.appearance().seedAttempted(doc.idAt(0)));
 }
 
 void SessionDocumentTest::replaceAll_keepsAppearance()
@@ -204,17 +195,13 @@ void SessionDocumentTest::replaceAll_keepsAppearance()
     doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
     const SessionImageId idA = doc.idAt(0);
     const SessionImageId idB = doc.idAt(1);
-    WorkspaceItemState st;
-    st.hasCrop = true;
-    st.cropRect = QRect(5, 5, 20, 20);
-    doc.appearance().set(idA, st);
+    doc.appearance().markSeedAttempted(idA);
 
-    // Swap order; same ids — appearance must survive.
+    // Swap order; same ids — seed flags must survive (replaceAll does not clear).
     doc.replaceAll({QStringLiteral("/b.jpg"), QStringLiteral("/a.jpg")}, {idB, idA});
     QCOMPARE(doc.idAt(0), idB);
     QCOMPARE(doc.idAt(1), idA);
-    QVERIFY(doc.appearance().contains(idA));
-    QCOMPARE(doc.appearance().get(idA)->cropRect, QRect(5, 5, 20, 20));
+    QVERIFY(doc.appearance().seedAttempted(idA));
 }
 
 void SessionDocumentTest::removeAt_clearsAppearance()
@@ -223,15 +210,12 @@ void SessionDocumentTest::removeAt_clearsAppearance()
     doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
     const SessionImageId idA = doc.idAt(0);
     const SessionImageId idB = doc.idAt(1);
-    WorkspaceItemState st;
-    st.hasCrop = true;
-    st.cropRect = QRect(3, 3, 12, 12);
-    doc.appearance().set(idA, st);
-    doc.appearance().set(idB, st);
+    doc.appearance().markSeedAttempted(idA);
+    doc.appearance().markSeedAttempted(idB);
 
     doc.removeAt(0);
-    QVERIFY(!doc.appearance().contains(idA));
-    QVERIFY(doc.appearance().contains(idB));
+    QVERIFY(!doc.appearance().seedAttempted(idA));
+    QVERIFY(doc.appearance().seedAttempted(idB));
     QCOMPARE(doc.size(), 1);
     QCOMPARE(doc.idAt(0), idB);
 }

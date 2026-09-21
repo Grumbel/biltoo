@@ -63,7 +63,6 @@ void SessionGalleryCropScenarioTest::cropFocused_layoutSizeShrinks()
     const SessionImageId focus = doc.idAt(0);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     WorkspaceItemState crop;
     crop.hasCrop = true;
@@ -92,7 +91,6 @@ void SessionGalleryCropScenarioTest::returnImage_cropSurvivesBookClear()
     const SessionImageId focus = doc.idAt(0);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     WorkspaceItemState crop;
     crop.hasCrop = true;
@@ -108,7 +106,7 @@ void SessionGalleryCropScenarioTest::returnImage_cropSurvivesBookClear()
     QVERIFY(book.isEmpty());
     QVERIFY(world.hasCrop(focus));
     QCOMPARE(world.crop(focus).rect, QRect(5, 5, 40, 30));
-    QVERIFY(doc.appearance().contains(focus));
+    QVERIFY(world.hasDurableAppearance(focus));
     // Pack must not use document after clear
     QVERIFY(!PackOrderView::fromBook(book).alignsWithDocument(doc));
 }
@@ -121,7 +119,6 @@ void SessionGalleryCropScenarioTest::siblingUnchanged_andDuplicatePathIndependen
     const SessionImageId idTwo = doc.idAt(1);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     WorkspaceItemState crop;
     crop.hasCrop = true;
@@ -130,7 +127,7 @@ void SessionGalleryCropScenarioTest::siblingUnchanged_andDuplicatePathIndependen
 
     QVERIFY(world.hasCrop(idOne));
     QVERIFY(!world.hasCrop(idTwo));
-    QVERIFY(!doc.appearance().contains(idTwo));
+    QVERIFY(!world.hasDurableAppearance(idTwo));
 
     doc.append(QStringLiteral("/one.png"));
     const SessionImageId idOneB = doc.idAt(2);
@@ -162,7 +159,6 @@ void SessionGalleryCropScenarioTest::itemWorld_cropComponentSurvivesBookClear()
     const SessionImageId id = doc.idAt(0);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     ItemComponents::Crop c;
     c.rect = QRect(1, 2, 30, 40);
@@ -187,7 +183,6 @@ void SessionGalleryCropScenarioTest::itemWorld_contentBakeIndependentPerId()
     QVERIFY(a != b);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     ItemComponents::ContentBake bake;
     bake.quarterTurns = 1;

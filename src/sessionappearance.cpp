@@ -320,69 +320,6 @@ WorkspaceItemState clearedContentOps(const WorkspaceItemState &state)
 
 } // namespace SessionAppearance
 
-const WorkspaceItemState *SessionAppearanceStore::get(SessionImageId id) const
-{
-    if (id == kInvalidSessionImageId) {
-        return nullptr;
-    }
-    const auto it = m_byId.constFind(id);
-    if (it == m_byId.cend()) {
-        return nullptr;
-    }
-    return &(*it);
-}
-
-WorkspaceItemState SessionAppearanceStore::value(SessionImageId id) const
-{
-    if (const WorkspaceItemState *p = get(id)) {
-        return *p;
-    }
-    return {};
-}
-
-bool SessionAppearanceStore::contains(SessionImageId id) const
-{
-    return get(id) != nullptr;
-}
-
-void SessionAppearanceStore::set(SessionImageId id, const WorkspaceItemState &state)
-{
-    if (id == kInvalidSessionImageId) {
-        return;
-    }
-    WorkspaceItemState s = state;
-    s.sessionId = id;
-    m_byId.insert(id, s);
-}
-
-bool SessionAppearanceStore::take(SessionImageId id, WorkspaceItemState *out)
-{
-    if (id == kInvalidSessionImageId || !out) {
-        return false;
-    }
-    const auto it = m_byId.find(id);
-    if (it == m_byId.end()) {
-        return false;
-    }
-    *out = *it;
-    m_byId.erase(it);
-    return true;
-}
-
-void SessionAppearanceStore::remove(SessionImageId id)
-{
-    if (id != kInvalidSessionImageId) {
-        m_byId.remove(id);
-        m_seedAttempted.remove(id);
-    }
-}
-
-void SessionAppearanceStore::clear()
-{
-    m_byId.clear();
-    m_seedAttempted.clear();
-}
-
 bool SessionAppearanceStore::seedAttempted(SessionImageId id) const
 {
     return id != kInvalidSessionImageId && m_seedAttempted.contains(id);
@@ -400,4 +337,14 @@ void SessionAppearanceStore::clearSeedAttempted(SessionImageId id)
     if (id != kInvalidSessionImageId) {
         m_seedAttempted.remove(id);
     }
+}
+
+void SessionAppearanceStore::remove(SessionImageId id)
+{
+    clearSeedAttempted(id);
+}
+
+void SessionAppearanceStore::clear()
+{
+    m_seedAttempted.clear();
 }

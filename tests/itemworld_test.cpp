@@ -52,14 +52,13 @@ private slots:
 void ItemWorldTest::unbound_gettersAreSafe()
 {
     ItemWorld world;
-    QVERIFY(!world.hasAppearanceBound());
     QVERIFY(!world.hasPathBookBound());
     QVERIFY(!world.hasSizeBookBound());
-    QCOMPARE(world.getAppearance(1), nullptr);
     QCOMPARE(world.getPathState(QStringLiteral("/a.png")), nullptr);
     QCOMPARE(world.knownSize(QStringLiteral("/a.png")), QSize());
     QVERIFY(world.crop(1).isEmpty());
     QVERIFY(world.attention(1).isEmpty());
+    QVERIFY(!world.hasDurableAppearance(1));
 }
 
 void ItemWorldTest::appearance_roundTripById()
@@ -87,7 +86,6 @@ void ItemWorldTest::pathBook_independentOfAppearance()
     SessionAppearanceStore store;
     PathItemStateBook paths;
     ItemWorld world;
-    world.bindAppearance(&store);
     world.bindPathBook(&paths);
 
     WorkspaceItemState app;
@@ -123,7 +121,6 @@ void ItemWorldTest::bind_pointsAtSameStore()
     PathItemStateBook paths;
     ImageSizeBook sizes;
     ItemWorld world;
-    world.bindAppearance(&store);
     world.bindPathBook(&paths);
     world.bindSizeBook(&sizes);
 
@@ -143,9 +140,7 @@ void ItemWorldTest::cropFromState_emptyWhenNoCrop()
 
 void ItemWorldTest::crop_setAppearanceDualWritesTable()
 {
-    SessionAppearanceStore store;
     ItemWorld world;
-    world.bindAppearance(&store);
 
     WorkspaceItemState st;
     st.hasCrop = true;
@@ -164,10 +159,7 @@ void ItemWorldTest::crop_setAppearanceDualWritesTable()
 
 void ItemWorldTest::setCrop_updatesDtoAndTable()
 {
-    // Stage 4b: setCrop writes sparse only; fat DTO stays untouched.
-    SessionAppearanceStore store;
     ItemWorld world;
-    world.bindAppearance(&store);
 
     ItemComponents::Crop c;
     c.rect = QRect(5, 5, 40, 30);
@@ -177,7 +169,6 @@ void ItemWorldTest::setCrop_updatesDtoAndTable()
     QVERIFY(world.hasCrop(9));
     QCOMPARE(world.crop(9).rect, QRect(5, 5, 40, 30));
     QCOMPARE(world.crop(9).sourceSize, QSize(200, 100));
-    QCOMPARE(store.get(9), nullptr); // no dual-write
     const WorkspaceItemState v = world.appearanceValue(9);
     QVERIFY(v.hasCrop);
     QCOMPARE(v.cropRect, QRect(5, 5, 40, 30));
@@ -217,9 +208,7 @@ void ItemWorldTest::attention_setAndClear()
 
 void ItemWorldTest::removeAppearance_clearsComponents()
 {
-    SessionAppearanceStore store;
     ItemWorld world;
-    world.bindAppearance(&store);
 
     WorkspaceItemState st;
     st.hasCrop = true;
@@ -233,32 +222,25 @@ void ItemWorldTest::removeAppearance_clearsComponents()
     world.removeAppearance(7);
     QCOMPARE(world.cropCount(), 0);
     QCOMPARE(world.attentionCount(), 0);
-    QVERIFY(!store.contains(7));
+    QVERIFY(!world.hasDurableAppearance(7));
 }
 
 void ItemWorldTest::crop_fallbackWhenDtoWrittenDirectly()
 {
-    // Stage 4b: fat-only rows are not authoritative; sparse table is required.
-    SessionAppearanceStore store;
+    // Stage 4b residual: seed book is not content; sparse empty until setAppearance.
+    SessionAppearanceStore seeds;
     ItemWorld world;
-    world.bindAppearance(&store);
-
-    WorkspaceItemState st;
-    st.hasCrop = true;
-    st.cropRect = QRect(3, 3, 20, 20);
-    store.set(8, st);
+    seeds.markSeedAttempted(8);
     QCOMPARE(world.cropCount(), 0);
     QVERIFY(world.crop(8).isEmpty());
     QVERIFY(!world.hasCrop(8));
-    // appearanceValue ignores fat-only crop.
     QVERIFY(!world.appearanceValue(8).hasCrop);
+    QVERIFY(seeds.seedAttempted(8));
 }
 
 void ItemWorldTest::clearAppearance_clearsDtoAndTables()
 {
-    SessionAppearanceStore store;
     ItemWorld world;
-    world.bindAppearance(&store);
 
     WorkspaceItemState st;
     st.hasCrop = true;
@@ -277,7 +259,6 @@ void ItemWorldTest::clearAppearance_clearsDtoAndTables()
     QCOMPARE(world.placementCount(), 1);
 
     world.clearAppearance();
-    QVERIFY(!store.contains(1));
     QCOMPARE(world.cropCount(), 0);
     QCOMPARE(world.attentionCount(), 0);
     QCOMPARE(world.contentBakeCount(), 0);
@@ -324,9 +305,7 @@ void ItemWorldTest::color_setAndClear()
 
 void ItemWorldTest::setAppearance_dualWritesBakeAndColor()
 {
-    SessionAppearanceStore store;
     ItemWorld world;
-    world.bindAppearance(&store);
 
     WorkspaceItemState st;
     st.contentVFlip = true;
@@ -342,9 +321,7 @@ void ItemWorldTest::setAppearance_dualWritesBakeAndColor()
 
 void ItemWorldTest::placement_setAppearanceDualWrites()
 {
-    SessionAppearanceStore store;
     ItemWorld world;
-    world.bindAppearance(&store);
 
     WorkspaceItemState st;
     st.pos = QPointF(12, 34);
@@ -486,27 +463,20 @@ void ItemWorldTest::hasDurableAppearance_emptyAndAfterSparse()
 
 void ItemWorldTest::hasDurableAppearance_fatOnlyCrop()
 {
-    // Stage 4b residual: fat-only rows are not durable; hasAppearance ≡ durable.
-    SessionAppearanceStore store;
+    // Seed flag alone is not durable content appearance.
+    SessionAppearanceStore seeds;
     ItemWorld world;
-    world.bindAppearance(&store);
-
-    WorkspaceItemState st;
-    st.hasCrop = true;
-    st.cropRect = QRect(4, 5, 30, 20);
-    store.set(9, st);
+    seeds.markSeedAttempted(9);
     QCOMPARE(world.cropCount(), 0);
-    QVERIFY(world.getAppearance(9) != nullptr); // fat row still in store
-    QVERIFY(!world.hasAppearance(9)); // alias of durable — sparse empty
+    QVERIFY(!world.hasAppearance(9));
     QVERIFY(!world.hasDurableAppearance(9));
     QVERIFY(!world.appearanceValue(9).hasCrop);
+    QVERIFY(seeds.seedAttempted(9));
 }
 
 void ItemWorldTest::appearanceValue_sparseCropWinsOverStaleFat()
 {
-    SessionAppearanceStore store;
     ItemWorld world;
-    world.bindAppearance(&store);
 
     WorkspaceItemState fat;
     fat.hasCrop = true;
@@ -530,9 +500,7 @@ void ItemWorldTest::appearanceValue_sparseCropWinsOverStaleFat()
 void ItemWorldTest::hasDurableAppearance_sparseOnlyAfterFatRemoved()
 {
     // Stage 4b readiness: store-read must not require the fat dual-write mirror.
-    SessionAppearanceStore store;
     ItemWorld world;
-    world.bindAppearance(&store);
 
     ItemComponents::Crop c;
     c.rect = QRect(1, 2, 30, 40);

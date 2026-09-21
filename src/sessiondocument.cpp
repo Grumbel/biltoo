@@ -85,7 +85,7 @@ void SessionDocument::clearPaths()
 void SessionDocument::clear()
 {
     clearPaths();
-    // Fat DTO only. Callers that bind ItemWorld must also clearAppearance()
+    // Seed book only. Callers that bind ItemWorld must also clearAppearance()
     // (ImageView::clearWorkspace does). Sparse tables are not owned here.
     m_appearance.clear();
 }
@@ -184,7 +184,7 @@ void SessionDocument::removeAt(int index)
         m_ids.removeAt(index);
     }
     m_paths.removeAt(index);
-    // Drop fat DTO for this id (ids are never recycled). ItemWorld sparse
+    // Drop seed flag for this id (ids are never recycled). ItemWorld sparse
     // tables still need removeAppearance / clearAppearance from the view.
     if (id != kInvalidSessionImageId) {
         m_appearance.remove(id);

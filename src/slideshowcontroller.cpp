@@ -1150,7 +1150,7 @@ SessionImageId SlideshowController::sessionIdForPath(const QString &path) const
 
 QImage SlideshowController::orientSlideshowImage(const QImage &raw, const QString &path) const
 {
-    // SessionAppearanceStore is sole content truth (CROP_MODE.md): flips, turns, crop.
+    // ItemWorld sparse tables are sole content truth (CROP_MODE.md): flips, turns, crop.
     if (raw.isNull() || path.isEmpty()) {
         return raw;
     }

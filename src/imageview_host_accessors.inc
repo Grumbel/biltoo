@@ -68,8 +68,16 @@
     /** Display pipeline host: filmstrip soft provider for image-mode pending. */
     ImageModeSoftProvider hostImageModeSoftProvider() const { return m_imageModeSoftProvider; }
 
-    SessionAppearanceStore &hostAppearance() { return m_itemWorld.appearance(); }
-    const SessionAppearanceStore &hostAppearance() const { return m_itemWorld.appearance(); }
+    SessionAppearanceStore &hostAppearance()
+    {
+        Q_ASSERT(m_appearanceBound);
+        return *m_appearanceBound;
+    }
+    const SessionAppearanceStore &hostAppearance() const
+    {
+        Q_ASSERT(m_appearanceBound);
+        return *m_appearanceBound;
+    }
     CanvasBackground &hostCanvasBg() { return m_canvasBg; }
     const CanvasBackground &hostCanvasBg() const { return m_canvasBg; }
     SessionIdentity &hostSessionId() { return m_sessionId; }

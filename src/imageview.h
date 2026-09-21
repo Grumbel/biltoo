@@ -231,11 +231,13 @@ public:
      */
     ItemWorld &itemWorld() { return m_itemWorld; }
     const ItemWorld &itemWorld() const { return m_itemWorld; }
-    /** Bind SessionDocument appearance store (required before hostAppearance()). */
+    /**
+     * Bind SessionDocument seed book (required before hostAppearance()).
+     * Content appearance is ItemWorld sparse tables — not this store.
+     */
     void bindSessionAppearance(SessionAppearanceStore *store)
     {
         m_appearanceBound = store;
-        m_itemWorld.bindAppearance(store);
     }
     /**
      * Bind working SessionDocument. firstSessionIdForPath prefers the document;

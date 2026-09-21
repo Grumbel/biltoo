@@ -135,7 +135,6 @@ void ImageViewCharacterizationTest::afterCropCommit_appearanceLayoutSizeAndSibli
     const SessionImageId other = doc.idAt(1);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     WorkspaceItemState crop;
     crop.hasCrop = true;
@@ -244,7 +243,6 @@ void ImageViewCharacterizationTest::returnToImage_cropSurvivesPathOrderClear()
     const SessionImageId other = doc.idAt(1);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     WorkspaceItemState crop;
     crop.hasCrop = true;
@@ -272,7 +270,6 @@ void ImageViewCharacterizationTest::returnToImage_placementSurvivesPathOrderClea
     const SessionImageId other = doc.idAt(1);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     ItemComponents::Placement pose;
     pose.pos = QPointF(120.0, 80.0);
@@ -306,7 +303,6 @@ void ImageViewCharacterizationTest::returnToImage_contentBakeSurvivesPathOrderCl
     const SessionImageId other = doc.idAt(1);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     ItemComponents::ContentBake bake;
     bake.quarterTurns = 1;
@@ -337,7 +333,6 @@ void ImageViewCharacterizationTest::returnToImage_colorSurvivesPathOrderClear()
     const SessionImageId other = doc.idAt(1);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     ItemComponents::Color c;
     c.grade.brightness = -12;
@@ -368,7 +363,6 @@ void ImageViewCharacterizationTest::returnToImage_attentionSurvivesPathOrderClea
     const SessionImageId other = doc.idAt(1);
 
     ItemWorld world;
-    world.bindAppearance(&doc.appearance());
 
     ItemComponents::Attention att;
     att.points = {QPointF(0.25, 0.35), QPointF(0.6, 0.7)};
