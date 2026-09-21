@@ -690,6 +690,58 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
     }
 
+    // Phase 6 Tier 4 residual: Image-mode LoadReplace without async decode.
+    // setViewMode(Image) clears the gallery canvas; installImageModeReplaceItem
+    // rebuilds the sole Image item from fixture host pixels + ItemWorld want.
+    {
+        view.setCurrentSessionId(focus);
+        view.setViewMode(ImageView::ViewMode::Image);
+        QVERIFY(view.isImageMode());
+        QVERIFY(view.hostFraming().isFitMode());
+
+        QImage hostA(m_pathA);
+        QVERIFY(!hostA.isNull());
+        view.hostDisplayPipeline().installImageModeReplaceItem(m_pathA, hostA);
+        QVERIFY(!view.liveItems().isEmpty());
+        ImageItem *imgItem = view.liveItems().first();
+        QVERIFY(imgItem != nullptr);
+        QVERIFY(imgItem->hasDisplayPixels());
+        QCOMPARE(imgItem->path(), m_pathA);
+        // Crop want still on focus in ItemWorld → layout is crop box.
+        QCOMPARE(ContentXform::layoutSize(QSize(64, 48),
+                                          view.itemWorld().appearanceValue(focus)),
+                 QSize(32, 24));
+
+        view.fitItem(imgItem, Qt::KeepAspectRatio);
+        const qreal imgFitScale = ViewTransform::scaleFrom(view.transform());
+        QVERIFY(imgFitScale > 0.0);
+        view.captureStickyPanAnchor(imgItem);
+        QVERIFY(view.hostFraming().hasPreservedViewScale()
+                || view.hostFraming().hasStickyPan());
+
+        // Navigate-style replace to sibling session id + path (sync soft sample).
+        view.setCurrentSessionId(other);
+        QImage hostB(m_pathB);
+        QVERIFY(!hostB.isNull());
+        view.hostDisplayPipeline().installImageModeReplaceItem(m_pathB, hostB);
+        QVERIFY(!view.liveItems().isEmpty());
+        ImageItem *imgOther = view.liveItems().first();
+        QVERIFY(imgOther != nullptr);
+        QVERIFY(imgOther->hasDisplayPixels());
+        QCOMPARE(imgOther->path(), m_pathB);
+        // Sibling has no crop in ItemWorld.
+        QVERIFY(!view.itemWorld().hasCrop(other));
+        view.fitItem(imgOther, Qt::KeepAspectRatio);
+        QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
+        view.restoreStickyPanAnchor(imgOther);
+        QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
+
+        // Focus ItemWorld components survived Image-mode navigate (id-keyed).
+        QVERIFY(view.itemWorld().hasCrop(focus));
+        QVERIFY(view.itemWorld().hasAppliedContentXform(focus));
+        QVERIFY(view.itemWorld().hasLiveColorLag(focus));
+    }
+
     // Mode-leave style clear: pack blank; all id-keyed components intact.
     view.pathOrderClear();
     QVERIFY(view.pathOrderIsEmpty());

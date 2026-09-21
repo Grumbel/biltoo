@@ -93,9 +93,9 @@ Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 - [x] prepareImageModeCanvas resets view scale to 1 + Fit; fitItem yields positive view scale
 - [x] captureStickyPanAnchor preserves view scale / pan; restoreStickyPanAnchor safe after fit
 - [x] Soft install + fit/capture/restore handoff across two session ids (no async Image load)
+- [x] Image-mode sync LoadReplace (installImageModeReplaceItem) focus→other; sticky capture/restore; ItemWorld survives
 - [x] `pathOrderClear` leaves doc + all id-keyed components; LoadAdd multiplicity
 - [ ] Full async decode / PreferCache ladder (optional; DisplaySurface decide pure tests cover policy)
-- [ ] Full Image-mode LoadReplace navigate + sticky restore across session ids (later)
 
 ## Landed
 

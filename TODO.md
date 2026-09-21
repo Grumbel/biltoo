@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2100-image-mode-loadreplace-characterization.** Phase 6 Tier 4 residual: Image-mode sync LoadReplace navigate.
+Prior: **2099**.
+
+### Change
+- ImageView harness: setViewMode(Image) + installImageModeReplaceItem for focus,
+  then sibling; sticky capture/restore; ItemWorld crop/applied/lag survive
+- No async decode — fixture PNGs as host samples
+- Checklist: Image-mode sync LoadReplace locked; async PreferCache still optional
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2100-image-mode-loadreplace-characterization-e77da63.bundle HEAD
+```
+Requires tip **2099** (base **e77da63**); includes 1938–2100.
+
+### Next
+- Phase 6 Tier 4: full async decode / PreferCache ladder (optional)
+- Stage 2 / SESSION residual only if new host digs appear
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2099-cross-session-framing-handoff.** Phase 6 Tier 4 residual: framing handoff across two session ids.
 Prior: **2098**.
 

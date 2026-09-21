@@ -1497,6 +1497,8 @@ Phase 1–6 rules still apply. Additions:
   view scale characterization after fitItem.
 - biltoo-2099: Phase 6 Tier 4 residual — cross-session soft install + fit/capture
   restore framing handoff (no async Image LoadReplace).
+- biltoo-2100: Phase 6 Tier 4 residual — Image-mode sync LoadReplace navigate
+  (installImageModeReplaceItem) + sticky; ItemWorld survives across ids.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
