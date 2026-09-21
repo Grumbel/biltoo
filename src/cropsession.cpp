@@ -529,21 +529,6 @@ SessionAppearance::PixelKind CropSession::applyPixelKind(bool multiMp)
 }
 
 
-void CropSession::seedEnterCropFlags(WorkspaceItemState *st, const ImageItem *item)
-{
-    fillSessionCropFromItem(st, item);
-}
-
-void CropSession::fillSessionCropFromItem(WorkspaceItemState *st, const ImageItem *item)
-{
-    if (!st || !item) {
-        return;
-    }
-    st->hasCrop = item->sessionHasCrop();
-    st->cropRect = item->sessionCropRect();
-}
-
-
 bool CropSession::fillAppearanceFromItemSessionCrop(WorkspaceItemState *app,
                                                     const ImageItem *item)
 {

@@ -240,17 +240,10 @@ void ImageView::duplicateSelected()
             continue;
         }
 
-        WorkspaceItemState content;
-        if (src->sessionId() != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *app = m_itemWorld.getAppearance(src->sessionId())) {
-                content = *app;
-            }
-        }
+        // captureState prefers ItemWorld sparse tables for bound ids; live item
+        // is fallback only. Do not overwrite crop/flip from item fields.
+        WorkspaceItemState content = captureState(src);
         content.path = src->path();
-        content.hasCrop = src->sessionHasCrop();
-        content.cropRect = src->sessionCropRect();
-        content.contentHFlip = src->contentHFlip();
-        content.contentVFlip = src->contentVFlip();
         content.colorAdjust = src->colorAdjustments();
         if (src->hasAppliedContentXform()
             && !SessionAppearance::hasContentAppearance(content)) {

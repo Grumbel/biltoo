@@ -434,8 +434,8 @@ bool CropController::enterCropModeFromUi()
     // session().active() stays false until after the first draft attach.
     {
         QImage enterSrc = CropSession::pickEnterSnapshotPixels(item);
+        // captureState prefers ItemWorld Crop/ContentBake for bound ids.
         WorkspaceItemState enterSt = m_view->captureState(item);
-        CropSession::seedEnterCropFlags(&enterSt, item);
         session().beginEnterSession(item, enterSrc, enterSt,
                                  !enterSrc.isNull() || item->hasDisplayPixels());
         // Stage 2: freeze tile LOD via pipeline (cleared on leave / abort).

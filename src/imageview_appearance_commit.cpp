@@ -165,9 +165,10 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
         const QImage appearanceImage = sessionAppearanceImage(item);
         if (!appearanceImage.isNull()) {
             emit sessionAppearanceChanged(sid, item->path(), appearanceImage);
-            if (item->sessionHasCrop()
+            if (m_itemWorld.hasCrop(sid)
                 || (m_itemWorld.hasAppearance(sid)
-                    && m_itemWorld.appearanceValue(sid).hasCrop)) {
+                    && m_itemWorld.appearanceValue(sid).hasCrop)
+                || item->sessionHasCrop()) {
                 emit sessionCropApplied(sid, item->path(), appearanceImage, /*hasCrop=*/true);
             }
         }

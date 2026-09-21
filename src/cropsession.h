@@ -410,12 +410,6 @@ public:
     void beginEnterSession(ImageItem *item, const QImage &enterSrc,
                            const WorkspaceItemState &enterSt, bool snapshotValid);
 
-    /** Copy live session crop flags from @p item into enter-state bag. */
-    static void seedEnterCropFlags(WorkspaceItemState *st, const ImageItem *item);
-
-    /** Copy live session crop flags into a captured appearance bag. */
-    static void fillSessionCropFromItem(WorkspaceItemState *st, const ImageItem *item);
-
     void stashPlacement(qreal rot, qreal shear)
     {
         stashedPlacementRotation = rot;

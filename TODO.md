@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1939-crop-readers-itemworld.** Residual crop/flip readers prefer ItemWorld.
+Prior: **1938**.
+
+### Change
+- Crop enter snapshot: captureState only (drop seedEnterCropFlags overwrite)
+- Selection / bindSelectedSessionIds: no live-item crop/flip overwrite of captureState
+- loadRestoreCropAppearance: ItemWorld Crop before live item fill
+- Framing draft geometry: ItemWorld hasCrop for bound ids
+- sessionCropApplied emit prefers ItemWorld hasCrop
+- Remove dead CropSession::seedEnterCropFlags / fillSessionCropFromItem
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1939-crop-readers-itemworld-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938+1939.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- CropSession draft writers + fillAppearanceFromItemSessionCrop residual
+- paint/tile-LOD still read live item fields (dual-write install remains)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1938-sync-live-content-meta.** Single dual-write install for ImageItem crop/flip.
 Prior: **1937**.
 

@@ -193,21 +193,22 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
             }
         }
         WorkspaceItemState slot;
-        if (m_pendingAppearance.take(item, &slot)) {
+        const bool fromPending = m_pendingAppearance.take(item, &slot);
+        if (fromPending) {
             // Pending may carry colour grade from Duplicate before the live item
             // was fully synced — apply it so the tile and sessionAppearanceImage match.
             item->setColorAdjustments(slot.colorAdjust);
         } else {
+            // captureState prefers ItemWorld sparse tables for bound ids.
             slot = captureState(item);
         }
         item->setSessionId(id);
         // Live placement from the canvas item (Duplicate offsets, scales, …).
         ItemComponents::applyPlacementToState(slot, item->placement());
-        slot.hasCrop = item->sessionHasCrop();
-        slot.cropRect = item->sessionCropRect();
-        slot.contentHFlip = item->contentHFlip();
-        slot.contentVFlip = item->contentVFlip();
-        slot.colorAdjust = item->colorAdjustments();
+        // Do not overwrite crop/flip from live item fields (ItemWorld authority).
+        if (!fromPending) {
+            slot.colorAdjust = item->colorAdjustments();
+        }
         slot.sessionId = id;
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
@@ -216,7 +217,10 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
             emit sessionAppearanceChanged(id, item->path(), appearance);
-            emit sessionCropApplied(id, item->path(), appearance, item->sessionHasCrop());
+            const bool hasCrop = m_itemWorld.hasCrop(id)
+                || (m_itemWorld.hasAppearance(id)
+                    && m_itemWorld.appearanceValue(id).hasCrop);
+            emit sessionCropApplied(id, item->path(), appearance, hasCrop);
         }
     }
 }

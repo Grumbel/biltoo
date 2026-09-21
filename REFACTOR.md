@@ -1171,6 +1171,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1936: rememberItemState setAppearance-only; crop undo uses captureState alone.
 - biltoo-1937: content-bake before/after state does not overwrite sparse tables from item.
 - biltoo-1938: syncLiveContentMetaFromState / clearLiveContentMeta — single dual-write install for live crop/flip; bound content-mods prefer ItemWorld.
+- biltoo-1939: residual crop/flip readers prefer ItemWorld; drop seedEnterCropFlags; selection/bind no longer overwrite captureState from item.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
