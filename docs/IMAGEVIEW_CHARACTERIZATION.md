@@ -3,11 +3,13 @@ SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# ImageView characterization harness (Tier 4 prerequisite)
+# ImageView characterization harness (Phase 6 Tier 4)
 
 REFACTOR.md requires an offscreen `QTest` that drives `ImageView` through
 **open → Gallery → crop → return → Image** and asserts appearance, logical
 size, and framing before trusting FollowDocument / document-only pack.
+Non-async residual is locked through biltoo-2101 (soft install + sync
+LoadReplace + sticky framing). Async PreferCache remains optional.
 
 ## Pure contracts already locked
 
@@ -24,8 +26,9 @@ size, and framing before trusting FollowDocument / document-only pack.
 | `itemworld` | Stage 0–2 facade: dual-write, presence, clear |
 | `imageview-characterization` | PNG fixtures + overlay host-mutator simulation + layoutSize |
 
-These do **not** replace the full harness: they do not exercise decode, mode
-transitions, framing, or Live canvas.
+Pure tests lock session/pack/ItemWorld contracts. The offscreen ImageView
+harness (below) exercises mode transitions, soft install, framing, and sync
+LoadReplace. Full async PreferCache / thumtoo ladder remains optional.
 
 ## Harness goals
 
@@ -104,9 +107,17 @@ Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 - **1885:** pure harness uses `PackOrderOverlay` (post-1883/1884); layoutSize;
   host-mutator simulation (collapse / clear / seed-append / crop survives clear)
 
-## Until the full ImageView harness exists
+## Pack-order policy (harness locked)
 
 Keep overlay **Explicit-only** for writes that must suppress pack; collapse is
 allowed only when order aligns with the document. Identity queries continue to
 prefer `m_sessionDoc` when bound (`firstSessionIdForPath`).
 See [PATH_ORDER.md](PATH_ORDER.md).
+
+## Phase 6 Tier 4 status (through biltoo-2101)
+
+**Non-async residual complete.** Pure ViewFraming / ViewTransform / ItemWorld
+runtime tables + offscreen ImageView path cover open → Gallery → crop want →
+soft install → fit/sticky → Image-mode sync LoadReplace → pathOrderClear.
+Optional: full async PreferCache / decode ladder (policy covered by
+`displaysurface_test`).

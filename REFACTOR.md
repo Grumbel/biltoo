@@ -1139,8 +1139,9 @@ Phase 1–6 rules still apply. Additions:
   fallback, and crop-enter undo baseline only — not interaction hot paths.
 - [x] Stage 4b: format version ≥ 2 nested sparse + drop dual-write (no v1 reader).
 - [x] Path-book content for bound `SessionImageId` is write- and read-clean (2069–2071).
-- Phase 6 Tier 4 residual still tracked separately ([docs/IMAGEVIEW_CHARACTERIZATION.md](docs/IMAGEVIEW_CHARACTERIZATION.md));
-  pure + offscreen harness largely green; decode/framing soft.
+- Phase 6 Tier 4 non-async residual complete through biltoo-2101
+  ([docs/IMAGEVIEW_CHARACTERIZATION.md](docs/IMAGEVIEW_CHARACTERIZATION.md));
+  optional: full async PreferCache / thumtoo ladder.
 
 ### Progress log (Phase 7)
 
@@ -1501,6 +1502,8 @@ Phase 1–6 rules still apply. Additions:
   (installImageModeReplaceItem) + sticky; ItemWorld survives across ids.
 - biltoo-2101: Fix characterization harness — imageitem.h include; restoreStickyPanAnchor
   public on host pipeline (pair with captureStickyPanAnchor).
+- biltoo-2102: Docs — Phase 6 Tier 4 non-async residual complete through 2101;
+  characterization harness status + pack-order policy wording.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2102-tier4-nonasync-complete.** Phase 6 Tier 4 non-async residual documented complete.
+Prior: **2101**.
+
+### Change
+- IMAGEVIEW_CHARACTERIZATION: harness status through 2101; pack-order policy
+  wording; pure vs offscreen vs optional async PreferCache
+- REFACTOR exit criteria: Tier 4 non-async complete; optional async ladder
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2102-tier4-nonasync-complete-e77da63.bundle HEAD
+```
+Requires tip **2101** (base **e77da63**); includes 1938–2102.
+
+### Next
+- Optional: full async PreferCache / thumtoo ladder characterization
+- SESSION residual: unbound tiles / open-by-path / path-map readers (identity)
+- Stage 2 only if new host digs appear
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2101-characterization-build-fix.** Fix ImageView characterization harness compile.
 Prior: **2100**.
 
