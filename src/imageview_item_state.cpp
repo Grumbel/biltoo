@@ -378,7 +378,24 @@ void ImageView::flushAppliedContentToItemWorld()
             continue;
         }
         WorkspaceItemState s = sessionAppearanceValue(sid);
+        // applyToState overwrites every field. Applied residuals often carry identity
+        // colorAdjust / no crop while only orient is mid-edit — must not wipe durable
+        // Color (brightness 8) or Crop when those were not part of the edit.
+        const ColorAdjustments durableColor = s.colorAdjust;
+        const bool hadCrop = s.hasCrop;
+        const QRect durableCropRect = s.cropRect;
+        const QSize durableCropSource = s.cropSourceSize;
+        const qreal durableCropRot = s.cropRotation;
         applied.applyToState(s);
+        if (applied.colorAdjust.isIdentity()) {
+            s.colorAdjust = durableColor;
+        }
+        if (!applied.hasCrop && hadCrop) {
+            s.hasCrop = true;
+            s.cropRect = durableCropRect;
+            s.cropSourceSize = durableCropSource;
+            s.cropRotation = durableCropRot;
+        }
         s.sessionId = sid;
         s.path = item->path();
         m_itemWorld.setContentBake(sid, ItemComponents::contentBakeFromState(s));

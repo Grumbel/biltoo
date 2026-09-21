@@ -2,6 +2,30 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2191-flush-preserve-durable-color.** Characterization: after
+Gallery→Image, durable Color brightness became 5 (live lag) or was wiped.
+flushAppliedContentToItemWorld called applied.applyToState which always overwrites
+colorAdjust/crop; orient-only applied residuals carried identity color and
+clobbered durable Color 8.
+
+### Fix
+- When applied.colorAdjust is identity, keep durable color
+- When applied.hasCrop is false, keep durable crop
+- Orient still commits into contentBake
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2191-flush-preserve-durable-color-e77da63.bundle HEAD
+```
+
+Next: **2192**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2190-characterization-lag-isolation.** hasLiveColorLag(other) is not
 content isolation: setItemSessionId always stamps liveColorLag for the bound id
 (identity grade still inserts a row). Applied values after mode leave must not
