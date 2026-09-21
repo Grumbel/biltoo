@@ -76,6 +76,7 @@ Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 - [x] ContentBake survives pathOrderClear; sibling clean
 - [x] Color grade survives pathOrderClear; sibling clean
 - [x] Attention points survive pathOrderClear; sibling clean
+- [x] Applied ContentXform runtime table survives pathOrderClear; not durable; clearAppearance drops it
 
 ### Full ImageView (`BILTOO_HAVE_IMAGEVIEW_HARNESS`)
 

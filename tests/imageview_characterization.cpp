@@ -52,6 +52,7 @@ private slots:
     void returnToImage_contentBakeSurvivesPathOrderClear();
     void returnToImage_colorSurvivesPathOrderClear();
     void returnToImage_attentionSurvivesPathOrderClear();
+    void returnToImage_appliedContentXformSurvivesPathOrderClear();
 
     void imageView_openGalleryCropReturn();
 
@@ -382,6 +383,42 @@ void ImageViewCharacterizationTest::returnToImage_attentionSurvivesPathOrderClea
     QCOMPARE(world.attention(focus).points.at(1), QPointF(0.6, 0.7));
     QVERIFY(overlay.resolve(&doc).isEmpty());
     QCOMPARE(doc.size(), 2);
+}
+
+/** Stage 2 residual: applied ContentXform is runtime-only (not durable);
+ * path-order clear must not drop the fingerprint; sibling stays clean. */
+void ImageViewCharacterizationTest::returnToImage_appliedContentXformSurvivesPathOrderClear()
+{
+    SessionDocument doc;
+    doc.setPaths({m_pathA, m_pathB});
+    const SessionImageId focus = doc.idAt(0);
+    const SessionImageId other = doc.idAt(1);
+
+    ItemWorld world;
+
+    ContentXform::Value x;
+    x.quarterTurns = 1;
+    x.hFlip = true;
+    world.setAppliedContentXform(focus, x);
+
+    QVERIFY(world.hasAppliedContentXform(focus));
+    QVERIFY(!world.hasAppliedContentXform(other));
+    // Applied alone is not durable appearance (project/clipboard).
+    QVERIFY(!world.hasDurableAppearance(focus));
+
+    PackOrderOverlay overlay;
+    overlay.setExplicit(doc.paths(), doc.ids());
+    overlay.clearExplicit();
+
+    QVERIFY(world.hasAppliedContentXform(focus));
+    QVERIFY(!world.hasAppliedContentXform(other));
+    QCOMPARE(world.appliedContentXform(focus).quarterTurns, 1);
+    QVERIFY(world.appliedContentXform(focus).hFlip);
+    QVERIFY(overlay.resolve(&doc).isEmpty());
+    QCOMPARE(doc.size(), 2);
+
+    world.clearAppearance();
+    QVERIFY(!world.hasAppliedContentXform(focus));
 }
 
 void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2087-applied-contentxform-characterization.** Stage 2 residual: pure characterization for applied ContentXform runtime table; demotion status through 2086.
+Prior: **2086**.
+
+### Change
+- `returnToImage_appliedContentXformSurvivesPathOrderClear` pure test: runtime
+  fingerprint survives path-order clear, is not durable, drops on clearAppearance
+- IMAGEVIEW_CHARACTERIZATION checklist updated
+- REFACTOR ImageItem demotion status table through 2086 (applied + live color)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2087-applied-contentxform-characterization-e77da63.bundle HEAD
+```
+Requires tip **2086** (base **e77da63**); includes 1938–2087.
+
+### Next
+- Stage 2: further paint mirror residual, or host-side color scratch
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2086-cropsession-liveColor-from-view.** Stage 2 residual: CropSession takes live grade from itemLiveColor.
 Prior: **2085**.
 

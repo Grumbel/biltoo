@@ -1468,11 +1468,13 @@ Phase 1–6 rules still apply. Additions:
   durable Color stays ItemWorld; setSessionId docs valid-id via setItemSessionId.
 - biltoo-2086: Stage 2 residual — CropSession canKeep takes liveColor from view;
   MainWindow panel uses itemLiveColor.
+- biltoo-2087: Stage 2 residual — pure characterization applied ContentXform
+  survives pathOrderClear; demotion status table through 2086.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
 
-### ImageItem demotion status (through biltoo-2025)
+### ImageItem demotion status (through biltoo-2086)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live
 in ItemWorld / SessionDocument. Public surface is readers, interaction handlers,
@@ -1480,16 +1482,19 @@ and view-driven chrome paint. **All mutators are private** (friends: ImageView,
 DisplayPipelineController, CropSession, GalleryController, GalleryLayout helpers).
 Completed: path/session stamps, interactive/chrome flags, cell size, placement,
 content-edit marks, gallery scroll cache (1985–1995); Stage 2 residual store-read
-hygiene (2022–2025).
+hygiene (2022–2025); applied ContentXform runtime table + host helpers (2080–2084);
+live grade via `itemLiveColor` (2085–2086).
 
 | Concern | Authority |
 |---------|-----------|
 | Crop / orient / grade / attention | ItemWorld sparse tables; read via `sessionAppearanceValue` / `appearanceValue` |
+| Applied ContentXform (mid-edit) | ItemWorld runtime table when bound (2080–2084); `itemAppliedContentXform`; paint mirror on item |
+| Live colour grade (slider lag) | ImageItem `m_colorAdjust`; host via `itemLiveColor` (2085–2086); durable is ItemWorld Color |
 | Store presence | `hasDurableAppearance` (fat **or** sparse) — not fat-only `hasAppearance` |
 | Live pose | `placement()` reader; `applyPlacement` private (+ `GalleryLayout::applyItemPlacement`) |
 | Interaction snapshot | `captureState` = store seed + live pose / applied ContentXform / grade |
-| Pixels / intrinsic / path / session stamps | Host / pipeline private mutators |
-| List order | `sessionListIndex` (document); stamp via `refreshSessionIndexCache` (2078) |
+| Pixels / intrinsic / path / session stamps | Host / pipeline private mutators; valid ids via `setItemSessionId` |
+| List order | `sessionListIndex` (document); stamp via `refreshSessionIndexCache` (2078–2079) |
 
 Dual-write on store **writes** remains so fat DTO serialization stays aligned;
 store **reads** prefer sparse via the choke point. Stage 4a save/load/clipboard
