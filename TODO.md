@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2194-workspace-snapshot-placement-only.** ECS continue: Workspace
+onLeave snapshot called setAppearance(freeze) which carried live color lag into
+durable Color. flushApplied already ran; content is on ItemWorld. Snapshot must
+write Placement only for bound ids.
+
+### Fix
+- WorkspaceController::snapshot: bound → setPlacement only; unbound → path map
+- ECS_GUI_BYPASSES #5 updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2194-workspace-snapshot-placement-only-e77da63.bundle HEAD
+```
+
+Next: **2195**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2193-lag-settles-to-durable.** After mode leave + Image install,
 liveColorLag is re-seeded from durable Color (attachDisplaySample →
 syncLiveColorFromState). Mid-edit lag 5 does not survive; settles to durable 8.

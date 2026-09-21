@@ -167,7 +167,7 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 | 2 | Filmstrip pixel override parallel store | Override after rotate; **2179** cold paint from ItemWorld |
 | 3 | ImageCache host-raw contract | **2176–2178** see IMAGECACHE_PUT_AUDIT.md |
 | 4 | Applied ContentXform vs store at leave | **2177** flush on setViewMode |
-| 5 | Workspace m_savedItems content | **2177** restore pose from snapshot; full content from ItemWorld |
+| 5 | Workspace m_savedItems content | **2177** restore pose + ItemWorld content; **2194** snapshot writes Placement only (no lag→Color via setAppearance) |
 | 6 | Incremental bakeRotate90 | **2178** disk host before incremental |
 | 7 | Path/XDG seed | Orient-only for bound OK |
 

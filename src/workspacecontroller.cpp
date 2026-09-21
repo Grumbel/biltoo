@@ -43,11 +43,14 @@ void WorkspaceController::snapshot()
     for (ImageItem *item : m_view->liveItems()) {
         const WorkspaceItemState s = m_view->freezeItemAppearance(item);
         m_savedItems.append(s);
-        // Bound: appearance by SessionImageId only (IDENTITY — crop must not
-        // land on the path map for duplicates that share a file).
+        // Bound: durable content already on ItemWorld (flushApplied ran before
+        // onLeave). freezeItemAppearance may carry live color lag into
+        // colorAdjust — setAppearance would promote lag into durable Color
+        // (ECS_GUI_BYPASSES #5). Write Placement only.
         // Unbound: path map is the sole store (even when sessionIndex is -1).
         if (s.sessionId != kInvalidSessionImageId) {
-            m_view->itemWorld().setAppearance(s.sessionId, s);
+            m_view->itemWorld().setPlacement(
+                s.sessionId, ItemComponents::placementFromState(s));
         } else if (!s.path.isEmpty()) {
             m_view->itemWorld().setPathState(s.path, s);
         }
