@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1972-private-pixel-install.** Private ImageItem pixel install mutators.
+Prior: **1971**.
+
+### Change
+- `setSourceImage` / `setSourceImageReady` / `setPreviewImage` / `clearDecodedPixels`
+  moved to ImageItem private (ImageView + DisplayPipelineController friends)
+- External clear/soft paths: `ImageView::clearItemDecodedPixels` /
+  `setItemPreviewImage`
+- CropSession::clearItemPixelsForDraftReinstall removed; crop uses view host API
+- Gallery soft fallback, Workspace/Image reload, crop apply all use host API
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1972-private-pixel-install-e77da63.bundle HEAD
+```
+Requires tip **1971** (base **e77da63**); includes 1938–1972.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host (priority)
+- Color sparse-table readers where fat DTO is redundant
+- ImageItem is closer to render proxy: pose via placement(), content-meta via
+  tileContentXform(), pixels only via pipeline/view install
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1971-drop-stackz-field-getter.** Drop public stackZ(); placement().z only.
 Prior: **1970**.
 

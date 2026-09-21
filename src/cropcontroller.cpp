@@ -319,7 +319,7 @@ bool CropController::applyCropCommit(ImageItem *item)
             ViewportUpdateHold paintHold(m_view->viewport());
             // Clear first so the crop bake replaces full-frame pixels — otherwise canvas
             // stretches full into the crop box and filmstrip gets img=full.
-            item->clearDecodedPixels();
+            m_view->clearItemDecodedPixels(item);
             // Geometry before pixels: empty item with crop intrinsic, then bake.
             m_view->applyContentLayoutSize(item, st);
             CropSession::ensureApplyIntrinsicSize(item, cropW, cropH, path);
@@ -553,7 +553,7 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
         CropDebug::draftEnterBegin(path, item->imageSize().width(), item->imageSize().height(),
                                    item->hasDecodedPixels(), sample.hadPriorCrop,
                                    ImageCache::longEdge(full));
-        CropSession::clearItemPixelsForDraftReinstall(item);
+        m_view->clearItemDecodedPixels(item);
         m_view->attachDisplaySample(item, sample.display, contentOnly, sample.kind);
         m_view->applyContentLayoutSize(item, contentOnly);
         m_view->syncLiveContentMetaFromState(item, contentOnly);

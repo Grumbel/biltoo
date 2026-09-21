@@ -489,6 +489,16 @@ public:
      * Identity clear: drop applied ContentXform fingerprint.
      */
     void clearLiveContentMeta(ImageItem *item);
+    /**
+     * Clear display pixels on @p item (keeps applied ContentXform fingerprint).
+     * Sole external clear path — ImageItem::clearDecodedPixels is private.
+     */
+    void clearItemDecodedPixels(ImageItem *item);
+    /**
+     * Soft stand-in when install left no display pixels (Gallery soft path).
+     * Sole external setPreviewImage path.
+     */
+    void setItemPreviewImage(ImageItem *item, const QImage &preview);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     /** Copy of stored appearance for @p id (empty/default if none). */

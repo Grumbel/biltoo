@@ -683,7 +683,7 @@ void WorkspaceController::reloadFromDisk()
             m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         }
         m_view->takePendingWorkspacePath(path);
-        item->clearDecodedPixels();
+        m_view->clearItemDecodedPixels(item);
         PendingSessionBind b;
         b.path = path;
         b.id = item->sessionId();
@@ -724,7 +724,7 @@ void WorkspaceController::hardReloadFromDisk()
         ++itemCount;
         m_view->hostDisplayPipeline().gallerySoftResetPath(path);
         m_view->takePendingWorkspacePath(path);
-        item->clearDecodedPixels();
+        m_view->clearItemDecodedPixels(item);
         if (!pathSet.contains(path)) {
             ImageCache::remove(path);
             m_view->hostDisplayPipeline().purgeTilePathRam(path);

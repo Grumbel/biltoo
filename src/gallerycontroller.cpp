@@ -923,7 +923,7 @@ int GalleryController::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *m
         m_view->hostDisplayPipeline().installDisplayPixels(item, sample, kind, item->sessionId());
         int after = item->displayPixelLongEdge();
         if (after <= before && !hadDisplay && !sample.isNull()) {
-            item->setPreviewImage(sample);
+            m_view->setItemPreviewImage(item, sample);
             after = item->displayPixelLongEdge();
         }
         if (after <= before && hadDisplay) {
@@ -1503,7 +1503,7 @@ void GalleryController::reloadFromDisk(bool relayout)
             m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         }
         m_view->takePendingWorkspacePath(path);
-        item->clearDecodedPixels();
+        m_view->clearItemDecodedPixels(item);
         PendingSessionBind b;
         b.path = path;
         b.id = item->sessionId();
@@ -1547,7 +1547,7 @@ void GalleryController::hardReloadFromDisk(bool relayout)
         ++itemCount;
         m_view->hostDisplayPipeline().gallerySoftResetPath(path);
         m_view->takePendingWorkspacePath(path);
-        item->clearDecodedPixels();
+        m_view->clearItemDecodedPixels(item);
         if (!pathSet.contains(path)) {
             ImageCache::remove(path);
             m_view->hostDisplayPipeline().purgeTilePathRam(path);

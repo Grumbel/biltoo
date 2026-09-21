@@ -94,20 +94,6 @@ public:
      * (or we have no pixels). Soft ladder upgrades use this.
      */
     bool shouldUpgradeDisplayTo(int incomingLongEdge) const;
-    /** Replace or clear decoded pixels; keeps path and intrinsic size. */
-    void setSourceImage(const QImage &image);
-    /**
-     * Assign display-ready pixels (appearance already baked). Does not
-     * re-apply item-level flip/grade; skips multi-MP QPixmap::fromImage.
-     */
-    void setSourceImageReady(const QImage &image);
-    /**
-     * Low-res stand-in while a full decode is in flight. Does not change
-     * intrinsic geometry; painted scaled into contentRect().
-     */
-    void setPreviewImage(const QImage &preview);
-    void clearDecodedPixels();
-
     /**
      * Live Workspace pose as Placement (Stage 2 sole reader for item pose:
      * scale, shear, rotation, flips, opacity, z). Content 90° turns are baked
@@ -276,6 +262,13 @@ private:
     friend class DisplayPipelineController;
     // Content-meta / color install — ImageView syncLive* helpers.
     friend class ImageView;
+    // Pixel install — ImageView / DisplayPipelineController only (Stage 2).
+    void setSourceImage(const QImage &image);
+    void setSourceImageReady(const QImage &image);
+    void setPreviewImage(const QImage &preview);
+    /** Clear display pixels; keeps applied ContentXform fingerprint. */
+    void clearDecodedPixels();
+
     void setColorAdjustments(const ColorAdjustments &adj);
     /** Store grade without rebuilding the display pixmap. */
     void setColorAdjustmentsRecord(const ColorAdjustments &adj);

@@ -416,16 +416,6 @@ bool CropSession::shouldPushResetUndo(const QSize &currentSourceSize) const
         && (enterHadCrop() || enterSourceDiffersFrom(currentSourceSize));
 }
 
-void CropSession::clearItemPixelsForDraftReinstall(ImageItem *item)
-{
-    if (!item) {
-        return;
-    }
-    // clearDecodedPixels keeps applied ContentXform (session fingerprint).
-    // Draft reinstall reasserts via syncLiveContentMetaFromState(contentOnly).
-    item->clearDecodedPixels();
-}
-
 bool CropSession::maybePutUnorientedHostCache(const QString &path, const QImage &full,
                                               bool unorientedSource, bool coversNative)
 {

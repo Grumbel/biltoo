@@ -190,8 +190,6 @@ public:
 
     bool shouldPushResetUndo(const QSize &currentSourceSize) const;
 
-    static void clearItemPixelsForDraftReinstall(ImageItem *item);
-
     static bool maybePutUnorientedHostCache(const QString &path, const QImage &full,
                                             bool unorientedSource, bool coversNative);
 

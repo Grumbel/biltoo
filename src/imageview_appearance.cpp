@@ -139,6 +139,22 @@ void ImageView::clearLiveContentMeta(ImageItem *item)
     item->clearAppliedContentXform();
 }
 
+void ImageView::clearItemDecodedPixels(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    item->clearDecodedPixels();
+}
+
+void ImageView::setItemPreviewImage(ImageItem *item, const QImage &preview)
+{
+    if (!item) {
+        return;
+    }
+    item->setPreviewImage(preview);
+}
+
 void ImageView::persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)
 {
     if (!item) {

@@ -1213,6 +1213,8 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1970: drop public itemScaleX/Y/itemRotation; placement() is sole live pose
   reader (stackZ remains for z-order sorts).
 - biltoo-1971: drop public stackZ(); placement().z is sole z-order reader.
+- biltoo-1972: private setSource/setPreview/clearDecodedPixels; host APIs
+  clearItemDecodedPixels / setItemPreviewImage for non-friend controllers.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
