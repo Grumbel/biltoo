@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2019-identity-acceptance-handoff.** IDENTITY.md §11–12 acceptance and handoff current.
+Prior: **2018**.
+
+### Change
+- Acceptance criteria phrased with `SessionImageId` + path-map crop ban
+- Handoff: path book role clarified; “do not reintroduce” list updated for
+  sessionIndex-as-identity and setPathState strip; points at TODO.md for tip
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2019-identity-acceptance-handoff-e77da63.bundle HEAD
+```
+Requires tip **2018** (base **e77da63**); includes 1938–2019.
+
+### Next
+- Stage 4 project-format migration (design)
+- Optional: IDENTITY migration-status section polish
+- Characterization already green on user machine
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2018-identity-invariants-current.** IDENTITY.md §§7–10 id-keyed scenarios and invariants.
 Prior: **2017**.
 

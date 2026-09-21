@@ -360,39 +360,40 @@ updates ItemWorld for that `SessionImageId` and id-matched peers.
 
 ---
 
-## 11. What “fixed” means (acceptance, not a patch plan)
+## 11. What “fixed” means (acceptance)
 
-For **two session slots with the same path**, both on the Workspace canvas,
-bound to indices 0 and 1:
+For **two session rows with the same path**, both on the Workspace canvas,
+bound to distinct `SessionImageId`s `S0` and `S1`:
 
-- Opening Image mode from tile 1 edits slot 1 only.
-- Crop/flip/90° in Image mode updates tile 1’s pixels after return; tile 0
-  unchanged.
-- Workspace-only crop on tile 1 does the same without affecting tile 0.
-- Filmstrip row 1 reflects tile 1’s appearance; row 0 reflects tile 0’s.
+- Opening Image mode from tile `S1` edits `S1` only.
+- Crop/flip/90° in Image mode updates tile `S1` after return; tile `S0` unchanged.
+- Workspace-only crop on tile `S1` does the same without affecting tile `S0`.
+- Filmstrip row for `S1` reflects `S1`’s appearance; row for `S0` reflects `S0`.
 - Leaving and re-entering Workspace preserves both appearances independently.
+- Path-map / XDG never applies **crop** from a shared path onto a bound id.
 
-Until those hold without path-first shortcuts, duplicate identity is incomplete.
-
+Regression checklist for agents: no path-only open for the second duplicate;
+no path-map crop read/write for bound ids; peer sync by id only.
 
 ---
 
-## 12. Handoff status (see SESSION.md)
+## 12. Handoff status (see SESSION.md / TODO.md)
 
-Implementation now keys appearance and peer sync on **`SessionImageId`**.
-Path-keyed `m_itemStates` remains a legacy last-writer cache only.
+Implementation keys appearance and peer sync on **`SessionImageId`**.
+Path book is for **unbound** tiles and orient/flip hints only (see Appearance
+ownership table above).
 
 **Do not** reintroduce:
 
 - `clearWorkspace()` on Image-mode LoadReplace (use `clearLiveCanvas()`)
-- Peer sync by path or by `m_currentSessionId` in Workspace
+- Peer sync by path or by “current session id” on a multi-tile Workspace canvas
 - Crop prior rect from path map when a session id is bound
-- Thumbnail canvas membership by path occurrence (use `detachCanvasSessionId` /
-  `addImageForSession` with `SessionImageId`)
-- Writing bound-tile content appearance into the path map (`rememberItemState`)
+- Thumbnail canvas membership by path occurrence (use id-keyed APIs)
+- Writing bound-tile **crop** into the path map (`setPathState` strips it; do
+  not bypass)
+- Treating `ImageItem::sessionIndex` as identity (list-order cache only)
 
-Full residual list and bundle index: [SESSION.md](SESSION.md) (including
-continuation for project/export/controllers).
+Latest tip / bundle index: [TODO.md](TODO.md). Broader session notes: [SESSION.md](SESSION.md).
 
 
 ---
