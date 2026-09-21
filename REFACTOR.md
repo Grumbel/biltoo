@@ -1256,6 +1256,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2013: slideshow content snapshot bound never path/XDG crop.
 - biltoo-2014: IDENTITY.md path-map crop ownership (write strip + read bans).
 - biltoo-2015: IDENTITY.md sessionId vs sessionIndex; wantAppearance brace cleanup.
+- biltoo-2016: IDENTITY.md §2 ItemWorld current; legacy m_itemStates maps historical.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

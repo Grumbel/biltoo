@@ -103,35 +103,31 @@ duplicates, which is an unresolved tension for Gallery packing.
 | `m_sessionId` | Stable session-image id (0 = unbound) — appearance / peer key |
 | `m_sessionIndex` | Deprecated list-order cache only; prefer `sessionListIndex()` |
 | `m_source` / pixmap | **Current displayed pixels** (may already include crop/flip/90° bake) |
-| `m_sessionHasCrop` / `m_sessionCropRect` | Crop in **on-disk** pixel coordinates (metadata) |
-| `m_contentHFlip` / `m_contentVFlip` | Net content flips vs on-disk (after crop), for chrome indicators |
-| `itemRotation()` | Placement angle (Workspace free rotate); cleared in Image mode |
-| `itemScale` / pos / opacity / z | Workspace placement |
-| `itemHFlip` / `itemVFlip` | Legacy **display** flips (normally cleared after bake) |
+| Applied `ContentXform` | Live crop/orient fingerprint (mid-edit authority; not a parallel DB) |
+| `placement()` | Workspace pose (pos/scale/rotation/opacity/z/item flips) |
 
-Crop **Apply** bakes pixels via `cropToLocalRect` and updates session crop
-metadata on that item. Flip/90° use `bakeFlip` / `bakeRotate90` and update
-content flags via `ImageView::bakeItemFlip` / `bakeItemRotate90`.
+Crop **Apply** and orient bake update **ItemWorld** by `SessionImageId` (and
+applied ContentXform on the tile). ImageItem is a render / hit-test proxy —
+see REFACTOR.md demotion status.
 
-### 2.2 `ImageView::m_itemStates` — `QHash<QString, WorkspaceItemState>`
+### 2.2 ItemWorld / SessionAppearanceStore (current)
 
-- **Keyed by path only.**
-- At most **one** `WorkspaceItemState` per path string.
-- Used for: Image-mode reload appearance, path-level filmstrip signals,
-  historical “session appearance survives navigation”.
-- **Cannot** represent two independent crops/flips for two session slots that
-  share a path. Last writer wins.
+| Store | Key | Role |
+|-------|-----|------|
+| Session appearance + sparse Crop/ContentBake/Color/Placement | `SessionImageId` | Bound content + pose |
+| `PathItemStateBook` | path | Unbound tiles; orient hints for bound (no crop — tips 2009–2013) |
 
-### 2.3 `ImageView::m_sessionSlotStates` — `QHash<int, WorkspaceItemState>`
+Reads: `sessionAppearanceValue` / `appearanceValue` (sparse-first).
+Writes: `setAppearance` / component setters (dual-write fat DTO until Stage 4).
 
-- **Keyed by session index.**
-- Added to store per-slot appearance as value copies.
-- Written in `commitItemSessionEdit` when `item->sessionIndex() >= 0`.
-- Read in `createItemFromImage` (Image mode) and stash restore as preferred
-  appearance source.
-- Still coexists with path-keyed maps; dual write is easy to desync.
+### 2.3 Historical (removed / renamed — do not reintroduce)
 
-### 2.4 `ImageView::m_savedWorkspace` — `QList<WorkspaceItemState>`
+- `ImageView::m_itemStates` — path-keyed last-writer appearance (cannot hold
+  independent crops for path duplicates)
+- `ImageView::m_sessionSlotStates` — index-keyed appearance (index shifts on
+  insert/delete; superseded by SessionImageId)
+
+### 2.4 `WorkspaceController` saved items — `QList<WorkspaceItemState>`
 
 - Snapshot of **all** canvas items when leaving Workspace (list, not hash).
 - **Can** hold two entries with the same path and different transforms.
@@ -154,7 +150,7 @@ content flags via `ImageView::bakeItemFlip` / `bakeItemRotate90`.
 |------|----------------|------------------------|
 | **Image** | At most one `ImageItem` | Session cursor `m_currentIndex` → path `m_files[i]` |
 | **Gallery** | One tile per layout path set | Session cursor + tile selection |
-| **Workspace** | Zero or more free objects | Subset of session; each may be bound via `sessionIndex` |
+| **Workspace** | Zero or more free objects | Subset of session; each may be bound via `sessionId` |
 
 ### 3.1 Entering Image mode
 

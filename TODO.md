@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2016-identity-itemworld-current.** IDENTITY.md §2 reflects ItemWorld, not legacy maps.
+Prior: **2015**.
+
+### Change
+`IDENTITY.md` section 2:
+- ImageItem field table: ContentXform + placement (no obsolete session crop fields)
+- **2.2** ItemWorld / SessionAppearanceStore as current authority
+- **2.3** `m_itemStates` / `m_sessionSlotStates` marked historical (do not reintroduce)
+- Workspace mode identity via `sessionId`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2016-identity-itemworld-current-e77da63.bundle HEAD
+```
+Requires tip **2015** (base **e77da63**); includes 1938–2016.
+
+### Next
+- Stage 4 project-format migration (design)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2015-identity-sessionId-docs.** IDENTITY.md: sessionId identity; sessionIndex cache-only.
 Prior: **2014**.
 
