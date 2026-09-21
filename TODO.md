@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2121-path-fallback-firstIdForPath.** SESSION residual: path focus/open prefer firstIdForPath.
+Prior: **2120**.
+
+### Change
+- `galleryItemFocused` and `showPathInImageMode`: when no live preferred tile,
+  resolve via `m_session.firstIdForPath` before `paths().indexOf`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2121-path-fallback-firstIdForPath-e77da63.bundle HEAD
+```
+Requires tip **2120** (base **e77da63**); includes 1938–2121.
+
+### Next
+- SESSION residual: pure path index only for fully unbound session rows
+- Optional: PreferCache / thumtoo ladder characterization
+- Runtime QA: duplicate × membership × flip × project round-trip
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2120-filmstrip-path-restore-occurrence.** SESSION residual: filmstrip path restore by occurrence.
 Prior: **2119**.
 

@@ -167,6 +167,18 @@ MainWindow::MainWindow(QWidget *parent)
                         }
                     }
                 }
+                // No live preferred tile: still prefer a bound session row for
+                // this path over paths().indexOf alone.
+                {
+                    const SessionImageId sid = m_session.firstIdForPath(path);
+                    if (sid != kInvalidSessionImageId) {
+                        const int idx = indexOfSessionId(sid);
+                        if (idx >= 0) {
+                            apply(idx);
+                            return;
+                        }
+                    }
+                }
                 apply(m_session.paths().indexOf(path));
             });
     connect(m_imageView, &ImageView::filesDropped,

@@ -256,6 +256,14 @@ void MainWindow::showPathInImageMode(const QString &path)
             }
         }
     }
+    // No live preferred tile: open the first bound session row for this path.
+    {
+        const SessionImageId sid = m_session.firstIdForPath(path);
+        if (sid != kInvalidSessionImageId) {
+            openSessionImageInImageMode(sid);
+            return;
+        }
+    }
     const int idx = m_session.paths().indexOf(path);
     if (idx < 0) {
         return;
