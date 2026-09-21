@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1954-applied-install-lag-seed.** Applied-only install; lag dual-write on pixel clear.
+Prior: **1953**.
+
+### Change
+- `syncLiveContentMetaFromState` installs **applied ContentXform only** (no session dual-write)
+- `clearDecodedPixels` seeds lag dual-write from applied before clearing applied
+- Session crop/flip fields are lag-only (seed on pixel clear, clear on identity clearLive)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1954-applied-install-lag-seed-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1954.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Lag dual-write fields still needed for chrome across pixel-clear gaps
+- Later: drop lag fields if chrome can tolerate applied-empty gaps
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1953-private-applied-mutators.** Private set/clearAppliedContentXform.
 Prior: **1952**.
 

@@ -475,13 +475,13 @@ public:
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
     /**
-     * Dual-write install: push content crop/flips and applied ContentXform
-     * onto the live ImageItem. ItemWorld remains authority for bound ids;
-     * tileContentXform prefers applied xform, then session dual-write fields.
+     * Install applied ContentXform fingerprint on the live ImageItem.
+     * ItemWorld remains authority for bound ids. Session dual-write fields are
+     * lag-only (seeded from applied on clearDecodedPixels).
      */
     void syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state);
     /**
-     * Clear live ImageItem crop/content-flip dual-write fields.
+     * Clear lag dual-write session crop/flip fields.
      * Pass clearAppliedXform=true for identity path-change / reset so
      * tileContentXform does not keep a stale applied fingerprint.
      */

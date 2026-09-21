@@ -84,9 +84,8 @@ qreal ImageItem::tileDevicePerContent() const
 
 /**
  * Single live content-meta reader for tile plan and chrome marks (Phase 7).
- * Prefer applied ContentXform fingerprint (always written by
- * ImageView::syncLiveContentMetaFromState); fall back to dual-write session
- * crop/flip fields when applied is absent (legacy / mid-edit lag).
+ * Prefer applied ContentXform fingerprint (ImageView::syncLiveContentMetaFromState).
+ * Fall back to lag dual-write session fields seeded on clearDecodedPixels.
  */
 ContentXform::Value ImageItem::tileContentXform() const
 {

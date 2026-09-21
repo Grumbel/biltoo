@@ -151,8 +151,8 @@ public:
 
     /**
      * Single live content-meta reader for tile plan, chrome, and host capture.
-     * Prefers applied ContentXform; falls back to dual-write session fields
-     * (pixel-clear gaps). Install mutators are ImageView-only (private).
+     * Prefers applied ContentXform; falls back to lag session fields seeded on
+     * clearDecodedPixels. Install mutators are ImageView-only (private).
      */
     ContentXform::Value tileContentXform() const;
 
@@ -292,6 +292,7 @@ private:
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
     // Content-meta install — ImageView::syncLiveContentMetaFromState / clearLiveContentMeta.
+    // Session dual-write fields are lag-only (seeded on clearDecodedPixels).
     friend class ImageView;
     void setContentHFlip(bool on) { m_contentHFlip = on; }
     void setContentVFlip(bool on) { m_contentVFlip = on; }

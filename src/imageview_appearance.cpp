@@ -112,11 +112,8 @@ void ImageView::syncLiveContentMetaFromState(ImageItem *item, const WorkspaceIte
     if (!item) {
         return;
     }
-    // Phase 7 Stage 2: single dual-write install for live crop/flip chrome and
-    // applied ContentXform fingerprint. tileContentXform prefers applied.
-    item->setSessionCrop(state.hasCrop, state.cropRect);
-    item->setContentHFlip(state.contentHFlip);
-    item->setContentVFlip(state.contentVFlip);
+    // Phase 7 Stage 2: applied ContentXform is the live fingerprint.
+    // Session dual-write fields are lag-only (seeded on clearDecodedPixels).
     item->setAppliedContentXform(ContentXform::Value::fromState(state));
 }
 
@@ -125,6 +122,7 @@ void ImageView::clearLiveContentMeta(ImageItem *item, bool clearAppliedXform)
     if (!item) {
         return;
     }
+    // Clear lag dual-write fields; optionally drop applied fingerprint (identity).
     item->setSessionCrop(false, QRect());
     item->setContentHFlip(false);
     item->setContentVFlip(false);

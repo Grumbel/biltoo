@@ -247,9 +247,19 @@ void ImageItem::clearDecodedPixels()
     if (!m_interactive) {
         setCacheMode(QGraphicsItem::NoCache);
     }
-    // Applied fingerprint tracks the *current* sample. Dual-write session
-    // crop/flip fields (private, ImageView install) remain as tileContentXform
-    // lag fallback for chrome until the next syncLiveContentMetaFromState.
+    // Applied tracks the *current* sample. Seed lag dual-write fields from it
+    // so tileContentXform still reports crop/flip chrome across the pixel gap.
+    if (m_hasAppliedContentXform) {
+        m_contentHFlip = m_appliedContentXform.hFlip;
+        m_contentVFlip = m_appliedContentXform.vFlip;
+        if (m_appliedContentXform.hasCrop && !m_appliedContentXform.cropRect.isEmpty()) {
+            m_sessionHasCrop = true;
+            m_sessionCropRect = m_appliedContentXform.cropRect;
+        } else {
+            m_sessionHasCrop = false;
+            m_sessionCropRect = QRect();
+        }
+    }
     clearAppliedContentXform();
     update();
 }

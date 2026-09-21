@@ -1186,6 +1186,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1951: crop draft enter via syncLiveContentMetaFromState(contentOnly); document pixel-clear dual-write lag.
 - biltoo-1952: bake rotate/flip drop redundant setApplied; applied only via syncLive/attachDisplaySample/no-view.
 - biltoo-1953: set/clearAppliedContentXform private (friend ImageView); public getters retained.
+- biltoo-1954: syncLive installs applied only; clearDecodedPixels seeds lag dual-write from applied.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
