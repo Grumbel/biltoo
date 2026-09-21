@@ -34,7 +34,8 @@ struct ProjectImage {
 };
 
 struct ProjectDocument {
-    int version = 1;
+    /** On-disk format; Stage 4b nested sparse appearance requires ≥ 2. */
+    int version = 2;
     QString mode;
     QVector<ProjectAsset> assets;
     QVector<ProjectImage> images;

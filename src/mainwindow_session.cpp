@@ -3579,7 +3579,8 @@ QByteArray encodeWorkspaceClipboard(const QList<WorkspaceItemState> &items)
     }
     QJsonObject root;
     root.insert(QStringLiteral("format"), QStringLiteral("biltoo-workspace-clipboard"));
-    root.insert(QStringLiteral("version"), 1);
+    // Stage 4b: same nested sparse appearance as project format ≥ 2.
+    root.insert(QStringLiteral("version"), 2);
     root.insert(QStringLiteral("items"), arr);
     return QJsonDocument(root).toJson(QJsonDocument::Compact);
 }
@@ -3594,6 +3595,9 @@ QList<WorkspaceItemState> decodeWorkspaceClipboard(const QByteArray &bytes)
     const QJsonObject root = doc.object();
     if (root.value(QStringLiteral("format")).toString()
         != QLatin1String("biltoo-workspace-clipboard")) {
+        return out;
+    }
+    if (root.value(QStringLiteral("version")).toInt(0) < 2) {
         return out;
     }
     const QJsonArray arr = root.value(QStringLiteral("items")).toArray();
@@ -4035,11 +4039,11 @@ void MainWindow::attachWorkspaceBackgroundToDocument(ProjectDocument *doc, const
 
 bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
 {
-    // Stage 4a persistence boundary: build the on-disk DTO only here from
-    // sparse-prefer sessionAppearanceValue + live Workspace poses. Never treat
+    // Stage 4b persistence boundary: nested sparse appearance (format ≥ 2)
+    // built from sessionAppearanceValue + live Workspace poses. Never treat
     // a raw fat WorkspaceItemState pointer as save authority.
     ProjectDocument doc;
-    doc.version = 1;
+    doc.version = 2;
     doc.mode = currentProjectModeString();
 
     QHash<QString, QString> pathToSha; // absolute path → sha256

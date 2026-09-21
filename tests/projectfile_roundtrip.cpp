@@ -256,7 +256,7 @@ void ProjectFileRoundTripTest::appearanceJson_colorGrade()
 void ProjectFileRoundTripTest::project_saveLoad_semantic()
 {
     ProjectDocument doc;
-    doc.version = 1;
+    doc.version = 2;
     doc.mode = QStringLiteral("workspace");
     doc.pageGuideVisible = true;
     doc.pageGuideSizeMm = QSizeF(210.0, 297.0);
@@ -314,7 +314,7 @@ void ProjectFileRoundTripTest::project_saveLoad_semantic()
 void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
 {
     ProjectDocument doc;
-    doc.version = 1;
+    doc.version = 2;
     doc.mode = QStringLiteral("workspace");
     doc.pageGuideVisible = false;
 
@@ -418,7 +418,7 @@ void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
 
     // AppDefault must not be written as a project override after load.
     ProjectDocument defaultDoc;
-    defaultDoc.version = 1;
+    defaultDoc.version = 2;
     defaultDoc.mode = QStringLiteral("workspace");
     defaultDoc.hasWorkspaceBackground = false;
     defaultDoc.workspaceBackground = WorkspaceBackground{};
@@ -433,7 +433,7 @@ void ProjectFileRoundTripTest::project_saveLoad_colorAndBackground()
 void ProjectFileRoundTripTest::project_saveLoadSave_jsonStable()
 {
     ProjectDocument doc;
-    doc.version = 1;
+    doc.version = 2;
     doc.mode = QStringLiteral("image");
     ProjectAsset asset;
     asset.sha256 = QStringLiteral("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
@@ -477,7 +477,7 @@ void ProjectFileRoundTripTest::project_saveLoadSave_jsonStable()
 void ProjectFileRoundTripTest::project_emptyMinimal()
 {
     ProjectDocument doc;
-    doc.version = 1;
+    doc.version = 2;
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
     const QString path = dir.filePath(QStringLiteral("empty.biltoo"));
@@ -485,7 +485,7 @@ void ProjectFileRoundTripTest::project_emptyMinimal()
     QVERIFY(ProjectFile::save(path, doc, &err));
     ProjectDocument loaded;
     QVERIFY(ProjectFile::load(path, &loaded, &err));
-    QCOMPARE(loaded.version, 1);
+    QCOMPARE(loaded.version, 2);
     QVERIFY(loaded.assets.isEmpty());
     QVERIFY(loaded.images.isEmpty());
     QVERIFY(!loaded.hasWorkspaceBackground || loaded.workspaceBackground.isAppDefault());
@@ -563,7 +563,7 @@ void ProjectFileRoundTripTest::appearanceJson_poseOnly_identityContent()
 void ProjectFileRoundTripTest::project_saveLoad_mixedContentAndPoseRows()
 {
     ProjectDocument doc;
-    doc.version = 1;
+    doc.version = 2;
     doc.mode = QStringLiteral("workspace");
 
     ProjectAsset asset;
