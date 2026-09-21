@@ -233,14 +233,6 @@ void ImageItem::setPreviewImage(const QImage &preview)
     update();
 }
 
-void ImageItem::clearContentMetaLag()
-{
-    m_contentHFlip = false;
-    m_contentVFlip = false;
-    m_sessionHasCrop = false;
-    m_sessionCropRect = QRect();
-}
-
 void ImageItem::clearDecodedPixels()
 {
     if (m_source.isNull() && m_preview.isNull()) {
@@ -258,7 +250,7 @@ void ImageItem::clearDecodedPixels()
     // Keep applied ContentXform across the pixel gap: it is the session content
     // fingerprint (tileContentXform / chrome), not a claim that pixels are
     // currently present. attachDisplaySample / syncLive reassert or replace it.
-    // Identity path-change uses clearLiveContentMeta to drop applied + lag.
+    // Identity path-change uses clearLiveContentMeta to drop applied.
     update();
 }
 

@@ -84,26 +84,15 @@ qreal ImageItem::tileDevicePerContent() const
 
 /**
  * Single live content-meta reader for tile plan and chrome marks (Phase 7).
- * Prefer applied ContentXform fingerprint (survives clearDecodedPixels pixel
- * gaps). Fall back to lag fields only after identity clearLiveContentMeta
- * mid-state (rare).
+ * Applied ContentXform fingerprint only (survives clearDecodedPixels;
+ * identity clearLiveContentMeta drops it).
  */
 ContentXform::Value ImageItem::tileContentXform() const
 {
     if (m_hasAppliedContentXform) {
         return m_appliedContentXform;
     }
-    ContentXform::Value x;
-    x.hFlip = m_contentHFlip;
-    x.vFlip = m_contentVFlip;
-    // Session crop alone must carry geometry — hasCrop without cropRect made
-    // mapDisplay/mapSource treat the item as uncropped, so tiles planned/drew
-    // the full native frame into the crop-sized contentRect (squish + spill).
-    if (m_sessionHasCrop && !m_sessionCropRect.isEmpty()) {
-        x.hasCrop = true;
-        x.cropRect = m_sessionCropRect;
-    }
-    return x;
+    return {};
 }
 
 

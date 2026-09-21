@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1966-drop-content-meta-lag.** Drop content-meta lag fields.
+Prior: **1965**.
+
+### Change
+- Remove `m_contentHFlip` / `m_contentVFlip` / `m_sessionHasCrop` / `m_sessionCropRect`
+- Remove `clearContentMetaLag`
+- `tileContentXform()` returns applied only (or empty)
+- `clearLiveContentMeta` only clears applied
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1966-drop-content-meta-lag-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1966.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host (priority)
+- Color: live interaction authority; ItemWorld Color persistence
+- Content-meta on ImageItem is applied ContentXform + private install only
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1965-applied-survives-pixel-clear.** Applied ContentXform survives clearDecodedPixels.
 Prior: **1964**.
 

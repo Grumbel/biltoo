@@ -149,8 +149,8 @@ public:
 
     /**
      * Single live content-meta reader for tile plan, chrome, and host capture.
-     * Prefers applied ContentXform; falls back to lag session fields seeded on
-     * clearDecodedPixels. Install mutators are ImageView-only (private).
+     * Applied ContentXform only (empty when identity-cleared). Install mutators
+     * are ImageView-only (private).
      */
     ContentXform::Value tileContentXform() const;
 
@@ -290,7 +290,6 @@ private:
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
     // Content-meta / color install — ImageView syncLive* helpers.
-    // Session lag fields (m_content*Flip / m_session*) are internal only.
     friend class ImageView;
     void setColorAdjustments(const ColorAdjustments &adj);
     /** Store grade without rebuilding the display pixmap. */
@@ -307,8 +306,6 @@ private:
         m_hasAppliedContentXform = false;
         clearTileGradedCache();
     }
-    /** Clear lag crop/flip fields (identity clearLiveContentMeta residual). */
-    void clearContentMetaLag();
     void tickTileLod(int budget = 8);
     /** Plan/paint helpers (ImageItem paint + tick only). */
     void prepareTileLod();
@@ -348,13 +345,7 @@ private:
     qreal m_stackZ = 0.0;
     bool m_hFlip = false;
     bool m_vFlip = false;
-    /** Lag content flips for tileContentXform after clearDecodedPixels (not placement). */
-    bool m_contentHFlip = false;
     static bool s_contentEditMarksVisible;
-    bool m_contentVFlip = false;
-    /** Lag session crop for tileContentXform after clearDecodedPixels. */
-    bool m_sessionHasCrop = false;
-    QRect m_sessionCropRect;
     ContentXform::Value m_appliedContentXform;
     bool m_hasAppliedContentXform = false;
     bool m_interactive = false;

@@ -476,8 +476,7 @@ public:
     void applyState(ImageItem *item, const WorkspaceItemState &state);
     /**
      * Install applied ContentXform fingerprint on the live ImageItem.
-     * ItemWorld remains authority for bound ids. Session dual-write fields are
-     * lag-only (seeded from applied on clearDecodedPixels).
+     * ItemWorld remains authority for bound ids. Applied survives pixel clear.
      */
     void syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state);
     /**
@@ -487,7 +486,7 @@ public:
     void syncLiveColorFromState(ImageItem *item, const ColorAdjustments &grade,
                                 bool rebuildDisplay = false);
     /**
-     * Identity clear: drop lag dual-write session fields and applied fingerprint.
+     * Identity clear: drop applied ContentXform fingerprint.
      */
     void clearLiveContentMeta(ImageItem *item);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */

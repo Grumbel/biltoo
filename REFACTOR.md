@@ -1203,6 +1203,7 @@ Phase 1–6 rules still apply. Additions:
   Color parallel live grade remains (`syncLiveColorFromState` / private mutators).
 - biltoo-1964: captureState/wantAppearance prefer live color grade (interaction authority).
 - biltoo-1965: clearDecodedPixels keeps applied ContentXform; drop seedContentMetaLagFromApplied.
+- biltoo-1966: drop content-meta lag fields; tileContentXform is applied-only.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

@@ -39,7 +39,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     if (sid != kInvalidSessionImageId) {
         // Phase 7: when applied ContentXform is present, it is mid-edit authority
         // over sparse tables (Gallery full-circle rotate must not resurrect turns).
-        // Otherwise sparse tables, then live lag via tileContentXform.
+        // Otherwise sparse tables, then live applied via tileContentXform.
         if (item->hasAppliedContentXform()) {
             const ContentXform::Value live = item->tileContentXform();
             s.hasCrop = live.hasCrop;
@@ -85,7 +85,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         }
         // Bound session image: path map is placement-only.
     } else {
-        // Unbound: live applied / lag via tileContentXform; path map may hold
+        // Unbound: live applied via tileContentXform; path map may hold
         // orient extras (quarter turns / crop source).
         const ContentXform::Value live = item->tileContentXform();
         s.hasCrop = live.hasCrop;

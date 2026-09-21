@@ -135,8 +135,7 @@ void ImageView::clearLiveContentMeta(ImageItem *item)
     if (!item) {
         return;
     }
-    // Identity: clear lag fields and applied fingerprint together.
-    item->clearContentMetaLag();
+    // Identity: drop applied ContentXform fingerprint.
     item->clearAppliedContentXform();
 }
 

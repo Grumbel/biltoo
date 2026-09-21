@@ -322,7 +322,7 @@ int ImageView::resetContentAppearanceForTargets()
             m_itemWorld.setPathState(path, pathSlot);
         }
 
-        // Identity: clear lag content-meta fields and applied fingerprint together.
+        // Identity: drop applied ContentXform fingerprint.
         clearLiveContentMeta(item);
         {
             ItemComponents::Placement pl = item->placement();
