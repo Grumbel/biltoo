@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2023-bake-want-live-pose.** Stage 2 residual: bake/crop record no longer rebuild via captureState when want is known.
+Prior: **2022**.
+
+### Change
+- `bakeItemRotate90` / `bakeItemFlip` undo after-image and flip store write: absolute
+  content from `want` + live pose via `placementFromItem` (no `captureState`)
+- `CropController::recordSessionCrop` bound path: `sessionAppearanceValue` + live
+  pose/grade; unbound still uses `captureState`
+- Stale cropcontroller comments updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2023-bake-want-live-pose-e77da63.bundle HEAD
+```
+Requires tip **2022** (base **e77da63**); includes 1938–2023.
+
+### Next
+- Further thin remaining `captureState` (remember/persist/undo enter still legitimate)
+- Optional characterization: pose-only vs content-only rows
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2022-capturestate-store-seed.** Stage 2 residual: captureState seeds from sparse-prefer store.
 Prior: **2021**.
 
