@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1964-live-color-capture-authority.** Live color grade is capture/want authority.
+Prior: **1963**.
+
+### Change
+- Bound `captureState`: always `item->colorAdjustments()` (live leads ItemWorld until flush)
+- `wantAppearanceForItem`: prefer live grade when non-identity, or when store is identity
+  (cold open keeps store grade until live is seeded)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1964-live-color-capture-authority-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1964.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- ItemWorld Color remains persistence authority; live grade is interaction authority
+- Optional: drop content-meta lag fields if chrome tolerates applied-empty gaps
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1963-content-meta-stage2-docs.** Content-meta Stage 2 status + comment cleanup.
 Prior: **1962**.
 

@@ -76,11 +76,9 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
                 s.contentVFlip = live.vFlip;
             }
         }
-        if (m_itemWorld.hasColor(sid)) {
-            s.colorAdjust = m_itemWorld.color(sid).grade;
-        } else {
-            s.colorAdjust = item->colorAdjustments();
-        }
+        // Live grade is interaction authority (slider may lead ItemWorld Color
+        // until flushColorAdjustCommit). Same idea as pose-from-item.
+        s.colorAdjust = item->colorAdjustments();
         if (m_itemWorld.hasAttention(sid)) {
             s.attentionPoints = m_itemWorld.attention(sid).points;
             s.syncAttentionPrimary();

@@ -332,24 +332,32 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     // Phase 7: applied ContentXform is mid-edit authority (same as captureState).
     if (item->hasAppliedContentXform()) {
         item->tileContentXform().applyToState(want);
-        return want;
-    }
-    // No applied: lag-fill empty store from sparse tables, else tileContentXform lag.
-    ContentXform::Value liveX = item->tileContentXform();
-    if (id != kInvalidSessionImageId) {
-        if (m_view->itemWorld().hasContentBake(id)) {
-            const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);
-            liveX.hFlip = bake.hFlip;
-            liveX.vFlip = bake.vFlip;
-            liveX.quarterTurns = bake.quarterTurns;
+    } else {
+        // No applied: lag-fill empty store from sparse tables, else tileContentXform lag.
+        ContentXform::Value liveX = item->tileContentXform();
+        if (id != kInvalidSessionImageId) {
+            if (m_view->itemWorld().hasContentBake(id)) {
+                const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);
+                liveX.hFlip = bake.hFlip;
+                liveX.vFlip = bake.vFlip;
+                liveX.quarterTurns = bake.quarterTurns;
+            }
+            if (m_view->itemWorld().hasCrop(id)) {
+                const ItemComponents::Crop crop = m_view->itemWorld().crop(id);
+                liveX.hasCrop = !crop.isEmpty();
+                liveX.cropRect = crop.rect;
+            }
         }
-        if (m_view->itemWorld().hasCrop(id)) {
-            const ItemComponents::Crop crop = m_view->itemWorld().crop(id);
-            liveX.hasCrop = !crop.isEmpty();
-            liveX.cropRect = crop.rect;
+        SessionAppearance::mergeLiveContentLagFlags(want, liveX);
+    }
+    // Live grade leads ItemWorld during slider drag; keep store grade when live
+    // is still identity (cold open / path-change before seed install).
+    {
+        const ColorAdjustments liveGrade = item->colorAdjustments();
+        if (!liveGrade.isIdentity() || want.colorAdjust.isIdentity()) {
+            want.colorAdjust = liveGrade;
         }
     }
-    SessionAppearance::mergeLiveContentLagFlags(want, liveX);
     return want;
 }
 
