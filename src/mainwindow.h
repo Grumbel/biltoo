@@ -42,19 +42,6 @@ class QMenu;
 class QSpinBox;
 class QTimer;
 
-/**
- * Snapshot of one session row for undo of remove.
- * Identity is @a id; path is decode source only. Appearance restores
- * ImageView store content (crop / content flips / quarter turns).
- */
-struct SessionEntrySnapshot {
-    int index = -1;
-    QString path;
-    SessionImageId id = kInvalidSessionImageId;
-    WorkspaceItemState appearance;
-    bool hasAppearance = false;
-};
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT

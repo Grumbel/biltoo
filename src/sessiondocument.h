@@ -13,6 +13,18 @@
 #include <QVector>
 
 /**
+ * Snapshot of one session row for undoable remove/restore (IDENTITY: id + path +
+ * optional appearance). Lives with the session document model, not MainWindow chrome.
+ */
+struct SessionEntrySnapshot {
+    int index = -1;
+    QString path;
+    SessionImageId id = kInvalidSessionImageId;
+    WorkspaceItemState appearance;
+    bool hasAppearance = false;
+};
+
+/**
  * Ordered session image list (DOMAIN / IDENTITY).
  * Paths may repeat; identity is SessionImageId, never the path string.
  *

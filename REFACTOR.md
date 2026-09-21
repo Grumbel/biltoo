@@ -1564,6 +1564,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2142:** mainwindow_expand TU; imageFileDialogFilter colocated with nav openers.
 
+**biltoo-2143:** SessionEntrySnapshot on SessionDocument; mainwindow_session_remove TU.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

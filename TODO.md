@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2143-session-remove-snapshot.** Session remove TU; SessionEntrySnapshot on document.
+Prior: **2142**.
+
+### Change
+- `SessionEntrySnapshot` moved to `sessiondocument.h` (domain model, not MainWindow)
+- `mainwindow_session_remove.cpp` — remove/restore + SessionRemoveCommand (~338 lines)
+- `mainwindow_session.cpp` — load/append/cursor (~635 lines)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2143-session-remove-snapshot-e77da63.bundle HEAD
+```
+Requires tip **2142** (base **e77da63**); includes 1938–2143.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2142-mainwindow-expand-split.** Expand TU; file-dialog filter with nav.
 Prior: **2141**.
 
