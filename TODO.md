@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2120-filmstrip-path-restore-occurrence.** SESSION residual: filmstrip path restore by occurrence.
+Prior: **2119**.
+
+### Change
+- `finishExpandedAppendChrome`: when restoring filmstrip multi-select from
+  workspace paths (ids missing), map successive path occurrences to successive
+  session rows (same pattern as removeSessionPaths)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2120-filmstrip-path-restore-occurrence-e77da63.bundle HEAD
+```
+Requires tip **2119** (base **e77da63**); includes 1938–2120.
+
+### Next
+- SESSION residual: path open/reveal only when unbound without list/live index (rare)
+- Optional: full async PreferCache / thumtoo ladder characterization
+- Runtime QA: duplicate × membership × flip × project round-trip
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2119-primary-item-prefer-sessionId.** SESSION residual: Image-mode primaryItem prefers SessionImageId.
 Prior: **2118**.
 

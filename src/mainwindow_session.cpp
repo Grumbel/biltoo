@@ -1467,8 +1467,12 @@ void MainWindow::finishExpandedAppendChrome(SessionImageId currentId, const QStr
         if (m_thumbnailBar->selectedIndices().isEmpty()
             && (!workspaceIds.isEmpty() || !workspacePaths.isEmpty())) {
             // Prefer SessionImageId so duplicate paths restore the correct rows.
+            // Path fallback maps successive path occurrences to successive session
+            // rows (same idea as removeSessionPaths).
             QList<int> indices;
             QSet<int> seen;
+            QHash<QString, int> pathOccurrence;
+            const QStringList &sessionPaths = m_session.paths();
             const int n = qMax(workspaceIds.size(), workspacePaths.size());
             for (int i = 0; i < n; ++i) {
                 int idx = -1;
@@ -1478,7 +1482,20 @@ void MainWindow::finishExpandedAppendChrome(SessionImageId currentId, const QStr
                 }
                 if (idx < 0 && i < workspacePaths.size()
                     && !workspacePaths.at(i).isEmpty()) {
-                    idx = m_session.paths().indexOf(workspacePaths.at(i));
+                    const QString &path = workspacePaths.at(i);
+                    const int wantOcc = pathOccurrence.value(path, 0);
+                    pathOccurrence[path] = wantOcc + 1;
+                    int seenOcc = 0;
+                    for (int p = 0; p < sessionPaths.size(); ++p) {
+                        if (sessionPaths.at(p) != path) {
+                            continue;
+                        }
+                        if (seenOcc == wantOcc) {
+                            idx = p;
+                            break;
+                        }
+                        ++seenOcc;
+                    }
                 }
                 if (idx >= 0 && !seen.contains(idx)) {
                     indices.append(idx);

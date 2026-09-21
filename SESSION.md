@@ -125,6 +125,8 @@ unbound and edits will not propagate correctly in Workspace).
    Gallery layout-switch multi-select restore: id → list index → path
    (biltoo-2118). Image-mode `primaryItem` prefers current SessionImageId
    (biltoo-2119); classic path is last resort for paint/reload.
+   Workspace filmstrip path restore after append uses occurrence mapping
+   (biltoo-2120) when ids are missing.
    `showPathInImageMode` prefers live preferred item + session id.
    Sort / append / remove / slideshow start prefer `SessionImageId` over
    `paths().indexOf` (biltoo-2105). Workspace filmstrip selection restore after
@@ -132,7 +134,7 @@ unbound and edits will not propagate correctly in Workspace).
    LoadReplace seed and bulk selection→canvas bind ids (biltoo-2107/2108).
    Image-mode drop focus prefers filmstrip `sessionIds`, else
    `lastIndexOfPath` / `firstIdForPath` (biltoo-2111). Residual: path
-   open/reveal only when unbound without list or live index.
+   open/reveal only when unbound without list or live index (rare).
 
 3. **Path map (`PathItemStateBook`) — bound writes are a no-op (biltoo-2110)**  
    `ItemWorld::setPathState` ignores states that carry a bound SessionImageId
