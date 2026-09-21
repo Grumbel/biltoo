@@ -501,7 +501,8 @@ private:
                              const QPointF &scenePos, bool hasScenePos,
                              const QList<qint64> &sessionIds);
     void handleGalleryDrop(const QStringList &paths, bool fromInternalSelection);
-    void handleImageModeDrop(const QStringList &paths, bool fromInternalSelection);
+    void handleImageModeDrop(const QStringList &paths, bool fromInternalSelection,
+                             const QList<qint64> &sessionIds = {});
     void handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,
                            const QPointF &scenePos, bool hasScenePos,
                            const QList<qint64> &sessionIds = {},

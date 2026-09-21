@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2111-image-mode-drop-prefer-sessionId.** SESSION residual: Image-mode drop focus by SessionImageId.
+Prior: **2110**.
+
+### Change
+- `handleImageModeDrop` accepts parallel filmstrip `sessionIds` and focuses via
+  `indexOfSessionId` when present
+- Novel external paths focus `lastIndexOfPath` after append; existing paths use
+  `firstIdForPath` before path `indexOf` fallback
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2111-image-mode-drop-prefer-sessionId-e77da63.bundle HEAD
+```
+Requires tip **2110** (base **e77da63**); includes 1938–2111.
+
+### Next
+- SESSION residual: path open/remove fallback for unbound tiles
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2110-path-map-bound-write-noop.** SESSION residual: path map ignores bound SessionImageId.
 Prior: **2109**.
 

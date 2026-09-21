@@ -3530,7 +3530,8 @@ void MainWindow::handleGalleryDrop(const QStringList &paths, bool fromInternalSe
     updateStatus();
 }
 
-void MainWindow::handleImageModeDrop(const QStringList &paths, bool fromInternalSelection)
+void MainWindow::handleImageModeDrop(const QStringList &paths, bool fromInternalSelection,
+                                     const QList<qint64> &sessionIds)
 {
     // Image mode: always append to the session (Open still replaces).
     // Drops from the thumbnail bar are already in the session — just navigate
@@ -3552,9 +3553,31 @@ void MainWindow::handleImageModeDrop(const QStringList &paths, bool fromInternal
     if (!novel.isEmpty()) {
         appendFiles(novel);
     }
-    // Focus the first dropped path (existing or newly appended).
-    const QString focus = expanded.first();
-    const int idx = m_session.paths().indexOf(focus);
+
+    // Prefer SessionImageId so duplicate paths keep the intended row.
+    // Filmstrip internal drops carry parallel sessionIds; novel external drops
+    // land at lastIndexOfPath after append.
+    int idx = -1;
+    if (!sessionIds.isEmpty()) {
+        const SessionImageId sid = static_cast<SessionImageId>(sessionIds.first());
+        if (sid != kInvalidSessionImageId) {
+            idx = indexOfSessionId(sid);
+        }
+    }
+    if (idx < 0) {
+        const QString focus = expanded.first();
+        if (novel.contains(focus)) {
+            idx = m_session.lastIndexOfPath(focus);
+        } else {
+            const SessionImageId sid = m_session.firstIdForPath(focus);
+            if (sid != kInvalidSessionImageId) {
+                idx = indexOfSessionId(sid);
+            }
+            if (idx < 0) {
+                idx = m_session.paths().indexOf(focus);
+            }
+        }
+    }
     if (idx >= 0) {
         setCurrentIndex(idx);
     }
@@ -3610,7 +3633,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         handleGalleryDrop(paths, fromInternalSelection);
         return;
     }
-    handleImageModeDrop(paths, fromInternalSelection);
+    handleImageModeDrop(paths, fromInternalSelection, sessionIds);
     Q_UNUSED(modifiers);
 }
 
