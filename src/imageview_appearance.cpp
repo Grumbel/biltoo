@@ -245,8 +245,17 @@ void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
     }
     item->setSessionId(id);
     refreshSessionIndexCache(item);
+    // Live lag is paint/slider residual. Durable Color is store authority.
+    // Do not insert an identity lag row on every bind (pollutes hasLiveColorLag
+    // and made freeze→setAppearance look like a grade commit). Prefer durable
+    // Color when present; only stamp item grade when non-identity.
     if (id != kInvalidSessionImageId) {
-        m_itemWorld.setLiveColorLag(id, item->colorAdjustments());
+        if (m_itemWorld.hasColor(id)) {
+            m_itemWorld.setLiveColorLag(id, m_itemWorld.color(id).grade);
+        } else if (!item->colorAdjustments().isIdentity()) {
+            m_itemWorld.setLiveColorLag(id, item->colorAdjustments());
+        }
+        // else: leave lag table unchanged (no identity row)
     }
 }
 

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2196-bind-lag-stash-applied.** ECS continue:
+
+1. setItemSessionId always stamped liveColorLag (even identity) — polluted
+   hasLiveColorLag and dual-write surfaces.
+2. Gallery stash restore could keep a stale applied fingerprint after Image edits
+   committed to ItemWorld while the tile was off-canvas.
+
+### Fix
+- setItemSessionId: lag from durable Color if hasColor; else non-identity item grade only
+- rematerializeGalleryItemFromStore: clearLiveContentMeta when applied ≠ store want
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2196-bind-lag-stash-applied-e77da63.bundle HEAD
+```
+
+Next: **2197**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2195-freeze-no-lag-promote.** Continue ECS: rememberItemState for
 bound tiles used freeze→setAppearance (live lag → durable Color). Same class as
 2194 Workspace snapshot.

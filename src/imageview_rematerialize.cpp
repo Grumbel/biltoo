@@ -156,6 +156,12 @@ void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
         applyContentLayoutSize(item, st);
         return;
     }
+    // Stash may hold a stale applied fingerprint from Image-mode edits that
+    // were committed to ItemWorld while this tile was off-canvas. Drop it so
+    // materialize uses store want only (ECS_GUI_BYPASSES #6).
+    if (itemHasAppliedContentXform(item)) {
+        clearLiveContentMeta(item);
+    }
     rematerializeItemContent(item, st);
 }
 

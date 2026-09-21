@@ -91,6 +91,8 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 
 **Respects ECS when:** stash is presentation cache only; content ops always re-validated from ItemWorld on restore/open.
 
+**2196:** Gallery `rematerializeGalleryItemFromStore` clears stale applied fingerprint before rematerialize when store advanced while stashed.
+
 ---
 
 ## 7. `ImageItem::bakeRotate90` / `bakeFlip` incremental (medium)
