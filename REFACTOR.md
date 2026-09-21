@@ -939,7 +939,7 @@ characterization extended before storage changes.
 | **0** | **`ItemWorld` facade** | One type wrapping existing stores behind id-keyed accessors. No storage change, no behaviour change. Later stages mutate *inside* the facade. |
 | **1** | **Split the god-component** | `WorkspaceItemState` remains the **project-file DTO** (`projectfile.cpp` serializes it; `projectfile_roundtrip` pins the shape). Runtime gets separate tables (see below). |
 | **2** | **Demote `ImageItem` to a render proxy** | Highest payoff. Item keeps what Qt needs to draw (pixmap, surface id, transform derived from Placement). Interaction scratch → `ItemInteractSession` (already exists). Tile-LOD cache → runtime-only table under `DisplayPipelineController`. Collapse `captureState` fan-out into Placement / component writes. |
-| **3** | **Systems as free functions** | Entry points: `system(ItemWorld&, std::span<const SessionImageId>)` (or equivalent). GalleryLayout / ContentXform already lean this way; remove `ImageItem*` from pure transforms where possible. All `packPoses*` modes pure (2033–2038); pack only applies via ImageItem friends. |
+| **3** | **Systems as free functions** | Entry points: `system(ItemWorld&, std::span<const SessionImageId>)` (or equivalent). GalleryLayout pack pure data plane complete (2030–2039): all `packPoses*` + DRY apply; ContentXform already pure. Further systems as needed. |
 | **4** | **Persistence split** | Tag each table persistent vs derived. Project save walks only persistent tables. Design: see **Stage 4 design** below (tip 2020). |
 | **5** | **Storage (optional)** | Dense index + contiguous arrays *behind* `ItemWorld`. Only if profiled. |
 
@@ -1371,6 +1371,8 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2038: Stage 3 — packPosesMasonryFill / MasonryRowsFill pure data plane;
   all GalleryLayout pack modes now pure-pose + apply.
 - biltoo-2039: Stage 3 residual — pack() single switch + apply loop (DRY).
+- biltoo-2040: Stage 2 residual — crop record/afterSt/apply seed use freezeItemAppearance;
+  Stage 3 GalleryLayout pack marked complete.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
@@ -1399,10 +1401,10 @@ store **reads** prefer sparse via the choke point. Stage 4a save/load/clipboard
 build DTOs from sparse-prefer reads; Stage 4b may drop dual-write when the
 project format no longer needs the fat DTO mirror.
 
-Freeze policy is `freezeItemAppearance` (2029): store + live when durable and
-not mid-edit; else `captureState`. Remaining direct `captureState` call sites:
-unbound path-map, crop enter/undo unbound, color unbound, content-bake before,
-donor fallback without durable row.
+Freeze policy is `freezeItemAppearance` (2029+): store + live when durable and
+not mid-edit; else `captureState`. Remaining direct `captureState` call sites
+(intentional): unbound path-map freezes, crop enter snapshot, color unbound
+fallback, content-bake before-state, loadRestore without store row.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

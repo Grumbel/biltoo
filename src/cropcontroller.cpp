@@ -249,14 +249,8 @@ void CropController::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     // Stage 2: durable orient/grade from sparse-prefer store; live pose/grade
     // from the item. Avoid a full captureState rebuild when orient is already
     // in orientStore.
-    WorkspaceItemState s;
-    if (sid != kInvalidSessionImageId) {
-        s = m_view->sessionAppearanceValue(sid);
-    } else {
-        s = m_view->captureState(item);
-    }
-    ItemComponents::applyPlacementToState(s, item->placement());
-    s.colorAdjust = item->colorAdjustments();
+    // Freeze policy: store + live when durable; captureState when unbound/mid-edit.
+    WorkspaceItemState s = m_view->freezeItemAppearance(item);
     CropSession::mergeOrientFromAppearance(&s, orientApp);
     s.sessionId = sid;
     s.sessionIndex = m_view->sessionListIndex(item);
@@ -273,19 +267,8 @@ void CropController::pushCropAppearanceUndo(ImageItem *item, const QString &text
     if (!m_view->hostUndoStack() || !item || !session().isEnterValid()) {
         return;
     }
-    // After storeCropAppearance the store holds the new crop; seed from sparse-prefer
-    // read and overlay live pose (same boundary as bake want+live). Unbound: captureState.
-    WorkspaceItemState afterSt;
-    const SessionImageId sid = cropRecordSessionId(item);
-    if (sid != kInvalidSessionImageId) {
-        afterSt = m_view->sessionAppearanceValue(sid);
-        ItemComponents::applyPlacementToState(afterSt, item->placement());
-        afterSt.colorAdjust = item->colorAdjustments();
-        afterSt.sessionId = sid;
-        afterSt.path = item->path();
-    } else {
-        afterSt = m_view->captureState(item);
-    }
+    // After storeCropAppearance the store holds the new crop; freeze prefers store.
+    const WorkspaceItemState afterSt = m_view->freezeItemAppearance(item);
     m_view->hostUndoStack()->push(new CropAppearanceCommand(
         m_view, item, session().enterSourceRef(), item->sourceImage().copy(),
         session().enterStateRef(), afterSt, text));
@@ -326,7 +309,7 @@ bool CropController::applyCropCommit(ImageItem *item)
         WorkspaceItemState st;
         m_view->loadSessionAppearance(sid, &st);
         if (!m_view->itemWorld().hasCrop(sid) && !st.hasCrop) {
-            st = m_view->captureState(item);
+            st = m_view->freezeItemAppearance(item);
             session().seedApplyCropState(&st, item->offset(), item->imageSize());
             if (sid != kInvalidSessionImageId) {
                 m_view->itemWorld().setAppearance(sid, st);

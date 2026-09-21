@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2040-crop-freeze-stage3-done.** Stage 2 residual crop freezes + Stage 3 GalleryLayout pack complete.
+Prior: **2039**.
+
+### Change
+- Crop `recordSessionCrop` / `pushCropAppearanceUndo` afterSt / apply seed →
+  `freezeItemAppearance`
+- Crop enter still uses `captureState` (interaction undo baseline)
+- REFACTOR: Stage 3 GalleryLayout pack complete; captureState inventory tightened
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2040-crop-freeze-stage3-done-e77da63.bundle HEAD
+```
+Requires tip **2039** (base **e77da63**); includes 1938–2040.
+
+### Next
+- Remaining direct `captureState`: unbound path-map, crop enter, color unbound,
+  content-bake before, loadRestore without store
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2039-pack-apply-dry.** Stage 3 residual: pack() single switch + apply loop.
 Prior: **2038**.
 
