@@ -237,11 +237,16 @@ int ImageView::refreshSessionIndexCache(ImageItem *item)
     if (!item) {
         return -1;
     }
-    // Document order when bound; otherwise leave any unbound cache hint as-is.
+    // Document order when bound.
     const int listIdx = sessionListIndex(item);
     if (listIdx >= 0) {
         item->setSessionIndex(listIdx);
         return listIdx;
+    }
+    // Unbound: drop stale list-order cache. Pack-row hints must be restamped
+    // by the caller via setSessionIndex after refresh (Gallery/Workspace).
+    if (item->sessionId() == kInvalidSessionImageId) {
+        item->setSessionIndex(-1);
     }
     return -1;
 }

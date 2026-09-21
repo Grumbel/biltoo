@@ -433,8 +433,8 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
             if (usedId.contains(sid)) {
                 qCritical("rebindWorkspaceSession: demoting duplicate live SessionImageId %lld path=%s",
                           static_cast<long long>(sid), qPrintable(item->path()));
-                item->setSessionId(kInvalidSessionImageId);
-                item->setSessionIndex(-1);
+                // Unbind: setItemSessionId(invalid) + refresh clears list-order cache.
+                setItemSessionId(item, kInvalidSessionImageId);
                 continue;
             }
             setItemSessionId(item, sid); // refresh list index + applied migrate

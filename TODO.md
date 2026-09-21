@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2089-refreshSessionIndex-clear-unbound.** Stage 2 residual: unbound clears list-order cache.
+Prior: **2088**.
+
+### Change
+- `refreshSessionIndexCache`: when unbound (`sessionId` invalid), clear
+  `sessionIndex` to -1 (no stale document-slot cache)
+- Pack-row hints must be restamped by callers after refresh (existing Gallery/Workspace)
+- Duplicate-id demote in rebind uses `setItemSessionId(invalid)` only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2089-refreshSessionIndex-clear-unbound-e77da63.bundle HEAD
+```
+Requires tip **2088** (base **e77da63**); includes 1938–2089.
+
+### Next
+- Stage 2: paint mirror residual (intentional), or host-side color scratch
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2088-syncLiveColor-applied-colorAdjust.** Stage 2 residual: live grade updates applied ContentXform.colorAdjust.
 Prior: **2087**.
 

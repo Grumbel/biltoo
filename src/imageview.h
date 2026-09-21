@@ -165,10 +165,10 @@ public:
      */
     int sessionListIndex(const ImageItem *item) const;
     /**
-     * Stamp ImageItem list-order cache from sessionListIndex when known.
+     * Stamp list-order cache from document when bound; clear to -1 when unbound.
+     * Pack-row hints must be restamped by the caller after refresh.
      * Stage 2 residual: call after setSessionId so the cache cannot lag
-     * document order. Returns the stamped index, or -1 when unbound/unknown
-     * (does not clear an existing unbound cache hint).
+     * document order. Returns the stamped index, or -1 when unbound/unknown.
      */
     int refreshSessionIndexCache(ImageItem *item);
     QList<int> selectedSessionIndices() const;
