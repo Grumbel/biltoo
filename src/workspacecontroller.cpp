@@ -75,12 +75,8 @@ void WorkspaceController::restore()
                 slot.contentVFlip = sit.contentVFlip;
                 continue;
             }
-            // Bound but no appearance yet: path may seed orient/flip only.
-            if (const WorkspaceItemState *it = m_view->itemWorld().getPathState(slot.path)) {
-                slot.contentQuarterTurns = it->contentQuarterTurns;
-                slot.contentHFlip = it->contentHFlip;
-                slot.contentVFlip = it->contentVFlip;
-            }
+            // Bound but no appearance yet: leave identity; pipeline XDG seed
+            // fills sparse on decode (path book no longer holds bound content).
             continue;
         }
         const WorkspaceItemState *it = m_view->itemWorld().getPathState(slot.path);

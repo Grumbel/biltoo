@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2070-bound-skip-path-content-reads.** Bound content readers use sparse + XDG only.
+Prior: **2069**.
+
+### Change
+- `imageWithSessionAppearance` / slideshow snapshot: path map content only when unbound
+- `loadRestoreCropAppearance`: path crop only when unbound
+- Workspace restore: no path orient seed for bound empty slots (XDG seed on decode)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2070-bound-skip-path-content-reads-e77da63.bundle HEAD
+```
+Requires tip **2069** (base **e77da63**); includes 1938–2070.
+
+### Next
+- Phase 7 Stage 2: ContentXform runtime table
+- Phase 6 Tier 4: decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2069-path-strip-bound-content.** Bound setPathState strips all content fields.
 Prior: **2068**.
 

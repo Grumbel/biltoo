@@ -661,20 +661,13 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
             return true;
         }
     }
-    if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(path)) {
-        if (sid != kInvalidSessionImageId) {
-            // Bound: orient/flip path hint only — never path crop (IDENTITY).
-            out->path = path;
-            out->sessionId = sid;
-            out->contentHFlip = st->contentHFlip;
-            out->contentVFlip = st->contentVFlip;
-            out->contentQuarterTurns = st->contentQuarterTurns;
-            if (SessionAppearance::hasContentAppearance(*out)) {
+    // Unbound path map may hold content; bound content is sparse + XDG only.
+    if (sid == kInvalidSessionImageId) {
+        if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(path)) {
+            if (SessionAppearance::hasContentAppearance(*st)) {
+                *out = *st;
                 return true;
             }
-        } else if (SessionAppearance::hasContentAppearance(*st)) {
-            *out = *st;
-            return true;
         }
     }
     ThumtooCache::StoredContentAppearance stored;

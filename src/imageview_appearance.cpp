@@ -303,25 +303,13 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
         fallback = sessionAppearanceValue(sid);
         app = &fallback;
     }
-    if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
+    // Unbound only: path map may hold content. Bound content is sparse + XDG
+    // (setPathState strips content when sessionId is set — tip 2069).
+    if ((!app || !SessionAppearance::hasContentAppearance(*app))
+        && sid == kInvalidSessionImageId && !path.isEmpty()) {
         if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
-            if (sid != kInvalidSessionImageId) {
-                // Bound: orient/flip path hint only — never adopt path crop.
-                if (!app) {
-                    fallback = {};
-                    fallback.path = path;
-                    fallback.sessionId = sid;
-                } else {
-                    fallback = *app;
-                }
-                fallback.contentHFlip = st->contentHFlip;
-                fallback.contentVFlip = st->contentVFlip;
-                fallback.contentQuarterTurns = st->contentQuarterTurns;
-                app = &fallback;
-            } else {
-                fallback = *st;
-                app = &fallback;
-            }
+            fallback = *st;
+            app = &fallback;
         }
     }
     // Durable XDG appearance when session store is empty (slideshow may paint a
@@ -730,9 +718,12 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
         *app = freezeItemAppearance(item);
         return true;
     }
-    if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {
-        *app = *st;
-        return true;
+    // Unbound path map may hold crop; bound crop is sparse only.
+    if (sid == kInvalidSessionImageId) {
+        if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {
+            *app = *st;
+            return true;
+        }
     }
     return false;
 }
