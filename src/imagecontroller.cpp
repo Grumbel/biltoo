@@ -46,6 +46,8 @@ void ImageController::enter()
     m_view->clearLiveCanvas();
     m_view->hostDisplayPipeline().loadGate().clearPending();
     m_view->clearSceneKeepingStashes();
+    // Gallery size-resolve defer must not block Image underlay creation.
+    m_view->hostGallerySoftBook().setDeferPopulate(false);
     if (!path.isEmpty()) {
         m_view->hostDisplayPipeline().loadImage(path);
     }

@@ -223,11 +223,21 @@ void MainWindow::openSessionIndexInImageMode(int sessionIndex)
         m_thumbnailBar->selectNoneThumbs();
     }
     setCurrentIndex(sessionIndex);
-    // Guarantee Image canvas has the target after mode switch (Workspace
-    // double-click left empty when only enter's scheduleReplaceLoad ran).
+    // Guarantee Image canvas has pixels after mode switch. itemCount()>0 alone
+    // is not enough: a blank placeholder with classicPath already set skipped
+    // a second load and left Workspace→Image empty when soft delivery failed.
     if (m_imageView && m_imageView->isImageMode() && !path.isEmpty()) {
-        if (m_imageView->itemCount() == 0
-            || m_imageView->hostImage().classicPath() != path) {
+        bool needLoad = m_imageView->itemCount() == 0
+            || m_imageView->hostImage().classicPath() != path;
+        if (!needLoad) {
+            const QList<ImageItem *> &live = m_imageView->liveItems();
+            ImageItem *primary = live.isEmpty() ? nullptr : live.first();
+            if (!primary || !primary->hasDisplayPixels()
+                || primary->displayPixelLongEdge() <= 0) {
+                needLoad = true;
+            }
+        }
+        if (needLoad) {
             m_imageView->hostDisplayPipeline().loadImage(path);
         }
     }

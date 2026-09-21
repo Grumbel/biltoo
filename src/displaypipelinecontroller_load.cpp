@@ -793,6 +793,13 @@ bool DisplayPipelineController::takePendingRestoreState(const QString &path, Wor
 
 void DisplayPipelineController::completeLoadRestore(const QString &path, const QImage &image)
 {
+    // LoadRestore is Workspace durable-snapshot rebuild only. Accepting it in
+    // Gallery/Image created free-form tiles on the packed canvas and/or ate
+    // pending states so Gallery populate looked missing tiles that belong to
+    // the session list.
+    if (!m_view->isWorkspaceMode()) {
+        return;
+    }
     WorkspaceItemState state;
     if (!takePendingRestoreState(path, &state) || image.isNull()) {
         return;

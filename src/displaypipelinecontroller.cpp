@@ -1320,11 +1320,10 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
 
 ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
 {
-    // Defer-populate only: size-resolve for Fill layouts must still create
-    // placeholders so soft can install. applyLayout stays deferred until
-    // finishGallerySizeResolve. Blocking on gallerySizeResolveActive() left
-    // m_view->liveItems() empty until a manual relayout (and never for pure Fill open).
-    if (m_view->hostGallerySoftBook().isDeferPopulate()) {
+    // Defer-populate is a Gallery size-resolve gate only. Applying it in Image
+    // mode blocked Workspace→Image from creating the sole underlay item when a
+    // prior Gallery size-resolve left the flag set (empty Image view).
+    if (m_view->isGalleryMode() && m_view->hostGallerySoftBook().isDeferPopulate()) {
         return nullptr;
     }
     auto *item = new ImageItem(path, intrinsicSize);

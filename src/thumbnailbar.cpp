@@ -1075,17 +1075,33 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     // durable size probe / prior content size. Appearance overrides (crop /
     // rotate / flip) intentionally change display aspect and must drive layout
     // from the oriented image, not the unoriented native probe.
+    //
+    // XDG orient applied in applyStoredAppearanceToThumb produces an oriented
+    // pixmap while cachedSize(path) stays native. Using native for the cell
+    // left wrong aspect until refreshAllItemGeometry (resize) used pm.size().
     if (!m_cropToSquare) {
         QSize aspectBasis;
         if (m_allowOverrideIconInstall && image.width() > 0 && image.height() > 0) {
             aspectBasis = image.size();
         } else {
             const QString path = (row >= 0 && row < m_files.size()) ? m_files.at(row) : QString();
+            QSize native;
             if (!path.isEmpty()) {
-                const QSize native = ThumtooCache::cachedSize(path);
-                if (native.isValid() && native.width() > 0 && native.height() > 0) {
-                    aspectBasis = native;
-                }
+                native = ThumtooCache::cachedSize(path);
+            }
+            const bool haveNative = native.isValid() && native.width() > 0 && native.height() > 0;
+            const bool haveImg = image.width() > 0 && image.height() > 0;
+            // Oriented soft (90/270, or crop) changes display aspect vs native.
+            bool orientChangedAspect = false;
+            if (haveNative && haveImg) {
+                const double na = double(native.width()) / double(native.height());
+                const double ia = double(image.width()) / double(image.height());
+                orientChangedAspect = qAbs(na - ia) > 0.08;
+            }
+            if (orientChangedAspect) {
+                aspectBasis = image.size();
+            } else if (haveNative) {
+                aspectBasis = native;
             }
             if (!aspectBasis.isValid()) {
                 const QSize prev = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();

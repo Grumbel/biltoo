@@ -1580,6 +1580,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2150:** Image LoadReplace soft delivery; Workspace stash-first then durable.
 
+**biltoo-2151:** Filmstrip oriented aspect; Image placeholder defer Gallery-only; LoadRestore Workspace-only.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

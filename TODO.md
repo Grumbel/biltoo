@@ -2,6 +2,52 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2151-root-cause-filmstrip-gallery-image.** Root-cause fixes (no speculative hacks).
+Prior: **2150**.
+
+### Investigation findings
+
+1. **Filmstrip wrong content size on rotated images**
+   - `setThumbnailIcon` always used `ThumtooCache::cachedSize(path)` (native,
+     unoriented) for cell aspect when not an override install.
+   - Pixmap was already oriented via `applyStoredAppearanceToThumb`.
+   - Resize called `refreshAllItemGeometry` which uses `pm.size()` → self-correct.
+   - **Fix:** if image aspect differs from native (>8%), use `image.size()` for
+     the cell (oriented display aspect).
+
+2. **Empty ImageView from Workspace**
+   - `createPlaceholderItem` refused creation whenever `isDeferPopulate()` was
+     true — a **Gallery-only** size-resolve flag, applied in Image mode too.
+   - Blank placeholder with classicPath already set skipped the post-switch
+     `loadImage` (only checked `itemCount()==0`).
+   - **Fix:** defer gate only in Gallery mode; clear defer on Image enter;
+     reload when live item has no display pixels.
+
+3. **Gallery tiles disappear**
+   - `completeLoadRestore` had **no mode check**. Delayed Workspace LoadRestore
+     completions while in Gallery took pending states and created free-form
+     tiles on the packed canvas (and/or left session tiles looking “gone”).
+   - **Fix:** `completeLoadRestore` returns immediately unless `isWorkspaceMode()`
+     (pending states left for a later Workspace restore).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2151-root-cause-filmstrip-gallery-image-e77da63.bundle HEAD
+```
+Requires tip **2150** (base **e77da63**); includes 1938–2151.
+
+### Next (runtime QA)
+- Cold open + filmstrip resize: rotated thumbs correct cell size from first paint
+- Filmstrip drag to Workspace: cell size stays correct
+- Workspace double-click → Image shows image
+- Gallery after Workspace: full session still packed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2150-image-open-soft-workspace-stash.** Image open soft delivery; Workspace stash-first.
 Prior: **2149**.
 
