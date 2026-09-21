@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2067-sessionindex-cache-from-doc.** Refresh sessionIndex cache from document after setSessionId.
+Prior: **2066**.
+
+### Change
+- After `setSessionId`, refresh list-order cache via `sessionListIndex` (document)
+  in bindSelectedSessionIds, Image-mode pipeline attach, canvas placeholders
+- Avoid stale ImageItem::sessionIndex lag after bind / drop / Image-mode target
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2067-sessionindex-cache-from-doc-e77da63.bundle HEAD
+```
+Requires tip **2066** (base **e77da63**); includes 1938–2067.
+
+### Next
+- Phase 7 Stage 2: further sessionIndex call-site reduction or ContentXform table
+- Phase 6 Tier 4: decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2066-drop-deprecated-orientation.** Remove dead WorkspaceItemState::orientation.
 Prior: **2065**.
 

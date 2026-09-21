@@ -1076,7 +1076,7 @@ Stage 4b delivered (product: no backward compatibility):
 | `m_colorAdjust` | Live grade for paint + slider lag | Keep until grade is applied only via rematerialize; interaction lag needs a host-side scratch |
 | Applied `ContentXform` fingerprint | Mid-edit content authority | Keep on item (or move to a runtime-only table under DisplayPipeline) |
 | Live pose (`m_scaleX`… via `applyPlacement`) | QGraphicsItem transform | Keep; durable copy is ItemWorld Placement |
-| `sessionIndex` cache | List-order mirror | Prefer `sessionListIndex` / document; cache remains for unbound / O(1) hints |
+| `sessionIndex` cache | List-order mirror | Prefer `sessionListIndex` / document; refresh after `setSessionId` (2067); cache remains for unbound / O(1) hints |
 | Tile LOD bag pointer | Runtime decode | Already pipeline-owned bag |
 | `PendingItemAppearanceBook` | Duplicate→bind staging | GUI-only; destination is `setAppearance` on bind |
 

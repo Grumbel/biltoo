@@ -403,8 +403,14 @@ void DisplayPipelineController::bindImageModeSessionCursor(ImageItem *item)
     // Image-mode crop/flip targets the matching Workspace session slot.
     if (m_view->hostSessionId().hasCurrentId()) {
         item->setSessionId(m_view->hostSessionId().currentIdValue());
-    }
-    if (m_view->hostSessionId().currentIndex() >= 0) {
+        // Prefer document list order over SessionId cursor index cache.
+        const int listIdx = m_view->sessionListIndex(item);
+        if (listIdx >= 0) {
+            item->setSessionIndex(listIdx);
+        } else if (m_view->hostSessionId().currentIndex() >= 0) {
+            item->setSessionIndex(m_view->hostSessionId().currentIndex());
+        }
+    } else if (m_view->hostSessionId().currentIndex() >= 0) {
         item->setSessionIndex(m_view->hostSessionId().currentIndex());
     }
 }

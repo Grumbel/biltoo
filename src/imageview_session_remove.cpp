@@ -203,12 +203,18 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
             slot = freezeItemAppearance(item);
         }
         item->setSessionId(id);
+        // List-order cache must follow document for the new id (Stage 2 residual).
+        {
+            const int listIdx = sessionListIndex(item);
+            if (listIdx >= 0) {
+                item->setSessionIndex(listIdx);
+            }
+        }
         // Live placement from the canvas item (Duplicate offsets, scales, …).
         ItemComponents::applyPlacementToState(slot, item->placement());
         // Content/color already from freeze/pending; do not overwrite
         // ItemWorld authority with a second live dig.
         slot.sessionId = id;
-        // Document list order (not the deprecated ImageItem cache).
         slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();
         m_itemWorld.setAppearance(id, slot);
