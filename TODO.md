@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1993-controllers-applyItemPlacement.** Route Slideshow/Workspace pose writes through GalleryLayout helper.
+Prior: **1992**.
+
+### Problem
+After 1989 privatized `ImageItem::applyPlacement`, `SlideshowController` and
+`WorkspaceController` still called it directly (not friends) → compile errors.
+
+### Change
+- Both controllers use `GalleryLayout::applyItemPlacement` (existing friend helper)
+- Slideshow includes `gallerylayout.h`
+- No new ImageItem friends; placement authority stays narrow
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1993-controllers-applyItemPlacement-e77da63.bundle HEAD
+```
+Requires tip **1992** (base **e77da63**); includes 1938–1993.
+
+### Next
+- Characterization + full build
+- Prefer appearanceValue over getAppearance* for any remaining value reads
+- Optional: Stage 4 persistence split / drop dual-write later
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1992-itemworld-sparse-appearanceValue.** Sparse-prefer on ItemWorld::appearanceValue.
 Prior: **1991**.
 

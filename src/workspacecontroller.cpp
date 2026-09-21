@@ -307,7 +307,7 @@ void WorkspaceController::restoreFreeFormStates()
         if (!found) {
             continue;
         }
-        item->applyPlacement(pl);
+        GalleryLayout::applyItemPlacement(item, pl);
         if (item->sessionId() != kInvalidSessionImageId) {
             m_view->itemWorld().setPlacement(item->sessionId(), pl);
         } else if (!item->path().isEmpty()) {
@@ -506,7 +506,7 @@ bool WorkspaceController::tryKeyPressShear(QKeyEvent *event)
             pl.shear = PlacementLinear::shearAfterKey(
                 pl.shear, step, key == Qt::Key_BracketRight);
         }
-        item->applyPlacement(pl);
+        GalleryLayout::applyItemPlacement(item, pl);
         m_view->commitItemSessionEdit(item);
     }
     emit m_view->statusChanged();
@@ -578,7 +578,7 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
         pl.rotation = 0.0;
         pl.hFlip = false;
         pl.vFlip = false;
-        item->applyPlacement(pl);
+        GalleryLayout::applyItemPlacement(item, pl);
     }
 
     GalleryLayout::pack(items, params);
@@ -599,7 +599,7 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
                 if (item) {
                     ItemComponents::Placement pl = item->placement();
                     pl.pos += delta;
-                    item->applyPlacement(pl);
+                    GalleryLayout::applyItemPlacement(item, pl);
                 }
             }
         }

@@ -5,6 +5,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
+#include "gallerylayout.h"
 #include "imagecache.h"
 #include "sessionappearance.h"
 #include "contentxform.h"
@@ -320,7 +321,7 @@ void SlideshowController::applySlideshowZoomFraming(ImageItem *item)
         if (m_view->isImageMode()) {
             pl.pos = QPointF(0, 0);
         }
-        item->applyPlacement(pl);
+        GalleryLayout::applyItemPlacement(item, pl);
     }
     const QString path = item->path();
     QSize logical = m_view->ensureLogicalSizeForPath(path);
@@ -2231,7 +2232,7 @@ void SlideshowController::resetItemPlacementForMotion(ImageItem *item)
         if (m_view->isImageMode()) {
             pl.pos = QPointF(0, 0);
         }
-        item->applyPlacement(pl);
+        GalleryLayout::applyItemPlacement(item, pl);
     }
 }
 
