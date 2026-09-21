@@ -78,6 +78,7 @@ Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 - [x] Attention points survive pathOrderClear; sibling clean
 - [x] Applied ContentXform runtime table survives pathOrderClear; not durable; clearAppearance drops it
 - [x] Live colour lag runtime table survives pathOrderClear; not durable Color; clearAppearance drops it
+- [x] ViewFraming defaults, fit/fill transitions, sticky pan norms (pure)
 
 ### Full ImageView (`BILTOO_HAVE_IMAGEVIEW_HARNESS`)
 
@@ -85,9 +86,10 @@ Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 - [x] `enterGallery` + `setWorkspacePaths` pack order aligns
 - [x] Crop via ItemWorld; sibling clean; layoutSize
 - [x] Placement / ContentBake / Color / Attention on focus; siblings clean
+- [x] Applied ContentXform + liveColorLag on focus; siblings clean; survive pathOrderClear
 - [x] `pathOrderClear` leaves doc + all id-keyed components; LoadAdd multiplicity
 - [ ] Decode / soft tiles for fixture PNGs (not required for pack dual-model)
-- [ ] Live framing / return-to-Image view matrix (later)
+- [ ] Live framing / return-to-Image view matrix (later; pure ViewFraming locked)
 
 ## Landed
 

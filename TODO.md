@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2095-viewframing-characterization.** Phase 6 Tier 4 residual: pure ViewFraming + harness applied/lag.
+Prior: **2094**.
+
+### Change
+- Pure tests: `viewFraming_defaultsAndFitFill`, `viewFraming_stickyPanNorms`
+- ImageView harness: applied ContentXform + liveColorLag on focus, survive
+  pathOrderClear, siblings clean
+- IMAGEVIEW_CHARACTERIZATION checklist updated (decode/live matrix still open)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2095-viewframing-characterization-e77da63.bundle HEAD
+```
+Requires tip **2094** (base **e77da63**); includes 1938–2095.
+
+### Next
+- Phase 6 Tier 4: decode / soft tiles for fixture PNGs (optional)
+- Phase 6 Tier 4: live framing / return-to-Image view matrix (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2094-stage2-demotion-status-through-2093.** Stage 2 residual: demotion status through 2093; reader docs.
 Prior: **2093**.
 

@@ -20,6 +20,7 @@
 #include "itemworld.h"
 #include "itemcomponents.h"
 #include "contentxform.h"
+#include "viewframing.h"
 #include "imageview_types.h"
 
 #if defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)
@@ -54,6 +55,8 @@ private slots:
     void returnToImage_attentionSurvivesPathOrderClear();
     void returnToImage_appliedContentXformSurvivesPathOrderClear();
     void returnToImage_liveColorLagSurvivesPathOrderClear();
+    void viewFraming_defaultsAndFitFill();
+    void viewFraming_stickyPanNorms();
 
     void imageView_openGalleryCropReturn();
 
@@ -458,6 +461,57 @@ void ImageViewCharacterizationTest::returnToImage_liveColorLagSurvivesPathOrderC
     QVERIFY(!world.hasLiveColorLag(focus));
 }
 
+
+/** Phase 6 Tier 4 residual: ViewFraming pure defaults and fit/fill transitions. */
+void ImageViewCharacterizationTest::viewFraming_defaultsAndFitFill()
+{
+    ViewFraming f;
+    QVERIFY(f.isFitMode());
+    QVERIFY(!f.isFillMode());
+    QVERIFY(!f.isStickyZoomEnabled());
+    QVERIFY(!f.hasPreservedViewScale());
+    QVERIFY(!f.hasStickyPan());
+    QCOMPARE(f.aspectMode(), Qt::KeepAspectRatio);
+
+    QVERIFY(f.setFillMode());
+    QVERIFY(f.isFitMode());
+    QVERIFY(f.isFillMode());
+    QCOMPARE(f.aspectMode(), Qt::KeepAspectRatioByExpanding);
+
+    QVERIFY(f.setFitOnly());
+    QVERIFY(f.isFitMode());
+    QVERIFY(!f.isFillMode());
+
+    QVERIFY(!f.setFitOnly()); // no-op when already fit-only
+
+    QVERIFY(f.setFitFillFlags(false, true));
+    QVERIFY(!f.isFitMode());
+    QVERIFY(f.isFillMode());
+
+    QVERIFY(f.setStickyZoomEnabled(true));
+    QVERIFY(f.isStickyZoomEnabled());
+    QVERIFY(!f.setStickyZoomEnabled(true));
+}
+
+/** Phase 6 Tier 4 residual: sticky pan norms clamp and map within item bounds. */
+void ImageViewCharacterizationTest::viewFraming_stickyPanNorms()
+{
+    ViewFraming f;
+    const QRectF bounds(10.0, 20.0, 100.0, 50.0);
+    f.setStickyPanFromScene(QPointF(60.0, 45.0), bounds);
+    QVERIFY(f.hasStickyPan());
+    QCOMPARE(f.stickyPanNormPoint().x(), 0.5);
+    QCOMPARE(f.stickyPanNormPoint().y(), 0.5);
+    QCOMPARE(f.sceneFromStickyPan(bounds), QPointF(60.0, 45.0));
+
+    // Outside bounds → clamped to [0,1].
+    f.setStickyPanFromScene(QPointF(-50.0, 200.0), bounds);
+    QVERIFY(f.stickyPanNormPoint().x() >= 0.0);
+    QVERIFY(f.stickyPanNormPoint().x() <= 1.0);
+    QVERIFY(f.stickyPanNormPoint().y() >= 0.0);
+    QVERIFY(f.stickyPanNormPoint().y() <= 1.0);
+}
+
 void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
 {
 #if !defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)
@@ -515,6 +569,14 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     att.points = {QPointF(0.1, 0.2)};
     view.itemWorld().setAttention(focus, att);
 
+    ContentXform::Value appliedCx;
+    appliedCx.quarterTurns = 1;
+    appliedCx.hFlip = true;
+    view.itemWorld().setAppliedContentXform(focus, appliedCx);
+    ColorAdjustments lag;
+    lag.brightness = 5;
+    view.itemWorld().setLiveColorLag(focus, lag);
+
     QVERIFY(view.itemWorld().hasCrop(focus));
     QVERIFY(view.itemWorld().hasPlacement(focus));
     QVERIFY(view.itemWorld().hasContentBake(focus));
@@ -535,15 +597,22 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     QVERIFY(view.itemWorld().hasContentBake(focus));
     QVERIFY(view.itemWorld().hasColor(focus));
     QVERIFY(view.itemWorld().hasAttention(focus));
+    QVERIFY(view.itemWorld().hasAppliedContentXform(focus));
+    QVERIFY(view.itemWorld().hasLiveColorLag(focus));
     QVERIFY(!view.itemWorld().hasCrop(other));
     QVERIFY(!view.itemWorld().hasPlacement(other));
     QVERIFY(!view.itemWorld().hasContentBake(other));
     QVERIFY(!view.itemWorld().hasColor(other));
     QVERIFY(!view.itemWorld().hasAttention(other));
+    QVERIFY(!view.itemWorld().hasAppliedContentXform(other));
+    QVERIFY(!view.itemWorld().hasLiveColorLag(other));
     QCOMPARE(view.itemWorld().placement(focus).pos, QPointF(40.0, 60.0));
     QCOMPARE(view.itemWorld().contentBake(focus).quarterTurns, 2);
     QCOMPARE(view.itemWorld().color(focus).grade.brightness, 8);
     QCOMPARE(view.itemWorld().attention(focus).points.size(), 1);
+    QCOMPARE(view.itemWorld().appliedContentXform(focus).quarterTurns, 1);
+    QVERIFY(view.itemWorld().appliedContentXform(focus).hFlip);
+    QCOMPARE(view.itemWorld().liveColorLag(focus).brightness, 5);
 
     // LoadAdd multiplicity on the view overlay only.
     view.pathOrderSetOrder({m_pathA, m_pathA, m_pathA}, {focus, focus, focus});

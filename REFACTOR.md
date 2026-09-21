@@ -1487,6 +1487,8 @@ Phase 1–6 rules still apply. Additions:
   itemAppliedContentXform / itemLiveColor via live*ForPaint helpers.
 - biltoo-2094: Stage 2 residual — demotion status / sequencing through 2093;
   ImageItem reader docs for host vs paint helpers.
+- biltoo-2095: Phase 6 Tier 4 residual — pure ViewFraming characterization;
+  ImageView harness applied ContentXform + liveColorLag survive pathOrderClear.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
