@@ -13,14 +13,22 @@ void MainWindow::setLayoutFreeForm()
 
 void MainWindow::populateGalleryCanvas()
 {
-    // DOMAIN: Gallery shows the full session list (m_session.paths()), not the previous
-    // Workspace membership. Clearing the canvas first ensures Workspace-only
-    // tiles do not linger when switching modes.
-    // Caller must already be in Gallery (setWorkspacePaths is a no-op in Image).
+    // DOMAIN: Gallery shows the full session list (m_session.paths()), not the
+    // Workspace membership. Caller must already be in Gallery mode.
     if (!m_imageView || m_session.paths().isEmpty()) {
         return;
     }
+    // Full session pack. Cancel any stale size-resolve gate left from a prior
+    // Gallery visit so setWorkspacePaths cannot hide every tile under defer
+    // and leave an empty canvas after Workspace.
+    m_imageView->hostGallerySizeResolve().cancel();
+    m_imageView->hostGallerySoftBook().setDeferPopulate(false);
     m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
+    if (m_imageView->isGalleryMode() && m_imageView->itemCount() == 0
+        && !m_session.paths().isEmpty()) {
+        m_imageView->hostGallerySoftBook().setDeferPopulate(false);
+        m_imageView->hostGallery().ensurePlaceholders();
+    }
 }
 
 

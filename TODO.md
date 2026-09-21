@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2156-promote-image-gallery-populate.**
+Prior: **2155**.
+
+### Empty ImageView from Workspace
+Soft re-fetch failed when Workspace tiles were tile-LOD-only (no soft buffer)
+or soft was missing from ImageCache. **Fix:** promote the matching stashed
+Workspace/Gallery `ImageItem` into Image mode as the sole underlay, then
+`loadImage` for framing/climb. No decode required for first paint.
+
+### Gallery empty after Workspace
+`populateGalleryCanvas` could leave the canvas empty under a stale size-resolve
+defer gate (tiles hidden, createPlaceholder blocked). **Fix:** cancel size
+resolve, clear defer, set full session paths, `ensurePlaceholders` if still empty.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2156-promote-image-gallery-populate-e77da63.bundle HEAD
+```
+
+Next: **2157**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2155-unused-wantx.** Remove unused `want`/`wantX` in
 `resolveImageModePendingPixels` (warning after sameId-always soft accept).
 Prior: **2154**.
