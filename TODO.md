@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2007-dtoForWrite-sessionId.** Sparse dual-write always stamps sessionId on fat DTO.
+Prior: **2006**.
+
+### Change
+`ItemWorld::dtoForWrite(id)` — private helper used by `setCrop` / `setAttention` /
+`setContentBake` / `setColor` / `setPlacement`:
+
+- Copy existing fat DTO or start empty
+- Always set `sessionId = id` before applying the component
+
+Callers no longer need to re-seed `sessionId` after a sparse write. Path still
+belongs to ImageView (filled when empty after first color write).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2007-dtoForWrite-sessionId-e77da63.bundle HEAD
+```
+Requires tip **2006** (base **e77da63**); includes 1938–2007.
+
+### Next
+- Stage 4 project-format migration (design)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2006-captureState-index-unbound-only.** Path-map sessionIndex hint only when unbound.
 Prior: **2005**.
 

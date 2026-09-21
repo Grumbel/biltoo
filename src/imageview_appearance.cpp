@@ -674,11 +674,11 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
         ItemComponents::Color c;
         c.grade = adj;
         m_itemWorld.setColor(sid, c);
-        // setColor dual-writes the fat DTO; re-read via sparse-prefer choke.
+        // setColor dual-writes the fat DTO and stamps sessionId (dtoForWrite).
+        // Path is not known to ItemWorld — fill once if still empty.
         if (m_itemWorld.hasAppearance(sid)) {
             slot = sessionAppearanceValue(sid);
-            if (slot.path.isEmpty() || slot.sessionId == kInvalidSessionImageId) {
-                slot.sessionId = sid;
+            if (slot.path.isEmpty() && !item->path().isEmpty()) {
                 slot.path = item->path();
                 slot.colorAdjust = adj;
                 m_itemWorld.setAppearance(sid, slot);

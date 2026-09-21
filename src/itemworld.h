@@ -188,10 +188,7 @@ public:
         } else {
             m_crops.insert(id, c);
         }
-        WorkspaceItemState s;
-        if (const WorkspaceItemState *cur = m_appearance->get(id)) {
-            s = *cur;
-        }
+        WorkspaceItemState s = dtoForWrite(id);
         ItemComponents::applyCropToState(s, c);
         m_appearance->set(id, s);
     }
@@ -224,10 +221,7 @@ public:
         } else {
             m_attentions.insert(id, a);
         }
-        WorkspaceItemState s;
-        if (const WorkspaceItemState *cur = m_appearance->get(id)) {
-            s = *cur;
-        }
+        WorkspaceItemState s = dtoForWrite(id);
         ItemComponents::applyAttentionToState(s, a);
         m_appearance->set(id, s);
     }
@@ -260,10 +254,7 @@ public:
         } else {
             m_contentBakes.insert(id, b);
         }
-        WorkspaceItemState s;
-        if (const WorkspaceItemState *cur = m_appearance->get(id)) {
-            s = *cur;
-        }
+        WorkspaceItemState s = dtoForWrite(id);
         ItemComponents::applyContentBakeToState(s, b);
         m_appearance->set(id, s);
     }
@@ -299,10 +290,7 @@ public:
         } else {
             m_colors.insert(id, c);
         }
-        WorkspaceItemState s;
-        if (const WorkspaceItemState *cur = m_appearance->get(id)) {
-            s = *cur;
-        }
+        WorkspaceItemState s = dtoForWrite(id);
         ItemComponents::applyColorToState(s, c);
         m_appearance->set(id, s);
     }
@@ -334,10 +322,7 @@ public:
             return;
         }
         m_placements.insert(id, pl);
-        WorkspaceItemState s;
-        if (const WorkspaceItemState *cur = m_appearance->get(id)) {
-            s = *cur;
-        }
+        WorkspaceItemState s = dtoForWrite(id);
         ItemComponents::applyPlacementToState(s, pl);
         m_appearance->set(id, s);
     }
@@ -387,6 +372,19 @@ public:
     int placementCount() const { return m_placements.size(); }
 
 private:
+    /** Fat DTO base for sparse dual-write: copy existing or empty, always stamp id. */
+    WorkspaceItemState dtoForWrite(SessionImageId id) const
+    {
+        WorkspaceItemState s;
+        if (m_appearance) {
+            if (const WorkspaceItemState *cur = m_appearance->get(id)) {
+                s = *cur;
+            }
+        }
+        s.sessionId = id;
+        return s;
+    }
+
     void syncComponentsFromState(SessionImageId id, const WorkspaceItemState &state)
     {
         const ItemComponents::Crop c = ItemComponents::cropFromState(state);
