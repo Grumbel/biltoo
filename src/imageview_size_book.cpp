@@ -131,21 +131,21 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
             want = *st;
         }
     }
-    // Bound session with empty ItemWorld: still apply durable XDG *orient/flip*
-    // for layout (IDENTITY: path crop must not layout bound rows). Matches
-    // wantAppearanceForItem seed path so cold open is not unoriented boxes.
-    if (!SessionAppearance::hasContentAppearance(want) && !path.isEmpty()) {
+    // Bound SessionImageId: layout only from ItemWorld contentBake/crop — never
+    // path XDG. XDG layout with host-raw pixels swapped the content box while
+    // install logged turns=0 (looked like wrong rotation on first Image open).
+    // Unbound path rows may still use full XDG including crop.
+    if (!SessionAppearance::hasContentAppearance(want) && !path.isEmpty()
+        && sessionId == kInvalidSessionImageId) {
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
             want.contentHFlip = stored.contentHFlip;
             want.contentVFlip = stored.contentVFlip;
             want.contentQuarterTurns = stored.contentQuarterTurns;
-            if (sessionId == kInvalidSessionImageId) {
-                want.hasCrop = stored.hasCrop;
-                want.cropRect = stored.cropRect;
-                want.cropSourceSize = stored.cropSourceSize;
-                want.cropRotation = stored.cropRotation;
-            }
+            want.hasCrop = stored.hasCrop;
+            want.cropRect = stored.cropRect;
+            want.cropSourceSize = stored.cropSourceSize;
+            want.cropRotation = stored.cropRotation;
         }
     }
     const QSize lay = ContentXform::layoutSize(native, want);

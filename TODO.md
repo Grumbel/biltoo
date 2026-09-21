@@ -2,6 +2,28 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2183-no-xdg-layout-bound.** User log proved Image install turns=0
+bake=0 — orient was not from contentBake. contentLayoutSize still applied path
+XDG for bound ids → swapped layout box vs host-raw pixels (false rotation).
+
+### Fix
+- contentLayoutSize: XDG only for unbound path rows
+- Filmstrip ContentAppearanceProvider / applyStoredAppearance: same
+- Image materialize remains explicit contentBake/crop only (2182)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2183-no-xdg-layout-bound-e77da63.bundle HEAD
+```
+
+Next: **2184**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2182-no-xdg-seed-image.** Image underlay does not XDG-seed; content
 ops only from explicit contentBake/crop (fixes first Workspace→Image orient).
 

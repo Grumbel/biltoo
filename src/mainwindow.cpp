@@ -202,8 +202,10 @@ MainWindow::MainWindow(QWidget *parent)
                     && m_imageView->hasSessionAppearance(sid)) {
                     want = m_imageView->sessionAppearanceValue(sid);
                 }
-                // Bound empty ItemWorld: XDG orient only (same as contentLayoutSize).
-                if (!SessionAppearance::hasContentAppearance(want)
+                // Bound: ItemWorld only — no path XDG (matches Image underlay).
+                // Unbound: full path XDG including crop.
+                if (sid == kInvalidSessionImageId
+                    && !SessionAppearance::hasContentAppearance(want)
                     && want.colorAdjust.isIdentity()) {
                     ThumtooCache::StoredContentAppearance stored;
                     if (ThumtooCache::loadContentAppearance(path, &stored)
@@ -211,12 +213,10 @@ MainWindow::MainWindow(QWidget *parent)
                         want.contentHFlip = stored.contentHFlip;
                         want.contentVFlip = stored.contentVFlip;
                         want.contentQuarterTurns = stored.contentQuarterTurns;
-                        if (sid == kInvalidSessionImageId) {
-                            want.hasCrop = stored.hasCrop;
-                            want.cropRect = stored.cropRect;
-                            want.cropSourceSize = stored.cropSourceSize;
-                            want.cropRotation = stored.cropRotation;
-                        }
+                        want.hasCrop = stored.hasCrop;
+                        want.cropRect = stored.cropRect;
+                        want.cropSourceSize = stored.cropSourceSize;
+                        want.cropRotation = stored.cropRotation;
                         if (stored.hasGrade) {
                             want.colorAdjust.brightness = stored.gradeBrightness;
                             want.colorAdjust.contrast =

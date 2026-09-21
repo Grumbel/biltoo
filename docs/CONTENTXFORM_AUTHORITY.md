@@ -58,3 +58,12 @@ XDG → rotated unrotated images (first open; worse after other images via seed)
 
 **Rule:** Image materialize uses explicit contentBake/crop only. No XDG seed on
 Image install/enter. Placement-only rows force identity content for underlay.
+
+## Layout vs pixels (2183)
+
+User log: `Image install sid=1 turns=0 bake=0` yet still looked rotated.
+Cause: `contentLayoutSize` applied **path XDG** for bound sessions → transposed
+layout box while materialize used identity host pixels.
+
+Bound SessionImageId layout/paint content ops = ItemWorld only. Path XDG only
+for unbound path rows.

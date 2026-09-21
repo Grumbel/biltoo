@@ -1280,20 +1280,19 @@ QImage ThumbnailBar::applyStoredAppearanceToThumb(const QString &path, const QIm
     if (m_contentAppearanceProvider) {
         st = m_contentAppearanceProvider(sessionId, path);
     }
-    // Fallback: path XDG when provider empty (unbound / cold before ItemWorld seed).
-    if (!SessionAppearance::hasContentAppearance(st) && st.colorAdjust.isIdentity()) {
+    // Fallback path XDG only for unbound rows (bound = ItemWorld only).
+    if (sessionId == kInvalidSessionImageId
+        && !SessionAppearance::hasContentAppearance(st)
+        && st.colorAdjust.isIdentity()) {
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
             st.contentHFlip = stored.contentHFlip;
             st.contentVFlip = stored.contentVFlip;
             st.contentQuarterTurns = stored.contentQuarterTurns;
-            // Bound: orient/grade only — never path crop (IDENTITY).
-            if (sessionId == kInvalidSessionImageId) {
-                st.hasCrop = stored.hasCrop;
-                st.cropRect = stored.cropRect;
-                st.cropSourceSize = stored.cropSourceSize;
-                st.cropRotation = stored.cropRotation;
-            }
+            st.hasCrop = stored.hasCrop;
+            st.cropRect = stored.cropRect;
+            st.cropSourceSize = stored.cropSourceSize;
+            st.cropRotation = stored.cropRotation;
             if (stored.hasGrade) {
                 st.colorAdjust.brightness = stored.gradeBrightness;
                 st.colorAdjust.contrast =
