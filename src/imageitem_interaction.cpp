@@ -836,23 +836,9 @@ void ImageItem::activateChromeHandle(Handle h)
                 }
             }
         }
-        // Fallback without a view: bake pixels and install applied fingerprint
-        // only (applied survives pixel clear; identity clear drops it).
-        ContentXform::Value x = tileContentXform();
-        if (h == Handle::FlipH) {
-            bakeFlip(true, false);
-            x.hFlip = !x.hFlip;
-        } else if (h == Handle::FlipV) {
-            bakeFlip(false, true);
-            x.vFlip = !x.vFlip;
-        } else if (h == Handle::Rotate90CCW) {
-            bakeRotate90(-1);
-            x.quarterTurns = ContentXform::normalizeQuarterTurns(x.quarterTurns - 1);
-        } else {
-            bakeRotate90(1);
-            x.quarterTurns = ContentXform::normalizeQuarterTurns(x.quarterTurns + 1);
-        }
-        setAppliedContentXform(x);
+        // Content chrome requires ImageView (bakeItemFlip / rotateContentByQuarterTurns
+        // write sparse ItemWorld). Baking pixels alone would desync the store.
+        qWarning("ImageItem::activateChromeHandle: no ImageView — content op ignored");
         break;
     }
     case Handle::Raise:

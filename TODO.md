@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2073-chrome-requires-imageview.** Content chrome without ImageView no longer pixel-bakes alone.
+Prior: **2072**.
+
+### Change
+- `ImageItem::activateChromeHandle` flip/rotate: require ImageView path (sparse write);
+  remove no-view pixel-only bake fallback that desynced ItemWorld
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2073-chrome-requires-imageview-e77da63.bundle HEAD
+```
+Requires tip **2072** (base **e77da63**); includes 1938–2073.
+
+### Next
+- Phase 7 Stage 2: ContentXform runtime table inventory / further demotion
+- Phase 6 Tier 4: decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2072-refactor-pathbook-identity-docs.** REFACTOR: path-book IDENTITY + Stage 0–4b closed.
 Prior: **2071**.
 
