@@ -240,16 +240,10 @@ void ImageView::duplicateSelected()
             continue;
         }
 
-        // captureState prefers ItemWorld sparse tables for bound ids; live item
-        // is fallback only. Do not overwrite crop/flip from item fields.
+        // captureState prefers ItemWorld sparse tables; live tileContentXform /
+        // colorAdjustments only when tables empty. No second dig into the item.
         WorkspaceItemState content = captureState(src);
         content.path = src->path();
-        content.colorAdjust = src->colorAdjustments();
-        if (src->hasAppliedContentXform()
-            && !SessionAppearance::hasContentAppearance(content)) {
-            ContentXform::Value x = src->appliedContentXform();
-            x.applyToState(content);
-        }
 
         QSize intrinsic = src->imageSize();
         if (!(intrinsic.width() > 1 && intrinsic.height() > 1)) {

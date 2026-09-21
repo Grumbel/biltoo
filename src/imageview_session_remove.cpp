@@ -205,10 +205,8 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         item->setSessionId(id);
         // Live placement from the canvas item (Duplicate offsets, scales, …).
         ItemComponents::applyPlacementToState(slot, item->placement());
-        // Do not overwrite crop/flip from live item fields (ItemWorld authority).
-        if (!fromPending) {
-            slot.colorAdjust = item->colorAdjustments();
-        }
+        // Content/color already from captureState or pending; do not overwrite
+        // ItemWorld authority with a second live dig.
         slot.sessionId = id;
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();

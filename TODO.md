@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1959-no-post-capture-digs.** Drop post-captureState live digs.
+Prior: **1958**.
+
+### Change
+- Duplicate selection: `captureState` only (no color/applied second dig)
+- Session bind after Duplicate: no live color overwrite after captureState/pending
+- Framing draft comment: applied / lag (not dual-write install)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1959-no-post-capture-digs-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1959.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- commitItemSessionEdit still forces applied fingerprint into slot (mid-edit authority)
+- Color commit may still prefer live grade over lagging ItemWorld slot
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1958-private-color-mutators.** Private ImageItem color mutators.
 Prior: **1957**.
 

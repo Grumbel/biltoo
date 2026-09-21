@@ -282,7 +282,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     // item) is draft geometry.
     // Draft enter clears live session crop while ItemWorld still holds durable
     // crop until Apply. isDraftLayoutGeometry must use the live flag only
-    // (tileContentXform reflects dual-write + applied xform on the item).
+    // (tileContentXform reflects applied xform / lag fields on the item).
     const bool liveSessionCrop = item->tileContentXform().hasCrop;
     const bool cropDraft = CropSession::isDraftLayoutGeometry(
         m_cropCtrl.session().active(),
