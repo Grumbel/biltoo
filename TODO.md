@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2204-filmstrip-no-displayready-override.** sampleForImageModePending
+still returned session-id content-baked override as displayReady for Image
+underlay. resolveImageModePendingPixels discarded it, but the parallel path
+remained.
+
+### Fix
+- Bound sid: never return m_sessionIdImageOverrides from sampleForImageModePending
+- Path-only override: unbound only
+- Filmstrip cell paint still uses overrides via paint path
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2204-filmstrip-no-displayready-override-e77da63.bundle HEAD
+```
+
+Next: **2205**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2203-flush-clears-live-applied.** After flushApplied → contentBake,
 live tiles still kept applied fingerprints into mode stash. clearLiveContentMeta
 after each flush so stash is presentation-only (ItemWorld is content authority).

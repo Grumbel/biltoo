@@ -1341,18 +1341,11 @@ QImage ThumbnailBar::sampleForImageModePending(const QString &path, SessionImage
     if (path.isEmpty()) {
         return {};
     }
-    // 1) Session appearance override (content-baked) — display-ready for that id.
-    if (sid != kInvalidSessionImageId) {
-        const auto it = m_sessionIdImageOverrides.constFind(sid);
-        if (it != m_sessionIdImageOverrides.cend() && !it.value().isNull()) {
-            if (displayReadyOut) {
-                *displayReadyOut = true;
-            }
-            return it.value();
-        }
-    }
-    // 2) Path-only override (unbound rows).
-    {
+    // Bound SessionImageId: never return content-baked override to Image
+    // underlay (ECS_GUI_BYPASSES #1/#2). Override is filmstrip cell paint only;
+    // Image soft always materializes host-raw + ItemWorld want.
+    // Path-only override: unbound rows only.
+    if (sid == kInvalidSessionImageId) {
         const auto it = m_sessionImageOverrides.constFind(path);
         if (it != m_sessionImageOverrides.cend() && !it.value().isNull()) {
             if (displayReadyOut) {
@@ -1361,7 +1354,7 @@ QImage ThumbnailBar::sampleForImageModePending(const QString &path, SessionImage
             return it.value();
         }
     }
-    // 3) Shared host cache (filmstrip makeThumbnail puts here).
+    // Shared host cache (filmstrip makeThumbnail puts host-raw here).
     QImage host = ImageCache::get(path);
     // 4) Filmstrip cell pixmap — survives ImageCache LRU eviction; path-row
     //    icons from makeThumbnail are host-derived (not override).
