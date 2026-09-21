@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2062-clear-content-components.** Reset Content Appearance clears crop/bake/color only.
+Prior: **2061**.
+
+### Change
+- `ItemWorld::clearContentComponents` — remove crop, content-bake, color; keep attention + Placement
+- `resetContentAppearanceForTargets` uses clearContentComponents (not full setAppearance)
+- Test: clearContentComponents_keepsAttentionAndPlacement
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2062-clear-content-components-e77da63.bundle HEAD
+```
+Requires tip **2061** (base **e77da63**); includes 1938–2062.
+
+### Next
+- Remaining setAppearance sites are intentional full-replace
+- Phase 7 Stage 2 / Phase 6 Tier 4 when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2061-merge-content-from-state.** Content upsert API; seed/bake no longer clear siblings.
 Prior: **2060**.
 

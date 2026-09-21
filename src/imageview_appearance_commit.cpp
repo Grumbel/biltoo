@@ -305,15 +305,9 @@ int ImageView::resetContentAppearanceForTargets()
         // 1) Drop durable XDG state for this content.
         ThumtooCache::clearContentAppearance(path);
 
-        // 2) Clear session appearance content fields (keep placement pose).
-        // clearedContentOps also zeros colour grade; setAppearance writes sparse
-        // sparse Crop / ContentBake / Color (identity ⇒ remove).
+        // 2) Clear sparse content (crop / bake / color); keep attention + Placement.
         if (sid != kInvalidSessionImageId) {
-            WorkspaceItemState slot = SessionAppearance::clearedContentOps(
-                sessionAppearanceValue(sid));
-            slot.sessionId = sid;
-            slot.path = path;
-            m_itemWorld.setAppearance(sid, slot);
+            m_itemWorld.clearContentComponents(sid);
         }
         // Path map still holds content turns from prior bake/pack; captureState
         // re-merges turns==0 from m_itemStateBook.byPath and can resurrect orientation.

@@ -161,7 +161,21 @@ public:
         }
     }
 
-    void removeAppearance(SessionImageId id)
+        /**
+     * Remove crop / content-bake / color for @p id (Reset Content Appearance).
+     * Attention and Placement are left intact.
+     */
+    void clearContentComponents(SessionImageId id)
+    {
+        if (id == kInvalidSessionImageId) {
+            return;
+        }
+        m_crops.remove(id);
+        m_contentBakes.remove(id);
+        m_colors.remove(id);
+    }
+
+void removeAppearance(SessionImageId id)
     {
         if (id == kInvalidSessionImageId) {
             return;

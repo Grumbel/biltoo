@@ -48,6 +48,7 @@ private slots:
     void hasDurableAppearance_sparseOnlyAfterFatRemoved();
     void setAppearance_preservesExistingPlacement();
     void mergeContentFromState_doesNotClearSiblings();
+    void clearContentComponents_keepsAttentionAndPlacement();
 };
 
 
@@ -633,6 +634,31 @@ void ItemWorldTest::mergeContentFromState_doesNotClearSiblings()
     world.mergeContentFromState(3, WorkspaceItemState{});
     QVERIFY(world.hasContentBake(3));
     QVERIFY(world.hasColor(3));
+}
+
+
+void ItemWorldTest::clearContentComponents_keepsAttentionAndPlacement()
+{
+    ItemWorld world;
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(1, 1, 10, 10);
+    st.contentHFlip = true;
+    st.colorAdjust.brightness = 20;
+    st.pos = QPointF(5, 6);
+    st.scale = 2.0;
+    world.setAppearance(4, st);
+    ItemComponents::Attention att;
+    att.points = {QPointF(0.5, 0.5)};
+    world.setAttention(4, att);
+
+    world.clearContentComponents(4);
+    QVERIFY(!world.hasCrop(4));
+    QVERIFY(!world.hasContentBake(4));
+    QVERIFY(!world.hasColor(4));
+    QVERIFY(world.hasAttention(4));
+    QVERIFY(world.hasPlacement(4));
+    QCOMPARE(world.placement(4).pos, QPointF(5, 6));
 }
 
 QTEST_MAIN(ItemWorldTest)
