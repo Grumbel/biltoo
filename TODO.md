@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2096-soft-install-characterization.** Phase 6 Tier 4 residual: soft install without async decode; framing defaults on view.
+Prior: **2095**.
+
+### Change
+- ImageView harness: fixture PNG → SoftPreview via installDisplayPixels;
+  focus has display pixels, sibling clean
+- Assert ViewFraming fit defaults on offscreen construct
+- Checklist: soft install + framing defaults locked; async decode / live matrix open
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2096-soft-install-characterization-e77da63.bundle HEAD
+```
+Requires tip **2095** (base **e77da63**); includes 1938–2096.
+
+### Next
+- Phase 6 Tier 4: full async decode / PreferCache ladder (optional)
+- Phase 6 Tier 4: live framing / return-to-Image view matrix (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2095-viewframing-characterization.** Phase 6 Tier 4 residual: pure ViewFraming + harness applied/lag.
 Prior: **2094**.
 

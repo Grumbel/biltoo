@@ -529,6 +529,10 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     view.resize(800, 600);
     view.bindSessionSeedBook(&doc.seedBook());
     view.bindSessionDocument(&doc);
+    // Phase 6 Tier 4: framing defaults before any mode enter.
+    QVERIFY(view.hostFraming().isFitMode());
+    QVERIFY(!view.hostFraming().isFillMode());
+    QVERIFY(!view.hostFraming().isStickyZoomEnabled());
 
     // Gallery before setWorkspacePaths (Image mode rejects path placement).
     view.enterGallery(LayoutMode::Grid);
@@ -587,6 +591,23 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     QCOMPARE(ContentXform::layoutSize(QSize(64, 48),
                                       view.itemWorld().appearanceValue(focus)),
              QSize(32, 24));
+
+    // Phase 6 Tier 4 residual: soft display without async decode wait.
+    // Fixture PNG → SoftPreview install; crop want materializes on GUI thread.
+    {
+        QImage hostA(m_pathA);
+        QVERIFY(!hostA.isNull());
+        QCOMPARE(hostA.size(), QSize(64, 48));
+        ImageItem *focusItem = view.findItemBySessionId(focus);
+        QVERIFY(focusItem != nullptr);
+        view.hostDisplayPipeline().installDisplayPixels(
+            focusItem, hostA, SessionAppearance::PixelKind::SoftPreview, focus);
+        QVERIFY(focusItem->hasDisplayPixels());
+        // Sibling not installed stays without display pixels.
+        if (ImageItem *otherItem = view.findItemBySessionId(other)) {
+            QVERIFY(!otherItem->hasDisplayPixels());
+        }
+    }
 
     // Mode-leave style clear: pack blank; all id-keyed components intact.
     view.pathOrderClear();

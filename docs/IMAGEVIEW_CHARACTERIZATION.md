@@ -87,8 +87,10 @@ Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 - [x] Crop via ItemWorld; sibling clean; layoutSize
 - [x] Placement / ContentBake / Color / Attention on focus; siblings clean
 - [x] Applied ContentXform + liveColorLag on focus; siblings clean; survive pathOrderClear
+- [x] Soft install (fixture PNG → SoftPreview) without async decode wait; sibling clean
+- [x] ViewFraming defaults on offscreen ImageView construct
 - [x] `pathOrderClear` leaves doc + all id-keyed components; LoadAdd multiplicity
-- [ ] Decode / soft tiles for fixture PNGs (not required for pack dual-model)
+- [ ] Full async decode / PreferCache ladder (optional; not required for pack dual-model)
 - [ ] Live framing / return-to-Image view matrix (later; pure ViewFraming locked)
 
 ## Landed
