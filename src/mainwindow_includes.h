@@ -20,6 +20,8 @@
 #include "tocpanel.h"
 #include "helppanel.h"
 #include "thumtoocache.h"
+#include "contentxform.h"
+#include "sessionappearance.h"
 #include "pagepath.h"
 
 #include <QAbstractButton>

@@ -9,6 +9,7 @@
 #include <QImage>
 #include "imageview_types.h"
 #include <QListWidget>
+#include <functional>
 #include "displaysurface.h"
 #include <QVector>
 #include <QMimeData>
@@ -110,6 +111,18 @@ public:
      * (wrong crop/appearance on drag-drop / Duplicate / History).
      */
     void setSession(const QStringList &files, const QVector<SessionImageId> &ids);
+    /**
+     * Ground truth for filmstrip cell aspect: SessionImageId content ops
+     * (ItemWorld) + native file size → ContentXform::layoutSize.
+     * Host (MainWindow) binds ImageView::sessionAppearanceValue + logical size.
+     * Pixmap overrides never define aspect — only which pixels to paint.
+     */
+    using LayoutAspectProvider =
+        std::function<QSize(SessionImageId sessionId, const QString &path)>;
+    void setLayoutAspectProvider(LayoutAspectProvider provider)
+    {
+        m_layoutAspectProvider = std::move(provider);
+    }
     void setCurrentIndex(int index);
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
     void setVisibleLoadsSuspended(bool on);
@@ -233,9 +246,16 @@ private:
     /** Visible FilmstripCell recovery via bound surface evaluate. */
     void filmstripSurfaceTick();
     void rebindFilmstripSurfaces();
-    /** True when session-id or path appearance override owns this row's aspect. */
+    /** True when session-id or path appearance override owns this row's pixels. */
     bool rowHasAppearanceOverride(int row) const;
-    /** Apply native pixel size as letterbox aspect on a row (sizeHint + role). */
+    /**
+     * Single aspect query for @p row: provider (ItemWorld) else native+XDG.
+     * Never uses override pixmap size.
+     */
+    QSize layoutAspectForRow(int row) const;
+    /** Apply layoutAspectForRow (or @p nativeFallback oriented via provider path). */
+    void applyLayoutAspect(QListWidgetItem *item, int row, const QSize &nativeHint = QSize());
+    /** @deprecated name kept; routes to applyLayoutAspect. */
     void applyNativeAspect(QListWidgetItem *item, const QSize &native);
     /** Cache-first sizes for all rows; scheduleProbe for misses. */
     void primeGeometryFromCache();

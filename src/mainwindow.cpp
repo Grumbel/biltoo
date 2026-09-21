@@ -180,6 +180,28 @@ MainWindow::MainWindow(QWidget *parent)
     m_thumbnailBar->setAccessibleName(tr("Thumbnails"));
     if (m_imageView) {
         m_thumbnailBar->setStripBackground(m_imageView->hostCanvasBg().primaryColor());
+        // Filmstrip cell aspect = ItemWorld content ops + native size (not sample
+        // pixmap size). SessionImageId is identity; path XDG is unbound fallback
+        // inside ThumbnailBar when provider returns empty.
+        m_thumbnailBar->setLayoutAspectProvider(
+            [this](SessionImageId sid, const QString &path) -> QSize {
+                if (!m_imageView || path.isEmpty()) {
+                    return {};
+                }
+                QSize native = m_imageView->logicalSizeForPath(path);
+                if (native.width() < 1 || native.height() < 1) {
+                    native = ThumtooCache::cachedSize(path);
+                }
+                if (native.width() < 1 || native.height() < 1) {
+                    return {};
+                }
+                WorkspaceItemState want;
+                if (sid != kInvalidSessionImageId
+                    && m_imageView->hasSessionAppearance(sid)) {
+                    want = m_imageView->sessionAppearanceValue(sid);
+                }
+                return ContentXform::layoutSize(native, want);
+            });
         // Image-mode ←/→: reuse filmstrip Soft (and ImageCache) instead of LQIP
         // when the strip already decoded the path.
         m_imageView->setImageModeSoftProvider(

@@ -470,14 +470,13 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     if (!it) {
                         continue;
                     }
-                    // Appearance override owns oriented/crop aspect (2074/2075).
+                    // Always refresh aspect from ItemWorld/native (override is
+                    // pixels only). Skip only the LQIP pixel install below.
+                    applyNativeAspect(it, size);
                     if (rowHasAppearanceOverride(i)) {
                         continue;
                     }
-                    // Durable size even if LQIP already painted. Skipping when
-                    // ThumbLoadedRole was set left cells at sample aspect until
-                    // a soft upgrade (PDF LQIP growth).
-                    applyNativeAspect(it, size);
+                    // Durable size even if LQIP already painted.
                     any = true;
                     // LQIP often arrives in the same sizeReady payload (ImageCache).
                     // Install only *after* aspect so cells are never sample-shaped.
@@ -1072,69 +1071,28 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
     it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole, incomingEdge);
 
-    // SIZE.md: cell geometry from durable layout size, not sample pixels.
-    // Override installs (session crop/orient bake) use the override image size.
-    // Ordinary installs: native probe + ContentXform::layoutSize from XDG
-    // content orient/crop (same as canvas), never a sample-aspect heuristic.
+    // SIZE.md: cell geometry from layoutAspectForRow (ItemWorld + native), never
+    // sample/override pixmap size. Override only chooses which pixels to paint.
     if (!m_cropToSquare) {
-        QSize aspectBasis;
-        if (m_allowOverrideIconInstall && image.width() > 0 && image.height() > 0) {
-            aspectBasis = image.size();
-        } else {
-            const QString path = (row >= 0 && row < m_files.size()) ? m_files.at(row) : QString();
-            QSize native;
-            if (!path.isEmpty()) {
-                native = ThumtooCache::cachedSize(path);
-            }
-            if (native.isValid() && native.width() > 0 && native.height() > 0) {
-                // Orient/crop from the same stored appearance used for the pixmap.
-                WorkspaceItemState layoutSt;
-                ThumtooCache::StoredContentAppearance stored;
-                if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
-                    layoutSt.contentHFlip = stored.contentHFlip;
-                    layoutSt.contentVFlip = stored.contentVFlip;
-                    layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
-                    // Bound rows: orient only for layout (IDENTITY — no path crop).
-                    bool anySessionId = false;
-                    for (SessionImageId id : m_sessionIds) {
-                        if (id != kInvalidSessionImageId) {
-                            anySessionId = true;
-                            break;
-                        }
-                    }
-                    if (!anySessionId) {
-                        layoutSt.hasCrop = stored.hasCrop;
-                        layoutSt.cropRect = stored.cropRect;
-                        layoutSt.cropSourceSize = stored.cropSourceSize;
-                        layoutSt.cropRotation = stored.cropRotation;
-                    }
+        applyLayoutAspect(it, row);
+        const QSize content = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
+        if (content.width() < 1 || content.height() < 1) {
+            const QSize prev = content;
+            Q_UNUSED(prev);
+            const QSize aspect = layoutAspectForRow(row);
+            if (aspect.width() > 0 && aspect.height() > 0) {
+                applyLayoutAspect(it, row, aspect);
+            } else {
+                // Keep prior sizeHint if any; else provisional square.
+                const QSize keep = it->sizeHint();
+                if (keep.width() < 1 || keep.height() < 1) {
+                    const QSize prov = m_delegate->letterboxContentSize(
+                        m_delegate->provisionalContentSize());
+                    it->setData(ThumbnailDelegate::ThumbContentSizeRole, prov);
+                    it->setSizeHint(m_delegate->cellSizeForContent(font(), prov));
                 }
-                aspectBasis = ContentXform::layoutSize(native, layoutSt);
-            }
-            if (!aspectBasis.isValid() || aspectBasis.width() < 1 || aspectBasis.height() < 1) {
-                const QSize prev = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
-                if (prev.isValid() && prev.width() > 0 && prev.height() > 0) {
-                    const QSize hint = m_delegate->cellSizeForContent(font(), prev);
-                    it->setSizeHint(hint);
-                    const QModelIndex idx = indexFromItem(it);
-                    if (idx.isValid()) {
-                        dataChanged(idx, idx, {Qt::DecorationRole, Qt::SizeHintRole,
-                                               ThumbnailDelegate::ThumbLoadedRole,
-                                               ThumbnailDelegate::ThumbPixmapRole});
-                    }
-                    doItemsLayout();
-                    scheduleLayoutRefresh();
-                    if (viewport()) {
-                        viewport()->update(visualItemRect(it));
-                    }
-                    return;
-                }
-                aspectBasis = QSize(m_thumbSize, m_thumbSize);
             }
         }
-        const QSize content = m_delegate->letterboxContentSize(aspectBasis);
-        it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
-        it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
     } else {
         const QSize content(m_thumbSize, m_thumbSize);
         it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
@@ -1729,33 +1687,14 @@ void ThumbnailBar::refreshAllItemGeometry()
             it->setSizeHint(m_delegate->cellSize(font()));
             continue;
         }
-        // Prefer session appearance override (oriented/cropped), then pixmap,
-        // then role — role may be provisional square from before decode.
-        QSize aspect;
-        if (i < m_sessionIds.size()) {
-            const SessionImageId sid = m_sessionIds.at(i);
-            if (sid != kInvalidSessionImageId) {
-                const auto oit = m_sessionIdImageOverrides.constFind(sid);
-                if (oit != m_sessionIdImageOverrides.cend() && !oit.value().isNull()) {
-                    aspect = oit.value().size();
-                }
-            }
+        applyLayoutAspect(it, i);
+        const QSize content = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
+        if (content.width() < 1 || content.height() < 1) {
+            const QSize prov = m_delegate->letterboxContentSize(
+                m_delegate->provisionalContentSize());
+            it->setData(ThumbnailDelegate::ThumbContentSizeRole, prov);
+            it->setSizeHint(m_delegate->cellSizeForContent(font(), prov));
         }
-        if (aspect.width() < 1 || aspect.height() < 1) {
-            const QPixmap pm = qvariant_cast<QPixmap>(
-                it->data(ThumbnailDelegate::ThumbPixmapRole));
-            if (!pm.isNull() && pm.width() > 0 && pm.height() > 0) {
-                aspect = pm.size();
-            } else {
-                aspect = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
-                if (aspect.width() < 1 || aspect.height() < 1) {
-                    aspect = m_delegate->provisionalContentSize();
-                }
-            }
-        }
-        const QSize content = m_delegate->letterboxContentSize(aspect);
-        it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
-        it->setSizeHint(m_delegate->cellSizeForContent(font(), content));
     }
     doItemsLayout();
     updateCenteringMargins();
@@ -1763,6 +1702,7 @@ void ThumbnailBar::refreshAllItemGeometry()
         viewport()->update();
     }
 }
+
 
 
 void ThumbnailBar::rebindFilmstripSurfaces()
@@ -2214,17 +2154,93 @@ bool ThumbnailBar::rowHasAppearanceOverride(int row) const
     return !path.isEmpty() && m_sessionImageOverrides.contains(path);
 }
 
-void ThumbnailBar::applyNativeAspect(QListWidgetItem *item, const QSize &native)
+QSize ThumbnailBar::layoutAspectForRow(int row) const
+{
+    // Ground truth: host provider (ItemWorld SessionImageId + native size).
+    // Path-only XDG is fallback when unbound or provider unset — never override
+    // pixmap size (that mixed soft sample aspect into cell geometry).
+    if (row < 0 || row >= m_files.size()) {
+        return {};
+    }
+    const QString path = m_files.at(row);
+    const SessionImageId sid = (row < m_sessionIds.size()) ? m_sessionIds.at(row)
+                                                           : kInvalidSessionImageId;
+    if (m_layoutAspectProvider) {
+        const QSize fromHost = m_layoutAspectProvider(sid, path);
+        if (fromHost.width() > 0 && fromHost.height() > 0) {
+            return fromHost;
+        }
+    }
+    if (path.isEmpty()) {
+        return {};
+    }
+    QSize native = ThumtooCache::cachedSize(path);
+    if (native.width() < 1 || native.height() < 1) {
+        return {};
+    }
+    WorkspaceItemState layoutSt;
+    ThumtooCache::StoredContentAppearance stored;
+    if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
+        layoutSt.contentHFlip = stored.contentHFlip;
+        layoutSt.contentVFlip = stored.contentVFlip;
+        layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
+        // Bound session: path crop must not layout every row that shares the file.
+        if (sid == kInvalidSessionImageId) {
+            layoutSt.hasCrop = stored.hasCrop;
+            layoutSt.cropRect = stored.cropRect;
+            layoutSt.cropSourceSize = stored.cropSourceSize;
+            layoutSt.cropRotation = stored.cropRotation;
+        }
+    }
+    return ContentXform::layoutSize(native, layoutSt);
+}
+
+void ThumbnailBar::applyLayoutAspect(QListWidgetItem *item, int row, const QSize &nativeHint)
 {
     if (!item || !m_delegate || m_cropToSquare) {
         return;
     }
-    if (!native.isValid() || native.width() < 1 || native.height() < 1) {
+    QSize aspect = layoutAspectForRow(row);
+    if ((aspect.width() < 1 || aspect.height() < 1)
+        && nativeHint.width() > 0 && nativeHint.height() > 0) {
+        // Provider miss: orient nativeHint via path/session same as layoutAspectForRow.
+        const QString path = (row >= 0 && row < m_files.size()) ? m_files.at(row) : QString();
+        const SessionImageId sid = (row >= 0 && row < m_sessionIds.size())
+            ? m_sessionIds.at(row) : kInvalidSessionImageId;
+        if (m_layoutAspectProvider && !path.isEmpty()) {
+            aspect = m_layoutAspectProvider(sid, path);
+        }
+        if (aspect.width() < 1 || aspect.height() < 1) {
+            WorkspaceItemState layoutSt;
+            ThumtooCache::StoredContentAppearance stored;
+            if (!path.isEmpty()
+                && ThumtooCache::loadContentAppearance(path, &stored)
+                && !stored.isIdentity()) {
+                layoutSt.contentHFlip = stored.contentHFlip;
+                layoutSt.contentVFlip = stored.contentVFlip;
+                layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
+            }
+            aspect = ContentXform::layoutSize(nativeHint, layoutSt);
+        }
+        if (aspect.width() < 1 || aspect.height() < 1) {
+            aspect = nativeHint;
+        }
+    }
+    if (aspect.width() < 1 || aspect.height() < 1) {
         return;
     }
-    const QSize content = m_delegate->letterboxContentSize(native);
+    const QSize content = m_delegate->letterboxContentSize(aspect);
     item->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
     item->setSizeHint(m_delegate->cellSizeForContent(font(), content));
+}
+
+void ThumbnailBar::applyNativeAspect(QListWidgetItem *item, const QSize &native)
+{
+    if (!item) {
+        return;
+    }
+    const int row = this->row(item);
+    applyLayoutAspect(item, row, native);
 }
 
 void ThumbnailBar::primeGeometryFromCache()
@@ -2358,21 +2374,8 @@ void ThumbnailBar::setFiles(const QStringList &files)
         }
         if (m_delegate && !m_cropToSquare && native.isValid()
             && native.width() > 0 && native.height() > 0) {
-            // Orient cell from XDG content appearance (same as setThumbnailIcon
-            // ordinary path). Unoriented native made rotated rows jump aspect
-            // until override re-applied.
-            WorkspaceItemState layoutSt;
-            ThumtooCache::StoredContentAppearance stored;
-            if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
-                layoutSt.contentHFlip = stored.contentHFlip;
-                layoutSt.contentVFlip = stored.contentVFlip;
-                layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
-            }
-            const QSize aspect = ContentXform::layoutSize(native, layoutSt);
-            const QSize content = m_delegate->letterboxContentSize(
-                (aspect.width() > 0 && aspect.height() > 0) ? aspect : native);
-            item->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
-            item->setSizeHint(m_delegate->cellSizeForContent(font(), content));
+            // ItemWorld (via provider) or XDG — not raw native alone.
+            applyLayoutAspect(item, i, native);
         } else if (m_delegate && !m_cropToSquare) {
             const QSize prov = m_delegate->letterboxContentSize(
                 m_delegate->provisionalContentSize());

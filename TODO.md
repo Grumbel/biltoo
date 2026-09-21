@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2169-filmstrip-itemworld-aspect.** Filmstrip cell aspect from ItemWorld
+ground truth, not override pixmap size / path-only spaghetti.
+
+### Structural change
+
+- **Ground truth:** `SessionImageId` → ItemWorld content ops + native file size →
+  `ContentXform::layoutSize` (same as canvas).
+- **ThumbnailBar:** `LayoutAspectProvider` bound by MainWindow to
+  `sessionAppearanceValue` + `logicalSizeForPath`.
+- **Single path:** `layoutAspectForRow` / `applyLayoutAspect` used by
+  `setThumbnailIcon`, `setFiles`, `refreshAllItemGeometry`, `sizeReady`.
+- **Override pixmap is pixels only** — never defines aspect.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2169-filmstrip-itemworld-aspect-e77da63.bundle HEAD
+```
+
+Next: **2170** — QA rotate → filmstrip aspect stays; drop does not jump.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2168-paint-budget-25ms.** ImageItem::paint GUI budget 3→25 ms (noise).
 
 ### Apply
