@@ -290,8 +290,10 @@ void GalleryController::enter(int packagedLayoutInt)
     // Preserve multi-select when only switching Gallery layout (not entering
     // from Image/Workspace — prepareGalleryCanvas clears selection).
     QStringList selectedPaths;
+    QList<int> selectedIndices;
     QList<SessionImageId> selectedIds;
     QString anchorPath;
+    int anchorIndex = -1;
     SessionImageId anchorId = kInvalidSessionImageId;
     const bool layoutSwitch = m_view->isGalleryMode();
 
@@ -317,8 +319,13 @@ void GalleryController::enter(int packagedLayoutInt)
             }
             if (ii->sessionId() != kInvalidSessionImageId) {
                 selectedIds.append(ii->sessionId());
-            } else if (!ii->path().isEmpty()) {
-                selectedPaths.append(ii->path());
+            } else {
+                const int listIdx = m_view->sessionListIndex(ii);
+                if (listIdx >= 0) {
+                    selectedIndices.append(listIdx);
+                } else if (!ii->path().isEmpty()) {
+                    selectedPaths.append(ii->path());
+                }
             }
         }
         if (m_selectionAnchor
@@ -327,7 +334,12 @@ void GalleryController::enter(int packagedLayoutInt)
             if (m_selectionAnchor->sessionId() != kInvalidSessionImageId) {
                 anchorId = m_selectionAnchor->sessionId();
             } else {
-                anchorPath = m_selectionAnchor->path();
+                const int listIdx = m_view->sessionListIndex(m_selectionAnchor);
+                if (listIdx >= 0) {
+                    anchorIndex = listIdx;
+                } else {
+                    anchorPath = m_selectionAnchor->path();
+                }
             }
         } else {
             m_selectionAnchor = nullptr;
@@ -405,11 +417,21 @@ void GalleryController::enter(int packagedLayoutInt)
         m_view->viewport()->update();
     }
 
-    if (layoutSwitch && (!selectedIds.isEmpty() || !selectedPaths.isEmpty())) {
+    if (layoutSwitch
+        && (!selectedIds.isEmpty() || !selectedIndices.isEmpty()
+            || !selectedPaths.isEmpty())) {
         m_view->canvasScene()->clearSelection();
         for (const SessionImageId sid : selectedIds) {
             if (ImageItem *item = m_view->findItemBySessionId(sid)) {
                 item->setSelected(true);
+            }
+        }
+        for (const int listIdx : selectedIndices) {
+            for (ImageItem *item : m_view->liveItems()) {
+                if (item && m_view->sessionListIndex(item) == listIdx) {
+                    item->setSelected(true);
+                    break;
+                }
             }
         }
         for (const QString &path : selectedPaths) {
@@ -419,6 +441,14 @@ void GalleryController::enter(int packagedLayoutInt)
         }
         if (anchorId != kInvalidSessionImageId) {
             m_selectionAnchor = m_view->findItemBySessionId(anchorId);
+        } else if (anchorIndex >= 0) {
+            m_selectionAnchor = nullptr;
+            for (ImageItem *item : m_view->liveItems()) {
+                if (item && m_view->sessionListIndex(item) == anchorIndex) {
+                    m_selectionAnchor = item;
+                    break;
+                }
+            }
         } else if (!anchorPath.isEmpty()) {
             m_selectionAnchor = m_view->findItemForPath(anchorPath);
         } else {

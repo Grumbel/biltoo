@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2118-gallery-layout-select-list-index.** SESSION residual: Gallery layout-switch selection id→index→path.
+Prior: **2117**.
+
+### Change
+- Gallery layout switch multi-select capture/restore: SessionImageId, then list
+  index for unbound tiles, path last
+- Selection anchor uses the same priority
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2118-gallery-layout-select-list-index-e77da63.bundle HEAD
+```
+Requires tip **2117** (base **e77da63**); includes 1938–2118.
+
+### Next
+- SESSION residual: path open/reveal only when unbound without list/live index
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2117-reveal-gallery-session-id.** SESSION residual: Gallery reveal by SessionImageId.
 Prior: **2116**.
 
