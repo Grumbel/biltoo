@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2058-drop-color-path-stamp-dual-comments.** Stage 4 residual: color sparse-only; dual-write comments.
+Prior: **2057**.
+
+### Change
+- `setTargetColorAdjustments`: drop dead `setAppearance` path-stamp after `setColor`
+  (path is not a sparse field; color already written)
+- Production comments no longer claim fat DTO dual-write / SessionDocument fat wipe
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2058-drop-color-path-stamp-dual-comments-e77da63.bundle HEAD
+```
+Requires tip **2057** (base **e77da63**); includes 1938–2058.
+
+### Next
+- Phase 7 Stage 2 residual: further ImageItem demotion when needed
+- Phase 6 Tier 4: decode/framing characterization when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2057-stage4-residual-docs-gap.** Stage 4 residual hygiene: seed-book docs + unused gap.
 Prior: **2056**.
 

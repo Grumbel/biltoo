@@ -205,8 +205,8 @@ void ImageView::clearWorkspace()
     // Path-keyed placement is legacy for unbound tiles only; drop it so a
     // project load cannot inherit stale poses from a previous session.
     m_itemWorld.pathBook().clear();
-    // SessionDocument::clear only wipes the fat DTO store; sparse ItemWorld
-    // tables must be cleared here so hasDurableAppearance cannot see stale ids.
+    // SessionDocument::clear only wipes the seed book; sparse ItemWorld tables
+    // must be cleared here so hasDurableAppearance cannot see stale ids.
     m_itemWorld.clearAppearance();
     m_image.clearClassicPath();
     // Invalidate in-flight LoadReplace so a prior Image-mode decode cannot

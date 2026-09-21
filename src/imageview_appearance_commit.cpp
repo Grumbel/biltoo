@@ -138,7 +138,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
         return;
     }
     // Bound session id: persistSessionAppearanceSlot is the single setAppearance
-    // + durable write. rememberItemState would dual-write the same fat DTO again.
+    // + durable write. rememberItemState would re-write sparse tables again.
     // Unbound: path-map still needs rememberItemState (Workspace/Gallery/Image).
     if (item->sessionId() == kInvalidSessionImageId) {
         rememberItemState(item);
@@ -306,7 +306,7 @@ int ImageView::resetContentAppearanceForTargets()
         ThumtooCache::clearContentAppearance(path);
 
         // 2) Clear session appearance content fields (keep placement pose).
-        // clearedContentOps also zeros colour grade; setAppearance dual-writes
+        // clearedContentOps also zeros colour grade; setAppearance writes sparse
         // sparse Crop / ContentBake / Color (identity ⇒ remove).
         if (sid != kInvalidSessionImageId) {
             WorkspaceItemState slot = SessionAppearance::clearedContentOps(

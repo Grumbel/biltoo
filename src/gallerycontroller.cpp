@@ -1205,7 +1205,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         if (!item) {
             return;
         }
-        // Pack only moves pose — Placement dual-write; no fat captureState.
+        // Pack only moves pose — sparse Placement; no captureState content stamp.
         const ItemComponents::Placement pl = item->placement();
         if (item->sessionId() != kInvalidSessionImageId) {
             m_view->itemWorld().setPlacement(item->sessionId(), pl);

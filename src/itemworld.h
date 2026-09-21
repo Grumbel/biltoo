@@ -61,7 +61,6 @@ public:
 
     /**
      * True when any persistent sparse table has a row for @p id.
-     * Stage 4b residual: fat DTO alone is not durable.
      */
     bool hasDurableAppearance(SessionImageId id) const
     {
@@ -73,8 +72,7 @@ public:
     }
 
     /**
-     * Alias for hasDurableAppearance (setAppearance no longer writes fat).
-     * Prefer hasDurableAppearance in new code.
+     * Alias for hasDurableAppearance. Prefer hasDurableAppearance in new code.
      */
     bool hasAppearance(SessionImageId id) const
     {

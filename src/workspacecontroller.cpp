@@ -635,7 +635,7 @@ bool WorkspaceController::layoutItems(const GalleryLayout::Params &userParams,
         if (!item) {
             continue;
         }
-        // Layout only moves pose — Placement dual-write; do not re-stamp content tables.
+        // Layout only moves pose — sparse Placement; do not re-stamp content tables.
         const ItemComponents::Placement pl = item->placement();
         if (item->sessionId() != kInvalidSessionImageId) {
             m_view->itemWorld().setPlacement(item->sessionId(), pl);

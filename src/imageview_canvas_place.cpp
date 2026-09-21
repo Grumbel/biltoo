@@ -145,8 +145,8 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
                     m_scene->clearSelection();
                 }
                 existing->setSelected(true);
-                // Pose-only: setPlacement dual-write — do not setAppearance the
-                // whole fat DTO (content already lives on the session id).
+                // Pose-only: sparse Placement — do not setAppearance the whole
+                // DTO (content already lives on the session id).
                 persistGeometrySessionState(existing, existing->placement());
                 updateWorkspaceSceneRect();
                 ensureVisibleItem(existing);

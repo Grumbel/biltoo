@@ -34,7 +34,7 @@
      * Remove @p item from the scene and delete it.
      * @p persistState when true snapshots via rememberItemState (pose/content
      * for session ids that remain). Pass false after removeAppearance so
-     * destroy cannot re-seed the fat DTO.
+     * destroy cannot re-seed sparse appearance.
      */
     void destroyCanvasItem(ImageItem *item, bool persistState = true);
     void updateWorkspaceSceneRect();

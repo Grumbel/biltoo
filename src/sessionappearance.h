@@ -144,7 +144,7 @@ bool liveItemHasContentMods(const ContentXform::Value &live);
  * OR-merge content flags from @p flags into empty fields of @p appearance only
  * (never clears store). Used when there is no applied ContentXform fingerprint
  * and ItemWorld sparse Crop/ContentBake (or a derived ContentXform::Value) may
- * still hold orient/crop that the fat DTO slot lacks.
+ * still hold orient/crop that sparse tables lack.
  */
 void fillEmptyContentFlags(WorkspaceItemState &appearance,
                            const ContentXform::Value &flags);

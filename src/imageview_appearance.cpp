@@ -42,7 +42,7 @@ const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
         m_displayPipeline.seedSessionAppearanceFromState(sid, item->path());
         if (m_itemWorld.hasDurableAppearance(sid)) {
             // Always copy through sessionAppearanceValue so sparse Crop/Color/…
-            // override a lagging fat DTO (store-read authority).
+            // override lagging live xform (store-read authority).
             *fallback = sessionAppearanceValue(sid);
             return fallback;
         }
@@ -89,7 +89,7 @@ bool ImageView::loadSessionAppearance(SessionImageId sid, WorkspaceItemState *st
     if (!st || sid == kInvalidSessionImageId) {
         return false;
     }
-    // Sparse-only rows count (Stage 2 — do not require fat DTO presence).
+    // Sparse rows count (Stage 4b — hasDurableAppearance).
     if (!m_itemWorld.hasDurableAppearance(sid)) {
         return false;
     }
@@ -190,7 +190,7 @@ void ImageView::persistGeometrySessionState(ImageItem *item, const ItemComponent
     }
     const SessionImageId sid = item->sessionId();
     if (sid != kInvalidSessionImageId) {
-        // Pose-only; setPlacement dual-writes sparse Placement + DTO pose fields.
+        // Pose-only; sparse Placement table (Stage 4b).
         m_itemWorld.setPlacement(sid, pl);
         return;
     }
@@ -342,7 +342,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
         }
     }
     // Prefer sparse Color grade for filmstrip / soft paint. Grade-only sparse
-    // presence still materializes when the fat DTO has no other content ops.
+    // presence still materializes when only color (or other single component) is set.
     WorkspaceItemState paint;
     if (app) {
         paint = *app;
@@ -375,7 +375,7 @@ void ImageView::setSessionAppearance(SessionImageId id, const WorkspaceItemState
     if (id == kInvalidSessionImageId) {
         return;
     }
-    // ItemWorld::setAppearance dual-writes sparse Crop/ContentBake/Color/… tables.
+    // ItemWorld::setAppearance writes sparse Crop/ContentBake/Color/… tables.
     m_itemWorld.setAppearance(id, state);
 }
 
@@ -465,8 +465,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();
         m_itemWorld.setAppearance(sid, slot);
-        // Sparse Color is store authority after dual-write; prefer it for durable
-        // grade fields so the fat DTO is not the only reader.
+        // Sparse Color is store authority for durable grade fields.
         slot.colorAdjust = m_itemWorld.color(sid).grade;
         contentSlot = slot;
         haveContentSlot = true;
@@ -673,22 +672,11 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     slot.path = item->path().isEmpty() ? slot.path : item->path();
     slot.colorAdjust = adj;
     if (sid != kInvalidSessionImageId) {
-        // ItemWorld Color is persistence authority (dual-writes DTO colour).
-        // Live grade is installed below via applyInteractiveColorGrade →
-        // syncLiveColorFromState (interaction authority).
+        // ItemWorld Color is persistence authority (sparse-only). Live grade is
+        // installed below via applyInteractiveColorGrade → syncLiveColorFromState.
         ItemComponents::Color c;
         c.grade = adj;
         m_itemWorld.setColor(sid, c);
-        // setColor dual-writes the fat DTO and stamps sessionId (dtoForWrite).
-        // Path is not known to ItemWorld — fill once if still empty.
-        if (m_itemWorld.hasDurableAppearance(sid)) {
-            slot = sessionAppearanceValue(sid);
-            if (slot.path.isEmpty() && !item->path().isEmpty()) {
-                slot.path = item->path();
-                slot.colorAdjust = adj;
-                m_itemWorld.setAppearance(sid, slot);
-            }
-        }
     }
     // Fast path while dragging: live grade + optional host bake (no SQLite).
     applyInteractiveColorGrade(item, slot);
@@ -707,7 +695,7 @@ void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
         return;
     }
     if (sid != kInvalidSessionImageId) {
-        // Dual-writes Crop (and other) sparse tables via ItemWorld.
+        // Sparse tables via ItemWorld::setAppearance.
         m_itemWorld.setAppearance(sid, s);
     } else {
         // Unbound only: path map is the sole store.
