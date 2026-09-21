@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2021-stage4a-persistence-boundary.** Stage 4a project/clipboard sparse-prefer boundary.
+Prior: **2020**.
+
+### Change
+Stage 4a implementation (REFACTOR.md Stage 4 design):
+- `writeProjectToPath` documents sparse-prefer `sessionAppearanceValue` + live pose
+  as the only project-save authority (already used; comment locks the contract)
+- `installProjectAppearances` documents load via `setSessionAppearance` (dual-fill)
+- Workspace clipboard `captureSelectedWorkspaceClipboard` builds content from
+  `sessionAppearanceValue`, pose from live item — same boundary as project save
+- `ItemWorld` header + member comments tag persistent vs derived tables
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2021-stage4a-persistence-boundary-e77da63.bundle HEAD
+```
+Requires tip **2020** (base **e77da63**); includes 1938–2021.
+
+### Next
+- Optional: characterization scenario pose-only vs content-only rows
+- Optional IDENTITY migration-status polish
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2020-stage4-design.** Stage 4 persistence-split design in REFACTOR.md.
 Prior: **2019**.
 

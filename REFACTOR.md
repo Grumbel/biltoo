@@ -1337,6 +1337,8 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2018: IDENTITY.md §§7–10 scenarios/invariants id-keyed.
 - biltoo-2019: IDENTITY.md §11–12 acceptance and handoff (id + path-map).
 - biltoo-2020: Stage 4 design — persistent vs derived tags, 4a/4b migration.
+- biltoo-2021: Stage 4a — project/clipboard boundary via sessionAppearanceValue;
+  ItemWorld persistence tags; load dual-fills via setSessionAppearance.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
