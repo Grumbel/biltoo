@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1997-imageitem-demotion-status.** Demotion status through 1996; header hygiene.
+Prior: **1996**.
+
+### Change
+- REFACTOR.md ImageItem demotion table: mutator demotion complete through 1996
+- `imageitem.h`: class comment; drop orphan public docs for privatized APIs
+  (intrinsic-size, scale-handles); private `setScaleHandlesEnabled` note
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1997-imageitem-demotion-status-e77da63.bundle HEAD
+```
+Requires tip **1996** (base **e77da63**); includes 1938–1997.
+
+### Next
+- Optional: `sessionIndex` deprecation cleanup (prefer `sessionListIndex` only)
+- Optional: Stage 4 dual-write / fat DTO persistence split
+- Full build + characterization on default configure
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1996-characterization-default-on.** Full ImageView characterization by default.
 Prior: **1995**.
 

@@ -28,9 +28,10 @@
  *
  * Owns display pixels, applied ContentXform fingerprint, and live placement
  * (pose). Durable content lives in ItemWorld sparse tables —
- * ImageView::sessionAppearanceValue is the store-read path. Mutators are
- * private; ImageView, DisplayPipelineController, CropSession, GalleryController,
- * and GalleryLayout helpers are the writers.
+ * ImageView::sessionAppearanceValue is the store-read path. All mutators are
+ * private (friends: ImageView, DisplayPipelineController, CropSession,
+ * GalleryController, GalleryLayout helpers). Public surface is readers,
+ * interaction handlers, and paint chrome for the view.
  *
  * Geometry (pixmap + item transform) is independent of interaction chrome.
  * Scale/rotation/flip live in QGraphicsItem::transform; chrome is painted in
@@ -73,10 +74,7 @@ public:
     /** DisplaySurfaceController id (0 = unbound). Host install policy key. */
     qint64 displaySurfaceId() const { return m_displaySurfaceId; }
     QSize imageSize() const;
-    /**
-     * Set logical layout size (probe / layout / crop). Does not touch pixels.
-     * Always applied — samples never block this write.
-     */
+    /** Full-resolution source sample when decoded (may be null). */
     const QImage &sourceImage() const { return m_source; }
     /**
      * Active display sample: full source when decoded, else soft preview.
@@ -143,11 +141,6 @@ public:
      * units (after item scale). Empty size clears cropping.
      */
     QSizeF galleryCellSize() const { return m_galleryCellSize; }
-
-    /**
-     * When false, corner scale (resize) handles are neither drawn nor hit-tested.
-     * Used for fixed packaged layouts where scale is driven by the layout.
-     */
 
     /** Map a scene position to integer pixel coordinates, or (-1,-1) if outside. */
     QPoint pixelAtScenePos(const QPointF &scenePos) const;
@@ -258,6 +251,7 @@ private:
     void setInteractive(bool on);
     void setGallerySelectable(bool on);
     void invalidateDeviceCache();
+    /** Corner scale handles on/off (packaged layouts leave off). */
     void setScaleHandlesEnabled(bool on);
     void setHoverHandle(Handle h);
     void setGalleryCellSize(const QSizeF &sceneSize);

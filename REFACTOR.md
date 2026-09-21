@@ -1237,26 +1237,30 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1994: Q_INIT_RESOURCE(icons) — static biltoo_lib RCC must be forced into the exe.
 - biltoo-1995: privatize syncGalleryScrollCache; tests value-read via appearanceValue.
 - biltoo-1996: BILTOO_IMAGEVIEW_CHARACTERIZATION defaults ON (full harness).
+- biltoo-1997: ImageItem demotion status through 1996; header comment hygiene.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
 
-### ImageItem demotion status (through biltoo-1990)
+### ImageItem demotion status (through biltoo-1996)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live
-in ItemWorld / SessionDocument. Public surface is readers + interaction handlers;
-almost all mutators are private (friends: ImageView, DisplayPipelineController,
-CropSession, GalleryController, GalleryLayout helpers).
+in ItemWorld / SessionDocument. Public surface is readers, interaction handlers,
+and view-driven chrome paint. **All mutators are private** (friends: ImageView,
+DisplayPipelineController, CropSession, GalleryController, GalleryLayout helpers).
+Completed: path/session stamps, interactive/chrome flags, cell size, placement,
+content-edit marks, gallery scroll cache (1985–1995).
 
 | Concern | Authority |
 |---------|-----------|
-| Crop / orient / grade / attention | ItemWorld sparse tables; read via `sessionAppearanceValue` |
-| Live pose | `placement()` reader; `applyPlacement` private |
+| Crop / orient / grade / attention | ItemWorld sparse tables; read via `sessionAppearanceValue` / `appearanceValue` |
+| Live pose | `placement()` reader; `applyPlacement` private (+ `GalleryLayout::applyItemPlacement`) |
 | Pixels / intrinsic / path / session stamps | Host / pipeline private mutators |
-| List order | `sessionListIndex` (document) over `sessionIndex` cache |
+| List order | `sessionListIndex` (document) over deprecated `sessionIndex` cache |
 
 Dual-write on store **writes** remains so fat DTO serialization stays aligned;
-store **reads** prefer sparse via the choke point.
+store **reads** prefer sparse via the choke point. Stage 4 may drop dual-write
+when the project format no longer needs the fat DTO mirror.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
