@@ -4026,6 +4026,9 @@ void MainWindow::attachWorkspaceBackgroundToDocument(ProjectDocument *doc, const
 
 bool MainWindow::writeProjectToPath(const QString &projectPath, QString *error)
 {
+    // Stage 4a persistence boundary: build the on-disk DTO only here from
+    // sparse-prefer sessionAppearanceValue + live Workspace poses. Never treat
+    // a raw fat WorkspaceItemState pointer as save authority.
     ProjectDocument doc;
     doc.version = 1;
     doc.mode = currentProjectModeString();
@@ -4072,6 +4075,8 @@ void MainWindow::installProjectAppearances(
     const QVector<WorkspaceItemState> &appearanceByRow,
     const QVector<bool> &rowHasAppearance)
 {
+    // Stage 4a load path: every row goes through setSessionAppearance so ItemWorld
+    // dual-fills sparse Crop/ContentBake/Color/Attention/Placement tables.
     if (!m_imageView) {
         return;
     }

@@ -13,16 +13,26 @@
 #include <QString>
 
 /**
- * Facade over per-item stores (Phase 7 / REFACTOR.md).
+ * Facade over per-item stores (Phase 7 / REFACTOR.md Stage 4).
  *
  * Owns sparse tables (Crop, Attention, ContentBake, Color, Placement) and
  * non-owning links to SessionAppearanceStore, PathItemStateBook, ImageSizeBook.
+ *
+ * Persistence tags (REFACTOR.md Stage 4 design):
+ *   Persistent — SessionDocument paths/ids; sparse Crop / ContentBake / Color /
+ *     Attention; Placement (Workspace-scoped pose); path book only for unbound.
+ *   Derived mirror — fat WorkspaceItemState (dual-write until Stage 4b format).
+ *   Derived only — applied ContentXform, tile LOD, soft pixels, sessionIndex.
  *
  * Writes: setAppearance / setCrop / setColor / … dual-write sparse + fat DTO so
  * project serialization and legacy readers stay consistent.
  * Reads: prefer ImageView::sessionAppearanceValue (sparse-first choke point) or
  * component accessors (crop(), color(), …). ImageItem is a render/hit-test proxy
  * — not a parallel live database.
+ *
+ * Project/clipboard boundary (Stage 4a): build DTO from appearanceValue /
+ * sessionAppearanceValue (+ live pose when needed), never from a raw fat
+ * pointer alone. Load always goes through setAppearance (dual-fills sparse).
  *
  * Entity key for content appearance: SessionImageId (IDENTITY.md).
  */
@@ -435,13 +445,17 @@ private:
         m_placements.insert(id, ItemComponents::placementFromState(state));
     }
 
-    SessionAppearanceStore *m_appearance = nullptr;
-    PathItemStateBook *m_pathBook = nullptr;
-    ImageSizeBook *m_sizeBook = nullptr;
+    // Linked stores (not owned). Fat DTO is a derived dual-write mirror until 4b.
+    SessionAppearanceStore *m_appearance = nullptr; // derived mirror + legacy
+    PathItemStateBook *m_pathBook = nullptr;        // persistent unbound only
+    ImageSizeBook *m_sizeBook = nullptr;            // derived (host probe)
+
+    // Sparse component tables — persistent (project/clipboard via appearanceValue).
     QHash<SessionImageId, ItemComponents::Crop> m_crops;
     QHash<SessionImageId, ItemComponents::Attention> m_attentions;
     QHash<SessionImageId, ItemComponents::ContentBake> m_contentBakes;
     QHash<SessionImageId, ItemComponents::Color> m_colors;
+    // Workspace pose; optional per id on disk (hasWorkspacePose).
     QHash<SessionImageId, ItemComponents::Placement> m_placements;
 };
 
