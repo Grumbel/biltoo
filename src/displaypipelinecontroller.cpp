@@ -1164,19 +1164,13 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             // Same path soft→HQ: clear full so soft can attach.
             item->clearDecodedPixels();
         }
+        // Display-ready soft (same-session stash / filmstrip override) is already
+        // content-baked for store want — attach as-is. Never replace with
+        // ImageCache then materialize: cache is path-shared and may be host-raw
+        // *or* a contaminated soft; rematerializing oriented soft as host-raw
+        // double-applied Workspace→Image rotation.
         // Host-raw soft: installDisplayPixels seeds ImageCache + materializes want.
-        // Display-ready (stashed Gallery / filmstrip override) only when it still
-        // matches store want — otherwise rematerialize from host so sparse
-        // crop/rotate are not skipped (stale strip Soft looked like
-        // "edits not persistent").
         const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
-        if (displayReady && SessionAppearance::hasContentAppearance(want)) {
-            const QImage host = ImageCache::get(path);
-            if (!host.isNull()) {
-                pixels = host;
-                displayReady = false;
-            }
-        }
         if (displayReady) {
             m_view->attachDisplaySample(item, pixels, want,
                                 SessionAppearance::PixelKind::SoftPreview);

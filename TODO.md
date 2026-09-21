@@ -2,6 +2,38 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2166-workspace-image-orient.** Workspace→Image rotation still wrong
+after 2165 (seed only).
+
+### Root cause
+
+1. `resolveImageModePendingPixels` preferred **path-shared** filmstrip/ImageCache
+   before same-session **Workspace stash** soft. Oriented stash soft was skipped
+   or only used when cache missed.
+2. `pendingTile` forced `ImageCache` host over any `displayReady` soft whenever
+   store want had content, then `installDisplayPixels` materialize’d — treating
+   already-baked soft as host-raw when cache was contaminated, or fighting
+   display-ready path.
+
+### Fix
+
+- Resolve order: preview → slideshow → **same-id Workspace/Gallery stash** →
+  filmstrip/cache/LQIP.
+- When `displayReady`, `attachDisplaySample` only — do not swap in cache host.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2166-workspace-image-orient-e77da63.bundle HEAD
+```
+
+Next: **2167** — QA R-rotate on Workspace tile → double-click Image (once).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2165-orient-seed-gallery-stash.** Workspace→Image rotation double-bake;
 Gallery pack survives Workspace without full rebuild flicker.
 

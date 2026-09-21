@@ -437,17 +437,16 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
                                                 const QImage &preview,
                                                 bool *displayReadyOut) const
 {
-    // Image-mode ←/→ hot path: process memory only (no sync thumtoo IPC).
+    // Image-mode soft sources (process memory only).
     //
-    // Soft sources, in order:
-    // 1) Explicit preview / slideshow raster  → host-raw candidate
-    // 2) ImageCache                          → host-raw
-    // 3) Stashed Gallery tile soft:
-    //    - display-ready only when same SessionImageId and applied == store want
-    //      (already content-baked; must not ImageCache::put or re-materialize)
-    //    - otherwise host-raw only when the tile has no content bake. Soft baked
-    //      for a *different* id is skipped — not unoriented host, must not be
-    //      materialize()'d again (double-bake).
+    // Order matters for Workspace→Image orientation:
+    // 1) Explicit preview / slideshow
+    // 2) Same-session mode-stash soft (may already be content-baked → displayReady)
+    // 3) Filmstrip session override (displayReady) or host-raw strip/cache/LQIP
+    //
+    // Path-shared ImageCache must not win over same-session oriented stash soft:
+    // that forced installDisplayPixels to treat baked pixels as host-raw (double
+    // rotate) or skip store want when sources disagreed.
     if (displayReadyOut) {
         *displayReadyOut = false;
     }
@@ -455,37 +454,10 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         return preview;
     }
     QImage pixels = m_view->hostSlideshow().slideshowRaster(path);
-    // Filmstrip often has Soft while ImageCache only has size-probe LQIP (or
-    // LRU-evicted the soft). Prefer strip / shared host sample first.
-    if (pixels.isNull() && m_view->hostImageModeSoftProvider()) {
-        bool ready = false;
-        pixels = m_view->hostImageModeSoftProvider()(path, m_view->hostSessionId().currentIdValue(), &ready);
-        if (!pixels.isNull()) {
-            if (displayReadyOut) {
-                *displayReadyOut = ready;
-            }
-            return pixels;
-        }
-    }
-    // Best host in process memory (any edge). Do not require Soft ladder first —
-    // filmstrip decode edge may be 128–256 and still beat LQIP.
-    if (pixels.isNull()) {
-        pixels = ImageCache::get(path);
-    }
-    // LQIP only if already in the durable/process cache — never request encode.
-    if (pixels.isNull()) {
-        pixels = ThumtooCache::cachedLqipImage(path);
-        if (!pixels.isNull()) {
-            ImageCache::put(path, pixels);
-        }
-    }
     if (!pixels.isNull()) {
         return pixels;
     }
 
-    // Soft still on mode-stashed tiles (Gallery or Workspace). Opening Image
-    // from Workspace left an empty view because only Gallery stash was scanned
-    // while Workspace onLeave holds the live tiles with decoded soft.
     auto tryStashSoft = [&](const QList<ImageItem *> &stash) -> QImage {
         for (ImageItem *cand : stash) {
             if (!cand || cand->path() != path || !cand->hasDisplayPixels()) {
@@ -498,9 +470,6 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
             const bool sameId = (m_view->hostSessionId().hasCurrentId()
                                  && cand->sessionId() == m_view->hostSessionId().currentIdValue());
             const bool hasApplied = m_view->itemHasAppliedContentXform(cand);
-            // Same session row: always usable as Image underlay. Requiring
-            // applied == store want rejected content-oriented soft when the
-            // store slot was still empty (Workspace→Image blank for rotated).
             if (sameId) {
                 if (displayReadyOut) {
                     *displayReadyOut = hasApplied;
@@ -516,15 +485,35 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         }
         return {};
     };
-    pixels = tryStashSoft(m_view->hostGallery().stashedItems());
-    if (!pixels.isNull()) {
-        return pixels;
-    }
+    // Workspace first — open Image from Workspace is the common oriented path.
     pixels = tryStashSoft(m_view->hostWorkspace().stashedItems());
     if (!pixels.isNull()) {
         return pixels;
     }
-    return {};
+    pixels = tryStashSoft(m_view->hostGallery().stashedItems());
+    if (!pixels.isNull()) {
+        return pixels;
+    }
+
+    if (m_view->hostImageModeSoftProvider()) {
+        bool ready = false;
+        pixels = m_view->hostImageModeSoftProvider()(
+            path, m_view->hostSessionId().currentIdValue(), &ready);
+        if (!pixels.isNull()) {
+            if (displayReadyOut) {
+                *displayReadyOut = ready;
+            }
+            return pixels;
+        }
+    }
+    pixels = ImageCache::get(path);
+    if (pixels.isNull()) {
+        pixels = ThumtooCache::cachedLqipImage(path);
+        if (!pixels.isNull()) {
+            ImageCache::put(path, pixels);
+        }
+    }
+    return pixels;
 }
 
 
