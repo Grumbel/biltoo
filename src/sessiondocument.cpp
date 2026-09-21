@@ -178,9 +178,16 @@ void SessionDocument::removeAt(int index)
     if (index < 0 || index >= m_paths.size()) {
         return;
     }
-    m_paths.removeAt(index);
+    SessionImageId id = kInvalidSessionImageId;
     if (index < m_ids.size()) {
+        id = m_ids.at(index);
         m_ids.removeAt(index);
+    }
+    m_paths.removeAt(index);
+    // Drop fat DTO for this id (ids are never recycled). ItemWorld sparse
+    // tables still need removeAppearance / clearAppearance from the view.
+    if (id != kInvalidSessionImageId) {
+        m_appearance.remove(id);
     }
 }
 

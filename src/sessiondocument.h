@@ -61,6 +61,7 @@ public:
     void replaceAll(const QStringList &paths, const QVector<SessionImageId> &ids);
     void append(const QString &path, SessionImageId id = kInvalidSessionImageId);
     void insert(int index, const QString &path, SessionImageId id = kInvalidSessionImageId);
+    /** Remove path/id at index; also drops fat appearance for that id. */
     void removeAt(int index);
     /** Pad or trim ids to match paths (legacy recovery only). */
     void ensureIdsAligned();

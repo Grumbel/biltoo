@@ -32,6 +32,7 @@ private slots:
     // Stage 2 residual (2046): setPaths orphans prior ids; replaceAll keeps them
     void setPaths_clearsAppearance();
     void replaceAll_keepsAppearance();
+    void removeAt_clearsAppearance();
 };
 
 void SessionDocumentTest::empty_initial()
@@ -214,6 +215,25 @@ void SessionDocumentTest::replaceAll_keepsAppearance()
     QCOMPARE(doc.idAt(1), idA);
     QVERIFY(doc.appearance().contains(idA));
     QCOMPARE(doc.appearance().get(idA)->cropRect, QRect(5, 5, 20, 20));
+}
+
+void SessionDocumentTest::removeAt_clearsAppearance()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+    const SessionImageId idA = doc.idAt(0);
+    const SessionImageId idB = doc.idAt(1);
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(3, 3, 12, 12);
+    doc.appearance().set(idA, st);
+    doc.appearance().set(idB, st);
+
+    doc.removeAt(0);
+    QVERIFY(!doc.appearance().contains(idA));
+    QVERIFY(doc.appearance().contains(idB));
+    QCOMPARE(doc.size(), 1);
+    QCOMPARE(doc.idAt(0), idB);
 }
 
 QTEST_MAIN(SessionDocumentTest)

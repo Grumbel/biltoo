@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2049-removeat-clears-appearance.** Stage 2 residual: SessionDocument::removeAt drops fat appearance.
+Prior: **2048**.
+
+### Change
+- `SessionDocument::removeAt` removes fat DTO for the deleted SessionImageId
+- Test: `removeAt_clearsAppearance` — sibling row appearance kept
+- Sparse tables still require ItemWorld `removeAppearance` / `clearAppearance`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2049-removeat-clears-appearance-e77da63.bundle HEAD
+```
+Requires tip **2048** (base **e77da63**); includes 1938–2049.
+
+### Next
+- **Stage 4b** only with explicit product decision
+- Phase 6 Tier 4: decode/framing when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2048-image-mode-remove-appearance.** Stage 2 residual: Image-mode session remove clears appearance.
 Prior: **2047**.
 
