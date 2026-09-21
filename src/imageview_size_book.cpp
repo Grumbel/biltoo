@@ -4,6 +4,7 @@
 // Image size book, probes, and GallerySizeResolve host methods.
 
 #include "imageview.h"
+#include "contentxform.h"
 #include "gallerysoftsm.h"
 #include "displayquality.h"
 #include "archivepath.h"
@@ -280,9 +281,14 @@ void ImageView::onSizeResolveGateComplete()
             if (item) {
                 item->setVisible(true);
                 if (!m_sizeBook.isProvisional(item->path())) {
-                    const QSize sz = layoutSizeForPath(item->path());
-                    if (isPositiveSize(sz)) {
-                        item->setIntrinsicSize(sz);
+                    const QSize native = layoutSizeForPath(item->path());
+                    if (isPositiveSize(native)) {
+                        const SessionImageId sid = item->sessionId();
+                        const WorkspaceItemState want =
+                            m_displayPipeline.wantAppearanceForItem(item, sid);
+                        const QSize lay = ContentXform::layoutSize(native, want);
+                        item->setIntrinsicSize(
+                            (isPositiveSize(lay) && lay.width() > 1) ? lay : native);
                     }
                 }
             }

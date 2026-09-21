@@ -9,6 +9,8 @@
 #include "itemcomponents.h"
 #include "imagecache.h"
 #include "sessionappearance.h"
+#include "thumtoocache.h"
+#include "contentxform.h"
 
 #include <QSet>
 #include <QPointer>
@@ -167,11 +169,37 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     // the stack (filesDropped → handleDroppedUrls); re-entrant status/selection
     // updates were tripping Qt "destructor may have already run" asserts.
     {
-        // Workspace scene units = content pixels at scale 1. Placeholder starts
-        // at layout size with identity ContentXform (no pack cell, no flips).
+        // Workspace scene units = content pixels at scale 1. Placeholder must
+        // use content-oriented layout size (turns + crop) so a filmstrip drop of
+        // an already-rotated session image does not start with the unrotated box.
         QSize sz = layoutSizeForPath(path, QImage());
         if (!isPositiveSize(sz) || sz.width() <= 1 || sz.height() <= 1) {
             sz = QSize(512, 512);
+        }
+        {
+            WorkspaceItemState want;
+            if (sessionId != kInvalidSessionImageId
+                && m_itemWorld.hasDurableAppearance(sessionId)) {
+                want = sessionAppearanceValue(sessionId);
+            } else if (!path.isEmpty()) {
+                ThumtooCache::StoredContentAppearance stored;
+                if (ThumtooCache::loadContentAppearance(path, &stored)
+                    && !stored.isIdentity()) {
+                    want.contentHFlip = stored.contentHFlip;
+                    want.contentVFlip = stored.contentVFlip;
+                    want.contentQuarterTurns = stored.contentQuarterTurns;
+                    want.hasCrop = stored.hasCrop;
+                    want.cropRect = stored.cropRect;
+                    want.cropSourceSize = stored.cropSourceSize;
+                    want.cropRotation = stored.cropRotation;
+                }
+            }
+            if (SessionAppearance::hasContentAppearance(want)) {
+                const QSize lay = ContentXform::layoutSize(sz, want);
+                if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
+                    sz = lay;
+                }
+            }
         }
         ImageItem *ph = new ImageItem(path, sz);
         ph->setGalleryCellSize({});

@@ -201,10 +201,13 @@ void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState
     // Intrinsic is always ContentXform layout of file-native size — never sample
     // pixel dimensions. Using displayImage().size() for crops shrank Workspace
     // tiles to soft resolution (and stretched wrong pixels on re-crop).
+    //
+    // Provisional sizes still get orient/crop layout: a 90° content turn must
+    // transpose the box even before the durable probe lands (filmstrip→Workspace
+    // drop was leaving unrotated intrinsic + oriented pixels → clipped tile).
     const QString path = item->path();
     QSize fileNative = logicalSizeForPath(path);
-    if (!isPositiveSize(fileNative) || fileNative.width() <= 1 || fileNative.height() <= 1
-        || (!path.isEmpty() && m_sizeBook.isProvisional(path))) {
+    if (!isPositiveSize(fileNative) || fileNative.width() <= 1 || fileNative.height() <= 1) {
         // Fall back: crop rect in recorded source space, or orient-only current.
         if (want.hasCrop && !want.cropRect.isEmpty()) {
             const QSize basis = (want.cropSourceSize.isValid()
@@ -215,6 +218,12 @@ void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState
                 want.cropRect.normalized(), want.cropSourceSize, basis);
             if (c.width() > 1 && c.height() > 1) {
                 item->setIntrinsicSize(c.size());
+            }
+        } else if (ContentXform::swapsAspect(ContentXform::Value::fromState(want))) {
+            // Orient-only with no usable native: transpose current box if odd turns.
+            const QSize cur = item->imageSize();
+            if (isPositiveSize(cur) && cur.width() > 1 && cur.height() > 1) {
+                item->setIntrinsicSize(QSize(cur.height(), cur.width()));
             }
         }
         return;

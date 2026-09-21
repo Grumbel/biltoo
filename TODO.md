@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2130-drop-oriented-layout-size.** Filmstrip→Workspace drop uses content-oriented layout size.
+Prior: **2129**.
+
+### Change
+- `placeOrMoveImageAt` placeholder: ContentXform layout size from session/XDG want
+  (90° turns transpose the box before decode)
+- `applyContentLayoutSize`: apply orient/crop on provisional sizes too (no early skip)
+- `onSizeResolveGateComplete`: set intrinsic via layoutSize(native, want)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2130-drop-oriented-layout-size-e77da63.bundle HEAD
+```
+Requires tip **2129** (base **e77da63**); includes 1938–2130.
+
+### Next
+- Runtime QA: filmstrip drag of content-rotated image into Workspace
+- Runtime QA: SESSION §7 identity checklist
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2129-session-checklist-handoff.** SESSION checklist + bundle index for residual series.
 Prior: **2128**.
 
