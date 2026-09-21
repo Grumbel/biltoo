@@ -301,6 +301,33 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
     }
 }
 
+void ImageView::emitItemOpenInImageMode(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    if (item->sessionId() != kInvalidSessionImageId) {
+        emit sessionImageOpenRequested(item->sessionId());
+        return;
+    }
+    int listIdx = sessionListIndex(item);
+    // Gallery pack order aligns live canvas with session rows after reorder.
+    if (listIdx < 0 && isGalleryMode()) {
+        const int live = m_items.indexOf(item);
+        if (live >= 0
+            && (!m_sessionDoc || live < m_sessionDoc->size())) {
+            listIdx = live;
+        }
+    }
+    if (listIdx >= 0) {
+        emit sessionSlotOpenRequested(listIdx);
+        return;
+    }
+    if (!item->path().isEmpty()) {
+        emit galleryItemOpenRequested(item->path());
+    }
+}
+
 
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
@@ -348,19 +375,7 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         const QPointF scenePos = mapToScene(event->pos());
         for (QGraphicsItem *gi : m_scene->items(scenePos)) {
             if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (item->sessionId() != kInvalidSessionImageId) {
-                    emit sessionImageOpenRequested(item->sessionId());
-                } else {
-                    const int listIdx = sessionListIndex(item);
-                    if (listIdx >= 0) {
-                        emit sessionSlotOpenRequested(listIdx);
-                    } else {
-                        const QString path = item->path();
-                        if (!path.isEmpty()) {
-                            emit galleryItemOpenRequested(path);
-                        }
-                    }
-                }
+                emitItemOpenInImageMode(item);
                 event->accept();
                 return;
             }
@@ -405,19 +420,7 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
         for (QGraphicsItem *gi : m_scene->items(scenePos)) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
                 if (ii->isInteractive() && m_items.contains(ii)) {
-                    if (ii->sessionId() != kInvalidSessionImageId) {
-                        emit sessionImageOpenRequested(ii->sessionId());
-                    } else {
-                        const int listIdx = sessionListIndex(ii);
-                        if (listIdx >= 0) {
-                            emit sessionSlotOpenRequested(listIdx);
-                        } else {
-                            const QString path = ii->path();
-                            if (!path.isEmpty()) {
-                                emit galleryItemOpenRequested(path);
-                            }
-                        }
-                    }
+                    emitItemOpenInImageMode(ii);
                     event->accept();
                     return;
                 }

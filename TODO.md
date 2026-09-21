@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2114-emit-item-open-in-image-mode.** SESSION residual: unified tile open id→slot→path.
+Prior: **2113**.
+
+### Change
+- `ImageView::emitItemOpenInImageMode`: SessionImageId → list index → path
+- Gallery: unbound without list cache uses live canvas index as pack-aligned
+  slot hint (after reorder)
+- Gallery Enter, Gallery double-click, Workspace double-click use the helper
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2114-emit-item-open-in-image-mode-e77da63.bundle HEAD
+```
+Requires tip **2113** (base **e77da63**); includes 1938–2114.
+
+### Next
+- SESSION residual: path open/remove only when unbound without list/live index
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2113-reorder-prefer-sessionId.** SESSION residual: pack/canvas reorder prefers SessionImageId.
 Prior: **2112**.
 

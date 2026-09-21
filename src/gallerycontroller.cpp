@@ -688,16 +688,7 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
 
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
         if (ImageItem *item = m_view->selectedOrFirstGalleryItem()) {
-            if (item->sessionId() != kInvalidSessionImageId) {
-                emit m_view->sessionImageOpenRequested(item->sessionId());
-            } else {
-                const int listIdx = m_view->sessionListIndex(item);
-                if (listIdx >= 0) {
-                    emit m_view->sessionSlotOpenRequested(listIdx);
-                } else if (!item->path().isEmpty()) {
-                    emit m_view->galleryItemOpenRequested(item->path());
-                }
-            }
+            m_view->emitItemOpenInImageMode(item);
             event->accept();
             return true;
         }
