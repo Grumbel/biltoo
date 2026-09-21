@@ -2,6 +2,44 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2152-root-stash-layoutsize-zoom.** Root causes (no aspect heuristic).
+Prior: **2151**.
+
+### Filmstrip content size
+**Wrong:** >8% sample-vs-native aspect heuristic.
+**Right:** `ContentXform::layoutSize(native, storedOrientState)` — same authority
+as the canvas (native probe + XDG content quarter-turns / flips / unbound crop).
+
+### Empty ImageView from Workspace
+**Root cause:** `resolveImageModePendingPixels` only scanned **Gallery** stashed
+tiles for soft underlay. Workspace→Image stashes tiles on **Workspace** stash;
+Gallery stash is empty, so Image mode got no soft and stayed blank.
+**Fix:** try Gallery stash, then Workspace stash (same same-id / host-raw rules).
+
+### Workspace tiles disappearing on zoom
+1. `updateWorkspaceSceneRect()` after wheel zoom so sceneRect keeps covering
+   free-form tiles when the viewport-in-scene halo shrinks.
+2. Tile plan: if axis-aligned local vis ∩ contentRect is empty but the item
+   still intersects the view in scene space (rotated / edge float), plan using
+   full `contentRect()` instead of aborting (empty plan → blank tiles).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2152-root-stash-layoutsize-zoom-e77da63.bundle HEAD
+```
+Requires tip **2151** (base **e77da63**); includes 1938–2152.
+
+### Next (runtime QA)
+- Rotated filmstrip cells correct on load and after drag-drop (no resize needed)
+- Workspace double-click → Image shows the image
+- Workspace zoom in: tiles stay visible
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2151-root-cause-filmstrip-gallery-image.** Root-cause fixes (no speculative hacks).
 Prior: **2150**.
 

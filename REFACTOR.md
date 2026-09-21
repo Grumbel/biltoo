@@ -1582,6 +1582,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2151:** Filmstrip oriented aspect; Image placeholder defer Gallery-only; LoadRestore Workspace-only.
 
+**biltoo-2152:** Filmstrip ContentXform::layoutSize; Image soft from Workspace stash; zoom sceneRect/tile plan.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

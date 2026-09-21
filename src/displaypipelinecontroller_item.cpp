@@ -492,31 +492,41 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
     }
     const ContentXform::Value wantX = ContentXform::Value::fromState(want);
 
-    for (ImageItem *cand : m_view->hostGallery().stashedItems()) {
-        if (!cand || cand->path() != path || !cand->hasDisplayPixels()) {
-            continue;
-        }
-        pixels = cand->displayImage();
-        if (pixels.isNull()) {
-            continue;
-        }
-        const bool sameId = (m_view->hostSessionId().hasCurrentId()
-                             && cand->sessionId() == m_view->hostSessionId().currentIdValue());
-        // Stage 2: ItemWorld when bound (stashed tiles still dual-written).
-        const bool hasApplied = m_view->itemHasAppliedContentXform(cand);
-        const ContentXform::Value applied = m_view->itemAppliedContentXform(cand);
-        // Display-ready: same session row and bake already matches store want.
-        if (sameId && hasApplied && ContentXform::equal(applied, wantX)) {
-            if (displayReadyOut) {
-                *displayReadyOut = true;
+    // Soft still on mode-stashed tiles (Gallery or Workspace). Opening Image
+    // from Workspace left an empty view because only Gallery stash was scanned
+    // while Workspace onLeave holds the live tiles with decoded soft.
+    auto tryStashSoft = [&](const QList<ImageItem *> &stash) -> QImage {
+        for (ImageItem *cand : stash) {
+            if (!cand || cand->path() != path || !cand->hasDisplayPixels()) {
+                continue;
             }
-            return pixels;
+            QImage px = cand->displayImage();
+            if (px.isNull()) {
+                continue;
+            }
+            const bool sameId = (m_view->hostSessionId().hasCurrentId()
+                                 && cand->sessionId() == m_view->hostSessionId().currentIdValue());
+            const bool hasApplied = m_view->itemHasAppliedContentXform(cand);
+            const ContentXform::Value applied = m_view->itemAppliedContentXform(cand);
+            if (sameId && hasApplied && ContentXform::equal(applied, wantX)) {
+                if (displayReadyOut) {
+                    *displayReadyOut = true;
+                }
+                return px;
+            }
+            if (!hasApplied || ContentXform::equal(applied, ContentXform::Value{})) {
+                return px;
+            }
         }
-        // Host-raw: only unbaked / identity soft (safe to materialize with want).
-        if (!hasApplied || ContentXform::equal(applied, ContentXform::Value{})) {
-            return pixels;
-        }
-        // Baked for another id or mismatched want — skip.
+        return {};
+    };
+    pixels = tryStashSoft(m_view->hostGallery().stashedItems());
+    if (!pixels.isNull()) {
+        return pixels;
+    }
+    pixels = tryStashSoft(m_view->hostWorkspace().stashedItems());
+    if (!pixels.isNull()) {
+        return pixels;
     }
     return {};
 }

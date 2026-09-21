@@ -12,6 +12,7 @@
 #include "imageloader.h"
 #include "thumtoocache.h"
 #include "sessionappearance.h"
+#include "contentxform.h"
 
 #include <QAction>
 #include <QApplication>
@@ -1071,14 +1072,10 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
     it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole, incomingEdge);
 
-    // SIZE.md: ordinary soft samples must not redefine cell geometry — prefer
-    // durable size probe / prior content size. Appearance overrides (crop /
-    // rotate / flip) intentionally change display aspect and must drive layout
-    // from the oriented image, not the unoriented native probe.
-    //
-    // XDG orient applied in applyStoredAppearanceToThumb produces an oriented
-    // pixmap while cachedSize(path) stays native. Using native for the cell
-    // left wrong aspect until refreshAllItemGeometry (resize) used pm.size().
+    // SIZE.md: cell geometry from durable layout size, not sample pixels.
+    // Override installs (session crop/orient bake) use the override image size.
+    // Ordinary installs: native probe + ContentXform::layoutSize from XDG
+    // content orient/crop (same as canvas), never a sample-aspect heuristic.
     if (!m_cropToSquare) {
         QSize aspectBasis;
         if (m_allowOverrideIconInstall && image.width() > 0 && image.height() > 0) {
@@ -1089,24 +1086,34 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
             if (!path.isEmpty()) {
                 native = ThumtooCache::cachedSize(path);
             }
-            const bool haveNative = native.isValid() && native.width() > 0 && native.height() > 0;
-            const bool haveImg = image.width() > 0 && image.height() > 0;
-            // Oriented soft (90/270, or crop) changes display aspect vs native.
-            bool orientChangedAspect = false;
-            if (haveNative && haveImg) {
-                const double na = double(native.width()) / double(native.height());
-                const double ia = double(image.width()) / double(image.height());
-                orientChangedAspect = qAbs(na - ia) > 0.08;
+            if (native.isValid() && native.width() > 0 && native.height() > 0) {
+                // Orient/crop from the same stored appearance used for the pixmap.
+                WorkspaceItemState layoutSt;
+                ThumtooCache::StoredContentAppearance stored;
+                if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
+                    layoutSt.contentHFlip = stored.contentHFlip;
+                    layoutSt.contentVFlip = stored.contentVFlip;
+                    layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
+                    // Bound rows: orient only for layout (IDENTITY — no path crop).
+                    bool anySessionId = false;
+                    for (SessionImageId id : m_sessionIds) {
+                        if (id != kInvalidSessionImageId) {
+                            anySessionId = true;
+                            break;
+                        }
+                    }
+                    if (!anySessionId) {
+                        layoutSt.hasCrop = stored.hasCrop;
+                        layoutSt.cropRect = stored.cropRect;
+                        layoutSt.cropSourceSize = stored.cropSourceSize;
+                        layoutSt.cropRotation = stored.cropRotation;
+                    }
+                }
+                aspectBasis = ContentXform::layoutSize(native, layoutSt);
             }
-            if (orientChangedAspect) {
-                aspectBasis = image.size();
-            } else if (haveNative) {
-                aspectBasis = native;
-            }
-            if (!aspectBasis.isValid()) {
+            if (!aspectBasis.isValid() || aspectBasis.width() < 1 || aspectBasis.height() < 1) {
                 const QSize prev = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
                 if (prev.isValid() && prev.width() > 0 && prev.height() > 0) {
-                    // Keep prior cell geometry; only the pixmap upgrades (LQIP→soft).
                     const QSize hint = m_delegate->cellSizeForContent(font(), prev);
                     it->setSizeHint(hint);
                     const QModelIndex idx = indexFromItem(it);
@@ -1122,8 +1129,6 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
                     }
                     return;
                 }
-                // First paint, no durable size yet: square provisional at thumbSize.
-                // sizeReady → applyNativeAspect sets real aspect once.
                 aspectBasis = QSize(m_thumbSize, m_thumbSize);
             }
         }

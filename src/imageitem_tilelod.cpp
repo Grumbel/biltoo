@@ -310,8 +310,21 @@ void ImageItem::prepareTileLodPlan()
         QGraphicsView *view = scene()->views().first();
         const QRectF sceneVis =
             view->mapToScene(view->viewport()->rect()).boundingRect();
+        // If this item is still on-screen in scene space, never drop the plan
+        // because axis-aligned local intersection went empty (rotated items /
+        // float edge cases made tiles vanish on zoom).
+        const bool onScreen =
+            sceneBoundingRect().intersects(sceneVis)
+            || sceneVis.contains(sceneBoundingRect().center());
         const QRectF localVis = mapFromScene(sceneVis).boundingRect();
-        visLocal = localVis.intersected(contentRect());
+        const QRectF hit = localVis.intersected(contentRect());
+        if (!hit.isEmpty()) {
+            visLocal = hit;
+        } else if (onScreen) {
+            visLocal = contentRect();
+        } else {
+            return;
+        }
     }
     if (visLocal.isEmpty()) {
         return;

@@ -118,6 +118,11 @@ void ImageView::wheelZoomViewAboutCursor(QWheelEvent *event)
     m_framing.releaseFit();
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     scale(factor, factor);
+    // Workspace: keep sceneRect covering all free-form tiles after zoom so
+    // items are not clipped when the viewport-in-scene halo shrinks.
+    if (isWorkspaceMode()) {
+        updateWorkspaceSceneRect();
+    }
     // Soft / PreferCache / tile LOD: coalesce continuous wheel notches.
     // Per-notch climb+tick was heavy on the GUI thread (set_viewport, cancel,
     // issue_requests). Paint uses the last plan + soft until the debounce fires.
