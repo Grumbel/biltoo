@@ -48,20 +48,17 @@ public:
     ~ImageItem() override;
 
     QString path() const { return m_path; }
-    void setPath(const QString &path);
     /**
      * Stable session-image id (0 = unbound). Survives session insert/delete;
      * list index does not. Identity for appearance and Workspace association.
      */
     SessionImageId sessionId() const { return m_sessionId; }
-    void setSessionId(SessionImageId id) { m_sessionId = id; }
     /**
      * @deprecated List-order cache only — shifts on insert/delete.
      * Prefer sessionId() for identity; ImageView::sessionListIndex() for list
      * position (resolves via SessionDocument when bound).
      */
     int sessionIndex() const { return m_sessionIndex; }
-    void setSessionIndex(int index) { m_sessionIndex = index; }
     /** DisplaySurfaceController id (0 = unbound). Host install policy key. */
     qint64 displaySurfaceId() const { return m_displaySurfaceId; }
     QSize imageSize() const;
@@ -260,9 +257,13 @@ private:
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
     friend class CropSession;
+    friend class GalleryController;
     // Content-meta / color install — ImageView syncLive* helpers.
     friend class ImageView;
     // Pixel install — ImageView / DisplayPipelineController only (Stage 2).
+    void setPath(const QString &path);
+    void setSessionId(SessionImageId id) { m_sessionId = id; }
+    void setSessionIndex(int index) { m_sessionIndex = index; }
     void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
     void setIntrinsicSize(const QSize &size);
     void setSourceImage(const QImage &image);

@@ -158,6 +158,22 @@ void ImageView::setItemIntrinsicSize(ImageItem *item, const QSize &size)
     item->setIntrinsicSize(size);
 }
 
+void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
+{
+    if (!item) {
+        return;
+    }
+    item->setSessionId(id);
+}
+
+void ImageView::setItemSessionIndex(ImageItem *item, int index)
+{
+    if (!item) {
+        return;
+    }
+    item->setSessionIndex(index);
+}
+
 void ImageView::setItemPreviewImage(ImageItem *item, const QImage &preview)
 {
     if (!item) {

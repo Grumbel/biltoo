@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1986-private-path-session-stamps.** Privatize path + session id/index stamps.
+Prior: **1985**.
+
+### Change
+- `ImageItem::setPath` / `setSessionId` / `setSessionIndex` private
+- Host `setItemSessionId` / `setItemSessionIndex` for Attention + MainWindow
+- Friend `GalleryController` for gallery rebuild stamps
+- Pipeline already friend for setPath on soft replace
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1986-private-path-session-stamps-e77da63.bundle HEAD
+```
+Requires tip **1985** (base **e77da63**); includes 1938–1986.
+
+### Next
+- Characterization re-check
+- Gallery chrome mutators (setGalleryCellSize etc.) still public — layout namespace
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1985-private-intrinsic-display-surface.** Privatize intrinsic size + display surface id.
 Prior: **1984**.
 

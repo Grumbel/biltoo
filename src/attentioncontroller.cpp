@@ -74,7 +74,7 @@ void AttentionController::setAttentionPointsForTarget(const QVector<QPointF> &pt
     SessionImageId sid = attentionSessionId();
     ImageItem *item = m_view->targetItem();
     if (item && sid != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
-        item->setSessionId(sid);
+        m_view->setItemSessionId(item, sid);
     }
     session().setDraft(clamped, sid);
 

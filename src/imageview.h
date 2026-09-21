@@ -502,6 +502,8 @@ public:
     void clearItemDecodedPixels(ImageItem *item);
     /** Host path for logical layout size (ImageItem::setIntrinsicSize is private). */
     void setItemIntrinsicSize(ImageItem *item, const QSize &size);
+    void setItemSessionId(ImageItem *item, SessionImageId id);
+    void setItemSessionIndex(ImageItem *item, int index);
     /**
      * Soft stand-in when install left no display pixels (Gallery soft path).
      * Sole external setPreviewImage path.
