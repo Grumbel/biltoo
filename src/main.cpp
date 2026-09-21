@@ -21,6 +21,7 @@
 #include <QCommandLineOption>
 #include <QDebug>
 #include <QFileInfo>
+#include <QFile>
 #include <QIcon>
 #include <QPainter>
 #include <QPixmap>
@@ -71,6 +72,9 @@ int main(int argc, char *argv[])
     }
 
     QApplication app(argc, argv);
+    // icons.qrc is compiled into static biltoo_lib; without an explicit init the
+    // linker may drop the RCC object and :/icons/* is empty at runtime.
+    Q_INIT_RESOURCE(icons);
     tilelod::TileLodRegistry::instance().apply_environment_overrides();
     // Leave headroom for the GUI thread under tile/soft background load.
     {
@@ -98,29 +102,34 @@ int main(int argc, char *argv[])
     // App icon from embedded SVG. QIcon(":.svg") needs the svg iconengines
     // plugin on QT_PLUGIN_PATH; under nix develop the unwrapped binary often
     // lacks that, so rasterize via QSvgRenderer (linked Qt6::Svg).
+    // Prefer theme when it actually provides sizes (installed + XDG_DATA_DIRS);
+    // otherwise use the qrc (requires Q_INIT_RESOURCE above).
     QIcon appIcon;
     {
-        const QString res = QStringLiteral(":/icons/biltoo.svg");
-        const QIcon native(res);
-        if (!native.isNull() && !native.availableSizes().isEmpty()) {
-            appIcon = native;
-        } else {
-            QSvgRenderer renderer(res);
-            if (renderer.isValid()) {
-                for (int s : {16, 32, 48, 64, 128, 256}) {
-                    QPixmap pm(s, s);
-                    pm.fill(Qt::transparent);
-                    QPainter p(&pm);
-                    p.setRenderHint(QPainter::Antialiasing, true);
-                    renderer.render(&p);
-                    p.end();
-                    appIcon.addPixmap(pm);
-                }
-            }
-        }
         const QIcon theme = QIcon::fromTheme(QStringLiteral("biltoo"));
         if (!theme.isNull() && !theme.availableSizes().isEmpty()) {
             appIcon = theme;
+        } else {
+            const QString res = QStringLiteral(":/icons/biltoo.svg");
+            if (QFile::exists(res)) {
+                const QIcon native(res);
+                if (!native.isNull() && !native.availableSizes().isEmpty()) {
+                    appIcon = native;
+                } else {
+                    QSvgRenderer renderer(res);
+                    if (renderer.isValid()) {
+                        for (int s : {16, 32, 48, 64, 128, 256}) {
+                            QPixmap pm(s, s);
+                            pm.fill(Qt::transparent);
+                            QPainter p(&pm);
+                            p.setRenderHint(QPainter::Antialiasing, true);
+                            renderer.render(&p);
+                            p.end();
+                            appIcon.addPixmap(pm);
+                        }
+                    }
+                }
+            }
         }
     }
     QApplication::setWindowIcon(appIcon);

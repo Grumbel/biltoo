@@ -2,6 +2,37 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1994-qinit-icons-resource.** Q_INIT_RESOURCE for static-lib icons.qrc.
+Prior: **1993**.
+
+### Problem
+`qt.svg: Cannot open file ':/icons/biltoo.svg'` at startup. `icons.qrc` lives in
+static `biltoo_lib`; the linker can drop the RCC object so `:/icons/*` is empty
+(toolbar SVGs and app icon both affected). Not an XDG datadir path bug — qrc
+registration.
+
+### Change
+- `Q_INIT_RESOURCE(icons)` early in `main` after `QApplication`
+- App-icon path: theme first when it has sizes; else qrc only if `QFile::exists`
+  (no spurious QSvgRenderer open of a missing resource)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1994-qinit-icons-resource-e77da63.bundle HEAD
+```
+Requires tip **1993** (base **e77da63**); includes 1938–1994.
+
+### Next
+- Characterization + full build (verify no qt.svg spam; toolbar icons present)
+- Prefer appearanceValue over getAppearance* for remaining value reads
+- Optional: Stage 4 persistence split / drop dual-write later
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1993-controllers-applyItemPlacement.** Route Slideshow/Workspace pose writes through GalleryLayout helper.
 Prior: **1992**.
 
