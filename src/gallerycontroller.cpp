@@ -1300,11 +1300,13 @@ void GalleryController::ensurePlaceholders()
             claimed.insert(existing);
             if (sid != kInvalidSessionImageId
                 && existing->sessionId() == kInvalidSessionImageId) {
-                existing->setSessionId(sid);
+                m_view->setItemSessionId(existing, sid);
+            } else {
+                m_view->refreshSessionIndexCache(existing);
             }
             // sessionIndex is session-list order, not pack row (IDENTITY / Stage 2).
             // Pack multiplicity shares one document index; unbound keeps pack hint.
-            if (m_view->refreshSessionIndexCache(existing) < 0) {
+            if (m_view->sessionListIndex(existing) < 0) {
                 existing->setSessionIndex(i);
             }
             existing->setVisible(true);
@@ -1331,10 +1333,10 @@ void GalleryController::ensurePlaceholders()
         ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(path, sz);
         if (ph) {
             if (sid != kInvalidSessionImageId) {
-                ph->setSessionId(sid);
+                m_view->setItemSessionId(ph, sid);
             }
             // List-order cache from document when bound; pack i only unbound hint.
-            if (m_view->refreshSessionIndexCache(ph) < 0) {
+            if (m_view->sessionListIndex(ph) < 0) {
                 ph->setSessionIndex(i);
             }
             ph->setVisible(true);

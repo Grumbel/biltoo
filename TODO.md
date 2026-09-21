@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2084-setItemSessionId-all-binds.** Stage 2 residual: all valid-id binds go through setItemSessionId.
+Prior: **2083**.
+
+### Change
+- LoadAdd / claim-bind / Image-mode cursor / place / Gallery placeholders /
+  Workspace placeholders / rebind / appearance commit: `setItemSessionId`
+  instead of raw `setSessionId` for valid ids
+- Ensures list-order refresh + applied ContentXform → ItemWorld migrate on every bind
+- Unbind still uses `setSessionId(kInvalidSessionImageId)`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2084-setItemSessionId-all-binds-e77da63.bundle HEAD
+```
+Requires tip **2083** (base **e77da63**); includes 1938–2084.
+
+### Next
+- Stage 2: paint-grade lag residual, or further ImageItem applied demotion
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2083-bind-migrate-applied-contentxform.** Stage 2 residual: migrate applied ContentXform to ItemWorld on bind; pipeline stash uses helpers.
 Prior: **2082**.
 

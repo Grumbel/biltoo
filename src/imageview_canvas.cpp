@@ -260,10 +260,12 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             const bool newlyBoundId = (sid != kInvalidSessionImageId
                                       && existing->sessionId() == kInvalidSessionImageId);
             if (newlyBoundId) {
-                existing->setSessionId(sid);
+                setItemSessionId(existing, sid);
+            } else {
+                refreshSessionIndexCache(existing);
             }
             // sessionIndex is session-list order, not pack row (Stage 2 residual).
-            if (refreshSessionIndexCache(existing) < 0) {
+            if (sessionListIndex(existing) < 0) {
                 existing->setSessionIndex(i);
             }
             if (newlyBoundId && existing->hasDecodedPixels()
@@ -314,10 +316,10 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             ImageItem *ph = m_displayPipeline.createPlaceholderItem(path, layoutSizeForPath(path, hint));
             if (ph) {
                 if (sid != kInvalidSessionImageId) {
-                    ph->setSessionId(sid);
+                    setItemSessionId(ph, sid);
                 }
                 // List-order cache from document when bound; pack i only unbound hint.
-                if (refreshSessionIndexCache(ph) < 0) {
+                if (sessionListIndex(ph) < 0) {
                     ph->setSessionIndex(i);
                 }
                 if (!hint.isNull()) {
@@ -435,7 +437,7 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
                 item->setSessionIndex(-1);
                 continue;
             }
-            item->setSessionIndex(found);
+            setItemSessionId(item, sid); // refresh list index + applied migrate
             usedIndex.insert(found);
             usedId.insert(sid);
             continue;
@@ -448,7 +450,7 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
             if (si < sessionIds.size()) {
                 const SessionImageId listId = sessionIds.at(si);
                 if (listId != kInvalidSessionImageId) {
-                    item->setSessionId(listId);
+                    setItemSessionId(item, listId);
                     usedId.insert(listId);
                 }
             }
@@ -484,7 +486,7 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
             }
             item->setSessionIndex(i);
             if (sid != kInvalidSessionImageId) {
-                item->setSessionId(sid);
+                setItemSessionId(item, sid);
                 usedId.insert(sid);
             }
             usedIndex.insert(i);

@@ -140,11 +140,12 @@ void DisplayPipelineController::reassertPendingBindPlacement(const QString &path
                 }
             }
             if (b.id != kInvalidSessionImageId && item->sessionId() == kInvalidSessionImageId) {
-                item->setSessionId(b.id);
+                m_view->setItemSessionId(item, b.id);
+            } else {
+                // Already bound: still refresh list-order cache from document.
+                m_view->refreshSessionIndexCache(item);
             }
-            // Always prefer document order after bind — do not gate on cache==-1
-            // (stale positive index can lag after reorder; Stage 2 residual).
-            if (m_view->refreshSessionIndexCache(item) < 0 && b.index >= 0) {
+            if (m_view->sessionListIndex(item) < 0 && b.index >= 0) {
                 item->setSessionIndex(b.index);
             }
             break;
@@ -171,12 +172,8 @@ void DisplayPipelineController::claimUnboundItemsForPendingBinds(const QString &
             break;
         }
         if (bound.id != kInvalidSessionImageId) {
-            existing->setSessionId(bound.id);
-        }
-        // Prefer document list index after id bind; PendingSessionBind.index is
-        // the schedule-time fallback.
-        if (bound.id != kInvalidSessionImageId) {
-            if (m_view->refreshSessionIndexCache(existing) < 0 && bound.index >= 0) {
+            m_view->setItemSessionId(existing, bound.id);
+            if (m_view->sessionListIndex(existing) < 0 && bound.index >= 0) {
                 existing->setSessionIndex(bound.index);
             }
         } else if (bound.index >= 0) {
@@ -743,7 +740,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     // Image-mode edits updated ItemWorld sparse appearance while Workspace was stashed.
     WorkspaceItemState app = state;
     if (state.sessionId != kInvalidSessionImageId) {
-        item->setSessionId(state.sessionId);
+        m_view->setItemSessionId(item, state.sessionId);
         if (m_view->itemWorld().hasDurableAppearance(state.sessionId)) {
             app = m_view->sessionAppearanceValue(state.sessionId);
             // Keep placement from the snapshot.

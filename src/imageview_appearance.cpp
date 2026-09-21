@@ -488,7 +488,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
     bool haveContentSlot = false;
     if (sid != kInvalidSessionImageId) {
         if (item->sessionId() == kInvalidSessionImageId) {
-            item->setSessionId(sid);
+            setItemSessionId(item, sid);
         }
         WorkspaceItemState slot = freezeItemAppearance(item);
         slot.sessionId = sid;

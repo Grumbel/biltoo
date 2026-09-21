@@ -60,8 +60,7 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
     if (sessionIndex >= 0) {
         if (ImageItem *existing = findItemBySessionIndex(sessionIndex)) {
             if (sessionId != kInvalidSessionImageId) {
-                existing->setSessionId(sessionId);
-                refreshSessionIndexCache(existing);
+                setItemSessionId(existing, sessionId);
             }
             if (sessionId != kInvalidSessionImageId) {
                 if (m_itemWorld.hasDurableAppearance(sessionId)) {
@@ -211,8 +210,8 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         }
         clearLiveContentMeta(ph);
         if (sessionId != kInvalidSessionImageId) {
-            ph->setSessionId(sessionId);
-            if (refreshSessionIndexCache(ph) < 0 && sessionIndex >= 0) {
+            setItemSessionId(ph, sessionId);
+            if (sessionListIndex(ph) < 0 && sessionIndex >= 0) {
                 ph->setSessionIndex(sessionIndex);
             }
         } else if (sessionIndex >= 0) {
