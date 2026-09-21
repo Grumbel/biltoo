@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2190-characterization-lag-isolation.** hasLiveColorLag(other) is not
+content isolation: setItemSessionId always stamps liveColorLag for the bound id
+(identity grade still inserts a row). Applied values after mode leave must not
+be compared either.
+
+### Fix
+- Drop !hasLiveColorLag(other) and post-flush appliedContentXform QCOMPARE
+- Keep focus lag brightness=5 and durable content isolation asserts
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2190-characterization-lag-isolation-e77da63.bundle HEAD
+```
+
+Next: **2191**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2189-characterization-applied-flush.** imageView_openGalleryCropReturn
 still failed: expected hasAppliedContentXform after Gallery→Image. Applied is
 presentation-only; setViewMode flushes into contentBake and clears residuals.

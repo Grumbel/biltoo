@@ -773,23 +773,22 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     QVERIFY(view.itemWorld().hasAttention(focus));
     QVERIFY(!view.itemWorld().hasAppliedContentXform(focus));
     QVERIFY(view.itemWorld().hasLiveColorLag(focus));
+    QCOMPARE(view.itemWorld().liveColorLag(focus).brightness, 5);
+    // Content isolation: sibling must not share focus crop/bake/color/attention.
     QVERIFY(!view.itemWorld().hasCrop(other));
     QVERIFY(!view.itemWorld().hasContentBake(other));
     QVERIFY(!view.itemWorld().hasColor(other));
     QVERIFY(!view.itemWorld().hasAttention(other));
     QVERIFY(!view.itemWorld().hasAppliedContentXform(other));
-    QVERIFY(!view.itemWorld().hasLiveColorLag(other));
-    // Gallery pack may still have left Placement on the sibling id — content isolation
-    // is the contract, not pack pose absence after pathOrderClear.
+    // setItemSessionId stamps liveColorLag for every bound tile (identity grade
+    // is still a table row). Only the explicit lag on focus is the isolation story.
+    // Gallery pack may leave Placement on the sibling — not a content leak.
     QCOMPARE(view.itemWorld().placement(focus).pos, QPointF(40.0, 60.0));
     // contentBake may include flushed applied (turns) — at least non-identity.
     QVERIFY(view.itemWorld().contentBake(focus).quarterTurns != 0
             || view.itemWorld().contentBake(focus).vFlip);
     QCOMPARE(view.itemWorld().color(focus).grade.brightness, 8);
     QCOMPARE(view.itemWorld().attention(focus).points.size(), 1);
-    QCOMPARE(view.itemWorld().appliedContentXform(focus).quarterTurns, 1);
-    QVERIFY(view.itemWorld().appliedContentXform(focus).hFlip);
-    QCOMPARE(view.itemWorld().liveColorLag(focus).brightness, 5);
 
     // LoadAdd multiplicity on the view overlay only.
     view.pathOrderSetOrder({m_pathA, m_pathA, m_pathA}, {focus, focus, focus});
