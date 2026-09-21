@@ -216,10 +216,35 @@ void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
     if (!item) {
         return;
     }
+    // IDENTITY: one SessionImageId maps to one path. If a live or stashed tile
+    // already holds this id on a different path, unbind it (peer-sync was
+    // seeing sid=2 on both 001.jpg and 002.jpg).
+    if (id != kInvalidSessionImageId && !item->path().isEmpty()) {
+        auto scrub = [&](const QList<ImageItem *> &list) {
+            for (ImageItem *other : list) {
+                if (!other || other == item) {
+                    continue;
+                }
+                if (other->sessionId() != id) {
+                    continue;
+                }
+                if (other->path() == item->path()) {
+                    continue;
+                }
+                qCritical("setItemSessionId: SessionImageId %lld path conflict "
+                          "(%s vs %s) — unbinding other tile",
+                          static_cast<long long>(id),
+                          qPrintable(item->path()),
+                          qPrintable(other->path()));
+                other->setSessionId(kInvalidSessionImageId);
+            }
+        };
+        scrub(m_items);
+        scrub(m_workspace.stashedItems());
+        scrub(m_gallery.stashedItems());
+    }
     item->setSessionId(id);
-    // Stage 2 residual: list-order cache follows document when the id is bound.
     refreshSessionIndexCache(item);
-    // Applied stays on the ImageItem only (no ItemWorld residual).
     if (id != kInvalidSessionImageId) {
         m_itemWorld.setLiveColorLag(id, item->colorAdjustments());
     }

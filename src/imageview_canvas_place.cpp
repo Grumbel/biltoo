@@ -169,27 +169,8 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
     // the stack (filesDropped → handleDroppedUrls); re-entrant status/selection
     // updates were tripping Qt "destructor may have already run" asserts.
     {
-        // Content layout (ItemWorld) — same ground truth as filmstrip/Gallery.
-        if (sessionId != kInvalidSessionImageId
-            && !m_itemWorld.hasContentBake(sessionId)
-            && !path.isEmpty()) {
-            ThumtooCache::StoredContentAppearance stored;
-            if (ThumtooCache::loadContentAppearance(path, &stored)
-                && !stored.isIdentity()) {
-                WorkspaceItemState want;
-                want.path = path;
-                want.sessionId = sessionId;
-                want.contentHFlip = stored.contentHFlip;
-                want.contentVFlip = stored.contentVFlip;
-                want.contentQuarterTurns = stored.contentQuarterTurns;
-                want.hasCrop = stored.hasCrop;
-                want.cropRect = stored.cropRect;
-                want.cropSourceSize = stored.cropSourceSize;
-                want.cropRotation = stored.cropRotation;
-                m_itemWorld.mergeContentFromState(sessionId, want);
-                hostSeedBook().clearSeedAttempted(sessionId);
-            }
-        }
+        // Do not XDG-seed contentBake on place (bound id = ItemWorld only).
+        // Prior seed wrote path orient into bake while host stayed raw.
         QSize sz = contentLayoutSize(path, sessionId);
         if (!isPositiveSize(sz) || sz.width() <= 1 || sz.height() <= 1) {
             sz = QSize(512, 512);

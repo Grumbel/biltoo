@@ -118,6 +118,13 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
         if (slot.sessionId != sessionId) {
             continue;
         }
+        // Never rewrite another tile's path under the same id (IDENTITY).
+        if (!slot.path.isEmpty() && slot.path != path) {
+            qCritical("updateWorkspaceSavedAppearance: sid %lld slot path %s != %s — skip",
+                      static_cast<long long>(sessionId),
+                      qPrintable(slot.path), qPrintable(path));
+            continue;
+        }
         slot.hasCrop = st.hasCrop;
         slot.cropRect = st.cropRect;
         slot.hFlip = hFlip;

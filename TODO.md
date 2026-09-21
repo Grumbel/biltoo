@@ -2,6 +2,24 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2184-session-id-path-identity.** Log showed sid=2 on both 001.jpg
+and 002.jpg (peer sync refuse). setItemSessionId unbinds conflicting tiles;
+Workspace place no longer XDG-seeds contentBake; saved-appearance update is
+path-scoped.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2184-session-id-path-identity-e77da63.bundle HEAD
+```
+
+Next: **2185**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2183-no-xdg-layout-bound.** User log proved Image install turns=0
 bake=0 — orient was not from contentBake. contentLayoutSize still applied path
 XDG for bound ids → swapped layout box vs host-raw pixels (false rotation).
