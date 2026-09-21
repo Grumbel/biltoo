@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2164-find-session-id-live-only.** Individual Gallery tiles missing
+after placing the same session image on Workspace.
+
+### Root cause (from clarified report + code)
+
+`findItemBySessionId` searched **Workspace stash** after live. Gallery
+`setWorkspacePaths` / `ensurePlaceholders` then treated the stashed free-form
+tile as the existing Gallery cell and **skipped creating** that session row.
+Rest of Gallery fine; only Workspace-placed ids vanished from the overview.
+
+### Fix
+
+`findItemBySessionId` = live canvas only. Session remove still uses
+`collectItemsForSessionId` (live + stashes).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2164-find-session-id-live-only-e77da63.bundle HEAD
+```
+
+Next: **2165** — QA Gallery full after Workspace place + return.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2163-central-detach-live.** Image→Workspace bleed fixed by central
 presentation detach in `setViewMode` — not `ImageController::onLeave`.
 

@@ -8,7 +8,8 @@
     void rematerializeGalleryItemFromStore(ImageItem *item);
     /** @deprecated Path is not identity; prefer findItemBySessionId. */
     ImageItem *findItemByPath(const QString &path) const;
-    /** Live canvas item bound to @p sessionId, or nullptr. */
+    /** Live canvas only (not Workspace/Gallery stashes). Same SessionImageId may
+     * exist as a stashed Workspace tile while Gallery needs its own live cell. */
     ImageItem *findItemBySessionId(SessionImageId sessionId) const;
     /**
      * Resolve a path to a live item without always taking the first match.

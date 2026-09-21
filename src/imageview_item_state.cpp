@@ -287,15 +287,16 @@ ImageItem *ImageView::findItemBySessionIndex(int sessionIndex) const
 
 ImageItem *ImageView::findItemBySessionId(SessionImageId sessionId) const
 {
+    // Live canvas only. Workspace (and Gallery) stashes hold parallel
+    // presentations of the same SessionImageId — searching the Workspace stash
+    // here made Gallery setWorkspacePaths/ensurePlaceholders treat a stashed
+    // free-form tile as the Gallery cell and skip creating that session row
+    // (individual images "disappeared" from Gallery after placing on Workspace).
+    // Session remove uses collectItemsForSessionId (live + both stashes).
     if (sessionId == kInvalidSessionImageId) {
         return nullptr;
     }
     for (ImageItem *item : m_items) {
-        if (item->sessionId() == sessionId) {
-            return item;
-        }
-    }
-    for (ImageItem *item : m_workspace.stashedItems()) {
         if (item && item->sessionId() == sessionId) {
             return item;
         }

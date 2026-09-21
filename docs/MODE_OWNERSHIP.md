@@ -133,4 +133,17 @@ Image underlay is presentation-only. It is not stashed; step 2 destroys it.
 Forgetting that step (controller-only leave, no Image path) is what put the
 ImageView image onto Workspace.
 
+## SessionImageId vs live tile
+
+`SessionImageId` is identity for appearance and session membership. It is **not**
+a guarantee of a single `ImageItem*` process-wide.
+
+- **Live canvas** (`m_items`): active-mode presentation only.
+- **Workspace stash**: free-form tiles kept while in Image/Gallery.
+- **Gallery stash**: packed cells kept while in Image.
+
+`findItemBySessionId` searches **live only**. Gallery pack must create a live
+cell for every session row even when Workspace stash already holds that id.
+Session remove uses `collectItemsForSessionId` (live + both stashes).
+
 
