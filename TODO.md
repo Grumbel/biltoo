@@ -2,6 +2,21 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2168-paint-budget-25ms.** ImageItem::paint GUI budget 3→25 ms (noise).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2168-paint-budget-25ms-e77da63.bundle HEAD
+```
+
+Next: **2169**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2167-drop-filmstrip-orient.** Filmstrip aspect jump on drag-drop;
 Workspace drop of rotated session tiles unrotated / stretched.
 
