@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2074-filmstrip-override-aspect.** Filmstrip cell aspect follows oriented appearance.
+Prior: **2073**.
+
+### Change
+- `ThumbnailBar::setThumbnailIcon`: when installing a session appearance override
+  (crop/rotate/flip), drive letterbox aspect from the oriented image size — not
+  unoriented `ThumtooCache::cachedSize` (SIZE.md soft-sample rule does not apply)
+- `refreshAllItemGeometry`: prefer session-id override size for aspect
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2074-filmstrip-override-aspect-e77da63.bundle HEAD
+```
+Requires tip **2073** (base **e77da63**); includes 1938–2074.
+
+### Verify
+Rotate 90° / flip in Image or Workspace — filmstrip cell should swap aspect.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2073-chrome-requires-imageview.** Content chrome without ImageView no longer pixel-bakes alone.
 Prior: **2072**.
 

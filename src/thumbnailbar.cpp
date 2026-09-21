@@ -1064,40 +1064,45 @@ void ThumbnailBar::setThumbnailIcon(int row, const QImage &image)
     it->setData(ThumbnailDelegate::ThumbLoadedRole, true);
     it->setData(ThumbnailDelegate::ThumbDecodeEdgeRole, incomingEdge);
 
-    // SIZE.md: sample (LQIP/soft) must not redefine cell geometry. Prefer durable
-    // size probe; else keep an existing content size; else letterbox the sample
-    // only when we have nothing yet (first paint before sizeReady).
+    // SIZE.md: ordinary soft samples must not redefine cell geometry — prefer
+    // durable size probe / prior content size. Appearance overrides (crop /
+    // rotate / flip) intentionally change display aspect and must drive layout
+    // from the oriented image, not the unoriented native probe.
     if (!m_cropToSquare) {
         QSize aspectBasis;
-        const QString path = (row >= 0 && row < m_files.size()) ? m_files.at(row) : QString();
-        if (!path.isEmpty()) {
-            const QSize native = ThumtooCache::cachedSize(path);
-            if (native.isValid() && native.width() > 0 && native.height() > 0) {
-                aspectBasis = native;
-            }
-        }
-        if (!aspectBasis.isValid()) {
-            const QSize prev = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
-            if (prev.isValid() && prev.width() > 0 && prev.height() > 0) {
-                // Keep prior cell geometry; only the pixmap upgrades (LQIP→soft).
-                const QSize hint = m_delegate->cellSizeForContent(font(), prev);
-                it->setSizeHint(hint);
-                const QModelIndex idx = indexFromItem(it);
-                if (idx.isValid()) {
-                    dataChanged(idx, idx, {Qt::DecorationRole, Qt::SizeHintRole,
-                                           ThumbnailDelegate::ThumbLoadedRole,
-                                           ThumbnailDelegate::ThumbPixmapRole});
+        if (m_allowOverrideIconInstall && image.width() > 0 && image.height() > 0) {
+            aspectBasis = image.size();
+        } else {
+            const QString path = (row >= 0 && row < m_files.size()) ? m_files.at(row) : QString();
+            if (!path.isEmpty()) {
+                const QSize native = ThumtooCache::cachedSize(path);
+                if (native.isValid() && native.width() > 0 && native.height() > 0) {
+                    aspectBasis = native;
                 }
-                doItemsLayout();
-                scheduleLayoutRefresh();
-                if (viewport()) {
-                    viewport()->update(visualItemRect(it));
-                }
-                return;
             }
-            // First paint, no durable size yet: square provisional at thumbSize.
-            // sizeReady → applyNativeAspect sets real aspect once.
-            aspectBasis = QSize(m_thumbSize, m_thumbSize);
+            if (!aspectBasis.isValid()) {
+                const QSize prev = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
+                if (prev.isValid() && prev.width() > 0 && prev.height() > 0) {
+                    // Keep prior cell geometry; only the pixmap upgrades (LQIP→soft).
+                    const QSize hint = m_delegate->cellSizeForContent(font(), prev);
+                    it->setSizeHint(hint);
+                    const QModelIndex idx = indexFromItem(it);
+                    if (idx.isValid()) {
+                        dataChanged(idx, idx, {Qt::DecorationRole, Qt::SizeHintRole,
+                                               ThumbnailDelegate::ThumbLoadedRole,
+                                               ThumbnailDelegate::ThumbPixmapRole});
+                    }
+                    doItemsLayout();
+                    scheduleLayoutRefresh();
+                    if (viewport()) {
+                        viewport()->update(visualItemRect(it));
+                    }
+                    return;
+                }
+                // First paint, no durable size yet: square provisional at thumbSize.
+                // sizeReady → applyNativeAspect sets real aspect once.
+                aspectBasis = QSize(m_thumbSize, m_thumbSize);
+            }
         }
         const QSize content = m_delegate->letterboxContentSize(aspectBasis);
         it->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
@@ -1682,17 +1687,28 @@ void ThumbnailBar::refreshAllItemGeometry()
             it->setSizeHint(m_delegate->cellSize(font()));
             continue;
         }
-        // Prefer pixmap aspect when loaded — role may be provisional square
-        // from before decode or after thumbSize-only refresh of empty cells.
+        // Prefer session appearance override (oriented/cropped), then pixmap,
+        // then role — role may be provisional square from before decode.
         QSize aspect;
-        const QPixmap pm = qvariant_cast<QPixmap>(
-            it->data(ThumbnailDelegate::ThumbPixmapRole));
-        if (!pm.isNull() && pm.width() > 0 && pm.height() > 0) {
-            aspect = pm.size();
-        } else {
-            aspect = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
-            if (aspect.width() < 1 || aspect.height() < 1) {
-                aspect = m_delegate->provisionalContentSize();
+        if (i < m_sessionIds.size()) {
+            const SessionImageId sid = m_sessionIds.at(i);
+            if (sid != kInvalidSessionImageId) {
+                const auto oit = m_sessionIdImageOverrides.constFind(sid);
+                if (oit != m_sessionIdImageOverrides.cend() && !oit.value().isNull()) {
+                    aspect = oit.value().size();
+                }
+            }
+        }
+        if (aspect.width() < 1 || aspect.height() < 1) {
+            const QPixmap pm = qvariant_cast<QPixmap>(
+                it->data(ThumbnailDelegate::ThumbPixmapRole));
+            if (!pm.isNull() && pm.width() > 0 && pm.height() > 0) {
+                aspect = pm.size();
+            } else {
+                aspect = it->data(ThumbnailDelegate::ThumbContentSizeRole).toSize();
+                if (aspect.width() < 1 || aspect.height() < 1) {
+                    aspect = m_delegate->provisionalContentSize();
+                }
             }
         }
         const QSize content = m_delegate->letterboxContentSize(aspect);
