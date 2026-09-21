@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1974-sparse-color-durable-flush.** Sparse Color on durable + flush paths.
+Prior: **1973**.
+
+### Change
+- `persistSessionAppearanceSlot`: after setAppearance dual-write, grade for
+  durable XDG comes from `ItemWorld::color(sid)`
+- `flushColorAdjustCommit`: store base grade from sparse Color before live
+  override
+- `setTargetColorAdjustments`: re-read DTO after setColor without redundant
+  grade assign (setColor already dual-wrote)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1974-sparse-color-durable-flush-e77da63.bundle HEAD
+```
+Requires tip **1973** (base **e77da63**); includes 1938–1974.
+
+### Next
+- Further sparse Color prefer at remaining filmstrip / peer-sync sites
+- ImageItem public-surface trim (sessionIndex deprecation cleanup)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1973-char-green-color-sparse.** CHARACTERIZATION green + Color sparse prefer.
 Prior: **1972**.
 

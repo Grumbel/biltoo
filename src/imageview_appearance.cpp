@@ -413,6 +413,9 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         // captureState prefers applied ContentXform when present (mid-edit
         // authority; full-circle identity stays zero).
         m_itemWorld.setAppearance(sid, slot);
+        // Sparse Color is store authority after dual-write; prefer it for durable
+        // grade fields so the fat DTO is not the only reader.
+        slot.colorAdjust = m_itemWorld.color(sid).grade;
         contentSlot = slot;
         haveContentSlot = true;
     } else {
@@ -580,6 +583,8 @@ void ImageView::flushColorAdjustCommit()
     WorkspaceItemState want;
     if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
         want = m_itemWorld.appearanceValue(sid);
+        // Sparse Color is store authority; live grade overwrites below.
+        want.colorAdjust = m_itemWorld.color(sid).grade;
     } else {
         want = captureState(item);
     }
@@ -632,12 +637,14 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
         ItemComponents::Color c;
         c.grade = adj;
         m_itemWorld.setColor(sid, c);
+        // setColor dual-writes the fat DTO; re-read so applyInteractiveColorGrade
+        // sees the same store as ItemWorld::color(sid).
         if (const WorkspaceItemState *cur = m_itemWorld.getAppearance(sid)) {
             slot = *cur;
-            slot.colorAdjust = adj; // setColor already wrote grade; keep slot local
             if (slot.path.isEmpty() || slot.sessionId == kInvalidSessionImageId) {
                 slot.sessionId = sid;
                 slot.path = item->path();
+                slot.colorAdjust = adj;
                 m_itemWorld.setAppearance(sid, slot);
             }
         }
