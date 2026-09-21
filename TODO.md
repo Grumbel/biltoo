@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2027-projectfile-pose-content-rows.** Stage 4a characterization: pose-only vs content-only project rows.
+Prior: **2026**.
+
+### Change
+`tests/projectfile_roundtrip.cpp`:
+- `appearanceJson_contentOnly_omitsPoseKeys` — `includePose=false` drops pose keys
+- `appearanceJson_poseOnly_identityContent` — pose without crop/orient/grade
+- `project_saveLoad_mixedContentAndPoseRows` — mixed project document round-trip
+
+REFACTOR Stage 4 exit criteria: optional pose/content scenario marked done.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2027-projectfile-pose-content-rows-e77da63.bundle HEAD
+```
+Requires tip **2026** (base **e77da63**); includes 1938–2027.
+
+### Next
+- Remaining `captureState` call sites are interaction-legitimate (see REFACTOR)
+- Stage 4b later: format version + drop dual-write (not now)
+- Stage 3 incremental (systems as free functions) when needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2026-durable-appearance-tests.** Stage 2 residual: characterize hasDurableAppearance + sparse-prefer crop.
 Prior: **2025**.
 

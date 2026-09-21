@@ -159,6 +159,10 @@ private slots:
     void project_saveLoad_colorAndBackground();
     void project_saveLoadSave_jsonStable();
     void project_emptyMinimal();
+    // Stage 4a: content-only vs pose-only rows (REFACTOR exit criteria)
+    void appearanceJson_contentOnly_omitsPoseKeys();
+    void appearanceJson_poseOnly_identityContent();
+    void project_saveLoad_mixedContentAndPoseRows();
 };
 
 void ProjectFileRoundTripTest::appearanceJson_cropRotation()
@@ -485,6 +489,162 @@ void ProjectFileRoundTripTest::project_emptyMinimal()
     QVERIFY(loaded.assets.isEmpty());
     QVERIFY(loaded.images.isEmpty());
     QVERIFY(!loaded.hasWorkspaceBackground || loaded.workspaceBackground.isAppDefault());
+}
+
+void ProjectFileRoundTripTest::appearanceJson_contentOnly_omitsPoseKeys()
+{
+    // Gallery/Image-style row: content appearance without Workspace pose.
+    WorkspaceItemState s;
+    s.hasCrop = true;
+    s.cropRect = QRect(5, 6, 40, 30);
+    s.cropSourceSize = QSize(200, 150);
+    s.contentQuarterTurns = 1;
+    s.contentHFlip = true;
+    s.colorAdjust.contrast = 8;
+    // Pose fields set but must not be serialized when includePose=false.
+    s.pos = QPointF(99, 88);
+    s.scale = 2.5;
+    s.rotation = 15.0;
+
+    const QJsonObject o = ProjectFile::appearanceToJson(s, /*includePose=*/false);
+    QVERIFY(o.contains(QStringLiteral("hasCrop")));
+    QVERIFY(o.contains(QStringLiteral("contentQuarterTurns")));
+    QVERIFY(o.contains(QStringLiteral("contentHFlip")));
+    QVERIFY(o.contains(QStringLiteral("colorContrast")));
+    QVERIFY(!o.contains(QStringLiteral("x")));
+    QVERIFY(!o.contains(QStringLiteral("y")));
+    QVERIFY(!o.contains(QStringLiteral("scaleX")));
+    QVERIFY(!o.contains(QStringLiteral("rotation")));
+    QVERIFY(!o.contains(QStringLiteral("opacity")));
+
+    const WorkspaceItemState back = ProjectFile::appearanceFromJson(o);
+    QVERIFY(appearanceEqual(s, back, /*pose=*/false));
+    // Pose defaults after load without pose keys.
+    QCOMPARE(back.pos, QPointF());
+    QCOMPARE(back.scale, 1.0);
+}
+
+void ProjectFileRoundTripTest::appearanceJson_poseOnly_identityContent()
+{
+    // Workspace pose without content mods (no crop/orient/grade).
+    WorkspaceItemState s;
+    s.pos = QPointF(120.5, -40.25);
+    s.scale = 0.75;
+    s.scaleY = 0.8;
+    s.shear = 0.05;
+    s.rotation = -12.0;
+    s.opacity = 0.9;
+    s.z = 3.0;
+    s.hFlip = true;
+    QVERIFY(!s.hasCrop);
+    QCOMPARE(s.contentQuarterTurns, 0);
+    QVERIFY(s.colorAdjust.isIdentity());
+
+    const QJsonObject o = ProjectFile::appearanceToJson(s, /*includePose=*/true);
+    QVERIFY(!o.contains(QStringLiteral("hasCrop")));
+    QVERIFY(!o.contains(QStringLiteral("contentQuarterTurns")));
+    QVERIFY(!o.contains(QStringLiteral("contentHFlip")));
+    QVERIFY(!o.contains(QStringLiteral("colorBrightness")));
+    QVERIFY(o.contains(QStringLiteral("x")));
+    QVERIFY(o.contains(QStringLiteral("y")));
+    QVERIFY(o.contains(QStringLiteral("scaleX")));
+    QVERIFY(o.contains(QStringLiteral("scaleY")));
+    QVERIFY(o.contains(QStringLiteral("shear")));
+    QVERIFY(o.contains(QStringLiteral("rotation")));
+    QVERIFY(o.contains(QStringLiteral("hFlip")));
+
+    const WorkspaceItemState back = ProjectFile::appearanceFromJson(o);
+    QVERIFY(appearanceEqual(s, back, /*pose=*/true));
+    QVERIFY(!back.hasCrop);
+    QCOMPARE(back.contentQuarterTurns, 0);
+    QVERIFY(back.colorAdjust.isIdentity());
+}
+
+void ProjectFileRoundTripTest::project_saveLoad_mixedContentAndPoseRows()
+{
+    ProjectDocument doc;
+    doc.version = 1;
+    doc.mode = QStringLiteral("workspace");
+
+    ProjectAsset asset;
+    asset.sha256 = QStringLiteral(
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    asset.path = QStringLiteral("/data/mixed.png");
+    doc.assets.append(asset);
+
+    // Row 0: content only (Image/Gallery style — no workspace pose flag).
+    ProjectImage contentOnly;
+    contentOnly.id = 10;
+    contentOnly.assetSha256 = asset.sha256;
+    contentOnly.hasAppearance = true;
+    contentOnly.hasWorkspacePose = false;
+    contentOnly.appearance.hasCrop = true;
+    contentOnly.appearance.cropRect = QRect(1, 2, 50, 40);
+    contentOnly.appearance.cropSourceSize = QSize(400, 300);
+    contentOnly.appearance.contentVFlip = true;
+    contentOnly.appearance.colorAdjust.saturation = 15;
+    contentOnly.appearance.pos = QPointF(1, 1); // must not round-trip as pose
+    contentOnly.appearance.scale = 3.0;
+    doc.images.append(contentOnly);
+
+    // Row 1: pose only (Workspace layout without content mods).
+    ProjectImage poseOnly;
+    poseOnly.id = 11;
+    poseOnly.assetSha256 = asset.sha256;
+    poseOnly.hasAppearance = true;
+    poseOnly.hasWorkspacePose = true;
+    poseOnly.appearance.pos = QPointF(200, 100);
+    poseOnly.appearance.scale = 1.5;
+    poseOnly.appearance.scaleY = 1.2;
+    poseOnly.appearance.rotation = 30.0;
+    poseOnly.appearance.opacity = 0.85;
+    poseOnly.appearance.z = 1.0;
+    doc.images.append(poseOnly);
+
+    // Row 2: content + pose together.
+    ProjectImage both;
+    both.id = 12;
+    both.assetSha256 = asset.sha256;
+    both.hasAppearance = true;
+    both.hasWorkspacePose = true;
+    both.appearance.hasCrop = true;
+    both.appearance.cropRect = QRect(0, 0, 20, 20);
+    both.appearance.cropSourceSize = QSize(100, 100);
+    both.appearance.contentQuarterTurns = 2;
+    both.appearance.pos = QPointF(50, 60);
+    both.appearance.scale = 0.5;
+    both.appearance.rotation = -5.0;
+    doc.images.append(both);
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("mixed.biltoo"));
+    QString err;
+    QVERIFY2(ProjectFile::save(path, doc, &err), qPrintable(err));
+    ProjectDocument loaded;
+    QVERIFY2(ProjectFile::load(path, &loaded, &err), qPrintable(err));
+
+    QCOMPARE(loaded.images.size(), 3);
+
+    const ProjectImage &c = loaded.images.at(0);
+    QVERIFY(c.hasAppearance);
+    QVERIFY(!c.hasWorkspacePose);
+    QVERIFY(appearanceEqual(contentOnly.appearance, c.appearance, /*pose=*/false));
+    QCOMPARE(c.appearance.pos, QPointF());
+    QCOMPARE(c.appearance.scale, 1.0);
+
+    const ProjectImage &p = loaded.images.at(1);
+    QVERIFY(p.hasWorkspacePose);
+    QVERIFY(appearanceEqual(poseOnly.appearance, p.appearance, /*pose=*/true));
+    QVERIFY(!p.appearance.hasCrop);
+    QCOMPARE(p.appearance.contentQuarterTurns, 0);
+
+    const ProjectImage &b = loaded.images.at(2);
+    QVERIFY(b.hasAppearance);
+    QVERIFY(b.hasWorkspacePose);
+    QVERIFY(appearanceEqual(both.appearance, b.appearance, /*pose=*/true));
+    QCOMPARE(b.appearance.contentQuarterTurns, 2);
+    QCOMPARE(b.appearance.cropRect, QRect(0, 0, 20, 20));
 }
 
 QTEST_MAIN(ProjectFileRoundTripTest)

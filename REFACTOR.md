@@ -1023,8 +1023,8 @@ versioned project format that no longer needs the mirror for round-trip.
 - Load always dual-fills sparse tables (`setAppearance` / component sync).
 - `git grep setAppearance` on hot edit paths may still dual-write; save/load
   no longer *require* dual-write correctness for any single field.
-- Characterization: `projectfile_roundtrip` still green; optional scenario for
-  pose-only vs content-only rows.
+- Characterization: `projectfile_roundtrip` still green; pose-only vs
+  content-only rows covered (biltoo-2027).
 
 **Sequencing relative to Stages 0–3**
 
@@ -1349,6 +1349,8 @@ Phase 1–6 rules still apply. Additions:
   store-read gates no longer require fat DTO presence alone.
 - biltoo-2026: Stage 2 residual — itemworld_test hasDurableAppearance + sparse-wins
   crop; demotion status through 2025.
+- biltoo-2027: Stage 4a characterization — projectfile pose-only vs content-only
+  rows (appearanceToJson includePose + mixed project save/load).
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
