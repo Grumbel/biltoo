@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1952-bake-no-redundant-applied.** Bake path relies on syncLive for applied.
+Prior: **1951**.
+
+### Change
+- `bakeItemRotate90` / `bakeItemFlip`: drop redundant `setAppliedContentXform` after
+  ItemWorld write — applied already set by `syncLiveContentMetaFromState` and
+  re-asserted by `attachDisplaySample` after soft `clearDecodedPixels`
+- Remaining external `setAppliedContentXform`: dual-write helper + no-view flip only
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1952-bake-no-redundant-applied-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1952.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Dual-write session fields remain lag fallback after pixel clear until next install
+- Optional: privatize setAppliedContentXform (friend ImageView) like dual-write setters
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1951-draft-enter-sync-live.** Crop draft enter via syncLiveContentMetaFromState.
 Prior: **1950**.
 

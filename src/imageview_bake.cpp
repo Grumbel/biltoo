@@ -116,7 +116,8 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             pathSlot.cropSourceSize = want.cropSourceSize;
             m_itemWorld.setPathState(item->path(), pathSlot);
         }
-        item->setAppliedContentXform(ContentXform::Value::fromState(s));
+        // Applied fingerprint already set by syncLiveContentMetaFromState(want)
+        // and re-asserted by attachDisplaySample after any soft clearDecodedPixels.
     }
 
     commitItemSessionEdit(item);
@@ -221,17 +222,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
 
     commitItemSessionEdit(item);
 
-    {
-        WorkspaceItemState tag;
-        tag.contentHFlip = h;
-        tag.contentVFlip = v;
-        tag.contentQuarterTurns = beforeSt.contentQuarterTurns;
-        tag.hasCrop = cropMap.hasCrop;
-        tag.cropRect = cropMap.cropRect;
-        tag.cropRotation = cropMap.cropRotation;
-        tag.cropSourceSize = cropMap.cropSourceSize;
-        item->setAppliedContentXform(ContentXform::Value::fromState(tag));
-    }
+    // Applied fingerprint already set by syncLiveContentMetaFromState(want).
 
     WorkspaceItemState afterSt = captureState(item);
     afterSt.hasCrop = cropMap.hasCrop;
