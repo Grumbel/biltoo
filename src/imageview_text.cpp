@@ -254,9 +254,8 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
     }
     if (sid != kInvalidSessionImageId) {
         st = sessionAppearanceValue(sid);
-    }
-    // Durable XDG row when session slot is empty (same as imageWithSessionAppearance).
-    if (!SessionAppearance::hasContentAppearance(st) && !path.isEmpty()) {
+    } else if (!path.isEmpty()) {
+        // Unbound only: path XDG (bound = ItemWorld sparse only).
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored)
             && (stored.contentHFlip || stored.contentVFlip

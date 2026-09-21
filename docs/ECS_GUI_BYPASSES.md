@@ -171,5 +171,5 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 | 4 | Applied ContentXform vs store at leave | **2177** flush on setViewMode |
 | 5 | Workspace m_savedItems / freeze→Color | **2177** restore; **2194** snapshot Placement-only; **2195** rememberItemState Placement-only; persist/bind keep durable Color over lag |
 | 6 | Incremental bakeRotate90 | **2178** disk host before incremental |
-| 7 | Path/XDG seed | Orient-only for bound OK |
+| 7 | Path/XDG seed | **2198** path XDG only for unbound (imageWithSessionAppearance / slideshow / text); bound = ItemWorld only |
 

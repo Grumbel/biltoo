@@ -394,30 +394,32 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
         fallback = sessionAppearanceValue(sid);
         app = &fallback;
     }
-    // Unbound only: path map may hold content. Bound content is sparse + XDG
-    // (setPathState strips content when sessionId is set — tip 2069).
+    // Unbound only: path map + path XDG. Bound content is ItemWorld sparse only
+    // (matches Image underlay / contentLayoutSize — no path XDG for bound ids).
     if ((!app || !SessionAppearance::hasContentAppearance(*app))
         && sid == kInvalidSessionImageId && !path.isEmpty()) {
         if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
             fallback = *st;
             app = &fallback;
         }
-    }
-    // Durable XDG appearance when session store is empty (slideshow may paint a
-    // path before installDisplayPixels seeds ItemWorld sparse tables for that id).
-    // Orient/flip only — never adopt path crop into an id-keyed soft paint.
-    if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
-        ThumtooCache::StoredContentAppearance stored;
-        if (ThumtooCache::loadContentAppearance(path, &stored)
-            && (stored.contentHFlip || stored.contentVFlip
-                || stored.contentQuarterTurns != 0)) {
-            fallback = {};
-            fallback.path = path;
-            fallback.sessionId = sid;
-            fallback.contentHFlip = stored.contentHFlip;
-            fallback.contentVFlip = stored.contentVFlip;
-            fallback.contentQuarterTurns = stored.contentQuarterTurns;
-            app = &fallback;
+        if ((!app || !SessionAppearance::hasContentAppearance(*app))) {
+            ThumtooCache::StoredContentAppearance stored;
+            if (ThumtooCache::loadContentAppearance(path, &stored)
+                && (stored.contentHFlip || stored.contentVFlip
+                    || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+                fallback = {};
+                fallback.path = path;
+                fallback.contentHFlip = stored.contentHFlip;
+                fallback.contentVFlip = stored.contentVFlip;
+                fallback.contentQuarterTurns = stored.contentQuarterTurns;
+                if (stored.hasCrop) {
+                    fallback.hasCrop = true;
+                    fallback.cropRect = stored.cropRect;
+                    fallback.cropSourceSize = stored.cropSourceSize;
+                    fallback.cropRotation = stored.cropRotation;
+                }
+                app = &fallback;
+            }
         }
     }
     // Prefer sparse Color grade for filmstrip / soft paint. Grade-only sparse

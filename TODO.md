@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2198-bound-no-path-xdg-soft.** ECS continue: soft-paint paths still
+applied path XDG orient for bound SessionImageIds when ItemWorld was empty
+(desync vs Image underlay which never path-XDG-seeds).
+
+### Fix
+- imageWithSessionAppearance: path map + XDG only when unbound
+- SlideshowController::snapshotSlideshowContentAppearance: same
+- imageview_text content map: XDG only when unbound
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2198-bound-no-path-xdg-soft-e77da63.bundle HEAD
+```
+
+Next: **2199**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2197-stash-clear-stale-applied.** ECS continue: extract shared
 clearStaleAppliedFingerprintIfNeeded; Workspace stash restore uses it (Gallery
 already did inline in 2196). Path-map setPathState already no-ops for bound ids.

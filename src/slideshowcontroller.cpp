@@ -661,7 +661,8 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
             return true;
         }
     }
-    // Unbound path map may hold content; bound content is sparse + XDG only.
+    // Unbound only: path map + path XDG. Bound = ItemWorld sparse only
+    // (matches Image underlay — no path XDG orient for bound ids).
     if (sid == kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(path)) {
             if (SessionAppearance::hasContentAppearance(*st)) {
@@ -669,25 +670,23 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
                 return true;
             }
         }
-    }
-    ThumtooCache::StoredContentAppearance stored;
-    if (ThumtooCache::loadContentAppearance(path, &stored)
-        && (stored.contentHFlip || stored.contentVFlip
-            || stored.contentQuarterTurns != 0
-            || (sid == kInvalidSessionImageId && stored.hasCrop))) {
-        out->path = path;
-        out->sessionId = sid;
-        out->contentHFlip = stored.contentHFlip;
-        out->contentVFlip = stored.contentVFlip;
-        out->contentQuarterTurns = stored.contentQuarterTurns;
-        // Path-keyed XDG crop only for unbound (bound crop is id-keyed).
-        if (sid == kInvalidSessionImageId && stored.hasCrop) {
-            out->hasCrop = true;
-            out->cropRect = stored.cropRect;
-            out->cropSourceSize = stored.cropSourceSize;
-            out->cropRotation = stored.cropRotation;
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(path, &stored)
+            && (stored.contentHFlip || stored.contentVFlip
+                || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+            out->path = path;
+            out->sessionId = sid;
+            out->contentHFlip = stored.contentHFlip;
+            out->contentVFlip = stored.contentVFlip;
+            out->contentQuarterTurns = stored.contentQuarterTurns;
+            if (stored.hasCrop) {
+                out->hasCrop = true;
+                out->cropRect = stored.cropRect;
+                out->cropSourceSize = stored.cropSourceSize;
+                out->cropRotation = stored.cropRotation;
+            }
+            return SessionAppearance::hasContentAppearance(*out);
         }
-        return SessionAppearance::hasContentAppearance(*out);
     }
     return false;
 }
