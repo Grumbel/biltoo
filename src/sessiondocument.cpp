@@ -130,6 +130,24 @@ QList<int> SessionDocument::indicesForPathsByOccurrence(const QStringList &paths
     return indices;
 }
 
+QList<int> SessionDocument::indicesForIds(const QVector<SessionImageId> &ids) const
+{
+    QList<int> indices;
+    if (ids.isEmpty() || isEmpty()) {
+        return indices;
+    }
+    for (SessionImageId id : ids) {
+        if (id == kInvalidSessionImageId) {
+            continue;
+        }
+        const int idx = indexOfId(id);
+        if (idx >= 0) {
+            indices.append(idx);
+        }
+    }
+    return indices;
+}
+
 void SessionDocument::clearPaths()
 {
     m_paths.clear();

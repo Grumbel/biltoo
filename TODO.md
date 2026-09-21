@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2134-appearance-split-indices-for-ids.** Appearance TU split + SessionDocument indicesForIds.
+Prior: **2133**.
+
+### Change
+- Split `imageview_appearance.cpp` → core + `imageview_color_grade.cpp` + `imageview_crop_appearance.cpp`
+  (mechanical; Phase 6 size target: largest appearance-related TU under 800)
+- `SessionDocument::indicesForIds`; `MainWindow::removeSessionIds` thin forward
+- Characterization for indicesForIds
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2134-appearance-split-indices-for-ids-e77da63.bundle HEAD
+```
+Requires tip **2133** (base **e77da63**); includes 1938–2134.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Optional: more MainWindow session chrome → SessionDocument
+- Optional: thin `imageview_canvas.cpp` (885) under 800
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2133-sessiondocument-path-occurrence.** Path occurrence index on SessionDocument.
 Prior: **2132**.
 

@@ -30,6 +30,7 @@ private slots:
     void countPath_and_firstId();
     void indexOfPathPreferId_prefersBoundId();
     void indexOfPathOccurrence_and_indicesByOccurrence();
+    void indicesForIds_skipsInvalidAndMissing();
     void appearance_on_document();
     // Stage 2 residual (2046): setPaths orphans prior ids; replaceAll keeps them
     void setPaths_clearsAppearance();
@@ -210,6 +211,19 @@ void SessionDocumentTest::indexOfPathOccurrence_and_indicesByOccurrence()
     QCOMPARE(shortList.size(), 2);
     QCOMPARE(shortList.at(0), 0);
     QCOMPARE(shortList.at(1), 2);
+}
+
+
+void SessionDocumentTest::indicesForIds_skipsInvalidAndMissing()
+{
+    SessionDocument doc;
+    doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg"), QStringLiteral("/c.jpg")});
+    const SessionImageId idA = doc.idAt(0);
+    const SessionImageId idC = doc.idAt(2);
+    const QList<int> idxs = doc.indicesForIds({idC, kInvalidSessionImageId, idA, SessionImageId(99999)});
+    QCOMPARE(idxs.size(), 2);
+    QCOMPARE(idxs.at(0), 2);
+    QCOMPARE(idxs.at(1), 0);
 }
 
 

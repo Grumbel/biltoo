@@ -63,6 +63,12 @@ public:
      */
     QList<int> indicesForPathsByOccurrence(const QStringList &paths) const;
 
+    /**
+     * List indices for each valid id in @p ids (skips invalid / missing).
+     * Order follows @p ids; duplicate ids yield duplicate indices.
+     */
+    QList<int> indicesForIds(const QVector<SessionImageId> &ids) const;
+
     /** Never reuses an id after remove. */
     SessionImageId allocId();
 

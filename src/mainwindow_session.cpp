@@ -2058,14 +2058,7 @@ void MainWindow::removeSessionIds(const QVector<SessionImageId> &ids)
     if (ids.isEmpty() || m_session.isEmpty()) {
         return;
     }
-    QList<int> indices;
-    for (SessionImageId id : ids) {
-        const int idx = indexOfSessionId(id);
-        if (idx >= 0) {
-            indices.append(idx);
-        }
-    }
-    removeSessionIndices(indices);
+    removeSessionIndices(m_session.indicesForIds(ids));
 }
 
 void MainWindow::removeSessionPaths(const QStringList &paths)

@@ -1543,6 +1543,9 @@ SESSION residual “path index only for fully unbound rows” at the document AP
 **biltoo-2133:** `indexOfPathOccurrence` / `indicesForPathsByOccurrence` on
 SessionDocument; MainWindow remove + append-chrome path fallbacks call them.
 
+**biltoo-2134:** Split appearance TU (core / color grade / crop appearance);
+`SessionDocument::indicesForIds`; appearance core 595 lines (under 800).
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live
