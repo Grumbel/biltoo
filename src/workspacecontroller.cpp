@@ -80,7 +80,6 @@ void WorkspaceController::restore()
                 slot.contentQuarterTurns = it->contentQuarterTurns;
                 slot.contentHFlip = it->contentHFlip;
                 slot.contentVFlip = it->contentVFlip;
-                slot.orientation = 0.0;
             }
             continue;
         }
@@ -100,7 +99,6 @@ void WorkspaceController::restore()
         slot.contentQuarterTurns = it->contentQuarterTurns;
         slot.contentHFlip = it->contentHFlip;
         slot.contentVFlip = it->contentVFlip;
-        slot.orientation = 0.0;
     }
     // AUDIT M27: queue every saved state (including duplicate paths) then load.
     m_view->hostDisplayPipeline().loadGate().setPendingRestoreStates(m_savedItems);

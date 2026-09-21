@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2066-drop-deprecated-orientation.** Remove dead WorkspaceItemState::orientation.
+Prior: **2065**.
+
+### Change
+- Drop `@deprecated` `WorkspaceItemState::orientation` (always forced to 0; content
+  uses contentQuarterTurns; Stage 4b has no v1 merge path)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2066-drop-deprecated-orientation-e77da63.bundle HEAD
+```
+Requires tip **2065** (base **e77da63**); includes 1938–2066.
+
+### Next
+- Phase 7 Stage 2: sessionIndex cache reduction or ContentXform runtime table
+- Phase 6 Tier 4: decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2065-stage4-closed-imageitem-residual.** Stage 4 residual closed; ImageItem residual inventory.
 Prior: **2064**.
 

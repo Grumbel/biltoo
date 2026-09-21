@@ -125,7 +125,6 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
         slot.contentQuarterTurns = st.contentQuarterTurns;
         slot.contentHFlip = st.contentHFlip;
         slot.contentVFlip = st.contentVFlip;
-        slot.orientation = 0.0;
         slot.sessionId = sessionId;
         slot.path = path;
     }

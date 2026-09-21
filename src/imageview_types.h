@@ -251,8 +251,6 @@ struct WorkspaceItemState {
     qreal shear = 0.0;
     /** Workspace placement angle only (free rotate). Never content. */
     qreal rotation = 0.0;
-    /** @deprecated kept for older session merges; prefer contentQuarterTurns. */
-    qreal orientation = 0.0;
     /** Content transforms baked into pixels (disk → crop → flip → quarter turns). */
     int contentQuarterTurns = 0; // 0..3
     bool contentHFlip = false;

@@ -81,7 +81,6 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         WorkspaceItemState s = want;
         s.sessionId = sid;
         s.path = item->path();
-        s.orientation = 0.0;
         s.contentQuarterTurns = turns;
         if (sid != kInvalidSessionImageId) {
             // Content bake/crop only — do not re-sync attention/color/placement.

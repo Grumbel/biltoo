@@ -63,7 +63,6 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     s.path = item->path();
     s.sessionId = sid != kInvalidSessionImageId ? sid : item->sessionId();
     s.sessionIndex = sessionListIndex(item); // document order when bound
-    s.orientation = 0.0;
     // Live pose always wins (interaction may lead the Placement table).
     ItemComponents::applyPlacementToState(s, placementFromItem(item));
 
