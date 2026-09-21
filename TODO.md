@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2030-gallerylayout-pure-size.** Stage 3: pure layoutSizeForNative + donor freeze.
+Prior: **2029**.
+
+### Change
+- `GalleryLayout::layoutSizeForNative` — pure pack aspect from native size + rotation
+- Internal `layoutSize(ImageItem*)` delegates to it
+- `tests/gallerylayout_test.cpp` + CMake `gallerylayout-pure`
+- `copySessionAppearance` donor fallback uses `freezeItemAppearance`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2030-gallerylayout-pure-size-e77da63.bundle HEAD
+```
+Requires tip **2029** (base **e77da63**); includes 1938–2030.
+
+### Next
+- Stage 3: further pack pure-data extraction when needed
+- Remaining direct `captureState`: unbound, crop enter, mid-edit content-bake
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2029-freeze-item-appearance.** Stage 2 residual: freezeItemAppearance consolidates store+live freeze policy.
 Prior: **2028**.
 

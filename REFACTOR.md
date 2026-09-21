@@ -939,7 +939,7 @@ characterization extended before storage changes.
 | **0** | **`ItemWorld` facade** | One type wrapping existing stores behind id-keyed accessors. No storage change, no behaviour change. Later stages mutate *inside* the facade. |
 | **1** | **Split the god-component** | `WorkspaceItemState` remains the **project-file DTO** (`projectfile.cpp` serializes it; `projectfile_roundtrip` pins the shape). Runtime gets separate tables (see below). |
 | **2** | **Demote `ImageItem` to a render proxy** | Highest payoff. Item keeps what Qt needs to draw (pixmap, surface id, transform derived from Placement). Interaction scratch → `ItemInteractSession` (already exists). Tile-LOD cache → runtime-only table under `DisplayPipelineController`. Collapse `captureState` fan-out into Placement / component writes. |
-| **3** | **Systems as free functions** | Entry points: `system(ItemWorld&, std::span<const SessionImageId>)` (or equivalent). GalleryLayout / ContentXform already lean this way; remove `ImageItem*` from pure transforms where possible. |
+| **3** | **Systems as free functions** | Entry points: `system(ItemWorld&, std::span<const SessionImageId>)` (or equivalent). GalleryLayout / ContentXform already lean this way; remove `ImageItem*` from pure transforms where possible. `layoutSizeForNative` (2030) is pure; pack still applies via ImageItem friends. |
 | **4** | **Persistence split** | Tag each table persistent vs derived. Project save walks only persistent tables. Design: see **Stage 4 design** below (tip 2020). |
 | **5** | **Storage (optional)** | Dense index + contiguous arrays *behind* `ItemWorld`. Only if profiled. |
 
@@ -1355,6 +1355,8 @@ Phase 1–6 rules still apply. Additions:
   live overlays when not mid-edit (applied ContentXform still captureState).
 - biltoo-2029: Stage 2 residual — ImageView::freezeItemAppearance consolidates
   store+live freeze policy; remember/persist/snapshot/bind/duplicate/clipboard.
+- biltoo-2030: Stage 3 — GalleryLayout::layoutSizeForNative pure helper + test;
+  copySessionAppearance donor uses freezeItemAppearance.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

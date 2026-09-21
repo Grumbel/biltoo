@@ -37,6 +37,21 @@ inline bool axesSwapForItemRotation(qreal rotationDeg)
     return r > 45.0 && r < 135.0;
 }
 
+/**
+ * Pack aspect size from logical native size and placement rotation (Stage 3 pure).
+ * Soft sample pixels must never be passed as @p native — only intrinsic size.
+ */
+inline QSizeF layoutSizeForNative(const QSizeF &native, qreal rotationDeg)
+{
+    if (native.isEmpty()) {
+        return native;
+    }
+    if (axesSwapForItemRotation(rotationDeg)) {
+        return QSizeF(native.height(), native.width());
+    }
+    return native;
+}
+
 enum class Mode {
     SideBySide,
     Vertical,

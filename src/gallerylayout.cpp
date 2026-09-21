@@ -44,14 +44,10 @@ QSizeF nativeSize(const ImageItem *item)
 /** Pixmap size with 90°-class rotation applied (for packing aspect ratio). */
 QSizeF layoutSize(const ImageItem *item)
 {
-    const QSizeF ns = nativeSize(item);
-    if (!item || ns.isEmpty()) {
-        return ns;
+    if (!item) {
+        return {};
     }
-    if (axesSwapForItemRotation(item->placement().rotation)) {
-        return QSizeF(ns.height(), ns.width());
-    }
-    return ns;
+    return layoutSizeForNative(nativeSize(item), item->placement().rotation);
 }
 
 /** Uniform pack pose: center + scale, shear cleared; rotation/flips/z preserved. */

@@ -587,6 +587,14 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-placementlinear-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME placementlinear-roundtrip COMMAND biltoo-placementlinear-test)
 
+  # Stage 3 pure: GalleryLayout axes swap + layoutSizeForNative (header-only).
+  add_executable(biltoo-gallerylayout-test
+    tests/gallerylayout_test.cpp
+  )
+  target_include_directories(biltoo-gallerylayout-test PRIVATE src)
+  target_link_libraries(biltoo-gallerylayout-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME gallerylayout-pure COMMAND biltoo-gallerylayout-test)
+
   add_executable(biltoo-rasterclimbsm-test
     tests/rasterclimbsm_test.cpp
     src/rasterclimbsm.cpp

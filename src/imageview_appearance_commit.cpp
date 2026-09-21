@@ -212,7 +212,7 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
         if (!donor) {
             return;
         }
-        dst = captureState(donor);
+        dst = freezeItemAppearance(donor);
     }
     dst.sessionId = toId;
     dst.pos = QPointF();
