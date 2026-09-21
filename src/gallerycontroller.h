@@ -46,7 +46,7 @@ public:
     void leaveForImageMode();
     void returnFromImage(int layoutMode, const QString &focusPath = QString(),
                          SessionImageId focusId = kInvalidSessionImageId);
-    void enter(int packagedLayout);
+    void enter(int packagedLayoutInt, int previousModeInt = -1);
 
     bool hasStash() const { return !m_stashedItems.isEmpty(); }
     QList<ImageItem *> &stashedItems() { return m_stashedItems; }

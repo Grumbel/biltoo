@@ -246,19 +246,18 @@ void GalleryController::onLeave(int nextMode)
     // Any other leave path drops the snapshot.
     if (next == ImageView::ViewMode::Image) {
         // Keep tiles + decoded pixels for a fast return to Gallery.
-        // Pending LoadAdds may still fill stashed placeholders in Image mode.
         stashItems();
     } else {
+        // Gallery → Workspace / other: discard the pack. Shared ImageCache /
+        // thumtoo tile RAM makes populateGalleryCanvas rebuild cheap. Stashing
+        // the pack into Gallery stash caused Gallery::enter (from Workspace)
+        // to restore grid tiles onto live, then Workspace.stashItems to capture
+        // those grid tiles as the free-form arrangement.
         m_haveScroll = false;
         m_haveViewCenter = false;
-        // Gallery → Workspace / other: cancel decode jobs, then *stash* packed
-        // tiles (do not destroy). Destroying left return-to-Gallery depending
-        // only on populate/decode; soft samples were gone and session images
-        // looked "removed" until a full rebuild. Stash keeps pixels for
-        // restore + Image soft seeding. Live list is emptied by stashItems so
-        // Workspace cannot "move" grid tiles by SessionImageId.
         m_view->hostGallery().invalidateDecodes();
-        stashItems();
+        discardStash(); // drop any stale Image-return stash
+        m_view->clearLiveCanvas();
         m_view->pathOrderClear();
     }
 }
@@ -283,12 +282,21 @@ void GalleryController::returnFromImage(int layoutMode, const QString &focusPath
     applyPendingRestore();
 }
 
-void GalleryController::enter(int packagedLayoutInt)
+void GalleryController::enter(int packagedLayoutInt, int previousModeInt)
 {
     auto packagedLayout = static_cast<LayoutMode>(packagedLayoutInt);
     if (packagedLayout == LayoutMode::FreeForm) {
         packagedLayout = LayoutMode::Masonry;
     }
+    ImageView::ViewMode previous = ImageView::ViewMode::Gallery;
+    if (previousModeInt >= 0) {
+        previous = static_cast<ImageView::ViewMode>(previousModeInt);
+    } else if (m_view->isWorkspaceMode()) {
+        previous = ImageView::ViewMode::Workspace;
+    } else if (m_view->isImageMode()) {
+        previous = ImageView::ViewMode::Image;
+    }
+
     // Preserve multi-select when only switching Gallery layout (not entering
     // from Image/Workspace — prepareGalleryCanvas clears selection).
     QStringList selectedPaths;
@@ -297,12 +305,15 @@ void GalleryController::enter(int packagedLayoutInt)
     QString anchorPath;
     int anchorIndex = -1;
     SessionImageId anchorId = kInvalidSessionImageId;
-    const bool layoutSwitch = m_view->isGalleryMode();
+    const bool layoutSwitch = (previous == ImageView::ViewMode::Gallery)
+        && m_view->isGalleryMode();
 
-    // Returning from Image: reattach cached tiles before packing.
-    // Hold paints until after applyLayout so crop-sized cells never show with
-    // pre-crop pixels for a frame (peer sync + pack ordering).
-    const bool restoredStash = !layoutSwitch && !m_stashedItems.isEmpty();
+    // Restore Gallery stash only when returning from Image. Stash from a prior
+    // Image visit must not be reattached when entering from Workspace (that
+    // put packed cells on the Workspace canvas via a later workspace stash).
+    const bool restoredStash = !layoutSwitch
+        && previous == ImageView::ViewMode::Image
+        && !m_stashedItems.isEmpty();
     const bool holdPaint = restoredStash;
     if (holdPaint && m_view->viewport()) {
         m_view->viewport()->setUpdatesEnabled(false);
@@ -348,16 +359,14 @@ void GalleryController::enter(int packagedLayoutInt)
         }
     }
 
+    // Workspace leave is owned by setViewMode / enterGallery central switch.
+    // Only stash here if we still appear to be in Workspace (legacy bypass).
     if (m_view->isWorkspaceMode()) {
         m_view->hostWorkspace().snapshotFreeFormStates();
         m_view->hostWorkspace().snapshot();
-        // enterGallery bypasses setViewMode → Workspace onLeave never runs.
-        // Stash free-form tiles so Gallery→Workspace can reattach without
-        // depending only on async LoadRestore (which left an empty canvas).
         m_view->hostWorkspace().stashItems();
     }
-    // Do not discardStash(): permanent Workspace arrangement must survive
-    // Gallery. Gallery packs from session paths / pathOrder, not live tiles.
+    // Do not discard Workspace stash: free-form arrangement survives Gallery.
     if (layoutSwitch) {
         // Soft reset: keep items and selection paths; only clear view zoom.
         // Drop scroll snapshot — user asked for a new layout, not return-from-Image.

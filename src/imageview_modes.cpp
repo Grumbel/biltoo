@@ -266,7 +266,6 @@ void ImageView::prepareImageModeCanvas()
 
 void ImageView::setViewMode(ViewMode mode)
 {
-
     if (mode == m_viewMode) {
         return;
     }
@@ -279,37 +278,49 @@ void ImageView::setViewMode(ViewMode mode)
     }
 
     const ViewMode previous = m_viewMode;
+
+    // --- Central mode switch (leave → set mode → enter) -------------------
+    // Controllers used to leave/enter while m_viewMode still named the *old*
+    // mode. Gallery::enter saw isWorkspaceMode() true, restored gallery stash
+    // onto the live canvas, then hostWorkspace().stashItems() put *gallery*
+    // packed tiles into the Workspace stash — Workspace later reattached a
+    // grid layout and Gallery looked empty after populate.
+    //
+    // Contract:
+    //   1. Leave previous (snapshot/stash or discard pack).
+    //   2. setActiveMode so isXMode() matches the destination.
+    //   3. Enter destination with explicit previous mode.
     if (previous == ViewMode::Gallery) {
         m_gallery.onLeave(static_cast<int>(mode));
-    }
-
-    if (previous == ViewMode::Workspace && mode != ViewMode::Workspace) {
+    } else if (previous == ViewMode::Workspace) {
         m_workspace.onLeave(static_cast<int>(mode));
     }
+    // Image has no onLeave: single underlay is cleared by Image enter or by
+    // Gallery/Workspace enter when residual live tiles remain.
 
-    // Sticky Fit/Fill/1:1 is Image-mode only.
     if (mode != ViewMode::Image) {
         releaseStickyZoom();
     }
 
     if (mode == ViewMode::Image) {
+        // ImageController::enter sets ActiveMode + builds underlay.
         m_image.enter();
         return;
     }
 
     if (mode == ViewMode::Workspace) {
+        setActiveMode(ViewMode::Workspace, LayoutMode::FreeForm);
         m_workspace.enter(static_cast<int>(previous));
         return;
     }
 
-    // Gallery — sole entry is GalleryController::enter (also used by enterGallery).
-    // setViewMode(Gallery) is not used by MainWindow; keep a safe path that
-    // restores stash and packs rather than a second divergent implementation.
+    // Gallery
     LayoutMode layout = m_layout.currentMode();
     if (layout == LayoutMode::FreeForm) {
         layout = LayoutMode::Masonry;
     }
-    m_gallery.enter(static_cast<int>(layout));
+    setActiveMode(ViewMode::Gallery, layout);
+    m_gallery.enter(static_cast<int>(layout), static_cast<int>(previous));
 }
 
 
@@ -377,7 +388,20 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
 {
     // Sticky Fit/Fill/1:1 is Image-mode only.
     releaseStickyZoom();
-    m_gallery.enter(static_cast<int>(packagedLayout));
+    if (packagedLayout == LayoutMode::FreeForm) {
+        packagedLayout = LayoutMode::Masonry;
+    }
+    if (m_viewMode == ViewMode::Gallery) {
+        // Layout-only switch inside Gallery (no leave/enter of other modes).
+        m_gallery.enter(static_cast<int>(packagedLayout),
+                        static_cast<int>(ViewMode::Gallery));
+        return;
+    }
+    // Full mode switch through the central path so Workspace/Image leave runs
+    // and setActiveMode happens before GalleryController::enter.
+    // Preserve requested layout for setViewMode's Gallery branch.
+    m_layout.setMode(packagedLayout);
+    setViewMode(ViewMode::Gallery);
 }
 
 // --- Tool / nav shell (was imageview_view.cpp) ---

@@ -1586,6 +1586,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2153:** Image soft seed from stash; Gallery leave stashes; Workspace soft under tiles on zoom.
 
+**biltoo-2154:** Central mode switch (leave→setActiveMode→enter); Gallery pack rebuild not cross-stash.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

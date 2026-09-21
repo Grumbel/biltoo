@@ -2,6 +2,54 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2154-central-mode-switch.** Mode switch ownership fixed at the root.
+Prior: **2153** (Gallery→Workspace stash was harmful — reverted).
+
+### Root cause (why 2153 made it worse)
+
+`enterGallery()` called `GalleryController::enter` **without** leaving Workspace
+and **without** setting `m_viewMode` first. Combined with stashing Gallery packs
+on leave-to-Workspace:
+
+1. Gallery stash held packed grid tiles
+2. Enter Gallery from Workspace restored that stash onto live
+3. Still `isWorkspaceMode()==true` → `Workspace.stashItems()` captured **grid**
+   tiles as the free-form arrangement
+4. Workspace later reattached a Gallery layout; Gallery looked empty after
+   populate/defer
+
+### Design (central switch)
+
+`ImageView::setViewMode` / `enterGallery` now:
+
+1. **Leave** previous mode (Gallery/Workspace onLeave)
+2. **`setActiveMode`** so `isXMode()` matches the destination
+3. **Enter** destination with explicit `previous` mode
+
+Gallery pack is **rebuilt** on return from Workspace (`populateGalleryCanvas` +
+shared ImageCache/thumtoo). Gallery stash is **only** for Gallery↔Image.
+
+Gallery leave → Workspace: `clearLiveCanvas` + discard stash (not stash pack).
+
+Gallery enter restores stash **only** when `previous == Image`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2154-central-mode-switch-e77da63.bundle HEAD
+```
+Requires tip **2153** (base **e77da63**); includes 1938–2154.
+
+### Next (runtime QA)
+- Gallery → Workspace → Gallery: full session pack, not empty, not grid-on-workspace
+- Workspace double-click → Image shows soft/pixels
+- Workspace zoom: tiles stay visible
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2153-image-soft-gallery-stash-zoom.** Confirmed root causes for three bugs.
 Prior: **2152**.
 
