@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2001-bind-book-sessionListIndex.** Pending bind applies list index from document.
+Prior: **2000**.
+
+### Change
+`ImageView` pending-bind take path: after `setSessionId`, stamp
+`sessionIndex` from `sessionListIndex` (document), with schedule-time
+`PendingSessionBind.index` only as fallback — same policy as load/restore (1999).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2001-bind-book-sessionListIndex-e77da63.bundle HEAD
+```
+Requires tip **2000** (base **e77da63**); includes 1938–2001.
+
+### Next
+- sessionIndex cache policy is consistent on bind/restore/rebind; remaining
+  stamps are intentional list-row indices (gallery populate, append, Image-mode cursor)
+- Optional: Stage 4 dual-write reduction
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2000-rebind-id-index-hash.** rebindWorkspaceSession: O(1) id→index; path-mismatch clear.
 Prior: **1999**.
 

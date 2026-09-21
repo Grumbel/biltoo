@@ -1241,6 +1241,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1998: durable sessionIndex from sessionListIndex; no item-cache restamp after captureState.
 - biltoo-1999: restore/bind stamp ImageItem sessionIndex cache from sessionListIndex.
 - biltoo-2000: rebindWorkspaceSession id→index hash; path-mismatch clears list cache.
+- biltoo-2001: pending-bind stamps sessionIndex via sessionListIndex after id bind.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

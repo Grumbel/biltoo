@@ -139,8 +139,10 @@ bool ImageView::takePendingSessionBindForNewItem(const QString &path, ImageItem 
         m_bindBook.takeBindAt(bi, out);
         if (out->id != kInvalidSessionImageId) {
             item->setSessionId(out->id);
-        }
-        if (out->index >= 0 && out->id != kInvalidSessionImageId) {
+            // Prefer document list order after id bind; schedule-time index is fallback.
+            const int listIdx = sessionListIndex(item);
+            item->setSessionIndex(listIdx >= 0 ? listIdx : out->index);
+        } else if (out->index >= 0) {
             item->setSessionIndex(out->index);
         }
         return true;
