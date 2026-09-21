@@ -31,6 +31,7 @@ private slots:
     void crop_fallbackWhenDtoWrittenDirectly();
     void clearAppearance_clearsSparseTables();
     void appliedContentXform_runtimeOnly();
+    void liveColorLag_runtimeOnly();
     void contentBake_setAndClear();
     void color_setAndClear();
     void setAppearance_writesBakeAndColor();
@@ -725,6 +726,40 @@ void ItemWorldTest::appliedContentXform_runtimeOnly()
     // Unbound id is a no-op.
     world.setAppliedContentXform(kInvalidSessionImageId, x);
     QVERIFY(!world.hasAppliedContentXform(kInvalidSessionImageId));
+}
+
+/** Stage 2 residual: live colour lag is runtime-only (not durable Color). */
+void ItemWorldTest::liveColorLag_runtimeOnly()
+{
+    ItemWorld world;
+
+    ColorAdjustments g;
+    g.brightness = 18;
+    g.contrast = 105;
+    world.setLiveColorLag(7, g);
+
+    QVERIFY(world.hasLiveColorLag(7));
+    QCOMPARE(world.liveColorLag(7).brightness, 18);
+    QCOMPARE(world.liveColorLag(7).contrast, 105);
+    // Not durable Color sparse table.
+    QVERIFY(!world.hasColor(7));
+    QVERIFY(!world.hasDurableAppearance(7));
+
+    world.clearLiveColorLag(7);
+    QVERIFY(!world.hasLiveColorLag(7));
+
+    world.setLiveColorLag(7, g);
+    world.removeAppearance(7);
+    QVERIFY(!world.hasLiveColorLag(7));
+
+    world.setLiveColorLag(7, g);
+    world.setLiveColorLag(8, g);
+    world.clearAppearance();
+    QVERIFY(!world.hasLiveColorLag(7));
+    QVERIFY(!world.hasLiveColorLag(8));
+
+    world.setLiveColorLag(kInvalidSessionImageId, g);
+    QVERIFY(!world.hasLiveColorLag(kInvalidSessionImageId));
 }
 
 QTEST_MAIN(ItemWorldTest)

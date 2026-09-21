@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2091-itemworld-liveColorLag.** Stage 2 residual: ItemWorld runtime live colour lag table.
+Prior: **2090**.
+
+### Change
+- `ItemWorld::setLiveColorLag` / `hasLiveColorLag` / `liveColorLag` — runtime-only
+  host-side grade scratch when bound (not durable Color)
+- `syncLiveColorFromState` dual-writes lag table; `setItemSessionId` seeds lag on bind
+- `itemLiveColor` prefers ItemWorld lag when bound; item mirror for paint / unbound
+- Pure test `liveColorLag_runtimeOnly`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2091-itemworld-liveColorLag-e77da63.bundle HEAD
+```
+Requires tip **2090** (base **e77da63**); includes 1938–2091.
+
+### Next
+- Stage 2: paint mirror residual (intentional on item)
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2090-applied-colorAdjust-test-demotion-status.** Stage 2 residual: applied colorAdjust test + demotion status through 2089.
 Prior: **2089**.
 

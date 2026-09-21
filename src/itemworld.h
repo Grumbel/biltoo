@@ -215,6 +215,44 @@ public:
         return m_appliedContentXforms.value(id);
     }
 
+    /**
+     * Runtime-only live colour grade lag (Stage 2 residual host-side scratch).
+     * Never project-persisted (distinct from durable Color sparse table).
+     * Dual-written with ImageItem::m_colorAdjust when bound so host reads can
+     * prefer ItemWorld; paint keeps the item mirror.
+     */
+    void setLiveColorLag(SessionImageId id, const ColorAdjustments &grade)
+    {
+        if (id == kInvalidSessionImageId) {
+            return;
+        }
+        m_liveColorLags.insert(id, grade);
+    }
+
+    void clearLiveColorLag(SessionImageId id)
+    {
+        if (id == kInvalidSessionImageId) {
+            return;
+        }
+        m_liveColorLags.remove(id);
+    }
+
+    bool hasLiveColorLag(SessionImageId id) const
+    {
+        if (id == kInvalidSessionImageId) {
+            return false;
+        }
+        return m_liveColorLags.contains(id);
+    }
+
+    ColorAdjustments liveColorLag(SessionImageId id) const
+    {
+        if (id == kInvalidSessionImageId) {
+            return {};
+        }
+        return m_liveColorLags.value(id);
+    }
+
     void removeAppearance(SessionImageId id)
     {
         if (id == kInvalidSessionImageId) {
@@ -226,9 +264,10 @@ public:
         m_colors.remove(id);
         m_placements.remove(id);
         m_appliedContentXforms.remove(id);
+        m_liveColorLags.remove(id);
     }
 
-    /** Clear sparse component tables and runtime applied ContentXform. */
+    /** Clear sparse component tables and runtime applied / live-color lag. */
     void clearAppearance()
     {
         m_crops.clear();
@@ -237,6 +276,7 @@ public:
         m_colors.clear();
         m_placements.clear();
         m_appliedContentXforms.clear();
+        m_liveColorLags.clear();
     }
 
     /** Sparse crop table (Stage 1). Empty crop ⇒ absent. */
@@ -469,6 +509,8 @@ private:
     QHash<SessionImageId, ItemComponents::Placement> m_placements;
     /** Runtime-only; not in appearanceValue / project save. */
     QHash<SessionImageId, ContentXform::Value> m_appliedContentXforms;
+    /** Runtime-only live grade lag; not durable Color. */
+    QHash<SessionImageId, ColorAdjustments> m_liveColorLags;
 };
 
 #endif // ITEMWORLD_H

@@ -527,9 +527,8 @@ public:
     ContentXform::Value itemAppliedContentXform(const ImageItem *item) const;
     /**
      * Live colour grade for @p item (slider / paint lag).
-     * Stage 2 residual: interaction authority is always the ImageItem mirror;
-     * durable grade is ItemWorld Color (setTargetColorAdjustments / project).
-     * Use this helper in host logic instead of digging item->colorAdjustments().
+     * Prefer ItemWorld runtime lag when bound (host-side scratch); ImageItem
+     * mirror for paint / unbound. Durable grade is ItemWorld Color.
      */
     ColorAdjustments itemLiveColor(const ImageItem *item) const;
     /**
