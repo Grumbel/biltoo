@@ -229,6 +229,13 @@ public:
      * Slideshow and Image-mode framing share this.
      */
     QSize logicalSizeForPath(const QString &path) const override;
+    /**
+     * Content layout size for a session row (or unbound path): native file size
+     * × ItemWorld content ops (SessionImageId). Same rule as filmstrip provider
+     * and applyContentLayoutSize — never soft sample dims, never native alone
+     * when orient/crop is known.
+     */
+    QSize contentLayoutSize(const QString &path, SessionImageId sessionId) const;
     // Host accessors (controllers): path raster, books, prefs — imageview_host_accessors.inc
 #include "imageview_host_accessors.inc"
 

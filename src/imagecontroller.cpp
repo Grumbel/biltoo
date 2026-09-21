@@ -107,8 +107,9 @@ void ImageController::enter()
     if (!path.isEmpty() && m_view->itemCount() == 0) {
         biltooModeDbg("Image::enter FORCE underlay path=%s",
                       qPrintable(QFileInfo(path).fileName()));
-        const QSize sz = m_view->layoutSizeForPath(path, ImageCache::get(path));
-        ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(path, sz);
+        const QSize sz = m_view->contentLayoutSize(path, wantId);
+        ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(
+            path, isPositiveSize(sz) ? sz : QSize(1, 1));
         if (ph) {
             m_view->hostDisplayPipeline().bindImageModeSessionCursor(ph);
             m_view->syncImageModeSceneRect(ph);

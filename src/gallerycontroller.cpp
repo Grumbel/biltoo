@@ -1345,8 +1345,8 @@ void GalleryController::ensurePlaceholders()
                 existing->setSessionIndex(i);
             }
             existing->setVisible(true);
-            // Refresh intrinsic from definitive size map.
-            const QSize sz = m_view->layoutSizeForPath(path, ImageCache::get(path));
+            // Content layout (ItemWorld orient/crop), not file-native alone.
+            const QSize sz = m_view->contentLayoutSize(path, sid);
             if (isPositiveSize(sz) && !m_view->hostSizeBook().isProvisional(path)) {
                 m_view->setItemIntrinsicSize(existing, sz);
             }
@@ -1362,10 +1362,11 @@ void GalleryController::ensurePlaceholders()
             m_view->hostBindBook().setIndexForPath(path, i);
         }
 
-        // Prefer definitive size; soft hint only if still provisional (should be rare).
+        // Prefer content layout size (ItemWorld); soft install may follow.
         const QImage hint = ImageCache::get(path);
-        const QSize sz = m_view->layoutSizeForPath(path, hint);
-        ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(path, sz);
+        const QSize sz = m_view->contentLayoutSize(path, sid);
+        ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(
+            path, isPositiveSize(sz) ? sz : QSize(1, 1));
         if (ph) {
             if (sid != kInvalidSessionImageId) {
                 m_view->setItemSessionId(ph, sid);

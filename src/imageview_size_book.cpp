@@ -86,7 +86,8 @@ QSize ImageView::imageSizeForPath(const QString &path)
 
 QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHint)
 {
-    // Prefer definitive logical size (map / thumtoo) — never soft/LQIP sample dims.
+    // File-native size only (map / thumtoo) — not content-oriented layout.
+    // Prefer contentLayoutSize(path, sessionId) for placeholder / pack cells.
     // previewHint is display-only; using it for aspect made layout jump when LQIP
     // (wrong aspect / tiny box) was replaced by the size probe.
     Q_UNUSED(previewHint);
@@ -103,6 +104,38 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
         return bookSize;
     }
     return imageSizeForPath(path);
+}
+
+QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId) const
+{
+    // Ground truth: native × ItemWorld content ops (same as filmstrip provider).
+    QSize native = logicalSizeForPath(path);
+    if (!(native.width() > 1 && native.height() > 1)) {
+        native = m_sizeBook.known(path);
+    }
+    if (!(native.width() > 1 && native.height() > 1)) {
+        // Trigger probe on non-const path via const_cast schedule is awkward;
+        // callers still call layoutSizeForPath which schedules. Return native-ish.
+        const QSize known = ThumtooCache::cachedSize(path);
+        if (known.width() > 1 && known.height() > 1) {
+            native = known;
+        } else {
+            return native; // may be empty/provisional
+        }
+    }
+    WorkspaceItemState want;
+    if (sessionId != kInvalidSessionImageId && hasSessionAppearance(sessionId)) {
+        want = sessionAppearanceValue(sessionId);
+    } else if (sessionId == kInvalidSessionImageId && !path.isEmpty()) {
+        if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
+            want = *st;
+        }
+    }
+    const QSize lay = ContentXform::layoutSize(native, want);
+    if (lay.width() > 1 && lay.height() > 1) {
+        return lay;
+    }
+    return native;
 }
 
 

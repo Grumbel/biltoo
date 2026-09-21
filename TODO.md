@@ -2,6 +2,41 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2170-content-layout-size.** Gallery/Image/Workspace placeholders
+use ItemWorld content layout (same ground truth as filmstrip 2169).
+
+### Investigation
+
+`layoutSizeForPath` is **file-native only** but was used as intrinsic for:
+
+- Gallery `ensurePlaceholders` (existing + new)
+- `setWorkspacePaths` createPlaceholder
+- Image force underlay
+- Workspace placeOrMove (partially fixed earlier with local orient)
+
+Rotated session rows got unoriented boxes until install; soft host in oriented
+box → stretch. Tile path already documents not using oriented imageSize as native.
+
+### Fix
+
+`ImageView::contentLayoutSize(path, sid)` = native × ItemWorld want.
+Migrated Gallery / canvas / Image enter / placeOrMove.
+
+See `docs/LAYOUT_GROUND_TRUTH.md`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2170-content-layout-size-e77da63.bundle HEAD
+```
+
+Next: **2171** — remaining layoutSizeForPath call sites (pendingTile Image mode).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2169-filmstrip-itemworld-aspect.** Filmstrip cell aspect from ItemWorld
 ground truth, not override pixmap size / path-only spaghetti.
 
