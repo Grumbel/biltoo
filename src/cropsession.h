@@ -66,16 +66,20 @@ public:
      * Prefer ImageCache for Apply host; fall back to item display only when
      * the live pixels are not already a prior crop bake.
      */
-    static QImage pickApplyHost(ImageItem *item, const QString &path, bool *fromCache);
+    /** @p hasApplied/@p applied from ImageView::itemHas/itemAppliedContentXform. */
+    static QImage pickApplyHost(ImageItem *item, const QString &path, bool *fromCache,
+                                bool hasApplied, const ContentXform::Value &applied);
 
     /**
      * True when enter can KEEP the live display pixels (no re-bake): full-frame,
      * no prior crop, applied/live grade already matches content-only want.
      */
+    /** @p hasApplied/@p applied from ImageView itemApplied helpers (Stage 2). */
     static bool canKeepDisplayForEnter(const ImageItem *item,
                                        const ContentXform::Value &wantX,
                                        const WorkspaceItemState &contentOnly,
-                                       bool hadPriorCrop, bool needGeomBake);
+                                       bool hadPriorCrop, bool needGeomBake,
+                                       bool hasApplied, const ContentXform::Value &applied);
 
     /** Zero free placement (item rotate/shear/flip) so crop draft is content-only. */
     static void clearItemFreePlacementForDraft(ImageItem *item);
@@ -163,9 +167,10 @@ public:
 
     void restoreEnterScale(ImageItem *item) const;
 
+    /** Orient from appearance or @p applied — no ImageItem dig (Stage 2). */
     static QSize cropBasisSize(const QSize &imageSize, const QSize &fileNative,
                                const WorkspaceItemState *orientFromAppearance,
-                               const ImageItem *item);
+                               bool hasApplied, const ContentXform::Value &applied);
 
     void applyRecordToState(WorkspaceItemState *s, const RecordGeometry &rec,
                             const QSize &cropBasis) const;
@@ -207,7 +212,8 @@ public:
 
     enum class ApplyHostStatus { Ok, NeedFull, NoPixels };
     static ApplyHostStatus classifyApplyHost(const QImage &host, bool hostFromCache,
-                                             const ImageItem *item);
+                                             bool hasApplied,
+                                             const ContentXform::Value &applied);
 
     static SessionAppearance::PixelKind applyPixelKind(bool multiMp);
 

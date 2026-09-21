@@ -244,8 +244,10 @@ void CropController::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         || m_view->hostSizeBook().isProvisional(item->path())) {
         fileNative = {};
     }
+    const bool hasApplied = m_view->itemHasAppliedContentXform(item);
+    const ContentXform::Value appliedCx = m_view->itemAppliedContentXform(item);
     const QSize cropBasis = CropSession::cropBasisSize(
-        item->imageSize(), fileNative, orientApp, item);
+        item->imageSize(), fileNative, orientApp, hasApplied, appliedCx);
     // Stage 2: durable orient/grade from sparse-prefer store; live pose/grade
     // from the item. Avoid a full captureState rebuild when orient is already
     // in orientStore.
@@ -298,9 +300,12 @@ bool CropController::applyCropCommit(ImageItem *item)
 
         const QString path = item->path();
         bool hostFromCache = false;
-        QImage host = CropSession::pickApplyHost(item, path, &hostFromCache);
+        const bool hasApplied = m_view->itemHasAppliedContentXform(item);
+        const ContentXform::Value appliedCx = m_view->itemAppliedContentXform(item);
+        QImage host = CropSession::pickApplyHost(item, path, &hostFromCache,
+                                                 hasApplied, appliedCx);
         const CropSession::ApplyHostStatus hostSt =
-            CropSession::classifyApplyHost(host, hostFromCache, item);
+            CropSession::classifyApplyHost(host, hostFromCache, hasApplied, appliedCx);
         if (hostSt != CropSession::ApplyHostStatus::Ok) {
             flashCropHud(CropFlash::applyHostStatus(hostSt));
             return false;
@@ -550,8 +555,10 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
     const ContentXform::Value &wantX = sample.wantX;
     // Full-frame already on the item (no crop bake): keep those pixels.
     // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
-    if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
-                                            sample.needGeomBake)) {
+    if (CropSession::canKeepDisplayForEnter(
+            item, wantX, contentOnly, sample.hadPriorCrop, sample.needGeomBake,
+            m_view->itemHasAppliedContentXform(item),
+            m_view->itemAppliedContentXform(item))) {
         // Draft chrome: contentOnly is withoutCrop — applied fingerprint via
         // syncLiveContentMetaFromState (no separate clearLive).
         CropSession::clearItemFreePlacementForDraft(item);

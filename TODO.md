@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2082-cropsession-applied-from-view.** Stage 2 residual: CropSession takes applied ContentXform from ImageView helpers.
+Prior: **2081**.
+
+### Change
+- `pickApplyHost` / `canKeepDisplayForEnter` / `classifyApplyHost` / `cropBasisSize`
+  take `hasApplied` + `ContentXform::Value` from the caller
+- CropController passes `itemHasAppliedContentXform` / `itemAppliedContentXform`
+  (ItemWorld when bound)
+- CropSession no longer digs ImageItem applied mirror for content authority
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2082-cropsession-applied-from-view-e77da63.bundle HEAD
+```
+Requires tip **2081** (base **e77da63**); includes 1938–2082.
+
+### Next
+- Stage 2: paint-grade lag residual, or further ImageItem applied demotion
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2081-applied-contentxform-prefer-itemworld.** Stage 2 residual: prefer ItemWorld applied reads when bound.
 Prior: **2080**.
 

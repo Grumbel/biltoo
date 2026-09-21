@@ -35,7 +35,8 @@ CropSession::EnterFullRaster CropSession::pickEnterFullRaster(ImageItem *item,
     return out;
 }
 
-QImage CropSession::pickApplyHost(ImageItem *item, const QString &path, bool *fromCache)
+QImage CropSession::pickApplyHost(ImageItem *item, const QString &path, bool *fromCache,
+                                  bool hasApplied, const ContentXform::Value &applied)
 {
     QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
     if (fromCache) {
@@ -44,8 +45,7 @@ QImage CropSession::pickApplyHost(ImageItem *item, const QString &path, bool *fr
     if (!host.isNull()) {
         return host;
     }
-    if (item && item->hasAppliedContentXform()
-        && item->tileContentXform().hasCrop) {
+    if (item && hasApplied && applied.hasCrop) {
         return {};
     }
     if (!item) {
@@ -61,19 +61,21 @@ QImage CropSession::pickApplyHost(ImageItem *item, const QString &path, bool *fr
 bool CropSession::canKeepDisplayForEnter(const ImageItem *item,
                                          const ContentXform::Value &wantX,
                                          const WorkspaceItemState &contentOnly,
-                                         bool hadPriorCrop, bool needGeomBake)
+                                         bool hadPriorCrop, bool needGeomBake,
+                                         bool hasApplied,
+                                         const ContentXform::Value &applied)
 {
-    if (!item || hadPriorCrop || !item->hasDisplayPixels() || item->tileContentXform().hasCrop) {
+    if (!item || hadPriorCrop || !item->hasDisplayPixels()
+        || (hasApplied && applied.hasCrop)) {
         return false;
     }
     if (item->displayPixelLongEdge() < ContentXform::kGuiMaterializeMaxEdge) {
         return false;
     }
-    const ContentXform::Value applied = item->tileContentXform();
-    const bool appliedOk = item->hasAppliedContentXform()
+    const bool appliedOk = hasApplied
         && !applied.hasCrop
         && ContentXform::equal(applied, wantX);
-    const bool liveGradeOk = !item->hasAppliedContentXform()
+    const bool liveGradeOk = !hasApplied
         && !needGeomBake
         && item->colorAdjustments().matches(contentOnly.colorAdjust);
     return appliedOk || liveGradeOk;
@@ -306,7 +308,7 @@ void CropSession::restoreEnterScale(ImageItem *item) const
 
 QSize CropSession::cropBasisSize(const QSize &imageSize, const QSize &fileNative,
                                  const WorkspaceItemState *orientFromAppearance,
-                                 const ImageItem *item)
+                                 bool hasApplied, const ContentXform::Value &applied)
 {
     QSize cropBasis = imageSize;
     if (fileNative.width() <= 1 || fileNative.height() <= 0) {
@@ -317,12 +319,11 @@ QSize CropSession::cropBasisSize(const QSize &imageSize, const QSize &fileNative
         orientOnly.contentQuarterTurns = orientFromAppearance->contentQuarterTurns;
         orientOnly.contentHFlip = orientFromAppearance->contentHFlip;
         orientOnly.contentVFlip = orientFromAppearance->contentVFlip;
-    } else if (item) {
-        const ContentXform::Value live = item->tileContentXform();
-        orientOnly.contentHFlip = live.hFlip;
-        orientOnly.contentVFlip = live.vFlip;
+    } else if (hasApplied) {
+        orientOnly.contentHFlip = applied.hFlip;
+        orientOnly.contentVFlip = applied.vFlip;
         orientOnly.contentQuarterTurns =
-            ContentXform::normalizeQuarterTurns(live.quarterTurns);
+            ContentXform::normalizeQuarterTurns(applied.quarterTurns);
     }
     const QSize oriented = ContentXform::layoutSize(fileNative, orientOnly);
     if (oriented.width() > 1 && oriented.height() > 0) {
@@ -481,13 +482,13 @@ bool CropSession::appearanceHasCrop(const WorkspaceItemState *app, bool haveApp)
 
 CropSession::ApplyHostStatus CropSession::classifyApplyHost(const QImage &host,
                                                             bool hostFromCache,
-                                                            const ImageItem *item)
+                                                            bool hasApplied,
+                                                            const ContentXform::Value &applied)
 {
     if (!host.isNull()) {
         return ApplyHostStatus::Ok;
     }
-    if (!hostFromCache && item && item->hasAppliedContentXform()
-        && item->tileContentXform().hasCrop) {
+    if (!hostFromCache && hasApplied && applied.hasCrop) {
         return ApplyHostStatus::NeedFull;
     }
     return ApplyHostStatus::NoPixels;
