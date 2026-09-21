@@ -45,11 +45,11 @@ duplicates) of those rows on a free-form canvas. Placing on Workspace must
 | From → To | Leave does | Enter does |
 |-----------|------------|------------|
 | Workspace → Image | `snapshot` + **stash all** free-form tiles (pointers stay in Workspace stash) | Clear live; `loadImage(classicPath)` underlay from LQIP / ImageCache / filmstrip sample / tiles |
-| Image → Workspace | (Image has no stash) | Restore Workspace pointer stash; if empty, durable `LoadRestore` |
+| Image → Workspace | **Central detach** destroys Image underlay | Restore Workspace pointer stash; if empty, durable `LoadRestore` |
 | Gallery → Image | Stash packed cells | `loadImage`; return restores Gallery stash |
 | Gallery → Workspace | Discard pack + clear live | Restore Workspace stash / durable |
 | Workspace → Gallery | Stash free-form | Discard residual live; **`populateGalleryCanvas` full session** |
-| Image → Gallery | (no Image leave) | Prefer Gallery pointer stash; else **`populateGalleryCanvas`**; `returnFromImage` uses `enterGallery` → central switch |
+| Image → Gallery | **Central detach** destroys Image underlay | Prefer Gallery pointer stash; else **`populateGalleryCanvas`** |
 
 ### Gallery empty defense (Workspace → Gallery)
 
@@ -106,4 +106,31 @@ Tile LOD plans in **file-native** pixel space. `contentRect` / intrinsic size
 are **layout** (oriented). `tileNativeSize()` must not fall back to oriented
 `imageSize()` when ContentXform has quarter-turns or flips — that paints
 unrotated tile patches inside a rotated layout box.
+
+## One scene, not three
+
+Biltoo uses **one** `QGraphicsScene` on `ImageView` on purpose:
+
+| Layer | Where it lives |
+|-------|----------------|
+| Session membership | `SessionDocument` (paths + `SessionImageId`) |
+| Content appearance / crop | `ItemWorld` sparse tables (ECS-style) |
+| Workspace poses | Workspace durable snapshot + pointer stash |
+| Gallery pack | Ephemeral view of the session (rebuildable) |
+| **On-screen items** | Single scene = **active mode presentation only** |
+
+Three scenes would isolate transforms and items, but would also triplicate
+selection, scrollbars, chrome, and tile-LOD host wiring, and force
+cross-scene reparenting on every switch. Isolation is the **mode switch
+pipeline**, not the number of scenes:
+
+1. Snapshot previous presentation into mode **data** stores (stash / durable).
+2. **Detach live** (`clearLiveCanvas`) — nothing from the previous mode may remain.
+3. Set active mode flag.
+4. Attach destination presentation (stash restore, `loadImage`, or full Gallery pack).
+
+Image underlay is presentation-only. It is not stashed; step 2 destroys it.
+Forgetting that step (controller-only leave, no Image path) is what put the
+ImageView image onto Workspace.
+
 

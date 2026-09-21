@@ -304,35 +304,40 @@ void ImageView::setViewMode(ViewMode mode)
                   static_cast<int>(m_workspace.stashedItems().size()),
                   static_cast<int>(m_gallery.stashedItems().size()));
 
-    // --- Central mode switch (leave → set mode → enter) -------------------
-    // Controllers used to leave/enter while m_viewMode still named the *old*
-    // mode. Gallery::enter saw isWorkspaceMode() true, restored gallery stash
-    // onto the live canvas, then hostWorkspace().stashItems() put *gallery*
-    // packed tiles into the Workspace stash — Workspace later reattached a
-    // grid layout and Gallery looked empty after populate.
-    //
-    // Contract:
-    //   1. Leave previous (snapshot/stash or discard pack).
-    //   2. setActiveMode so isXMode() matches the destination.
-    //   3. Enter destination with explicit previous mode.
+    // Mode switch = presentation systems over shared data stores (not three scenes).
+    // Data: SessionDocument + ItemWorld + mode stashes / durable Workspace snapshots.
+    // Presentation: one QGraphicsScene shows the *active mode only*.
+    // Isolation: snapshot → detach live → set mode → attach destination.
+    // Controllers may snapshot/stash; they must not be the only place that
+    // clears the Image underlay (that omission caused Image→Workspace bleed).
+
+    // 1) Snapshot previous presentation into mode stores.
     if (previous == ViewMode::Gallery) {
         m_gallery.onLeave(static_cast<int>(mode));
     } else if (previous == ViewMode::Workspace) {
         m_workspace.onLeave(static_cast<int>(mode));
     }
-    biltooModeDbg("setViewMode afterLeave live=%d wstash=%d gstash=%d",
+    // Image underlay is pure presentation (classicPath + session id are data).
+
+    // 2) Detach ALL live presentation. After Gallery/Workspace stash, live is
+    // already empty; after Image, destroy the underlay so it cannot bleed onto
+    // Workspace/Gallery.
+    if (!m_items.isEmpty()) {
+        biltooModeDbg("setViewMode detachLive residual=%d (prev=%d)",
+                      itemCount(), static_cast<int>(previous));
+        clearLiveCanvas();
+    }
+    biltooModeDbg("setViewMode afterDetach live=%d wstash=%d gstash=%d",
                   itemCount(),
                   static_cast<int>(m_workspace.stashedItems().size()),
                   static_cast<int>(m_gallery.stashedItems().size()));
-    // Image has no onLeave: single underlay is cleared by Image enter or by
-    // Gallery/Workspace enter when residual live tiles remain.
 
+    // 3) Active mode + 4) attach destination presentation.
     if (mode != ViewMode::Image) {
         releaseStickyZoom();
     }
 
     if (mode == ViewMode::Image) {
-        // ImageController::enter sets ActiveMode + builds underlay.
         m_image.enter();
         return;
     }
@@ -343,7 +348,6 @@ void ImageView::setViewMode(ViewMode mode)
         return;
     }
 
-    // Gallery
     LayoutMode layout = m_layout.currentMode();
     if (layout == LayoutMode::FreeForm) {
         layout = LayoutMode::Masonry;
@@ -351,6 +355,7 @@ void ImageView::setViewMode(ViewMode mode)
     setActiveMode(ViewMode::Gallery, layout);
     m_gallery.enter(static_cast<int>(layout), static_cast<int>(previous));
 }
+
 
 
 // --- from imageview_layout.cpp (modes) ---

@@ -2,6 +2,36 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2163-central-detach-live.** Image→Workspace bleed fixed by central
+presentation detach in `setViewMode` — not `ImageController::onLeave`.
+
+### Why Image landed on Workspace
+
+One shared `QGraphicsScene`. Image underlay stayed in `m_items` because the
+switch path only ran Gallery/Workspace leave, then Workspace enter only cleared
+residual live when the **Workspace stash was empty** *and* live was empty —
+with a leftover Image underlay, both checks failed and the underlay stayed.
+
+### Design (not three scenes)
+
+Data: SessionDocument + ItemWorld + mode stashes.  
+Presentation: one scene, active mode only.  
+Pipeline: snapshot → **detach live** → set mode → attach.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2163-central-detach-live-e77da63.bundle HEAD
+```
+
+Next: **2164** — optional further ECS: mode presentation bags as explicit
+stores (still one scene).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2162-structural-canvas-ownership.** Structural fixes, not cosmetics.
 
 ### Root causes (re-traced)
