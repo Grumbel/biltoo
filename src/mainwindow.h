@@ -7,6 +7,7 @@
 #include "imageview.h"
 #include "itemcomponents.h"
 #include "sessiondocument.h"
+#include "sessionsort.h"
 #include "imageview_types.h"
 #include "projectfile.h"
 
@@ -59,17 +60,8 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    enum class SortMode {
-        Name = 0,
-        MTime = 1,
-        FileSize = 2,
-        Width = 3,
-        Height = 4,
-        PixelCount = 5,
-        Path = 6,
-        AspectRatio = 7,
-        Shuffle = 8
-    };
+    /** Session list sort policy (owned by SessionSort). */
+    using SortMode = SessionSort::Mode;
 
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
@@ -414,6 +406,7 @@ private:
     /** Name / mtime / file size — no image I/O. */
     void sortFileListSync();
     /** Width / height / pixels: probe off the GUI thread, then apply order. */
+    /** @deprecated Prefer SessionSort::orderIndices; kept as a thin forward. */
     static QVector<int> computeSortOrderIndices(SortMode mode,
                                                 const QStringList &paths,
                                                 const QHash<QString, QSize> &sizes,

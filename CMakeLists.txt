@@ -254,6 +254,8 @@ set(BILTOO_LIB_SOURCES
   src/sessiondocument.h
   src/sessionopen.cpp
   src/sessionopen.h
+  src/sessionsort.cpp
+  src/sessionsort.h
   src/projectfile.cpp
   src/projectfile.h
   src/placementlinear.cpp
@@ -634,7 +636,16 @@ if(Qt6Test_FOUND)
   )
   target_include_directories(biltoo-sessiondocument-test PRIVATE src)
   target_link_libraries(biltoo-sessiondocument-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
-  add_test(NAME sessiondocument COMMAND biltoo-sessiondocument-test)
+    add_test(NAME sessiondocument COMMAND biltoo-sessiondocument-test)
+
+  add_executable(biltoo-sessionsort-test
+    tests/sessionsort_test.cpp
+    src/sessionsort.cpp
+    src/pagepath.cpp
+  )
+  target_include_directories(biltoo-sessionsort-test PRIVATE src)
+  target_link_libraries(biltoo-sessionsort-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME sessionsort COMMAND biltoo-sessionsort-test)
 
   add_executable(biltoo-sessionpathorder-test
     tests/sessionpathorder_test.cpp

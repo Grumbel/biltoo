@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2136-sessionsort-pure.** SessionSort pure list ordering extracted from MainWindow.
+Prior: **2135**.
+
+### Change
+- `sessionsort.{h,cpp}`: Mode enum, orderIndices, modeNeedsImageProbe, looksLikePagedDocument
+- MainWindow::SortMode is `using SessionSort::Mode`
+- computeSortOrderIndices / sortModeNeedsImageProbe / sessionLooksLikePagedDocument thin forwards
+- Characterization: sessionsort_test (name/path/width, probe flags)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2136-sessionsort-pure-e77da63.bundle HEAD
+```
+Requires tip **2135** (base **e77da63**); includes 1938–2136.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Optional: sortFileListSync dedupe via SessionSort::orderIndices
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2135-canvas-focus-split.** Canvas focus/destroy TU split; SessionDocument::hasId.
 Prior: **2134**.
 
