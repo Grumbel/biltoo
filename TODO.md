@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2132-sessiondocument-index-prefer-id.** SessionDocument owns path→index prefer-id.
+Prior: **2131**.
+
+### Change
+- `SessionDocument::indexOfPathPreferId` — firstIdForPath then indexOfId, else indexOfPath
+- `MainWindow::indexOfPathPreferId` is a one-line forward (list authority on document)
+- Characterization: `indexOfPathPreferId_prefersBoundId` in sessiondocument_test
+- REFACTOR.md: tip 2131 metrics + Phase 7 residual note
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2132-sessiondocument-index-prefer-id-e77da63.bundle HEAD
+```
+Requires tip **2131** (base **e77da63**); includes 1938–2132.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Optional: further MainWindow session chrome → SessionDocument pure helpers
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2131-workspace-gallery-stash-drop-orient.** Workspace survives Gallery; drop seeds content orient.
 Prior: **2130**.
 

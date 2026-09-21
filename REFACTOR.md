@@ -1516,6 +1516,30 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
 
+### Metrics at tip 2131 / 2132 (2026-09-21)
+
+| Metric | Phase 6 exit target | Tip 2131 |
+|--------|--------------------:|---------:|
+| `imageview.h` | < 400 | 711 |
+| `imageview*.cpp` total | ~3–4k ideal | ~11.9k |
+| Largest `imageview_*.cpp` | < 800 | appearance 901, canvas 885 |
+| Controllers | — | Slideshow / Crop / Attention / DisplayPipeline / Gallery / Workspace / Image |
+| `SessionDocument` | paths∥ids owner | yes (`MainWindow::m_session`) |
+| Phase 7 Stages 0–4b | complete | complete |
+| `captureState` call sites | thin | crop enter + freeze fallback + definition |
+
+**Phase 7 residual (not blocking):** ImageItem remains intentional render proxy
+(pixmap, live pose, dual-written applied ContentXform mirror for detached tiles).
+`WorkspaceItemState` remains the project/clipboard DTO assembled from sparse
+tables. Stage 5 dense storage is optional/never unless profiled.
+
+**Phase 6 residual (not blocking):** optional full async PreferCache / thumtoo
+ladder under Gallery scroll; Runtime QA of identity series (SESSION §7).
+
+**biltoo-2132:** `SessionDocument::indexOfPathPreferId` — path→list index with
+id preference lives on the document (MainWindow is a thin forward). Closes the
+SESSION residual “path index only for fully unbound rows” at the document API.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

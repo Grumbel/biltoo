@@ -28,6 +28,7 @@ private slots:
     void clear_empties();
     void clearPaths_keepsAppearance();
     void countPath_and_firstId();
+    void indexOfPathPreferId_prefersBoundId();
     void appearance_on_document();
     // Stage 2 residual (2046): setPaths orphans prior ids; replaceAll keeps them
     void setPaths_clearsAppearance();
@@ -162,6 +163,23 @@ void SessionDocumentTest::countPath_and_firstId()
     QCOMPARE(doc.firstIdForPath(QStringLiteral("/a.jpg")), doc.idAt(0));
     QCOMPARE(doc.firstIdForPath(QStringLiteral("/missing.jpg")), kInvalidSessionImageId);
 }
+
+void SessionDocumentTest::indexOfPathPreferId_prefersBoundId()
+{
+    SessionDocument doc;
+    // Two rows same path: first bound id wins over pure path index when we
+    // resolve via firstIdForPath (duplicate-safe identity).
+    doc.append(QStringLiteral("/dup.jpg"));
+    doc.append(QStringLiteral("/dup.jpg"));
+    const SessionImageId id0 = doc.idAt(0);
+    QCOMPARE(doc.indexOfPathPreferId(QStringLiteral("/dup.jpg")), 0);
+    QCOMPARE(doc.indexOfId(id0), 0);
+    // Unbound path: pure path index.
+    QCOMPARE(doc.indexOfPathPreferId(QStringLiteral("/missing.jpg")), -1);
+    // Empty path.
+    QCOMPARE(doc.indexOfPathPreferId(QString()), -1);
+}
+
 
 void SessionDocumentTest::appearance_on_document()
 {

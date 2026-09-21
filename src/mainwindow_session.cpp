@@ -1622,17 +1622,7 @@ int MainWindow::indexOfSessionId(SessionImageId id) const
 
 int MainWindow::indexOfPathPreferId(const QString &path) const
 {
-    if (path.isEmpty() || m_session.isEmpty()) {
-        return -1;
-    }
-    const SessionImageId sid = m_session.firstIdForPath(path);
-    if (sid != kInvalidSessionImageId) {
-        const int idx = indexOfSessionId(sid);
-        if (idx >= 0) {
-            return idx;
-        }
-    }
-    return m_session.paths().indexOf(path);
+    return m_session.indexOfPathPreferId(path);
 }
 
 SessionImageId MainWindow::currentSessionId() const

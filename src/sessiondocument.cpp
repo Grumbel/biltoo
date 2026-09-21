@@ -75,6 +75,21 @@ SessionImageId SessionDocument::firstIdForPath(const QString &path) const
     return kInvalidSessionImageId;
 }
 
+int SessionDocument::indexOfPathPreferId(const QString &path) const
+{
+    if (path.isEmpty() || isEmpty()) {
+        return -1;
+    }
+    const SessionImageId sid = firstIdForPath(path);
+    if (sid != kInvalidSessionImageId) {
+        const int idx = indexOfId(sid);
+        if (idx >= 0) {
+            return idx;
+        }
+    }
+    return indexOfPath(path);
+}
+
 void SessionDocument::clearPaths()
 {
     m_paths.clear();

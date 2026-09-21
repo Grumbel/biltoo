@@ -42,6 +42,13 @@ public:
     /** First non-invalid id for @p path, or invalid if none. */
     SessionImageId firstIdForPath(const QString &path) const;
 
+    /**
+     * List index for @p path preferring SessionImageId over pure path match.
+     * Uses firstIdForPath then indexOfId; falls back to indexOfPath when the
+     * path has no bound id (fully unbound row). -1 if absent.
+     */
+    int indexOfPathPreferId(const QString &path) const;
+
     /** Never reuses an id after remove. */
     SessionImageId allocId();
 
