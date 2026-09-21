@@ -49,6 +49,17 @@ duplicates) of those rows on a free-form canvas. Placing on Workspace must
 | Gallery → Image | Stash packed cells | `loadImage`; return restores Gallery stash |
 | Gallery → Workspace | Discard pack + clear live | Restore Workspace stash / durable |
 | Workspace → Gallery | Stash free-form | Discard residual live; **`populateGalleryCanvas` full session** |
+| Image → Gallery | (no Image leave) | Prefer Gallery pointer stash; else **`populateGalleryCanvas`**; `returnFromImage` uses `enterGallery` → central switch |
+
+### Gallery empty defense (Workspace → Gallery)
+
+1. `setViewMode(Gallery)` leaves Workspace (stash only — do not steal tiles).
+2. `GalleryController::enter` never stashes Workspace while mode is still
+   Workspace (that legacy path packed Gallery cells into the free-form stash).
+3. `MainWindow::populateGalleryCanvas` cancels size-resolve, sets full session
+   paths, then **`ensurePlaceholders`** if the canvas is empty **or** every live
+   tile is invisible (defer hide). Size-resolve may re-arm after cancel; the
+   placeholder pass must still run so the overview is never blank.
 
 ## Pixel layers (not “soft ladder”)
 

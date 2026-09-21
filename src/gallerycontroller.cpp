@@ -278,7 +278,14 @@ void GalleryController::returnFromImage(int layoutMode, const QString &focusPath
     // Arm restore before enter/applyLayout so packs re-centre on the
     // snapshotted scene point (flags preserved across Gallery→Image leave).
     restoreViewport(focusPath, focusId);
-    enter(layoutMode);
+    // Central leave → setActiveMode → enter (MODE_OWNERSHIP). enterGallery
+    // routes through setViewMode when not already Gallery so previous=Image is
+    // explicit and Gallery stash restore cannot race a stale mode flag.
+    auto layout = static_cast<LayoutMode>(layoutMode);
+    if (layout == LayoutMode::FreeForm) {
+        layout = LayoutMode::Masonry;
+    }
+    m_view->enterGallery(layout);
     applyPendingRestore();
 }
 
@@ -359,14 +366,10 @@ void GalleryController::enter(int packagedLayoutInt, int previousModeInt)
         }
     }
 
-    // Workspace leave is owned by setViewMode / enterGallery central switch.
-    // Only stash here if we still appear to be in Workspace (legacy bypass).
-    if (m_view->isWorkspaceMode()) {
-        m_view->hostWorkspace().snapshotFreeFormStates();
-        m_view->hostWorkspace().snapshot();
-        m_view->hostWorkspace().stashItems();
-    }
-    // Do not discard Workspace stash: free-form arrangement survives Gallery.
+    // Workspace leave is owned exclusively by setViewMode (leave → setActiveMode
+    // → enter). Do not stash here — that path put Gallery packs into the
+    // Workspace pointer stash and left Gallery empty after the next populate.
+    // Free-form arrangement survives via Workspace m_stashedItems / m_savedItems.
     if (layoutSwitch) {
         // Soft reset: keep items and selection paths; only clear view zoom.
         // Drop scroll snapshot — user asked for a new layout, not return-from-Image.

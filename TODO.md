@@ -2,6 +2,45 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2159-gallery-empty-after-workspace.** Hardened Workspace→Gallery so
+the overview cannot stay blank; removed legacy Gallery-enter Workspace stash.
+
+### Root cause class (empty Gallery after Workspace)
+
+1. **Size-resolve defer:** `setWorkspacePaths` could re-arm defer after
+   `populateGalleryCanvas` cancelled the gate, hide residual tiles, and return
+   without creating placeholders. The old safety net only ran when
+   `itemCount()==0`, so an all-invisible residual left a blank canvas.
+2. **Legacy Gallery::enter Workspace stash:** while mode still looked like
+   Workspace, enter stashed live tiles into the free-form stash — historically
+   that captured a Gallery pack and poisoned Workspace return / next Gallery
+   populate. Central `setViewMode` already owns leave; the bypass is removed.
+3. **Image→Gallery return:** `returnFromImage` called `enter(layout)` with
+   default `previousModeInt=-1` instead of the central leave→setActiveMode→enter
+   path. Now uses `enterGallery` so previous=Image is explicit via `setViewMode`.
+
+### Change
+
+- `populateGalleryCanvas`: after session `setWorkspacePaths`, clear defer and
+  `ensurePlaceholders` when empty **or** every live item is invisible.
+- `GalleryController::enter`: drop the `isWorkspaceMode()` stash bypass.
+- `GalleryController::returnFromImage`: `enterGallery(layout)` (central switch).
+- `docs/MODE_OWNERSHIP.md`: Gallery empty defense + Image→Gallery row.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2159-gallery-empty-after-workspace-e77da63.bundle HEAD
+```
+
+Next: **2160** — runtime QA Workspace↔Gallery↔Image; optional characterization
+for Workspace→Gallery populate non-empty.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2158-mode-ownership.** Documented ownership; fixed Workspace→Image
 steal that removed tiles from the Workspace stash.
 
