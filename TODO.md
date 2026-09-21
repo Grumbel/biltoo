@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1981-store-readers-via-sessionAppearanceValue.** Route store readers through choke point.
+Prior: **1980**.
+
+### Change
+- flush / setTarget / peer sync / copy / reset / crop orient: `sessionAppearanceValue`
+- Drop redundant `appearanceValue(sid).hasCrop` (use `hasCrop(sid)` only)
+- Crop record list index via `sessionListIndex`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1981-store-readers-via-sessionAppearanceValue-e77da63.bundle HEAD
+```
+Requires tip **1980** (base **e77da63**); includes 1938–1981.
+
+### Next
+- Characterization re-check
+- Remaining getAppearance for pointer lifetime / write paths only
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1980-sparse-store-read-choke.** sessionAppearanceValue prefers sparse tables.
 Prior: **1979**.
 

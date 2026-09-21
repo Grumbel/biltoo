@@ -232,8 +232,12 @@ void CropController::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
         return;
     }
     const SessionImageId sid = cropRecordSessionId(item);
-    const WorkspaceItemState *orientApp =
-        (sid != kInvalidSessionImageId) ? m_view->itemWorld().getAppearance(sid) : nullptr;
+    WorkspaceItemState orientStore;
+    const WorkspaceItemState *orientApp = nullptr;
+    if (sid != kInvalidSessionImageId) {
+        orientStore = m_view->sessionAppearanceValue(sid);
+        orientApp = &orientStore;
+    }
     QSize fileNative = m_view->logicalSizeForPath(item->path());
     if (!isPositiveSize(fileNative) || fileNative.width() <= 1
         || m_view->hostSizeBook().isProvisional(item->path())) {
@@ -244,7 +248,7 @@ void CropController::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     WorkspaceItemState s = m_view->captureState(item);
     CropSession::mergeOrientFromAppearance(&s, orientApp);
     s.sessionId = sid;
-    s.sessionIndex = item->sessionIndex();
+    s.sessionIndex = m_view->sessionListIndex(item);
     session().applyRecordToState(&s, rec, cropBasis);
     CropDebug::recordCrop(cropBasis, item->imageSize(), rec.sourceRect);
     s.path = item->path();

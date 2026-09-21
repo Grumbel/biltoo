@@ -73,9 +73,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
             // as install (layout + applied + chrome) — do not put into ImageCache.
             WorkspaceItemState want;
             if (sessionId != kInvalidSessionImageId) {
-                if (const WorkspaceItemState *st = m_itemWorld.getAppearance(sessionId)) {
-                    want = *st;
-                }
+                want = sessionAppearanceValue(sessionId);
             }
             // Applied fingerprint is mid-edit authority when store slot is empty.
             if (!SessionAppearance::hasContentAppearance(want) && item->hasAppliedContentXform()) {
@@ -86,9 +84,7 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
                 : SessionAppearance::PixelKind::SoftPreview;
             attachDisplaySample(other, baked, want, kind);
         } else if (sessionId != kInvalidSessionImageId) {
-            if (const WorkspaceItemState *st = m_itemWorld.getAppearance(sessionId)) {
-                applyContentLayoutSize(other, *st);
-            }
+            applyContentLayoutSize(other, sessionAppearanceValue(sessionId));
         }
         {
             ItemComponents::Placement pl = other->placement();
@@ -168,8 +164,6 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
         if (!appearanceImage.isNull()) {
             emit sessionAppearanceChanged(sid, item->path(), appearanceImage);
             if (m_itemWorld.hasCrop(sid)
-                || (m_itemWorld.hasAppearance(sid)
-                    && m_itemWorld.appearanceValue(sid).hasCrop)
                 || item->tileContentXform().hasCrop) {
                 emit sessionCropApplied(sid, item->path(), appearanceImage, /*hasCrop=*/true);
             }
@@ -200,8 +194,8 @@ void ImageView::copySessionAppearance(SessionImageId fromId, SessionImageId toId
     // Prefer the session store; fall back to a live donor tile so drop-duplicate
     // from a graded filmstrip row still carries crop / bakes / colour grade.
     WorkspaceItemState dst;
-    if (const WorkspaceItemState *src = m_itemWorld.getAppearance(fromId)) {
-        dst = *src;
+    if (m_itemWorld.hasAppearance(fromId)) {
+        dst = sessionAppearanceValue(fromId);
     } else {
         ImageItem *donor = findItemBySessionId(fromId);
         if (!donor && isImageMode()) {
@@ -312,7 +306,7 @@ int ImageView::resetContentAppearanceForTargets()
         // sparse Crop / ContentBake / Color (identity ⇒ remove).
         if (sid != kInvalidSessionImageId) {
             WorkspaceItemState slot = SessionAppearance::clearedContentOps(
-                m_itemWorld.appearanceValue(sid));
+                sessionAppearanceValue(sid));
             slot.sessionId = sid;
             slot.path = path;
             m_itemWorld.setAppearance(sid, slot);

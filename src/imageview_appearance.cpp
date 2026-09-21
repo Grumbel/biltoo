@@ -484,8 +484,6 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
             // the same file (IDENTITY.md).
             emit sessionAppearanceChanged(sid, item->path(), appearance);
             const bool hasCrop = m_itemWorld.hasCrop(sid)
-                || (m_itemWorld.hasAppearance(sid)
-                    && m_itemWorld.appearanceValue(sid).hasCrop)
                 || item->tileContentXform().hasCrop;
             emit sessionCropApplied(sid, item->path(), appearance, hasCrop);
         }
@@ -594,9 +592,8 @@ void ImageView::flushColorAdjustCommit()
     }
     WorkspaceItemState want;
     if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
-        want = m_itemWorld.appearanceValue(sid);
-        // Sparse Color is store authority; live grade overwrites below.
-        want.colorAdjust = m_itemWorld.color(sid).grade;
+        // Sparse-prefer store read (sessionAppearanceValue choke point).
+        want = sessionAppearanceValue(sid);
     } else {
         want = captureState(item);
     }
@@ -637,7 +634,7 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
         sid = m_sessionId.currentIdValue();
     }
     WorkspaceItemState slot = (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid))
-        ? m_itemWorld.appearanceValue(sid)
+        ? sessionAppearanceValue(sid)
         : captureState(item);
     slot.sessionId = (sid != kInvalidSessionImageId) ? sid : slot.sessionId;
     slot.path = item->path().isEmpty() ? slot.path : item->path();
