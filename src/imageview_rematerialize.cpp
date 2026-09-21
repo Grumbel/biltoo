@@ -55,11 +55,8 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
         }
     }
 
-    item->setContentHFlip(want.contentHFlip);
-    item->setContentVFlip(want.contentVFlip);
-    item->setSessionCrop(want.hasCrop, want.cropRect);
+    syncLiveContentMetaFromState(item, want, true);
     item->setColorAdjustmentsRecord(want.colorAdjust);
-    item->setAppliedContentXform(ContentXform::Value::fromState(want));
 }
 
 

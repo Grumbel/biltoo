@@ -208,10 +208,7 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
             pl.pos = scenePos;
             ph->applyPlacement(pl);
         }
-        ph->setContentHFlip(false);
-        ph->setContentVFlip(false);
-        ph->setSessionCrop(false, QRect());
-        ph->clearAppliedContentXform();
+        clearLiveContentMeta(ph, true);
         if (sessionId != kInvalidSessionImageId) {
             ph->setSessionId(sessionId);
         }

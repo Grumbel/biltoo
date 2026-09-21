@@ -107,6 +107,36 @@ void ImageView::applyState(ImageItem *item, const WorkspaceItemState &state)
     item->applyPlacement(ItemComponents::placementFromState(state));
 }
 
+void ImageView::syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state,
+                                             bool syncAppliedXform)
+{
+    if (!item) {
+        return;
+    }
+    // Phase 7 Stage 2: single dual-write install for live crop/flip chrome.
+    // Bound-id authority remains ItemWorld sparse tables; paint/tile-LOD still
+    // read these fields until demotion completes.
+    item->setSessionCrop(state.hasCrop, state.cropRect);
+    item->setContentHFlip(state.contentHFlip);
+    item->setContentVFlip(state.contentVFlip);
+    if (syncAppliedXform) {
+        item->setAppliedContentXform(ContentXform::Value::fromState(state));
+    }
+}
+
+void ImageView::clearLiveContentMeta(ImageItem *item, bool clearAppliedXform)
+{
+    if (!item) {
+        return;
+    }
+    item->setSessionCrop(false, QRect());
+    item->setContentHFlip(false);
+    item->setContentVFlip(false);
+    if (clearAppliedXform) {
+        item->clearAppliedContentXform();
+    }
+}
+
 void ImageView::persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)
 {
     if (!item) {
@@ -713,10 +743,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     if (!src.isNull()) {
         attachDisplaySample(item, src, state, SessionAppearance::PixelKind::FullSource);
     } else {
-        item->setSessionCrop(state.hasCrop, state.cropRect);
-        item->setContentHFlip(state.contentHFlip);
-        item->setContentVFlip(state.contentVFlip);
-        item->setAppliedContentXform(ContentXform::Value::fromState(state));
+        syncLiveContentMetaFromState(item, state, true);
     }
     applyState(item, state);
     // Seed appearance with the full state (including cropRotation) before

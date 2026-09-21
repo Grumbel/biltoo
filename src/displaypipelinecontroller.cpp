@@ -1073,9 +1073,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
                 if (item->hasDisplayPixels()) {
                     item->clearDecodedPixels();
                 }
-                item->setSessionCrop(false, QRect());
-                item->setContentHFlip(false);
-                item->setContentVFlip(false);
+                m_view->clearLiveContentMeta(item, false);
                 item->setColorAdjustmentsRecord(ColorAdjustments{});
                 item->clearAppliedContentXform();
                 // Intrinsic from size memo/probe when known; else provisional.
@@ -1147,9 +1145,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             if (item->hasDisplayPixels()) {
                 item->clearDecodedPixels();
             }
-            item->setSessionCrop(false, QRect());
-            item->setContentHFlip(false);
-            item->setContentVFlip(false);
+            m_view->clearLiveContentMeta(item, false);
             item->setColorAdjustmentsRecord(ColorAdjustments{});
             item->clearAppliedContentXform();
         } else if (item->hasDecodedPixels()) {

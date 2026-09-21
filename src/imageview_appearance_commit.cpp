@@ -268,6 +268,12 @@ bool ImageView::targetHasContentAppearance() const
                 }
             }
         }
+        // Bound: ItemWorld sparse tables are authority; live item is fallback.
+        if (sid != kInvalidSessionImageId) {
+            if (m_itemWorld.hasCrop(sid) || m_itemWorld.hasContentBake(sid)) {
+                return true;
+            }
+        }
         if (SessionAppearance::liveItemHasContentMods(
                 item->sessionHasCrop(), item->contentHFlip(), item->contentVFlip())) {
             return true;
@@ -316,9 +322,7 @@ int ImageView::resetContentAppearanceForTargets()
             m_itemWorld.setPathState(path, pathSlot);
         }
 
-        item->setContentHFlip(false);
-        item->setContentVFlip(false);
-        item->setSessionCrop(false, QRect());
+        clearLiveContentMeta(item, false);
         {
             ItemComponents::Placement pl = item->placement();
             pl.hFlip = false;

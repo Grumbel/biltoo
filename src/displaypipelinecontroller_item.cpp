@@ -110,9 +110,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     if (wantBake) {
         // Seed item chrome so wantAppearanceForItem can merge if the store slot
         // is still empty (bound id with no entry yet).
-        item->setContentHFlip(app.contentHFlip);
-        item->setContentVFlip(app.contentVFlip);
-        item->setSessionCrop(app.hasCrop, app.cropRect);
+        m_view->syncLiveContentMetaFromState(item, app, false);
         item->setColorAdjustmentsRecord(app.colorAdjust);
         const SessionImageId sid = m_view->isImageMode()
             ? m_view->hostSessionId().currentIdValue()

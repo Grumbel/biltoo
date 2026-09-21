@@ -27,9 +27,6 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     // re-entering crop mode still frames the same region.
     WorkspaceItemState cropMap = appearanceCropMapForEdit(item, beforeSt, sid);
     SessionAppearance::mapCropThroughContentRotate90(cropMap, quarterTurns);
-    if (cropMap.hasCrop) {
-        item->setSessionCrop(true, cropMap.cropRect);
-    }
 
     // Absolute want after this edit.
     WorkspaceItemState want = beforeSt;
@@ -41,6 +38,8 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     want.contentHFlip = item->contentHFlip();
     want.contentVFlip = item->contentVFlip();
     want.colorAdjust = item->colorAdjustments();
+    // Dual-write live chrome once want is absolute (ItemWorld updated below).
+    syncLiveContentMetaFromState(item, want, false);
 
     // ContentXform is ground truth: absolute want from store + delta, pure
     // materialize from unoriented host. Never stack incremental transforms.
@@ -178,9 +177,6 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     const SessionImageId sid = resolveContentEditSessionId(item);
     WorkspaceItemState cropMap = appearanceCropMapForEdit(item, beforeSt, sid);
     SessionAppearance::mapCropThroughContentFlip(cropMap, horizontal, vertical);
-    if (cropMap.hasCrop) {
-        item->setSessionCrop(true, cropMap.cropRect);
-    }
 
     WorkspaceItemState want = beforeSt;
     want.contentHFlip = h;
@@ -192,12 +188,11 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     want.contentQuarterTurns = cropMap.contentQuarterTurns;
 
     // Prefer pure rematerialize from unoriented host; else incremental + async.
-    item->setContentHFlip(h);
-    item->setContentVFlip(v);
+    // Single dual-write for live chrome (replaces ad-hoc crop/flip sets).
+    syncLiveContentMetaFromState(item, want, false);
     if (!tryRematerializeFromHost(item, want)) {
         item->bakeFlip(horizontal, vertical);
-        item->setContentHFlip(h);
-        item->setContentVFlip(v);
+        syncLiveContentMetaFromState(item, want, false);
         scheduleAsyncHostRematerialize(item->path(), sid, want);
     }
     applyContentLayoutSize(item, want);

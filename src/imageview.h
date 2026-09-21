@@ -474,6 +474,15 @@ public:
 
     WorkspaceItemState captureState(const ImageItem *item) const;
     void applyState(ImageItem *item, const WorkspaceItemState &state);
+    /**
+     * Dual-write install: push content crop/flips (and optional applied xform)
+     * onto the live ImageItem. ItemWorld remains authority for bound ids;
+     * these fields stay for paint/tile-LOD until Stage 2 demotion completes.
+     */
+    void syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state,
+                                      bool syncAppliedXform = true);
+    /** Clear live ImageItem crop/content-flip chrome (identity). */
+    void clearLiveContentMeta(ImageItem *item, bool clearAppliedXform = false);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
     /** Copy of stored appearance for @p id (empty/default if none). */

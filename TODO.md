@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1938-sync-live-content-meta.** Single dual-write install for ImageItem crop/flip.
+Prior: **1937**.
+
+### Change
+- `syncLiveContentMetaFromState` / `clearLiveContentMeta` on ImageView
+- Install / reset / bake / rematerialize / pipeline / crop-record write through helpers
+- `targetHasContentAppearance` prefers ItemWorld Crop/ContentBake for bound ids
+- CropSession draft enter/leave still writes item directly (draft chrome)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1938-sync-live-content-meta-e77da63.bundle HEAD
+```
+Requires tip **1937** (base **e77da63**).
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Further ImageItem live crop/flip demotion (paint/tile-LOD readers; CropSession)
+- Drop ad-hoc item field writes outside the helpers
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1937-content-bake-before-authority.** Content-bake before/after without item overwrite.
 Prior: **1936**.
 
