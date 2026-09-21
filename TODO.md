@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2043-stage4a-complete-4b-ready.** Docs: Stage 4a complete; Stage 4b readiness checklist.
+Prior: **2042**.
+
+### Change
+- REFACTOR Stage 4 exit criteria: 4a items checked complete
+- Stage 4b readiness: prerequisites listed; format version still product-gated
+- Phase 7 whole-phase exit criteria updated (4b + Tier 4 residual open)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2043-stage4a-complete-4b-ready-e77da63.bundle HEAD
+```
+Requires tip **2042** (base **e77da63**); includes 1938–2043.
+
+### Next
+- **Stage 4b** only with explicit product decision (format version + dual-write drop)
+- Phase 6 Tier 4: decode/framing characterization when prioritized
+- Otherwise this Phase 7 line is at a natural pause
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2042-capturestate-thin.** Stage 2 residual: captureState only at freeze fallback + crop enter.
 Prior: **2041**.
 

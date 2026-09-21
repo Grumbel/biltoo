@@ -1017,14 +1017,31 @@ versioned project format that no longer needs the mirror for round-trip.
 
 **Exit criteria (Stage 4)**
 
-- Documented tag table (above) matches code comments on ItemWorld stores.
-- Project save builds appearance from **sparse-prefer reads**
-  (`sessionAppearanceValue`), never from a raw fat pointer alone.
-- Load always dual-fills sparse tables (`setAppearance` / component sync).
-- `git grep setAppearance` on hot edit paths may still dual-write; save/load
+- [x] Documented tag table (above) matches code comments on ItemWorld stores.
+- [x] Project save builds appearance from **sparse-prefer reads**
+  (`sessionAppearanceValue` / `appearanceValue`), never from a raw fat pointer alone.
+- [x] Load always dual-fills sparse tables (`setAppearance` / component sync).
+- [x] `git grep setAppearance` on hot edit paths may still dual-write; save/load
   no longer *require* dual-write correctness for any single field.
-- Characterization: `projectfile_roundtrip` still green; pose-only vs
+- [x] Characterization: `projectfile_roundtrip` still green; pose-only vs
   content-only rows covered (biltoo-2027).
+
+**Stage 4a status: complete** (tips 2020–2027 + store-read hygiene 2022–2042).
+
+**Stage 4b readiness (not started — needs product format-version decision)**
+
+Prerequisites already in place:
+
+- Sparse-prefer store reads (`appearanceValue`, `hasDurableAppearance`)
+- Freeze policy (`freezeItemAppearance`) so interaction freezes do not depend on fat lag
+- Project/clipboard boundary builds DTOs from sparse-prefer values
+- Load path dual-fills sparse tables via `setAppearance`
+
+Stage 4b still requires:
+
+1. Bump `projectFormat` / version field with a documented reader for old flat DTO JSON
+2. Optional sparse on-disk shape (`"crop": {...}`, `"placement": {...}`) or keep flat keys with sparse-only runtime
+3. Only then remove dual-write from ItemWorld mutators (fat DTO becomes load/save assemble-only)
 
 **Sequencing relative to Stages 0–3**
 
@@ -1071,14 +1088,15 @@ Phase 1–6 rules still apply. Additions:
 
 ### Exit criteria (whole phase)
 
-- One authoritative owner per persisted fact keyed by `SessionImageId` (pose
+- [x] One authoritative owner per persisted fact keyed by `SessionImageId` (pose
   may remain Workspace-mode-scoped; content/crop/attention/color are id-keyed).
-- `ImageItem` is a render + hit-test proxy, not a parallel appearance database.
-- Project save walks explicitly tagged persistent tables.
-- `git grep captureState` is thin (2042): definition, `freezeItemAppearance`
+- [x] `ImageItem` is a render + hit-test proxy, not a parallel appearance database.
+- [x] Project save walks explicitly tagged persistent tables (Stage 4a sparse-prefer).
+- [x] `git grep captureState` is thin (2042): definition, `freezeItemAppearance`
   fallback, and crop-enter undo baseline only — not interaction hot paths.
-- Phase 6 Tier 4 residual still tracked separately until the full ImageView
-  characterization harness is green (member `m_pathOrderBook` already gone).
+- [ ] Stage 4b: format version + drop dual-write (blocked on product decision).
+- Phase 6 Tier 4 residual still tracked separately ([docs/IMAGEVIEW_CHARACTERIZATION.md](docs/IMAGEVIEW_CHARACTERIZATION.md));
+  pure + offscreen harness largely green; decode/framing soft.
 
 ### Progress log (Phase 7)
 
@@ -1376,6 +1394,8 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2041: Stage 3 residual — packPosesForMode pure dispatcher shared by pack + tests.
 - biltoo-2042: Stage 2 residual — all freezes via freezeItemAppearance except crop enter;
   captureState only definition, freeze fallback, crop enter.
+- biltoo-2043: Docs — Stage 4a exit criteria checked complete; Stage 4b readiness
+  checklist (format version still blocked on product decision).
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
