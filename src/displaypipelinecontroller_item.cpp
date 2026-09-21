@@ -110,7 +110,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     if (wantBake) {
         // Seed item chrome so wantAppearanceForItem can merge if the store slot
         // is still empty (bound id with no entry yet).
-        m_view->syncLiveContentMetaFromState(item, app, false);
+        m_view->syncLiveContentMetaFromState(item, app);
         item->setColorAdjustmentsRecord(app.colorAdjust);
         const SessionImageId sid = m_view->isImageMode()
             ? m_view->hostSessionId().currentIdValue()

@@ -247,7 +247,7 @@ void CropController::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     session().applyRecordToState(&s, rec, cropBasis);
     CropDebug::recordCrop(cropBasis, item->imageSize(), rec.sourceRect);
     s.path = item->path();
-    m_view->syncLiveContentMetaFromState(item, s, false);
+    m_view->syncLiveContentMetaFromState(item, s);
     m_view->storeCropAppearance(item, sid, s);
 }
 

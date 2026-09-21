@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1947-sync-always-applied-xform.** Dual-write install always sets applied xform.
+Prior: **1946**.
+
+### Change
+- `syncLiveContentMetaFromState` always installs applied ContentXform from state
+  (removed `syncAppliedXform` flag)
+- All former `false` call sites updated; draft enter still clear + setApplied(wantX)
+- `tileContentXform` docs: applied is the primary path after dual-write install
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1947-sync-always-applied-xform-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1947.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Session dual-write fields remain lag fallback inside tileContentXform
+- Later: drop session fields once no lag paths remain without applied
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1946-noview-flip-tile-xform.** No-view flip keeps tileContentXform in sync.
 Prior: **1945**.
 

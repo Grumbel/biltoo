@@ -38,7 +38,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     want.cropRotation = cropMap.cropRotation;
     want.cropSourceSize = cropMap.cropSourceSize;
     // Dual-write live chrome once want is absolute (ItemWorld updated below).
-    syncLiveContentMetaFromState(item, want, false);
+    syncLiveContentMetaFromState(item, want);
 
     // ContentXform is ground truth: absolute want from store + delta, pure
     // materialize from unoriented host. Never stack incremental transforms.
@@ -188,10 +188,10 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
 
     // Prefer pure rematerialize from unoriented host; else incremental + async.
     // Single dual-write for live chrome (replaces ad-hoc crop/flip sets).
-    syncLiveContentMetaFromState(item, want, false);
+    syncLiveContentMetaFromState(item, want);
     if (!tryRematerializeFromHost(item, want)) {
         item->bakeFlip(horizontal, vertical);
-        syncLiveContentMetaFromState(item, want, false);
+        syncLiveContentMetaFromState(item, want);
         scheduleAsyncHostRematerialize(item->path(), sid, want);
     }
     applyContentLayoutSize(item, want);
