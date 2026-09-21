@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2092-liveColorLag-characterization.** Stage 2 residual: pure characterization for liveColorLag; demotion status through 2091.
+Prior: **2091**.
+
+### Change
+- `returnToImage_liveColorLagSurvivesPathOrderClear` pure test
+- IMAGEVIEW_CHARACTERIZATION checklist updated
+- REFACTOR demotion status / sequencing through 2091
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2092-liveColorLag-characterization-e77da63.bundle HEAD
+```
+Requires tip **2091** (base **e77da63**); includes 1938–2092.
+
+### Next
+- Stage 2: paint mirror residual (intentional on item)
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2091-itemworld-liveColorLag.** Stage 2 residual: ItemWorld runtime live colour lag table.
 Prior: **2090**.
 

@@ -53,6 +53,7 @@ private slots:
     void returnToImage_colorSurvivesPathOrderClear();
     void returnToImage_attentionSurvivesPathOrderClear();
     void returnToImage_appliedContentXformSurvivesPathOrderClear();
+    void returnToImage_liveColorLagSurvivesPathOrderClear();
 
     void imageView_openGalleryCropReturn();
 
@@ -419,6 +420,42 @@ void ImageViewCharacterizationTest::returnToImage_appliedContentXformSurvivesPat
 
     world.clearAppearance();
     QVERIFY(!world.hasAppliedContentXform(focus));
+}
+
+/** Stage 2 residual: live colour lag is runtime-only (not durable Color);
+ * path-order clear must not drop it; sibling stays clean. */
+void ImageViewCharacterizationTest::returnToImage_liveColorLagSurvivesPathOrderClear()
+{
+    SessionDocument doc;
+    doc.setPaths({m_pathA, m_pathB});
+    const SessionImageId focus = doc.idAt(0);
+    const SessionImageId other = doc.idAt(1);
+
+    ItemWorld world;
+
+    ColorAdjustments g;
+    g.brightness = 22;
+    g.contrast = 108;
+    world.setLiveColorLag(focus, g);
+
+    QVERIFY(world.hasLiveColorLag(focus));
+    QVERIFY(!world.hasLiveColorLag(other));
+    QVERIFY(!world.hasColor(focus)); // durable Color is separate
+    QVERIFY(!world.hasDurableAppearance(focus));
+
+    PackOrderOverlay overlay;
+    overlay.setExplicit(doc.paths(), doc.ids());
+    overlay.clearExplicit();
+
+    QVERIFY(world.hasLiveColorLag(focus));
+    QVERIFY(!world.hasLiveColorLag(other));
+    QCOMPARE(world.liveColorLag(focus).brightness, 22);
+    QCOMPARE(world.liveColorLag(focus).contrast, 108);
+    QVERIFY(overlay.resolve(&doc).isEmpty());
+    QCOMPARE(doc.size(), 2);
+
+    world.clearAppearance();
+    QVERIFY(!world.hasLiveColorLag(focus));
 }
 
 void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
