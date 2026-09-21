@@ -190,9 +190,6 @@ public:
     void paintInteractionChrome(QPainter *painter) const;
     /** Selection outline only (multi-select); no scale/rotate/chrome buttons. */
     void paintSelectionFrame(QPainter *painter) const;
-    /** View menu: corner marks for orient / grade / crop (default on). */
-    static void setContentEditMarksVisible(bool on);
-    static bool contentEditMarksVisible();
     /** View-driven hover highlight for chrome (keeps highlight in sync with hits). */
     Handle hoverHandle() const { return m_hoverHandle; }
     QRectF boundingRect() const override;
@@ -266,6 +263,8 @@ private:
     void setHoverHandle(Handle h);
     void setGalleryCellSize(const QSizeF &sceneSize);
     void applyPlacement(const ItemComponents::Placement &pl);
+    static void setContentEditMarksVisible(bool on);
+    static bool contentEditMarksVisible();
     void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
     void setIntrinsicSize(const QSize &size);
     void setSourceImage(const QImage &image);

@@ -425,6 +425,7 @@ public:
     void setHudVisible(bool on);
     /** Corner marks for crop / orient / grade (default on). */
     void setContentEditMarksVisible(bool on);
+    bool contentEditMarksVisible() const;
     void setHudFontPointSize(int pt);
     void setHudTextColor(const QColor &color);
     void setHudPanelColor(const QColor &color);

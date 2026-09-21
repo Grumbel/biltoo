@@ -209,6 +209,11 @@ void ImageView::setContentEditMarksVisible(bool on)
     }
 }
 
+bool ImageView::contentEditMarksVisible() const
+{
+    return ImageItem::contentEditMarksVisible();
+}
+
 QString ImageView::currentPath() const
 {
     if (ImageItem *item = targetItem()) {

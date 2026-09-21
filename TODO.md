@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1991-private-content-edit-marks.** Content-edit marks via ImageView only.
+Prior: **1990**.
+
+### Change
+- `ImageItem::setContentEditMarksVisible` / `contentEditMarksVisible` private
+- `ImageView::contentEditMarksVisible()` reader for settings save
+- **No remaining public mutators on ImageItem**
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1991-private-content-edit-marks-e77da63.bundle HEAD
+```
+Requires tip **1990** (base **e77da63**); includes 1938–1991.
+
+### Next
+- Characterization + full build (1989 Gallery recursion fix + surface privatizations)
+- Optional: reduce fat-DTO dual-write when project format allows
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1990-imageitem-proxy-status-docs.** ImageItem proxy status + authority docs.
 Prior: **1989**.
 

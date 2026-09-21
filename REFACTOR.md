@@ -1234,6 +1234,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1988: privatize setGalleryCellSize; GalleryLayout::setItemGalleryCellSize friend helper.
 - biltoo-1989: privatize applyPlacement; GalleryLayout::applyItemPlacement; fix cell-size recursion.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
+- biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 
 ### ImageItem demotion status (through biltoo-1990)
 
