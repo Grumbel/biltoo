@@ -127,16 +127,9 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
     if (sessionId != kInvalidSessionImageId && hasSessionAppearance(sessionId)) {
         want = sessionAppearanceValue(sessionId);
         // Placement/color-only durable row is not content orient — same strip as
-        // installDisplayPixels / createItemFromImage (2205–2206). Otherwise
-        // filmstrip/Gallery layout can transpose while paint stays identity.
+        // installDisplayPixels / createItemFromImage (2205–2207).
         if (!m_itemWorld.hasContentBake(sessionId) && !m_itemWorld.hasCrop(sessionId)) {
-            want.contentQuarterTurns = 0;
-            want.contentHFlip = false;
-            want.contentVFlip = false;
-            want.hasCrop = false;
-            want.cropRect = QRect();
-            want.cropSourceSize = QSize();
-            want.cropRotation = 0.0;
+            want = SessionAppearance::withoutContentOrient(want);
         }
     } else if (sessionId == kInvalidSessionImageId && !path.isEmpty()) {
         if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {

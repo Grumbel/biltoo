@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2208-without-content-orient-helper.** Consolidate placement-only
+orient strip into SessionAppearance::withoutContentOrient (keeps grade).
+
+### Fix
+- withoutContentOrient / clearedContentOps uses it
+- installDisplayPixels, createItemFromImage, contentLayoutSize call the helper
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2208-without-content-orient-helper-e77da63.bundle HEAD
+```
+
+Next: **2209**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2207-content-layout-size-orient-strip.** contentLayoutSize used
 sessionAppearanceValue for bound ids without the install/create rule that
 placement-only rows are not content orient — filmstrip/Gallery layout could

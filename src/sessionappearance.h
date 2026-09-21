@@ -152,6 +152,13 @@ void fillEmptyContentFlags(WorkspaceItemState &appearance,
 WorkspaceItemState withoutCrop(const WorkspaceItemState &state);
 
 /**
+ * Drop orient/crop fields only; keep colour grade and placement.
+ * Used when ItemWorld has no contentBake/crop sparse rows — placement-only
+ * durable appearance must not drive layout or materialize orient (2205–2207).
+ */
+WorkspaceItemState withoutContentOrient(const WorkspaceItemState &state);
+
+/**
  * Drop content bake ops (flips, quarter turns, crop); keep colour grade and
  * non-content placement fields.
  */

@@ -304,14 +304,19 @@ WorkspaceItemState withoutCrop(const WorkspaceItemState &state)
 }
 
 
-WorkspaceItemState clearedContentOps(const WorkspaceItemState &state)
+WorkspaceItemState withoutContentOrient(const WorkspaceItemState &state)
 {
     WorkspaceItemState out = withoutCrop(state);
     out.contentHFlip = false;
     out.contentVFlip = false;
     out.contentQuarterTurns = 0;
-    out.cropSourceSize = QSize();
-    out.cropRotation = 0.0;
+    return out;
+}
+
+
+WorkspaceItemState clearedContentOps(const WorkspaceItemState &state)
+{
+    WorkspaceItemState out = withoutContentOrient(state);
     // Colour grade is part of content appearance (hasContentAppearance /
     // Reset Content Appearance help text).
     out.colorAdjust = {};

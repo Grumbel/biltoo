@@ -104,13 +104,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
         if (sidLayout != kInvalidSessionImageId
             && !m_view->itemWorld().hasContentBake(sidLayout)
             && !m_view->itemWorld().hasCrop(sidLayout)) {
-            app.contentQuarterTurns = 0;
-            app.contentHFlip = false;
-            app.contentVFlip = false;
-            app.hasCrop = false;
-            app.cropRect = QRect();
-            app.cropSourceSize = QSize();
-            app.cropRotation = 0.0;
+            app = SessionAppearance::withoutContentOrient(app);
         }
     }
     // Logical size only from probe / map — never sample (LQIP/soft) dims.

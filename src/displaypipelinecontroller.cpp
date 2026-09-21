@@ -970,13 +970,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
         // Placement-only durable row is not content orient.
         if (!m_view->itemWorld().hasContentBake(sid)
             && !m_view->itemWorld().hasCrop(sid)) {
-            appearance.contentQuarterTurns = 0;
-            appearance.contentHFlip = false;
-            appearance.contentVFlip = false;
-            appearance.hasCrop = false;
-            appearance.cropRect = QRect();
-            appearance.cropSourceSize = QSize();
-            appearance.cropRotation = 0.0;
+            appearance = SessionAppearance::withoutContentOrient(appearance);
         }
         if (qEnvironmentVariableIsSet("BILTOO_MODE_DEBUG")) {
             fprintf(stderr,
