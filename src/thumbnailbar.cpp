@@ -1393,10 +1393,12 @@ QImage ThumbnailBar::sampleForImageModePending(const QString &path, SessionImage
         const int hostEdge = ImageCache::longEdge(host);
         if (iconEdge > hostEdge) {
             // Re-seed host cache so Image mode and strip stay aligned.
-            ImageCache::put(path, icon);
+            /* ImageCache host-raw only — filmstrip icon may be XDG-baked */
+            // ImageCache::put(path, icon);
             host = icon;
         } else if (hostEdge <= 0) {
-            ImageCache::put(path, icon);
+            /* ImageCache host-raw only — filmstrip icon may be XDG-baked */
+            // ImageCache::put(path, icon);
             host = icon;
         }
         break;

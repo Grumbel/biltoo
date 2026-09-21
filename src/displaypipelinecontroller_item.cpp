@@ -459,16 +459,19 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         return pixels;
     }
 
+    // Filmstrip session-id override is a GUI pixel cache (ECS_GUI_BYPASSES #2).
+    // It is not verified against ItemWorld and caused random Image orient when
+    // treated as displayReady. Only accept host-raw strip samples (ready=false).
+    // Orient always comes from ItemWorld via installDisplayPixels materialize.
     if (m_view->hostImageModeSoftProvider()) {
         bool ready = false;
         pixels = m_view->hostImageModeSoftProvider()(
             path, m_view->hostSessionId().currentIdValue(), &ready);
-        if (!pixels.isNull()) {
-            if (displayReadyOut) {
-                *displayReadyOut = ready;
-            }
+        if (!pixels.isNull() && !ready) {
             return pixels;
         }
+        // displayReady override discarded — fall through to ImageCache/LQIP.
+        pixels = QImage();
     }
     pixels = ImageCache::get(path);
     if (pixels.isNull()) {

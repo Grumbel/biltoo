@@ -2,6 +2,39 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2176-image-orient-host-only.** Image underlay no longer uses filmstrip
+displayReady overrides; always host-raw + ItemWorld materialize.
+
+### ECS bypass work list (from docs/ECS_GUI_BYPASSES.md)
+
+- [x] **2174** Mode-stash soft not used for Image underlay
+- [x] **2176** Filmstrip displayReady ignored for Image soft; materialize from host-raw
+- [x] **2176** Filmstrip sampleForImageModePending must not ImageCache::put icons
+- [ ] ImageCache audit: all puts host-raw only
+- [ ] Workspace restore: pose from snapshot only; content only from ItemWorld (verify LoadRestore)
+- [ ] Ban incremental bakeRotate90 when host exists
+- [ ] Filmstrip override refresh always after ItemWorld commit (paint cache only)
+- [ ] Applied ContentXform flush to ItemWorld before mode leave
+- [ ] Path-map content writes only for unbound
+
+### ImageView rotation (Workspace→Image)
+
+Root cause class: **GUI soft pixel path ≠ ItemWorld**. Fix direction: underlay
+pixels only from host-raw; orient only from ItemWorld via installDisplayPixels.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2176-image-orient-host-only-e77da63.bundle HEAD
+```
+
+Next: **2177** — Workspace LoadRestore content from ItemWorld only; ImageCache put audit.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2175-ecs-gui-bypass-audit.** Full inventory of GUI paths that do not
 solely respect ItemWorld / SessionImageId ground truth.
 

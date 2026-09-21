@@ -157,4 +157,17 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 - `applyContentLayoutSize` / `wantAppearanceForItem` install path  
 - `contentLayoutSize` + filmstrip `LayoutAspectProvider`  
 - Image pending soft: no mode-stash (2174)  
-- `tileNativeSize` refuses oriented layout as native (2172)  
+- `tileNativeSize` refuses oriented layout as native (2172)
+
+## Work status
+
+| # | Issue | Status |
+|---|--------|--------|
+| 1 | Image underlay trusts filmstrip displayReady | **2176** reject displayReady; materialize host-raw + ItemWorld |
+| 2 | Filmstrip pixel override parallel store | Open (filmstrip paint only; Image ignores) |
+| 3 | ImageCache host-raw contract | **2176** stop filmstrip sample putting icons into cache |
+| 4 | Applied ContentXform vs store at leave | Open |
+| 5 | Workspace m_savedItems content | Restore already merges ItemWorld (verify) |
+| 6 | Incremental bakeRotate90 | Open |
+| 7 | Path/XDG seed | Orient-only for bound OK |
+

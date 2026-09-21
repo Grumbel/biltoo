@@ -1166,14 +1166,25 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             // Same path soft→HQ: clear full so soft can attach.
             item->clearDecodedPixels();
         }
-        // Display-ready soft (same-session stash / filmstrip override) is already
-        // content-baked for store want — attach as-is. Never replace with
-        // ImageCache then materialize: cache is path-shared and may be host-raw
-        // *or* a contaminated soft; rematerializing oriented soft as host-raw
-        // double-applied Workspace→Image rotation.
-        // Host-raw soft: installDisplayPixels seeds ImageCache + materializes want.
+        // Soft underlay always materializes host-raw + ItemWorld want (ECS).
+        // Unverified displayReady baked soft caused random Workspace→Image orient.
+        // resolveImageModePendingPixels no longer returns filmstrip overrides as
+        // displayReady; if still set, prefer host-raw from cache then materialize.
         const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
-        if (displayReady) {
+        if (displayReady && SessionAppearance::hasContentAppearance(want)) {
+            QImage host = ImageCache::get(path);
+            if (host.isNull()) {
+                host = ThumtooCache::cachedLqipImage(path);
+            }
+            if (!host.isNull()) {
+                installDisplayPixels(item, host, SessionAppearance::PixelKind::SoftPreview,
+                                     item->sessionId());
+            } else {
+                // No host-raw: attach bake and apply want fingerprint/layout only.
+                m_view->attachDisplaySample(item, pixels, want,
+                                    SessionAppearance::PixelKind::SoftPreview);
+            }
+        } else if (displayReady) {
             m_view->attachDisplaySample(item, pixels, want,
                                 SessionAppearance::PixelKind::SoftPreview);
         } else {
