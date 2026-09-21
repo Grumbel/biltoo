@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2072-refactor-pathbook-identity-docs.** REFACTOR: path-book IDENTITY + Stage 0–4b closed.
+Prior: **2071**.
+
+### Change
+- REFACTOR exit criteria: path-book bound content write/read clean (2069–2071)
+- Stage 2 residual table includes PathItemStateBook
+- Stale “Stage 4b waits for 4a” sequencing removed
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2072-refactor-pathbook-identity-docs-e77da63.bundle HEAD
+```
+Requires tip **2071** (base **e77da63**); includes 1938–2072.
+
+### Next
+- Phase 7 Stage 2: applied ContentXform runtime table or sessionIndex further reduction
+- Phase 6 Tier 4: decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2071-workspace-unstash-path-unbound-only.** Workspace unstash path content only when unbound.
 Prior: **2070**.
 

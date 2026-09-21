@@ -1043,7 +1043,7 @@ Ids are never recycled (`IDENTITY`). Content is sparse-only (no fat DTO mirror).
 `sessiondocument_test` (seeds), `itemworld_test` (sparse content).
 
 
-**Stage 4b status: complete** (tips 2051–2063 — product: nested sparse, no v1 compat)
+**Stage 4b status: complete** (tips 2051–2064; path-book IDENTITY 2069–2071)
 
 Stage 4b delivered (product: no backward compatibility):
 
@@ -1054,6 +1054,8 @@ Stage 4b delivered (product: no backward compatibility):
 5. Write-path hygiene (2060–2063): `mergeContentFromState` (XDG seed), crop/bake
    component writes, `clearContentComponents` (Reset Content), `captureState` without
    live gap-fill; `setAppearance` preserves existing Placement on identity pose
+6. Path-book IDENTITY (2069–2071): bound `setPathState` strips all content; bake
+   path sync unbound-only; bound readers use sparse + XDG only
 
 **Runtime write APIs (single source of truth)**
 
@@ -1079,15 +1081,15 @@ Stage 4b delivered (product: no backward compatibility):
 | `sessionIndex` cache | List-order mirror | Prefer `sessionListIndex` / document; refresh after `setSessionId` (2067); cache remains for unbound / O(1) hints |
 | Tile LOD bag pointer | Runtime decode | Already pipeline-owned bag |
 | `PendingItemAppearanceBook` | Duplicate→bind staging | GUI-only; destination is `setAppearance` on bind |
+| `PathItemStateBook` | Unbound content + placement | Bound content stripped on write (2069); bound reads sparse+XDG (2070–2071) |
 
 
-**Sequencing relative to Stages 0–3**
+**Sequencing relative to Stages 0–4**
 
-Stages 0–2 are largely landed (facade, sparse tables, ImageItem demotion).
-Stage 3 is incremental. Stage 4a can proceed **now** without Stage 3: it is a
-boundary hygiene change at `MainWindow` project save/load + `projectfile.cpp`.
-Stage 4b (format bump / drop dual-write) waits until 4a is proven and product
-accepts a version tick.
+Stages 0–4b are complete (facade, sparse tables, nested format, path-book IDENTITY).
+Stage 3 remains incremental. Remaining Stage 2 work is ImageItem render-proxy
+demotion (paint-grade lag, applied ContentXform, sessionIndex cache). Phase 6
+Tier 4 decode/framing is independent.
 
 ### Sequencing
 
@@ -1117,11 +1119,11 @@ decode/framing assertions (Phase 6 Tier 4).
 Phase 1–6 rules still apply. Additions:
 
 - No behaviour change without a failing scenario or explicit product decision.
-- Do not rename or reshape the on-disk / project `WorkspaceItemState` DTO until
-  Stage 4 has a migration story; runtime tables may differ earlier.
+- On-disk project appearance is nested v2 (Stage 4b). Runtime DTO remains the
+  assemble/load boundary; further DTO field drops need explicit product decision.
 - Do not touch `QGraphicsScene` ownership or introduce a frame scheduler.
-- Prefer deleting sync paths (`captureState` fan-out, path-book write-through for
-  bound ids) over new mirror flags.
+- Prefer deleting sync paths (`captureState` fan-out) over new mirror flags.
+  Path-book write-through for bound content is gone (2069–2071).
 - Ship Stage 0 as a pure facade tip before any table split.
 
 ### Exit criteria (whole phase)
@@ -1133,6 +1135,7 @@ Phase 1–6 rules still apply. Additions:
 - [x] `git grep captureState` is thin (2042): definition, `freezeItemAppearance`
   fallback, and crop-enter undo baseline only — not interaction hot paths.
 - [x] Stage 4b: format version ≥ 2 nested sparse + drop dual-write (no v1 reader).
+- [x] Path-book content for bound `SessionImageId` is write- and read-clean (2069–2071).
 - Phase 6 Tier 4 residual still tracked separately ([docs/IMAGEVIEW_CHARACTERIZATION.md](docs/IMAGEVIEW_CHARACTERIZATION.md));
   pure + offscreen harness largely green; decode/framing soft.
 
