@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2032-pack-bounds-pure.** Stage 3: pure display size + tile bounds for pack overshoot.
+Prior: **2031**.
+
+### Change
+- `GalleryPackFit::scaledDisplaySize` / `centeredTileBounds` — pure geometry
+- `GalleryLayout::pack` overshoot content union uses the pure helpers
+- Tests: bounds union, resolvedColumns / Flow / band / axisFillScale / cellAxisLength
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2032-pack-bounds-pure-e77da63.bundle HEAD
+```
+Requires tip **2031** (base **e77da63**); includes 1938–2032.
+
+### Next
+- Stage 3: pack algorithm data-plane extraction when needed
+- Remaining direct `captureState`: unbound, crop enter, mid-edit content-bake
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2031-gallerypackfit-tests.** Stage 3: characterize pure GalleryPackFit helpers.
 Prior: **2030**.
 

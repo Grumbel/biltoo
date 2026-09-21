@@ -21,6 +21,8 @@ private slots:
     void packFit_fittedTargets_heightVsWidthModes();
     void packFit_overshootUniformScale();
     void packFit_modeFromLayoutMode();
+    void packFit_scaledDisplaySizeAndCenteredBounds();
+    void layout_resolvedColumnsAndAxisFill();
 };
 
 void GalleryLayoutTest::axesSwap_cardinalAndDiagonal()
@@ -95,6 +97,38 @@ void GalleryLayoutTest::packFit_modeFromLayoutMode()
     QCOMPARE(GalleryPackFit::modeFromLayoutMode(LayoutMode::FreeForm),
              GalleryLayout::Mode::Masonry);
     QCOMPARE(GalleryPackFit::modeFromLayoutMode(LayoutMode::Facing), GalleryLayout::Mode::Facing);
+}
+
+void GalleryLayoutTest::packFit_scaledDisplaySizeAndCenteredBounds()
+{
+    QCOMPARE(GalleryPackFit::scaledDisplaySize(QSizeF(), 2.0), QSizeF());
+    QCOMPARE(GalleryPackFit::scaledDisplaySize(QSizeF(100, 50), 2.0), QSizeF(200, 100));
+    QCOMPARE(GalleryPackFit::scaledDisplaySize(QSizeF(100, 50), 2.0, 3.0), QSizeF(200, 150));
+
+    const QRectF b = GalleryPackFit::centeredTileBounds(QPointF(50, 40), QSizeF(20, 10));
+    QCOMPARE(b, QRectF(40, 35, 20, 10));
+    QVERIFY(GalleryPackFit::centeredTileBounds(QPointF(0, 0), QSizeF()).isEmpty());
+
+    // Union of two tiles matches pack overshoot measurement shape.
+    QRectF content;
+    content = content.united(GalleryPackFit::centeredTileBounds(QPointF(10, 10), QSizeF(20, 20)));
+    content = content.united(GalleryPackFit::centeredTileBounds(QPointF(40, 10), QSizeF(20, 20)));
+    QCOMPARE(content, QRectF(0, 0, 50, 20));
+}
+
+void GalleryLayoutTest::layout_resolvedColumnsAndAxisFill()
+{
+    QCOMPARE(GalleryLayout::resolvedColumns(0, 0), 1);
+    QCOMPARE(GalleryLayout::resolvedColumns(4, 0), 2); // ceil sqrt 4
+    QCOMPARE(GalleryLayout::resolvedColumns(5, 0), 3);
+    QCOMPARE(GalleryLayout::resolvedColumns(10, 4), 4);
+    QCOMPARE(GalleryLayout::resolvedFlowColumns(0), 3);
+    QCOMPARE(GalleryLayout::resolvedFlowColumns(5), 5);
+    QCOMPARE(GalleryLayout::resolvedBandCount(0, 5), 1);
+    QCOMPARE(GalleryLayout::resolvedBandCount(9, 5), 5);
+    QCOMPARE(GalleryLayout::axisFillScale(100.0, 50.0), 2.0);
+    QCOMPARE(GalleryLayout::axisFillScale(100.0, 0.0), 100.0); // native floored at 1
+    QCOMPARE(GalleryLayout::cellAxisLength(100.0, 10.0, 3), (100.0 - 20.0) / 3.0);
 }
 
 QTEST_MAIN(GalleryLayoutTest)

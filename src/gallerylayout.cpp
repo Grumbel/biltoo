@@ -436,18 +436,14 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             }
             QSizeF sz = item->galleryCellSize();
             if (sz.isEmpty()) {
-                const QSizeF ns = layoutSize(item);
                 const ItemComponents::Placement pl = item->placement();
-                const qreal sy = pl.scaleY > 0.0 ? pl.scaleY : pl.scale;
-                sz = QSizeF(ns.width() * pl.scale, ns.height() * sy);
+                sz = GalleryPackFit::scaledDisplaySize(layoutSize(item), pl.scale, pl.scaleY);
             }
             if (sz.isEmpty()) {
                 continue;
             }
-            const QPointF c = item->pos();
-            content = content.united(QRectF(c.x() - sz.width() / 2.0,
-                                            c.y() - sz.height() / 2.0,
-                                            sz.width(), sz.height()));
+            content = content.united(
+                GalleryPackFit::centeredTileBounds(item->pos(), sz));
         }
         const qreal s = GalleryPackFit::overshootUniformScale(content, targetW, targetH);
         if (s < 1.0) {

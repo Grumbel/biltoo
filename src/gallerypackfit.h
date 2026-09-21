@@ -94,6 +94,32 @@ inline void fittedTargets(GalleryLayout::Mode mode, qreal availW, qreal availH,
 }
 
 /**
+ * Display size from pack layout size and placement scales (uniform when
+ * @p scaleY ≤ 0). Pure — no ImageItem.
+ */
+inline QSizeF scaledDisplaySize(const QSizeF &layoutSize, qreal scale, qreal scaleY = 0.0)
+{
+    if (layoutSize.isEmpty()) {
+        return {};
+    }
+    const qreal sy = scaleY > 0.0 ? scaleY : scale;
+    return QSizeF(layoutSize.width() * scale, layoutSize.height() * sy);
+}
+
+/**
+ * Axis-aligned bounds of a tile centered at @p center with display size @p sz.
+ * Matches Gallery pack placement (pos is centre).
+ */
+inline QRectF centeredTileBounds(const QPointF &center, const QSizeF &sz)
+{
+    if (sz.isEmpty()) {
+        return {};
+    }
+    return QRectF(center.x() - sz.width() / 2.0, center.y() - sz.height() / 2.0,
+                  sz.width(), sz.height());
+}
+
+/**
  * Uniform scale ≤ 1 about the pack origin so content fits the target box.
  * Returns 1.0 when there is no overshoot beyond @p epsilon.
  */
