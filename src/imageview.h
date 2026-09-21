@@ -320,6 +320,11 @@ public:
      * (focusSessionPath exclusive-selects — for keyboard nav.)
      */
     void revealGalleryPath(const QString &path);
+    /**
+     * Gallery: scroll @p sessionId into view without clearing multi-select
+     * (preferred over path when the tile is bound).
+     */
+    void revealGallerySessionId(SessionImageId sessionId);
     void removeWorkspaceSessionId(SessionImageId sessionId);
     /** Assign sequential session indices to currently selected items starting at @p first. */
     void bindSelectedSessionIndices(int firstSessionIndex);

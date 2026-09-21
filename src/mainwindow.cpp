@@ -531,7 +531,12 @@ void MainWindow::onThumbnailWorkspaceSelectionChanged()
         m_syncingSelection = false;
         if (isGalleryMode() && !sel.isEmpty() && sel.last() >= 0
             && sel.last() < m_session.paths().size()) {
-            m_imageView->revealGalleryPath(m_session.paths().at(sel.last()));
+            const SessionImageId sid = sessionIdAt(sel.last());
+            if (sid != kInvalidSessionImageId) {
+                m_imageView->revealGallerySessionId(sid);
+            } else {
+                m_imageView->revealGalleryPath(m_session.paths().at(sel.last()));
+            }
         }
     }
     updateStatus();

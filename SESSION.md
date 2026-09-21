@@ -120,6 +120,8 @@ unbound and edits will not propagate correctly in Workspace).
    (biltoo-2114). Gallery focus matches open: live canvas index as pack-aligned
    slot hint when list cache is empty (biltoo-2115). Path remove maps successive
    path occurrences to successive session rows (biltoo-2115).
+   Filmstrip Gallery reveal prefers `revealGallerySessionId` (biltoo-2117);
+   path reveal remains unbound fallback.
    `showPathInImageMode` prefers live preferred item + session id.
    Sort / append / remove / slideshow start prefer `SessionImageId` over
    `paths().indexOf` (biltoo-2105). Workspace filmstrip selection restore after
@@ -127,7 +129,7 @@ unbound and edits will not propagate correctly in Workspace).
    LoadReplace seed and bulk selection→canvas bind ids (biltoo-2107/2108).
    Image-mode drop focus prefers filmstrip `sessionIds`, else
    `lastIndexOfPath` / `firstIdForPath` (biltoo-2111). Residual: path
-   open only when unbound without list or live index.
+   open/reveal only when unbound without list or live index.
 
 3. **Path map (`PathItemStateBook`) — bound writes are a no-op (biltoo-2110)**  
    `ItemWorld::setPathState` ignores states that carry a bound SessionImageId

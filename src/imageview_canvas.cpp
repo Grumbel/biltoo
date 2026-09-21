@@ -647,6 +647,24 @@ void ImageView::revealGalleryPath(const QString &path)
     }
 }
 
+void ImageView::revealGallerySessionId(SessionImageId sessionId)
+{
+    if (sessionId == kInvalidSessionImageId || !isGalleryMode()) {
+        return;
+    }
+    ImageItem *item = findItemBySessionId(sessionId);
+    if (!item) {
+        return;
+    }
+    // Do not clearSelection — preserves Ctrl/Shift/rubber-band multi-select.
+    ensureVisible(item, ViewTransform::kEnsureVisibleMargin, ViewTransform::kEnsureVisibleMargin);
+    const QString path = item->path();
+    if (!path.isEmpty() && m_gallery.hoverPath() != path) {
+        m_gallery.setHoverPath(path);
+        viewport()->update();
+    }
+}
+
 
 void ImageView::destroyCanvasItem(ImageItem *item, bool persistState)
 {

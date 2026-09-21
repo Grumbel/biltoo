@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2117-reveal-gallery-session-id.** SESSION residual: Gallery reveal by SessionImageId.
+Prior: **2116**.
+
+### Change
+- `ImageView::revealGallerySessionId`: scroll bound tile into view without
+  clearing multi-select (parallel to `revealGalleryPath`)
+- Filmstrip selection → Gallery reveal prefers session id at selected slot
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2117-reveal-gallery-session-id-e77da63.bundle HEAD
+```
+Requires tip **2116** (base **e77da63**); includes 1938–2117.
+
+### Next
+- SESSION residual: path open/reveal only when unbound without list/live index
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2116-pending-appearance-collision-only.** SESSION residual: PendingItemAppearance is collision recovery only.
 Prior: **2115**.
 
