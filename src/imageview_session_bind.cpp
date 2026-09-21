@@ -55,7 +55,8 @@ void ImageView::applyPendingBindScenePos(ImageItem *item, const PendingSessionBi
         item->setScaleHandlesEnabled(true);
     }
     m_displayPipeline.loadGate().removePendingScenePos(item->path());
-    rememberItemState(item);
+    // Pose-only persist (explicit drop); content stays on session id / path map.
+    persistGeometrySessionState(item, item->placement());
 }
 
 

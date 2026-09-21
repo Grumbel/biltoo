@@ -2,6 +2,38 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2003-pose-only-persistGeometry.** Drop/move pose uses setPlacement, not setAppearance.
+Prior: **2002**.
+
+### Change
+Pose-only canvas updates no longer call `rememberItemState` (full `setAppearance`
+dual-write of the fat DTO):
+
+- `placeOrMoveImageAt` (existing tile move)
+- `applyPendingBindScenePos` (explicit drop pose)
+
+Both use `persistGeometrySessionState` → `setPlacement` / path-map pose fields only.
+Content remains on the session id (or unbound path map) from prior commits.
+
+`commitItemSessionEdit` / destroy still use `rememberItemState` (full snapshot).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2003-pose-only-persistGeometry-e77da63.bundle HEAD
+```
+Requires tip **2002** (base **e77da63**); includes 1938–2003.
+
+### Next
+- Optional: more pose-only call sites still on rememberItemState
+- Stage 4 project-format migration (design)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2002-findItemBySessionIndex-doc-first.** Document-owned slots never match stale cache.
 Prior: **2001**.
 

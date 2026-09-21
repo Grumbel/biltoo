@@ -1243,6 +1243,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2000: rebindWorkspaceSession id→index hash; path-mismatch clears list cache.
 - biltoo-2001: pending-bind stamps sessionIndex via sessionListIndex after id bind.
 - biltoo-2002: findItemBySessionIndex document-first; no stale-cache cross-tile match.
+- biltoo-2003: place/drop pose via persistGeometrySessionState (setPlacement), not setAppearance.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

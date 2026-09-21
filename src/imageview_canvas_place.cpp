@@ -145,9 +145,9 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
                     m_scene->clearSelection();
                 }
                 existing->setSelected(true);
-                // Persist free-form pose so a later appearance restore cannot
-                // revive gallery pack coordinates.
-                rememberItemState(existing);
+                // Pose-only: setPlacement dual-write — do not setAppearance the
+                // whole fat DTO (content already lives on the session id).
+                persistGeometrySessionState(existing, existing->placement());
                 updateWorkspaceSceneRect();
                 ensureVisibleItem(existing);
                 emit statusChanged();
