@@ -4,6 +4,7 @@
 #include "cropcontroller.h"
 
 #include "imageview.h"
+#include "itemcomponents.h"
 #include "imageitem.h"
 #include "croppathraster.h"
 #include "cropflash.h"
@@ -245,7 +246,17 @@ void CropController::recordSessionCrop(ImageItem *item, const QRectF &localCrop)
     }
     const QSize cropBasis = CropSession::cropBasisSize(
         item->imageSize(), fileNative, orientApp, item);
-    WorkspaceItemState s = m_view->captureState(item);
+    // Stage 2: durable orient/grade from sparse-prefer store; live pose/grade
+    // from the item. Avoid a full captureState rebuild when orient is already
+    // in orientStore.
+    WorkspaceItemState s;
+    if (sid != kInvalidSessionImageId) {
+        s = m_view->sessionAppearanceValue(sid);
+    } else {
+        s = m_view->captureState(item);
+    }
+    ItemComponents::applyPlacementToState(s, item->placement());
+    s.colorAdjust = item->colorAdjustments();
     CropSession::mergeOrientFromAppearance(&s, orientApp);
     s.sessionId = sid;
     s.sessionIndex = m_view->sessionListIndex(item);
@@ -262,7 +273,7 @@ void CropController::pushCropAppearanceUndo(ImageItem *item, const QString &text
     if (!m_view->hostUndoStack() || !item || !session().isEnterValid()) {
         return;
     }
-    // captureState prefers ItemWorld Crop table after storeCropAppearance.
+    // Interaction snapshot after storeCropAppearance (undo after-image).
     const WorkspaceItemState afterSt = m_view->captureState(item);
     m_view->hostUndoStack()->push(new CropAppearanceCommand(
         m_view, item, session().enterSourceRef(), item->sourceImage().copy(),
@@ -439,7 +450,7 @@ bool CropController::enterCropModeFromUi()
     // session().active() stays false until after the first draft attach.
     {
         QImage enterSrc = CropSession::pickEnterSnapshotPixels(item);
-        // captureState prefers ItemWorld Crop/ContentBake for bound ids.
+        // Enter snapshot: live interaction baseline for crop undo.
         WorkspaceItemState enterSt = m_view->captureState(item);
         session().beginEnterSession(item, enterSrc, enterSt,
                                  !enterSrc.isNull() || item->hasDisplayPixels());

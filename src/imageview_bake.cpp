@@ -7,6 +7,7 @@
 #include "imageitem.h"
 #include "contentxform.h"
 #include "sessionappearance.h"
+#include "itemcomponents.h"
 #include "thumtoocache.h"
 #include "imagecache.h"
 
@@ -137,14 +138,10 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
     }
 
-    WorkspaceItemState afterSt = captureState(item);
-    afterSt.hasCrop = cropMap.hasCrop;
-    afterSt.cropRect = cropMap.cropRect;
-    afterSt.cropRotation = cropMap.cropRotation;
-    afterSt.cropSourceSize = cropMap.cropSourceSize;
-    afterSt.contentHFlip = want.contentHFlip;
-    afterSt.contentVFlip = want.contentVFlip;
-    afterSt.contentQuarterTurns = turns;
+    // Undo after-image: absolute content from want; live pose from the item.
+    // Do not rebuild via captureState — store already matches want after setAppearance.
+    WorkspaceItemState afterSt = want;
+    ItemComponents::applyPlacementToState(afterSt, placementFromItem(item));
     afterSt.sessionId = beforeSt.sessionId;
     pushItemContentCommand(tr("Rotate"), item, beforeSrc, item->sourceImage().copy(),
                            beforeSt, afterSt);
@@ -207,40 +204,25 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     applyContentLayoutSize(item, want);
 
     if (sid != kInvalidSessionImageId) {
-        WorkspaceItemState s = captureState(item);
+        // Absolute content from want; live pose from the item (same boundary as
+        // project save / captureState overlays).
+        WorkspaceItemState s = want;
         s.sessionId = sid;
-        s.hasCrop = cropMap.hasCrop;
-        s.cropRect = cropMap.cropRect;
-        s.cropRotation = cropMap.cropRotation;
-        s.cropSourceSize = cropMap.cropSourceSize;
-        s.contentHFlip = h;
-        s.contentVFlip = v;
-        s.contentQuarterTurns = cropMap.contentQuarterTurns;
+        ItemComponents::applyPlacementToState(s, placementFromItem(item));
         m_itemWorld.setAppearance(sid, s);
         persistDurableContentAppearance(item, s, "bakeFlip");
     } else if (cropMap.hasCrop) {
-        WorkspaceItemState s = captureState(item);
-        s.hasCrop = true;
-        s.cropRect = cropMap.cropRect;
-        s.cropRotation = cropMap.cropRotation;
-        s.cropSourceSize = cropMap.cropSourceSize;
-        s.contentHFlip = h;
-        s.contentVFlip = v;
+        WorkspaceItemState s = want;
+        ItemComponents::applyPlacementToState(s, placementFromItem(item));
         m_itemWorld.setPathState(item->path(), s);
     }
 
     commitItemSessionEdit(item);
 
     // Applied fingerprint already set by syncLiveContentMetaFromState(want).
-
-    WorkspaceItemState afterSt = captureState(item);
-    afterSt.hasCrop = cropMap.hasCrop;
-    afterSt.cropRect = cropMap.cropRect;
-    afterSt.cropRotation = cropMap.cropRotation;
-    afterSt.cropSourceSize = cropMap.cropSourceSize;
-    afterSt.contentHFlip = h;
-    afterSt.contentVFlip = v;
-    afterSt.contentQuarterTurns = beforeSt.contentQuarterTurns;
+    // Undo after-image matches want content + live pose (no captureState rebuild).
+    WorkspaceItemState afterSt = want;
+    ItemComponents::applyPlacementToState(afterSt, placementFromItem(item));
     afterSt.sessionId = beforeSt.sessionId;
     pushItemContentCommand(horizontal && !vertical ? tr("Flip horizontal")
                           : vertical && !horizontal ? tr("Flip vertical")
