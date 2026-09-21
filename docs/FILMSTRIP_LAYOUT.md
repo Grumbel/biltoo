@@ -68,7 +68,8 @@ Every install path (pool worker, session override, ladder) must call
 | Event | Action |
 |-------|--------|
 | `setFiles` | `ThumtooCache::cachedSize` aspect when known; else provisional square + `scheduleProbe`; `ThumbLoaded=false` |
-| `sizeReady` | Updates letterbox sizeHint for unloaded rows (same supply path as Gallery) |
+| `sizeReady` | Updates letterbox sizeHint for rows **without** a session appearance override (oriented/crop aspect owns the cell) |
+| appearance override | `setSessionImageOverride` → `setThumbnailIcon` with override flag: aspect from oriented image |
 | decode done | `setThumbnailIcon`: pixmap, content, sizeHint, layout visible rows |
 | `setThumbSize` | `refreshAllItemGeometry` or full `scheduleThumbnailLoads` if sharper needed |
 | `setCropToSquare` | `scheduleThumbnailLoads` → `invalidateThumbPixels` + reload |

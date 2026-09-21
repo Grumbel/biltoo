@@ -469,9 +469,21 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     if (!it) {
                         continue;
                     }
-                    // Always apply durable size — even if LQIP already painted.
-                    // Skipping when ThumbLoadedRole was set left cells at sample
-                    // aspect until a soft upgrade (PDF LQIP growth).
+                    // Appearance override owns oriented/crop aspect — do not
+                    // reset the cell to unoriented native (tip 2074).
+                    if (i < m_sessionIds.size()) {
+                        const SessionImageId sid = m_sessionIds.at(i);
+                        if (sid != kInvalidSessionImageId
+                            && m_sessionIdImageOverrides.contains(sid)) {
+                            continue;
+                        }
+                    }
+                    if (m_sessionImageOverrides.contains(path)) {
+                        continue;
+                    }
+                    // Durable size even if LQIP already painted. Skipping when
+                    // ThumbLoadedRole was set left cells at sample aspect until
+                    // a soft upgrade (PDF LQIP growth).
                     applyNativeAspect(it, size);
                     any = true;
                     // LQIP often arrives in the same sizeReady payload (ImageCache).

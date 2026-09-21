@@ -2,6 +2,25 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2075-sizeReady-skip-appearance-override.** sizeReady must not reset oriented filmstrip aspect.
+Prior: **2074**.
+
+### Change
+- `sizeReady` handler skips rows with session-id or path appearance overrides so
+  late native probes cannot clobber oriented/crop letterbox aspect
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2075-sizeReady-skip-appearance-override-e77da63.bundle HEAD
+```
+Requires tip **2074** (base **e77da63**); includes 1938–2075.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2074-filmstrip-override-aspect.** Filmstrip cell aspect follows oriented appearance.
 Prior: **2073**.
 
