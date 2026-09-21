@@ -98,6 +98,9 @@ void SessionDocument::setPaths(const QStringList &paths)
     for (int i = 0; i < m_paths.size(); ++i) {
         m_ids.append(allocId());
     }
+    // Fresh ids — prior appearance rows are orphaned (ids never recycled).
+    // replaceAll must NOT clear: sort/reorder keeps the same SessionImageIds.
+    m_appearance.clear();
 }
 
 void SessionDocument::replaceAll(const QStringList &paths, const QVector<SessionImageId> &ids)

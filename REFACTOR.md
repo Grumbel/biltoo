@@ -1400,6 +1400,8 @@ Phase 1–6 rules still apply. Additions:
   getAppearance/hasAppearance marked non-authority for store reads.
 - biltoo-2045: Stage 2 residual — clearWorkspace clears ItemWorld sparse tables
   when SessionDocument::clear wipes fat-only store (stale hasDurableAppearance).
+- biltoo-2046: Stage 2 residual — setPaths clears fat appearance; applyExpandedLoad
+  clears ItemWorld sparse so Open/Replace cannot keep orphaned prior-session rows.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

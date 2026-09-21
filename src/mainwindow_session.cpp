@@ -1274,7 +1274,12 @@ void MainWindow::loadFiles(const QStringList &paths, int startAt)
 
 void MainWindow::applyExpandedLoad(const QStringList &images, int startAt)
 {
-    m_session.setPaths(images);
+    m_session.setPaths(images); // also clears fat appearance (new ids)
+    // Sparse ItemWorld tables are not owned by SessionDocument — clear them so
+    // hasDurableAppearance cannot see prior-session crops after Open/Replace.
+    if (m_imageView) {
+        m_imageView->itemWorld().clearAppearance();
+    }
     m_session.validateUniqueIds("loadFiles");
     if (sortModeNeedsImageProbe()) {
         sortFileListWithProbesInBackground([this, startAt]() {

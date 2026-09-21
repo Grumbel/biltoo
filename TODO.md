@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2046-setpaths-clear-appearance.** Stage 2 residual: session Open/Replace clears fat + sparse appearance.
+Prior: **2045**.
+
+### Change
+- `SessionDocument::setPaths` clears fat appearance store (new ids; orphans prior)
+- `replaceAll` still keeps appearance (sort/reorder identity)
+- `MainWindow::applyExpandedLoad` clears ItemWorld sparse tables after setPaths
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2046-setpaths-clear-appearance-e77da63.bundle HEAD
+```
+Requires tip **2045** (base **e77da63**); includes 1938–2046.
+
+### Next
+- **Stage 4b** only with explicit product decision
+- Phase 6 Tier 4: decode/framing when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2045-clear-workspace-sparse.** Stage 2 residual: clearWorkspace clears ItemWorld sparse with session wipe.
 Prior: **2044**.
 

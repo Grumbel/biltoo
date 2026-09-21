@@ -48,7 +48,11 @@ public:
     /** Clear paths/ids only (does not clear appearance or recycle ids). */
     void clearPaths();
     void clear();
-    /** Replace list; allocates a fresh id for every path. */
+    /**
+     * Replace list; allocates a fresh id for every path.
+     * Clears the appearance store (orphaned prior ids). Use replaceAll to
+     * reorder while keeping SessionImageId identity and appearance rows.
+     */
     void setPaths(const QStringList &paths);
     /**
      * Replace list with parallel paths and ids (same size required).
