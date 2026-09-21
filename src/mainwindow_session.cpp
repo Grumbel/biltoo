@@ -1842,10 +1842,14 @@ void MainWindow::removeSessionIndicesFromModel(const QList<int> &sorted)
         }
         const SessionImageId sid = m_session.idAt(idx);
         m_session.removeAt(idx);
-        // Drop the canvas object for this session image only (not every path match).
-        if (m_imageView && sid != kInvalidSessionImageId
-            && (isWorkspaceMode() || isGalleryMode())) {
-            m_imageView->removeWorkspaceSessionId(sid);
+        // Always drop id-keyed appearance (fat + sparse). Canvas tiles only exist
+        // in Workspace/Gallery; Image mode still must not leave orphaned rows.
+        if (m_imageView && sid != kInvalidSessionImageId) {
+            if (isWorkspaceMode() || isGalleryMode()) {
+                m_imageView->removeWorkspaceSessionId(sid);
+            } else {
+                m_imageView->itemWorld().removeAppearance(sid);
+            }
         }
     }
     if (m_imageView) {

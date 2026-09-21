@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2048-image-mode-remove-appearance.** Stage 2 residual: Image-mode session remove clears appearance.
+Prior: **2047**.
+
+### Change
+- `removeSessionIndicesFromModel`: always drop id-keyed appearance
+- Workspace/Gallery: `removeWorkspaceSessionId` (canvas + appearance)
+- Image mode: `itemWorld().removeAppearance` only (no canvas tiles)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2048-image-mode-remove-appearance-e77da63.bundle HEAD
+```
+Requires tip **2047** (base **e77da63**); includes 1938–2048.
+
+### Next
+- **Stage 4b** only with explicit product decision
+- Phase 6 Tier 4: decode/framing when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2047-setpaths-appearance-tests.** Stage 2 residual: characterize setPaths vs replaceAll appearance.
 Prior: **2046**.
 
