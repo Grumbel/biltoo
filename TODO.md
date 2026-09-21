@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2138-mainwindow-slideshow-project-split.** Split slideshow + project TUs from mainwindow_session.
+Prior: **2137**.
+
+### Change
+- `mainwindow_slideshow.cpp` — interval/start/stop and related chrome (~777 lines)
+- `mainwindow_project.cpp` — save/load, recent projects, Workspace background (~897 lines)
+- `mainwindow_session.cpp` — load/sort/nav/history/clipboard (~2967 lines, was 4563)
+- Mechanical split only; CMake updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2138-mainwindow-slideshow-project-split-e77da63.bundle HEAD
+```
+Requires tip **2137** (base **e77da63**); includes 1938–2138.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Optional: further session/chrome splits (expand vs nav)
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2137-sort-sync-sessionsort.** sortFileListSync uses SessionSort::orderIndices.
 Prior: **2136**.
 

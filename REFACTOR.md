@@ -1554,6 +1554,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2137:** sortFileListSync deduped onto SessionSort::orderIndices.
 
+**biltoo-2138:** mainwindow_session split — slideshow + project TUs (~2967 / 777 / 897).
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live
