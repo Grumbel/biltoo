@@ -233,6 +233,18 @@ bool ImageView::placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
         m_items.append(ph);
         applyItemModeFlags(ph);
         m_displayPipeline.registerItemDisplaySurface(ph);
+        // Immediate content-baked soft when session/XDG want is known — do not
+        // wait for LoadAdd with an unrotated host painted into an oriented box
+        // (looked like stretch + missing rotation on filmstrip drop).
+        if (sessionId != kInvalidSessionImageId
+            && SessionAppearance::hasContentAppearance(
+                   sessionAppearanceValue(sessionId))) {
+            const QImage host = ImageCache::get(path);
+            if (!host.isNull()) {
+                m_displayPipeline.installDisplayPixels(
+                    ph, host, SessionAppearance::PixelKind::SoftPreview, sessionId);
+            }
+        }
         if (const char *dbg = std::getenv("BILTOO_DEBUG_DROP");
             dbg && dbg[0] != '\0' && dbg[0] != '0') {
             fprintf(stderr,

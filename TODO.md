@@ -2,6 +2,37 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2167-drop-filmstrip-orient.** Filmstrip aspect jump on drag-drop;
+Workspace drop of rotated session tiles unrotated / stretched.
+
+### Root causes
+
+1. **Filmstrip:** `setSession` → `setFiles` rebuilt cells from **unoriented**
+   native size and never re-installed `m_sessionIdImageOverrides`. Drop/Duplicate
+   called `setSession` → rotated rows snapped to landscape/portrait of file on disk.
+2. **Workspace drop:** placeholder waited for LoadAdd with host-raw pixels while
+   box used oriented layout when want was known late — stretch + missing rotate.
+   Immediate soft `installDisplayPixels` when session want is known.
+
+### Fix
+
+- `setSession`: after `setFiles`, re-apply id overrides (same as `setSessionIds`).
+- `setFiles`: provisional aspect = `ContentXform::layoutSize(native, XDG want)`.
+- `placeOrMoveImageAt`: soft-install from host when session has content appearance.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2167-drop-filmstrip-orient-e77da63.bundle HEAD
+```
+
+Next: **2168** — QA filmstrip drag of rotated row onto Workspace.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2166-workspace-image-orient.** Workspace→Image rotation still wrong
 after 2165 (seed only).
 

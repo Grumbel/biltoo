@@ -2286,6 +2286,26 @@ void ThumbnailBar::setSession(const QStringList &files, const QVector<SessionIma
         m_sessionIdCropSticky.swap(stickyKept);
     }
     setFiles(files);
+    // setFiles clears rows and sizes them from *unoriented* native cache size.
+    // Re-install session-id appearance overrides so rotated/cropped rows keep
+    // oriented aspect (drop/Duplicate called setSession and cells jumped).
+    for (int row = 0; row < m_sessionIds.size() && row < m_files.size(); ++row) {
+        const SessionImageId sid = m_sessionIds.at(row);
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        auto it = m_sessionIdImageOverrides.constFind(sid);
+        if (it == m_sessionIdImageOverrides.cend() || it.value().isNull()) {
+            continue;
+        }
+        const QImage thumb = prepareThumbnailFromImage(it.value(), filmstripDecodeEdge());
+        if (thumb.isNull()) {
+            continue;
+        }
+        m_allowOverrideIconInstall = true;
+        setThumbnailIcon(row, thumb);
+        m_allowOverrideIconInstall = false;
+    }
 }
 
 void ThumbnailBar::setFiles(const QStringList &files)
@@ -2338,7 +2358,19 @@ void ThumbnailBar::setFiles(const QStringList &files)
         }
         if (m_delegate && !m_cropToSquare && native.isValid()
             && native.width() > 0 && native.height() > 0) {
-            const QSize content = m_delegate->letterboxContentSize(native);
+            // Orient cell from XDG content appearance (same as setThumbnailIcon
+            // ordinary path). Unoriented native made rotated rows jump aspect
+            // until override re-applied.
+            WorkspaceItemState layoutSt;
+            ThumtooCache::StoredContentAppearance stored;
+            if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
+                layoutSt.contentHFlip = stored.contentHFlip;
+                layoutSt.contentVFlip = stored.contentVFlip;
+                layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
+            }
+            const QSize aspect = ContentXform::layoutSize(native, layoutSt);
+            const QSize content = m_delegate->letterboxContentSize(
+                (aspect.width() > 0 && aspect.height() > 0) ? aspect : native);
             item->setData(ThumbnailDelegate::ThumbContentSizeRole, content);
             item->setSizeHint(m_delegate->cellSizeForContent(font(), content));
         } else if (m_delegate && !m_cropToSquare) {
