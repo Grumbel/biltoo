@@ -2,6 +2,42 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2146-workspace-stash-scene-clear.** Harden Workspace stash against scene clear.
+Prior: **2145**.
+
+### Bug
+Workspace still emptied on leave/re-enter. Root cause beyond the double
+snapshot/stash (2145): `QGraphicsScene::clear()` in
+`clearSceneKeepingStashes` (Image enter) and `restoreStashedItems` **deletes**
+any stashed `ImageItem` that was still scene-parented, leaving dangling stash
+pointers. Re-enter then restored nothing (and durable recovery was not tried).
+
+### Fix
+- `clearSceneKeepingStashes`: remove/delete only non-stashed items; detach
+  Workspace/Gallery stash tiles without deleting them
+- `restoreStashedItems`: never call `scene->clear()`; destroy residual live
+  tiles except those in the stash keep-set
+- `WorkspaceController::enter`: if live is still empty after stash restore but
+  `m_savedItems` is non-empty, fall back to durable `restore()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2146-workspace-stash-scene-clear-e77da63.bundle HEAD
+```
+Requires tip **2145** (base **e77da63**); includes 1938–2146.
+
+### Next
+- Runtime QA: Workspace → Image → Workspace keeps tiles
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Runtime QA: filmstrip XDG orient on cold open
+- Medium: opacity/HiDPI polish
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2145-workspace-stash-filmstrip-orient.** Workspace re-enter stash fix; filmstrip XDG orient on startup.
 Prior: **2144**.
 

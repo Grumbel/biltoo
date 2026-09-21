@@ -1570,6 +1570,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2145:** Workspace re-entrant stash/snapshot no-op; filmstrip XDG orient on bound rows.
 
+**biltoo-2146:** scene clear must not delete stashed Workspace tiles; durable restore fallback.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

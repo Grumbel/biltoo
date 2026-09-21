@@ -103,8 +103,33 @@ void ImageView::clearSceneKeepingStashes()
     if (!m_scene) {
         return;
     }
+    // Do not QGraphicsScene::clear() — that deletes every item still parented to
+    // the scene. Workspace/Gallery stashes are supposed to be off-scene, but if a
+    // tile is still parented, clear() would free it and leave a dangling stash
+    // pointer (Workspace re-enter → empty canvas).
+    QSet<ImageItem *> keep;
+    for (ImageItem *item : m_workspace.stashedItems()) {
+        if (item) {
+            keep.insert(item);
+        }
+    }
+    for (ImageItem *item : m_gallery.stashedItems()) {
+        if (item) {
+            keep.insert(item);
+        }
+    }
     m_scene->blockSignals(true);
-    m_scene->clear();
+    const QList<QGraphicsItem *> all = m_scene->items();
+    for (QGraphicsItem *gi : all) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (keep.contains(ii)) {
+                m_scene->removeItem(ii);
+                continue;
+            }
+        }
+        m_scene->removeItem(gi);
+        delete gi;
+    }
     m_scene->blockSignals(false);
 }
 

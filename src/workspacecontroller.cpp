@@ -191,13 +191,40 @@ void WorkspaceController::restoreStashedItems()
         return;
     }
     // Drop Image-mode canvas (single tile) without touching the stash.
-    while (!m_view->liveItems().isEmpty()) {
-        m_view->destroyCanvasItem(m_view->liveItems().last());
+    // Never QGraphicsScene::clear() — stashed tiles may still be scene-parented
+    // if removeItem was skipped; clear() would delete them and leave dangling
+    // pointers in m_stashedItems / liveItems.
+    QSet<ImageItem *> keep;
+    for (ImageItem *item : m_stashedItems) {
+        if (item) {
+            keep.insert(item);
+        }
     }
-    if (m_view->canvasScene()) {
-        m_view->canvasScene()->blockSignals(true);
-        m_view->canvasScene()->clear();
-        m_view->canvasScene()->blockSignals(false);
+    while (!m_view->liveItems().isEmpty()) {
+        ImageItem *item = m_view->liveItems().last();
+        if (keep.contains(item)) {
+            // Should not happen (stash owns these); detach from live only.
+            m_view->liveItems().removeAll(item);
+            continue;
+        }
+        m_view->destroyCanvasItem(item);
+    }
+    if (QGraphicsScene *sc = m_view->canvasScene()) {
+        sc->blockSignals(true);
+        for (QGraphicsItem *gi : sc->items()) {
+            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+                if (keep.contains(ii)) {
+                    sc->removeItem(ii);
+                    continue;
+                }
+            }
+            // Residual non-stashed graphics (page guide is not ImageItem).
+            if (qgraphicsitem_cast<ImageItem *>(gi)) {
+                sc->removeItem(gi);
+                delete gi;
+            }
+        }
+        sc->blockSignals(false);
     }
     m_view->liveItems() = m_stashedItems;
     m_stashedItems.clear();
@@ -386,6 +413,15 @@ void WorkspaceController::enter(int previousMode)
         m_view->hostGallery().invalidateDecodes();
         m_view->pathOrderClear();
         m_view->applyModeFlagsToLiveItems();
+    }
+    // If the live stash was destroyed (dangling after scene clear) but the
+    // durable snapshot survived, rebuild from m_savedItems.
+    if (m_view->liveItems().isEmpty() && !m_savedItems.isEmpty()) {
+        const bool hadSavedView = m_hasSavedView;
+        restore();
+        if (hadSavedView) {
+            keepViewTransform = true;
+        }
     }
     // Always clear canvas selection on enter — restored stash may keep old
     // selected flags, which MainWindow would mirror onto every filmstrip row.
