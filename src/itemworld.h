@@ -356,6 +356,12 @@ public:
         return !contentBake(id).isIdentity();
     }
 
+    /** True when sparse contentBake or crop drives orient/layout (not placement-only). */
+    bool hasContentOrient(SessionImageId id) const
+    {
+        return hasContentBake(id) || hasCrop(id);
+    }
+
     /** Sparse color-grade table (Stage 1). Identity grade ⇒ absent. */
     ItemComponents::Color color(SessionImageId id) const
     {

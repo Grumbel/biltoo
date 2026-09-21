@@ -219,10 +219,21 @@ bool ImageView::tryRematerializeFromHost(ImageItem *item, const WorkspaceItemSta
 }
 
 
-void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &want)
+void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState &wantIn)
 {
     if (!item) {
         return;
+    }
+    // Placement/color-only durable rows are not content orient (2205–2208).
+    WorkspaceItemState want = wantIn;
+    {
+        SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId && isImageMode()) {
+            sid = m_sessionId.currentIdValue();
+        }
+        if (sid != kInvalidSessionImageId && !m_itemWorld.hasContentOrient(sid)) {
+            want = SessionAppearance::withoutContentOrient(want);
+        }
     }
     // Intrinsic is always ContentXform layout of file-native size — never sample
     // pixel dimensions. Using displayImage().size() for crops shrank Workspace

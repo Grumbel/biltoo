@@ -128,7 +128,7 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
         want = sessionAppearanceValue(sessionId);
         // Placement/color-only durable row is not content orient — same strip as
         // installDisplayPixels / createItemFromImage (2205–2207).
-        if (!m_itemWorld.hasContentBake(sessionId) && !m_itemWorld.hasCrop(sessionId)) {
+        if (!m_itemWorld.hasContentOrient(sessionId)) {
             want = SessionAppearance::withoutContentOrient(want);
         }
     } else if (sessionId == kInvalidSessionImageId && !path.isEmpty()) {

@@ -102,8 +102,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
         // orient — layout must not transpose while paint stays identity.
         const SessionImageId sidLayout = m_view->hostSessionId().currentIdValue();
         if (sidLayout != kInvalidSessionImageId
-            && !m_view->itemWorld().hasContentBake(sidLayout)
-            && !m_view->itemWorld().hasCrop(sidLayout)) {
+            && !m_view->itemWorld().hasContentOrient(sidLayout)) {
             app = SessionAppearance::withoutContentOrient(app);
         }
     }

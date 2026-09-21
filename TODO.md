@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2209-has-content-orient-layout-strip.** Orient authority cleanup:
+
+1. ItemWorld::hasContentOrient(sid) — contentBake or crop sparse
+2. applyContentLayoutSize strips want via withoutContentOrient when no content orient
+   (covers peer sync and all layout callers)
+3. install/create/contentLayoutSize use hasContentOrient
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2209-has-content-orient-layout-strip-e77da63.bundle HEAD
+```
+
+Next: **2210**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2208-without-content-orient-helper.** Consolidate placement-only
 orient strip into SessionAppearance::withoutContentOrient (keeps grade).
 
