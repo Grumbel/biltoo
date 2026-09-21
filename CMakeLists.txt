@@ -259,6 +259,8 @@ set(BILTOO_LIB_SOURCES
   src/sessionopen.h
   src/sessionsort.cpp
   src/sessionsort.h
+  src/sessionexpand.cpp
+  src/sessionexpand.h
   src/projectfile.cpp
   src/projectfile.h
   src/placementlinear.cpp

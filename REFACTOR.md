@@ -1558,6 +1558,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2139:** clipboard/history TU; WorkspaceBackgroundCommand moved into project TU.
 
+**biltoo-2140:** SessionExpand pure path expansion (PDF/EPUB/archive/dir).
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2140-sessionexpand-pure.** SessionExpand path expansion extracted from MainWindow.
+Prior: **2139**.
+
+### Change
+- `sessionexpand.{h,cpp}`: canonicalImagePath, expandPathList, emptyResultMessage (+ internal helpers)
+- MainWindow expandPaths / background expand / empty message call SessionExpand
+- Session file keeps dialog filter + SessionRemoveCommand only in the anonymous namespace
+- mainwindow_session.cpp ~2110 lines (was ~2340)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2140-sessionexpand-pure-e77da63.bundle HEAD
+```
+Requires tip **2139** (base **e77da63**); includes 1938–2140.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Optional: characterization test for SessionExpand with thumtoo-linked harness
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2139-mainwindow-clipboard-split.** Clipboard/history TU; fix project undo command visibility.
 Prior: **2138**.
 
