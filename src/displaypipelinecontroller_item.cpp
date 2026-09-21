@@ -332,23 +332,22 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     // Phase 7: applied ContentXform is mid-edit authority (same as captureState).
     if (item->hasAppliedContentXform()) {
         item->tileContentXform().applyToState(want);
-    } else {
-        // No applied: lag-fill empty store from sparse tables, else tileContentXform lag.
-        ContentXform::Value liveX = item->tileContentXform();
-        if (id != kInvalidSessionImageId) {
-            if (m_view->itemWorld().hasContentBake(id)) {
-                const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);
-                liveX.hFlip = bake.hFlip;
-                liveX.vFlip = bake.vFlip;
-                liveX.quarterTurns = bake.quarterTurns;
-            }
-            if (m_view->itemWorld().hasCrop(id)) {
-                const ItemComponents::Crop crop = m_view->itemWorld().crop(id);
-                liveX.hasCrop = !crop.isEmpty();
-                liveX.cropRect = crop.rect;
-            }
+    } else if (id != kInvalidSessionImageId) {
+        // No applied fingerprint: fill empty DTO fields from ItemWorld sparse
+        // Crop / ContentBake (tileContentXform is applied-only after 1966).
+        ContentXform::Value sparse;
+        if (m_view->itemWorld().hasContentBake(id)) {
+            const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);
+            sparse.hFlip = bake.hFlip;
+            sparse.vFlip = bake.vFlip;
+            sparse.quarterTurns = bake.quarterTurns;
         }
-        SessionAppearance::mergeLiveContentLagFlags(want, liveX);
+        if (m_view->itemWorld().hasCrop(id)) {
+            const ItemComponents::Crop crop = m_view->itemWorld().crop(id);
+            sparse.hasCrop = !crop.isEmpty();
+            sparse.cropRect = crop.rect;
+        }
+        SessionAppearance::fillEmptyContentFlags(want, sparse);
     }
     // Live grade leads ItemWorld during slider drag; keep store grade when live
     // is still identity (cold open / path-change before seed install).

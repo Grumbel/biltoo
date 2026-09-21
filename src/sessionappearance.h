@@ -143,16 +143,13 @@ bool liveItemHasContentMods(const ContentXform::Value &live);
 
 
 /**
- * Overlay applied ContentXform and lag-fill flags onto a store/path slot.
- * Applied fingerprint wins when store lagged a live edit; live flips/crop
- * (prefer ItemWorld sparse tables when bound) fill empty store fields only.
+ * OR-merge content flags from @p flags into empty fields of @p appearance only
+ * (never clears store). Used when there is no applied ContentXform fingerprint
+ * and ItemWorld sparse Crop/ContentBake (or a derived ContentXform::Value) may
+ * still hold orient/crop that the fat DTO slot lacks.
  */
-/**
- * Lag-fill content flags from live tileContentXform when the store slot is empty
- * (no applied ContentXform path — callers prefer applied before calling this).
- */
-void mergeLiveContentLagFlags(WorkspaceItemState &appearance,
-                              const ContentXform::Value &live);
+void fillEmptyContentFlags(WorkspaceItemState &appearance,
+                           const ContentXform::Value &flags);
 
 /** Copy of @p state with crop fields cleared (orient-only layout / draft). */
 WorkspaceItemState withoutCrop(const WorkspaceItemState &state);

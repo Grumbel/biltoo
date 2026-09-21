@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1967-sparse-fill-color-flush.** Sparse fill rename + crop-locked color flush.
+Prior: **1966**.
+
+### Change
+- `mergeLiveContentLagFlags` → `fillEmptyContentFlags` (post-lag terminology)
+- `wantAppearanceForItem` no-applied path fills empty DTO fields from ItemWorld
+  sparse Crop/ContentBake only (no dead `tileContentXform()` call)
+- `flushColorAdjustCommit`: re-schedule when crop draft locks the item (do not
+  drop the debounced rematerialize); item lookup via `findItemBySessionId`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1967-sparse-fill-color-flush-e77da63.bundle HEAD
+```
+Requires tip **1966** (base **e77da63**); includes 1938–1967.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host (priority)
+- Color: live interaction authority; ItemWorld Color persistence (setTarget writes
+  both; flush rematerializes)
+- Content-meta on ImageItem is applied ContentXform + private install only
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1966-drop-content-meta-lag.** Drop content-meta lag fields.
 Prior: **1965**.
 

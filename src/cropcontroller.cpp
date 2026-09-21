@@ -539,8 +539,8 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
     // Do not rebuild a lower-res graded stand-in — that invites soft↔full thrash.
     if (CropSession::canKeepDisplayForEnter(item, wantX, contentOnly, sample.hadPriorCrop,
                                             sample.needGeomBake)) {
-        // Draft chrome: contentOnly is withoutCrop — dual-write + applied via
-        // single install (no separate clearLive / setApplied).
+        // Draft chrome: contentOnly is withoutCrop — applied fingerprint via
+        // syncLiveContentMetaFromState (no separate clearLive).
         CropSession::clearItemFreePlacementForDraft(item);
         m_view->syncLiveContentMetaFromState(item, contentOnly);
         m_view->syncLiveColorFromState(item, contentOnly.colorAdjust);

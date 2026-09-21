@@ -543,35 +543,30 @@ void ImageView::flushColorAdjustCommit()
     if (!m_colorAdjustCommit.take(&sid, &path)) {
         return;
     }
-    ImageItem *item = nullptr;
-    if (sid != kInvalidSessionImageId) {
-        for (ImageItem *it : m_items) {
-            if (it && it->sessionId() == sid) {
-                item = it;
-                break;
-            }
-        }
-    }
+    ImageItem *item = (sid != kInvalidSessionImageId)
+        ? findItemBySessionId(sid)
+        : nullptr;
     if (!item && isImageMode() && !m_items.isEmpty()) {
         item = m_items.first();
-    }
-    WorkspaceItemState want;
-    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
-        want = m_itemWorld.appearanceValue(sid);
-    } else if (item) {
-        want = captureState(item);
-    } else {
-        return;
     }
     if (!item) {
         return;
     }
-    // Flush always prefers live grade (slider may lead ItemWorld until this write).
-    want.colorAdjust = item->colorAdjustments();
-    // Crop draft freezes pixels; colour commit waits until crop exits.
+    // Crop draft freezes pixels; put the commit back so idle debounce retries
+    // after leaveCrop (take already cleared the bag).
     if (m_cropCtrl.isCropDraftLockedItem(item)) {
+        scheduleColorAdjustCommit(sid, path.isEmpty() ? item->path() : path);
         return;
     }
+    WorkspaceItemState want;
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
+        want = m_itemWorld.appearanceValue(sid);
+    } else {
+        want = captureState(item);
+    }
+    // Flush always prefers live grade (interaction authority; ItemWorld Color
+    // is already updated on setTargetColorAdjustments).
+    want.colorAdjust = item->colorAdjustments();
     // Full rematerialize from host (async when multi-MP). Do **not** write
     // grade into thumtoo durable appearance — SessionAppearanceStore / project
     // already own it; path cache is for orient/crop hints, not slider spam.

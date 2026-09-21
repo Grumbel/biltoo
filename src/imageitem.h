@@ -141,8 +141,8 @@ public:
     /**
      * Content xform that was applied to the current display sample.
      * Compared on install so rematerialize is driven by data, not aspect heuristics.
-     * Primary live content-meta path is tileContentXform() (applied first).
-     * Mutators are private (ImageView dual-write install / ImageItem self).
+     * Primary live content-meta path is tileContentXform() (applied only).
+     * Mutators are private (ImageView syncLiveContentMetaFromState / ImageItem self).
      */
     ContentXform::Value appliedContentXform() const { return m_appliedContentXform; }
     bool hasAppliedContentXform() const { return m_hasAppliedContentXform; }

@@ -272,23 +272,23 @@ QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,
 }
 
 
-void mergeLiveContentLagFlags(WorkspaceItemState &appearance,
-                              const ContentXform::Value &live)
+void fillEmptyContentFlags(WorkspaceItemState &appearance,
+                           const ContentXform::Value &flags)
 {
-    // Live lag flags fill empty store fields only (OR-merge; never clear store).
-    if (live.quarterTurns != 0 && appearance.contentQuarterTurns == 0) {
+    // Fill empty store fields only (OR-merge; never clear store).
+    if (flags.quarterTurns != 0 && appearance.contentQuarterTurns == 0) {
         appearance.contentQuarterTurns =
-            ContentXform::normalizeQuarterTurns(live.quarterTurns);
+            ContentXform::normalizeQuarterTurns(flags.quarterTurns);
     }
-    if (live.hFlip) {
+    if (flags.hFlip) {
         appearance.contentHFlip = true;
     }
-    if (live.vFlip) {
+    if (flags.vFlip) {
         appearance.contentVFlip = true;
     }
-    if (live.hasCrop && appearance.cropRect.isEmpty()) {
+    if (flags.hasCrop && appearance.cropRect.isEmpty()) {
         appearance.hasCrop = true;
-        appearance.cropRect = live.cropRect;
+        appearance.cropRect = flags.cropRect;
     }
 }
 

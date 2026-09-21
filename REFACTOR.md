@@ -1196,14 +1196,16 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1961: wantAppearanceForItem prefers applied/tileContentXform; lag-fill only without applied.
 - biltoo-1962: mergeLiveContentLagFlags (no applied path); framing single tileContentXform read.
 - biltoo-1963: content-meta Stage 2 status docs + dual-write→lag/applied comment cleanup.
-- **Content-meta Stage 2 demotion (1938–1962):** ImageItem is no longer a parallel
+- **Content-meta Stage 2 demotion (1938–1966):** ImageItem is no longer a parallel
   crop/flip store. Authority: ItemWorld sparse tables (bound) + applied ContentXform
-  mid-edit; live read via `tileContentXform`; install via `syncLiveContentMetaFromState`;
-  lag fields only for pixel-clear chrome gaps (`seedContentMetaLagFromApplied`).
-  Color parallel live grade remains (`syncLiveColorFromState` / private mutators).
+  mid-edit; live read via `tileContentXform` (applied-only); install via
+  `syncLiveContentMetaFromState`. Lag fields removed in 1966. Color parallel live
+  grade remains (`syncLiveColorFromState` / private mutators).
 - biltoo-1964: captureState/wantAppearance prefer live color grade (interaction authority).
 - biltoo-1965: clearDecodedPixels keeps applied ContentXform; drop seedContentMetaLagFromApplied.
 - biltoo-1966: drop content-meta lag fields; tileContentXform is applied-only.
+- biltoo-1967: rename mergeLiveContentLagFlags → fillEmptyContentFlags; wantAppearance
+  sparse fill without dead tileContentXform call; crop-locked color flush re-schedules.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).
