@@ -136,28 +136,20 @@ public:
     bool itemHFlip() const { return m_hFlip; }
     bool itemVFlip() const { return m_vFlip; }
     /**
-     * Net content (baked) flips relative to the on-disk pixels after crop.
-     * Used by Workspace chrome so flip toggle buttons show the current state
-     * after bakeFlip clears the transient display flags.
+     * Dual-write install only (ImageView::syncLiveContentMetaFromState).
+     * Read live content meta via tileContentXform() — not these fields.
      */
-    bool contentHFlip() const { return m_contentHFlip; }
-    bool contentVFlip() const { return m_contentVFlip; }
     void setContentHFlip(bool on) { m_contentHFlip = on; }
     void setContentVFlip(bool on) { m_contentVFlip = on; }
     void setColorAdjustments(const ColorAdjustments &adj);
     /** Store grade for HUD without rebuilding the display pixmap. */
     void setColorAdjustmentsRecord(const ColorAdjustments &adj);
     ColorAdjustments colorAdjustments() const { return m_colorAdjust; }
-    /**
-     * Per-instance session crop in on-disk pixel coordinates (top-left origin).
-     * Independent of path-keyed ImageView state so Workspace duplicates do not
-     * share crops.
-     */
-    bool sessionHasCrop() const { return m_sessionHasCrop; }
 
     /**
      * Content xform that was applied to the current display sample.
      * Compared on install so rematerialize is driven by data, not aspect heuristics.
+     * Primary live content-meta path is tileContentXform() (applied first).
      */
     ContentXform::Value appliedContentXform() const { return m_appliedContentXform; }
     void setAppliedContentXform(const ContentXform::Value &x)
@@ -174,7 +166,7 @@ public:
     }
     bool hasAppliedContentXform() const { return m_hasAppliedContentXform; }
 
-    QRect sessionCropRect() const { return m_sessionCropRect; }
+    /** Dual-write install only — read via tileContentXform(). */
     void setSessionCrop(bool has, const QRect &rect)
     {
         m_sessionHasCrop = has;

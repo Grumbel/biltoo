@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1949-drop-session-content-getters.** Remove unused session crop/flip getters.
+Prior: **1948**.
+
+### Change
+- Drop public `contentHFlip` / `contentVFlip` / `sessionHasCrop` / `sessionCropRect` getters
+  (no remaining call sites; reads go through `tileContentXform`)
+- Dual-write setters documented install-only; applied xform docs point at tileContentXform
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1949-drop-session-content-getters-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1949.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Dual-write session fields remain lag fallback inside tileContentXform (pixel-clear gaps)
+- Later: private dual-write setters (friend ImageView) / drop session fields
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1948-identity-clear-applied.** Identity clears drop applied with session fields.
 Prior: **1947**.
 
