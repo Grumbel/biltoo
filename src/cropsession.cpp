@@ -63,7 +63,8 @@ bool CropSession::canKeepDisplayForEnter(const ImageItem *item,
                                          const WorkspaceItemState &contentOnly,
                                          bool hadPriorCrop, bool needGeomBake,
                                          bool hasApplied,
-                                         const ContentXform::Value &applied)
+                                         const ContentXform::Value &applied,
+                                         const ColorAdjustments &liveColor)
 {
     if (!item || hadPriorCrop || !item->hasDisplayPixels()
         || (hasApplied && applied.hasCrop)) {
@@ -77,7 +78,7 @@ bool CropSession::canKeepDisplayForEnter(const ImageItem *item,
         && ContentXform::equal(applied, wantX);
     const bool liveGradeOk = !hasApplied
         && !needGeomBake
-        && item->colorAdjustments().matches(contentOnly.colorAdjust);
+        && liveColor.matches(contentOnly.colorAdjust);
     return appliedOk || liveGradeOk;
 }
 

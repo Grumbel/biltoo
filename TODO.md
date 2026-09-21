@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2086-cropsession-liveColor-from-view.** Stage 2 residual: CropSession takes live grade from itemLiveColor.
+Prior: **2085**.
+
+### Change
+- `canKeepDisplayForEnter` takes `liveColor` from `itemLiveColor` (no item dig)
+- MainWindow adjustments panel uses `itemLiveColor`
+- CropSession has no remaining `colorAdjustments()` digs
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2086-cropsession-liveColor-from-view-e77da63.bundle HEAD
+```
+Requires tip **2085** (base **e77da63**); includes 1938–2086.
+
+### Next
+- Stage 2: further ImageItem paint/applied residual, or host-side color scratch
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2085-itemLiveColor-helper.** Stage 2 residual: itemLiveColor for paint-grade lag reads.
 Prior: **2084**.
 

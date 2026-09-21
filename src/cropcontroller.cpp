@@ -558,7 +558,8 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
     if (CropSession::canKeepDisplayForEnter(
             item, wantX, contentOnly, sample.hadPriorCrop, sample.needGeomBake,
             m_view->itemHasAppliedContentXform(item),
-            m_view->itemAppliedContentXform(item))) {
+            m_view->itemAppliedContentXform(item),
+            m_view->itemLiveColor(item))) {
         // Draft chrome: contentOnly is withoutCrop — applied fingerprint via
         // syncLiveContentMetaFromState (no separate clearLive).
         CropSession::clearItemFreePlacementForDraft(item);

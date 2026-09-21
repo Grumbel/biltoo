@@ -2459,7 +2459,7 @@ void MainWindow::updateAdjustmentsPanel()
     m_adjustmentsPanel->setEnabledControls(true);
     {
         QSignalBlocker b(m_adjustmentsPanel);
-        m_adjustmentsPanel->setAdjustments(item->colorAdjustments());
+        m_adjustmentsPanel->setAdjustments(m_imageView->itemLiveColor(item));
     }
     // Preview is optional chrome — keep it cheap (scaled down).
     QPixmap pm = item->pixmap();

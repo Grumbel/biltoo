@@ -74,12 +74,16 @@ public:
      * True when enter can KEEP the live display pixels (no re-bake): full-frame,
      * no prior crop, applied/live grade already matches content-only want.
      */
-    /** @p hasApplied/@p applied from ImageView itemApplied helpers (Stage 2). */
+    /**
+     * @p hasApplied/@p applied from ImageView itemApplied helpers;
+     * @p liveColor from itemLiveColor (Stage 2 — no item grade dig).
+     */
     static bool canKeepDisplayForEnter(const ImageItem *item,
                                        const ContentXform::Value &wantX,
                                        const WorkspaceItemState &contentOnly,
                                        bool hadPriorCrop, bool needGeomBake,
-                                       bool hasApplied, const ContentXform::Value &applied);
+                                       bool hasApplied, const ContentXform::Value &applied,
+                                       const ColorAdjustments &liveColor);
 
     /** Zero free placement (item rotate/shear/flip) so crop draft is content-only. */
     static void clearItemFreePlacementForDraft(ImageItem *item);
