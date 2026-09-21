@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1956-content-meta-lag-helpers.** ImageItem lag seed/clear helpers.
+Prior: **1955**.
+
+### Change
+- `ImageItem::seedContentMetaLagFromApplied` / `clearContentMetaLag` encapsulate lag fields
+- Drop private setSessionCrop / setContentHFlip / setContentVFlip
+- `clearDecodedPixels` and `clearLiveContentMeta` use the helpers
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1956-content-meta-lag-helpers-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1956.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Lag fields internal to ImageItem; only seed path writes non-zero lag
+- Later: drop lag fields if chrome can tolerate applied-empty gaps
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1955-identity-clear-applied-only-noview.** Identity clear; no-view applied-only.
 Prior: **1954**.
 

@@ -122,10 +122,8 @@ void ImageView::clearLiveContentMeta(ImageItem *item)
     if (!item) {
         return;
     }
-    // Identity: clear lag dual-write fields and applied fingerprint together.
-    item->setSessionCrop(false, QRect());
-    item->setContentHFlip(false);
-    item->setContentVFlip(false);
+    // Identity: clear lag fields and applied fingerprint together.
+    item->clearContentMetaLag();
     item->clearAppliedContentXform();
 }
 

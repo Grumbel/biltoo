@@ -292,15 +292,8 @@ private:
     // Tile session mutators — DisplayPipelineController only (Stage 2).
     friend class DisplayPipelineController;
     // Content-meta install — ImageView::syncLiveContentMetaFromState / clearLiveContentMeta.
-    // Session dual-write fields are lag-only (seeded on clearDecodedPixels).
+    // Session lag fields (m_content*Flip / m_session*) are internal only.
     friend class ImageView;
-    void setContentHFlip(bool on) { m_contentHFlip = on; }
-    void setContentVFlip(bool on) { m_contentVFlip = on; }
-    void setSessionCrop(bool has, const QRect &rect)
-    {
-        m_sessionHasCrop = has;
-        m_sessionCropRect = has ? rect : QRect();
-    }
     void setAppliedContentXform(const ContentXform::Value &x)
     {
         m_appliedContentXform = x;
@@ -313,6 +306,10 @@ private:
         m_hasAppliedContentXform = false;
         clearTileGradedCache();
     }
+    /** Seed lag crop/flip from applied before clearDecodedPixels drops applied. */
+    void seedContentMetaLagFromApplied();
+    /** Clear lag crop/flip fields (identity clearLiveContentMeta). */
+    void clearContentMetaLag();
     void tickTileLod(int budget = 8);
     /** Plan/paint helpers (ImageItem paint + tick only). */
     void prepareTileLod();
@@ -352,10 +349,11 @@ private:
     qreal m_stackZ = 0.0;
     bool m_hFlip = false;
     bool m_vFlip = false;
-    /** Net baked content flips (chrome indicator); independent of m_hFlip/m_vFlip. */
+    /** Lag content flips for tileContentXform after clearDecodedPixels (not placement). */
     bool m_contentHFlip = false;
     static bool s_contentEditMarksVisible;
     bool m_contentVFlip = false;
+    /** Lag session crop for tileContentXform after clearDecodedPixels. */
     bool m_sessionHasCrop = false;
     QRect m_sessionCropRect;
     ContentXform::Value m_appliedContentXform;

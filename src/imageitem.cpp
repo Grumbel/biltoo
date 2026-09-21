@@ -233,6 +233,30 @@ void ImageItem::setPreviewImage(const QImage &preview)
     update();
 }
 
+void ImageItem::seedContentMetaLagFromApplied()
+{
+    if (!m_hasAppliedContentXform) {
+        return;
+    }
+    m_contentHFlip = m_appliedContentXform.hFlip;
+    m_contentVFlip = m_appliedContentXform.vFlip;
+    if (m_appliedContentXform.hasCrop && !m_appliedContentXform.cropRect.isEmpty()) {
+        m_sessionHasCrop = true;
+        m_sessionCropRect = m_appliedContentXform.cropRect;
+    } else {
+        m_sessionHasCrop = false;
+        m_sessionCropRect = QRect();
+    }
+}
+
+void ImageItem::clearContentMetaLag()
+{
+    m_contentHFlip = false;
+    m_contentVFlip = false;
+    m_sessionHasCrop = false;
+    m_sessionCropRect = QRect();
+}
+
 void ImageItem::clearDecodedPixels()
 {
     if (m_source.isNull() && m_preview.isNull()) {
@@ -247,19 +271,9 @@ void ImageItem::clearDecodedPixels()
     if (!m_interactive) {
         setCacheMode(QGraphicsItem::NoCache);
     }
-    // Applied tracks the *current* sample. Seed lag dual-write fields from it
-    // so tileContentXform still reports crop/flip chrome across the pixel gap.
-    if (m_hasAppliedContentXform) {
-        m_contentHFlip = m_appliedContentXform.hFlip;
-        m_contentVFlip = m_appliedContentXform.vFlip;
-        if (m_appliedContentXform.hasCrop && !m_appliedContentXform.cropRect.isEmpty()) {
-            m_sessionHasCrop = true;
-            m_sessionCropRect = m_appliedContentXform.cropRect;
-        } else {
-            m_sessionHasCrop = false;
-            m_sessionCropRect = QRect();
-        }
-    }
+    // Applied tracks the *current* sample. Seed lag fields so tileContentXform
+    // still reports crop/flip chrome across the pixel gap.
+    seedContentMetaLagFromApplied();
     clearAppliedContentXform();
     update();
 }
