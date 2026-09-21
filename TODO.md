@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1946-noview-flip-tile-xform.** No-view flip keeps tileContentXform in sync.
+Prior: **1945**.
+
+### Change
+- No-view handle flip/rotate fallback: update dual-write + applied via
+  `tileContentXform` → setters / `setAppliedContentXform` (no direct member toggles)
+- CropDebug draft-enter dig uses `tileContentXform().hasCrop`
+- Private session crop/flip members now only written by dual-write install setters
+  and read by `tileContentXform`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1946-noview-flip-tile-xform-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1946.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Dual-write install still required for session-field fallback inside tileContentXform
+- Stage 2 residual: eventually drop session fields once applied xform is always present after install
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1945-tile-content-xform-readers.** Live content readers via tileContentXform.
 Prior: **1944**.
 

@@ -1178,6 +1178,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1943: bakeItemRotate90 want flips/grade from beforeSt only (no live item dig).
 - biltoo-1944: chrome crop/orient/flip marks via tileContentXform only (single live content-meta reader).
 - biltoo-1945: captureState/framing/wantAppearance/CropSession live digs via tileContentXform; corner marks completed.
+- biltoo-1946: no-view flip/rotate fallback via tileContentXform + setters; session fields only dual-write install + tileContentXform.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

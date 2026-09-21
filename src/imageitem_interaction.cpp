@@ -836,18 +836,25 @@ void ImageItem::activateChromeHandle(Handle h)
                 }
             }
         }
-        // Fallback without a view: bake pixels and toggle content indicators.
+        // Fallback without a view: bake pixels and keep dual-write / applied
+        // content meta aligned (tileContentXform is the live reader).
+        ContentXform::Value x = tileContentXform();
         if (h == Handle::FlipH) {
             bakeFlip(true, false);
-            m_contentHFlip = !m_contentHFlip;
+            x.hFlip = !x.hFlip;
         } else if (h == Handle::FlipV) {
             bakeFlip(false, true);
-            m_contentVFlip = !m_contentVFlip;
+            x.vFlip = !x.vFlip;
         } else if (h == Handle::Rotate90CCW) {
             bakeRotate90(-1);
+            x.quarterTurns = ContentXform::normalizeQuarterTurns(x.quarterTurns - 1);
         } else {
             bakeRotate90(1);
+            x.quarterTurns = ContentXform::normalizeQuarterTurns(x.quarterTurns + 1);
         }
+        setContentHFlip(x.hFlip);
+        setContentVFlip(x.vFlip);
+        setAppliedContentXform(x);
         break;
     }
     case Handle::Raise:

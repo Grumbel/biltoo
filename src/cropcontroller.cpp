@@ -559,7 +559,7 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
         item->setAppliedContentXform(wantX);
         CropDebug::draftEnterDone(item->imageSize().width(), item->imageSize().height(),
                                   sample.display.width(), sample.display.height(),
-                                  item->sessionHasCrop(), contentOnly.contentQuarterTurns);
+                                  item->tileContentXform().hasCrop, contentOnly.contentQuarterTurns);
         session().markShowingFullImage();
     }
 
