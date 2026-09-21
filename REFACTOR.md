@@ -1540,6 +1540,9 @@ ladder under Gallery scroll; Runtime QA of identity series (SESSION §7).
 id preference lives on the document (MainWindow is a thin forward). Closes the
 SESSION residual “path index only for fully unbound rows” at the document API.
 
+**biltoo-2133:** `indexOfPathOccurrence` / `indicesForPathsByOccurrence` on
+SessionDocument; MainWindow remove + append-chrome path fallbacks call them.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

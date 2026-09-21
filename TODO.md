@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2133-sessiondocument-path-occurrence.** Path occurrence index on SessionDocument.
+Prior: **2132**.
+
+### Change
+- `SessionDocument::indexOfPathOccurrence` / `indicesForPathsByOccurrence`
+- `MainWindow::removeSessionPaths` and append-chrome filmstrip selection use them
+- Characterization for successive duplicate-path mapping
+- Continues MainWindow → SessionDocument pure helper extraction
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2133-sessiondocument-path-occurrence-e77da63.bundle HEAD
+```
+Requires tip **2132** (base **e77da63**); includes 1938–2133.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Optional: more MainWindow session chrome → SessionDocument
+- Optional: split imageview_appearance color/crop sections under 800 lines
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2132-sessiondocument-index-prefer-id.** SessionDocument owns path→index prefer-id.
 Prior: **2131**.
 

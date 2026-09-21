@@ -4,6 +4,7 @@
 #include "sessiondocument.h"
 
 #include <QDebug>
+#include <QHash>
 #include <QSet>
 
 QString SessionDocument::pathAt(int index) const
@@ -88,6 +89,45 @@ int SessionDocument::indexOfPathPreferId(const QString &path) const
         }
     }
     return indexOfPath(path);
+}
+
+int SessionDocument::indexOfPathOccurrence(const QString &path, int occurrence) const
+{
+    if (path.isEmpty() || occurrence < 0 || isEmpty()) {
+        return -1;
+    }
+    int seen = 0;
+    for (int i = 0; i < m_paths.size(); ++i) {
+        if (m_paths.at(i) != path) {
+            continue;
+        }
+        if (seen == occurrence) {
+            return i;
+        }
+        ++seen;
+    }
+    return -1;
+}
+
+QList<int> SessionDocument::indicesForPathsByOccurrence(const QStringList &paths) const
+{
+    QList<int> indices;
+    if (paths.isEmpty() || isEmpty()) {
+        return indices;
+    }
+    QHash<QString, int> pathOccurrence;
+    for (const QString &path : paths) {
+        if (path.isEmpty()) {
+            continue;
+        }
+        const int wantOcc = pathOccurrence.value(path, 0);
+        pathOccurrence[path] = wantOcc + 1;
+        const int found = indexOfPathOccurrence(path, wantOcc);
+        if (found >= 0 && !indices.contains(found)) {
+            indices.append(found);
+        }
+    }
+    return indices;
 }
 
 void SessionDocument::clearPaths()

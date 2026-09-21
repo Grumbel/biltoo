@@ -1472,7 +1472,6 @@ void MainWindow::finishExpandedAppendChrome(SessionImageId currentId, const QStr
             QList<int> indices;
             QSet<int> seen;
             QHash<QString, int> pathOccurrence;
-            const QStringList &sessionPaths = m_session.paths();
             const int n = qMax(workspaceIds.size(), workspacePaths.size());
             for (int i = 0; i < n; ++i) {
                 int idx = -1;
@@ -1485,17 +1484,7 @@ void MainWindow::finishExpandedAppendChrome(SessionImageId currentId, const QStr
                     const QString &path = workspacePaths.at(i);
                     const int wantOcc = pathOccurrence.value(path, 0);
                     pathOccurrence[path] = wantOcc + 1;
-                    int seenOcc = 0;
-                    for (int p = 0; p < sessionPaths.size(); ++p) {
-                        if (sessionPaths.at(p) != path) {
-                            continue;
-                        }
-                        if (seenOcc == wantOcc) {
-                            idx = p;
-                            break;
-                        }
-                        ++seenOcc;
-                    }
+                    idx = m_session.indexOfPathOccurrence(path, wantOcc);
                 }
                 if (idx >= 0 && !seen.contains(idx)) {
                     indices.append(idx);
@@ -2082,37 +2071,11 @@ void MainWindow::removeSessionIds(const QVector<SessionImageId> &ids)
 void MainWindow::removeSessionPaths(const QStringList &paths)
 {
     // Path-only fallback when list index is unknown. Prefer removeSessionIds /
-    // removeSessionIndices. When the same path appears more than once in
-    // @p paths, map to successive session occurrences (not always the first).
+    // removeSessionIndices. Successive path occurrences map via SessionDocument.
     if (paths.isEmpty() || m_session.isEmpty()) {
         return;
     }
-    QList<int> indices;
-    QHash<QString, int> pathOccurrence;
-    const QStringList &sessionPaths = m_session.paths();
-    for (const QString &path : paths) {
-        if (path.isEmpty()) {
-            continue;
-        }
-        const int wantOcc = pathOccurrence.value(path, 0);
-        pathOccurrence[path] = wantOcc + 1;
-        int seen = 0;
-        int found = -1;
-        for (int i = 0; i < sessionPaths.size(); ++i) {
-            if (sessionPaths.at(i) != path) {
-                continue;
-            }
-            if (seen == wantOcc) {
-                found = i;
-                break;
-            }
-            ++seen;
-        }
-        if (found >= 0 && !indices.contains(found)) {
-            indices.append(found);
-        }
-    }
-    removeSessionIndices(indices);
+    removeSessionIndices(m_session.indicesForPathsByOccurrence(paths));
 }
 
 void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)

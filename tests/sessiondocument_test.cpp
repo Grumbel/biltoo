@@ -29,6 +29,7 @@ private slots:
     void clearPaths_keepsAppearance();
     void countPath_and_firstId();
     void indexOfPathPreferId_prefersBoundId();
+    void indexOfPathOccurrence_and_indicesByOccurrence();
     void appearance_on_document();
     // Stage 2 residual (2046): setPaths orphans prior ids; replaceAll keeps them
     void setPaths_clearsAppearance();
@@ -178,6 +179,37 @@ void SessionDocumentTest::indexOfPathPreferId_prefersBoundId()
     QCOMPARE(doc.indexOfPathPreferId(QStringLiteral("/missing.jpg")), -1);
     // Empty path.
     QCOMPARE(doc.indexOfPathPreferId(QString()), -1);
+}
+
+
+void SessionDocumentTest::indexOfPathOccurrence_and_indicesByOccurrence()
+{
+    SessionDocument doc;
+    doc.append(QStringLiteral("/a.jpg"));
+    doc.append(QStringLiteral("/b.jpg"));
+    doc.append(QStringLiteral("/a.jpg"));
+    QCOMPARE(doc.indexOfPathOccurrence(QStringLiteral("/a.jpg"), 0), 0);
+    QCOMPARE(doc.indexOfPathOccurrence(QStringLiteral("/a.jpg"), 1), 2);
+    QCOMPARE(doc.indexOfPathOccurrence(QStringLiteral("/a.jpg"), 2), -1);
+    QCOMPARE(doc.indexOfPathOccurrence(QStringLiteral("/b.jpg"), 0), 1);
+    QCOMPARE(doc.indexOfPathOccurrence(QStringLiteral("/missing.jpg"), 0), -1);
+    QCOMPARE(doc.indexOfPathOccurrence(QString(), 0), -1);
+
+    // Successive occurrences in a request list map to successive session rows.
+    const QList<int> idxs = doc.indicesForPathsByOccurrence(
+        {QStringLiteral("/a.jpg"), QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
+    QCOMPARE(idxs.size(), 3);
+    QCOMPARE(idxs.at(0), 0);
+    QCOMPARE(idxs.at(1), 2);
+    QCOMPARE(idxs.at(2), 1);
+
+    // Duplicate index omitted if the same occurrence is requested twice somehow
+    // (second /a already consumed first two rows — third /a is absent).
+    const QList<int> shortList = doc.indicesForPathsByOccurrence(
+        {QStringLiteral("/a.jpg"), QStringLiteral("/a.jpg"), QStringLiteral("/a.jpg")});
+    QCOMPARE(shortList.size(), 2);
+    QCOMPARE(shortList.at(0), 0);
+    QCOMPARE(shortList.at(1), 2);
 }
 
 

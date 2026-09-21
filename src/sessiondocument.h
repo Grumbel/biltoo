@@ -8,6 +8,7 @@
 #include "sessionseedbook.h"
 
 #include <QString>
+#include <QList>
 #include <QStringList>
 #include <QVector>
 
@@ -48,6 +49,19 @@ public:
      * path has no bound id (fully unbound row). -1 if absent.
      */
     int indexOfPathPreferId(const QString &path) const;
+
+    /**
+     * Index of the @p occurrence-th match of @p path (0 = first). -1 if fewer
+     * than occurrence+1 rows share that path. Duplicate-safe membership helper.
+     */
+    int indexOfPathOccurrence(const QString &path, int occurrence) const;
+
+    /**
+     * Map each path in @p paths to successive session occurrences (IDENTITY:
+     * same path twice selects the first then second row). Skips empty paths and
+     * omits duplicate indices. Order follows @p paths.
+     */
+    QList<int> indicesForPathsByOccurrence(const QStringList &paths) const;
 
     /** Never reuses an id after remove. */
     SessionImageId allocId();
