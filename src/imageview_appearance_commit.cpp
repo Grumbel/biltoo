@@ -264,17 +264,16 @@ bool ImageView::targetHasContentAppearance() const
         if (sid == kInvalidSessionImageId && isImageMode()) {
             sid = m_sessionId.currentIdValue();
         }
+        // Bound: ItemWorld sparse tables are authority (Crop / ContentBake / Color).
         if (sid != kInvalidSessionImageId) {
+            if (m_itemWorld.hasCrop(sid) || m_itemWorld.hasContentBake(sid)
+                || m_itemWorld.hasColor(sid)) {
+                return true;
+            }
             if (const WorkspaceItemState *app = m_itemWorld.getAppearance(sid)) {
                 if (SessionAppearance::hasContentAppearance(*app)) {
                     return true;
                 }
-            }
-        }
-        // Bound: ItemWorld sparse tables are authority; live item is fallback.
-        if (sid != kInvalidSessionImageId) {
-            if (m_itemWorld.hasCrop(sid) || m_itemWorld.hasContentBake(sid)) {
-                return true;
             }
         }
         if (SessionAppearance::liveItemHasContentMods(item->tileContentXform())) {

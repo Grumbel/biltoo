@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1975-sparse-color-content-presence.** Sparse Color in content presence + install.
+Prior: **1974**.
+
+### Change
+- `targetHasContentAppearance`: sparse Crop/ContentBake/**Color** first; fat DTO second
+  (grade-only edits now count as content appearance for status / Reset enable)
+- `createItemFromImage`: store grade from `ItemWorld::color(sid)` when Image-mode
+  id is known; `wantBake` includes `hasColor`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1975-sparse-color-content-presence-e77da63.bundle HEAD
+```
+Requires tip **1974** (base **e77da63**); includes 1938–1975.
+
+### Next
+- sessionIndex deprecation cleanup (list-order cache only)
+- Further filmstrip peer-sync sparse prefer if any fat-only grade paths remain
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1974-sparse-color-durable-flush.** Sparse Color on durable + flush paths.
 Prior: **1973**.
 

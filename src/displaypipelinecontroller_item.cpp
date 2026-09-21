@@ -105,16 +105,21 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     registerItemDisplaySurface(item);
 
     // @p image is host-raw. Sole materialize site is installDisplayPixels.
+    const SessionImageId sidEarly = m_view->isImageMode()
+        ? m_view->hostSessionId().currentIdValue()
+        : kInvalidSessionImageId;
+    const ColorAdjustments storeGrade = (sidEarly != kInvalidSessionImageId)
+        ? m_view->itemWorld().color(sidEarly).grade
+        : app.colorAdjust;
     const bool wantBake = SessionAppearance::hasContentAppearance(app)
-        || !app.colorAdjust.isIdentity();
+        || !storeGrade.isIdentity()
+        || (sidEarly != kInvalidSessionImageId && m_view->itemWorld().hasColor(sidEarly));
     if (wantBake) {
         // Seed item chrome so wantAppearanceForItem can merge if the store slot
         // is still empty (bound id with no entry yet).
         m_view->syncLiveContentMetaFromState(item, app);
-        m_view->syncLiveColorFromState(item, app.colorAdjust);
-        const SessionImageId sid = m_view->isImageMode()
-            ? m_view->hostSessionId().currentIdValue()
-            : kInvalidSessionImageId;
+        m_view->syncLiveColorFromState(item, storeGrade);
+        const SessionImageId sid = sidEarly;
         const int hostEdge = ImageCache::longEdge(image);
         const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
             ? SessionAppearance::PixelKind::FullSource
