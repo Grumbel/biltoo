@@ -117,7 +117,10 @@ public:
     QRectF contentSceneRect() const;
     /** Content quad in scene coordinates (respects item scale/rotation). */
     QPolygonF contentScenePolygon() const;
-    /** Live grade for paint/HUD; mutators are ImageView-only (syncLiveColorFromState). */
+    /**
+     * Live grade mirror. Host: itemLiveColor. Paint on a view: liveColorForPaint.
+     * Mutators are ImageView-only (syncLiveColorFromState).
+     */
     ColorAdjustments colorAdjustments() const { return m_colorAdjust; }
 
     /**
@@ -130,9 +133,9 @@ public:
     bool hasAppliedContentXform() const { return m_hasAppliedContentXform; }
 
     /**
-     * Single live content-meta reader for tile plan, chrome, and host capture.
-     * Applied ContentXform only (empty when identity-cleared). Install mutators
-     * are ImageView-only (private).
+     * Applied ContentXform mirror (empty when identity-cleared).
+     * Host logic: ImageView::itemAppliedContentXform. Paint/tile LOD on a view:
+     * liveContentXformForPaint(). Install mutators are ImageView-only (private).
      */
     ContentXform::Value tileContentXform() const;
 

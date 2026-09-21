@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2094-stage2-demotion-status-through-2093.** Stage 2 residual: demotion status through 2093; reader docs.
+Prior: **2093**.
+
+### Change
+- REFACTOR ImageItem demotion status + sequencing through 2093 (host + paint
+  preference largely complete)
+- ImageItem public reader docs: host vs paint helper vs mirror roles
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2094-stage2-demotion-status-through-2093-e77da63.bundle HEAD
+```
+Requires tip **2093** (base **e77da63**); includes 1938–2094.
+
+### Next
+- Phase 6 Tier 4: optional decode/framing characterization
+- Stage 2 further only if new host digs appear; paint proxy state is intentional
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2093-paint-prefer-host-helpers.** Stage 2 residual: paint chrome/tile LOD prefer ImageView host helpers.
 Prior: **2092**.
 
