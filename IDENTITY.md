@@ -317,7 +317,7 @@ updates ItemWorld for that `SessionImageId` and id-matched peers.
    duplicated path; prefer `SessionImageId` or document index.
 2. **`findItemByPath` / first-match** — clones and donors must prefer
    `findItemBySessionId`.
-3. **Path-map crop for bound ids** — writes stripped at `setPathState`; reads
+3. **Path-map crop for bound ids** — writes are a no-op at `setPathState`; reads
    must not adopt path crop (IDENTITY path-map rules, tips 2009–2013).
 4. **List-order cache** — `ImageItem::sessionIndex` may lag; use
    `sessionListIndex` / document for durable order (tips 1998–2002).
@@ -389,7 +389,7 @@ ownership table above).
 - Peer sync by path or by “current session id” on a multi-tile Workspace canvas
 - Crop prior rect from path map when a session id is bound
 - Thumbnail canvas membership by path occurrence (use id-keyed APIs)
-- Writing bound-tile **crop** into the path map (`setPathState` strips it; do
+- Writing bound-tile **crop** into the path map (`setPathState` is a no-op; do
   not bypass)
 - Treating `ImageItem::sessionIndex` as identity (list-order cache only)
 
@@ -475,7 +475,7 @@ appearance map / canvas bind that could still hold old ids.
 | `SessionDocument` | index | Paths + ids only — no crop/flip/turns |
 | Filmstrip id override | `SessionImageId` | Derived; never path-wide when ids present |
 | Thumtoo path XDG appearance | path | Orient/flip/grade hint only; **never crop** for bound `SessionImageId` |
-| `PathItemStateBook` (`setPathState`) | path | **Unbound** tiles: full state including crop. **Bound** writes: crop stripped at the facade (`ItemWorld::setPathState`); orient/flip path hints may remain for pack/seed |
+| `PathItemStateBook` (`setPathState`) | path | **Unbound** tiles only: full state including crop. **Bound** writes are a no-op (`ItemWorld::setPathState`); content+pose are sparse + XDG |
 
 **Do not:**
 - Bake path-keyed XDG into filmstrip cells that have session ids

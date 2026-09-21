@@ -409,28 +409,18 @@ public:
     }
 
     /**
-     * Path-keyed store for unbound tiles (content + placement) and legacy
-     * placement-only path hints. IDENTITY: when @p state carries a bound
-     * SessionImageId, all content fields are stripped — crop/bake/color are
-     * id-keyed only (duplicates share a path). Placement may remain for
-     * unbound-style pack leftovers; durable pose is ItemWorld Placement.
+     * Path-keyed store for **unbound** tiles only (content + placement).
+     * IDENTITY: when @p state carries a bound SessionImageId, this is a no-op —
+     * crop/bake/color/pose for bound images live in sparse ItemWorld tables
+     * (and XDG). Callers must branch on sessionId before writing path state.
      */
     void setPathState(const QString &path, const WorkspaceItemState &state)
     {
         if (!m_pathBook || path.isEmpty()) {
             return;
         }
+        // Bound identity must not touch the path book (duplicates share a path).
         if (state.sessionId != kInvalidSessionImageId) {
-            WorkspaceItemState s = state;
-            s.hasCrop = false;
-            s.cropRect = QRect();
-            s.cropRotation = 0.0;
-            s.cropSourceSize = QSize();
-            s.contentHFlip = false;
-            s.contentVFlip = false;
-            s.contentQuarterTurns = 0;
-            s.colorAdjust = {};
-            m_pathBook->set(path, s);
             return;
         }
         m_pathBook->set(path, state);

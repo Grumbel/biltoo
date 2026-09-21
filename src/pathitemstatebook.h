@@ -12,10 +12,9 @@
 /**
  * Path-keyed WorkspaceItemState map.
  *
- * Bound session images: content is ItemWorld sparse + XDG only. ItemWorld::setPathState
- * strips all content fields when sessionId is bound (IDENTITY: path is not the
- * content key). This bag remains unbound-tile content+placement and optional
- * placement-only leftovers for path-keyed pack.
+ * Bound session images: content+pose are ItemWorld sparse + XDG only.
+ * ItemWorld::setPathState is a no-op when sessionId is bound (IDENTITY: path is
+ * not the identity key). This bag holds unbound-tile content+placement only.
  */
 class PathItemStateBook
 {

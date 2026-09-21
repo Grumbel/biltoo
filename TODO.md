@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2110-path-map-bound-write-noop.** SESSION residual: path map ignores bound SessionImageId.
+Prior: **2109**.
+
+### Change
+- `ItemWorld::setPathState`: no-op when `state.sessionId` is bound (IDENTITY —
+  path is not identity; sparse + XDG own bound content/pose)
+- Test: `setPathState_ignoresWhenBound` (replaces stripsContentWhenBound)
+- Docs: pathitemstatebook, IDENTITY, SESSION residual #3
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2110-path-map-bound-write-noop-e77da63.bundle HEAD
+```
+Requires tip **2109** (base **e77da63**); includes 1938–2110.
+
+### Next
+- SESSION residual: open-by-path fallback still exists; PendingItemAppearanceBook
+  for legacy create-without-id
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2109-duplicate-bind-on-create.** SESSION residual: duplicate binds SessionImageId on create.
 Prior: **2108**.
 

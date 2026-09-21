@@ -112,8 +112,7 @@ unbound and edits will not propagate correctly in Workspace).
    pre-allocated `SessionImageId`s and binds each copy immediately (no
    unbound window before membership update). Workspace edits on unbound
    tiles **still** do not write appearance / sync (by design after 024).
-   Residual: path map for unbound-only content; `PendingItemAppearanceBook`
-   remains for any legacy create-without-id path.
+   Residual: `PendingItemAppearanceBook` for any legacy create-without-id path.
 
 2. **Open-by-path still exists (fallback only)**  
    Gallery open / double-click prefer `sessionImageOpenRequested(id)` then
@@ -124,11 +123,10 @@ unbound and edits will not propagate correctly in Workspace).
    append prefers live `itemSessionIds()` (biltoo-2106). Empty-workspace
    LoadReplace seed and bulk selection→canvas bind ids (biltoo-2107/2108).
 
-3. **Path map (`PathItemStateBook`) — write/read hygiene largely in place**  
-   Bound content is stripped on `setPathState` (IDENTITY 2069–2071).
-   `resolveStoredAppearance` / `wantAppearanceForItem` never fall back to path
-   map for bound ids. Residual: unbound-only path map still written for
-   placement/content on unbound tiles.
+3. **Path map (`PathItemStateBook`) — bound writes are a no-op (biltoo-2110)**  
+   `ItemWorld::setPathState` ignores states that carry a bound SessionImageId
+   (was strip-content-and-still-write). Unbound tiles remain the only path-book
+   clients. Call sites already branch on `sessionId` before writing.
 
 4. **Filmstrip path-only override signal — fixed (biltoo-2104)**  
    Path-only `sessionAppearanceChanged` / `sessionCropApplied` overloads removed;

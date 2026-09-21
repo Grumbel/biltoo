@@ -42,7 +42,7 @@ private slots:
     void placementFromState_roundTrip();
     void applyPlacementToState_preservesNonPose();
     void sparseWrite_stampsSessionIdOnDto();
-    void setPathState_stripsContentWhenBound();
+    void setPathState_ignoresWhenBound();
     // Stage 2 residual: durable presence (fat | sparse)
     void hasDurableAppearance_emptyAndAfterSparse();
     void hasDurableAppearance_seedOnlyNotDurable();
@@ -590,7 +590,7 @@ void ItemWorldTest::sparseWrite_stampsSessionIdOnDto()
     QCOMPARE(world.appearanceValue(42).pos, QPointF(10, 20));
 }
 
-void ItemWorldTest::setPathState_stripsContentWhenBound()
+void ItemWorldTest::setPathState_ignoresWhenBound()
 {
     PathItemStateBook paths;
     ItemWorld world;
@@ -606,14 +606,8 @@ void ItemWorldTest::setPathState_stripsContentWhenBound()
     bound.colorAdjust.brightness = 12;
     world.setPathState(QStringLiteral("/dup.png"), bound);
 
-    const WorkspaceItemState *got = world.getPathState(QStringLiteral("/dup.png"));
-    QVERIFY(got);
-    QVERIFY(!got->hasCrop);
-    QVERIFY(got->cropRect.isEmpty());
-    // Bound: all content stripped (IDENTITY — sparse/XDG own content).
-    QVERIFY(!got->contentHFlip);
-    QCOMPARE(got->contentQuarterTurns, 0);
-    QVERIFY(got->colorAdjust.isIdentity());
+    // Bound: no path-book entry (IDENTITY — sparse/XDG own content+pose).
+    QCOMPARE(world.getPathState(QStringLiteral("/dup.png")), nullptr);
 
     WorkspaceItemState unbound;
     unbound.path = QStringLiteral("/solo.png");
