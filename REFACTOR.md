@@ -1347,29 +1347,38 @@ Phase 1–6 rules still apply. Additions:
   sessionAppearanceValue for bound ids (sparse-only safe).
 - biltoo-2025: Stage 2 residual — ItemWorld::hasDurableAppearance (fat|sparse);
   store-read gates no longer require fat DTO presence alone.
+- biltoo-2026: Stage 2 residual — itemworld_test hasDurableAppearance + sparse-wins
+  crop; demotion status through 2025.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
 
-### ImageItem demotion status (through biltoo-1996)
+### ImageItem demotion status (through biltoo-2025)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live
 in ItemWorld / SessionDocument. Public surface is readers, interaction handlers,
 and view-driven chrome paint. **All mutators are private** (friends: ImageView,
 DisplayPipelineController, CropSession, GalleryController, GalleryLayout helpers).
 Completed: path/session stamps, interactive/chrome flags, cell size, placement,
-content-edit marks, gallery scroll cache (1985–1995).
+content-edit marks, gallery scroll cache (1985–1995); Stage 2 residual store-read
+hygiene (2022–2025).
 
 | Concern | Authority |
 |---------|-----------|
 | Crop / orient / grade / attention | ItemWorld sparse tables; read via `sessionAppearanceValue` / `appearanceValue` |
+| Store presence | `hasDurableAppearance` (fat **or** sparse) — not fat-only `hasAppearance` |
 | Live pose | `placement()` reader; `applyPlacement` private (+ `GalleryLayout::applyItemPlacement`) |
+| Interaction snapshot | `captureState` = store seed + live pose / applied ContentXform / grade |
 | Pixels / intrinsic / path / session stamps | Host / pipeline private mutators |
 | List order | `sessionListIndex` (document) over deprecated `sessionIndex` cache |
 
 Dual-write on store **writes** remains so fat DTO serialization stays aligned;
-store **reads** prefer sparse via the choke point. Stage 4 may drop dual-write
-when the project format no longer needs the fat DTO mirror.
+store **reads** prefer sparse via the choke point. Stage 4a save/load/clipboard
+build DTOs from sparse-prefer reads; Stage 4b may drop dual-write when the
+project format no longer needs the fat DTO mirror.
+
+`captureState` remaining call sites are intentional interaction freezes
+(remember/persist, crop enter/undo unbound, bind/duplicate, workspace snapshot).
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

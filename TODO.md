@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2026-durable-appearance-tests.** Stage 2 residual: characterize hasDurableAppearance + sparse-prefer crop.
+Prior: **2025**.
+
+### Change
+- `tests/itemworld_test.cpp`: `hasDurableAppearance` empty/sparse/fat-only;
+  `appearanceValue` sparse crop wins over stale fat
+- `REFACTOR.md` ImageItem demotion status through 2025 (store presence,
+  interaction snapshot, Stage 4a note; remaining `captureState` classified)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2026-durable-appearance-tests-e77da63.bundle HEAD
+```
+Requires tip **2025** (base **e77da63**); includes 1938–2026.
+
+### Next
+- Remaining `captureState` call sites are interaction-legitimate (see REFACTOR)
+- Optional: projectfile pose-only vs content-only characterization
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2025-durable-appearance-presence.** Stage 2 residual: hasDurableAppearance for store-read gates.
 Prior: **2024**.
 

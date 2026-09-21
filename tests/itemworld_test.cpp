@@ -39,6 +39,10 @@ private slots:
     void applyPlacementToState_preservesNonPose();
     void sparseWrite_stampsSessionIdOnDto();
     void setPathState_stripsCropWhenBound();
+    // Stage 2 residual: durable presence (fat | sparse)
+    void hasDurableAppearance_emptyAndAfterSparse();
+    void hasDurableAppearance_fatOnlyCrop();
+    void appearanceValue_sparseCropWinsOverStaleFat();
 };
 
 
@@ -476,6 +480,76 @@ void ItemWorldTest::applyPlacementToState_preservesNonPose()
     QVERIFY(s.hasCrop);
     QCOMPARE(s.cropRect, QRect(0, 0, 5, 5));
     QCOMPARE(s.colorAdjust.saturation, 40);
+}
+
+
+void ItemWorldTest::hasDurableAppearance_emptyAndAfterSparse()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    QVERIFY(!world.hasDurableAppearance(1));
+    QVERIFY(!world.hasAppearance(1));
+
+    ItemComponents::Color c;
+    c.grade.brightness = 12;
+    world.setColor(1, c);
+    // setColor dual-writes fat + sparse Color table.
+    QVERIFY(world.hasDurableAppearance(1));
+    QVERIFY(world.hasColor(1));
+    QVERIFY(world.hasAppearance(1));
+
+    world.clearAppearance();
+    QVERIFY(!world.hasDurableAppearance(1));
+
+    ItemComponents::Placement pl;
+    pl.pos = QPointF(5, 6);
+    world.setPlacement(2, pl);
+    QVERIFY(world.hasDurableAppearance(2));
+    QVERIFY(world.hasPlacement(2));
+}
+
+void ItemWorldTest::hasDurableAppearance_fatOnlyCrop()
+{
+    // Legacy: fat DTO written without ItemWorld dual-write into sparse table.
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(4, 5, 30, 20);
+    store.set(9, st);
+    QCOMPARE(world.cropCount(), 0);
+    // hasCrop falls back to DTO extract; durable presence must still be true.
+    QVERIFY(world.hasAppearance(9));
+    QVERIFY(world.hasDurableAppearance(9));
+    QCOMPARE(world.appearanceValue(9).cropRect, QRect(4, 5, 30, 20));
+}
+
+void ItemWorldTest::appearanceValue_sparseCropWinsOverStaleFat()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    WorkspaceItemState fat;
+    fat.hasCrop = true;
+    fat.cropRect = QRect(0, 0, 10, 10);
+    fat.sessionId = 11;
+    world.setAppearance(11, fat);
+
+    ItemComponents::Crop sparse;
+    sparse.rect = QRect(2, 3, 40, 50);
+    sparse.sourceSize = QSize(100, 100);
+    world.setCrop(11, sparse);
+
+    const WorkspaceItemState v = world.appearanceValue(11);
+    QVERIFY(v.hasCrop);
+    QCOMPARE(v.cropRect, QRect(2, 3, 40, 50));
+    QCOMPARE(v.cropSourceSize, QSize(100, 100));
+    QVERIFY(world.hasDurableAppearance(11));
 }
 
 QTEST_MAIN(ItemWorldTest)
