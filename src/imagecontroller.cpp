@@ -11,7 +11,6 @@
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "imageitem.h"
-#include "itemcomponents.h"
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QApplication>
@@ -31,6 +30,7 @@ QString ImageController::takeClassicPath()
 void ImageController::enter()
 {
     // Gallery/Workspace → Image: matching onLeave already stashed live tiles.
+    // MODE_OWNERSHIP.md: never take ImageItem* out of a mode stash.
     m_view->setActiveMode(ImageView::ViewMode::Image, LayoutMode::FreeForm);
     m_view->stopDeferredPacking();
     m_view->prepareImageModeCanvas();
@@ -41,13 +41,11 @@ void ImageController::enter()
         ? m_view->hostSessionId().currentIdValue()
         : kInvalidSessionImageId;
 
-    // Promote the matching stashed tile into Image mode. Re-decode from soft
-    // failed when Workspace tiles were tile-LOD-only (no m_source/m_preview) or
-    // soft was content-baked and rejected. The live Workspace item already has
-    // the right pixels — move it, do not rebuild from cache.
-    auto takeFromStash = [&](QList<ImageItem *> &stash) -> ImageItem * {
-        for (int i = 0; i < stash.size(); ++i) {
-            ImageItem *cand = stash.at(i);
+    // Seed ImageCache from stashed tiles' display samples (copy only).
+    // Workspace tiles may be tile-LOD-only with no soft buffer — then filmstrip
+    // / LQIP / tile path in loadImage must supply the underlay.
+    auto seedFrom = [&](const QList<ImageItem *> &stash) {
+        for (ImageItem *cand : stash) {
             if (!cand) {
                 continue;
             }
@@ -57,81 +55,36 @@ void ImageController::enter()
             if (!idMatch && !pathMatch) {
                 continue;
             }
-            stash.removeAt(i);
-            if (cand->scene()) {
-                cand->scene()->removeItem(cand);
+            if (cand->hasDisplayPixels()) {
+                ImageCache::put(path.isEmpty() ? cand->path() : path,
+                                cand->displayImage());
+                return true;
             }
-            return cand;
+            if (!cand->pixmap().isNull()) {
+                ImageCache::put(path.isEmpty() ? cand->path() : path,
+                                cand->pixmap().toImage());
+                return true;
+            }
         }
-        return nullptr;
+        return false;
     };
-
-    ImageItem *promoted = takeFromStash(m_view->hostWorkspace().stashedItems());
-    if (!promoted) {
-        promoted = takeFromStash(m_view->hostGallery().stashedItems());
+    if (!path.isEmpty()) {
+        if (!seedFrom(m_view->hostWorkspace().stashedItems())) {
+            seedFrom(m_view->hostGallery().stashedItems());
+        }
     }
 
     m_view->clearLiveCanvas();
     m_view->hostDisplayPipeline().loadGate().clearPending();
     m_view->clearSceneKeepingStashes();
 
-    if (promoted) {
-        // Sole Image underlay from the stashed Workspace/Gallery tile.
-        m_view->liveItems().append(promoted);
-        if (!promoted->scene() && m_view->canvasScene()) {
-            m_view->canvasScene()->addItem(promoted);
-        }
-        promoted->setGalleryCellSize({});
-        promoted->setInteractive(false);
-        promoted->setScaleHandlesEnabled(false);
-        {
-            ItemComponents::Placement pl;
-            pl.opacity = 1.0;
-            promoted->applyPlacement(pl);
-        }
-        if (wantId != kInvalidSessionImageId) {
-            m_view->setItemSessionId(promoted, wantId);
-        }
-        if (!path.isEmpty() && promoted->path() != path) {
-            promoted->setPath(path);
-        }
-        if (!path.isEmpty() && promoted->hasDisplayPixels()) {
-            ImageCache::put(path, promoted->displayImage());
-        }
-        m_view->applyModeFlagsToLiveItems();
-        m_view->hostDisplayPipeline().registerItemDisplaySurface(promoted);
-        // loadImage frames + climbs using the existing item (pending-tile path).
-        if (!path.isEmpty()) {
-            m_view->hostDisplayPipeline().loadImage(path);
-        } else if (m_view->viewport()) {
-            m_view->viewport()->update();
-        }
-        emit m_view->statusChanged();
-        return;
-    }
-
-    // No stash tile: seed cache if possible and load as usual.
     if (!path.isEmpty()) {
-        auto seedFrom = [&](const QList<ImageItem *> &stash) {
-            for (ImageItem *cand : stash) {
-                if (!cand || !cand->hasDisplayPixels()) {
-                    continue;
-                }
-                if (cand->path() == path
-                    || (wantId != kInvalidSessionImageId
-                        && cand->sessionId() == wantId)) {
-                    ImageCache::put(path, cand->displayImage());
-                    return true;
-                }
-            }
-            return false;
-        };
-        seedFrom(m_view->hostWorkspace().stashedItems());
-        seedFrom(m_view->hostGallery().stashedItems());
+        // LQIP / host sample + tiles (IMAGE_MODE_NAV_SOFT.md). No soft ladder.
         m_view->hostDisplayPipeline().loadImage(path);
     }
     emit m_view->statusChanged();
 }
+
 
 // --- Image mode session keys (Tier 6h) ---
 

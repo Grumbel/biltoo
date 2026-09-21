@@ -2,6 +2,42 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2158-mode-ownership.** Documented ownership; fixed Workspace→Image
+steal that removed tiles from the Workspace stash.
+
+### Root cause (Workspace tile missing after Image)
+
+`ImageController::enter` **took** the matching `ImageItem*` out of
+`WorkspaceController::m_stashedItems` and used it as the Image underlay. Return
+to Workspace restored a **partial** stash; durable `LoadRestore` only runs when
+live is empty — so the opened image never came back on the free-form canvas.
+
+### Correct model (docs/MODE_OWNERSHIP.md)
+
+| Who | Holds |
+|-----|--------|
+| `m_session` | Session membership (Gallery = full list) |
+| `m_items` | Live scene for **active mode only** |
+| Workspace `m_stashedItems` | Pointers while in Image/Gallery — **do not remove** |
+| Workspace `m_savedItems` | Durable pose/appearance for rebuild |
+| Gallery `m_stashedItems` | Gallery↔Image only |
+| Image underlay | New load from LQIP / ImageCache / filmstrip / tiles |
+
+Pixels: LQIP + tiles (product). Soft PreferCache underlay remains removed.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2158-mode-ownership-e77da63.bundle HEAD
+```
+
+Next: **2159** — still verify Gallery empty-after-Workspace if it persists.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2157-imagecontroller-friend.** ImageController is a friend of
 ImageItem so enter() can promote a stashed tile (private mutators).
 Prior: **2156**.
