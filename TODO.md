@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2127-duplicate-shortfall-format.** Fix -Wformat on duplicateSelected shortfall log.
+Prior: **2126**.
+
+### Change
+- `duplicateSelected` qCritical: print qsizetype sizes as `%lld` with
+  `static_cast<long long>` (fixes -Wformat)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2127-duplicate-shortfall-format-e77da63.bundle HEAD
+```
+Requires tip **2126** (base **e77da63**); includes 1938–2127.
+
+### Next
+- Runtime QA: duplicate × membership × flip × project; ladder under Gallery scroll
+- Medium: opacity/HiDPI polish, -Wnull-dereference
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2126-identity-section1-sessiondocument.** IDENTITY.md §1 matches SessionDocument + SessionImageId.
 Prior: **2125**.
 

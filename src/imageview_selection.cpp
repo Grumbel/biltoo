@@ -229,8 +229,9 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
         return;
     }
     if (newIds.size() < sources.size()) {
-        qCritical("duplicateSelected: newIds size %d < sources %d — shortfall tiles stay unbound",
-                  newIds.size(), sources.size());
+        qCritical("duplicateSelected: newIds size %lld < sources %lld — shortfall tiles stay unbound",
+                  static_cast<long long>(newIds.size()),
+                  static_cast<long long>(sources.size()));
     }
 
     m_scene->clearSelection();
