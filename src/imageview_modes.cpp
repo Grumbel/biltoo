@@ -8,6 +8,7 @@
 #include "imageitem.h"
 #include "imageloader.h"
 #include "thumtoocache.h"
+#include "biltoo_logging.h"
 #include "tilelod/tile_lod_registry.hpp"
 #include "tilelod/tile_lod_controller.hpp"
 
@@ -278,6 +279,11 @@ void ImageView::setViewMode(ViewMode mode)
     }
 
     const ViewMode previous = m_viewMode;
+    biltooModeDbg("setViewMode %d→%d live=%d wstash=%d gstash=%d",
+                  static_cast<int>(previous), static_cast<int>(mode),
+                  itemCount(),
+                  m_workspace.stashedItems().size(),
+                  m_gallery.stashedItems().size());
 
     // --- Central mode switch (leave → set mode → enter) -------------------
     // Controllers used to leave/enter while m_viewMode still named the *old*
@@ -295,6 +301,10 @@ void ImageView::setViewMode(ViewMode mode)
     } else if (previous == ViewMode::Workspace) {
         m_workspace.onLeave(static_cast<int>(mode));
     }
+    biltooModeDbg("setViewMode afterLeave live=%d wstash=%d gstash=%d",
+                  itemCount(),
+                  m_workspace.stashedItems().size(),
+                  m_gallery.stashedItems().size());
     // Image has no onLeave: single underlay is cleared by Image enter or by
     // Gallery/Workspace enter when residual live tiles remain.
 

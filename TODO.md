@@ -2,6 +2,42 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2160-mode-empty-root-cause.** Deep investigation; two proven bugs fixed;
+`BILTOO_MODE_DEBUG` instrumentation; docs/INVESTIGATION_MODE_EMPTY.md.
+
+### Proven bugs (code, not guesswork)
+
+1. **Image cold underlay:** `installImageModePendingTile` created a placeholder
+   then called `prepareImageModeCanvas()` which **cleared sceneRect to empty**
+   and never framed the item. View looked empty until soft arrived (or forever).
+2. **Gallery size-resolve cancel:** `onSizeResolveGateCancelled` left tiles
+   `setVisible(false)` from the defer hide path — Gallery “images disappeared”.
+
+### Change
+
+- Cold pendingTile: `syncImageModeSceneRect` + `applyImageModeFraming`; no
+  post-create `prepareImageModeCanvas`.
+- Size-resolve cancel: unhide + ensurePlaceholders when Gallery empty.
+- `biltooModeDbg` (`BILTOO_MODE_DEBUG=1`) on setViewMode, Image enter, populate,
+  size-resolve cancel.
+- Investigation log: docs/INVESTIGATION_MODE_EMPTY.md
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2160-mode-empty-root-cause-e77da63.bundle HEAD
+```
+
+Runtime: `BILTOO_MODE_DEBUG=1 BILTOO_LOAD_DEBUG=1 biltoo …` and capture stderr
+on the failing switch.
+
+Next: **2161** — if still empty, pin from mode log line (`live=0` after enter).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2159-gallery-empty-after-workspace.** Hardened Workspace→Gallery so
 the overview cannot stay blank; removed legacy Gallery-enter Workspace stash.
 

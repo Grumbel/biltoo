@@ -1102,16 +1102,30 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             }
             return;
         }
-        // First image ever: minimal placeholder, no fit storm.
+        // First image ever / post-clearLiveCanvas: create underlay and frame it.
+        // Do NOT call prepareImageModeCanvas here — that resets sceneRect to
+        // empty after the item exists and leaves Image mode looking blank until
+        // a later soft install (or forever if soft/LQIP never arrives).
         const QSize sz = m_view->layoutSizeForPath(path, QImage());
         ImageItem *item = createPlaceholderItem(path, sz);
         if (item) {
             bindImageModeSessionCursor(item);
             resetImageModeItemPlacement(item);
-            m_view->prepareImageModeCanvas();
+            m_view->syncImageModeSceneRect(item);
+            m_view->applyImageModeFraming(item);
+            if (m_view->viewport()) {
+                m_view->viewport()->update();
+            }
+        } else {
+            biltooLoadDbg("pendingTile PLACEHOLDER FAILED path=%s mode=%d defer=%d",
+                          qPrintable(QFileInfo(path).fileName()),
+                          m_view->isImageMode() ? 1 : 0,
+                          m_view->hostGallerySoftBook().isDeferPopulate() ? 1 : 0);
         }
-        biltooLoadDbg("pendingTile PLACEHOLDER empty soft path=%s",
-                      qPrintable(QFileInfo(path).fileName()));
+        biltooLoadDbg("pendingTile PLACEHOLDER empty soft path=%s items=%d sz=%dx%d",
+                      qPrintable(QFileInfo(path).fileName()),
+                      m_view->itemCount(),
+                      sz.width(), sz.height());
         return;
     }
 

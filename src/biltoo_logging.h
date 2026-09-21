@@ -21,4 +21,14 @@ void biltooLoadDbg(const char *fmt, ...)
 #endif
     ;
 
+/**
+ * Mode-switch / canvas ownership debug (BILTOO_MODE_DEBUG=1).
+ * Use for Workspace↔Gallery↔Image empty-canvas investigations.
+ */
+void biltooModeDbg(const char *fmt, ...)
+#if defined(__GNUC__) || defined(__clang__)
+    __attribute__((format(printf, 1, 2)))
+#endif
+    ;
+
 #endif // BILTOO_LOGGING_H

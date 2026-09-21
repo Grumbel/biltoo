@@ -54,3 +54,31 @@ void biltooLoadDbg(const char *fmt, ...)
     va_end(ap);
     fputc('\n', stderr);
 }
+
+namespace {
+
+bool biltooModeDebugEnabled()
+{
+    static const bool on = []() {
+        const char *e = std::getenv("BILTOO_MODE_DEBUG");
+        return e && e[0] && e[0] != '0';
+    }();
+    return on;
+}
+
+} // namespace
+
+void biltooModeDbg(const char *fmt, ...)
+{
+    if (!biltooModeDebugEnabled()) {
+        return;
+    }
+    const qint64 ms = QDateTime::currentMSecsSinceEpoch();
+    fprintf(stderr, "biltoo/mode t=%lld gui=%d ", static_cast<long long>(ms),
+            QThread::isMainThread() ? 1 : 0);
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fputc('\n', stderr);
+}

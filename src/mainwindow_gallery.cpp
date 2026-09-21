@@ -3,6 +3,7 @@
 
 #include "mainwindow_includes.h"
 #include "imageitem.h"
+#include "biltoo_logging.h"
 
 void MainWindow::setLayoutFreeForm()
 {
@@ -45,6 +46,12 @@ void MainWindow::populateGalleryCanvas()
     if (needPlaceholders) {
         m_imageView->hostGallery().ensurePlaceholders();
     }
+    biltooModeDbg("populateGallery live=%d visibleNeed=%d session=%d defer=%d sizeRes=%d",
+                  m_imageView->itemCount(),
+                  needPlaceholders ? 1 : 0,
+                  m_session.paths().size(),
+                  m_imageView->hostGallerySoftBook().isDeferPopulate() ? 1 : 0,
+                  m_imageView->hostGallerySizeResolve().active() ? 1 : 0);
 }
 
 

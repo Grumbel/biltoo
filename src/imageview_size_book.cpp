@@ -14,6 +14,7 @@
 #include "imagecache.h"
 #include "thumtoocache.h"
 #include "sessionappearance.h"
+#include "biltoo_logging.h"
 
 #include <QFileInfo>
 #include <QImageReader>
@@ -319,6 +320,28 @@ void ImageView::onSizeResolveGateCancelled()
     m_gallerySoftBook.setDeferPopulate(false);
     if (isGalleryMode() && m_centreProgress.titleRef().isEmpty()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    }
+    // Size-resolve hides live tiles under defer. Cancel without complete must
+    // not leave them invisible forever (Gallery "images disappeared").
+    if (isGalleryMode()) {
+        int hidden = 0;
+        for (ImageItem *item : m_items) {
+            if (item && !item->isVisible()) {
+                item->setVisible(true);
+                ++hidden;
+            }
+        }
+        if (m_items.isEmpty() && !pathOrderIsEmpty()) {
+            m_gallery.ensurePlaceholders();
+            biltooModeDbg("sizeResolve CANCEL ensurePlaceholders items=%d pathOrder=%d",
+                          itemCount(), currentPackOrder().size());
+        } else if (hidden > 0) {
+            biltooModeDbg("sizeResolve CANCEL unhide n=%d items=%d",
+                          hidden, itemCount());
+            if (viewport()) {
+                viewport()->update();
+            }
+        }
     }
     clearSizeResolveProgress();
     emit gallerySizeResolveFinished();

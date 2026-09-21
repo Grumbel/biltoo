@@ -11,6 +11,7 @@
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "imageitem.h"
+#include "biltoo_logging.h"
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QApplication>
@@ -40,6 +41,13 @@ void ImageController::enter()
     const SessionImageId wantId = m_view->hostSessionId().hasCurrentId()
         ? m_view->hostSessionId().currentIdValue()
         : kInvalidSessionImageId;
+    biltooModeDbg("Image::enter path=%s id=%lld live=%d wstash=%d gstash=%d defer=%d",
+                  qPrintable(QFileInfo(path).fileName()),
+                  static_cast<long long>(wantId),
+                  m_view->itemCount(),
+                  m_view->hostWorkspace().stashedItems().size(),
+                  m_view->hostGallery().stashedItems().size(),
+                  m_view->hostGallerySoftBook().isDeferPopulate() ? 1 : 0);
 
     // Seed ImageCache from stashed tiles' display samples (copy only).
     // Workspace tiles may be tile-LOD-only with no soft buffer — then filmstrip
@@ -81,7 +89,16 @@ void ImageController::enter()
     if (!path.isEmpty()) {
         // LQIP / host sample + tiles (IMAGE_MODE_NAV_SOFT.md). No soft ladder.
         m_view->hostDisplayPipeline().loadImage(path);
+    } else {
+        biltooModeDbg("Image::enter EMPTY classicPath — no loadImage");
     }
+    biltooModeDbg("Image::enter done live=%d hasPixels=%d path=%s",
+                  m_view->itemCount(),
+                  (m_view->itemCount() > 0 && m_view->liveItems().first()
+                   && m_view->liveItems().first()->hasDisplayPixels())
+                      ? 1
+                      : 0,
+                  qPrintable(QFileInfo(path).fileName()));
     emit m_view->statusChanged();
 }
 
