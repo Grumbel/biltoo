@@ -940,7 +940,7 @@ characterization extended before storage changes.
 | **1** | **Split the god-component** | `WorkspaceItemState` remains the **project-file DTO** (`projectfile.cpp` serializes it; `projectfile_roundtrip` pins the shape). Runtime gets separate tables (see below). |
 | **2** | **Demote `ImageItem` to a render proxy** | Highest payoff. Item keeps what Qt needs to draw (pixmap, surface id, transform derived from Placement). Interaction scratch → `ItemInteractSession` (already exists). Tile-LOD cache → runtime-only table under `DisplayPipelineController`. Collapse `captureState` fan-out into Placement / component writes. |
 | **3** | **Systems as free functions** | Entry points: `system(ItemWorld&, std::span<const SessionImageId>)` (or equivalent). GalleryLayout / ContentXform already lean this way; remove `ImageItem*` from pure transforms where possible. |
-| **4** | **Persistence split** | Tag each table persistent vs derived. Project save walks only persistent tables. Today the distinction is implicit (`includePose` flags, path-book vs appearance). |
+| **4** | **Persistence split** | Tag each table persistent vs derived. Project save walks only persistent tables. Design: see **Stage 4 design** below (tip 2020). |
 | **5** | **Storage (optional)** | Dense index + contiguous arrays *behind* `ItemWorld`. Only if profiled. |
 
 #### Stage 1 runtime tables (sketch)
@@ -957,6 +957,82 @@ sparse:  ContentBake { quarterTurns, hFlip, vFlip }
 
 The three `hasX` bools become **presence in a sparse table**.
 `syncAttentionPrimary()` disappears with the duplicated primary/list fields.
+
+#### Stage 4 design (tip 2020)
+
+**Goal.** Project save/load and clipboard walk **explicitly tagged persistent
+tables**, not a fat DTO that is also the runtime dual-write mirror. Dual-write
+(sparse tables → fat `WorkspaceItemState`) remains until Stage 4 ships a
+versioned project format that no longer needs the mirror for round-trip.
+
+**Today (implicit persistence)**
+
+| Fact | Runtime | On disk (project JSON) |
+|------|---------|------------------------|
+| Path + `SessionImageId` | `SessionDocument` | `images[]` row |
+| Crop / orient / grade / attention | ItemWorld sparse + fat DTO | `appearanceToJson` fields (always when present) |
+| Workspace pose | ItemWorld Placement / fat DTO | Same object, gated by `includePose` / `hasWorkspacePose` |
+| Path book (unbound) | `PathItemStateBook` | Not a first-class project key; unbound is rare in saved projects |
+| Applied ContentXform, tiles, soft pixels | Live only | **Never** persisted |
+| List order | Document index | Array order of `images[]` |
+| `sessionIndex` on DTO | Deprecated cache | Should not be required for load |
+
+`ProjectImage` already splits **content appearance** vs **workspace pose** via
+`hasWorkspacePose` + `mergePoseIntoProjectImage`. That is the seed of Stage 4.
+
+**Persistent vs derived (target tagging)**
+
+| Table / fact | Tag | Notes |
+|--------------|-----|-------|
+| SessionDocument paths + ids | **Persistent** | Source of truth for list identity |
+| Crop, ContentBake, Color, Attention | **Persistent** | Sparse ItemWorld tables; project fields map 1:1 |
+| Placement (Workspace pose) | **Persistent** (Workspace-scoped) | Optional per row; Gallery/Image may omit |
+| Path book | **Persistent** only for unbound | Bound crop must not appear (IDENTITY) |
+| Fat `WorkspaceItemState` | **Derived mirror** | Dual-write for legacy serializers until format bump |
+| Applied ContentXform, ImageCache, tile LOD | **Derived** | Rebuild from host + persistent components |
+| `sessionIndex` on items/DTO | **Derived** | `sessionListIndex` from document |
+
+**Format migration (do not break existing projects)**
+
+1. **Keep** `WorkspaceItemState` / `appearanceToJson` / `appearanceFromJson` as
+   the **on-disk DTO** until a new `projectFormat` version is introduced.
+2. **Save path (Stage 4a):** build the DTO **only at the project boundary** from
+   sparse tables + document (`appearanceValue` / component getters), not by
+   reading a dual-written fat store as authority. Runtime can keep dual-write
+   for a while; save must not depend on it being complete.
+3. **Load path (Stage 4a):** `appearanceFromJson` → `setAppearance` (or
+   component setters) so sparse tables are populated; do not leave fat-only.
+4. **Stage 4b (optional format bump):** serialize sparse objects explicitly
+   (`"crop": {...}`, `"placement": {...}`) instead of flat DTO keys; keep a
+   reader for the old flat shape. Only then can dual-write be removed.
+5. **Clipboard** uses the same DTO helpers as project save (`includePose=true`);
+   treat clipboard as the same persistence boundary.
+
+**Non-goals**
+
+- No Stage 5 dense storage as part of Stage 4.
+- No behaviour change to IDENTITY path-map crop rules.
+- No renaming on-disk keys without a format version + reader.
+- No persisting applied ContentXform or decode caches.
+
+**Exit criteria (Stage 4)**
+
+- Documented tag table (above) matches code comments on ItemWorld stores.
+- Project save builds appearance from **sparse-prefer reads**
+  (`sessionAppearanceValue`), never from a raw fat pointer alone.
+- Load always dual-fills sparse tables (`setAppearance` / component sync).
+- `git grep setAppearance` on hot edit paths may still dual-write; save/load
+  no longer *require* dual-write correctness for any single field.
+- Characterization: `projectfile_roundtrip` still green; optional scenario for
+  pose-only vs content-only rows.
+
+**Sequencing relative to Stages 0–3**
+
+Stages 0–2 are largely landed (facade, sparse tables, ImageItem demotion).
+Stage 3 is incremental. Stage 4a can proceed **now** without Stage 3: it is a
+boundary hygiene change at `MainWindow` project save/load + `projectfile.cpp`.
+Stage 4b (format bump / drop dual-write) waits until 4a is proven and product
+accepts a version tick.
 
 ### Sequencing
 
@@ -1260,6 +1336,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2017: IDENTITY.md §§3–5 mode/duplicate/edit pipeline on SessionImageId.
 - biltoo-2018: IDENTITY.md §§7–10 scenarios/invariants id-keyed.
 - biltoo-2019: IDENTITY.md §11–12 acceptance and handoff (id + path-map).
+- biltoo-2020: Stage 4 design — persistent vs derived tags, 4a/4b migration.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

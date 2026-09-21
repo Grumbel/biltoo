@@ -2,6 +2,36 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2020-stage4-design.** Stage 4 persistence-split design in REFACTOR.md.
+Prior: **2019**.
+
+### Change
+`REFACTOR.md` — **Stage 4 design**:
+- Tag table: persistent (document, sparse content, workspace pose) vs derived
+  (fat DTO mirror, applied ContentXform, caches, sessionIndex)
+- **4a** (now): save builds DTO from sparse-prefer reads; load always fills
+  sparse via setAppearance; clipboard = same boundary
+- **4b** (later): optional format bump + drop dual-write
+- Non-goals and exit criteria documented
+- Stages 0–2 treated as largely landed; 4a does not wait on Stage 3
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2020-stage4-design-e77da63.bundle HEAD
+```
+Requires tip **2019** (base **e77da63**); includes 1938–2020.
+
+### Next
+- Stage 4a implementation: project save/load via sessionAppearanceValue only
+- Optional IDENTITY migration-status polish
+- Characterization remains the gate for behaviour
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2019-identity-acceptance-handoff.** IDENTITY.md §11–12 acceptance and handoff current.
 Prior: **2018**.
 
