@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2109-duplicate-bind-on-create.** SESSION residual: duplicate binds SessionImageId on create.
+Prior: **2108**.
+
+### Change
+- `ImageView::duplicateSelected(newIds, firstSessionIndex)` binds each copy
+  immediately and writes ItemWorld appearance under the new id
+- `MainWindow::applyDuplicate` allocates session rows *before* canvas copies
+- Source walk uses `m_items` order to stay aligned with `selectedPaths` / ids
+- `PendingItemAppearanceBook` only for legacy create-without-id
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2109-duplicate-bind-on-create-e77da63.bundle HEAD
+```
+Requires tip **2108** (base **e77da63**); includes 1938–2109.
+
+### Next
+- SESSION residual: path map still written for unbound-only tiles
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2108-drop-path-only-placement-apis.** SESSION residual: remove path-only placement overloads.
 Prior: **2107**.
 

@@ -206,14 +206,17 @@ QList<ImageItem *> ImageView::transformTargets() const
 
 // --- Clipboard / duplicate (was imageview_clipboard.cpp) ---
 
-void ImageView::duplicateSelected()
+void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
+                                  int firstSessionIndex)
 {
     if (!isWorkspaceMode() && !isGalleryMode()) {
         return;
     }
+    // Walk m_items (session/canvas order), not scene selection order, so
+    // parallel newIds from MainWindow::selectedPaths() stay aligned.
     QList<ImageItem *> sources;
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
-        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+    for (ImageItem *item : m_items) {
+        if (item && item->isSelected()) {
             sources.append(item);
         }
     }
@@ -227,6 +230,8 @@ void ImageView::duplicateSelected()
     }
 
     m_scene->clearSelection();
+    int idIdx = 0;
+    int sessionIdx = firstSessionIndex;
     for (ImageItem *src : sources) {
         // Display-ready copy of current pixels — never createItemFromImage with
         // sourceImage/preview: that ImageCache::put's baked samples as host.
@@ -241,6 +246,14 @@ void ImageView::duplicateSelected()
             kind = SessionAppearance::PixelKind::SoftPreview;
         }
         if (display.isNull()) {
+            // Still consume a pre-allocated id slot so parallel vectors stay aligned
+            // with MainWindow session rows (one row per selected source).
+            if (idIdx < newIds.size()) {
+                ++idIdx;
+            }
+            if (sessionIdx >= 0) {
+                ++sessionIdx;
+            }
             continue;
         }
 
@@ -264,17 +277,60 @@ void ImageView::duplicateSelected()
         m_items.append(copy);
         // Attach already-baked display; do not put into ImageCache.
         attachDisplaySample(copy, display, content, kind);
-        m_pendingAppearance.insert(copy, content);
         if (isWorkspaceMode()) {
             ItemComponents::Placement pl = src->placement();
             pl.pos += QPointF(40.0, 40.0); // visible beside the original
             pl.z += 0.01;
             copy->applyPlacement(pl);
         } else {
-            // Gallery: upright tile; MainWindow packs after binding session ids.
+            // Gallery: upright tile; pack runs after membership update.
             ItemComponents::Placement pl;
             pl.pos = src->pos();
             copy->applyPlacement(pl);
+        }
+
+        // Bind immediately when MainWindow pre-allocated a SessionImageId.
+        const SessionImageId id = (idIdx < newIds.size()) ? newIds.at(idIdx)
+                                                          : kInvalidSessionImageId;
+        ++idIdx;
+        if (id != kInvalidSessionImageId) {
+            if (ImageItem *owner = findItemBySessionId(id)) {
+                if (owner != copy) {
+                    qCritical("duplicateSelected: SessionImageId %lld already on another tile — leave unbound",
+                              static_cast<long long>(id));
+                    m_pendingAppearance.insert(copy, content);
+                } else {
+                    setItemSessionId(copy, id);
+                }
+            } else {
+                setItemSessionId(copy, id);
+            }
+            if (copy->sessionId() == id) {
+                WorkspaceItemState slot = content;
+                ItemComponents::applyPlacementToState(slot, copy->placement());
+                slot.sessionId = id;
+                if (sessionIdx >= 0) {
+                    copy->setSessionIndex(sessionIdx);
+                    slot.sessionIndex = sessionIdx;
+                } else {
+                    slot.sessionIndex = sessionListIndex(copy);
+                }
+                slot.path = copy->path();
+                m_itemWorld.setAppearance(id, slot);
+                syncLiveColorFromState(copy, slot.colorAdjust, true);
+                const QImage appearance = sessionAppearanceImage(copy);
+                if (!appearance.isNull()) {
+                    emit sessionAppearanceChanged(id, copy->path(), appearance);
+                    const bool hasCrop = m_itemWorld.hasCrop(id);
+                    emit sessionCropApplied(id, copy->path(), appearance, hasCrop);
+                }
+            }
+        } else {
+            // No id supplied: stage for a later bindSelectedSessionIds (legacy).
+            m_pendingAppearance.insert(copy, content);
+        }
+        if (sessionIdx >= 0) {
+            ++sessionIdx;
         }
         copy->setSelected(true);
     }

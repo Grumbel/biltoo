@@ -107,14 +107,13 @@ unbound and edits will not propagate correctly in Workspace).
 
 ### High priority
 
-1. **Unbound tiles (`sessionId == 0`) — path-only placement APIs removed (biltoo-2108)**  
-   Removed `addImage(path)`, index-only `addImageForSession`, path-only
-   `placeOrMoveImageAt`, and path-only `setWorkspacePaths`. Remaining entry
-   points require `SessionImageId`. `ensureMultiImageMode` binds via
-   `addImageForSession` (completed in 2108; intended in 2107). Workspace
-   edits on unbound tiles **still** do not write `m_sessionAppearance` and
-   **do not** sync (by design after 024). Residual: temporary unbound tiles
-   during duplicate-before-bind, and path map for unbound-only content.
+1. **Unbound tiles (`sessionId == 0`) — duplicate binds on create (biltoo-2109)**  
+   Path-only placement APIs removed (2108). `duplicateSelected` takes
+   pre-allocated `SessionImageId`s and binds each copy immediately (no
+   unbound window before membership update). Workspace edits on unbound
+   tiles **still** do not write appearance / sync (by design after 024).
+   Residual: path map for unbound-only content; `PendingItemAppearanceBook`
+   remains for any legacy create-without-id path.
 
 2. **Open-by-path still exists (fallback only)**  
    Gallery open / double-click prefer `sessionImageOpenRequested(id)` then

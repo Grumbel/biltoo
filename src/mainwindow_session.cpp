@@ -3553,8 +3553,12 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
 
     // Paths of the tiles we are about to copy (after id-based reselect).
     const QStringList sourcePaths = m_imageView->selectedPaths();
-    m_imageView->duplicateSelected();
+    if (sourcePaths.isEmpty()) {
+        return newIds;
+    }
 
+    // Allocate session rows *before* canvas copies so tiles bind on create
+    // (no unbound window between duplicateSelected and bindSelectedSessionIds).
     const int firstNew = m_session.paths().size();
     for (const QString &path : sourcePaths) {
         if (!path.isEmpty()) {
@@ -3566,10 +3570,9 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
     if (m_session.paths().size() == firstNew || newIds.isEmpty()) {
         return {};
     }
-    // Copies are the only selected items (duplicateSelected cleared + selected them).
     m_session.validateUniqueIds("applyDuplicate");
-    m_imageView->bindSelectedSessionIndices(firstNew);
-    m_imageView->bindSelectedSessionIds(newIds.toList());
+    m_imageView->duplicateSelected(newIds, firstNew);
+    // Copies are already id-bound; rebind refreshes path-order / membership.
     m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
     syncThumbnailCanvasMembership();
 

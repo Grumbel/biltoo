@@ -462,7 +462,14 @@ public:
     void resetItemRotation();
     void resetItemShear();
     /** Workspace: clone selection (same path, independent transforms). */
-    void duplicateSelected();
+    /**
+     * Duplicate selected tiles. @p newIds are pre-allocated session images
+     * (one per source, same order as selection walk). Each copy is bound
+     * immediately — no unbound window before MainWindow membership update.
+     * @p firstSessionIndex stamps list-order cache on copies when >= 0.
+     */
+    void duplicateSelected(const QVector<SessionImageId> &newIds,
+                           int firstSessionIndex = -1);
 
     /**
      * Workspace clipboard: capture selected tiles (path + content + pose).
