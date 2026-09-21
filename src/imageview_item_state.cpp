@@ -37,8 +37,8 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
-        // Phase 7 Stage 1: sparse tables are authority for bound ids when present.
-        // Live ImageItem remains fallback while dual-write install paths exist.
+        // Phase 7: sparse tables are authority for bound ids when present.
+        // Live fallback via tileContentXform / colorAdjustments when tables empty.
         if (m_itemWorld.hasCrop(sid)) {
             const ItemComponents::Crop crop = m_itemWorld.crop(sid);
             s.hasCrop = !crop.isEmpty();
@@ -46,7 +46,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
             s.cropRotation = crop.rotation;
             s.cropSourceSize = crop.sourceSize;
         } else {
-            // Live dual-write / applied xform via single item reader.
+            // Live applied / lag via tileContentXform.
             const ContentXform::Value live = item->tileContentXform();
             s.hasCrop = live.hasCrop;
             s.cropRect = live.cropRect;
@@ -75,8 +75,8 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         }
         // Bound session image: path map is placement-only.
     } else {
-        // Unbound: live dual-write / applied xform via tileContentXform; path map
-        // may hold orient extras (quarter turns / crop source).
+        // Unbound: live applied / lag via tileContentXform; path map may hold
+        // orient extras (quarter turns / crop source).
         const ContentXform::Value live = item->tileContentXform();
         s.hasCrop = live.hasCrop;
         s.cropRect = live.cropRect;

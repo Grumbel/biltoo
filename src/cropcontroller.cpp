@@ -543,7 +543,7 @@ bool CropController::prepareCropModeFullImage(ImageItem *item)
         // single install (no separate clearLive / setApplied).
         CropSession::clearItemFreePlacementForDraft(item);
         m_view->syncLiveContentMetaFromState(item, contentOnly);
-        item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
+        m_view->syncLiveColorFromState(item, contentOnly.colorAdjust);
         m_view->applyContentLayoutSize(item, contentOnly);
         session().markShowingFullImage();
         CropDebug::keepEnterDisplay(item->displayPixelLongEdge(), path);

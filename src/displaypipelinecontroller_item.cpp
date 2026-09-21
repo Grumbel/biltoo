@@ -111,7 +111,7 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
         // Seed item chrome so wantAppearanceForItem can merge if the store slot
         // is still empty (bound id with no entry yet).
         m_view->syncLiveContentMetaFromState(item, app);
-        item->setColorAdjustmentsRecord(app.colorAdjust);
+        m_view->syncLiveColorFromState(item, app.colorAdjust);
         const SessionImageId sid = m_view->isImageMode()
             ? m_view->hostSessionId().currentIdValue()
             : kInvalidSessionImageId;

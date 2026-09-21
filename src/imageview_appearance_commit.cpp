@@ -275,12 +275,8 @@ bool ImageView::targetHasContentAppearance() const
                 return true;
             }
         }
-        {
-            const ContentXform::Value live = item->tileContentXform();
-            if (SessionAppearance::liveItemHasContentMods(
-                    live.hasCrop, live.hFlip, live.vFlip)) {
-                return true;
-            }
+        if (SessionAppearance::liveItemHasContentMods(item->tileContentXform())) {
+            return true;
         }
         if (ThumtooCache::hasContentAppearance(item->path())) {
             return true;

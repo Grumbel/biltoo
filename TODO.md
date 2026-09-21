@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1957-sync-live-color.** Centralized live color install helper.
+Prior: **1956**.
+
+### Change
+- `ImageView::syncLiveColorFromState` — single install for live grade (record or rebuild)
+- Route attach/rematerialize/pipeline/crop draft/path-change/session-remove through it
+- `liveItemHasContentMods` takes `ContentXform::Value` (tileContentXform)
+- captureState comments: sparse tables + tileContentXform (not dual-write install)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1957-sync-live-color-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1957.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Color still parallel-stored on ImageItem (m_colorAdjust); ItemWorld Color is bound authority
+- Content-meta lag fields remain for pixel-clear chrome gaps
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1956-content-meta-lag-helpers.** ImageItem lag seed/clear helpers.
 Prior: **1955**.
 

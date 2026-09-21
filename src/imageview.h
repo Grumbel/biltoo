@@ -481,6 +481,12 @@ public:
      */
     void syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state);
     /**
+     * Install live color grade on the item (record-only or rebuild display).
+     * ItemWorld Color table remains authority for bound ids.
+     */
+    void syncLiveColorFromState(ImageItem *item, const ColorAdjustments &grade,
+                                bool rebuildDisplay = false);
+    /**
      * Identity clear: drop lag dual-write session fields and applied fingerprint.
      */
     void clearLiveContentMeta(ImageItem *item);

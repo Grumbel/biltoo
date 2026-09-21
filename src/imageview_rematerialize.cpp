@@ -56,7 +56,7 @@ void ImageView::attachDisplaySample(ImageItem *item, const QImage &display,
     }
 
     syncLiveContentMetaFromState(item, want);
-    item->setColorAdjustmentsRecord(want.colorAdjust);
+    syncLiveColorFromState(item, want.colorAdjust);
 }
 
 

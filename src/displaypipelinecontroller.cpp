@@ -1074,7 +1074,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
                     item->clearDecodedPixels();
                 }
                 m_view->clearLiveContentMeta(item);
-                item->setColorAdjustmentsRecord(ColorAdjustments{});
+                m_view->syncLiveColorFromState(item, ColorAdjustments{});
                 // Intrinsic from size memo/probe when known; else provisional.
                 // Paint draws a sized placeholder until LQIP (cache-only) or tiles.
                 const QSize sz = m_view->layoutSizeForPath(path, QImage());
@@ -1145,7 +1145,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
                 item->clearDecodedPixels();
             }
             m_view->clearLiveContentMeta(item);
-            item->setColorAdjustmentsRecord(ColorAdjustments{});
+            m_view->syncLiveColorFromState(item, ColorAdjustments{});
         } else if (item->hasDecodedPixels()) {
             // Same path soft→HQ: clear full so soft can attach.
             item->clearDecodedPixels();

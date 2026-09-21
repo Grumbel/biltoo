@@ -113,8 +113,21 @@ void ImageView::syncLiveContentMetaFromState(ImageItem *item, const WorkspaceIte
         return;
     }
     // Phase 7 Stage 2: applied ContentXform is the live fingerprint.
-    // Session dual-write fields are lag-only (seeded on clearDecodedPixels).
+    // Session lag fields are seeded on clearDecodedPixels only.
     item->setAppliedContentXform(ContentXform::Value::fromState(state));
+}
+
+void ImageView::syncLiveColorFromState(ImageItem *item, const ColorAdjustments &grade,
+                                       bool rebuildDisplay)
+{
+    if (!item) {
+        return;
+    }
+    if (rebuildDisplay) {
+        item->setColorAdjustments(grade);
+    } else {
+        item->setColorAdjustmentsRecord(grade);
+    }
 }
 
 void ImageView::clearLiveContentMeta(ImageItem *item)
@@ -471,7 +484,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
     const bool contentGeom = want.hasCrop || want.contentHFlip || want.contentVFlip
         || want.contentQuarterTurns != 0;
     if (!contentGeom && item->hasDecodedPixels() && !item->hasAppliedContentXform()) {
-        item->setColorAdjustments(want.colorAdjust);
+        syncLiveColorFromState(item, want.colorAdjust, true);
         const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
             ? item->sessionId()
             : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
@@ -490,7 +503,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
         host = item->sourceImage();
     }
     if (host.isNull()) {
-        item->setColorAdjustmentsRecord(want.colorAdjust);
+        syncLiveColorFromState(item, want.colorAdjust);
         item->update();
         return;
     }
@@ -503,7 +516,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
     const auto kind = SessionAppearance::PixelKind::SoftPreview;
     const QImage display = SessionAppearance::materializeDisplay(host, want, kind);
     if (display.isNull()) {
-        item->setColorAdjustmentsRecord(want.colorAdjust);
+        syncLiveColorFromState(item, want.colorAdjust);
         return;
     }
     if (item->hasDecodedPixels()

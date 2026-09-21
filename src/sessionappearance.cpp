@@ -144,9 +144,9 @@ bool hasContentAppearance(const WorkspaceItemState &state)
 }
 
 
-bool liveItemHasContentMods(bool sessionHasCrop, bool contentHFlip, bool contentVFlip)
+bool liveItemHasContentMods(const ContentXform::Value &live)
 {
-    return sessionHasCrop || contentHFlip || contentVFlip;
+    return live.hasCrop || live.hFlip || live.vFlip;
 }
 
 QImage materializeDisplay(const QImage &raw, const WorkspaceItemState &state,

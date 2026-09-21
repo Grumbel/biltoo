@@ -131,8 +131,8 @@ QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,
 /** True when any content field differs from identity (crop / bake / grade). */
 bool hasContentAppearance(const WorkspaceItemState &state);
 
-/** Live item flags that count as content mods (crop / flips). */
-bool liveItemHasContentMods(bool sessionHasCrop, bool contentHFlip, bool contentVFlip);
+/** Live content-meta (tileContentXform) counts as content mods (crop / flips). */
+bool liveItemHasContentMods(const ContentXform::Value &live);
 
 /**
  * True when content orientation changes the display aspect relative to the
