@@ -37,32 +37,44 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
     if (sid != kInvalidSessionImageId) {
-        // Phase 7: sparse tables are authority for bound ids when present.
-        // Live fallback via tileContentXform / colorAdjustments when tables empty.
-        if (m_itemWorld.hasCrop(sid)) {
-            const ItemComponents::Crop crop = m_itemWorld.crop(sid);
-            s.hasCrop = !crop.isEmpty();
-            s.cropRect = crop.rect;
-            s.cropRotation = crop.rotation;
-            s.cropSourceSize = crop.sourceSize;
-        } else {
-            // Live applied / lag via tileContentXform.
+        // Phase 7: when applied ContentXform is present, it is mid-edit authority
+        // over sparse tables (Gallery full-circle rotate must not resurrect turns).
+        // Otherwise sparse tables, then live lag via tileContentXform.
+        if (item->hasAppliedContentXform()) {
             const ContentXform::Value live = item->tileContentXform();
             s.hasCrop = live.hasCrop;
             s.cropRect = live.cropRect;
-        }
-        if (m_itemWorld.hasContentBake(sid)) {
-            const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid);
-            s.contentQuarterTurns =
-                ContentXform::normalizeQuarterTurns(bake.quarterTurns);
-            s.contentHFlip = bake.hFlip;
-            s.contentVFlip = bake.vFlip;
-        } else {
-            const ContentXform::Value live = item->tileContentXform();
+            s.cropSourceSize = live.cropSourceSize;
+            s.cropRotation = live.cropRotation;
             s.contentQuarterTurns =
                 ContentXform::normalizeQuarterTurns(live.quarterTurns);
             s.contentHFlip = live.hFlip;
             s.contentVFlip = live.vFlip;
+        } else {
+            if (m_itemWorld.hasCrop(sid)) {
+                const ItemComponents::Crop crop = m_itemWorld.crop(sid);
+                s.hasCrop = !crop.isEmpty();
+                s.cropRect = crop.rect;
+                s.cropRotation = crop.rotation;
+                s.cropSourceSize = crop.sourceSize;
+            } else {
+                const ContentXform::Value live = item->tileContentXform();
+                s.hasCrop = live.hasCrop;
+                s.cropRect = live.cropRect;
+            }
+            if (m_itemWorld.hasContentBake(sid)) {
+                const ItemComponents::ContentBake bake = m_itemWorld.contentBake(sid);
+                s.contentQuarterTurns =
+                    ContentXform::normalizeQuarterTurns(bake.quarterTurns);
+                s.contentHFlip = bake.hFlip;
+                s.contentVFlip = bake.vFlip;
+            } else {
+                const ContentXform::Value live = item->tileContentXform();
+                s.contentQuarterTurns =
+                    ContentXform::normalizeQuarterTurns(live.quarterTurns);
+                s.contentHFlip = live.hFlip;
+                s.contentVFlip = live.vFlip;
+            }
         }
         if (m_itemWorld.hasColor(sid)) {
             s.colorAdjust = m_itemWorld.color(sid).grade;
@@ -117,23 +129,12 @@ WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
 {
-    // Applied ContentXform fingerprint wins mid-edit; otherwise captureState
-    // already prefers ItemWorld sparse tables for bound ids (Stage 1).
+    // captureState already prefers applied ContentXform when present.
     WorkspaceItemState beforeSt = captureState(item);
     const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
     beforeSt.sessionId = sid0;
-    if (item->hasAppliedContentXform()) {
-        const ContentXform::Value x = item->appliedContentXform();
-        beforeSt.contentQuarterTurns = x.quarterTurns;
-        beforeSt.contentHFlip = x.hFlip;
-        beforeSt.contentVFlip = x.vFlip;
-        beforeSt.hasCrop = x.hasCrop;
-        beforeSt.cropRect = x.cropRect;
-        beforeSt.cropSourceSize = x.cropSourceSize;
-        beforeSt.cropRotation = x.cropRotation;
-    }
     return beforeSt;
 }
 

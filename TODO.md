@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1960-capture-applied-authority.** captureState prefers applied when present.
+Prior: **1959**.
+
+### Change
+- Bound `captureState`: when `hasAppliedContentXform`, use `tileContentXform` over sparse tables
+- Drop applied force dig in `commitItemSessionEdit` and `captureContentBakeBeforeState`
+- Color flush always takes live `colorAdjustments` (slider may lead ItemWorld)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1960-capture-applied-authority-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1960.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Content-meta lag fields remain for pixel-clear chrome gaps
+- Color still parallel live grade on ImageItem for paint/HUD
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1959-no-post-capture-digs.** Drop post-captureState live digs.
 Prior: **1958**.
 

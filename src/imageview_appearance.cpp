@@ -392,21 +392,8 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         slot.sessionId = sid;
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
-        // ContentXform applied fingerprint wins. Do NOT resurrect prev turns
-        // when capture says 0 — that is a real full-circle identity and was
-        // the Gallery 4th-rotate corruption path.
-        if (item->hasAppliedContentXform()) {
-            const ContentXform::Value x = item->appliedContentXform();
-            slot.contentQuarterTurns = x.quarterTurns;
-            slot.contentHFlip = x.hFlip;
-            slot.contentVFlip = x.vFlip;
-            if (x.hasCrop) {
-                slot.hasCrop = true;
-                slot.cropRect = x.cropRect;
-                slot.cropSourceSize = x.cropSourceSize;
-                slot.cropRotation = x.cropRotation;
-            }
-        }
+        // captureState prefers applied ContentXform when present (mid-edit
+        // authority; full-circle identity stays zero).
         m_itemWorld.setAppearance(sid, slot);
         contentSlot = slot;
         haveContentSlot = true;
@@ -574,13 +561,14 @@ void ImageView::flushColorAdjustCommit()
         want = m_itemWorld.appearanceValue(sid);
     } else if (item) {
         want = captureState(item);
-        want.colorAdjust = item->colorAdjustments();
     } else {
         return;
     }
     if (!item) {
         return;
     }
+    // Flush always prefers live grade (slider may lead ItemWorld until this write).
+    want.colorAdjust = item->colorAdjustments();
     // Crop draft freezes pixels; colour commit waits until crop exits.
     if (m_cropCtrl.isCropDraftLockedItem(item)) {
         return;
