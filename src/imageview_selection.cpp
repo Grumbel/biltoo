@@ -141,8 +141,12 @@ QList<int> ImageView::selectedSessionIndices() const
 {
     QList<int> out;
     for (ImageItem *item : m_items) {
-        if (item->isSelected() && item->sessionIndex() >= 0) {
-            out.append(item->sessionIndex());
+        if (!item || !item->isSelected()) {
+            continue;
+        }
+        const int idx = sessionListIndex(item);
+        if (idx >= 0) {
+            out.append(idx);
         }
     }
     return out;

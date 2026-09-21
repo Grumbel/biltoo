@@ -5,6 +5,7 @@
 // (7741d56) dropped their definitions without relocating them.
 
 #include "imageview.h"
+#include "sessiondocument.h"
 #include "imageitem.h"
 #include "contentxform.h"
 #include "itemcomponents.h"
@@ -220,13 +221,37 @@ ImageItem *ImageView::findItemForPath(const QString &path) const
     return findItemByPath(path);
 }
 
+int ImageView::sessionListIndex(const ImageItem *item) const
+{
+    if (!item) {
+        return -1;
+    }
+    // Document order is authoritative when the item is bound.
+    if (m_sessionDoc && item->sessionId() != kInvalidSessionImageId) {
+        const int i = m_sessionDoc->indexOfId(item->sessionId());
+        if (i >= 0) {
+            return i;
+        }
+    }
+    return item->sessionIndex();
+}
+
 ImageItem *ImageView::findItemBySessionIndex(int sessionIndex) const
 {
     if (sessionIndex < 0) {
         return nullptr;
     }
+    // Prefer the SessionImageId at this list slot (cache may lag after reorder).
+    if (m_sessionDoc && sessionIndex < m_sessionDoc->size()) {
+        const SessionImageId id = m_sessionDoc->idAt(sessionIndex);
+        if (id != kInvalidSessionImageId) {
+            if (ImageItem *byId = findItemBySessionId(id)) {
+                return byId;
+            }
+        }
+    }
     for (ImageItem *item : m_items) {
-        if (item->sessionIndex() == sessionIndex) {
+        if (item && item->sessionIndex() == sessionIndex) {
             return item;
         }
     }

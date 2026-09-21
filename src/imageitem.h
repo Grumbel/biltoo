@@ -56,8 +56,9 @@ public:
     SessionImageId sessionId() const { return m_sessionId; }
     void setSessionId(SessionImageId id) { m_sessionId = id; }
     /**
-     * @deprecated Order in the session list only — shifts on insert/delete.
-     * Prefer sessionId() for identity.
+     * @deprecated List-order cache only — shifts on insert/delete.
+     * Prefer sessionId() for identity; ImageView::sessionListIndex() for list
+     * position (resolves via SessionDocument when bound).
      */
     int sessionIndex() const { return m_sessionIndex; }
     void setSessionIndex(int index) { m_sessionIndex = index; }

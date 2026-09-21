@@ -157,6 +157,12 @@ public:
     bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos);
     bool placeOrMoveImageAt(const QString &path, const QPointF &scenePos,
                             SessionImageId sessionId, int sessionIndex);
+    /**
+     * Session list order for @p item. Prefers SessionDocument::indexOfId when
+     * the item is bound; falls back to the cached ImageItem::sessionIndex().
+     * List position is not identity (IDENTITY.md) — use sessionId for that.
+     */
+    int sessionListIndex(const ImageItem *item) const;
     QList<int> selectedSessionIndices() const;
     void selectBySessionIndices(const QList<int> &indices);
     /** SessionImageIds of selected canvas items (skips unbound). */

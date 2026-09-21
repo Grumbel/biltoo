@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1978-session-list-index-from-doc.** sessionListIndex from SessionDocument.
+Prior: **1977**.
+
+### Change
+- `ImageView::sessionListIndex(item)` — document `indexOfId` first, item cache fallback
+- `selectedSessionIndices` uses `sessionListIndex`
+- `findItemBySessionIndex` prefers item with `idAt(index)` then cache match
+- ImageItem::sessionIndex deprecation points at `sessionListIndex`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1978-session-list-index-from-doc-e77da63.bundle HEAD
+```
+Requires tip **1977** (base **e77da63**); includes 1938–1978.
+
+### Next
+- Route more MainWindow index fallbacks through sessionListIndex
+- Characterization re-check (Reset + list-index changes)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1977-reset-clears-color-grade.** Reset clears colour grade (aligned with help).
 Prior: **1976**.
 
