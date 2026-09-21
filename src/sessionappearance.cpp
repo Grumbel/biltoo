@@ -272,35 +272,23 @@ QImage applyContentToImage(const QImage &src, const WorkspaceItemState &state,
 }
 
 
-void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
-                              const ContentXform::Value *appliedOrNull,
-                              bool liveHFlip, bool liveVFlip,
-                              bool liveHasCrop, const QRect &liveCropRect)
+void mergeLiveContentLagFlags(WorkspaceItemState &appearance,
+                              const ContentXform::Value &live)
 {
-    // Applied fingerprint is authoritative when the store lagged a live edit
-    // (rotate then fitItem before m_appearance was visible to this reader).
-    if (appliedOrNull) {
-        const ContentXform::Value &x = *appliedOrNull;
-        if (appearance.contentQuarterTurns == 0 && x.quarterTurns != 0) {
-            appearance.contentQuarterTurns = x.quarterTurns;
-        }
-        if (!appearance.contentHFlip && x.hFlip) {
-            appearance.contentHFlip = true;
-        }
-        if (!appearance.contentVFlip && x.vFlip) {
-            appearance.contentVFlip = true;
-        }
+    // Live lag flags fill empty store fields only (OR-merge; never clear store).
+    if (live.quarterTurns != 0 && appearance.contentQuarterTurns == 0) {
+        appearance.contentQuarterTurns =
+            ContentXform::normalizeQuarterTurns(live.quarterTurns);
     }
-    // Live flags on the item win when the store is still empty for flips/crop.
-    if (liveHFlip) {
+    if (live.hFlip) {
         appearance.contentHFlip = true;
     }
-    if (liveVFlip) {
+    if (live.vFlip) {
         appearance.contentVFlip = true;
     }
-    if (liveHasCrop && appearance.cropRect.isEmpty()) {
+    if (live.hasCrop && appearance.cropRect.isEmpty()) {
         appearance.hasCrop = true;
-        appearance.cropRect = liveCropRect;
+        appearance.cropRect = live.cropRect;
     }
 }
 

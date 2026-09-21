@@ -1194,6 +1194,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1959: selection/session-bind drop post-captureState live digs (color/applied).
 - biltoo-1960: captureState prefers applied ContentXform over sparse tables; drop commit force digs.
 - biltoo-1961: wantAppearanceForItem prefers applied/tileContentXform; lag-fill only without applied.
+- biltoo-1962: mergeLiveContentLagFlags (no applied path); framing single tileContentXform read.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

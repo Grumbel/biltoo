@@ -147,10 +147,12 @@ bool liveItemHasContentMods(const ContentXform::Value &live);
  * Applied fingerprint wins when store lagged a live edit; live flips/crop
  * (prefer ItemWorld sparse tables when bound) fill empty store fields only.
  */
-void mergeAppliedAndLiveFlags(WorkspaceItemState &appearance,
-                              const ContentXform::Value *appliedOrNull,
-                              bool liveHFlip, bool liveVFlip,
-                              bool liveHasCrop, const QRect &liveCropRect);
+/**
+ * Lag-fill content flags from live tileContentXform when the store slot is empty
+ * (no applied ContentXform path — callers prefer applied before calling this).
+ */
+void mergeLiveContentLagFlags(WorkspaceItemState &appearance,
+                              const ContentXform::Value &live);
 
 /** Copy of @p state with crop fields cleared (orient-only layout / draft). */
 WorkspaceItemState withoutCrop(const WorkspaceItemState &state);

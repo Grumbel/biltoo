@@ -336,24 +336,20 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     }
     // No applied: lag-fill empty store from sparse tables, else tileContentXform lag.
     ContentXform::Value liveX = item->tileContentXform();
-    bool liveHFlip = liveX.hFlip;
-    bool liveVFlip = liveX.vFlip;
-    bool liveHasCrop = liveX.hasCrop;
-    QRect liveCropRect = liveX.cropRect;
     if (id != kInvalidSessionImageId) {
         if (m_view->itemWorld().hasContentBake(id)) {
             const ItemComponents::ContentBake bake = m_view->itemWorld().contentBake(id);
-            liveHFlip = bake.hFlip;
-            liveVFlip = bake.vFlip;
+            liveX.hFlip = bake.hFlip;
+            liveX.vFlip = bake.vFlip;
+            liveX.quarterTurns = bake.quarterTurns;
         }
         if (m_view->itemWorld().hasCrop(id)) {
             const ItemComponents::Crop crop = m_view->itemWorld().crop(id);
-            liveHasCrop = !crop.isEmpty();
-            liveCropRect = crop.rect;
+            liveX.hasCrop = !crop.isEmpty();
+            liveX.cropRect = crop.rect;
         }
     }
-    SessionAppearance::mergeAppliedAndLiveFlags(
-        want, nullptr, liveHFlip, liveVFlip, liveHasCrop, liveCropRect);
+    SessionAppearance::mergeLiveContentLagFlags(want, liveX);
     return want;
 }
 

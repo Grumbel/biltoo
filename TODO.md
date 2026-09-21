@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1962-live-content-lag-merge.** Lag-fill merge without applied path.
+Prior: **1961**.
+
+### Change
+- `mergeAppliedAndLiveFlags` → `mergeLiveContentLagFlags(ContentXform::Value)`
+- Applied path removed from merge (callers prefer applied before lag-fill)
+- Framing draft uses one `tileContentXform` read for applied/lag crop flags
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1962-live-content-lag-merge-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1962.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Content-meta lag fields remain for pixel-clear chrome gaps
+- Color still parallel live grade on ImageItem for paint/HUD
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1961-want-appearance-applied-authority.** wantAppearance prefers applied like captureState.
 Prior: **1960**.
 
