@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2103-itemLiveColor-prefer-liveColorLag.** Stage 2 residual: itemLiveColor prefers ItemWorld liveColorLag.
+Prior: **2102**.
+
+### Change
+- `itemLiveColor` reads ItemWorld `liveColorLag` when bound (was dual-write only;
+  host still returned the item mirror — incomplete 2091)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2103-itemLiveColor-prefer-liveColorLag-e77da63.bundle HEAD
+```
+Requires tip **2102** (base **e77da63**); includes 1938–2103.
+
+### Next
+- Optional: full async PreferCache / thumtoo ladder characterization
+- SESSION residual: unbound tiles / open-by-path / path-map readers (identity)
+- Stage 2 only if new host digs appear
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2102-tier4-nonasync-complete.** Phase 6 Tier 4 non-async residual documented complete.
 Prior: **2101**.
 

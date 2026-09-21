@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2102-tier4-nonasync-complete**.
-Latest tip: **biltoo-2102-tier4-nonasync-complete**. Next bundle number: **2103**
+Latest agent handoff: **TODO.md → biltoo-2103-itemLiveColor-prefer-liveColorLag**.
+Latest tip: **biltoo-2103-itemLiveColor-prefer-liveColorLag**. Next bundle number: **2104**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

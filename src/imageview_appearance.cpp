@@ -198,7 +198,12 @@ ColorAdjustments ImageView::itemLiveColor(const ImageItem *item) const
     if (!item) {
         return {};
     }
-    // Live lag is always the item mirror (slider may lead ItemWorld Color).
+    // Prefer ItemWorld runtime lag when bound (host-side scratch); item mirror
+    // for paint / unbound. Durable grade remains ItemWorld Color.
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasLiveColorLag(sid)) {
+        return m_itemWorld.liveColorLag(sid);
+    }
     return item->colorAdjustments();
 }
 
