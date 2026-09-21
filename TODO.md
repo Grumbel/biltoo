@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2018-identity-invariants-current.** IDENTITY.md §§7–10 id-keyed scenarios and invariants.
+Prior: **2017**.
+
+### Change
+Rewrite scenarios, pitfalls, invariants, and code-site map:
+- Scenarios use `SessionImageId` (not sessionIndex-as-identity)
+- Pitfalls: path-only open, path-map crop, list-order cache lag
+- Invariants: id is identity; path is decode source; filmstrip id-keyed
+- Code map points at SessionDocument / ItemWorld / commit-by-id
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2018-identity-invariants-current-e77da63.bundle HEAD
+```
+Requires tip **2017** (base **e77da63**); includes 1938–2018.
+
+### Next
+- Stage 4 project-format migration (design)
+- Optional: remaining IDENTITY historical sections
+- Characterization / fuller build verification on user machine (already green)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2017-identity-mode-edit-docs.** IDENTITY.md mode/duplicate/edit pipeline current.
 Prior: **2016**.
 

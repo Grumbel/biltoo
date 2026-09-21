@@ -1258,6 +1258,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2015: IDENTITY.md sessionId vs sessionIndex; wantAppearance brace cleanup.
 - biltoo-2016: IDENTITY.md §2 ItemWorld current; legacy m_itemStates maps historical.
 - biltoo-2017: IDENTITY.md §§3–5 mode/duplicate/edit pipeline on SessionImageId.
+- biltoo-2018: IDENTITY.md §§7–10 scenarios/invariants id-keyed.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

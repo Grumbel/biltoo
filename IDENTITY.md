@@ -282,83 +282,63 @@ Any code that still uses path-first lookup will mis-handle duplicates.
 
 ### 7.1 Single session entry, one Workspace tile
 
-1. Session `[A]`, canvas item bound to 0.  
-2. Image mode crop on index 0 → stash peer 0 updated → return shows crop.  
-**Works** if sessionIndex stays 0 through stash/commit.
+1. Session row with path `A` and id `S0`, canvas item bound to `S0`.  
+2. Image mode crop on `S0` → ItemWorld appearance[`S0`] updated → peers with
+   `sessionId == S0` rematerialize → return shows crop.  
+**Works** when the open path binds the Image-mode item to `S0` (not a path-only
+first match).
 
 ### 7.2 Duplicate then crop “the copy” in Image mode
 
-1. Session `[A]`, canvas item0 `@0`.  
-2. Duplicate → session `[A, A]`, item1 `@1`, item0 `@0`.  
-3. Double-click item1 → should emit `sessionSlotOpenRequested(1)`.  
-4. Crop apply → commit with sessionIndex 1 → sync only peers `@1`.  
+1. Session `[A@S0]`, item0 bound to `S0`.  
+2. Duplicate → session `[A@S0, A@S1]`, item1 bound to `S1`.  
+3. Double-click item1 → open by id/row for `S1`.  
+4. Crop apply → commit writes appearance[`S1`] → sync only peers with `S1`.  
 5. Return: item1 cropped, item0 unchanged.
 
-**Breaks if:** open used path (`indexOf` → 0); item1 unbound (`sessionIndex -1`);
-sync skipped; stash restore rebuilds from path map and overwrites the wrong
-item; or Image load applied path crop from the other slot.
+**Breaks if:** open used path (`indexOf` → first row); item1 never received
+`S1`; peer sync by path; path-map crop leaked onto `S0` (tips 2009–2013).
 
 ### 7.3 Thumbnail after crop with duplicates
 
-Path override updates **both** rows. Filmstrip cannot show two different
-appearances for one path. That matches path-keyed signals, not per-slot
-identity.
+Filmstrip overrides must be **id-keyed** when session ids are present. Path-wide
+override would paint both rows the same.
 
 ### 7.4 Workspace-only crop (no Image mode)
 
-Crop target is the selected canvas item. `commitItemSessionEdit` updates that
-item and peers with the same sessionIndex. User report: this path “seems to
-work” relative to Image mode — consistent with editing the live object
-directly without a path-only open step.
+Crop target is the selected canvas item locked by id. `commitItemSessionEdit`
+updates ItemWorld for that `SessionImageId` and id-matched peers.
 
 ---
 
-## 8. Known structural contradictions (do not paper over)
+## 8. Remaining pitfalls (do not reintroduce)
 
-1. **Path-keyed vs slot-keyed appearance**  
-   `m_itemStates` and filmstrip overrides are path-keyed; duplicates need
-   slot-keyed (or list-keyed) appearance. `m_sessionSlotStates` was added as a
-   third store without removing the path store → dual source of truth.
-
-2. **Opening Image mode by path**  
-   `showPathInImageMode` / Gallery open / any `indexOf(path)` cannot address
-   the second session entry of a duplicated path.
-
-3. **DOMAIN Gallery “one object per path” vs session path duplicates**  
-   Unspecified what Gallery shows when `m_files` contains `A` twice.
-
-4. **`findItemByPath` / first-match**  
-   Clones and donor lookups always see the first canvas instance.
-
-5. **Pixels vs metadata**  
-   Appearance is sometimes “already baked into `m_source`” and sometimes
-   “full decode + cropRect + content flags”. Rebuild paths must agree on order
-   (DOMAIN/AUDIT: disk → crop → flip → quarter turns).
-
-6. **Unbound canvas objects (`sessionIndex == -1`)**  
-   Edits do not write slot maps and do not sync to Image/session. Rebind
-   (`rebindWorkspaceSessionIndices`) assigns free slots by path occurrence
-   order — order-dependent, not identity-stable across arbitrary operations.
+1. **Path-only open** — `indexOf(path)` cannot address the second row of a
+   duplicated path; prefer `SessionImageId` or document index.
+2. **`findItemByPath` / first-match** — clones and donors must prefer
+   `findItemBySessionId`.
+3. **Path-map crop for bound ids** — writes stripped at `setPathState`; reads
+   must not adopt path crop (IDENTITY path-map rules, tips 2009–2013).
+4. **List-order cache** — `ImageItem::sessionIndex` may lag; use
+   `sessionListIndex` / document for durable order (tips 1998–2002).
+5. **DOMAIN Gallery “one object per path” vs path duplicates** — still a
+   product tension; packing must not collapse ids.
 
 ---
 
-## 9. Invariants the implementation must obey (for a correct design)
+## 9. Invariants (current design)
 
-Derived from DOMAIN + the failure modes above. Not all are held today.
-
-1. **Session index is the identity of an editable “picture instance”** once it
-   has been placed in the session list (including duplicates).
-2. **Path is only the decode source**, not the key for appearance when the
-   same path can appear more than once.
-3. **Canvas objects bound to index N** are value holders for that slot’s
-   current pixels and placement; editing Image mode at cursor N must update
-   the bound object N (including while stashed).
-4. **Duplication** creates a new session index and a new canvas object with
-   **copied** pixels and metadata, then independent lifetime.
-5. **Filmstrip row i** reflects session slot i (appearance override must be
-   index-keyed if rows can share a path).
-6. **No path-keyed hash may be the sole store** of crop/flip/90° if duplicates
-   are supported.
+1. **`SessionImageId` is the identity** of an editable picture instance
+   (including duplicates). List index is order, not identity.
+2. **Path is only the decode source**, not the key for bound appearance.
+3. **Canvas objects bound to id `S`** hold display pixels + placement; edits
+   update ItemWorld[`S`] (including while stashed peers share `S`).
+4. **Duplication** allocates a **new** `SessionImageId` and a new canvas object
+   with copied pixels, then independent lifetime.
+5. **Filmstrip row i** reflects document row i; appearance override is
+   id-keyed when ids are present.
+6. **No path-keyed store may be the sole authority** for crop when duplicates
+   share a path (orient/flip path hints are allowed; crop is not for bound ids).
 
 ---
 
@@ -366,17 +346,17 @@ Derived from DOMAIN + the failure modes above. Not all are held today.
 
 | Concern | Location |
 |---------|----------|
-| Session list | `MainWindow::m_files`, `setCurrentIndex`, `duplicateSelected` |
-| Mode switch / stash | `ImageView::setViewMode`, `stashWorkspaceItems`, `restoreStashedWorkspaceItems` |
-| Item create + crop apply on decode | `ImageView::createItemFromImage` |
-| Edit commit / sync | `ImageView::commitItemSessionEdit` |
+| Session list | `SessionDocument` (MainWindow), `setCurrentIndex`, `duplicateSelected` |
+| Appearance | `ItemWorld` / `SessionAppearanceStore`, `sessionAppearanceValue` |
+| Mode switch / stash | `ImageView::setViewMode`, Workspace/Gallery controllers |
+| Item create + crop on decode | `DisplayPipelineController::createItemFromImage` |
+| Edit commit / peer sync | `ImageView::commitItemSessionEdit` (by id) |
 | Flip / 90° | `bakeItemFlip`, `bakeItemRotate90` |
-| Crop UI | `setCropMode`, `leaveCropModeInternal`, `recordSessionCrop` |
-| Workspace duplicate canvas | `ImageView::duplicateSelected` |
-| Bind slot after session append | `bindSelectedSessionIndices` |
-| Open Image from Workspace | double-click → `sessionSlotOpenRequested` / `galleryItemOpenRequested` |
-| Filmstrip override | `ThumbnailBar::setSessionImageOverride` |
-| State types | `WorkspaceItemState` in `imageview_types.h` |
+| Crop UI | CropSession / crop controllers, locked target id |
+| Bind after append | `bindSelectedSessionIds` |
+| Open Image from Workspace | id- or index-keyed slot open (not path-only) |
+| Filmstrip override | id-keyed when session ids present |
+| State DTO | `WorkspaceItemState` in `imageview_types.h` (project + dual-write) |
 
 ---
 
