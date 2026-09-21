@@ -2,6 +2,34 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2025-durable-appearance-presence.** Stage 2 residual: hasDurableAppearance for store-read gates.
+Prior: **2024**.
+
+### Change
+- `ItemWorld::hasDurableAppearance` — true when fat DTO **or** sparse Crop /
+  ContentBake / Color / Placement has a row for the id
+- Store-read gates (`loadSessionAppearance`, `hasSessionAppearance`,
+  `resolveStoredAppearance`, clipboard, copy, pipeline/load/slideshow/workspace,
+  rematerialize, canvas place/bind, bake) use durable presence instead of
+  fat-only `hasAppearance`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2025-durable-appearance-presence-e77da63.bundle HEAD
+```
+Requires tip **2024** (base **e77da63**); includes 1938–2025.
+
+### Next
+- Remaining `captureState`: interaction freezes (remember/persist, crop enter, bind)
+- Optional characterization: pose-only vs content-only rows
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2024-color-crop-store-read.** Stage 2 residual: color adjust + crop undo use sparse-prefer store when bound.
 Prior: **2023**.
 

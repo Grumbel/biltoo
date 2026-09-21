@@ -1345,6 +1345,8 @@ Phase 1–6 rules still apply. Additions:
   + live pose; recordSessionCrop bound path via sessionAppearanceValue.
 - biltoo-2024: Stage 2 residual — color flush/setTarget and crop undo afterSt prefer
   sessionAppearanceValue for bound ids (sparse-only safe).
+- biltoo-2025: Stage 2 residual — ItemWorld::hasDurableAppearance (fat|sparse);
+  store-read gates no longer require fat DTO presence alone.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
