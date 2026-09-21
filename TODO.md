@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2197-stash-clear-stale-applied.** ECS continue: extract shared
+clearStaleAppliedFingerprintIfNeeded; Workspace stash restore uses it (Gallery
+already did inline in 2196). Path-map setPathState already no-ops for bound ids.
+
+### Fix
+- ImageView::clearStaleAppliedFingerprintIfNeeded
+- Gallery rematerializeGalleryItemFromStore + Workspace restoreStashedItems
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2197-stash-clear-stale-applied-e77da63.bundle HEAD
+```
+
+Next: **2198**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2196-bind-lag-stash-applied.** ECS continue:
 
 1. setItemSessionId always stamped liveColorLag (even identity) — polluted

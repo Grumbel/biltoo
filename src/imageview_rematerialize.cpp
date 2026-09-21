@@ -132,6 +132,31 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
 }
 
 
+void ImageView::clearStaleAppliedFingerprintIfNeeded(ImageItem *item)
+{
+    if (!item) {
+        return;
+    }
+    const SessionImageId sid = item->sessionId();
+    if (sid == kInvalidSessionImageId || !m_itemWorld.hasDurableAppearance(sid)) {
+        return;
+    }
+    if (!itemHasAppliedContentXform(item)) {
+        return;
+    }
+    const WorkspaceItemState st = sessionAppearanceValue(sid);
+    if (!SessionAppearance::hasContentAppearance(st)) {
+        return;
+    }
+    const ContentXform::Value want = ContentXform::Value::fromState(st);
+    if (ContentXform::equal(itemAppliedContentXform(item), want)) {
+        return;
+    }
+    // Stash may hold a stale applied fingerprint from Image-mode edits that
+    // were committed to ItemWorld while this tile was off-canvas.
+    clearLiveContentMeta(item);
+}
+
 void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
 {
     if (!item) {
@@ -156,12 +181,7 @@ void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
         applyContentLayoutSize(item, st);
         return;
     }
-    // Stash may hold a stale applied fingerprint from Image-mode edits that
-    // were committed to ItemWorld while this tile was off-canvas. Drop it so
-    // materialize uses store want only (ECS_GUI_BYPASSES #6).
-    if (itemHasAppliedContentXform(item)) {
-        clearLiveContentMeta(item);
-    }
+    clearStaleAppliedFingerprintIfNeeded(item);
     rematerializeItemContent(item, st);
 }
 

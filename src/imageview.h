@@ -553,6 +553,12 @@ public:
      */
     void clearLiveContentMeta(ImageItem *item);
     /**
+     * Mode-stash restore: if this tile still carries an applied fingerprint that
+     * no longer matches ItemWorld want, drop it so rematerialize uses the store
+     * only (ECS_GUI_BYPASSES #6). No-op when unbound, no durable row, or match.
+     */
+    void clearStaleAppliedFingerprintIfNeeded(ImageItem *item);
+    /**
      * Applied ContentXform fingerprint for @p item.
      * Prefer ItemWorld runtime table when bound (Stage 2 residual 2081);
      * fall back to ImageItem mirror (paint / unbound).
