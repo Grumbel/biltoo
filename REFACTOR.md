@@ -1233,6 +1233,24 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1987: privatize setInteractive/GallerySelectable/ScaleHandles/Hover/invalidateDeviceCache.
 - biltoo-1988: privatize setGalleryCellSize; GalleryLayout::setItemGalleryCellSize friend helper.
 - biltoo-1989: privatize applyPlacement; GalleryLayout::applyItemPlacement; fix cell-size recursion.
+- biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
+
+### ImageItem demotion status (through biltoo-1990)
+
+**ImageItem is a render / hit-test proxy.** Durable content and list identity live
+in ItemWorld / SessionDocument. Public surface is readers + interaction handlers;
+almost all mutators are private (friends: ImageView, DisplayPipelineController,
+CropSession, GalleryController, GalleryLayout helpers).
+
+| Concern | Authority |
+|---------|-----------|
+| Crop / orient / grade / attention | ItemWorld sparse tables; read via `sessionAppearanceValue` |
+| Live pose | `placement()` reader; `applyPlacement` private |
+| Pixels / intrinsic / path / session stamps | Host / pipeline private mutators |
+| List order | `sessionListIndex` (document) over `sessionIndex` cache |
+
+Dual-write on store **writes** remains so fat DTO serialization stays aligned;
+store **reads** prefer sparse via the choke point.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

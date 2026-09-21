@@ -15,12 +15,14 @@
 /**
  * Facade over per-item stores (Phase 7 / REFACTOR.md).
  *
- * Stage 0: non-owning pointers to SessionAppearanceStore, PathItemStateBook,
- * ImageSizeBook.
+ * Owns sparse tables (Crop, Attention, ContentBake, Color, Placement) and
+ * non-owning links to SessionAppearanceStore, PathItemStateBook, ImageSizeBook.
  *
- * Stage 1–2: owned sparse tables (Crop, Attention, ContentBake, Color, Placement)
- * dual-written with the fat WorkspaceItemState DTO. Placement is Stage 2 start
- * (pose off ImageItem eventually). Component accessors preferred for new code.
+ * Writes: setAppearance / setCrop / setColor / … dual-write sparse + fat DTO so
+ * project serialization and legacy readers stay consistent.
+ * Reads: prefer ImageView::sessionAppearanceValue (sparse-first choke point) or
+ * component accessors (crop(), color(), …). ImageItem is a render/hit-test proxy
+ * — not a parallel live database.
  *
  * Entity key for content appearance: SessionImageId (IDENTITY.md).
  */
@@ -68,7 +70,7 @@ public:
         return *m_sizeBook;
     }
 
-    /** Id-keyed content appearance (DTO; dual-writes crop/attention tables). */
+    /** Id-keyed content appearance DTO (writes dual-write sparse component tables). */
     const WorkspaceItemState *getAppearance(SessionImageId id) const
     {
         if (!m_appearance || id == kInvalidSessionImageId) {

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1990-imageitem-proxy-status-docs.** ImageItem proxy status + authority docs.
+Prior: **1989**.
+
+### Change
+- ItemWorld class comment: sparse-first reads, dual-write on writes only
+- Stale "Phase 7 Stage 1" comments refreshed
+- REFACTOR.md: ImageItem demotion status table (through 1990)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1990-imageitem-proxy-status-docs-e77da63.bundle HEAD
+```
+Requires tip **1989** (base **e77da63**); includes 1938–1990.
+
+### Next
+- Characterization + full build (especially Gallery pack after 1989 recursion fix)
+- Optional: drop fat DTO dual-write when project format no longer needs it
+- Remaining public mutator: `setContentEditMarksVisible` (static view pref — fine)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1989-private-applyPlacement.** Privatize applyPlacement; fix GalleryLayout cell-size helper.
 Prior: **1988**.
 

@@ -189,7 +189,7 @@ void ImageView::persistGeometrySessionState(ImageItem *item, const ItemComponent
     }
     const SessionImageId sid = item->sessionId();
     if (sid != kInvalidSessionImageId) {
-        // Pose-only; setPlacement dual-writes DTO pose fields.
+        // Pose-only; setPlacement dual-writes sparse Placement + DTO pose fields.
         m_itemWorld.setPlacement(sid, pl);
         return;
     }
@@ -245,7 +245,7 @@ void ImageView::rememberItemState(ImageItem *item)
         slot.sessionId = item->sessionId();
         slot.sessionIndex = item->sessionIndex();
         slot.path = item->path();
-        // setAppearance dual-writes sparse tables including Placement.
+        // setAppearance dual-writes sparse tables (Crop/ContentBake/Color/Placement).
         m_itemWorld.setAppearance(item->sessionId(), slot);
         return;
     }
@@ -361,7 +361,7 @@ void ImageView::setSessionAppearance(SessionImageId id, const WorkspaceItemState
     if (id == kInvalidSessionImageId) {
         return;
     }
-    // Phase 7 Stage 1: dual-write crop/attention sparse tables via ItemWorld.
+    // ItemWorld::setAppearance dual-writes sparse Crop/ContentBake/Color/… tables.
     m_itemWorld.setAppearance(id, state);
 }
 
