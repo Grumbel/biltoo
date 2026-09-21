@@ -144,9 +144,12 @@ MainWindow::MainWindow(QWidget *parent)
                             return;
                         }
                     }
-                    if (pref->sessionIndex() >= 0) {
-                        apply(pref->sessionIndex());
-                        return;
+                    {
+                        const int listIdx = m_imageView->sessionListIndex(pref);
+                        if (listIdx >= 0) {
+                            apply(listIdx);
+                            return;
+                        }
                     }
                 }
                 apply(m_session.paths().indexOf(path));
@@ -597,13 +600,7 @@ void MainWindow::syncThumbnailCanvasMembership()
         if (!item) {
             continue;
         }
-        int idx = -1;
-        if (item->sessionId() != kInvalidSessionImageId) {
-            idx = m_session.indexOfId(item->sessionId());
-        }
-        if (idx < 0) {
-            idx = item->sessionIndex();
-        }
+        const int idx = m_imageView->sessionListIndex(item);
         if (idx >= 0) {
             onCanvas.insert(idx);
         }
@@ -784,13 +781,7 @@ void MainWindow::toggleCropMode()
             }
             return;
         }
-        int idx = -1;
-        if (item->sessionId() != kInvalidSessionImageId) {
-            idx = indexOfSessionId(item->sessionId());
-        }
-        if (idx < 0) {
-            idx = item->sessionIndex();
-        }
+        const int idx = m_imageView->sessionListIndex(item);
         if (idx < 0) {
             if (m_cropAct) {
                 m_cropAct->setChecked(false);

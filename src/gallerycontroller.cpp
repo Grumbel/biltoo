@@ -706,10 +706,13 @@ bool GalleryController::tryKeyPressGallery(QKeyEvent *event)
         if (ImageItem *item = m_view->selectedOrFirstGalleryItem()) {
             if (item->sessionId() != kInvalidSessionImageId) {
                 emit m_view->sessionImageOpenRequested(item->sessionId());
-            } else if (item->sessionIndex() >= 0) {
-                emit m_view->sessionSlotOpenRequested(item->sessionIndex());
-            } else if (!item->path().isEmpty()) {
-                emit m_view->galleryItemOpenRequested(item->path());
+            } else {
+                const int listIdx = m_view->sessionListIndex(item);
+                if (listIdx >= 0) {
+                    emit m_view->sessionSlotOpenRequested(listIdx);
+                } else if (!item->path().isEmpty()) {
+                    emit m_view->galleryItemOpenRequested(item->path());
+                }
             }
             event->accept();
             return true;
@@ -1507,7 +1510,7 @@ void GalleryController::reloadFromDisk(bool relayout)
         PendingSessionBind b;
         b.path = path;
         b.id = item->sessionId();
-        b.index = item->sessionIndex();
+        b.index = m_view->sessionListIndex(item);
         m_view->hostBindBook().append(b);
         m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
     }
@@ -1561,7 +1564,7 @@ void GalleryController::hardReloadFromDisk(bool relayout)
         ReloadBind b;
         b.path = path;
         b.id = item->sessionId();
-        b.index = item->sessionIndex();
+        b.index = m_view->sessionListIndex(item);
         binds.append(b);
     }
     if (pathSet.isEmpty()) {

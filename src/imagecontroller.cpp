@@ -177,7 +177,7 @@ void ImageController::hardReloadFromDisk()
         ReloadBind b;
         b.path = p;
         b.id = item->sessionId();
-        b.index = item->sessionIndex();
+        b.index = m_view->sessionListIndex(item);
         binds.append(b);
         m_view->hostDisplayPipeline().gallerySoftResetPath(p);
         m_view->hostDisplayPipeline().dropItemTileLodSession(item);

@@ -342,12 +342,15 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
             if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
                 if (item->sessionId() != kInvalidSessionImageId) {
                     emit sessionImageOpenRequested(item->sessionId());
-                } else if (item->sessionIndex() >= 0) {
-                    emit sessionSlotOpenRequested(item->sessionIndex());
                 } else {
-                    const QString path = item->path();
-                    if (!path.isEmpty()) {
-                        emit galleryItemOpenRequested(path);
+                    const int listIdx = sessionListIndex(item);
+                    if (listIdx >= 0) {
+                        emit sessionSlotOpenRequested(listIdx);
+                    } else {
+                        const QString path = item->path();
+                        if (!path.isEmpty()) {
+                            emit galleryItemOpenRequested(path);
+                        }
                     }
                 }
                 event->accept();
@@ -396,12 +399,15 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
                 if (ii->isInteractive() && m_items.contains(ii)) {
                     if (ii->sessionId() != kInvalidSessionImageId) {
                         emit sessionImageOpenRequested(ii->sessionId());
-                    } else if (ii->sessionIndex() >= 0) {
-                        emit sessionSlotOpenRequested(ii->sessionIndex());
                     } else {
-                        const QString path = ii->path();
-                        if (!path.isEmpty()) {
-                            emit galleryItemOpenRequested(path);
+                        const int listIdx = sessionListIndex(ii);
+                        if (listIdx >= 0) {
+                            emit sessionSlotOpenRequested(listIdx);
+                        } else {
+                            const QString path = ii->path();
+                            if (!path.isEmpty()) {
+                                emit galleryItemOpenRequested(path);
+                            }
                         }
                     }
                     event->accept();

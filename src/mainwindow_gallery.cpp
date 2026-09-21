@@ -247,9 +247,12 @@ void MainWindow::showPathInImageMode(const QString &path)
                 openSessionImageInImageMode(pref->sessionId());
                 return;
             }
-            if (pref->sessionIndex() >= 0) {
-                openSessionIndexInImageMode(pref->sessionIndex());
-                return;
+            {
+                const int listIdx = m_imageView->sessionListIndex(pref);
+                if (listIdx >= 0) {
+                    openSessionIndexInImageMode(listIdx);
+                    return;
+                }
             }
         }
     }

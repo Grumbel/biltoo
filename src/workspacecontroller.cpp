@@ -687,7 +687,7 @@ void WorkspaceController::reloadFromDisk()
         PendingSessionBind b;
         b.path = path;
         b.id = item->sessionId();
-        b.index = item->sessionIndex();
+        b.index = m_view->sessionListIndex(item);
         m_view->hostBindBook().append(b);
         m_view->hostDisplayPipeline().scheduleImageLoad(path, static_cast<int>(ImageView::LoadAdd));
     }
@@ -738,7 +738,7 @@ void WorkspaceController::hardReloadFromDisk()
         ReloadBind b;
         b.path = path;
         b.id = item->sessionId();
-        b.index = item->sessionIndex();
+        b.index = m_view->sessionListIndex(item);
         binds.append(b);
     }
     if (pathSet.isEmpty()) {

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1979-session-list-index-call-sites.** Route list-index readers through sessionListIndex.
+Prior: **1978**.
+
+### Change
+- MainWindow filmstrip badge, path focus, gallery crop open: `sessionListIndex`
+- Gallery / Image / Workspace reload binds: `b.index = sessionListIndex(item)`
+- Gallery Enter / double-click / body open fallbacks: `sessionListIndex` then path
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1979-session-list-index-call-sites-e77da63.bundle HEAD
+```
+Requires tip **1978** (base **e77da63**); includes 1938–1979.
+
+### Next
+- Characterization re-check (Reset + list-index series)
+- Remaining `item->sessionIndex()` only in cache refresh / bind write paths
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1978-session-list-index-from-doc.** sessionListIndex from SessionDocument.
 Prior: **1977**.
 
