@@ -32,7 +32,7 @@ QSizeF layoutSize(const ImageItem *item)
     if (!item || ns.isEmpty()) {
         return ns;
     }
-    if (axesSwapForItemRotation(item->itemRotation())) {
+    if (axesSwapForItemRotation(item->placement().rotation)) {
         return QSizeF(ns.height(), ns.width());
     }
     return ns;
@@ -425,8 +425,9 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             QSizeF sz = item->galleryCellSize();
             if (sz.isEmpty()) {
                 const QSizeF ns = layoutSize(item);
-                sz = QSizeF(ns.width() * item->itemScaleX(),
-                            ns.height() * item->itemScaleY());
+                const ItemComponents::Placement pl = item->placement();
+                const qreal sy = pl.scaleY > 0.0 ? pl.scaleY : pl.scale;
+                sz = QSizeF(ns.width() * pl.scale, ns.height() * sy);
             }
             if (sz.isEmpty()) {
                 continue;

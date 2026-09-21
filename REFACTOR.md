@@ -1210,6 +1210,8 @@ Phase 1–6 rules still apply. Additions:
   alias; call sites prefer tileContentXform; setTargetColor docs live vs ItemWorld.
 - biltoo-1969: drop public itemHFlip/VFlip and appliedContentXform alias; placement()
   is sole pose-flip reader; tileContentXform sole content-meta value reader.
+- biltoo-1970: drop public itemScaleX/Y/itemRotation; placement() is sole live pose
+  reader (stackZ remains for z-order sorts).
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

@@ -108,19 +108,18 @@ public:
     void setPreviewImage(const QImage &preview);
     void clearDecodedPixels();
 
-    qreal itemScaleX() const { return m_scaleX; }
-    qreal itemScaleY() const { return m_scaleY; }
     /**
-     * Workspace *placement* rotation only (free-rotate handle).
-     * Content 90° turns are baked into pixels — not stored here.
+     * Live Workspace pose as Placement (Stage 2 sole reader for item pose:
+     * scale, shear, rotation, flips, opacity, z). Content 90° turns are baked
+     * into pixels — not stored here.
      */
-    qreal itemRotation() const { return m_rotation; }
-
-    /** Live Workspace pose as Placement (Stage 2 single reader for item pose). */
     ItemComponents::Placement placement() const;
     /** Apply Workspace pose (Stage 2 single writer for item pose). */
     void applyPlacement(const ItemComponents::Placement &pl);
-    /** Persistent stacking order (selection may temporarily raise the item). */
+    /**
+     * Persistent stacking order (selection may temporarily raise the item).
+     * Cheap field getter for z-order sorts; also available as placement().z.
+     */
     qreal stackZ() const { return m_stackZ; }
     /** Item-local pixmap/content rect (no chrome pad). */
     QRectF contentRect() const;

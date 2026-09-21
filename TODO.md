@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1970-placement-sole-pose-reader.** placement() sole pose reader.
+Prior: **1969**.
+
+### Change
+- Drop public `itemScaleX` / `itemScaleY` / `itemRotation`
+- Gallery pack + status chrome use `placement()` for scale/rotation
+- `stackZ()` kept as cheap z-order field getter (also `placement().z`)
+- ImageItem public pose surface is now: `placement()` / `applyPlacement()` / `stackZ()`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1970-placement-sole-pose-reader-e77da63.bundle HEAD
+```
+Requires tip **1969** (base **e77da63**); includes 1938–1970.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host (priority)
+- Optional: route z-order sorts through `placement().z` and drop `stackZ()` if
+  profiling allows
+- Color sparse-table readers where fat DTO is redundant
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1969-placement-flip-drop-applied-alias.** Placement flips + drop applied alias.
 Prior: **1968**.
 

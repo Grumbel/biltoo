@@ -276,15 +276,17 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
         }
     }
     if (isWorkspaceMode() && item->isSelected()) {
-        if (qAbs(item->itemScaleX() - item->itemScaleY()) < 0.005) {
+        const ItemComponents::Placement pl = item->placement();
+        const qreal sy = pl.scaleY > 0.0 ? pl.scaleY : pl.scale;
+        if (qAbs(pl.scale - sy) < 0.005) {
             text += tr(" · Item %1% · Rot %2°")
-                        .arg(qRound(item->itemScaleX() * 100))
-                        .arg(qRound(item->itemRotation()));
+                        .arg(qRound(pl.scale * 100))
+                        .arg(qRound(pl.rotation));
         } else {
             text += tr(" · Item %1%×%2% · Rot %3°")
-                        .arg(qRound(item->itemScaleX() * 100))
-                        .arg(qRound(item->itemScaleY() * 100))
-                        .arg(qRound(item->itemRotation()));
+                        .arg(qRound(pl.scale * 100))
+                        .arg(qRound(sy * 100))
+                        .arg(qRound(pl.rotation));
         }
     }
     if (targetHasContentAppearance()) {
@@ -350,11 +352,11 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
     if (!climb.isEmpty()) {
         text += tr(" · %1").arg(climb);
     }
-    if (qAbs(item->itemRotation()) > 0.5) {
-        text += tr(" · Rot %1°").arg(qRound(item->itemRotation()));
-    }
     {
         const ItemComponents::Placement pl = item->placement();
+        if (qAbs(pl.rotation) > 0.5) {
+            text += tr(" · Rot %1°").arg(qRound(pl.rotation));
+        }
         if (pl.hFlip || pl.vFlip) {
             QStringList flips;
             if (pl.hFlip) {
