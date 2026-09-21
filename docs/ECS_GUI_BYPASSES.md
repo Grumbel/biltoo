@@ -165,9 +165,9 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 |---|--------|--------|
 | 1 | Image underlay trusts filmstrip displayReady | **2176** reject displayReady; materialize host-raw + ItemWorld |
 | 2 | Filmstrip pixel override parallel store | Open (filmstrip paint only; Image ignores) |
-| 3 | ImageCache host-raw contract | **2176** filmstrip; **2177** header contract note |
+| 3 | ImageCache host-raw contract | **2176–2178** see IMAGECACHE_PUT_AUDIT.md |
 | 4 | Applied ContentXform vs store at leave | **2177** flush on setViewMode |
 | 5 | Workspace m_savedItems content | **2177** restore pose from snapshot; full content from ItemWorld |
-| 6 | Incremental bakeRotate90 | Open |
+| 6 | Incremental bakeRotate90 | **2178** disk host before incremental |
 | 7 | Path/XDG seed | Orient-only for bound OK |
 

@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2178-bake-host-disk.** Content rotate/flip: load host-raw from disk
+before any incremental bake; ImageCache put audit documented.
+
+### ECS work list
+
+- [x] 2174–2177 Image underlay, restore, flush applied, filmstrip soft
+- [x] 2178 bakeRotate/bakeFlip: disk host before incremental
+- [x] 2178 IMAGECACHE_PUT_AUDIT.md
+- [ ] Filmstrip applyStoredAppearanceToThumb still uses path XDG not ItemWorld for cold cells (override after rotate is ItemWorld)
+- [ ] Optional: assert in ImageCache::put debug builds
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2178-bake-host-disk-e77da63.bundle HEAD
+```
+
+Next: **2179**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2177-ecs-restore-flush.** Workspace restore content = ItemWorld only;
 flush applied ContentXform into ItemWorld on every mode leave.
 

@@ -10,6 +10,8 @@
 #include "itemcomponents.h"
 #include "thumtoocache.h"
 #include "imagecache.h"
+#include "imageloader.h"
+#include "displayquality.h"
 
 #include <QImage>
 
@@ -65,8 +67,33 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
                 gotDisplay = true;
             }
         }
+        if (!gotDisplay && !path.isEmpty()) {
+            // Load host-raw from disk before any incremental bake (ECS).
+            QImage disk = ImageLoader::loadThumbnail(
+                path, ThumtooCache::kGalleryLadderEdge);
+            if (disk.isNull()) {
+                disk = ImageLoader::loadThumbnail(path, 512);
+            }
+            if (!disk.isNull()) {
+                ImageCache::put(path, disk);
+                QImage soft = disk;
+                if (ContentXform::longEdge(disk.size())
+                    > ContentXform::kGuiMaterializeMaxEdge) {
+                    soft = ImageCache::clampToMaxEdge(
+                        disk, ContentXform::kGuiMaterializeMaxEdge);
+                }
+                const QImage display = SessionAppearance::materializeDisplay(
+                    soft, want, SessionAppearance::PixelKind::SoftPreview);
+                if (!display.isNull()) {
+                    item->clearDecodedPixels();
+                    attachDisplaySample(item, display, want,
+                                        SessionAppearance::PixelKind::SoftPreview);
+                    gotDisplay = true;
+                }
+            }
+        }
         if (!gotDisplay) {
-            // No host at all: last resort incremental on whatever is shown.
+            // Truly no host: incremental last resort (will be replaced async).
             item->bakeRotate90(quarterTurns);
         }
         applyContentLayoutSize(item, want);
@@ -176,9 +203,36 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     // Install applied ContentXform fingerprint (syncLiveContentMetaFromState).
     syncLiveContentMetaFromState(item, want);
     if (!tryRematerializeFromHost(item, want)) {
-        item->bakeFlip(horizontal, vertical);
+        const QString path = item->path();
+        QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
+        bool gotDisplay = false;
+        if (host.isNull() && !path.isEmpty()) {
+            host = ImageLoader::loadThumbnail(path, ThumtooCache::kGalleryLadderEdge);
+            if (!host.isNull()) {
+                ImageCache::put(path, host);
+            }
+        }
+        if (!host.isNull()) {
+            QImage soft = host;
+            if (ContentXform::longEdge(host.size())
+                > ContentXform::kGuiMaterializeMaxEdge) {
+                soft = ImageCache::clampToMaxEdge(
+                    host, ContentXform::kGuiMaterializeMaxEdge);
+            }
+            const QImage display = SessionAppearance::materializeDisplay(
+                soft, want, SessionAppearance::PixelKind::SoftPreview);
+            if (!display.isNull()) {
+                item->clearDecodedPixels();
+                attachDisplaySample(item, display, want,
+                                    SessionAppearance::PixelKind::SoftPreview);
+                gotDisplay = true;
+            }
+        }
+        if (!gotDisplay) {
+            item->bakeFlip(horizontal, vertical);
+        }
         syncLiveContentMetaFromState(item, want);
-        scheduleAsyncHostRematerialize(item->path(), sid, want);
+        scheduleAsyncHostRematerialize(path, sid, want);
     }
     applyContentLayoutSize(item, want);
 
