@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2069-path-strip-bound-content.** Bound setPathState strips all content fields.
+Prior: **2068**.
+
+### Change
+- `ItemWorld::setPathState`: when sessionId is bound, strip crop + content bake + color
+  (not only crop) — IDENTITY
+- Bake rotate: path content sync only for unbound tiles
+- Test: setPathState_stripsContentWhenBound
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2069-path-strip-bound-content-e77da63.bundle HEAD
+```
+Requires tip **2068** (base **e77da63**); includes 1938–2069.
+
+### Next
+- Phase 7 Stage 2: ContentXform runtime table or path-hint read cleanup
+- Phase 6 Tier 4: decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2068-drop-legacy-path-placement-flips.** Remove Image-mode path-book placement flip residual.
 Prior: **2067**.
 

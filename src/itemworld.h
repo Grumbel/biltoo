@@ -327,22 +327,27 @@ void removeAppearance(SessionImageId id)
     }
 
     /**
-     * Path-keyed store for unbound tiles and orient/flip path hints.
-     * IDENTITY: when @p state carries a bound SessionImageId, crop fields are
-     * stripped before write — crop is id-keyed only (duplicates share a path).
+     * Path-keyed store for unbound tiles (content + placement) and legacy
+     * placement-only path hints. IDENTITY: when @p state carries a bound
+     * SessionImageId, all content fields are stripped — crop/bake/color are
+     * id-keyed only (duplicates share a path). Placement may remain for
+     * unbound-style pack leftovers; durable pose is ItemWorld Placement.
      */
     void setPathState(const QString &path, const WorkspaceItemState &state)
     {
         if (!m_pathBook || path.isEmpty()) {
             return;
         }
-        if (state.sessionId != kInvalidSessionImageId
-            && (state.hasCrop || !state.cropRect.isEmpty())) {
+        if (state.sessionId != kInvalidSessionImageId) {
             WorkspaceItemState s = state;
             s.hasCrop = false;
             s.cropRect = QRect();
             s.cropRotation = 0.0;
             s.cropSourceSize = QSize();
+            s.contentHFlip = false;
+            s.contentVFlip = false;
+            s.contentQuarterTurns = 0;
+            s.colorAdjust = {};
             m_pathBook->set(path, s);
             return;
         }

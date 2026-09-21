@@ -12,9 +12,10 @@
 /**
  * Path-keyed WorkspaceItemState map.
  *
- * Bound session images: content appearance is ItemWorld sparse tables only.
- * This bag remains the Workspace free-placement cache and unbound-tile
- * fallback (IDENTITY: path is not the content key when an id is bound).
+ * Bound session images: content is ItemWorld sparse + XDG only. ItemWorld::setPathState
+ * strips all content fields when sessionId is bound (IDENTITY: path is not the
+ * content key). This bag remains unbound-tile content+placement and optional
+ * placement-only leftovers for path-keyed pack.
  */
 class PathItemStateBook
 {

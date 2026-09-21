@@ -88,9 +88,9 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             m_itemWorld.setCrop(sid, ItemComponents::cropFromState(s));
             persistDurableContentAppearance(item, s, "bakeRotate");
         }
-        // Keep path map content fields in sync so pack afterEach cannot leave
-        // stale turns for any reader that still peeks at m_itemStateBook.byPath.
-        {
+        // Unbound only: path map is the sole content store. Bound content is
+        // sparse + XDG (IDENTITY — do not dual-write orient by path).
+        if (sid == kInvalidSessionImageId) {
             WorkspaceItemState pathSlot;
             if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {
                 pathSlot = *st;
@@ -99,18 +99,10 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             pathSlot.contentQuarterTurns = turns;
             pathSlot.contentHFlip = want.contentHFlip;
             pathSlot.contentVFlip = want.contentVFlip;
-            // Crop is id-keyed when bound (IDENTITY — path may be shared).
-            if (sid == kInvalidSessionImageId) {
-                pathSlot.hasCrop = want.hasCrop;
-                pathSlot.cropRect = want.cropRect;
-                pathSlot.cropRotation = want.cropRotation;
-                pathSlot.cropSourceSize = want.cropSourceSize;
-            } else {
-                pathSlot.hasCrop = false;
-                pathSlot.cropRect = QRect();
-                pathSlot.cropRotation = 0.0;
-                pathSlot.cropSourceSize = QSize();
-            }
+            pathSlot.hasCrop = want.hasCrop;
+            pathSlot.cropRect = want.cropRect;
+            pathSlot.cropRotation = want.cropRotation;
+            pathSlot.cropSourceSize = want.cropSourceSize;
             m_itemWorld.setPathState(item->path(), pathSlot);
         }
         // Applied fingerprint already set by syncLiveContentMetaFromState(want)
