@@ -116,15 +116,11 @@ void ImageView::syncLiveContentMetaFromState(ImageItem *item, const WorkspaceIte
     if (!item) {
         return;
     }
-    // Phase 7 Stage 2: applied ContentXform is the live fingerprint (survives
-    // clearDecodedPixels; identity clear uses clearLiveContentMeta).
-    // Dual-write ItemWorld runtime table when bound (Stage 2 residual 2080).
+    // Applied fingerprint is presentation-local on the ImageItem only.
+    // Never dual-write ItemWorld applied residual (outlived mode leave and
+    // overrode sparse contentBake on Image underlay — CONTENTXFORM_AUTHORITY).
     const ContentXform::Value x = ContentXform::Value::fromState(state);
     item->setAppliedContentXform(x);
-    const SessionImageId sid = item->sessionId();
-    if (sid != kInvalidSessionImageId) {
-        m_itemWorld.setAppliedContentXform(sid, x);
-    }
 }
 
 void ImageView::syncLiveColorFromState(ImageItem *item, const ColorAdjustments &grade,
@@ -150,9 +146,6 @@ void ImageView::syncLiveColorFromState(ImageItem *item, const ColorAdjustments &
         ContentXform::Value x = item->tileContentXform();
         x.colorAdjust = grade;
         item->setAppliedContentXform(x);
-        if (sid != kInvalidSessionImageId) {
-            m_itemWorld.setAppliedContentXform(sid, x);
-        }
     }
 }
 
@@ -226,12 +219,7 @@ void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
     item->setSessionId(id);
     // Stage 2 residual: list-order cache follows document when the id is bound.
     refreshSessionIndexCache(item);
-    // Migrate applied ContentXform mirror into ItemWorld when binding so
-    // itemAppliedContentXform prefers the runtime table after late bind
-    // (content was applied while unbound).
-    if (id != kInvalidSessionImageId && item->hasAppliedContentXform()) {
-        m_itemWorld.setAppliedContentXform(id, item->tileContentXform());
-    }
+    // Applied stays on the ImageItem only (no ItemWorld residual).
     if (id != kInvalidSessionImageId) {
         m_itemWorld.setLiveColorLag(id, item->colorAdjustments());
     }

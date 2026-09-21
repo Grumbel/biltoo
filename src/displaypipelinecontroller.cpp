@@ -934,8 +934,24 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     }
     seedSessionAppearanceFromState(sid, path);
 
-    // Absolute want xform (session store / path map / live flags).
-    const WorkspaceItemState appearance = wantAppearanceForItem(item, sid);
+    // Image underlay: durable sparse only (contentBake/crop/color). Mid-edit
+    // item applied must not change materialize want — attach sets applied to
+    // match this want after bake. Other modes keep wantAppearanceForItem.
+    WorkspaceItemState appearance;
+    if (m_view->isImageMode() && sid != kInvalidSessionImageId) {
+        appearance = m_view->sessionAppearanceValue(sid);
+        if (qEnvironmentVariableIsSet("BILTOO_MODE_DEBUG")) {
+            fprintf(stderr,
+                    "biltoo/orient Image install sid=%lld turns=%d flip=%d%d path=%s\n",
+                    static_cast<long long>(sid),
+                    appearance.contentQuarterTurns,
+                    appearance.contentHFlip ? 1 : 0,
+                    appearance.contentVFlip ? 1 : 0,
+                    qPrintable(QFileInfo(path).fileName()));
+        }
+    } else {
+        appearance = wantAppearanceForItem(item, sid);
+    }
 
     // Host cache is unoriented. Every ladder/decode sample that enters here is
     // host-raw (Gallery, Image, Workspace). Display-ready stash soft never

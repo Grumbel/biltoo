@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2181-sparse-only-image-want.** Image underlay materialize want is
+*only* sessionAppearanceValue (sparse contentBake). ItemWorld applied residual
+abolished (no dual-write; clear all on mode leave).
+
+### Structural invariant
+
+Image installDisplayPixels:
+  want = sessionAppearanceValue(sid) after seed
+  never wantAppearanceForItem (item applied / residual)
+
+Applied ContentXform lives only on the live ImageItem.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2181-sparse-only-image-want-e77da63.bundle HEAD
+```
+
+Debug: `BILTOO_MODE_DEBUG=1` logs Image install turns.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2180-applied-xform-presentation-only.** Root cause of ImageView
 wrong rotation: ItemWorld residual *applied* ContentXform overrode sparse
 contentBake on underlay materialize after Workspace→Image.

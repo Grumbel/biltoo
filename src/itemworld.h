@@ -199,6 +199,11 @@ public:
         m_appliedContentXforms.remove(id);
     }
 
+    void clearAllAppliedContentXforms()
+    {
+        m_appliedContentXforms.clear();
+    }
+
     bool hasAppliedContentXform(SessionImageId id) const
     {
         if (id == kInvalidSessionImageId) {

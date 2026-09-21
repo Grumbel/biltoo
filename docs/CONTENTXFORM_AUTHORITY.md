@@ -25,7 +25,7 @@ Meaning: "pixels currently attached were materialized with this Value."
 
 Used for: mid-edit while the same item is live; tile paint orient of host-native tiles.
 
-## Structural rules (2179→2180)
+## Structural rules (2180→2181)
 
 1. **Materialize want** for a new underlay = sparse contentBake/crop only.
 2. **Never** read ItemWorld `applied` residual as want for install (it outlived
@@ -42,3 +42,10 @@ Used for: mid-edit while the same item is live; tile paint orient of host-native
 3. Project load → sparse tables
 
 Nothing else may invent quarter turns for Image underlay.
+
+## Image underlay (2181)
+
+`installDisplayPixels` in Image mode sets
+`appearance = sessionAppearanceValue(sid)` only (after XDG seed if sparse empty).
+It does **not** call `wantAppearanceForItem`. Applied is written onto the new
+item after materialize to match that sparse want.

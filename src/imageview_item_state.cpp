@@ -370,4 +370,5 @@ void ImageView::flushAppliedContentToItemWorld()
         }
         m_itemWorld.clearAppliedContentXform(sid);
     }
+    m_itemWorld.clearAllAppliedContentXforms();
 }
