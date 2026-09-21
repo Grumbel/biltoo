@@ -1552,6 +1552,8 @@ SessionDocument; MainWindow remove + append-chrome path fallbacks call them.
 **biltoo-2136:** SessionSort pure ordering (Mode, orderIndices, probe/paged
 helpers); MainWindow SortMode aliases SessionSort::Mode.
 
+**biltoo-2137:** sortFileListSync deduped onto SessionSort::orderIndices.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

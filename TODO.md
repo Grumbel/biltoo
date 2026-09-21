@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2137-sort-sync-sessionsort.** sortFileListSync uses SessionSort::orderIndices.
+Prior: **2136**.
+
+### Change
+- `sortFileListSync` builds mtime/filesize maps then calls `SessionSort::orderIndices`
+- Probe-mode sync fallback → Name (same as prior basename fallback)
+- Drop duplicated switch / collators / shuffle in MainWindow
+- Remove unused `<random>` include
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2137-sort-sync-sessionsort-e77da63.bundle HEAD
+```
+Requires tip **2136** (base **e77da63**); includes 1938–2137.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Optional: further MainWindow session chrome splits
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2136-sessionsort-pure.** SessionSort pure list ordering extracted from MainWindow.
 Prior: **2135**.
 

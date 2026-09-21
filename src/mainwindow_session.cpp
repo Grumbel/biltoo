@@ -5,7 +5,6 @@
 #include "slideshowclocks.h"
 #include "viewtransform.h"
 #include <QtMath>
-#include <random>
 #include <algorithm>
 #include "thumtoocache.h"
 #include "sessionopen.h"
@@ -716,91 +715,27 @@ void MainWindow::sortFileListSync()
     }
     m_session.ensureIdsAligned();
 
-    auto nameLess = [](const QString &a, const QString &b) {
-        QCollator collator;
-        collator.setNumericMode(true);
-        collator.setCaseSensitivity(Qt::CaseInsensitive);
-        return collator.compare(PagePath::displayName(a), PagePath::displayName(b)) < 0;
-    };
-    auto pathLess = [](const QString &a, const QString &b) {
-        QCollator collator;
-        collator.setNumericMode(true);
-        collator.setCaseSensitivity(Qt::CaseInsensitive);
-        return collator.compare(a, b) < 0;
-    };
+    const QStringList paths = m_session.paths();
+    SortMode mode = m_sortMode;
+    QHash<QString, qint64> mtimes;
+    QHash<QString, qint64> fsizes;
 
-    auto pathAt = [&](int i) -> const QString & { return m_session.paths().at(i); };
-
-    QVector<int> order(m_session.paths().size());
-    for (int i = 0; i < order.size(); ++i) {
-        order[i] = i;
-    }
-
-
-    switch (m_sortMode) {
-    case SortMode::MTime:
-    case SortMode::FileSize: {
+    if (mode == SortMode::MTime || mode == SortMode::FileSize) {
         // Prefer background path (sortModeNeedsImageProbe). If still here,
-        // snapshot metadata once — never QFileInfo inside the comparator.
-        const int n = order.size();
-        QVector<qint64> mtimes(n);
-        QVector<qint64> fsizes(n);
-        for (int i = 0; i < n; ++i) {
-            const QFileInfo fi(pathAt(i));
-            mtimes[i] = fi.lastModified().toMSecsSinceEpoch();
-            fsizes[i] = fi.size();
+        // snapshot metadata once — never QFileInfo inside a comparator loop.
+        for (const QString &p : paths) {
+            const QFileInfo fi(p);
+            mtimes.insert(p, fi.lastModified().toMSecsSinceEpoch());
+            fsizes.insert(p, fi.size());
         }
-        if (m_sortMode == SortMode::MTime) {
-            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-                if (mtimes.at(ia) != mtimes.at(ib)) {
-                    return mtimes.at(ia) < mtimes.at(ib);
-                }
-                return nameLess(pathAt(ia), pathAt(ib));
-            });
-        } else {
-            std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-                if (fsizes.at(ia) != fsizes.at(ib)) {
-                    return fsizes.at(ia) < fsizes.at(ib);
-                }
-                return nameLess(pathAt(ia), pathAt(ib));
-            });
-        }
-        break;
-    }
-    case SortMode::Width:
-    case SortMode::Height:
-    case SortMode::PixelCount:
-        // Must use sortFileListWithProbesInBackground — no probe on GUI.
-        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            return nameLess(pathAt(ia), pathAt(ib));
-        });
-        break;
-    case SortMode::Path:
-        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            return pathLess(pathAt(ia), pathAt(ib));
-        });
-        break;
-    case SortMode::Shuffle: {
-        // Non-deterministic: new order each time this mode is applied.
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::shuffle(order.begin(), order.end(), gen);
-        break;
-    }
-    case SortMode::AspectRatio:
-        // Needs probes — should use background path; basename fallback here.
-        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            return nameLess(pathAt(ia), pathAt(ib));
-        });
-        break;
-    case SortMode::Name:
-    default:
-        std::stable_sort(order.begin(), order.end(), [&](int ia, int ib) {
-            return nameLess(pathAt(ia), pathAt(ib));
-        });
-        break;
+    } else if (mode == SortMode::Width || mode == SortMode::Height
+               || mode == SortMode::PixelCount || mode == SortMode::AspectRatio) {
+        // Probe modes must use sortFileListWithProbesInBackground; basename
+        // fallback if we are still on the sync path.
+        mode = SortMode::Name;
     }
 
+    const QVector<int> order = SessionSort::orderIndices(mode, paths, {}, mtimes, fsizes);
     QStringList newFiles;
     QVector<SessionImageId> newIds;
     newFiles.reserve(order.size());
