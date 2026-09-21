@@ -84,17 +84,18 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
         s.contentQuarterTurns = turns;
         if (sid != kInvalidSessionImageId) {
             // Preserve placement fields from previous appearance when present.
-            if (const WorkspaceItemState *prev = m_itemWorld.getAppearance(sid)) {
-                s.pos = prev->pos;
-                s.scale = prev->scale;
-                s.scaleY = prev->scaleY;
-                s.shear = prev->shear;
-                s.rotation = prev->rotation;
-                s.opacity = prev->opacity;
-                s.z = prev->z;
-                s.hFlip = prev->hFlip;
-                s.vFlip = prev->vFlip;
-                s.sessionIndex = prev->sessionIndex;
+            if (m_itemWorld.hasAppearance(sid)) {
+                const WorkspaceItemState prev = sessionAppearanceValue(sid);
+                s.pos = prev.pos;
+                s.scale = prev.scale;
+                s.scaleY = prev.scaleY;
+                s.shear = prev.shear;
+                s.rotation = prev.rotation;
+                s.opacity = prev.opacity;
+                s.z = prev.z;
+                s.hFlip = prev.hFlip;
+                s.vFlip = prev.vFlip;
+                s.sessionIndex = prev.sessionIndex;
             }
             m_itemWorld.setAppearance(sid, s);
             persistDurableContentAppearance(item, s, "bakeRotate");

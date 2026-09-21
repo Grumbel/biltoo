@@ -264,10 +264,9 @@ bool ImageView::targetHasContentAppearance() const
                 || m_itemWorld.hasColor(sid)) {
                 return true;
             }
-            if (const WorkspaceItemState *app = m_itemWorld.getAppearance(sid)) {
-                if (SessionAppearance::hasContentAppearance(*app)) {
-                    return true;
-                }
+            if (m_itemWorld.hasAppearance(sid)
+                && SessionAppearance::hasContentAppearance(sessionAppearanceValue(sid))) {
+                return true;
             }
         }
         if (SessionAppearance::liveItemHasContentMods(item->tileContentXform())) {

@@ -265,11 +265,10 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             existing->setSessionIndex(i);
             if (newlyBoundId && existing->hasDecodedPixels()
                 && sid != kInvalidSessionImageId) {
-                const WorkspaceItemState *appPtr = m_itemWorld.getAppearance(sid);
-                if (!appPtr) {
+                if (!m_itemWorld.hasAppearance(sid)) {
                     continue;
                 }
-                const WorkspaceItemState &app = *appPtr;
+                const WorkspaceItemState app = sessionAppearanceValue(sid);
                 // Crop / content bakes need a full-source redecode; colour grade
                 // alone can be applied in place via the central content path.
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip

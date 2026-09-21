@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1983-pipeline-canvas-bake-store-reads.** Pipeline/canvas/bake via sessionAppearanceValue.
+Prior: **1982**.
+
+### Change
+- DisplayPipeline wantAppearance / seed / appearanceForNewImageModeItem
+- Load restore placement merge
+- Canvas rebind content install
+- Bake preserve placement from sparse store
+- targetHasContentAppearance secondary DTO path
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1983-pipeline-canvas-bake-store-reads-e77da63.bundle HEAD
+```
+Requires tip **1982** (base **e77da63**); includes 1938–1983.
+
+### Next
+- Characterization re-check
+- Remaining getAppearance: resolveStoredAppearance pointer API, setColor dual-write re-read
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1982-more-store-readers-sparse-choke.** More store readers via sessionAppearanceValue.
 Prior: **1981**.
 

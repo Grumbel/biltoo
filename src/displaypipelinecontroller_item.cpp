@@ -50,9 +50,10 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
     // its own session id *after* creation. Applying m_view->hostSessionId().currentIdValue() here
     // would bake the navigated image's crop into every newly decoded tile.
     if (m_view->hostSessionId().hasCurrentId()) {
-        seedSessionAppearanceFromState(m_view->hostSessionId().currentIdValue(), path);
-        if (const WorkspaceItemState *sit = m_view->itemWorld().getAppearance(m_view->hostSessionId().currentIdValue())) {
-            return *sit;
+        const SessionImageId curId = m_view->hostSessionId().currentIdValue();
+        seedSessionAppearanceFromState(curId, path);
+        if (m_view->itemWorld().hasAppearance(curId)) {
+            return m_view->sessionAppearanceValue(curId);
         }
         // Bound session image with no appearance entry = full frame, no path fallback.
         return {};
@@ -257,10 +258,8 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
     if (m_view->itemWorld().hasAppearance(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.
-        if (const WorkspaceItemState *cur = m_view->itemWorld().getAppearance(sid)) {
-            if (SessionAppearance::hasContentAppearance(*cur)) {
-                return;
-            }
+        if (SessionAppearance::hasContentAppearance(m_view->sessionAppearanceValue(sid))) {
+            return;
         }
     }
     WorkspaceItemState seed;
@@ -314,8 +313,8 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         id = m_view->hostSessionId().currentIdValue();
     }
     if (id != kInvalidSessionImageId) {
-        if (const WorkspaceItemState *app = m_view->itemWorld().getAppearance(id)) {
-            want = *app;
+        if (m_view->itemWorld().hasAppearance(id)) {
+            want = m_view->sessionAppearanceValue(id);
         }
         // Cold open / ←→: id slot often empty until first seed. Path XDG holds
         // durable rotate/flip/grade — pull it before materialize or we paint
@@ -325,9 +324,9 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             && !item->path().isEmpty()) {
             const_cast<DisplayPipelineController *>(this)->seedSessionAppearanceFromState(
                 id, item->path());
-            if (const WorkspaceItemState *app = m_view->itemWorld().getAppearance(id)) {
-                want = *app;
-            }
+        if (m_view->itemWorld().hasAppearance(id)) {
+            want = m_view->sessionAppearanceValue(id);
+        }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
         if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(item->path())) {
@@ -483,8 +482,9 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
 
     WorkspaceItemState want;
     if (m_view->hostSessionId().hasCurrentId()) {
-        if (const WorkspaceItemState *st = m_view->itemWorld().getAppearance(m_view->hostSessionId().currentIdValue())) {
-            want = *st;
+        const SessionImageId curId = m_view->hostSessionId().currentIdValue();
+        if (m_view->itemWorld().hasAppearance(curId)) {
+            want = m_view->sessionAppearanceValue(curId);
         }
     }
     const ContentXform::Value wantX = ContentXform::Value::fromState(want);

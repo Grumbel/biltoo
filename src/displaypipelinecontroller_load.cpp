@@ -736,8 +736,8 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     WorkspaceItemState app = state;
     if (state.sessionId != kInvalidSessionImageId) {
         item->setSessionId(state.sessionId);
-        if (const WorkspaceItemState *it = m_view->itemWorld().getAppearance(state.sessionId)) {
-            app = *it;
+        if (m_view->itemWorld().hasAppearance(state.sessionId)) {
+            app = m_view->sessionAppearanceValue(state.sessionId);
             // Keep placement from the snapshot.
             app.pos = state.pos;
             app.scale = state.scale;
