@@ -1572,6 +1572,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2146:** scene clear must not delete stashed Workspace tiles; durable restore fallback.
 
+**biltoo-2147:** Workspace cross-mode restore is durable-only; filmstrip XDG orient on ladder/surface.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

@@ -547,6 +547,9 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                             || qMax(image.width(), image.height()) < decodeSize) {
                             image = bar->makeThumbnail(path, decodeSize);
                         } else {
+                            // Ladder samples are unoriented source — apply XDG
+                            // orient/grade (and unbound crop) like makeThumbnail.
+                            image = bar->applyStoredAppearanceToThumb(path, image);
                             image = bar->prepareThumbnailFromImage(image, decodeSize);
                         }
                         bar = guard.data();
@@ -1284,6 +1287,57 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
     });
 }
 
+
+QImage ThumbnailBar::applyStoredAppearanceToThumb(const QString &path, const QImage &src) const
+{
+    if (src.isNull() || path.isEmpty()) {
+        return src;
+    }
+    // Bound rows: orient + grade only (never path crop — IDENTITY duplicates).
+    // Unbound rows: full stored appearance including crop.
+    bool anySessionId = false;
+    for (SessionImageId id : m_sessionIds) {
+        if (id != kInvalidSessionImageId) {
+            anySessionId = true;
+            break;
+        }
+    }
+    ThumtooCache::StoredContentAppearance stored;
+    if (!ThumtooCache::loadContentAppearance(path, &stored) || stored.isIdentity()) {
+        return src;
+    }
+    WorkspaceItemState st;
+    st.contentHFlip = stored.contentHFlip;
+    st.contentVFlip = stored.contentVFlip;
+    st.contentQuarterTurns = stored.contentQuarterTurns;
+    if (!anySessionId) {
+        st.hasCrop = stored.hasCrop;
+        st.cropRect = stored.cropRect;
+        st.cropSourceSize = stored.cropSourceSize;
+        st.cropRotation = stored.cropRotation;
+    }
+    if (stored.hasGrade) {
+        st.colorAdjust.brightness = stored.gradeBrightness;
+        st.colorAdjust.contrast =
+            stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
+        st.colorAdjust.saturation =
+            stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
+        st.colorAdjust.hue = stored.gradeHue;
+        st.colorAdjust.gamma = stored.gradeGamma <= 0
+            ? 1.0
+            : (stored.gradeGamma / 100.0);
+        st.colorAdjust.invert = stored.gradeInvert;
+    }
+    const bool hasOrient = st.contentHFlip || st.contentVFlip
+        || st.contentQuarterTurns != 0 || !st.colorAdjust.isIdentity()
+        || st.hasCrop;
+    if (!hasOrient) {
+        return src;
+    }
+    return SessionAppearance::applyContentToImage(
+        src, st, SessionAppearance::PixelKind::SoftPreview);
+}
+
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
 {
     // Process-memory only. Soft / classic loadThumbnail encode is removed for
@@ -1295,50 +1349,7 @@ QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize) const
     if (image.isNull()) {
         return {};
     }
-    // XDG path appearance until an id override arrives via sessionAppearanceChanged.
-    // Bound rows: orient / grade only — never path crop (would leak across
-    // duplicates that share a file). Unbound rows: full stored appearance.
-    bool anySessionId = false;
-    for (SessionImageId id : m_sessionIds) {
-        if (id != kInvalidSessionImageId) {
-            anySessionId = true;
-            break;
-        }
-    }
-    ThumtooCache::StoredContentAppearance stored;
-    if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
-        WorkspaceItemState st;
-        st.contentHFlip = stored.contentHFlip;
-        st.contentVFlip = stored.contentVFlip;
-        st.contentQuarterTurns = stored.contentQuarterTurns;
-        if (!anySessionId) {
-            st.hasCrop = stored.hasCrop;
-            st.cropRect = stored.cropRect;
-            st.cropSourceSize = stored.cropSourceSize;
-            st.cropRotation = stored.cropRotation;
-        }
-        if (stored.hasGrade) {
-            st.colorAdjust.brightness = stored.gradeBrightness;
-            st.colorAdjust.contrast =
-                stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
-            st.colorAdjust.saturation =
-                stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
-            st.colorAdjust.hue = stored.gradeHue;
-            st.colorAdjust.gamma = stored.gradeGamma <= 0
-                ? 1.0
-                : (stored.gradeGamma / 100.0);
-            st.colorAdjust.invert = stored.gradeInvert;
-        }
-        const bool orientOnly = anySessionId
-            && !st.hasCrop
-            && (st.contentHFlip || st.contentVFlip || st.contentQuarterTurns != 0
-                || !st.colorAdjust.isIdentity());
-        const bool fullUnbound = !anySessionId && !stored.isIdentity();
-        if (orientOnly || fullUnbound) {
-            image = SessionAppearance::applyContentToImage(
-                image, st, SessionAppearance::PixelKind::SoftPreview);
-        }
-    }
+    image = applyStoredAppearanceToThumb(path, image);
     return prepareThumbnailFromImage(image, maxSize);
 }
 
@@ -1844,7 +1855,8 @@ void ThumbnailBar::filmstripSurfaceTick()
         if (act.type == AT::AttachSoft || act.type == AT::AttachFull) {
             const QImage host = ImageCache::get(path);
             if (!host.isNull()) {
-                const QImage thumb = prepareThumbnailFromImage(host, decodeSize);
+                QImage oriented = applyStoredAppearanceToThumb(path, host);
+                const QImage thumb = prepareThumbnailFromImage(oriented, decodeSize);
                 if (!thumb.isNull()) {
                     const int newShown = qMax(thumb.width(), thumb.height());
                     if (newShown > shown) {

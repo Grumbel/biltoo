@@ -387,41 +387,38 @@ void WorkspaceController::enter(int previousMode)
     m_view->setActiveMode(ImageView::ViewMode::Workspace, LayoutMode::FreeForm);
     m_view->applyToolDragMode();
     bool keepViewTransform = false;
-    if ((previous == ImageView::ViewMode::Image
-         || previous == ImageView::ViewMode::Gallery)
-        && !m_stashedItems.isEmpty()) {
-        // Fast path: reattach live items (no re-decode). Covers Workspace→Image
-        // and Workspace→Gallery→Workspace (enterGallery also stashes; must not
-        // discardStash on Gallery enter).
+
+    // Cross-mode return (Image/Gallery → Workspace): durable m_savedItems is the
+    // source of truth. Pointer stash can be invalidated by scene teardown in
+    // Image enter (clearSceneKeepingStashes / clearLiveCanvas); reattaching
+    // dangling ImageItem* produced an empty canvas. Always rebuild from the
+    // snapshot taken in onLeave (while tiles were still live).
+    if (previous == ImageView::ViewMode::Image
+        || previous == ImageView::ViewMode::Gallery) {
+        discardStash(); // free any stashed tiles; do not reattach pointers
+        if (!m_savedItems.isEmpty()) {
+            const bool hadSavedView = m_hasSavedView;
+            restore();
+            keepViewTransform = hadSavedView;
+        } else {
+            m_view->clearLiveCanvas();
+            m_view->hostGallery().invalidateDecodes();
+            m_view->pathOrderClear();
+            m_view->applyModeFlagsToLiveItems();
+        }
+    } else if (!m_stashedItems.isEmpty()) {
+        // Same-mode edge path only.
         restoreStashedItems();
-        keepViewTransform = true; // stashed view includes user zoom
+        keepViewTransform = true;
     } else if (!m_savedItems.isEmpty()) {
-        // Durable snapshot — permanent Workspace across Gallery↔Workspace and
-        // when the Image-mode stash was discarded. Never adopt Gallery packing
-        // as the free-form canvas (that silently overwrote user arrangement).
         const bool hadSavedView = m_hasSavedView;
         restore();
         keepViewTransform = hadSavedView;
     } else {
-        // Empty permanent Workspace. Never adopt whatever Image/Gallery is
-        // currently showing — only filmstrip drop / project load / explicit place
-        // load places tiles. (Previously only Gallery was cleared; Image→
-        // Workspace left the classic single tile on the free-form canvas.)
         m_view->clearLiveCanvas();
-        // Drop gallery pathOrder / in-flight LoadAdd so background Gallery
-        // decodes cannot recreate session tiles on this blank canvas.
         m_view->hostGallery().invalidateDecodes();
         m_view->pathOrderClear();
         m_view->applyModeFlagsToLiveItems();
-    }
-    // If the live stash was destroyed (dangling after scene clear) but the
-    // durable snapshot survived, rebuild from m_savedItems.
-    if (m_view->liveItems().isEmpty() && !m_savedItems.isEmpty()) {
-        const bool hadSavedView = m_hasSavedView;
-        restore();
-        if (hadSavedView) {
-            keepViewTransform = true;
-        }
     }
     // Always clear canvas selection on enter — restored stash may keep old
     // selected flags, which MainWindow would mirror onto every filmstrip row.

@@ -2,6 +2,42 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2147-workspace-durable-filmstrip-orient.** Durable Workspace restore; filmstrip orient on all install paths.
+Prior: **2146**.
+
+### Workspace (still broken for user after 2145–2146)
+Pointer-stash reattach is abandoned for Image/Gallery → Workspace. `onLeave`
+still snapshots to `m_savedItems` while tiles are live; `enter` always
+`discardStash()` + `restore()` from that durable list (LoadRestore rebuild).
+Live `ImageItem*` stash is only for same-mode edge cases — scene teardown was
+leaving dangling pointers and an empty canvas.
+
+### Filmstrip orient
+Ladder samples and DisplaySurface host attaches were calling
+`prepareThumbnailFromImage` on **unoriented** source. Shared helper
+`applyStoredAppearanceToThumb` applies XDG orient/grade (bound) or full
+appearance (unbound); used by `makeThumbnail`, ladderReady, and surface attach.
+
+### Dropped from TODO
+"Opacity / HiDPI polish" was an undefined backlog note — not a tracked bug.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2147-workspace-durable-filmstrip-orient-e77da63.bundle HEAD
+```
+Requires tip **2146** (base **e77da63**); includes 1938–2147.
+
+### Next (runtime QA only)
+- Workspace → Image → Workspace (tiles + poses)
+- Workspace → Gallery → Workspace
+- Cold open: filmstrip shows content-rotated images from XDG
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2146-workspace-stash-scene-clear.** Harden Workspace stash against scene clear.
 Prior: **2145**.
 

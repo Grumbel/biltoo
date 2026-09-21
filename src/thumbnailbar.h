@@ -261,6 +261,8 @@ private:
     int labelBandHeight() const;
     int thumbSizeFromBarExtent(int extent) const;
     QImage makeThumbnail(const QString &path, int maxSize) const;
+    /** Apply durable XDG orient/grade (bound) or full appearance (unbound). */
+    QImage applyStoredAppearanceToThumb(const QString &path, const QImage &src) const;
     QImage prepareThumbnailFromImage(const QImage &image, int maxSize) const;
     /**
      * Filmstrip sharpness: LQIP is cache-only; PreferCache only when durable
