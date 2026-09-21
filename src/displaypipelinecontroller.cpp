@@ -1075,9 +1075,9 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
                 }
                 m_view->clearLiveContentMeta(item);
                 m_view->syncLiveColorFromState(item, ColorAdjustments{});
-                // Intrinsic from size memo/probe when known; else provisional.
-                // Paint draws a sized placeholder until LQIP (cache-only) or tiles.
-                const QSize sz = m_view->layoutSizeForPath(path, QImage());
+                // Content layout (ItemWorld / XDG orient), not file-native alone.
+                const SessionImageId sid = m_view->hostSessionId().currentIdValue();
+                const QSize sz = m_view->contentLayoutSize(path, sid);
                 if (isPositiveSize(sz)) {
                     item->setIntrinsicSize(sz);
                     m_view->syncImageModeSceneRect(item);
@@ -1106,8 +1106,9 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         // Do NOT call prepareImageModeCanvas here — that resets sceneRect to
         // empty after the item exists and leaves Image mode looking blank until
         // a later soft install (or forever if soft/LQIP never arrives).
-        const QSize sz = m_view->layoutSizeForPath(path, QImage());
-        ImageItem *item = createPlaceholderItem(path, sz);
+        const SessionImageId sid = m_view->hostSessionId().currentIdValue();
+        const QSize sz = m_view->contentLayoutSize(path, sid);
+        ImageItem *item = createPlaceholderItem(path, isPositiveSize(sz) ? sz : QSize(1, 1));
         if (item) {
             bindImageModeSessionCursor(item);
             resetImageModeItemPlacement(item);
@@ -1129,8 +1130,9 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         return;
     }
 
-    // Layout size = native when known; else preview aspect.
-    const QSize sz = m_view->layoutSizeForPath(path, pixels);
+    // Content layout size (ItemWorld); soft sample never defines geometry.
+    const SessionImageId layoutSid = m_view->hostSessionId().currentIdValue();
+    const QSize sz = m_view->contentLayoutSize(path, layoutSid);
 
     // Fast path: reuse the single Image-mode item.
     // Do NOT m_view->setUpdatesEnabled(false) — that defers soft paint until after the
@@ -1229,7 +1231,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         m_view->captureStickyPanAnchor(m_view->liveItems().first());
     }
     m_view->clearLiveCanvas();
-    item = createPlaceholderItem(path, sz);
+    item = createPlaceholderItem(path, isPositiveSize(sz) ? sz : QSize(1, 1));
     if (!item) {
         m_view->setUpdatesEnabled(true);
         return;

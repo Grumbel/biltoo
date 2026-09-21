@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2171-layout-audit.** Double-check of layout ground truth; closed gaps.
+
+### Audit results
+
+**Correct native→layout (OK):**
+- createItemFromImage, Duplicate, applyProbedImageSize, tileNativeSize (rejects oriented)
+- Live install via applyContentLayoutSize
+
+**Gaps fixed in 2171:**
+1. `contentLayoutSize` — bound SessionImageId with empty ItemWorld ignored XDG orient
+2. Image `pendingTile` three sites still used native-only `layoutSizeForPath`
+3. Filmstrip provider now calls `contentLayoutSize` (one API)
+
+**Remaining layoutSizeForPath** — only as intentional **native** input before
+ContentXform::layoutSize (selection, size_book, createItemFromImage).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2171-layout-audit-e77da63.bundle HEAD
+```
+
+Next: **2172**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2170-content-layout-size.** Gallery/Image/Workspace placeholders
 use ItemWorld content layout (same ground truth as filmstrip 2169).
 

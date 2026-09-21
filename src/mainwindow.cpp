@@ -188,19 +188,8 @@ MainWindow::MainWindow(QWidget *parent)
                 if (!m_imageView || path.isEmpty()) {
                     return {};
                 }
-                QSize native = m_imageView->logicalSizeForPath(path);
-                if (native.width() < 1 || native.height() < 1) {
-                    native = ThumtooCache::cachedSize(path);
-                }
-                if (native.width() < 1 || native.height() < 1) {
-                    return {};
-                }
-                WorkspaceItemState want;
-                if (sid != kInvalidSessionImageId
-                    && m_imageView->hasSessionAppearance(sid)) {
-                    want = m_imageView->sessionAppearanceValue(sid);
-                }
-                return ContentXform::layoutSize(native, want);
+                // Same API as Gallery/Workspace/Image placeholders.
+                return m_imageView->contentLayoutSize(path, sid);
             });
         // Image-mode ←/→: reuse filmstrip Soft (and ImageCache) instead of LQIP
         // when the strip already decoded the path.

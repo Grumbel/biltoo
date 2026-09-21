@@ -131,6 +131,23 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
             want = *st;
         }
     }
+    // Bound session with empty ItemWorld: still apply durable XDG *orient/flip*
+    // for layout (IDENTITY: path crop must not layout bound rows). Matches
+    // wantAppearanceForItem seed path so cold open is not unoriented boxes.
+    if (!SessionAppearance::hasContentAppearance(want) && !path.isEmpty()) {
+        ThumtooCache::StoredContentAppearance stored;
+        if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
+            want.contentHFlip = stored.contentHFlip;
+            want.contentVFlip = stored.contentVFlip;
+            want.contentQuarterTurns = stored.contentQuarterTurns;
+            if (sessionId == kInvalidSessionImageId) {
+                want.hasCrop = stored.hasCrop;
+                want.cropRect = stored.cropRect;
+                want.cropSourceSize = stored.cropSourceSize;
+                want.cropRotation = stored.cropRotation;
+            }
+        }
+    }
     const QSize lay = ContentXform::layoutSize(native, want);
     if (lay.width() > 1 && lay.height() > 1) {
         return lay;
