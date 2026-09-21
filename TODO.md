@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2000-rebind-id-index-hash.** rebindWorkspaceSession: O(1) id→index; path-mismatch clear.
+Prior: **1999**.
+
+### Change
+`ImageView::rebindWorkspaceSession`:
+- Build `QHash<SessionImageId,int>` from the session id list (document order)
+- Bound tiles refresh `sessionIndex` from that map (cache is a mirror only)
+- Path mismatch for a bound id: clear list-order cache + critical log (no longer
+  treated as “id not in list”)
+- Legacy unbound path still validates `sessionIndex` against list paths
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2000-rebind-id-index-hash-e77da63.bundle HEAD
+```
+Requires tip **1999** (base **e77da63**); includes 1938–2000.
+
+### Next
+- Optional: Stage 4 dual-write reduction
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1999-sessionIndex-cache-from-document.** Stamp list-order cache from sessionListIndex on restore/bind.
 Prior: **1998**.
 

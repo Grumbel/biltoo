@@ -386,49 +386,65 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
 
     QSet<int> usedIndex;
     QSet<SessionImageId> usedId;
+    // Document order for bound ids — O(1) lookup (sessionIndex cache is only a mirror).
+    QHash<SessionImageId, int> idToIndex;
+    const int n = qMin(sessionFiles.size(), sessionIds.size());
+    for (int i = 0; i < n; ++i) {
+        const SessionImageId id = sessionIds.at(i);
+        if (id != kInvalidSessionImageId) {
+            idToIndex.insert(id, i);
+        }
+    }
 
-    // 1) Prefer stable id: refresh list-order cache (sessionIndex) from id position.
+    // 1) Prefer stable id: refresh list-order cache from document position.
     for (ImageItem *item : m_items) {
         if (!item) {
             continue;
         }
         const SessionImageId sid = item->sessionId();
         if (sid != kInvalidSessionImageId) {
-            int found = -1;
-            for (int i = 0; i < sessionIds.size() && i < sessionFiles.size(); ++i) {
-                if (sessionIds.at(i) == sid) {
-                    found = i;
-                    break;
-                }
-            }
-            if (found >= 0 && sessionFiles.at(found) == item->path()) {
-                // One SessionImageId → at most one live tile. A second claim is
-                // corruption (drop bindSelectedSessionIds fan-out); unbind so a
-                // new session row can be allocated instead of sharing crop/state.
-                if (usedId.contains(sid)) {
-                    qCritical("rebindWorkspaceSession: demoting duplicate live SessionImageId %lld path=%s",
-                              static_cast<long long>(sid), qPrintable(item->path()));
-                    item->setSessionId(kInvalidSessionImageId);
-                    item->setSessionIndex(-1);
-                    continue;
-                }
-                item->setSessionIndex(found);
-                usedIndex.insert(found);
-                usedId.insert(sid);
+            const int found = idToIndex.value(sid, -1);
+            if (found < 0) {
+                // Id not in current session list — unbound from list order.
+                item->setSessionIndex(-1);
                 continue;
             }
-            // Id not in current session list — unbound from list order.
-            item->setSessionIndex(-1);
+            if (sessionFiles.at(found) != item->path()) {
+                // Id maps to a different path than this tile — do not trust cache.
+                qCritical("rebindWorkspaceSession: SessionImageId %lld path mismatch "
+                          "(list=%s tile=%s) — clearing list-order cache",
+                          static_cast<long long>(sid),
+                          qPrintable(sessionFiles.at(found)),
+                          qPrintable(item->path()));
+                item->setSessionIndex(-1);
+                continue;
+            }
+            // One SessionImageId → at most one live tile. A second claim is
+            // corruption (drop bindSelectedSessionIds fan-out); unbind so a
+            // new session row can be allocated instead of sharing crop/state.
+            if (usedId.contains(sid)) {
+                qCritical("rebindWorkspaceSession: demoting duplicate live SessionImageId %lld path=%s",
+                          static_cast<long long>(sid), qPrintable(item->path()));
+                item->setSessionId(kInvalidSessionImageId);
+                item->setSessionIndex(-1);
+                continue;
+            }
+            item->setSessionIndex(found);
+            usedIndex.insert(found);
+            usedId.insert(sid);
             continue;
         }
-        // No id yet — validate legacy index.
+        // No id yet — validate legacy index against list path.
         const int si = item->sessionIndex();
         if (si >= 0 && si < sessionFiles.size()
             && sessionFiles.at(si) == item->path() && !usedIndex.contains(si)) {
             usedIndex.insert(si);
             if (si < sessionIds.size()) {
-                item->setSessionId(sessionIds.at(si));
-                usedId.insert(sessionIds.at(si));
+                const SessionImageId listId = sessionIds.at(si);
+                if (listId != kInvalidSessionImageId) {
+                    item->setSessionId(listId);
+                    usedId.insert(listId);
+                }
             }
         } else {
             item->setSessionIndex(-1);
