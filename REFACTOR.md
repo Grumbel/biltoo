@@ -1493,6 +1493,8 @@ Phase 1–6 rules still apply. Additions:
   PNG SoftPreview, no async wait); ViewFraming defaults on offscreen construct.
 - biltoo-2097: Phase 6 Tier 4 residual — ViewTransform pure fit/pad; harness
   prepareImageModeCanvas + fitItem framing scale asserts.
+- biltoo-2098: Phase 6 Tier 4 residual — sticky pan capture/restore + preserved
+  view scale characterization after fitItem.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

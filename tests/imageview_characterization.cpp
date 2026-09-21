@@ -512,6 +512,14 @@ void ImageViewCharacterizationTest::viewFraming_stickyPanNorms()
     QVERIFY(f.stickyPanNormPoint().x() <= 1.0);
     QVERIFY(f.stickyPanNormPoint().y() >= 0.0);
     QVERIFY(f.stickyPanNormPoint().y() <= 1.0);
+
+    f.clearStickyPan();
+    QVERIFY(!f.hasStickyPan());
+    f.setPreservedViewScale(1.75);
+    QVERIFY(f.hasPreservedViewScale());
+    QCOMPARE(f.currentPreservedViewScale(), 1.75);
+    f.clearPreservedViewScale();
+    QVERIFY(!f.hasPreservedViewScale());
 }
 
 /** Phase 6 Tier 4 residual: pure ViewTransform fit scale and padded bounds. */
@@ -638,8 +646,20 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
 
         // fitItem uses view matrix for framing (DOMAIN); scale > 0 after fit.
         view.fitItem(focusItem, Qt::KeepAspectRatio);
-        QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
+        const qreal fitScale = ViewTransform::scaleFrom(view.transform());
+        QVERIFY(fitScale > 0.0);
         QVERIFY(view.hostFraming().isFitMode());
+
+        // Sticky pan / preserved scale capture after framing (return-to-Image path).
+        view.captureStickyPanAnchor(focusItem);
+        QVERIFY(view.hostFraming().hasPreservedViewScale()
+                || view.hostFraming().hasStickyPan());
+        if (view.hostFraming().hasPreservedViewScale()) {
+            QCOMPARE(view.hostFraming().currentPreservedViewScale(), fitScale);
+        }
+        // restore must not crash; centres on captured pan when available.
+        view.restoreStickyPanAnchor(focusItem);
+        QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
     }
 
     // Mode-leave style clear: pack blank; all id-keyed components intact.

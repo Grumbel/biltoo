@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2098-sticky-pan-capture-characterization.** Phase 6 Tier 4 residual: sticky pan capture/restore + preserved scale.
+Prior: **2097**.
+
+### Change
+- Pure ViewFraming: preserved view scale set/clear
+- ImageView harness: captureStickyPanAnchor after fitItem; preserved scale
+  matches fit scale when finite; restoreStickyPanAnchor safe
+- Checklist updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2098-sticky-pan-capture-characterization-e77da63.bundle HEAD
+```
+Requires tip **2097** (base **e77da63**); includes 1938–2098.
+
+### Next
+- Phase 6 Tier 4: full async decode / PreferCache ladder (optional)
+- Phase 6 Tier 4: full return-to-Image navigate across session ids (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2097-framing-viewtransform-characterization.** Phase 6 Tier 4 residual: ViewTransform pure + live fitItem framing.
 Prior: **2096**.
 
