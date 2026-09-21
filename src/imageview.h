@@ -621,12 +621,16 @@ signals:
     /** Crop mode toggled on/off (toolbar checkable state). */
     void cropModeChanged(bool active);
     void attentionModeChanged(bool active);
-    /** Session crop committed; @p image is the new displayed pixels for @p path. */
-    void sessionCropApplied(const QString &path, const QImage &image);
+    /**
+     * Session crop committed for filmstrip (id-keyed; never path-only).
+     * @p image is the new displayed pixels; @p hasCrop marks sticky crop bake.
+     */
     void sessionCropApplied(SessionImageId sessionId, const QString &path, const QImage &image,
                            bool hasCrop);
-    /** Flip / rotate / crop appearance for filmstrip (may include baked transforms). */
-    void sessionAppearanceChanged(const QString &path, const QImage &image);
+    /**
+     * Flip / rotate / grade appearance for filmstrip (id-keyed; never path-only).
+     * Path is informational; ThumbnailBar overrides by SessionImageId.
+     */
     void sessionAppearanceChanged(SessionImageId sessionId, const QString &path, const QImage &image);
     /**
      * Gallery layout: user clicked an item to open it in Image mode.

@@ -113,18 +113,21 @@ unbound and edits will not propagate correctly in Workspace).
    edits on unbound tiles **do not** write `m_sessionAppearance` and **do not**
    sync (by design after 024). Ensure every placement path assigns an id.
 
-2. **Open-by-path still exists**  
-   `galleryItemOpenRequested(path)`, `showPathInImageMode`, `indexOf(path)` resolve
-   the **first** session row with that path. Prefer id or explicit index when
-   duplicates exist. Gallery open should eventually pass session id.
+2. **Open-by-path still exists (fallback only)**  
+   Gallery open / double-click prefer `sessionImageOpenRequested(id)` then
+   `sessionSlotOpenRequested(index)`; path-only is unbound fallback.
+   `showPathInImageMode` prefers live preferred item + session id. Remaining:
+   some MainWindow session rebuild paths still use `paths().indexOf` (first match).
 
-3. **`m_itemStates[path]` still written**  
-   Last-writer cache for legacy. Any code that **reads** path map for appearance
-   on a **bound** id will mis-handle duplicates. Audit remaining readers.
+3. **Path map (`PathItemStateBook`) — write/read hygiene largely in place**  
+   Bound content is stripped on `setPathState` (IDENTITY 2069–2071).
+   `resolveStoredAppearance` / `wantAppearanceForItem` never fall back to path
+   map for bound ids. Residual: unbound-only path map still written for
+   placement/content on unbound tiles.
 
-4. **Filmstrip path-only override signal**  
-   3-arg id signals exist; path-only emits may still update all rows with that
-   path if anything connects the old overload.
+4. **Filmstrip path-only override signal — fixed (biltoo-2104)**  
+   Path-only `sessionAppearanceChanged` / `sessionCropApplied` overloads removed;
+   only id-keyed signals remain (MainWindow already connected the id overloads).
 
 5. **Session undo remove/restore** — **fixed**  
    `SessionEntrySnapshot` stores `SessionImageId` + appearance; undo

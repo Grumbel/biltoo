@@ -1506,6 +1506,8 @@ Phase 1–6 rules still apply. Additions:
   characterization harness status + pack-order policy wording.
 - biltoo-2103: Stage 2 residual — itemLiveColor prefers ItemWorld liveColorLag
   when bound (complete 2091 host read path).
+- biltoo-2104: SESSION residual — drop path-only filmstrip sessionAppearanceChanged
+  / sessionCropApplied overloads (id-keyed only).
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

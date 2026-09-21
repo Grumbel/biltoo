@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2104-drop-path-only-filmstrip-signals.** SESSION residual: drop path-only filmstrip appearance signals.
+Prior: **2103**.
+
+### Change
+- Remove path-only `sessionAppearanceChanged(path, image)` and
+  `sessionCropApplied(path, image)` overloads (no emitters; id-keyed only)
+- SESSION.md residual #2–#4 status updated
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2104-drop-path-only-filmstrip-signals-e77da63.bundle HEAD
+```
+Requires tip **2103** (base **e77da63**); includes 1938–2104.
+
+### Next
+- SESSION residual: MainWindow paths().indexOf first-match; unbound tile assignment
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2103-itemLiveColor-prefer-liveColorLag.** Stage 2 residual: itemLiveColor prefers ItemWorld liveColorLag.
 Prior: **2102**.
 
