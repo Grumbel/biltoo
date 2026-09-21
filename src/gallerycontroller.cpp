@@ -251,12 +251,14 @@ void GalleryController::onLeave(int nextMode)
     } else {
         m_haveScroll = false;
         m_haveViewCenter = false;
-        // Gallery → Workspace / leave: cancel decode-window jobs AND remove
-        // packed live tiles. Leaving them caused drops to "move" grid tiles
-        // (same SessionImageId) or keep gallery scale/cell size on the
-        // free-form canvas.
+        // Gallery → Workspace / other: cancel decode jobs, then *stash* packed
+        // tiles (do not destroy). Destroying left return-to-Gallery depending
+        // only on populate/decode; soft samples were gone and session images
+        // looked "removed" until a full rebuild. Stash keeps pixels for
+        // restore + Image soft seeding. Live list is emptied by stashItems so
+        // Workspace cannot "move" grid tiles by SessionImageId.
         m_view->hostGallery().invalidateDecodes();
-        m_view->clearLiveCanvas();
+        stashItems();
         m_view->pathOrderClear();
     }
 }

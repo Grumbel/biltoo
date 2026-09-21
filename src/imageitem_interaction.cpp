@@ -931,8 +931,12 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         const bool tilesLive = tilesWanted && tileLodActive();
         const bool tilesFullyCover =
             tilesWanted && tileLodViewportCovered();
-        // LQIP base until exact target coverage; keep under live coarse tiles too.
-        const bool drawLqipBase = !tilesFullyCover;
+        // LQIP/soft base until exact target coverage. Interactive Workspace
+        // tiles always keep soft under the grid: coverage can report true
+        // with an empty plan after zoom on rotated items, which blanked the
+        // tile with no soft and no tile paint.
+        const bool drawLqipBase = !tilesFullyCover
+            || (m_interactive && hasDisplayPixels());
         // Live tiles must not sit under a frozen ItemCoordinateCache pixmap.
         if (tilesLive && cacheMode() != QGraphicsItem::NoCache) {
             setCacheMode(QGraphicsItem::NoCache);

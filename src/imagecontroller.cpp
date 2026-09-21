@@ -42,6 +42,30 @@ void ImageController::enter()
     // scheduleReplaceLoad alone + Image-mode classic decode (probe/tiles only)
     // left Workspace→Image blank when ImageCache had no soft sample.
     const QString path = classicPath();
+    // Seed ImageCache from mode stashes *before* clearing the live list path
+    // is already empty (onLeave stashed). Soft often lives only on stashed
+    // tiles (especially content-oriented Workspace soft) and is not in
+    // ImageCache — without this, installImageModePendingTile stays blank.
+    if (!path.isEmpty()) {
+        auto seedFrom = [&](const QList<ImageItem *> &stash) {
+            for (ImageItem *cand : stash) {
+                if (!cand || !cand->hasDisplayPixels()) {
+                    continue;
+                }
+                const bool pathMatch = (cand->path() == path);
+                const bool idMatch = m_view->hostSessionId().hasCurrentId()
+                    && cand->sessionId() == m_view->hostSessionId().currentIdValue();
+                if (pathMatch || idMatch) {
+                    ImageCache::put(path, cand->displayImage());
+                    return true;
+                }
+            }
+            return false;
+        };
+        if (!seedFrom(m_view->hostWorkspace().stashedItems())) {
+            seedFrom(m_view->hostGallery().stashedItems());
+        }
+    }
     // Clear live canvas only — do not discard stashes.
     m_view->clearLiveCanvas();
     m_view->hostDisplayPipeline().loadGate().clearPending();

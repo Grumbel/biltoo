@@ -2,6 +2,51 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2153-image-soft-gallery-stash-zoom.** Confirmed root causes for three bugs.
+Prior: **2152**.
+
+### Empty ImageView from Workspace (rotated)
+`tryStashSoft` required `applied == store want`. Content-oriented Workspace soft
+was **skipped** when the ItemWorld slot was still empty. Soft was not in
+ImageCache either (tiles-only path).
+
+**Fix:** same SessionImageId → always accept stash soft as underlay; Image enter
+seeds `ImageCache` from Workspace/Gallery stash before `loadImage`.
+
+### Workspace tiles vanish on zoom (rotated)
+Interactive paint treated `tileLodViewportCovered()` as licence to drop soft
+underlay. Coverage can be true with an empty/failed plan after zoom on rotated
+items → blank. Tile visSource could also go empty under orient.
+
+**Fix:** interactive items always keep soft under the tile grid; visSource falls
+back to full native when map is empty.
+
+### Gallery images “disappear” when added to Workspace
+Gallery → Workspace **destroyed** packed tiles (`clearLiveCanvas`) instead of
+stashing. Return to Gallery depended on a cold populate/decode with no soft
+left — session images looked gone until rebuild finished (or failed).
+
+**Fix:** Gallery leave to non-Image **stashes** tiles (live emptied by stash so
+Workspace cannot move grid cells by id). `populateGalleryCanvas` still rebuilds
+the full session.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2153-image-soft-gallery-stash-zoom-e77da63.bundle HEAD
+```
+Requires tip **2152** (base **e77da63**); includes 1938–2153.
+
+### Next (runtime QA)
+- Workspace double-click (including rotated) → Image shows pixels
+- Workspace zoom on rotated tiles → tiles stay visible
+- Gallery → Workspace (place tiles) → Gallery again shows full session
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2152-root-stash-layoutsize-zoom.** Root causes (no aspect heuristic).
 Prior: **2151**.
 

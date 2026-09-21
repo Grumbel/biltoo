@@ -507,14 +507,19 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
             const bool sameId = (m_view->hostSessionId().hasCurrentId()
                                  && cand->sessionId() == m_view->hostSessionId().currentIdValue());
             const bool hasApplied = m_view->itemHasAppliedContentXform(cand);
-            const ContentXform::Value applied = m_view->itemAppliedContentXform(cand);
-            if (sameId && hasApplied && ContentXform::equal(applied, wantX)) {
+            // Same session row: always usable as Image underlay. Requiring
+            // applied == store want rejected content-oriented soft when the
+            // store slot was still empty (Workspace→Image blank for rotated).
+            if (sameId) {
                 if (displayReadyOut) {
-                    *displayReadyOut = true;
+                    *displayReadyOut = hasApplied;
                 }
                 return px;
             }
-            if (!hasApplied || ContentXform::equal(applied, ContentXform::Value{})) {
+            // Path-only: host-raw only (avoid double-bake of another id's crop).
+            if (!hasApplied
+                || ContentXform::equal(m_view->itemAppliedContentXform(cand),
+                                       ContentXform::Value{})) {
                 return px;
             }
         }

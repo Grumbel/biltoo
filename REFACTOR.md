@@ -1584,6 +1584,8 @@ helpers); MainWindow SortMode aliases SessionSort::Mode.
 
 **biltoo-2152:** Filmstrip ContentXform::layoutSize; Image soft from Workspace stash; zoom sceneRect/tile plan.
 
+**biltoo-2153:** Image soft seed from stash; Gallery leave stashes; Workspace soft under tiles on zoom.
+
 ### ImageItem demotion status (through biltoo-2093)
 
 **ImageItem is a render / hit-test proxy.** Durable content and list identity live

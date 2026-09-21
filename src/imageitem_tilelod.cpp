@@ -334,8 +334,12 @@ void ImageItem::prepareTileLodPlan()
     const ContentXform::Value x = liveContentXformForPaint();
     QRectF visSource = ContentXform::mapDisplayRectToSource(visDisplay, native, x);
     if (visSource.isEmpty()) {
-        // Identity xform: display == source when layout matches native.
+        // Identity or failed map: fall back to display, then full native.
         visSource = visDisplay;
+    }
+    if (visSource.isEmpty()
+        || visSource.width() < 1.0 || visSource.height() < 1.0) {
+        visSource = QRectF(0, 0, native.width(), native.height());
     }
     // Skip set_viewport when density and visible region are unchanged — paint
     // runs this every frame while tiles stream in; replanning is pure waste.
