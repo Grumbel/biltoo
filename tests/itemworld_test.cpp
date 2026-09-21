@@ -37,6 +37,7 @@ private slots:
     // Stage 2: Placement ↔ WorkspaceItemState bridge
     void placementFromState_roundTrip();
     void applyPlacementToState_preservesNonPose();
+    void sparseWrite_stampsSessionIdOnDto();
 };
 
 
@@ -68,8 +69,10 @@ void ItemWorldTest::appearance_roundTripById()
     QVERIFY(world.hasAppearance(11));
     const WorkspaceItemState got = world.appearanceValue(11);
     QVERIFY(got.hasCrop);
+    QCOMPARE(got.sessionId, SessionImageId(11));
     QCOMPARE(got.cropRect, QRect(2, 4, 60, 40));
     QCOMPARE(store.get(11)->cropRect, QRect(2, 4, 60, 40));
+    QCOMPARE(store.get(11)->sessionId, SessionImageId(11));
 
     world.removeAppearance(11);
     QVERIFY(!store.contains(11));
@@ -475,4 +478,27 @@ void ItemWorldTest::applyPlacementToState_preservesNonPose()
 }
 
 QTEST_MAIN(ItemWorldTest)
+
+void ItemWorldTest::sparseWrite_stampsSessionIdOnDto()
+{
+    SessionAppearanceStore store;
+    ItemWorld world;
+    world.bindAppearance(&store);
+
+    ItemComponents::Color c;
+    c.grade.brightness = 10;
+    world.setColor(42, c);
+
+    QVERIFY(world.hasAppearance(42));
+    QCOMPARE(store.get(42)->sessionId, SessionImageId(42));
+    QCOMPARE(world.appearanceValue(42).sessionId, SessionImageId(42));
+    QVERIFY(world.hasColor(42));
+
+    ItemComponents::Placement pl;
+    pl.pos = QPointF(10, 20);
+    world.setPlacement(42, pl);
+    QCOMPARE(world.appearanceValue(42).sessionId, SessionImageId(42));
+    QCOMPARE(world.appearanceValue(42).pos, QPointF(10, 20));
+}
+
 #include "itemworld_test.moc"

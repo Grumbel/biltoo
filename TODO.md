@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2008-appearanceValue-sessionId.** Read/write paths always surface sessionId on fat DTO.
+Prior: **2007**.
+
+### Change
+- `appearanceValue(id)`: always set `s.sessionId = id` (sparse-only or dual-write)
+- `setAppearance(id, state)`: stamp `sessionId` on the stored DTO even if the caller omitted it
+- Tests: round-trip asserts sessionId; `sparseWrite_stampsSessionIdOnDto` covers setColor/setPlacement
+
+Pairs with 2007 (`dtoForWrite` on sparse setters).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2008-appearanceValue-sessionId-e77da63.bundle HEAD
+```
+Requires tip **2007** (base **e77da63**); includes 1938–2008.
+
+### Next
+- Stage 4 project-format migration (design)
+- Full build + characterization (+ itemworld_test)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2007-dtoForWrite-sessionId.** Sparse dual-write always stamps sessionId on fat DTO.
 Prior: **2006**.
 

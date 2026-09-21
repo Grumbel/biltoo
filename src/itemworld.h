@@ -91,12 +91,15 @@ public:
      */
     WorkspaceItemState appearanceValue(SessionImageId id) const
     {
+        if (id == kInvalidSessionImageId) {
+            return {};
+        }
         WorkspaceItemState s;
         if (const WorkspaceItemState *p = getAppearance(id)) {
             s = *p;
-        } else if (id == kInvalidSessionImageId) {
-            return {};
         }
+        // Always surface the lookup key (sparse-only or partial dual-write).
+        s.sessionId = id;
         // Sparse tables win when a partial component write ran without a full
         // setAppearance refresh of every fat field.
         if (hasCrop(id)) {
@@ -129,8 +132,10 @@ public:
         if (!m_appearance || id == kInvalidSessionImageId) {
             return;
         }
-        m_appearance->set(id, state);
-        syncComponentsFromState(id, state);
+        WorkspaceItemState s = state;
+        s.sessionId = id;
+        m_appearance->set(id, s);
+        syncComponentsFromState(id, s);
     }
 
     void removeAppearance(SessionImageId id)
