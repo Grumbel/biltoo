@@ -243,7 +243,7 @@ void ImageView::rememberItemState(ImageItem *item)
     if (item->sessionId() != kInvalidSessionImageId) {
         WorkspaceItemState slot = captureState(item);
         slot.sessionId = item->sessionId();
-        slot.sessionIndex = item->sessionIndex();
+        // captureState already set sessionIndex via sessionListIndex (document).
         slot.path = item->path();
         // setAppearance dual-writes sparse tables (Crop/ContentBake/Color/Placement).
         m_itemWorld.setAppearance(item->sessionId(), slot);
@@ -448,7 +448,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         }
         WorkspaceItemState slot = captureState(item);
         slot.sessionId = sid;
-        slot.sessionIndex = item->sessionIndex();
+        // sessionIndex from captureState / sessionListIndex — do not restamp cache.
         slot.path = item->path();
         // captureState prefers applied ContentXform when present (mid-edit
         // authority; full-circle identity stays zero).

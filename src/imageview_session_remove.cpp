@@ -208,7 +208,8 @@ void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
         // Content/color already from captureState or pending; do not overwrite
         // ItemWorld authority with a second live dig.
         slot.sessionId = id;
-        slot.sessionIndex = item->sessionIndex();
+        // Document list order (not the deprecated ImageItem cache).
+        slot.sessionIndex = sessionListIndex(item);
         slot.path = item->path();
         m_itemWorld.setAppearance(id, slot);
         // Drive ThumbnailBar per-id override (cropped/rotated/graded pixels).

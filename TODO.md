@@ -2,6 +2,39 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1998-sessionIndex-no-restamp.** Durable slots use sessionListIndex, not item cache.
+Prior: **1997**.
+
+### Problem
+After `captureState` (which sets `sessionIndex` via `sessionListIndex` / document),
+several persist paths **overwrote** with `item->sessionIndex()` — the deprecated
+list-order cache, which can lag after reorder.
+
+### Change
+- `persistItemSessionState` / `persistSessionAppearanceSlot`: keep captureState’s
+  document index (drop restamp)
+- `bindSelectedSessionIds`: stamp `sessionListIndex(item)` after binding id
+  (pending path may not have gone through captureState)
+
+Canvas rebind still maintains the cache via `setSessionIndex` for unbound-path matching.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1998-sessionIndex-no-restamp-e77da63.bundle HEAD
+```
+Requires tip **1997** (base **e77da63**); includes 1938–1998.
+
+### Next
+- Optional: further reduce cache reads in findItemBySessionIndex / canvas rebind
+- Optional: Stage 4 dual-write reduction
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1997-imageitem-demotion-status.** Demotion status through 1996; header hygiene.
 Prior: **1996**.
 
