@@ -2186,19 +2186,21 @@ QSize ThumbnailBar::layoutAspectForRow(int row) const
     if (native.width() < 1 || native.height() < 1) {
         return {};
     }
+    // Bound: provider miss means ItemWorld has no content row — native only.
+    // Path XDG orient would desync from Image underlay (2198). Unbound: full XDG.
+    if (sid != kInvalidSessionImageId) {
+        return native;
+    }
     WorkspaceItemState layoutSt;
     ThumtooCache::StoredContentAppearance stored;
     if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
         layoutSt.contentHFlip = stored.contentHFlip;
         layoutSt.contentVFlip = stored.contentVFlip;
         layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
-        // Bound session: path crop must not layout every row that shares the file.
-        if (sid == kInvalidSessionImageId) {
-            layoutSt.hasCrop = stored.hasCrop;
-            layoutSt.cropRect = stored.cropRect;
-            layoutSt.cropSourceSize = stored.cropSourceSize;
-            layoutSt.cropRotation = stored.cropRotation;
-        }
+        layoutSt.hasCrop = stored.hasCrop;
+        layoutSt.cropRect = stored.cropRect;
+        layoutSt.cropSourceSize = stored.cropSourceSize;
+        layoutSt.cropRotation = stored.cropRotation;
     }
     return ContentXform::layoutSize(native, layoutSt);
 }
@@ -2220,13 +2222,19 @@ void ThumbnailBar::applyLayoutAspect(QListWidgetItem *item, int row, const QSize
         }
         if (aspect.width() < 1 || aspect.height() < 1) {
             WorkspaceItemState layoutSt;
-            ThumtooCache::StoredContentAppearance stored;
-            if (!path.isEmpty()
-                && ThumtooCache::loadContentAppearance(path, &stored)
-                && !stored.isIdentity()) {
-                layoutSt.contentHFlip = stored.contentHFlip;
-                layoutSt.contentVFlip = stored.contentVFlip;
-                layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
+            // Path XDG orient only for unbound rows (bound = ItemWorld / native).
+            if (sid == kInvalidSessionImageId && !path.isEmpty()) {
+                ThumtooCache::StoredContentAppearance stored;
+                if (ThumtooCache::loadContentAppearance(path, &stored)
+                    && !stored.isIdentity()) {
+                    layoutSt.contentHFlip = stored.contentHFlip;
+                    layoutSt.contentVFlip = stored.contentVFlip;
+                    layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
+                    layoutSt.hasCrop = stored.hasCrop;
+                    layoutSt.cropRect = stored.cropRect;
+                    layoutSt.cropSourceSize = stored.cropSourceSize;
+                    layoutSt.cropRotation = stored.cropRotation;
+                }
             }
             aspect = ContentXform::layoutSize(nativeHint, layoutSt);
         }

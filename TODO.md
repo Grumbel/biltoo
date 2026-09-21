@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2199-filmstrip-bound-no-path-xdg-layout.** Filmstrip layoutAspectForRow
+still applied path XDG orient for bound rows when the host provider missed
+(ItemWorld empty) — cell aspect desynced from Image underlay.
+
+### Fix
+- layoutAspectForRow: bound → native only on provider miss
+- applyLayoutAspect fallback: path XDG only when unbound
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2199-filmstrip-bound-no-path-xdg-layout-e77da63.bundle HEAD
+```
+
+Next: **2200**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2198-bound-no-path-xdg-soft.** ECS continue: soft-paint paths still
 applied path XDG orient for bound SessionImageIds when ItemWorld was empty
 (desync vs Image underlay which never path-XDG-seeds).
