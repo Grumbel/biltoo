@@ -225,7 +225,7 @@ void ImageView::rememberItemState(ImageItem *item)
             : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
 
     // Image mode must not overwrite Workspace placement (pos / scale / free tilt).
-    // Bound session images: appearance lives only in m_appearance (Phase 2).
+    // Bound session images: appearance lives in ItemWorld sparse tables (Stage 4b).
     if (isImageMode()) {
         if (sid != kInvalidSessionImageId) {
             // Leave path-map placement untouched; do not last-write crop/flip by path.
@@ -238,7 +238,7 @@ void ImageView::rememberItemState(ImageItem *item)
         return;
     }
     // Workspace / Gallery: path map is legacy placement for *unbound* tiles only.
-    // Bound session images: placement + content live in m_appearance (by id).
+    // Bound session images: placement + content live in ItemWorld sparse tables (by id).
     // Never write pose by path — duplicates would steal each other's layout.
     if (item->sessionId() != kInvalidSessionImageId) {
         WorkspaceItemState slot = freezeItemAppearance(item);
@@ -325,7 +325,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
         }
     }
     // Durable XDG appearance when session store is empty (slideshow may paint a
-    // path before installDisplayPixels seeds m_appearance for that id).
+    // path before installDisplayPixels seeds ItemWorld sparse tables for that id).
     // Orient/flip only — never adopt path crop into an id-keyed soft paint.
     if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
         ThumtooCache::StoredContentAppearance stored;
@@ -477,7 +477,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
     }
     if (haveContentSlot) {
         // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
-        // Bound: orient/flip only — crop lives in SessionAppearanceStore by id.
+        // Bound: orient/flip only — crop lives in SessionSeedBook by id.
         // Unbound: may include crop (legacy single-instance path edit).
         // Writing identity deletes the SQLite row; intentional clear goes
         // through clearContentAppearance (Reset / undo-to-identity).
@@ -635,7 +635,7 @@ void ImageView::flushColorAdjustCommit()
     // is already updated on setTargetColorAdjustments).
     want.colorAdjust = item->colorAdjustments();
     // Full rematerialize from host (async when multi-MP). Do **not** write
-    // grade into thumtoo durable appearance — SessionAppearanceStore / project
+    // grade into thumtoo durable appearance — SessionSeedBook / project
     // already own it; path cache is for orient/crop hints, not slider spam.
     rematerializeItemContent(item, want);
     // Gallery: same session id may be stashed while Image mode edits — the
@@ -799,7 +799,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
         slot.path = item->path();
         storeCropAppearance(item, sid, slot);
     }
-    // Appearance persistence is commitItemSessionEdit → m_appearance (by id).
+    // Appearance persistence is commitItemSessionEdit → ItemWorld sparse tables (by id).
     // Do not write crop state into the path map for bound tiles.
     commitItemSessionEdit(item);
     // Undo back to identity: commit no longer writes identity (avoids wiping

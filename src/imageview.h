@@ -43,6 +43,7 @@
 #include "thumtoocache.h"
 #include "coloradjust.h"
 #include "sessionappearance.h"
+#include "sessionseedbook.h"
 #include "itemworld.h"
 #include "sessiondocument.h"
 #include "gallerycontroller.h"
@@ -232,12 +233,12 @@ public:
     ItemWorld &itemWorld() { return m_itemWorld; }
     const ItemWorld &itemWorld() const { return m_itemWorld; }
     /**
-     * Bind SessionDocument seed book (required before hostAppearance()).
+     * Bind SessionDocument seed book (required before hostSeedBook()).
      * Content appearance is ItemWorld sparse tables — not this store.
      */
-    void bindSessionAppearance(SessionAppearanceStore *store)
+    void bindSessionSeedBook(SessionSeedBook *store)
     {
-        m_appearanceBound = store;
+        m_seedBook = store;
     }
     /**
      * Bind working SessionDocument. firstSessionIdForPath prefers the document;

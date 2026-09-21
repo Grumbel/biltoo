@@ -21,7 +21,7 @@
  *   Persistent — SessionDocument paths/ids; sparse Crop / ContentBake / Color /
  *     Attention; Placement (Workspace-scoped pose); path book only for unbound.
  *   Derived only — applied ContentXform, tile LOD, soft pixels, sessionIndex.
- *   Seed book — SessionAppearanceStore (seedAttempted only; not content).
+ *   Seed book — SessionSeedBook (seedAttempted only; not content).
  *
  * setCrop / setColor / setAppearance write sparse tables only.
  * appearanceValue assembles WorkspaceItemState for project/clipboard.

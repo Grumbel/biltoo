@@ -742,7 +742,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
         return;
     }
     // Prefer live session-image appearance over the leave-mode snapshot when
-    // Image-mode edits updated m_appearance while Workspace was stashed.
+    // Image-mode edits updated ItemWorld sparse appearance while Workspace was stashed.
     WorkspaceItemState app = state;
     if (state.sessionId != kInvalidSessionImageId) {
         item->setSessionId(state.sessionId);

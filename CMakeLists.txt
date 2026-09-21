@@ -243,8 +243,10 @@ set(BILTOO_LIB_SOURCES
   src/imageview.h
   src/imageview_types.h
   src/sessionappearance.cpp
+  src/sessionseedbook.cpp
   src/contentxform.cpp
   src/sessionappearance.h
+  src/sessionseedbook.h
   src/sessiondocument.cpp
   src/sessiondocument.h
   src/sessionopen.cpp
@@ -623,6 +625,7 @@ if(Qt6Test_FOUND)
     tests/sessiondocument_test.cpp
     src/sessiondocument.cpp
     src/sessionappearance.cpp
+    src/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -642,6 +645,7 @@ if(Qt6Test_FOUND)
   add_executable(biltoo-itemworld-test
     tests/itemworld_test.cpp
     src/sessionappearance.cpp
+    src/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -671,6 +675,7 @@ if(Qt6Test_FOUND)
       tests/imageview_characterization.cpp
       src/sessiondocument.cpp
       src/sessionappearance.cpp
+    src/sessionseedbook.cpp
       src/contentxform.cpp
       src/coloradjust.cpp
     )
@@ -684,6 +689,7 @@ if(Qt6Test_FOUND)
     tests/pathorder_dual_model_test.cpp
     src/sessiondocument.cpp
     src/sessionappearance.cpp
+    src/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -695,6 +701,7 @@ if(Qt6Test_FOUND)
     tests/packorderview_test.cpp
     src/sessiondocument.cpp
     src/sessionappearance.cpp
+    src/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -706,6 +713,7 @@ if(Qt6Test_FOUND)
     tests/packorderoverlay_test.cpp
     src/sessiondocument.cpp
     src/sessionappearance.cpp
+    src/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -717,6 +725,7 @@ if(Qt6Test_FOUND)
     tests/session_gallery_crop_scenario_test.cpp
     src/sessiondocument.cpp
     src/sessionappearance.cpp
+    src/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -727,6 +736,7 @@ if(Qt6Test_FOUND)
   add_executable(biltoo-sessionappearance-test
     tests/sessionappearance_test.cpp
     src/sessionappearance.cpp
+    src/sessionseedbook.cpp
     src/sessiondocument.cpp
     src/contentxform.cpp
     src/coloradjust.cpp

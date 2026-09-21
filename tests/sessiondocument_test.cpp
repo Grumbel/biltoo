@@ -145,10 +145,10 @@ void SessionDocumentTest::clearPaths_keepsAppearance()
     SessionDocument doc;
     doc.append(QStringLiteral("/a.jpg"));
     const SessionImageId id = doc.idAt(0);
-    doc.appearance().markSeedAttempted(id);
+    doc.seedBook().markSeedAttempted(id);
     doc.clearPaths();
     QVERIFY(doc.isEmpty());
-    QVERIFY(doc.appearance().seedAttempted(id));
+    QVERIFY(doc.seedBook().seedAttempted(id));
 }
 
 void SessionDocumentTest::countPath_and_firstId()
@@ -168,12 +168,12 @@ void SessionDocumentTest::appearance_on_document()
     SessionDocument doc;
     doc.append(QStringLiteral("/a.jpg"));
     const SessionImageId id = doc.idAt(0);
-    doc.appearance().markSeedAttempted(id);
-    QVERIFY(doc.appearance().seedAttempted(id));
+    doc.seedBook().markSeedAttempted(id);
+    QVERIFY(doc.seedBook().seedAttempted(id));
     // clear() drops path list and seed book together.
     doc.clear();
     QVERIFY(doc.isEmpty());
-    QVERIFY(!doc.appearance().seedAttempted(id));
+    QVERIFY(!doc.seedBook().seedAttempted(id));
 }
 
 void SessionDocumentTest::setPaths_clearsAppearance()
@@ -181,12 +181,12 @@ void SessionDocumentTest::setPaths_clearsAppearance()
     SessionDocument doc;
     doc.append(QStringLiteral("/old.jpg"));
     const SessionImageId oldId = doc.idAt(0);
-    doc.appearance().markSeedAttempted(oldId);
-    QVERIFY(doc.appearance().seedAttempted(oldId));
+    doc.seedBook().markSeedAttempted(oldId);
+    QVERIFY(doc.seedBook().seedAttempted(oldId));
 
     doc.setPaths({QStringLiteral("/new.jpg")});
-    QVERIFY(!doc.appearance().seedAttempted(oldId));
-    QVERIFY(!doc.appearance().seedAttempted(doc.idAt(0)));
+    QVERIFY(!doc.seedBook().seedAttempted(oldId));
+    QVERIFY(!doc.seedBook().seedAttempted(doc.idAt(0)));
 }
 
 void SessionDocumentTest::replaceAll_keepsAppearance()
@@ -195,13 +195,13 @@ void SessionDocumentTest::replaceAll_keepsAppearance()
     doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
     const SessionImageId idA = doc.idAt(0);
     const SessionImageId idB = doc.idAt(1);
-    doc.appearance().markSeedAttempted(idA);
+    doc.seedBook().markSeedAttempted(idA);
 
     // Swap order; same ids — seed flags must survive (replaceAll does not clear).
     doc.replaceAll({QStringLiteral("/b.jpg"), QStringLiteral("/a.jpg")}, {idB, idA});
     QCOMPARE(doc.idAt(0), idB);
     QCOMPARE(doc.idAt(1), idA);
-    QVERIFY(doc.appearance().seedAttempted(idA));
+    QVERIFY(doc.seedBook().seedAttempted(idA));
 }
 
 void SessionDocumentTest::removeAt_clearsAppearance()
@@ -210,12 +210,12 @@ void SessionDocumentTest::removeAt_clearsAppearance()
     doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
     const SessionImageId idA = doc.idAt(0);
     const SessionImageId idB = doc.idAt(1);
-    doc.appearance().markSeedAttempted(idA);
-    doc.appearance().markSeedAttempted(idB);
+    doc.seedBook().markSeedAttempted(idA);
+    doc.seedBook().markSeedAttempted(idB);
 
     doc.removeAt(0);
-    QVERIFY(!doc.appearance().seedAttempted(idA));
-    QVERIFY(doc.appearance().seedAttempted(idB));
+    QVERIFY(!doc.seedBook().seedAttempted(idA));
+    QVERIFY(doc.seedBook().seedAttempted(idB));
     QCOMPARE(doc.size(), 1);
     QCOMPARE(doc.idAt(0), idB);
 }

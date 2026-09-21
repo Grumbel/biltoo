@@ -12,7 +12,7 @@
 /**
  * Path-keyed WorkspaceItemState map.
  *
- * Bound session images: content appearance is SessionAppearanceStore only.
+ * Bound session images: content appearance is ItemWorld sparse tables only.
  * This bag remains the Workspace free-placement cache and unbound-tile
  * fallback (IDENTITY: path is not the content key when an id is bound).
  */

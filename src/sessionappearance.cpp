@@ -319,32 +319,3 @@ WorkspaceItemState clearedContentOps(const WorkspaceItemState &state)
 }
 
 } // namespace SessionAppearance
-
-bool SessionAppearanceStore::seedAttempted(SessionImageId id) const
-{
-    return id != kInvalidSessionImageId && m_seedAttempted.contains(id);
-}
-
-void SessionAppearanceStore::markSeedAttempted(SessionImageId id)
-{
-    if (id != kInvalidSessionImageId) {
-        m_seedAttempted.insert(id);
-    }
-}
-
-void SessionAppearanceStore::clearSeedAttempted(SessionImageId id)
-{
-    if (id != kInvalidSessionImageId) {
-        m_seedAttempted.remove(id);
-    }
-}
-
-void SessionAppearanceStore::remove(SessionImageId id)
-{
-    clearSeedAttempted(id);
-}
-
-void SessionAppearanceStore::clear()
-{
-    m_seedAttempted.clear();
-}

@@ -7,6 +7,7 @@
  */
 
 #include "sessionappearance.h"
+#include "sessionseedbook.h"
 #include "sessiondocument.h"
 #include "itemworld.h"
 
@@ -28,7 +29,7 @@ private slots:
 
 void SessionAppearanceTest::seedBook_keyedById()
 {
-    SessionAppearanceStore store;
+    SessionSeedBook store;
     store.markSeedAttempted(7);
     QVERIFY(store.seedAttempted(7));
     QVERIFY(!store.seedAttempted(8));
@@ -59,7 +60,7 @@ void SessionAppearanceTest::duplicatePath_independentCrop()
 
 void SessionAppearanceTest::seed_remove_clearsFlag()
 {
-    SessionAppearanceStore store;
+    SessionSeedBook store;
     store.markSeedAttempted(3);
     store.remove(3);
     QVERIFY(!store.seedAttempted(3));
@@ -106,10 +107,10 @@ void SessionAppearanceTest::documentRemove_clearsSeed()
     SessionDocument doc;
     doc.append(QStringLiteral("/a.jpg"));
     const SessionImageId id = doc.idAt(0);
-    doc.appearance().markSeedAttempted(id);
-    QVERIFY(doc.appearance().seedAttempted(id));
+    doc.seedBook().markSeedAttempted(id);
+    QVERIFY(doc.seedBook().seedAttempted(id));
     doc.removeAt(0);
-    QVERIFY(!doc.appearance().seedAttempted(id));
+    QVERIFY(!doc.seedBook().seedAttempted(id));
 }
 
 void SessionAppearanceTest::replaceAll_preservesSeedById()
@@ -118,10 +119,10 @@ void SessionAppearanceTest::replaceAll_preservesSeedById()
     doc.setPaths({QStringLiteral("/a.jpg"), QStringLiteral("/b.jpg")});
     const SessionImageId idA = doc.idAt(0);
     const SessionImageId idB = doc.idAt(1);
-    doc.appearance().markSeedAttempted(idA);
+    doc.seedBook().markSeedAttempted(idA);
     doc.replaceAll({QStringLiteral("/b.jpg"), QStringLiteral("/a.jpg")}, {idB, idA});
-    QVERIFY(doc.appearance().seedAttempted(idA));
-    QVERIFY(!doc.appearance().seedAttempted(idB));
+    QVERIFY(doc.seedBook().seedAttempted(idA));
+    QVERIFY(!doc.seedBook().seedAttempted(idB));
 }
 
 QTEST_MAIN(SessionAppearanceTest)

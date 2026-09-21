@@ -4143,7 +4143,7 @@ void MainWindow::enterProjectCanvasMode(
             enterWorkspaceMode();
         }
         if (m_imageView) {
-            // Pose (pos/scale/shear/rotation/opacity/z) is already in m_appearance.
+            // Pose (pos/scale/shear/rotation/opacity/z) is already in ItemWorld placement.
             // addImageForSession schedules LoadAdd; on decode, LoadAdd applies
             // placement via applyState from the store.
             //

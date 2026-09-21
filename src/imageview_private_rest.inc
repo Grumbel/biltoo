@@ -138,16 +138,16 @@
     QList<ImageItem *> m_items;
     /**
      * Path-keyed placement / legacy unbound appearance.
-     * Bound session images: content appearance is m_appearance only.
+     * Bound session images: content appearance is ItemWorld sparse tables only.
      * Path map remains Workspace free-placement cache and unbound fallback.
      */
     PathItemStateBook m_itemStateBook;
     /**
      * Phase 7 Stage 0: non-owning facade over appearance + path + size books.
-     * Bound in the ImageView ctor (path/size) and bindSessionAppearance.
+     * Bound in the ImageView ctor (path/size) and bindSessionSeedBook.
      */
     ItemWorld m_itemWorld;
-    SessionAppearanceStore *m_appearanceBound = nullptr;
+    SessionSeedBook *m_seedBook = nullptr;
     /** Non-owning SessionDocument (MainWindow); preferred for membership queries. */
     SessionDocument *m_sessionDoc = nullptr;
     /**

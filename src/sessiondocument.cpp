@@ -87,7 +87,7 @@ void SessionDocument::clear()
     clearPaths();
     // Seed book only. Callers that bind ItemWorld must also clearAppearance()
     // (ImageView::clearWorkspace does). Sparse tables are not owned here.
-    m_appearance.clear();
+    m_seedBook.clear();
 }
 
 void SessionDocument::setPaths(const QStringList &paths)
@@ -100,7 +100,7 @@ void SessionDocument::setPaths(const QStringList &paths)
     }
     // Fresh ids — prior appearance rows are orphaned (ids never recycled).
     // replaceAll must NOT clear: sort/reorder keeps the same SessionImageIds.
-    m_appearance.clear();
+    m_seedBook.clear();
 }
 
 void SessionDocument::replaceAll(const QStringList &paths, const QVector<SessionImageId> &ids)
@@ -187,7 +187,7 @@ void SessionDocument::removeAt(int index)
     // Drop seed flag for this id (ids are never recycled). ItemWorld sparse
     // tables still need removeAppearance / clearAppearance from the view.
     if (id != kInvalidSessionImageId) {
-        m_appearance.remove(id);
+        m_seedBook.remove(id);
     }
 }
 

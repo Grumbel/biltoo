@@ -8,8 +8,6 @@
 #include "coloradjust.h"
 #include "contentxform.h"
 
-#include <QHash>
-#include <QSet>
 #include <QImage>
 #include <QRect>
 #include <QSize>
@@ -161,45 +159,5 @@ WorkspaceItemState withoutCrop(const WorkspaceItemState &state);
 WorkspaceItemState clearedContentOps(const WorkspaceItemState &state);
 
 } // namespace SessionAppearance
-
-/**
- * Per–session-image content appearance (crop, content flips, quarter turns,
- * colour grade). Identity is SessionImageId — never path (IDENTITY.md).
- *
- * Apply content onto pixels only via materializeDisplay / applyContentToImage
- * (order is fixed). Prefer ImageView::installDisplayPixels or
- * rematerializeItemContent when attaching to items so SoftPreview vs FullSource
- * and multi-MP async stay consistent.
- *
- * Path-keyed maps on ImageView remain legacy fallbacks for unbound tiles only.
- */
-/**
- * Per-session seed-attempt book (Stage 4b residual).
- *
- * Formerly also held a fat WorkspaceItemState dual-write mirror. Content
- * appearance lives in ItemWorld sparse tables; project/clipboard assemble via
- * appearanceValue. This store only tracks "XDG/path seed already attempted"
- * so paint paths do not re-hit locatorId every frame.
- */
-class SessionAppearanceStore
-{
-public:
-    void clear();
-    int size() const { return m_seedAttempted.size(); }
-    bool isEmpty() const { return m_seedAttempted.isEmpty(); }
-
-    /**
-     * Durable XDG seed attempts (once per session id). Prevents archive/miss
-     * paths from re-hitting locatorId on every paint.
-     */
-    bool seedAttempted(SessionImageId id) const;
-    void markSeedAttempted(SessionImageId id);
-    void clearSeedAttempted(SessionImageId id);
-    /** Drop seed flag for @p id (session row remove). */
-    void remove(SessionImageId id);
-
-private:
-    QSet<SessionImageId> m_seedAttempted;
-};
 
 #endif // SESSIONAPPEARANCE_H

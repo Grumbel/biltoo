@@ -26,7 +26,7 @@ class ImageItem;
  *
  * Owns the draft rect, target binding, enter-stash for undo, and interaction
  * drag fields. Enter/apply/leave orchestration stays on ImageView (needs canvas
- * and SessionAppearanceStore). Session wipe should call clear().
+ * and SessionSeedBook). Session wipe should call clear().
  */
 class CropSession
 {

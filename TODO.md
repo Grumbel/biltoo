@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2055-session-seed-book-rename.** Rename SessionAppearanceStore → SessionSeedBook.
+Prior: **2054**.
+
+### Change
+- New `sessionseedbook.h` / `.cpp`; class `SessionSeedBook`
+- `SessionDocument::seedBook()`, `ImageView::bindSessionSeedBook` / `hostSeedBook()`
+- Fat store type name gone; seed-attempt API unchanged
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2055-session-seed-book-rename-e77da63.bundle HEAD
+```
+Requires tip **2054** (base **e77da63**); includes 1938–2055.
+
+### Next
+- Phase 6 Tier 4: decode/framing when prioritized
+- Phase 7 further ImageItem demotion when needed
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2054-seed-only-appearance-store.** Drop fat SessionAppearanceStore m_byId; seed book only.
 Prior: **2053**.
 

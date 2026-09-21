@@ -1153,7 +1153,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
         // Host-raw soft: installDisplayPixels seeds ImageCache + materializes want.
         // Display-ready (stashed Gallery / filmstrip override) only when it still
         // matches store want — otherwise rematerialize from host so crop/rotate
-        // in SessionAppearanceStore are not skipped (stale strip Soft looked like
+        // in SessionSeedBook are not skipped (stale strip Soft looked like
         // "edits not persistent").
         const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
         if (displayReady && SessionAppearance::hasContentAppearance(want)) {

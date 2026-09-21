@@ -1,3 +1,4 @@
+#include "sessionseedbook.h"
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -83,7 +84,6 @@ void ItemWorldTest::appearance_roundTripById()
 
 void ItemWorldTest::pathBook_independentOfAppearance()
 {
-    SessionAppearanceStore store;
     PathItemStateBook paths;
     ItemWorld world;
     world.bindPathBook(&paths);
@@ -117,14 +117,12 @@ void ItemWorldTest::sizeBook_noteDefinitive()
 
 void ItemWorldTest::bind_pointsAtSameStore()
 {
-    SessionAppearanceStore store;
     PathItemStateBook paths;
     ImageSizeBook sizes;
     ItemWorld world;
     world.bindPathBook(&paths);
     world.bindSizeBook(&sizes);
 
-    QCOMPARE(&world.appearance(), &store);
     QCOMPARE(&world.pathBook(), &paths);
     QCOMPARE(&world.sizeBook(), &sizes);
 }
@@ -228,7 +226,7 @@ void ItemWorldTest::removeAppearance_clearsComponents()
 void ItemWorldTest::crop_fallbackWhenDtoWrittenDirectly()
 {
     // Stage 4b residual: seed book is not content; sparse empty until setAppearance.
-    SessionAppearanceStore seeds;
+    SessionSeedBook seeds;
     ItemWorld world;
     seeds.markSeedAttempted(8);
     QCOMPARE(world.cropCount(), 0);
@@ -464,7 +462,7 @@ void ItemWorldTest::hasDurableAppearance_emptyAndAfterSparse()
 void ItemWorldTest::hasDurableAppearance_fatOnlyCrop()
 {
     // Seed flag alone is not durable content appearance.
-    SessionAppearanceStore seeds;
+    SessionSeedBook seeds;
     ItemWorld world;
     seeds.markSeedAttempted(9);
     QCOMPARE(world.cropCount(), 0);

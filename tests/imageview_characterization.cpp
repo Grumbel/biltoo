@@ -399,7 +399,7 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
 
     ImageView view;
     view.resize(800, 600);
-    view.bindSessionAppearance(&doc.appearance());
+    view.bindSessionSeedBook(&doc.seedBook());
     view.bindSessionDocument(&doc);
 
     // Gallery before setWorkspacePaths (Image mode rejects path placement).

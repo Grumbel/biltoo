@@ -5,7 +5,7 @@
 #define SESSIONDOCUMENT_H
 
 #include "imageview_types.h"
-#include "sessionappearance.h"
+#include "sessionseedbook.h"
 
 #include <QString>
 #include <QStringList>
@@ -45,13 +45,14 @@ public:
     /** Never reuses an id after remove. */
     SessionImageId allocId();
 
-    /** Clear paths/ids only (does not clear appearance or recycle ids). */
+    /** Clear paths/ids only (does not clear seed book or recycle ids). */
     void clearPaths();
     void clear();
     /**
      * Replace list; allocates a fresh id for every path.
-     * Clears the appearance store (orphaned prior ids). Use replaceAll to
-     * reorder while keeping SessionImageId identity and appearance rows.
+     * Clears the seed book (orphaned prior ids). Use replaceAll to reorder
+     * while keeping SessionImageId identity; ItemWorld sparse rows are the
+     * caller's responsibility on full Open/Replace.
      */
     void setPaths(const QStringList &paths);
     /**
@@ -70,17 +71,17 @@ public:
 
     /**
      * Seed-attempt book for the session (Stage 4b residual).
-     * ImageView binds via bindSessionAppearance → hostAppearance().
+     * ImageView binds via bindSessionSeedBook → hostSeedBook().
      * Content appearance is ItemWorld sparse tables; clear() only resets seeds.
      */
-    SessionAppearanceStore &appearance() { return m_appearance; }
-    const SessionAppearanceStore &appearance() const { return m_appearance; }
+    SessionSeedBook &seedBook() { return m_seedBook; }
+    const SessionSeedBook &seedBook() const { return m_seedBook; }
 
 private:
     QStringList m_paths;
     QVector<SessionImageId> m_ids;
     SessionImageId m_nextId = 1;
-    SessionAppearanceStore m_appearance;
+    SessionSeedBook m_seedBook;
 };
 
 

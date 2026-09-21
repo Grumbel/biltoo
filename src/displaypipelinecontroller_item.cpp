@@ -152,7 +152,7 @@ void DisplayPipelineController::seedSessionAppearancesFromPaths(const QStringLis
     // Fresh session: allow seed again for new ids (old set cleared on invalidate).
     const int n = ViewTransform::pairCount(paths.size(), ids.size());
     for (int i = 0; i < n; ++i) {
-        m_view->hostAppearance().clearSeedAttempted(ids.at(i));
+        m_view->hostSeedBook().clearSeedAttempted(ids.at(i));
     }
     // Small sessions: fine on GUI (few stats). Large sessions: locatorId +
     // appearance SQLite used to run O(n) on the GUI during open and freeze the
@@ -223,10 +223,10 @@ void DisplayPipelineController::seedSessionAppearanceFromState(SessionImageId si
     }
     // One attempt per session id — archive/miss paths must not re-hit locatorId
     // on every paint via wantAppearanceForItem.
-    if (m_view->hostAppearance().seedAttempted(sid)) {
+    if (m_view->hostSeedBook().seedAttempted(sid)) {
         return;
     }
-    m_view->hostAppearance().markSeedAttempted(sid);
+    m_view->hostSeedBook().markSeedAttempted(sid);
     ThumtooCache::StoredContentAppearance stored;
     if (!ThumtooCache::loadContentAppearance(path, &stored)) {
         return;
@@ -241,7 +241,7 @@ void DisplayPipelineController::seedSessionAppearanceFromState(SessionImageId si
 void DisplayPipelineController::markAppearanceSeedAttempted(SessionImageId sid)
 {
     if (sid != kInvalidSessionImageId) {
-        m_view->hostAppearance().markSeedAttempted(sid);
+        m_view->hostSeedBook().markSeedAttempted(sid);
     }
 }
 
@@ -254,7 +254,7 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
     }
     // Worker path may not have marked attempted yet; mark here so paint does not
     // re-drive locatorId via wantAppearanceForItem.
-    m_view->hostAppearance().markSeedAttempted(sid);
+    m_view->hostSeedBook().markSeedAttempted(sid);
     if (m_view->itemWorld().hasDurableAppearance(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.
