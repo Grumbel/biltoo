@@ -1,5 +1,28 @@
 # TODO / agent handoff
 
+## Status (2026-09-22)
+
+**Tip: biltoo-2188-natural-sort-gallery-test.** sessionsort still failed: Qt
+QCollator numeric mode is a no-op without ICU. Characterization: size prime
+created tiles; Gallery pack writes Placement for every live row so
+`!hasPlacement(other)` was wrong.
+
+### Fix
+- SessionSort Name/Path: pure naturalLess (digit runs as integers) — no QCollator
+- imageView_openGalleryCropReturn: assert content isolation only; check focus
+  placement values; sibling may have pack pose
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2188-natural-sort-gallery-test-e77da63.bundle HEAD
+```
+
+Next: **2189**.
+
+---
+
+# TODO / agent handoff
+
 ## Status (2026-09-21)
 
 **Tip: biltoo-2187-test-sessionsort-gallery-size.** CI: sessionsort + imageview

@@ -625,8 +625,15 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
     QVERIFY(view.itemWorld().hasContentBake(focus));
     QVERIFY(view.itemWorld().hasColor(focus));
     QVERIFY(view.itemWorld().hasAttention(focus));
+    // Content components stay focus-only (IDENTITY isolation).
     QVERIFY(!view.itemWorld().hasCrop(other));
-    QVERIFY(!view.itemWorld().hasPlacement(other));
+    QVERIFY(!view.itemWorld().hasContentBake(other));
+    QVERIFY(!view.itemWorld().hasColor(other));
+    QVERIFY(!view.itemWorld().hasAttention(other));
+    // Gallery pack writes sparse Placement for every live tile — sibling may
+    // already have pose; isolation is content, not pack pose.
+    QCOMPARE(view.itemWorld().placement(focus).pos, QPointF(40.0, 60.0));
+    QCOMPARE(view.itemWorld().placement(focus).scale, 1.5);
     QCOMPARE(ContentXform::layoutSize(QSize(64, 48),
                                       view.itemWorld().appearanceValue(focus)),
              QSize(32, 24));

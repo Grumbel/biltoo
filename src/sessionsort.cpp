@@ -5,8 +5,6 @@
 
 #include "pagepath.h"
 
-#include <QCollator>
-#include <QLocale>
 #include <QtMath>
 
 #include <algorithm>
@@ -16,14 +14,69 @@ namespace SessionSort {
 
 namespace {
 
-/** Numeric, case-insensitive collator with C locale — independent of process
- *  locale / missing Fontconfig in headless CI (otherwise b10 can sort before b2). */
-QCollator sessionNameCollator()
+/**
+ * Natural order without QCollator: Qt's numeric collator needs ICU; headless
+ * Nix builds often ship without it, so b10 sorted before b2. Digit runs compare
+ * as integers; other runs are case-insensitive UTF-16 code units.
+ */
+bool naturalLess(const QString &a, const QString &b)
 {
-    QCollator collator(QLocale::c());
-    collator.setNumericMode(true);
-    collator.setCaseSensitivity(Qt::CaseInsensitive);
-    return collator;
+    const int na = a.size();
+    const int nb = b.size();
+    int ia = 0;
+    int ib = 0;
+    while (ia < na && ib < nb) {
+        const QChar ca = a.at(ia);
+        const QChar cb = b.at(ib);
+        if (ca.isDigit() && cb.isDigit()) {
+            // Skip leading zeros but remember length for equal-value tie-break.
+            int za = ia;
+            while (za < na && a.at(za) == QLatin1Char('0')) {
+                ++za;
+            }
+            int zb = ib;
+            while (zb < nb && b.at(zb) == QLatin1Char('0')) {
+                ++zb;
+            }
+            int ea = za;
+            while (ea < na && a.at(ea).isDigit()) {
+                ++ea;
+            }
+            int eb = zb;
+            while (eb < nb && b.at(eb).isDigit()) {
+                ++eb;
+            }
+            const int lena = ea - za;
+            const int lenb = eb - zb;
+            if (lena != lenb) {
+                return lena < lenb;
+            }
+            for (int k = 0; k < lena; ++k) {
+                const ushort da = a.at(za + k).unicode();
+                const ushort db = b.at(zb + k).unicode();
+                if (da != db) {
+                    return da < db;
+                }
+            }
+            // Equal numeric value: fewer leading zeros sorts first (stable feel).
+            const int zlena = ea - ia;
+            const int zlenb = eb - ib;
+            if (zlena != zlenb) {
+                return zlena < zlenb;
+            }
+            ia = ea;
+            ib = eb;
+            continue;
+        }
+        const QChar la = ca.toLower();
+        const QChar lb = cb.toLower();
+        if (la != lb) {
+            return la.unicode() < lb.unicode();
+        }
+        ++ia;
+        ++ib;
+    }
+    return (na - ia) < (nb - ib);
 }
 
 } // namespace
@@ -59,12 +112,10 @@ QVector<int> orderIndices(Mode mode,
                           const QHash<QString, qint64> &fsizes)
 {
     auto nameLess = [](const QString &a, const QString &b) {
-        return sessionNameCollator().compare(
-                   PagePath::displayName(a), PagePath::displayName(b))
-            < 0;
+        return naturalLess(PagePath::displayName(a), PagePath::displayName(b));
     };
     auto pathLess = [](const QString &a, const QString &b) {
-        return sessionNameCollator().compare(a, b) < 0;
+        return naturalLess(a, b);
     };
 
     QVector<int> order(paths.size());
