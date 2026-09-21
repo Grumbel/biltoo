@@ -206,12 +206,18 @@ void GalleryLayoutTest::packPoses_masonryAndMasonryRows()
     // col0 heights: 40 then +10 gap +30 → third centre y = 40+10+15 = 65
     QCOMPARE(m.at(2).center.y(), 65.0);
 
-    // Row masonry: 2 rows, availH=110 gap=10 → rowH=50.
-    const auto rows = GalleryLayout::packPosesMasonryRows(three, 0.0, 10.0, 110.0, 2);
+    // Row masonry dual: equal heights, varying widths so axis-fill scale is 1
+    // (transpose of the column case above). 2 rows, availH=110 gap=10 → rowH=50.
+    const QVector<QSizeF> threeRows{QSizeF(40, 50), QSizeF(60, 50), QSizeF(30, 50)};
+    const auto rows = GalleryLayout::packPosesMasonryRows(threeRows, 0.0, 10.0, 110.0, 2);
     QCOMPARE(rows.size(), 3);
+    // First → row0; second → row1; third → row0 (shorter after 40 vs 60).
     QCOMPARE(rows.at(0).center.y(), 25.0); // row0
     QCOMPARE(rows.at(1).center.y(), 85.0); // row1
-    QCOMPARE(rows.at(2).center.y(), 25.0); // shorter row0
+    QCOMPARE(rows.at(2).center.y(), 25.0); // row0 again
+    QCOMPARE(rows.at(0).scale, 1.0);
+    // row0 widths: 40 then +10 gap +30 → third centre x = 40+10+15 = 65
+    QCOMPARE(rows.at(2).center.x(), 65.0);
 }
 
 void GalleryLayoutTest::packPoses_flowAndFlowFill()
@@ -266,7 +272,7 @@ void GalleryLayoutTest::packPoses_masonryFillAndRowsFill()
     QCOMPARE(fill.at(1).center.x(), 85.0);
 
     // Unequal heights: tall column stretches short one so bottoms align.
-    // col0: 80, col1: 40 → col1 s=2; scales 1*2 and base.
+    // col0: 80, col1: 40 → col1 s=2; scales 1 and 2.
     const QVector<QSizeF> uneven{QSizeF(50, 80), QSizeF(50, 40)};
     const auto u = GalleryLayout::packPosesMasonryFill(uneven, 0.0, 10.0, 110.0, 2);
     QCOMPARE(u.size(), 2);
@@ -275,11 +281,15 @@ void GalleryLayoutTest::packPoses_masonryFillAndRowsFill()
     // col1 centre y: h/2 = 40 after scale
     QCOMPARE(u.at(1).center.y(), 40.0);
 
-    // RowsFill: mirror on width.
-    const auto rows = GalleryLayout::packPosesMasonryRowsFill(uneven, 0.0, 10.0, 110.0, 2);
+    // RowsFill dual: equal heights, unequal widths so axis-fill scale is 1.
+    // row0: 80, row1: 40 → row1 s=2; scales 1 and 2.
+    const QVector<QSizeF> unevenRows{QSizeF(80, 50), QSizeF(40, 50)};
+    const auto rows = GalleryLayout::packPosesMasonryRowsFill(unevenRows, 0.0, 10.0, 110.0, 2);
     QCOMPARE(rows.size(), 2);
     QCOMPARE(rows.at(0).scale, 1.0);
     QCOMPARE(rows.at(1).scale, 2.0);
+    // row1 centre x: w/2 = 40 after scale
+    QCOMPARE(rows.at(1).center.x(), 40.0);
 }
 
 void GalleryLayoutTest::packPosesForMode_dispatches()
