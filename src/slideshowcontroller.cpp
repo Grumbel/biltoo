@@ -662,7 +662,17 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
         }
     }
     if (const WorkspaceItemState *st = m_view->itemWorld().getPathState(path)) {
-        if (SessionAppearance::hasContentAppearance(*st)) {
+        if (sid != kInvalidSessionImageId) {
+            // Bound: orient/flip path hint only — never path crop (IDENTITY).
+            out->path = path;
+            out->sessionId = sid;
+            out->contentHFlip = st->contentHFlip;
+            out->contentVFlip = st->contentVFlip;
+            out->contentQuarterTurns = st->contentQuarterTurns;
+            if (SessionAppearance::hasContentAppearance(*out)) {
+                return true;
+            }
+        } else if (SessionAppearance::hasContentAppearance(*st)) {
             *out = *st;
             return true;
         }
@@ -670,16 +680,20 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
     ThumtooCache::StoredContentAppearance stored;
     if (ThumtooCache::loadContentAppearance(path, &stored)
         && (stored.contentHFlip || stored.contentVFlip
-            || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+            || stored.contentQuarterTurns != 0
+            || (sid == kInvalidSessionImageId && stored.hasCrop))) {
         out->path = path;
         out->sessionId = sid;
         out->contentHFlip = stored.contentHFlip;
         out->contentVFlip = stored.contentVFlip;
         out->contentQuarterTurns = stored.contentQuarterTurns;
-        out->hasCrop = stored.hasCrop;
-        out->cropRect = stored.cropRect;
-        out->cropSourceSize = stored.cropSourceSize;
-        out->cropRotation = stored.cropRotation;
+        // Path-keyed XDG crop only for unbound (bound crop is id-keyed).
+        if (sid == kInvalidSessionImageId && stored.hasCrop) {
+            out->hasCrop = true;
+            out->cropRect = stored.cropRect;
+            out->cropSourceSize = stored.cropSourceSize;
+            out->cropRotation = stored.cropRotation;
+        }
         return SessionAppearance::hasContentAppearance(*out);
     }
     return false;

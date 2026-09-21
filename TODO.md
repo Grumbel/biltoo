@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2013-slideshow-bound-no-path-crop.** Slideshow content snapshot respects IDENTITY.
+Prior: **2012**.
+
+### Change
+`SlideshowController::snapshotSlideshowContentAppearance`:
+- Bound id: path-map fallback is orient/flip only
+- Path-keyed XDG crop is adopted only when unbound
+- Bound crop remains id-keyed via `sessionAppearanceValue`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2013-slideshow-bound-no-path-crop-e77da63.bundle HEAD
+```
+Requires tip **2012** (base **e77da63**); includes 1938–2013.
+
+### Next
+- Stage 4 / build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2012-bound-no-path-crop-read.** Bound slots never take crop from path map on read.
 Prior: **2011**.
 
