@@ -69,10 +69,6 @@
     void restoreViewportAfterSessionRemove(bool gallery, const QRectF &keptSceneRect,
                                            const QPointF &keptCenter, int scrollH, int scrollV);
 
-    /** Best-effort: remember viewport centre in image-normalized coords. */
-
-    void restoreStickyPanAnchor(ImageItem *item);
-
     /** Current view-level scale factor (workspace zoom). */
     qreal viewScale() const;
 

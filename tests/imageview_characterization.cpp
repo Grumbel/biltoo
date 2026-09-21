@@ -26,6 +26,7 @@
 
 #if defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)
 #  include "imageview.h"
+#  include "imageitem.h"
 #endif
 
 #include <QtTest/QtTest>

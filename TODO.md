@@ -2,6 +2,29 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2101-characterization-build-fix.** Fix ImageView characterization harness compile.
+Prior: **2100**.
+
+### Change
+- Include `imageitem.h` under harness (complete type for hasDisplayPixels)
+- Promote `restoreStickyPanAnchor` to public host pipeline (with captureStickyPanAnchor)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2101-characterization-build-fix-e77da63.bundle HEAD
+```
+Requires tip **2100** (base **e77da63**); includes 1938–2101.
+
+### Next
+- Phase 6 Tier 4: full async decode / PreferCache ladder (optional)
+- Stage 2 / SESSION residual only if new host digs appear
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2100-image-mode-loadreplace-characterization.** Phase 6 Tier 4 residual: Image-mode sync LoadReplace navigate.
 Prior: **2099**.
 
