@@ -25,7 +25,7 @@
     ImageItem *findItemForPath(const QString &path) const;
     /** Gallery: selected tile, else first live item (keyboard open / focus). */
     ImageItem *selectedOrFirstGalleryItem() const;
-    /** Emit galleryItemFocused / sessionImageFocused for @p item. */
+    /** Emit sessionImageFocused / sessionSlotFocused / galleryItemFocused for @p item. */
     void emitGalleryItemFocus(ImageItem *item);
     /** Page-guide selection chrome (Workspace print frame). */
     void setPageGuideSelected(bool on);

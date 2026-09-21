@@ -117,14 +117,16 @@ unbound and edits will not propagate correctly in Workspace).
 2. **Open-by-path still exists (fallback only)**  
    Gallery open / double-click prefer `sessionImageOpenRequested(id)` then
    `sessionSlotOpenRequested(index)`; path-only is unbound fallback.
+   Gallery focus/remove prefer id, then list index (`sessionSlotFocused` /
+   `sessionRemoveIndicesRequested`), path last (biltoo-2112).
    `showPathInImageMode` prefers live preferred item + session id.
    Sort / append / remove / slideshow start prefer `SessionImageId` over
    `paths().indexOf` (biltoo-2105). Workspace filmstrip selection restore after
    append prefers live `itemSessionIds()` (biltoo-2106). Empty-workspace
    LoadReplace seed and bulk selection→canvas bind ids (biltoo-2107/2108).
    Image-mode drop focus prefers filmstrip `sessionIds`, else
-   `lastIndexOfPath` / `firstIdForPath` (biltoo-2111). Residual: path open
-   signal for truly unbound tiles; `removeSessionPaths` first-match fallback.
+   `lastIndexOfPath` / `firstIdForPath` (biltoo-2111). Residual: path
+   open/remove only when unbound and list index unknown.
 
 3. **Path map (`PathItemStateBook`) — bound writes are a no-op (biltoo-2110)**  
    `ItemWorld::setPathState` ignores states that carry a bound SessionImageId

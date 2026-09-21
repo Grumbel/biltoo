@@ -656,11 +656,15 @@ signals:
     void sessionImageOpenRequested(SessionImageId sessionId);
     /** Gallery focus moved (path fallback when tile is unbound). */
     void galleryItemFocused(const QString &path);
+    /** Gallery focus by session list index (unbound tile with list-order cache). */
+    void sessionSlotFocused(int sessionIndex);
     /** Gallery focus by stable session id (preferred when tile is bound). */
     void sessionImageFocused(SessionImageId sessionId);
     /** Gallery: remove selected session images by id (duplicate-safe). */
     void sessionRemoveIdsRequested(const QVector<SessionImageId> &ids);
-    /** Gallery: path-only remove for unbound tiles. */
+    /** Gallery: remove by session list indices (unbound tiles with list-order cache). */
+    void sessionRemoveIndicesRequested(const QList<int> &indices);
+    /** Gallery: path-only remove for unbound tiles without list index. */
     void sessionRemovePathsRequested(const QStringList &paths);
     /** File URLs dropped onto the view (same semantics as MainWindow). */
     void filesDropped(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,

@@ -105,6 +105,21 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::removeSessionPaths);
     connect(m_imageView, &ImageView::sessionRemoveIdsRequested,
             this, &MainWindow::removeSessionIds);
+    connect(m_imageView, &ImageView::sessionRemoveIndicesRequested,
+            this, &MainWindow::removeSessionIndices);
+    connect(m_imageView, &ImageView::sessionSlotFocused,
+            this, [this](int idx) {
+                if (idx < 0) {
+                    return;
+                }
+                if (isGalleryMode()) {
+                    QTimer::singleShot(0, this, [this, idx]() {
+                        setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
+                    });
+                } else {
+                    setCurrentIndex(idx, /*ensureGalleryVisible=*/false);
+                }
+            });
     connect(m_imageView, &ImageView::sessionImageFocused,
             this, [this](SessionImageId id) {
                 const int idx = indexOfSessionId(id);

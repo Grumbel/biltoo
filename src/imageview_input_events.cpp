@@ -288,7 +288,15 @@ void ImageView::emitGalleryItemFocus(ImageItem *item)
     }
     if (item->sessionId() != kInvalidSessionImageId) {
         emit sessionImageFocused(item->sessionId());
-    } else if (!item->path().isEmpty()) {
+        return;
+    }
+    // Unbound but list-order known: prefer slot over path first-match.
+    const int listIdx = sessionListIndex(item);
+    if (listIdx >= 0) {
+        emit sessionSlotFocused(listIdx);
+        return;
+    }
+    if (!item->path().isEmpty()) {
         emit galleryItemFocused(item->path());
     }
 }

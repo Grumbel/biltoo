@@ -554,11 +554,7 @@ bool GalleryController::tryMousePressGalleryRight(QMouseEvent *event)
         m_view->canvasScene()->clearSelection();
         hit->setSelected(true);
         setSelectionAnchor(hit);
-        if (hit->sessionId() != kInvalidSessionImageId) {
-            emit m_view->sessionImageFocused(hit->sessionId());
-        } else if (!hit->path().isEmpty()) {
-            emit m_view->galleryItemFocused(hit->path());
-        }
+        m_view->emitGalleryItemFocus(hit);
         emit m_view->statusChanged();
     }
     event->accept();
@@ -610,11 +606,7 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
                 m_view->viewport()->update();
             }
             emit m_view->canvasSelectionChanged();
-            if (hit->sessionId() != kInvalidSessionImageId) {
-                emit m_view->sessionImageFocused(hit->sessionId());
-            } else if (!hit->path().isEmpty()) {
-                emit m_view->galleryItemFocused(hit->path());
-            }
+            m_view->emitGalleryItemFocus(hit);
             event->accept();
             if (m_view->hostHudPrefs().isVisible() || m_view->hostHudFlash().isVisible()) {
                 emit m_view->statusChanged();
@@ -633,11 +625,7 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
             }
             hit->invalidateDeviceCache();
             emit m_view->canvasSelectionChanged();
-            if (hit->sessionId() != kInvalidSessionImageId) {
-                emit m_view->sessionImageFocused(hit->sessionId());
-            } else if (!hit->path().isEmpty()) {
-                emit m_view->galleryItemFocused(hit->path());
-            }
+            m_view->emitGalleryItemFocus(hit);
             event->accept();
             if (m_view->hostHudPrefs().isVisible() || m_view->hostHudFlash().isVisible()) {
                 emit m_view->statusChanged();
@@ -668,11 +656,7 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
             }
             emit m_view->canvasSelectionChanged();
             setSelectionAnchor(hit);
-            if (hit->sessionId() != kInvalidSessionImageId) {
-                emit m_view->sessionImageFocused(hit->sessionId());
-            } else if (!hit->path().isEmpty()) {
-                emit m_view->galleryItemFocused(hit->path());
-            }
+            m_view->emitGalleryItemFocus(hit);
             event->accept();
             return true;
         }
@@ -786,6 +770,7 @@ bool GalleryController::tryKeyPressDeleteSelection(QKeyEvent *event)
     }
     const QList<QGraphicsItem *> selected = scene->selectedItems();
     QVector<SessionImageId> removeIds;
+    QList<int> removeIndices;
     QStringList removePaths;
     for (QGraphicsItem *gi : selected) {
         if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
@@ -794,17 +779,25 @@ bool GalleryController::tryKeyPressDeleteSelection(QKeyEvent *event)
             }
             if (item->sessionId() != kInvalidSessionImageId) {
                 removeIds.append(item->sessionId());
-            } else if (!item->path().isEmpty()) {
-                removePaths.append(item->path());
+            } else {
+                const int listIdx = m_view->sessionListIndex(item);
+                if (listIdx >= 0) {
+                    removeIndices.append(listIdx);
+                } else if (!item->path().isEmpty()) {
+                    removePaths.append(item->path());
+                }
             }
         }
     }
-    if (removeIds.isEmpty() && removePaths.isEmpty()) {
+    if (removeIds.isEmpty() && removeIndices.isEmpty() && removePaths.isEmpty()) {
         return false;
     }
-    // Gallery tiles are the session — remove by id when bound.
+    // Gallery tiles are the session — prefer id, then list index, path last.
     if (!removeIds.isEmpty()) {
         emit m_view->sessionRemoveIdsRequested(removeIds);
+    }
+    if (!removeIndices.isEmpty()) {
+        emit m_view->sessionRemoveIndicesRequested(removeIndices);
     }
     if (!removePaths.isEmpty()) {
         emit m_view->sessionRemovePathsRequested(removePaths);

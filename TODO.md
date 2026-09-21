@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2112-gallery-slot-focus-remove.** SESSION residual: Gallery focus/remove prefer list index over path.
+Prior: **2111**.
+
+### Change
+- `emitGalleryItemFocus`: unbound tiles with list-order cache emit
+  `sessionSlotFocused` before path `galleryItemFocused`
+- Gallery click focus sites use `emitGalleryItemFocus` (unified)
+- Gallery Delete: unbound tiles with list index → `sessionRemoveIndicesRequested`;
+  path remove only when index unknown
+- MainWindow connects slot focus + remove-indices
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2112-gallery-slot-focus-remove-e77da63.bundle HEAD
+```
+Requires tip **2111** (base **e77da63**); includes 1938–2112.
+
+### Next
+- SESSION residual: path open/remove only when unbound without list index
+- Optional: full async PreferCache / thumtoo ladder characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2111-image-mode-drop-prefer-sessionId.** SESSION residual: Image-mode drop focus by SessionImageId.
 Prior: **2110**.
 
