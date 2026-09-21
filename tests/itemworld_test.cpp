@@ -8,6 +8,7 @@
 
 #include "itemworld.h"
 #include "itemcomponents.h"
+#include "contentxform.h"
 
 #include <QtTest/QtTest>
 
@@ -29,6 +30,7 @@ private slots:
     void removeAppearance_clearsComponents();
     void crop_fallbackWhenDtoWrittenDirectly();
     void clearAppearance_clearsSparseTables();
+    void appliedContentXform_runtimeOnly();
     void contentBake_setAndClear();
     void color_setAndClear();
     void setAppearance_writesBakeAndColor();
@@ -220,10 +222,17 @@ void ItemWorldTest::removeAppearance_clearsComponents()
     QCOMPARE(world.cropCount(), 1);
     QCOMPARE(world.attentionCount(), 1);
 
+    ContentXform::Value ax;
+    ax.quarterTurns = 1;
+    ax.hFlip = true;
+    world.setAppliedContentXform(7, ax);
+    QVERIFY(world.hasAppliedContentXform(7));
+
     world.removeAppearance(7);
     QCOMPARE(world.cropCount(), 0);
     QCOMPARE(world.attentionCount(), 0);
     QVERIFY(!world.hasDurableAppearance(7));
+    QVERIFY(!world.hasAppliedContentXform(7));
 }
 
 void ItemWorldTest::crop_fallbackWhenDtoWrittenDirectly()
@@ -259,12 +268,19 @@ void ItemWorldTest::clearAppearance_clearsSparseTables()
     QCOMPARE(world.colorCount(), 1);
     QCOMPARE(world.placementCount(), 1);
 
+    ContentXform::Value ax;
+    ax.hasCrop = true;
+    ax.cropRect = QRect(2, 2, 4, 4);
+    world.setAppliedContentXform(1, ax);
+    QVERIFY(world.hasAppliedContentXform(1));
+
     world.clearAppearance();
     QCOMPARE(world.cropCount(), 0);
     QCOMPARE(world.attentionCount(), 0);
     QCOMPARE(world.contentBakeCount(), 0);
     QCOMPARE(world.colorCount(), 0);
     QCOMPARE(world.placementCount(), 0);
+    QVERIFY(!world.hasAppliedContentXform(1));
 }
 
 void ItemWorldTest::contentBake_setAndClear()
@@ -666,6 +682,32 @@ void ItemWorldTest::clearContentComponents_keepsAttentionAndPlacement()
     QVERIFY(world.hasAttention(4));
     QVERIFY(world.hasPlacement(4));
     QCOMPARE(world.placement(4).pos, QPointF(5, 6));
+}
+
+/** Stage 2 residual: applied ContentXform is runtime-only (not durable). */
+void ItemWorldTest::appliedContentXform_runtimeOnly()
+{
+    ItemWorld world;
+
+    ContentXform::Value x;
+    x.quarterTurns = 2;
+    x.vFlip = true;
+    world.setAppliedContentXform(9, x);
+
+    QVERIFY(world.hasAppliedContentXform(9));
+    QCOMPARE(world.appliedContentXform(9).quarterTurns, 2);
+    QVERIFY(world.appliedContentXform(9).vFlip);
+    // Not durable appearance — project/clipboard must not require it.
+    QVERIFY(!world.hasDurableAppearance(9));
+    QVERIFY(!world.hasCrop(9));
+    QVERIFY(!world.hasContentBake(9));
+
+    world.clearAppliedContentXform(9);
+    QVERIFY(!world.hasAppliedContentXform(9));
+
+    // Unbound id is a no-op.
+    world.setAppliedContentXform(kInvalidSessionImageId, x);
+    QVERIFY(!world.hasAppliedContentXform(kInvalidSessionImageId));
 }
 
 QTEST_MAIN(ItemWorldTest)

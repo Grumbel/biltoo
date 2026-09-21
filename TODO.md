@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2080-itemworld-applied-contentxform.** Stage 2 residual: ItemWorld runtime applied ContentXform table.
+Prior: **2079**.
+
+### Change
+- `ItemWorld` runtime table `m_appliedContentXforms` (never project-persisted)
+- Dual-write from `syncLiveContentMetaFromState` / `clearLiveContentMeta` when bound
+- `removeAppearance` / `clearAppearance` drop applied rows
+- ImageItem remains paint/mid-edit mirror; unbound stays item-only
+- itemworld_test: appliedContentXform_runtimeOnly + clear/remove coverage
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2080-itemworld-applied-contentxform-e77da63.bundle HEAD
+```
+Requires tip **2079** (base **e77da63**); includes 1938–2080.
+
+### Next
+- Stage 2: prefer ItemWorld applied reads when bound, or demote ImageItem mirror
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2079-sessionindex-not-pack-order.** Stage 2 residual: sessionIndex is list order, not pack row.
 Prior: **2078**.
 

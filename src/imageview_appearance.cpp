@@ -118,7 +118,13 @@ void ImageView::syncLiveContentMetaFromState(ImageItem *item, const WorkspaceIte
     }
     // Phase 7 Stage 2: applied ContentXform is the live fingerprint (survives
     // clearDecodedPixels; identity clear uses clearLiveContentMeta).
-    item->setAppliedContentXform(ContentXform::Value::fromState(state));
+    // Dual-write ItemWorld runtime table when bound (Stage 2 residual 2080).
+    const ContentXform::Value x = ContentXform::Value::fromState(state);
+    item->setAppliedContentXform(x);
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId) {
+        m_itemWorld.setAppliedContentXform(sid, x);
+    }
 }
 
 void ImageView::syncLiveColorFromState(ImageItem *item, const ColorAdjustments &grade,
@@ -139,8 +145,12 @@ void ImageView::clearLiveContentMeta(ImageItem *item)
     if (!item) {
         return;
     }
-    // Identity: drop applied ContentXform fingerprint.
+    // Identity: drop applied ContentXform fingerprint (item + ItemWorld when bound).
     item->clearAppliedContentXform();
+    const SessionImageId sid = item->sessionId();
+    if (sid != kInvalidSessionImageId) {
+        m_itemWorld.clearAppliedContentXform(sid);
+    }
 }
 
 void ImageView::clearItemDecodedPixels(ImageItem *item)

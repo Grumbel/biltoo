@@ -1076,7 +1076,7 @@ Stage 4b delivered (product: no backward compatibility):
 |------------------|------|----------------|
 | Pixmap / preview / intrinsic size | Qt paint | Keep |
 | `m_colorAdjust` | Live grade for paint + slider lag | Keep until grade is applied only via rematerialize; interaction lag needs a host-side scratch |
-| Applied `ContentXform` fingerprint | Mid-edit content authority | Keep on item (or move to a runtime-only table under DisplayPipeline) |
+| Applied `ContentXform` fingerprint | Mid-edit content authority | ItemWorld runtime table dual-write when bound (2080); ImageItem mirror for paint / unbound |
 | Live pose (`m_scaleX`… via `applyPlacement`) | QGraphicsItem transform | Keep; durable copy is ItemWorld Placement |
 | `sessionIndex` cache | List-order mirror | Prefer `sessionListIndex` / document; `refreshSessionIndexCache` after `setSessionId` (2067–2079); never pack row; unbound may keep pack hint |
 | Tile LOD bag pointer | Runtime decode | Already pipeline-owned bag |
@@ -1454,6 +1454,8 @@ Phase 1–6 rules still apply. Additions:
   cache stamp after setSessionId; bind/LoadAdd no longer gate on cache==-1.
 - biltoo-2079: Stage 2 residual — Gallery/Workspace placeholders stamp sessionIndex
   from document (refreshSessionIndexCache), not pack row index.
+- biltoo-2080: Stage 2 residual — ItemWorld applied ContentXform runtime table;
+  dual-write on syncLive/clearLive; remove/clearAppearance drop rows.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

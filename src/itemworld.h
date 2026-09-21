@@ -6,6 +6,7 @@
 
 #include "imagesizebook.h"
 #include "itemcomponents.h"
+#include "contentxform.h"
 #include "pathitemstatebook.h"
 
 #include <QHash>
@@ -20,7 +21,8 @@
  * Persistence tags (REFACTOR.md Stage 4b):
  *   Persistent — SessionDocument paths/ids; sparse Crop / ContentBake / Color /
  *     Attention; Placement (Workspace-scoped pose); path book only for unbound.
- *   Derived only — applied ContentXform, tile LOD, soft pixels, sessionIndex.
+ *   Derived only — applied ContentXform (runtime table + ImageItem mirror),
+ *     tile LOD, soft pixels, sessionIndex.
  *   Seed book — SessionSeedBook (seedAttempted only; not content).
  *
  * setCrop / setColor / setAppearance write sparse tables only.
@@ -175,7 +177,45 @@ public:
         m_colors.remove(id);
     }
 
-void removeAppearance(SessionImageId id)
+/**
+     * Runtime-only applied ContentXform fingerprint (Stage 2 residual).
+     * Never project-persisted. Dual-written with ImageItem mid-edit authority;
+     * keyed by SessionImageId so bound tiles share one fingerprint after
+     * restamp. Unbound tiles keep ImageItem-only storage.
+     */
+    void setAppliedContentXform(SessionImageId id, const ContentXform::Value &x)
+    {
+        if (id == kInvalidSessionImageId) {
+            return;
+        }
+        m_appliedContentXforms.insert(id, x);
+    }
+
+    void clearAppliedContentXform(SessionImageId id)
+    {
+        if (id == kInvalidSessionImageId) {
+            return;
+        }
+        m_appliedContentXforms.remove(id);
+    }
+
+    bool hasAppliedContentXform(SessionImageId id) const
+    {
+        if (id == kInvalidSessionImageId) {
+            return false;
+        }
+        return m_appliedContentXforms.contains(id);
+    }
+
+    ContentXform::Value appliedContentXform(SessionImageId id) const
+    {
+        if (id == kInvalidSessionImageId) {
+            return {};
+        }
+        return m_appliedContentXforms.value(id);
+    }
+
+    void removeAppearance(SessionImageId id)
     {
         if (id == kInvalidSessionImageId) {
             return;
@@ -185,9 +225,10 @@ void removeAppearance(SessionImageId id)
         m_contentBakes.remove(id);
         m_colors.remove(id);
         m_placements.remove(id);
+        m_appliedContentXforms.remove(id);
     }
 
-    /** Clear sparse component tables. */
+    /** Clear sparse component tables and runtime applied ContentXform. */
     void clearAppearance()
     {
         m_crops.clear();
@@ -195,6 +236,7 @@ void removeAppearance(SessionImageId id)
         m_contentBakes.clear();
         m_colors.clear();
         m_placements.clear();
+        m_appliedContentXforms.clear();
     }
 
     /** Sparse crop table (Stage 1). Empty crop ⇒ absent. */
@@ -425,6 +467,8 @@ private:
     QHash<SessionImageId, ItemComponents::Color> m_colors;
     // Workspace pose; optional per id on disk (hasWorkspacePose).
     QHash<SessionImageId, ItemComponents::Placement> m_placements;
+    /** Runtime-only; not in appearanceValue / project save. */
+    QHash<SessionImageId, ContentXform::Value> m_appliedContentXforms;
 };
 
 #endif // ITEMWORLD_H
