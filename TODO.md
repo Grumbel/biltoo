@@ -2,6 +2,30 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2205-image-no-path-xdg-seed.** Image underlay still path-XDG-seeded
+via appearanceForNewImageModeItem / wantAppearanceForItem / resolveStoredAppearance
+even though installDisplayPixels refuses XDG. That wrote orient into contentBake
+when only Workspace Placement existed (Image rotated, Workspace did not).
+
+### Fix
+- appearanceForNewImageModeItem: ItemWorld read only (no seed)
+- wantAppearanceForItem: seed only when not Image mode
+- resolveStoredAppearance: seed only when not Image mode
+- Session open + Gallery still seed
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2205-image-no-path-xdg-seed-e77da63.bundle HEAD
+```
+
+Next: **2206**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2204-filmstrip-no-displayready-override.** sampleForImageModePending
 still returned session-id content-baked override as displayReady for Image
 underlay. resolveImageModePendingPixels discarded it, but the parallel path

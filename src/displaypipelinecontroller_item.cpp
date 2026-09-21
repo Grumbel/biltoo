@@ -65,11 +65,13 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
             }
         }
         if (curId != kInvalidSessionImageId) {
-            seedSessionAppearanceFromState(curId, path);
+            // Image underlay create: ItemWorld only — never path-XDG seed here.
+            // Session open (seedSessionAppearancesFromPaths) and Gallery already
+            // seed; installDisplayPixels also refuses XDG (ECS_GUI_BYPASSES #7).
             if (m_view->itemWorld().hasDurableAppearance(curId)) {
                 return m_view->sessionAppearanceValue(curId);
             }
-            // Bound session image with no appearance entry = full frame, no path fallback.
+            // Bound with empty ItemWorld = full frame, no path fallback.
             return {};
         }
     }
@@ -344,10 +346,11 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
         if (m_view->itemWorld().hasDurableAppearance(id)) {
             want = m_view->sessionAppearanceValue(id);
         }
-        // Cold open / ←→: id slot often empty until first seed. Path XDG holds
-        // durable rotate/flip/grade — pull it before materialize or we paint
-        // unoriented host forever.
-        if (!SessionAppearance::hasContentAppearance(want)
+        // Gallery/Workspace: path XDG seed when id slot is empty (cold pack).
+        // Image mode: never seed here — session open seeds; underlay install
+        // zeros orient without contentBake (Workspace Placement vs Image orient).
+        if (!m_view->isImageMode()
+            && !SessionAppearance::hasContentAppearance(want)
             && want.colorAdjust.isIdentity()
             && !item->path().isEmpty()) {
             const_cast<DisplayPipelineController *>(this)->seedSessionAppearanceFromState(
