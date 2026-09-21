@@ -267,7 +267,7 @@ void CropController::pushCropAppearanceUndo(ImageItem *item, const QString &text
     if (!m_view->hostUndoStack() || !item || !session().isEnterValid()) {
         return;
     }
-    // After storeCropAppearance the store holds the new crop; freeze prefers store.
+    // After storeCropAppearance sparse crop+bake hold the new values; freeze prefers store.
     const WorkspaceItemState afterSt = m_view->freezeItemAppearance(item);
     m_view->hostUndoStack()->push(new CropAppearanceCommand(
         m_view, item, session().enterSourceRef(), item->sourceImage().copy(),

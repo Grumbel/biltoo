@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2060-store-crop-component-writes.** storeCropAppearance writes crop+bake only.
+Prior: **2059**.
+
+### Change
+- `ImageView::storeCropAppearance` uses `setCrop` + `setContentBake` instead of
+  full `setAppearance` so crop commit cannot clear attention/color/placement
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2060-store-crop-component-writes-e77da63.bundle HEAD
+```
+Requires tip **2059** (base **e77da63**); includes 1938–2060.
+
+### Next
+- Phase 7 Stage 2 residual: further ImageItem demotion when needed
+- Phase 6 Tier 4: decode/framing characterization when prioritized
+- Audit other setAppearance call sites for component-scoped writes
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2059-setappearance-preserve-placement.** setAppearance must not clobber Workspace pose.
 Prior: **2058**.
 

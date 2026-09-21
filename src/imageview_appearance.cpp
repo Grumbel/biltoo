@@ -695,8 +695,11 @@ void ImageView::storeCropAppearance(ImageItem *item, SessionImageId sid,
         return;
     }
     if (sid != kInvalidSessionImageId) {
-        // Sparse tables via ItemWorld::setAppearance.
-        m_itemWorld.setAppearance(sid, s);
+        // Crop commit owns crop + content bake only. Do not setAppearance the
+        // full DTO — that would re-sync attention/color/placement from freeze
+        // and risk clearing components not in this write path.
+        m_itemWorld.setCrop(sid, ItemComponents::cropFromState(s));
+        m_itemWorld.setContentBake(sid, ItemComponents::contentBakeFromState(s));
     } else {
         // Unbound only: path map is the sole store.
         m_itemWorld.setPathState(item->path(), s);
