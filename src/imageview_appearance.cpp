@@ -693,12 +693,14 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
     if (loadSessionAppearance(sid, app)) {
         return true;
     }
-    // Bound sparse Crop table is authority before live ImageItem fields.
+    // captureState prefers ItemWorld Crop/ContentBake for bound ids; live item
+    // is fallback (covers unbound session crop still on the tile).
     if (sid != kInvalidSessionImageId && m_itemWorld.hasCrop(sid)) {
         *app = captureState(item);
         return true;
     }
-    if (CropSession::fillAppearanceFromItemSessionCrop(app, item)) {
+    if (item->sessionHasCrop()) {
+        *app = captureState(item);
         return true;
     }
     if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {

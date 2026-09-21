@@ -280,16 +280,14 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     // orient-only layout on top of crop pixels → stretch into the pre-crop
     // contentRect. Only pure draft (no applied crop, no session crop on the
     // item) is draft geometry.
-    const SessionImageId frameSid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
-    const bool sessionCrop = (frameSid != kInvalidSessionImageId && m_itemWorld.hasCrop(frameSid))
-        || item->sessionHasCrop();
+    // Draft enter clears live session crop while ItemWorld still holds durable
+    // crop until Apply. isDraftLayoutGeometry must use the live flag only.
+    const bool liveSessionCrop = item->sessionHasCrop();
     const bool cropDraft = CropSession::isDraftLayoutGeometry(
         m_cropCtrl.session().active(),
         item->hasAppliedContentXform() && item->appliedContentXform().hasCrop,
-        sessionCrop);
-    if (!path.isEmpty() && !sessionCrop && !cropDraft) {
+        liveSessionCrop);
+    if (!path.isEmpty() && !liveSessionCrop && !cropDraft) {
         const QSize fileNative = ensureLogicalSizeForPath(path);
         if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
             && !m_sizeBook.isProvisional(path)) {

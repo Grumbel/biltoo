@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1940-crop-draft-live-meta.** Crop draft enter uses clearLiveContentMeta.
+Prior: **1939**.
+
+### Change
+- Crop enter keep/reinstall paths clear live session crop via `clearLiveContentMeta`
+- Remove CropSession::applyKeepEnterFlags / applyEnterDraftFlags / fillAppearanceFromItemSessionCrop
+- loadRestoreCropAppearance: captureState for live session crop fallback
+- Framing draft geometry: live item session crop only (ItemWorld still holds durable crop during draft)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1940-crop-draft-live-meta-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1940.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- paint/tile-LOD still read live item fields (dual-write install remains)
+- Optional: mergeAppliedAndLiveFlags residual in display pipeline
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1939-crop-readers-itemworld.** Residual crop/flip readers prefer ItemWorld.
 Prior: **1938**.
 

@@ -303,18 +303,6 @@ void CropSession::restoreEnterScale(ImageItem *item) const
     item->applyPlacement(pl);
 }
 
-void CropSession::applyKeepEnterFlags(ImageItem *item, const WorkspaceItemState &contentOnly,
-                                      const ContentXform::Value &wantX)
-{
-    if (!item) {
-        return;
-    }
-    clearItemFreePlacementForDraft(item);
-    item->setSessionCrop(false, QRect());
-    item->setColorAdjustmentsRecord(contentOnly.colorAdjust);
-    item->setAppliedContentXform(wantX);
-}
-
 QSize CropSession::cropBasisSize(const QSize &imageSize, const QSize &fileNative,
                                  const WorkspaceItemState *orientFromAppearance,
                                  const ImageItem *item)
@@ -420,15 +408,6 @@ QImage CropSession::pickEnterSnapshotPixels(const ImageItem *item)
     return src;
 }
 
-void CropSession::applyEnterDraftFlags(ImageItem *item, const ContentXform::Value &wantX)
-{
-    if (!item) {
-        return;
-    }
-    item->setSessionCrop(false, QRect());
-    item->setAppliedContentXform(wantX);
-}
-
 bool CropSession::shouldPushResetUndo(const QSize &currentSourceSize) const
 {
     return isEnterValid()
@@ -528,19 +507,6 @@ SessionAppearance::PixelKind CropSession::applyPixelKind(bool multiMp)
                    : SessionAppearance::PixelKind::FullSource;
 }
 
-
-bool CropSession::fillAppearanceFromItemSessionCrop(WorkspaceItemState *app,
-                                                    const ImageItem *item)
-{
-    if (!app || !item || !item->sessionHasCrop()) {
-        return false;
-    }
-    app->hasCrop = true;
-    app->cropRect = item->sessionCropRect();
-    app->contentHFlip = item->contentHFlip();
-    app->contentVFlip = item->contentVFlip();
-    return true;
-}
 
 bool CropSession::shouldRequestFullOnNullEnter(bool hadPriorCrop, const QString &path)
 {

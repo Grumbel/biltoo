@@ -163,9 +163,6 @@ public:
 
     void restoreEnterScale(ImageItem *item) const;
 
-    static void applyKeepEnterFlags(ImageItem *item, const WorkspaceItemState &contentOnly,
-                                    const ContentXform::Value &wantX);
-
     static QSize cropBasisSize(const QSize &imageSize, const QSize &fileNative,
                                const WorkspaceItemState *orientFromAppearance,
                                const ImageItem *item);
@@ -191,8 +188,6 @@ public:
 
     static QImage pickEnterSnapshotPixels(const ImageItem *item);
 
-    static void applyEnterDraftFlags(ImageItem *item, const ContentXform::Value &wantX);
-
     bool shouldPushResetUndo(const QSize &currentSourceSize) const;
 
     static void clearItemPixelsForDraftReinstall(ImageItem *item);
@@ -217,10 +212,6 @@ public:
                                              const ImageItem *item);
 
     static SessionAppearance::PixelKind applyPixelKind(bool multiMp);
-
-    /** Fill hasCrop/cropRect/content flips from the live item session crop. */
-    static bool fillAppearanceFromItemSessionCrop(WorkspaceItemState *app,
-                                                  const ImageItem *item);
 
     /** True when enter host is null and a prior crop should force a full load. */
     static bool shouldRequestFullOnNullEnter(bool hadPriorCrop, const QString &path);
