@@ -126,15 +126,24 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
     WorkspaceItemState want;
     if (sessionId != kInvalidSessionImageId && hasSessionAppearance(sessionId)) {
         want = sessionAppearanceValue(sessionId);
+        // Placement/color-only durable row is not content orient — same strip as
+        // installDisplayPixels / createItemFromImage (2205–2206). Otherwise
+        // filmstrip/Gallery layout can transpose while paint stays identity.
+        if (!m_itemWorld.hasContentBake(sessionId) && !m_itemWorld.hasCrop(sessionId)) {
+            want.contentQuarterTurns = 0;
+            want.contentHFlip = false;
+            want.contentVFlip = false;
+            want.hasCrop = false;
+            want.cropRect = QRect();
+            want.cropSourceSize = QSize();
+            want.cropRotation = 0.0;
+        }
     } else if (sessionId == kInvalidSessionImageId && !path.isEmpty()) {
         if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
             want = *st;
         }
     }
-    // Bound SessionImageId: layout only from ItemWorld contentBake/crop — never
-    // path XDG. XDG layout with host-raw pixels swapped the content box while
-    // install logged turns=0 (looked like wrong rotation on first Image open).
-    // Unbound path rows may still use full XDG including crop.
+    // Bound: never path XDG. Unbound path rows may still use full XDG including crop.
     if (!SessionAppearance::hasContentAppearance(want) && !path.isEmpty()
         && sessionId == kInvalidSessionImageId) {
         ThumtooCache::StoredContentAppearance stored;

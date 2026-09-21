@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2207-content-layout-size-orient-strip.** contentLayoutSize used
+sessionAppearanceValue for bound ids without the install/create rule that
+placement-only rows are not content orient — filmstrip/Gallery layout could
+transpose while paint stayed identity.
+
+### Fix
+- contentLayoutSize: strip orient/crop when no contentBake and no sparse crop
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2207-content-layout-size-orient-strip-e77da63.bundle HEAD
+```
+
+Next: **2208**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2206-image-create-layout-matches-install.** Image underlay create
 computed intrinsic via appearanceForNewImageModeItem without the same
 placement-only orient strip that installDisplayPixels applies — layout could
