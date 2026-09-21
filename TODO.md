@@ -2,6 +2,33 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2142-mainwindow-expand-split.** Expand TU; file-dialog filter with nav.
+Prior: **2141**.
+
+### Change
+- `mainwindow_expand.cpp` — isImageFile, expand progress, background expand (~224 lines)
+- `imageFileDialogFilter` moved into `mainwindow_nav.cpp` (was anonymous in session;
+  openFiles/addFiles in nav could not see it after 2141 — same class of per-TU
+  visibility issue as the 2138/2139 undo commands)
+- `mainwindow_session.cpp` — load/append/cursor/remove (~932 lines)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2142-mainwindow-expand-split-e77da63.bundle HEAD
+```
+Requires tip **2141** (base **e77da63**); includes 1938–2142.
+
+### Next
+- Runtime QA: filmstrip drop of content-rotated image (box + pixels)
+- Runtime QA: Workspace → Gallery → Workspace keeps tiles
+- Medium: opacity/HiDPI polish (runtime re-check)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2141-mainwindow-sort-nav-split.** Sort and navigation TUs split from mainwindow_session.
 Prior: **2140**.
 

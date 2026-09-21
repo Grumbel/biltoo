@@ -38,6 +38,31 @@
 
 // Navigation actions, location bar, EPUB/PDF open helpers (split from mainwindow_session).
 
+namespace {
+
+QString imageFileDialogFilter()
+{
+    QStringList imagePatterns;
+    for (const QString &suffix : ImageLoader::imageSuffixes()) {
+        imagePatterns.append(QStringLiteral("*.%1").arg(suffix));
+    }
+    QStringList archivePatterns;
+    for (const QString &suffix : ArchivePath::archiveSuffixes()) {
+        // Compound suffixes like tar.gz → *.tar.gz
+        archivePatterns.append(QStringLiteral("*.%1").arg(suffix));
+    }
+    const QString images = imagePatterns.join(QLatin1Char(' '));
+    const QString archives = archivePatterns.join(QLatin1Char(' '));
+    // First filter is the dialog default — include archives/PDFs/EPUBs so containers are visible.
+    return QObject::tr(
+               "Images, archives, PDF, EPUB and DjVu (%1 %2 *.pdf *.epub *.djvu *.djv);;"
+               "Images only (%1);;Archives only (%2);;PDF documents (*.pdf);;"
+               "EPUB books (*.epub);;DjVu documents (*.djvu *.djv);;All Files (*)")
+        .arg(images, archives);
+}
+
+} // namespace
+
 void MainWindow::updateNavPrevNextSlideshowActions(bool hasFiles, bool hasMany)
 {
     // Prev/Next are Image mode only. Slideshow may start from Gallery (enters
