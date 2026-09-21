@@ -92,9 +92,10 @@ Session / ItemWorld / PackOrderOverlay cases (no ImageView). See AGENT-ENV.md.
 - [x] ViewFraming defaults on offscreen ImageView construct
 - [x] prepareImageModeCanvas resets view scale to 1 + Fit; fitItem yields positive view scale
 - [x] captureStickyPanAnchor preserves view scale / pan; restoreStickyPanAnchor safe after fit
+- [x] Soft install + fit/capture/restore handoff across two session ids (no async Image load)
 - [x] `pathOrderClear` leaves doc + all id-keyed components; LoadAdd multiplicity
-- [ ] Full async decode / PreferCache ladder (optional; not required for pack dual-model)
-- [ ] Full return-to-Image navigate across session ids (later; capture/restore locked)
+- [ ] Full async decode / PreferCache ladder (optional; DisplaySurface decide pure tests cover policy)
+- [ ] Full Image-mode LoadReplace navigate + sticky restore across session ids (later)
 
 ## Landed
 

@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2099-cross-session-framing-handoff.** Phase 6 Tier 4 residual: framing handoff across two session ids.
+Prior: **2098**.
+
+### Change
+- ImageView harness: soft-install sibling, fitItem + capture/restore sticky on
+  other id, then handoff back to focus id
+- Checklist: cross-session soft framing handoff locked; async Image LoadReplace
+  navigate still open
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2099-cross-session-framing-handoff-e77da63.bundle HEAD
+```
+Requires tip **2098** (base **e77da63**); includes 1938–2099.
+
+### Next
+- Phase 6 Tier 4: full async decode / PreferCache ladder (optional)
+- Phase 6 Tier 4: full Image-mode LoadReplace navigate + sticky restore (later)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2098-sticky-pan-capture-characterization.** Phase 6 Tier 4 residual: sticky pan capture/restore + preserved scale.
 Prior: **2097**.
 

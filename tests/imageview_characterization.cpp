@@ -660,6 +660,34 @@ void ImageViewCharacterizationTest::imageView_openGalleryCropReturn()
         // restore must not crash; centres on captured pan when available.
         view.restoreStickyPanAnchor(focusItem);
         QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
+
+        // Framing handoff across session ids (prev/next style without async Image load).
+        ImageItem *otherItem = view.findItemBySessionId(other);
+        QVERIFY(otherItem != nullptr);
+        QImage hostB(m_pathB);
+        QVERIFY(!hostB.isNull());
+        QCOMPARE(hostB.size(), QSize(80, 60));
+        view.hostDisplayPipeline().installDisplayPixels(
+            otherItem, hostB, SessionAppearance::PixelKind::SoftPreview, other);
+        QVERIFY(otherItem->hasDisplayPixels());
+        // Sibling now has pixels; focus still has pixels from earlier install.
+        QVERIFY(focusItem->hasDisplayPixels());
+
+        view.fitItem(otherItem, Qt::KeepAspectRatio);
+        const qreal otherFitScale = ViewTransform::scaleFrom(view.transform());
+        QVERIFY(otherFitScale > 0.0);
+        view.captureStickyPanAnchor(otherItem);
+        if (view.hostFraming().hasPreservedViewScale()) {
+            QCOMPARE(view.hostFraming().currentPreservedViewScale(), otherFitScale);
+        }
+        view.restoreStickyPanAnchor(otherItem);
+        QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
+
+        // Switch capture back to focus id (navigate-like framing continuity).
+        view.fitItem(focusItem, Qt::KeepAspectRatio);
+        view.captureStickyPanAnchor(focusItem);
+        view.restoreStickyPanAnchor(focusItem);
+        QVERIFY(ViewTransform::scaleFrom(view.transform()) > 0.0);
     }
 
     // Mode-leave style clear: pack blank; all id-keyed components intact.
