@@ -137,10 +137,9 @@ void ImageView::rematerializeGalleryItemFromStore(ImageItem *item)
         return;
     }
     const ContentXform::Value want = ContentXform::Value::fromState(*st);
-    const ContentXform::Value applied = item->hasAppliedContentXform()
-        ? item->appliedContentXform()
-        : ContentXform::Value{};
-    if (ContentXform::equal(applied, want) && item->hasDisplayPixels()) {
+    const ContentXform::Value applied = item->tileContentXform();
+    if (item->hasAppliedContentXform() && ContentXform::equal(applied, want)
+        && item->hasDisplayPixels()) {
         // Applied matches store; still fix layout if intrinsic is full-frame.
         applyContentLayoutSize(item, *st);
         return;
@@ -299,7 +298,7 @@ void ImageView::finishAsyncHostRematerialize(const QString &path, SessionImageId
     // Soft (or soft-sized) FullSource with applied identity used to match and
     // discard Prefer/Full async bakes permanently.
     if (item->hasDecodedPixels() && item->hasAppliedContentXform()
-        && ContentXform::equal(item->appliedContentXform(), wantX)
+        && ContentXform::equal(item->tileContentXform(), wantX)
         && !item->shouldUpgradeDisplayTo(ImageCache::longEdge(display))) {
         return;
     }

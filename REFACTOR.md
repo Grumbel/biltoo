@@ -1206,6 +1206,8 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1966: drop content-meta lag fields; tileContentXform is applied-only.
 - biltoo-1967: rename mergeLiveContentLagFlags → fillEmptyContentFlags; wantAppearance
   sparse fill without dead tileContentXform call; crop-locked color flush re-schedules.
+- biltoo-1968: privatize bakeRotate90/bakeFlip; appliedContentXform → tileContentXform
+  alias; call sites prefer tileContentXform; setTargetColor docs live vs ItemWorld.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

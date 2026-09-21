@@ -45,7 +45,7 @@ QImage CropSession::pickApplyHost(ImageItem *item, const QString &path, bool *fr
         return host;
     }
     if (item && item->hasAppliedContentXform()
-        && item->appliedContentXform().hasCrop) {
+        && item->tileContentXform().hasCrop) {
         return {};
     }
     if (!item) {
@@ -69,9 +69,10 @@ bool CropSession::canKeepDisplayForEnter(const ImageItem *item,
     if (item->displayPixelLongEdge() < ContentXform::kGuiMaterializeMaxEdge) {
         return false;
     }
+    const ContentXform::Value applied = item->tileContentXform();
     const bool appliedOk = item->hasAppliedContentXform()
-        && !item->appliedContentXform().hasCrop
-        && ContentXform::equal(item->appliedContentXform(), wantX);
+        && !applied.hasCrop
+        && ContentXform::equal(applied, wantX);
     const bool liveGradeOk = !item->hasAppliedContentXform()
         && !needGeomBake
         && item->colorAdjustments().matches(contentOnly.colorAdjust);
@@ -496,7 +497,7 @@ CropSession::ApplyHostStatus CropSession::classifyApplyHost(const QImage &host,
         return ApplyHostStatus::Ok;
     }
     if (!hostFromCache && item && item->hasAppliedContentXform()
-        && item->appliedContentXform().hasCrop) {
+        && item->tileContentXform().hasCrop) {
         return ApplyHostStatus::NeedFull;
     }
     return ApplyHostStatus::NoPixels;

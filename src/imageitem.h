@@ -139,25 +139,24 @@ public:
     ColorAdjustments colorAdjustments() const { return m_colorAdjust; }
 
     /**
-     * Content xform that was applied to the current display sample.
-     * Compared on install so rematerialize is driven by data, not aspect heuristics.
-     * Primary live content-meta path is tileContentXform() (applied only).
-     * Mutators are private (ImageView syncLiveContentMetaFromState / ImageItem self).
+     * True when an applied ContentXform fingerprint is installed (even identity).
+     * Distinct from tileContentXform() fields: host-raw samples have no applied
+     * fingerprint and may take live colour grade without rematerialize.
      */
-    ContentXform::Value appliedContentXform() const { return m_appliedContentXform; }
     bool hasAppliedContentXform() const { return m_hasAppliedContentXform; }
 
     /**
      * Single live content-meta reader for tile plan, chrome, and host capture.
      * Applied ContentXform only (empty when identity-cleared). Install mutators
-     * are ImageView-only (private).
+     * are ImageView-only (private). Prefer this over appliedContentXform().
      */
     ContentXform::Value tileContentXform() const;
 
-    /** Bake ±90° into source pixels; placement angle unchanged. */
-    void bakeRotate90(int quarterTurns);
-    /** Bake horizontal/vertical mirror into source pixels; clears flip flags. */
-    void bakeFlip(bool horizontal, bool vertical);
+    /**
+     * Same as tileContentXform() — retained name for call sites that mean
+     * "fingerprint on the sample" (gated on hasAppliedContentXform).
+     */
+    ContentXform::Value appliedContentXform() const { return tileContentXform(); }
 
     /** When false, the item cannot be selected or dragged (classic viewer). */
     void setInteractive(bool on);
@@ -306,6 +305,10 @@ private:
         m_hasAppliedContentXform = false;
         clearTileGradedCache();
     }
+    /** Bake ±90° into source pixels; placement angle unchanged. ImageView + self. */
+    void bakeRotate90(int quarterTurns);
+    /** Bake horizontal/vertical mirror into source pixels; clears flip flags. */
+    void bakeFlip(bool horizontal, bool vertical);
     void tickTileLod(int budget = 8);
     /** Plan/paint helpers (ImageItem paint + tick only). */
     void prepareTileLod();

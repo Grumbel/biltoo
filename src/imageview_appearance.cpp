@@ -607,21 +607,23 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     slot.path = item->path().isEmpty() ? slot.path : item->path();
     slot.colorAdjust = adj;
     if (sid != kInvalidSessionImageId) {
-        // Component write (dual-writes DTO color fields); then ensure path/id.
+        // ItemWorld Color is persistence authority (dual-writes DTO colour).
+        // Live grade is installed below via applyInteractiveColorGrade →
+        // syncLiveColorFromState (interaction authority).
         ItemComponents::Color c;
         c.grade = adj;
         m_itemWorld.setColor(sid, c);
         if (const WorkspaceItemState *cur = m_itemWorld.getAppearance(sid)) {
             slot = *cur;
+            slot.colorAdjust = adj; // setColor already wrote grade; keep slot local
             if (slot.path.isEmpty() || slot.sessionId == kInvalidSessionImageId) {
                 slot.sessionId = sid;
                 slot.path = item->path();
-                slot.colorAdjust = adj;
                 m_itemWorld.setAppearance(sid, slot);
             }
         }
     }
-    // Fast path while dragging: bake from clamped host (no SQLite / filmstrip).
+    // Fast path while dragging: live grade + optional host bake (no SQLite).
     applyInteractiveColorGrade(item, slot);
     if (sid != kInvalidSessionImageId || !item->path().isEmpty()) {
         scheduleColorAdjustCommit(sid, item->path());
@@ -697,10 +699,8 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
         rematerializeItemContent(item, app);
     } else if (!tryRematerializeFromHost(item, app)) {
         m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
-        if (!ContentXform::equal(
-                item->hasAppliedContentXform() ? item->appliedContentXform()
-                                               : ContentXform::Value{},
-                ContentXform::Value::fromState(app))) {
+        if (!ContentXform::equal(item->tileContentXform(),
+                                 ContentXform::Value::fromState(app))) {
             rematerializeItemContent(item, app);
         }
     }

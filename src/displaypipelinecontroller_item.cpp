@@ -489,9 +489,7 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
         const bool sameId = (m_view->hostSessionId().hasCurrentId()
                              && cand->sessionId() == m_view->hostSessionId().currentIdValue());
         const bool hasApplied = cand->hasAppliedContentXform();
-        const ContentXform::Value applied = hasApplied
-            ? cand->appliedContentXform()
-            : ContentXform::Value{};
+        const ContentXform::Value applied = cand->tileContentXform();
         // Display-ready: same session row and bake already matches store want.
         if (sameId && hasApplied && ContentXform::equal(applied, wantX)) {
             if (displayReadyOut) {

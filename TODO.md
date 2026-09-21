@@ -2,6 +2,35 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1968-privatize-bake-tile-content.** Private bake + tileContentXform authority.
+Prior: **1967**.
+
+### Change
+- `bakeRotate90` / `bakeFlip` moved to ImageItem private (ImageView friend + self)
+- `appliedContentXform()` is a gated alias of `tileContentXform()` (no stale
+  fingerprint when `hasAppliedContentXform` is false)
+- Call sites prefer `tileContentXform()` for content-meta reads
+- `setTargetColorAdjustments` documents live vs ItemWorld Color split; always
+  refreshes local slot grade after `setColor`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1968-privatize-bake-tile-content-e77da63.bundle HEAD
+```
+Requires tip **1967** (base **e77da63**); includes 1938–1968.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host (priority)
+- Color interaction path is stable; optional: drop fat-DTO colour reads where
+  ItemWorld Color sparse table is enough
+- Further ImageItem public surface trim (placement flip chrome is Placement, not content-meta)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1967-sparse-fill-color-flush.** Sparse fill rename + crop-locked color flush.
 Prior: **1966**.
 
