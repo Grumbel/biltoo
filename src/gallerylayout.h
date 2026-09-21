@@ -6,6 +6,7 @@
 
 #include <QList>
 #include <QSizeF>
+#include "itemcomponents.h"
 #include <cmath>
 #include "viewtransform.h"
 #include <functional>
@@ -20,6 +21,8 @@ namespace GalleryLayout {
 
 /** Writes ImageItem gallery cell size (ImageItem mutator is private). */
 void setItemGalleryCellSize(ImageItem *item, const QSizeF &sceneSize);
+/** Writes live pose (ImageItem::applyPlacement is private). */
+void applyItemPlacement(ImageItem *item, const ItemComponents::Placement &pl);
 
 /**
  * True when item rotation is nearer ±90°/±270° than axis-aligned — pack

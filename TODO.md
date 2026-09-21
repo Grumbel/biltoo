@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1989-private-applyPlacement.** Privatize applyPlacement; fix GalleryLayout cell-size helper.
+Prior: **1988**.
+
+### Change
+- `ImageItem::applyPlacement` private; public `placement()` reader remains
+- `GalleryLayout::applyItemPlacement` friend helper for pack code
+- **Bugfix:** `setItemGalleryCellSize` no longer recurses into itself (1988 regression)
+- Class comment: ImageItem documented as render/hit-test proxy
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1989-private-applyPlacement-e77da63.bundle HEAD
+```
+Requires tip **1988** (base **e77da63**); includes 1938–1989.
+
+### Next
+- Characterization + full build (critical after recursion fix)
+- Remaining public mutator: `setContentEditMarksVisible` (static view pref)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1988-private-gallery-cell-size.** Privatize setGalleryCellSize via GalleryLayout helper.
 Prior: **1987**.
 

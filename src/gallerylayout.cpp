@@ -19,7 +19,15 @@ void setItemGalleryCellSize(ImageItem *item, const QSizeF &sceneSize)
     if (!item) {
         return;
     }
-    setItemGalleryCellSize(item, sceneSize);
+    item->setGalleryCellSize(sceneSize);
+}
+
+void applyItemPlacement(ImageItem *item, const ItemComponents::Placement &pl)
+{
+    if (!item) {
+        return;
+    }
+    item->applyPlacement(pl);
 }
 
 namespace {
@@ -58,7 +66,7 @@ void applyPackPose(ImageItem *item, const QPointF &center, qreal scale)
     pl.scaleY = scale;
     pl.shear = 0.0;
     pl.opacity = 1.0;
-    item->applyPlacement(pl);
+    applyItemPlacement(item, pl);
 }
 
 void finish(ImageItem *item, const std::function<void(ImageItem *)> &afterEach)
@@ -90,7 +98,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
         // applyPackPose also forces opacity 1; set early so layoutSize reads match.
         ItemComponents::Placement pl = item->placement();
         pl.opacity = 1.0;
-        item->applyPlacement(pl);
+        applyItemPlacement(item, pl);
         if (params.mode != Mode::GridCrop) {
             setItemGalleryCellSize(item, {});
         }
@@ -456,7 +464,7 @@ void pack(const QList<ImageItem *> &items, const Params &params,
                 pl.pos = origin + (pl.pos - origin) * s;
                 pl.scale *= s;
                 pl.scaleY *= s;
-                item->applyPlacement(pl);
+                applyItemPlacement(item, pl);
                 if (!item->galleryCellSize().isEmpty()) {
                     const QSizeF cs = item->galleryCellSize();
                     setItemGalleryCellSize(item, QSizeF(cs.width() * s, cs.height() * s));

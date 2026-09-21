@@ -9,6 +9,7 @@
 #include "contentxform.h"
 #include "iteminteractsession.h"
 #include "itemhandle.h"
+#include "itemcomponents.h"
 #include <QGraphicsPixmapItem>
 #include <QColor>
 #include <QImage>
@@ -23,8 +24,13 @@
 #include "tilelod/tile_lod_item_bag.hpp"
 
 /**
- * A single image on the workspace. Owns its pixmap, source pixels (for colour
- * sampling), and local scale/rotation/flip applied around the item centre.
+ * Render / hit-test proxy for one session image on the canvas.
+ *
+ * Owns display pixels, applied ContentXform fingerprint, and live placement
+ * (pose). Durable content lives in ItemWorld sparse tables —
+ * ImageView::sessionAppearanceValue is the store-read path. Mutators are
+ * private; ImageView, DisplayPipelineController, CropSession, GalleryController,
+ * and GalleryLayout helpers are the writers.
  *
  * Geometry (pixmap + item transform) is independent of interaction chrome.
  * Scale/rotation/flip live in QGraphicsItem::transform; chrome is painted in
@@ -33,6 +39,7 @@
  */
 namespace GalleryLayout {
 void setItemGalleryCellSize(class ImageItem *item, const QSizeF &sceneSize);
+void applyItemPlacement(class ImageItem *item, const ItemComponents::Placement &pl);
 }
 
 class ImageItem : public QGraphicsPixmapItem
@@ -100,8 +107,6 @@ public:
      * into pixels — not stored here.
      */
     ItemComponents::Placement placement() const;
-    /** Apply Workspace pose (Stage 2 single writer for item pose). */
-    void applyPlacement(const ItemComponents::Placement &pl);
     /** Item-local pixmap/content rect (no chrome pad). */
     QRectF contentRect() const;
     /**
@@ -247,6 +252,7 @@ private:
     friend class CropSession;
     friend class GalleryController;
     friend void GalleryLayout::setItemGalleryCellSize(ImageItem *item, const QSizeF &sceneSize);
+    friend void GalleryLayout::applyItemPlacement(ImageItem *item, const ItemComponents::Placement &pl);
     // Content-meta / color install — ImageView syncLive* helpers.
     friend class ImageView;
     // Pixel install — ImageView / DisplayPipelineController only (Stage 2).
@@ -259,6 +265,7 @@ private:
     void setScaleHandlesEnabled(bool on);
     void setHoverHandle(Handle h);
     void setGalleryCellSize(const QSizeF &sceneSize);
+    void applyPlacement(const ItemComponents::Placement &pl);
     void setDisplaySurfaceId(qint64 id) { m_displaySurfaceId = id; }
     void setIntrinsicSize(const QSize &size);
     void setSourceImage(const QImage &image);
