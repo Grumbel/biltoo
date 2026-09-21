@@ -2,6 +2,24 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2161-mode-debug-format.** Cast `QList::size()` (`qsizetype`) to `int`
+in `biltooModeDbg` format args (Wformat on Qt 6 / 64-bit).
+
+Prior: **2160** (Image cold framing + Gallery size-resolve unhide + MODE_DEBUG).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2161-mode-debug-format-e77da63.bundle HEAD
+```
+
+Next: **2162** — runtime with BILTOO_MODE_DEBUG if empty canvas persists.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2160-mode-empty-root-cause.** Deep investigation; two proven bugs fixed;
 `BILTOO_MODE_DEBUG` instrumentation; docs/INVESTIGATION_MODE_EMPTY.md.
 

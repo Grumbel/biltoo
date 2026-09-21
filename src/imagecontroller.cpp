@@ -45,8 +45,8 @@ void ImageController::enter()
                   qPrintable(QFileInfo(path).fileName()),
                   static_cast<long long>(wantId),
                   m_view->itemCount(),
-                  m_view->hostWorkspace().stashedItems().size(),
-                  m_view->hostGallery().stashedItems().size(),
+                  static_cast<int>(m_view->hostWorkspace().stashedItems().size()),
+                  static_cast<int>(m_view->hostGallery().stashedItems().size()),
                   m_view->hostGallerySoftBook().isDeferPopulate() ? 1 : 0);
 
     // Seed ImageCache from stashed tiles' display samples (copy only).

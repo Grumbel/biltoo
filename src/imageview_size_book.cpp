@@ -334,7 +334,7 @@ void ImageView::onSizeResolveGateCancelled()
         if (m_items.isEmpty() && !pathOrderIsEmpty()) {
             m_gallery.ensurePlaceholders();
             biltooModeDbg("sizeResolve CANCEL ensurePlaceholders items=%d pathOrder=%d",
-                          itemCount(), currentPackOrder().size());
+                          itemCount(), static_cast<int>(currentPackOrder().size()));
         } else if (hidden > 0) {
             biltooModeDbg("sizeResolve CANCEL unhide n=%d items=%d",
                           hidden, itemCount());

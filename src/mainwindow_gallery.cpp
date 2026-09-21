@@ -49,7 +49,7 @@ void MainWindow::populateGalleryCanvas()
     biltooModeDbg("populateGallery live=%d visibleNeed=%d session=%d defer=%d sizeRes=%d",
                   m_imageView->itemCount(),
                   needPlaceholders ? 1 : 0,
-                  m_session.paths().size(),
+                  static_cast<int>(m_session.paths().size()),
                   m_imageView->hostGallerySoftBook().isDeferPopulate() ? 1 : 0,
                   m_imageView->hostGallerySizeResolve().active() ? 1 : 0);
 }

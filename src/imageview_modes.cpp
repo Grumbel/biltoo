@@ -282,8 +282,8 @@ void ImageView::setViewMode(ViewMode mode)
     biltooModeDbg("setViewMode %d→%d live=%d wstash=%d gstash=%d",
                   static_cast<int>(previous), static_cast<int>(mode),
                   itemCount(),
-                  m_workspace.stashedItems().size(),
-                  m_gallery.stashedItems().size());
+                  static_cast<int>(m_workspace.stashedItems().size()),
+                  static_cast<int>(m_gallery.stashedItems().size()));
 
     // --- Central mode switch (leave → set mode → enter) -------------------
     // Controllers used to leave/enter while m_viewMode still named the *old*
@@ -303,8 +303,8 @@ void ImageView::setViewMode(ViewMode mode)
     }
     biltooModeDbg("setViewMode afterLeave live=%d wstash=%d gstash=%d",
                   itemCount(),
-                  m_workspace.stashedItems().size(),
-                  m_gallery.stashedItems().size());
+                  static_cast<int>(m_workspace.stashedItems().size()),
+                  static_cast<int>(m_gallery.stashedItems().size()));
     // Image has no onLeave: single underlay is cleared by Image enter or by
     // Gallery/Workspace enter when residual live tiles remain.
 
