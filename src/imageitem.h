@@ -321,6 +321,7 @@ private:
     void prepareTileLod();
     void prepareTileLodPlan();
     qreal tileDevicePerContent() const;
+    /** Live content meta for tile plan + chrome (applied xform, else session dual-write). */
     ContentXform::Value tileContentXform() const;
     QSize tileNativeSize() const;
     void clearTileGradedCache() const;

@@ -82,6 +82,11 @@ qreal ImageItem::tileDevicePerContent() const
     return screenScale() * dpr;
 }
 
+/**
+ * Single live content-meta reader for tile plan and chrome marks (Phase 7).
+ * Prefer applied ContentXform fingerprint; fall back to dual-write session
+ * crop/flip fields installed via ImageView::syncLiveContentMetaFromState.
+ */
 ContentXform::Value ImageItem::tileContentXform() const
 {
     if (m_hasAppliedContentXform) {

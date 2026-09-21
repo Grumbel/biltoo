@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1944-tile-content-xform-chrome.** Chrome marks via tileContentXform.
+Prior: **1943**.
+
+### Change
+- Corner crop/orient marks and flip-toggle chrome read content meta only through
+  `ImageItem::tileContentXform()` (applied xform, else session dual-write fields)
+- Document `tileContentXform` as the single live content-meta reader for tile plan + chrome
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1944-tile-content-xform-chrome-e77da63.bundle HEAD
+```
+Requires tip **1937** on origin (base **e77da63**); includes 1938–1944.
+
+### Next
+- Green CHARACTERIZATION=ON on roomier host
+- Further paint/tile paths still may dig session fields; dual-write install remains
+- captureState unbound + wantAppearance item fallback remain intentional
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1943-bake-before-state-authority.** Bake rotate want from beforeSt only.
 Prior: **1942**.
 
