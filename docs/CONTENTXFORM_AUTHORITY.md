@@ -49,3 +49,12 @@ Nothing else may invent quarter turns for Image underlay.
 `appearance = sessionAppearanceValue(sid)` only (after XDG seed if sparse empty).
 It does **not** call `wantAppearanceForItem`. Applied is written onto the new
 item after materialize to match that sparse want.
+
+## First open Workspace→Image (2182)
+
+**Bug:** XDG seed on Image install/enter wrote path orient into contentBake for
+ids that only had Workspace placement. Workspace showed host-raw; Image applied
+XDG → rotated unrotated images (first open; worse after other images via seed).
+
+**Rule:** Image materialize uses explicit contentBake/crop only. No XDG seed on
+Image install/enter. Placement-only rows force identity content for underlay.

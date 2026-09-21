@@ -59,11 +59,7 @@ void ImageController::enter()
     m_view->hostDisplayPipeline().loadGate().clearPending();
     m_view->clearSceneKeepingStashes();
 
-    if (!path.isEmpty() && wantId != kInvalidSessionImageId) {
-        // Ensure ItemWorld has durable orient before underlay materialize
-        // (XDG seed when sparse empty). Same for Gallery→Image and Workspace→Image.
-        m_view->hostDisplayPipeline().seedSessionAppearanceFromState(wantId, path);
-    }
+    // No XDG-seed on Image enter (Workspace placement-only must stay unoriented).
     if (!path.isEmpty()) {
         // LQIP / host sample + tiles (IMAGE_MODE_NAV_SOFT.md). No soft ladder.
         m_view->hostDisplayPipeline().loadImage(path);

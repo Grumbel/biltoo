@@ -932,24 +932,36 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
             sid = m_view->hostSessionId().currentIdValue();
         }
     }
-    seedSessionAppearanceFromState(sid, path);
-
-    // Image underlay: durable sparse only (contentBake/crop/color). Mid-edit
-    // item applied must not change materialize want — attach sets applied to
-    // match this want after bake. Other modes keep wantAppearanceForItem.
+    // Image underlay: do NOT seed XDG here. Path XDG seed on first Image open
+    // wrote orient into contentBake when only Workspace Placement existed —
+    // host stayed unrotated on Workspace, Image materialize then rotated
+    // "unrotated" images. Content ops for Image come only from explicit
+    // contentBake/crop (user edit). Gallery may still seed via wantAppearance.
     WorkspaceItemState appearance;
     if (m_view->isImageMode() && sid != kInvalidSessionImageId) {
         appearance = m_view->sessionAppearanceValue(sid);
+        // Placement-only durable row is not content orient.
+        if (!m_view->itemWorld().hasContentBake(sid)
+            && !m_view->itemWorld().hasCrop(sid)) {
+            appearance.contentQuarterTurns = 0;
+            appearance.contentHFlip = false;
+            appearance.contentVFlip = false;
+            appearance.hasCrop = false;
+            appearance.cropRect = QRect();
+            appearance.cropSourceSize = QSize();
+            appearance.cropRotation = 0.0;
+        }
         if (qEnvironmentVariableIsSet("BILTOO_MODE_DEBUG")) {
             fprintf(stderr,
-                    "biltoo/orient Image install sid=%lld turns=%d flip=%d%d path=%s\n",
+                    "biltoo/orient Image install sid=%lld turns=%d bake=%d crop=%d path=%s\n",
                     static_cast<long long>(sid),
                     appearance.contentQuarterTurns,
-                    appearance.contentHFlip ? 1 : 0,
-                    appearance.contentVFlip ? 1 : 0,
+                    m_view->itemWorld().hasContentBake(sid) ? 1 : 0,
+                    m_view->itemWorld().hasCrop(sid) ? 1 : 0,
                     qPrintable(QFileInfo(path).fileName()));
         }
     } else {
+        seedSessionAppearanceFromState(sid, path);
         appearance = wantAppearanceForItem(item, sid);
     }
 

@@ -2,6 +2,22 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2182-no-xdg-seed-image.** Image underlay does not XDG-seed; content
+ops only from explicit contentBake/crop (fixes first Workspace→Image orient).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2182-no-xdg-seed-image-e77da63.bundle HEAD
+```
+
+Next: **2183**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2181-sparse-only-image-want.** Image underlay materialize want is
 *only* sessionAppearanceValue (sparse contentBake). ItemWorld applied residual
 abolished (no dual-write; clear all on mode leave).
