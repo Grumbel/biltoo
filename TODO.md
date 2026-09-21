@@ -2,6 +2,32 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-1984-resolveStored-sparse-prefer.** resolveStoredAppearance + filmstrip sparse prefer.
+Prior: **1983**.
+
+### Change
+- `resolveStoredAppearance`: bound path copies via `sessionAppearanceValue` into
+  fallback (no raw DTO pointer)
+- `imageWithSessionAppearance` initial id read via sparse choke
+- `setTargetColorAdjustments` re-read after setColor via sparse choke
+- session_bind presence uses `hasAppearance`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-1984-resolveStored-sparse-prefer-e77da63.bundle HEAD
+```
+Requires tip **1983** (base **e77da63**); includes 1938–1984.
+
+### Next
+- Characterization re-check
+- ImageItem surface trim / remaining dual-write documentation
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-1983-pipeline-canvas-bake-store-reads.** Pipeline/canvas/bake via sessionAppearanceValue.
 Prior: **1982**.
 

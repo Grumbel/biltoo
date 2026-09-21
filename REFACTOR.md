@@ -1227,6 +1227,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-1981: flush/setTarget/peer/copy/reset/crop use sessionAppearanceValue store reads.
 - biltoo-1982: workspace/slideshow/rematerialize/selection/load bind via sessionAppearanceValue.
 - biltoo-1983: pipeline want/seed, load restore, canvas rebind, bake placement via sessionAppearanceValue.
+- biltoo-1984: resolveStoredAppearance / filmstrip / setColor re-read via sessionAppearanceValue.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

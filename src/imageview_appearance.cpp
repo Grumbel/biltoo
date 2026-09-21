@@ -40,8 +40,11 @@ const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
         // Seed orient/flip/grade from path XDG when the id slot is still empty
         // (restart / first bind). Crop is never seeded from path (IDENTITY).
         m_displayPipeline.seedSessionAppearanceFromState(sid, item->path());
-        if (const WorkspaceItemState *it = m_itemWorld.getAppearance(sid)) {
-            return it;
+        if (m_itemWorld.hasAppearance(sid)) {
+            // Always copy through sessionAppearanceValue so sparse Crop/Color/…
+            // override a lagging fat DTO (store-read authority).
+            *fallback = sessionAppearanceValue(sid);
+            return fallback;
         }
         // Bound with no durable content after seed = full frame.
         // NEVER fall back to the path map — that leaks crop/flip across
@@ -273,8 +276,9 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
     }
     const WorkspaceItemState *app = nullptr;
     WorkspaceItemState fallback;
-    if (sid != kInvalidSessionImageId) {
-        app = m_itemWorld.getAppearance(sid);
+    if (sid != kInvalidSessionImageId && m_itemWorld.hasAppearance(sid)) {
+        fallback = sessionAppearanceValue(sid);
+        app = &fallback;
     }
     if ((!app || !SessionAppearance::hasContentAppearance(*app)) && !path.isEmpty()) {
         if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
@@ -646,10 +650,9 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
         ItemComponents::Color c;
         c.grade = adj;
         m_itemWorld.setColor(sid, c);
-        // setColor dual-writes the fat DTO; re-read so applyInteractiveColorGrade
-        // sees the same store as ItemWorld::color(sid).
-        if (const WorkspaceItemState *cur = m_itemWorld.getAppearance(sid)) {
-            slot = *cur;
+        // setColor dual-writes the fat DTO; re-read via sparse-prefer choke.
+        if (m_itemWorld.hasAppearance(sid)) {
+            slot = sessionAppearanceValue(sid);
             if (slot.path.isEmpty() || slot.sessionId == kInvalidSessionImageId) {
                 slot.sessionId = sid;
                 slot.path = item->path();
