@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2035-pack-poses-masonry.** Stage 3: pure Masonry / MasonryRows pack data plane.
+Prior: **2034**.
+
+### Change
+- `packPosesMasonry` — column bands, shortest-column greedy
+- `packPosesMasonryRows` — row bands, shortest-row greedy
+- `pack` Masonry/MasonryRows gather sizes → pure poses → apply
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2035-pack-poses-masonry-e77da63.bundle HEAD
+```
+Requires tip **2034** (base **e77da63**); includes 1938–2035.
+
+### Next
+- Stage 3: MasonryFill / Flow / Facing packPoses* when needed
+- Remaining direct `captureState`: unbound, crop enter, mid-edit content-bake
+- Stage 4b later: format version + drop dual-write (not now)
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2034-pack-poses-grid.** Stage 3: pure Grid / GridCrop pack data plane.
 Prior: **2033**.
 

@@ -25,6 +25,7 @@ private slots:
     void layout_resolvedColumnsAndAxisFill();
     void packPoses_sideBySideAndVertical();
     void packPoses_gridAndGridCrop();
+    void packPoses_masonryAndMasonryRows();
 };
 
 void GalleryLayoutTest::axesSwap_cardinalAndDiagonal()
@@ -185,6 +186,28 @@ void GalleryLayoutTest::packPoses_gridAndGridCrop()
     const auto tall = GalleryLayout::packPosesGridCrop({QSizeF(25, 50)}, 0.0, 0.0, 50.0, 1);
     QCOMPARE(tall.at(0).scale, 2.0); // cover: max(50/25, 50/50)=2
     QCOMPARE(tall.at(0).cellSize, QSizeF(50.0, 50.0));
+}
+
+void GalleryLayoutTest::packPoses_masonryAndMasonryRows()
+{
+    // Three equal tiles, 2 columns, availW=110 gap=10 → colW=50.
+    const QVector<QSizeF> three{QSizeF(50, 40), QSizeF(50, 60), QSizeF(50, 30)};
+    const auto m = GalleryLayout::packPosesMasonry(three, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(m.size(), 3);
+    // First → col0; second → col1 (equal height 0); third → col0 (shorter after 40 vs 60).
+    QCOMPARE(m.at(0).center.x(), 25.0); // col0
+    QCOMPARE(m.at(1).center.x(), 85.0); // col1
+    QCOMPARE(m.at(2).center.x(), 25.0); // col0 again
+    QCOMPARE(m.at(0).scale, 1.0);
+    // col0 heights: 40 then +10 gap +30 → third centre y = 40+10+15 = 65
+    QCOMPARE(m.at(2).center.y(), 65.0);
+
+    // Row masonry: 2 rows, availH=110 gap=10 → rowH=50.
+    const auto rows = GalleryLayout::packPosesMasonryRows(three, 0.0, 10.0, 110.0, 2);
+    QCOMPARE(rows.size(), 3);
+    QCOMPARE(rows.at(0).center.y(), 25.0); // row0
+    QCOMPARE(rows.at(1).center.y(), 85.0); // row1
+    QCOMPARE(rows.at(2).center.y(), 25.0); // shorter row0
 }
 
 QTEST_MAIN(GalleryLayoutTest)

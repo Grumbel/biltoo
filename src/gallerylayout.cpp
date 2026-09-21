@@ -169,43 +169,35 @@ void pack(const QList<ImageItem *> &items, const Params &params,
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::Masonry) {
-        const int cols = resolvedBandCount(params.masonryColumns, n);
-        const qreal colW = cellAxisLength(availW, gap, cols);
-        QVector<qreal> colHeights(cols, 0.0);
+        QVector<QSizeF> sizes;
+        sizes.reserve(n);
         for (ImageItem *item : items) {
-            const QSizeF ns = layoutSize(item);
-            const qreal scale = axisFillScale(colW, ns.width());
-            const qreal h = ns.height() * scale;
-            int best = 0;
-            for (int c = 1; c < cols; ++c) {
-                if (colHeights.at(c) < colHeights.at(best)) {
-                    best = c;
-                }
+            sizes.append(layoutSize(item));
+        }
+        const QVector<PackPose> poses =
+            packPosesMasonry(sizes, margin, gap, availW, params.masonryColumns);
+        for (int i = 0; i < n; ++i) {
+            ImageItem *item = items.at(i);
+            if (!item || i >= poses.size()) {
+                continue;
             }
-            const qreal cx = margin + best * (colW + gap) + colW / 2.0;
-            const qreal cy = margin + colHeights.at(best) + h / 2.0;
-            applyPackPose(item, QPointF(cx, cy), scale);
-            colHeights[best] += h + gap;
+            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::MasonryRows) {
-        const int rows = resolvedBandCount(params.masonryRows, n);
-        const qreal rowH = cellAxisLength(availH, gap, rows);
-        QVector<qreal> rowWidths(rows, 0.0);
+        QVector<QSizeF> sizes;
+        sizes.reserve(n);
         for (ImageItem *item : items) {
-            const QSizeF ns = layoutSize(item);
-            const qreal scale = axisFillScale(rowH, ns.height());
-            const qreal w = ns.width() * scale;
-            int best = 0;
-            for (int r = 1; r < rows; ++r) {
-                if (rowWidths.at(r) < rowWidths.at(best)) {
-                    best = r;
-                }
+            sizes.append(layoutSize(item));
+        }
+        const QVector<PackPose> poses =
+            packPosesMasonryRows(sizes, margin, gap, availH, params.masonryRows);
+        for (int i = 0; i < n; ++i) {
+            ImageItem *item = items.at(i);
+            if (!item || i >= poses.size()) {
+                continue;
             }
-            const qreal cx = margin + rowWidths.at(best) + w / 2.0;
-            const qreal cy = margin + best * (rowH + gap) + rowH / 2.0;
-            applyPackPose(item, QPointF(cx, cy), scale);
-            rowWidths[best] += w + gap;
+            applyPackPose(item, poses.at(i).center, poses.at(i).scale);
             finish(item, afterEach);
         }
     } else if (params.mode == Mode::MasonryFill) {

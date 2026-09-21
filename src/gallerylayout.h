@@ -259,6 +259,71 @@ inline QVector<PackPose> packPosesGridCrop(const QVector<QSizeF> &layoutSizes,
 }
 
 /**
+ * Column masonry: width fills band; place into shortest column.
+ * @p masonryColumns requested band count (clamped to [1, n]).
+ */
+inline QVector<PackPose> packPosesMasonry(const QVector<QSizeF> &layoutSizes,
+                                          qreal margin, qreal gap, qreal availW,
+                                          int masonryColumns)
+{
+    const int n = layoutSizes.size();
+    const int cols = resolvedBandCount(masonryColumns, n);
+    const qreal colW = cellAxisLength(availW, gap, cols);
+    QVector<qreal> colHeights(cols, 0.0);
+    QVector<PackPose> out;
+    out.reserve(n);
+    for (const QSizeF &ns : layoutSizes) {
+        const qreal scale = axisFillScale(colW, ns.width());
+        const qreal h = ns.height() * scale;
+        int best = 0;
+        for (int c = 1; c < cols; ++c) {
+            if (colHeights.at(c) < colHeights.at(best)) {
+                best = c;
+            }
+        }
+        PackPose p;
+        p.scale = scale;
+        p.center = QPointF(margin + best * (colW + gap) + colW / 2.0,
+                           margin + colHeights.at(best) + h / 2.0);
+        out.append(p);
+        colHeights[best] += h + gap;
+    }
+    return out;
+}
+
+/**
+ * Row masonry: height fills band; place into shortest row.
+ */
+inline QVector<PackPose> packPosesMasonryRows(const QVector<QSizeF> &layoutSizes,
+                                              qreal margin, qreal gap, qreal availH,
+                                              int masonryRows)
+{
+    const int n = layoutSizes.size();
+    const int rows = resolvedBandCount(masonryRows, n);
+    const qreal rowH = cellAxisLength(availH, gap, rows);
+    QVector<qreal> rowWidths(rows, 0.0);
+    QVector<PackPose> out;
+    out.reserve(n);
+    for (const QSizeF &ns : layoutSizes) {
+        const qreal scale = axisFillScale(rowH, ns.height());
+        const qreal w = ns.width() * scale;
+        int best = 0;
+        for (int r = 1; r < rows; ++r) {
+            if (rowWidths.at(r) < rowWidths.at(best)) {
+                best = r;
+            }
+        }
+        PackPose p;
+        p.scale = scale;
+        p.center = QPointF(margin + rowWidths.at(best) + w / 2.0,
+                           margin + best * (rowH + gap) + rowH / 2.0);
+        out.append(p);
+        rowWidths[best] += w + gap;
+    }
+    return out;
+}
+
+/**
  * Arrange @p items in scene coordinates. Clears gallery crop except for GridCrop.
  * @p afterEach is invoked after each item is placed (e.g. to snapshot state).
  */

@@ -1365,6 +1365,7 @@ Phase 1–6 rules still apply. Additions:
   pack applies via ImageItem friends only.
 - biltoo-2034: Stage 3 — packPosesGrid / packPosesGridCrop pure data plane;
   PackPose.cellSize for GridCrop clip.
+- biltoo-2035: Stage 3 — packPosesMasonry / packPosesMasonryRows pure data plane.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
