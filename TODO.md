@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2042-capturestate-thin.** Stage 2 residual: captureState only at freeze fallback + crop enter.
+Prior: **2041**.
+
+### Change
+- Color flush/setTarget, loadRestore live-crop, content-bake before, unbound
+  remember/persist → `freezeItemAppearance`
+- Direct `captureState` remains: definition, freeze fallback, crop enter only
+- Phase 7 exit criteria: captureState thin — marked met
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2042-capturestate-thin-e77da63.bundle HEAD
+```
+Requires tip **2041** (base **e77da63**); includes 1938–2042.
+
+### Next
+- Stage 4b later: format version + drop dual-write (not now)
+- Phase 6 Tier 4 residual (ImageView characterization) tracked separately
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2041-pack-poses-for-mode.** Stage 3 residual: pure packPosesForMode dispatcher.
 Prior: **2040**.
 

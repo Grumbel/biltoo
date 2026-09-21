@@ -231,9 +231,8 @@ void ImageView::rememberItemState(ImageItem *item)
             // Leave path-map placement untouched; do not last-write crop/flip by path.
             return;
         }
-        // Unbound legacy tile: path map is the only store. captureState already
-        // reads live crop/flip and merges path-book orient extras.
-        WorkspaceItemState s = captureState(item);
+        // Unbound legacy tile: path map is the only store (freeze → captureState).
+        WorkspaceItemState s = freezeItemAppearance(item);
         s.path = item->path();
         m_itemWorld.setPathState(item->path(), s);
         return;
@@ -249,7 +248,7 @@ void ImageView::rememberItemState(ImageItem *item)
         m_itemWorld.setAppearance(item->sessionId(), slot);
         return;
     }
-    m_itemWorld.setPathState(item->path(), captureState(item));
+    m_itemWorld.setPathState(item->path(), freezeItemAppearance(item));
 }
 
 
@@ -473,7 +472,7 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
         haveContentSlot = true;
     } else {
         // Unbound tile: still persist content-hash state for the file.
-        contentSlot = captureState(item);
+        contentSlot = freezeItemAppearance(item);
         haveContentSlot = true;
     }
     if (haveContentSlot) {
@@ -630,10 +629,8 @@ void ImageView::flushColorAdjustCommit()
         scheduleColorAdjustCommit(sid, path.isEmpty() ? item->path() : path);
         return;
     }
-    // Stage 2: bound → sparse-prefer store (works sparse-only); unbound → live.
-    WorkspaceItemState want = (sid != kInvalidSessionImageId)
-        ? sessionAppearanceValue(sid)
-        : captureState(item);
+    // Stage 2: freeze policy (store + live when durable; else captureState).
+    WorkspaceItemState want = freezeItemAppearance(item);
     // Flush always prefers live grade (interaction authority; ItemWorld Color
     // is already updated on setTargetColorAdjustments).
     want.colorAdjust = item->colorAdjustments();
@@ -670,10 +667,8 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     if (sid == kInvalidSessionImageId && isImageMode()) {
         sid = m_sessionId.currentIdValue();
     }
-    // Stage 2: any bound id uses sparse-prefer store (not only fat hasAppearance).
-    WorkspaceItemState slot = (sid != kInvalidSessionImageId)
-        ? sessionAppearanceValue(sid)
-        : captureState(item);
+    // Stage 2: freeze policy for grade slot seed.
+    WorkspaceItemState slot = freezeItemAppearance(item);
     slot.sessionId = (sid != kInvalidSessionImageId) ? sid : slot.sessionId;
     slot.path = item->path().isEmpty() ? slot.path : item->path();
     slot.colorAdjust = adj;
@@ -741,7 +736,7 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
         return true;
     }
     if (item->tileContentXform().hasCrop) {
-        *app = captureState(item);
+        *app = freezeItemAppearance(item);
         return true;
     }
     if (const WorkspaceItemState *st = m_itemWorld.getPathState(item->path())) {

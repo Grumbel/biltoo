@@ -1075,8 +1075,8 @@ Phase 1–6 rules still apply. Additions:
   may remain Workspace-mode-scoped; content/crop/attention/color are id-keyed).
 - `ImageItem` is a render + hit-test proxy, not a parallel appearance database.
 - Project save walks explicitly tagged persistent tables.
-- `git grep captureState` is thin (host snapshot for DTO only) or gone from
-  interaction hot paths.
+- `git grep captureState` is thin (2042): definition, `freezeItemAppearance`
+  fallback, and crop-enter undo baseline only — not interaction hot paths.
 - Phase 6 Tier 4 residual still tracked separately until the full ImageView
   characterization harness is green (member `m_pathOrderBook` already gone).
 
@@ -1374,6 +1374,8 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2040: Stage 2 residual — crop record/afterSt/apply seed use freezeItemAppearance;
   Stage 3 GalleryLayout pack marked complete.
 - biltoo-2041: Stage 3 residual — packPosesForMode pure dispatcher shared by pack + tests.
+- biltoo-2042: Stage 2 residual — all freezes via freezeItemAppearance except crop enter;
+  captureState only definition, freeze fallback, crop enter.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
@@ -1402,10 +1404,9 @@ store **reads** prefer sparse via the choke point. Stage 4a save/load/clipboard
 build DTOs from sparse-prefer reads; Stage 4b may drop dual-write when the
 project format no longer needs the fat DTO mirror.
 
-Freeze policy is `freezeItemAppearance` (2029+): store + live when durable and
-not mid-edit; else `captureState`. Remaining direct `captureState` call sites
-(intentional): unbound path-map freezes, crop enter snapshot, color unbound
-fallback, content-bake before-state, loadRestore without store row.
+Freeze policy is `freezeItemAppearance` (2029–2042): store + live when durable
+and not mid-edit; else `captureState`. Direct `captureState` call sites (2042):
+definition, freeze fallback, crop-enter undo baseline only.
 
 - biltoo-1789: QFileInfo include in imageitem_tilelod.cpp (TU split fix).
 - biltoo-1790: ImageItem/pipeline tileLodBag() single access path (ownership prep).

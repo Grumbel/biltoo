@@ -144,8 +144,8 @@ WorkspaceItemState ImageView::sessionAppearanceValue(SessionImageId id) const
 
 WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) const
 {
-    // captureState already prefers applied ContentXform when present.
-    WorkspaceItemState beforeSt = captureState(item);
+    // Freeze: mid-edit applied ContentXform → captureState; else store + live.
+    WorkspaceItemState beforeSt = freezeItemAppearance(item);
     const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
         ? item->sessionId()
         : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
