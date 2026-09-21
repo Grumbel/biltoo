@@ -505,17 +505,22 @@ appearance map / canvas bind that could still hold old ids.
 **Do not add** new path-keyed identity, appearance, or selection APIs.
 
 
-### Appearance ownership (standing, tip 873+)
+### Appearance ownership (standing, tip 873+; path-map IDENTITY through 2013)
 
 | Authority | Key | Notes |
 |-----------|-----|-------|
-| `SessionAppearanceStore` | `SessionImageId` | Sole live content appearance for bound rows |
+| `SessionAppearanceStore` / ItemWorld sparse | `SessionImageId` | Sole live content appearance for **bound** rows (crop included) |
 | `SessionDocument` | index | Paths + ids only — no crop/flip/turns |
 | Filmstrip id override | `SessionImageId` | Derived; never path-wide when ids present |
 | Thumtoo path XDG appearance | path | Orient/flip/grade hint only; **never crop** for bound `SessionImageId` |
+| `PathItemStateBook` (`setPathState`) | path | **Unbound** tiles: full state including crop. **Bound** writes: crop stripped at the facade (`ItemWorld::setPathState`); orient/flip path hints may remain for pack/seed |
 
-Do not bake path-keyed XDG into filmstrip cells that have session ids.
-Do not use path as the write key for crop after Apply.
+**Do not:**
+- Bake path-keyed XDG into filmstrip cells that have session ids
+- Use path as the write key for crop after Apply on a bound id
+- Merge path-map **crop** into a bound slot on restore, soft-paint, or slideshow snapshot (orient/flip only)
+
+Call sites that must stay aligned: workspace snapshot/restore (2009–2012), bakeRotate path slot (2010), `imageWithSessionAppearance` (2012), slideshow content snapshot (2013).
 
 
 

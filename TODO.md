@@ -2,6 +2,31 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2014-identity-path-map-docs.** IDENTITY.md documents path-map crop rules (2009–2013).
+Prior: **2013**.
+
+### Change
+`IDENTITY.md` Appearance ownership table: `PathItemStateBook` rules —
+unbound may store crop; bound writes strip crop at `setPathState`; bound reads
+never adopt path crop (workspace restore, soft-paint, slideshow). Lists the
+call sites fixed in tips 2009–2013.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2014-identity-path-map-docs-e77da63.bundle HEAD
+```
+Requires tip **2013** (base **e77da63**); includes 1938–2014.
+
+### Next
+- Stage 4 project-format migration (design)
+- Full build + characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2013-slideshow-bound-no-path-crop.** Slideshow content snapshot respects IDENTITY.
 Prior: **2012**.
 

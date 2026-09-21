@@ -1254,6 +1254,7 @@ Phase 1–6 rules still apply. Additions:
 - biltoo-2011: ItemWorld setPathState strips crop when state.sessionId is bound.
 - biltoo-2012: restore/soft-paint bound never adopt path-map crop.
 - biltoo-2013: slideshow content snapshot bound never path/XDG crop.
+- biltoo-2014: IDENTITY.md path-map crop ownership (write strip + read bans).
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.
