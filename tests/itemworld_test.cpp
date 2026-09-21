@@ -46,6 +46,7 @@ private slots:
     void appearanceValue_sparseCropWinsOverStaleFat();
     // Stage 4b readiness: sparse survives fat removal (dual-write lag)
     void hasDurableAppearance_sparseOnlyAfterFatRemoved();
+    void setAppearance_preservesExistingPlacement();
 };
 
 
@@ -518,7 +519,37 @@ void ItemWorldTest::hasDurableAppearance_sparseOnlyAfterFatRemoved()
     QCOMPARE(v.sessionId, SessionImageId(11));
 }
 
-QTEST_MAIN(ItemWorldTest)
+
+void ItemWorldTest::setAppearance_preservesExistingPlacement()
+{
+    ItemWorld world;
+    ItemComponents::Placement pl;
+    pl.pos = QPointF(40, 50);
+    pl.scale = 1.5;
+    world.setPlacement(7, pl);
+    QVERIFY(world.hasPlacement(7));
+
+    // Content-only setAppearance with identity pose must not wipe Workspace pose.
+    WorkspaceItemState content;
+    content.hasCrop = true;
+    content.cropRect = QRect(1, 2, 30, 40);
+    content.contentHFlip = true;
+    world.setAppearance(7, content);
+
+    QVERIFY(world.hasCrop(7));
+    QCOMPARE(world.crop(7).rect, QRect(1, 2, 30, 40));
+    QVERIFY(world.hasContentBake(7));
+    QVERIFY(world.hasPlacement(7));
+    QCOMPARE(world.placement(7).pos, QPointF(40, 50));
+    QCOMPARE(world.placement(7).scale, 1.5);
+
+    // Non-identity pose still writes.
+    content.pos = QPointF(9, 8);
+    content.scale = 2.0;
+    world.setAppearance(7, content);
+    QCOMPARE(world.placement(7).pos, QPointF(9, 8));
+    QCOMPARE(world.placement(7).scale, 2.0);
+}
 
 void ItemWorldTest::sparseWrite_stampsSessionIdOnDto()
 {
@@ -571,4 +602,5 @@ void ItemWorldTest::setPathState_stripsCropWhenBound()
     QCOMPARE(u->cropRect, QRect(5, 5, 10, 10));
 }
 
+QTEST_MAIN(ItemWorldTest)
 #include "itemworld_test.moc"

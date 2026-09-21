@@ -118,8 +118,9 @@ public:
     }
 
     /**
-     * Load / full-replace: write sparse component tables only (Stage 4b residual).
-     * Does not require a bound fat store; appearanceValue assembles from sparse.
+     * Write sparse component tables from @p state (Stage 4b).
+     * Content tables always sync. Placement: non-identity always writes; identity
+     * pose does not clobber an existing Placement row (use setPlacement to clear).
      */
     void setAppearance(SessionImageId id, const WorkspaceItemState &state)
     {
@@ -354,8 +355,15 @@ private:
         } else {
             m_colors.insert(id, col);
         }
-        // Placement: always present once setAppearance (identity pose still placed).
-        m_placements.insert(id, ItemComponents::placementFromState(state));
+        // Placement is Workspace-scoped and optional. Content-only setAppearance
+        // (crop/bake/color with identity pose) must not clobber an existing pose
+        // with origin/scale-1. Non-identity pose always writes; identity only
+        // seeds when no placement row exists yet. Clear pose via setPlacement.
+        const ItemComponents::Placement pl = ItemComponents::placementFromState(state);
+        if (!pl.isIdentity()) {
+            m_placements.insert(id, pl);
+        }
+        // else: identity pose and row already present — keep existing placement
     }
 
     // Linked stores (not owned).

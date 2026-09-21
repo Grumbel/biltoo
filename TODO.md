@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2059-setappearance-preserve-placement.** setAppearance must not clobber Workspace pose.
+Prior: **2058**.
+
+### Change
+- `syncComponentsFromState`: non-identity placement always writes; identity pose
+  does not overwrite an existing Placement row (content-only setAppearance safe)
+- Test: `setAppearance_preservesExistingPlacement`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2059-setappearance-preserve-placement-e77da63.bundle HEAD
+```
+Requires tip **2058** (base **e77da63**); includes 1938–2059.
+
+### Next
+- Phase 7 Stage 2 residual: further ImageItem demotion when needed
+- Phase 6 Tier 4: decode/framing characterization when prioritized
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2058-drop-color-path-stamp-dual-comments.** Stage 4 residual: color sparse-only; dual-write comments.
 Prior: **2057**.
 
