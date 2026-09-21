@@ -2,6 +2,30 @@
 
 ## Status (2026-09-21)
 
+**Tip: biltoo-2088-syncLiveColor-applied-colorAdjust.** Stage 2 residual: live grade updates applied ContentXform.colorAdjust.
+Prior: **2087**.
+
+### Change
+- `syncLiveColorFromState`: when applied fingerprint present, patch `colorAdjust`
+  on item mirror + ItemWorld so paint/tile LOD prefer `Value.colorAdjust`
+- Avoids reliance on identity-grade fallback to `m_colorAdjust` mid-edit
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2088-syncLiveColor-applied-colorAdjust-e77da63.bundle HEAD
+```
+Requires tip **2087** (base **e77da63**); includes 1938–2088.
+
+### Next
+- Stage 2: paint mirror residual (intentional), or host-side color scratch
+- Phase 6 Tier 4: optional decode/framing characterization
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-21)
+
 **Tip: biltoo-2087-applied-contentxform-characterization.** Stage 2 residual: pure characterization for applied ContentXform runtime table; demotion status through 2086.
 Prior: **2086**.
 

@@ -1075,8 +1075,8 @@ Stage 4b delivered (product: no backward compatibility):
 | Member / concern | Role | Demotion notes |
 |------------------|------|----------------|
 | Pixmap / preview / intrinsic size | Qt paint | Keep |
-| `m_colorAdjust` | Live grade for paint + slider lag | Keep on item; host/CropSession via `itemLiveColor` (2085–2086); durable is ItemWorld Color |
-| Applied `ContentXform` fingerprint | Mid-edit content authority | ItemWorld when bound (2080–2084); all valid binds via setItemSessionId; ImageItem mirror for paint / unbound |
+| `m_colorAdjust` | Live grade for paint + slider lag | Keep on item; host via `itemLiveColor` (2085–2086); applied Value.colorAdjust dual-synced on live grade (2088) |
+| Applied `ContentXform` fingerprint | Mid-edit content authority | ItemWorld when bound (2080–2084); paint mirror dual-written; colorAdjust kept coherent on live grade (2088) |
 | Live pose (`m_scaleX`… via `applyPlacement`) | QGraphicsItem transform | Keep; durable copy is ItemWorld Placement |
 | `sessionIndex` cache | List-order mirror | Prefer `sessionListIndex` / document; `refreshSessionIndexCache` after `setSessionId` (2067–2079); never pack row; unbound may keep pack hint |
 | Tile LOD bag pointer | Runtime decode | Already pipeline-owned bag |
@@ -1470,6 +1470,8 @@ Phase 1–6 rules still apply. Additions:
   MainWindow panel uses itemLiveColor.
 - biltoo-2087: Stage 2 residual — pure characterization applied ContentXform
   survives pathOrderClear; demotion status table through 2086.
+- biltoo-2088: Stage 2 residual — syncLiveColorFromState patches applied
+  ContentXform.colorAdjust (item + ItemWorld) for paint/tile LOD coherence.
 - biltoo-1990: ItemWorld/ImageItem authority docs; sparse-read + private mutators status.
 - biltoo-1991: content-edit marks private on ImageItem; ImageView-only host API.
 - biltoo-1992: ItemWorld::appearanceValue sparse-prefer; sessionAppearanceValue thin wrapper.

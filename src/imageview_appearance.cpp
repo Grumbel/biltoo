@@ -138,6 +138,18 @@ void ImageView::syncLiveColorFromState(ImageItem *item, const ColorAdjustments &
     } else {
         item->setColorAdjustmentsRecord(grade);
     }
+    // Stage 2 residual: when an applied ContentXform fingerprint is present,
+    // keep its colorAdjust field coherent with live grade so paint / tile LOD
+    // read one path (Value.colorAdjust) without falling back to m_colorAdjust.
+    if (item->hasAppliedContentXform()) {
+        ContentXform::Value x = item->tileContentXform();
+        x.colorAdjust = grade;
+        item->setAppliedContentXform(x);
+        const SessionImageId sid = item->sessionId();
+        if (sid != kInvalidSessionImageId) {
+            m_itemWorld.setAppliedContentXform(sid, x);
+        }
+    }
 }
 
 void ImageView::clearLiveContentMeta(ImageItem *item)
