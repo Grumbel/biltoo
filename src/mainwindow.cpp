@@ -1402,28 +1402,29 @@ void MainWindow::resetItemShear()
 
 QList<int> MainWindow::sessionSelectionIndices() const
 {
-    QList<int> strip;
+    // Union filmstrip + canvas selection (session order). A single current row
+    // on the strip must not hide a larger Gallery/Workspace multi-select.
+    QSet<int> set;
     if (m_thumbnailBar) {
-        strip = m_thumbnailBar->selectedIndices();
+        for (int idx : m_thumbnailBar->selectedIndices()) {
+            if (idx >= 0 && idx < m_session.size()) {
+                set.insert(idx);
+            }
+        }
     }
-    QList<int> canvas;
     if (m_imageView && (isGalleryMode() || isWorkspaceMode())) {
-        canvas = m_imageView->selectedSessionIndices();
-        std::sort(canvas.begin(), canvas.end());
-        canvas.erase(std::unique(canvas.begin(), canvas.end()), canvas.end());
+        for (int idx : m_imageView->selectedSessionIndices()) {
+            if (idx >= 0 && idx < m_session.size()) {
+                set.insert(idx);
+            }
+        }
     }
-    // Prefer the larger multi-selection when strip and canvas disagree
-    // (e.g. Gallery multi-select vs single current on the filmstrip).
-    QList<int> indices = strip;
-    if (canvas.size() > strip.size()) {
-        indices = canvas;
-    }
-    if (indices.isEmpty() && m_currentIndex >= 0
+    if (set.isEmpty() && m_currentIndex >= 0
         && m_currentIndex < m_session.paths().size()) {
-        indices.append(m_currentIndex);
+        set.insert(m_currentIndex);
     }
+    QList<int> indices = set.values();
     std::sort(indices.begin(), indices.end());
-    indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
     return indices;
 }
 
@@ -1453,15 +1454,22 @@ QList<SessionEntrySnapshot> MainWindow::sessionSelectionSnapshots() const
             if (m_imageView->hasSessionAppearance(snap.id)) {
                 snap.appearance = m_imageView->sessionAppearanceValue(snap.id);
                 snap.hasAppearance = true;
-            } else if (ImageItem *item = m_imageView->findItemBySessionId(snap.id)) {
-                snap.appearance = m_imageView->freezeItemAppearance(item);
-                snap.hasAppearance = SessionAppearance::hasContentAppearance(snap.appearance)
-                    || snap.appearance.hasCrop;
-            } else if (isImageMode() && m_imageView->primaryItem()
-                       && m_imageView->primaryItem()->sessionId() == snap.id) {
-                snap.appearance = m_imageView->freezeItemAppearance(m_imageView->primaryItem());
-                snap.hasAppearance = SessionAppearance::hasContentAppearance(snap.appearance)
-                    || snap.appearance.hasCrop;
+            } else {
+                ImageItem *item = m_imageView->findItemBySessionId(snap.id);
+                if (!item && isImageMode()) {
+                    item = m_imageView->primaryItem();
+                    if (item && item->sessionId() != snap.id) {
+                        item = nullptr;
+                    }
+                }
+                if (item) {
+                    snap.appearance = m_imageView->freezeItemAppearance(item);
+                    snap.hasAppearance =
+                        SessionAppearance::hasContentAppearance(snap.appearance)
+                        || snap.appearance.hasCrop
+                        || snap.appearance.hasAttention
+                        || !snap.appearance.attentionPoints.isEmpty();
+                }
             }
             if (snap.hasAppearance) {
                 snap.appearance.sessionId = snap.id;
@@ -1522,6 +1530,33 @@ void MainWindow::loadSessionSnapshots(const QList<SessionEntrySnapshot> &entries
 
     // Preserve selection order — do not run sortFileListSync.
     finishApplyExpandedLoad(startAt);
+
+    // Filmstrip may install on a later event-loop turn (warm multi-open) or
+    // after size resolve (cold). Select all transferred rows once the strip exists.
+    const auto selectTransferred = [this]() {
+        if (!m_thumbnailBar || m_session.isEmpty()) {
+            return;
+        }
+        if (isGalleryMode() || isWorkspaceMode()) {
+            m_thumbnailBar->setMultiSelectEnabled(true);
+        }
+        QList<int> all;
+        all.reserve(m_session.size());
+        for (int i = 0; i < m_session.size(); ++i) {
+            all.append(i);
+        }
+        m_thumbnailBar->setSelectedIndices(all);
+        if (m_imageView && (isGalleryMode() || isWorkspaceMode())) {
+            m_imageView->selectBySessionIndices(all);
+        }
+    };
+    if (m_imageView && m_imageView->hostGallerySizeResolve().active()) {
+        connect(m_imageView, &ImageView::gallerySizeResolveFinished, this,
+                selectTransferred,
+                static_cast<Qt::ConnectionType>(Qt::SingleShotConnection));
+    } else {
+        QTimer::singleShot(0, this, selectTransferred);
+    }
 }
 
 void MainWindow::openSelectionInNewWindow()
@@ -1533,6 +1568,13 @@ void MainWindow::openSelectionInNewWindow()
         }
         return;
     }
+    const int n = entries.size();
+    int withAppearance = 0;
+    for (const SessionEntrySnapshot &e : entries) {
+        if (e.hasAppearance) {
+            ++withAppearance;
+        }
+    }
     auto *window = new MainWindow;
     window->setAttribute(Qt::WA_DeleteOnClose);
     if (isVisible()) {
@@ -1540,6 +1582,17 @@ void MainWindow::openSelectionInNewWindow()
     }
     window->show();
     window->loadSessionSnapshots(entries);
+    if (statusBar()) {
+        if (withAppearance > 0) {
+            statusBar()->showMessage(
+                tr("Opened %n image(s) in a new window (%1 with appearance).",
+                   "", n).arg(withAppearance),
+                4000);
+        } else {
+            statusBar()->showMessage(
+                tr("Opened %n image(s) in a new window.", "", n), 4000);
+        }
+    }
 }
 
 void MainWindow::newWindow()
