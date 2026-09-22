@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2301-filmstrip-label-vcenter.**
+
+Filmstrip filename: centre vertically in the label band (was AlignTop at the
+bottom edge → sat too low).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2301-filmstrip-label-vcenter-c0bffd5.bundle HEAD
+```
+
+Next: **2302**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2300-gallery-selection-ring.**
 
 Gallery selection frames: dark 7px outer + cyan 3px inner (cosmetic) + light

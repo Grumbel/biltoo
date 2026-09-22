@@ -288,17 +288,19 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     const QString text = index.data(Qt::DisplayRole).toString();
     if (m_labelsVisible && !text.isEmpty() && labelBand > 0) {
         // Label uses flow-axis side inset on horizontal bars; cross on vertical.
+        // Vertically centre the name in the label band (was AlignTop at the
+        // bottom edge and sat a few pixels too low in the empty strip).
         const int labelInset = (orient == Qt::Horizontal) ? flow : cross;
         const QRect textRect(cell.left() + labelInset,
-                             cell.bottom() - labelBand + kLabelGap,
+                             cell.bottom() - labelBand,
                              ViewTransform::atLeast1(cell.width() - 2 * labelInset),
-                             fm.height());
+                             labelBand);
         const QColor textColor = selected
             ? option.palette.color(QPalette::HighlightedText)
             : option.palette.color(QPalette::Text);
         painter->setPen(textColor);
         painter->setFont(option.font);
-        painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignTop,
+        painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignVCenter,
                           fm.elidedText(text, Qt::ElideMiddle, textRect.width()));
     }
 
