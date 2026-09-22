@@ -1357,12 +1357,17 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
     if (image.isNull()) {
         if (ThumtooCache::isAvailable()) {
             // Full native miss: PreferCache display ladder so onLadderReady can
-            // upgrade Image mode (soft→HQ). Skip when tiles already own zoom.
-            bool tilesOwn = false;
+            // upgrade Image mode (soft→HQ). Skip when tiles own display
+            // (tileLodWanted or durable pyramid — same as requestEscalateClimb).
+            const bool durable = ThumtooCache::hasDurableTilesKnown(path);
+            bool tilesOwn = durable;
             if (ImageItem *it = imageModeItemForPath(path)) {
-                tilesOwn = it->tileLodWanted();
+                tilesOwn = DisplayEdgePolicy::tilesOwnDisplay(
+                    it->tileLodWanted(), durable);
             }
-            if (!tilesOwn) {
+            if (tilesOwn) {
+                tickPrimaryTileLod(12);
+            } else {
                 scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
             }
             m_view->hostSessionId().clearLastLoadError();

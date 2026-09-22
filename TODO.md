@@ -2,6 +2,23 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2238-complete-load-tiles-own.** `completeLoadReplace` native miss
+path uses `DisplayEdgePolicy::tilesOwnDisplay` (tileLodWanted or durable
+pyramid) instead of tileLodWanted alone; durable → tick tile LOD, else PreferCache.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2238-complete-load-tiles-own-e6c70e4.bundle HEAD
+```
+
+Next: **2239**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2237-tiles-own-display-docs.** Tile/PreferCache policy:
 
 1. Comment why `if (durable)` after `tilesOwnDisplay` is not dead (no live item)
