@@ -227,10 +227,7 @@ void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState
     // Placement/color-only durable rows are not content orient (2205–2211).
     WorkspaceItemState want = wantIn;
     {
-        SessionImageId sid = item->sessionId();
-        if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_sessionId.currentIdValue();
-        }
+        const SessionImageId sid = resolveContentEditSessionId(item);
         if (sid != kInvalidSessionImageId) {
             want = SessionAppearance::orientAuthorityWant(
                 m_itemWorld.hasContentOrient(sid), want);

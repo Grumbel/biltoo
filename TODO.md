@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2212-saved-appearance-placement-only.** Workspace durable snapshot
+slots must not dual-write content for bound ids:
+
+1. `updateWorkspaceSavedAppearance` — Placement flips + path/sid only; content
+   stays on ItemWorld (restore already re-reads `sessionAppearanceValue`).
+2. `resolveContentEditSessionId` takes `const ImageItem*`; used by
+   `freezeItemAppearance`, `captureContentBakeBeforeState`, `applyContentLayoutSize`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2212-saved-appearance-placement-only-e6c70e4.bundle HEAD
+```
+
+Next: **2213**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2211-orient-authority-want-gate.** Polish + verify orient authority:
 
 1. `SessionAppearance::orientAuthorityWant(hasContentOrient, want)` — single gate

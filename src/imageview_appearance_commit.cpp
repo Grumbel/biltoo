@@ -101,19 +101,18 @@ void ImageView::syncSessionEditPeers(ImageItem *item)
 
 void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
 {
-    // Durable snapshot: update the entry for this session image id.
+    // Bound durable content is ItemWorld only (Workspace restore re-reads
+    // sessionAppearanceValue). Snapshot slots hold pose identity + path —
+    // never dual-write crop/orient into m_savedItems (2194 / ECS #5 / 2212).
+    if (!item) {
+        return;
+    }
     const SessionImageId sessionId = item->sessionId();
     if (sessionId == kInvalidSessionImageId) {
         return;
     }
-    if (!m_itemWorld.hasDurableAppearance(sessionId)) {
-        return;
-    }
-    const WorkspaceItemState st = sessionAppearanceValue(sessionId);
     const QString path = item->path();
-    const ItemComponents::Placement itemPl = item->placement();
-    const bool hFlip = itemPl.hFlip;
-    const bool vFlip = itemPl.vFlip;
+    const ItemComponents::Placement itemPl = placementFromItem(item);
     for (WorkspaceItemState &slot : m_workspace.savedItems()) {
         if (slot.sessionId != sessionId) {
             continue;
@@ -125,13 +124,9 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
                       qPrintable(slot.path), qPrintable(path));
             continue;
         }
-        slot.hasCrop = st.hasCrop;
-        slot.cropRect = st.cropRect;
-        slot.hFlip = hFlip;
-        slot.vFlip = vFlip;
-        slot.contentQuarterTurns = st.contentQuarterTurns;
-        slot.contentHFlip = st.contentHFlip;
-        slot.contentVFlip = st.contentVFlip;
+        // Placement display flips only; content stays on ItemWorld sparse tables.
+        slot.hFlip = itemPl.hFlip;
+        slot.vFlip = itemPl.vFlip;
         slot.sessionId = sessionId;
         slot.path = path;
     }

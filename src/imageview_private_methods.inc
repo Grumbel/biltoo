@@ -117,7 +117,7 @@
     /** Bake ±90° content into pixels and session state (not placement). */
     WorkspaceItemState captureContentBakeBeforeState(ImageItem *item) const;
 
-    SessionImageId resolveContentEditSessionId(ImageItem *item) const;
+    SessionImageId resolveContentEditSessionId(const ImageItem *item) const;
 
     WorkspaceItemState appearanceCropMapForEdit(ImageItem *item,
                                                 const WorkspaceItemState &fallback,

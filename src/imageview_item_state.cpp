@@ -106,9 +106,7 @@ WorkspaceItemState ImageView::freezeItemAppearance(const ImageItem *item) const
     if (!item) {
         return {};
     }
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+    const SessionImageId sid = resolveContentEditSessionId(item);
     if (sid != kInvalidSessionImageId
         && !itemHasAppliedContentXform(item)
         && m_itemWorld.hasDurableAppearance(sid)) {
@@ -133,15 +131,15 @@ WorkspaceItemState ImageView::captureContentBakeBeforeState(ImageItem *item) con
 {
     // Freeze: mid-edit applied ContentXform → captureState; else store + live.
     WorkspaceItemState beforeSt = freezeItemAppearance(item);
-    const SessionImageId sid0 = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
-    beforeSt.sessionId = sid0;
+    beforeSt.sessionId = resolveContentEditSessionId(item);
     return beforeSt;
 }
 
-SessionImageId ImageView::resolveContentEditSessionId(ImageItem *item) const
+SessionImageId ImageView::resolveContentEditSessionId(const ImageItem *item) const
 {
+    if (!item) {
+        return kInvalidSessionImageId;
+    }
     SessionImageId sid = item->sessionId();
     if (sid == kInvalidSessionImageId && isImageMode()) {
         sid = m_sessionId.currentIdValue();
