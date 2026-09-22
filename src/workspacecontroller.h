@@ -47,7 +47,6 @@ public:
     void snapshotFreeFormStates();
     void restoreFreeFormStates();
 
-    bool hasStash() const { return !m_stashedItems.isEmpty(); }
     QList<ImageItem *> &stashedItems() { return m_stashedItems; }
     const QList<ImageItem *> &stashedItems() const { return m_stashedItems; }
 

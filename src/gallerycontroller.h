@@ -48,45 +48,8 @@ public:
                          SessionImageId focusId = kInvalidSessionImageId);
     void enter(int packagedLayoutInt, int previousModeInt = -1);
 
-    bool hasStash() const { return !m_stashedItems.isEmpty(); }
     QList<ImageItem *> &stashedItems() { return m_stashedItems; }
     const QList<ImageItem *> &stashedItems() const { return m_stashedItems; }
-
-    bool pendingRestore() const { return m_pendingRestore; }
-
-    /** @return true when the pending-restore flag changed. */
-    bool setPendingRestore(bool v)
-    {
-        if (m_pendingRestore == v) {
-            return false;
-        }
-        m_pendingRestore = v;
-        return true;
-    }
-
-    bool haveViewCenter() const { return m_haveViewCenter; }
-    void clearViewCenter() { m_haveViewCenter = false; }
-    QPointF viewCenter() const { return m_viewCenter; }
-
-    bool haveScroll() const { return m_haveScroll; }
-    void clearScroll() { m_haveScroll = false; }
-    int scrollH() const { return m_scrollH; }
-    int scrollV() const { return m_scrollV; }
-
-    QString focusPath() const { return m_focusPath; }
-    SessionImageId focusSessionId() const { return m_focusSessionId; }
-
-    /** @return true when focus path changed. */
-    bool setFocusPath(const QString &path)
-    {
-        if (m_focusPath == path) {
-            return false;
-        }
-        m_focusPath = path;
-        return true;
-    }
-
-    void setFocusSessionId(SessionImageId id) { m_focusSessionId = id; }
 
     ImageItem *selectionAnchor() const { return m_selectionAnchor; }
     void setSelectionAnchor(ImageItem *item) { m_selectionAnchor = item; }

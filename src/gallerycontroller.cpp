@@ -1189,7 +1189,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     // the user roughly in the same place. Enter / explicit layout switch still
     // starts at the origin. Image→Gallery restore uses pendingRestore instead.
     const bool preserveView =
-        !pendingRestore()
+        !m_pendingRestore
         && (reason == GalleryPackReason::ContentChange
             || reason == GalleryPackReason::SessionMutate
             || reason == GalleryPackReason::Reload);
@@ -1205,7 +1205,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     m_view->resetTransform();
-    if (!pendingRestore() && !preserveView) {
+    if (!m_pendingRestore && !preserveView) {
         m_view->centerOn(0, 0);
     }
 

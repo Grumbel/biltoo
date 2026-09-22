@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2253-drop-gallery-view-focus-accessors.** Gallery/Workspace API surface:
+
+1. GalleryController: remove unused public pendingRestore/view/scroll/focus
+   getters and setters (members used only inside the controller)
+2. Drop unused `hasStash()` from GalleryController and WorkspaceController
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2253-drop-gallery-view-focus-accessors-e6c70e4.bundle HEAD
+```
+
+Next: **2254**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2252-drop-workspace-view-getters-bind-selected-ids.** API surface cleanup:
 
 1. WorkspaceController: remove unused public view getters (saved/stashed/freeForm
