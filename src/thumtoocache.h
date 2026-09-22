@@ -54,7 +54,6 @@ Bridge *bridge();
 void init();
 /** Force THUMTOO_DEBUG-style traces (stderr + ~/.cache/biltoo/thumtoo-debug.log). */
 void enableDebugTracing();
-bool debugTracingEnabled();
 
 /** Drop the client (join thumtoo worker). Safe to call more than once. */
 void shutdown();
@@ -179,8 +178,6 @@ void forgetPixelsSettled(const QString &path, int maxEdge);
  * @return new epoch, or 0 if thumtoo unavailable.
  */
 quint64 bumpInterestEpoch();
-/** Drop all queued thumtoo jobs (pixels/size/tiles); in-flight may still finish. */
-int cancelPendingThumtooWork();
 /** Drop queued EnsureTiles jobs for this path (thumtoo cancel_uri). */
 int cancelTilesForPath(const QString &path);
 
@@ -281,13 +278,6 @@ QString queueStatsLabel();
 
 /** HUD: active/queued jobs split into cache retrieval vs file/archive encode. */
 QString loadingBreakdownLabel();
-
-/** True when setInterest owns overview scheduling (no scheduleOverviewPixels). */
-bool interestOwnsOverview();
-
-/** True while a request_pixels for this path/edge is queued or running. */
-bool isPixelsInflight(const QString &path, int maxEdge);
-
 
 /**
  * Prewarm **sizes** only for a session file list (thumtoo prepare / probe).
@@ -463,12 +453,6 @@ struct StoredContentAppearance {
         return !hasOrientContent() && !hasGrade;
     }
 };
-
-/**
- * Debug string for the thumtoo Store locator.id bound to @p path (empty if none).
- * Appearance is keyed by that locator rowid, not a content hash.
- */
-QString contentIdForPath(const QString &path);
 
 /** Load durable content appearance for path's content id (if any). */
 bool loadContentAppearance(const QString &path, StoredContentAppearance *out);

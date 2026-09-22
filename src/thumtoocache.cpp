@@ -736,11 +736,6 @@ void enableDebugTracing()
     qWarning("biltoo/thumtoo: debug tracing ON → ~/.cache/biltoo/thumtoo-debug.log");
 }
 
-bool debugTracingEnabled()
-{
-    return thumtooDebugEnabled();
-}
-
 void noteCachedSize(const QString &path, const QSize &size)
 {
     ProcessMemos::instance().noteSize(path, size);
@@ -1162,24 +1157,6 @@ void forgetPixelsSettled(const QString &path, int maxEdge)
     g_pixelsSettled.remove(fullKey);
 }
 
-bool isPixelsInflight(const QString &path, int maxEdge)
-{
-    if (path.isEmpty() || maxEdge <= 0) {
-        return false;
-    }
-    const QString key = path + QLatin1Char('#') + QString::number(maxEdge);
-    std::lock_guard lock(g_mu);
-    return g_pixelsInflight.contains(key);
-}
-
-
-
-
-bool interestOwnsOverview()
-{
-    return true;
-}
-
 QString queueStatsLabel()
 {
     init();
@@ -1559,18 +1536,6 @@ quint64 bumpInterestEpoch()
     // Drop host-side pixel queue so we do not keep dispatching stale paths.
     g_pixelsQueue.clear();
     return static_cast<quint64>(c->bump_interest_epoch());
-}
-
-int cancelPendingThumtooWork()
-{
-    init();
-    std::lock_guard lock(g_mu);
-    g_pixelsQueue.clear();
-    thumtoo::Client *c = clientUnlocked();
-    if (!c) {
-        return 0;
-    }
-    return static_cast<int>(c->cancel_pending());
 }
 
 int cancelTilesForPath(const QString &path)
@@ -3002,15 +2967,6 @@ std::optional<std::int64_t> locatorIdForPath(const QString &path)
 
 } // namespace
 
-QString contentIdForPath(const QString &path)
-{
-    // Debug/compat: string form of locator id (not a content hash).
-    if (auto id = locatorIdForPath(path)) {
-        return QString::number(*id);
-    }
-    return {};
-}
-
 bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
 {
     if (!out) {
@@ -3218,11 +3174,6 @@ void clearContentAppearance(const QString &path)
 }
 
 #else
-
-QString contentIdForPath(const QString &)
-{
-    return {};
-}
 
 bool loadContentAppearance(const QString &, StoredContentAppearance *out)
 {

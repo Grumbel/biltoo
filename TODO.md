@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2257-drop-unused-thumtoo-cache-apis.** ThumtooCache dead surface:
+
+- `debugTracingEnabled` (wrapper; zero callers)
+- `cancelPendingThumtooWork` (zero callers; cancelTilesForPath remains)
+- `interestOwnsOverview` (always true; zero callers)
+- `isPixelsInflight` (zero callers)
+- `contentIdForPath` (debug/compat; zero callers)
+
+Kept documented overview path (`scheduleOverviewPixels`) and other live APIs.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2257-drop-unused-thumtoo-cache-apis-e6c70e4.bundle HEAD
+```
+
+Next: **2258**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2256-drop-path-raster-want-edge.** PathRaster cleanup:
 
 - Remove unused `PathRasterService::wantEdge` (zero call sites; callers use
