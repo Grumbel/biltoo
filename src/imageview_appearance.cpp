@@ -408,15 +408,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
                     || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
                 fallback = {};
                 fallback.path = path;
-                fallback.contentHFlip = stored.contentHFlip;
-                fallback.contentVFlip = stored.contentVFlip;
-                fallback.contentQuarterTurns = stored.contentQuarterTurns;
-                if (stored.hasCrop) {
-                    fallback.hasCrop = true;
-                    fallback.cropRect = stored.cropRect;
-                    fallback.cropSourceSize = stored.cropSourceSize;
-                    fallback.cropRotation = stored.cropRotation;
-                }
+                SessionAppearance::applyStoredContentAppearance(&fallback, stored, false);
                 app = &fallback;
             }
         }

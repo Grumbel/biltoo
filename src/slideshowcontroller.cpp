@@ -676,15 +676,7 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
                 || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
             out->path = path;
             out->sessionId = sid;
-            out->contentHFlip = stored.contentHFlip;
-            out->contentVFlip = stored.contentVFlip;
-            out->contentQuarterTurns = stored.contentQuarterTurns;
-            if (stored.hasCrop) {
-                out->hasCrop = true;
-                out->cropRect = stored.cropRect;
-                out->cropSourceSize = stored.cropSourceSize;
-                out->cropRotation = stored.cropRotation;
-            }
+            SessionAppearance::applyStoredContentAppearance(out, stored, false);
             return SessionAppearance::hasContentAppearance(*out);
         }
     }

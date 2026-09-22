@@ -11,6 +11,7 @@
 #include "sessiondocument.h"
 #include "itemworld.h"
 #include "itemcomponents.h"
+#include "thumtoocache.h"
 
 #include <QtTest/QtTest>
 
@@ -34,6 +35,9 @@ private slots:
     // Workspace pose-only snapshot contract (2212–2214)
     void clearedContentOps_keepsFullPlacement();
     void poseMerge_snapshotOntoStoreContent();
+    // Path-XDG fill (2228)
+    void applyStoredContentAppearance_orientAndGrade();
+    void applyStoredContentAppearance_orientOnlySkipsGrade();
 };
 
 void SessionAppearanceTest::seedBook_keyedById()
@@ -289,6 +293,47 @@ void SessionAppearanceTest::poseMerge_snapshotOntoStoreContent()
     QVERIFY(store.hasCrop);
     QCOMPARE(store.cropRect, QRect(0, 0, 50, 40));
     QCOMPARE(store.colorAdjust.brightness, 8);
+}
+
+
+void SessionAppearanceTest::applyStoredContentAppearance_orientAndGrade()
+{
+    ThumtooCache::StoredContentAppearance stored;
+    stored.contentQuarterTurns = 1;
+    stored.contentHFlip = true;
+    stored.hasCrop = true;
+    stored.cropRect = QRect(1, 2, 3, 4);
+    stored.cropSourceSize = QSize(100, 80);
+    stored.hasGrade = true;
+    stored.gradeBrightness = 10;
+    stored.gradeContrast = 0; // identity 100
+    stored.gradeGamma = 150; // 1.5
+
+    WorkspaceItemState st;
+    st.pos = QPointF(5, 6);
+    SessionAppearance::applyStoredContentAppearance(&st, stored);
+    QCOMPARE(st.contentQuarterTurns, 1);
+    QVERIFY(st.contentHFlip);
+    QVERIFY(st.hasCrop);
+    QCOMPARE(st.cropRect, QRect(1, 2, 3, 4));
+    QCOMPARE(st.colorAdjust.brightness, 10);
+    QCOMPARE(st.colorAdjust.contrast, 100);
+    QCOMPARE(st.colorAdjust.gamma, 1.5);
+    QCOMPARE(st.pos, QPointF(5, 6)); // other fields preserved
+}
+
+void SessionAppearanceTest::applyStoredContentAppearance_orientOnlySkipsGrade()
+{
+    ThumtooCache::StoredContentAppearance stored;
+    stored.contentVFlip = true;
+    stored.hasGrade = true;
+    stored.gradeBrightness = 20;
+
+    WorkspaceItemState st;
+    st.colorAdjust.brightness = 3;
+    SessionAppearance::applyStoredContentAppearance(&st, stored, false);
+    QVERIFY(st.contentVFlip);
+    QCOMPARE(st.colorAdjust.brightness, 3); // grade not applied
 }
 
 QTEST_MAIN(SessionAppearanceTest)

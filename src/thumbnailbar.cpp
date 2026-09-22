@@ -1286,19 +1286,7 @@ QImage ThumbnailBar::applyStoredAppearanceToThumb(const QString &path, const QIm
         && st.colorAdjust.isIdentity()) {
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
-            st.contentHFlip = stored.contentHFlip;
-            st.contentVFlip = stored.contentVFlip;
-            st.contentQuarterTurns = stored.contentQuarterTurns;
-            st.hasCrop = stored.hasCrop;
-            st.cropRect = stored.cropRect;
-            st.cropSourceSize = stored.cropSourceSize;
-            st.cropRotation = stored.cropRotation;
-            if (stored.hasGrade) {
-                st.colorAdjust = ColorAdjustments::fromDurableGrade(
-                    stored.gradeBrightness, stored.gradeContrast,
-                    stored.gradeSaturation, stored.gradeHue,
-                    stored.gradeGamma, stored.gradeInvert);
-            }
+            SessionAppearance::applyStoredContentAppearance(&st, stored);
         }
     }
     const bool hasOrient = SessionAppearance::hasContentAppearance(st)
@@ -2181,13 +2169,7 @@ QSize ThumbnailBar::layoutAspectForRow(int row) const
     WorkspaceItemState layoutSt;
     ThumtooCache::StoredContentAppearance stored;
     if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
-        layoutSt.contentHFlip = stored.contentHFlip;
-        layoutSt.contentVFlip = stored.contentVFlip;
-        layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
-        layoutSt.hasCrop = stored.hasCrop;
-        layoutSt.cropRect = stored.cropRect;
-        layoutSt.cropSourceSize = stored.cropSourceSize;
-        layoutSt.cropRotation = stored.cropRotation;
+        SessionAppearance::applyStoredContentAppearance(&layoutSt, stored, false);
     }
     return ContentXform::layoutSize(native, layoutSt);
 }
@@ -2214,13 +2196,8 @@ void ThumbnailBar::applyLayoutAspect(QListWidgetItem *item, int row, const QSize
                 ThumtooCache::StoredContentAppearance stored;
                 if (ThumtooCache::loadContentAppearance(path, &stored)
                     && !stored.isIdentity()) {
-                    layoutSt.contentHFlip = stored.contentHFlip;
-                    layoutSt.contentVFlip = stored.contentVFlip;
-                    layoutSt.contentQuarterTurns = stored.contentQuarterTurns;
-                    layoutSt.hasCrop = stored.hasCrop;
-                    layoutSt.cropRect = stored.cropRect;
-                    layoutSt.cropSourceSize = stored.cropSourceSize;
-                    layoutSt.cropRotation = stored.cropRotation;
+                    SessionAppearance::applyStoredContentAppearance(
+                        &layoutSt, stored, false);
                 }
             }
             aspect = ContentXform::layoutSize(nativeHint, layoutSt);

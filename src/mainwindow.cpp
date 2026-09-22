@@ -210,19 +210,7 @@ MainWindow::MainWindow(QWidget *parent)
                     ThumtooCache::StoredContentAppearance stored;
                     if (ThumtooCache::loadContentAppearance(path, &stored)
                         && !stored.isIdentity()) {
-                        want.contentHFlip = stored.contentHFlip;
-                        want.contentVFlip = stored.contentVFlip;
-                        want.contentQuarterTurns = stored.contentQuarterTurns;
-                        want.hasCrop = stored.hasCrop;
-                        want.cropRect = stored.cropRect;
-                        want.cropSourceSize = stored.cropSourceSize;
-                        want.cropRotation = stored.cropRotation;
-                        if (stored.hasGrade) {
-                            want.colorAdjust = ColorAdjustments::fromDurableGrade(
-                                stored.gradeBrightness, stored.gradeContrast,
-                                stored.gradeSaturation, stored.gradeHue,
-                                stored.gradeGamma, stored.gradeInvert);
-                        }
+                        SessionAppearance::applyStoredContentAppearance(&want, stored);
                     }
                 }
                 return want;

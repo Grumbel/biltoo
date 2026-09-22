@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2228-apply-stored-content-appearance.** Shared path-XDG → state fill:
+
+- `SessionAppearance::applyStoredContentAppearance(st, stored, includeGrade, includeCrop)`
+- Adopted by filmstrip, mainwindow, size book, slideshow, text, soft paint, seed
+- Seed uses `includeCrop=false` (path crop never dual-writes into ItemWorld)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2228-apply-stored-content-appearance-e6c70e4.bundle HEAD
+```
+
+Next: **2229**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2227-durable-grade-from-helper.** Path-XDG grade conversion uses
 `ColorAdjustments::fromDurableGrade` (thumbnail filmstrip + mainwindow paint)
 instead of hand-copied percent fields. Slideshow residual #10 marked aligned.

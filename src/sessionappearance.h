@@ -5,6 +5,8 @@
 #define SESSIONAPPEARANCE_H
 
 #include "imageview_types.h"
+
+namespace ThumtooCache { struct StoredContentAppearance; }
 #include "coloradjust.h"
 #include "contentxform.h"
 
@@ -176,6 +178,17 @@ WorkspaceItemState orientAuthorityWant(bool hasContentOrient,
  * non-content placement fields.
  */
 WorkspaceItemState clearedContentOps(const WorkspaceItemState &state);
+
+/**
+ * Copy path-XDG StoredContentAppearance into @p st.
+ * @p includeGrade / @p includeCrop control which fields are written.
+ * Does not clear other fields of @p st. Callers must gate unbound-only;
+ * Gallery/Image seed must pass includeCrop=false (IDENTITY — no path crop).
+ */
+void applyStoredContentAppearance(WorkspaceItemState *st,
+                                  const ThumtooCache::StoredContentAppearance &stored,
+                                  bool includeGrade = true,
+                                  bool includeCrop = true);
 
 } // namespace SessionAppearance
 

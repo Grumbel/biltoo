@@ -7,6 +7,7 @@
 #include "viewtransform.h"
 #include "biltoo_thread.h"
 #include "coloradjust.h"
+#include "thumtoocache.h"
 
 #include <QtMath>
 #include <QImage>
@@ -331,6 +332,38 @@ WorkspaceItemState clearedContentOps(const WorkspaceItemState &state)
     // Reset Content Appearance help text).
     out.colorAdjust = {};
     return out;
+}
+
+
+void applyStoredContentAppearance(WorkspaceItemState *st,
+                                  const ThumtooCache::StoredContentAppearance &stored,
+                                  bool includeGrade, bool includeCrop)
+{
+    if (!st) {
+        return;
+    }
+    st->contentHFlip = stored.contentHFlip;
+    st->contentVFlip = stored.contentVFlip;
+    st->contentQuarterTurns = stored.contentQuarterTurns;
+    if (includeCrop) {
+        if (stored.hasCrop) {
+            st->hasCrop = true;
+            st->cropRect = stored.cropRect;
+            st->cropSourceSize = stored.cropSourceSize;
+            st->cropRotation = stored.cropRotation;
+        } else {
+            st->hasCrop = false;
+            st->cropRect = QRect();
+            st->cropSourceSize = QSize();
+            st->cropRotation = 0.0;
+        }
+    }
+    if (includeGrade && stored.hasGrade) {
+        st->colorAdjust = ColorAdjustments::fromDurableGrade(
+            stored.gradeBrightness, stored.gradeContrast,
+            stored.gradeSaturation, stored.gradeHue,
+            stored.gradeGamma, stored.gradeInvert);
+    }
 }
 
 } // namespace SessionAppearance

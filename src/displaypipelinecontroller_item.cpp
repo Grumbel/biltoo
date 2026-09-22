@@ -300,15 +300,8 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
     seed.path = path;
     // Orient/flip/grade only. Crop is per SessionImageId — never seed from
     // path-keyed XDG (duplicates share a path; last crop would leak).
-    seed.contentHFlip = stored.contentHFlip;
-    seed.contentVFlip = stored.contentVFlip;
-    seed.contentQuarterTurns = stored.contentQuarterTurns;
-    if (stored.hasGrade) {
-        // Durable gradeGamma is percent (100 = 1.0); 0 contrast/sat = identity 100.
-        seed.colorAdjust = ColorAdjustments::fromDurableGrade(
-            stored.gradeBrightness, stored.gradeContrast, stored.gradeSaturation,
-            stored.gradeHue, stored.gradeGamma, stored.gradeInvert);
-    }
+    // Orient/grade only — never path-XDG crop (duplicates share a path).
+    SessionAppearance::applyStoredContentAppearance(&seed, stored, true, false);
     // Upsert orient/grade only — must not clear attention or Placement.
     m_view->itemWorld().mergeContentFromState(sid, seed);
 }

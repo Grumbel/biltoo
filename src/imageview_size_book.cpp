@@ -140,13 +140,7 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
         && sessionId == kInvalidSessionImageId) {
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
-            want.contentHFlip = stored.contentHFlip;
-            want.contentVFlip = stored.contentVFlip;
-            want.contentQuarterTurns = stored.contentQuarterTurns;
-            want.hasCrop = stored.hasCrop;
-            want.cropRect = stored.cropRect;
-            want.cropSourceSize = stored.cropSourceSize;
-            want.cropRotation = stored.cropRotation;
+            SessionAppearance::applyStoredContentAppearance(&want, stored, false);
         }
     }
     const QSize lay = ContentXform::layoutSize(native, want);
