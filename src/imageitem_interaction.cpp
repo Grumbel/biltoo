@@ -83,7 +83,10 @@ bool tilePaintNeedsSmooth(double devicePerContent, int targetScale,
 void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
                                const tilelod::DrawPlan &plan,
                                const QRectF &contentBounds,
-                               const QPointF &contentOffset)
+                               const QPointF &contentOffset,
+                               const QSize &nativeSize,
+                               const ContentXform::Value &xform,
+                               bool freeRotPainter)
 {
     if (!painter || !session) {
         return;
@@ -94,6 +97,8 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const qreal sx = ViewTransform::scaleFrom(dt);
 
     // Yellow = exact tile, orange = coarser parent, cyan = underlay hole.
+    // Host-side coverage debug only. Durable TILE text on pixels belongs in
+    // thumtoo (bitmap stamps rotate/flip with the patch automatically).
     constexpr int kWashAlpha = 90;
     const QColor fillExact(255, 220, 40, kWashAlpha);
     const QColor fillParent(255, 140, 20, kWashAlpha);
@@ -105,14 +110,35 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const int target = session->target_scale();
 
     for (const tilelod::DrawCommand &cmd : plan.commands) {
-        // dst_content is top-left content space; tiles paint with item offset()
-        // (typically -w/2,-h/2). Without offset, washes sat in the BR quarter.
-        const QRectF dst(cmd.dst_content.x + contentOffset.x(),
-                         cmd.dst_content.y + contentOffset.y(),
-                         cmd.dst_content.w, cmd.dst_content.h);
+        // Same mapping as tile paint: source content rect → oriented display.
+        const QRectF srcBox(cmd.dst_content.x, cmd.dst_content.y,
+                            cmd.dst_content.w, cmd.dst_content.h);
+        if (srcBox.isEmpty()) {
+            continue;
+        }
+        QRectF disp = ContentXform::mapSourceRectToOriented(srcBox, nativeSize, xform);
+        if (disp.isEmpty()) {
+            continue;
+        }
+        if (xform.hasCrop && !xform.cropRect.isEmpty()) {
+            const QRect contentCrop = xform.cropRect.normalized();
+            const QRectF local = disp.translated(-contentCrop.x(), -contentCrop.y());
+            const QRectF cropLocal(0.0, 0.0, contentCrop.width(), contentCrop.height());
+            disp = local.intersected(cropLocal);
+            if (disp.isEmpty()) {
+                continue;
+            }
+        }
+        // Axis-aligned paint adds item offset(); free-rot uses painter xform only.
+        QRectF dst = disp;
+        if (!freeRotPainter) {
+            dst = QRectF(disp.x() + contentOffset.x(), disp.y() + contentOffset.y(),
+                         disp.width(), disp.height());
+        }
         if (dst.isEmpty()) {
             continue;
         }
+
         QColor fill;
         QColor edge;
         int scale = cmd.src_key.scale;
@@ -137,12 +163,11 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         painter->drawRect(dst);
 
         // TILE + scale + x,y. setPixelSize is item-local; scale by 1/sx so
-        // on-screen size stays readable when zoomed out (was tiny before).
+        // on-screen size stays readable when zoomed out.
         const qreal cellDev = qMin(dst.width(), dst.height()) * sx;
         if (cellDev < 10.0) {
-            continue; // pinhead tiles — wash only
+            continue;
         }
-        // ~28% of cell on screen; floor ~15 device px, cap ~56 device px.
         const int wantDevicePx = qBound(15, int(cellDev * 0.28), 56);
         const int fontLocalPx =
             qMax(1, int(qRound(qreal(wantDevicePx) / qMax(sx, qreal(1e-6)))));
@@ -1212,9 +1237,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 (void)under;
 
                 if (tilePlanDebugOverlayEnabled()) {
-                    // Plan dests are content top-left; tiles paint content+offset().
+                    // Map plan cells like tile paint (orient/flip/crop). Pixel
+                    // TILE stamps still belong in thumtoo so they follow patches.
                     paintTilePlanDebugOverlay(painter, tileLodBag().controller->session(), plan,
-                                             contentRect(), off);
+                                             contentRect(), off, native, x, freeRot);
                 }
                 painter->restore();
 

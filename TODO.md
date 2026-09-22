@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.26-tile-overlay-orient-thumtoo-note.**
+
+- Biltoo plan overlay now maps cells through **ContentXform** (orient/flip/crop)
+  like tile paint — was source-space only under rotation/flip.
+- **AGENTS.md**: durable TILE pixel stamps belong in **thumtoo** (automatic with
+  host orient). Do not grow biltoo’s plan overlay into the tile debugger.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.26-tile-overlay-orient-thumtoo-note-5b36062.bundle HEAD
+```
+
+Next: **2291** (thumtoo TILE stamp work is a thumtoo change).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.25-agents-qstringliteral-note.** Docs only: AGENTS.md Coding
 conventions now call out the recurring `QStringLiteral` multi-line footgun
 (use `\n` or adjacent literals; never a real newline inside one pair of quotes).

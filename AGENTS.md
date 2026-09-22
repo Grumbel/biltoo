@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2290.25-agents-qstringliteral-note**.
-Latest tip: **biltoo-2290.25-agents-qstringliteral-note**. Next bundle number: **2291**
+Latest agent handoff: **TODO.md → biltoo-2290.26-tile-overlay-orient-thumtoo-note**.
+Latest tip: **biltoo-2290.26-tile-overlay-orient-thumtoo-note**. Next bundle number: **2291**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
@@ -104,6 +104,22 @@ Do **not** put raw line breaks inside one pair of `"` … `"` for
 multi-line `QString`. Same discipline for shell / Nix strings when editing
 sources via scripts: prefer explicit `\n` escapes over embedding real newlines
 in generated C++ string literals.
+
+### Debug TILE overlays: thumtoo owns pixel stamps
+
+`THUMTOO_DEBUG_OVERLAY` / `BILTOO_DEBUG_OVERLAY` currently layers **two** things:
+
+1. **Thumtoo** (preferred): stamps on soft/tile **bitmaps** as they are produced.
+   Those stamps live in source pixel space and **automatically** follow host
+   orient/flip/crop when biltoo paints the patch.
+2. **Biltoo host** (`paintTilePlanDebugOverlay`): coverage washes over the draw
+   plan (exact/parent/hole). This is approximate host geometry only.
+
+Do **not** expand biltoo’s plan overlay into a full tile debugger. Durable
+`TILE s=… / x,y` text on the pixels themselves belongs in **thumtoo** so every
+host gets correct orientation for free. Biltoo may keep a thin coverage wash
+for `BILTOO_TILE_DEBUG` / plan completeness; it must map cells through
+`ContentXform` like tile paint when it draws.
 
 ## Git & delivery
 
