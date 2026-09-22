@@ -206,17 +206,3 @@ void HelpPanel::showAction(const QAction *action)
     m_body->setHtml(bodyHtmlForAction(action));
 }
 
-void HelpPanel::showTopic(const QString &title, const QString &bodyHtml, const QString &shortcutsLine)
-{
-    m_title->setText(title.isEmpty() ? tr("Help") : title);
-    if (shortcutsLine.isEmpty()) {
-        m_shortcuts->clear();
-        m_shortcuts->hide();
-    } else {
-        m_shortcuts->setText(shortcutsLine);
-        m_shortcuts->show();
-    }
-    m_disabledNote->clear();
-    m_disabledNote->hide();
-    m_body->setHtml(bodyHtml);
-}

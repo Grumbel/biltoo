@@ -35,10 +35,6 @@ public:
     /** Show title, shortcuts, disabled note, and body for @p action. */
     void showAction(const QAction *action);
 
-    /** Show a free-form help topic (modes, filmstrip, …) not tied to a QAction. */
-    void showTopic(const QString &title, const QString &bodyHtml,
-                   const QString &shortcutsLine = QString());
-
 signals:
     /** User asked to open the full keyboard-shortcuts table. */
     void showAllShortcutsRequested();

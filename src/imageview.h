@@ -651,8 +651,6 @@ signals:
     void galleryReturnRequested();
     /** Image mode: double-click requests fullscreen toggle. */
     void fullscreenToggleRequested();
-    /** Host may restart the advance timer (snapshot end / fade-black complete). */
-    void slideshowDwellResumeRequested();
     /** Crop mode toggled on/off (toolbar checkable state). */
     void cropModeChanged(bool active);
     void attentionModeChanged(bool active);

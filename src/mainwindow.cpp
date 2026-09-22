@@ -483,12 +483,6 @@ MainWindow::MainWindow(QWidget *parent)
     m_slideshowTimer->setSingleShot(false);
     m_slideshowTimer->setInterval(16);
     connect(m_slideshowTimer, &QTimer::timeout, this, &MainWindow::onSlideshowTick);
-    if (m_imageView) {
-        
-        // Dwell-resume must not schedule — clock owns the schedule.
-        connect(m_imageView, &ImageView::slideshowDwellResumeRequested, this, []() {});
-    }
-
     m_cursorHideTimer = new QTimer(this);
     m_cursorHideTimer->setSingleShot(true);
     m_cursorHideTimer->setInterval(1000);

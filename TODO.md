@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2262-drop-show-topic-dwell-resume-signal.** Dead UI API cleanup:
+
+1. Remove unused `HelpPanel::showTopic` (free-form topic path never wired)
+2. Remove never-emitted `ImageView::slideshowDwellResumeRequested` and its empty
+   MainWindow connect (clock owns schedule)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2262-drop-show-topic-dwell-resume-signal-e6c70e4.bundle HEAD
+```
+
+Next: **2263**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2261-drop-sessionappearance-aliases-slideshow-stubs.** Dead API cleanup:
 
 1. SessionAppearance: remove unused ContentXform thin aliases
