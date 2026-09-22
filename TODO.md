@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2237-tiles-own-display-docs.** Tile/PreferCache policy:
+
+1. Comment why `if (durable)` after `tilesOwnDisplay` is not dead (no live item)
+2. TILE_LOD PreferCache section documents `tilesOwnDisplay` truth table
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2237-tiles-own-display-docs-e6c70e4.bundle HEAD
+```
+
+Next: **2238**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2236-tiles-own-display-tests.** Tile/PreferCache policy polish:
 
 1. Document why climb loop passes `durable=false` (SoftDisplay underlay until

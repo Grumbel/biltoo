@@ -215,6 +215,7 @@ void DisplayPipelineController::requestEscalateClimb(const QString &path, int wa
             return;
         }
     }
+    // No live item for path but durable pyramid known (e.g. prefetch / filmstrip).
     if (durable) {
         tickPrimaryTileLod(12);
         return;
@@ -258,6 +259,7 @@ void DisplayPipelineController::ensureImageModeQualityClimb(const QString &path,
             return;
         }
     }
+    // No underlay item yet; durable pyramid still owns display (no PreferCache).
     if (durable) {
         tickPrimaryTileLod(12);
         return;

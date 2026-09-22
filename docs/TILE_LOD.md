@@ -301,15 +301,20 @@ the AABB of transformed corners for viewport request and draw destinations.
 - Soft underlay is already display-space; leave plan `lqip` empty.
 
 
-## PreferCache vs tiles (biltoo-1035)
+## PreferCache vs tiles (biltoo-1035 / 2234–2237)
 
-When `tileLodWanted()` is true (on-screen need past soft **and** durable
-tiles exist), hosts must not schedule PreferCache/Full whole-frame climbs
-for that path:
+Policy helper: `DisplayEdgePolicy::tilesOwnDisplay(tileLodWanted, durableTilesKnown)`.
 
-- Gallery decode window skips those cells
-- `requestEscalateClimb` returns early for Image-mode tile-band items
-- Workspace quality climb already skipped; PathRaster cancel-once on enter
+| Case | PreferCache whole-frame |
+|------|-------------------------|
+| `tileLodWanted` | **Skip** — tiles own display; tick tile LOD |
+| Durable pyramid, no live item yet | **Skip** — tick tile LOD (prefetch / cold underlay) |
+| Durable only, `tileLodWanted` false | SoftDisplay underlay may still run until LOD wants |
+| Neither | PreferCache / Full climb as usual |
+
+- Gallery decode window skips tileLodWanted cells
+- `requestEscalateClimb` / `ensureImageModeQualityClimb` use `tilesOwnDisplay`
+- PathRaster cancel-once on enter tile band
 
 
 ## Coverage + heartbeat (biltoo-1036 / 1037)
