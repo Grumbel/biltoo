@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.17-reorderItems-index.** Validate progressive reorder cost:
+
+- `reorderItemsByPaths` (end of every `ensurePlaceholders`) used
+  `findItemBySessionId` + path scan per row → O(n²) after each progressive
+  ensure during the size gate.
+- Local `QHash` / `QMultiHash` indexes make reorder O(n).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.17-reorderItems-index-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.16-ensurePlaceholders-index.** Validate progressive ensure cost:
 
 - `ensurePlaceholders` used `findItemBySessionId` (O(n) scan) and a path scan

@@ -17,6 +17,7 @@
 #include <QSet>
 #include <QDebug>
 #include <QHash>
+#include <QMultiHash>
 #include <QPointer>
 #include <QTimer>
 #include <QUndoStack>
@@ -349,6 +350,24 @@ void ImageView::reorderItemsByPaths(const QStringList &paths,
     if (m_items.isEmpty() || paths.isEmpty()) {
         return;
     }
+    // Local indexes — findItemBySessionId + path scan per row was O(n²) and ran
+    // at the end of every progressive ensurePlaceholders during the size gate.
+    QHash<SessionImageId, ImageItem *> bySessionId;
+    QMultiHash<QString, ImageItem *> byPath;
+    bySessionId.reserve(m_items.size() * 2);
+    byPath.reserve(m_items.size() * 2);
+    for (ImageItem *item : m_items) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId id = item->sessionId();
+        if (id != kInvalidSessionImageId) {
+            bySessionId.insert(id, item);
+        }
+        if (!item->path().isEmpty()) {
+            byPath.insert(item->path(), item);
+        }
+    }
     QList<ImageItem *> ordered;
     ordered.reserve(m_items.size());
     QSet<ImageItem *> seen;
@@ -359,7 +378,7 @@ void ImageView::reorderItemsByPaths(const QStringList &paths,
         ImageItem *picked = nullptr;
         const SessionImageId sid = (i < ids.size()) ? ids.at(i) : kInvalidSessionImageId;
         if (sid != kInvalidSessionImageId) {
-            if (ImageItem *byId = findItemBySessionId(sid)) {
+            if (ImageItem *byId = bySessionId.value(sid, nullptr)) {
                 if (!seen.contains(byId)) {
                     picked = byId;
                 }
@@ -367,8 +386,10 @@ void ImageView::reorderItemsByPaths(const QStringList &paths,
         }
         if (!picked) {
             const QString &path = paths.at(i);
-            for (ImageItem *item : m_items) {
-                if (!item || item->path() != path || seen.contains(item)) {
+            const auto range = byPath.equal_range(path);
+            for (auto it = range.first; it != range.second; ++it) {
+                ImageItem *item = it.value();
+                if (!item || seen.contains(item)) {
                     continue;
                 }
                 picked = item;
