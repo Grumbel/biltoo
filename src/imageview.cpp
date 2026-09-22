@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 #include "displayquality.h"
 
 #include <QCoreApplication>
@@ -346,8 +346,8 @@ ImageView::ImageView(QWidget *parent)
         // work and could peg a core while the user was only panning.
         // Gallery soft install needs a responsive window while LQIP→soft climbs.
         m_gallery.scheduleDecodeWindowRefresh(isGalleryMode()
-            ? GallerySoft::kDecodeWindowSettleMs
-            : GallerySoft::kDecodeWindowImageMs);
+            ? GalleryDecode::kDecodeWindowSettleMs
+            : GalleryDecode::kDecodeWindowImageMs);
         // Image/Workspace deep zoom: timer may be stopped after coverage;
         // scrollbar drag (or pan setValue) must re-issue visible cells.
         // Hand pan already ticks; skip when m_chrome.isPanning() to avoid double work.
@@ -358,8 +358,8 @@ ImageView::ImageView(QWidget *parent)
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
         m_gallery.scheduleDecodeWindowRefresh(isGalleryMode()
-            ? GallerySoft::kDecodeWindowSettleMs
-            : GallerySoft::kDecodeWindowImageMs);
+            ? GalleryDecode::kDecodeWindowSettleMs
+            : GalleryDecode::kDecodeWindowImageMs);
         if (!m_chrome.isPanning() && !isGalleryMode()) {
             m_displayPipeline.tickPrimaryTileLod(4);
         }
@@ -367,11 +367,11 @@ ImageView::ImageView(QWidget *parent)
 
     // Recover Gallery tiles that received soft pixels but never repainted
     // (DeviceCoordinateCache + BoundingRectViewportUpdate stalls).
-    m_gallerySoftWatchdog = new QTimer(this);
-    m_gallerySoftWatchdog->setInterval(GallerySoft::kWatchdogIntervalMs);
-    connect(m_gallerySoftWatchdog, &QTimer::timeout, this, [this]() {
+    m_galleryDecodeWatchdog = new QTimer(this);
+    m_galleryDecodeWatchdog->setInterval(GalleryDecode::kWatchdogIntervalMs);
+    connect(m_galleryDecodeWatchdog, &QTimer::timeout, this, [this]() {
         if (isGalleryMode()) {
-            m_gallery.softWatchdogTick();
+            m_gallery.decodeWatchdogTick();
         }
         // ImageFocus is event-driven only (rasterImproved / load / resize climb).
         // Slideshow phase buffers: DisplaySurface::decide while transition is live.
@@ -379,7 +379,7 @@ ImageView::ImageView(QWidget *parent)
             m_slideshow.slideshowPhaseSurfaceTick();
         }
     });
-    m_gallerySoftWatchdog->start();
+    m_galleryDecodeWatchdog->start();
 }
 
 ImageView::~ImageView()
@@ -414,7 +414,7 @@ ImageView::~ImageView()
         m_scene->clear();
         m_items.clear();
         m_displayPipeline.loadGate().clearPendingWorkspacePaths();
-        m_displayPipeline.gallerySoftResetAll();
+        m_displayPipeline.galleryDecodeResetAll();
         setScene(nullptr);
         delete m_scene;
         m_scene = nullptr;

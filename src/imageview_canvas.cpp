@@ -103,7 +103,7 @@ QList<ImageItem *> ImageView::collectDoomedWorkspaceItems(const QStringList &pat
 void ImageView::destroyDoomedWorkspaceItems(const QList<ImageItem *> &doomed)
 {
     for (ImageItem *item : doomed) {
-        m_displayPipeline.gallerySoftResetPath(item->path());
+        m_displayPipeline.galleryDecodeResetPath(item->path());
         m_displayPipeline.loadGate().removePendingWorkspacePath(item->path());
         destroyCanvasItem(item);
     }
@@ -130,7 +130,7 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
     if (isGalleryMode() && m_gallerySizeResolve.active()) {
         // Pack deferred until sizes settle. Keep items hidden so provisional
         // geometry is never painted (cold-open layout glitch).
-        if (m_items.isEmpty() && !paths.isEmpty() && !m_gallerySoftBook.isDeferPopulate()) {
+        if (m_items.isEmpty() && !paths.isEmpty() && !m_galleryDecodeBook.isDeferPopulate()) {
             m_gallery.ensurePlaceholders();
         }
         for (ImageItem *item : m_items) {
@@ -196,9 +196,9 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         && m_gallerySizeResolve.startIfNeeded(paths)) {
         // Probes in flight — pack once in finishGallerySizeResolve with real sizes.
         TtfpTrace::mark("gallery_size_resolve_await_sizes");
-        m_gallerySoftBook.setDeferPopulate(true);
+        m_galleryDecodeBook.setDeferPopulate(true);
     } else {
-        m_gallerySoftBook.setDeferPopulate(false);
+        m_galleryDecodeBook.setDeferPopulate(false);
     }
 
     // Gallery always virtualizes: placeholders + soft/full ladder. The old
@@ -212,7 +212,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // once). NEVER hide existing live tiles — that made Gallery look empty after
     // Image/Workspace return (restored stash → setWorkspacePaths → hide forever
     // until finish/cancel). Membership is session; visibility is not a size gate.
-    if (isGalleryMode() && m_gallerySoftBook.isDeferPopulate() && m_gallerySizeResolve.active()) {
+    if (isGalleryMode() && m_galleryDecodeBook.isDeferPopulate() && m_gallerySizeResolve.active()) {
         for (ImageItem *item : m_items) {
             if (item && !item->isVisible()) {
                 item->setVisible(true);
@@ -276,7 +276,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 if (app.hasCrop || app.contentHFlip || app.contentVFlip
                     || app.contentQuarterTurns != 0) {
                     existing->clearDecodedPixels();
-                    m_displayPipeline.gallerySoftResetPath(path);
+                    m_displayPipeline.galleryDecodeResetPath(path);
                     takePendingWorkspacePath(path);
 
                     PendingSessionBind b;

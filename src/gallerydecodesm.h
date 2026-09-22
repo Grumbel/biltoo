@@ -1,36 +1,39 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef GALLERYSOFTSM_H
-#define GALLERYSOFTSM_H
+#ifndef GALLERYDECODESM_H
+#define GALLERYDECODESM_H
 
 #include <QtGlobal>
 
 /**
- * Pure Gallery soft/decode-window policy (no I/O).
+ * Pure Gallery decode-window policy (no I/O).
  *
- * Separates "should we schedule PathRaster?" and "should pass1 install host
- * sample?" from ImageView so SoftPreview clamp loops and inflight stalls are
+ * Gallery underlay is LQIP only; sharpness is tiles (docs/GALLERY_PIXELS.md).
+ * PreferCache whole-frame soft climb is not used.
+ *
+ * Separates "should we schedule decode work?" and "should pass1 install a host
+ * LQIP/sample?" from ImageView so install clamps and inflight stalls are
  * testable invariants.
  *
  * Invariants:
  * 1. needsSchedule is false when anyFull (tile already has FullSource).
  * 2. needsSchedule is false when have covers want and no blank tile.
- * 3. LQIP have never counts as PreferCache plateau (have ≤ lqip still schedules).
- * 4. Host install uses FullSource when hostEdge > softMax — never SoftPreview
- *    for large host samples (SoftPreview clamp would leave shown << host forever).
+ * 3. LQIP have still schedules (underlay is never treated as "done").
+ * 4. Host install uses FullSource when hostEdge > softMax — never LqipUnderlay
+ *    for large host samples (cell clamp would leave shown << host forever).
  * 5. Host install is a no-op when shown already covers host (strict upgrade only).
  * 6. After kMaxEnsureAttempts ensure cycles without settling, terminal=true —
- *    needsSchedule stays false (no soft storm). Clearing terminal only when
- *    want rises or the path is reset.
+ *    needsSchedule stays false. Clearing terminal only when want rises or the
+ *    path is reset.
  */
-namespace GallerySoft {
+namespace GalleryDecode {
 
 constexpr int kCoverNumer = 9;
 constexpr int kCoverDenom = 10;
 constexpr int kDefaultLqipCeiling = 96;
-constexpr int kSoftProgressFloor = 128;
-/** Hard cap: soft PreferCache ensure cycles per path per want band. */
+constexpr int kProgressFloor = 128;
+/** Hard cap: ensure cycles per path per want band. */
 constexpr int kMaxEnsureAttempts = 6;
 /** Host LQIP installs per decode-window tick (steady state). */
 constexpr int kMaxInstallsPerDecodeWindow = 24;
@@ -40,15 +43,15 @@ constexpr int kMaxInstallsDuringSizeResolve = 16;
 constexpr qint64 kDecodeWindowWallMs = 6;
 /** Re-arm delay when more installs remain (ms). */
 constexpr int kDecodeWindowRearmMs = 32;
-/** Soft-state watchdog tick (ms). */
+/** Decode-state watchdog tick (ms). */
 constexpr int kWatchdogIntervalMs = 1000;
-/** Gallery status-line refresh after host soft install (ms). */
+/** Gallery status-line refresh after host LQIP install (ms). */
 constexpr int kStatusRefreshMs = 100;
 /** Decode-window rearm after scroll / wheel (ms). */
 constexpr int kDecodeWindowScrollMs = 80;
 /** Decode-window rearm after layout / mode settle (ms). */
 constexpr int kDecodeWindowSettleMs = 48;
-/** Decode-window rearm after soft install slice (ms). */
+/** Decode-window rearm after LQIP install slice (ms). */
 constexpr int kDecodeWindowSliceMs = 16;
 /** Decode-window rearm for Image/Workspace (non-gallery) interest (ms). */
 constexpr int kDecodeWindowImageMs = 150;
@@ -99,14 +102,14 @@ inline bool needsSchedule(const State &st, int wantEdge, bool anyBlank, bool any
     if (st.failed || st.terminal || anyFull) {
         return false;
     }
-    // Cap soft storms: blank may get one last attempt only if under the hard max.
+    // Cap ensure storms: blank may get one last attempt only if under the hard max.
     if (st.ensureAttempts >= kMaxEnsureAttempts) {
         return false;
     }
     if (st.have >= wantEdge && !anyBlank) {
         return false;
     }
-    if (st.inflight > 0 && st.have >= kSoftProgressFloor && !anyBlank) {
+    if (st.inflight > 0 && st.have >= kProgressFloor && !anyBlank) {
         return false;
     }
     return true;
@@ -131,15 +134,15 @@ inline void noteEnsureScheduled(State &st, int wantEdge)
 /** Illegal to schedule soft after terminal without want rise / reset. */
 inline void assertNotTerminalForSchedule(const State &st)
 {
-    Q_ASSERT_X(!st.terminal, "GallerySoft",
-               "schedule after terminal soft state — soft storm / stuck loop");
+    Q_ASSERT_X(!st.terminal, "GalleryDecode",
+               "schedule after terminal decode state — stuck loop");
 }
 
 void noteLadderDelivery(State &st, int requestEdge, int gotEdge, int softFloor);
 
 enum class InstallKind {
     None = 0,
-    SoftPreview = 1,
+    LqipUnderlay = 1,
     FullSource = 2,
 };
 
@@ -156,6 +159,6 @@ struct InstallDecision {
 InstallDecision decideHostInstall(int shownEdge, int hostEdge, bool hasDisplay,
                                   bool hasFullDecoded, int softMax);
 
-} // namespace GallerySoft
+} // namespace GalleryDecode
 
 #endif

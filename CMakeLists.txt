@@ -196,7 +196,7 @@ set(BILTOO_LIB_SOURCES
   src/viewportchrome.h
   src/hudappearance.h
   src/sessionchrome.h
-  src/gallerysoftbook.h
+  src/gallerydecodebook.h
   src/perfstats.h
   src/layoutdebounce.h
   src/gallerypackfit.h
@@ -235,8 +235,8 @@ set(BILTOO_LIB_SOURCES
   src/edgenavpolicy.h
   src/edgenavpolicy.cpp
   src/motionscrollchrome.h
-  src/softdisplaypolicy.h
-  src/softdisplaypolicy.cpp
+  src/lqipdisplaypolicy.h
+  src/lqipdisplaypolicy.cpp
   src/tile_load_coordinator.cpp
   src/imageview_framing_image.cpp
   src/imageview_status.cpp
@@ -284,8 +284,8 @@ set(BILTOO_LIB_SOURCES
   src/pathrasterservice.h
   src/rasterclimbsm.cpp
   src/rasterclimbsm.h
-  src/gallerysoftsm.cpp
-  src/gallerysoftsm.h
+  src/gallerydecodesm.cpp
+  src/gallerydecodesm.h
   src/thumtoocache.cpp
   src/thumtoocache.h
   src/thumtoo_process_memos.cpp
@@ -619,13 +619,13 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-rasterclimbsm-test PRIVATE Qt6::Core Qt6::Test)
   add_test(NAME rasterclimbsm COMMAND biltoo-rasterclimbsm-test)
 
-  add_executable(biltoo-gallerysoftsm-test
-    tests/gallerysoftsm_test.cpp
-    src/gallerysoftsm.cpp
+  add_executable(biltoo-gallerydecodesm-test
+    tests/gallerydecodesm_test.cpp
+    src/gallerydecodesm.cpp
   )
-  target_include_directories(biltoo-gallerysoftsm-test PRIVATE src)
-  target_link_libraries(biltoo-gallerysoftsm-test PRIVATE Qt6::Core Qt6::Test)
-  add_test(NAME gallerysoftsm COMMAND biltoo-gallerysoftsm-test)
+  target_include_directories(biltoo-gallerydecodesm-test PRIVATE src)
+  target_link_libraries(biltoo-gallerydecodesm-test PRIVATE Qt6::Core Qt6::Test)
+  add_test(NAME gallerydecodesm COMMAND biltoo-gallerydecodesm-test)
 
   add_executable(biltoo-hudmodel-test
     tests/hudmodel_test.cpp

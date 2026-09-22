@@ -8,4 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 Soft PreferCache / soft-ladder underlay for Gallery is **gone** and must not be
 reintroduced. Placeholders are **LQIP** only; sharpness is **tiles**.
 
+Host decode-window bookkeeping lives under the **GalleryDecode** name
+(`gallerydecodesm`, `GalleryDecodeBook`, `GalleryDecodeState`) — not "soft".
+
 See [GALLERY_PIXELS.md](GALLERY_PIXELS.md).

@@ -194,7 +194,7 @@
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
     LayoutPrefs m_layout;
-    GallerySoftBook m_gallerySoftBook;
+    GalleryDecodeBook m_galleryDecodeBook;
     /** Central path→raster climb (slideshow + shared PreferCache policy). */
     ImageModeSoftProvider m_imageModeSoftProvider;
 
@@ -226,7 +226,7 @@
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
     PerfStats m_perf;
 
-    QTimer *m_gallerySoftWatchdog = nullptr;
+    QTimer *m_galleryDecodeWatchdog = nullptr;
     QTimer *m_layoutDebounceTimer = nullptr;
     LayoutDebounce m_layoutDebounce;
     /** Debounce colour-slider durable write + filmstrip (see setTargetColorAdjustments). */

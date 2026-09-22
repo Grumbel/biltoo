@@ -13,9 +13,9 @@
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
 #include "pagepath.h"
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 #include "displayquality.h"
-#include "softdisplaypolicy.h"
+#include "lqipdisplaypolicy.h"
 #include "biltoo_thread.h"
 
 #include "imageloader.h"
@@ -150,10 +150,10 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
 void DisplayPipelineController::scheduleImageModeNativeDecodeOnce(const QString &path)
 {
     ASSERT_GUI_THREAD();
-    if (path.isEmpty() || m_view->hostGallerySoftBook().hasImageModeNativeDecode(path)) {
+    if (path.isEmpty() || m_view->hostGalleryDecodeBook().hasImageModeNativeDecode(path)) {
         return;
     }
-    m_view->hostGallerySoftBook().markImageModeNativeDecode(path);
+    m_view->hostGalleryDecodeBook().markImageModeNativeDecode(path);
     const quint64 gen = loadGate().generation();
     const QPointer<ImageView> guard(m_view);
     QThreadPool::globalInstance()->start([guard, path, gen]() {
@@ -507,13 +507,13 @@ void DisplayPipelineController::applyGalleryLadderReady(const QString &path, int
         }
     }
 
-    if (GallerySoftState *st = m_view->hostGallerySoftBook().find(path)) {
+    if (GalleryDecodeState *st = m_view->hostGalleryDecodeBook().find(path)) {
         st->terminal = true;
-        st->have = GallerySoft::maxHave(st->have, galleryHaveEdgeFromItems(path, nullptr));
+        st->have = GalleryDecode::maxHave(st->have, galleryHaveEdgeFromItems(path, nullptr));
     }
 
-    m_view->hostGallery().scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
-    m_view->hostGallery().scheduleStatusRefresh(GallerySoft::kStatusRefreshMs);
+    m_view->hostGallery().scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSliceMs);
+    m_view->hostGallery().scheduleStatusRefresh(GalleryDecode::kStatusRefreshMs);
 }
 
 
@@ -860,7 +860,7 @@ bool DisplayPipelineController::canAcceptDisplaySample(const ImageItem *item, co
     }
     // Gallery: LQIP underlay only (≤kLqipMaxEdge). Never soft/HOST whole-frame.
     if (m_view->isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview
-        && !SoftDisplayPolicy::gallerySoftWithinLqipBand(
+        && !LqipDisplayPolicy::galleryWithinLqipBand(
                incoming, DisplayQuality::kLqipMaxEdge)) {
         return false;
     }
@@ -869,7 +869,7 @@ bool DisplayPipelineController::canAcceptDisplaySample(const ImageItem *item, co
     }
     if (m_view->isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
         // Only larger LQIP; never soft climb.
-        return SoftDisplayPolicy::galleryAcceptsLqipUpgrade(
+        return LqipDisplayPolicy::galleryAcceptsLqipUpgrade(
             item->displayPixelLongEdge(), incoming, DisplayQuality::kLqipMaxEdge);
     }
     DisplaySurface::State ds = displaySurfaceStateForItem(item, incoming, false);
@@ -1150,7 +1150,7 @@ void DisplayPipelineController::installImageModePendingTile(const QString &path,
             biltooLoadDbg("pendingTile PLACEHOLDER FAILED path=%s mode=%d defer=%d",
                           qPrintable(QFileInfo(path).fileName()),
                           m_view->isImageMode() ? 1 : 0,
-                          m_view->hostGallerySoftBook().isDeferPopulate() ? 1 : 0);
+                          m_view->hostGalleryDecodeBook().isDeferPopulate() ? 1 : 0);
         }
         biltooLoadDbg("pendingTile PLACEHOLDER empty soft path=%s items=%d sz=%dx%d",
                       qPrintable(QFileInfo(path).fileName()),
@@ -1370,7 +1370,7 @@ ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path,
     // Defer-populate is a Gallery size-resolve gate only. Applying it in Image
     // mode blocked Workspace→Image from creating the sole underlay item when a
     // prior Gallery size-resolve left the flag set (empty Image view).
-    if (m_view->isGalleryMode() && m_view->hostGallerySoftBook().isDeferPopulate()) {
+    if (m_view->isGalleryMode() && m_view->hostGalleryDecodeBook().isDeferPopulate()) {
         return nullptr;
     }
     auto *item = new ImageItem(path, intrinsicSize);

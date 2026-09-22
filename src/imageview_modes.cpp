@@ -57,7 +57,7 @@ void ImageView::invalidateSessionLoads()
         m_displayPipeline.tileCoordinator()->clearPreferCancelled();
     }
     m_displayPipeline.loadGate().clearPending();
-    m_displayPipeline.gallerySoftResetAll();
+    m_displayPipeline.galleryDecodeResetAll();
     m_slideshow.phase().clearRasterQueues();
     m_slideshow.phase().bumpPhaseUpgradeGeneration();
     m_slideshow.dwell().bumpAtlasRebuildGeneration();
@@ -237,9 +237,9 @@ void ImageView::clearWorkspace()
     m_displayPipeline.loadGate().clearPending();
     m_bindBook.clear();
     m_pendingAppearance.clear();
-    m_displayPipeline.gallerySoftResetAll();
+    m_displayPipeline.galleryDecodeResetAll();
     m_sizeBook.clear();
-    m_gallerySoftBook.setDeferPopulate(false);
+    m_galleryDecodeBook.setDeferPopulate(false);
     m_gallerySizeResolve.cancel();
     ImageCache::clear();
     m_tileNeighborPrefetch.clear();

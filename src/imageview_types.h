@@ -11,7 +11,7 @@
 #include <QSize>
 #include <QString>
 
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 #include <QVector>
 #include "coloradjust.h"
 #include <QtGlobal>
@@ -311,13 +311,13 @@ struct WorkspaceItemState {
  * inflight   — concurrency token (0 = idle); at most one per path
  * failed     — permanent hard failure for this path
  */
-struct GallerySoftState : GallerySoft::State {
+struct GalleryDecodeState : GalleryDecode::State {
     /**
      * Record a ladder delivery for concurrency bookkeeping only.
      */
     void noteLadderDelivery(int requestEdge, int gotEdge, int softFloor)
     {
-        GallerySoft::noteLadderDelivery(*this, requestEdge, gotEdge, softFloor);
+        GalleryDecode::noteLadderDelivery(*this, requestEdge, gotEdge, softFloor);
     }
 
     /** scheduleTilePyramid issued once for this path (tile band). */

@@ -232,7 +232,7 @@ QStringList ImageView::destroySessionIdItems(const QList<ImageItem *> &doomed)
         // Drop in-flight decodes so a late LoadAdd cannot create a tile or
         // call applyLayout after this session image is gone.
         m_displayPipeline.loadGate().removePendingWorkspacePath(path);
-        m_displayPipeline.gallerySoftResetPath(path);
+        m_displayPipeline.galleryDecodeResetPath(path);
         m_displayPipeline.loadGate().removePendingScenePos(path);
         // destroyCanvasItem clears selection anchor / drag pointers and
         // removes from m_items and both stashes (safe if already only in one).

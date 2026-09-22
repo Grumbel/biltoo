@@ -23,7 +23,7 @@
 #include "viewportchrome.h"
 #include "hudappearance.h"
 #include "sessionchrome.h"
-#include "gallerysoftbook.h"
+#include "gallerydecodebook.h"
 #include "perfstats.h"
 #include "coloradjustcommit.h"
 #include "layoutdebounce.h"

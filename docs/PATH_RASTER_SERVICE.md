@@ -64,7 +64,7 @@ invalidateAll()           — session switch
 | Filmstrip | *(not PathRaster — `scheduleFilmstripTilePixels`)* | LQIP + TileSynth |
 
 Gallery does not call `ensure`. Decode window installs LQIP and drives
-TileLoadCoordinator. Historical name `GallerySoftState` tracks decode-window
+TileLoadCoordinator. Historical name `GalleryDecodeState` tracks decode-window
 budget only (not PreferCache soft climb).
 
 **Soft-band and Display PreferCache plans:** use

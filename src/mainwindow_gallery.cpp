@@ -23,7 +23,7 @@ void MainWindow::populateGalleryCanvas()
     // Gallery visit so setWorkspacePaths cannot hide every tile under defer
     // and leave an empty canvas after Workspace.
     m_imageView->hostGallerySizeResolve().cancel();
-    m_imageView->hostGallerySoftBook().setDeferPopulate(false);
+    m_imageView->hostGalleryDecodeBook().setDeferPopulate(false);
     m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
     // Workspace→Gallery (and any cold enter) must never leave a blank canvas.
     // setWorkspacePaths may re-arm size-resolve + defer and return without
@@ -32,7 +32,7 @@ void MainWindow::populateGalleryCanvas()
     if (!m_imageView->isGalleryMode()) {
         return;
     }
-    m_imageView->hostGallerySoftBook().setDeferPopulate(false);
+    m_imageView->hostGalleryDecodeBook().setDeferPopulate(false);
     bool needPlaceholders = m_imageView->itemCount() == 0;
     if (!needPlaceholders) {
         needPlaceholders = true;
@@ -50,7 +50,7 @@ void MainWindow::populateGalleryCanvas()
                   m_imageView->itemCount(),
                   needPlaceholders ? 1 : 0,
                   static_cast<int>(m_session.paths().size()),
-                  m_imageView->hostGallerySoftBook().isDeferPopulate() ? 1 : 0,
+                  m_imageView->hostGalleryDecodeBook().isDeferPopulate() ? 1 : 0,
                   m_imageView->hostGallerySizeResolve().active() ? 1 : 0);
 }
 

@@ -148,7 +148,7 @@ Slideshow uses SoftDisplay only (screen-fit edge), never EscalateToFull.
 | **Image mode** | Viewport × DPR (capped), then native if still short | EscalateToFull |
 | **Slideshow** | `ladder(viewport × DPR × motionHeadroom)` capped at kImageLadderEdge; **need** ≈ 70% of target | EscalateToFull |
 
-Gallery **`GallerySoftState`** is decode-window bookkeeping only (concurrency, blank tiles,
+Gallery **`GalleryDecodeState`** is decode-window bookkeeping only (concurrency, blank tiles,
 on-screen want). PreferCache plateau is mirrored from PathRasterService — not
 decided in `noteLadderDelivery`.
 

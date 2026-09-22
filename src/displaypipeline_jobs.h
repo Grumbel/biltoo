@@ -20,7 +20,7 @@ void queuePreviewLoaded(const QPointer<ImageView> &guard, const QString &path,
 void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
                       const QImage &image, quint64 gen, int role);
 
-/** Worker LQIP/soft underlay — see SoftDisplayPolicy::lqipOrCachedSoft. */
+/** Worker LQIP/soft underlay — see LqipDisplayPolicy::lqipOrCachedSample. */
 QImage loadSoftPreviewPixels(const QString &path, int softEdge);
 
 /** LQIP seed job only. Never SoftOnly / PreferCache soft encode. */

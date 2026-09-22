@@ -14,9 +14,9 @@
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
 #include "pagepath.h"
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 #include "displayquality.h"
-#include "softdisplaypolicy.h"
+#include "lqipdisplaypolicy.h"
 #include "biltoo_thread.h"
 
 #include "imageloader.h"
@@ -44,7 +44,7 @@ void DisplayPipelineController::finishLoadAddStatus(bool refreshGalleryWindow)
 {
     emit m_view->statusChanged();
     if (refreshGalleryWindow && m_view->isGalleryMode()) {
-        m_view->hostGallery().scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
+        m_view->hostGallery().scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSettleMs);
     }
 }
 
@@ -82,7 +82,7 @@ void DisplayPipelineController::handleLoadAddDecodeFailure(const QString &path)
     }
     qWarning("ImageView: decode failed for %s", qPrintable(path));
     if (m_view->isGalleryMode()) {
-        GallerySoftState &st = m_view->hostGallerySoftBook().state(path);
+        GalleryDecodeState &st = m_view->hostGalleryDecodeBook().state(path);
         st.failed = true;
         st.inflight = 0;
     }
@@ -237,7 +237,7 @@ int DisplayPipelineController::fillLiveItemsWithDecodedPixels(const QString &pat
 void DisplayPipelineController::createMissingLoadAddItems(const QString &path, const QImage &image,
                                           int have, int wanted)
 {
-    if (m_view->hostGallerySizeResolve().active() || m_view->hostGallerySoftBook().isDeferPopulate()) {
+    if (m_view->hostGallerySizeResolve().active() || m_view->hostGalleryDecodeBook().isDeferPopulate()) {
         return;
     }
     // Create missing occurrences (each duplicate is a normal separate tile).
@@ -265,7 +265,7 @@ void DisplayPipelineController::createMissingLoadAddItems(const QString &path, c
 
 void DisplayPipelineController::applyLoadAddLayoutAfterMembership(bool sizeChanged)
 {
-    if (m_view->hostGallerySizeResolve().active() || m_view->hostGallerySoftBook().isDeferPopulate()) {
+    if (m_view->hostGallerySizeResolve().active() || m_view->hostGalleryDecodeBook().isDeferPopulate()) {
         return;
     }
     if (!m_view->hostLayout().isFreeForm()) {
@@ -291,7 +291,7 @@ void DisplayPipelineController::completeLoadAdd(const QString &path, const QImag
     // LoadAdd: workspace new item, or Gallery placeholder fill / virtual window.
     // Duplicate paths are separate session images: fill every undecoded live
     // occurrence, then create until live count matches pathOrder occurrences.
-    gallerySoftResetPath(path);
+    galleryDecodeResetPath(path);
 
     // Remember size even when the pending membership was cancelled — a successful
     // decode still updates the session size cache for later layout.
@@ -342,7 +342,7 @@ void DisplayPipelineController::completeLoadAdd(const QString &path, const QImag
     emit m_view->statusChanged();
     emit m_view->workspacePathsChanged();
     if (m_view->isGalleryMode()) {
-        m_view->hostGallery().scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
+        m_view->hostGallery().scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSettleMs);
     }
     if (m_view->isWorkspaceMode()) {
         ensureWorkspaceQualityClimb();
@@ -363,7 +363,7 @@ void DisplayPipelineController::scheduleImageLoad(const QString &path, int role)
     quint64 gen = loadGate().generation();
     if (role == ImageView::LoadReplace) {
         gen = loadGate().bumpGeneration();
-        m_view->hostGallerySoftBook().clearImageModeNativeDecode();
+        m_view->hostGalleryDecodeBook().clearImageModeNativeDecode();
         // Do NOT setPrimaryInterest here — that starts EnsureTiles / FocusFull
         // pyramid builds on archives and cancels the soft queue every ←/→.
     }
@@ -607,24 +607,24 @@ void DisplayPipelineController::scheduleClassicImageDecode(const QString &path, 
 
 
 
-void DisplayPipelineController::gallerySoftResetPath(const QString &path)
+void DisplayPipelineController::galleryDecodeResetPath(const QString &path)
 {
-    m_view->hostGallerySoftBook().resetPath(path);
+    m_view->hostGalleryDecodeBook().resetPath(path);
     if (m_view->hostPathRaster() && !path.isEmpty()) {
         m_view->hostPathRaster()->cancel(path);
     }
 }
 
 
-void DisplayPipelineController::gallerySoftResetAll()
+void DisplayPipelineController::galleryDecodeResetAll()
 {
-    m_view->hostGallerySoftBook().clearSoft();
+    m_view->hostGalleryDecodeBook().clearDecodeStates();
 }
 
 
 int DisplayPipelineController::galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const
 {
-    // Collect edges for this path, then pure aggregate (SoftDisplayPolicy).
+    // Collect edges for this path, then pure aggregate (LqipDisplayPolicy).
     QVarLengthArray<int, 8> edges;
     QVarLengthArray<bool, 8> decoded;
     for (ImageItem *item : m_view->liveItems()) {
@@ -634,8 +634,8 @@ int DisplayPipelineController::galleryHaveEdgeFromItems(const QString &path, boo
         edges.append(item->displayPixelLongEdge());
         decoded.append(item->hasDecodedPixels());
     }
-    const SoftDisplayPolicy::PathHaveEdge agg =
-        SoftDisplayPolicy::aggregatePathHaveEdge(
+    const LqipDisplayPolicy::PathHaveEdge agg =
+        LqipDisplayPolicy::aggregatePathHaveEdge(
             edges.constData(), decoded.constData(), edges.size());
     if (anyFullOut) {
         *anyFullOut = agg.anyFull;
@@ -688,9 +688,9 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
         }
     }
 
-    GallerySoftState &st = m_view->hostGallerySoftBook().state(path);
+    GalleryDecodeState &st = m_view->hostGalleryDecodeBook().state(path);
     st.terminal = true; // no soft climb ever
-    st.have = GallerySoft::maxHave(st.have, galleryHaveEdgeFromItems(path, nullptr));
+    st.have = GalleryDecode::maxHave(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
     if (anyTileWanted && !m_view->hostGallerySizeResolve().active()) {
         // Size must be known before pyramid encode (expensive). Wait for resolve.

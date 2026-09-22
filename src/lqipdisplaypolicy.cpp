@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "softdisplaypolicy.h"
+#include "lqipdisplaypolicy.h"
 
 #include "biltoo_thread.h"
 #include "displayquality.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
 
-namespace SoftDisplayPolicy {
+namespace LqipDisplayPolicy {
 
-QImage lqipOrCachedSoft(const QString &path)
+QImage lqipOrCachedSample(const QString &path)
 {
     ASSERT_NOT_GUI_THREAD();
     if (path.isEmpty()) {
@@ -38,7 +38,7 @@ QImage lqipOrCachedSoft(const QString &path)
 }
 
 
-bool gallerySoftWithinLqipBand(int incomingEdge, int lqipMaxEdge)
+bool galleryWithinLqipBand(int incomingEdge, int lqipMaxEdge)
 {
     return incomingEdge > 0 && incomingEdge <= lqipMaxEdge;
 }
@@ -69,4 +69,4 @@ PathHaveEdge aggregatePathHaveEdge(const int *displayEdges, const bool *decoded,
     return out;
 }
 
-} // namespace SoftDisplayPolicy
+} // namespace LqipDisplayPolicy

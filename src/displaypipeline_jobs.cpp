@@ -6,7 +6,7 @@
 #include "imageview.h"
 #include "imagecache.h"
 #include "displayedgepolicy.h"
-#include "softdisplaypolicy.h"
+#include "lqipdisplaypolicy.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
 #include "biltoo_logging.h"
@@ -47,10 +47,10 @@ void queueImageLoaded(const QPointer<ImageView> &guard, const QString &path,
     });
 }
 
-/** Worker LQIP/soft underlay — see SoftDisplayPolicy::lqipOrCachedSoft. */
+/** Worker LQIP/soft underlay — see LqipDisplayPolicy::lqipOrCachedSample. */
 QImage loadSoftPreviewPixels(const QString &path, int /*softEdge*/)
 {
-    return SoftDisplayPolicy::lqipOrCachedSoft(path);
+    return LqipDisplayPolicy::lqipOrCachedSample(path);
 }
 
 /**

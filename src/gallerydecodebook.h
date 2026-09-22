@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef GALLERYSOFTBOOK_H
-#define GALLERYSOFTBOOK_H
+#ifndef GALLERYDECODEBOOK_H
+#define GALLERYDECODEBOOK_H
 
 #include "imageview_types.h"
 
@@ -11,40 +11,40 @@
 #include <QString>
 
 /**
- * Per-path Gallery soft/decode-window state and related path sets.
- * Soft watchdog QTimer stays on ImageView.
+ * Per-path Gallery decode-window state and related path sets.
+ * Decode watchdog QTimer stays on ImageView.
  */
-class GallerySoftBook
+class GalleryDecodeBook
 {
 public:
     bool deferPopulate = false;
 
     bool isDeferPopulate() const { return deferPopulate; }
 
-    void clearSoft() { m_soft.clear(); }
+    void clearDecodeStates() { m_byPath.clear(); }
 
-    /** Mutable soft state for @p path (creates empty entry if missing). */
-    GallerySoftState &state(const QString &path) { return m_soft[path]; }
+    /** Mutable decode state for @p path (creates empty entry if missing). */
+    GalleryDecodeState &state(const QString &path) { return m_byPath[path]; }
 
-    const GallerySoftState *get(const QString &path) const
+    const GalleryDecodeState *get(const QString &path) const
     {
         if (path.isEmpty()) {
             return nullptr;
         }
-        const auto it = m_soft.constFind(path);
-        if (it == m_soft.cend()) {
+        const auto it = m_byPath.constFind(path);
+        if (it == m_byPath.cend()) {
             return nullptr;
         }
         return &(*it);
     }
 
-    GallerySoftState *find(const QString &path)
+    GalleryDecodeState *find(const QString &path)
     {
         if (path.isEmpty()) {
             return nullptr;
         }
-        const auto it = m_soft.find(path);
-        if (it == m_soft.end()) {
+        const auto it = m_byPath.find(path);
+        if (it == m_byPath.end()) {
             return nullptr;
         }
         return &(*it);
@@ -63,7 +63,7 @@ public:
     void resetPath(const QString &path)
     {
         if (!path.isEmpty()) {
-            m_soft.remove(path);
+            m_byPath.remove(path);
         }
     }
 
@@ -83,14 +83,14 @@ public:
 
     void clear()
     {
-        m_soft.clear();
+        m_byPath.clear();
         deferPopulate = false;
         m_imageModeNativeDecodePaths.clear();
     }
 
 private:
-    QHash<QString, GallerySoftState> m_soft;
+    QHash<QString, GalleryDecodeState> m_byPath;
     QSet<QString> m_imageModeNativeDecodePaths;
 };
 
-#endif // GALLERYSOFTBOOK_H
+#endif // GALLERYDECODEBOOK_H

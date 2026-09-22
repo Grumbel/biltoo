@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 
 #include <QtTest/QtTest>
 
-using namespace GallerySoft;
+using namespace GalleryDecode;
 
-class GallerySoftSmTest : public QObject
+class GalleryDecodeSmTest : public QObject
 {
     Q_OBJECT
 private slots:
@@ -25,21 +25,21 @@ private slots:
     void note_ladder_clears_inflight();
 };
 
-void GallerySoftSmTest::needs_schedule_blank()
+void GalleryDecodeSmTest::needs_schedule_blank()
 {
     State st;
     st.have = 0;
     QVERIFY(needsSchedule(st, 512, /*anyBlank=*/true, /*anyFull=*/false));
 }
 
-void GallerySoftSmTest::needs_schedule_covers_want()
+void GalleryDecodeSmTest::needs_schedule_covers_want()
 {
     State st;
     st.have = 512;
     QVERIFY(!needsSchedule(st, 512, false, false));
 }
 
-void GallerySoftSmTest::needs_schedule_lqip_not_plateau()
+void GalleryDecodeSmTest::needs_schedule_lqip_not_plateau()
 {
     State st;
     st.have = 16;
@@ -47,7 +47,7 @@ void GallerySoftSmTest::needs_schedule_lqip_not_plateau()
     QVERIFY(needsSchedule(st, 512, false, false));
 }
 
-void GallerySoftSmTest::needs_schedule_lqip_ceiling_edge()
+void GalleryDecodeSmTest::needs_schedule_lqip_ceiling_edge()
 {
     // have == kDefaultLqipCeiling (96): still LQIP, must schedule.
     State st;
@@ -58,7 +58,7 @@ void GallerySoftSmTest::needs_schedule_lqip_ceiling_edge()
     QVERIFY(needsSchedule(st, 512, false, false));
 }
 
-void GallerySoftSmTest::needs_schedule_inflight_soft()
+void GalleryDecodeSmTest::needs_schedule_inflight_soft()
 {
     State st;
     st.have = 256;
@@ -68,7 +68,7 @@ void GallerySoftSmTest::needs_schedule_inflight_soft()
     QVERIFY(needsSchedule(st, 512, true, false));
 }
 
-void GallerySoftSmTest::needs_schedule_terminal()
+void GalleryDecodeSmTest::needs_schedule_terminal()
 {
     State st;
     st.have = 16;
@@ -76,7 +76,7 @@ void GallerySoftSmTest::needs_schedule_terminal()
     QVERIFY(!needsSchedule(st, 512, true, false));
 }
 
-void GallerySoftSmTest::needs_schedule_max_attempts()
+void GalleryDecodeSmTest::needs_schedule_max_attempts()
 {
     State st;
     st.have = 16;
@@ -93,17 +93,17 @@ void GallerySoftSmTest::needs_schedule_max_attempts()
     QVERIFY(needsSchedule(st, 1024, true, false) || st.ensureAttempts < kMaxEnsureAttempts);
 }
 
-void GallerySoftSmTest::needs_schedule_any_full()
+void GalleryDecodeSmTest::needs_schedule_any_full()
 {
     State st;
     st.have = 16;
     QVERIFY(!needsSchedule(st, 512, true, /*anyFull=*/true));
 }
 
-void GallerySoftSmTest::host_install_soft_vs_full()
+void GalleryDecodeSmTest::host_install_soft_vs_full()
 {
     auto soft = decideHostInstall(0, 256, false, false, 512);
-    QCOMPARE(soft.kind, InstallKind::SoftPreview);
+    QCOMPARE(soft.kind, InstallKind::LqipUnderlay);
     QVERIFY(soft.meaningful);
 
     auto full = decideHostInstall(0, 2048, false, false, 512);
@@ -111,7 +111,7 @@ void GallerySoftSmTest::host_install_soft_vs_full()
     QVERIFY(full.meaningful);
 }
 
-void GallerySoftSmTest::host_install_no_loop_when_shown_matches()
+void GalleryDecodeSmTest::host_install_no_loop_when_shown_matches()
 {
     // After FullSource install shown==host — pass1 must stop
     auto d = decideHostInstall(2048, 2048, true, true, 512);
@@ -122,14 +122,14 @@ void GallerySoftSmTest::host_install_no_loop_when_shown_matches()
     QCOMPARE(d.kind, InstallKind::FullSource);
 }
 
-void GallerySoftSmTest::host_install_upgrades_lqip()
+void GalleryDecodeSmTest::host_install_upgrades_lqip()
 {
     auto d = decideHostInstall(16, 512, true, false, 512);
-    QCOMPARE(d.kind, InstallKind::SoftPreview);
+    QCOMPARE(d.kind, InstallKind::LqipUnderlay);
     QVERIFY(d.meaningful);
 }
 
-void GallerySoftSmTest::note_ladder_clears_inflight()
+void GalleryDecodeSmTest::note_ladder_clears_inflight()
 {
     State st;
     st.inflight = 512;
@@ -138,5 +138,5 @@ void GallerySoftSmTest::note_ladder_clears_inflight()
     QCOMPARE(st.have, 512);
 }
 
-QTEST_MAIN(GallerySoftSmTest)
-#include "gallerysoftsm_test.moc"
+QTEST_MAIN(GalleryDecodeSmTest)
+#include "gallerydecodesm_test.moc"

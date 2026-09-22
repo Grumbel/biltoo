@@ -11,8 +11,8 @@
     SlideshowController &hostSlideshow() { return m_slideshow; }
     const SlideshowController &hostSlideshow() const { return m_slideshow; }
     /** Display pipeline host: gallery soft SM book. */
-    GallerySoftBook &hostGallerySoftBook() { return m_gallerySoftBook; }
-    const GallerySoftBook &hostGallerySoftBook() const { return m_gallerySoftBook; }
+    GalleryDecodeBook &hostGalleryDecodeBook() { return m_galleryDecodeBook; }
+    const GalleryDecodeBook &hostGalleryDecodeBook() const { return m_galleryDecodeBook; }
     /** Display pipeline host: pending session binds. */
     SessionBindBook &hostBindBook() { return m_bindBook; }
     const SessionBindBook &hostBindBook() const { return m_bindBook; }

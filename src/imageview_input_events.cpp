@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <QEvent>
 #include "itemcomponents.h"
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 #include "toolpolicy.h"
 #include "workspacenavgeometry.h"
 #include "grouptransformgeometry.h"

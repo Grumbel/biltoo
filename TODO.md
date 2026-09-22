@@ -2,6 +2,30 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2282-rename-gallery-soft-to-decode.** Naming cleanup (LQIP + tiles model):
+
+1. `GallerySoft` → `GalleryDecode` (SM, book, state, host accessors, reset APIs)
+2. Files: `gallerydecodesm`, `gallerydecodebook`, test rename
+3. `galleryInstallHostSoftOntoBlanks` → `galleryInstallLqipOntoBlanks`
+4. `SoftDisplayPolicy` → `LqipDisplayPolicy` (worker LQIP sample selection)
+5. Comments/docs: PreferCache soft path is gone; decode-window is LQIP + tiles
+
+`SessionAppearance::PixelKind::SoftPreview` and Image-mode soft preview *jobs*
+are unchanged (different layer: sample kind / focus path, not Gallery climb).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2282.1-rename-gallery-soft-to-decode-e6c70e4.bundle HEAD
+```
+
+Next: **2283**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2281-drop-dead-slideshow-item-framing-helpers.** Dead API cleanup:
 
 1. SlideshowPhase/Hud: remove unused `fromSurfaceId`/`toSurfaceId`, `hasToPath`,

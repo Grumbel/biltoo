@@ -171,8 +171,8 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
     int galleryHave = 0;
     if (isGalleryMode()) {
         galleryNeed = m_displayPipeline.galleryDisplayEdgeForItem(item, /*allowHighRes=*/true);
-        const GallerySoftState *st = m_gallerySoftBook.get(item->path());
-        galleryHave = st ? GallerySoft::maxHave(st->have, edge) : edge;
+        const GalleryDecodeState *st = m_galleryDecodeBook.get(item->path());
+        galleryHave = st ? GalleryDecode::maxHave(st->have, edge) : edge;
     }
     return HudModel::qualityLabelDetail(
         t, edge, native, isGalleryMode(), isImageMode(), galleryNeed, galleryHave);
@@ -241,7 +241,7 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
             } else {
                 ++better;
             }
-            if (const GallerySoftState *sit = m_gallerySoftBook.get(ii->path())) {
+            if (const GalleryDecodeState *sit = m_galleryDecodeBook.get(ii->path())) {
                 if (sit->inflight > 0) {
                     ++climb;
                 }

@@ -29,7 +29,7 @@ void ImageController::enter()
     m_view->setActiveMode(ImageView::ViewMode::Image, LayoutMode::FreeForm);
     m_view->stopDeferredPacking();
     m_view->prepareImageModeCanvas();
-    m_view->hostGallerySoftBook().setDeferPopulate(false);
+    m_view->hostGalleryDecodeBook().setDeferPopulate(false);
 
     const QString path = classicPath();
     const SessionImageId wantId = m_view->hostSessionId().hasCurrentId()
@@ -41,7 +41,7 @@ void ImageController::enter()
                   m_view->itemCount(),
                   static_cast<int>(m_view->hostWorkspace().stashedItems().size()),
                   static_cast<int>(m_view->hostGallery().stashedItems().size()),
-                  m_view->hostGallerySoftBook().isDeferPopulate() ? 1 : 0);
+                  m_view->hostGalleryDecodeBook().isDeferPopulate() ? 1 : 0);
 
     // Do NOT seed ImageCache from Gallery/Workspace stash display samples.
     // Mode-stash soft may be content-baked; ImageCache is host-raw only.
@@ -229,7 +229,7 @@ void ImageController::hardReloadFromDisk()
         b.id = item->sessionId();
         b.index = m_view->sessionListIndex(item);
         binds.append(b);
-        m_view->hostDisplayPipeline().gallerySoftResetPath(p);
+        m_view->hostDisplayPipeline().galleryDecodeResetPath(p);
         m_view->hostDisplayPipeline().dropItemTileLodSession(item);
         m_view->takePendingWorkspacePath(p);
         m_view->clearItemDecodedPixels(item);

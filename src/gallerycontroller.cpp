@@ -22,7 +22,7 @@
 #include "imagecache.h"
 #include "displayquality.h"
 #include "workspacenavgeometry.h"
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 
 #include <QScrollBar>
 #include <QTimer>
@@ -118,7 +118,7 @@ void GalleryController::restoreStashedItems()
         }
         m_view->applyItemModeFlags(item);
         // Image-mode crop updates the appearance store and may have synced a
-        // bake onto the stash; if soft still lags (or was never baked), force
+        // bake onto the stash; if underlay still lags (or was never baked), force
         // rematerialize from the store so Gallery does not show full-frame.
         m_view->rematerializeGalleryItemFromStore(item);
     }
@@ -507,7 +507,7 @@ void GalleryController::updateGalleryHoverAt(const QPoint &viewPos)
 
 bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
 {
-    // Gallery: Ctrl+wheel zooms the view (inspection) and refreshes the soft
+    // Gallery: Ctrl+wheel zooms the view (inspection) and refreshes the
     // ladder for the new on-screen cell size.
     if (!m_view->isGalleryMode() || !(event->modifiers() & Qt::ControlModifier)) {
         return false;
@@ -520,8 +520,8 @@ bool GalleryController::tryWheelGalleryZoom(QWheelEvent *event)
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     // Do not run updateGalleryDecodeWindow or FullViewportUpdate here —
     // each wheel notch used to rescan all tiles + setInterest + repaint
-    // every high-res soft, freezing the UI while zooming out.
-    scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowScrollMs);
+    // every high-res underlay, freezing the UI while zooming out.
+    scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowScrollMs);
     emit m_view->statusChanged();
     event->accept();
     return true;
@@ -666,7 +666,7 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
         }
 
         if (hit && ctrl) {
-            // Defensive: soft/late tiles may have lost ItemIsSelectable.
+            // Defensive: late tiles may have lost ItemIsSelectable.
             if (!(hit->flags() & QGraphicsItem::ItemIsSelectable)) {
                 hit->setGallerySelectable(true);
             }
@@ -849,7 +849,7 @@ bool GalleryController::tryKeyPressDeleteSelection(QKeyEvent *event)
 }
 
 
-// --- Gallery soft decode window timers (Tier 5 residual) ---
+// --- Gallery decode window timers ---
 
 void GalleryController::scheduleStatusRefresh(int delayMs)
 {
@@ -893,7 +893,7 @@ void GalleryController::scheduleDecodeWindowRefresh(int delayMs)
 
 // --- Gallery decode window body (Tier 5 residual) ---
 
-int GalleryController::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending)
+int GalleryController::galleryInstallLqipOntoBlanks(int maxInstalls, bool *morePending)
 {
     if (morePending) {
         *morePending = false;
@@ -902,7 +902,7 @@ int GalleryController::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *m
         return 0;
     }
     int installed = 0;
-    // LQIP underlay only — never install soft/HOST whole-frame into Gallery cells.
+    // LQIP underlay only — never install PreferCache whole-frame into Gallery cells.
     QList<ImageItem *> ordered;
     ordered.reserve(m_view->liveItems().size());
     for (ImageItem *item : m_view->liveItems()) {
@@ -940,7 +940,7 @@ int GalleryController::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *m
         }
         QImage sample = hostSample;
         int sampleEdge = hostEdge;
-        // LQIP underlay only — downscale host soft; never install soft plate.
+        // LQIP underlay only — downscale host sample; never install whole-frame plate.
         if (sampleEdge > DisplayQuality::kLqipMaxEdge) {
             if (item->hasDisplayPixels()) {
                 continue;
@@ -967,9 +967,9 @@ int GalleryController::galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *m
         if (after <= before && hadDisplay) {
             continue;
         }
-        GallerySoftState &st = m_view->hostGallerySoftBook().state(path);
+        GalleryDecodeState &st = m_view->hostGalleryDecodeBook().state(path);
         // Shown edge only — hostEdge can exceed what install actually attached.
-        st.have = GallerySoft::maxHave(st.have, after);
+        st.have = GalleryDecode::maxHave(st.have, after);
         item->update();
         ++installed;
     }
@@ -998,14 +998,14 @@ void GalleryController::updateDecodeWindow()
     // While sizes are still sequential, only allow blank LQIP installs from cache
     // — no tile ticks / pyramid (workers stay on ProbeSize).
     if (m_view->hostGallerySizeResolve().active()) {
-        constexpr int kMaxInstallsDuringSizeResolve = GallerySoft::kMaxInstallsDuringSizeResolve;
+        constexpr int kMaxInstallsDuringSizeResolve = GalleryDecode::kMaxInstallsDuringSizeResolve;
         bool more = false;
-        const int n = galleryInstallHostSoftOntoBlanks(kMaxInstallsDuringSizeResolve, &more);
+        const int n = galleryInstallLqipOntoBlanks(kMaxInstallsDuringSizeResolve, &more);
         if (n > 0 && m_view->viewport()) {
             m_view->viewport()->update();
         }
         if (more) {
-            scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);
+            scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowRearmMs);
         }
         return;
     }
@@ -1013,7 +1013,7 @@ void GalleryController::updateDecodeWindow()
     // GUI_BUDGET. Slice work and re-arm instead of one multi-hundred-ms pass.
     QElapsedTimer wall;
     wall.start();
-    constexpr qint64 kDecodeWindowWallMs = GallerySoft::kDecodeWindowWallMs;
+    constexpr qint64 kDecodeWindowWallMs = GalleryDecode::kDecodeWindowWallMs;
 
     const QRect viewRect = m_view->viewport()->rect().adjusted(
         -GalleryPackFit::kDecodeOverscanPx, -GalleryPackFit::kDecodeOverscanPx,
@@ -1025,22 +1025,22 @@ void GalleryController::updateDecodeWindow()
     qint64 usInterest = 0;
     QElapsedTimer phaseTimer;
 
-    constexpr int kMaxInstallsPerDecodeWindow = GallerySoft::kMaxInstallsPerDecodeWindow;
+    constexpr int kMaxInstallsPerDecodeWindow = GalleryDecode::kMaxInstallsPerDecodeWindow;
     bool moreInstallsPending = false;
     if (m_view->hostPerf().isEnabled()) {
         phaseTimer.start();
     }
     const int hostInstalled =
-        galleryInstallHostSoftOntoBlanks(kMaxInstallsPerDecodeWindow,
+        galleryInstallLqipOntoBlanks(kMaxInstallsPerDecodeWindow,
                                          &moreInstallsPending);
     if (hostInstalled > 0) {
         if (m_view->viewport()) {
             m_view->viewport()->update();
         }
-        scheduleStatusRefresh(GallerySoft::kStatusRefreshMs);
+        scheduleStatusRefresh(GalleryDecode::kStatusRefreshMs);
     }
     if (moreInstallsPending) {
-        scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);
+        scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowRearmMs);
     }
     if (m_view->hostPerf().isEnabled()) {
         usPass1 = phaseTimer.nsecsElapsed() / 1000;
@@ -1061,7 +1061,7 @@ void GalleryController::updateDecodeWindow()
             : m_view->canvasScene()->items(sceneVisible, Qt::IntersectsItemBoundingRect);
     for (QGraphicsItem *gi : hit) {
         if (wall.elapsed() >= kDecodeWindowWallMs) {
-            scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
+            scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSliceMs);
             break;
         }
         auto *item = qgraphicsitem_cast<ImageItem *>(gi);
@@ -1074,8 +1074,8 @@ void GalleryController::updateDecodeWindow()
         }
         seen.insert(path);
 
-        GallerySoftState &st = m_view->hostGallerySoftBook().state(path);
-        st.have = GallerySoft::maxHave(st.have, item->displayPixelLongEdge());
+        GalleryDecodeState &st = m_view->hostGalleryDecodeBook().state(path);
+        st.have = GalleryDecode::maxHave(st.have, item->displayPixelLongEdge());
         st.terminal = true;
 
         // Blank on-screen cells only — off-screen waits until scrolled in.
@@ -1088,7 +1088,7 @@ void GalleryController::updateDecodeWindow()
     int scheduled = 0;
     for (const QString &path : visible) {
         if (scheduled >= kSchedBudget || wall.elapsed() >= kDecodeWindowWallMs) {
-            scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
+            scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSliceMs);
             break;
         }
         m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
@@ -1110,7 +1110,7 @@ void GalleryController::updateDecodeWindow()
         int tileBudget = m_view->isGalleryMode() ? 32 : 8;
         m_view->hostDisplayPipeline().tickPrimaryTileLod(tileBudget);
     } else {
-        scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
+        scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSliceMs);
     }
 
     // Rate-limited tile debug (BILTOO_TILE_DEBUG=1) — sample viewport hits only.
@@ -1130,7 +1130,7 @@ void GalleryController::updateDecodeWindow()
     // Re-arm while LQIP installs or schedules remain; tile coverage continues
     // via TileLoadCoordinator re-arm / completion wake.
     if (scheduled > 0 || moreInstallsPending) {
-        scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSliceMs);
+        scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSliceMs);
     }
     updateSoftProgressHud();
     if (m_view->hostPerf().isEnabled() && decodeWinTimer.isValid()) {
@@ -1284,13 +1284,13 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     }
     // Explicit column changes: debounce setInterest (was multi-second stalls).
     // EnterGallery / Reload: run decode once now so startup is not blank until
-    // the 180ms timer; still schedule a short follow-up for late soft.
+    // the 180ms timer; still schedule a short follow-up for late LQIP.
     if (reason == GalleryPackReason::ExplicitLayout) {
-        scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowAfterPackMs);
+        scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowAfterPackMs);
     } else if (reason == GalleryPackReason::EnterGallery
                || reason == GalleryPackReason::Reload) {
         updateDecodeWindow();
-        scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowSettleMs);
+        scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSettleMs);
     } else {
         updateDecodeWindow();
     }
@@ -1305,8 +1305,8 @@ void GalleryController::ensurePlaceholders()
         return;
     }
     // Only clear defer-populate. Keep size-resolve active so fill layouts still
-    // wait for finishGallerySizeResolve to pack (soft may install meanwhile).
-    m_view->hostGallerySoftBook().setDeferPopulate(false);
+    // wait for finishGallerySizeResolve to pack (LQIP may install meanwhile).
+    m_view->hostGalleryDecodeBook().setDeferPopulate(false);
     QSet<ImageItem *> claimed;
     const PackOrderView pack = m_view->currentPackOrder();
     for (int i = 0; i < pack.size(); ++i) {
@@ -1361,7 +1361,7 @@ void GalleryController::ensurePlaceholders()
             m_view->hostBindBook().append(b);
         }
 
-        // Prefer content layout size (ItemWorld); soft install may follow.
+        // Prefer content layout size (ItemWorld); LQIP install may follow.
         const QImage hint = ImageCache::get(path);
         const QSize sz = m_view->contentLayoutSize(path, sid);
         ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(
@@ -1388,9 +1388,9 @@ void GalleryController::ensurePlaceholders()
 }
 
 
-// --- Gallery soft watchdog + layout columns ---
+// --- Gallery decode watchdog + layout columns ---
 
-void GalleryController::softWatchdogTick()
+void GalleryController::decodeWatchdogTick()
 {
     if (!m_view->isGalleryMode() || m_view->liveItems().isEmpty()) {
         return;
@@ -1501,7 +1501,7 @@ void GalleryController::invalidateDecodes()
     // Drop scheduled markers and pending path counts so late LoadAdd results
     // cannot create tiles after leaving Gallery. Bump generation so in-flight
     // pool jobs are rejected in onImageLoaded.
-    m_view->hostDisplayPipeline().gallerySoftResetAll();
+    m_view->hostDisplayPipeline().galleryDecodeResetAll();
     m_view->hostDisplayPipeline().loadGate().clearPendingWorkspacePaths();
     m_view->hostDisplayPipeline().loadGate().bumpGeneration();
 }
@@ -1542,7 +1542,7 @@ void GalleryController::reloadFromDisk(bool relayout)
         if (path.isEmpty()) {
             continue;
         }
-        m_view->hostDisplayPipeline().gallerySoftResetPath(path);
+        m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
         if (!purgedPaths.contains(path)) {
             m_view->hostDisplayPipeline().purgeTilePathRam(path);
             purgedPaths.insert(path);
@@ -1592,7 +1592,7 @@ void GalleryController::hardReloadFromDisk(bool relayout)
             continue;
         }
         ++itemCount;
-        m_view->hostDisplayPipeline().gallerySoftResetPath(path);
+        m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
         m_view->takePendingWorkspacePath(path);
         m_view->clearItemDecodedPixels(item);
         if (!pathSet.contains(path)) {

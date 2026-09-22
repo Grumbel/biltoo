@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 #include "toolpolicy.h"
 #include "workspacenavgeometry.h"
 #include "grouptransformgeometry.h"
@@ -154,7 +154,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
     // into ImageCache, and without this pulse cells stay blank until F5/relayout.
     if (isGalleryMode()) {
         if (viewport() && viewport()->width() > 1 && viewport()->height() > 1) {
-            m_gallery.scheduleDecodeWindowRefresh(GallerySoft::kDecodeWindowRearmMs);
+            m_gallery.scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowRearmMs);
         }
         return;
     }

@@ -5,7 +5,7 @@
 
 #include "imageview.h"
 #include "contentxform.h"
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 #include "displayquality.h"
 #include "archivepath.h"
 #include "pagepath.h"
@@ -316,8 +316,8 @@ void ImageView::onSizeResolveGateComplete()
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
     // Create tiles only now — sizes are definitive (or timed out with stand-in).
-    if (m_gallerySoftBook.isDeferPopulate()) {
-        m_gallerySoftBook.setDeferPopulate(false);
+    if (m_galleryDecodeBook.isDeferPopulate()) {
+        m_galleryDecodeBook.setDeferPopulate(false);
         m_gallery.ensurePlaceholders();
     } else {
         for (ImageItem *item : m_items) {
@@ -359,7 +359,7 @@ void ImageView::onSizeResolveGateComplete()
 
 void ImageView::onSizeResolveGateCancelled()
 {
-    m_gallerySoftBook.setDeferPopulate(false);
+    m_galleryDecodeBook.setDeferPopulate(false);
     if (isGalleryMode() && m_centreProgress.titleRef().isEmpty()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }

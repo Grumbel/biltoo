@@ -13,9 +13,9 @@
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
 #include "pagepath.h"
-#include "gallerysoftsm.h"
+#include "gallerydecodesm.h"
 #include "displayquality.h"
-#include "softdisplaypolicy.h"
+#include "lqipdisplaypolicy.h"
 #include "biltoo_thread.h"
 
 #include "imageloader.h"

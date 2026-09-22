@@ -75,8 +75,8 @@ public:
     void completeLoadReplace(const QString &path, const QImage &image, quint64 generation);
     /** @p role is ImageView::LoadRole as int (avoid circular header). */
     void scheduleImageLoad(const QString &path, int role);
-    void gallerySoftResetPath(const QString &path);
-    void gallerySoftResetAll();
+    void galleryDecodeResetPath(const QString &path);
+    void galleryDecodeResetAll();
     void scheduleGalleryDecode(const QString &path);
 
     void scheduleTileLodAfterInteraction(int delayMs = 50);

@@ -84,14 +84,14 @@ public:
     bool tryKeyPressGallery(QKeyEvent *event);
     bool tryKeyPressDeleteSelection(QKeyEvent *event);
 
-    /** Debounced HUD/status refresh while soft installs progress. */
+    /** Debounced HUD/status refresh while LQIP installs progress. */
     void scheduleStatusRefresh(int delayMs = 100);
-    /** Debounced viewport soft/LQIP decode window (scroll/climb). */
+    /** Debounced viewport LQIP/tile decode window (scroll). */
     void scheduleDecodeWindowRefresh(int delayMs = 48);
     void updateDecodeWindow();
     void applyLayout(GalleryPackReason reason);
     void ensurePlaceholders();
-    void softWatchdogTick();
+    void decodeWatchdogTick();
     void setGridColumns(int columns);
     void setMasonryColumns(int columns);
     void setMasonryRows(int rows);
@@ -114,7 +114,7 @@ public:
 private:
 
     // Soft install / HUD / canvas helpers (no external callers)
-    int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending = nullptr);
+    int galleryInstallLqipOntoBlanks(int maxInstalls, bool *morePending = nullptr);
     void updateSoftProgressHud();
     void prepareCanvas();
 

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef SOFTDISPLAYPOLICY_H
-#define SOFTDISPLAYPOLICY_H
+#ifndef LQIPDISPLAYPOLICY_H
+#define LQIPDISPLAYPOLICY_H
 
 #include <QImage>
 #include <QString>
@@ -11,10 +11,10 @@
 #include "displayquality.h"
 
 /**
- * Pure soft / LQIP underlay sample selection for worker threads.
- * Gallery is tiles-only: never PreferCache soft encode or loadThumbnail here.
+ * Pure LQIP underlay sample selection for worker threads.
+ * Gallery never PreferCache-encodes whole-frame underlays here (tiles own sharpness).
  */
-namespace SoftDisplayPolicy {
+namespace LqipDisplayPolicy {
 
 /**
  * Host LQIP-band cache sample, else durable LQIP (installed into ImageCache),
@@ -22,18 +22,18 @@ namespace SoftDisplayPolicy {
  *
  * Call only off the GUI thread (cache / Store I/O).
  */
-QImage lqipOrCachedSoft(const QString &path);
+QImage lqipOrCachedSample(const QString &path);
 
 /**
  * Gallery SoftPreview install gates (LQIP underlay only).
  * @return false when incoming is above the LQIP band (reject whole-frame soft).
  */
-bool gallerySoftWithinLqipBand(int incomingEdge, int lqipMaxEdge);
+bool galleryWithinLqipBand(int incomingEdge, int lqipMaxEdge);
 
 /** Overload using DisplayQuality::kLqipMaxEdge. */
-inline bool gallerySoftWithinLqipBand(int incomingEdge)
+inline bool galleryWithinLqipBand(int incomingEdge)
 {
-    return gallerySoftWithinLqipBand(incomingEdge, DisplayQuality::kLqipMaxEdge);
+    return galleryWithinLqipBand(incomingEdge, DisplayQuality::kLqipMaxEdge);
 }
 
 /**
@@ -59,6 +59,6 @@ struct PathHaveEdge {
 PathHaveEdge aggregatePathHaveEdge(const int *displayEdges, const bool *decoded,
                                    int count);
 
-} // namespace SoftDisplayPolicy
+} // namespace LqipDisplayPolicy
 
-#endif // SOFTDISPLAYPOLICY_H
+#endif // LQIPDISPLAYPOLICY_H
