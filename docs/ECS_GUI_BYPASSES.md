@@ -158,7 +158,7 @@ durable dual-store.
 5. Audit every `ImageCache::put` for baked samples — **done** (see IMAGECACHE_PUT_AUDIT.md).
 6. Delete path-map content writes for bound session ids — **verified 2211**; `setPathState` no-ops when `sessionId` set.
 
-**Orient / Placement authority series closed (2205–2224).** Residual #7 incremental bake closed (2200/2226). Remaining low/accepted: #8 filmstrip display flips, #10 slideshow aligned, #11 crop draft local.
+**Orient / Placement authority series closed (2205–2224).** Residuals #7–#11 closed or accepted (2226–2231). Path-XDG apply/fill helpers (2228–2229); `hasOrientContent` (2231).
 
 ---
 
@@ -174,6 +174,8 @@ durable dual-store.
 - Normative summary: [CONTENTXFORM_AUTHORITY.md](CONTENTXFORM_AUTHORITY.md) (2216)
 - `DisplayPipelineController::resolveItemSessionId` (2219–2220) — pipeline materialize/layout/climb
 - Workspace Placement lifecycle + filmstrip display-flip note (2222–2224)
+- Path-XDG `applyStoredContentAppearance` / `fillStoredContentAppearance` (2228–2229)
+- `StoredContentAppearance::hasOrientContent` (2231)
 
 ## Work status
 

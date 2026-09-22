@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2232-stale-docs-checkboxes.** Close stale open checkboxes and docs
+left over from the orient / path-XDG series:
+
+- CONTENT_PIPELINE: no incremental bake (soft stand-in + async)
+- TODO history checkboxes for filmstrip XDG, incremental bake, Workspace restore,
+  path-map bound writes, applied flush
+- ECS residuals #7–#11 summary + path-XDG helpers in already-aligned list
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2232-stale-docs-checkboxes-e6c70e4.bundle HEAD
+```
+
+Next: **2233**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2231-stored-has-orient-content.** Path-XDG orient gate helper:
 
 - `ThumtooCache::StoredContentAppearance::hasOrientContent()` (orient/crop, not grade)
@@ -1123,7 +1144,7 @@ before any incremental bake; ImageCache put audit documented.
 - [x] 2174–2177 Image underlay, restore, flush applied, filmstrip soft
 - [x] 2178 bakeRotate/bakeFlip: disk host before incremental
 - [x] 2178 IMAGECACHE_PUT_AUDIT.md
-- [ ] Filmstrip applyStoredAppearanceToThumb still uses path XDG not ItemWorld for cold cells (override after rotate is ItemWorld)
+- [x] Filmstrip applyStoredAppearanceToThumb: provider (ItemWorld) first; path XDG only unbound (2228)
 - [ ] Optional: assert in ImageCache::put debug builds
 
 ### Apply
@@ -1150,8 +1171,8 @@ flush applied ContentXform into ItemWorld on every mode leave.
 - [x] 2177 flushAppliedContentToItemWorld on setViewMode before onLeave
 - [x] 2177 ImageCache host-raw contract documented on class
 - [ ] Full ImageCache::put site audit (gallery LQIP scale is host-ok)
-- [ ] Ban incremental bakeRotate90 when host exists (already prefers rematerialize)
-- [ ] Filmstrip override = paint cache only after ItemWorld commit
+- [x] Ban incremental bakeRotate90 when host exists (2200 / 2226)
+- [x] Filmstrip override = paint cache only after ItemWorld commit (2179 / 2204)
 
 ### Apply
 ```bash
@@ -1175,11 +1196,11 @@ displayReady overrides; always host-raw + ItemWorld materialize.
 - [x] **2176** Filmstrip displayReady ignored for Image soft; materialize from host-raw
 - [x] **2176** Filmstrip sampleForImageModePending must not ImageCache::put icons
 - [ ] ImageCache audit: all puts host-raw only
-- [ ] Workspace restore: pose from snapshot only; content only from ItemWorld (verify LoadRestore)
-- [ ] Ban incremental bakeRotate90 when host exists
-- [ ] Filmstrip override refresh always after ItemWorld commit (paint cache only)
-- [ ] Applied ContentXform flush to ItemWorld before mode leave
-- [ ] Path-map content writes only for unbound
+- [x] Workspace restore: pose from snapshot only; content only from ItemWorld (2213–2214)
+- [x] Ban incremental bakeRotate90 when host exists (2200 / 2226)
+- [x] Filmstrip override refresh always after ItemWorld commit (paint cache only)
+- [x] Applied ContentXform flush to ItemWorld before mode leave (2177 / 2203)
+- [x] Path-map content writes only for unbound (2211; setPathState no-op when bound)
 
 ### ImageView rotation (Workspace→Image)
 

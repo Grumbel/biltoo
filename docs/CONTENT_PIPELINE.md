@@ -20,7 +20,7 @@ ImageItem
 1. **All** display attaches go through `attachDisplaySample` (or `installDisplayPixels` which ends there).
 2. **`layoutSize(fileNative, want)`** is the only geometry rule. See below.
 3. **applied** fingerprint on the item drives `needsRematerialize` / `canAccept`.
-4. GUI may materialize only when long edge ≤ `kGuiMaterializeMaxEdge`; larger samples use worker or incremental bake + async pure rematerialize.
+4. GUI may materialize only when long edge ≤ `kGuiMaterializeMaxEdge`; larger samples use soft stand-in from clamped host + async pure rematerialize (never incremental transform on display — ECS #7 / 2226).
 5. No landscape/portrait heuristics. No path-only orientation without want.
 6. **ImageCache holds raw (unoriented) samples** for a path. Do not put
    appearance-baked FullSource over the host when live rotate/flip will
