@@ -298,6 +298,7 @@ private:
     void scheduleDebouncedThumbReload();
     void requestRemoveSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
+    QPoint dropPosInViewport(const QPoint &widgetPos) const;
     int insertIndexAt(const QPoint &pos) const;
     void setDropInsertIndex(int index);
     /** Centre icons when the row/column is shorter than the viewport. */

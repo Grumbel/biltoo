@@ -413,11 +413,18 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
     setTextElideMode(Qt::ElideMiddle);
     setContextMenuPolicy(Qt::DefaultContextMenu);
     setDragEnabled(true);
-    setDragDropMode(QAbstractItemView::DragOnly);
+    // DragDrop (not DragOnly): internal session-row drops reorder the session.
+    // Movement stays Static so QListWidget does not auto-shuffle items; host
+    // owns order via reorderRowsRequested → SessionDocument::replaceAll.
+    setDragDropMode(QAbstractItemView::DragDrop);
     setDefaultDropAction(Qt::CopyAction);
-    setStatusTip(tr("Drag thumbnails onto the Workspace canvas to place them; "
+    setAcceptDrops(true);
+    if (viewport()) {
+        viewport()->setAcceptDrops(true);
+    }
+    setStatusTip(tr("Drag to reorder on the strip, or onto the Workspace canvas; "
                     "double-click or Enter opens the image"));
-    setToolTip(tr("Drag to Workspace · double-click opens image"));
+    setToolTip(tr("Drag to reorder · Workspace · double-click opens"));
 
     QFont captionFont = font();
     if (captionFont.pointSizeF() > 0) {
@@ -3029,6 +3036,15 @@ void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
     drag->exec(supportedDragActions(), Qt::CopyAction);
 }
 
+QPoint ThumbnailBar::dropPosInViewport(const QPoint &widgetPos) const
+{
+    if (!viewport()) {
+        return widgetPos;
+    }
+    // Drag events are delivered to the view; visualItemRect is viewport-local.
+    return viewport()->mapFrom(this, widgetPos);
+}
+
 int ThumbnailBar::insertIndexAt(const QPoint &pos) const
 {
     if (count() <= 0) {
@@ -3070,7 +3086,7 @@ void ThumbnailBar::dragEnterEvent(QDragEnterEvent *event)
         && event->source() == this) {
         event->setDropAction(Qt::MoveAction);
         event->accept();
-        setDropInsertIndex(insertIndexAt(event->position().toPoint()));
+        setDropInsertIndex(insertIndexAt(dropPosInViewport(event->position().toPoint())));
         return;
     }
     event->ignore();
@@ -3083,7 +3099,7 @@ void ThumbnailBar::dragMoveEvent(QDragMoveEvent *event)
         && event->source() == this) {
         event->setDropAction(Qt::MoveAction);
         event->accept();
-        setDropInsertIndex(insertIndexAt(event->position().toPoint()));
+        setDropInsertIndex(insertIndexAt(dropPosInViewport(event->position().toPoint())));
         return;
     }
     event->ignore();
@@ -3114,7 +3130,7 @@ void ThumbnailBar::dropEvent(QDropEvent *event)
             rows.append(r);
         }
     }
-    const int insertBefore = insertIndexAt(event->position().toPoint());
+    const int insertBefore = insertIndexAt(dropPosInViewport(event->position().toPoint()));
     setDropInsertIndex(-1);
     if (!rows.isEmpty()) {
         emit reorderRowsRequested(rows, insertBefore);
