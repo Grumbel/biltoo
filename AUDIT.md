@@ -296,7 +296,7 @@ DOMAIN.md: *“The image may still carry rotation and flips; framing must not er
 |----|----------|--------|
 | H2a | High | Two drag pipelines can both accept the same gesture depending on scene delivery order — **double begin** or fight with view’s `m_handleDragItem`. |
 | H2b | Medium | Item hover still drives cursor on the **item** while view sets **viewport** cursor — competing cursors. |
-| H2c | Low | Gallery branch sets `m_galleryHovered` and `update()` though paint no longer uses hover wash — **dead state + extra repaints**. |
+| H2c | Low | Gallery branch sets `m_galleryHovered` and `update()` though paint no longer uses hover wash — **dead state + extra repaints**. **Fixed (2264):** field removed; never set true. |
 
 ---
 

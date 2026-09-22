@@ -385,7 +385,6 @@ void ImageItem::setGallerySelectable(bool on)
     // Selectable for classic multi-select; open on double-click; no transform chrome.
     m_interactive = false;
     m_scaleHandlesEnabled = false;
-    m_galleryHovered = false;
     m_hoverHandle = Handle::None;
     // Crop is owned by the layout; clear when leaving gallery selectable.
     if (!on) {

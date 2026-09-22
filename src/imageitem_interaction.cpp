@@ -1803,9 +1803,6 @@ void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 
 void ImageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
-    if (m_galleryHovered) {
-        m_galleryHovered = false;
-    }
     if (m_hoverHandle != Handle::None) {
         m_hoverHandle = Handle::None;
         setToolTip(QString());

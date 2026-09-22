@@ -344,8 +344,6 @@ private:
 
     /** View-driven hover + continuous-drag paint hot (set at begin continuous). */
     Handle m_hoverHandle = Handle::None;
-    /** Gallery: item under the mouse (no transform chrome). */
-    bool m_galleryHovered = false;
     QPointF scaleAnchorLocal(Handle h) const;
     /** Field mutators — only applyPlacement may write live pose (Stage 2). */
     void setItemScale(qreal scale);

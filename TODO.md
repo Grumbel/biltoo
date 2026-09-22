@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2264-drop-gallery-hovered-dead-state.** Dead state cleanup (AUDIT H2c):
+
+1. Remove `ImageItem::m_galleryHovered` — never set true; paint no longer uses
+   gallery hover wash; hoverLeave only cleared the flag
+2. Drop the dead clear in `setGallerySelectable` and `hoverLeaveEvent`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2264-drop-gallery-hovered-dead-state-e6c70e4.bundle HEAD
+```
+
+Next: **2265**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2263-drop-index-add-workspace-preload-pump.** Dead path cleanup:
 
 1. Remove never-emitted `ThumbnailBar::indexAddToWorkspace` and
