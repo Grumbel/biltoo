@@ -82,71 +82,52 @@ bool tilePaintNeedsSmooth(double devicePerContent, int targetScale,
  */
 void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
                                const tilelod::DrawPlan &plan,
-                               const QRectF &contentBounds)
+                               const QRectF &contentBounds,
+                               const QPointF &contentOffset)
 {
     if (!painter || !session) {
         return;
     }
     painter->save();
-    // Washes under labels; keep image readable.
     painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
     const QTransform dt = painter->deviceTransform();
     const qreal sx = ViewTransform::scaleFrom(dt);
-    // Aim for ~13–16 device px font regardless of zoom.
-    const int fontPx = ViewTransform::overlayFontPixelSize(sx);
-    QFont of = painter->font();
-    of.setBold(true);
-    of.setPixelSize(fontPx);
-    painter->setFont(of);
-    const QFontMetrics fm(of);
 
-    // Alpha high enough to read at a glance, low enough to see the photo.
+    // Yellow = exact tile, orange = coarser parent, cyan = underlay hole.
     constexpr int kWashAlpha = 90;
-    const QColor fillExact(255, 220, 40, kWashAlpha);   // yellow — exact cache
-    const QColor fillParent(255, 140, 20, kWashAlpha);  // orange — parent cache
-    const QColor fillHole(40, 200, 255, kWashAlpha);    // cyan — soft/ladder hole
+    const QColor fillExact(255, 220, 40, kWashAlpha);
+    const QColor fillParent(255, 140, 20, kWashAlpha);
+    const QColor fillHole(40, 200, 255, kWashAlpha);
     const QColor edgeExact(255, 230, 60);
     const QColor edgeParent(255, 160, 40);
     const QColor edgeHole(60, 220, 255);
 
-    int nExact = 0, nParent = 0;
-    for (const tilelod::DrawCommand &cmd : plan.commands) {
-        if (cmd.kind == tilelod::DrawKind::ExactTile) {
-            ++nExact;
-        } else if (cmd.kind == tilelod::DrawKind::CoarserTile) {
-            ++nParent;
-        }
-    }
-    const tilelod::TileSession::Coverage cov = session->coverage();
-    // Holes are omitted from the draw plan when soft is the continuous base;
-    // derive count from coverage vs painted exact/parent commands.
-    const int nHole = ViewTransform::nonNeg(cov.visible - nExact - nParent);
     const int target = session->target_scale();
-    const int desired = session->desired_scale();
 
-    // Cell washes first (under the summary plate).
-    const qreal minLabelLocal = 40.0 / sx;
     for (const tilelod::DrawCommand &cmd : plan.commands) {
-        const QRectF dst(cmd.dst_content.x, cmd.dst_content.y,
+        // dst_content is top-left content space; tiles paint with item offset()
+        // (typically -w/2,-h/2). Without offset, washes sat in the BR quarter.
+        const QRectF dst(cmd.dst_content.x + contentOffset.x(),
+                         cmd.dst_content.y + contentOffset.y(),
                          cmd.dst_content.w, cmd.dst_content.h);
         if (dst.isEmpty()) {
             continue;
         }
         QColor fill;
         QColor edge;
-        QString tag;
+        int scale = cmd.src_key.scale;
+        const int tx = cmd.src_key.x;
+        const int ty = cmd.src_key.y;
         if (cmd.kind == tilelod::DrawKind::ExactTile) {
             fill = fillExact;
             edge = edgeExact;
-            tag = QStringLiteral("E %1,%2").arg(cmd.src_key.x).arg(cmd.src_key.y);
         } else if (cmd.kind == tilelod::DrawKind::CoarserTile) {
             fill = fillParent;
             edge = edgeParent;
-            tag = QStringLiteral("P s%1").arg(cmd.src_key.scale);
         } else if (cmd.kind == tilelod::DrawKind::Underlay) {
             fill = fillHole;
             edge = edgeHole;
-            tag = QStringLiteral("H");
+            scale = target;
         } else {
             continue;
         }
@@ -154,43 +135,51 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         painter->setPen(QPen(edge, 0));
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(dst);
-        if (qMin(dst.width(), dst.height()) >= minLabelLocal && !tag.isEmpty()) {
-            painter->fillRect(QRectF(dst.left(), dst.top(),
-                                     fm.horizontalAdvance(tag) + 4, fm.height() + 2),
-                              QColor(0, 0, 0, 170));
-            painter->setPen(edge);
-            painter->drawText(dst.adjusted(2, 1, -1, -1),
-                              Qt::AlignTop | Qt::AlignLeft, tag);
+
+        // TILE + scale + x,y — large centered text (no filename / pixel size).
+        const qreal cellDev = qMin(dst.width(), dst.height()) * sx;
+        if (cellDev < 28.0) {
+            continue;
         }
+        QFont of = painter->font();
+        of.setBold(true);
+        of.setStyleHint(QFont::SansSerif);
+        of.setFamily(QStringLiteral("Sans Serif"));
+        const int fontPx = qBound(10, int(cellDev * 0.22), 64);
+        of.setPixelSize(fontPx);
+        painter->setFont(of);
+        const QString label = QStringLiteral("TILE\ns=%1\n%2,%3")
+                                  .arg(scale)
+                                  .arg(tx)
+                                  .arg(ty);
+        painter->setPen(QColor(0, 0, 0, 200));
+        painter->drawText(dst.adjusted(1, 1, 1, 1), Qt::AlignCenter, label);
+        painter->setPen(edge);
+        painter->drawText(dst, Qt::AlignCenter, label);
     }
 
+    QFont pf = painter->font();
+    pf.setBold(true);
+    pf.setStyleHint(QFont::SansSerif);
+    pf.setFamily(QStringLiteral("Sans Serif"));
+    pf.setPixelSize(ViewTransform::overlayFontPixelSize(sx));
+    painter->setFont(pf);
+    const QFontMetrics fm(pf);
+    const tilelod::TileSession::Coverage cov = session->coverage();
     QStringList summary;
     summary << QStringLiteral("TILE s=%1").arg(target);
-    if (desired != target) {
-        summary.back() += QStringLiteral(" (want %1)").arg(desired);
-    }
-    summary << QStringLiteral("vis=%1 exact=%2 parent=%3 hole=%4")
-                   .arg(cov.visible)
-                   .arg(nExact)
-                   .arg(nParent)
-                   .arg(nHole);
-    summary << QStringLiteral("ok=%1 flight=%2")
-                   .arg(cov.exact_succeeded)
-                   .arg(cov.in_flight);
-    summary << QStringLiteral("Y=exact  O=parent  C=hole");
     if (cov.fully_covered()) {
         summary << QStringLiteral("COMPLETE");
     } else if (cov.in_flight > 0) {
-        summary << QStringLiteral("LOADING…");
-    } else if (nHole > 0 || cov.exact_succeeded < cov.visible) {
+        summary << QStringLiteral("LOADING");
+    } else {
         summary << QStringLiteral("WAITING");
     }
-
     int blockW = 0;
     for (const QString &line : summary) {
         blockW = qMax(blockW, fm.horizontalAdvance(line));
     }
-    const int pad = qMax(2, fontPx / 4);
+    const int pad = qMax(2, pf.pixelSize() / 4);
     const int lineH = fm.height();
     const int blockH = lineH * summary.size() + pad * 2;
     blockW += pad * 2;
@@ -199,17 +188,8 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
                        blockW + 2.0,
                        blockH + 2.0);
     painter->fillRect(plate, QColor(0, 0, 0, 200));
-    // Colour-coded first lines for the wash legend.
     for (int i = 0; i < summary.size(); ++i) {
-        QColor pen(255, 255, 255);
-        if (summary.at(i).startsWith(QStringLiteral("Y="))) {
-            pen = edgeExact;
-        } else if (cov.fully_covered() && summary.at(i) == QStringLiteral("COMPLETE")) {
-            pen = QColor(120, 255, 120);
-        } else if (summary.at(i).startsWith(QStringLiteral("LOADING"))) {
-            pen = QColor(255, 220, 120);
-        }
-        painter->setPen(pen);
+        painter->setPen(QColor(255, 255, 255));
         painter->drawText(QPointF(plate.left() + pad,
                                   plate.top() + pad + (i + 1) * lineH - fm.descent()),
                           summary.at(i));
@@ -1228,11 +1208,9 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 (void)under;
 
                 if (tilePlanDebugOverlayEnabled()) {
-                    // Overlay still uses plan dests (source space); rebuild a
-                    // display-space plan for debug when needed — source overlay
-                    // is approximate under orient.
+                    // Plan dests are content top-left; tiles paint content+offset().
                     paintTilePlanDebugOverlay(painter, tileLodBag().controller->session(), plan,
-                                             contentRect());
+                                             contentRect(), off);
                 }
                 painter->restore();
 

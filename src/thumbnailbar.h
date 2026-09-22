@@ -339,6 +339,8 @@ private:
 
     QPoint m_pressPos;
     QListWidgetItem *m_pressItem = nullptr;
+    bool m_middleScrollActive = false;
+    QPoint m_middleScrollPos;
     bool m_pressActive = false;
     bool m_dragStarted = false;
     Qt::KeyboardModifiers m_pressModifiers;

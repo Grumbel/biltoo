@@ -85,6 +85,7 @@ bool debugOverlayEnabled()
 
 void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
 {
+    Q_UNUSED(label);
     if (!image || image->isNull() || !debugOverlayEnabled()) {
         return;
     }
@@ -99,58 +100,31 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     }
     const int w = image->width();
     const int h = image->height();
-    // Single cyan plate (not a repeated grid) — readable when soft is stretched
-    // into large Gallery cells. Distinct from thumtoo magenta/yellow TILE stamps.
+    // Cyan border distinguishes host ImageCache samples from thumtoo TILE stamps.
     const int border = DisplayQuality::debugStampBorderPx(w, h);
     p.setPen(QPen(QColor(0, 220, 255), border));
     p.setBrush(Qt::NoBrush);
     p.drawRect(border / 2, border / 2, w - border, h - border);
 
-    QStringList lines;
-    // Host ImageCache sample. Gallery must not show these as underlay (>LQIP);
-    // stamp marks accidental soft/HOST plates vs thumtoo TILE stamps.
+    // HOST = process ImageCache soft/sample (not durable tiles). LQIP = ≤96 edge.
+    // No filename / pixel size — those made small filmstrip cells unreadable.
     const int le = qMax(w, h);
-    if (le <= DisplayQuality::kLqipMaxEdge) {
-        lines << QStringLiteral("LQIP");
-    } else {
-        lines << QStringLiteral("HOST-SAMPLE"); // not product underlay in Gallery
-    }
-    if (!label.isEmpty()) {
-        lines << label;
-    }
-    lines << QStringLiteral("%1×%2").arg(w).arg(h);
-    lines << QStringLiteral("le=%1").arg(le);
+    const QString tag = (le <= DisplayQuality::kLqipMaxEdge)
+        ? QStringLiteral("LQIP")
+        : QStringLiteral("HOST");
 
     QFont f = p.font();
     f.setBold(true);
-    // Fixed readable band; avoid tiny soft fonts and avoid huge stretched ones.
-    f.setPixelSize(DisplayQuality::debugStampFontPx(w, h));
+    f.setStyleHint(QFont::SansSerif);
+    f.setFamily(QStringLiteral("Sans Serif"));
+    // Cover most of the sample so the tag is obvious when stretched in Gallery.
+    f.setPixelSize(qBound(12, qMin(w, h) / 3, 96));
     p.setFont(f);
-    const QFontMetrics fm(f);
-    int blockW = 0;
-    for (const QString &line : lines) {
-        blockW = qMax(blockW, fm.horizontalAdvance(line));
-    }
-    const int lineH = fm.height();
-    const int pad = 4;
-    const int blockH = lineH * lines.size() + pad * 2;
-    blockW += pad * 2;
-
-    // One plate, bottom-right (thumtoo soft stamps stay top-left).
-    const int x = qMax(border + 2, w - border - blockW - 4);
-    const int y = qMax(border + 2, h - border - blockH - 4);
-    p.fillRect(QRect(x, y, blockW, blockH), QColor(0, 0, 0, 180));
+    p.setPen(QColor(0, 0, 0, 200));
+    p.drawText(QRect(0, 0, w, h).adjusted(1, 1, 1, 1), Qt::AlignCenter, tag);
     p.setPen(QColor(0, 255, 220));
-    for (int i = 0; i < lines.size(); ++i) {
-        p.drawText(QPoint(x + pad, y + pad + (i + 1) * lineH - fm.descent()),
-                   lines.at(i));
-    }
+    p.drawText(QRect(0, 0, w, h), Qt::AlignCenter, tag);
     p.end();
-    static bool once = false;
-    if (!once) {
-        once = true;
-        fprintf(stderr, "biltoo: DEBUG_OVERLAY host watermark (cyan plate, BR)\n");
-    }
 }
 
 QImage clampToMaxEdge(const QImage &image, int maxEdge)

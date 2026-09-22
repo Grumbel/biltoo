@@ -2,6 +2,37 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.21-overlay-coords-filmstrip-midscroll.**
+
+### DEBUG_OVERLAY tile washes in BR quarter
+- Plan `dst_content` is **top-left content** space; tiles paint `content+offset()`
+  (item center origin). Overlay used raw content coords → washes only in BR.
+- Pass `offset()` into `paintTilePlanDebugOverlay`.
+
+### Overlay text
+- Per-tile: **TILE / s=N / x,y** only, large centered Sans Serif.
+- Drop filename, pixel size, E/P tags, long summary plate.
+- Host ImageCache stamp: **LQIP** or **HOST** only (HOST = process soft sample,
+  not durable tiles), centered large — no filename/resolution.
+
+### Filmstrip
+- Schedule tile pyramid/synth **immediately** after GUI LQIP install (do not
+  wait for pool job).
+- **Middle-button drag** scrolls the filmstrip.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.21-overlay-coords-filmstrip-midscroll-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.20-filmstrip-lqip-help-all.**
 
 ### Filmstrip slow refresh

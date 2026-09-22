@@ -2039,6 +2039,9 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     if (haveAfter >= decodeSize) {
                         continue;
                     }
+                    // Drive tiles now — do not wait for a pool job to discover
+                    // that LQIP is weak (that left the strip pixelated for seconds).
+                    scheduleFilmstripTilePixels(path, decodeSize);
                 }
             }
         }
@@ -2886,8 +2889,17 @@ void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
 
 void ThumbnailBar::mousePressEvent(QMouseEvent *event)
 {
+    if (event->button() == Qt::MiddleButton) {
+        m_middleScrollActive = true;
+        m_middleScrollPos = event->pos();
+        m_pressActive = false;
+        setCursor(Qt::ClosedHandCursor);
+        event->accept();
+        return;
+    }
     if (event->button() != Qt::LeftButton) {
         m_pressActive = false;
+        m_middleScrollActive = false;
         QListWidget::mousePressEvent(event);
         return;
     }
@@ -2926,6 +2938,18 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
 
 void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_middleScrollActive && (event->buttons() & Qt::MiddleButton)) {
+        const QPoint delta = event->pos() - m_middleScrollPos;
+        m_middleScrollPos = event->pos();
+        if (QScrollBar *h = horizontalScrollBar()) {
+            h->setValue(h->value() - delta.x());
+        }
+        if (QScrollBar *v = verticalScrollBar()) {
+            v->setValue(v->value() - delta.y());
+        }
+        event->accept();
+        return;
+    }
     // Drop stale press pointers if the model was rebuilt under us (setFiles,
     // removeIndices, etc.). QListWidgetItem* is not stable across clear().
     if (m_pressItem && row(m_pressItem) < 0) {
@@ -2972,6 +2996,12 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
 
 void ThumbnailBar::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (event->button() == Qt::MiddleButton && m_middleScrollActive) {
+        m_middleScrollActive = false;
+        unsetCursor();
+        event->accept();
+        return;
+    }
     if (m_multiSelect && event->button() == Qt::LeftButton
         && m_pressActive && !m_dragStarted) {
         // Normal multi-select (selection only — not canvas membership).
