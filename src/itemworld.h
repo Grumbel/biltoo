@@ -234,14 +234,6 @@ public:
         m_liveColorLags.insert(id, grade);
     }
 
-    void clearLiveColorLag(SessionImageId id)
-    {
-        if (id == kInvalidSessionImageId) {
-            return;
-        }
-        m_liveColorLags.remove(id);
-    }
-
     bool hasLiveColorLag(SessionImageId id) const
     {
         if (id == kInvalidSessionImageId) {

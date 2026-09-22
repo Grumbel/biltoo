@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2255-drop-clear-prefer-gave-up-live-color-lag.** Dead raster/color API:
+
+1. Remove `PathRasterService::clearPreferGaveUp` (zero call sites; PreferCache
+   plateau is cleared by raising want via ensure)
+2. Remove unused `ItemWorld::clearLiveColorLag` (lag cleared via other paths)
+3. Docs: PATH_RASTER_SERVICE / THUMTOO_HOST_CONTRACT no longer advertise
+   consumer-side gaveUp clear
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2255-drop-clear-prefer-gave-up-live-color-lag-e6c70e4.bundle HEAD
+```
+
+Next: **2256**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2254-drop-thumb-unused-getters.** ThumbnailBar cleanup:
 
 - Remove unused `multiSelectEnabled()` and `visibleLoadsSuspended()` getters

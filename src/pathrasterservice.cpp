@@ -117,20 +117,6 @@ bool PathRasterService::isGaveUp(const QString &path) const
     return it->machine.isGaveUp(ThumtooCache::kBatchOverviewEdge);
 }
 
-void PathRasterService::clearPreferGaveUp(const QString &path)
-{
-    if (path.isEmpty()) {
-        return;
-    }
-    auto it = m_state.find(path);
-    if (it == m_state.end()) {
-        return;
-    }
-    it->machine.state().preferGaveUp = false;
-    it->machine.state().displayQueued = false;
-    it->machine.state().lastDisplayGot = 0;
-}
-
 bool PathRasterService::isClimbPending(const QString &path) const
 {
     if (path.isEmpty()) {

@@ -162,8 +162,8 @@ Sample climb only changes sharpness.
 
 1. **Per-tick `ensure` spam** — look-ahead preload at most once per slideshow
    `toIdx` (or equivalent), not every clock tick.
-2. **Consumer PreferCache retry** after BestAvailable (`forgetPixelsSettled` +
-   `clearPreferGaveUp` as a product feature). Retry belongs only inside the
+2. **Consumer PreferCache retry** after BestAvailable (`forgetPixelsSettled`). Consumer PreferCache retry is not a product
+   feature). Retry belongs only inside the
    service if the contract is extended; today plateau → Full under
    EscalateToFull, or raise want under SoftDisplay.
 2b. **Second Full / PreferCache owners** outside PathRasterService (including

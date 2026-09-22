@@ -45,7 +45,6 @@ public:
     int haveEdge(const QString &path) const;
     int wantEdge(const QString &path) const;
     bool isGaveUp(const QString &path) const;
-    void clearPreferGaveUp(const QString &path);
     bool isClimbPending(const QString &path) const;
 
     void noteDelivery(const QString &path, int requestEdge, const QImage &image);

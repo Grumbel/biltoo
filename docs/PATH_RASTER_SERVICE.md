@@ -51,7 +51,6 @@ PreferCache does **not** guarantee `got ≈ request`. Plateau is normal. Raising
 ensure(path, wantEdge, knownNative?, policy = SoftDisplay)
 noteDelivery(path, requestEdge, image) → put cache, emit rasterImproved, pump
 best / haveEdge / wantEdge / isGaveUp / isClimbPending
-clearPreferGaveUp(path)   — rare; prefer raising want via ensure
 invalidateAll()           — session switch
 ```
 
@@ -81,7 +80,7 @@ display climb (Display band ≤2048). See contract §2 Full vs Display.
 
 ## Anti-patterns
 
-- PreferCache retry via `forgetPixelsSettled` + `clearPreferGaveUp` in ImageView
+- PreferCache plateau: raise want via `ensure` (no consumer-side gaveUp clear)
 - Per-tick slideshow `ensure` for look-ahead (once per `toIdx` only)
 - Assuming PreferCache returns want edge
 - Second climb state machines / `scheduleDisplayPixels` outside PathRasterService
