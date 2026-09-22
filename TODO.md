@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.9-loading-tiles-hud-ready-count.** Fix stuck "Loading tiles…":
+
+- HUD used a manual `contentSceneRect` walk (null/invalid rects counted as
+  on-screen) and treated only soft underlay (`hasDisplayPixels`) as "have pixels".
+  Tiles-only cells looked filled but stayed blank → frozen counts like 41/73.
+- On-screen set now matches the decode window (scene hit-test + same overscan).
+- A cell is **ready** if soft underlay **or** tile LOD is active / covered / has
+  path RAM. Detail string: "%1 / %2 on-screen cells ready".
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.9-loading-tiles-hud-ready-count-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.8-filmstrip-suspend-visible-loads.** Validate + fix:
 
 - Cold Gallery size-resolve sets `ThumbnailBar::setVisibleLoadsSuspended(true)` so

@@ -1465,24 +1465,36 @@ void GalleryController::updateSoftProgressHud()
     if (m_view->hostGallerySizeResolve().active()) {
         return;
     }
-    // After sizes: show decode progress for *on-screen* cells that still need
-    // LQIP/tiles. Counting every live item kept "Loading tiles…" stuck forever
-    // for off-screen blanks the decode window never fills until scrolled.
+    // On-screen set must match the decode window (scene hit-test), not a manual
+    // contentSceneRect walk. Null/invalid rects were counted as on-screen and
+    // "have pixels" was only soft underlay — tiles-only cells looked filled but
+    // stayed blank forever (e.g. frozen 41/73).
     const QRectF sceneVisible =
         m_view->mapToScene(
-            m_view->viewport()->rect().adjusted(-80, -80, 80, 80)).boundingRect();
+            m_view->viewport()->rect().adjusted(
+                -GalleryPackFit::kDecodeOverscanPx, -GalleryPackFit::kDecodeOverscanPx,
+                GalleryPackFit::kDecodeOverscanPx, GalleryPackFit::kDecodeOverscanPx))
+            .boundingRect();
     int blank = 0;
     int total = 0;
-    for (ImageItem *item : m_view->liveItems()) {
-        if (!item || item->path().isEmpty()) {
+    const QList<QGraphicsItem *> hit =
+        sceneVisible.isNull()
+            ? QList<QGraphicsItem *>()
+            : m_view->canvasScene()->items(sceneVisible, Qt::IntersectsItemBoundingRect);
+    QSet<ImageItem *> seen;
+    for (QGraphicsItem *gi : hit) {
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
+        if (!item || item->path().isEmpty() || seen.contains(item)) {
             continue;
         }
-        const QRectF tile = item->contentSceneRect();
-        if (!tile.isNull() && tile.isValid() && !tile.intersects(sceneVisible)) {
-            continue;
-        }
+        seen.insert(item);
         ++total;
-        if (!item->hasDisplayPixels()) {
+        // Ready = soft underlay or live/covered tile paint (user sees content).
+        const bool ready = item->hasDisplayPixels()
+            || item->tileLodActive()
+            || item->tileLodViewportCovered()
+            || item->tileLodHasPathRam();
+        if (!ready) {
             ++blank;
         }
     }
@@ -1504,7 +1516,7 @@ void GalleryController::updateSoftProgressHud()
         return;
     }
     const QString detail =
-        m_view->tr("%1 / %2 on-screen cells have pixels").arg(total - blank).arg(total);
+        m_view->tr("%1 / %2 on-screen cells ready").arg(total - blank).arg(total);
     m_view->setCentreProgress(m_view->tr("Loading tiles…"), detail);
 }
 
