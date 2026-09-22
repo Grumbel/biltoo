@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2245-drop-compute-sort-order-indices.** Session sort cleanup:
+
+- Remove deprecated `MainWindow::computeSortOrderIndices` thin forward; callers
+  use `SessionSort::orderIndices` directly (same as sortFileListSync)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2245-drop-compute-sort-order-indices-e6c70e4.bundle HEAD
+```
+
+Next: **2246**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2244-drop-filmstrip-apply-native-aspect.** Filmstrip cleanup:
 
 - Remove deprecated `ThumbnailBar::applyNativeAspect` (thin forward to

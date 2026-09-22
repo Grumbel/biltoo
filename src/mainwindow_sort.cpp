@@ -125,16 +125,6 @@ void MainWindow::applySortedSessionOrder(const QStringList &newFiles,
     }
 }
 
-QVector<int> MainWindow::computeSortOrderIndices(
-    SortMode mode,
-    const QStringList &paths,
-    const QHash<QString, QSize> &sizes,
-    const QHash<QString, qint64> &mtimes,
-    const QHash<QString, qint64> &fsizes)
-{
-    return SessionSort::orderIndices(mode, paths, sizes, mtimes, fsizes);
-}
-
 void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> &onDone)
 {
     if (m_session.paths().size() <= 1) {
@@ -194,7 +184,7 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
         }
 
         if (missIdx.isEmpty()) {
-            const QVector<int> order = MainWindow::computeSortOrderIndices(
+            const QVector<int> order = SessionSort::orderIndices(
                 mode, paths, sizes, mtimes, fsizes);
             QStringList newFiles;
             QVector<SessionImageId> newIds;
@@ -266,7 +256,7 @@ void MainWindow::sortFileListWithProbesInBackground(const std::function<void()> 
             }
         }
 
-        const QVector<int> order = MainWindow::computeSortOrderIndices(
+        const QVector<int> order = SessionSort::orderIndices(
             mode, paths, sizes, mtimes, fsizes);
 
         QStringList newFiles;

@@ -393,12 +393,6 @@ private:
     /** Name / mtime / file size — no image I/O. */
     void sortFileListSync();
     /** Width / height / pixels: probe off the GUI thread, then apply order. */
-    /** @deprecated Prefer SessionSort::orderIndices; kept as a thin forward. */
-    static QVector<int> computeSortOrderIndices(SortMode mode,
-                                                const QStringList &paths,
-                                                const QHash<QString, QSize> &sizes,
-                                                const QHash<QString, qint64> &mtimes,
-                                                const QHash<QString, qint64> &fsizes);
     void sortFileListWithProbesInBackground(const std::function<void()> &onDone = {});
     void applySortedSessionOrder(const QStringList &newFiles,
                                  const QVector<SessionImageId> &newIds,
