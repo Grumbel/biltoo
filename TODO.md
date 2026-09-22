@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.11-chunked-sizeReady.** GUI freeze on warm/memo size open:
+
+- `scheduleProbeBatch` emitted **every** process-memo size as a **synchronous**
+  `sizeReady` on the caller thread. Warm open with hundreds of cached sizes
+  ran hundreds of Gallery handlers (item scan + settle + pack arm) in one
+  stack frame and froze the GUI.
+- Memo hits are now delivered in **chunks of 16** via `QTimer::singleShot(0)`
+  so the event loop can paint between batches. Same path for probe-queue
+  memo drains.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.11-chunked-sizeReady-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.10-pool-warm-throttle-progressive.** Threads + GUI freeze:
 
 1. **`warmSessionOpenMemos`** spawned 4× `std::thread` per pass + a **detached**

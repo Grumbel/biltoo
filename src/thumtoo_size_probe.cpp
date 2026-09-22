@@ -12,7 +12,10 @@
 #include <QSet>
 #include <QStringList>
 #include <QThreadPool>
+#include <QTimer>
 #include <QVector>
+#include <functional>
+#include <memory>
 
 namespace ThumtooCache {
 namespace {
@@ -25,9 +28,46 @@ QStringList g_probeFifo;
 int g_probeInflight = 0;
 /** Cold-open / session size pass: probe many paths at once (not one-by-one). */
 constexpr int kMaxConcurrentSizeProbes = 8;
+/** Memo sizeReady emits per event-loop turn — avoids GUI freeze on warm open. */
+constexpr int kSizeReadyChunk = 16;
 QMutex g_probeMu;
 
 void pumpProbeQueue();
+
+/**
+ * Deliver sizeReady on the GUI thread in small chunks so the event loop can
+ * paint between batches. Synchronous emit of hundreds of memo hits from
+ * scheduleProbeBatch froze the GUI for the whole warm size pass.
+ */
+void emitSizeReadyChunked(QVector<QPair<QString, QSize>> hits)
+{
+    if (hits.isEmpty()) {
+        return;
+    }
+    Bridge *b = bridge();
+    if (!b) {
+        return;
+    }
+    auto deliver = std::make_shared<std::function<void(int)>>();
+    *deliver = [hits, b, deliver](int index) {
+        const int n = hits.size();
+        if (index >= n) {
+            return;
+        }
+        const int end = qMin(index + kSizeReadyChunk, n);
+        for (int i = index; i < end; ++i) {
+            emit b->sizeReady(hits.at(i).first, hits.at(i).second);
+        }
+        if (end < n) {
+            QTimer::singleShot(0, b, [deliver, end]() { (*deliver)(end); });
+        }
+    };
+    if (QThread::isMainThread()) {
+        (*deliver)(0);
+    } else {
+        QTimer::singleShot(0, b, [deliver]() { (*deliver)(0); });
+    }
+}
 
 void finishProbeSlot(const QString &pathCopy, bool ok, const QSize &size,
                      const QImage &lqip)
@@ -89,8 +129,8 @@ void pumpProbeQueue()
             toStart.append(p);
         }
     }
-    for (const auto &hit : memoHits) {
-        emit bridge()->sizeReady(hit.first, hit.second);
+    if (!memoHits.isEmpty()) {
+        emitSizeReadyChunked(std::move(memoHits));
     }
     for (const QString &pathCopy : toStart) {
         requestSizeAsync(pathCopy, [pathCopy](bool ok, const QSize &size, const QImage &lqip) {
@@ -129,7 +169,7 @@ void scheduleProbe(const QString &path)
     // so Gallery size-resolve pending is not left waiting forever.
     if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
         memo.isValid() && memo.width() > 0 && memo.height() > 0) {
-        emit bridge()->sizeReady(path, memo);
+        emitSizeReadyChunked({{path, memo}});
         return;
     }
     enqueueProbePaths(QStringList{path});
@@ -140,18 +180,23 @@ void scheduleProbeBatch(const QStringList &paths)
     if (paths.isEmpty()) {
         return;
     }
+    QVector<QPair<QString, QSize>> memoHits;
     QStringList need;
     need.reserve(paths.size());
+    memoHits.reserve(paths.size());
     for (const QString &path : paths) {
         if (path.isEmpty()) {
             continue;
         }
         if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
             memo.isValid() && memo.width() > 0 && memo.height() > 0) {
-            emit bridge()->sizeReady(path, memo);
+            memoHits.append(qMakePair(path, memo));
             continue;
         }
         need.append(path);
+    }
+    if (!memoHits.isEmpty()) {
+        emitSizeReadyChunked(std::move(memoHits));
     }
     if (!need.isEmpty()) {
         enqueueProbePaths(need);
