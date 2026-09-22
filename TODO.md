@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2281-drop-dead-slideshow-item-framing-helpers.** Dead API cleanup:
+
+1. SlideshowPhase/Hud: remove unused `fromSurfaceId`/`toSurfaceId`, `hasToPath`,
+   `hasPadColor`, `removeRasterInflight`, `takeNextRasterPending`,
+   `setFromMotionClockRunning`, `clearProgress`
+2. ItemComponents: remove unused `applyCropToState`, `applyAttentionToState`,
+   `applyContentBakeToState`, `applyColorToState` (from* helpers remain)
+3. ViewFraming: remove unused `syncStickyKindFromFitFill`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2281.1-drop-dead-slideshow-item-framing-helpers-e6c70e4.bundle HEAD
+```
+
+Next: **2282**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2280-drop-dead-surface-soft-perf-accessors.** Dead API cleanup:
 
 1. DisplayPipelineController: remove unused const `imageFocusSurface()` (callers

@@ -100,8 +100,6 @@ struct SlideshowPhaseState {
 
     void clearToPath() { toPath.clear(); }
 
-    void setFromMotionClockRunning(bool on) { fromMotionClockRunning = on; }
-
     void setToMotionClockRunning(bool on) { toMotionClockRunning = on; }
 
     /** Start from-phase motion clock at T=0 (or keep T if already set). */
@@ -248,17 +246,11 @@ struct SlideshowPhaseState {
 
     bool hasFromPath() const { return !fromPath.isEmpty(); }
 
-    bool hasToPath() const { return !toPath.isEmpty(); }
-
     quint64 phaseUpgradeGenerationValue() const { return phaseUpgradeGeneration; }
 
     DisplaySurface::SurfaceId &fromSurfaceRef() { return fromSurface; }
 
     DisplaySurface::SurfaceId &toSurfaceRef() { return toSurface; }
-
-    DisplaySurface::SurfaceId fromSurfaceId() const { return fromSurface; }
-
-    DisplaySurface::SurfaceId toSurfaceId() const { return toSurface; }
 
     const QPointF &toBiasAPoint() const { return toBiasA; }
 
@@ -327,20 +319,9 @@ struct SlideshowPhaseState {
         return rasterPending.contains(path);
     }
 
-    void removeRasterInflight(const QString &path) { rasterInflight.remove(path); }
-
     int rasterQueueCount() const
     {
         return rasterInflight.size() + rasterPending.size();
-    }
-
-    bool takeNextRasterPending(QString *out)
-    {
-        if (!out || rasterPending.isEmpty()) {
-            return false;
-        }
-        *out = rasterPending.takeFirst();
-        return true;
     }
 
     /** Bump generation so in-flight phase upgrades no-op. @return new generation. */
@@ -481,8 +462,6 @@ struct SlideshowSettings {
     SlideshowLetterboxFill currentLetterboxFill() const { return letterboxFill; }
 
     const QColor &padColorRef() const { return padColor; }
-
-    bool hasPadColor() const { return padColor.isValid(); }
 
     bool setZoom(SlideshowZoom mode)
     {
@@ -928,21 +907,6 @@ struct SlideshowProgressHud {
     }
 
     void clearPaintFingerprint() { lastPaintFp.clear(); }
-
-    void clearProgress()
-    {
-        progressActive = false;
-        progressClockPaused = false;
-        progressBaseMs = 0;
-        progressIntervalMs = 0;
-        timelineElapsedMs = 0;
-        cycleProgress01 = 0.0;
-        cycleProgressValid = false;
-        timelineTotalMs = 0;
-        lastPaintFp.clear();
-        seekDragging = false;
-        seekbarVisible = false;
-    }
 };
 
 #endif // SLIDESHOWTYPES_H

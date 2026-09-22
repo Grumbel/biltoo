@@ -173,10 +173,6 @@ struct ViewFraming {
         return StickyZoomKind::Actual;
     }
 
-    void syncStickyKindFromFitFill()
-    {
-        stickyZoomKind = kindFromFitFill(fitMode, fillMode);
-    }
 
     void clearStickyPan() { haveStickyPanAnchor = false; }
 

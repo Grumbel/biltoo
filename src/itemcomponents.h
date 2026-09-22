@@ -105,20 +105,6 @@ inline Crop cropFromState(const WorkspaceItemState &s)
     return c;
 }
 
-inline void applyCropToState(WorkspaceItemState &s, const Crop &c)
-{
-    if (c.isEmpty()) {
-        s.hasCrop = false;
-        s.cropRect = QRect();
-        s.cropSourceSize = QSize();
-        s.cropRotation = 0.0;
-        return;
-    }
-    s.hasCrop = true;
-    s.cropRect = c.rect;
-    s.cropSourceSize = c.sourceSize;
-    s.cropRotation = c.rotation;
-}
 
 inline Attention attentionFromState(const WorkspaceItemState &s)
 {
@@ -133,17 +119,6 @@ inline Attention attentionFromState(const WorkspaceItemState &s)
     return a;
 }
 
-inline void applyAttentionToState(WorkspaceItemState &s, const Attention &a)
-{
-    if (a.isEmpty()) {
-        s.hasAttention = false;
-        s.attentionPoints.clear();
-        s.attentionNorm = QPointF(0.5, 0.5);
-        return;
-    }
-    s.attentionPoints = a.points;
-    s.syncAttentionPrimary();
-}
 
 inline Placement placementFromState(const WorkspaceItemState &s)
 {
@@ -186,16 +161,6 @@ inline ContentBake contentBakeFromState(const WorkspaceItemState &s)
     return b;
 }
 
-inline void applyContentBakeToState(WorkspaceItemState &s, const ContentBake &b)
-{
-    int t = b.quarterTurns % 4;
-    if (t < 0) {
-        t += 4;
-    }
-    s.contentQuarterTurns = t;
-    s.contentHFlip = b.hFlip;
-    s.contentVFlip = b.vFlip;
-}
 
 inline Color colorFromState(const WorkspaceItemState &s)
 {
@@ -204,10 +169,6 @@ inline Color colorFromState(const WorkspaceItemState &s)
     return c;
 }
 
-inline void applyColorToState(WorkspaceItemState &s, const Color &c)
-{
-    s.colorAdjust = c.grade;
-}
 
 } // namespace ItemComponents
 
