@@ -481,6 +481,7 @@ void MainWindow::installProjectSession(
     }
     m_session.clear();
     m_session.replaceAll(paths, ids);
+    updateFileExportActions();
     m_currentIndex = 0;
 
     int poseCount = 0;

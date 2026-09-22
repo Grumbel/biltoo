@@ -14,6 +14,7 @@
 #include <QPainter>
 #include <QPdfWriter>
 #include <QPageSize>
+#include <QMarginsF>
 #include <QtEndian>
 
 #include <cstring>
@@ -56,7 +57,14 @@ bool saveImage(const QImage &img, const QString &path, Format fmt, int jpegQuali
     if (fmt == Format::Png) {
         return img.save(path, "PNG");
     }
-    return img.save(path, "JPEG", qBound(1, jpegQuality, 100));
+    // JPEG encoder rejects some formats (e.g. mono, indexed).
+    QImage out = img;
+    if (out.format() != QImage::Format_RGB32
+        && out.format() != QImage::Format_ARGB32
+        && out.format() != QImage::Format_RGB888) {
+        out = out.convertToFormat(QImage::Format_RGB32);
+    }
+    return out.save(path, "JPEG", qBound(1, jpegQuality, 100));
 }
 
 QString extension(Format fmt)
@@ -272,6 +280,14 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
     }
 
     if (opt.container == Container::Cbz) {
+        {
+            const QFileInfo fi(opt.destPath);
+            if (!fi.absolutePath().isEmpty()
+                && !QDir().mkpath(fi.absolutePath())) {
+                r.errors << QStringLiteral("cannot create parent directory");
+                return r;
+            }
+        }
         QVector<QPair<QString, QByteArray>> entries;
         entries.reserve(items.size());
         const int width = qMax(3, QString::number(items.size()).size());
@@ -286,11 +302,16 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
             QByteArray bytes;
             QBuffer buf(&bytes);
             buf.open(QIODevice::WriteOnly);
-            const char *fmt = opt.format == Format::Png ? "PNG" : "JPEG";
             if (opt.format == Format::Png) {
-                img.save(&buf, fmt);
+                img.save(&buf, "PNG");
             } else {
-                img.save(&buf, fmt, qBound(1, opt.jpegQuality, 100));
+                QImage out = img;
+                if (out.format() != QImage::Format_RGB32
+                    && out.format() != QImage::Format_ARGB32
+                    && out.format() != QImage::Format_RGB888) {
+                    out = out.convertToFormat(QImage::Format_RGB32);
+                }
+                out.save(&buf, "JPEG", qBound(1, opt.jpegQuality, 100));
             }
             buf.close();
             if (bytes.isEmpty()) {
@@ -323,9 +344,19 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
 
     // PDF — one page per image, page size matches image aspect at 72 dpi base.
     {
+        {
+            const QFileInfo fi(opt.destPath);
+            if (!fi.absolutePath().isEmpty()
+                && !QDir().mkpath(fi.absolutePath())) {
+                r.errors << QStringLiteral("cannot create parent directory");
+                return r;
+            }
+        }
         QPdfWriter pdf(opt.destPath);
         pdf.setTitle(QStringLiteral("biltoo export"));
         pdf.setCreator(QStringLiteral("biltoo"));
+        // Margins 0 so the image fills the page.
+        pdf.setPageMargins(QMarginsF(0, 0, 0, 0));
         bool first = true;
         QPainter painter;
         for (int i = 0; i < items.size(); ++i) {
@@ -336,9 +367,10 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
                 r.errors << QStringLiteral("decode failed: %1").arg(it.path);
                 continue;
             }
-            // Page size in points (1/72"); use pixel size as points for 72 dpi 1:1.
+            // Page size in points (1/72"); pixel size as points ≈ 72 dpi 1:1.
             const QPageSize pageSize(
                 QSizeF(img.width(), img.height()), QPageSize::Point);
+            // setPageSize must precede begin / newPage for that page.
             pdf.setPageSize(pageSize);
             if (first) {
                 if (!painter.begin(&pdf)) {
@@ -347,9 +379,12 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
                 }
                 first = false;
             } else {
-                pdf.newPage();
+                if (!pdf.newPage()) {
+                    r.errors << QStringLiteral("pdf newPage failed");
+                    break;
+                }
             }
-            const QRect pageRect(0, 0, pdf.width(), pdf.height());
+            const QRectF pageRect(0, 0, pdf.width(), pdf.height());
             painter.drawImage(pageRect, img);
             ++r.written;
         }
