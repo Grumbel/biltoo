@@ -30,6 +30,7 @@
 #include <QObject>
 #include <QUndoStack>
 #include <QSet>
+#include <QHash>
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QWheelEvent>
@@ -1336,6 +1337,23 @@ void GalleryController::ensurePlaceholders()
     if (!sizeGate) {
         m_view->hostGalleryDecodeBook().setDeferPopulate(false);
     }
+    // Local indexes — findItemBySessionId / path scan were O(n) per pack row and
+    // made progressive ensure O(n²) on every size-gate pack.
+    QHash<SessionImageId, ImageItem *> bySessionId;
+    QHash<QString, ImageItem *> byPathUnbound;
+    bySessionId.reserve(m_view->liveItems().size() * 2);
+    byPathUnbound.reserve(m_view->liveItems().size() * 2);
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId id = item->sessionId();
+        if (id != kInvalidSessionImageId) {
+            bySessionId.insert(id, item);
+        } else if (!item->path().isEmpty() && !byPathUnbound.contains(item->path())) {
+            byPathUnbound.insert(item->path(), item);
+        }
+    }
     QSet<ImageItem *> claimed;
     const PackOrderView pack = m_view->currentPackOrder();
     for (int i = 0; i < pack.size(); ++i) {
@@ -1352,20 +1370,28 @@ void GalleryController::ensurePlaceholders()
 
         ImageItem *existing = nullptr;
         if (sid != kInvalidSessionImageId) {
-            existing = m_view->findItemBySessionId(sid);
+            existing = bySessionId.value(sid, nullptr);
         }
-        if (!existing) {
-            for (ImageItem *item : m_view->liveItems()) {
-                if (!item || item->path() != path || claimed.contains(item)) {
-                    continue;
+        if (!existing && !path.isEmpty()) {
+            existing = byPathUnbound.value(path, nullptr);
+            if (existing && claimed.contains(existing)) {
+                existing = nullptr;
+            }
+            // Bound item with matching path but different sid already claimed via id.
+            if (!existing) {
+                // Rare: bound duplicate path without sid in pack — linear fallback.
+                for (ImageItem *item : m_view->liveItems()) {
+                    if (!item || item->path() != path || claimed.contains(item)) {
+                        continue;
+                    }
+                    if (sid != kInvalidSessionImageId
+                        && item->sessionId() != kInvalidSessionImageId
+                        && item->sessionId() != sid) {
+                        continue;
+                    }
+                    existing = item;
+                    break;
                 }
-                if (sid != kInvalidSessionImageId
-                    && item->sessionId() != kInvalidSessionImageId
-                    && item->sessionId() != sid) {
-                    continue;
-                }
-                existing = item;
-                break;
             }
         }
         if (existing) {
@@ -1373,6 +1399,8 @@ void GalleryController::ensurePlaceholders()
             if (sid != kInvalidSessionImageId
                 && existing->sessionId() == kInvalidSessionImageId) {
                 m_view->setItemSessionId(existing, sid);
+                bySessionId.insert(sid, existing);
+                byPathUnbound.remove(path);
             } else {
                 m_view->refreshSessionIndexCache(existing);
             }
@@ -1409,6 +1437,9 @@ void GalleryController::ensurePlaceholders()
         if (ph) {
             if (sid != kInvalidSessionImageId) {
                 m_view->setItemSessionId(ph, sid);
+                bySessionId.insert(sid, ph);
+            } else if (!path.isEmpty()) {
+                byPathUnbound.insert(path, ph);
             }
             // List-order cache from document when bound; pack i only unbound hint.
             if (m_view->sessionListIndex(ph) < 0) {

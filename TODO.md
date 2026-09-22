@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.16-ensurePlaceholders-index.** Validate progressive ensure cost:
+
+- `ensurePlaceholders` used `findItemBySessionId` (O(n) scan) and a path scan
+  **per pack row** → O(n²) on every progressive pack during the size gate.
+- Build local `QHash` session-id / unbound-path indexes once per call; update
+  them when creating placeholders. Typical progressive ensure is now O(n).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.16-ensurePlaceholders-index-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.15-skip-itemworld-on-progressive-pack.** Validate progressive pack cost:
 
 - Every progressive pack during the size gate wrote **ItemWorld** placement for
