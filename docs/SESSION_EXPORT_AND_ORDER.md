@@ -4,9 +4,11 @@ Product notes (2026-09-23).
 
 ## Status
 
-**v1 implemented (biltoo-2320):** File → Export Images…
+**v1 implemented (biltoo-2320+):** File → Export Images…
 (directory / .cbz / multi-page PDF), bake via SessionAppearance,
-File menu page exports mode-gated to Workspace. Reorder UI still open.
+File menu page exports mode-gated to Workspace.
+Selection: filmstrip indices, else Gallery/Workspace `selectedSessionIndices`.
+Reorder UI still open.
 
 ## 1. Session image export (Gallery / Image)
 

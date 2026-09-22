@@ -2,23 +2,20 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2322-session-export-harden.**
+**Tip: biltoo-2323-export-gallery-selection.**
 
-Session export hardening after verify:
-- JPEG: convert exotic formats before save
-- CBZ/PDF: create parent directories
-- PDF: setPageSize before each page; zero margins
-- updateFileExportActions after project open
+Export Images “Selection only” uses filmstrip selection, else Gallery /
+Workspace `selectedSessionIndices`. Structural verify of 2320–2322 passed.
 
-Includes 2318–2321. Requires **thumtoo-323**.
+Requires **thumtoo-323**. Includes 2318–2322.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2322.1-session-export-harden-999be36.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2323.1-export-gallery-selection-999be36.bundle HEAD
 ```
 
-Next: **2323** (reorder UI or export progress).
+Next: **2324** (reorder UI or export progress/cancel).
 
 ## Backlog
-- Session reorder UI (`docs/SESSION_EXPORT_AND_ORDER.md` §2)
+- Session reorder UI
 - Export progress / cancel

@@ -463,6 +463,10 @@ void MainWindow::exportSessionImages()
     if (m_thumbnailBar) {
         selectedRows = m_thumbnailBar->selectedIndices();
     }
+    // Gallery / Workspace canvas selection when filmstrip has nothing selected.
+    if (selectedRows.isEmpty() && m_imageView) {
+        selectedRows = m_imageView->selectedSessionIndices();
+    }
     if (selectedRows.isEmpty()) {
         scopeSel->setEnabled(false);
     }
