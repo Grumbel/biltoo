@@ -30,8 +30,6 @@ public:
 
     bool isGestureActive() const { return gestureActive; }
 
-    bool isDraftValid() const { return draftValid; }
-
     const QVector<int> &selectedRef() const { return selected; }
 
     QVector<int> &selectedMutable() { return selected; }

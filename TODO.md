@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2277-drop-isDraftValid-invAxisScale.** Dead API cleanup:
+
+1. AttentionSession: remove unused `isDraftValid` (callers use `hasDraftFor` /
+   draftValid internally)
+2. ContentXform: remove unused `invAxisScale`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2277.1-drop-isDraftValid-invAxisScale-e6c70e4.bundle HEAD
+```
+
+Next: **2278**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2276-drop-dead-session-gesture-helpers.** Dead API cleanup:
 
 1. SessionIdentity: remove unused `isValidPosition`

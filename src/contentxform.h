@@ -103,13 +103,6 @@ inline int heightForAspectWidth(int width, const QSizeF &aspect)
     return heightForAspectWidth(width, aspect.width(), aspect.height());
 }
 
-/** Map scale from crop extent to source pixel extent (min source 1). */
-inline qreal invAxisScale(qreal cropExtent, int sourceExtent)
-{
-    return cropExtent / qreal(qMax(1, sourceExtent));
-}
-
-
 /** Max long edge for materializeDisplay on the GUI thread (matches SessionAppearance). */
 inline constexpr int kGuiMaterializeMaxEdge = 512;
 inline constexpr int kGuiMaterializePreviewEdge = 256;
