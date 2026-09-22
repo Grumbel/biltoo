@@ -312,7 +312,11 @@ void ContentOrientPaintContractTest::successivePlusOneTurns_layoutCycles()
 void ContentOrientPaintContractTest::axisAlignedCrop_layoutFollowsMappedCrop_allTurns()
 {
     // Crop in oriented space after turns must define layoutSize; paint dests
-    // are crop-local after subtract origin.
+    // are crop-local after subtract origin (same as ImageItem tile path).
+    //
+    // Do *not* round-trip AABB inverse→forward: mapDisplayRectToSource returns an
+    // AABB that expands under odd turns, so forward mapSourceRectToOriented of
+    // that AABB can miss the crop window. Test the real forward paint path only.
     const QSize native(800, 600);
     for (int turns = 0; turns < 4; ++turns) {
         ContentXform::Value x = orientOnly(turns);
@@ -330,26 +334,49 @@ void ContentOrientPaintContractTest::axisAlignedCrop_layoutFollowsMappedCrop_all
 
         const QRectF cr = contentRectFor(lay);
         const QPointF off = cr.topLeft();
-        // A source cell that maps into the crop should land inside contentRect.
-        // Use the inverse: display centre → source, then a small source box.
-        const QRectF dispCentre(lay.width() / 2.0 - 10, lay.height() / 2.0 - 10, 20,
-                                20);
-        const QRectF src =
-            ContentXform::mapDisplayRectToSource(dispCentre, native, x);
-        QVERIFY2(!src.isEmpty(),
-                 qPrintable(QStringLiteral("crop inverse empty turns=%1").arg(turns)));
-        QRectF ori = ContentXform::mapSourceRectToOriented(src, native, x);
-        // Axis-aligned crop-local (same as tile paint path).
         const QRect crop = x.cropRect.normalized();
-        QRectF local = ori.translated(-crop.x(), -crop.y());
-        local = local.intersected(QRectF(0, 0, crop.width(), crop.height()));
-        QVERIFY2(!local.isEmpty(),
-                 qPrintable(QStringLiteral("crop-local empty turns=%1").arg(turns)));
-        const QRectF dest(local.x() + off.x(), local.y() + off.y(), local.width(),
-                          local.height());
-        QVERIFY2(nearlyContains(cr, dest, 2.0),
+        const QRectF cropLocal(0.0, 0.0, crop.width(), crop.height());
+
+        int hit = 0;
+        for (const QRectF &cell : tileCells(native, 128)) {
+            const QRectF ori =
+                ContentXform::mapSourceRectToOriented(cell, native, x);
+            if (ori.isEmpty()) {
+                continue;
+            }
+            QRectF local = ori.translated(-crop.x(), -crop.y());
+            local = local.intersected(cropLocal);
+            if (local.isEmpty()) {
+                continue; // cell outside the crop window
+            }
+            ++hit;
+            const QRectF dest(local.x() + off.x(), local.y() + off.y(),
+                              local.width(), local.height());
+            QVERIFY2(nearlyContains(cr, dest, 2.0),
+                     qPrintable(QStringLiteral(
+                                    "crop dest outside contentRect turns=%1 "
+                                    "cell=%2,%3 dest=%4,%5 %6x%7")
+                                    .arg(turns)
+                                    .arg(cell.left())
+                                    .arg(cell.top())
+                                    .arg(dest.left())
+                                    .arg(dest.top())
+                                    .arg(dest.width())
+                                    .arg(dest.height())));
+
+            // mapSourceRectToDisplay must agree with crop-local + (0,0) origin.
+            const QRectF viaDisplay =
+                ContentXform::mapSourceRectToDisplay(cell, native, x);
+            QVERIFY2(!viaDisplay.isEmpty(),
+                     qPrintable(QStringLiteral(
+                                    "mapSourceRectToDisplay empty turns=%1").arg(turns)));
+            QVERIFY2(nearlyContains(cropLocal, viaDisplay, 2.0),
+                     qPrintable(QStringLiteral(
+                                    "display map outside crop-local turns=%1").arg(turns)));
+        }
+        QVERIFY2(hit > 0,
                  qPrintable(QStringLiteral(
-                                "crop dest outside contentRect turns=%1").arg(turns)));
+                                "no tile cells intersected crop turns=%1").arg(turns)));
     }
 }
 

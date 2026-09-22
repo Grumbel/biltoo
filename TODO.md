@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2297.1-orient-crop-test-forward-only.**
+
+Fix flaky/false-fail crop contract: AABB inverse→forward under odd turns expands
+and can miss the crop window. Test the **forward** tile path only (orient →
+crop-local → contentRect) for every turn.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2297.1-orient-crop-test-forward-only-c0bffd5.bundle HEAD
+```
+
+Next: **2298**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2297-content-orient-paint-contract-tests.**
 
 Isolated **content orient ↔ contentRect** paint contract tests (no Widgets):
