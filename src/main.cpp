@@ -267,9 +267,9 @@ int main(int argc, char *argv[])
         // addHelpOption() already owns --help-all; process() would show Qt's
         // generic help and exit. Intercept first and list biltoo/thumtoo env.
         if (args.contains(QStringLiteral("--help-all"))) {
-        QTextStream out(stdout);
-        out << parser.helpText() << '\n';
-        out << QCoreApplication::translate(
+            QTextStream out(stdout);
+            out << parser.helpText() << '\n';
+            out << QCoreApplication::translate(
                    "main", "Environment variables (debugging / limits)")
             << '\n'
             << QCoreApplication::translate(
@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
                    "Flag-style: on when non-empty and not 0/f/n. "
                    "Full detail: docs/ENVIRONMENT.md")
             << "\n\n";
-        out << "Runtime debug traces\n"
+            out << "Runtime debug traces\n"
                "  THUMTOO_DEBUG              thumtoo ladder/tile/interest traces\n"
                "                             (stderr + ~/.cache/biltoo/thumtoo-debug.log)\n"
                "  BILTOO_THUMTOO_DEBUG       alias for THUMTOO_DEBUG\n"
