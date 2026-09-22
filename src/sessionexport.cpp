@@ -6,6 +6,8 @@
 #include "biltoo_thread.h"
 #include "imageloader.h"
 #include "sessionappearance.h"
+#include "pagepath.h"
+#include "archivepath.h"
 
 #include <QBuffer>
 #include <QDir>
@@ -197,7 +199,62 @@ bool writeStoreZip(const QString &zipPath,
 
 QString fileStem(const QString &path)
 {
+    // Virtual session paths must not go through QFileInfo on the full string:
+    // "//page:" / "//archive:" collapse under cleanPath and yield empty/wrong stems.
+    if (PagePath::isPageRef(path)) {
+        const PagePath::Ref ref = PagePath::parse(path);
+        if (ref.valid) {
+            return sanitizeStem(
+                QStringLiteral("%1_p%2")
+                    .arg(QFileInfo(ref.pdfPath).completeBaseName())
+                    .arg(ref.page));
+        }
+    }
+    if (PagePath::isPdfImageRef(path)) {
+        const QString doc = PagePath::documentFilePath(path);
+        const int n = PagePath::pdfImageNumber(path);
+        return sanitizeStem(
+            QStringLiteral("%1_img%2")
+                .arg(QFileInfo(doc).completeBaseName())
+                .arg(n));
+    }
+    if (ArchivePath::isArchiveRef(path)) {
+        const ArchivePath::Ref ref = ArchivePath::parse(path);
+        if (ref.valid) {
+            return sanitizeStem(QFileInfo(ref.memberPath).completeBaseName());
+        }
+    }
     return sanitizeStem(QFileInfo(path).completeBaseName());
+}
+
+/**
+ * True when writing @p outPath would replace the same on-disk file as @p sourcePath.
+ * Virtual session paths (PDF page, archive member) never collide with export files.
+ * Never treat empty canonical paths as equal (QFileInfo collapses // markers).
+ */
+bool wouldOverwriteSource(const QString &sourcePath, const QString &outPath)
+{
+    if (sourcePath.isEmpty() || outPath.isEmpty()) {
+        return false;
+    }
+    if (PagePath::isPageRef(sourcePath) || PagePath::isPdfImageRef(sourcePath)
+        || ArchivePath::isArchiveRef(sourcePath)) {
+        return false;
+    }
+    const QFileInfo srcInfo(sourcePath);
+    const QFileInfo outInfo(outPath);
+    const QString srcCanon = srcInfo.canonicalFilePath();
+    const QString outCanon = outInfo.canonicalFilePath();
+    // Both resolve to an existing file.
+    if (!srcCanon.isEmpty() && !outCanon.isEmpty()) {
+        return srcCanon == outCanon;
+    }
+    // Destination may not exist yet: compare cleaned absolute paths only when
+    // the source is a real local file.
+    if (srcCanon.isEmpty() || !srcInfo.isFile()) {
+        return false;
+    }
+    return srcCanon == QDir::cleanPath(outInfo.absoluteFilePath());
 }
 
 QImage bakeItem(const Item &item, int maxLongEdge)
@@ -274,11 +331,10 @@ Result exportItems(const QVector<Item> &items, const Options &opt,
                         .arg(fileStem(it.path))
                         .arg(extension(opt.format));
                 const QString outPath = dir.filePath(name);
-                if (QFileInfo(it.path).canonicalFilePath()
-                    == QFileInfo(outPath).canonicalFilePath()) {
+                if (wouldOverwriteSource(it.path, outPath)) {
                     ++r.failed;
                     r.errors << QStringLiteral("refusing to overwrite source: %1")
-                                    .arg(it.path);
+                                    .arg(outPath);
                 } else if (!saveImage(img, outPath, opt.format, opt.jpegQuality)) {
                     ++r.failed;
                     r.errors << QStringLiteral("write failed: %1").arg(outPath);
