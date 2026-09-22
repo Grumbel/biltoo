@@ -141,9 +141,7 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
 
         QColor fill;
         QColor edge;
-        int scale = cmd.src_key.scale;
-        const int tx = cmd.src_key.x;
-        const int ty = cmd.src_key.y;
+        // Per-cell TILE text is thumtoo bitmap stamps; host wash only needs kind.
         if (cmd.kind == tilelod::DrawKind::ExactTile) {
             fill = fillExact;
             edge = edgeExact;
@@ -153,7 +151,6 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         } else if (cmd.kind == tilelod::DrawKind::Underlay) {
             fill = fillHole;
             edge = edgeHole;
-            scale = target;
         } else {
             continue;
         }

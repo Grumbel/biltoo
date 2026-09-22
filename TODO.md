@@ -2,6 +2,22 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2292.1-overlay-unused-tile-key.** Drop unused `scale`/`tx`/`ty` in
+`paintTilePlanDebugOverlay` (washes only; TILE text is thumtoo stamps).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2292.1-overlay-unused-tile-key-c0bffd5.bundle HEAD
+```
+
+Next: **2293**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2292-free-rot-tile-clip.**
 
 Free crop-rotation tile paint: `setClipRect(contentRect)` ran *before* the
