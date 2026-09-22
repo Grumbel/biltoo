@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.8-filmstrip-suspend-visible-loads.** Validate + fix:
+
+- Cold Gallery size-resolve sets `ThumbnailBar::setVisibleLoadsSuspended(true)` so
+  filmstrip does not race size probes, but **`scheduleVisibleThumbnailLoads`
+  ignored that flag** (only `filmstripSurfaceTick` checked it).
+- `sizeReady` / scroll timers could still queue filmstrip pyramid work during
+  the size gate. Suspend is now enforced at the start of
+  `scheduleVisibleThumbnailLoads`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.8-filmstrip-suspend-visible-loads-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.7-pyramid-mark-on-success.** Validate sizeProbesBusy + fix retry:
 
 - `scheduleGalleryDecode` marked `tilesPyramidQueued` **before** calling

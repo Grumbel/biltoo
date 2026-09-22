@@ -1855,7 +1855,7 @@ void ThumbnailBar::scheduleThumbnailLoads()
 
 void ThumbnailBar::scheduleVisibleThumbnailLoads()
 {
-    if (m_files.isEmpty()) {
+    if (m_files.isEmpty() || m_visibleLoadsSuspended) {
         return;
     }
     const quint64 gen = m_generation.load();
