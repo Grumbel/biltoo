@@ -2216,6 +2216,7 @@ void ThumbnailBar::clearPressState()
     m_pressActive = false;
     m_pressItem = nullptr;
     m_dragStarted = false;
+    m_pressSelectedRows.clear();
 }
 
 
@@ -3197,6 +3198,10 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
     m_pressActive = true;
     m_dragStarted = false;
     m_pressModifiers = event->modifiers();
+    // Snapshot selection at press: multi-select is applied on release, and
+    // selection can change under us during the drag gesture. Use this list for
+    // the session-row mime payload so multi-reorder does not shrink to one row.
+    m_pressSelectedRows = selectedIndices();
 
     // --- Mode policy ---------------------------------------------------------
     // Image (m_multiSelect false): single-click navigates; Ctrl/Shift only for
@@ -3257,23 +3262,31 @@ void ThumbnailBar::mouseMoveEvent(QMouseEvent *event)
         if (dist >= QApplication::startDragDistance()) {
             // AUDIT M19: drag selected thumbs as files in every mode (no dead gesture).
             m_dragStarted = true;
-            // Payload is the pressed thumb, or the current multi-selection when
-            // the press is on a selected cell in Workspace multi-select.
-            // Never ship the whole filmstrip because of a stale Select-All /
-            // mirrored canvas selection after entering Workspace.
+            // Multi-reorder payload: prefer rows selected at press when the
+            // press is on one of them. Fall back to live selection, then press.
+            // Full-strip selection without Ctrl/Shift is treated as accidental
+            // (Workspace mirror / Select-All residue) → drag only the press row.
             QList<QListWidgetItem *> items;
-            if (m_multiSelect && m_pressItem->isSelected()) {
-                items = selectedItems();
-                // Guard: a full-strip selection is almost always accidental
-                // residual state — drag only the pressed row unless the user
-                // held Ctrl/Shift (explicit multi intent).
-                if (items.size() == count() && count() > 1
+            QList<int> rows = m_pressSelectedRows;
+            if (rows.isEmpty()) {
+                rows = selectedIndices();
+            }
+            const int pressRow = m_pressItem ? row(m_pressItem) : -1;
+            const bool pressInSel = pressRow >= 0 && rows.contains(pressRow);
+            if (pressInSel && rows.size() > 1) {
+                if (rows.size() == count() && count() > 1
                     && !(m_pressModifiers & (Qt::ControlModifier | Qt::ShiftModifier
                                             | Qt::MetaModifier))) {
-                    items = {m_pressItem};
+                    rows = {pressRow};
+                }
+                std::sort(rows.begin(), rows.end());
+                for (int r : rows) {
+                    if (QListWidgetItem *it = item(r)) {
+                        items.append(it);
+                    }
                 }
             }
-            if (items.isEmpty()) {
+            if (items.isEmpty() && m_pressItem) {
                 items = {m_pressItem};
             }
             startFileDrag(items);

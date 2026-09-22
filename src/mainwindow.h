@@ -488,7 +488,11 @@ private:
     void handleWorkspaceDrop(const QStringList &paths, bool fromInternalSelection,
                              const QPointF &scenePos, bool hasScenePos,
                              const QList<qint64> &sessionIds);
-    void handleGalleryDrop(const QStringList &paths, bool fromInternalSelection);
+    void handleGalleryDrop(const QStringList &paths, bool fromInternalSelection,
+                            const QList<qint64> &sessionIds = {},
+                            const QPointF &scenePos = {}, bool hasScenePos = false);
+    /** Gallery session-row insert index from drop scene position (0..size). */
+    int galleryReorderInsertBefore(const QPointF &scenePos) const;
     void handleImageModeDrop(const QStringList &paths, bool fromInternalSelection,
                              const QList<qint64> &sessionIds = {});
     void handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifiers modifiers,

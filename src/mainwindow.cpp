@@ -13,6 +13,7 @@
 #include <QRect>
 #include "biltoo_logging.h"
 #include <cmath>
+#include <algorithm>
 #include <QtMath>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -3629,14 +3630,54 @@ void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternal
     return;
 }
 
-void MainWindow::handleGalleryDrop(const QStringList &paths, bool fromInternalSelection)
+void MainWindow::handleGalleryDrop(const QStringList &paths, bool fromInternalSelection,
+                                   const QList<qint64> &sessionIds,
+                                   const QPointF &scenePos, bool hasScenePos)
 {
+    // Filmstrip → Gallery: reorder the session (do not append duplicates).
+    if (fromInternalSelection) {
+        QList<int> rows;
+        QSet<int> seen;
+        if (!sessionIds.isEmpty()) {
+            for (qint64 raw : sessionIds) {
+                const SessionImageId sid = static_cast<SessionImageId>(raw);
+                if (sid == kInvalidSessionImageId) {
+                    continue;
+                }
+                const int idx = indexOfSessionId(sid);
+                if (idx >= 0 && !seen.contains(idx)) {
+                    seen.insert(idx);
+                    rows.append(idx);
+                }
+            }
+        }
+        if (rows.isEmpty()) {
+            for (const QString &p : paths) {
+                const int idx = m_session.indexOfPathPreferId(p);
+                if (idx >= 0 && !seen.contains(idx)) {
+                    seen.insert(idx);
+                    rows.append(idx);
+                }
+            }
+        }
+        if (rows.isEmpty()) {
+            return;
+        }
+        std::sort(rows.begin(), rows.end());
+        int insertBefore = m_session.size();
+        if (hasScenePos && m_imageView) {
+            insertBefore = galleryReorderInsertBefore(scenePos);
+        }
+        reorderSessionRows(rows, insertBefore);
+        return;
+    }
+
     // Archives/PDF need the same background expand + centre HUD as File→Open.
-    if (!fromInternalSelection && pathsNeedBackgroundExpand(paths)) {
+    if (pathsNeedBackgroundExpand(paths)) {
         expandPathsInBackground(paths, /*append=*/true);
         return;
     }
-    const QStringList expanded = fromInternalSelection ? paths : expandPaths(paths);
+    const QStringList expanded = expandPaths(paths);
     if (expanded.isEmpty()) {
         return;
     }
@@ -3654,6 +3695,52 @@ void MainWindow::handleGalleryDrop(const QStringList &paths, bool fromInternalSe
     // the size-first gate (provisional / square first cell).
     populateGalleryCanvas();
     updateStatus();
+}
+
+int MainWindow::galleryReorderInsertBefore(const QPointF &scenePos) const
+{
+    if (!m_imageView || !m_imageView->canvasScene()) {
+        return m_session.size();
+    }
+    ImageItem *best = nullptr;
+    qreal bestDist2 = 1e300;
+    for (ImageItem *it : m_imageView->liveItems()) {
+        if (!it) {
+            continue;
+        }
+        const QRectF br = it->sceneBoundingRect();
+        if (br.contains(scenePos)) {
+            const int idx = m_imageView->sessionListIndex(it);
+            if (idx < 0) {
+                continue;
+            }
+            // Left/top half → insert before; right/bottom half → after.
+            const bool after = (scenePos.x() > br.center().x())
+                || (qAbs(scenePos.x() - br.center().x()) < 1.0
+                    && scenePos.y() > br.center().y());
+            return after ? idx + 1 : idx;
+        }
+        const QPointF c = br.center();
+        const qreal dx = c.x() - scenePos.x();
+        const qreal dy = c.y() - scenePos.y();
+        const qreal d2 = dx * dx + dy * dy;
+        if (d2 < bestDist2) {
+            bestDist2 = d2;
+            best = it;
+        }
+    }
+    if (!best) {
+        return m_session.size();
+    }
+    const int idx = m_imageView->sessionListIndex(best);
+    if (idx < 0) {
+        return m_session.size();
+    }
+    const QRectF br = best->sceneBoundingRect();
+    const bool after = scenePos.x() > br.center().x()
+        || (qAbs(scenePos.x() - br.center().x()) < 1.0
+            && scenePos.y() > br.center().y());
+    return after ? idx + 1 : idx;
 }
 
 void MainWindow::handleImageModeDrop(const QStringList &paths, bool fromInternalSelection,
@@ -3756,7 +3843,7 @@ void MainWindow::handleDroppedUrls(const QList<QUrl> &urls, Qt::KeyboardModifier
         return;
     }
     if (isGalleryMode()) {
-        handleGalleryDrop(paths, fromInternalSelection);
+        handleGalleryDrop(paths, fromInternalSelection, sessionIds, scenePos, hasScenePos);
         return;
     }
     handleImageModeDrop(paths, fromInternalSelection, sessionIds);

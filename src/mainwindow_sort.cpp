@@ -435,7 +435,7 @@ void MainWindow::applySessionOrder(const QStringList &paths,
 
     if (m_thumbnailBar) {
         m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-        if (isWorkspaceMode()) {
+        if (isWorkspaceMode() || isGalleryMode()) {
             m_thumbnailBar->setMultiSelectEnabled(true);
         }
     }

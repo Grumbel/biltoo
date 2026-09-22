@@ -369,6 +369,9 @@ private:
     /** Insertion slot while dragging rows over the strip; -1 = none. */
     int m_dropInsertIndex = -1;
     Qt::KeyboardModifiers m_pressModifiers;
+    /** Session rows selected at press (stable drag multi-payload). */
+    QList<int> m_pressSelectedRows;
 };
+
 
 #endif // THUMBNAILBAR_H

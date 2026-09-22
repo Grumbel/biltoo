@@ -2,20 +2,21 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2331-filmstrip-drop-dragdrop-mode.**
+**Tip: biltoo-2332-multiselect-reorder-gallery-drop.**
 
-Fix: filmstrip was `DragOnly`, so internal session-row drops never landed.
-Use `DragDrop` + acceptDrops; keep `Static` movement (host owns order).
-Map drop positions into the viewport for the insertion line / insert index.
+- Filmstrip multi-select drag: snapshot selected rows at press so the
+  session-row mime carries the full selection (not only the pressed thumb).
+- Gallery drop from filmstrip: internal selection reorders the session by
+  drop target (no path append/duplicate). External drops still append.
 
-Requires **thumtoo-323**. Includes 2318–2330.
+Requires **thumtoo-323**. Includes 2318–2331.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2331.1-filmstrip-drop-dragdrop-mode-2f201f6.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2332.1-multiselect-reorder-gallery-drop-2f201f6.bundle HEAD
 ```
 
-Next: **2332**.
+Next: **2333**.
 
 ## Backlog
-- Gallery drag reorder
+- Gallery-canvas drag reorder (drag tiles on the packed canvas itself)
