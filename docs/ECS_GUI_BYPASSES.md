@@ -129,11 +129,12 @@ authority bypass. Content orient remains ItemWorld contentBake/crop only.
 
 ---
 
-## 10. Slideshow appearance snapshot helper (low)
+## 10. Slideshow appearance snapshot helper (aligned)
 
 **Where:** `snapshotSlideshowContentAppearance` — ItemWorld then path map.
 
-**Mostly aligned** with ECS; path fallback for unbound.
+**Status (2227):** Bound = ItemWorld sparse only; unbound = path map then path XDG.
+Matches Image underlay / contentLayoutSize policy.
 
 ---
 

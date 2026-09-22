@@ -218,16 +218,10 @@ MainWindow::MainWindow(QWidget *parent)
                         want.cropSourceSize = stored.cropSourceSize;
                         want.cropRotation = stored.cropRotation;
                         if (stored.hasGrade) {
-                            want.colorAdjust.brightness = stored.gradeBrightness;
-                            want.colorAdjust.contrast =
-                                stored.gradeContrast == 0 ? 100 : stored.gradeContrast;
-                            want.colorAdjust.saturation =
-                                stored.gradeSaturation == 0 ? 100 : stored.gradeSaturation;
-                            want.colorAdjust.hue = stored.gradeHue;
-                            want.colorAdjust.gamma = stored.gradeGamma <= 0
-                                ? 1.0
-                                : (stored.gradeGamma / 100.0);
-                            want.colorAdjust.invert = stored.gradeInvert;
+                            want.colorAdjust = ColorAdjustments::fromDurableGrade(
+                                stored.gradeBrightness, stored.gradeContrast,
+                                stored.gradeSaturation, stored.gradeHue,
+                                stored.gradeGamma, stored.gradeInvert);
                         }
                     }
                 }

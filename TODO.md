@@ -2,6 +2,23 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2227-durable-grade-from-helper.** Path-XDG grade conversion uses
+`ColorAdjustments::fromDurableGrade` (thumbnail filmstrip + mainwindow paint)
+instead of hand-copied percent fields. Slideshow residual #10 marked aligned.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2227-durable-grade-from-helper-e6c70e4.bundle HEAD
+```
+
+Next: **2228**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2226-ecs-incremental-bake-closed.** Stale comments and ECS residual
 #7: no incremental `bakeRotate90`/`bakeFlip` on display. Missing host clears
 pixels + async rematerialize; soft stand-in only from host-raw materialize.
