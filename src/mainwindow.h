@@ -410,6 +410,7 @@ private:
      * the moved rows are removed. Undoable via host undo stack.
      */
     void reorderSessionRows(const QList<int> &rows, int insertBefore);
+    void selectSessionIdsOnFilmstrip(const QVector<SessionImageId> &ids);
     bool sortModeNeedsImageProbe() const;
     /** Majority of paths are PDF/EPUB/DjVu page (or pdfimage) refs. */
     static bool sessionLooksLikePagedDocument(const QStringList &paths);

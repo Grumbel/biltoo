@@ -383,7 +383,8 @@ public:
                           const QVector<SessionImageId> &beforeIds,
                           const QStringList &afterPaths,
                           const QVector<SessionImageId> &afterIds,
-                          SessionImageId focusId)
+                          SessionImageId focusId,
+                          const QVector<SessionImageId> &selectIds)
         : QUndoCommand(QObject::tr("Reorder session"))
         , m_mw(mw)
         , m_beforePaths(beforePaths)
@@ -391,6 +392,7 @@ public:
         , m_afterPaths(afterPaths)
         , m_afterIds(afterIds)
         , m_focusId(focusId)
+        , m_selectIds(selectIds)
     {
     }
 
@@ -398,6 +400,7 @@ public:
     {
         if (m_mw) {
             m_mw->applySessionOrder(m_beforePaths, m_beforeIds, m_focusId);
+            m_mw->selectSessionIdsOnFilmstrip(m_selectIds);
         }
     }
 
@@ -405,6 +408,7 @@ public:
     {
         if (m_mw) {
             m_mw->applySessionOrder(m_afterPaths, m_afterIds, m_focusId);
+            m_mw->selectSessionIdsOnFilmstrip(m_selectIds);
         }
     }
 
@@ -415,6 +419,7 @@ private:
     QStringList m_afterPaths;
     QVector<SessionImageId> m_afterIds;
     SessionImageId m_focusId = kInvalidSessionImageId;
+    QVector<SessionImageId> m_selectIds;
 };
 
 } // namespace
@@ -518,35 +523,14 @@ void MainWindow::reorderSessionRows(const QList<int> &rows, int insertBefore)
     dest = insertBefore - removedBefore;
     dest = qBound(0, dest, remainPaths.size());
 
-    // No-op if block already sits at dest.
-    if (!moving.isEmpty()) {
-        const int first = moving.first();
-        const int last = moving.last();
-        const bool contiguous = (last - first + 1 == moving.size());
-        if (contiguous && dest == first - removedBefore
-            && removedBefore == 0 && insertBefore == first) {
-            // still might be no-op when dropping on self
-        }
-        // If dest places the block at the same indices, skip.
-        bool same = (movePaths.size() == moving.size());
-        if (same && dest <= remainPaths.size()) {
-            QStringList trial = remainPaths;
-            QVector<SessionImageId> trialIds = remainIds;
-            for (int k = 0; k < movePaths.size(); ++k) {
-                trial.insert(dest + k, movePaths.at(k));
-                trialIds.insert(dest + k, moveIds.at(k));
-            }
-            if (trial == m_session.paths() && trialIds == m_session.ids()) {
-                return;
-            }
-        }
-    }
-
     QStringList afterPaths = remainPaths;
     QVector<SessionImageId> afterIds = remainIds;
     for (int k = 0; k < movePaths.size(); ++k) {
         afterPaths.insert(dest + k, movePaths.at(k));
         afterIds.insert(dest + k, moveIds.at(k));
+    }
+    if (afterPaths == m_session.paths() && afterIds == m_session.ids()) {
+        return;
     }
 
     const QStringList beforePaths = m_session.paths();
@@ -561,20 +545,9 @@ void MainWindow::reorderSessionRows(const QList<int> &rows, int insertBefore)
     if (m_imageView && m_imageView->hostUndoStack() && !m_sessionUndoGuard) {
         m_imageView->hostUndoStack()->push(
             new SessionReorderCommand(this, beforePaths, beforeIds,
-                                      afterPaths, afterIds, focusId));
-    } else {
-        applySessionOrder(afterPaths, afterIds, focusId);
+                                      afterPaths, afterIds, focusId, moveIds));
+        return;
     }
-    if (m_thumbnailBar && !moveIds.isEmpty()) {
-        QList<int> idxs;
-        for (SessionImageId id : moveIds) {
-            const int ix = indexOfSessionId(id);
-            if (ix >= 0) {
-                idxs.append(ix);
-            }
-        }
-        if (!idxs.isEmpty()) {
-            m_thumbnailBar->setSelectedIndices(idxs);
-        }
-    }
+    applySessionOrder(afterPaths, afterIds, focusId);
+    selectSessionIdsOnFilmstrip(moveIds);
 }
