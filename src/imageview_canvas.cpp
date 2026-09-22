@@ -306,11 +306,17 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         }
 
         if (virtualize) {
-            // Prefer host ImageCache aspect when native size is still unknown so
-            // the first pack does not use a neutral 1000×1000 cell.
+            // Size-first: only create when layout size is known (warm path).
+            // Cold path uses the size gate + ordered ensurePlaceholders.
+            const QSize lay = contentLayoutSize(path, sid);
+            if (!isPositiveSize(lay) || lay.width() <= 1 || lay.height() <= 1) {
+                if (isGalleryMode()) {
+                    scheduleImageSizeProbe(path);
+                }
+                continue;
+            }
             const QImage hint = ImageCache::get(path);
-            ImageItem *ph = m_displayPipeline.createPlaceholderItem(
-                path, contentLayoutSize(path, sid));
+            ImageItem *ph = m_displayPipeline.createPlaceholderItem(path, lay);
             if (ph) {
                 if (sid != kInvalidSessionImageId) {
                     setItemSessionId(ph, sid);

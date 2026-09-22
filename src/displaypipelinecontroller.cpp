@@ -1377,10 +1377,17 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
 
 ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
 {
-    // Defer-populate is a Gallery size-resolve gate only. Applying it in Image
-    // mode blocked Workspace→Image from creating the sole underlay item when a
-    // prior Gallery size-resolve left the flag set (empty Image view).
-    if (m_view->isGalleryMode() && m_view->hostGalleryDecodeBook().isDeferPopulate()) {
+    // Defer-populate blocks bulk setWorkspacePaths create while the size gate
+    // is still arming. Progressive ordered ensurePlaceholders must create while
+    // the gate is active (defer stays true until complete).
+    // Never apply defer in Image mode (empty underlay after Gallery visit).
+    if (m_view->isGalleryMode() && m_view->hostGalleryDecodeBook().isDeferPopulate()
+        && !m_view->hostGallerySizeResolve().active()) {
+        return nullptr;
+    }
+    if (m_view->isGalleryMode()
+        && (!isPositiveSize(intrinsicSize) || intrinsicSize.width() <= 1
+            || intrinsicSize.height() <= 1)) {
         return nullptr;
     }
     auto *item = new ImageItem(path, intrinsicSize);

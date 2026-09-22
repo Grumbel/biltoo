@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2286-fix-progressive-create-under-defer.** Verify + fix:
+
+1. **Bug:** `createPlaceholderItem` returned nullptr while `deferPopulate` was
+   set, which blocked *ordered progressive* creates during the size gate
+   (defer stays true until gate complete). Allow create when the size gate is
+   active; still block bulk create when defer is set and the gate is off.
+2. **Gallery create** refuses 1×1 / non-positive intrinsic.
+3. **Warm `setWorkspacePaths`** only creates cells with known layout size;
+   otherwise schedules a size probe (cold path uses the gate).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2286.1-fix-progressive-create-under-defer-e6c70e4.bundle HEAD
+```
+
+Next: **2287**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2285-fix-intrinsic-lqip-guard.** Verify + fix 2284:
 
 - `setItemIntrinsicSize` no longer compares against file-native *area* (that
