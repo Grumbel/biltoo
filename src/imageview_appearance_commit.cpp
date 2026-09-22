@@ -124,9 +124,9 @@ void ImageView::updateWorkspaceSavedAppearance(ImageItem *item)
                       qPrintable(slot.path), qPrintable(path));
             continue;
         }
-        // Placement display flips only; content stays on ItemWorld sparse tables.
-        slot.hFlip = itemPl.hFlip;
-        slot.vFlip = itemPl.vFlip;
+        // Full Placement pose from the live item; content stays on ItemWorld
+        // sparse tables (same bridge as restore / completeLoadRestore — 2214).
+        ItemComponents::applyPlacementToState(slot, itemPl);
         slot.sessionId = sessionId;
         slot.path = path;
     }

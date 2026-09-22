@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2222-workspace-saved-full-placement.** Mid-edit Workspace snapshot
+update uses the Placement bridge:
+
+- `updateWorkspaceSavedAppearance` applies full pose via
+  `applyPlacementToState` (not only hFlip/vFlip)
+- Content remains ItemWorld-only; same contract as leave snapshot / restore
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2222-workspace-saved-full-placement-e6c70e4.bundle HEAD
+```
+
+Next: **2223**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2221-session-id-resolve-docs.** Document pipeline/ImageView
 SessionImageId resolution in authority docs:
 
