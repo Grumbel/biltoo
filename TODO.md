@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2239-tick-tiles-if-own-display.** Shared PreferCache skip:
+
+- `DisplayPipelineController::tickTilesIfOwnDisplay(path)` consolidates
+  tileLodWanted / durable / no-live-item checks + `tickPrimaryTileLod`
+- Adopted by `requestEscalateClimb`, `ensureImageModeQualityClimb`,
+  `completeLoadReplace`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2239-tick-tiles-if-own-display-e6c70e4.bundle HEAD
+```
+
+Next: **2240**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2238-complete-load-tiles-own.** `completeLoadReplace` native miss
 path uses `DisplayEdgePolicy::tilesOwnDisplay` (tileLodWanted or durable
 pyramid) instead of tileLodWanted alone; durable → tick tile LOD, else PreferCache.

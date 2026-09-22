@@ -145,6 +145,12 @@ public:
     void tickItemTileLod(ImageItem *item, int budget = 8);
     void dropAllTileLodSessions();
     void tickPrimaryTileLod(int budget = 8);
+    /**
+     * When tileLodWanted or durable pyramid owns display for @p path: tick tile
+     * LOD and return true so PreferCache whole-frame climb is skipped.
+     * Covers live items and durable-only (no underlay item yet).
+     */
+    bool tickTilesIfOwnDisplay(const QString &path);
     void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role);
     bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);

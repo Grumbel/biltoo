@@ -192,6 +192,34 @@ void DisplayPipelineController::scheduleImageModePreferCacheClimb(const QString 
 {
     requestEscalateClimb(path, wantEdge);
 }
+
+bool DisplayPipelineController::tickTilesIfOwnDisplay(const QString &path)
+{
+    if (path.isEmpty()) {
+        return false;
+    }
+    const bool durable = ThumtooCache::hasDurableTilesKnown(path);
+    if (ImageItem *it = imageModeItemForPath(path)) {
+        if (DisplayEdgePolicy::tilesOwnDisplay(it->tileLodWanted(), durable)) {
+            tickPrimaryTileLod(12);
+            return true;
+        }
+    }
+    for (ImageItem *ii : m_view->liveItems()) {
+        if (ii && ii->path() == path
+            && DisplayEdgePolicy::tilesOwnDisplay(ii->tileLodWanted(), durable)) {
+            tickPrimaryTileLod(12);
+            return true;
+        }
+    }
+    // No live item for path but durable pyramid known (prefetch / filmstrip).
+    if (durable) {
+        tickPrimaryTileLod(12);
+        return true;
+    }
+    return false;
+}
+
 void DisplayPipelineController::requestEscalateClimb(const QString &path, int wantEdge)
 {
     if (!m_view->hostPathRaster() || path.isEmpty() || m_view->hostSlideshow().hud().isNavHot()) {
@@ -201,23 +229,7 @@ void DisplayPipelineController::requestEscalateClimb(const QString &path, int wa
         return;
     }
     // Tiles own display: tileLodWanted or known durable pyramid — no PreferCache.
-    const bool durable = ThumtooCache::hasDurableTilesKnown(path);
-    if (ImageItem *it = imageModeItemForPath(path)) {
-        if (DisplayEdgePolicy::tilesOwnDisplay(it->tileLodWanted(), durable)) {
-            tickPrimaryTileLod(12);
-            return;
-        }
-    }
-    for (ImageItem *ii : m_view->liveItems()) {
-        if (ii && ii->path() == path
-            && DisplayEdgePolicy::tilesOwnDisplay(ii->tileLodWanted(), durable)) {
-            tickPrimaryTileLod(12);
-            return;
-        }
-    }
-    // No live item for path but durable pyramid known (e.g. prefetch / filmstrip).
-    if (durable) {
-        tickPrimaryTileLod(12);
+    if (tickTilesIfOwnDisplay(path)) {
         return;
     }
     const int edge = cappedDisplayEdgeForPath(
@@ -252,16 +264,7 @@ void DisplayPipelineController::ensureImageModeQualityClimb(const QString &path,
         return;
     }
     // Tiles own display once wanted or durable pyramid is known — no PreferCache.
-    const bool durable = ThumtooCache::hasDurableTilesKnown(path);
-    if (ImageItem *it = imageModeItemForPath(path)) {
-        if (DisplayEdgePolicy::tilesOwnDisplay(it->tileLodWanted(), durable)) {
-            tickPrimaryTileLod(12);
-            return;
-        }
-    }
-    // No underlay item yet; durable pyramid still owns display (no PreferCache).
-    if (durable) {
-        tickPrimaryTileLod(12);
+    if (tickTilesIfOwnDisplay(path)) {
         return;
     }
     if (!sample.isNull() && sampleCoversNativeLogical(path, sample)) {
@@ -1357,17 +1360,8 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
     if (image.isNull()) {
         if (ThumtooCache::isAvailable()) {
             // Full native miss: PreferCache display ladder so onLadderReady can
-            // upgrade Image mode (soft→HQ). Skip when tiles own display
-            // (tileLodWanted or durable pyramid — same as requestEscalateClimb).
-            const bool durable = ThumtooCache::hasDurableTilesKnown(path);
-            bool tilesOwn = durable;
-            if (ImageItem *it = imageModeItemForPath(path)) {
-                tilesOwn = DisplayEdgePolicy::tilesOwnDisplay(
-                    it->tileLodWanted(), durable);
-            }
-            if (tilesOwn) {
-                tickPrimaryTileLod(12);
-            } else {
+            // upgrade Image mode (soft→HQ). Skip when tiles own display.
+            if (!tickTilesIfOwnDisplay(path)) {
                 scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
             }
             m_view->hostSessionId().clearLastLoadError();

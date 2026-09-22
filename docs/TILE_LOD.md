@@ -303,7 +303,10 @@ the AABB of transformed corners for viewport request and draw destinations.
 
 ## PreferCache vs tiles (biltoo-1035 / 2234–2237)
 
-Policy helper: `DisplayEdgePolicy::tilesOwnDisplay(tileLodWanted, durableTilesKnown)`.
+Policy helpers:
+
+- `DisplayEdgePolicy::tilesOwnDisplay(tileLodWanted, durableTilesKnown)`
+- `DisplayPipelineController::tickTilesIfOwnDisplay(path)` — tick LOD + skip PreferCache
 
 | Case | PreferCache whole-frame |
 |------|-------------------------|
