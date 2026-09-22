@@ -2,20 +2,21 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2323-export-gallery-selection.**
+**Tip: biltoo-2324-export-cleanup.**
 
-Export Images “Selection only” uses filmstrip selection, else Gallery /
-Workspace `selectedSessionIndices`. Structural verify of 2320–2322 passed.
+Export path re-verified (20/20 structural checks). Cleanup:
+- Remove dead sameOrUnderPath stub
+- updateFileExportActions after createMenus (initial empty session)
 
-Requires **thumtoo-323**. Includes 2318–2322.
+Requires **thumtoo-323**. Includes 2318–2323.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2323.1-export-gallery-selection-999be36.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2324.1-export-cleanup-999be36.bundle HEAD
 ```
 
-Next: **2324** (reorder UI or export progress/cancel).
+Next: **2325** — session reorder UI or export progress/cancel.
 
 ## Backlog
-- Session reorder UI
+- Session reorder UI (`docs/SESSION_EXPORT_AND_ORDER.md` §2)
 - Export progress / cancel

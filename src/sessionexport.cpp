@@ -191,15 +191,6 @@ bool writeStoreZip(const QString &zipPath,
     return true;
 }
 
-bool sameOrUnderPath(const QString &source, const QString &destFile)
-{
-    const QFileInfo s(source);
-    const QFileInfo d(destFile);
-    if (!s.exists()) {
-        return false;
-    }
-    return s.canonicalFilePath() == d.canonicalFilePath();
-}
 
 } // namespace
 
@@ -247,10 +238,6 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
         const int width = qMax(3, QString::number(items.size()).size());
         for (int i = 0; i < items.size(); ++i) {
             const Item &it = items.at(i);
-            if (sameOrUnderPath(it.path, QDir(opt.destPath).filePath(QStringLiteral("x")))) {
-                // Refuse writing into a tree that is the source file itself only;
-                // directory export still ok next to sources.
-            }
             QImage img = bakeItem(it, opt.maxLongEdge);
             if (img.isNull()) {
                 ++r.failed;

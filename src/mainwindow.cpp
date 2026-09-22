@@ -404,6 +404,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     createActions();
     createMenus();
+    updateFileExportActions();
     createToolBar();
     createStatusBar();
 
