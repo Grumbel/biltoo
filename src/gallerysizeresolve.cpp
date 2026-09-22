@@ -71,22 +71,32 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
         }
     }
 
-    // One batch enqueue — bounded parallel Store size work (not per-path serial).
-    m_host->scheduleSizeProbeBatch(ordered);
-
     if (!m_host->sizeResolveLayoutDefersPopulate()) {
-        // FreeForm / non-packaged: provisional pack OK; do not hold the gate.
+        // FreeForm / non-packaged: still batch-probe sizes, but do not hold the gate.
         m_pending.clear();
         m_total = 0;
+        if (!ordered.isEmpty()) {
+            m_host->scheduleSizeProbeBatch(ordered);
+        }
         return false;
     }
 
+    // Activate the gate BEFORE scheduling probes. scheduleProbeBatch may emit
+    // synchronous sizeReady for process-memo hits; noteProbeSettled must see
+    // m_active or those paths stay pending until the progress sweep.
     m_active = true;
     m_elapsed.start();
     ensureProgressTimer();
     m_progressTimer->start();
     updateProgressHud();
-    return true;
+
+    // One batch enqueue — bounded parallel Store size work (not per-path serial).
+    if (!ordered.isEmpty()) {
+        m_host->scheduleSizeProbeBatch(ordered);
+    }
+    // Sweep again for sync memo hits that settled during the batch enqueue.
+    updateProgressHud();
+    return m_active;
 }
 
 void GallerySizeResolve::cancel()

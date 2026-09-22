@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2287-fix-size-gate-active-before-batch.** Verify + fix:
+
+- Activate the Gallery size gate **before** `scheduleProbeBatch`. Sync
+  `sizeReady` (process-memo hits) was ignored by `noteProbeSettled` while
+  `m_active` was still false, leaving paths pending until the progress sweep.
+- FreeForm still batch-probes without holding the gate.
+- Return `m_active` after the post-batch sweep so a fully sync-resolved set
+  does not leave a dead gate.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2287.1-fix-size-gate-active-before-batch-e6c70e4.bundle HEAD
+```
+
+Next: **2288**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2286-fix-progressive-create-under-defer.** Verify + fix:
 
 1. **Bug:** `createPlaceholderItem` returned nullptr while `deferPopulate` was
