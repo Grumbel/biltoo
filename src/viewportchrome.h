@@ -24,12 +24,6 @@ struct ViewportChrome {
         return pos - lastMousePos;
     }
 
-    void noteMousePos(const QPoint &pos)
-    {
-        lastMousePos = pos;
-        lastHoverViewPos = pos;
-    }
-
     void beginPan(const QPoint &pos)
     {
         panning = true;

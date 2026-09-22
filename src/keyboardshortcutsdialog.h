@@ -44,7 +44,6 @@ private slots:
 
 private:
     QAction *actionAtRow(int row) const;
-    void refreshEnabledStyles();
 
     QLineEdit *m_filter = nullptr;
     QTableWidget *m_table = nullptr;

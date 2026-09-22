@@ -225,7 +225,3 @@ void KeyboardShortcutsDialog::onFilterTextChanged(const QString &text)
     }
 }
 
-void KeyboardShortcutsDialog::refreshEnabledStyles()
-{
-    // Reserved if we reopen the dialog without rebuilding; rows are static for now.
-}

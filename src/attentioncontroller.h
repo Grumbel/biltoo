@@ -38,9 +38,7 @@ public:
     SessionImageId attentionSessionId() const;
     QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
     QVector<QPointF> attentionPointsForTarget() const;
-    QPointF attentionNormForTarget() const;
     void setAttentionPointsForTarget(const QVector<QPointF> &pts);
-    void setAttentionNormForTarget(const QPointF &norm);
     void ensureAttentionPoint();
     void restoreAttentionPoints(const QVector<QPointF> &pts);
     void pushAttentionPointsUndo(const QVector<QPointF> &before,

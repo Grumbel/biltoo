@@ -39,16 +39,6 @@ public:
         m_selectIds.clear();
     }
 
-    /** Take the front pending bind; false if empty. */
-    bool takeFront(PendingSessionBind *out)
-    {
-        if (m_binds.isEmpty() || !out) {
-            return false;
-        }
-        *out = m_binds.takeFirst();
-        return true;
-    }
-
     /** Take and clear select-on-create session ids. */
     QSet<SessionImageId> takeSelectIds()
     {

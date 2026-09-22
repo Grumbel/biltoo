@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2260-drop-dead-attention-chrome-bind-helpers.** Dead helper cleanup:
+
+1. `KeyboardShortcutsDialog::refreshEnabledStyles` (empty; never called)
+2. `AttentionController::attentionNormForTarget` / `setAttentionNormForTarget`
+   (superseded by multi-point setAttentionPointsForTarget)
+3. `ViewportChrome::noteMousePos` (pan/hover use updatePanPos / setHoverViewPos)
+4. `SessionBindBook::takeFront` (callers use takeBindAt)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2260-drop-dead-attention-chrome-bind-helpers-e6c70e4.bundle HEAD
+```
+
+Next: **2261**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2259-drop-schedule-overview-prev-ladder.** ThumtooCache cleanup:
 
 - Remove unused `scheduleOverviewPixels` (zero call sites; soft/display paths

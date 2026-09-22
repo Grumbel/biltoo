@@ -59,15 +59,6 @@ QVector<QPointF> AttentionController::attentionPointsForTarget() const
     return {};
 }
 
-QPointF AttentionController::attentionNormForTarget() const
-{
-    const QVector<QPointF> pts = attentionPointsForTarget();
-    if (!pts.isEmpty()) {
-        return pts.first();
-    }
-    return QPointF(0.5, 0.5);
-}
-
 void AttentionController::setAttentionPointsForTarget(const QVector<QPointF> &pts)
 {
     const QVector<QPointF> clamped = AttentionGeometry::clampNormPoints(pts);
@@ -95,18 +86,6 @@ void AttentionController::setAttentionPointsForTarget(const QVector<QPointF> &pt
         m_view->viewport()->update();
     }
     emit m_view->statusChanged();
-}
-
-void AttentionController::setAttentionNormForTarget(const QPointF &norm)
-{
-    QVector<QPointF> pts = attentionPointsForTarget();
-    const QPointF clamped = AttentionGeometry::clampNorm(norm);
-    if (pts.isEmpty()) {
-        pts.append(clamped);
-    } else {
-        pts[0] = clamped;
-    }
-    setAttentionPointsForTarget(pts);
 }
 
 void AttentionController::ensureAttentionPoint()
