@@ -258,6 +258,11 @@ ImageView::ImageView(QWidget *parent)
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::durableTilesReady, this,
             [this](const QString &path) {
                 Q_UNUSED(path);
+                // Warm durable discovery can fire during the Gallery size gate —
+                // do not start tile I/O while probes own the Store/CPU.
+                if (m_gallerySizeResolve.active()) {
+                    return;
+                }
                 // Pyramid appeared mid-session; start tile pump if already in band.
                 m_displayPipeline.tickPrimaryTileLod(8);
             });

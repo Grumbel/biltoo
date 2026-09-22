@@ -498,8 +498,12 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     scheduleLayoutRefresh();
                     // Re-arm visible loads: rows that waited for size can proceed
                     // (LQIP + tiles for the viewport only, not the whole session).
+                    // Do not restart an already-running timer — continuous sizeReady
+                    // would starve loads the same way progressive pack was starved.
                     if (m_scrollLoadTimer) {
-                        m_scrollLoadTimer->start();
+                        if (!m_scrollLoadTimer->isActive()) {
+                            m_scrollLoadTimer->start();
+                        }
                     } else {
                         scheduleVisibleThumbnailLoads();
                     }

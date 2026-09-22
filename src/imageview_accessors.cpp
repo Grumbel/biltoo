@@ -17,6 +17,9 @@ void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
     const bool progressive = m_gallerySizeResolve.active();
     m_layoutDebounce.arm(reason, progressive);
     if (!m_layoutDebounceTimer) {
+        if (progressive) {
+            m_gallery.ensurePlaceholders();
+        }
         m_gallery.applyLayout(reason);
         return;
     }

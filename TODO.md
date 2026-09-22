@@ -2,6 +2,30 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.5-durableTilesReady-gate-and-filmstrip-timer.** Validate 2290.4 gap + fix:
+
+1. **durableTilesReady gate skip was missing** — 2290.4 commit message claimed it;
+   the `m_gallerySizeResolve.active()` early-return never landed in `imageview.cpp`.
+   Applied for real: no `tickPrimaryTileLod` while the size gate is active.
+2. **Filmstrip visible-load starvation** — continuous `sizeReady` kept restarting
+   the 80ms scroll load timer so viewport thumbs never loaded until probes paused.
+   Only start the timer when it is not already active.
+3. **Null debounce timer path** — progressive pack without a QTimer now calls
+   `ensurePlaceholders` before `applyLayout` (same as max-wait / timer paths).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.5-durableTilesReady-gate-and-filmstrip-timer-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.4-coalesce-ensure-pack-no-tile-tick-during-gate.** Validate + fix:
 
 1. **ensurePlaceholders per sizeReady** — O(session) create scan on every probe
