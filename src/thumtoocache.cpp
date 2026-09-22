@@ -744,6 +744,34 @@ void noteCachedSize(const QString &path, const QSize &size)
 QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob);
 #endif
 
+/** Prefer EXIF/container JPEG underlay over ThumbHash LQIP; never tiles. */
+static void putEmbeddedOrLqipUnderlay(const QString &path,
+                                      const thumtoo::SizeReply &reply)
+{
+    if (path.isEmpty() || ImageCache::has(path)) {
+        return;
+    }
+    if (reply.embedded && !reply.embedded->bytes.empty()) {
+        QImage emb;
+        if (emb.loadFromData(reply.embedded->bytes.data(),
+                             static_cast<int>(reply.embedded->bytes.size()),
+                             "JPEG")
+            && !emb.isNull()) {
+            ImageCache::put(path, emb);
+            return;
+        }
+    }
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+    if (reply.lqip && !reply.lqip->empty()) {
+        const QImage lqip = qimageFromLqipBlob(*reply.lqip);
+        if (!lqip.isNull()) {
+            ImageCache::put(path, lqip);
+        }
+    }
+#endif
+}
+
+
 void requestSizeAsync(const QString &path,
                       std::function<void(bool ok, const QSize &size, const QImage &lqip)> callback)
 {
@@ -775,19 +803,25 @@ void requestSizeAsync(const QString &path,
             callback(false, QSize(), QImage());
             return;
         }
-        c->request_size(uri, [callback](std::string, thumtoo::SizeReply reply) {
+        c->request_size(uri, [callback, path](std::string, thumtoo::SizeReply reply) {
             if (!reply.size) {
                 callback(false, QSize(), QImage());
                 return;
             }
             const QSize sz(reply.size->width, reply.size->height);
-            QImage lqip;
+            putEmbeddedOrLqipUnderlay(path, reply);
+            QImage underlay = ImageCache::get(path);
+            if (underlay.isNull() && reply.embedded && !reply.embedded->bytes.empty()) {
+                underlay.loadFromData(reply.embedded->bytes.data(),
+                                      static_cast<int>(reply.embedded->bytes.size()),
+                                      "JPEG");
+            }
 #if defined(BILTOO_HAVE_THUMTOO_LQIP)
-            if (reply.lqip && !reply.lqip->empty()) {
-                lqip = qimageFromLqipBlob(*reply.lqip);
+            if (underlay.isNull() && reply.lqip && !reply.lqip->empty()) {
+                underlay = qimageFromLqipBlob(*reply.lqip);
             }
 #endif
-            callback(true, sz, lqip);
+            callback(true, sz, underlay);
         });
     };
     if (QThread::isMainThread()) {
@@ -1999,14 +2033,7 @@ void preparePaths(const QStringList &paths)
             if (path.isEmpty() || !reply.size) {
                 return;
             }
-#if defined(BILTOO_HAVE_THUMTOO_LQIP)
-            if (reply.lqip && !reply.lqip->empty() && !ImageCache::has(path)) {
-                const QImage lqip = qimageFromLqipBlob(*reply.lqip);
-                if (!lqip.isNull()) {
-                    ImageCache::put(path, lqip);
-                }
-            }
-#endif
+            putEmbeddedOrLqipUnderlay(path, reply);
             emit bridge()->sizeReady(path, QSize(reply.size->width, reply.size->height));
         });
     });
