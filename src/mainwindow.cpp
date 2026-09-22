@@ -1543,10 +1543,9 @@ void MainWindow::loadSessionSnapshots(const QList<SessionEntrySnapshot> &entries
             st.path = m_session.pathAt(i);
             st.sessionIndex = i;
             // Workspace pose already cleared in sessionSelectionSnapshots.
+            // Path-XDG seed skips when hasContentAppearance is already set
+            // (applyStoredContentAppearanceSeed); no private seed-book API needed.
             m_imageView->setSessionAppearance(st.sessionId, st);
-            // Path-XDG seed (prepareExpandedSession) skips when content ops exist;
-            // mark attempted so wantAppearanceForItem does not re-hit locatorId.
-            m_imageView->hostDisplayPipeline().markAppearanceSeedAttempted(st.sessionId);
         }
     };
     installTransferredAppearance();

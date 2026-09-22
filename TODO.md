@@ -2,22 +2,20 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2337-export-page-ref-overwrite.**
+**Tip: biltoo-2338-open-selection-no-private-seed-api.**
 
-Fix: Export Images to folder refused PDF `//page:N` (and other virtual paths)
-because `QFileInfo::canonicalFilePath()` on refs is empty or collapses `//`,
-so empty==empty looked like overwriting the source. Virtual paths never
-collide; real-file compare requires non-empty canonical. Stems for page /
-archive / pdf-image refs use parsed names (`book_p2`, member basename).
+Fix: do not call private DisplayPipelineController::markAppearanceSeedAttempted
+from MainWindow. Transferred appearance already wins over path-XDG seed via
+hasContentAppearance in applyStoredContentAppearanceSeed.
 
-Requires **thumtoo-323**. Includes 2318–2336.
+Requires **thumtoo-323**. Includes 2318–2337.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2337.1-export-page-ref-overwrite-2f201f6.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2338.1-open-selection-no-private-seed-api-2f201f6.bundle HEAD
 ```
 
-Next: **2338**.
+Next: **2339**.
 
 ## Backlog
 - Gallery-canvas drag reorder (drag tiles on the packed canvas itself)
