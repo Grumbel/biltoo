@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.13-noteProbeSettled-no-hud-sweep.** Validate chunked sizeReady:
+
+- `noteProbeSettled` called `updateProgressHud()` on **every** successful settle.
+  That function sweeps all remaining pending + `setCentreProgress`. With chunked
+  memo delivery (16/turn) this was O(pending) work per path and kept freezing
+  the GUI during size resolve.
+- Progress HUD is owned by the 100ms timer only; settle still calls
+  `onSizeResolvePathSettled` / `finish()` when pending empties.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.13-noteProbeSettled-no-hud-sweep-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.12-no-warm-sizeReady-queue-chunks.** Further GUI flood:
 
 1. **First sizeReady chunk still ran synchronously** on the GUI inside

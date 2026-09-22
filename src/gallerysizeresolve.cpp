@@ -137,7 +137,9 @@ void GallerySizeResolve::noteProbeSettled(const QString &path, bool sizeValid)
         }
     }
     if (!m_pending.isEmpty()) {
-        updateProgressHud();
+        // Do not updateProgressHud here — it sweeps all pending + setCentreProgress
+        // on every sizeReady. Chunked memo delivery (16/turn) made that O(n) per
+        // path and froze the GUI. The 100ms progress timer owns the HUD.
         return;
     }
     finish();
