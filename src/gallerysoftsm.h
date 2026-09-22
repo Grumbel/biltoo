@@ -16,7 +16,7 @@
  * Invariants:
  * 1. needsSchedule is false when anyFull (tile already has FullSource).
  * 2. needsSchedule is false when have covers want and no blank tile.
- * 3. LQIP have never counts as PreferCache plateau (gaveUpWant ignored if have ≤ lqip).
+ * 3. LQIP have never counts as PreferCache plateau (have ≤ lqip still schedules).
  * 4. Host install uses FullSource when hostEdge > softMax — never SoftPreview
  *    for large host samples (SoftPreview clamp would leave shown << host forever).
  * 5. Host install is a no-op when shown already covers host (strict upgrade only).
@@ -87,7 +87,6 @@ struct State {
     int have = 0;
     int want = 0;
     int inflight = 0;
-    int gaveUpWant = 0;
     int ensureAttempts = 0;
     /** True after failed/max attempts — needsSchedule must stay false. */
     bool terminal = false;
@@ -97,8 +96,7 @@ struct State {
 };
 
 /** Decode-window: should PathRaster ensure run for this path? */
-inline bool needsSchedule(const State &st, int wantEdge, bool anyBlank, bool anyFull,
-                          int lqipCeiling = kDefaultLqipCeiling)
+inline bool needsSchedule(const State &st, int wantEdge, bool anyBlank, bool anyFull)
 {
     if (st.failed || st.terminal || anyFull) {
         return false;
@@ -108,9 +106,6 @@ inline bool needsSchedule(const State &st, int wantEdge, bool anyBlank, bool any
         return false;
     }
     if (st.have >= wantEdge && !anyBlank) {
-        return false;
-    }
-    if (st.gaveUpWant >= wantEdge && !anyBlank && st.have > lqipCeiling) {
         return false;
     }
     if (st.inflight > 0 && st.have >= kSoftProgressFloor && !anyBlank) {

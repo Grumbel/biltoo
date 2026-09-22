@@ -43,21 +43,19 @@ void GallerySoftSmTest::needs_schedule_lqip_not_plateau()
 {
     State st;
     st.have = 16;
-    st.gaveUpWant = 512;
-    // LQIP must still schedule despite gaveUpWant
+    // LQIP underlay must still schedule PreferCache / decode-window work
     QVERIFY(needsSchedule(st, 512, false, false));
 }
 
 void GallerySoftSmTest::needs_schedule_lqip_ceiling_edge()
 {
-    // have == kDefaultLqipCeiling (96): still LQIP, must not plateau-block.
+    // have == kDefaultLqipCeiling (96): still LQIP, must schedule.
     State st;
     st.have = kDefaultLqipCeiling;
-    st.gaveUpWant = 512;
     QVERIFY(needsSchedule(st, 512, false, false));
-    // One pixel above LQIP may plateau when gaveUp covers want.
+    // Above LQIP but below want: still needs schedule (no PreferCache plateau field).
     st.have = kDefaultLqipCeiling + 1;
-    QVERIFY(!needsSchedule(st, 512, false, false));
+    QVERIFY(needsSchedule(st, 512, false, false));
 }
 
 void GallerySoftSmTest::needs_schedule_inflight_soft()

@@ -309,7 +309,6 @@ struct WorkspaceItemState {
  * have       — best installed long edge (LQIP / host sample) for this path
  * want       — last on-screen need from decode-window pass
  * inflight   — concurrency token (0 = idle); at most one per path
- * gaveUpWant — unused for Gallery soft climb (historical field)
  * failed     — permanent hard failure for this path
  */
 struct GallerySoftState : GallerySoft::State {

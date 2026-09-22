@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2274-drop-gallery-soft-gave-up-want.** Dead state cleanup:
+
+- Remove `GallerySoft::State::gaveUpWant` (never written outside tests; PreferCache
+  plateau path was dead). Drop the matching `needsSchedule` branch and the
+  unused `lqipCeiling` parameter. Update unit tests.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2274.1-drop-gallery-soft-gave-up-want-e6c70e4.bundle HEAD
+```
+
+Next: **2275**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2273-drop-unbindall-bindbook-path-index.** Dead surface cleanup:
 
 1. DisplaySurfaceController: remove never-defined/never-called `unbindAll`
