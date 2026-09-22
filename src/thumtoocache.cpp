@@ -1792,13 +1792,11 @@ void warmSessionOpenMemos(const QStringList &paths)
         if (p.isEmpty()) {
             return;
         }
-        // Missing size/LQIP is a normal empty result for unsupported.
-        const QSize sz = cachedSize(p, /*scheduleRevalidate=*/false);
-        // Notify host (Gallery size gate) when async warm fills a memo — do not
-        // wait for the progress-timer sweep or a separate scheduleProbe.
-        if (sz.isValid() && sz.width() > 0 && sz.height() > 0) {
-            emit bridge()->sizeReady(p, sz);
-        }
+        // Fill process size memo (+ LQIP into ImageCache). Do NOT emit sizeReady
+        // per path — concurrent warm + scheduleProbeBatch double-flooded the
+        // GUI with hundreds of handlers. Gate progress timer sweeps memos;
+        // scheduleProbeBatch delivers memo hits in chunks.
+        (void)cachedSize(p, /*scheduleRevalidate=*/false);
 #if defined(BILTOO_HAVE_THUMTOO_LQIP)
         if (!ImageCache::has(p)) {
             const QImage lqip = cachedLqipImage(p);

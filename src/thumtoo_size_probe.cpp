@@ -62,11 +62,9 @@ void emitSizeReadyChunked(QVector<QPair<QString, QSize>> hits)
             QTimer::singleShot(0, b, [deliver, end]() { (*deliver)(end); });
         }
     };
-    if (QThread::isMainThread()) {
-        (*deliver)(0);
-    } else {
-        QTimer::singleShot(0, b, [deliver]() { (*deliver)(0); });
-    }
+    // Always queue — never run the first chunk synchronously on the GUI
+    // inside scheduleProbeBatch / startIfNeeded (that still froze open).
+    QTimer::singleShot(0, b, [deliver]() { (*deliver)(0); });
 }
 
 void finishProbeSlot(const QString &pathCopy, bool ok, const QSize &size,

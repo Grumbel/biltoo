@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.12-no-warm-sizeReady-queue-chunks.** Further GUI flood:
+
+1. **First sizeReady chunk still ran synchronously** on the GUI inside
+   `scheduleProbeBatch` / `startIfNeeded` (16 handlers before yield). All
+   chunks now start via `QTimer::singleShot(0)`.
+2. **`warmSessionOpenMemos` emitted `sizeReady` for every warm size** while
+   `scheduleProbeBatch` also delivered memo hits → double flood. Warm now only
+   fills process size memo + ImageCache LQIP; the gate progress timer sweeps
+   memos; batch delivers remaining hits in chunks.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.12-no-warm-sizeReady-queue-chunks-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.11-chunked-sizeReady.** GUI freeze on warm/memo size open:
 
 - `scheduleProbeBatch` emitted **every** process-memo size as a **synchronous**
