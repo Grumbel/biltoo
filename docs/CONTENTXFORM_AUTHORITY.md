@@ -12,8 +12,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
 | Quarter turns / content flips | ItemWorld `contentBake` (SessionImageId) |
 | Crop | ItemWorld `crop` |
 | Grade | ItemWorld `color` |
+| Workspace pose | ItemWorld `Placement` (or Workspace durable snapshot of pose only) |
 
 Assembled by `sessionAppearanceValue(id)` / sparse fill.
+`ItemWorld::hasContentOrient(id)` ≡ `hasContentBake(id) || hasCrop(id)`.
 
 ## Presentation-only (ephemeral)
 
@@ -25,7 +27,7 @@ Meaning: "pixels currently attached were materialized with this Value."
 
 Used for: mid-edit while the same item is live; tile paint orient of host-native tiles.
 
-## Structural rules (2180→2181)
+## Structural rules (2180→2215)
 
 1. **Materialize want** for a new underlay = sparse contentBake/crop only.
 2. **Never** read ItemWorld `applied` residual as want for install (it outlived
@@ -34,21 +36,35 @@ Used for: mid-edit while the same item is live; tile paint orient of host-native
    **clear** ItemWorld applied for that id.
 4. Host pixels in ImageCache are unoriented; `materializeDisplay(host, want)` once.
 5. Tiles stay native grid; paint applies applied (item-local) orient.
+6. **Placement-only** durable rows (Placement and/or Color without contentBake/crop)
+   must not drive layout or materialize orient. Gate:
+   `SessionAppearance::orientAuthorityWant(hasContentOrient, want)` (2211).
+7. **Workspace durable snapshot** (`m_savedItems`) for bound ids is **pose only**
+   (`clearedContentOps` on leave; `updateWorkspaceSavedAppearance` never stamps
+   crop/orient). Restore merges ItemWorld content + snapshot Placement (2212–2214).
+8. **SessionImageId** for content edit / layout / chrome on ImageView goes through
+   `resolveContentEditSessionId` (Image-mode cursor fallback only). Peer sync stays
+   strict `item->sessionId()` (2215).
 
 ## How orient enters the system
 
 1. User rotates → `bakeItemRotate90` → absolute want → `setContentBake` + materialize
-2. XDG seed once if sparse empty (`seedSessionAppearanceFromState`)
+2. XDG seed once if sparse empty (`seedSessionAppearanceFromState`) — **Gallery /
+   Workspace cold pack only**; never Image underlay install/create
 3. Project load → sparse tables
 
 Nothing else may invent quarter turns for Image underlay.
 
-## Image underlay (2181)
+## Image underlay (2181 / 2205)
 
 `installDisplayPixels` in Image mode sets
-`appearance = sessionAppearanceValue(sid)` only (after XDG seed if sparse empty).
-It does **not** call `wantAppearanceForItem`. Applied is written onto the new
-item after materialize to match that sparse want.
+`appearance = sessionAppearanceValue(sid)` then
+`orientAuthorityWant(hasContentOrient(sid), appearance)`.
+It does **not** call `wantAppearanceForItem` and does **not** path-XDG seed.
+Applied is written onto the new item after materialize to match that sparse want.
+
+`createItemFromImage` / `contentLayoutSize` / `applyContentLayoutSize` /
+`wantAppearanceForItem` use the same orient-authority gate.
 
 ## First open Workspace→Image (2182)
 

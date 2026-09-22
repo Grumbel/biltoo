@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2216-contentxform-authority-docs.** Document the 2205–2215 orient /
+Workspace snapshot authority stack in `docs/CONTENTXFORM_AUTHORITY.md`:
+
+- `hasContentOrient` / `orientAuthorityWant`
+- Image underlay: no path-XDG; orientAuthorityWant after sparse read
+- Workspace `m_savedItems` pose-only for bound; Placement bridge restore
+- `resolveContentEditSessionId` for ImageView content paths
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2216-contentxform-authority-docs-e6c70e4.bundle HEAD
+```
+
+Next: **2217**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2215-resolve-content-edit-session-id.** ImageView content paths
 resolve SessionImageId through one helper:
 

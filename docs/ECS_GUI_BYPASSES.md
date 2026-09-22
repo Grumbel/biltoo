@@ -161,6 +161,9 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 - Image pending soft: no mode-stash (2174)  
 - `tileNativeSize` refuses oriented layout as native (2172)
 - `SessionAppearance::orientAuthorityWant` (2211) — single gate for placement-only strip
+- Workspace bound snapshot pose-only + Placement bridge restore (2212–2214)
+- `resolveContentEditSessionId` for ImageView content paths (2215)
+- Normative summary: [CONTENTXFORM_AUTHORITY.md](CONTENTXFORM_AUTHORITY.md) (2216)
 
 ## Work status
 
