@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2300-gallery-selection-ring.**
+
+Gallery selection frames: dark 7px outer + cyan 3px inner (cosmetic) + light
+cyan wash so selection is obvious on light and dark tiles.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2300-gallery-selection-ring-c0bffd5.bundle HEAD
+```
+
+Next: **2301**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2299-filmstrip-click-policy.**
 
 Filmstrip click policy cleanup:

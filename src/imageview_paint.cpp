@@ -236,12 +236,18 @@ void ImageView::paintGallerySelectionFrames(QPainter *painter, const QRectF &exp
         return;
     }
     painter->save();
-    QPen pen(QColor(0, 180, 255, 255), 0);
-    pen.setCosmetic(true);
-    pen.setWidthF(4.0);
-    painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
     painter->setRenderHint(QPainter::Antialiasing, true);
+    // Double ring so selection reads on light and dark tiles (single cyan was
+    // easy to lose). Cosmetic widths = device pixels under any zoom.
+    QPen outer(QColor(0, 0, 0, 200));
+    outer.setCosmetic(true);
+    outer.setWidthF(7.0);
+    QPen inner(QColor(0, 200, 255, 255));
+    inner.setCosmetic(true);
+    inner.setWidthF(3.0);
+    // Soft wash so the cell is obviously "in" the selection set.
+    const QColor wash(0, 180, 255, 36);
     for (QGraphicsItem *gi : selected) {
         auto *item = qgraphicsitem_cast<ImageItem *>(gi);
         if (!item || item->isInteractive()) {
@@ -254,7 +260,13 @@ void ImageView::paintGallerySelectionFrames(QPainter *painter, const QRectF &exp
         if (!exposed.isNull() && !exposed.intersects(bounds)) {
             continue;
         }
-        // Cosmetic stroke sits on the edge; drawPolygon follows rotated/sheared cells.
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(wash);
+        painter->drawPolygon(scenePoly);
+        painter->setBrush(Qt::NoBrush);
+        painter->setPen(outer);
+        painter->drawPolygon(scenePoly);
+        painter->setPen(inner);
         painter->drawPolygon(scenePoly);
     }
     painter->restore();
