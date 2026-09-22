@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2256-drop-path-raster-want-edge.** PathRaster cleanup:
+
+- Remove unused `PathRasterService::wantEdge` (zero call sites; callers use
+  ensure / isGaveUp / haveEdge). Docs updated.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2256-drop-path-raster-want-edge-e6c70e4.bundle HEAD
+```
+
+Next: **2257**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2255-drop-clear-prefer-gave-up-live-color-lag.** Dead raster/color API:
 
 1. Remove `PathRasterService::clearPreferGaveUp` (zero call sites; PreferCache

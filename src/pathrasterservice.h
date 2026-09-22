@@ -43,7 +43,6 @@ public:
     QImage best(const QString &path, int minLongEdge = 0) const;
 
     int haveEdge(const QString &path) const;
-    int wantEdge(const QString &path) const;
     bool isGaveUp(const QString &path) const;
     bool isClimbPending(const QString &path) const;
 

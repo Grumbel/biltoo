@@ -102,12 +102,6 @@ int PathRasterService::haveEdge(const QString &path) const
     return 0;
 }
 
-int PathRasterService::wantEdge(const QString &path) const
-{
-    const auto it = m_state.constFind(path);
-    return it != m_state.cend() ? it->machine.state().want : 0;
-}
-
 bool PathRasterService::isGaveUp(const QString &path) const
 {
     const auto it = m_state.constFind(path);

@@ -50,7 +50,7 @@ PreferCache does **not** guarantee `got ≈ request`. Plateau is normal. Raising
 ```text
 ensure(path, wantEdge, knownNative?, policy = SoftDisplay)
 noteDelivery(path, requestEdge, image) → put cache, emit rasterImproved, pump
-best / haveEdge / wantEdge / isGaveUp / isClimbPending
+best / haveEdge / isGaveUp / isClimbPending
 invalidateAll()           — session switch
 ```
 
