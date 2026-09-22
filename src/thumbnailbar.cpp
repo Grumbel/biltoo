@@ -533,14 +533,9 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                         haveEdge =
                             it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
                     }
-                    // Soft stand-in still upgrades when display edge is higher.
+                    // Soft is only an underlay — keep climbing until strip edge.
                     if (haveEdge >= decodeSize && !wasAwaiting) {
                         continue;
-                    }
-                    if (haveEdge > DisplayQuality::kLqipMaxEdge
-                        && decodeSize <= ThumtooCache::kGalleryLadderEdge
-                        && !wasAwaiting) {
-                        continue; // soft PreferCache plateau terminal
                     }
                     m_thumbAwaitLadder.remove(i);
                     m_thumbLoadScheduled.remove(i);
@@ -959,10 +954,6 @@ int ThumbnailBar::pendingLoadCount() const
             it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
         if (haveEdge >= decodeSize) {
             continue;
-        }
-        if (haveEdge > DisplayQuality::kLqipMaxEdge
-            && decodeSize <= ThumtooCache::kGalleryLadderEdge) {
-            continue; // soft plateau terminal for soft-band strip
         }
         if (it->data(ThumbnailDelegate::ThumbLoadedRole).toBool()
             && haveEdge > 0) {
@@ -1754,9 +1745,7 @@ void ThumbnailBar::filmstripSurfaceTick()
         // Already meets filmstrip display edge — settled. Do not re-prepare
         // from host every 1.5s (that spammed setThumbnailIcon forever whenever
         // hostEdge > shown, even at target).
-        if (shown >= decodeSize
-            || (shown > DisplayQuality::kLqipMaxEdge
-                && decodeSize <= ThumtooCache::kGalleryLadderEdge)) {
+        if (shown >= decodeSize) {
             m_thumbAwaitLadder.remove(i);
             m_thumbLoadScheduled.remove(i);
             continue;
@@ -1823,9 +1812,7 @@ void ThumbnailBar::filmstripSurfaceTick()
                     if (newShown > shown) {
                         setThumbnailIcon(i, thumb);
                     }
-                    if (newShown >= decodeSize
-                        || (newShown > DisplayQuality::kLqipMaxEdge
-                            && decodeSize <= ThumtooCache::kGalleryLadderEdge)) {
+                    if (newShown >= decodeSize) {
                         m_thumbAwaitLadder.remove(i);
                         m_thumbLoadScheduled.remove(i);
                         continue;
@@ -1989,10 +1976,6 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                 it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
             if (haveEdge >= decodeSize) {
                 continue;
-            }
-            if (haveEdge > DisplayQuality::kLqipMaxEdge
-                && decodeSize <= ThumtooCache::kGalleryLadderEdge) {
-                continue; // soft PreferCache plateau terminal
             }
             // LQIP underlay is not settled — still need soft/overview for strip edge.
         }

@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.22-filmstrip-no-soft-plateau.**
+
+Filmstrip stayed soft/pixelated then only reached ~512 because several paths
+treated **any host sample > LQIP** as terminal when `decodeSize ≤ 512`
+("soft PreferCache plateau"). Product path is LQIP + tiles to strip edge —
+soft is underlay only.
+
+Removed all soft-plateau terminal checks; climb continues until
+`haveEdge >= filmstripDecodeEdge()`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.22-filmstrip-no-soft-plateau-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.21-overlay-coords-filmstrip-midscroll.**
 
 ### DEBUG_OVERLAY tile washes in BR quarter
