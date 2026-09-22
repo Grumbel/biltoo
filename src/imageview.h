@@ -339,8 +339,6 @@ public:
      */
     void revealGallerySessionId(SessionImageId sessionId);
     void removeWorkspaceSessionId(SessionImageId sessionId);
-    /** Assign sequential session indices to currently selected items starting at @p first. */
-    void bindSelectedSessionIndices(int firstSessionIndex);
     /**
      * Recovery: bind selected unbound tiles to @p ids (order of selection walk).
      * Normal Duplicate binds on create; prefer that path.

@@ -154,21 +154,6 @@ void ImageView::setCurrentSessionId(SessionImageId id)
 }
 
 
-void ImageView::bindSelectedSessionIndices(int firstSessionIndex)
-{
-    if (firstSessionIndex < 0) {
-        return;
-    }
-    int next = firstSessionIndex;
-    for (ImageItem *item : m_items) {
-        if (item->isSelected()) {
-            item->setSessionIndex(next);
-            ++next;
-        }
-    }
-}
-
-
 void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
 {
     // Recovery path only: normal Duplicate binds on create (biltoo-2109).

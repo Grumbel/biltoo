@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2247-drop-bind-selected-session-indices.** Session identity cleanup:
+
+- Remove dead `ImageView::bindSelectedSessionIndices` (only stamped deprecated
+  list-order sessionIndex cache; zero call sites). Keep `bindSelectedSessionIds`
+  recovery API.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2247-drop-bind-selected-session-indices-e6c70e4.bundle HEAD
+```
+
+Next: **2248**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2246-drop-unused-pending-pixels-scroll-offset.** Dead API cleanup:
 
 1. Collapse `resolveImageModePendingPixels` overloads — single signature with
