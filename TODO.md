@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2284-gallery-size-authority-pixels.** Size-first enforcement:
+
+1. `scheduleGalleryDecode` — requires definitive size (or skip on failure); no
+   LQIP/tiles before size is known
+2. `installDisplayPixels` (Gallery) — refuses install when size unknown/failed
+3. `applyContentLayoutSize` — Gallery does not invent intrinsic before definitive
+4. `setItemIntrinsicSize` — Gallery rejects tiny sample boxes over definitive native
+5. HUD after sizes: `Loading tiles…` with `N / M cells have pixels`
+6. Docs: LAYOUT_GROUND_TRUTH anti-pattern noted
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2284.1-gallery-size-authority-pixels-e6c70e4.bundle HEAD
+```
+
+Next: **2285** (background pyramid priority ladder / SizeAuthority consolidation).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2283-gallery-size-first-batch-ordered.** Cold Gallery size path:
 
 1. **Batch size probes** — `ThumtooCache::scheduleProbeBatch` with bounded

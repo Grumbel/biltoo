@@ -653,9 +653,17 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
         return;
     }
     // Gallery: LQIP placeholder + tiles only. Soft PreferCache is removed.
-
-    if (m_view->hostSizeBook().isProvisional(path) || !ThumtooCache::cachedSize(path).isValid()) {
-        m_view->scheduleImageSizeProbe(path);
+    // Size is ground truth: never install samples or schedule tiles before a
+    // definitive native size (or explicit probe failure).
+    {
+        const ImageSizeBook &book = m_view->hostSizeBook();
+        if (book.isFailed(path)) {
+            return;
+        }
+        if (!book.hasDefinitive(path)) {
+            m_view->scheduleImageSizeProbe(path);
+            return;
+        }
     }
 
     bool anyTileWanted = false;
@@ -693,8 +701,9 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
     st.have = GalleryDecode::maxHave(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
     if (anyTileWanted && !m_view->hostGallerySizeResolve().active()) {
-        // Size must be known before pyramid encode (expensive). Wait for resolve.
-        if (!ThumtooCache::cachedSize(path).isValid()) {
+        // Size must be known before pyramid encode (expensive).
+        if (!m_view->hostSizeBook().hasDefinitive(path)
+            && !ThumtooCache::cachedSize(path).isValid()) {
             return;
         }
         // Only encode a pyramid when Store has no durable coverage yet.

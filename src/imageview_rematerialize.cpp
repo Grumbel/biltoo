@@ -241,6 +241,10 @@ void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState
     const QString path = item->path();
     QSize fileNative = logicalSizeForPath(path);
     if (!isPositiveSize(fileNative) || fileNative.width() <= 1 || fileNative.height() <= 1) {
+        // Gallery: never invent intrinsic from samples/crop before definitive size.
+        if (isGalleryMode() && !m_sizeBook.hasDefinitive(path) && !m_sizeBook.isFailed(path)) {
+            return;
+        }
         // Fall back: crop rect in recorded source space, or orient-only current.
         if (want.hasCrop && !want.cropRect.isEmpty()) {
             const QSize basis = (want.cropSourceSize.isValid()

@@ -899,6 +899,16 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
         return;
     }
     const QString path = item->path();
+    // Gallery: pixels never precede definitive size (layout authority).
+    if (m_view->isGalleryMode() && !path.isEmpty()) {
+        const ImageSizeBook &book = m_view->hostSizeBook();
+        if (book.isFailed(path)) {
+            return;
+        }
+        if (!book.hasDefinitive(path)) {
+            return;
+        }
+    }
     // Crop draft owns the live sample — ladder/async must not replace it
     // (store want still has crop → wrong bake; soft↔full thrash).
     if (m_view->hostCrop().isCropDraftLockedItem(item) || m_view->hostCrop().isCropDraftLockedPath(path)) {

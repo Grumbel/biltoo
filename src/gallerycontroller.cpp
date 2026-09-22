@@ -1440,11 +1440,35 @@ void GalleryController::updateSoftProgressHud()
     if (!m_view->isGalleryMode()) {
         return;
     }
-    // LQIP is a free durable placeholder, not a user-facing "preview stage".
-    // Never show "Improving previews… LQIP" — that was noise and mis-sold the product.
-    if (m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Improving previews"))) {
-        m_view->clearCentreProgress();
+    // Size gate owns the centre HUD while probes run.
+    if (m_view->hostGallerySizeResolve().active()) {
+        return;
     }
+    // After sizes: show decode progress when cells still need LQIP/tiles.
+    int blank = 0;
+    int total = 0;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        ++total;
+        if (!item->hasDisplayPixels()) {
+            ++blank;
+        }
+    }
+    if (total == 0 || blank == 0) {
+        if (m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Loading tiles"))
+            || m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Improving previews"))) {
+            m_view->clearCentreProgress();
+        }
+        return;
+    }
+    // Only show when a meaningful fraction is still blank (avoid flicker on one cell).
+    if (blank < 2 && total > 8) {
+        return;
+    }
+    const QString detail = m_view->tr("%1 / %2 cells have pixels").arg(total - blank).arg(total);
+    m_view->setCentreProgress(m_view->tr("Loading tiles…"), detail);
 }
 
 void GalleryController::setGridColumns(int columns)

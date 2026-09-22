@@ -40,6 +40,7 @@ input to `ContentXform::layoutSize`, or via `contentLayoutSize`.
 ## Anti-patterns
 
 - Override / soft **pixmap size** as aspect
+- Gallery `installDisplayPixels` / `scheduleGalleryDecode` before definitive size
 - Path crop as layout for **bound** `SessionImageId` rows
 - `layoutSizeForPath` alone as pack/placeholder intrinsic for oriented rows
 - Tile LOD treating oriented `imageSize()` as file-native (`tileNativeSize`)

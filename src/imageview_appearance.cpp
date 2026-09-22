@@ -210,6 +210,21 @@ void ImageView::setItemIntrinsicSize(ImageItem *item, const QSize &size)
     if (!item) {
         return;
     }
+    // Gallery: sample / LQIP dimensions must never replace definitive layout.
+    if (isGalleryMode() && isPositiveSize(size)) {
+        const QString path = item->path();
+        if (!path.isEmpty() && m_sizeBook.hasDefinitive(path) && !m_sizeBook.isFailed(path)) {
+            const QSize known = m_sizeBook.known(path);
+            if (isPositiveSize(known)) {
+                const qint64 aNew = qint64(size.width()) * size.height();
+                const qint64 aKnown = qint64(known.width()) * known.height();
+                // Reject tiny sample boxes (e.g. LQIP) overwriting real native layout.
+                if (aKnown > 0 && aNew * 4 < aKnown) {
+                    return;
+                }
+            }
+        }
+    }
     item->setIntrinsicSize(size);
 }
 
