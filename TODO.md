@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2220-pipeline-resolve-item-session-id-adopt.** Further
+`resolveItemSessionId` adoption:
+
+1. Display surface climb path (was item/cursor without Image-mode guard)
+2. `completeLoadRestore` grade/rematerialize sid (item + snapshot preferred)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2220-pipeline-resolve-item-session-id-adopt-e6c70e4.bundle HEAD
+```
+
+Next: **2221**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2219-pipeline-resolve-item-session-id.** DisplayPipelineController
 mirrors ImageView session-id policy:
 

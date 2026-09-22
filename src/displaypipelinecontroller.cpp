@@ -776,12 +776,7 @@ void DisplayPipelineController::driveImageFocusSurface()
     if (!item || item->path() != path) {
         return;
     }
-    SessionImageId sid = b->sessionId;
-    if (sid == kInvalidSessionImageId) {
-        sid = item->sessionId() != kInvalidSessionImageId ? item->sessionId()
-                                                          : m_view->hostSessionId().currentIdValue();
-    }
-
+    const SessionImageId sid = resolveItemSessionId(item, b->sessionId);
     Q_UNUSED(sid);
     {
         const auto pol =

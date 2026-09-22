@@ -831,9 +831,7 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     // async multi-MP). Do not bake chrome-only on multi-MP — cannot
     // bake crop on the GUI and used to claim applied == want without pixels.
     {
-        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-            ? item->sessionId()
-            : state.sessionId;
+        const SessionImageId sid = resolveItemSessionId(item, state.sessionId);
         if (sid != kInvalidSessionImageId) {
             app.colorAdjust = m_view->itemWorld().color(sid).grade;
         }
