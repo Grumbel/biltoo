@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2223-workspace-placement-lifecycle-docs.** Document the Workspace
+Placement bridge lifecycle in CONTENTXFORM_AUTHORITY:
+
+leave snapshot → mid-edit updateWorkspaceSavedAppearance → restore /
+completeLoadRestore. All three use placementFromState / applyPlacementToState;
+bound content stays ItemWorld-only.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2223-workspace-placement-lifecycle-docs-e6c70e4.bundle HEAD
+```
+
+Next: **2224**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2222-workspace-saved-full-placement.** Mid-edit Workspace snapshot
 update uses the Placement bridge:
 

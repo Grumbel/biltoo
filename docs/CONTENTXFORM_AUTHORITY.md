@@ -27,7 +27,7 @@ Meaning: "pixels currently attached were materialized with this Value."
 
 Used for: mid-edit while the same item is live; tile paint orient of host-native tiles.
 
-## Structural rules (2180→2215)
+## Structural rules (2180→2222)
 
 1. **Materialize want** for a new underlay = sparse contentBake/crop only.
 2. **Never** read ItemWorld `applied` residual as want for install (it outlived
@@ -39,14 +39,30 @@ Used for: mid-edit while the same item is live; tile paint orient of host-native
 6. **Placement-only** durable rows (Placement and/or Color without contentBake/crop)
    must not drive layout or materialize orient. Gate:
    `SessionAppearance::orientAuthorityWant(hasContentOrient, want)` (2211).
-7. **Workspace durable snapshot** (`m_savedItems`) for bound ids is **pose only**
-   (`clearedContentOps` on leave; `updateWorkspaceSavedAppearance` never stamps
-   crop/orient). Restore merges ItemWorld content + snapshot Placement (2212–2214).
+7. **Workspace durable snapshot** (`m_savedItems`) for bound ids is **pose only**.
+   See [Workspace Placement lifecycle](#workspace-placement-lifecycle) below.
 8. **SessionImageId** for content edit / layout / chrome:
    - ImageView: `resolveContentEditSessionId` (2215)
    - DisplayPipelineController: `resolveItemSessionId` (2219–2220)
    Both: preferred / item sid → Image-mode cursor only. Gallery/Workspace unbound
    items never inherit the Image cursor. Peer sync stays strict `item->sessionId()`.
+
+
+## Workspace Placement lifecycle (2212–2222)
+
+Bound SessionImageId pose travels through three sites; all use the Placement
+bridge (`placementFromState` / `applyPlacementToState`). Content never enters
+`m_savedItems` for bound ids.
+
+| Phase | Function | What is stored |
+|-------|----------|----------------|
+| Leave | `WorkspaceController::snapshot` | `clearedContentOps(freeze)` → pose + path/sid only; `setPlacement` into ItemWorld |
+| Mid-edit | `updateWorkspaceSavedAppearance` | Full live Placement onto matching snapshot slots (2222) |
+| Restore | `WorkspaceController::restore` | `slot = sessionAppearanceValue(sid)` then `applyPlacementToState(slot, snapshotPose)` |
+| Load restore | `completeLoadRestore` | Same merge: store content + snapshot Placement |
+
+Unbound path rows may still carry content on the path map; bound ids never
+dual-write crop/orient into the Workspace snapshot.
 
 ## How orient enters the system
 
