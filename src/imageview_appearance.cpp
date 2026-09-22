@@ -24,6 +24,7 @@
 #include "sessionappearance.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
+#include "displayquality.h"
 
 const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
                                                              WorkspaceItemState *fallback,
@@ -210,18 +211,16 @@ void ImageView::setItemIntrinsicSize(ImageItem *item, const QSize &size)
     if (!item) {
         return;
     }
-    // Gallery: sample / LQIP dimensions must never replace definitive layout.
+    // Gallery: LQIP-scale boxes must not replace an already correct layout cell.
+    // Do NOT compare against file-native area — cropped layoutSize is often much
+    // smaller than native and must still apply.
     if (isGalleryMode() && isPositiveSize(size)) {
-        const QString path = item->path();
-        if (!path.isEmpty() && m_sizeBook.hasDefinitive(path) && !m_sizeBook.isFailed(path)) {
-            const QSize known = m_sizeBook.known(path);
-            if (isPositiveSize(known)) {
-                const qint64 aNew = qint64(size.width()) * size.height();
-                const qint64 aKnown = qint64(known.width()) * known.height();
-                // Reject tiny sample boxes (e.g. LQIP) overwriting real native layout.
-                if (aKnown > 0 && aNew * 4 < aKnown) {
-                    return;
-                }
+        const int newEdge = qMax(size.width(), size.height());
+        if (newEdge > 0 && newEdge <= DisplayQuality::kLqipMaxEdge) {
+            const QSize cur = item->imageSize();
+            if (isPositiveSize(cur)
+                && qMax(cur.width(), cur.height()) > DisplayQuality::kLqipMaxEdge * 2) {
+                return;
             }
         }
     }

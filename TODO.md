@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2285-fix-intrinsic-lqip-guard.** Verify + fix 2284:
+
+- `setItemIntrinsicSize` no longer compares against file-native *area* (that
+  rejected valid cropped layoutSize). Guard is now: do not replace an already
+  large layout cell with an LQIP-scale box (max edge ≤ kLqipMaxEdge).
+- Include `displayquality.h` for the LQIP edge constant.
+
+Prior 2283–2284 size-first path remains in effect.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2285.1-fix-intrinsic-lqip-guard-e6c70e4.bundle HEAD
+```
+
+Next: **2286**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2284-gallery-size-authority-pixels.** Size-first enforcement:
 
 1. `scheduleGalleryDecode` — requires definitive size (or skip on failure); no
