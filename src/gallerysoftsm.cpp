@@ -11,21 +11,16 @@ void noteLadderDelivery(State &st, int requestEdge, int gotEdge, int softFloor)
 {
     if (gotEdge > 0) {
         st.have = std::max(st.have, gotEdge);
-        if (gotEdge > kDefaultLqipCeiling) {
-            st.weakSinceMs = 0;
-        }
         // Settled soft band — stop further ensure attempts for this want.
         if (st.want > 0 && covers(st.have, st.want)) {
             st.terminal = true;
             st.inflight = 0;
-            st.inflightSinceMs = 0;
         }
     }
     if (st.inflight > 0
         && (requestEdge >= st.inflight
             || (gotEdge > 0 && requestEdge >= softFloor))) {
         st.inflight = 0;
-        st.inflightSinceMs = 0;
     }
 }
 

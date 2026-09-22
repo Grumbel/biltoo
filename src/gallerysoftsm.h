@@ -91,8 +91,6 @@ struct State {
     /** True after failed/max attempts — needsSchedule must stay false. */
     bool terminal = false;
     bool failed = false;
-    qint64 inflightSinceMs = 0;
-    qint64 weakSinceMs = 0;
 };
 
 /** Decode-window: should PathRaster ensure run for this path? */
@@ -127,7 +125,6 @@ inline void noteEnsureScheduled(State &st, int wantEdge)
     if (st.ensureAttempts >= kMaxEnsureAttempts) {
         st.terminal = true;
         st.inflight = 0;
-        st.inflightSinceMs = 0;
     }
 }
 

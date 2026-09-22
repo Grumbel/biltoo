@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2275-drop-gallery-soft-timestamps.** Dead state cleanup:
+
+- Remove `GallerySoft::State::inflightSinceMs` and `weakSinceMs` — never read,
+  only cleared. Timestamps were vestigial PreferCache-era bookkeeping.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2275.1-drop-gallery-soft-timestamps-e6c70e4.bundle HEAD
+```
+
+Next: **2276**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2274-drop-gallery-soft-gave-up-want.** Dead state cleanup:
 
 - Remove `GallerySoft::State::gaveUpWant` (never written outside tests; PreferCache

@@ -133,7 +133,6 @@ void GallerySoftSmTest::note_ladder_clears_inflight()
 {
     State st;
     st.inflight = 512;
-    st.inflightSinceMs = 123;
     noteLadderDelivery(st, 512, 512, 256);
     QCOMPARE(st.inflight, 0);
     QCOMPARE(st.have, 512);
