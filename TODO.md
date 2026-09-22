@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2236-tiles-own-display-tests.** Tile/PreferCache policy polish:
+
+1. Document why climb loop passes `durable=false` (SoftDisplay underlay until
+   tileLodWanted)
+2. Unit test `DisplayEdgePolicy::tilesOwnDisplay` truth table
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2236-tiles-own-display-tests-e6c70e4.bundle HEAD
+```
+
+Next: **2237**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2235-inline-stored-identity.** Fix link of light unit tests that
 compile `sessionappearance.cpp` without `thumtoocache.cpp`:
 

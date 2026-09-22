@@ -91,7 +91,9 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
         if (m_view->hostCrop().isCropDraftLockedPath(path)) {
             continue;
         }
-        // Deep zoom: tiles own display; skip PreferCache whole-frame climb.
+        // Deep zoom: tileLodWanted means tiles own display — skip PreferCache
+        // whole-frame climb. Durable pyramid alone still allows SoftDisplay
+        // PreferCache underlay until LOD is wanted (durable=false here).
         if (DisplayEdgePolicy::tilesOwnDisplay(ii->tileLodWanted(), false)) {
             continue;
         }

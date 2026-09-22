@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "displaysurface.h"
+#include "displayedgepolicy.h"
 
 #include <QtTest/QtTest>
 
@@ -28,6 +29,8 @@ private slots:
     void decide_climbPending_noDuplicateClimb();
     void controller_bindEvaluate();
     void controller_twoSurfacesIndependentWant();
+    // Tile / PreferCache ownership (2234–2236)
+    void tilesOwnDisplay_policy();
 };
 
 static ContentXform::Value identityXform()
@@ -231,6 +234,16 @@ void DisplaySurfaceTest::controller_twoSurfacesIndependentWant()
     QVERIFY(ctl.setWant(a, other));
     QCOMPARE(ctl.evaluate(a).type, ActionType::ScheduleAsyncMaterialize);
     QCOMPARE(ctl.evaluate(b).type, ActionType::None);
+}
+
+
+void DisplaySurfaceTest::tilesOwnDisplay_policy()
+{
+    using DisplayEdgePolicy::tilesOwnDisplay;
+    QVERIFY(!tilesOwnDisplay(false, false));
+    QVERIFY(tilesOwnDisplay(true, false));
+    QVERIFY(tilesOwnDisplay(false, true));
+    QVERIFY(tilesOwnDisplay(true, true));
 }
 
 QTEST_MAIN(DisplaySurfaceTest)
