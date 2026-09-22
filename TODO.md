@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2214-pose-merge-placement-bridge.** Workspace restore pose merge
+uses the Placement bridge instead of hand-copied fields:
+
+1. `WorkspaceController::restore` — `placementFromState` + `applyPlacementToState`
+   when merging ItemWorld content onto snapshot slots (includes shear).
+2. `completeLoadRestore` — same bridge for snapshot pose onto store appearance.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2214-pose-merge-placement-bridge-e6c70e4.bundle HEAD
+```
+
+Next: **2215**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2213-workspace-snapshot-placement-only.** Workspace leave snapshot
 for bound SessionImageIds is pose-only:
 

@@ -170,7 +170,7 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 | 2 | Filmstrip pixel override parallel store | Override after rotate; **2179** cold paint; **2204** Image pending soft ignores id override |
 | 3 | ImageCache host-raw contract | **2176–2178** see IMAGECACHE_PUT_AUDIT.md |
 | 4 | Applied ContentXform vs store at leave | **2177** flush on setViewMode; **2203** clearLiveContentMeta after flush (no applied on stash) |
-| 5 | Workspace m_savedItems / freeze→Color | **2177** restore; **2194**/**2213** snapshot Placement-only (clearedContentOps); **2195** rememberItemState Placement-only; persist/bind keep durable Color over lag; **2212** updateWorkspaceSavedAppearance Placement-only |
+| 5 | Workspace m_savedItems / freeze→Color | **2177** restore; **2194**/**2213** snapshot Placement-only (clearedContentOps); **2195** rememberItemState Placement-only; persist/bind keep durable Color over lag; **2212** updateWorkspaceSavedAppearance Placement-only; **2214** pose merge via applyPlacementToState |
 | 6 | Incremental bakeRotate90 | **2178** disk host first; **2200** no incremental — clear pixels + async when host missing |
 | 7 | Path/XDG seed / orient authority | **2205** Image no path-XDG seed; **2208–2210** withoutContentOrient + hasContentOrient + wantAppearance strip; **2211** `orientAuthorityWant` + unit tests + path-map bound-write verify |
 

@@ -75,29 +75,15 @@ void WorkspaceController::restore()
     for (WorkspaceItemState &slot : m_savedItems) {
         if (slot.sessionId != kInvalidSessionImageId) {
             if (m_view->itemWorld().hasDurableAppearance(slot.sessionId)) {
-                // Pose from snapshot (incl. placement display flips); content
-                // only from ItemWorld (ECS_GUI_BYPASSES #5 / 2213).
-                const WorkspaceItemState sit = m_view->sessionAppearanceValue(slot.sessionId);
-                const QPointF pos = slot.pos;
-                const qreal scale = slot.scale;
-                const qreal scaleY = slot.scaleY;
-                const qreal rotation = slot.rotation;
-                const qreal opacity = slot.opacity;
-                const qreal z = slot.z;
-                const bool hFlip = slot.hFlip;
-                const bool vFlip = slot.vFlip;
+                // Pose from snapshot (Placement bridge); content only from
+                // ItemWorld (ECS_GUI_BYPASSES #5 / 2213–2214).
+                const ItemComponents::Placement pose =
+                    ItemComponents::placementFromState(slot);
                 const int sessionIndex = slot.sessionIndex;
                 const QString path = slot.path;
                 const SessionImageId sid = slot.sessionId;
-                slot = sit;
-                slot.pos = pos;
-                slot.scale = scale;
-                slot.scaleY = scaleY;
-                slot.rotation = rotation;
-                slot.opacity = opacity;
-                slot.z = z;
-                slot.hFlip = hFlip;
-                slot.vFlip = vFlip;
+                slot = m_view->sessionAppearanceValue(sid);
+                ItemComponents::applyPlacementToState(slot, pose);
                 slot.sessionIndex = sessionIndex;
                 slot.path = path;
                 slot.sessionId = sid;
