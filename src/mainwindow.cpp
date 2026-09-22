@@ -1400,37 +1400,134 @@ void MainWindow::resetItemShear()
     }
 }
 
+QList<int> MainWindow::sessionSelectionIndices() const
+{
+    QList<int> strip;
+    if (m_thumbnailBar) {
+        strip = m_thumbnailBar->selectedIndices();
+    }
+    QList<int> canvas;
+    if (m_imageView && (isGalleryMode() || isWorkspaceMode())) {
+        canvas = m_imageView->selectedSessionIndices();
+        std::sort(canvas.begin(), canvas.end());
+        canvas.erase(std::unique(canvas.begin(), canvas.end()), canvas.end());
+    }
+    // Prefer the larger multi-selection when strip and canvas disagree
+    // (e.g. Gallery multi-select vs single current on the filmstrip).
+    QList<int> indices = strip;
+    if (canvas.size() > strip.size()) {
+        indices = canvas;
+    }
+    if (indices.isEmpty() && m_currentIndex >= 0
+        && m_currentIndex < m_session.paths().size()) {
+        indices.append(m_currentIndex);
+    }
+    std::sort(indices.begin(), indices.end());
+    indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
+    return indices;
+}
+
 QStringList MainWindow::pathsFromUiSelection() const
 {
-    // Prefer filmstrip multi-selection (session order). Image mode used to
-    // ignore the strip and only expose the single primary canvas path.
     QStringList paths;
-    if (m_thumbnailBar) {
-        for (int idx : m_thumbnailBar->selectedIndices()) {
-            if (idx >= 0 && idx < m_session.paths().size()) {
-                paths.append(m_session.paths().at(idx));
-            }
+    for (int idx : sessionSelectionIndices()) {
+        if (idx >= 0 && idx < m_session.paths().size()) {
+            paths.append(m_session.paths().at(idx));
         }
-    }
-    if (!paths.isEmpty()) {
-        return paths;
-    }
-    if (m_imageView) {
-        paths = m_imageView->selectedPaths();
-        if (!paths.isEmpty()) {
-            return paths;
-        }
-    }
-    if (m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-        paths.append(m_session.paths().at(m_currentIndex));
     }
     return paths;
 }
 
+QList<SessionEntrySnapshot> MainWindow::sessionSelectionSnapshots() const
+{
+    QList<SessionEntrySnapshot> out;
+    for (int idx : sessionSelectionIndices()) {
+        if (idx < 0 || idx >= m_session.paths().size()) {
+            continue;
+        }
+        SessionEntrySnapshot snap;
+        snap.index = idx;
+        snap.path = m_session.pathAt(idx);
+        snap.id = m_session.idAt(idx);
+        if (m_imageView && snap.id != kInvalidSessionImageId) {
+            if (m_imageView->hasSessionAppearance(snap.id)) {
+                snap.appearance = m_imageView->sessionAppearanceValue(snap.id);
+                snap.hasAppearance = true;
+            } else if (ImageItem *item = m_imageView->findItemBySessionId(snap.id)) {
+                snap.appearance = m_imageView->freezeItemAppearance(item);
+                snap.hasAppearance = SessionAppearance::hasContentAppearance(snap.appearance)
+                    || snap.appearance.hasCrop;
+            } else if (isImageMode() && m_imageView->primaryItem()
+                       && m_imageView->primaryItem()->sessionId() == snap.id) {
+                snap.appearance = m_imageView->freezeItemAppearance(m_imageView->primaryItem());
+                snap.hasAppearance = SessionAppearance::hasContentAppearance(snap.appearance)
+                    || snap.appearance.hasCrop;
+            }
+            if (snap.hasAppearance) {
+                snap.appearance.sessionId = snap.id;
+                if (snap.appearance.path.isEmpty()) {
+                    snap.appearance.path = snap.path;
+                }
+                // Drop Workspace placement — new window opens in Gallery/Image.
+                snap.appearance.pos = QPointF();
+                snap.appearance.scale = 1.0;
+                snap.appearance.scaleY = 1.0;
+                snap.appearance.shear = 0.0;
+                snap.appearance.rotation = 0.0;
+                snap.appearance.opacity = 1.0;
+                snap.appearance.z = 0.0;
+            }
+        }
+        out.append(snap);
+    }
+    return out;
+}
+
+void MainWindow::loadSessionSnapshots(const QList<SessionEntrySnapshot> &entries, int startAt)
+{
+    if (entries.isEmpty()) {
+        return;
+    }
+    stopSlideshow();
+    SessionOpen::beginReplace(m_imageView, m_thumbnailBar);
+    ++m_expandGeneration;
+    setExpandProgressBusy(false);
+
+    QStringList paths;
+    paths.reserve(entries.size());
+    for (const SessionEntrySnapshot &e : entries) {
+        paths.append(e.path);
+    }
+    // setPaths allocates fresh SessionImageIds (do not reuse source ids).
+    m_session.setPaths(paths);
+    if (m_imageView) {
+        m_imageView->itemWorld().clearAppearance();
+    }
+    m_session.validateUniqueIds("loadSessionSnapshots");
+
+    // Install content appearance onto the new ids (index-aligned).
+    if (m_imageView) {
+        const int n = qMin(entries.size(), m_session.size());
+        for (int i = 0; i < n; ++i) {
+            if (!entries.at(i).hasAppearance) {
+                continue;
+            }
+            WorkspaceItemState st = entries.at(i).appearance;
+            st.sessionId = m_session.idAt(i);
+            st.path = m_session.pathAt(i);
+            st.sessionIndex = i;
+            m_imageView->setSessionAppearance(st.sessionId, st);
+        }
+    }
+
+    // Preserve selection order — do not run sortFileListSync.
+    finishApplyExpandedLoad(startAt);
+}
+
 void MainWindow::openSelectionInNewWindow()
 {
-    const QStringList paths = pathsFromUiSelection();
-    if (paths.isEmpty()) {
+    const QList<SessionEntrySnapshot> entries = sessionSelectionSnapshots();
+    if (entries.isEmpty()) {
         if (statusBar()) {
             statusBar()->showMessage(tr("Nothing selected to open in a new window."), 3000);
         }
@@ -1442,7 +1539,7 @@ void MainWindow::openSelectionInNewWindow()
         window->move(frameGeometry().topLeft() + QPoint(32, 32));
     }
     window->show();
-    window->loadFiles(paths);
+    window->loadSessionSnapshots(entries);
 }
 
 void MainWindow::newWindow()

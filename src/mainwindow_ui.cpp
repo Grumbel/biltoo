@@ -1946,8 +1946,9 @@ void MainWindow::populateActionHelpTexts()
         "<p>Paste Workspace tiles from the clipboard as new session images with "
         "offset placement. Enabled when the clipboard holds Biltoo workspace data.</p>"));
     setHelp(m_openSelectionNewWindowAct, tr(
-        "<p>Open the current selection (filmstrip multi-select or Workspace tiles) in "
-        "a new Biltoo window with its own session. The current window is unchanged.</p>"));
+        "<p>Open the current selection (filmstrip or Gallery/Workspace multi-select) in "
+        "a new Biltoo window. Content appearance — crop, flip, rotation, colour grade — "
+        "is copied; Workspace placement is reset. The current window is unchanged.</p>"));
     setHelp(m_raiseAct, tr(
         "<p>Workspace: raise the selected tile(s) above the next overlapping neighbour "
         "(z-order). Placement scale and content transforms are unchanged.</p>"));

@@ -265,8 +265,23 @@ private slots:
     void openProject();
     /** Open filmstrip/canvas selection in a new MainWindow (WA_DeleteOnClose). */
     void openSelectionInNewWindow();
-    /** Session paths for current UI selection (filmstrip first, then canvas). */
+    /**
+     * Session paths for current UI selection (filmstrip first, then canvas).
+     * Prefer the larger multi-selection when strip and canvas disagree.
+     */
     QStringList pathsFromUiSelection() const;
+    /**
+     * Ordered selection snapshots (path + optional content appearance) for
+     * Open Selection in New Window. Preserves multiplicity and crop/flip/grade.
+     */
+    QList<SessionEntrySnapshot> sessionSelectionSnapshots() const;
+    /**
+     * Replace this window's session with @p entries (new SessionImageIds) and
+     * install content appearance. Does not re-sort (preserves selection order).
+     */
+    void loadSessionSnapshots(const QList<SessionEntrySnapshot> &entries, int startAt = 0);
+    /** Indices for Open Selection (prefer larger multi-select of strip vs canvas). */
+    QList<int> sessionSelectionIndices() const;
     /** Spawn an empty MainWindow (File → New Window). */
     void newWindow();
     void opacityDown();
