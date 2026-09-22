@@ -2,6 +2,23 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2230-path-xdg-helpers-docs.** Document path-XDG apply/fill helpers
+in CONTENTXFORM_AUTHORITY (2228–2229). Mark ECS residual #11 crop draft orient
+buffers as accepted (commit writes ItemWorld only).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2230-path-xdg-helpers-docs-e6c70e4.bundle HEAD
+```
+
+Next: **2231**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2229-fill-stored-content-appearance.** Path-XDG save side of 2228:
 
 - `SessionAppearance::fillStoredContentAppearance(stored, state, writeCrop)`

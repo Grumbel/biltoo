@@ -138,11 +138,13 @@ Matches Image underlay / contentLayoutSize policy.
 
 ---
 
-## 11. Crop session local orient buffers (low)
+## 11. Crop session local orient buffers (accepted)
 
 **Where:** `cropsession.cpp` orientOnly from appearance / live.
 
-**Scoped to crop draft**; commit should write ItemWorld.
+**Status (2230):** Draft-only layout basis while the crop rectangle is open.
+Commit writes ItemWorld crop + contentBake via `storeCropAppearance`. Not a
+durable dual-store.
 
 ---
 

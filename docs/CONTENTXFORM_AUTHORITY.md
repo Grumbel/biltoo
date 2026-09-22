@@ -64,6 +64,20 @@ bridge (`placementFromState` / `applyPlacementToState`). Content never enters
 Unbound path rows may still carry content on the path map; bound ids never
 dual-write crop/orient into the Workspace snapshot.
 
+
+## Path-XDG load / save helpers (2228–2229)
+
+| Helper | Direction | Notes |
+|--------|-----------|--------|
+| `applyStoredContentAppearance` | XDG → `WorkspaceItemState` | `includeGrade` / `includeCrop` |
+| `fillStoredContentAppearance` | state → XDG | `writeCrop=false` for bound ids |
+
+**Bound SessionImageId:** path XDG may hold orient/flip/grade as a file-level
+hint; **crop is id-only** (duplicates share a path). ItemWorld seed always
+passes `includeCrop=false`. Image underlay never path-XDG seeds.
+
+**Unbound:** full path XDG including crop is allowed.
+
 ## How orient enters the system
 
 1. User rotates → `bakeItemRotate90` → absolute want → `setContentBake` + materialize
