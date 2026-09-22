@@ -71,6 +71,7 @@ public:
     const QElapsedTimer &lastCenterClick() const { return m_lastSlideshowCenterClick; }
 
     // --- Orchestration (moved from ImageView, Phase 6 Tier 1b) ---
+    // Host / MainWindow / ImageView-facing orchestration
     void setSlideshowPadColor(const QColor &color);
     void setSlideshowLetterboxFill(SlideshowLetterboxFill mode);
     void setSessionPosition(int index, int total, bool pulseIdentity);
@@ -90,6 +91,29 @@ public:
     void setSlideshowPausedHud(bool on);
     void cancelSlideshowMotion();
     void restoreImageFramingAfterSlideshow();
+    void requestDwellAtlasRebuild();
+    void requestToPhaseAtlasRebuild();
+    void onSlideshowRasterReady(const QString &path, const QImage &image);
+    void slideshowPhaseSurfaceTick();
+    QString slideshowPrefetchHudLine() const;
+    QImage slideshowRaster(const QString &path) const;
+    void armSlideshowToPhase(const QString &toPath);
+    void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
+    int slideshowTargetEdge() const;
+    void setSlideshowNavHot(bool hot);
+    void preloadSlideshowImage(const QString &path);
+    void paintZoomBlurUnderlay(QPainter *painter, const QImage &image, const QRect &viewportRect, qint64 stableKey) const;
+    void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT, QPointF biasA, QPointF biasB, const QString &path) const;
+    void maybeStartSlideshowMotion();
+    bool prepareSlideshowMotionDwell(ImageItem *item);
+    QString sessionBadgeText() const;
+    bool tryMousePressSlideshowSeek(QMouseEvent *event);
+    void updateMouseMoveSlideshowSeek(QMouseEvent *event);
+    bool tryMouseReleaseSlideshowSeek(QMouseEvent *event);
+
+
+private:
+    // Internal phase / motion / atlas / zoom-blur helpers
     bool tryApplyAttentionMotionBiases(uint seed, const QImage &source);
     void applyGeometricMotionBiases(uint seed);
     void pickInterestingMotionBiases(uint seed, const QImage &source);
@@ -100,14 +124,8 @@ public:
     void scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image);
     void finishSlideshowAtlas(SlideshowAtlasKind kind, quint64 generation, const QImage &scaled, qreal atlasScale, int atlasVw, int atlasVh);
     void requestSlideshowAtlas(SlideshowAtlasKind kind);
-    void requestDwellAtlasRebuild();
-    void requestToPhaseAtlasRebuild();
-    void onSlideshowRasterReady(const QString &path, const QImage &image);
     void bindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id, const QString &path);
     void unbindSlideshowPhaseSurface(DisplaySurface::SurfaceId *id);
-    void slideshowPhaseSurfaceTick();
-    QString slideshowPrefetchHudLine() const;
-    QImage slideshowRaster(const QString &path) const;
     QImage slideshowSoftPlaceholder(const QString &path);
     QImage orientSlideshowImage(const QImage &raw, const QString &path) const;
     QImage slideshowSampleUnoriented(const QString &path) const;
@@ -122,17 +140,12 @@ public:
     void prepareSlideshowFromDwell(const QString &fromPath);
     void armSlideshowMotionClock(int pathMs);
     void armSlideshowFromPhase(const QString &fromPath, int pathMs);
-    void armSlideshowToPhase(const QString &toPath);
     int slideshowPathDurationMs() const;
     void warmZoomBlurForCurrentPhase();
     bool applySlideshowFadeProgressOnly(qreal fadeT);
     void updateSlideshowPhaseMotionProgress(int pathMs);
-    void setSlideshowPhase(const QString &fromPath, const QString &toPath, qreal fadeT);
     qreal slideshowMotionHeadroom() const;
-    int slideshowTargetEdge() const;
     qreal slideshowZoomBaseScale(const QSize &logical, int vw, int vh) const;
-    void setSlideshowNavHot(bool hot);
-    void preloadSlideshowImage(const QString &path);
     void invalidateDwellAtlasRebuilds();
     void setSlideshowUnderlayVisible(bool visible);
     void hideSlideshowUnderlay();
@@ -143,14 +156,10 @@ public:
     int claimZoomBlurFlightSlot(qint64 key) const;
     void installZoomBlurResult(const QImage &blurred, qint64 key, quint64 gen);
     void scheduleZoomBlurBuild(const QImage &image, int vw, int vh, qint64 key) const;
-    void paintZoomBlurUnderlay(QPainter *painter, const QImage &image, const QRect &viewportRect, qint64 stableKey) const;
     QSize resolveMotionLogicalSize(const QString &path) const;
     QRectF computeMotionCoverDestRect(qreal iw, qreal ih, int vw, int vh, qreal motionT, QPointF biasA, QPointF biasB, const QString &path) const;
     bool paintSlideshowTiles(QPainter *painter, const QString &path, const QRectF &dest, const QImage &underlay) const;
-    void paintMotionCover(QPainter *painter, const QImage &image, qreal motionT, QPointF biasA, QPointF biasB, const QString &path) const;
     QPixmap renderMotionCoverPixmap(const QImage &image, qreal motionT, uint pathHash) const;
-    void maybeStartSlideshowMotion();
-    bool prepareSlideshowMotionDwell(ImageItem *item);
     void freezeScrollbarsForMotion();
     void resetItemPlacementForMotion(ImageItem *item);
     void armMotionBiasForPath(ImageItem *item, const QString &path);
@@ -159,16 +168,11 @@ public:
     void tickSlideshowPhaseMotionClocks();
     void tickSlideshowDwellMotionClock();
     void tickSlideshowMotion();
-    QString sessionBadgeText() const;
-    bool tryMousePressSlideshowSeek(QMouseEvent *event);
-    void updateMouseMoveSlideshowSeek(QMouseEvent *event);
-    bool tryMouseReleaseSlideshowSeek(QMouseEvent *event);
-
     SessionImageId sessionIdForPath(const QString &path) const;
     DwellAtlasParams dwellAtlasParams() const;
     tilelod::TileLodController *slideshowTilesForPath(const QString &path) const;
 
-private:
+
     ImageView *m_view = nullptr; // not owned
     SlideshowProgressHud m_ssHud;
     SlideshowSettings m_ssSettings;

@@ -61,8 +61,6 @@ int ImageView::pendingDecodeCount() const
     // Slideshow preload queue (inflight + pending neighbours).
     if (m_slideshow.hud().isProgressActive()) {
         n += m_slideshow.phase().rasterQueueCount();
-        const int need = 0; // need edge checked via target below if needed
-        Q_UNUSED(need);
         if (m_slideshow.phase().hasFromPath()
             && ImageCache::longEdge(m_slideshow.phase().fromImageRef()) > 0
             && ImageCache::longEdge(m_slideshow.phase().fromImageRef())

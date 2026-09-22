@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2267-slideshow-private-helpers-drop-need-stub.** API surface cleanup:
+
+1. Move 57 `SlideshowController` methods with zero external callers from public
+   to private (phase/motion/atlas/zoom-blur internals). Host/MainWindow/ImageView
+   orchestration stays public.
+2. Drop dead `need = 0; Q_UNUSED(need)` stub in `ImageView::pendingDecodeCount`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2267.1-slideshow-private-helpers-drop-need-stub-e6c70e4.bundle HEAD
+```
+
+Next: **2268**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2266-drop-never-connected-tool-reset-signals.** Dead signal cleanup:
 
 1. Remove never-connected `ImageView::toolChanged` (emitted from setTool; no
