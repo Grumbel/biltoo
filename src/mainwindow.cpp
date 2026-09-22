@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "mainwindow_includes.h"
+#include "sessionopen.h"
 #include "keyboardshortcutsdialog.h"
 #include "version.h"
 #include "thumtoo/version.hpp"

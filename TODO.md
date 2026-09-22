@@ -2,20 +2,19 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2334-open-selection-harden.**
+**Tip: biltoo-2335-open-selection-sessionopen-include.**
 
-Open Selection in New Window: union filmstrip+canvas selection; transfer
-crop/flip/grade/attention; deferred select-all after filmstrip install;
-status message with count.
+Fix: `loadSessionSnapshots` needs `#include "sessionopen.h"` (SessionOpen
+lives outside mainwindow_includes).
 
-Requires **thumtoo-323**. Includes 2318–2333.
+Requires **thumtoo-323**. Includes 2318–2334.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2334.1-open-selection-harden-2f201f6.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2335.1-open-selection-sessionopen-include-2f201f6.bundle HEAD
 ```
 
-Next: **2335**.
+Next: **2336**.
 
 ## Backlog
 - Gallery-canvas drag reorder (drag tiles on the packed canvas itself)
