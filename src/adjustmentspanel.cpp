@@ -141,7 +141,6 @@ void AdjustmentsPanel::buildUi()
     form->addRow(QString(), m_resetBtn);
     connect(m_resetBtn, &QPushButton::clicked, this, [this]() {
         setAdjustments(ColorAdjustments{});
-        emit resetRequested();
         emit adjustmentsChanged(adjustments());
     });
     layout->addWidget(gradeBox);

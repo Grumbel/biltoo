@@ -456,7 +456,6 @@ void ImageView::setTool(Tool tool)
                         ? QGraphicsView::RubberBandDrag
                         : QGraphicsView::NoDrag);
     }
-    emit toolChanged(m_tool);
 }
 
 void ImageView::setImageModeNavigationEnabled(bool on)

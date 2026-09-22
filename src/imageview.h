@@ -633,7 +633,6 @@ signals:
     /** Packaged Gallery: all session size probes settled (or timed out). */
     void gallerySizeResolveFinished();
     void mouseInfoChanged(const ImageMouseInfo &info);
-    void toolChanged(ImageView::Tool tool);
     /** Emitted when items are removed from the workspace (e.g. Delete key). */
     void workspacePathsChanged();
     /** Workspace/Gallery canvas selection changed (session-index aware). */

@@ -21,7 +21,6 @@ public:
     void setEnabledControls(bool on);
 signals:
     void adjustmentsChanged(const ColorAdjustments &adj);
-    void resetRequested();
 private:
     void buildUi();
     void emitIfChanged();

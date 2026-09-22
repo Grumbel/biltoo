@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2266-drop-never-connected-tool-reset-signals.** Dead signal cleanup:
+
+1. Remove never-connected `ImageView::toolChanged` (emitted from setTool; no
+   listeners)
+2. Remove never-connected `AdjustmentsPanel::resetRequested` (Reset already
+   emits adjustmentsChanged after setAdjustments)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2266-drop-never-connected-tool-reset-signals-e6c70e4.bundle HEAD
+```
+
+Next: **2267**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2265-fix-itemworld-live-color-lag-test.** Build fix after 2255:
 
 - `ItemWorldTest::liveColorLag_runtimeOnly` still called removed
