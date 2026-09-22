@@ -2,6 +2,22 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.24-tile-overlay-qstringliteral.** Build fix: QStringLiteral
+had real newlines (unterminated string). Use `\n` escapes on one line.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.24-tile-overlay-qstringliteral-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.23-tile-overlay-font-device-px.**
 
 Tile overlay `setPixelSize` was item-local, so when zoomed out (small view

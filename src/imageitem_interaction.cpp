@@ -152,9 +152,7 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         of.setFamily(QStringLiteral("Sans Serif"));
         of.setPixelSize(fontLocalPx);
         painter->setFont(of);
-        const QString label = QStringLiteral("TILE
-s=%1
-%2,%3")
+        const QString label = QStringLiteral("TILE\ns=%1\n%2,%3")
                                   .arg(scale)
                                   .arg(tx)
                                   .arg(ty);
