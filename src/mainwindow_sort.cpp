@@ -569,3 +569,54 @@ void MainWindow::reorderSessionRows(const QList<int> &rows, int insertBefore)
     applySessionOrder(afterPaths, afterIds, focusId);
     selectSessionIdsOnFilmstrip(moveIds);
 }
+
+void MainWindow::showSessionReorderDialog()
+{
+    if (m_session.size() < 2) {
+        if (statusBar()) {
+            statusBar()->showMessage(tr("Need at least two images to reorder"), 3000);
+        }
+        return;
+    }
+
+    SessionReorderDialog dlg(this);
+    dlg.setSession(m_session.paths(), m_session.ids());
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    const QStringList afterPaths = dlg.orderedPaths();
+    const QVector<SessionImageId> afterIds = dlg.orderedIds();
+    if (afterPaths.size() != afterIds.size()
+        || afterPaths.size() != m_session.size()) {
+        return;
+    }
+    if (afterPaths == m_session.paths() && afterIds == m_session.ids()) {
+        return;
+    }
+
+    const QStringList beforePaths = m_session.paths();
+    const QVector<SessionImageId> beforeIds = m_session.ids();
+    SessionImageId focusId = currentSessionId();
+    QVector<SessionImageId> selectIds;
+    if (m_thumbnailBar) {
+        for (int row : m_thumbnailBar->selectedIndices()) {
+            if (row >= 0 && row < beforeIds.size()) {
+                selectIds.append(beforeIds.at(row));
+            }
+        }
+    }
+    if (selectIds.isEmpty() && focusId != kInvalidSessionImageId) {
+        selectIds.append(focusId);
+    }
+
+    if (m_imageView && m_imageView->hostUndoStack() && !m_sessionUndoGuard) {
+        m_imageView->hostUndoStack()->push(
+            new SessionReorderCommand(this, beforePaths, beforeIds,
+                                      afterPaths, afterIds, focusId, selectIds));
+        return;
+    }
+    applySessionOrder(afterPaths, afterIds, focusId);
+    selectSessionIdsOnFilmstrip(selectIds);
+}
+

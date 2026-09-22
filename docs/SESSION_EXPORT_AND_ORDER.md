@@ -51,7 +51,11 @@ sequence without re-opening files.
 
 **Keyboard / menu (2328):** Alt+←/→ (or ↑/↓ on vertical strip); context menu Move Left/Right/Start/End.
 
-**Still open:** reorder dialog, Gallery-canvas drag reorder.
+**Dialog (2330):** Gallery → Reorder Session… / Edit → Reorder Session… —
+modal list with drag + Move Up/Down/Start/End; OK pushes the same undoable
+`SessionReorderCommand` as filmstrip reorder.
+
+**Still open:** Gallery-canvas drag reorder.
 
 ## 3. File menu mode matrix (planned)
 

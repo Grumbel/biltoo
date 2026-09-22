@@ -14,6 +14,7 @@
 #include "thumbnailbar.h"
 #include "preferencesdialog.h"
 #include "slideshowsettingsdialog.h"
+#include "sessionreorderdialog.h"
 #include "metadatapanel.h"
 #include "adjustmentspanel.h"
 #include "layoutpanel.h"

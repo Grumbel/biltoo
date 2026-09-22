@@ -647,6 +647,12 @@ void MainWindow::createActions()
     connect(m_openSelectionNewWindowAct, &QAction::triggered,
             this, &MainWindow::openSelectionInNewWindow);
 
+    m_reorderSessionAct = new QAction(tr("&Reorder Session…"), this);
+    m_reorderSessionAct->setIcon(themeIcon(QStringLiteral("view-sort"), QStyle::SP_ArrowUp));
+    m_reorderSessionAct->setStatusTip(
+        tr("Manually reorder images in the session (drag or Move buttons)"));
+    connect(m_reorderSessionAct, &QAction::triggered, this, &MainWindow::showSessionReorderDialog);
+
     m_sortNameAct = new QAction(tr("Sort by &Name"), this);
     m_sortNameAct->setCheckable(true);
     m_sortNameAct->setChecked(true);
@@ -973,6 +979,7 @@ void MainWindow::createMenus()
     m_editMenu->addAction(m_cutWorkspaceAct);
     m_editMenu->addAction(m_pasteWorkspaceAct);
     m_editMenu->addAction(m_duplicateAct);
+    m_editMenu->addAction(m_reorderSessionAct);
     m_editMenu->addSeparator();
     // Sort Session lives under Gallery + toolbar (not duplicated here).
     m_editMenu->addAction(m_preferencesAct);
@@ -1044,6 +1051,7 @@ void MainWindow::createMenus()
     galleryMenu->addAction(m_layoutFlowFillAct);
     galleryMenu->addAction(m_layoutFacingAct);
     galleryMenu->addSeparator();
+    galleryMenu->addAction(m_reorderSessionAct);
     auto *gallerySortMenu = galleryMenu->addMenu(tr("&Sort Session"));
     gallerySortMenu->addAction(m_sortNameAct);
     gallerySortMenu->addAction(m_sortPathAct);
@@ -1835,6 +1843,8 @@ void MainWindow::populateActionHelpTexts()
         "<p>Gallery layout: flow with row justification (fill).</p>"));
     setHelp(m_layoutFacingAct, tr(
         "<p>Gallery layout: cover alone, then two-up spreads (verso|recto) — PDF-reader style.</p>"));
+    setHelp(m_reorderSessionAct, tr(
+        "<p>Open a dialog to reorder the session list. Drag rows or use Move Up/Down/Start/End. Changes are undoable.</p>"));
     setHelp(m_sortNameAct, tr("<p>Sort the session by file name and re-pack Gallery if active.</p>"));
     setHelp(m_sortPathAct, tr(
         "<p>Sort by full path — useful when the session spans several folders or archives.</p>"));

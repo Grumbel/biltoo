@@ -274,6 +274,7 @@ private slots:
     void lowerSelected();
     void raiseSelected();
     void onSlideshowTick(); // legacy name kept as private alias; use updateSlideshowFromClock
+    void showSessionReorderDialog();
     void sortByName();
     void sortByPath();
     void sortByMTime();
@@ -664,6 +665,7 @@ private:
     QAction *m_opacityUpAct = nullptr;
     QAction *m_lowerAct = nullptr;
     QAction *m_raiseAct = nullptr;
+    QAction *m_reorderSessionAct = nullptr;
     QAction *m_sortNameAct = nullptr;
     QAction *m_sortPathAct = nullptr;
     QAction *m_sortAspectAct = nullptr;

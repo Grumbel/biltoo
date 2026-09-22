@@ -303,6 +303,8 @@ set(BILTOO_LIB_SOURCES
   src/preferencesdialog.h
   src/slideshowsettingsdialog.cpp
   src/slideshowsettingsdialog.h
+  src/sessionreorderdialog.cpp
+  src/sessionreorderdialog.h
   src/epublayoutdialog.cpp
   src/epublayoutdialog.h
   src/workspacebackgrounddialog.cpp
