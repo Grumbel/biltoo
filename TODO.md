@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2294-tile-summary-large-transparent.**
+
+Host tile plan overlay summary (`TILE s=N` / COMPLETE|LOADING|WAITING):
+- Size font from content box (~70% of short edge), centred over the whole image.
+- Semi-transparent yellow + dark outline — no opaque corner plate.
+- freeRot: label the crop window (same space as tile dests).
+
+Washes unchanged.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2294-tile-summary-large-transparent-c0bffd5.bundle HEAD
+```
+
+Next: **2295**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2293-revert-free-rot-clip-order.**
 
 Revert 2292 free-rot clip experiment. Clip must stay **item-local
