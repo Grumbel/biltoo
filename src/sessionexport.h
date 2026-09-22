@@ -11,6 +11,9 @@
 #include <QStringList>
 #include <QVector>
 
+#include <atomic>
+#include <functional>
+
 /**
  * Bake session content appearance into new files (never writes sources).
  * See docs/SESSION_EXPORT_AND_ORDER.md.
@@ -46,9 +49,17 @@ struct Options {
 struct Result {
     int written = 0;
     int failed = 0;
+    bool cancelled = false;
     QStringList errors;
     QString destPath;
 };
+
+/**
+ * Optional progress: called from the worker after each item attempt with
+ * (completedCount, total). Return false to cancel (finish current item's
+ * attempt is already done; remaining items are skipped).
+ */
+using ProgressFn = std::function<bool(int completed, int total)>;
 
 /** Decode + bake one item. Worker thread only (ImageLoader). */
 QImage bakeItem(const Item &item, int maxLongEdge);
@@ -58,8 +69,12 @@ QImage bakeItem(const Item &item, int maxLongEdge);
  * For Directory: destPath is the folder.
  * For Cbz/Pdf: destPath is the file path.
  * Must not run on the GUI thread when decoding.
+ * @p progress may be null; if set, return false to cancel.
+ * @p cancelFlag optional atomic; when true, export stops between items.
  */
-Result exportItems(const QVector<Item> &items, const Options &opt);
+Result exportItems(const QVector<Item> &items, const Options &opt,
+                   ProgressFn progress = {},
+                   std::atomic<bool> *cancelFlag = nullptr);
 
 /** Safe leaf stem from path (no directories). */
 QString fileStem(const QString &path);

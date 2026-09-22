@@ -18,6 +18,7 @@
 #include <QtEndian>
 
 #include <cstring>
+#include <atomic>
 
 namespace SessionExport {
 namespace {
@@ -219,7 +220,8 @@ QImage bakeItem(const Item &item, int maxLongEdge)
     return clampLongEdge(baked, maxLongEdge);
 }
 
-Result exportItems(const QVector<Item> &items, const Options &opt)
+Result exportItems(const QVector<Item> &items, const Options &opt,
+                   ProgressFn progress, std::atomic<bool> *cancelFlag)
 {
     ASSERT_NOT_GUI_THREAD();
     Result r;
@@ -229,6 +231,25 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
         return r;
     }
 
+    const int total = items.size();
+    auto cancelled = [&]() -> bool {
+        return cancelFlag && cancelFlag->load(std::memory_order_relaxed);
+    };
+    auto afterItem = [&](int completed) -> bool {
+        if (cancelled()) {
+            r.cancelled = true;
+            return false;
+        }
+        if (progress && !progress(completed, total)) {
+            r.cancelled = true;
+            if (cancelFlag) {
+                cancelFlag->store(true, std::memory_order_relaxed);
+            }
+            return false;
+        }
+        return !cancelled();
+    };
+
     if (opt.container == Container::Directory) {
         QDir dir(opt.destPath);
         if (!dir.exists() && !QDir().mkpath(opt.destPath)) {
@@ -237,31 +258,37 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
         }
         const int width = qMax(3, QString::number(items.size()).size());
         for (int i = 0; i < items.size(); ++i) {
+            if (cancelled()) {
+                r.cancelled = true;
+                break;
+            }
             const Item &it = items.at(i);
             QImage img = bakeItem(it, opt.maxLongEdge);
             if (img.isNull()) {
                 ++r.failed;
                 r.errors << QStringLiteral("decode failed: %1").arg(it.path);
-                continue;
+            } else {
+                const QString name =
+                    QStringLiteral("%1_%2.%3")
+                        .arg(i + 1, width, 10, QLatin1Char('0'))
+                        .arg(fileStem(it.path))
+                        .arg(extension(opt.format));
+                const QString outPath = dir.filePath(name);
+                if (QFileInfo(it.path).canonicalFilePath()
+                    == QFileInfo(outPath).canonicalFilePath()) {
+                    ++r.failed;
+                    r.errors << QStringLiteral("refusing to overwrite source: %1")
+                                    .arg(it.path);
+                } else if (!saveImage(img, outPath, opt.format, opt.jpegQuality)) {
+                    ++r.failed;
+                    r.errors << QStringLiteral("write failed: %1").arg(outPath);
+                } else {
+                    ++r.written;
+                }
             }
-            const QString name =
-                QStringLiteral("%1_%2.%3")
-                    .arg(i + 1, width, 10, QLatin1Char('0'))
-                    .arg(fileStem(it.path))
-                    .arg(extension(opt.format));
-            const QString outPath = dir.filePath(name);
-            if (QFileInfo(it.path).canonicalFilePath()
-                == QFileInfo(outPath).canonicalFilePath()) {
-                ++r.failed;
-                r.errors << QStringLiteral("refusing to overwrite source: %1").arg(it.path);
-                continue;
+            if (!afterItem(i + 1)) {
+                break;
             }
-            if (!saveImage(img, outPath, opt.format, opt.jpegQuality)) {
-                ++r.failed;
-                r.errors << QStringLiteral("write failed: %1").arg(outPath);
-                continue;
-            }
-            ++r.written;
         }
         return r;
     }
@@ -279,40 +306,47 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
         entries.reserve(items.size());
         const int width = qMax(3, QString::number(items.size()).size());
         for (int i = 0; i < items.size(); ++i) {
+            if (cancelled()) {
+                r.cancelled = true;
+                break;
+            }
             const Item &it = items.at(i);
             QImage img = bakeItem(it, opt.maxLongEdge);
             if (img.isNull()) {
                 ++r.failed;
                 r.errors << QStringLiteral("decode failed: %1").arg(it.path);
-                continue;
-            }
-            QByteArray bytes;
-            QBuffer buf(&bytes);
-            buf.open(QIODevice::WriteOnly);
-            if (opt.format == Format::Png) {
-                img.save(&buf, "PNG");
             } else {
-                QImage out = img;
-                if (out.format() != QImage::Format_RGB32
-                    && out.format() != QImage::Format_ARGB32
-                    && out.format() != QImage::Format_RGB888) {
-                    out = out.convertToFormat(QImage::Format_RGB32);
+                QByteArray bytes;
+                QBuffer buf(&bytes);
+                buf.open(QIODevice::WriteOnly);
+                if (opt.format == Format::Png) {
+                    img.save(&buf, "PNG");
+                } else {
+                    QImage out = img;
+                    if (out.format() != QImage::Format_RGB32
+                        && out.format() != QImage::Format_ARGB32
+                        && out.format() != QImage::Format_RGB888) {
+                        out = out.convertToFormat(QImage::Format_RGB32);
+                    }
+                    out.save(&buf, "JPEG", qBound(1, opt.jpegQuality, 100));
                 }
-                out.save(&buf, "JPEG", qBound(1, opt.jpegQuality, 100));
+                buf.close();
+                if (bytes.isEmpty()) {
+                    ++r.failed;
+                    r.errors << QStringLiteral("encode failed: %1").arg(it.path);
+                } else {
+                    const QString name =
+                        QStringLiteral("%1_%2.%3")
+                            .arg(i + 1, width, 10, QLatin1Char('0'))
+                            .arg(fileStem(it.path))
+                            .arg(extension(opt.format));
+                    entries.append(qMakePair(name, bytes));
+                    ++r.written;
+                }
             }
-            buf.close();
-            if (bytes.isEmpty()) {
-                ++r.failed;
-                r.errors << QStringLiteral("encode failed: %1").arg(it.path);
-                continue;
+            if (!afterItem(i + 1)) {
+                break;
             }
-            const QString name =
-                QStringLiteral("%1_%2.%3")
-                    .arg(i + 1, width, 10, QLatin1Char('0'))
-                    .arg(fileStem(it.path))
-                    .arg(extension(opt.format));
-            entries.append(qMakePair(name, bytes));
-            ++r.written;
         }
         if (entries.isEmpty()) {
             r.errors << QStringLiteral("no pages encoded");
@@ -347,33 +381,40 @@ Result exportItems(const QVector<Item> &items, const Options &opt)
         bool first = true;
         QPainter painter;
         for (int i = 0; i < items.size(); ++i) {
+            if (cancelled()) {
+                r.cancelled = true;
+                break;
+            }
             const Item &it = items.at(i);
             QImage img = bakeItem(it, opt.maxLongEdge);
             if (img.isNull()) {
                 ++r.failed;
                 r.errors << QStringLiteral("decode failed: %1").arg(it.path);
-                continue;
-            }
-            // Page size in points (1/72"); pixel size as points ≈ 72 dpi 1:1.
-            const QPageSize pageSize(
-                QSizeF(img.width(), img.height()), QPageSize::Point);
-            // setPageSize must precede begin / newPage for that page.
-            pdf.setPageSize(pageSize);
-            if (first) {
-                if (!painter.begin(&pdf)) {
-                    r.errors << QStringLiteral("pdf begin failed");
-                    return r;
-                }
-                first = false;
             } else {
-                if (!pdf.newPage()) {
-                    r.errors << QStringLiteral("pdf newPage failed");
-                    break;
+                // Page size in points (1/72"); pixel size as points ≈ 72 dpi 1:1.
+                const QPageSize pageSize(
+                    QSizeF(img.width(), img.height()), QPageSize::Point);
+                // setPageSize must precede begin / newPage for that page.
+                pdf.setPageSize(pageSize);
+                if (first) {
+                    if (!painter.begin(&pdf)) {
+                        r.errors << QStringLiteral("pdf begin failed");
+                        return r;
+                    }
+                    first = false;
+                } else {
+                    if (!pdf.newPage()) {
+                        r.errors << QStringLiteral("pdf newPage failed");
+                        break;
+                    }
                 }
+                const QRectF pageRect(0, 0, pdf.width(), pdf.height());
+                painter.drawImage(pageRect, img);
+                ++r.written;
             }
-            const QRectF pageRect(0, 0, pdf.width(), pdf.height());
-            painter.drawImage(pageRect, img);
-            ++r.written;
+            if (!afterItem(i + 1)) {
+                break;
+            }
         }
         if (painter.isActive()) {
             painter.end();

@@ -29,6 +29,7 @@
 #include <QMessageBox>
 
 #include <QThreadPool>
+#include <QProgressDialog>
 #include <QTimer>
 #include <QRadioButton>
 #include <QGroupBox>
@@ -38,6 +39,8 @@
 #include <QPointer>
 
 #include <algorithm>
+#include <memory>
+#include <atomic>
 
 namespace {
 
@@ -618,43 +621,95 @@ void MainWindow::exportSessionImages()
             tr("Exporting %n image(s)…", "", items.size()), 0);
     }
 
-    // Snapshot for worker — do not touch session/UI from the pool thread.
+    auto *progress = new QProgressDialog(
+        tr("Exporting images…"), tr("Cancel"), 0, items.size(), this);
+    progress->setWindowModality(Qt::WindowModal);
+    progress->setMinimumDuration(0);
+    progress->setValue(0);
+    progress->setAutoClose(true);
+    progress->setAutoReset(true);
+
+    auto cancelFlag = std::make_shared<std::atomic<bool>>(false);
+    QObject::connect(progress, &QProgressDialog::canceled, this, [cancelFlag]() {
+        cancelFlag->store(true, std::memory_order_relaxed);
+    });
+
     const SessionExport::Options optCopy = opt;
     const QVector<SessionExport::Item> itemsCopy = items;
     QPointer<MainWindow> guard(this);
-    QThreadPool::globalInstance()->start([guard, optCopy, itemsCopy]() {
-        const SessionExport::Result result =
-            SessionExport::exportItems(itemsCopy, optCopy);
-        if (!guard) {
-            return;
-        }
-        QTimer::singleShot(0, guard, [guard, result]() {
-            MainWindow *host = guard.data();
-            if (!host || !host->statusBar()) {
+    QPointer<QProgressDialog> progressGuard(progress);
+
+    QThreadPool::globalInstance()->start(
+        [guard, progressGuard, optCopy, itemsCopy, cancelFlag]() {
+            SessionExport::ProgressFn progressFn =
+                [progressGuard](int completed, int total) -> bool {
+                    if (!progressGuard) {
+                        return false;
+                    }
+                    // Progress UI must run on the GUI thread.
+                    QMetaObject::invokeMethod(
+                        progressGuard.data(),
+                        [progressGuard, completed, total]() {
+                            if (!progressGuard) {
+                                return;
+                            }
+                            progressGuard->setMaximum(total);
+                            progressGuard->setValue(completed);
+                            progressGuard->setLabelText(
+                                QObject::tr("Exporting %1 / %2…")
+                                    .arg(completed)
+                                    .arg(total));
+                        },
+                        Qt::QueuedConnection);
+                    return true; // cancel is via cancelFlag / dialog button
+                };
+
+            const SessionExport::Result result = SessionExport::exportItems(
+                itemsCopy, optCopy, progressFn, cancelFlag.get());
+
+            if (!guard) {
                 return;
             }
-            if (result.written > 0 && result.failed == 0) {
-                host->statusBar()->showMessage(
-                    QObject::tr("Exported %1 image(s) → %2")
-                        .arg(result.written)
-                        .arg(result.destPath),
-                    6000);
-            } else if (result.written > 0) {
-                host->statusBar()->showMessage(
-                    QObject::tr("Exported %1, failed %2 → %3")
-                        .arg(result.written)
-                        .arg(result.failed)
-                        .arg(result.destPath),
-                    8000);
-            } else {
-                const QString detail = result.errors.isEmpty()
-                    ? QObject::tr("unknown error")
-                    : result.errors.first();
-                host->statusBar()->showMessage(
-                    QObject::tr("Export failed: %1").arg(detail), 8000);
-                QMessageBox::warning(host, QObject::tr("Export Images"),
-                                     QObject::tr("Export failed.\n%1").arg(detail));
-            }
+            QTimer::singleShot(0, guard, [guard, progressGuard, result]() {
+                MainWindow *host = guard.data();
+                if (progressGuard) {
+                    progressGuard->reset();
+                    progressGuard->deleteLater();
+                }
+                if (!host || !host->statusBar()) {
+                    return;
+                }
+                if (result.cancelled) {
+                    host->statusBar()->showMessage(
+                        QObject::tr("Export cancelled (%1 written, %2 failed)")
+                            .arg(result.written)
+                            .arg(result.failed),
+                        6000);
+                    return;
+                }
+                if (result.written > 0 && result.failed == 0) {
+                    host->statusBar()->showMessage(
+                        QObject::tr("Exported %1 image(s) → %2")
+                            .arg(result.written)
+                            .arg(result.destPath),
+                        6000);
+                } else if (result.written > 0) {
+                    host->statusBar()->showMessage(
+                        QObject::tr("Exported %1, failed %2 → %3")
+                            .arg(result.written)
+                            .arg(result.failed)
+                            .arg(result.destPath),
+                        8000);
+                } else {
+                    const QString detail = result.errors.isEmpty()
+                        ? QObject::tr("unknown error")
+                        : result.errors.first();
+                    host->statusBar()->showMessage(
+                        QObject::tr("Export failed: %1").arg(detail), 8000);
+                    QMessageBox::warning(
+                        host, QObject::tr("Export Images"),
+                        QObject::tr("Export failed.\n%1").arg(detail));
+                }
+            });
         });
-    });
 }
