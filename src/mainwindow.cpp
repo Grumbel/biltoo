@@ -3497,7 +3497,7 @@ void MainWindow::handleWorkspaceDrop(const QStringList &paths, bool fromInternal
                         pos.x(), pos.y(), alreadyOnCanvas ? 1 : 0);
             }
             // placeOrMoveImageAt owns identity via PendingSessionBind / move-by-id.
-            // Do NOT bindSelectedSessionIds here — that stamped sid onto every
+            // Do NOT fan-out one SessionImageId onto every selected tile — that
             // currently selected tile and created duplicate SessionImageIds.
             m_imageView->placeOrMoveImageAt(img, pos, sid, slot);
         } else {

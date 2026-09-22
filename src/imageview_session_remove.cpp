@@ -154,64 +154,6 @@ void ImageView::setCurrentSessionId(SessionImageId id)
 }
 
 
-void ImageView::bindSelectedSessionIds(const QList<SessionImageId> &ids)
-{
-    // Recovery path only: normal Duplicate binds on create (biltoo-2109).
-    // Still used if a tile was left unbound after an id collision / shortfall.
-    int i = 0;
-    for (ImageItem *item : m_items) {
-        if (!item->isSelected()) {
-            continue;
-        }
-        if (i >= ids.size()) {
-            break;
-        }
-        const SessionImageId id = ids.at(i++);
-        if (id == kInvalidSessionImageId) {
-            continue;
-        }
-        // Never give the same SessionImageId to two live tiles (drop path used
-        // to stamp {sid} onto every selected item while LoadAdd also bound it).
-        if (ImageItem *owner = findItemBySessionId(id)) {
-            if (owner != item) {
-                qCritical("bindSelectedSessionIds: SessionImageId %lld already on another tile — skip",
-                          static_cast<long long>(id));
-                continue;
-            }
-        }
-        WorkspaceItemState slot;
-        const bool fromPending = m_pendingAppearance.take(item, &slot);
-        if (fromPending) {
-            // Pending may carry colour grade from Duplicate before the live item
-            // was fully synced — apply it so the tile and sessionAppearanceImage match.
-            syncLiveColorFromState(item, slot.colorAdjust, true);
-        } else {
-            // Freeze policy for bind seed (store + live when durable, not mid-edit).
-            slot = freezeItemAppearance(item);
-        }
-        // setItemSessionId: list-order refresh + applied→ItemWorld migrate (2083).
-        setItemSessionId(item, id);
-        // Live placement from the canvas item (Duplicate offsets, scales, …).
-        ItemComponents::applyPlacementToState(slot, item->placement());
-        // Content from freeze/pending. Do not promote live lag over durable Color.
-        if (m_itemWorld.hasColor(id)) {
-            slot.colorAdjust = m_itemWorld.color(id).grade;
-        }
-        slot.sessionId = id;
-        slot.sessionIndex = sessionListIndex(item);
-        slot.path = item->path();
-        m_itemWorld.setAppearance(id, slot);
-        // Drive ThumbnailBar per-id override (cropped/rotated/graded pixels).
-        const QImage appearance = sessionAppearanceImage(item);
-        if (!appearance.isNull()) {
-            emit sessionAppearanceChanged(id, item->path(), appearance);
-            const bool hasCrop = m_itemWorld.hasCrop(id);
-            emit sessionCropApplied(id, item->path(), appearance, hasCrop);
-        }
-    }
-}
-
-
 void ImageView::removeCanvasSessionIds(const QList<SessionImageId> &ids)
 {
     if (!isWorkspaceMode() || ids.isEmpty()) {

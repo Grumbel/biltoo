@@ -339,11 +339,6 @@ public:
      */
     void revealGallerySessionId(SessionImageId sessionId);
     void removeWorkspaceSessionId(SessionImageId sessionId);
-    /**
-     * Recovery: bind selected unbound tiles to @p ids (order of selection walk).
-     * Normal Duplicate binds on create; prefer that path.
-     */
-    void bindSelectedSessionIds(const QList<SessionImageId> &ids);
     /** How many canvas items currently show @p path. */
     int workspacePathOccurrenceCount(const QString &path) const;
     void setTool(Tool tool);

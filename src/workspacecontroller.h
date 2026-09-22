@@ -53,16 +53,6 @@ public:
 
     QList<WorkspaceItemState> &savedItems() { return m_savedItems; }
     const QList<WorkspaceItemState> &savedItems() const { return m_savedItems; }
-    bool hasSavedView() const { return m_hasSavedView; }
-    QTransform savedViewTransform() const { return m_savedViewTransform; }
-    QPointF savedViewCenter() const { return m_savedViewCenter; }
-
-    bool hasStashedView() const { return m_hasStashedView; }
-    QTransform stashedViewTransform() const { return m_stashedViewTransform; }
-    QPointF stashedViewCenter() const { return m_stashedViewCenter; }
-
-    bool hasFreeFormViewTransform() const { return m_hasFreeFormViewTransform; }
-    QTransform freeFormViewTransform() const { return m_freeFormViewTransform; }
 
     /** Select tool: item hit / page-guide / rubber-band (Tier 6d). */
     bool tryMousePressSelect(QMouseEvent *event);

@@ -337,7 +337,7 @@ void ImageView::duplicateSelected(const QVector<SessionImageId> &newIds,
             }
         } else {
             // Id missing or shortfall vs sources — programming error; stage so a
-            // later bindSelectedSessionIds can still recover appearance.
+            // PendingItemAppearanceBook may still recover appearance on bind.
             qCritical("duplicateSelected: no SessionImageId for copy path=%s — stage pending",
                       qPrintable(copy->path()));
             m_pendingAppearance.insert(copy, content);

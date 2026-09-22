@@ -196,7 +196,7 @@ with pixels and **`sessionId`** (list-order cache may be refreshed on rebind).
 2. MainWindow appends each source path again onto the session document (allows
    path duplicates) and allocates a fresh id.
 
-3. Bind selected tiles to the new ids (`bindSelectedSessionIds` / document order).
+3. Bind selected tiles to the new ids (document-order bind on create).
 
 4. Filmstrip and canvas membership refresh from the document.
 
@@ -354,7 +354,7 @@ updates ItemWorld for that `SessionImageId` and id-matched peers.
 | Edit commit / peer sync | `ImageView::commitItemSessionEdit` (by id) |
 | Flip / 90° | `bakeItemFlip`, `bakeItemRotate90` |
 | Crop UI | CropSession / crop controllers, locked target id |
-| Bind after append | `bindSelectedSessionIds` |
+| Bind after append | bind on create (Duplicate / LoadAdd) |
 | Open Image from Workspace | id- or index-keyed slot open (not path-only) |
 | Filmstrip override | id-keyed when session ids present |
 | State DTO | `WorkspaceItemState` in `imageview_types.h` (project + dual-write) |

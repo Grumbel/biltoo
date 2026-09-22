@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2252-drop-workspace-view-getters-bind-selected-ids.** API surface cleanup:
+
+1. WorkspaceController: remove unused public view getters (saved/stashed/freeForm
+   transform & center); members remain private and used internally
+2. Remove dead `ImageView::bindSelectedSessionIds` (zero call sites; Duplicate /
+   LoadAdd bind on create). IDENTITY.md table updated.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2252-drop-workspace-view-getters-bind-selected-ids-e6c70e4.bundle HEAD
+```
+
+Next: **2253**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2251-drop-empty-sync-thumb-workspace-selection.** MainWindow cleanup:
 
 1. Remove empty no-op `syncThumbnailWorkspaceSelection` and its call sites

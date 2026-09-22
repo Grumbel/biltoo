@@ -442,7 +442,7 @@ void ImageView::rebindWorkspaceSession(const QStringList &sessionFiles,
                 continue;
             }
             // One SessionImageId → at most one live tile. A second claim is
-            // corruption (drop bindSelectedSessionIds fan-out); unbind so a
+            // corruption (drop id fan-out); unbind so a
             // new session row can be allocated instead of sharing crop/state.
             if (usedId.contains(sid)) {
                 qCritical("rebindWorkspaceSession: demoting duplicate live SessionImageId %lld path=%s",

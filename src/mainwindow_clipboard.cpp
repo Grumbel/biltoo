@@ -334,7 +334,7 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
     }
 
     // Allocate session rows *before* canvas copies so tiles bind on create
-    // (no unbound window between duplicateSelected and bindSelectedSessionIds).
+    // (no unbound window: Duplicate binds SessionImageId on create).
     const int firstNew = m_session.paths().size();
     for (const QString &path : sourcePaths) {
         if (path.isEmpty()) {
