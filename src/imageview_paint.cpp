@@ -627,7 +627,16 @@ void ImageView::paintHudPanels(QPainter &painter)
             if (!m_centreProgress.detailRef().isEmpty()) {
                 lines.append({m_centreProgress.detailRef(), false});
             }
-            drawPanel(lines, 0, 0, false, false, true);
+            // Tile/decode progress belongs in the sticky HUD corner — not the
+            // viewport centre (that was for blocking size-resolve / expand).
+            const bool corner =
+                m_centreProgress.matchesTitlePrefix(tr("Loading tiles"))
+                || m_centreProgress.matchesTitlePrefix(tr("Improving previews"));
+            if (corner) {
+                drawPanel(lines, margin, margin, false, false, false);
+            } else {
+                drawPanel(lines, 0, 0, false, false, true);
+            }
         } else if (m_gallerySizeResolve.active() && m_gallerySizeResolve.total() > 0) {
             // Fallback if title was cleared but gate still active.
             const int done = ViewTransform::nonNeg(

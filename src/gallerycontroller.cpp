@@ -1158,8 +1158,15 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     if (m_view->hostLayoutApply().active()) {
         return;
     }
-    // Size-first open: do not pack on provisional stand-ins while probes run.
-    if (m_view->hostGallerySizeResolve().active()) {
+    // Size-first open: while the gate is active, liveItems are only the ordered
+    // sized prefix (ensurePlaceholders stops at the first unresolved path). Pack
+    // that prefix so cells are not stacked at the origin until the gate completes.
+    // Provisional stand-ins are no longer installed in Gallery, so packing here
+    // is safe. Full session pack still runs on gate complete (EnterGallery).
+    if (m_view->hostGallerySizeResolve().active()
+        && reason != GalleryPackReason::ContentChange
+        && reason != GalleryPackReason::EnterGallery
+        && reason != GalleryPackReason::Reload) {
         return;
     }
     // Packaged packing is Gallery-only; never rearrange Workspace free-form items.
@@ -1444,11 +1451,20 @@ void GalleryController::updateSoftProgressHud()
     if (m_view->hostGallerySizeResolve().active()) {
         return;
     }
-    // After sizes: show decode progress when cells still need LQIP/tiles.
+    // After sizes: show decode progress for *on-screen* cells that still need
+    // LQIP/tiles. Counting every live item kept "Loading tiles…" stuck forever
+    // for off-screen blanks the decode window never fills until scrolled.
+    const QRectF sceneVisible =
+        m_view->mapToScene(
+            m_view->viewport()->rect().adjusted(-80, -80, 80, 80)).boundingRect();
     int blank = 0;
     int total = 0;
     for (ImageItem *item : m_view->liveItems()) {
         if (!item || item->path().isEmpty()) {
+            continue;
+        }
+        const QRectF tile = item->contentSceneRect();
+        if (!tile.isNull() && tile.isValid() && !tile.intersects(sceneVisible)) {
             continue;
         }
         ++total;
@@ -1467,7 +1483,8 @@ void GalleryController::updateSoftProgressHud()
     if (blank < 2 && total > 8) {
         return;
     }
-    const QString detail = m_view->tr("%1 / %2 cells have pixels").arg(total - blank).arg(total);
+    const QString detail =
+        m_view->tr("%1 / %2 on-screen cells have pixels").arg(total - blank).arg(total);
     m_view->setCentreProgress(m_view->tr("Loading tiles…"), detail);
 }
 

@@ -1781,7 +1781,10 @@ void warmSessionOpenMemos(const QStringList &paths)
         return;
     }
     const QStringList copy = paths;
-    auto workOne = [](const QString &p) {
+    // Size + LQIP only. Durable has_tile used to run in the same pass and
+    // contended with scheduleProbeBatch / request_size on the Store — size
+    // resolve felt like "tiles in parallel" and slowed the gate.
+    auto workOneSize = [](const QString &p) {
         if (p.isEmpty()) {
             return;
         }
@@ -1800,17 +1803,19 @@ void warmSessionOpenMemos(const QStringList &paths)
             }
         }
 #endif
+    };
+    auto workOneDurable = [](const QString &p) {
+        if (p.isEmpty()) {
+            return;
+        }
         // durableTilesReady fires on first positive hasDurableTiles hit.
         (void)hasDurableTiles(p);
     };
-    auto workAll = [copy, workOne]() {
-        ASSERT_NOT_GUI_THREAD();
-        init();
-        // Parallel Store lookups — sequential warm was O(n) wall on large sessions.
+    auto parallelFor = [](const QStringList &list, auto workOne) {
         constexpr int kWorkers = 4;
-        const int n = copy.size();
+        const int n = list.size();
         if (n <= 8) {
-            for (const QString &p : copy) {
+            for (const QString &p : list) {
                 workOne(p);
             }
             return;
@@ -1820,13 +1825,21 @@ void warmSessionOpenMemos(const QStringList &paths)
         for (int w = 0; w < kWorkers; ++w) {
             threads.emplace_back([&, w]() {
                 for (int i = w; i < n; i += kWorkers) {
-                    workOne(copy.at(i));
+                    workOne(list.at(i));
                 }
             });
         }
         for (std::thread &th : threads) {
             th.join();
         }
+    };
+    auto workAll = [copy, workOneSize, workOneDurable, parallelFor]() {
+        ASSERT_NOT_GUI_THREAD();
+        init();
+        // Pass 1: sizes (+ LQIP) so the Gallery size gate can settle quickly.
+        parallelFor(copy, workOneSize);
+        // Pass 2: durable tile discovery after sizes — does not block the gate.
+        parallelFor(copy, workOneDurable);
     };
     // Never join Store warm on the GUI thread. Session-replace clears durable
     // memos (1234) so every Open paid a full cold warm wall and froze the UI.

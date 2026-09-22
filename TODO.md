@@ -2,6 +2,34 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290-gallery-progressive-pack-tile-hud.** Verify + fix:
+
+1. **Progressive pack during size gate** — `applyLayout` no longer no-ops while
+   the gate is active for ContentChange / EnterGallery / Reload. Live items are
+   only the ordered sized prefix; packing them stops cells stacking at the
+   origin ("images hit the view without layout").
+2. **"Loading tiles…" HUD** — drawn top-left (sticky corner), not viewport centre.
+   Blank count is *on-screen only* so the chip clears after scroll / fill and
+   no longer sticks on off-screen blanks.
+3. **Size-first warm** — `warmSessionOpenMemos` fills size+LQIP first, then a
+   second pass for durable `has_tile`. Size probes are no longer interleaved
+   with durable discovery on the same warm pass (felt like tiles in parallel /
+   slow size resolve). Decode window still skips tile ticks while the gate is
+   active.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.1-gallery-progressive-pack-tile-hud-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2289-warm-memo-sizeReady.** Verify + fix:
 
 - `warmSessionOpenMemos` now emits `Bridge::sizeReady` when a process memo
