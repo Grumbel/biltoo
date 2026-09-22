@@ -2,19 +2,19 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2325-export-progress-cancel.**
+**Tip: biltoo-2326-print-thumbnailbar-include.**
 
-Export Images: modal progress dialog + Cancel (atomic flag between items).
-Structural verify of prior export work still green.
+Fix incomplete type: `mainwindow_print.cpp` needs `#include "thumbnailbar.h"`
+for `selectedIndices()` in Export Images scope.
 
-Requires **thumtoo-323**. Includes 2318–2324.
+Requires **thumtoo-323**. Includes 2318–2325.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2325.1-export-progress-cancel-999be36.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2326.1-print-thumbnailbar-include-999be36.bundle HEAD
 ```
 
-Next: **2326** — session reorder UI.
+Next: **2327** — session reorder UI.
 
 ## Backlog
-- Session reorder UI (`docs/SESSION_EXPORT_AND_ORDER.md` §2)
+- Session reorder UI
