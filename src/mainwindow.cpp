@@ -1502,9 +1502,22 @@ void MainWindow::loadSessionSnapshots(const QList<SessionEntrySnapshot> &entries
     ++m_expandGeneration;
     setExpandProgressBusy(false);
 
-    QStringList paths;
-    paths.reserve(entries.size());
+    // Drop empty paths; keep appearance parallel via filtered list.
+    QList<SessionEntrySnapshot> cleaned;
+    cleaned.reserve(entries.size());
     for (const SessionEntrySnapshot &e : entries) {
+        if (e.path.isEmpty()) {
+            continue;
+        }
+        cleaned.append(e);
+    }
+    if (cleaned.isEmpty()) {
+        return;
+    }
+
+    QStringList paths;
+    paths.reserve(cleaned.size());
+    for (const SessionEntrySnapshot &e : cleaned) {
         paths.append(e.path);
     }
     // setPaths allocates fresh SessionImageIds (do not reuse source ids).
@@ -1514,23 +1527,42 @@ void MainWindow::loadSessionSnapshots(const QList<SessionEntrySnapshot> &entries
     }
     m_session.validateUniqueIds("loadSessionSnapshots");
 
-    // Install content appearance onto the new ids (index-aligned).
-    if (m_imageView) {
-        const int n = qMin(entries.size(), m_session.size());
+    // Install content appearance *before* finishApplyExpandedLoad so Gallery
+    // pack / contentLayoutSize see crop aspect on first layout.
+    const auto installTransferredAppearance = [this, cleaned]() {
+        if (!m_imageView) {
+            return;
+        }
+        const int n = qMin(cleaned.size(), m_session.size());
         for (int i = 0; i < n; ++i) {
-            if (!entries.at(i).hasAppearance) {
+            if (!cleaned.at(i).hasAppearance) {
                 continue;
             }
-            WorkspaceItemState st = entries.at(i).appearance;
+            WorkspaceItemState st = cleaned.at(i).appearance;
             st.sessionId = m_session.idAt(i);
             st.path = m_session.pathAt(i);
             st.sessionIndex = i;
+            // Workspace pose already cleared in sessionSelectionSnapshots.
             m_imageView->setSessionAppearance(st.sessionId, st);
+            // Path-XDG seed (prepareExpandedSession) skips when content ops exist;
+            // mark attempted so wantAppearanceForItem does not re-hit locatorId.
+            m_imageView->hostDisplayPipeline().markAppearanceSeedAttempted(st.sessionId);
         }
-    }
+    };
+    installTransferredAppearance();
 
     // Preserve selection order — do not run sortFileListSync.
     finishApplyExpandedLoad(startAt);
+
+    // Re-apply after open barriers: prepareExpandedSession may seed path-XDG
+    // orient asynchronously for large sessions; content ops (crop) already win
+    // inside applyStoredContentAppearanceSeed, but re-install keeps attention
+    // and grade authoritative for the transferred snapshots.
+    installTransferredAppearance();
+
+    if (cleaned.size() > 1) {
+        setWindowTitle(tr("Biltoo — %n image(s)", "", cleaned.size()));
+    }
 
     // Filmstrip may install on a later event-loop turn (warm multi-open) or
     // after size resolve (cold). Select all transferred rows once the strip exists.
