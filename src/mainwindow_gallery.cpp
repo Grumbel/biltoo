@@ -27,24 +27,32 @@ void MainWindow::populateGalleryCanvas()
     m_imageView->setWorkspacePaths(m_session.paths(), m_session.ids());
     // Workspace→Gallery (and any cold enter) must never leave a blank canvas.
     // setWorkspacePaths may re-arm size-resolve + defer and return without
-    // creating tiles, or hide residual items under defer. Always ensure one
-    // placeholder per session row when still empty or all invisible.
+    // creating tiles. While the size gate is active, leave defer alone so
+    // gate-complete still runs a full ensure (clearing defer here left a
+    // single progressive cell until manual relayout).
     if (!m_imageView->isGalleryMode()) {
         return;
     }
-    m_imageView->hostGalleryDecodeBook().setDeferPopulate(false);
-    bool needPlaceholders = m_imageView->itemCount() == 0;
-    if (!needPlaceholders) {
-        needPlaceholders = true;
-        for (ImageItem *item : m_imageView->liveItems()) {
-            if (item && item->isVisible()) {
-                needPlaceholders = false;
-                break;
+    if (m_imageView->hostGallerySizeResolve().active()) {
+        // Sized prefix only — ordered ensure stops at the first unresolved path.
+        if (m_imageView->itemCount() == 0) {
+            m_imageView->hostGallery().ensurePlaceholders();
+        }
+    } else {
+        m_imageView->hostGalleryDecodeBook().setDeferPopulate(false);
+        bool needPlaceholders = m_imageView->itemCount() == 0;
+        if (!needPlaceholders) {
+            needPlaceholders = true;
+            for (ImageItem *item : m_imageView->liveItems()) {
+                if (item && item->isVisible()) {
+                    needPlaceholders = false;
+                    break;
+                }
             }
         }
-    }
-    if (needPlaceholders) {
-        m_imageView->hostGallery().ensurePlaceholders();
+        if (needPlaceholders) {
+            m_imageView->hostGallery().ensurePlaceholders();
+        }
     }
     biltooModeDbg("populateGallery live=%d visibleNeed=%d session=%d defer=%d sizeRes=%d",
                   m_imageView->itemCount(),

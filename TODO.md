@@ -2,6 +2,34 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.18-gallery-full-ensure-on-gate-complete.** Regression: Gallery
+opens with a single cell until relayout.
+
+**Cause:** `populateGalleryCanvas` cleared `deferPopulate` after
+`setWorkspacePaths` re-armed the size gate. Progressive open could create one
+sized cell; gate-complete then saw `defer=false` and **skipped**
+`ensurePlaceholders` (only ran it when defer was still true or the canvas was
+empty). Remaining session rows never appeared until an explicit relayout.
+
+**Fix:**
+1. `onSizeResolveGateComplete` always `ensurePlaceholders` in Gallery when the
+   path order is non-empty (defer flag is not trusted).
+2. `populateGalleryCanvas` does not clear defer while the size gate is active;
+   only seeds the sized prefix if the canvas is still empty.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.18-gallery-full-ensure-on-gate-complete-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.17-reorderItems-index.** Validate progressive reorder cost:
 
 - `reorderItemsByPaths` (end of every `ensurePlaceholders`) used

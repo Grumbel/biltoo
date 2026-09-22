@@ -366,31 +366,19 @@ void ImageView::onSizeResolveGateComplete()
     if (isGalleryMode()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
-    // Create any remaining tiles — every path has definitive size or failure.
-    if (m_galleryDecodeBook.isDeferPopulate()) {
-        m_galleryDecodeBook.setDeferPopulate(false);
-        m_gallery.ensurePlaceholders();
-    } else {
+    // Always create remaining tiles when sizes are known. deferPopulate can be
+    // cleared by populateGalleryCanvas while the gate is still active (one
+    // progressive cell already live → needPlaceholders false → defer false).
+    // Gate complete then skipped ensure and left a single-cell Gallery until
+    // an explicit relayout.
+    m_galleryDecodeBook.setDeferPopulate(false);
+    if (isGalleryMode() && !pathOrderIsEmpty()) {
         for (ImageItem *item : m_items) {
             if (item) {
                 item->setVisible(true);
-                if (!m_sizeBook.isProvisional(item->path())) {
-                    const QSize native = layoutSizeForPath(item->path());
-                    if (isPositiveSize(native)) {
-                        const SessionImageId sid = resolveContentEditSessionId(item);
-                        const WorkspaceItemState want =
-                            m_displayPipeline.wantAppearanceForItem(item, sid);
-                        const QSize lay = ContentXform::layoutSize(native, want);
-                        item->setIntrinsicSize(
-                            (isPositiveSize(lay) && lay.width() > 1) ? lay : native);
-                    }
-                }
             }
         }
-        // Safety: size-resolve used to refuse createPlaceholder → empty canvas.
-        if (isGalleryMode() && m_items.isEmpty() && !pathOrderIsEmpty()) {
-            m_gallery.ensurePlaceholders();
-        }
+        m_gallery.ensurePlaceholders();
     }
     if (isGalleryMode() && !m_items.isEmpty() && !m_layout.isFreeForm()) {
         m_gallery.applyLayout(GalleryPackReason::EnterGallery);
