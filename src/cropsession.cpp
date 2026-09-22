@@ -218,18 +218,6 @@ void CropSession::itemScalePair(const ImageItem *item, qreal *sx, qreal *sy)
     *sy = pl.scaleY > 0.0 ? pl.scaleY : *sx;
 }
 
-SessionImageId CropSession::resolveSessionIdForItem(const ImageItem *item,
-                                                 SessionImageId imageModeCurrentId)
-{
-    if (!item) {
-        return kInvalidSessionImageId;
-    }
-    if (item->sessionId() != kInvalidSessionImageId) {
-        return item->sessionId();
-    }
-    return imageModeCurrentId;
-}
-
 SessionImageId CropSession::sessionIdForRecord(const ImageItem *item,
                                                SessionImageId boundTargetId,
                                                SessionImageId imageModeCurrentId)

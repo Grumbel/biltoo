@@ -139,10 +139,6 @@ public:
                                              SessionImageId boundTargetId,
                                              SessionImageId imageModeCurrentId);
 
-    /** Prefer item session id, else image-mode current id. */
-    static SessionImageId resolveSessionIdForItem(const ImageItem *item,
-                                                  SessionImageId imageModeCurrentId);
-
     /** Copy content orient flags from appearance into @p s when @p orient is set. */
     static void mergeOrientFromAppearance(WorkspaceItemState *s,
                                           const WorkspaceItemState *orient);
