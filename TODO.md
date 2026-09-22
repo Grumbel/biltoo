@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2218-pose-only-snapshot-tests.** Characterize Workspace pose-only
+snapshot / restore helpers:
+
+1. `clearedContentOps_keepsFullPlacement` — all Placement fields + path/sid survive
+2. `poseMerge_snapshotOntoStoreContent` — applyPlacementToState merge keeps store
+   content (2214 restore / completeLoadRestore pattern)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2218-pose-only-snapshot-tests-e6c70e4.bundle HEAD
+```
+
+Next: **2219**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2217-drop-dead-crop-resolve-session-id.** Remove unused
 `CropSession::resolveSessionIdForItem` after ImageView content paths adopted
 `resolveContentEditSessionId` (2215). Crop commit still uses

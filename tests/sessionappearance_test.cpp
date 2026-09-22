@@ -10,6 +10,7 @@
 #include "sessionseedbook.h"
 #include "sessiondocument.h"
 #include "itemworld.h"
+#include "itemcomponents.h"
 
 #include <QtTest/QtTest>
 
@@ -30,6 +31,9 @@ private slots:
     void orientAuthorityWant_passthroughWhenHasOrient();
     void orientAuthorityWant_stripsWhenPlacementOnly();
     void clearedContentOps_stripsOrientAndGrade();
+    // Workspace pose-only snapshot contract (2212–2214)
+    void clearedContentOps_keepsFullPlacement();
+    void poseMerge_snapshotOntoStoreContent();
 };
 
 void SessionAppearanceTest::seedBook_keyedById()
@@ -203,6 +207,88 @@ void SessionAppearanceTest::clearedContentOps_stripsOrientAndGrade()
     QVERIFY(!out.hasCrop);
     QVERIFY(out.colorAdjust.isIdentity());
     QCOMPARE(out.pos, QPointF(3, 4));
+}
+
+void SessionAppearanceTest::clearedContentOps_keepsFullPlacement()
+{
+    // Workspace leave snapshot (2213): bound slots are clearedContentOps(freeze).
+    WorkspaceItemState st;
+    st.contentQuarterTurns = 2;
+    st.contentHFlip = true;
+    st.hasCrop = true;
+    st.cropRect = QRect(2, 2, 8, 8);
+    st.colorAdjust.saturation = 120;
+    st.pos = QPointF(10, 20);
+    st.scale = 1.75;
+    st.scaleY = 1.25;
+    st.shear = 0.15;
+    st.rotation = 12.5;
+    st.opacity = 0.8;
+    st.z = 3.0;
+    st.hFlip = true;
+    st.vFlip = true;
+    st.sessionId = 42;
+    st.path = QStringLiteral("/a.jpg");
+    st.sessionIndex = 3;
+
+    const WorkspaceItemState out = SessionAppearance::clearedContentOps(st);
+    QCOMPARE(out.contentQuarterTurns, 0);
+    QVERIFY(!out.contentHFlip);
+    QVERIFY(!out.hasCrop);
+    QVERIFY(out.colorAdjust.isIdentity());
+    QCOMPARE(out.pos, QPointF(10, 20));
+    QCOMPARE(out.scale, 1.75);
+    QCOMPARE(out.scaleY, 1.25);
+    QCOMPARE(out.shear, 0.15);
+    QCOMPARE(out.rotation, 12.5);
+    QCOMPARE(out.opacity, 0.8);
+    QCOMPARE(out.z, 3.0);
+    QVERIFY(out.hFlip);
+    QVERIFY(out.vFlip);
+    QCOMPARE(out.sessionId, SessionImageId(42));
+    QCOMPARE(out.path, QStringLiteral("/a.jpg"));
+    QCOMPARE(out.sessionIndex, 3);
+}
+
+void SessionAppearanceTest::poseMerge_snapshotOntoStoreContent()
+{
+    // restore / completeLoadRestore (2214): ItemWorld content + snapshot pose.
+    WorkspaceItemState store;
+    store.contentQuarterTurns = 1;
+    store.hasCrop = true;
+    store.cropRect = QRect(0, 0, 50, 40);
+    store.colorAdjust.brightness = 8;
+    store.pos = QPointF(0, 0);
+    store.scale = 1.0;
+
+    WorkspaceItemState snapshot;
+    snapshot.pos = QPointF(7, 9);
+    snapshot.scale = 2.0;
+    snapshot.scaleY = 1.5;
+    snapshot.shear = 0.05;
+    snapshot.rotation = 30.0;
+    snapshot.opacity = 0.9;
+    snapshot.z = 1.0;
+    snapshot.hFlip = true;
+    snapshot.vFlip = false;
+
+    ItemComponents::applyPlacementToState(
+        store, ItemComponents::placementFromState(snapshot));
+
+    QCOMPARE(store.pos, QPointF(7, 9));
+    QCOMPARE(store.scale, 2.0);
+    QCOMPARE(store.scaleY, 1.5);
+    QCOMPARE(store.shear, 0.05);
+    QCOMPARE(store.rotation, 30.0);
+    QCOMPARE(store.opacity, 0.9);
+    QCOMPARE(store.z, 1.0);
+    QVERIFY(store.hFlip);
+    QVERIFY(!store.vFlip);
+    // Content from store preserved.
+    QCOMPARE(store.contentQuarterTurns, 1);
+    QVERIFY(store.hasCrop);
+    QCOMPARE(store.cropRect, QRect(0, 0, 50, 40));
+    QCOMPARE(store.colorAdjust.brightness, 8);
 }
 
 QTEST_MAIN(SessionAppearanceTest)
