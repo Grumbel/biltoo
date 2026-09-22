@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.28-overlay-thumtoo-stamps.**
+
+- **thumtoo-314** (separate bundle): large centred TILE/SOFT source-space stamps.
+- Biltoo plan overlay: **washes + summary only** — no per-cell TILE text.
+  Pixel labels come from thumtoo when `THUMTOO_DEBUG_OVERLAY=1`.
+
+### Apply
+```bash
+# thumtoo first (or rebuild nested):
+git -C /path/to/thumtoo pull --ff-only /path/to/thumtoo-314-debug-overlay-tile-labels-8ea52ea.bundle HEAD
+# biltoo:
+git pull --ff-only /path/to/biltoo-2290.28-overlay-thumtoo-stamps-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.27-tile-cull-orient-clip.**
 
 Tile culling/clipping wrong on rotated images (general, not only overlay):

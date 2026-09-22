@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2290.27-tile-cull-orient-clip**.
-Latest tip: **biltoo-2290.27-tile-cull-orient-clip**. Next bundle number: **2291**
+Latest agent handoff: **TODO.md → biltoo-2290.28-overlay-thumtoo-stamps**.
+Latest tip: **biltoo-2290.28-overlay-thumtoo-stamps**. Next bundle number: **2291**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
@@ -107,19 +107,17 @@ in generated C++ string literals.
 
 ### Debug TILE overlays: thumtoo owns pixel stamps
 
-`THUMTOO_DEBUG_OVERLAY` / `BILTOO_DEBUG_OVERLAY` currently layers **two** things:
+`THUMTOO_DEBUG_OVERLAY` / `BILTOO_DEBUG_OVERLAY`:
 
-1. **Thumtoo** (preferred): stamps on soft/tile **bitmaps** as they are produced.
-   Those stamps live in source pixel space and **automatically** follow host
-   orient/flip/crop when biltoo paints the patch.
-2. **Biltoo host** (`paintTilePlanDebugOverlay`): coverage washes over the draw
-   plan (exact/parent/hole). This is approximate host geometry only.
+1. **Thumtoo** (required for TILE text): stamps soft/tile **bitmaps** on the
+   read path (`debug_overlay_tile` / `debug_overlay_pixel_level`). Source
+   pixel space — host orient/flip carries the stamp. Labels: **TILE / s=N /
+   x,y** (tiles) or **SOFT / le=N** (ladder). Needs thumtoo **≥314**.
+2. **Biltoo host** (`paintTilePlanDebugOverlay`): **coverage washes only**
+   (exact/parent/hole) + small summary plate. No per-cell TILE text (that
+   duplicated thumtoo and ignored orient before ContentXform mapping).
 
-Do **not** expand biltoo’s plan overlay into a full tile debugger. Durable
-`TILE s=… / x,y` text on the pixels themselves belongs in **thumtoo** so every
-host gets correct orientation for free. Biltoo may keep a thin coverage wash
-for `BILTOO_TILE_DEBUG` / plan completeness; it must map cells through
-`ContentXform` like tile paint when it draws.
+Do **not** reintroduce host-side TILE text on plan cells.
 
 ## Git & delivery
 

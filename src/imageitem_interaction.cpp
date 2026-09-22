@@ -162,29 +162,9 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(dst);
 
-        // TILE + scale + x,y. setPixelSize is item-local; scale by 1/sx so
-        // on-screen size stays readable when zoomed out.
-        const qreal cellDev = qMin(dst.width(), dst.height()) * sx;
-        if (cellDev < 10.0) {
-            continue;
-        }
-        const int wantDevicePx = qBound(15, int(cellDev * 0.28), 56);
-        const int fontLocalPx =
-            qMax(1, int(qRound(qreal(wantDevicePx) / qMax(sx, qreal(1e-6)))));
-        QFont of = painter->font();
-        of.setBold(true);
-        of.setStyleHint(QFont::SansSerif);
-        of.setFamily(QStringLiteral("Sans Serif"));
-        of.setPixelSize(fontLocalPx);
-        painter->setFont(of);
-        const QString label = QStringLiteral("TILE\ns=%1\n%2,%3")
-                                  .arg(scale)
-                                  .arg(tx)
-                                  .arg(ty);
-        painter->setPen(QColor(0, 0, 0, 200));
-        painter->drawText(dst.adjusted(1, 1, 1, 1), Qt::AlignCenter, label);
-        painter->setPen(edge);
-        painter->drawText(dst, Qt::AlignCenter, label);
+        // Pixel TILE text is stamped by thumtoo on the bitmap (source space;
+        // orient follows the patch). Host overlay is coverage wash only.
+
     }
 
     QFont pf = painter->font();
