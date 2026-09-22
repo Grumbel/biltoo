@@ -6,7 +6,6 @@
 
 #include "imageview_types.h"
 
-#include <QHash>
 #include <QList>
 #include <QPointF>
 #include <QSet>
@@ -25,7 +24,7 @@ struct PendingSessionBind {
 };
 
 /**
- * Session-scoped LoadAdd bind queue and related select/index maps.
+ * Session-scoped LoadAdd bind queue and select-on-create ids.
  *
  * Decode orchestration and canvas placement stay on ImageView; this bag owns
  * the pending lists that clear together on session wipe.
@@ -35,7 +34,6 @@ public:
     void clear()
     {
         m_binds.clear();
-        m_indexByPath.clear();
         m_selectIds.clear();
     }
 
@@ -95,15 +93,6 @@ public:
 
     int bindCount() const { return m_binds.size(); }
 
-    void setIndexForPath(const QString &path, int index)
-    {
-        if (!path.isEmpty()) {
-            m_indexByPath.insert(path, index);
-        }
-    }
-
-    void removeIndexForPath(const QString &path) { m_indexByPath.remove(path); }
-
     void clearSelectIds() { m_selectIds.clear(); }
 
     void addSelectId(SessionImageId id)
@@ -133,7 +122,6 @@ public:
 
 private:
     QList<PendingSessionBind> m_binds;
-    QHash<QString, int> m_indexByPath;
     QSet<SessionImageId> m_selectIds;
 };
 

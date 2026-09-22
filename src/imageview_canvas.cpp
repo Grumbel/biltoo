@@ -303,7 +303,6 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
             b.id = sid;
             b.index = i;
             m_bindBook.append(b);
-            m_bindBook.setIndexForPath(path, i);
         }
 
         if (virtualize) {

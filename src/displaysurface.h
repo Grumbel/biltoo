@@ -96,7 +96,6 @@ public:
     DisplaySurface::SurfaceId bind(DisplaySurface::Kind kind, const QString &path,
                                    SessionImageId sessionId);
     void unbind(DisplaySurface::SurfaceId id);
-    void unbindAll();
 
     bool setNeed(DisplaySurface::SurfaceId id, int needEdge);
     bool setFrozen(DisplaySurface::SurfaceId id, bool frozen);

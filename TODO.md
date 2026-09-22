@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2273-drop-unbindall-bindbook-path-index.** Dead surface cleanup:
+
+1. DisplaySurfaceController: remove never-defined/never-called `unbindAll`
+2. SessionBindBook: remove write-only `m_indexByPath` and
+   `setIndexForPath` / `removeIndexForPath` (list index lives on
+   `PendingSessionBind::index`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2273.1-drop-unbindall-bindbook-path-index-e6c70e4.bundle HEAD
+```
+
+Next: **2274**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2272-drop-unused-bindbook-loadgate-apis.** Dead API cleanup:
 
 1. SessionBindBook: remove unused `takeSelectIds` (select ids cleared via

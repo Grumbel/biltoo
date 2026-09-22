@@ -65,9 +65,6 @@ bool ImageView::addImageForSession(const QString &path, SessionImageId sessionId
         b.id = sessionId;
         b.index = sessionIndex;
         m_bindBook.append(b);
-        if (sessionIndex >= 0) {
-            m_bindBook.setIndexForPath(path, sessionIndex);
-        }
         // Paste / membership must grow pathOrder so LoadAdd's wanted count
         // includes this session image. Without this, a path already on the
         // canvas left have==pathOrderCount and never created the new tile

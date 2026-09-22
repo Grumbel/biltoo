@@ -1359,7 +1359,6 @@ void GalleryController::ensurePlaceholders()
             b.id = sid;
             b.index = i;
             m_view->hostBindBook().append(b);
-            m_view->hostBindBook().setIndexForPath(path, i);
         }
 
         // Prefer content layout size (ItemWorld); soft install may follow.
