@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2263-drop-index-add-workspace-preload-pump.** Dead path cleanup:
+
+1. Remove never-emitted `ThumbnailBar::indexAddToWorkspace` and
+   `MainWindow::onThumbnailAddToWorkspace` (workspace membership is multi-select
+   + workspaceSelectionChanged)
+2. Remove unused `SlideshowController::pumpSlideshowPreloadQueue` (preload is
+   driven by direct preloadSlideshowImage calls)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2263-drop-index-add-workspace-preload-pump-e6c70e4.bundle HEAD
+```
+
+Next: **2264**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2262-drop-show-topic-dwell-resume-signal.** Dead UI API cleanup:
 
 1. Remove unused `HelpPanel::showTopic` (free-form topic path never wired)

@@ -132,7 +132,6 @@ public:
     int slideshowTargetEdge() const;
     qreal slideshowZoomBaseScale(const QSize &logical, int vw, int vh) const;
     void setSlideshowNavHot(bool hot);
-    void pumpSlideshowPreloadQueue();
     void preloadSlideshowImage(const QString &path);
     void invalidateDwellAtlasRebuilds();
     void setSlideshowUnderlayVisible(bool visible);

@@ -227,8 +227,6 @@ MainWindow::MainWindow(QWidget *parent)
     }
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);
-    connect(m_thumbnailBar, &ThumbnailBar::indexAddToWorkspace,
-            this, &MainWindow::onThumbnailAddToWorkspace);
     connect(m_thumbnailBar, &ThumbnailBar::workspaceSelectionChanged,
             this, &MainWindow::onThumbnailWorkspaceSelectionChanged);
     connect(m_thumbnailBar, &ThumbnailBar::removeIndicesRequested,
@@ -515,25 +513,6 @@ bool MainWindow::isImageMode() const
     return m_imageView && m_imageView->isImageMode();
 }
 
-void MainWindow::onThumbnailAddToWorkspace(int index)
-{
-    if (!isWorkspaceMode()) {
-        // Enter Workspace when the user explicitly adds from the strip
-        m_workspaceModeAct->setChecked(true);
-        m_imageView->setViewMode(ImageView::ViewMode::Workspace);
-        m_thumbnailBar->setMultiSelectEnabled(true);
-        updateWorkspaceActionVisibility();
-        if (index >= 0 && index < m_session.paths().size()) {
-            m_thumbnailBar->setSelectedIndices({index});
-        }
-    }
-    if (index < 0 || index >= m_session.paths().size()) {
-        return;
-    }
-    m_imageView->addImageForSession(m_session.paths().at(index), sessionIdAt(index), index);
-    markWorkspaceDirty();
-    syncThumbnailCanvasMembership();
-}
 
 void MainWindow::onThumbnailWorkspaceSelectionChanged()
 {

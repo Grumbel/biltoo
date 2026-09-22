@@ -1580,22 +1580,6 @@ void SlideshowController::setSlideshowNavHot(bool hot)
 }
 
 
-void SlideshowController::pumpSlideshowPreloadQueue()
-{
-    // Start at most one pending path now that an inflight slot freed.
-    const int needEdge = SlideshowAtlasPolicy::needEdge(slideshowTargetEdge());
-    QString next;
-    while (phase().takeNextRasterPending(&next)) {
-        if (phase().rasterInflightContains(next)) {
-            continue;
-        }
-        if (ImageCache::adequate(slideshowRaster(next), needEdge)) {
-            continue;
-        }
-        preloadSlideshowImage(next);
-        break;
-    }
-}
 
 
 void SlideshowController::preloadSlideshowImage(const QString &path)

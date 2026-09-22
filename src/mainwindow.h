@@ -332,7 +332,6 @@ private slots:
     void onMouseInfoChanged(const ImageMouseInfo &info);
     void showContextMenu(const QPoint &pos);
     void onThumbnailActivated(int index);
-    void onThumbnailAddToWorkspace(int index);
     void onThumbnailWorkspaceSelectionChanged();
     void onWorkspacePathsChanged();
     void removeSessionIndices(const QList<int> &indices);

@@ -215,7 +215,6 @@ public:
 
 signals:
     void indexActivated(int index);
-    void indexAddToWorkspace(int index);
     /** Multi-select changed (selection only — does not drive canvas membership). */
     void workspaceSelectionChanged();
     void removeIndicesRequested(const QList<int> &indices);
