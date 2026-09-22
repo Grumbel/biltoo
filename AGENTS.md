@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2290.24-tile-overlay-qstringliteral**.
-Latest tip: **biltoo-2290.24-tile-overlay-qstringliteral**. Next bundle number: **2291**
+Latest agent handoff: **TODO.md → biltoo-2290.25-agents-qstringliteral-note**.
+Latest tip: **biltoo-2290.25-agents-qstringliteral-note**. Next bundle number: **2291**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).
@@ -69,6 +69,41 @@ Windows / cross-compile feasibility (not a scheduled port).
 - Avoid quick hacks; prefer the proper design even if it takes longer.
 - Icons: use `QIcon::fromTheme(...)` with a `QStyle::StandardPixmap`
   fallback so the app works under any icon theme and without a theme.
+
+### `QStringLiteral` and multi-line strings (recurring agent footgun)
+
+`QStringLiteral("…")` is a **single C string literal**. A real newline inside
+the quotes is a **compile error** (`missing terminating " character` /
+`unterminated argument list invoking macro QStringLiteral`).
+
+**Wrong** (looks fine in an editor, fails the build):
+
+```cpp
+const QString label = QStringLiteral("TILE
+s=%1
+%2,%3");
+```
+
+**Right** — escape newlines on one line:
+
+```cpp
+const QString label = QStringLiteral("TILE\ns=%1\n%2,%3");
+```
+
+**Also right** — concatenate adjacent string literals (each line is its own
+quoted piece; the preprocessor joins them):
+
+```cpp
+const QString label = QStringLiteral("TILE\n"
+                                     "s=%1\n"
+                                     "%2,%3");
+```
+
+Do **not** put raw line breaks inside one pair of `"` … `"` for
+`QStringLiteral`, `QLatin1String`, or plain `"…"` when the intent is a
+multi-line `QString`. Same discipline for shell / Nix strings when editing
+sources via scripts: prefer explicit `\n` escapes over embedding real newlines
+in generated C++ string literals.
 
 ## Git & delivery
 

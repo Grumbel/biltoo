@@ -2,6 +2,23 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.25-agents-qstringliteral-note.** Docs only: AGENTS.md Coding
+conventions now call out the recurring `QStringLiteral` multi-line footgun
+(use `\n` or adjacent literals; never a real newline inside one pair of quotes).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.25-agents-qstringliteral-note-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.24-tile-overlay-qstringliteral.** Build fix: QStringLiteral
 had real newlines (unterminated string). Use `\n` escapes on one line.
 
