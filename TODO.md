@@ -2,6 +2,34 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2299-filmstrip-click-policy.**
+
+Filmstrip click policy cleanup:
+
+| Mode | Single-click | Double-click / Enter |
+|------|----------------|----------------------|
+| **Image** | `indexNavigated` → `setCurrentIndex` | (same row) |
+| **Gallery** | multi-select on release | `indexActivated` → Image mode |
+| **Workspace** | multi-select on release | `indexActivated` → Image mode |
+
+Fixes Image-mode single-click: was emitting `indexActivated` →
+`openSessionIndexInImageMode` (heavy re-enter). Also force SingleSelection on
+plain click so a prior Ctrl/Shift gesture cannot leave ExtendedSelection stuck
+and skip navigation.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2299-filmstrip-click-policy-c0bffd5.bundle HEAD
+```
+
+Next: **2300**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2298-layout-orient-first-rotate.**
 
 `applyContentLayoutSize` used `orientAuthorityWant(hasContentOrient, want)` **before**

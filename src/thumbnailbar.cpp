@@ -2530,15 +2530,16 @@ void ThumbnailBar::onCurrentRowChanged(int row)
     if (!m_visibleLoadsSuspended) {
         scheduleVisibleThumbnailLoads();
     }
+    // Gallery/Workspace: multi-select is applied on mouse release; row change is
+    // not navigation.
     if (m_multiSelect) {
         return;
     }
     if (row < 0) {
         return;
     }
-    // Ctrl/Shift/Meta multi-select (temporary ExtendedSelection in Image mode):
-    // do not treat current-row change as activation. Activation opened Image
-    // mode / cleared the strip selection and made Ctrl feel broken.
+    // Image mode only below. Ctrl/Shift/Meta: temporary ExtendedSelection for
+    // bulk session ops — update selection chrome, do not navigate the image.
     const Qt::KeyboardModifiers mods =
         QGuiApplication::keyboardModifiers()
         | (m_pressActive ? m_pressModifiers : Qt::KeyboardModifiers());
@@ -2551,7 +2552,12 @@ void ThumbnailBar::onCurrentRowChanged(int row)
         emit workspaceSelectionChanged();
         return;
     }
-    emit indexActivated(row);
+    // Plain click: navigate session cursor (MainWindow::setCurrentIndex).
+    // Never indexActivated here — that re-enters Image mode and broke single-click.
+    if (selectionMode() != QAbstractItemView::SingleSelection) {
+        setSelectionMode(QAbstractItemView::SingleSelection);
+    }
+    emit indexNavigated(row);
 }
 
 void ThumbnailBar::requestRemoveSelection()
@@ -2894,12 +2900,16 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
     m_dragStarted = false;
     m_pressModifiers = event->modifiers();
 
-    // Image / Gallery session strip: Ctrl/Shift multi-select for bulk session
-    // ops (remove, etc.). Does not enter Workspace — that is explicit (mode
-    // toggle mode, or drag onto the canvas).
+    // --- Mode policy ---------------------------------------------------------
+    // Image (m_multiSelect false): single-click navigates; Ctrl/Shift only for
+    // temporary multi-select (bulk remove etc.). Gallery + Workspace
+    // (m_multiSelect true): normal multi-select on release; drag starts on move.
+    // -------------------------------------------------------------------------
     if (!m_multiSelect) {
-        if (hit && (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier
-                                          | Qt::MetaModifier))) {
+        const bool multiMods = event->modifiers()
+                               & (Qt::ControlModifier | Qt::ShiftModifier
+                                  | Qt::MetaModifier);
+        if (hit && multiMods) {
             if (selectionMode() == QAbstractItemView::SingleSelection) {
                 setSelectionMode(QAbstractItemView::ExtendedSelection);
                 setSelectionRectVisible(false);
@@ -2908,14 +2918,18 @@ void ThumbnailBar::mousePressEvent(QMouseEvent *event)
             event->accept();
             return;
         }
-        // Single click navigates the session (list selection)
+        // Plain click: force SingleSelection so a prior Ctrl gesture cannot leave
+        // ExtendedSelection stuck (currentRowChanged then skipped navigation).
+        if (selectionMode() != QAbstractItemView::SingleSelection) {
+            setSelectionMode(QAbstractItemView::SingleSelection);
+            setSelectionRectVisible(false);
+        }
         QListWidget::mousePressEvent(event);
         return;
     }
 
-    // Workspace mode: selection is normal multi-select (applied on release if
-    // the gesture is not a drag). Canvas membership is drag-drop only.
-    // Do not change selection on press — that fought drag-and-drop.
+    // Gallery / Workspace: apply selection on release if the gesture is not a
+    // drag. Canvas membership is drag-drop only — never toggle on press.
     event->accept();
 }
 
@@ -3050,8 +3064,8 @@ void ThumbnailBar::mouseDoubleClickEvent(QMouseEvent *event)
         event->accept();
         return;
     }
-    // Open / navigate only — never toggle Workspace canvas membership.
-    // Place on Workspace via drag-drop (or explicit Workspace selection).
+    // Open in Image mode — never toggle Workspace canvas membership.
+    // Place on Workspace via drag-drop only.
     emit indexActivated(row(hit));
     event->accept();
 }

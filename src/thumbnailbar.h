@@ -211,8 +211,17 @@ public:
     static constexpr int kMaxThumbSize = 1024;
 
 signals:
+    /**
+     * Double-click / Enter: open this session index in Image mode (from Gallery
+     * or Workspace). Not used for plain Image-mode single-click navigation.
+     */
     void indexActivated(int index);
-    /** Multi-select changed (selection only — does not drive canvas membership). */
+    /**
+     * Image-mode filmstrip: plain single-click changed the current row.
+     * Host should setCurrentIndex only — do not re-enter Image mode.
+     */
+    void indexNavigated(int index);
+    /** Multi-select changed (Gallery/Workspace; selection only — not canvas membership). */
     void workspaceSelectionChanged();
     void removeIndicesRequested(const QList<int> &indices);
     /** Pending filmstrip decode count changed (status bar / indicators). */

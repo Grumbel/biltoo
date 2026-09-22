@@ -240,14 +240,26 @@ void MainWindow::updateNavigationActions()
 
 void MainWindow::onThumbnailActivated(int index)
 {
-    // Double-click / Enter on the filmstrip — same as Gallery tile open:
-    // switch to Image mode on that session index (not Workspace membership).
-    // setCurrentIndex alone only moves the session cursor and left the user
-    // in Gallery/Workspace.
+    // Double-click / Enter on the filmstrip: open Image mode on that index
+    // (from Gallery or Workspace). Not used for plain Image-mode single-click.
     if (index < 0 || index >= m_session.size()) {
         return;
     }
     openSessionIndexInImageMode(index);
+    onSlideshowUserNavigated();
+}
+
+void MainWindow::onThumbnailNavigated(int index)
+{
+    // Image-mode filmstrip single-click: switch the displayed session image.
+    if (index < 0 || index >= m_session.size()) {
+        return;
+    }
+    if (!isImageMode()) {
+        // Gallery/Workspace navigation is multi-select only; open via activate.
+        return;
+    }
+    setCurrentIndex(index);
     onSlideshowUserNavigated();
 }
 

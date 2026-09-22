@@ -227,6 +227,8 @@ MainWindow::MainWindow(QWidget *parent)
     }
     connect(m_thumbnailBar, &ThumbnailBar::indexActivated,
             this, &MainWindow::onThumbnailActivated);
+    connect(m_thumbnailBar, &ThumbnailBar::indexNavigated,
+            this, &MainWindow::onThumbnailNavigated);
     connect(m_thumbnailBar, &ThumbnailBar::workspaceSelectionChanged,
             this, &MainWindow::onThumbnailWorkspaceSelectionChanged);
     connect(m_thumbnailBar, &ThumbnailBar::removeIndicesRequested,
