@@ -319,6 +319,12 @@ WorkspaceItemState orientAuthorityWant(bool hasContentOrient,
     return withoutContentOrient(want);
 }
 
+bool wantSpecifiesContentOrient(const WorkspaceItemState &want)
+{
+    return want.hasCrop || want.contentHFlip || want.contentVFlip
+           || ContentXform::normalizeQuarterTurns(want.contentQuarterTurns) != 0;
+}
+
 
 WorkspaceItemState clearedContentOps(const WorkspaceItemState &state)
 {

@@ -223,11 +223,14 @@ void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState
         return;
     }
     // Placement/color-only durable rows are not content orient (2205–2211).
+    // layoutOrientAuthorityWant also keeps orient when *want* already specifies
+    // turns/flips/crop — bakeItemRotate90 applies layout *before* setContentBake,
+    // so hasContentOrient is still false on the first 90° and must not strip.
     WorkspaceItemState want = wantIn;
     {
         const SessionImageId sid = resolveContentEditSessionId(item);
         if (sid != kInvalidSessionImageId) {
-            want = SessionAppearance::orientAuthorityWant(
+            want = SessionAppearance::layoutOrientAuthorityWant(
                 m_itemWorld.hasContentOrient(sid), want);
         }
     }

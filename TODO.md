@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2298-layout-orient-first-rotate.**
+
+`applyContentLayoutSize` used `orientAuthorityWant(hasContentOrient, want)` **before**
+`setContentBake`, so the **first** 90° content rotate had `hasContentOrient==false`
+and **stripped turns** — contentRect stayed unrotated. Odd subsequent turns looked
+OK once bake existed.
+
+Fix: `layoutOrientAuthorityWant` = ItemWorld orient **or** want already specifies
+turns/flips/crop. Placement-only wants still strip.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2298-layout-orient-first-rotate-c0bffd5.bundle HEAD
+```
+
+Next: **2299**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2297.1-orient-crop-test-forward-only.**
 
 Fix flaky/false-fail crop contract: AABB inverse→forward under odd turns expands

@@ -151,6 +151,25 @@ WorkspaceItemState orientAuthorityWant(bool hasContentOrient,
                                        const WorkspaceItemState &want);
 
 /**
+ * True when @p want itself carries orient/crop (flips, quarter turns, crop).
+ * Used with orientAuthorityWant so the **first** content rotate/crop still
+ * drives layoutSize: ItemWorld hasContentOrient is still false until
+ * setContentBake runs *after* applyContentLayoutSize in bakeItemRotate90.
+ */
+[[nodiscard]] bool wantSpecifiesContentOrient(const WorkspaceItemState &want);
+
+/**
+ * Layout-size authority: ItemWorld content orient **or** explicit orient on
+ * @p want (mid-bake). Placement-only wants with no orient fields still strip.
+ */
+inline WorkspaceItemState layoutOrientAuthorityWant(bool hasItemWorldOrient,
+                                                    const WorkspaceItemState &want)
+{
+    return orientAuthorityWant(hasItemWorldOrient || wantSpecifiesContentOrient(want),
+                               want);
+}
+
+/**
  * Drop content bake ops (flips, quarter turns, crop); keep colour grade and
  * non-content placement fields.
  */

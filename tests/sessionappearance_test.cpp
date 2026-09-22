@@ -7,6 +7,7 @@
  */
 
 #include "sessionappearance.h"
+#include "contentxform.h"
 #include "sessionseedbook.h"
 #include "sessiondocument.h"
 #include "itemworld.h"
@@ -31,6 +32,8 @@ private slots:
     void withoutContentOrient_stripsOrientKeepsGrade();
     void orientAuthorityWant_passthroughWhenHasOrient();
     void orientAuthorityWant_stripsWhenPlacementOnly();
+    void wantSpecifiesContentOrient_detectsTurnsFlipsCrop();
+    void layoutOrientAuthorityWant_keepsFirstRotateWithoutItemWorld();
     void clearedContentOps_stripsOrientAndGrade();
     // Workspace pose-only snapshot contract (2212–2214)
     void clearedContentOps_keepsFullPlacement();
@@ -198,6 +201,46 @@ void SessionAppearanceTest::orientAuthorityWant_stripsWhenPlacementOnly()
     QVERIFY(!out.hasCrop);
     QCOMPARE(out.colorAdjust.contrast, 110);
     QCOMPARE(out.pos, QPointF(1, 2));
+}
+
+void SessionAppearanceTest::wantSpecifiesContentOrient_detectsTurnsFlipsCrop()
+{
+    QVERIFY(!SessionAppearance::wantSpecifiesContentOrient(WorkspaceItemState{}));
+    WorkspaceItemState t;
+    t.contentQuarterTurns = 1;
+    QVERIFY(SessionAppearance::wantSpecifiesContentOrient(t));
+    WorkspaceItemState f;
+    f.contentHFlip = true;
+    QVERIFY(SessionAppearance::wantSpecifiesContentOrient(f));
+    WorkspaceItemState c;
+    c.hasCrop = true;
+    c.cropRect = QRect(0, 0, 10, 10);
+    QVERIFY(SessionAppearance::wantSpecifiesContentOrient(c));
+}
+
+void SessionAppearanceTest::layoutOrientAuthorityWant_keepsFirstRotateWithoutItemWorld()
+{
+    // bakeItemRotate90: hasContentOrient still false, want already has turns=1.
+    WorkspaceItemState want;
+    want.contentQuarterTurns = 1;
+    const WorkspaceItemState out =
+        SessionAppearance::layoutOrientAuthorityWant(false, want);
+    QCOMPARE(out.contentQuarterTurns, 1);
+
+    // Placement-only pollution with no orient fields: still identity.
+    WorkspaceItemState place;
+    place.pos = QPointF(3, 4);
+    place.scale = 2.0;
+    const WorkspaceItemState stripped =
+        SessionAppearance::layoutOrientAuthorityWant(false, place);
+    QCOMPARE(stripped.contentQuarterTurns, 0);
+    QCOMPARE(stripped.pos, QPointF(3, 4));
+    QCOMPARE(stripped.scale, 2.0);
+
+    // layoutSize must swap on that first-rotate want (file-native 800×600).
+    const QSize lay = ContentXform::layoutSize(
+        QSize(800, 600), SessionAppearance::layoutOrientAuthorityWant(false, want));
+    QCOMPARE(lay, QSize(600, 800));
 }
 
 void SessionAppearanceTest::clearedContentOps_stripsOrientAndGrade()
