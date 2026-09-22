@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2296-tile-summary-lines-alpha.**
+
+Host plan summary: `TILE` / `s=N` / COMPLETE on **three lines**, `QFont::Black`,
+alpha ~110 (more transparent). Yellow still thumtoo only.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2296-tile-summary-lines-alpha-c0bffd5.bundle HEAD
+```
+
+Next: **2297**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2295-tile-summary-black-bigger.**
 
 Host plan summary (`TILE s=N` / COMPLETE|…): even larger (~90% short edge),

@@ -178,8 +178,10 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     }
 
     const tilelod::TileSession::Coverage cov = session->coverage();
+    // Three lines so "s=N" is not glued to TILE (easier to read at large size).
     QStringList summary;
-    summary << QStringLiteral("TILE s=%1").arg(target);
+    summary << QStringLiteral("TILE");
+    summary << QStringLiteral("s=%1").arg(target);
     if (cov.fully_covered()) {
         summary << QStringLiteral("COMPLETE");
     } else if (cov.in_flight > 0) {
@@ -191,11 +193,12 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const int nlines = summary.size();
     const qreal shortEdge = qMin(labelBox.width(), labelBox.height());
     // Fill most of the content box — host summary, not thumtoo TILE stamps.
-    int px = qRound(shortEdge * 0.90 / (nlines * 1.15));
+    int px = qRound(shortEdge * 0.92 / (nlines * 1.12));
     px = qBound(24, px, 1024);
 
     QFont pf = painter->font();
-    pf.setBold(true);
+    // Black weight — setBold alone often looks medium at large pixel sizes.
+    pf.setWeight(QFont::Black);
     pf.setStyleHint(QFont::SansSerif);
     pf.setFamily(QStringLiteral("Sans Serif"));
     pf.setPixelSize(px);
@@ -219,8 +222,8 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const int lineH = fm.height();
     const qreal totalH = lineH * nlines;
     const qreal y0 = labelBox.center().y() - totalH / 2.0;
-    // Bold black, no outline — yellow is reserved for thumtoo pixel stamps.
-    painter->setPen(QColor(0, 0, 0, 220));
+    // Semi-transparent black, no outline — yellow stays thumtoo stamps.
+    painter->setPen(QColor(0, 0, 0, 110));
     painter->setBrush(Qt::NoBrush);
     for (int i = 0; i < nlines; ++i) {
         const QString &line = summary.at(i);
