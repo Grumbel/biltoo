@@ -39,9 +39,10 @@
         return m_sizeBook.hasDefinitive(path);
     }
     void adoptResolvedSize(const QString &path, const QSize &size) override;
-    void scheduleSizeProbe(const QString &path) override
+    void adoptSizeProbeFailed(const QString &path) override;
+    void scheduleSizeProbeBatch(const QStringList &paths) override
     {
-        scheduleImageSizeProbe(path);
+        ThumtooCache::scheduleProbeBatch(paths);
     }
     /** Pack order for TTFP probes — overlay resolve (Explicit book). */
     QStringList sizeResolvePathOrder() const override
@@ -60,6 +61,7 @@
     void clearSizeResolveProgress() override;
     void onSizeResolveGateComplete() override;
     void onSizeResolveGateCancelled() override;
+    void onSizeResolvePathSettled(const QString &path) override;
 
     // --- TileNeighborPrefetchHost ------------------------------------------
     bool pathOnLiveCanvas(const QString &path) const override;

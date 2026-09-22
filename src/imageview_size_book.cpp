@@ -299,6 +299,48 @@ void ImageView::adoptResolvedSize(const QString &path, const QSize &size)
 }
 
 
+void ImageView::adoptSizeProbeFailed(const QString &path)
+{
+    if (path.isEmpty()) {
+        return;
+    }
+    m_sizeBook.markFailed(path);
+    // Apply error-cell layout so ordered pack can place this row.
+    if (const QSize native = m_sizeBook.contains(path)
+            ? logicalSizeForPath(path)
+            : QSize(256, 256);
+        isPositiveSize(native)) {
+        applyProbedImageSize(path, native);
+    }
+    // Surface failure on any live tile for this path.
+    for (ImageItem *item : m_items) {
+        if (item && item->path() == path) {
+            item->setToolTip(tr("Failed to read image size:\n%1").arg(path));
+        }
+    }
+}
+
+void ImageView::onSizeResolvePathSettled(const QString &path)
+{
+    Q_UNUSED(path);
+    if (!isGalleryMode() || !m_gallerySizeResolve.active()) {
+        return;
+    }
+    // Ordered progressive pack: create placeholders only for paths that already
+    // have definitive (or failed) size, in pack order — never random.
+    if (m_galleryDecodeBook.isDeferPopulate()) {
+        m_gallery.ensurePlaceholders();
+        if (!m_items.isEmpty() && !m_layout.isFreeForm()) {
+            m_gallery.applyLayout(GalleryPackReason::ContentChange);
+        }
+        if (viewport()) {
+            viewport()->update();
+        }
+    }
+}
+
+
+
 
 
 
@@ -315,7 +357,7 @@ void ImageView::onSizeResolveGateComplete()
     if (isGalleryMode()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     }
-    // Create tiles only now — sizes are definitive (or timed out with stand-in).
+    // Create any remaining tiles — every path has definitive size or failure.
     if (m_galleryDecodeBook.isDeferPopulate()) {
         m_galleryDecodeBook.setDeferPopulate(false);
         m_gallery.ensurePlaceholders();

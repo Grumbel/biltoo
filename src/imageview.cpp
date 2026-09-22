@@ -189,7 +189,7 @@ ImageView::ImageView(QWidget *parent)
                         }
                     }
                 }
-                m_gallerySizeResolve.noteProbeSettled(path);
+                m_gallerySizeResolve.noteProbeSettled(path, valid);
             });
 
     // Soft preview: install better ladder pixels; clear inflight when matched.

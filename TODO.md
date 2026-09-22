@@ -2,6 +2,34 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2283-gallery-size-first-batch-ordered.** Cold Gallery size path:
+
+1. **Batch size probes** — `ThumtooCache::scheduleProbeBatch` with bounded
+   parallel Store work (8), not one-at-a-time serial FIFO.
+2. **No size-resolve wall-clock timeout** — each path ends in definitive size
+   or explicit probe failure (error cell 256² + tooltip); no 45s safety pack.
+3. **Ordered progressive pack** — while the gate is active, create/pack only the
+   contiguous session-order prefix that already has size/failure; never 1×1
+   placeholders; never out-of-order placement.
+4. **HUD** — `Resolving sizes…` with `N / M`, failure count, rough ETA.
+5. Docs: `GALLERY_PIXELS.md` open path updated.
+
+Still open: IntrinsicSource tagging; background pyramid priority ladder;
+full SizeAuthority consolidation.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2283.1-gallery-size-first-batch-ordered-e6c70e4.bundle HEAD
+```
+
+Next: **2284**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2282-rename-gallery-soft-to-decode.** Naming cleanup (LQIP + tiles model):
 
 1. `GallerySoft` → `GalleryDecode` (SM, book, state, host accessors, reset APIs)

@@ -7,33 +7,38 @@
 #include <QObject>
 #include <QSet>
 #include <QString>
-#include <QStringList>
 #include <QSize>
+#include <QStringList>
+#include <QElapsedTimer>
 
 class QTimer;
 
 /**
- * Host surface for Gallery cold-open size gating.
- *
- * ImageView implements this; GallerySizeResolve owns timers, pending set, and
- * progress text policy. Canvas pack / placeholder creation stay on the host.
+ * Host callbacks for the Gallery packaged-layout size gate.
+ * ImageView implements this; GallerySizeResolve owns pending set and progress.
  */
 class GallerySizeResolveHost
 {
 public:
     virtual ~GallerySizeResolveHost() = default;
 
-    /** Host map already has a non-provisional size for @p path. */
+    /** True when ImageSizeBook already has a definitive native size for @p path. */
     virtual bool hasDefinitiveHostSize(const QString &path) const = 0;
 
-    /**
-     * Install a process-memo / probe size into the host map and live geometry.
-     * Called from the GUI thread only.
-     */
+    /** Install a known positive size into the host size book + apply to items. */
     virtual void adoptResolvedSize(const QString &path, const QSize &size) = 0;
 
-    /** Enqueue an async size probe (Thumtoo scheduleProbe or equivalent). */
-    virtual void scheduleSizeProbe(const QString &path) = 0;
+    /**
+     * Size probe failed (unsupported / unreadable). Host records failure and
+     * may adopt a fixed error-cell layout size so ordered pack can proceed.
+     */
+    virtual void adoptSizeProbeFailed(const QString &path) = 0;
+
+    /**
+     * Queue size probes for the full cold-open set in one batch (not per-path
+     * serial). Implementation should call ThumtooCache::scheduleProbeBatch.
+     */
+    virtual void scheduleSizeProbeBatch(const QStringList &paths) = 0;
 
     /** Session path order for TTFP (cover / primary first). */
     virtual QStringList sizeResolvePathOrder() const = 0;
@@ -50,8 +55,8 @@ public:
     virtual void clearSizeResolveProgress() = 0;
 
     /**
-     * Gate completed (all probes settled or safety timeout). Host packs /
-     * shows placeholders. @p wasActive is always true when invoked from finish.
+     * Gate completed (all probes settled: size or failure). Host packs /
+     * shows placeholders for any remaining rows.
      */
     virtual void onSizeResolveGateComplete() = 0;
 
@@ -60,13 +65,21 @@ public:
      * Host drops defer-populate and may clear HUD.
      */
     virtual void onSizeResolveGateCancelled() = 0;
+
+    /**
+     * A path settled (size or failure) while the gate is active.
+     * Host may extend the ordered prefix of placeholders and pack in session
+     * order (no random out-of-order placement).
+     */
+    virtual void onSizeResolvePathSettled(const QString &path) = 0;
 };
 
 /**
  * Gallery packaged-layout size gate.
  *
- * Owns pending paths, safety timeout, and progress tick (memo sweep). Does not
- * own ImageView canvas state — that remains on GallerySizeResolveHost.
+ * Owns pending paths and progress HUD. Does not use wall-clock timeouts —
+ * each path ends in a definitive size or an explicit failure.
+ * Does not own ImageView canvas state — that remains on GallerySizeResolveHost.
  */
 class GallerySizeResolve : public QObject
 {
@@ -77,33 +90,36 @@ public:
                                 QObject *parent = nullptr);
 
     /**
-     * Inspect @p paths, adopt warm memos, schedule probes for the rest.
+     * Inspect @p paths, adopt warm memos, batch-schedule probes for the rest.
      * @return true if the packaged-layout gate is now active (caller should
-     *         defer populate until finished()).
+     *         defer full populate until finished(); ordered prefix may grow).
      */
     bool startIfNeeded(const QStringList &paths);
 
     void cancel();
-    void noteProbeSettled(const QString &path);
+    void noteProbeSettled(const QString &path, bool sizeValid);
 
     bool active() const { return m_active; }
     int total() const { return m_total; }
     int pendingCount() const { return m_pending.size(); }
+    int failedCount() const { return m_failed; }
+    int resolvedCount() const { return m_resolved; }
 
 private:
     void finish();
     void updateProgressHud();
-    void ensureTimers();
+    void ensureProgressTimer();
 
     GallerySizeResolveHost *m_host = nullptr;
     bool m_active = false;
     int m_total = 0;
+    int m_resolved = 0;
+    int m_failed = 0;
     QSet<QString> m_pending;
-    QTimer *m_safetyTimer = nullptr;
     QTimer *m_progressTimer = nullptr;
+    QElapsedTimer m_elapsed;
 
-    static constexpr int kSafetyTimeoutMs = 45000;
-    static constexpr int kProgressIntervalMs = 50;
+    static constexpr int kProgressIntervalMs = 100;
 };
 
 #endif // GALLERYSIZERESOLVE_H

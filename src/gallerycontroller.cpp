@@ -1304,14 +1304,25 @@ void GalleryController::ensurePlaceholders()
     if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()) {
         return;
     }
-    // Only clear defer-populate. Keep size-resolve active so fill layouts still
-    // wait for finishGallerySizeResolve to pack (LQIP may install meanwhile).
-    m_view->hostGalleryDecodeBook().setDeferPopulate(false);
+    // While the size gate is active, grow an ordered prefix only (session order).
+    // Do not clear defer-populate until the gate completes.
+    const bool sizeGate = m_view->hostGallerySizeResolve().active();
+    if (!sizeGate) {
+        m_view->hostGalleryDecodeBook().setDeferPopulate(false);
+    }
     QSet<ImageItem *> claimed;
     const PackOrderView pack = m_view->currentPackOrder();
     for (int i = 0; i < pack.size(); ++i) {
         const QString path = pack.pathAt(i);
         const SessionImageId sid = pack.idAt(i);
+
+        // Ordered progressive: stop at the first path still waiting for size.
+        if (sizeGate) {
+            const ImageSizeBook &book = m_view->hostSizeBook();
+            if (!book.hasDefinitive(path) && !book.isFailed(path)) {
+                break;
+            }
+        }
 
         ImageItem *existing = nullptr;
         if (sid != kInvalidSessionImageId) {
@@ -1362,10 +1373,13 @@ void GalleryController::ensurePlaceholders()
         }
 
         // Prefer content layout size (ItemWorld); LQIP install may follow.
-        const QImage hint = ImageCache::get(path);
+        // Never create a 1×1 / unknown-size tile on the scene.
         const QSize sz = m_view->contentLayoutSize(path, sid);
-        ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(
-            path, isPositiveSize(sz) ? sz : QSize(1, 1));
+        if (!isPositiveSize(sz) || sz.width() <= 1) {
+            continue;
+        }
+        const QImage hint = ImageCache::get(path);
+        ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(path, sz);
         if (ph) {
             if (sid != kInvalidSessionImageId) {
                 m_view->setItemSessionId(ph, sid);

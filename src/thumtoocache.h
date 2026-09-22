@@ -133,6 +133,12 @@ void requestSizeAsync(const QString &path,
 void scheduleProbe(const QString &path);
 
 /**
+ * Queue many size probes in one pass (session-order FIFO, bounded parallel
+ * Store work). Prefer this for cold Gallery open over per-path scheduleProbe.
+ */
+void scheduleProbeBatch(const QStringList &paths);
+
+/**
  * Cache-only ladder payload (usually JPEG-XL) with long edge <= maxEdge.
  * Empty if thumtoo has no level yet. Caller decodes (e.g. via libvips).
  */

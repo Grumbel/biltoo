@@ -21,12 +21,14 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
     if (!m_host) {
         return false;
     }
-    if (m_safetyTimer) {
-        m_safetyTimer->stop();
-    }
     m_pending.clear();
     m_total = 0;
+    m_resolved = 0;
+    m_failed = 0;
     m_active = false;
+
+    QStringList needProbe;
+    needProbe.reserve(paths.size());
 
     for (const QString &path : paths) {
         if (path.isEmpty()) {
@@ -44,6 +46,7 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
             continue;
         }
         m_pending.insert(path);
+        needProbe.append(path);
     }
 
     m_total = m_pending.size();
@@ -52,32 +55,35 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
     }
 
     // Session order first so primary/cover pages finish before the tail (TTFP).
-    QStringList need;
-    need.reserve(m_pending.size());
+    QStringList ordered;
+    ordered.reserve(m_pending.size());
+    QSet<QString> seen;
     for (const QString &path : m_host->sizeResolvePathOrder()) {
-        if (m_pending.contains(path)) {
-            need.append(path);
+        if (m_pending.contains(path) && !seen.contains(path)) {
+            ordered.append(path);
+            seen.insert(path);
         }
     }
-    for (const QString &path : m_pending) {
-        if (!need.contains(path)) {
-            need.append(path);
+    for (const QString &path : needProbe) {
+        if (!seen.contains(path)) {
+            ordered.append(path);
+            seen.insert(path);
         }
-    }
-    for (const QString &path : need) {
-        m_host->scheduleSizeProbe(path);
     }
 
+    // One batch enqueue — bounded parallel Store size work (not per-path serial).
+    m_host->scheduleSizeProbeBatch(ordered);
+
     if (!m_host->sizeResolveLayoutDefersPopulate()) {
-        // FreeForm / non-packaged: provisional pack OK.
+        // FreeForm / non-packaged: provisional pack OK; do not hold the gate.
         m_pending.clear();
         m_total = 0;
         return false;
     }
 
     m_active = true;
-    ensureTimers();
-    m_safetyTimer->start(kSafetyTimeoutMs);
+    m_elapsed.start();
+    ensureProgressTimer();
     m_progressTimer->start();
     updateProgressHud();
     return true;
@@ -85,13 +91,12 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
 
 void GallerySizeResolve::cancel()
 {
-    if (m_safetyTimer) {
-        m_safetyTimer->stop();
-    }
     const bool wasActive = m_active;
     m_active = false;
     m_pending.clear();
     m_total = 0;
+    m_resolved = 0;
+    m_failed = 0;
     if (!wasActive) {
         return;
     }
@@ -103,13 +108,23 @@ void GallerySizeResolve::cancel()
     }
 }
 
-void GallerySizeResolve::noteProbeSettled(const QString &path)
+void GallerySizeResolve::noteProbeSettled(const QString &path, bool sizeValid)
 {
     if (!m_active) {
         return;
     }
-    if (!path.isEmpty()) {
-        m_pending.remove(path);
+    if (!path.isEmpty() && m_pending.remove(path)) {
+        if (sizeValid) {
+            ++m_resolved;
+        } else {
+            ++m_failed;
+            if (m_host) {
+                m_host->adoptSizeProbeFailed(path);
+            }
+        }
+        if (m_host) {
+            m_host->onSizeResolvePathSettled(path);
+        }
     }
     if (!m_pending.isEmpty()) {
         updateProgressHud();
@@ -120,13 +135,9 @@ void GallerySizeResolve::noteProbeSettled(const QString &path)
 
 void GallerySizeResolve::finish()
 {
-    if (m_safetyTimer) {
-        m_safetyTimer->stop();
-    }
     const bool wasActive = m_active;
     m_active = false;
     m_pending.clear();
-    m_total = 0;
     if (!wasActive) {
         return;
     }
@@ -136,6 +147,9 @@ void GallerySizeResolve::finish()
     if (m_host) {
         m_host->onSizeResolveGateComplete();
     }
+    m_total = 0;
+    m_resolved = 0;
+    m_failed = 0;
 }
 
 void GallerySizeResolve::updateProgressHud()
@@ -152,6 +166,8 @@ void GallerySizeResolve::updateProgressHud()
         }
         if (m_host->hasDefinitiveHostSize(path)) {
             m_pending.remove(path);
+            ++m_resolved;
+            m_host->onSizeResolvePathSettled(path);
             continue;
         }
         const QSize cached =
@@ -161,33 +177,43 @@ void GallerySizeResolve::updateProgressHud()
         }
         m_host->adoptResolvedSize(path, cached);
         m_pending.remove(path);
+        ++m_resolved;
+        m_host->onSizeResolvePathSettled(path);
     }
     if (m_pending.isEmpty()) {
         finish();
         return;
     }
-    const int done = ViewTransform::nonNeg(qint64(m_total) - qint64(m_pending.size()));
-    m_host->setSizeResolveProgress(
-        tr("Resolving sizes…"),
-        tr("%1 / %2").arg(done).arg(m_total));
+
+    const int done = m_resolved + m_failed;
+    const int left = m_pending.size();
+    const qint64 ms = m_elapsed.isValid() ? m_elapsed.elapsed() : 0;
+    QString detail = QStringLiteral("%1 / %2 sizes").arg(done).arg(m_total);
+    if (m_failed > 0) {
+        detail += QStringLiteral(" · %1 failed").arg(m_failed);
+    }
+    if (done > 0 && ms > 200) {
+        const double per = double(ms) / double(done);
+        const int etaMs = int(per * double(left));
+        if (etaMs >= 1000) {
+            detail += QStringLiteral(" · ~%1 s left").arg((etaMs + 500) / 1000);
+        } else {
+            detail += QStringLiteral(" · ~%1 ms left").arg(etaMs);
+        }
+    } else if (ms > 0) {
+        detail += QStringLiteral(" · %1 s").arg(ms / 1000.0, 0, 'f', 1);
+    }
+    m_host->setSizeResolveProgress(QStringLiteral("Resolving sizes…"), detail);
 }
 
-void GallerySizeResolve::ensureTimers()
+void GallerySizeResolve::ensureProgressTimer()
 {
-    if (!m_safetyTimer) {
-        m_safetyTimer = new QTimer(this);
-        m_safetyTimer->setSingleShot(true);
-        connect(m_safetyTimer, &QTimer::timeout, this, [this]() {
-            if (!m_active) {
-                return;
-            }
-            finish();
-        });
+    if (m_progressTimer) {
+        return;
     }
-    if (!m_progressTimer) {
-        m_progressTimer = new QTimer(this);
-        m_progressTimer->setInterval(kProgressIntervalMs);
-        connect(m_progressTimer, &QTimer::timeout, this,
-                &GallerySizeResolve::updateProgressHud);
-    }
+    m_progressTimer = new QTimer(this);
+    m_progressTimer->setInterval(kProgressIntervalMs);
+    QObject::connect(m_progressTimer, &QTimer::timeout, this, [this]() {
+        updateProgressHud();
+    });
 }

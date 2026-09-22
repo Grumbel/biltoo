@@ -19,8 +19,13 @@ PreferCache for underlay.
 
 ## Open path
 
-1. warmSessionOpenMemos — size memo + LQIP into ImageCache + durable-tile memo (worker, joined before pack).
-2. Pack with real aspects when sizes warm.
-3. Install LQIP from ImageCache onto blank cells.
-4. TileLoadCoordinator issues visible tile keys (Gallery uses a higher per-tick budget than Image mode).
-5. scheduleTilePyramid only when durable coverage is not already known.
+1. **Size (ground truth)** — batch `scheduleProbeBatch` / warm memos for the
+   session; packaged layouts hold a size gate until each path has a definitive
+   size or an explicit probe failure (no wall-clock timeout).
+2. **Ordered placeholders + pack** — create cells only for the contiguous
+   session-order prefix that already has size (or failure); extend as results
+   arrive; never place out of order or with unknown/1×1 geometry.
+3. **LQIP** — install from ImageCache onto blank cells (never layout authority).
+4. **Tiles** — TileLoadCoordinator issues visible keys; pyramid only when durable
+   coverage is missing.
+5. HUD shows resolving progress (`N / M sizes`, failures, rough ETA).

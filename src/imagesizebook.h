@@ -27,6 +27,7 @@ public:
     {
         m_byPath.clear();
         m_provisionalPaths.clear();
+        m_failedPaths.clear();
         m_probeScheduled.clear();
     }
 
@@ -39,6 +40,29 @@ public:
     {
         return !path.isEmpty() && m_provisionalPaths.contains(path);
     }
+
+    bool isFailed(const QString &path) const
+    {
+        return !path.isEmpty() && m_failedPaths.contains(path);
+    }
+
+    /**
+     * Size probe failed — record failure and install a fixed error-cell native
+     * size so ordered Gallery pack can proceed without a wall-clock timeout.
+     */
+    void markFailed(const QString &path)
+    {
+        if (path.isEmpty()) {
+            return;
+        }
+        m_failedPaths.insert(path);
+        m_provisionalPaths.remove(path);
+        if (!hasDefinitive(path)) {
+            // Modest cell so layout does not use 1000² stand-ins for errors.
+            m_byPath.insert(path, QSize(256, 256));
+        }
+    }
+
 
     bool hasDefinitive(const QString &path) const
     {
@@ -73,6 +97,7 @@ public:
         }
         m_byPath.insert(path, size);
         m_provisionalPaths.remove(path);
+        m_failedPaths.remove(path);
         return true;
     }
 
@@ -131,6 +156,7 @@ public:
         *out = *it;
         m_byPath.erase(it);
         m_provisionalPaths.remove(path);
+        m_failedPaths.remove(path);
         m_probeScheduled.remove(path);
         return true;
     }
@@ -138,6 +164,7 @@ public:
 private:
     QHash<QString, QSize> m_byPath;
     QSet<QString> m_provisionalPaths;
+    QSet<QString> m_failedPaths;
     QSet<QString> m_probeScheduled;
 };
 
