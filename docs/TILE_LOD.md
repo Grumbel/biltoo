@@ -323,8 +323,9 @@ Policy helpers:
 - `onLadderReady` uses `tickTilesIfOwnDisplay(path, false)` — only wake when a
   live item already wants tiles (not every soft underlay delivery)
 - PathRaster cancel-once on enter tile band
-- Workspace climb still uses `tilesOwnDisplay(wanted, false)` so durable-only
-  SoftDisplay underlay can run until LOD wants
+- Workspace `ensureWorkspaceQualityClimb` skips PreferCache only when
+  `tileLodWanted()` (durable-only SoftDisplay underlay still allowed); global
+  `tickPrimaryTileLod` already ran for the mode
 
 
 ## Coverage + heartbeat (biltoo-1036 / 1037)

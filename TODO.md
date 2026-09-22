@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2242-workspace-tilelod-prefercache-skip.** PreferCache polish:
+
+1. Workspace climb: PreferCache skip is `tileLodWanted()` only (equiv. to
+   tilesOwnDisplay(wanted, false)); durable SoftDisplay underlay kept
+2. `tickTilesIfOwnDisplay`: named budget + owns() helper; Image underlay fast path
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2242-workspace-tilelod-prefercache-skip-e6c70e4.bundle HEAD
+```
+
+Next: **2243**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2241-tick-tiles-count-durable.** PreferCache / tile wake API:
 
 1. `tickTilesIfOwnDisplay(path, countDurable=true)` — durable counts for climb skip

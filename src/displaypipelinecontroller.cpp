@@ -91,10 +91,10 @@ void DisplayPipelineController::ensureWorkspaceQualityClimb()
         if (m_view->hostCrop().isCropDraftLockedPath(path)) {
             continue;
         }
-        // Deep zoom: tileLodWanted means tiles own display — skip PreferCache
-        // whole-frame climb. Durable pyramid alone still allows SoftDisplay
-        // PreferCache underlay until LOD is wanted (durable=false here).
-        if (DisplayEdgePolicy::tilesOwnDisplay(ii->tileLodWanted(), false)) {
+        // tileLodWanted: tiles own display — skip PreferCache (global tick already
+        // ran above). Durable-only still allows SoftDisplay PreferCache underlay
+        // until LOD wants (same as tilesOwnDisplay(wanted, false) / countDurable=false).
+        if (ii->tileLodWanted()) {
             continue;
         }
         // Always measure need after the current view transform (zoom/pan).
@@ -194,24 +194,28 @@ bool DisplayPipelineController::tickTilesIfOwnDisplay(const QString &path,
     if (path.isEmpty()) {
         return false;
     }
+    // PreferCache skip budgets a short primary tick (not the full coordinator default).
+    constexpr int kOwnDisplayTickBudget = 12;
     const bool durable =
         countDurable && ThumtooCache::hasDurableTilesKnown(path);
-    if (ImageItem *it = imageModeItemForPath(path)) {
-        if (DisplayEdgePolicy::tilesOwnDisplay(it->tileLodWanted(), durable)) {
-            tickPrimaryTileLod(12);
-            return true;
-        }
+    auto owns = [&](ImageItem *ii) {
+        return ii
+            && DisplayEdgePolicy::tilesOwnDisplay(ii->tileLodWanted(), durable);
+    };
+    // Fast path: Image underlay (target/primary) before full liveItems scan.
+    if (owns(imageModeItemForPath(path))) {
+        tickPrimaryTileLod(kOwnDisplayTickBudget);
+        return true;
     }
     for (ImageItem *ii : m_view->liveItems()) {
-        if (ii && ii->path() == path
-            && DisplayEdgePolicy::tilesOwnDisplay(ii->tileLodWanted(), durable)) {
-            tickPrimaryTileLod(12);
+        if (ii && ii->path() == path && owns(ii)) {
+            tickPrimaryTileLod(kOwnDisplayTickBudget);
             return true;
         }
     }
     // No live item for path but durable pyramid known (prefetch / filmstrip).
     if (durable) {
-        tickPrimaryTileLod(12);
+        tickPrimaryTileLod(kOwnDisplayTickBudget);
         return true;
     }
     return false;
