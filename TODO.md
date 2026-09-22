@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2235-inline-stored-identity.** Fix link of light unit tests that
+compile `sessionappearance.cpp` without `thumtoocache.cpp`:
+
+- `StoredContentAppearance::hasOrientContent` / `isIdentity` are inline in the
+  header (no out-of-line defs)
+- Fixes undefined reference in `biltoo-sessiondocument-test` (and same pattern
+  for `sessionappearance-test`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2235-inline-stored-identity-e6c70e4.bundle HEAD
+```
+
+Next: **2236**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2234-tiles-own-display-policy.** New domain: tile / PreferCache
 policy polish.
 

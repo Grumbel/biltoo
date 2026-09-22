@@ -451,8 +451,17 @@ struct StoredContentAppearance {
     int gradeGamma = 0;
     bool gradeInvert = false;
     /** Orient/crop only (not grade) — for load paths that skip grade-only XDG. */
-    bool hasOrientContent() const;
-    bool isIdentity() const;
+    bool hasOrientContent() const
+    {
+        if (contentHFlip || contentVFlip || contentQuarterTurns != 0) {
+            return true;
+        }
+        return hasCrop && !cropRect.isEmpty();
+    }
+    bool isIdentity() const
+    {
+        return !hasOrientContent() && !hasGrade;
+    }
 };
 
 /**

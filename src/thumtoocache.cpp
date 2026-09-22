@@ -2873,22 +2873,6 @@ PageTextLayer ensurePageTextLayer(const QString &)
 
 
 
-bool StoredContentAppearance::hasOrientContent() const
-{
-    if (contentHFlip || contentVFlip || contentQuarterTurns != 0) {
-        return true;
-    }
-    return hasCrop && !cropRect.isEmpty();
-}
-
-bool StoredContentAppearance::isIdentity() const
-{
-    if (hasOrientContent() || hasGrade) {
-        return false;
-    }
-    return true;
-}
-
 #if defined(BILTOO_HAVE_THUMTOO_APPEARANCE)
 
 namespace {
