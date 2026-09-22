@@ -2521,6 +2521,69 @@ void MainWindow::ensureWorkStatusPoll(bool workBusy)
     }
 }
 
+void MainWindow::refreshWorkActivityStatusBar()
+{
+    if (!statusBar() || !ThumtooCache::isAvailable()) {
+        return;
+    }
+    const ThumtooCache::WorkActivity act = ThumtooCache::workActivity();
+    QStringList parts;
+    if (act.archiveReadRunning > 0) {
+        QString arch = tr("Archive read ×%1").arg(act.archiveReadRunning);
+        if (!act.runningArchiveLabels.isEmpty()) {
+            arch += tr(" · %1").arg(act.runningArchiveLabels.last());
+        }
+        parts << arch;
+    }
+    if (act.sizeQueued + act.sizeRunning > 0) {
+        QString probe = tr("Size probes %1 running · %2 queued")
+                            .arg(act.sizeRunning)
+                            .arg(act.sizeQueued);
+        if (!act.sizeRunningUris.isEmpty()) {
+            const QString leaf = PagePath::displayName(act.sizeRunningUris.last());
+            if (!leaf.isEmpty()) {
+                probe += tr(" · %1").arg(leaf);
+            }
+        }
+        if (m_imageView && m_imageView->hostGallerySizeResolve().active()) {
+            const int total = m_imageView->hostGallerySizeResolve().total();
+            const int left = m_imageView->hostGallerySizeResolve().pendingCount();
+            if (total > 0) {
+                probe += tr(" · session %1/%2")
+                             .arg(qMax(0, total - left))
+                             .arg(total);
+            }
+        }
+        parts << probe;
+    }
+    if (act.tileQueued + act.tileRunning > 0) {
+        QString tiles = tr("Tiles %1 running · %2 queued")
+                            .arg(act.tileRunning)
+                            .arg(act.tileQueued);
+        if (!act.tileRunningLabels.isEmpty()) {
+            tiles += tr(" · %1").arg(act.tileRunningLabels.last());
+        }
+        parts << tiles;
+    }
+    if (act.softQueued + act.softRunning > 0) {
+        QString soft = tr("Soft %1 running · %2 queued")
+                           .arg(act.softRunning)
+                           .arg(act.softQueued);
+        if (!act.softRunningUris.isEmpty()) {
+            soft += tr(" · %1").arg(
+                PagePath::displayName(act.softRunningUris.last()));
+        }
+        parts << soft;
+    }
+    if (!parts.isEmpty()) {
+        statusBar()->showMessage(parts.join(QStringLiteral(" · ")), 0);
+        m_decodeStatusActive = true;
+        if (m_decodeStatusClearTimer) {
+            m_decodeStatusClearTimer->stop();
+        }
+    }
+}
+
 void MainWindow::updateStatus()
 {
     if (m_inUpdateStatus) {
