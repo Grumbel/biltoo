@@ -2,6 +2,33 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.3-size-gate-no-parallel-tiles-status.** Validate + fix freezes:
+
+1. **Filmstrip sizeReady was scheduling tiles** — every `sizeReady` called
+   `scheduleFilmstripTilePixels` (pyramid/synth) for the whole session **in
+   parallel with the Gallery size gate**. That is the “tiles during size query”
+   contention. Now sizeReady only applies aspect + LQIP; visible rows load tiles
+   via debounced `scheduleVisibleThumbnailLoads`.
+2. **Progressive pack → statusChanged** — each progressive pack emitted
+   `statusChanged` → `MainWindow::updateStatus` (TOC/metadata/adjustments + O(n)
+   pendingDecodeCount) every ~16–40ms during probes. Skip `statusChanged` for
+   ContentChange packs while the size gate is active; gate-complete still notifies.
+3. **Filmstrip layout** — sizeReady uses `scheduleLayoutRefresh` instead of
+   synchronous `doItemsLayout` per path.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.3-size-gate-no-parallel-tiles-status-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.2-progressive-pack-maxwait-hud-clear.** Validate 2290 + fix:
 
 1. **Progressive pack starvation** — continuous `sizeReady` restarted the 48ms

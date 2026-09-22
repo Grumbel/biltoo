@@ -1276,8 +1276,17 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         m_view->setVerticalScrollBarPolicy(savedVBar);
     }
     m_view->hostFraming().armFit();
-    // Keep the guard until after statusChanged so slots cannot re-enter layout.
-    emit m_view->statusChanged();
+    // Progressive packs during the size gate fire every ~16–40ms. Emitting
+    // statusChanged each time runs MainWindow::updateStatus (TOC/metadata/
+    // adjustments + O(n) pendingDecodeCount) and freezes the GUI for the whole
+    // probe stream. Gate-complete / EnterGallery / explicit packs still notify.
+    const bool progressiveDuringGate =
+        m_view->hostGallerySizeResolve().active()
+        && reason == GalleryPackReason::ContentChange;
+    if (!progressiveDuringGate) {
+        // Keep the guard until after statusChanged so slots cannot re-enter layout.
+        emit m_view->statusChanged();
+    }
     // layoutApplyScope ends after this function returns (keeps guard through statusChanged)
     // Re-apply scroll after m_view->centerOn(0,0) above when returning from Image.
     applyPendingRestore();

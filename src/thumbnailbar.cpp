@@ -486,15 +486,23 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                             <= DisplayQuality::kLqipMaxEdge) {
                         setThumbnailIcon(i, lqip);
                     }
-                    // Tiles after layout geometry is known (LQIP may already show).
-                    if (ThumtooCache::isAvailable()) {
-                        const int decodeSize = filmstripDecodeEdge();
-                        scheduleFilmstripTilePixels(path, decodeSize);
-                    }
+                    // Do NOT scheduleFilmstripTilePixels here. Every sizeReady used
+                    // to queue pyramid/synth for the whole session in parallel with
+                    // the Gallery size gate (felt like "tiles during size query" and
+                    // starved Store/CPU). Visible rows load tiles via
+                    // scheduleVisibleThumbnailLoads after aspect is known.
                 }
                 if (any) {
-                    doItemsLayout();
-                    updateCenteringMargins();
+                    // Debounce layout — full doItemsLayout per sizeReady froze the GUI
+                    // on large sessions during the probe stream.
+                    scheduleLayoutRefresh();
+                    // Re-arm visible loads: rows that waited for size can proceed
+                    // (LQIP + tiles for the viewport only, not the whole session).
+                    if (m_scrollLoadTimer) {
+                        m_scrollLoadTimer->start();
+                    } else {
+                        scheduleVisibleThumbnailLoads();
+                    }
                 }
             });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
