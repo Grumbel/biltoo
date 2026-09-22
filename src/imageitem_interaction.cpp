@@ -1215,7 +1215,10 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
                 const QRectF cr = contentRect();
                 painter->save();
-                painter->setClipRect(cr);
+                // Intersect with any outer gallery cell clip — ReplaceClip used
+                // to drop GridCrop clipping so tiles spilled outside the cell.
+                // Under orient, cr is the oriented content box (same space as dests).
+                painter->setClipRect(cr, Qt::IntersectClip);
                 if (freeRot) {
                     const QRect contentCrop = x.cropRect.normalized();
                     painter->translate(cr.center());

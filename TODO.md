@@ -2,6 +2,30 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.27-tile-cull-orient-clip.**
+
+Tile culling/clipping wrong on rotated images (general, not only overlay):
+
+1. **Viewport → source:** scene AABB + `mapFromScene` AABB under item rotation
+   was a poor visible proxy. Use **viewport polygon** mapped to local, then
+   `mapDisplayRectToSource`. Never fall back to treating oriented display
+   coords as source (under-cull after quarter-turns); pad 1px and clamp to native.
+2. **Paint clip:** `setClipRect(contentRect)` used **ReplaceClip**, dropping the
+   outer Gallery GridCrop clip so tiles could spill. Use **IntersectClip**.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.27-tile-cull-orient-clip-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.26-tile-overlay-orient-thumtoo-note.**
 
 - Biltoo plan overlay now maps cells through **ContentXform** (orient/flip/crop)

@@ -25,6 +25,7 @@
 #include <QFileInfo>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QPolygon>
 #include <QMetaObject>
 #include <QTimer>
 
@@ -326,19 +327,22 @@ void ImageItem::prepareTileLodPlan()
     QRectF visLocal = contentRect();
     if (scene() && !scene()->views().isEmpty() && scene()->views().first()) {
         QGraphicsView *view = scene()->views().first();
-        const QRectF sceneVis =
-            view->mapToScene(view->viewport()->rect()).boundingRect();
-        // If this item is still on-screen in scene space, never drop the plan
-        // because axis-aligned local intersection went empty (rotated items /
-        // float edge cases made tiles vanish on zoom).
+        // Polygon map (not only scene AABB): item/placement rotation makes the
+        // axis-aligned scene rect a poor proxy for the visible local region.
+        const QPolygonF scenePoly =
+            view->mapToScene(QPolygon(view->viewport()->rect()));
+        const QRectF sceneVis = scenePoly.boundingRect();
         const bool onScreen =
             sceneBoundingRect().intersects(sceneVis)
             || sceneVis.contains(sceneBoundingRect().center());
-        const QRectF localVis = mapFromScene(sceneVis).boundingRect();
+        const QPolygonF localPoly = mapFromScene(scenePoly);
+        const QRectF localVis = localPoly.boundingRect();
         const QRectF hit = localVis.intersected(contentRect());
         if (!hit.isEmpty()) {
             visLocal = hit;
         } else if (onScreen) {
+            // Still on screen but AABB miss (rotated placement / float) — full
+            // content so we do not drop the plan to empty.
             visLocal = contentRect();
         } else {
             return;
@@ -351,13 +355,17 @@ void ImageItem::prepareTileLodPlan()
     const QRectF visDisplay = visLocal.translated(-offset());
     const ContentXform::Value x = liveContentXformForPaint();
     QRectF visSource = ContentXform::mapDisplayRectToSource(visDisplay, native, x);
-    if (visSource.isEmpty()) {
-        // Identity or failed map: fall back to display, then full native.
-        visSource = visDisplay;
-    }
     if (visSource.isEmpty()
         || visSource.width() < 1.0 || visSource.height() < 1.0) {
+        // Never treat oriented display coords as source — that under/over-culls
+        // after quarter-turns. Full native is the safe request set.
         visSource = QRectF(0, 0, native.width(), native.height());
+    } else {
+        // Float / AABB inverse: pad one content pixel so edge tiles are not
+        // clipped out of the plan under orient.
+        visSource = visSource.adjusted(-1.0, -1.0, 1.0, 1.0);
+        visSource = visSource.intersected(
+            QRectF(0, 0, native.width(), native.height()));
     }
     // Skip set_viewport when density and visible region are unchanged — paint
     // runs this every frame while tiles stream in; replanning is pure waste.
