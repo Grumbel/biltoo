@@ -234,12 +234,6 @@ bool hasDurableTiles(const QString &path);
  */
 bool hasDurableTilesKnown(const QString &path);
 /**
- * Background: discover durable tiles for @p paths into the process memo so
- * Gallery decode does not pay has_tile on the GUI thread at open.
- */
-void warmDurableTilesMemo(const QStringList &paths);
-
-/**
  * Session open: fill process size memo + ImageCache LQIP + durable-tile memo
  * from the Store. Safe on the GUI: schedules pool work and returns immediately
  * (never joins). sizeReady / durableTilesReady notify as memos land; the
@@ -314,9 +308,6 @@ using TileBitmapCellCallback =
     std::function<void(std::size_t index, std::optional<tilelod::TileBitmap> tile)>;
 void requestTiles(const QString &path, const QVector<TileCoord> &coords,
                   TileBitmapCellCallback on_cell);
-/** Cache-only synchronous get; null image on miss. Prefer requestTiles. */
-QImage getTile(const QString &path, int scale, int x, int y);
-
 /** True when built with thumtoo and the client opened successfully. */
 bool isAvailable();
 

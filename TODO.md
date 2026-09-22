@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2258-drop-get-tile-warm-durable-memo.** ThumtooCache cleanup:
+
+- Remove unused `getTile` (sync path; callers use `requestTiles`)
+- Remove unused `warmDurableTilesMemo` (session open uses `warmSessionOpenMemos`)
+- TILE_LOD.md no longer lists getTile
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2258-drop-get-tile-warm-durable-memo-e6c70e4.bundle HEAD
+```
+
+Next: **2259**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2257-drop-unused-thumtoo-cache-apis.** ThumtooCache dead surface:
 
 - `debugTracingEnabled` (wrapper; zero callers)

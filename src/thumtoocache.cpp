@@ -1872,24 +1872,6 @@ bool hasDurableTilesKnown(const QString &path)
     return ProcessMemos::instance().durableYes(path);
 }
 
-void warmDurableTilesMemo(const QStringList &paths)
-{
-    if (paths.isEmpty()) {
-        return;
-    }
-    // Fill positive/negative memos off the GUI so updateGalleryDecodeWindow does
-    // not serialize has_tile SQLite on every tileLodWanted cell at open.
-    const QStringList copy = paths;
-    QThreadPool::globalInstance()->start([copy]() {
-        ASSERT_NOT_GUI_THREAD();
-        for (const QString &p : copy) {
-            if (!p.isEmpty()) {
-                (void)hasDurableTiles(p);
-            }
-        }
-    });
-}
-
 void warmSessionOpenMemos(const QStringList &paths)
 {
     if (paths.isEmpty()) {
@@ -1960,7 +1942,7 @@ void clearSessionReplaceMemos()
 
 int durableTileMinScale(const QString &path)
 {
-    // Memo only — discovery is warmDurableTilesMemo / hasDurableTiles on workers.
+    // Memo only — discovery is warmSessionOpenMemos / hasDurableTiles on workers.
     // Paint path calls this on the GUI; must never has_tile here.
     ProcessMemos &memos = ProcessMemos::instance();
     if (!memos.durableYes(path)) {
@@ -2084,33 +2066,6 @@ void warmUris(const QStringList &paths)
             (void)toThumtooUri(p);
         }
     });
-}
-
-QImage getTile(const QString &path, int scale, int x, int y)
-{
-    init();
-    const std::string uri = toThumtooUri(path);
-    if (uri.empty()) {
-        return {};
-    }
-    thumtoo::Client *c = nullptr;
-    {
-        std::lock_guard lock(g_mu);
-        c = clientUnlocked();
-    }
-    if (!c) {
-        return {};
-    }
-    auto blob = c->get_tile(uri, scale, x, y);
-    if (!blob) {
-        return {};
-    }
-    auto decoded = tilelod::decode_tile_payload(blob->width, blob->height, blob->codec,
-                                                blob->bytes);
-    if (!decoded) {
-        return {};
-    }
-    return tilelod::tile_bitmap_to_qimage(*decoded);
 }
 
 void requestTiles(const QString &path, const QVector<TileCoord> &coords,

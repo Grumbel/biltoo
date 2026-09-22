@@ -229,7 +229,7 @@ zoom first.
 
 ## Phase B status (biltoo-1026)
 
-- `ThumtooTileSource` + `ThumtooCache::requestTiles` / `getTile`
+- `ThumtooTileSource` + `ThumtooCache::requestTiles`
 - `tile_painter` + `TileLodController`
 - **ImageItem** (interactive): when on-screen long edge exceeds soft max (~512),
   updates viewport, issues budgeted tile requests, paints exact/coarser tiles
