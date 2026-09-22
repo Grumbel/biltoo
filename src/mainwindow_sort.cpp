@@ -562,7 +562,19 @@ void MainWindow::reorderSessionRows(const QList<int> &rows, int insertBefore)
         m_imageView->hostUndoStack()->push(
             new SessionReorderCommand(this, beforePaths, beforeIds,
                                       afterPaths, afterIds, focusId));
-        return;
+    } else {
+        applySessionOrder(afterPaths, afterIds, focusId);
     }
-    applySessionOrder(afterPaths, afterIds, focusId);
+    if (m_thumbnailBar && !moveIds.isEmpty()) {
+        QList<int> idxs;
+        for (SessionImageId id : moveIds) {
+            const int ix = indexOfSessionId(id);
+            if (ix >= 0) {
+                idxs.append(ix);
+            }
+        }
+        if (!idxs.isEmpty()) {
+            m_thumbnailBar->setSelectedIndices(idxs);
+        }
+    }
 }

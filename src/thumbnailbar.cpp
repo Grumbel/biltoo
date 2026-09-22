@@ -2699,6 +2699,51 @@ void ThumbnailBar::keyPressEvent(QKeyEvent *event)
         event->accept();
         return;
     }
+
+    // Alt+Arrow: move selection one step along the strip (session reorder).
+    const bool alt = event->modifiers() & Qt::AltModifier;
+    if (alt && count() > 1) {
+        const QList<int> rows = selectedIndices();
+        if (!rows.isEmpty()) {
+            const bool horizontal = (m_orientation == Qt::Horizontal);
+            int delta = 0; // -1 = toward start, +1 = toward end
+            if (horizontal) {
+                if (event->key() == Qt::Key_Left) {
+                    delta = -1;
+                } else if (event->key() == Qt::Key_Right) {
+                    delta = 1;
+                }
+            } else {
+                if (event->key() == Qt::Key_Up) {
+                    delta = -1;
+                } else if (event->key() == Qt::Key_Down) {
+                    delta = 1;
+                }
+            }
+            if (delta != 0) {
+                QList<int> moving = rows;
+                std::sort(moving.begin(), moving.end());
+                const int first = moving.first();
+                const int last = moving.last();
+                int insertBefore = -1;
+                if (delta < 0) {
+                    if (first > 0) {
+                        insertBefore = first - 1;
+                    }
+                } else {
+                    if (last + 1 < count()) {
+                        insertBefore = last + 2; // after the next item
+                    }
+                }
+                if (insertBefore >= 0) {
+                    emit reorderRowsRequested(moving, insertBefore);
+                    event->accept();
+                    return;
+                }
+            }
+        }
+    }
+
     QListWidget::keyPressEvent(event);
 }
 
@@ -2742,6 +2787,33 @@ void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
 
     menu.addSeparator();
 
+    QList<int> sortedSel = indices;
+    std::sort(sortedSel.begin(), sortedSel.end());
+    const int firstSel = sortedSel.isEmpty() ? -1 : sortedSel.first();
+    const int lastSel = sortedSel.isEmpty() ? -1 : sortedSel.last();
+
+    QAction *moveEarlierAct = menu.addAction(
+        m_orientation == Qt::Horizontal ? tr("Move &Left") : tr("Move &Up"));
+    moveEarlierAct->setShortcut(QKeySequence(Qt::ALT | (m_orientation == Qt::Horizontal
+                                                           ? Qt::Key_Left
+                                                           : Qt::Key_Up)));
+    moveEarlierAct->setEnabled(firstSel > 0);
+
+    QAction *moveLaterAct = menu.addAction(
+        m_orientation == Qt::Horizontal ? tr("Move &Right") : tr("Move &Down"));
+    moveLaterAct->setShortcut(QKeySequence(Qt::ALT | (m_orientation == Qt::Horizontal
+                                                          ? Qt::Key_Right
+                                                          : Qt::Key_Down)));
+    moveLaterAct->setEnabled(lastSel >= 0 && lastSel + 1 < total);
+
+    QAction *moveStartAct = menu.addAction(tr("Move to &Start"));
+    moveStartAct->setEnabled(firstSel > 0);
+
+    QAction *moveEndAct = menu.addAction(tr("Move to &End"));
+    moveEndAct->setEnabled(lastSel >= 0 && lastSel + 1 < total);
+
+    menu.addSeparator();
+
     QAction *removeAct = menu.addAction(tr("&Remove from Session"));
     removeAct->setShortcut(QKeySequence::Delete);
     removeAct->setEnabled(selectedCount > 0);
@@ -2769,6 +2841,14 @@ void ThumbnailBar::contextMenuEvent(QContextMenuEvent *event)
         selectNoneThumbs();
     } else if (chosen == invertAct) {
         invertThumbSelection();
+    } else if (chosen == moveEarlierAct && firstSel > 0) {
+        emit reorderRowsRequested(sortedSel, firstSel - 1);
+    } else if (chosen == moveLaterAct && lastSel >= 0 && lastSel + 1 < total) {
+        emit reorderRowsRequested(sortedSel, lastSel + 2);
+    } else if (chosen == moveStartAct && firstSel > 0) {
+        emit reorderRowsRequested(sortedSel, 0);
+    } else if (chosen == moveEndAct && lastSel >= 0 && lastSel + 1 < total) {
+        emit reorderRowsRequested(sortedSel, total);
     } else if (chosen == removeAct && selectedCount > 0) {
         emit removeIndicesRequested(indices);
     } else if (chosen == removeOthersAct && selectedCount > 0) {

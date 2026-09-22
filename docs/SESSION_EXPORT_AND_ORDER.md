@@ -49,7 +49,9 @@ sequence without re-opening files.
 - External path drag mime still present for canvas drops; strip-internal drop
   uses `application/x-biltoo-session-rows`.
 
-**Still open:** keyboard move, reorder dialog, Gallery-canvas drag reorder.
+**Keyboard / menu (2328):** Alt+←/→ (or ↑/↓ on vertical strip); context menu Move Left/Right/Start/End.
+
+**Still open:** reorder dialog, Gallery-canvas drag reorder.
 
 ## 3. File menu mode matrix (planned)
 
