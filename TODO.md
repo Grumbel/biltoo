@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2268-displaypipeline-private-helpers.** API surface cleanup:
+
+- Move 41 `DisplayPipelineController` methods with no external callers from
+  public to private (load/climb/surface/install helpers). Host, jobs,
+  controllers, and tests keep the 40 external orchestration methods public.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2268.1-displaypipeline-private-helpers-e6c70e4.bundle HEAD
+```
+
+Next: **2269**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2267-slideshow-private-helpers-drop-need-stub.** API surface cleanup:
 
 1. Move 57 `SlideshowController` methods with zero external callers from public

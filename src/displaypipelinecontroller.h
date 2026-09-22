@@ -32,6 +32,7 @@ class TileLoadCoordinator;
 class DisplayPipelineController
 {
 public:
+
     explicit DisplayPipelineController(ImageView *view);
     ~DisplayPipelineController();
 
@@ -60,63 +61,23 @@ public:
      * items. Body moved from ImageView (Tier 5b); ImageView thin-forwards.
      */
     void ensureWorkspaceQualityClimb();
-    void scheduleImageModeNativeDecodeOnce(const QString &path);
     void requestEscalateClimb(const QString &path, int wantEdge);
-    void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
-    void installImageModeSampleInPlace(ImageItem *item, const QString &path,
-                                       const QImage &image,
-                                       SessionAppearance::PixelKind kind);
     int cappedDisplayEdgeForPath(const QString &path, int wantEdge) const;
     bool sampleCoversNativeLogical(const QString &path, const QImage &image) const;
-    bool tryInstallImageModeSample(const QString &path, const QImage &image);
-    bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
-                                        SessionAppearance::PixelKind kind);
     void onLadderReady(const QString &path, int maxEdge, const QImage &image);
-    void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
-    void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
-    void applyWorkspaceLadderReady(const QString &path, int maxEdge, const QImage &image);
     void maybeClimbImageModePixelsForView();
-    DisplaySurface::State displaySurfaceStateForItem(const ImageItem *item,
-                                                     int hostLongEdge = -1,
-                                                     bool climbPending = false) const;
-    bool applyDisplaySurfaceAction(ImageItem *item,
-                                   const DisplaySurface::Action &act,
-                                   const QImage &hostSample,
-                                   int fallbackNeedEdge,
-                                   PathRasterService::ClimbPolicy climbPolicy);
     void driveImageFocusSurface();
     void registerItemDisplaySurface(ImageItem *item);
     void unregisterItemDisplaySurface(ImageItem *item);
-    void syncItemDisplaySurface(ImageItem *item, int hostLongEdge = -1,
-                                bool climbPending = false);
-    bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
-                                SessionAppearance::PixelKind kind) const;
     void installDisplayPixels(ImageItem *item, const QImage &pixels,
                               SessionAppearance::PixelKind kind,
                               SessionImageId sid);
-    void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
     void installImageModeReplaceItem(const QString &path, const QImage &image);
     void completeLoadReplace(const QString &path, const QImage &image, quint64 generation);
-    void finishLoadAddStatus(bool refreshGalleryWindow);
-    bool acceptPendingLoadAdd(const QString &path, quint64 generation);
-    void handleLoadAddDecodeFailure(const QString &path);
-    void fillStashedItemsForPath(const QString &path, const QImage &image);
-    void reassertPendingBindPlacement(const QString &path);
-    void claimUnboundItemsForPendingBinds(const QString &path, const QImage &image);
-    int fillLiveItemsWithDecodedPixels(const QString &path, const QImage &image,
-                                       bool *sizeChangedOut);
-    void createMissingLoadAddItems(const QString &path, const QImage &image,
-                                   int have, int wanted);
-    void applyLoadAddLayoutAfterMembership(bool sizeChanged);
-    void completeLoadAdd(const QString &path, const QImage &image, quint64 generation);
     /** @p role is ImageView::LoadRole as int (avoid circular header). */
     void scheduleImageLoad(const QString &path, int role);
-    bool tryDeliverReplaceFromSlideshowRaster(const QString &path, quint64 gen);
-    void scheduleSlideshowReplaceDecode(const QString &path, quint64 gen, int role);
-    void scheduleClassicImageDecode(const QString &path, quint64 gen, int role);
     void gallerySoftResetPath(const QString &path);
     void gallerySoftResetAll();
-    int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const;
     void scheduleGalleryDecode(const QString &path);
 
     void scheduleTileLodAfterInteraction(int delayMs = 50);
@@ -141,6 +102,27 @@ public:
     void tickItemTileLod(ImageItem *item, int budget = 8);
     void dropAllTileLodSessions();
     void tickPrimaryTileLod(int budget = 8);
+    void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
+                              int role);
+    void completeLoadRestore(const QString &path, const QImage &image);
+    ImageItem *createItemFromImage(const QString &path, const QImage &image,
+                                   bool applyStoredSessionCrop = true);
+    void seedSessionAppearancesFromPaths(const QStringList &paths,
+                                         const QVector<SessionImageId> &ids);
+    void seedSessionAppearanceFromState(SessionImageId sid, const QString &path);
+    WorkspaceItemState wantAppearanceForItem(const ImageItem *item,
+                                             SessionImageId sid) const;
+    ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
+    int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
+    void bindImageModeSessionCursor(ImageItem *item);
+    QImage fullRasterForEdit(const QString &path) const;
+    int imageModeOnScreenNeedEdge() const;
+    void onImageLoaded(const QString &path, const QImage &image, quint64 generation, int role);
+    bool loadImage(const QString &path);
+
+
+private:
+    // Load / climb / surface / install helpers (no external callers)
     /**
      * When tiles own display for @p path: tick primary tile LOD and return true
      * (PreferCache whole-frame climb should skip).
@@ -151,26 +133,6 @@ public:
      * deliveries — avoid ticking every PreferCache underlay).
      */
     bool tickTilesIfOwnDisplay(const QString &path, bool countDurable = true);
-    void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
-                              int role);
-    bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);
-    void completeLoadRestore(const QString &path, const QImage &image);
-    WorkspaceItemState appearanceForNewImageModeItem(const QString &path);
-    ImageItem *createItemFromImage(const QString &path, const QImage &image,
-                                   bool applyStoredSessionCrop = true);
-    void seedSessionAppearancesFromPaths(const QStringList &paths,
-                                         const QVector<SessionImageId> &ids);
-    void seedSessionAppearanceFromState(SessionImageId sid, const QString &path);
-    void markAppearanceSeedAttempted(SessionImageId sid);
-    void applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
-                                          const ThumtooCache::StoredContentAppearance &stored);
-    WorkspaceItemState wantAppearanceForItem(const ImageItem *item,
-                                             SessionImageId sid) const;
-    ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
-    int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = false) const;
-    int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
-    void bindImageModeSessionCursor(ImageItem *item);
-    void resetImageModeItemPlacement(ImageItem *item);
     /**
      * Image underlay soft sources (host-raw only). @p displayReadyOut set true
      * only for rare attach-ready samples; normally false (materialize path).
@@ -178,19 +140,61 @@ public:
     QImage resolveImageModePendingPixels(const QString &path,
                                          const QImage &preview = QImage(),
                                          bool *displayReadyOut = nullptr) const;
+    void scheduleImageModeNativeDecodeOnce(const QString &path);
+    void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
+    void installImageModeSampleInPlace(ImageItem *item, const QString &path,
+                                       const QImage &image,
+                                       SessionAppearance::PixelKind kind);
+    bool tryInstallImageModeSample(const QString &path, const QImage &image);
+    bool tryInstallImageModeSampleBaked(const QString &path, const QImage &image,
+                                        SessionAppearance::PixelKind kind);
+    void upgradeImageModeFromLadder(const QString &path, int maxEdge, const QImage &image);
+    void applyGalleryLadderReady(const QString &path, int maxEdge, const QImage &image);
+    void applyWorkspaceLadderReady(const QString &path, int maxEdge, const QImage &image);
+    DisplaySurface::State displaySurfaceStateForItem(const ImageItem *item,
+                                                     int hostLongEdge = -1,
+                                                     bool climbPending = false) const;
+    bool applyDisplaySurfaceAction(ImageItem *item,
+                                   const DisplaySurface::Action &act,
+                                   const QImage &hostSample,
+                                   int fallbackNeedEdge,
+                                   PathRasterService::ClimbPolicy climbPolicy);
+    void syncItemDisplaySurface(ImageItem *item, int hostLongEdge = -1,
+                                bool climbPending = false);
+    bool canAcceptDisplaySample(const ImageItem *item, const QImage &pixels,
+                                SessionAppearance::PixelKind kind) const;
+    void installImageModePendingTile(const QString &path, const QImage &preview = QImage());
+    void finishLoadAddStatus(bool refreshGalleryWindow);
+    bool acceptPendingLoadAdd(const QString &path, quint64 generation);
+    void handleLoadAddDecodeFailure(const QString &path);
+    void fillStashedItemsForPath(const QString &path, const QImage &image);
+    void reassertPendingBindPlacement(const QString &path);
+    void claimUnboundItemsForPendingBinds(const QString &path, const QImage &image);
+    int fillLiveItemsWithDecodedPixels(const QString &path, const QImage &image,
+                                       bool *sizeChangedOut);
+    void createMissingLoadAddItems(const QString &path, const QImage &image,
+                                   int have, int wanted);
+    void applyLoadAddLayoutAfterMembership(bool sizeChanged);
+    void completeLoadAdd(const QString &path, const QImage &image, quint64 generation);
+    bool tryDeliverReplaceFromSlideshowRaster(const QString &path, quint64 gen);
+    void scheduleSlideshowReplaceDecode(const QString &path, quint64 gen, int role);
+    void scheduleClassicImageDecode(const QString &path, quint64 gen, int role);
+    int galleryHaveEdgeFromItems(const QString &path, bool *anyFullOut) const;
+    bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);
+    WorkspaceItemState appearanceForNewImageModeItem(const QString &path);
+    void markAppearanceSeedAttempted(SessionImageId sid);
+    void applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
+                                          const ThumtooCache::StoredContentAppearance &stored);
+    int itemOnScreenNeedEdge(const ImageItem *item, bool allowHighRes = false) const;
+    void resetImageModeItemPlacement(ImageItem *item);
     SessionAppearance::PixelKind pixelKindForImageModeSample(const QString &path,
                                                              const QImage &image) const;
     void frameImageModeReplaceItem(ImageItem *item, const QString &path);
     void seedEmptyWorkspaceFromReplace(const QString &path, const QImage &image);
     ImageItem *imageModeItemForPath(const QString &path) const;
-    QImage fullRasterForEdit(const QString &path) const;
-    int imageModeOnScreenNeedEdge() const;
-    void onImageLoaded(const QString &path, const QImage &image, quint64 generation, int role);
-    bool loadImage(const QString &path);
     void ensureImageFocusSurface();
     void syncImageFocusSurfaceState();
 
-private:
     /**
      * SessionImageId for materialize / layout: @p preferred if set, else
      * item->sessionId(), else Image-mode cursor id. Matches
