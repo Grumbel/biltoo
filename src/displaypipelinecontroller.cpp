@@ -295,9 +295,7 @@ void DisplayPipelineController::installImageModeSampleInPlace(ImageItem *item, c
         return;
     }
     // Same rules as every other attach: accept → materialize → m_view->attachDisplaySample.
-    installDisplayPixels(item, image, kind, item->sessionId() != kInvalidSessionImageId
-                                             ? item->sessionId()
-                                             : m_view->hostSessionId().currentIdValue());
+    installDisplayPixels(item, image, kind, resolveItemSessionId(item));
     m_view->hostSessionId().clearLastLoadError();
     m_view->rememberSizeFromDecode(path, image);
     if (m_view->viewport()) {
@@ -925,13 +923,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     const QSize layoutBefore = item->imageSize();
 
     // Resolve session id (Image-mode soft path often passes invalid sid).
-    if (sid == kInvalidSessionImageId) {
-        if (item->sessionId() != kInvalidSessionImageId) {
-            sid = item->sessionId();
-        } else if (m_view->isImageMode() && m_view->hostSessionId().hasCurrentId()) {
-            sid = m_view->hostSessionId().currentIdValue();
-        }
-    }
+    sid = resolveItemSessionId(item, sid);
     // Image mode: never materialize under a sid whose document path ≠ underlay path.
     if (m_view->isImageMode() && sid != kInvalidSessionImageId && !path.isEmpty()) {
         if (SessionDocument *doc = m_view->sessionDocument()) {

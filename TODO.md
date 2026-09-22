@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2219-pipeline-resolve-item-session-id.** DisplayPipelineController
+mirrors ImageView session-id policy:
+
+1. `resolveItemSessionId(item, preferred)` — preferred → item sid → Image-mode cursor
+2. Adopted by `installDisplayPixels`, `installDisplayPreservingView`,
+   `installImageModeSampleInPlace`, `wantAppearanceForItem`
+3. Gallery/Workspace no longer fall back to Image cursor when item is unbound
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2219-pipeline-resolve-item-session-id-e6c70e4.bundle HEAD
+```
+
+Next: **2220**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2218-pose-only-snapshot-tests.** Characterize Workspace pose-only
 snapshot / restore helpers:
 

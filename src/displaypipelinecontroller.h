@@ -185,6 +185,15 @@ public:
     void syncImageFocusSurfaceState();
 
 private:
+    /**
+     * SessionImageId for materialize / layout: @p preferred if set, else
+     * item->sessionId(), else Image-mode cursor id. Matches
+     * ImageView::resolveContentEditSessionId (2215 / 2219).
+     */
+    SessionImageId resolveItemSessionId(
+        const ImageItem *item,
+        SessionImageId preferred = kInvalidSessionImageId) const;
+
     ImageView *m_view = nullptr; // not owned
     SessionLoadGate m_loadGate;
     DisplaySurfaceController m_displaySurfaces;

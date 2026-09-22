@@ -314,6 +314,25 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
 }
 
 
+SessionImageId DisplayPipelineController::resolveItemSessionId(
+    const ImageItem *item, SessionImageId preferred) const
+{
+    if (preferred != kInvalidSessionImageId) {
+        return preferred;
+    }
+    if (!item) {
+        return kInvalidSessionImageId;
+    }
+    if (item->sessionId() != kInvalidSessionImageId) {
+        return item->sessionId();
+    }
+    if (m_view->isImageMode()) {
+        return m_view->hostSessionId().currentIdValue();
+    }
+    return kInvalidSessionImageId;
+}
+
+
 void DisplayPipelineController::installDisplayPreservingView(ImageItem *item, const QImage &pixels,
                                              SessionAppearance::PixelKind kind,
                                              SessionImageId sid)
@@ -322,11 +341,7 @@ void DisplayPipelineController::installDisplayPreservingView(ImageItem *item, co
         return;
     }
     const QSize before = item->imageSize();
-    if (sid == kInvalidSessionImageId) {
-        sid = item->sessionId() != kInvalidSessionImageId
-                  ? item->sessionId()
-                  : m_view->hostSessionId().currentIdValue();
-    }
+    sid = resolveItemSessionId(item, sid);
     installDisplayPixels(item, pixels, kind, sid);
     m_view->preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
 }
@@ -339,13 +354,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     if (!item) {
         return want;
     }
-    SessionImageId id = sid;
-    if (id == kInvalidSessionImageId) {
-        id = item->sessionId();
-    }
-    if (id == kInvalidSessionImageId && m_view->isImageMode()) {
-        id = m_view->hostSessionId().currentIdValue();
-    }
+    const SessionImageId id = resolveItemSessionId(item, sid);
     if (id != kInvalidSessionImageId) {
         if (m_view->itemWorld().hasDurableAppearance(id)) {
             want = m_view->sessionAppearanceValue(id);
