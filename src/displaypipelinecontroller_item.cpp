@@ -326,20 +326,6 @@ SessionImageId DisplayPipelineController::resolveItemSessionId(
 }
 
 
-void DisplayPipelineController::installDisplayPreservingView(ImageItem *item, const QImage &pixels,
-                                             SessionAppearance::PixelKind kind,
-                                             SessionImageId sid)
-{
-    if (!item || pixels.isNull()) {
-        return;
-    }
-    const QSize before = item->imageSize();
-    sid = resolveItemSessionId(item, sid);
-    installDisplayPixels(item, pixels, kind, sid);
-    m_view->preserveImageViewOnLogicalSizeChange(item, before, item->imageSize());
-}
-
-
 WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageItem *item,
                                                       SessionImageId sid) const
 {

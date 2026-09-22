@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2248-drop-dead-display-pipeline-helpers.** DisplayPipeline cleanup:
+
+1. Remove unused `installDisplayPreservingView` (zero call sites; callers use
+   installDisplayPixels + preserveImageViewOnLogicalSizeChange directly)
+2. Remove unused `setImageFocusSurface` setter (only imageFocusSurfaceRef assigns)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2248-drop-dead-display-pipeline-helpers-e6c70e4.bundle HEAD
+```
+
+Next: **2249**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2247-drop-bind-selected-session-indices.** Session identity cleanup:
 
 - Remove dead `ImageView::bindSelectedSessionIndices` (only stamped deprecated

@@ -44,7 +44,6 @@ public:
     const DisplaySurfaceController &displaySurfaces() const { return m_displaySurfaces; }
 
     DisplaySurface::SurfaceId imageFocusSurface() const { return m_imageFocusSurface; }
-    void setImageFocusSurface(DisplaySurface::SurfaceId id) { m_imageFocusSurface = id; }
     DisplaySurface::SurfaceId &imageFocusSurfaceRef() { return m_imageFocusSurface; }
 
     std::unique_ptr<TileLoadCoordinator> &tileCoordinator() { return m_tileCoordinator; }
@@ -165,9 +164,6 @@ public:
     void markAppearanceSeedAttempted(SessionImageId sid);
     void applyStoredContentAppearanceSeed(SessionImageId sid, const QString &path,
                                           const ThumtooCache::StoredContentAppearance &stored);
-    void installDisplayPreservingView(ImageItem *item, const QImage &pixels,
-                                      SessionAppearance::PixelKind kind,
-                                      SessionImageId sid);
     WorkspaceItemState wantAppearanceForItem(const ImageItem *item,
                                              SessionImageId sid) const;
     ImageItem *createPlaceholderItem(const QString &path, const QSize &intrinsicSize);
