@@ -170,16 +170,23 @@ void GallerySizeResolve::updateProgressHud()
         return;
     }
     // Defense: async warm can fill the process size memo without a probe
-    // callback. Sweep pending against the memo every progress tick.
+    // callback. Sweep pending against the memo every progress tick — but only
+    // a bounded batch. Settling hundreds in one tick (adopt + pathSettled each)
+    // froze the GUI the same way sync sizeReady did.
+    constexpr int kMemoSettlePerTick = 24;
+    int settledThisTick = 0;
     const QList<QString> pending = m_pending.values();
     for (const QString &path : pending) {
+        if (settledThisTick >= kMemoSettlePerTick) {
+            break;
+        }
         if (path.isEmpty()) {
             continue;
         }
         if (m_host->hasDefinitiveHostSize(path)) {
             m_pending.remove(path);
             ++m_resolved;
-            m_host->onSizeResolvePathSettled(path);
+            ++settledThisTick;
             continue;
         }
         const QSize cached =
@@ -190,7 +197,11 @@ void GallerySizeResolve::updateProgressHud()
         m_host->adoptResolvedSize(path, cached);
         m_pending.remove(path);
         ++m_resolved;
-        m_host->onSizeResolvePathSettled(path);
+        ++settledThisTick;
+    }
+    // One progressive pack arm per tick, not per path.
+    if (settledThisTick > 0) {
+        m_host->onSizeResolvePathSettled(QString());
     }
     if (m_pending.isEmpty()) {
         finish();

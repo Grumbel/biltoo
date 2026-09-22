@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.14-chunk-progress-memo-settle.** Validate progress timer:
+
+- `updateProgressHud` could adopt **every** warm-filled memo in one 100ms tick
+  and call `onSizeResolvePathSettled` per path → same GUI freeze as sync
+  sizeReady when hundreds of sizes were already in the process memo.
+- Memo settle is now **24 paths per tick**, with a **single** progressive pack
+  arm after the batch (not per path).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.14-chunk-progress-memo-settle-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.13-noteProbeSettled-no-hud-sweep.** Validate chunked sizeReady:
 
 - `noteProbeSettled` called `updateProgressHud()` on **every** successful settle.
