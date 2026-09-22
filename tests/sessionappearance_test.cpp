@@ -40,6 +40,7 @@ private slots:
     void applyStoredContentAppearance_orientOnlySkipsGrade();
     void fillStoredContentAppearance_roundTripOrient();
     void fillStoredContentAppearance_boundSkipsCrop();
+    void storedHasOrientContent_vsIdentity();
 };
 
 void SessionAppearanceTest::seedBook_keyedById()
@@ -369,6 +370,30 @@ void SessionAppearanceTest::fillStoredContentAppearance_boundSkipsCrop()
     QVERIFY(SessionAppearance::fillStoredContentAppearance(&stored, st, false));
     QVERIFY(!stored.hasCrop);
     QCOMPARE(stored.contentQuarterTurns, 1);
+}
+
+
+void SessionAppearanceTest::storedHasOrientContent_vsIdentity()
+{
+    ThumtooCache::StoredContentAppearance empty;
+    QVERIFY(!empty.hasOrientContent());
+    QVERIFY(empty.isIdentity());
+
+    ThumtooCache::StoredContentAppearance turns;
+    turns.contentQuarterTurns = 1;
+    QVERIFY(turns.hasOrientContent());
+    QVERIFY(!turns.isIdentity());
+
+    ThumtooCache::StoredContentAppearance gradeOnly;
+    gradeOnly.hasGrade = true;
+    gradeOnly.gradeBrightness = 5;
+    QVERIFY(!gradeOnly.hasOrientContent());
+    QVERIFY(!gradeOnly.isIdentity());
+
+    ThumtooCache::StoredContentAppearance crop;
+    crop.hasCrop = true;
+    crop.cropRect = QRect(0, 0, 10, 10);
+    QVERIFY(crop.hasOrientContent());
 }
 
 QTEST_MAIN(SessionAppearanceTest)

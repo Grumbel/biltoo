@@ -158,7 +158,9 @@ durable dual-store.
 5. Audit every `ImageCache::put` for baked samples — **done** (see IMAGECACHE_PUT_AUDIT.md).
 6. Delete path-map content writes for bound session ids — **verified 2211**; `setPathState` no-ops when `sessionId` set.
 
-**Orient / Placement authority series closed (2205–2224).** Residuals #7–#11 closed or accepted (2226–2231). Path-XDG apply/fill helpers (2228–2229); `hasOrientContent` (2231).
+**Orient / Placement / path-XDG series closed (2205–2232).** Residuals #7–#11
+closed or accepted. Path-XDG apply/fill + `hasOrientContent` covered by unit tests
+(2233). Further agent work should pick a new domain (tile LOD, crop UX, archives).
 
 ---
 

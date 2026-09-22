@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2233-has-orient-content-test.** Unit test
+`StoredContentAppearance::hasOrientContent` vs `isIdentity` (grade-only is not
+orient). ECS series note: orient/path-XDG residuals closed through 2232; next
+work should pick a new domain.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2233-has-orient-content-test-e6c70e4.bundle HEAD
+```
+
+Next: **2234** (new domain recommended).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2232-stale-docs-checkboxes.** Close stale open checkboxes and docs
 left over from the orient / path-XDG series:
 
