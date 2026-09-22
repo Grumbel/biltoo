@@ -107,13 +107,16 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 
 ---
 
-## 8. Placement hFlip / rotation in filmstrip export (low–medium)
+## 8. Placement hFlip / rotation in filmstrip export (accepted)
 
 **Where:** `sessionAppearanceImage` applies **placement** hFlip/vFlip on top of displayImage.
 
-**Why:** Legacy display flips on placement.
+**Why:** Workspace free-form **display** flips live on Placement, not contentBake.
+Gallery forces placement flips false after content orient. Filmstrip mirrors the
+live tile including display flips.
 
-**Bypass risk:** Content should be fully in content bake; placement flips are a second channel. Filmstrip can show placement flip not in ItemWorld contentBake.
+**Status (2224):** Intentional second channel for Workspace pose — not a content
+authority bypass. Content orient remains ItemWorld contentBake/crop only.
 
 ---
 

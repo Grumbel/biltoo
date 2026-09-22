@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2224-text-sid-resolve-filmstrip-note.** Polish:
+
+1. `imageview_text` content-space mapping uses `resolveContentEditSessionId`
+2. ECS residual #8 (filmstrip placement flips) documented as accepted Workspace
+   display-flip channel — not a content authority bypass
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2224-text-sid-resolve-filmstrip-note-e6c70e4.bundle HEAD
+```
+
+Next: **2225**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2223-workspace-placement-lifecycle-docs.** Document the Workspace
 Placement bridge lifecycle in CONTENTXFORM_AUTHORITY:
 

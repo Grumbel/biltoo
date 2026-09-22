@@ -232,8 +232,9 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
         // Last resort: invert orientation from the live item (no crop only).
         sourceSize = item->imageSize();
         WorkspaceItemState stGuess;
-        if (item->sessionId() != kInvalidSessionImageId) {
-            stGuess = sessionAppearanceValue(item->sessionId());
+        const SessionImageId sidGuess = resolveContentEditSessionId(item);
+        if (sidGuess != kInvalidSessionImageId) {
+            stGuess = sessionAppearanceValue(sidGuess);
         }
         int turns = stGuess.contentQuarterTurns % 4;
         if (turns < 0) {
@@ -248,10 +249,7 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
     }
 
     WorkspaceItemState st;
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_sessionId.currentIdValue();
-    }
+    const SessionImageId sid = resolveContentEditSessionId(item);
     if (sid != kInvalidSessionImageId) {
         st = sessionAppearanceValue(sid);
     } else if (!path.isEmpty()) {
