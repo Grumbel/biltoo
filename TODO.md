@@ -2,6 +2,20 @@
 
 ## Status (2026-09-22)
 
+**Code tip: biltoo-2305-gallery-layout-early-pack** (`477a977`).
+
+**Docs tip: biltoo-2306-docs-activity-plan** — hierarchical work status.
+
+Full design: **[docs/ACTIVITY.md](docs/ACTIVITY.md)**.
+
+Summary: one WorkLedger (thumtoo activity snapshot + biltoo host ops) projected
+to status bar / centre gate / optional debug view. Instrument size probe →
+tiles → archive member reads. First implementation slice: size-probe only.
+
+Next **code** bundle: **2307** (or thumtoo **317** if activity API lands first).
+
+---
+
 **Tip: biltoo-2305-gallery-layout-early-pack** (unchanged code tip).
 
 ### Plan (no code): hierarchical work status
