@@ -145,6 +145,15 @@ void scheduleProbeBatch(const QStringList &paths);
  */
 bool sizeProbesBusy();
 
+/** Phase-1 work status: size-probe queued/running counts + sample URIs. */
+struct SizeProbeActivity {
+    quint64 queued = 0;
+    quint64 running = 0;
+    quint64 completed = 0;
+    QStringList runningUris; // up to 8
+};
+SizeProbeActivity sizeProbeActivity();
+
 /**
  * Cache-only ladder payload (usually JPEG-XL) with long edge <= maxEdge.
  * Empty if thumtoo has no level yet. Caller decodes (e.g. via libvips).

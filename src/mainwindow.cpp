@@ -2535,13 +2535,44 @@ void MainWindow::updateStatus()
             statusBar()->showMessage(
                 tr("Could not load “%1”").arg(PagePath::displayName(err)), 5000);
         }
+        // Live size-probe activity from thumtoo ActivityLedger (phase 1 status).
+        bool sizeProbeStatusShown = false;
+        if (statusBar() && ThumtooCache::isAvailable()) {
+            const ThumtooCache::SizeProbeActivity act = ThumtooCache::sizeProbeActivity();
+            if (act.queued + act.running > 0) {
+                QString msg = tr("Size probes %1 running · %2 queued")
+                                  .arg(act.running)
+                                  .arg(act.queued);
+                if (!act.runningUris.isEmpty()) {
+                    const QString leaf = PagePath::displayName(act.runningUris.last());
+                    if (!leaf.isEmpty()) {
+                        msg += tr(" · %1").arg(leaf);
+                    }
+                }
+                if (m_imageView->hostGallerySizeResolve().active()) {
+                    const int total = m_imageView->hostGallerySizeResolve().total();
+                    const int left = m_imageView->hostGallerySizeResolve().pendingCount();
+                    if (total > 0) {
+                        msg += tr(" · session %1/%2")
+                                   .arg(qMax(0, total - left))
+                                   .arg(total);
+                    }
+                }
+                statusBar()->showMessage(msg, 0);
+                m_decodeStatusActive = true;
+                if (m_decodeStatusClearTimer) {
+                    m_decodeStatusClearTimer->stop();
+                }
+                sizeProbeStatusShown = true;
+            }
+        }
         // Remaining decode work (Gallery blanks + filmstrip unloaded), not
         // concurrent inflight — the latter flickered 1↔0 between jobs.
         int pending = m_imageView->pendingDecodeCount();
         if (m_thumbnailBar) {
             pending += m_thumbnailBar->pendingLoadCount();
         }
-        if (pending > 0 && statusBar()) {
+        if (!sizeProbeStatusShown && pending > 0 && statusBar()) {
             statusBar()->showMessage(
                 tr("Loading %n thumbnail…", "thumb/decode progress", pending), 0);
             m_decodeStatusActive = true;

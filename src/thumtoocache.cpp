@@ -1194,6 +1194,28 @@ QString queueStatsLabel()
     return parts.join(QStringLiteral(" · "));
 }
 
+SizeProbeActivity sizeProbeActivity()
+{
+    SizeProbeActivity out;
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return out;
+    }
+    const thumtoo::ActivitySnapshot s = c->activity_snapshot();
+    out.queued = static_cast<quint64>(s.size_probe_queued);
+    out.running = static_cast<quint64>(s.size_probe_running);
+    out.completed = s.size_probe_completed;
+    for (const std::string &u : s.running_size_probe_uris) {
+        out.runningUris.append(QString::fromStdString(u));
+    }
+    return out;
+}
+
+
 QString loadingBreakdownLabel()
 {
     init();

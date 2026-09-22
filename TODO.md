@@ -2,6 +2,30 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2307-status-size-probe-activity.**
+
+Phase 1 status (with **thumtoo-317**):
+- `ThumtooCache::sizeProbeActivity()` reads `Client::activity_snapshot()`
+- Status bar: `Size probes N running · M queued · leaf · session a/b`
+
+Requires thumtoo tip **317** (ActivityLedger).
+
+### Apply
+```bash
+# thumtoo first
+git pull --ff-only /path/to/thumtoo-317-activity-size-probe-8ea52ea.bundle HEAD
+# biltoo
+git pull --ff-only /path/to/biltoo-2307-status-size-probe-activity-c0bffd5.bundle HEAD
+```
+
+Next: **2308** (archive member activity) / thumtoo **318**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Code tip: biltoo-2305-gallery-layout-early-pack** (`477a977`).
 
 **Docs tip: biltoo-2306-docs-activity-plan** — hierarchical work status.
