@@ -27,6 +27,7 @@ void ImageView::requestDebouncedGalleryPack(GalleryPackReason reason)
         m_layoutDebounceTimer->stop();
         GalleryPackReason r = reason;
         if (m_layoutDebounce.take(&r)) {
+            m_gallery.ensurePlaceholders();
             m_gallery.applyLayout(r);
         }
         return;

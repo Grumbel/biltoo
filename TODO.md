@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.4-coalesce-ensure-pack-no-tile-tick-during-gate.** Validate + fix:
+
+1. **ensurePlaceholders per sizeReady** — O(session) create scan on every probe
+   settlement froze progressive open. Create is now coalesced with the layout
+   debounce timer / max-wait pack (ensure once, then pack).
+2. **durableTilesReady during size gate** — warm durable discovery emitted
+   durableTilesReady → `tickPrimaryTileLod` while probes still owned the Store.
+   Skip tile ticks while the Gallery size gate is active.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.4-coalesce-ensure-pack-no-tile-tick-during-gate-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.3-size-gate-no-parallel-tiles-status.** Validate + fix freezes:
 
 1. **Filmstrip sizeReady was scheduling tiles** — every `sizeReady` called

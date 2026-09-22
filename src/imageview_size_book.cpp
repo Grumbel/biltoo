@@ -341,17 +341,10 @@ void ImageView::onSizeResolvePathSettled(const QString &path)
     if (!isGalleryMode() || !m_gallerySizeResolve.active()) {
         return;
     }
-    // Ordered progressive pack: create placeholders only for paths that already
-    // have definitive (or failed) size, in pack order — never random.
-    if (m_gallerySizeResolve.active()) {
-        m_gallery.ensurePlaceholders();
-        if (!m_items.isEmpty() && !m_layout.isFreeForm()) {
-            // Debounce: many sizeReady events in one batch must not full-pack each.
-            requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
-        }
-        if (viewport()) {
-            viewport()->update();
-        }
+    // Ordered progressive pack: create + pack are coalesced on the layout
+    // debounce timer (ensurePlaceholders once per pack, not per sizeReady).
+    if (!m_layout.isFreeForm()) {
+        requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }
 }
 

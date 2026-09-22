@@ -278,6 +278,11 @@ ImageView::ImageView(QWidget *parent)
         GalleryPackReason reason = GalleryPackReason::ContentChange;
         if (isGalleryMode() && !m_layout.isFreeForm()
             && m_layoutDebounce.take(&reason)) {
+            // Coalesce create+pack: ensurePlaceholders was O(session) per
+            // sizeReady; run once with the pack so progressive open stays smooth.
+            if (m_gallerySizeResolve.active()) {
+                m_gallery.ensurePlaceholders();
+            }
             m_gallery.applyLayout(reason);
         }
     });
