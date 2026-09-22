@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2234-tiles-own-display-policy.** New domain: tile / PreferCache
+policy polish.
+
+- `requestEscalateClimb` uses `DisplayEdgePolicy::tilesOwnDisplay(tileLodWanted,
+  durable)` instead of inlined OR
+- Single durable lookup; PreferCache skipped when tiles own display
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2234-tiles-own-display-policy-e6c70e4.bundle HEAD
+```
+
+Next: **2235**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2233-has-orient-content-test.** Unit test
 `StoredContentAppearance::hasOrientContent` vs `isIdentity` (grade-only is not
 orient). ECS series note: orient/path-XDG residuals closed through 2232; next

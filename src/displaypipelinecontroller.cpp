@@ -199,20 +199,21 @@ void DisplayPipelineController::requestEscalateClimb(const QString &path, int wa
         return;
     }
     // Tiles own display: tileLodWanted or known durable pyramid — no PreferCache.
+    const bool durable = ThumtooCache::hasDurableTilesKnown(path);
     if (ImageItem *it = imageModeItemForPath(path)) {
-        if (it->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path)) {
+        if (DisplayEdgePolicy::tilesOwnDisplay(it->tileLodWanted(), durable)) {
             tickPrimaryTileLod(12);
             return;
         }
     }
     for (ImageItem *ii : m_view->liveItems()) {
         if (ii && ii->path() == path
-            && (ii->tileLodWanted() || ThumtooCache::hasDurableTilesKnown(path))) {
+            && DisplayEdgePolicy::tilesOwnDisplay(ii->tileLodWanted(), durable)) {
             tickPrimaryTileLod(12);
             return;
         }
     }
-    if (ThumtooCache::hasDurableTilesKnown(path)) {
+    if (durable) {
         tickPrimaryTileLod(12);
         return;
     }
