@@ -2,20 +2,15 @@
 
 ## Status (2026-09-22)
 
-**Tip: biltoo-2310-work-status-poll.**
+**Tip: biltoo-2311-status-dry-refresh.**
 
-- Verified thumtoo `test_activity` (standalone) still ok against tip 319.
-- Status bar work line polls at ~5 Hz while `workActivityBusy()` so counts move
-  during long extracts without relying on sparse `statusChanged`.
-- Poll uses `refreshWorkActivityStatusBar()` only (no metadata/nav refresh).
-- `updateStatus` reentrancy guard (`m_inUpdateStatus`).
-
-Requires **thumtoo-319**.
+updateStatus uses refreshWorkActivityStatusBar() (same as 5 Hz poll).
+Requires **thumtoo-320** (batch warm activity finish fix).
 
 ### Apply
 ```bash
-git -C thumtoo pull --ff-only …/thumtoo-319-activity-tiles-soft-8ea52ea.bundle HEAD
-git -C biltoo  pull --ff-only …/biltoo-2310-work-status-poll-c0bffd5.bundle HEAD
+git -C thumtoo pull --ff-only …/thumtoo-320-activity-batch-warm-finish-8ea52ea.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2311-status-dry-refresh-c0bffd5.bundle HEAD
 ```
 
-Next: **2311** (optional debug activity panel / TOC archive i/n).
+Next: **2312**.
