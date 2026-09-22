@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2288-gallery-no-standin-debounce-pack.** Verify + fix:
+
+1. **Gallery `imageSizeForPath` / `layoutSizeForPath`** no longer install or
+   return 1000² / square provisional stand-ins (that poisoned the size book and
+   ordered pack). Gallery schedules a probe and returns empty until definitive.
+2. **Progressive pack** uses `requestDebouncedGalleryPack` so batch sizeReady
+   does not full-pack once per path.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2288.1-gallery-no-standin-debounce-pack-e6c70e4.bundle HEAD
+```
+
+Next: **2289**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2287-fix-size-gate-active-before-batch.** Verify + fix:
 
 - Activate the Gallery size gate **before** `scheduleProbeBatch`. Sync

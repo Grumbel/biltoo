@@ -72,7 +72,18 @@ QSize ImageView::imageSizeForPath(const QString &path)
         if (!m_sizeBook.contains(path)) {
             rememberImageSize(path, known); // install thumtoo hit into map
         }
+        // Do not treat provisional stand-ins as known geometry for Gallery.
+        if (isGalleryMode() && m_sizeBook.isProvisional(path)) {
+            scheduleImageSizeProbe(path);
+            return {};
+        }
         return known;
+    }
+    // Gallery size-first: never install 1000² / square stand-ins into the book.
+    // Probe only; ordered pack waits for definitive size or explicit failure.
+    if (isGalleryMode()) {
+        scheduleImageSizeProbe(path);
+        return {};
     }
     // Archives / multipage / embedded PDF: async probe; neutral stand-in.
     scheduleImageSizeProbe(path);
@@ -100,8 +111,12 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
     }
     // Provisional or definitive entry already in the book (layout needs a size).
     const QSize bookSize = m_sizeBook.known(path);
-    if (!bookSize.isEmpty()) {
+    if (!bookSize.isEmpty() && !m_sizeBook.isProvisional(path)) {
         return bookSize;
+    }
+    if (isGalleryMode()) {
+        scheduleImageSizeProbe(path);
+        return {};
     }
     return imageSizeForPath(path);
 }
@@ -328,10 +343,11 @@ void ImageView::onSizeResolvePathSettled(const QString &path)
     }
     // Ordered progressive pack: create placeholders only for paths that already
     // have definitive (or failed) size, in pack order — never random.
-    if (m_galleryDecodeBook.isDeferPopulate()) {
+    if (m_gallerySizeResolve.active()) {
         m_gallery.ensurePlaceholders();
         if (!m_items.isEmpty() && !m_layout.isFreeForm()) {
-            m_gallery.applyLayout(GalleryPackReason::ContentChange);
+            // Debounce: many sizeReady events in one batch must not full-pack each.
+            requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
         }
         if (viewport()) {
             viewport()->update();
