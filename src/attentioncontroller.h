@@ -35,21 +35,9 @@ public:
 
     bool active() const { return m_attention.active(); }
 
-    SessionImageId attentionSessionId() const;
-    QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
-    QVector<QPointF> attentionPointsForTarget() const;
-    void setAttentionPointsForTarget(const QVector<QPointF> &pts);
     void ensureAttentionPoint();
     void restoreAttentionPoints(const QVector<QPointF> &pts);
-    void pushAttentionPointsUndo(const QVector<QPointF> &before,
-                                 const QVector<QPointF> &after, const QString &text);
-    void detectAttentionPoint();
     void setAttentionMode(bool on);
-    void toggleAttentionMode();
-    int attentionHandleIndexAt(const QPoint &viewPos) const;
-    bool attentionHandleAt(const QPoint &viewPos) const;
-    void attentionDeleteSelected();
-    void attentionCommitSelectionMove();
     void paintAttentionOverlay(QPainter &painter);
 
     bool tryMousePressAttention(QMouseEvent *event);
@@ -58,6 +46,20 @@ public:
     bool tryKeyPressAttention(QKeyEvent *event);
 
 private:
+    // Point edit / detect / paint helpers (no external callers)
+    SessionImageId attentionSessionId() const;
+    QPointF attentionViewPos(ImageItem *item, const QPointF &norm) const;
+    QVector<QPointF> attentionPointsForTarget() const;
+    void setAttentionPointsForTarget(const QVector<QPointF> &pts);
+    void pushAttentionPointsUndo(const QVector<QPointF> &before,
+                                 const QVector<QPointF> &after, const QString &text);
+    void detectAttentionPoint();
+    void toggleAttentionMode();
+    int attentionHandleIndexAt(const QPoint &viewPos) const;
+    bool attentionHandleAt(const QPoint &viewPos) const;
+    void attentionDeleteSelected();
+    void attentionCommitSelectionMove();
+
     ImageView *m_view = nullptr; // not owned
     AttentionSession m_attention;
 };

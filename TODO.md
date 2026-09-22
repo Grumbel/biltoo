@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2270-attentioncontroller-private-helpers.** API surface cleanup:
+
+- Move 11 `AttentionController` methods with no external callers from public to
+  private (point edit/detect/handle helpers). Host, MainWindow, input, paint,
+  and session-remove keep the public surface (active, setAttentionMode,
+  ensureAttentionPoint, restoreAttentionPoints, paint, try*).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2270.1-attentioncontroller-private-helpers-e6c70e4.bundle HEAD
+```
+
+Next: **2271**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2269-cropcontroller-private-helpers.** API surface cleanup:
 
 - Move 33 `CropController` methods with no external callers from public to
