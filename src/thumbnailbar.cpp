@@ -287,21 +287,32 @@ void ThumbnailDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     const QString text = index.data(Qt::DisplayRole).toString();
     if (m_labelsVisible && !text.isEmpty() && labelBand > 0) {
-        // Label uses flow-axis side inset on horizontal bars; cross on vertical.
-        // Vertically centre the name in the label band (was AlignTop at the
-        // bottom edge and sat a few pixels too low in the empty strip).
+        // Under the image: bottom cross/flow pad + label band (see cell sizeHint).
+        // Centre the name in that *whole* empty strip — not only the labelBand
+        // slice at the bottom (that left the glyph stuck low under a large pad).
+        const int underPad = (orient == Qt::Horizontal) ? cross : flow;
         const int labelInset = (orient == Qt::Horizontal) ? flow : cross;
+        const int zoneH = underPad + labelBand;
         const QRect textRect(cell.left() + labelInset,
-                             cell.bottom() - labelBand,
+                             cell.bottom() - zoneH,
                              ViewTransform::atLeast1(cell.width() - 2 * labelInset),
-                             labelBand);
+                             zoneH);
         const QColor textColor = selected
             ? option.palette.color(QPalette::HighlightedText)
             : option.palette.color(QPalette::Text);
         painter->setPen(textColor);
         painter->setFont(option.font);
-        painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignVCenter,
-                          fm.elidedText(text, Qt::ElideMiddle, textRect.width()));
+        const QString elided = fm.elidedText(text, Qt::ElideMiddle, textRect.width());
+        // Optical vertical centre: AlignVCenter uses line spacing and often sits
+        // low in the em-box. Pin the baseline from ascent/descent of the elided
+        // string so the ink is centred in the under-image zone.
+        const QRect ink = fm.boundingRect(elided);
+        const int inkH = qMax(1, ink.height());
+        const int baseline =
+            textRect.top() + (textRect.height() - inkH) / 2 - ink.top();
+        const int x = textRect.left()
+            + (textRect.width() - fm.horizontalAdvance(elided)) / 2;
+        painter->drawText(x, baseline, elided);
     }
 
 

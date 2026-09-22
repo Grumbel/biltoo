@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2302-filmstrip-label-optical-center.**
+
+Filmstrip filename still looked low because:
+1. Bottom **cross/flow pad** sits between image and labelBand — text was only
+   centred in the band, not the full under-image strip.
+2. `AlignVCenter` + font line metrics bias ink downward in the em-box.
+
+Fix: centre in `underPad + labelBand`, baseline from `boundingRect` ink box.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2302-filmstrip-label-optical-center-c0bffd5.bundle HEAD
+```
+
+Next: **2303**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2301-filmstrip-label-vcenter.**
 
 Filmstrip filename: centre vertically in the label band (was AlignTop at the
