@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2271-gallery-workspace-private-helpers.** API surface cleanup:
+
+1. GalleryController: privatize `galleryInstallHostSoftOntoBlanks`,
+   `updateSoftProgressHud`, `prepareCanvas` (no external callers)
+2. WorkspaceController: privatize `restoreFreeFormStates` (no external callers)
+3. ImageController already had no internal-only public methods — no change
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2271.1-gallery-workspace-private-helpers-e6c70e4.bundle HEAD
+```
+
+Next: **2272**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2270-attentioncontroller-private-helpers.** API surface cleanup:
 
 - Move 11 `AttentionController` methods with no external callers from public to

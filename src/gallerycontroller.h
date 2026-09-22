@@ -88,12 +88,10 @@ public:
     void scheduleStatusRefresh(int delayMs = 100);
     /** Debounced viewport soft/LQIP decode window (scroll/climb). */
     void scheduleDecodeWindowRefresh(int delayMs = 48);
-    int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending = nullptr);
     void updateDecodeWindow();
     void applyLayout(GalleryPackReason reason);
     void ensurePlaceholders();
     void softWatchdogTick();
-    void updateSoftProgressHud();
     void setGridColumns(int columns);
     void setMasonryColumns(int columns);
     void setMasonryRows(int rows);
@@ -102,7 +100,6 @@ public:
     void reloadFromDisk(bool relayout = true);
     void hardReloadFromDisk(bool relayout = true);
     void setRelayoutSuppressed(bool on);
-    void prepareCanvas();
     void invalidateDecodes();
 
     void setViewportSnapshot(const QPointF &center, int scrollH, int scrollV)
@@ -115,6 +112,12 @@ public:
     }
 
 private:
+
+    // Soft install / HUD / canvas helpers (no external callers)
+    int galleryInstallHostSoftOntoBlanks(int maxInstalls, bool *morePending = nullptr);
+    void updateSoftProgressHud();
+    void prepareCanvas();
+
     /** Rebuild view path-order book from live tiles (layout switch). */
     void setPathOrderFromLiveItems();
 

@@ -45,7 +45,6 @@ public:
     /** Leaving Workspace: durable snapshot; stash live tiles when next is Image. */
     void onLeave(int nextMode);
     void snapshotFreeFormStates();
-    void restoreFreeFormStates();
 
     QList<ImageItem *> &stashedItems() { return m_stashedItems; }
     const QList<ImageItem *> &stashedItems() const { return m_stashedItems; }
@@ -65,6 +64,10 @@ public:
     void hardReloadFromDisk();
 
 private:
+
+    // Free-form restore helper (no external callers)
+    void restoreFreeFormStates();
+
     ImageView *m_view = nullptr;
 
     QList<WorkspaceItemState> m_savedItems;
