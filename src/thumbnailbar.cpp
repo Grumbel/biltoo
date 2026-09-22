@@ -845,7 +845,6 @@ ThumbnailBar::ScrollAnchor ThumbnailBar::captureScrollAnchor() const
         return a;
     }
     a.row = idx.row();
-    a.offsetInViewport = 0; // unused — restore centres the row
     a.valid = true;
     return a;
 }

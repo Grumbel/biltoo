@@ -175,10 +175,13 @@ public:
     int galleryDisplayEdgeForItem(const ImageItem *item, bool allowHighRes = false) const;
     void bindImageModeSessionCursor(ImageItem *item);
     void resetImageModeItemPlacement(ImageItem *item);
+    /**
+     * Image underlay soft sources (host-raw only). @p displayReadyOut set true
+     * only for rare attach-ready samples; normally false (materialize path).
+     */
     QImage resolveImageModePendingPixels(const QString &path,
-                                         const QImage &preview = QImage()) const;
-    QImage resolveImageModePendingPixels(const QString &path, const QImage &preview,
-                                         bool *displayReadyOut) const;
+                                         const QImage &preview = QImage(),
+                                         bool *displayReadyOut = nullptr) const;
     SessionAppearance::PixelKind pixelKindForImageModeSample(const QString &path,
                                                              const QImage &image) const;
     void frameImageModeReplaceItem(ImageItem *item, const QString &path);

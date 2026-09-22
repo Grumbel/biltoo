@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2246-drop-unused-pending-pixels-scroll-offset.** Dead API cleanup:
+
+1. Collapse `resolveImageModePendingPixels` overloads — single signature with
+   optional `displayReadyOut` (removed unused bool dummy wrapper)
+2. Drop unused `ThumbnailBar::ScrollAnchor::offsetInViewport` (restore always
+   centres the row)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2246-drop-unused-pending-pixels-scroll-offset-e6c70e4.bundle HEAD
+```
+
+Next: **2247**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2245-drop-compute-sort-order-indices.** Session sort cleanup:
 
 - Remove deprecated `MainWindow::computeSortOrderIndices` thin forward; callers

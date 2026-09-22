@@ -493,14 +493,6 @@ void DisplayPipelineController::resetImageModeItemPlacement(ImageItem *item)
 
 
 QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &path,
-                                                const QImage &preview) const
-{
-    bool unused = false;
-    return resolveImageModePendingPixels(path, preview, &unused);
-}
-
-
-QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &path,
                                                 const QImage &preview,
                                                 bool *displayReadyOut) const
 {

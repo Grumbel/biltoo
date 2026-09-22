@@ -276,7 +276,6 @@ private:
     /** Capture / restore: keep the viewport-centre image centred across thumbSize changes. */
     struct ScrollAnchor {
         int row = -1;
-        int offsetInViewport = 0; // unused (centre restore)
         bool valid = false;
     };
     ScrollAnchor captureScrollAnchor() const;
