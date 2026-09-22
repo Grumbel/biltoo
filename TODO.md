@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2217-drop-dead-crop-resolve-session-id.** Remove unused
+`CropSession::resolveSessionIdForItem` after ImageView content paths adopted
+`resolveContentEditSessionId` (2215). Crop commit still uses
+`sessionIdForRecord` (item → crop target → Image cursor).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2217-drop-dead-crop-resolve-session-id-e6c70e4.bundle HEAD
+```
+
+Next: **2218**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2216-contentxform-authority-docs.** Document the 2205–2215 orient /
 Workspace snapshot authority stack in `docs/CONTENTXFORM_AUTHORITY.md`:
 
