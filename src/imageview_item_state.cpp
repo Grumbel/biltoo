@@ -30,9 +30,7 @@ WorkspaceItemState ImageView::captureState(const ImageItem *item) const
     // Interaction snapshot: durable content from ItemWorld sparse tables
     // (Stage 4b), then live pose / applied ContentXform / grade overlays.
     // Bound content starts from sessionAppearanceValue (single merge policy).
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+    const SessionImageId sid = resolveContentEditSessionId(item);
 
     WorkspaceItemState s;
     if (sid != kInvalidSessionImageId) {

@@ -89,9 +89,7 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
         // FullSource without applied xform is still host-shaped (rare).
         raw = item->sourceImage();
     }
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+    const SessionImageId sid = resolveContentEditSessionId(item);
     if (raw.isNull()) {
         // No unoriented host: schedule async; do not claim applied yet.
         if (!path.isEmpty() && SessionAppearance::hasContentAppearance(want)) {

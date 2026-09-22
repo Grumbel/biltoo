@@ -239,10 +239,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         }
         // Probe is authoritative file-native size. Layout = ContentXform
         // (turns + crop), not a simple axis swap.
-        SessionImageId sid = item->sessionId();
-        if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_sessionId.currentIdValue();
-        }
+        const SessionImageId sid = resolveContentEditSessionId(item);
         WorkspaceItemState want = m_displayPipeline.wantAppearanceForItem(item, sid);
         QSize layoutSize = ContentXform::layoutSize(size, want);
         if (!(layoutSize.width() > 1 && layoutSize.height() > 1)) {
@@ -335,7 +332,7 @@ void ImageView::onSizeResolveGateComplete()
                 if (!m_sizeBook.isProvisional(item->path())) {
                     const QSize native = layoutSizeForPath(item->path());
                     if (isPositiveSize(native)) {
-                        const SessionImageId sid = item->sessionId();
+                        const SessionImageId sid = resolveContentEditSessionId(item);
                         const WorkspaceItemState want =
                             m_displayPipeline.wantAppearanceForItem(item, sid);
                         const QSize lay = ContentXform::layoutSize(native, want);

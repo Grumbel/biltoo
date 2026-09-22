@@ -34,9 +34,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
         || want.contentQuarterTurns != 0;
     if (!contentGeom && item->hasDecodedPixels() && !itemHasAppliedContentXform(item)) {
         syncLiveColorFromState(item, want.colorAdjust, true);
-        const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-            ? item->sessionId()
-            : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+        const SessionImageId sid = resolveContentEditSessionId(item);
         if (sid != kInvalidSessionImageId) {
             const QImage appearance = sessionAppearanceImage(item);
             if (!appearance.isNull()) {
@@ -76,9 +74,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
     attachDisplaySample(item, display, want, kind);
     // Filmstrip / Gallery chrome: push soft appearance while dragging so the
     // strip does not wait for the idle commit (and does not require FullSource).
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+    const SessionImageId sid = resolveContentEditSessionId(item);
     if (sid != kInvalidSessionImageId) {
         const QImage appearance = sessionAppearanceImage(item);
         if (!appearance.isNull()) {
@@ -155,10 +151,7 @@ void ImageView::setTargetColorAdjustments(const ColorAdjustments &adj)
     if (!item) {
         return;
     }
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_sessionId.currentIdValue();
-    }
+    const SessionImageId sid = resolveContentEditSessionId(item);
     // Stage 2: freeze policy for grade slot seed.
     WorkspaceItemState slot = freezeItemAppearance(item);
     slot.sessionId = (sid != kInvalidSessionImageId) ? sid : slot.sessionId;

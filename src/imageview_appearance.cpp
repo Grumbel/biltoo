@@ -313,10 +313,7 @@ void ImageView::rememberItemState(ImageItem *item)
     if (!item) {
         return;
     }
-    const SessionImageId sid =
-        item->sessionId() != kInvalidSessionImageId
-            ? item->sessionId()
-            : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+    const SessionImageId sid = resolveContentEditSessionId(item);
 
     // Image mode must not overwrite Workspace placement (pos / scale / free tilt).
     // Bound session images: appearance lives in ItemWorld sparse tables (Stage 4b).
@@ -531,12 +528,9 @@ void ImageView::persistDurableContentAppearance(ImageItem *item, const Workspace
 void ImageView::persistSessionAppearanceSlot(ImageItem *item)
 {
     // Per-session-image appearance is a value copy keyed by stable id.
-    SessionImageId sid = item->sessionId();
     // Image mode may bind the cursor id when the live item is not yet tagged.
     // Workspace/Gallery must not invent an id — that merges edits onto peers.
-    if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_sessionId.currentIdValue();
-    }
+    const SessionImageId sid = resolveContentEditSessionId(item);
     WorkspaceItemState contentSlot;
     bool haveContentSlot = false;
     if (sid != kInvalidSessionImageId) {

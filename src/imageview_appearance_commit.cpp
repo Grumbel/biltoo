@@ -162,9 +162,7 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
     // Filmstrip: persistSessionAppearanceSlot already emits when display pixels
     // exist. Re-emit after peer sync so soft-only tiles that gained pixels, and
     // paths that skipped emit, still update the strip.
-    const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-        ? item->sessionId()
-        : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+    const SessionImageId sid = resolveContentEditSessionId(item);
     if (sid != kInvalidSessionImageId) {
         const QImage appearanceImage = sessionAppearanceImage(item);
         if (!appearanceImage.isNull()) {
@@ -260,10 +258,7 @@ bool ImageView::targetHasContentAppearance() const
         if (!item) {
             continue;
         }
-        SessionImageId sid = item->sessionId();
-        if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_sessionId.currentIdValue();
-        }
+        const SessionImageId sid = resolveContentEditSessionId(item);
         // Bound: ItemWorld sparse tables are authority (Crop / ContentBake / Color).
         if (sid != kInvalidSessionImageId) {
             if (m_itemWorld.hasCrop(sid) || m_itemWorld.hasContentBake(sid)
@@ -298,10 +293,7 @@ int ImageView::resetContentAppearanceForTargets()
             continue;
         }
         const QString path = item->path();
-        SessionImageId sid = item->sessionId();
-        if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_sessionId.currentIdValue();
-        }
+        const SessionImageId sid = resolveContentEditSessionId(item);
 
         // 1) Drop durable XDG state for this content.
         ThumtooCache::clearContentAppearance(path);

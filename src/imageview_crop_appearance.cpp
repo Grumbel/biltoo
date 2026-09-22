@@ -47,8 +47,7 @@ bool ImageView::loadRestoreCropAppearance(ImageItem *item, WorkspaceItemState *a
     if (!item || !app) {
         return false;
     }
-    const SessionImageId sid = CropSession::resolveSessionIdForItem(
-        item, m_sessionId.currentIdValue());
+    const SessionImageId sid = resolveContentEditSessionId(item);
     if (sidOut) {
         *sidOut = sid;
     }
@@ -119,10 +118,7 @@ void ImageView::applyCropAppearance(ImageItem *item, const QImage &src,
     // Seed appearance with the full state (including cropRotation) before
     // commitItemSessionEdit, which rebuilds the slot via captureState.
     {
-        SessionImageId sid = item->sessionId();
-        if (sid == kInvalidSessionImageId && isImageMode()) {
-            sid = m_sessionId.currentIdValue();
-        }
+        const SessionImageId sid = resolveContentEditSessionId(item);
         WorkspaceItemState slot = state;
         slot.sessionId = sid;
         slot.path = item->path();

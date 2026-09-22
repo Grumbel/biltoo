@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2215-resolve-content-edit-session-id.** ImageView content paths
+resolve SessionImageId through one helper:
+
+- `resolveContentEditSessionId` used by captureState, rematerialize, framing,
+  color grade, crop appearance load, size probe/layout, rememberItemState,
+  persistSessionAppearanceSlot, appearance commit / reset, and related sites.
+- Peer sync still uses strict `item->sessionId()` only (no Image-cursor fallback).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2215-resolve-content-edit-session-id-e6c70e4.bundle HEAD
+```
+
+Next: **2216**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2214-pose-merge-placement-bridge.** Workspace restore pose merge
 uses the Placement bridge instead of hand-copied fields:
 

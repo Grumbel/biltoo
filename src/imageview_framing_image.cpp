@@ -293,9 +293,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
         const QSize fileNative = ensureLogicalSizeForPath(path);
         if (fileNative.isValid() && fileNative.width() > 1 && fileNative.height() > 1
             && !m_sizeBook.isProvisional(path)) {
-            const SessionImageId sid = item->sessionId() != kInvalidSessionImageId
-                ? item->sessionId()
-                : (isImageMode() ? m_sessionId.currentIdValue() : kInvalidSessionImageId);
+            const SessionImageId sid = resolveContentEditSessionId(item);
             const WorkspaceItemState want = m_displayPipeline.wantAppearanceForItem(item, sid);
             const QSize lay = ContentXform::layoutSize(fileNative, want);
             if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
@@ -305,11 +303,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
     } else if (cropDraft && !path.isEmpty()) {
         const WorkspaceItemState orientOnly = SessionAppearance::withoutCrop(
             m_displayPipeline.wantAppearanceForItem(
-                item,
-                item->sessionId() != kInvalidSessionImageId
-                    ? item->sessionId()
-                    : (isImageMode() ? m_sessionId.currentIdValue()
-                                     : kInvalidSessionImageId)));
+                item, resolveContentEditSessionId(item)));
         applyContentLayoutSize(item, orientOnly);
     }
     if (isImageMode() || m_items.size() == 1) {
