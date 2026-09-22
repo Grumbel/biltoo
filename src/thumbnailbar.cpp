@@ -472,7 +472,7 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     }
                     // Always refresh aspect from ItemWorld/native (override is
                     // pixels only). Skip only the LQIP pixel install below.
-                    applyNativeAspect(it, size);
+                    applyLayoutAspect(it, i, size);
                     if (rowHasAppearanceOverride(i)) {
                         continue;
                     }
@@ -2214,15 +2214,6 @@ void ThumbnailBar::applyLayoutAspect(QListWidgetItem *item, int row, const QSize
     item->setSizeHint(m_delegate->cellSizeForContent(font(), content));
 }
 
-void ThumbnailBar::applyNativeAspect(QListWidgetItem *item, const QSize &native)
-{
-    if (!item) {
-        return;
-    }
-    const int row = this->row(item);
-    applyLayoutAspect(item, row, native);
-}
-
 void ThumbnailBar::primeGeometryFromCache()
 {
     if (!m_delegate || m_cropToSquare || m_files.isEmpty()) {
@@ -2245,7 +2236,7 @@ void ThumbnailBar::primeGeometryFromCache()
         }
         if (const QSize cached = ThumtooCache::cachedSize(path);
             cached.isValid() && cached.width() > 0 && cached.height() > 0) {
-            applyNativeAspect(it, cached);
+            applyLayoutAspect(it, i, cached);
             any = true;
         } else if (ThumtooCache::isAvailable()) {
             ThumtooCache::scheduleProbe(path);

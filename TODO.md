@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2244-drop-filmstrip-apply-native-aspect.** Filmstrip cleanup:
+
+- Remove deprecated `ThumbnailBar::applyNativeAspect` (thin forward to
+  `applyLayoutAspect`); call sites use `applyLayoutAspect(item, row, native)`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2244-drop-filmstrip-apply-native-aspect-e6c70e4.bundle HEAD
+```
+
+Next: **2245**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2243-drop-dead-prefercache-delivery-note.** PreferCache cleanup:
 
 - Remove unused `DisplayPipelineController::noteImageModePreferCacheDelivery`

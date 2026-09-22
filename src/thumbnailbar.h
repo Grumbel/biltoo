@@ -266,8 +266,6 @@ private:
     QSize layoutAspectForRow(int row) const;
     /** Apply layoutAspectForRow (or @p nativeFallback oriented via provider path). */
     void applyLayoutAspect(QListWidgetItem *item, int row, const QSize &nativeHint = QSize());
-    /** @deprecated name kept; routes to applyLayoutAspect. */
-    void applyNativeAspect(QListWidgetItem *item, const QSize &native);
     /** Cache-first sizes for all rows; scheduleProbe for misses. */
     void primeGeometryFromCache();
 
