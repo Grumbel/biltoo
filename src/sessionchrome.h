@@ -69,11 +69,6 @@ struct SessionIdentity {
 
     bool hasLastLoadError() const { return !lastLoadError.isEmpty(); }
 
-    bool isValidPosition() const
-    {
-        return total > 0 && index >= 0 && index < total;
-    }
-
     int currentIndex() const { return index; }
 
     int currentTotal() const { return total; }

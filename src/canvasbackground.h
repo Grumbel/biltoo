@@ -55,8 +55,6 @@ struct CanvasBackground {
 
     bool isWorkspaceShowDefault() const { return workspaceShowDefault; }
 
-    bool hasWorkspaceTile() const { return !workspaceTile.isNull(); }
-
     const QPixmap &workspaceTilePixmap() const { return workspaceTile; }
 
     const WorkspaceBackground &workspaceRef() const { return workspace; }

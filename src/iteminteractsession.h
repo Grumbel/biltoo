@@ -65,8 +65,6 @@ public:
 
     bool isRotating() const { return rotating; }
     bool isHandleDragging() const { return handleDragItem != nullptr; }
-    bool isMoving() const { return dragItem != nullptr; }
-
     ImageItem *currentRotateItem() const { return rotateItem; }
     ImageItem *currentDragItem() const { return dragItem; }
     ImageItem *currentHandleDragItem() const { return handleDragItem; }

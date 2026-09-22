@@ -31,7 +31,6 @@ public:
         boundsStart = {};
         centerStart = {};
         pressScenePos = {};
-        pressAngleDeg = 0.0;
         dragStartPlacements.clear();
         dragItems.clear();
     }
@@ -59,8 +58,6 @@ public:
 
     const QPointF &pressScenePosPoint() const { return pressScenePos; }
 
-    qreal pressAngle() const { return pressAngleDeg; }
-
     /** @return true when hover handle index changed. */
     bool setHoverHandle(int h)
     {
@@ -74,8 +71,6 @@ public:
     void clearHover() { hoverHandle = -1; }
 
     void setPressScenePos(const QPointF &p) { pressScenePos = p; }
-
-    void setPressAngleDeg(qreal deg) { pressAngleDeg = deg; }
 
     /** Start scale or rotate drag for the given handle and selection snapshot. */
     void beginDrag(int h, bool isRotate, const QRectF &bounds,
@@ -127,13 +122,6 @@ public:
         return (i >= 0 && i < dragItems.size()) ? dragItems.at(i) : nullptr;
     }
 
-    void setDragItemAt(int i, ImageItem *item)
-    {
-        if (i >= 0 && i < dragItems.size()) {
-            dragItems[i] = item;
-        }
-    }
-
     const ItemComponents::Placement &dragStartPlacementAt(int i) const
     {
         return dragStartPlacements.at(i);
@@ -151,7 +139,6 @@ public:
         boundsStart = {};
         centerStart = {};
         pressScenePos = {};
-        pressAngleDeg = 0.0;
         dragStartPlacements.clear();
         dragItems.clear();
     }
@@ -164,7 +151,6 @@ private:
     QRectF boundsStart;
     QPointF centerStart;
     QPointF pressScenePos;
-    qreal pressAngleDeg = 0.0;
     QList<ItemComponents::Placement> dragStartPlacements;
     QList<ImageItem *> dragItems;
 };

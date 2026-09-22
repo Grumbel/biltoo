@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2276-drop-dead-session-gesture-helpers.** Dead API cleanup:
+
+1. SessionIdentity: remove unused `isValidPosition`
+2. GroupTransformSession: remove unread `pressAngleDeg` + `pressAngle` /
+   `setPressAngleDeg`; remove unused `setDragItemAt`
+3. ItemInteractSession: remove unused `isMoving`
+4. CanvasBackground: remove unused `hasWorkspaceTile`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2276.1-drop-dead-session-gesture-helpers-e6c70e4.bundle HEAD
+```
+
+Next: **2277**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2275-drop-gallery-soft-timestamps.** Dead state cleanup:
 
 - Remove `GallerySoft::State::inflightSinceMs` and `weakSinceMs` — never read,
