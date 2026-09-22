@@ -148,12 +148,14 @@ authority bypass. Content orient remains ItemWorld contentBake/crop only.
 
 ## Priority cleanup order
 
-1. Image underlay: never displayReady unless override fingerprint matches ItemWorld want (filmstrip path still open).
-2. Workspace restore: content from ItemWorld, not `m_savedItems` content fields. (**2194–2195**, restore merges ItemWorld content)
-3. Ban incremental `bakeRotate90` when host exists; require host for content edit. (**2200**)
-4. Filmstrip override: treat as pure cache of `sessionAppearanceImage` after ItemWorld commit only.
-5. Audit every `ImageCache::put` for baked samples. (see IMAGECACHE_PUT_AUDIT.md)
-6. Delete path-map content writes for bound session ids — **verified 2211**: `rememberItemState`, Gallery pack afterEach, Workspace snapshot write Placement-only for bound ids; path map is unbound-only.
+1. Image underlay: never displayReady unless override fingerprint matches ItemWorld want — **done 2176/2202/2204**.
+2. Workspace restore: content from ItemWorld, not `m_savedItems` content fields — **done 2194–2214 / 2222** (pose-only snapshot + Placement bridge).
+3. Ban incremental `bakeRotate90` when host exists; require host for content edit — **done 2200**.
+4. Filmstrip override: pure cache of `sessionAppearanceImage` after ItemWorld commit — **done 2179/2204**; placement flips accepted for Workspace display (residual #8 / 2224).
+5. Audit every `ImageCache::put` for baked samples — **done** (see IMAGECACHE_PUT_AUDIT.md).
+6. Delete path-map content writes for bound session ids — **verified 2211**; `setPathState` no-ops when `sessionId` set.
+
+**Orient / Placement authority series closed (2205–2224).** Remaining residuals are low/accepted (#8 filmstrip display flips, #10 slideshow aligned, #11 crop draft local).
 
 ---
 
@@ -168,6 +170,7 @@ authority bypass. Content orient remains ItemWorld contentBake/crop only.
 - `resolveContentEditSessionId` for ImageView content paths (2215)
 - Normative summary: [CONTENTXFORM_AUTHORITY.md](CONTENTXFORM_AUTHORITY.md) (2216)
 - `DisplayPipelineController::resolveItemSessionId` (2219–2220) — pipeline materialize/layout/climb
+- Workspace Placement lifecycle + filmstrip display-flip note (2222–2224)
 
 ## Work status
 

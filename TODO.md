@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2225-orient-authority-series-closed.** ECS priority cleanup list
+marked complete for the orient / Placement authority series (2205–2224):
+
+- Image underlay host materialize, Workspace pose-only snapshot, no incremental
+  bake, filmstrip override, ImageCache host-raw, path-map bound no-op
+- Residual #8 filmstrip placement flips accepted (Workspace display channel)
+
+Suggested next domains (outside this series): filmstrip override fingerprint
+hardening if new bugs appear; crop draft buffers (#11) only if crop regressions.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2225-orient-authority-series-closed-e6c70e4.bundle HEAD
+```
+
+Next: **2226**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2224-text-sid-resolve-filmstrip-note.** Polish:
 
 1. `imageview_text` content-space mapping uses `resolveContentEditSessionId`
