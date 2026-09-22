@@ -596,13 +596,6 @@ void MainWindow::onWorkspacePathsChanged()
     syncThumbnailCanvasMembership();
     updateStatus();
 }
-
-
-void MainWindow::syncThumbnailWorkspaceSelection()
-{
-    // Kept for callers; membership badge is syncThumbnailCanvasMembership().
-}
-
 void MainWindow::syncThumbnailCanvasMembership()
 {
     if (!m_thumbnailBar || !m_imageView) {

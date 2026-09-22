@@ -170,7 +170,6 @@ void MainWindow::refreshSessionUiAfterRemove()
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
-        syncThumbnailWorkspaceSelection();
     }
     applyThumbnailVisibility();
 }
@@ -295,7 +294,6 @@ void MainWindow::restoreSessionEntries(const QList<SessionEntrySnapshot> &entrie
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
-        syncThumbnailWorkspaceSelection();
     }
     applyThumbnailVisibility();
 

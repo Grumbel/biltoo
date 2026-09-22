@@ -310,7 +310,6 @@ void MainWindow::setSortMode(SortMode mode)
         m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
         if (isWorkspaceMode()) {
             m_thumbnailBar->setMultiSelectEnabled(true);
-            syncThumbnailWorkspaceSelection();
         }
 
         // Prefer SessionImageId so duplicate paths keep the focused row after sort.

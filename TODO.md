@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2251-drop-empty-sync-thumb-workspace-selection.** MainWindow cleanup:
+
+1. Remove empty no-op `syncThumbnailWorkspaceSelection` and its call sites
+   (membership is `syncThumbnailCanvasMembership`)
+2. Remove orphan declaration `finishApplyExpandedAppend` (no definition, no callers)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2251-drop-empty-sync-thumb-workspace-selection-e6c70e4.bundle HEAD
+```
+
+Next: **2252**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2250-drop-dead-mainwindow-slideshow-entrypoints.** Dead API cleanup:
 
 MainWindow (zero call sites):

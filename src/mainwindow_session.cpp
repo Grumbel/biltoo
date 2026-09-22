@@ -273,7 +273,6 @@ void MainWindow::finishExpandedAppendChrome(SessionImageId currentId, const QStr
     m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
     if (isWorkspaceMode()) {
         m_thumbnailBar->setMultiSelectEnabled(true);
-        syncThumbnailWorkspaceSelection();
         if (m_thumbnailBar->selectedIndices().isEmpty()
             && (!workspaceIds.isEmpty() || !workspacePaths.isEmpty())) {
             // Prefer SessionImageId so duplicate paths restore the correct rows.

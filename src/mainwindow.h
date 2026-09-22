@@ -411,7 +411,6 @@ private:
     QString historyEntryLabel(const QStringList &paths) const;
     /** Rich Help-panel body for one remembered session (file list). */
     QString historyEntryHelpHtml(const QStringList &paths) const;
-    void syncThumbnailWorkspaceSelection();
     void syncThumbnailCanvasMembership();
     /** Push thumbnail multi-select onto the canvas (Workspace membership / Gallery seed). */
     void showSlideshowCursor();
@@ -468,7 +467,6 @@ private:
                                     const QStringList &workspacePaths,
                                     const QVector<SessionImageId> &workspaceIds);
     void finishApplyExpandedLoad(int startAt);
-    void finishApplyExpandedAppend();
     void setExpandProgress(int current, int total, const QString &message);
     QStringList extractLocalImagePaths(const QMimeData *mime) const;
     void handleWorkspaceDrop(const QStringList &paths, bool fromInternalSelection,
