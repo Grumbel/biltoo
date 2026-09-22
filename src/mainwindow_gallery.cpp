@@ -33,14 +33,16 @@ void MainWindow::populateGalleryCanvas()
     if (!m_imageView->isGalleryMode()) {
         return;
     }
+    bool needPlaceholders = false;
     if (m_imageView->hostGallerySizeResolve().active()) {
         // Sized prefix only — ordered ensure stops at the first unresolved path.
-        if (m_imageView->itemCount() == 0) {
+        needPlaceholders = m_imageView->itemCount() == 0;
+        if (needPlaceholders) {
             m_imageView->hostGallery().ensurePlaceholders();
         }
     } else {
         m_imageView->hostGalleryDecodeBook().setDeferPopulate(false);
-        bool needPlaceholders = m_imageView->itemCount() == 0;
+        needPlaceholders = m_imageView->itemCount() == 0;
         if (!needPlaceholders) {
             needPlaceholders = true;
             for (ImageItem *item : m_imageView->liveItems()) {

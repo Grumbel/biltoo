@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.19-populateGallery-needPlaceholders-scope.** Build fix:
+
+- `needPlaceholders` was only declared in the non-gate branch but used in
+  `biltooModeDbg` → compile error. Declare at function scope.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.19-populateGallery-needPlaceholders-scope-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.18-gallery-full-ensure-on-gate-complete.** Regression: Gallery
 opens with a single cell until relayout.
 
