@@ -777,6 +777,18 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-contentxform-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME contentxform COMMAND biltoo-contentxform-test)
 
+  # Paint-path contract: contentRect / layoutSize vs mapSourceRectToOriented
+  # for every quarter-turn (and flips). Isolates "content rect does not rotate".
+  add_executable(biltoo-content-orient-paint-contract-test
+    tests/content_orient_paint_contract_test.cpp
+    src/contentxform.cpp
+  )
+  target_include_directories(biltoo-content-orient-paint-contract-test PRIVATE src)
+  target_link_libraries(biltoo-content-orient-paint-contract-test PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME content_orient_paint_contract
+    COMMAND biltoo-content-orient-paint-contract-test)
+
   add_executable(biltoo-displaysurface-test
     tests/displaysurface_test.cpp
     src/displaysurface.cpp

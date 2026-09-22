@@ -2,6 +2,34 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2297-content-orient-paint-contract-tests.**
+
+Isolated **content orient ↔ contentRect** paint contract tests (no Widgets):
+
+- `tests/content_orient_paint_contract_test.cpp` + CMake target
+  `biltoo-content-orient-paint-contract-test` / ctest `content_orient_paint_contract`
+- For every quarter-turn (and flip×turn): `layoutSize` matches
+  `mapSourceRectToOriented(full)` AABB; simulated contentRect contains full-frame
+  and tile-grid dests; display→source recovers native; successive +1 turns cycle.
+- Axis-aligned crop: layout is crop size; crop-local dest stays in contentRect.
+
+Pure ContentXform only — if these pass but the app still misbehaves, the bug is
+in host layout apply (`applyContentLayoutSize` / intrinsic) or tile paint, not
+the map math.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2297-content-orient-paint-contract-tests-c0bffd5.bundle HEAD
+```
+
+Next: **2298** (if app still broken: host intrinsic on orient).
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2296-tile-summary-lines-alpha.**
 
 Host plan summary: `TILE` / `s=N` / COMPLETE on **three lines**, `QFont::Black`,
