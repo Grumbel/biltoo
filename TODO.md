@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2308-status-archive-activity.**
+
+Status bar prefers archive extract activity when present:
+
+`Archive read ×1 · photos.zip:img/001.jpg · Size probes …`
+
+Requires **thumtoo-318**.
+
+### Apply
+```bash
+git -C thumtoo pull --ff-only …/thumtoo-318-activity-archive-member-8ea52ea.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2308-status-archive-activity-c0bffd5.bundle HEAD
+```
+
+Next: **2309**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2307-status-size-probe-activity.**
 
 Phase 1 status (with **thumtoo-317**):

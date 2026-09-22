@@ -1212,6 +1212,11 @@ SizeProbeActivity sizeProbeActivity()
     for (const std::string &u : s.running_size_probe_uris) {
         out.runningUris.append(QString::fromStdString(u));
     }
+    out.archiveReadRunning = static_cast<quint64>(s.archive_read_running);
+    out.archiveReadCompleted = s.archive_read_completed;
+    for (const std::string &lab : s.running_archive_labels) {
+        out.runningArchiveLabels.append(QString::fromStdString(lab));
+    }
     return out;
 }
 

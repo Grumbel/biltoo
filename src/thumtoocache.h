@@ -151,6 +151,9 @@ struct SizeProbeActivity {
     quint64 running = 0;
     quint64 completed = 0;
     QStringList runningUris; // up to 8
+    quint64 archiveReadRunning = 0;
+    quint64 archiveReadCompleted = 0;
+    QStringList runningArchiveLabels; // "zip:member"
 };
 SizeProbeActivity sizeProbeActivity();
 

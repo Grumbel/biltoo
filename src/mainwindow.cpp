@@ -2539,26 +2539,37 @@ void MainWindow::updateStatus()
         bool sizeProbeStatusShown = false;
         if (statusBar() && ThumtooCache::isAvailable()) {
             const ThumtooCache::SizeProbeActivity act = ThumtooCache::sizeProbeActivity();
+            QStringList parts;
+            if (act.archiveReadRunning > 0) {
+                QString arch = tr("Archive read ×%1").arg(act.archiveReadRunning);
+                if (!act.runningArchiveLabels.isEmpty()) {
+                    arch += tr(" · %1").arg(act.runningArchiveLabels.last());
+                }
+                parts << arch;
+            }
             if (act.queued + act.running > 0) {
-                QString msg = tr("Size probes %1 running · %2 queued")
-                                  .arg(act.running)
-                                  .arg(act.queued);
+                QString probe = tr("Size probes %1 running · %2 queued")
+                                    .arg(act.running)
+                                    .arg(act.queued);
                 if (!act.runningUris.isEmpty()) {
                     const QString leaf = PagePath::displayName(act.runningUris.last());
                     if (!leaf.isEmpty()) {
-                        msg += tr(" · %1").arg(leaf);
+                        probe += tr(" · %1").arg(leaf);
                     }
                 }
                 if (m_imageView->hostGallerySizeResolve().active()) {
                     const int total = m_imageView->hostGallerySizeResolve().total();
                     const int left = m_imageView->hostGallerySizeResolve().pendingCount();
                     if (total > 0) {
-                        msg += tr(" · session %1/%2")
-                                   .arg(qMax(0, total - left))
-                                   .arg(total);
+                        probe += tr(" · session %1/%2")
+                                     .arg(qMax(0, total - left))
+                                     .arg(total);
                     }
                 }
-                statusBar()->showMessage(msg, 0);
+                parts << probe;
+            }
+            if (!parts.isEmpty()) {
+                statusBar()->showMessage(parts.join(QStringLiteral(" · ")), 0);
                 m_decodeStatusActive = true;
                 if (m_decodeStatusClearTimer) {
                     m_decodeStatusClearTimer->stop();
