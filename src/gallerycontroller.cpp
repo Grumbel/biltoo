@@ -23,6 +23,7 @@
 #include "displayquality.h"
 #include "workspacenavgeometry.h"
 #include "gallerydecodesm.h"
+#include <functional>
 
 #include <QScrollBar>
 #include <QTimer>
@@ -1243,24 +1244,33 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     params.masonryRows = m_view->hostLayout().masonryRowsValue();
     params.mode = GalleryPackFit::modeFromLayoutMode(m_view->hostLayout().currentMode());
 
-    GalleryLayout::pack(m_view->liveItems(), params, [this](ImageItem *item) {
-        if (!item) {
-            return;
-        }
-        // Pack only moves pose — sparse Placement; no captureState content stamp.
-        const ItemComponents::Placement pl = item->placement();
-        if (item->sessionId() != kInvalidSessionImageId) {
-            m_view->itemWorld().setPlacement(item->sessionId(), pl);
-        } else if (!item->path().isEmpty()) {
-            WorkspaceItemState s;
-            if (const WorkspaceItemState *prev =
-                    m_view->itemWorld().getPathState(item->path())) {
-                s = *prev;
-            }
-            ItemComponents::applyPlacementToState(s, pl);
-            m_view->itemWorld().setPathState(item->path(), s);
-        }
-    });
+    // Progressive packs during the size gate only need scene poses for display.
+    // Writing ItemWorld for every cell every ~50–120ms was pure overhead (and
+    // EnterGallery / gate-complete pack persists the final poses once).
+    const bool persistWorld =
+        !(m_view->hostGallerySizeResolve().active()
+          && reason == GalleryPackReason::ContentChange);
+    GalleryLayout::pack(m_view->liveItems(), params,
+                        persistWorld
+                            ? std::function<void(ImageItem *)>([this](ImageItem *item) {
+                                  if (!item) {
+                                      return;
+                                  }
+                                  // Pack only moves pose — sparse Placement.
+                                  const ItemComponents::Placement pl = item->placement();
+                                  if (item->sessionId() != kInvalidSessionImageId) {
+                                      m_view->itemWorld().setPlacement(item->sessionId(), pl);
+                                  } else if (!item->path().isEmpty()) {
+                                      WorkspaceItemState s;
+                                      if (const WorkspaceItemState *prev =
+                                              m_view->itemWorld().getPathState(item->path())) {
+                                          s = *prev;
+                                      }
+                                      ItemComponents::applyPlacementToState(s, pl);
+                                      m_view->itemWorld().setPathState(item->path(), s);
+                                  }
+                              })
+                            : std::function<void(ImageItem *)>());
 
     const QRectF bounds = ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), margin);
     if (m_view->canvasScene()->sceneRect() != bounds) {

@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.15-skip-itemworld-on-progressive-pack.** Validate progressive pack cost:
+
+- Every progressive pack during the size gate wrote **ItemWorld** placement for
+  every live cell. Pose is already applied by `GalleryLayout::pack`; persistence
+  is only needed on the final EnterGallery / gate-complete pack.
+- Progressive `ContentChange` packs while the gate is active now skip the
+  ItemWorld callback (scene poses only).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.15-skip-itemworld-on-progressive-pack-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.14-chunk-progress-memo-settle.** Validate progress timer:
 
 - `updateProgressHud` could adopt **every** warm-filled memo in one 100ms tick
