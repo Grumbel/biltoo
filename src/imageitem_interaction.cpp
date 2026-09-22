@@ -190,9 +190,9 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
 
     const int nlines = summary.size();
     const qreal shortEdge = qMin(labelBox.width(), labelBox.height());
-    // Fit n lines into ~70% of the short edge.
-    int px = qRound(shortEdge * 0.70 / (nlines * 1.25));
-    px = qBound(18, px, 512);
+    // Fill most of the content box — host summary, not thumtoo TILE stamps.
+    int px = qRound(shortEdge * 0.90 / (nlines * 1.15));
+    px = qBound(24, px, 1024);
 
     QFont pf = painter->font();
     pf.setBold(true);
@@ -201,15 +201,15 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     pf.setPixelSize(px);
     painter->setFont(pf);
 
-    // Shrink if the longest line exceeds ~90% of width.
+    // Shrink if the longest line exceeds the box width.
     {
         qreal maxLineW = 0.0;
         const QFontMetrics fm(pf);
         for (const QString &line : summary) {
             maxLineW = qMax(maxLineW, qreal(fm.horizontalAdvance(line)));
         }
-        if (maxLineW > labelBox.width() * 0.90 && maxLineW > 1.0) {
-            px = qBound(14, qRound(px * (labelBox.width() * 0.90) / maxLineW), 512);
+        if (maxLineW > labelBox.width() * 0.98 && maxLineW > 1.0) {
+            px = qBound(18, qRound(px * (labelBox.width() * 0.98) / maxLineW), 1024);
             pf.setPixelSize(px);
             painter->setFont(pf);
         }
@@ -219,24 +219,17 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
     const int lineH = fm.height();
     const qreal totalH = lineH * nlines;
     const qreal y0 = labelBox.center().y() - totalH / 2.0;
-    // Semi-transparent yellow + dark outline — no opaque plate so washes show.
-    const QColor fill(255, 230, 40, 200);
-    const QColor outline(0, 0, 0, 180);
-    const qreal outlineW = qMax(2.0, px / 16.0);
-
+    // Bold black, no outline — yellow is reserved for thumtoo pixel stamps.
+    painter->setPen(QColor(0, 0, 0, 220));
+    painter->setBrush(Qt::NoBrush);
     for (int i = 0; i < nlines; ++i) {
         const QString &line = summary.at(i);
-        const qreal x = labelBox.center().x() - fm.horizontalAdvance(line) / 2.0;
-        const qreal y = y0 + i * lineH + fm.ascent();
-        QPainterPath path;
-        path.addText(QPointF(x, y), pf, line);
-        painter->setPen(QPen(outline, outlineW, Qt::SolidLine, Qt::RoundCap,
-                             Qt::RoundJoin));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawPath(path);
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(fill);
-        painter->drawPath(path);
+        const QRectF lineRect(
+            labelBox.left(),
+            y0 + i * lineH,
+            labelBox.width(),
+            lineH);
+        painter->drawText(lineRect, Qt::AlignHCenter | Qt::AlignVCenter, line);
     }
     Q_UNUSED(sx);
     painter->restore();

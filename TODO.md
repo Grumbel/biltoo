@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2295-tile-summary-black-bigger.**
+
+Host plan summary (`TILE s=N` / COMPLETE|…): even larger (~90% short edge),
+**bold black**, no outline. Yellow left for thumtoo DEBUG_OVERLAY stamps.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2295-tile-summary-black-bigger-c0bffd5.bundle HEAD
+```
+
+Next: **2296**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2294-tile-summary-large-transparent.**
 
 Host tile plan overlay summary (`TILE s=N` / COMPLETE|LOADING|WAITING):
