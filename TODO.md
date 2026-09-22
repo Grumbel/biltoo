@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2279-drop-thumbnailbar-height-aliases.** Dead API cleanup:
+
+- ThumbnailBar: remove unused `heightForThumbSize` / `thumbSizeForHeight`
+  aliases (callers use `extentForThumbSize` / `thumbSizeForExtent`).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2279.1-drop-thumbnailbar-height-aliases-e6c70e4.bundle HEAD
+```
+
+Next: **2280**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2278-drop-placementlinear-dead-helpers.** Dead API cleanup:
 
 - PlacementLinear: remove unused `opacityStepFromModifiers` and

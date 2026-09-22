@@ -210,9 +210,6 @@ public:
     /** Layout max matches highest ladder step (power-of-two). No soft-only clamp. */
     static constexpr int kMaxThumbSize = 1024;
 
-    static int heightForThumbSize(int thumbSize) { return extentForThumbSize(thumbSize); }
-    static int thumbSizeForHeight(int height) { return thumbSizeForExtent(height); }
-
 signals:
     void indexActivated(int index);
     /** Multi-select changed (selection only — does not drive canvas membership). */
