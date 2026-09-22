@@ -38,6 +38,8 @@ private slots:
     // Path-XDG fill (2228)
     void applyStoredContentAppearance_orientAndGrade();
     void applyStoredContentAppearance_orientOnlySkipsGrade();
+    void fillStoredContentAppearance_roundTripOrient();
+    void fillStoredContentAppearance_boundSkipsCrop();
 };
 
 void SessionAppearanceTest::seedBook_keyedById()
@@ -334,6 +336,39 @@ void SessionAppearanceTest::applyStoredContentAppearance_orientOnlySkipsGrade()
     SessionAppearance::applyStoredContentAppearance(&st, stored, false);
     QVERIFY(st.contentVFlip);
     QCOMPARE(st.colorAdjust.brightness, 3); // grade not applied
+}
+
+
+void SessionAppearanceTest::fillStoredContentAppearance_roundTripOrient()
+{
+    WorkspaceItemState st;
+    st.contentQuarterTurns = 2;
+    st.contentHFlip = true;
+    st.colorAdjust.brightness = 7;
+    ThumtooCache::StoredContentAppearance stored;
+    QVERIFY(SessionAppearance::fillStoredContentAppearance(&stored, st, true));
+    QCOMPARE(stored.contentQuarterTurns, 2);
+    QVERIFY(stored.contentHFlip);
+    QVERIFY(stored.hasGrade);
+    QCOMPARE(stored.gradeBrightness, 7);
+
+    WorkspaceItemState back;
+    SessionAppearance::applyStoredContentAppearance(&back, stored);
+    QCOMPARE(back.contentQuarterTurns, 2);
+    QVERIFY(back.contentHFlip);
+    QCOMPARE(back.colorAdjust.brightness, 7);
+}
+
+void SessionAppearanceTest::fillStoredContentAppearance_boundSkipsCrop()
+{
+    WorkspaceItemState st;
+    st.hasCrop = true;
+    st.cropRect = QRect(0, 0, 10, 10);
+    st.contentQuarterTurns = 1;
+    ThumtooCache::StoredContentAppearance stored;
+    QVERIFY(SessionAppearance::fillStoredContentAppearance(&stored, st, false));
+    QVERIFY(!stored.hasCrop);
+    QCOMPARE(stored.contentQuarterTurns, 1);
 }
 
 QTEST_MAIN(SessionAppearanceTest)

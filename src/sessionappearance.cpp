@@ -366,4 +366,35 @@ void applyStoredContentAppearance(WorkspaceItemState *st,
     }
 }
 
+
+bool fillStoredContentAppearance(ThumtooCache::StoredContentAppearance *stored,
+                                 const WorkspaceItemState &state,
+                                 bool writeCrop)
+{
+    if (!stored) {
+        return false;
+    }
+    *stored = {};
+    stored->contentHFlip = state.contentHFlip;
+    stored->contentVFlip = state.contentVFlip;
+    stored->contentQuarterTurns = state.contentQuarterTurns;
+    const bool cropOut = writeCrop && state.hasCrop && !state.cropRect.isEmpty();
+    stored->hasCrop = cropOut;
+    if (cropOut) {
+        stored->cropRect = state.cropRect;
+        stored->cropSourceSize = state.cropSourceSize;
+        stored->cropRotation = state.cropRotation;
+    }
+    if (!state.colorAdjust.isIdentity()) {
+        stored->hasGrade = true;
+        stored->gradeBrightness = state.colorAdjust.brightness;
+        stored->gradeContrast = state.colorAdjust.contrast;
+        stored->gradeSaturation = state.colorAdjust.saturation;
+        stored->gradeHue = state.colorAdjust.hue;
+        stored->gradeGamma = ColorAdjustments::gammaToPercent(state.colorAdjust.gamma);
+        stored->gradeInvert = state.colorAdjust.invert;
+    }
+    return !stored->isIdentity();
+}
+
 } // namespace SessionAppearance

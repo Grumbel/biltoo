@@ -190,6 +190,15 @@ void applyStoredContentAppearance(WorkspaceItemState *st,
                                   bool includeGrade = true,
                                   bool includeCrop = true);
 
+/**
+ * Fill path-XDG StoredContentAppearance from @p state.
+ * @p writeCrop false for bound SessionImageId (crop is id-only — IDENTITY).
+ * Returns true when the result is non-identity (worth saving).
+ */
+bool fillStoredContentAppearance(ThumtooCache::StoredContentAppearance *stored,
+                                 const WorkspaceItemState &state,
+                                 bool writeCrop);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H

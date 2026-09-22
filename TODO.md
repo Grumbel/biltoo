@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2229-fill-stored-content-appearance.** Path-XDG save side of 2228:
+
+- `SessionAppearance::fillStoredContentAppearance(stored, state, writeCrop)`
+- `writeCrop=false` for bound ids (crop is SessionImageId-only)
+- `persistDurableContentAppearance` / `persistSessionAppearanceSlot` adopt it
+- Round-trip unit tests with applyStoredContentAppearance
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2229-fill-stored-content-appearance-e6c70e4.bundle HEAD
+```
+
+Next: **2230**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2228-apply-stored-content-appearance.** Shared path-XDG → state fill:
 
 - `SessionAppearance::applyStoredContentAppearance(st, stored, includeGrade, includeCrop)`
