@@ -904,7 +904,7 @@ int GalleryController::galleryInstallLqipOntoBlanks(int maxInstalls, bool *moreP
         return 0;
     }
     int installed = 0;
-    // LQIP underlay only — never install PreferCache whole-frame into Gallery cells.
+    // Underlay only (LQIP / EMB) — never install PreferCache whole-frame into cells.
     QList<ImageItem *> ordered;
     ordered.reserve(m_view->liveItems().size());
     for (ImageItem *item : m_view->liveItems()) {
@@ -912,10 +912,12 @@ int GalleryController::galleryInstallLqipOntoBlanks(int maxInstalls, bool *moreP
             continue;
         }
         const int e = item->displayPixelLongEdge();
-        if (!item->hasDisplayPixels() || e <= DisplayQuality::kLqipMaxEdge) {
+        // Allow EMB band (≤320) so EXIF/PDF /Thumb can replace a tiny ThumbHash.
+        if (!item->hasDisplayPixels()
+            || e <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
             ordered.prepend(item);
         } else {
-            continue; // already past LQIP — tiles own sharpness
+            continue; // past embedded underlay — tiles own sharpness
         }
     }
     for (ImageItem *item : ordered) {
@@ -942,19 +944,21 @@ int GalleryController::galleryInstallLqipOntoBlanks(int maxInstalls, bool *moreP
         }
         QImage sample = hostSample;
         int sampleEdge = hostEdge;
-        // LQIP underlay only — downscale host sample; never install whole-frame plate.
-        if (sampleEdge > DisplayQuality::kLqipMaxEdge) {
-            if (item->hasDisplayPixels()) {
+        // Underlay only — downscale huge host samples for install paint, but do
+        // not put a smaller raster back into ImageCache (that wiped EMB EXIF).
+        if (sampleEdge > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+            if (item->hasDisplayPixels()
+                && shown >= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
                 continue;
             }
-            const int cap = DisplayQuality::kLqipMaxEdge;
+            const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;
             sample = hostSample.scaled(
                 cap, cap, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             sampleEdge = ImageCache::longEdge(sample);
             if (sample.isNull() || sampleEdge <= 0) {
                 continue;
             }
-            ImageCache::put(path, sample);
+            // Install-only scale — leave ImageCache at the larger EMB/HOST sample.
         }
         const SessionAppearance::PixelKind kind =
             SessionAppearance::PixelKind::SoftPreview;

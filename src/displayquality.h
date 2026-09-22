@@ -18,6 +18,13 @@ namespace DisplayQuality {
 /** Long-edge ceiling for LQIP / "quick preview" (ThumbHash-scale). */
 constexpr int kLqipMaxEdge = 96;
 
+/**
+ * Max long edge for container embedded underlay (EXIF / PDF /Thumb).
+ * Above this, Gallery may downscale for install only — never write a smaller
+ * stand-in back into ImageCache over a larger EMB sample.
+ */
+constexpr int kEmbeddedUnderlayMaxEdge = 320;
+
 /** Soft ladder durable max (matches ThumtooCache::kGalleryLadderEdge). */
 constexpr int kSoftMaxEdge = 512;
 

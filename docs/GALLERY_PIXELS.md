@@ -10,7 +10,8 @@ encode is **not** used in Gallery (removed).
 
 | Layer | Role |
 |-------|------|
-| **LQIP** (≤96) | Placeholder until tiles cover. Loaded from Store into ImageCache at session open (warmSessionOpenMemos). |
+| **LQIP** (≤96) | ThumbHash placeholder until tiles cover. |
+| **EMB** (≤320) | EXIF / PDF `/Thumb` container preview (`SizeReply.embedded`); stamped **EMB** in debug overlay. Not tiles. |
 | **Tiles** | Sharpness for cells with on-screen long edge > 32 px. Durable Store hits preferred; encode only when coverage missing. |
 
 Filmstrip uses the same product rule via `scheduleFilmstripTilePixels` /
