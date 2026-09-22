@@ -44,7 +44,6 @@ public:
     DisplaySurfaceController &displaySurfaces() { return m_displaySurfaces; }
     const DisplaySurfaceController &displaySurfaces() const { return m_displaySurfaces; }
 
-    DisplaySurface::SurfaceId imageFocusSurface() const { return m_imageFocusSurface; }
     DisplaySurface::SurfaceId &imageFocusSurfaceRef() { return m_imageFocusSurface; }
 
     std::unique_ptr<TileLoadCoordinator> &tileCoordinator() { return m_tileCoordinator; }

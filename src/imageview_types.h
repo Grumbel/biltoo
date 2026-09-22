@@ -320,11 +320,6 @@ struct GallerySoftState : GallerySoft::State {
         GallerySoft::noteLadderDelivery(*this, requestEdge, gotEdge, softFloor);
     }
 
-    bool needsSoftSchedule(int wantEdge, bool anyBlank, bool anyFull) const
-    {
-        return GallerySoft::needsSchedule(*this, wantEdge, anyBlank, anyFull);
-    }
-
     /** scheduleTilePyramid issued once for this path (tile band). */
     bool tilesPyramidQueued = false;
 

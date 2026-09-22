@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2280-drop-dead-surface-soft-perf-accessors.** Dead API cleanup:
+
+1. DisplayPipelineController: remove unused const `imageFocusSurface()` (callers
+   use `imageFocusSurfaceRef()`)
+2. GallerySoftState: remove unused `needsSoftSchedule` wrapper
+3. PerfStats: remove unused `hasHudLine` (callers use `isEnabled()`)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2280.1-drop-dead-surface-soft-perf-accessors-e6c70e4.bundle HEAD
+```
+
+Next: **2281**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2279-drop-thumbnailbar-height-aliases.** Dead API cleanup:
 
 - ThumbnailBar: remove unused `heightForThumbSize` / `thumbSizeForHeight`

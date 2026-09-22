@@ -78,11 +78,6 @@ struct PerfStats {
         return lastDecodeWindowUs > kWarnDecodeWindowUs;
     }
 
-    /**
-     * HUD line body (without tr wrapper). Empty when disabled.
-     * Caller localises via tr("FPS %1 · paint %2 ms · decode-win %3 ms (max %4)").
-     */
-    bool hasHudLine() const { return enabled; }
 };
 
 #endif // PERFSTATS_H
