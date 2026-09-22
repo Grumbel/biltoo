@@ -235,6 +235,13 @@ int main(int argc, char *argv[])
             "~/.cache/biltoo/thumtoo-debug.log"));
     parser.addOption(thumtooDebugOption);
 
+    QCommandLineOption helpAllOption(
+        QStringList() << QStringLiteral("help-all"),
+        QCoreApplication::translate("main",
+            "Show help plus environment variables for debugging "
+            "(see also docs/ENVIRONMENT.md)"));
+    parser.addOption(helpAllOption);
+
     // Rich --version: biltoo + optional features + linked thumtoo version.
     {
         const QStringList args = QCoreApplication::arguments();
@@ -263,6 +270,61 @@ int main(int argc, char *argv[])
     }
 
     parser.process(app);
+
+    if (parser.isSet(helpAllOption)) {
+        QTextStream out(stdout);
+        out << parser.helpText() << '\n';
+        out << QCoreApplication::translate(
+                   "main", "Environment variables (debugging / limits)")
+            << '\n'
+            << QCoreApplication::translate(
+                   "main",
+                   "Flag-style: on when non-empty and not 0/f/n. "
+                   "Full detail: docs/ENVIRONMENT.md")
+            << "\n\n";
+        out << "Runtime debug traces\n"
+               "  THUMTOO_DEBUG              thumtoo ladder/tile/interest traces\n"
+               "                             (stderr + ~/.cache/biltoo/thumtoo-debug.log)\n"
+               "  BILTOO_THUMTOO_DEBUG       alias for THUMTOO_DEBUG\n"
+               "  BILTOO_LOAD_DEBUG          ImageView load-pipeline timestamps\n"
+               "  BILTOO_DEBUG_SLIDESHOW     slideshow transition traces\n"
+               "  BILTOO_DEBUG_FILMSTRIP     filmstrip schedule diagnostics\n"
+               "  BILTOO_DEBUG_DROP          drag-and-drop / session-append logging\n"
+               "  BILTOO_DEBUG_CROP          crop-mode geometry diagnostics\n"
+               "  BILTOO_DEBUG_APPEARANCE    appearance / materialize logging\n"
+               "  BILTOO_MODE_DEBUG          mode-switch / empty-canvas diagnostics\n"
+               "  BILTOO_PERF                paint + decode-window timings\n"
+               "  BILTOO_TILE_DEBUG          tile LOD coordinator lines (~500 ms)\n"
+               "  BILTOO_TTFP                time-to-first-paint traces\n"
+               "  THUMTOO_DEBUG_OVERLAY      watermark decoded samples (soft vs full)\n"
+               "  BILTOO_DEBUG_OVERLAY       alias for THUMTOO_DEBUG_OVERLAY\n"
+               "  BILTOO_GUI_BUDGET_STRICT   abort when GUI_BUDGET is exceeded\n"
+               "\n"
+               "Thumtoo cache policy (mostly ignored on modern thumtoo)\n"
+               "  THUMTOO_SOFT_LEVELS        ignored for Client writes (>=265)\n"
+               "  THUMTOO_TILES_ONLY         ignored for Client writes (>=265)\n"
+               "  THUMTOO_STORE_ONLY         ignored (>=262; always Store-only)\n"
+               "\n"
+               "Concurrency / limits\n"
+               "  BILTOO_THUMTOO_PIXEL_JOBS     concurrent PreferCache/pixel jobs\n"
+               "                               (default 4, range 1-32)\n"
+               "  BILTOO_FILMSTRIP_THUMB_LOADS concurrent filmstrip thumb jobs\n"
+               "                               (default 6, range 1-64)\n"
+               "  BILTOO_TILE_RAM_MIB          TileLodRegistry RAM budget MiB\n"
+               "                               (default 384)\n"
+               "  BILTOO_TILE_MAX_IDLE         max zero-ref path entries retained\n"
+               "                               (default 64)\n"
+               "\n"
+               "Paths\n"
+               "  XDG_CACHE_HOME             durable cache + thumtoo-debug.log base\n"
+               "  XDG_DATA_HOME              thumtoo user overlays (user.sqlite)\n"
+               "  XDG_STATE_HOME             optional state base\n"
+               "  HOME                       fallback when XDG_* unset\n"
+               "\n"
+               "CLI aliases: --debug, --thumtoo-debug\n";
+        out.flush();
+        return 0;
+    }
 
     const bool debug = parser.isSet(debugOption);
     // Quiet by default; --debug enables biltoo.slideshow qCDebug + Exiv2 warnings.

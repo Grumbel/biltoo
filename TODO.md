@@ -2,6 +2,31 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.20-filmstrip-lqip-help-all.**
+
+### Filmstrip slow refresh
+- Visible loads only scheduled pool `makeThumbnail`, which used **ImageCache only**
+  and treated LQIP as weak → often blank until tile pyramid.
+- **GUI:** paint ImageCache LQIP immediately once size is known.
+- **Worker:** if ImageCache empty, `cachedLqipImage` (Store, off-GUI) then put.
+
+### --help-all
+- New CLI flag lists runtime env vars (THUMTOO_* / BILTOO_*) for debugging.
+- Points at docs/ENVIRONMENT.md for full detail.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.20-filmstrip-lqip-help-all-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.19-populateGallery-needPlaceholders-scope.** Build fix:
 
 - `needPlaceholders` was only declared in the non-gate branch but used in

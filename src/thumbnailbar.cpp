@@ -1312,11 +1312,20 @@ QImage ThumbnailBar::applyStoredAppearanceToThumb(const QString &path, const QIm
 QImage ThumbnailBar::makeThumbnail(const QString &path, int maxSize,
                                    SessionImageId sessionId) const
 {
-    // Process-memory only. Soft / classic loadThumbnail encode is removed for
+    // Process-memory first. Soft / classic loadThumbnail encode is removed for
     // filmstrip — sharpness is tiles (TileSynth) after LQIP underlay.
     QImage image = ImageCache::get(path, maxSize);
     if (image.isNull()) {
         image = ImageCache::get(path);
+    }
+    // Worker-only Store LQIP when ImageCache is empty (GUI path is a no-op).
+    // Without this the strip waited on tile pyramid with a blank cell even when
+    // durable LQIP existed.
+    if (image.isNull() && ThumtooCache::isAvailable()) {
+        image = ThumtooCache::cachedLqipImage(path);
+        if (!image.isNull()) {
+            ImageCache::put(path, image);
+        }
     }
     if (image.isNull()) {
         return {};
@@ -2000,6 +2009,37 @@ void ThumbnailBar::scheduleVisibleThumbnailLoads()
                     ThumtooCache::scheduleProbe(path);
                 }
                 continue;
+            }
+        }
+        // Paint ImageCache LQIP on the GUI now — do not wait for a pool job or
+        // tile pyramid when warm/probe already left a sample in process memory.
+        {
+            const QImage host = ImageCache::get(path);
+            if (!host.isNull()) {
+                if (QListWidgetItem *it = item(i)) {
+                    const int have =
+                        it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
+                    const int hostEdge = ImageCache::longEdge(host);
+                    if (hostEdge > have) {
+                        SessionImageId rowSid = kInvalidSessionImageId;
+                        if (i < m_sessionIds.size()) {
+                            rowSid = m_sessionIds.at(i);
+                        }
+                        QImage oriented =
+                            applyStoredAppearanceToThumb(path, host, rowSid);
+                        const QImage thumb =
+                            prepareThumbnailFromImage(oriented, decodeSize);
+                        if (!thumb.isNull()) {
+                            setThumbnailIcon(i, thumb);
+                        }
+                    }
+                    // Already at strip edge — no tile job needed.
+                    const int haveAfter =
+                        it->data(ThumbnailDelegate::ThumbDecodeEdgeRole).toInt();
+                    if (haveAfter >= decodeSize) {
+                        continue;
+                    }
+                }
             }
         }
         m_thumbLoadScheduled.insert(i);
