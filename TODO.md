@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2292-free-rot-tile-clip.**
+
+Free crop-rotation tile paint: `setClipRect(contentRect)` ran *before* the
+free-rot painter transform, so the device clip stayed an unrotated AABB while
+tiles were drawn in rotated crop-local space. Set the clip **after** the
+transform to the crop rect in oriented space (`IntersectClip`).
+
+Axis-aligned / quarter-turn path unchanged (`contentRect` clip).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2292-free-rot-tile-clip-c0bffd5.bundle HEAD
+```
+
+Next: **2293**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2291-help-all-no-duplicate.**
 
 `QCommandLineParser::addHelpOption()` already registers `--help-all`. Adding it

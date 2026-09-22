@@ -1197,13 +1197,21 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                 painter->save();
                 // Intersect with any outer gallery cell clip — ReplaceClip used
                 // to drop GridCrop clipping so tiles spilled outside the cell.
-                // Under orient, cr is the oriented content box (same space as dests).
-                painter->setClipRect(cr, Qt::IntersectClip);
                 if (freeRot) {
+                    // Free-rot dests are in oriented space; paint transform maps
+                    // crop centre → contentRect centre. Clip must be set *after*
+                    // that transform in crop-local coords. Setting contentRect
+                    // first then rotating left the device clip as an unrotated
+                    // AABB while tiles spun under it.
                     const QRect contentCrop = x.cropRect.normalized();
                     painter->translate(cr.center());
                     painter->rotate(-x.cropRotation);
                     painter->translate(-QPointF(contentCrop.center()));
+                    painter->setClipRect(QRectF(contentCrop), Qt::IntersectClip);
+                } else {
+                    // Axis-aligned / quarter-turn: dests and contentRect share
+                    // oriented display space (+ offset).
+                    painter->setClipRect(cr, Qt::IntersectClip);
                 }
 
                 const bool smooth = tilePaintNeedsSmooth(
