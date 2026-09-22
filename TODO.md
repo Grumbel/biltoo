@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2231-stored-has-orient-content.** Path-XDG orient gate helper:
+
+- `ThumtooCache::StoredContentAppearance::hasOrientContent()` (orient/crop, not grade)
+- `isIdentity()` uses it
+- Slideshow / soft paint / text load gates adopt it
+- ECS residual #9 Gallery pack intrinsic marked accepted
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2231-stored-has-orient-content-e6c70e4.bundle HEAD
+```
+
+Next: **2232**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2230-path-xdg-helpers-docs.** Document path-XDG apply/fill helpers
 in CONTENTXFORM_AUTHORITY (2228–2229). Mark ECS residual #11 crop draft orient
 buffers as accepted (commit writes ItemWorld only).

@@ -450,6 +450,8 @@ struct StoredContentAppearance {
     int gradeHue = 0;
     int gradeGamma = 0;
     bool gradeInvert = false;
+    /** Orient/crop only (not grade) — for load paths that skip grade-only XDG. */
+    bool hasOrientContent() const;
     bool isIdentity() const;
 };
 

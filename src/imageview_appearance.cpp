@@ -404,8 +404,7 @@ QImage ImageView::imageWithSessionAppearance(const QImage &src, SessionImageId s
         if ((!app || !SessionAppearance::hasContentAppearance(*app))) {
             ThumtooCache::StoredContentAppearance stored;
             if (ThumtooCache::loadContentAppearance(path, &stored)
-                && (stored.contentHFlip || stored.contentVFlip
-                    || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+                && stored.hasOrientContent()) {
                 fallback = {};
                 fallback.path = path;
                 SessionAppearance::applyStoredContentAppearance(&fallback, stored, false);

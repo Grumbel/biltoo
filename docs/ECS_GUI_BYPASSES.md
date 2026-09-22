@@ -119,13 +119,14 @@ authority bypass. Content orient remains ItemWorld contentBake/crop only.
 
 ---
 
-## 9. Gallery pack reads `imageSize()` (low if intrinsic correct)
+## 9. Gallery pack reads `imageSize()` (accepted)
 
 **Where:** `gallerylayout.cpp` `nativeSize` → `item->imageSize()`.
 
-**Contract:** intrinsic is already content layout size.
+**Contract:** intrinsic is content layout size (`contentLayoutSize` / orient gate on
+placeholders and install). Soft samples never write intrinsic (SIZE.md).
 
-**Bypass risk:** If any path sets intrinsic to file-native while content orient exists, pack aspect is wrong. Mitigated by `contentLayoutSize` on placeholders (2170+).
+**Status (2231):** Accepted; pack uses layout-correct intrinsic, not file-native.
 
 ---
 

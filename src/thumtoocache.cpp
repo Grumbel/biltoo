@@ -2873,15 +2873,17 @@ PageTextLayer ensurePageTextLayer(const QString &)
 
 
 
-bool StoredContentAppearance::isIdentity() const
+bool StoredContentAppearance::hasOrientContent() const
 {
     if (contentHFlip || contentVFlip || contentQuarterTurns != 0) {
-        return false;
+        return true;
     }
-    if (hasCrop && !cropRect.isEmpty()) {
-        return false;
-    }
-    if (hasGrade) {
+    return hasCrop && !cropRect.isEmpty();
+}
+
+bool StoredContentAppearance::isIdentity() const
+{
+    if (hasOrientContent() || hasGrade) {
         return false;
     }
     return true;

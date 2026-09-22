@@ -256,8 +256,7 @@ QRectF ImageView::textRegionImageRect(const ThumtooCache::TextRegion &region) co
         // Unbound only: path XDG (bound = ItemWorld sparse only).
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored)
-            && (stored.contentHFlip || stored.contentVFlip
-                || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+            && stored.hasOrientContent()) {
             SessionAppearance::applyStoredContentAppearance(&st, stored, false);
         }
     }

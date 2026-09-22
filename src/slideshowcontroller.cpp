@@ -672,8 +672,7 @@ bool SlideshowController::snapshotSlideshowContentAppearance(const QString &path
         }
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored)
-            && (stored.contentHFlip || stored.contentVFlip
-                || stored.contentQuarterTurns != 0 || stored.hasCrop)) {
+            && stored.hasOrientContent()) {
             out->path = path;
             out->sessionId = sid;
             SessionAppearance::applyStoredContentAppearance(out, stored, false);
