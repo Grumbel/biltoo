@@ -707,10 +707,14 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
             return;
         }
         // Only encode a pyramid when Store has no durable coverage yet.
+        // Mark queued only after a successful schedule (or durable already
+        // known). sizeProbesBusy makes scheduleTilePyramid return false —
+        // must not mark queued or this path never retries.
         if (!st.isTilesPyramidQueued()) {
-            st.markTilesPyramidQueued();
-            if (!ThumtooCache::hasDurableTilesKnown(path)) {
-                (void)ThumtooCache::scheduleTilePyramid(path);
+            if (ThumtooCache::hasDurableTilesKnown(path)) {
+                st.markTilesPyramidQueued();
+            } else if (ThumtooCache::scheduleTilePyramid(path)) {
+                st.markTilesPyramidQueued();
             }
         }
     }

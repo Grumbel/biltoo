@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.7-pyramid-mark-on-success.** Validate sizeProbesBusy + fix retry:
+
+- `scheduleGalleryDecode` marked `tilesPyramidQueued` **before** calling
+  `scheduleTilePyramid`. When size probes were busy the schedule returned false
+  but the path stayed marked queued → **no pyramid ever** for that cell until
+  session reload.
+- Mark queued only when durable tiles are already known **or**
+  `scheduleTilePyramid` returns true.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.7-pyramid-mark-on-success-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.6-sizeProbesBusy-watchdog-pyramid.** Validate + harden size-first:
 
 1. **Decode watchdog during size gate** — when on-screen cells already had LQIP,
