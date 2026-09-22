@@ -146,11 +146,11 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 ## Priority cleanup order
 
 1. Image underlay: never displayReady unless override fingerprint matches ItemWorld want (filmstrip path still open).
-2. Workspace restore: content from ItemWorld, not `m_savedItems` content fields.
-3. Ban incremental `bakeRotate90` when host exists; require host for content edit.
+2. Workspace restore: content from ItemWorld, not `m_savedItems` content fields. (**2194–2195**, restore merges ItemWorld content)
+3. Ban incremental `bakeRotate90` when host exists; require host for content edit. (**2200**)
 4. Filmstrip override: treat as pure cache of `sessionAppearanceImage` after ItemWorld commit only.
-5. Audit every `ImageCache::put` for baked samples.
-6. Delete path-map content writes for bound session ids (verify none remain).
+5. Audit every `ImageCache::put` for baked samples. (see IMAGECACHE_PUT_AUDIT.md)
+6. Delete path-map content writes for bound session ids — **verified 2211**: `rememberItemState`, Gallery pack afterEach, Workspace snapshot write Placement-only for bound ids; path map is unbound-only.
 
 ---
 
@@ -160,6 +160,7 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 - `contentLayoutSize` + filmstrip `LayoutAspectProvider`  
 - Image pending soft: no mode-stash (2174)  
 - `tileNativeSize` refuses oriented layout as native (2172)
+- `SessionAppearance::orientAuthorityWant` (2211) — single gate for placement-only strip
 
 ## Work status
 
@@ -171,5 +172,5 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 | 4 | Applied ContentXform vs store at leave | **2177** flush on setViewMode; **2203** clearLiveContentMeta after flush (no applied on stash) |
 | 5 | Workspace m_savedItems / freeze→Color | **2177** restore; **2194** snapshot Placement-only; **2195** rememberItemState Placement-only; persist/bind keep durable Color over lag |
 | 6 | Incremental bakeRotate90 | **2178** disk host first; **2200** no incremental — clear pixels + async when host missing |
-| 7 | Path/XDG seed / orient authority | **2205** Image no path-XDG seed; **2208–2210** withoutContentOrient + hasContentOrient + wantAppearance strip |
+| 7 | Path/XDG seed / orient authority | **2205** Image no path-XDG seed; **2208–2210** withoutContentOrient + hasContentOrient + wantAppearance strip; **2211** `orientAuthorityWant` + unit tests + path-map bound-write verify |
 

@@ -224,15 +224,16 @@ void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState
     if (!item) {
         return;
     }
-    // Placement/color-only durable rows are not content orient (2205–2208).
+    // Placement/color-only durable rows are not content orient (2205–2211).
     WorkspaceItemState want = wantIn;
     {
         SessionImageId sid = item->sessionId();
         if (sid == kInvalidSessionImageId && isImageMode()) {
             sid = m_sessionId.currentIdValue();
         }
-        if (sid != kInvalidSessionImageId && !m_itemWorld.hasContentOrient(sid)) {
-            want = SessionAppearance::withoutContentOrient(want);
+        if (sid != kInvalidSessionImageId) {
+            want = SessionAppearance::orientAuthorityWant(
+                m_itemWorld.hasContentOrient(sid), want);
         }
     }
     // Intrinsic is always ContentXform layout of file-native size — never sample

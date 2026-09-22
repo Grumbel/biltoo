@@ -159,6 +159,19 @@ WorkspaceItemState withoutCrop(const WorkspaceItemState &state);
 WorkspaceItemState withoutContentOrient(const WorkspaceItemState &state);
 
 /**
+ * Content-orient authority gate (2208–2211).
+ *
+ * When @p hasContentOrient is false (no ItemWorld contentBake/crop for the id),
+ * strip orient/crop so placement-only durable rows cannot drive layout or
+ * materialize. When true, return @p want unchanged.
+ *
+ * Callers that already hold mid-edit applied ContentXform should merge that
+ * onto the DTO *before* this gate (applied is live-item authority while editing).
+ */
+WorkspaceItemState orientAuthorityWant(bool hasContentOrient,
+                                       const WorkspaceItemState &want);
+
+/**
  * Drop content bake ops (flips, quarter turns, crop); keep colour grade and
  * non-content placement fields.
  */

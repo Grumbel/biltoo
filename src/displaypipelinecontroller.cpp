@@ -968,9 +968,8 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
     if (m_view->isImageMode() && sid != kInvalidSessionImageId) {
         appearance = m_view->sessionAppearanceValue(sid);
         // Placement-only durable row is not content orient.
-        if (!m_view->itemWorld().hasContentOrient(sid)) {
-            appearance = SessionAppearance::withoutContentOrient(appearance);
-        }
+        appearance = SessionAppearance::orientAuthorityWant(
+            m_view->itemWorld().hasContentOrient(sid), appearance);
         if (qEnvironmentVariableIsSet("BILTOO_MODE_DEBUG")) {
             fprintf(stderr,
                     "biltoo/orient Image install sid=%lld turns=%d bake=%d crop=%d path=%s\n",

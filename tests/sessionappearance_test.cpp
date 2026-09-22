@@ -25,6 +25,11 @@ private slots:
     void materialize_quarterTurnSwapsAspect();
     void documentRemove_clearsSeed();
     void replaceAll_preservesSeedById();
+    // Orient authority (2208–2211)
+    void withoutContentOrient_stripsOrientKeepsGrade();
+    void orientAuthorityWant_passthroughWhenHasOrient();
+    void orientAuthorityWant_stripsWhenPlacementOnly();
+    void clearedContentOps_stripsOrientAndGrade();
 };
 
 void SessionAppearanceTest::seedBook_keyedById()
@@ -123,6 +128,81 @@ void SessionAppearanceTest::replaceAll_preservesSeedById()
     doc.replaceAll({QStringLiteral("/b.jpg"), QStringLiteral("/a.jpg")}, {idB, idA});
     QVERIFY(doc.seedBook().seedAttempted(idA));
     QVERIFY(!doc.seedBook().seedAttempted(idB));
+}
+
+void SessionAppearanceTest::withoutContentOrient_stripsOrientKeepsGrade()
+{
+    WorkspaceItemState st;
+    st.contentQuarterTurns = 1;
+    st.contentHFlip = true;
+    st.contentVFlip = true;
+    st.hasCrop = true;
+    st.cropRect = QRect(1, 2, 3, 4);
+    st.cropSourceSize = QSize(100, 80);
+    st.colorAdjust.brightness = 12;
+    st.pos = QPointF(9, 8);
+    st.scale = 1.5;
+
+    const WorkspaceItemState out = SessionAppearance::withoutContentOrient(st);
+    QCOMPARE(out.contentQuarterTurns, 0);
+    QVERIFY(!out.contentHFlip);
+    QVERIFY(!out.contentVFlip);
+    QVERIFY(!out.hasCrop);
+    QVERIFY(out.cropRect.isEmpty());
+    QCOMPARE(out.colorAdjust.brightness, 12);
+    QCOMPARE(out.pos, QPointF(9, 8));
+    QCOMPARE(out.scale, 1.5);
+}
+
+void SessionAppearanceTest::orientAuthorityWant_passthroughWhenHasOrient()
+{
+    WorkspaceItemState st;
+    st.contentQuarterTurns = 3;
+    st.contentHFlip = true;
+    st.hasCrop = true;
+    st.cropRect = QRect(5, 5, 10, 10);
+
+    const WorkspaceItemState out =
+        SessionAppearance::orientAuthorityWant(true, st);
+    QCOMPARE(out.contentQuarterTurns, 3);
+    QVERIFY(out.contentHFlip);
+    QVERIFY(out.hasCrop);
+    QCOMPARE(out.cropRect, QRect(5, 5, 10, 10));
+}
+
+void SessionAppearanceTest::orientAuthorityWant_stripsWhenPlacementOnly()
+{
+    WorkspaceItemState st;
+    st.contentQuarterTurns = 2;
+    st.contentVFlip = true;
+    st.hasCrop = true;
+    st.cropRect = QRect(0, 0, 20, 20);
+    st.colorAdjust.contrast = 110;
+    st.pos = QPointF(1, 2);
+
+    const WorkspaceItemState out =
+        SessionAppearance::orientAuthorityWant(false, st);
+    QCOMPARE(out.contentQuarterTurns, 0);
+    QVERIFY(!out.contentVFlip);
+    QVERIFY(!out.hasCrop);
+    QCOMPARE(out.colorAdjust.contrast, 110);
+    QCOMPARE(out.pos, QPointF(1, 2));
+}
+
+void SessionAppearanceTest::clearedContentOps_stripsOrientAndGrade()
+{
+    WorkspaceItemState st;
+    st.contentQuarterTurns = 1;
+    st.hasCrop = true;
+    st.cropRect = QRect(1, 1, 2, 2);
+    st.colorAdjust.brightness = 5;
+    st.pos = QPointF(3, 4);
+
+    const WorkspaceItemState out = SessionAppearance::clearedContentOps(st);
+    QCOMPARE(out.contentQuarterTurns, 0);
+    QVERIFY(!out.hasCrop);
+    QVERIFY(out.colorAdjust.isIdentity());
+    QCOMPARE(out.pos, QPointF(3, 4));
 }
 
 QTEST_MAIN(SessionAppearanceTest)

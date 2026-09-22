@@ -101,9 +101,9 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
         // Match installDisplayPixels: placement-only durable row is not content
         // orient — layout must not transpose while paint stays identity.
         const SessionImageId sidLayout = m_view->hostSessionId().currentIdValue();
-        if (sidLayout != kInvalidSessionImageId
-            && !m_view->itemWorld().hasContentOrient(sidLayout)) {
-            app = SessionAppearance::withoutContentOrient(app);
+        if (sidLayout != kInvalidSessionImageId) {
+            app = SessionAppearance::orientAuthorityWant(
+                m_view->itemWorld().hasContentOrient(sidLayout), app);
         }
     }
     // Logical size only from probe / map — never sample (LQIP/soft) dims.
@@ -388,10 +388,9 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             sparse.cropRect = crop.rect;
         }
         SessionAppearance::fillEmptyContentFlags(want, sparse);
-        // Placement/color-only durable row is not content orient (2205–2209).
-        if (!m_view->itemWorld().hasContentOrient(id)) {
-            want = SessionAppearance::withoutContentOrient(want);
-        }
+        // Placement/color-only durable row is not content orient (2205–2211).
+        want = SessionAppearance::orientAuthorityWant(
+            m_view->itemWorld().hasContentOrient(id), want);
     }
     // ItemWorld Color is persistence authority for stored grade (sparse table;
     // sparse tables only). Prefer it over a

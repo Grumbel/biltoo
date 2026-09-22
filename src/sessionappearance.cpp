@@ -314,6 +314,16 @@ WorkspaceItemState withoutContentOrient(const WorkspaceItemState &state)
 }
 
 
+WorkspaceItemState orientAuthorityWant(bool hasContentOrient,
+                                       const WorkspaceItemState &want)
+{
+    if (hasContentOrient) {
+        return want;
+    }
+    return withoutContentOrient(want);
+}
+
+
 WorkspaceItemState clearedContentOps(const WorkspaceItemState &state)
 {
     WorkspaceItemState out = withoutContentOrient(state);

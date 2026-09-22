@@ -2,6 +2,31 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2211-orient-authority-want-gate.** Polish + verify orient authority:
+
+1. `SessionAppearance::orientAuthorityWant(hasContentOrient, want)` — single gate
+   for placement-only strip (install, create, wantAppearance, contentLayoutSize,
+   applyContentLayoutSize).
+2. Unit tests: withoutContentOrient / orientAuthorityWant / clearedContentOps;
+   ItemWorld::hasContentOrient; appearanceValue carries no orient without
+   contentBake/crop.
+3. Path-map content writes for bound ids: verified none remain (ItemWorld
+   setPathState no-ops when sessionId bound; rememberItemState / pack / snapshot
+   are Placement-only for bound).
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2211-orient-authority-want-gate-e6c70e4.bundle HEAD
+```
+
+Next: **2212**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2210-want-appearance-orient-strip.** wantAppearanceForItem is the
 common choke for materialize/layout DTO. After sparse fill, strip orient when
 the id has no contentBake/crop and the live item has no mid-edit applied.

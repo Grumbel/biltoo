@@ -127,10 +127,9 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
     if (sessionId != kInvalidSessionImageId && hasSessionAppearance(sessionId)) {
         want = sessionAppearanceValue(sessionId);
         // Placement/color-only durable row is not content orient — same strip as
-        // installDisplayPixels / createItemFromImage (2205–2207).
-        if (!m_itemWorld.hasContentOrient(sessionId)) {
-            want = SessionAppearance::withoutContentOrient(want);
-        }
+        // installDisplayPixels / createItemFromImage (2205–2211).
+        want = SessionAppearance::orientAuthorityWant(
+            m_itemWorld.hasContentOrient(sessionId), want);
     } else if (sessionId == kInvalidSessionImageId && !path.isEmpty()) {
         if (const WorkspaceItemState *st = m_itemWorld.getPathState(path)) {
             want = *st;

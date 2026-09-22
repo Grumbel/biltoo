@@ -52,6 +52,9 @@ private slots:
     void setAppearance_preservesExistingPlacement();
     void mergeContentFromState_doesNotClearSiblings();
     void clearContentComponents_keepsAttentionAndPlacement();
+    // Orient authority (2209–2211)
+    void hasContentOrient_bakeOrCrop();
+    void appearanceValue_noOrientWithoutContentOrient();
 };
 
 
@@ -754,6 +757,69 @@ void ItemWorldTest::liveColorLag_runtimeOnly()
 
     world.setLiveColorLag(kInvalidSessionImageId, g);
     QVERIFY(!world.hasLiveColorLag(kInvalidSessionImageId));
+}
+
+void ItemWorldTest::hasContentOrient_bakeOrCrop()
+{
+    ItemWorld world;
+    QVERIFY(!world.hasContentOrient(1));
+
+    ItemComponents::Placement pl;
+    pl.pos = QPointF(1, 2);
+    world.setPlacement(1, pl);
+    QVERIFY(world.hasDurableAppearance(1));
+    QVERIFY(!world.hasContentOrient(1)); // placement-only
+
+    ItemComponents::Color c;
+    c.grade.brightness = 5;
+    world.setColor(1, c);
+    QVERIFY(!world.hasContentOrient(1)); // color still not orient
+
+    ItemComponents::ContentBake b;
+    b.quarterTurns = 1;
+    world.setContentBake(1, b);
+    QVERIFY(world.hasContentOrient(1));
+
+    world.setContentBake(1, ItemComponents::ContentBake{});
+    QVERIFY(!world.hasContentOrient(1));
+
+    ItemComponents::Crop crop;
+    crop.rect = QRect(0, 0, 10, 10);
+    crop.sourceSize = QSize(100, 100);
+    world.setCrop(1, crop);
+    QVERIFY(world.hasContentOrient(1));
+}
+
+void ItemWorldTest::appearanceValue_noOrientWithoutContentOrient()
+{
+    ItemWorld world;
+    ItemComponents::Placement pl;
+    pl.pos = QPointF(3, 4);
+    pl.scale = 1.25;
+    world.setPlacement(2, pl);
+    ItemComponents::Color c;
+    c.grade.contrast = 105;
+    world.setColor(2, c);
+
+    const WorkspaceItemState v = world.appearanceValue(2);
+    QCOMPARE(v.contentQuarterTurns, 0);
+    QVERIFY(!v.contentHFlip);
+    QVERIFY(!v.contentVFlip);
+    QVERIFY(!v.hasCrop);
+    QCOMPARE(v.pos, QPointF(3, 4));
+    QCOMPARE(v.scale, 1.25);
+    QCOMPARE(v.colorAdjust.contrast, 105);
+    QVERIFY(!world.hasContentOrient(2));
+
+    // With content bake, appearanceValue carries orient.
+    ItemComponents::ContentBake b;
+    b.hFlip = true;
+    b.quarterTurns = 2;
+    world.setContentBake(2, b);
+    QVERIFY(world.hasContentOrient(2));
+    const WorkspaceItemState v2 = world.appearanceValue(2);
+    QVERIFY(v2.contentHFlip);
+    QCOMPARE(v2.contentQuarterTurns, 2);
 }
 
 QTEST_MAIN(ItemWorldTest)
