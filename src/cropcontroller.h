@@ -32,6 +32,7 @@ class QKeyEvent;
 class CropController
 {
 public:
+
     explicit CropController(ImageView *view);
 
     ImageView *view() const { return m_view; }
@@ -41,12 +42,30 @@ public:
 
     bool active() const { return m_crop.active(); }
 
-    ImageItem *cropSessionBoundItem() const;
-    ImageItem *cropTargetItem() const;
     bool isCropDraftLockedItem(const ImageItem *item) const;
     bool isCropDraftLockedPath(const QString &path) const;
-    void cancelPathRasterForCrop(const QString &path);
     void fitImageOrUpdateWorkspace(ImageItem *item);
+    void cancelCrop();
+    void leaveCropModeInternal(bool apply);
+    void setCropMode(bool on);
+    void paintCropOverlay(QPainter &painter);
+    void onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
+                                            quint64 gen);
+    void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
+
+
+    bool tryMousePressCrop(QMouseEvent *event);
+    bool tryMouseMoveCropDrag(QMouseEvent *event);
+    bool tryMouseMoveCropHover(QMouseEvent *event);
+    bool tryMouseReleaseCrop(QMouseEvent *event);
+    bool tryKeyPressCrop(QKeyEvent *event);
+
+
+private:
+    // Enter/apply/paint helpers (no external callers)
+    ImageItem *cropSessionBoundItem() const;
+    ImageItem *cropTargetItem() const;
+    void cancelPathRasterForCrop(const QString &path);
     void relayoutAfterCropLeave(ImageItem *item);
     void ensureCropRectValid();
     void alignItemCenterToScene(ImageItem *item, const QPointF &sceneAnchor);
@@ -55,14 +74,11 @@ public:
     void applyAutoCrop();
     void flashCropHud(const CropFlash::Hud &hud);
     void applyCrop();
-    void cancelCrop();
     SessionImageId cropRecordSessionId(const ImageItem *item) const;
     void recordSessionCrop(ImageItem *item, const QRectF &localCrop);
     void pushCropAppearanceUndo(ImageItem *item, const QString &text);
     bool applyCropCommit(ImageItem *item);
-    void leaveCropModeInternal(bool apply);
     bool enterCropModeFromUi();
-    void setCropMode(bool on);
     bool prepareCropModeFullImage(ImageItem *item);
     QRectF cropRectView() const;
     void beginCropHandleDrag(CropHandle h, const QPoint &viewPos);
@@ -74,25 +90,13 @@ public:
     void updateCropRubberBand(const QPoint &viewPos);
     void finishCropRubberBand();
     void endCropRubberBand();
-    void paintCropOverlay(QPainter &painter);
-    void onPoolCropFullRasterDecoded(const QString &path, const QImage &decoded,
-                                            quint64 gen);
     void requestCropFullRaster(const QString &path);
-    void maybeUpgradeCropFullRaster(const QString &path, const QImage &image);
-
     CropGeometry::CropButtonLayout cropChromeLayout() const;
     CropHandle cropHandleAt(const QPoint &viewPos) const;
     QPolygonF cropPolygonView() const;
     QPointF itemLocalFromView(ImageItem *item, const QPoint &viewPos) const;
     QPolygonF mapItemLocalPolygonToView(ImageItem *item, const QPolygonF &local) const;
 
-    bool tryMousePressCrop(QMouseEvent *event);
-    bool tryMouseMoveCropDrag(QMouseEvent *event);
-    bool tryMouseMoveCropHover(QMouseEvent *event);
-    bool tryMouseReleaseCrop(QMouseEvent *event);
-    bool tryKeyPressCrop(QKeyEvent *event);
-
-private:
     ImageView *m_view = nullptr; // not owned
     CropSession m_crop;
 };
