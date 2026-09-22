@@ -137,7 +137,6 @@ public:
     void setCurrentIndex(int index);
     /** Skip scheduleVisibleThumbnailLoads (slideshow key-repeat). */
     void setVisibleLoadsSuspended(bool on);
-    bool visibleLoadsSuspended() const { return m_visibleLoadsSuspended; }
     int currentIndex() const;
 
     /**
@@ -170,7 +169,6 @@ public:
 
     /** Multi-select session paths for Workspace canvas membership (not app ViewMode). */
     void setMultiSelectEnabled(bool on);
-    bool multiSelectEnabled() const { return m_multiSelect; }
 
     QList<int> selectedIndices() const;
     void setSelectedIndices(const QList<int> &indices);

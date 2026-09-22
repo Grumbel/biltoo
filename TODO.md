@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2254-drop-thumb-unused-getters.** ThumbnailBar cleanup:
+
+- Remove unused `multiSelectEnabled()` and `visibleLoadsSuspended()` getters
+  (setters and members remain; no external readers)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2254-drop-thumb-unused-getters-e6c70e4.bundle HEAD
+```
+
+Next: **2255**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2253-drop-gallery-view-focus-accessors.** Gallery/Workspace API surface:
 
 1. GalleryController: remove unused public pendingRestore/view/scroll/focus
