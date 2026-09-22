@@ -206,11 +206,9 @@ QImage bakeItem(const Item &item, int maxLongEdge)
     if (item.path.isEmpty()) {
         return {};
     }
-    // Native decode when maxLongEdge <= 0; otherwise request that edge.
-    QImage raw = ImageLoader::loadThumbnail(item.path, maxLongEdge);
-    if (raw.isNull()) {
-        raw = ImageLoader::loadThumbnail(item.path, 0);
-    }
+    // Full decode first so cropSourceSize / FullSource bake stays in native
+    // pixel space; clamp long edge only after appearance bake.
+    QImage raw = ImageLoader::loadThumbnail(item.path, /*maxEdge=*/0);
     if (raw.isNull()) {
         return {};
     }

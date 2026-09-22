@@ -205,6 +205,7 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
         statusBar()->clearMessage();
     }
     rememberSessionHistory(m_session.paths());
+    updateFileExportActions();
     TtfpTrace::mark("finishApplyExpandedLoad_return");
     // First pixels often arrive async; if still none, leave session active for
     // installDisplayPixels to close the report.
@@ -214,6 +215,7 @@ void MainWindow::newSession()
 {
     stopSlideshow();
     m_session.clear();
+    updateFileExportActions();
     m_currentIndex = -1;
     m_galleryReturnActive = false;
     m_workspaceReturnActive = false;

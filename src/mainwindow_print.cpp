@@ -4,6 +4,7 @@
 #include "contentxform.h"
 #include "mainwindow.h"
 #include "imageview.h"
+#include "sessionexport.h"
 
 #include <QFileDialog>
 #include <QDialog>
@@ -26,6 +27,17 @@
 #include <QScreen>
 #include <QStatusBar>
 #include <QMessageBox>
+
+#include <QThreadPool>
+#include <QTimer>
+#include <QRadioButton>
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QPointer>
+
+#include <algorithm>
 
 namespace {
 
@@ -390,21 +402,6 @@ void MainWindow::fitPageGuideToContent()
         statusBar()->showMessage(tr("Page guide fitted to content."), 3000);
     }
 }
-
-#include "sessionexport.h"
-
-#include <algorithm>
-
-#include <QThreadPool>
-#include <QTimer>
-#include <QProgressDialog>
-#include <QRadioButton>
-#include <QButtonGroup>
-#include <QGroupBox>
-#include <QHBoxLayout>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QPointer>
 
 void MainWindow::updateFileExportActions()
 {

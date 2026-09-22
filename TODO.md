@@ -2,23 +2,22 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2320-session-export-images.**
+**Tip: biltoo-2321-session-export-verify.**
 
-Session bake export: **File → Export Images…** (folder / CBZ / multi-page PDF).
-Bakes rotate/flip/crop via `SessionAppearance::applyContentToImage`; never
-overwrites sources. Workspace page exports renamed and mode-gated.
+Verify/fix for 2320 session export:
+- Bake always full-decodes then clamps (crop stays native-space)
+- `updateFileExportActions` on session open/clear
+- Includes tidy in mainwindow_print.cpp
 
-See `docs/SESSION_EXPORT_AND_ORDER.md`. Includes 2318–2319. Requires **thumtoo-323**.
+Requires **thumtoo-323**. Includes 2318–2320.
 
 ### Apply
 ```bash
-git -C thumtoo pull --ff-only …/thumtoo-323.1-try-exif-external-linkage-bd9cca0.bundle HEAD
-git -C biltoo pull --ff-only …/biltoo-2320.1-session-export-images-999be36.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2321.1-session-export-verify-999be36.bundle HEAD
 ```
 
-Next: **2321**.
+Next: **2322**.
 
 ## Backlog
-
-- Session **reorder UI** (filmstrip/list) — `docs/SESSION_EXPORT_AND_ORDER.md` §2
-- Export: progress dialog / cancel; EXIF strip option; selection from Gallery multi-select when filmstrip hidden
+- Session reorder UI
+- Export progress/cancel
