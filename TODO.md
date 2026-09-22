@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2303-size-resolve-progress-keep-done.**
+
+"Resolving sizes…" counter restarted at 0 on mode switch because `startIfNeeded`
+set `m_total = pending only` and `m_resolved = 0`, ignoring sizes already in the
+book/memo. Now `m_total = already + pending` and `m_resolved = already`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2303-size-resolve-progress-keep-done-c0bffd5.bundle HEAD
+```
+
+Next: **2304**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2302-filmstrip-label-optical-center.**
 
 Filmstrip filename still looked low because:

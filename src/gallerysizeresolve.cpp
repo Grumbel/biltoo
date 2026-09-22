@@ -29,6 +29,9 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
 
     QStringList needProbe;
     needProbe.reserve(paths.size());
+    // Paths already known (size book or process memo) count as done so a mode
+    // switch does not show "0 / N" again after half the session was resolved.
+    int already = 0;
 
     for (const QString &path : paths) {
         if (path.isEmpty()) {
@@ -37,19 +40,22 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
         // Do not call isUnsupported on the GUI (Store get_meta). Probes no-op
         // unsupported paths on the worker.
         if (m_host->hasDefinitiveHostSize(path)) {
+            ++already;
             continue;
         }
         if (const QSize cached =
                 ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
             isPositiveSize(cached)) {
             m_host->adoptResolvedSize(path, cached);
+            ++already;
             continue;
         }
         m_pending.insert(path);
         needProbe.append(path);
     }
 
-    m_total = m_pending.size();
+    m_total = already + m_pending.size();
+    m_resolved = already;
     if (m_pending.isEmpty()) {
         return false;
     }
