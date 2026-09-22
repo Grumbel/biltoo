@@ -145,11 +145,15 @@ public:
     void dropAllTileLodSessions();
     void tickPrimaryTileLod(int budget = 8);
     /**
-     * When tileLodWanted or durable pyramid owns display for @p path: tick tile
-     * LOD and return true so PreferCache whole-frame climb is skipped.
-     * Covers live items and durable-only (no underlay item yet).
+     * When tiles own display for @p path: tick primary tile LOD and return true
+     * (PreferCache whole-frame climb should skip).
+     *
+     * @p countDurable when true (default): tileLodWanted **or** known durable
+     * pyramid — including durable-only with no live underlay (prefetch).
+     * When false: only live items with tileLodWanted (ladderReady soft
+     * deliveries — avoid ticking every PreferCache underlay).
      */
-    bool tickTilesIfOwnDisplay(const QString &path);
+    bool tickTilesIfOwnDisplay(const QString &path, bool countDurable = true);
     void onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,
                               int role);
     bool takePendingRestoreState(const QString &path, WorkspaceItemState *out);

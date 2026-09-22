@@ -306,18 +306,22 @@ the AABB of transformed corners for viewport request and draw destinations.
 Policy helpers:
 
 - `DisplayEdgePolicy::tilesOwnDisplay(tileLodWanted, durableTilesKnown)`
-- `DisplayPipelineController::tickTilesIfOwnDisplay(path)` — tick LOD + skip PreferCache
+- `DisplayPipelineController::tickTilesIfOwnDisplay(path, countDurable=true)` —
+  tick LOD + signal PreferCache skip
 
 | Case | PreferCache whole-frame |
 |------|-------------------------|
 | `tileLodWanted` | **Skip** — tiles own display; tick tile LOD |
-| Durable pyramid, no live item yet | **Skip** — tick tile LOD (prefetch / cold underlay) |
+| Durable pyramid, no live item yet | **Skip** — tick tile LOD (prefetch / cold underlay) when `countDurable` |
 | Durable only, `tileLodWanted` false | SoftDisplay underlay may still run until LOD wants |
 | Neither | PreferCache / Full climb as usual |
 
 - Gallery decode window skips tileLodWanted cells
-- `requestEscalateClimb` / `ensureImageModeQualityClimb` / `maybeClimbImageModePixelsForView`
-  / `completeLoadReplace` use `tickTilesIfOwnDisplay` (tilesOwnDisplay + tick)
+- Image PreferCache entry points use `tickTilesIfOwnDisplay(path)` (`countDurable`
+  default true): `requestEscalateClimb`, `ensureImageModeQualityClimb`,
+  `maybeClimbImageModePixelsForView`, `completeLoadReplace`
+- `onLadderReady` uses `tickTilesIfOwnDisplay(path, false)` — only wake when a
+  live item already wants tiles (not every soft underlay delivery)
 - PathRaster cancel-once on enter tile band
 - Workspace climb still uses `tilesOwnDisplay(wanted, false)` so durable-only
   SoftDisplay underlay can run until LOD wants

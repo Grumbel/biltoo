@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2241-tick-tiles-count-durable.** PreferCache / tile wake API:
+
+1. `tickTilesIfOwnDisplay(path, countDurable=true)` — durable counts for climb skip
+2. `onLadderReady` uses `countDurable=false` (only tileLodWanted live items)
+3. Docs: PreferCache truth table + entry-point list
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2241-tick-tiles-count-durable-e6c70e4.bundle HEAD
+```
+
+Next: **2242**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2240-maybe-climb-tiles-own.** Image-mode view climb PreferCache:
 
 1. `maybeClimbImageModePixelsForView` uses `tickTilesIfOwnDisplay` (same as

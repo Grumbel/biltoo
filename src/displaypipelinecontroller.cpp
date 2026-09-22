@@ -188,12 +188,14 @@ void DisplayPipelineController::scheduleImageModeNativeDecodeOnce(const QString 
             Qt::QueuedConnection);
     });
 }
-bool DisplayPipelineController::tickTilesIfOwnDisplay(const QString &path)
+bool DisplayPipelineController::tickTilesIfOwnDisplay(const QString &path,
+                                                      bool countDurable)
 {
     if (path.isEmpty()) {
         return false;
     }
-    const bool durable = ThumtooCache::hasDurableTilesKnown(path);
+    const bool durable =
+        countDurable && ThumtooCache::hasDurableTilesKnown(path);
     if (ImageItem *it = imageModeItemForPath(path)) {
         if (DisplayEdgePolicy::tilesOwnDisplay(it->tileLodWanted(), durable)) {
             tickPrimaryTileLod(12);
@@ -447,15 +449,10 @@ void DisplayPipelineController::onLadderReady(const QString &path, int maxEdge, 
     }
 
     // PreferCache/FocusFull may have co-built durable tiles; wake tile LOD only
-    // if some on-canvas item for this path already wants tiles (avoids a full
-    // tickPrimary scan on every soft delivery).
+    // when a live item already wants tiles (countDurable=false — skip every
+    // soft underlay delivery that has not entered the tile band).
     if (m_view->isImageMode() || m_view->isWorkspaceMode() || m_view->isGalleryMode()) {
-        for (ImageItem *ii : m_view->liveItems()) {
-            if (ii && ii->path() == path && ii->tileLodWanted()) {
-                tickPrimaryTileLod(12);
-                break;
-            }
-        }
+        (void)tickTilesIfOwnDisplay(path, /*countDurable=*/false);
     }
 
     if (!m_view->isGalleryMode()) {
