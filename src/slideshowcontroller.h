@@ -80,7 +80,6 @@ public:
     void setSlideshowCycleProgress(qreal phase01);
     void setSlideshowTransition(SlideshowTransition kind);
     void setSlideshowTransitionDurationMs(int ms);
-    QPixmap captureSlideshowFrame() const;
     void cancelSlideshowTransition();
     void setSlideshowMotion(SlideshowMotion mode);
     void setPanZoomFactor(qreal factor);
@@ -110,7 +109,6 @@ public:
     void slideshowPhaseSurfaceTick();
     QString slideshowPrefetchHudLine() const;
     QImage slideshowRaster(const QString &path) const;
-    QImage slideshowFullIfReady(const QString &path) const;
     QImage slideshowSoftPlaceholder(const QString &path);
     QImage orientSlideshowImage(const QImage &raw, const QString &path) const;
     QImage slideshowSampleUnoriented(const QString &path) const;

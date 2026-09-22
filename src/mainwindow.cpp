@@ -597,22 +597,6 @@ void MainWindow::onWorkspacePathsChanged()
     updateStatus();
 }
 
-void MainWindow::syncCanvasFromThumbnailSelection()
-{
-    // Kept for callers that still expect a bulk "selection → canvas" path
-    // (e.g. future context-menu actions). Not used for ordinary clicks.
-    QStringList paths;
-    QVector<SessionImageId> ids;
-    for (int idx : m_thumbnailBar->selectedIndices()) {
-        if (idx >= 0 && idx < m_session.paths().size()) {
-            paths.append(m_session.paths().at(idx));
-            ids.append(sessionIdAt(idx));
-        }
-    }
-    // Prefer id-aware rebuild so duplicate paths each keep their session image.
-    m_imageView->setWorkspacePaths(paths, ids);
-    updateStatus();
-}
 
 void MainWindow::syncThumbnailWorkspaceSelection()
 {
@@ -898,11 +882,6 @@ void MainWindow::toggleCropMode()
 }
 
 
-void MainWindow::findOnPage()
-{
-    // Legacy entry point — same as Ctrl+F.
-    openSearchBar();
-}
 
 void MainWindow::exportDocumentText()
 {
@@ -1019,10 +998,6 @@ void MainWindow::cancelSearchBar()
     }
 }
 
-void MainWindow::commitSearchBar()
-{
-    findNextMatch();
-}
 
 void MainWindow::setSearchBarPinned(bool pinned)
 {
@@ -1410,32 +1385,6 @@ void MainWindow::toggleThumbnailCrop()
     m_thumbnailBar->setCropToSquare(m_cropThumbnailsAct->isChecked());
 }
 
-void MainWindow::ensureMultiImageMode()
-{
-    if (isWorkspaceMode()) {
-        return;
-    }
-    m_workspaceModeAct->setChecked(true);
-    m_imageView->setViewMode(ImageView::ViewMode::Workspace);
-    m_thumbnailBar->setMultiSelectEnabled(true);
-    if (m_imageView->itemCount() == 0
-        && m_currentIndex >= 0 && m_currentIndex < m_session.paths().size()) {
-        // Always bind the session row — path-only addImage left an unbound tile.
-        m_imageView->addImageForSession(m_session.paths().at(m_currentIndex),
-                                        sessionIdAt(m_currentIndex), m_currentIndex);
-    }
-    syncThumbnailWorkspaceSelection();
-    if (m_session.paths().size() > 1
-        && !(m_thumbnailDock ? m_thumbnailDock->isVisible() : m_thumbnailBar->isVisible())) {
-        m_toggleThumbnailBarAct->setChecked(true);
-        if (m_thumbnailDock) {
-            m_thumbnailDock->setVisible(true);
-        } else {
-            m_thumbnailBar->setVisible(true);
-        }
-    }
-    updateWorkspaceActionVisibility();
-}
 
 void MainWindow::raiseSelected()
 {

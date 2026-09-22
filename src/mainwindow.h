@@ -172,10 +172,8 @@ private slots:
     void resetContentAppearance();
     void toggleCropMode();
     void toggleAttentionMode();
-    void findOnPage();
     void openSearchBar();
     void cancelSearchBar();
-    void commitSearchBar();
     void setSearchBarPinned(bool pinned);
     void onSearchTextChanged(const QString &text);
     void updateSearchMatchLabel();
@@ -318,7 +316,6 @@ private slots:
     void updateMasonryCountControl();
     /** Sync exclusive layout action checks + toolbar combo icon/tooltip. */
     void syncGalleryLayoutUi(LayoutMode layout);
-    void ensureMultiImageMode();
     /** Put every session image on the multi-image canvas (gallery). */
     void populateGalleryCanvas();
     void updateStatus();
@@ -389,7 +386,6 @@ private:
     void setThumbnailBarPosition(ThumbnailEdge edge);
     void onThumbnailDockLocationChanged(Qt::DockWidgetArea area);
     void updateThumbnailEdgeActions();
-    void sortFileList();
     /** Name / mtime / file size — no image I/O. */
     void sortFileListSync();
     /** Width / height / pixels: probe off the GUI thread, then apply order. */
@@ -418,7 +414,6 @@ private:
     void syncThumbnailWorkspaceSelection();
     void syncThumbnailCanvasMembership();
     /** Push thumbnail multi-select onto the canvas (Workspace membership / Gallery seed). */
-    void syncCanvasFromThumbnailSelection();
     void showSlideshowCursor();
     void hideSlideshowCursor();
     void armSlideshowCursorHide();

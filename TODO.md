@@ -2,6 +2,32 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2250-drop-dead-mainwindow-slideshow-entrypoints.** Dead API cleanup:
+
+MainWindow (zero call sites):
+- `findOnPage` (legacy → openSearchBar; action already connects openSearchBar)
+- `commitSearchBar` (thin findNextMatch)
+- `ensureMultiImageMode`
+- `sortFileList` (callers use Sync / WithProbes)
+- `syncCanvasFromThumbnailSelection` (future-hook never wired)
+
+SlideshowController:
+- `captureSlideshowFrame` (zero call sites)
+- `slideshowFullIfReady` (alias of slideshowRaster)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2250-drop-dead-mainwindow-slideshow-entrypoints-e6c70e4.bundle HEAD
+```
+
+Next: **2251**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2249-drop-take-classic-path.** ImageController cleanup:
 
 - Remove unused `ImageController::takeClassicPath` (zero call sites; enter uses

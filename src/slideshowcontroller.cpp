@@ -228,37 +228,6 @@ void SlideshowController::setSlideshowTransitionDurationMs(int ms)
 }
 
 
-QPixmap SlideshowController::captureSlideshowFrame() const
-{
-    // QOpenGLWidget::grab() often returns a blank/white pixmap. Paint the
-    // current slide into an offscreen pixmap instead (software, reliable).
-    if (!m_view->viewport()) {
-        return {};
-    }
-    const int vw = ViewTransform::atLeast1(m_view->viewport()->width());
-    const int vh = ViewTransform::atLeast1(m_view->viewport()->height());
-    const qreal dpr = m_view->viewport()->devicePixelRatioF();
-    QPixmap pm(QSize(vw, vh) * dpr);
-    pm.setDevicePixelRatio(dpr);
-    pm.fill(m_view->slideshowPadColor());
-    QPainter painter(&pm);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-
-    if (dwell().isMotionActive() && dwell().hasSourceImage()) {
-        paintMotionCover(&painter, dwell().sourceImageRef(), dwell().motionTValue(),
-                         dwell().biasAPoint(), dwell().biasBPoint(), phase().fromPathRef());
-    } else if (ImageItem *item = m_view->targetItem()) {
-        // Still frame: draw source (or displayed pixmap) with cover/fit framing.
-        const QImage src = item->hasDecodedPixels() ? item->sourceImage()
-                                                    : item->pixmap().toImage();
-        if (!src.isNull()) {
-            paintMotionCover(&painter, src, 0.0, QPointF(0, 0), QPointF(0, 0),
-                             item->path());
-        }
-    }
-    painter.end();
-    return pm;
-}
 
 
 void SlideshowController::cancelSlideshowTransition()
@@ -1064,10 +1033,6 @@ QImage SlideshowController::slideshowRaster(const QString &path) const
 }
 
 
-QImage SlideshowController::slideshowFullIfReady(const QString &path) const
-{
-    return slideshowRaster(path);
-}
 
 
 QImage SlideshowController::slideshowSoftPlaceholder(const QString &path)

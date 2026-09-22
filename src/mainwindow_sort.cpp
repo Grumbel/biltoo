@@ -38,18 +38,6 @@
 
 // Session list sort chrome (split from mainwindow_session).
 
-void MainWindow::sortFileList()
-{
-    if (m_session.paths().size() <= 1) {
-        return;
-    }
-    if (sortModeNeedsImageProbe()) {
-        // MTime/FileSize/size probes must not run on the GUI thread.
-        sortFileListWithProbesInBackground();
-        return;
-    }
-    sortFileListSync();
-}
 
 bool MainWindow::sortModeNeedsImageProbe() const
 {
