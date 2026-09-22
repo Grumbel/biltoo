@@ -1425,6 +1425,11 @@ void GalleryController::decodeWatchdogTick()
     if (!m_view->isGalleryMode() || m_view->liveItems().isEmpty()) {
         return;
     }
+    // Size gate owns workers — LQIP only, never tile ticks/pyramids.
+    if (m_view->hostGallerySizeResolve().active()) {
+        updateDecodeWindow();
+        return;
+    }
     // Soft PreferCache is gone. Watchdog only re-installs LQIP on blank
     // on-screen cells and keeps the tile coordinator awake.
     const QRectF sceneVisible =

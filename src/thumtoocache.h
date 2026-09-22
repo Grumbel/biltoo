@@ -139,6 +139,13 @@ void scheduleProbe(const QString &path);
 void scheduleProbeBatch(const QStringList &paths);
 
 /**
+ * True while the size-probe FIFO has queued or in-flight Store size work.
+ * Hosts should avoid scheduling tile pyramids until this is false so cold
+ * Gallery open keeps workers on size resolution.
+ */
+bool sizeProbesBusy();
+
+/**
  * Cache-only ladder payload (usually JPEG-XL) with long edge <= maxEdge.
  * Empty if thumtoo has no level yet. Caller decodes (e.g. via libvips).
  */

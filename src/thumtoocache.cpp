@@ -1671,6 +1671,11 @@ bool scheduleTilePyramid(const QString &path)
     if (path.isEmpty()) {
         return false;
     }
+    // Size probes first: pyramid encode shares Store/CPU with request_size and
+    // made cold Gallery open feel like "tiles during size query".
+    if (sizeProbesBusy()) {
+        return false;
+    }
     // Memo hit: pyramid already on Store — never re-encode (Gallery open was
     // queuing N full FocusFull rebuilds and burning seconds of CPU).
     if (hasDurableTilesKnown(path)) {
@@ -1838,11 +1843,14 @@ void warmSessionOpenMemos(const QStringList &paths)
         init();
         // Pass 1: sizes (+ LQIP) so the Gallery size gate can settle quickly.
         parallelFor(copy, workOneSize);
-        // Pass 2: durable has_tile off this pool slot so cold size probes are
-        // not waiting on a warm job that still joins N has_tile Store calls.
-        // Detached: discovery still notifies durableTilesReady when ready.
+        // Pass 2: durable has_tile only after size probes drain — otherwise
+        // warm has_tile races scheduleProbeBatch on the Store. Detached so
+        // this pool slot is free for request_size workers.
         std::thread([copy, workOneDurable, parallelFor]() {
             ASSERT_NOT_GUI_THREAD();
+            for (int i = 0; i < 500 && sizeProbesBusy(); ++i) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            }
             parallelFor(copy, workOneDurable);
         }).detach();
     };

@@ -158,4 +158,10 @@ void scheduleProbeBatch(const QStringList &paths)
     }
 }
 
+bool sizeProbesBusy()
+{
+    QMutexLocker lock(&g_probeMu);
+    return g_probeInflight > 0 || !g_probeFifo.isEmpty();
+}
+
 } // namespace ThumtooCache

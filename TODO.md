@@ -2,6 +2,31 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.6-sizeProbesBusy-watchdog-pyramid.** Validate + harden size-first:
+
+1. **Decode watchdog during size gate** — when on-screen cells already had LQIP,
+   the 1s watchdog called `tickPrimaryTileLod` while the size gate was still
+   active. Gate path now only runs the LQIP decode window.
+2. **`ThumtooCache::sizeProbesBusy()`** — true while the size-probe FIFO has
+   queued or in-flight work.
+3. **`scheduleTilePyramid`** returns false while size probes are busy so filmstrip
+   / other callers cannot start pyramid encode mid size-resolve.
+4. **Warm durable pass** waits for size probes to drain (up to ~10s) before
+   `has_tile` discovery, instead of racing Store with `request_size`.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.6-sizeProbesBusy-watchdog-pyramid-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.5-durableTilesReady-gate-and-filmstrip-timer.** Validate 2290.4 gap + fix:
 
 1. **durableTilesReady gate skip was missing** — 2290.4 commit message claimed it;
