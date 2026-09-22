@@ -83,7 +83,8 @@ bool debugOverlayEnabled()
         || on(std::getenv("BILTOO_DEBUG_OVERLAY"));
 }
 
-void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
+void stampDebugOverlayIfEnabled(QImage *image, const QString &label,
+                                const QString &forceTag)
 {
     Q_UNUSED(label);
     if (!image || image->isNull() || !debugOverlayEnabled()) {
@@ -109,9 +110,12 @@ void stampDebugOverlayIfEnabled(QImage *image, const QString &label)
     // HOST = process ImageCache soft/sample (not durable tiles). LQIP = ≤96 edge.
     // No filename / pixel size — those made small filmstrip cells unreadable.
     const int le = qMax(w, h);
-    const QString tag = (le <= DisplayQuality::kLqipMaxEdge)
-        ? QStringLiteral("LQIP")
-        : QStringLiteral("HOST");
+    QString tag = forceTag;
+    if (tag.isEmpty()) {
+        tag = (le <= DisplayQuality::kLqipMaxEdge)
+            ? QStringLiteral("LQIP")
+            : QStringLiteral("HOST");
+    }
 
     QFont f = p.font();
     f.setBold(true);
@@ -154,6 +158,11 @@ QImage get(const QString &path, int minLongEdge)
 
 void put(const QString &path, const QImage &image)
 {
+    put(path, image, QString());
+}
+
+void put(const QString &path, const QImage &image, const QString &forceTag)
+{
     if (path.isEmpty() || image.isNull()) {
         return;
     }
@@ -163,7 +172,7 @@ void put(const QString &path, const QImage &image)
     }
     // Stamp every sample that enters the host cache so HQ upgrades keep the
     // watermark (soft→PreferCache was replacing stamped soft with clean HQ).
-    stampDebugOverlayIfEnabled(&stored, QFileInfo(path).fileName());
+    stampDebugOverlayIfEnabled(&stored, QFileInfo(path).fileName(), forceTag);
     const int incoming = longEdge(stored);
 
     QMutexLocker lock(&mutex());

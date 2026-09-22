@@ -757,7 +757,8 @@ static void putEmbeddedOrLqipUnderlay(const QString &path,
                              static_cast<int>(reply.embedded->bytes.size()),
                              "JPEG")
             && !emb.isNull()) {
-            ImageCache::put(path, emb);
+            // EMB = container EXIF or PDF /Thumb — not content tiles, not ThumbHash.
+            ImageCache::put(path, emb, QStringLiteral("EMB"));
             return;
         }
     }
@@ -765,7 +766,7 @@ static void putEmbeddedOrLqipUnderlay(const QString &path,
     if (reply.lqip && !reply.lqip->empty()) {
         const QImage lqip = qimageFromLqipBlob(*reply.lqip);
         if (!lqip.isNull()) {
-            ImageCache::put(path, lqip);
+            ImageCache::put(path, lqip, QStringLiteral("LQIP"));
         }
     }
 #endif

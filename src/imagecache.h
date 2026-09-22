@@ -96,7 +96,10 @@ void remove(const QString &path);
 
 /** THUMTOO_DEBUG_OVERLAY / BILTOO_DEBUG_OVERLAY: tiled watermark + border. */
 bool debugOverlayEnabled();
-void stampDebugOverlayIfEnabled(QImage *image, const QString &label = QString());
+void stampDebugOverlayIfEnabled(QImage *image, const QString &label = QString(),
+                                const QString &forceTag = QString());
+/** put() with explicit debug tag (EMB / LQIP / HOST). */
+void put(const QString &path, const QImage &image, const QString &forceTag);
 
 } // namespace ImageCache
 
