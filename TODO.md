@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2249-drop-take-classic-path.** ImageController cleanup:
+
+- Remove unused `ImageController::takeClassicPath` (zero call sites; enter uses
+  classicPath() without clearing)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2249-drop-take-classic-path-e6c70e4.bundle HEAD
+```
+
+Next: **2250**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2248-drop-dead-display-pipeline-helpers.** DisplayPipeline cleanup:
 
 1. Remove unused `installDisplayPreservingView` (zero call sites; callers use

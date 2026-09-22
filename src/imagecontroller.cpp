@@ -22,13 +22,6 @@ ImageController::ImageController(ImageView *view)
 {
 }
 
-QString ImageController::takeClassicPath()
-{
-    const QString path = m_classicPath;
-    m_classicPath.clear();
-    return path;
-}
-
 void ImageController::enter()
 {
     // Gallery/Workspace → Image: matching onLeave already stashed live tiles.

@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2248-drop-dead-display-pipeline-helpers**.
-Latest tip: **biltoo-2248-drop-dead-display-pipeline-helpers**. Next bundle number: **2249**
+Latest agent handoff: **TODO.md → biltoo-2249-drop-take-classic-path**.
+Latest tip: **biltoo-2249-drop-take-classic-path**. Next bundle number: **2250**
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

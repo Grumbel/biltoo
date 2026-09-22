@@ -31,8 +31,6 @@ public:
     bool hasClassicPath() const { return !m_classicPath.isEmpty(); }
     void setClassicPath(const QString &path) { m_classicPath = path; }
     void clearClassicPath() { m_classicPath.clear(); }
-    /** Return classic path and clear it (Image enter). */
-    QString takeClassicPath();
 
     /** Left/Right/PageUp/PageDown session navigation (Image mode). */
     bool tryKeyPressNavigate(QKeyEvent *event);
