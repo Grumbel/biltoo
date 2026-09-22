@@ -11,7 +11,7 @@
 
 ### Apply
 ```bash
-git pull --ff-only /path/to/biltoo-2266-drop-never-connected-tool-reset-signals-e6c70e4.bundle HEAD
+git pull --ff-only /path/to/biltoo-2266.2-drop-never-connected-tool-reset-signals-e6c70e4.bundle HEAD
 ```
 
 Next: **2267**.
