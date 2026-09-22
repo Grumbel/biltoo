@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2221-session-id-resolve-docs.** Document pipeline/ImageView
+SessionImageId resolution in authority docs:
+
+- CONTENTXFORM_AUTHORITY §8: resolveContentEditSessionId + resolveItemSessionId
+- ECS already-aligned + work status #7
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2221-session-id-resolve-docs-e6c70e4.bundle HEAD
+```
+
+Next: **2222**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2220-pipeline-resolve-item-session-id-adopt.** Further
 `resolveItemSessionId` adoption:
 

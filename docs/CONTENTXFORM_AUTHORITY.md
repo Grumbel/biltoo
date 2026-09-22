@@ -42,9 +42,11 @@ Used for: mid-edit while the same item is live; tile paint orient of host-native
 7. **Workspace durable snapshot** (`m_savedItems`) for bound ids is **pose only**
    (`clearedContentOps` on leave; `updateWorkspaceSavedAppearance` never stamps
    crop/orient). Restore merges ItemWorld content + snapshot Placement (2212–2214).
-8. **SessionImageId** for content edit / layout / chrome on ImageView goes through
-   `resolveContentEditSessionId` (Image-mode cursor fallback only). Peer sync stays
-   strict `item->sessionId()` (2215).
+8. **SessionImageId** for content edit / layout / chrome:
+   - ImageView: `resolveContentEditSessionId` (2215)
+   - DisplayPipelineController: `resolveItemSessionId` (2219–2220)
+   Both: preferred / item sid → Image-mode cursor only. Gallery/Workspace unbound
+   items never inherit the Image cursor. Peer sync stays strict `item->sessionId()`.
 
 ## How orient enters the system
 
