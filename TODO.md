@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2289-warm-memo-sizeReady.** Verify + fix:
+
+- `warmSessionOpenMemos` now emits `Bridge::sizeReady` when a process memo
+  size is filled on the worker. Gallery size gate settles as warm completes
+  without waiting only on the 100ms progress sweep or a duplicate probe.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2289.1-warm-memo-sizeReady-e6c70e4.bundle HEAD
+```
+
+Next: **2290**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2288-gallery-no-standin-debounce-pack.** Verify + fix:
 
 1. **Gallery `imageSizeForPath` / `layoutSizeForPath`** no longer install or

@@ -1786,7 +1786,12 @@ void warmSessionOpenMemos(const QStringList &paths)
             return;
         }
         // Missing size/LQIP is a normal empty result for unsupported.
-        (void)cachedSize(p, /*scheduleRevalidate=*/false);
+        const QSize sz = cachedSize(p, /*scheduleRevalidate=*/false);
+        // Notify host (Gallery size gate) when async warm fills a memo — do not
+        // wait for the progress-timer sweep or a separate scheduleProbe.
+        if (sz.isValid() && sz.width() > 0 && sz.height() > 0) {
+            emit bridge()->sizeReady(p, sz);
+        }
 #if defined(BILTOO_HAVE_THUMTOO_LQIP)
         if (!ImageCache::has(p)) {
             const QImage lqip = cachedLqipImage(p);
