@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2265-fix-itemworld-live-color-lag-test.** Build fix after 2255:
+
+- `ItemWorldTest::liveColorLag_runtimeOnly` still called removed
+  `clearLiveColorLag`; lag is cleared only via `removeAppearance` /
+  `clearAppearance`. Drop the dedicated-clear assertion block.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2265-fix-itemworld-live-color-lag-test-e6c70e4.bundle HEAD
+```
+
+Next: **2266**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2264-drop-gallery-hovered-dead-state.** Dead state cleanup (AUDIT H2c):
 
 1. Remove `ImageItem::m_galleryHovered` — never set true; paint no longer uses

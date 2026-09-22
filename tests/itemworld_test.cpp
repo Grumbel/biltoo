@@ -742,10 +742,7 @@ void ItemWorldTest::liveColorLag_runtimeOnly()
     QVERIFY(!world.hasColor(7));
     QVERIFY(!world.hasDurableAppearance(7));
 
-    world.clearLiveColorLag(7);
-    QVERIFY(!world.hasLiveColorLag(7));
-
-    world.setLiveColorLag(7, g);
+    // Lag is cleared with appearance (no dedicated clearLiveColorLag API).
     world.removeAppearance(7);
     QVERIFY(!world.hasLiveColorLag(7));
 
