@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2259-drop-schedule-overview-prev-ladder.** ThumtooCache cleanup:
+
+- Remove unused `scheduleOverviewPixels` (zero call sites; soft/display paths
+  cover product underlay). Update HOST_CONTRACT / PERFORMANCE docs.
+- Remove unused inline `prevLadderEdge`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2259-drop-schedule-overview-prev-ladder-e6c70e4.bundle HEAD
+```
+
+Next: **2260**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2258-drop-get-tile-warm-durable-memo.** ThumtooCache cleanup:
 
 - Remove unused `getTile` (sync path; callers use `requestTiles`)

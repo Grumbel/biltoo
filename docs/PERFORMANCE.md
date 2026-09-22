@@ -19,7 +19,6 @@ Related: [**THUMTOO_HOST_CONTRACT.md**](THUMTOO_HOST_CONTRACT.md) (normative req
 | Long edge | What it is | Mechanism |
 |-----------|------------|-----------|
 | **≤512** | **Session soft** | `schedulePixels` / `get_pixels` / `cachedLadderBytes`. Cap = thumtoo `kMaxSoftLadderEdge` = biltoo `kGalleryLadderEdge`. Session encode; not schema-4 durable levels. |
-| **~1024** | **FastBatch overview (Q1)** — *not* a soft level | `scheduleOverviewPixels` → `request_overview_pixels` / `RasterPolicy::Overview`. Often **jpeg_shrink** (DCT scale). `kBatchOverviewEdge`. |
 | **≤2048** | **PreferCache display** | `scheduleDisplayPixels` / PreferCache. Soft or overview if present; else **tile reconstruct** when a pyramid exists. `kImageLadderEdge`. |
 | **Near native / full** | **Full / FocusFull** | `scheduleFullPixels` / `request_full_pixels`, or full decode → tile pyramid. ImageCache host store still clamps ~2048. |
 

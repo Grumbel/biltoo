@@ -61,7 +61,6 @@ Biltoo requests a **band**, not “exactly N pixels.” Edge numbers snap via
 | **LQIP** | cache / size-reply only | ≤ **96** | Free side-effect of prior tile work — **never** `request_lqip` encode |
 | **Display (TileSynth)** | `scheduleDisplayPixels` **only if** `hasDurableTilesKnown` | ≤ **8192** (`kImageLadderEdge`, interim) | PreferCache **TileSynth** from durable tiles |
 | **Cold tiles** | `scheduleTilePyramid` | (pyramid) | Builds durable coverage; then TileSynth |
-| **Overview** | `scheduleOverviewPixels` | ~**1024** (`kBatchOverviewEdge`) | jpeg_shrink / overview (legacy; not product underlay) |
 | **Full** | `scheduleFullPixels` | up to native / host max | Near-native / full decode path |
 
 **Product underlay (Gallery, Image, filmstrip, PathRaster soft-band):** LQIP +
@@ -181,7 +180,6 @@ Sample climb only changes sharpness.
 | Host call | Band | Notes |
 |-----------|------|--------|
 | `ThumtooCache::schedulePixels` | Soft | Settled on success; skip if inflight/settled |
-| `ThumtooCache::scheduleOverviewPixels` | Overview | Optional explicit overview |
 | `ThumtooCache::scheduleDisplayPixels` | Display | PreferCache; BestAvailable common |
 | `ThumtooCache::scheduleFullPixels` | Full | Image / slideshow escalation |
 | `Bridge::ladderReady(path, requestEdge, image)` | any | Always `noteDelivery` first |
