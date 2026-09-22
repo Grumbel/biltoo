@@ -1192,23 +1192,20 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
                 const QRectF cr = contentRect();
                 painter->save();
-                // Intersect with any outer gallery cell clip — ReplaceClip used
-                // to drop GridCrop clipping so tiles spilled outside the cell.
+                // Clip in item-local display space first (same AABB as soft underlay
+                // and contentRect). Qt stores the clip in device space at set time,
+                // so subsequent free-rot transforms only affect drawing — they must
+                // not re-interpret contentRect as crop-local coords (that left tiles
+                // clipped to an unrotated crop window while soft filled the AABB).
+                // IntersectClip keeps outer Gallery GridCrop.
+                painter->setClipRect(cr, Qt::IntersectClip);
                 if (freeRot) {
-                    // Free-rot dests are in oriented space; paint transform maps
-                    // crop centre → contentRect centre. Clip must be set *after*
-                    // that transform in crop-local coords. Setting contentRect
-                    // first then rotating left the device clip as an unrotated
-                    // AABB while tiles spun under it.
+                    // Match SessionAppearance::materializeDisplay free-rot window:
+                    // crop centre → contentRect centre, then -cropRotation.
                     const QRect contentCrop = x.cropRect.normalized();
                     painter->translate(cr.center());
                     painter->rotate(-x.cropRotation);
                     painter->translate(-QPointF(contentCrop.center()));
-                    painter->setClipRect(QRectF(contentCrop), Qt::IntersectClip);
-                } else {
-                    // Axis-aligned / quarter-turn: dests and contentRect share
-                    // oriented display space (+ offset).
-                    painter->setClipRect(cr, Qt::IntersectClip);
                 }
 
                 const bool smooth = tilePaintNeedsSmooth(

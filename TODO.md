@@ -2,6 +2,32 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2293-revert-free-rot-clip-order.**
+
+Revert 2292 free-rot clip experiment. Clip must stay **item-local
+`contentRect`** (soft underlay AABB) *before* the free-rot painter transform.
+Clipping `contentCrop` *after* the transform treated the crop window as the
+device clip in the wrong space — tiles looked unrotated / contentRect failed
+to match the soft box.
+
+Original IntersectClip on `contentRect` (2290.27) restored for all paths.
+
+If quarter-turn orient still clips wrong, next is layout intrinsic vs orient
+mismatch (`applyContentLayoutSize`), not paint clip order.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2293-revert-free-rot-clip-order-c0bffd5.bundle HEAD
+```
+
+Next: **2294**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2292.1-overlay-unused-tile-key.** Drop unused `scale`/`tx`/`ty` in
 `paintTilePlanDebugOverlay` (washes only; TILE text is thumtoo stamps).
 
