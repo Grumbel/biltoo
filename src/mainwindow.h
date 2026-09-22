@@ -398,6 +398,18 @@ private:
     void applySortedSessionOrder(const QStringList &newFiles,
                                  const QVector<SessionImageId> &newIds,
                                  const std::function<void()> &onDone);
+    /**
+     * Replace session order (paths ∥ ids) and refresh filmstrip / Gallery /
+     * Workspace item order. Focus by SessionImageId when valid.
+     */
+    void applySessionOrder(const QStringList &paths,
+                           const QVector<SessionImageId> &ids,
+                           SessionImageId focusId = kInvalidSessionImageId);
+    /**
+     * Move @p rows so they land starting at @p insertBefore in the list after
+     * the moved rows are removed. Undoable via host undo stack.
+     */
+    void reorderSessionRows(const QList<int> &rows, int insertBefore);
     bool sortModeNeedsImageProbe() const;
     /** Majority of paths are PDF/EPUB/DjVu page (or pdfimage) refs. */
     static bool sessionLooksLikePagedDocument(const QStringList &paths);

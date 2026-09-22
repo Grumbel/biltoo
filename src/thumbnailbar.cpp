@@ -2810,7 +2810,8 @@ QStringList ThumbnailBar::mimeTypes() const
 {
     return {QStringLiteral("text/uri-list"),
             QStringLiteral("application/x-biltoo-paths"),
-            QStringLiteral("application/x-biltoo-session-ids")};
+            QStringLiteral("application/x-biltoo-session-ids"),
+            QStringLiteral("application/x-biltoo-session-rows")};
 }
 
 QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
@@ -2873,12 +2874,30 @@ QMimeData *ThumbnailBar::mimeData(const QList<QListWidgetItem *> items) const
     if (!idPayload.isEmpty()) {
         mime->setData(QStringLiteral("application/x-biltoo-session-ids"), idPayload);
     }
+    // Row indices for filmstrip-internal reorder (stable order of @p items).
+    QByteArray rowPayload;
+    for (QListWidgetItem *it : items) {
+        if (!it) {
+            continue;
+        }
+        const int r = row(it);
+        if (r < 0) {
+            continue;
+        }
+        if (!rowPayload.isEmpty()) {
+            rowPayload.append(',');
+        }
+        rowPayload.append(QByteArray::number(r));
+    }
+    if (!rowPayload.isEmpty()) {
+        mime->setData(QStringLiteral("application/x-biltoo-session-rows"), rowPayload);
+    }
     return mime;
 }
 
 Qt::DropActions ThumbnailBar::supportedDragActions() const
 {
-    return Qt::CopyAction | Qt::LinkAction;
+    return Qt::CopyAction | Qt::LinkAction | Qt::MoveAction;
 }
 
 void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
@@ -2928,6 +2947,135 @@ void ThumbnailBar::startFileDrag(const QList<QListWidgetItem *> &items)
     }
 
     drag->exec(supportedDragActions(), Qt::CopyAction);
+}
+
+int ThumbnailBar::insertIndexAt(const QPoint &pos) const
+{
+    if (count() <= 0) {
+        return 0;
+    }
+    const bool horizontal = (m_orientation == Qt::Horizontal);
+    for (int i = 0; i < count(); ++i) {
+        QListWidgetItem *it = item(i);
+        if (!it) {
+            continue;
+        }
+        const QRect r = visualItemRect(it);
+        if (horizontal) {
+            if (pos.x() < r.center().x()) {
+                return i;
+            }
+        } else {
+            if (pos.y() < r.center().y()) {
+                return i;
+            }
+        }
+    }
+    return count();
+}
+
+void ThumbnailBar::setDropInsertIndex(int index)
+{
+    if (m_dropInsertIndex == index) {
+        return;
+    }
+    m_dropInsertIndex = index;
+    viewport()->update();
+}
+
+void ThumbnailBar::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()
+        && event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-session-rows"))
+        && event->source() == this) {
+        event->setDropAction(Qt::MoveAction);
+        event->accept();
+        setDropInsertIndex(insertIndexAt(event->position().toPoint()));
+        return;
+    }
+    event->ignore();
+}
+
+void ThumbnailBar::dragMoveEvent(QDragMoveEvent *event)
+{
+    if (event->mimeData()
+        && event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-session-rows"))
+        && event->source() == this) {
+        event->setDropAction(Qt::MoveAction);
+        event->accept();
+        setDropInsertIndex(insertIndexAt(event->position().toPoint()));
+        return;
+    }
+    event->ignore();
+}
+
+void ThumbnailBar::dragLeaveEvent(QDragLeaveEvent *event)
+{
+    Q_UNUSED(event);
+    setDropInsertIndex(-1);
+}
+
+void ThumbnailBar::dropEvent(QDropEvent *event)
+{
+    if (!event->mimeData()
+        || !event->mimeData()->hasFormat(QStringLiteral("application/x-biltoo-session-rows"))
+        || event->source() != this) {
+        event->ignore();
+        setDropInsertIndex(-1);
+        return;
+    }
+    const QByteArray raw =
+        event->mimeData()->data(QStringLiteral("application/x-biltoo-session-rows"));
+    QList<int> rows;
+    for (const QByteArray &part : raw.split(',')) {
+        bool ok = false;
+        const int r = part.trimmed().toInt(&ok);
+        if (ok && r >= 0) {
+            rows.append(r);
+        }
+    }
+    const int insertBefore = insertIndexAt(event->position().toPoint());
+    setDropInsertIndex(-1);
+    if (!rows.isEmpty()) {
+        emit reorderRowsRequested(rows, insertBefore);
+        event->setDropAction(Qt::MoveAction);
+        event->accept();
+        return;
+    }
+    event->ignore();
+}
+
+void ThumbnailBar::paintEvent(QPaintEvent *event)
+{
+    QListWidget::paintEvent(event);
+    if (m_dropInsertIndex < 0 || count() <= 0) {
+        return;
+    }
+    QPainter painter(viewport());
+    painter.setRenderHint(QPainter::Antialiasing, false);
+    const QColor line = palette().color(QPalette::Highlight);
+    QPen pen(line, 2);
+    painter.setPen(pen);
+
+    const bool horizontal = (m_orientation == Qt::Horizontal);
+    const int idx = qBound(0, m_dropInsertIndex, count());
+    QRect guide;
+    if (idx < count()) {
+        const QRect r = visualItemRect(item(idx));
+        if (horizontal) {
+            guide = QRect(r.left() - 1, r.top(), 2, r.height());
+        } else {
+            guide = QRect(r.left(), r.top() - 1, r.width(), 2);
+        }
+    } else {
+        const QRect r = visualItemRect(item(count() - 1));
+        if (horizontal) {
+            guide = QRect(r.right() - 1, r.top(), 2, r.height());
+        } else {
+            guide = QRect(r.left(), r.bottom() - 1, r.width(), 2);
+        }
+    }
+    painter.fillRect(guide, line);
 }
 
 void ThumbnailBar::mousePressEvent(QMouseEvent *event)

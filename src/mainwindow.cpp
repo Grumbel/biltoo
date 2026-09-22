@@ -233,6 +233,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onThumbnailWorkspaceSelectionChanged);
     connect(m_thumbnailBar, &ThumbnailBar::removeIndicesRequested,
             this, &MainWindow::removeSessionIndices);
+    connect(m_thumbnailBar, &ThumbnailBar::reorderRowsRequested,
+            this, &MainWindow::reorderSessionRows);
     connect(m_thumbnailBar, &ThumbnailBar::loadsChanged,
             this, &MainWindow::updateStatus);
     // Filmstrip put soft into ImageCache; Gallery pass1 only runs on decode-window

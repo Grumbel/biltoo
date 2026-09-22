@@ -2,19 +2,21 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2326-print-thumbnailbar-include.**
+**Tip: biltoo-2327-session-reorder-filmstrip.**
 
-Fix incomplete type: `mainwindow_print.cpp` needs `#include "thumbnailbar.h"`
-for `selectedIndices()` in Export Images scope.
+Filmstrip drag-reorder with insertion line → SessionDocument order (undoable).
+Gallery/Workspace refresh via `applySessionOrder`.
 
-Requires **thumtoo-323**. Includes 2318–2325.
+Requires **thumtoo-323**. Includes 2318–2326.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2326.1-print-thumbnailbar-include-999be36.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2327.1-session-reorder-filmstrip-999be36.bundle HEAD
 ```
 
-Next: **2327** — session reorder UI.
+Next: **2328** — keyboard reorder / polish.
 
 ## Backlog
-- Session reorder UI
+- Keyboard move selection in filmstrip
+- Reorder session dialog
+- Gallery drag reorder

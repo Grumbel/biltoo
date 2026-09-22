@@ -217,6 +217,12 @@ signals:
      */
     void indexActivated(int index);
     /**
+     * Filmstrip internal reorder: selected rows should be moved so the
+     * first of them sits at @p insertBefore in the post-remove list
+     * (0..count). Host updates SessionDocument.
+     */
+    void reorderRowsRequested(const QList<int> &rows, int insertBefore);
+    /**
      * Image-mode filmstrip: plain single-click changed the current row.
      * Host should setCurrentIndex only — do not re-enter Image mode.
      */
@@ -233,6 +239,11 @@ protected:
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
     void mousePressEvent(QMouseEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragMoveEvent(QDragMoveEvent *event) override;
+    void dragLeaveEvent(QDragLeaveEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
@@ -287,6 +298,8 @@ private:
     void scheduleDebouncedThumbReload();
     void requestRemoveSelection();
     void startFileDrag(const QList<QListWidgetItem *> &items);
+    int insertIndexAt(const QPoint &pos) const;
+    void setDropInsertIndex(int index);
     /** Centre icons when the row/column is shorter than the viewport. */
     void updateCenteringMargins();
     int labelBandHeight() const;
@@ -352,6 +365,8 @@ private:
     QPoint m_middleScrollPos;
     bool m_pressActive = false;
     bool m_dragStarted = false;
+    /** Insertion slot while dragging rows over the strip; -1 = none. */
+    int m_dropInsertIndex = -1;
     Qt::KeyboardModifiers m_pressModifiers;
 };
 

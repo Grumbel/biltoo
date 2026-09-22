@@ -41,18 +41,15 @@ Today order is mostly open/add/sort-driven. Session export, slideshow, and films
 all follow session order — without reorder, users cannot define deliverable
 sequence without re-opening files.
 
-**Desired (sketch only):**
+**Implemented (filmstrip v1, biltoo-2327):**
 
-- Reorder **session membership** (`SessionDocument` paths + ids), not only the
-  Gallery pack overlay (`docs/PATH_ORDER.md`).
-- Affordances: drag-reorder in filmstrip and/or a simple ordered list dialog;
-  move left/right (or up/down) for selection; optional “move to front/back”.
-- After reorder: filmstrip, Gallery pack (when following document), slideshow,
-  and future session export all see the same order.
-- Do not confuse with Workspace z-order (raise/lower on the page).
+- Drag rows on the filmstrip; insertion **line** shows drop slot; drop calls
+  `SessionDocument::replaceAll` via `MainWindow::reorderSessionRows` (undoable).
+- Gallery / Workspace item order refresh after reorder; focus by SessionImageId.
+- External path drag mime still present for canvas drops; strip-internal drop
+  uses `application/x-biltoo-session-rows`.
 
-When implementing, read `PATH_ORDER.md` so document vs `PackOrderOverlay` stay
-consistent (FollowDocument vs Explicit).
+**Still open:** keyboard move, reorder dialog, Gallery-canvas drag reorder.
 
 ## 3. File menu mode matrix (planned)
 
