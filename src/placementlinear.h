@@ -8,7 +8,6 @@
 #include <QRectF>
 #include <QTransform>
 #include <QtGlobal>
-#include <QtMath>
 
 /**
  * Workspace linear pose helpers: R(θ)·H(k)·S(sx,sy) with
@@ -69,13 +68,6 @@ inline qreal opacityAfterStep(qreal opacity, qreal delta,
 {
     return clampOpacity(opacity + delta, lo, hi);
 }
-
-/** Keyboard opacity step: Shift → 0.1, else 0.05. */
-inline qreal opacityStepFromModifiers(bool shiftHeld)
-{
-    return shiftHeld ? 0.1 : 0.05;
-}
-
 
 /** Snap @p degrees to the nearest multiple of @p stepDegrees. */
 qreal snapDegrees(qreal degrees, qreal stepDegrees);
@@ -166,11 +158,6 @@ inline qreal shearStepFromModifiers(bool shiftHeld)
 inline qreal shearAfterKey(qreal shear, qreal step, bool increase)
 {
     return clampShear(shear + (increase ? step : -step));
-}
-
-inline qreal geometricMeanScale(qreal scaleX, qreal scaleY)
-{
-    return qSqrt(qMax(0.01, scaleX) * qMax(0.01, scaleY));
 }
 
 inline qreal maxAxisScale(qreal scaleX, qreal scaleY, qreal floor = 0.001)

@@ -2,6 +2,24 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2278-drop-placementlinear-dead-helpers.** Dead API cleanup:
+
+- PlacementLinear: remove unused `opacityStepFromModifiers` and
+  `geometricMeanScale`; drop unused `<QtMath>` include from the header.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2278.1-drop-placementlinear-dead-helpers-e6c70e4.bundle HEAD
+```
+
+Next: **2279**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2277-drop-isDraftValid-invAxisScale.** Dead API cleanup:
 
 1. AttentionSession: remove unused `isDraftValid` (callers use `hasDraftFor` /
