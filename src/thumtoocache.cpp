@@ -972,6 +972,40 @@ QImage cachedLqipImage(const QString &path)
 #endif
 }
 
+QImage cachedEmbeddedPreviewImage(const QString &path)
+{
+    if (path.isEmpty()) {
+        return {};
+    }
+    if (QThread::isMainThread()) {
+        return {};
+    }
+    init();
+    const std::string uri = toThumtooUri(path);
+    if (uri.empty()) {
+        return {};
+    }
+    thumtoo::Client *c = nullptr;
+    {
+        std::lock_guard lock(g_mu);
+        c = clientUnlocked();
+    }
+    if (!c) {
+        return {};
+    }
+    auto emb = c->get_embedded_preview(uri);
+    if (!emb || emb->bytes.empty()) {
+        return {};
+    }
+    QImage img;
+    if (!img.loadFromData(emb->bytes.data(), static_cast<int>(emb->bytes.size()),
+                          "JPEG")
+        || img.isNull()) {
+        return {};
+    }
+    return img;
+}
+
 
 bool isUnsupported(const QString &path)
 {
@@ -1879,14 +1913,21 @@ void warmSessionOpenMemos(const QStringList &paths)
         // GUI with hundreds of handlers. Gate progress timer sweeps memos;
         // scheduleProbeBatch delivers memo hits in chunks.
         (void)cachedSize(p, /*scheduleRevalidate=*/false);
-#if defined(BILTOO_HAVE_THUMTOO_LQIP)
         if (!ImageCache::has(p)) {
-            const QImage lqip = cachedLqipImage(p);
-            if (!lqip.isNull()) {
-                ImageCache::put(p, lqip);
+            // Prefer durable EMB (EXIF / PDF /Thumb) over ThumbHash LQIP.
+            const QImage emb = cachedEmbeddedPreviewImage(p);
+            if (!emb.isNull()) {
+                ImageCache::put(p, emb, QStringLiteral("EMB"));
             }
-        }
+#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+            else {
+                const QImage lqip = cachedLqipImage(p);
+                if (!lqip.isNull()) {
+                    ImageCache::put(p, lqip, QStringLiteral("LQIP"));
+                }
+            }
 #endif
+        }
     };
     auto workOneDurable = [](const QString &p) {
         if (p.isEmpty()) {

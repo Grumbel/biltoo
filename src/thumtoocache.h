@@ -112,6 +112,12 @@ bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs);
 QImage cachedLqipImage(const QString &path);
 
 /**
+ * Cache-only EXIF / PDF /Thumb JPEG underlay (thumtoo EmbeddedJpeg kind).
+ * Empty if missing — does not open the source. Prefer over LQIP when both exist.
+ */
+QImage cachedEmbeddedPreviewImage(const QString &path);
+
+/**
  * Cache-only: thumtoo reported ContentStatus::Unsupported for this locator.
  * Callers should stop scheduling probes/pixels (Failed remains retryable).
  */

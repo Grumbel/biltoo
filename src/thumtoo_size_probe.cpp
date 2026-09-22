@@ -4,6 +4,7 @@
 #include "thumtoocache.h"
 #include "thumtoo_process_memos.h"
 #include "imagecache.h"
+#include "displayquality.h"
 #include "biltoo_thread.h"
 
 #include <QMutex>
@@ -82,13 +83,15 @@ void finishProbeSlot(const QString &pathCopy, bool ok, const QSize &size,
         pumpProbeQueue();
         return;
     }
-#if defined(BILTOO_HAVE_THUMTOO_LQIP)
     if (!lqip.isNull() && !ImageCache::has(pathCopy)) {
-        ImageCache::put(pathCopy, lqip);
+        // requestSizeAsync already put EMB/LQIP when SizeReply had them; this is
+        // a fallback for the underlay QImage returned on the callback.
+        const int le = ImageCache::longEdge(lqip);
+        const QString tag = (le > DisplayQuality::kLqipMaxEdge)
+            ? QStringLiteral("EMB")
+            : QStringLiteral("LQIP");
+        ImageCache::put(pathCopy, lqip, tag);
     }
-#else
-    Q_UNUSED(lqip);
-#endif
     noteCachedSize(pathCopy, size);
     emit bridge()->sizeReady(pathCopy, size);
     pumpProbeQueue();
