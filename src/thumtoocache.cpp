@@ -1194,9 +1194,9 @@ QString queueStatsLabel()
     return parts.join(QStringLiteral(" · "));
 }
 
-SizeProbeActivity sizeProbeActivity()
+WorkActivity workActivity()
 {
-    SizeProbeActivity out;
+    WorkActivity out;
     thumtoo::Client *c = nullptr;
     {
         std::lock_guard lock(g_mu);
@@ -1206,18 +1206,31 @@ SizeProbeActivity sizeProbeActivity()
         return out;
     }
     const thumtoo::ActivitySnapshot s = c->activity_snapshot();
-    out.queued = static_cast<quint64>(s.size_probe_queued);
-    out.running = static_cast<quint64>(s.size_probe_running);
-    out.completed = s.size_probe_completed;
+    out.sizeQueued = static_cast<quint64>(s.size_probe_queued);
+    out.sizeRunning = static_cast<quint64>(s.size_probe_running);
     for (const std::string &u : s.running_size_probe_uris) {
-        out.runningUris.append(QString::fromStdString(u));
+        out.sizeRunningUris.append(QString::fromStdString(u));
     }
     out.archiveReadRunning = static_cast<quint64>(s.archive_read_running);
-    out.archiveReadCompleted = s.archive_read_completed;
     for (const std::string &lab : s.running_archive_labels) {
         out.runningArchiveLabels.append(QString::fromStdString(lab));
     }
+    out.softQueued = static_cast<quint64>(s.soft_queued);
+    out.softRunning = static_cast<quint64>(s.soft_running);
+    for (const std::string &u : s.running_soft_uris) {
+        out.softRunningUris.append(QString::fromStdString(u));
+    }
+    out.tileQueued = static_cast<quint64>(s.tile_queued);
+    out.tileRunning = static_cast<quint64>(s.tile_running);
+    for (const std::string &lab : s.running_tile_labels) {
+        out.tileRunningLabels.append(QString::fromStdString(lab));
+    }
     return out;
+}
+
+SizeProbeActivity sizeProbeActivity()
+{
+    return workActivity();
 }
 
 

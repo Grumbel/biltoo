@@ -146,15 +146,23 @@ void scheduleProbeBatch(const QStringList &paths);
 bool sizeProbesBusy();
 
 /** Phase-1 work status: size-probe queued/running counts + sample URIs. */
-struct SizeProbeActivity {
-    quint64 queued = 0;
-    quint64 running = 0;
-    quint64 completed = 0;
-    QStringList runningUris; // up to 8
+/** Live thumtoo activity snapshot (size / archive / soft / tiles). */
+struct WorkActivity {
+    quint64 sizeQueued = 0;
+    quint64 sizeRunning = 0;
+    QStringList sizeRunningUris;
     quint64 archiveReadRunning = 0;
-    quint64 archiveReadCompleted = 0;
-    QStringList runningArchiveLabels; // "zip:member"
+    QStringList runningArchiveLabels;
+    quint64 softQueued = 0;
+    quint64 softRunning = 0;
+    QStringList softRunningUris;
+    quint64 tileQueued = 0;
+    quint64 tileRunning = 0;
+    QStringList tileRunningLabels;
 };
+WorkActivity workActivity();
+/** @deprecated name — prefer workActivity(). */
+using SizeProbeActivity = WorkActivity;
 SizeProbeActivity sizeProbeActivity();
 
 /**

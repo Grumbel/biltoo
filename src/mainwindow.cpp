@@ -2538,7 +2538,7 @@ void MainWindow::updateStatus()
         // Live size-probe activity from thumtoo ActivityLedger (phase 1 status).
         bool sizeProbeStatusShown = false;
         if (statusBar() && ThumtooCache::isAvailable()) {
-            const ThumtooCache::SizeProbeActivity act = ThumtooCache::sizeProbeActivity();
+            const ThumtooCache::WorkActivity act = ThumtooCache::workActivity();
             QStringList parts;
             if (act.archiveReadRunning > 0) {
                 QString arch = tr("Archive read ×%1").arg(act.archiveReadRunning);
@@ -2547,12 +2547,12 @@ void MainWindow::updateStatus()
                 }
                 parts << arch;
             }
-            if (act.queued + act.running > 0) {
+            if (act.sizeQueued + act.sizeRunning > 0) {
                 QString probe = tr("Size probes %1 running · %2 queued")
-                                    .arg(act.running)
-                                    .arg(act.queued);
-                if (!act.runningUris.isEmpty()) {
-                    const QString leaf = PagePath::displayName(act.runningUris.last());
+                                    .arg(act.sizeRunning)
+                                    .arg(act.sizeQueued);
+                if (!act.sizeRunningUris.isEmpty()) {
+                    const QString leaf = PagePath::displayName(act.sizeRunningUris.last());
                     if (!leaf.isEmpty()) {
                         probe += tr(" · %1").arg(leaf);
                     }
@@ -2567,6 +2567,25 @@ void MainWindow::updateStatus()
                     }
                 }
                 parts << probe;
+            }
+            if (act.tileQueued + act.tileRunning > 0) {
+                QString tiles = tr("Tiles %1 running · %2 queued")
+                                    .arg(act.tileRunning)
+                                    .arg(act.tileQueued);
+                if (!act.tileRunningLabels.isEmpty()) {
+                    tiles += tr(" · %1").arg(act.tileRunningLabels.last());
+                }
+                parts << tiles;
+            }
+            if (act.softQueued + act.softRunning > 0) {
+                QString soft = tr("Soft %1 running · %2 queued")
+                                   .arg(act.softRunning)
+                                   .arg(act.softQueued);
+                if (!act.softRunningUris.isEmpty()) {
+                    soft += tr(" · %1").arg(
+                        PagePath::displayName(act.softRunningUris.last()));
+                }
+                parts << soft;
             }
             if (!parts.isEmpty()) {
                 statusBar()->showMessage(parts.join(QStringLiteral(" · ")), 0);
