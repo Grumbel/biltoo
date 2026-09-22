@@ -131,6 +131,8 @@ public:
     void exportPdf();
     void exportDocumentText();
     void exportPng();
+    /** Bake session rotate/flip/crop into new files (dir / cbz / pdf). */
+    void exportSessionImages();
     void togglePageGuide();
     void fitPageGuideToContent();
 
@@ -312,6 +314,7 @@ private slots:
     void updateThumbnailBarForMode();
     /** Apply Layout dock visibility/enablement for the current view mode. */
     void updateLayoutPanelForMode();
+    void updateFileExportActions();
     void updateScrollBarPolicyForMode();
     void updateMasonryCountControl();
     /** Sync exclusive layout action checks + toolbar combo icon/tooltip. */
@@ -564,6 +567,7 @@ private:
     QAction *m_exportPdfAct = nullptr;
     QAction *m_exportTextAct = nullptr;
     QAction *m_exportPngAct = nullptr;
+    QAction *m_exportSessionImagesAct = nullptr;
     QAction *m_pageGuideAct = nullptr;
     QAction *m_fitPageGuideAct = nullptr;
     QAction *m_zoomInAct = nullptr;

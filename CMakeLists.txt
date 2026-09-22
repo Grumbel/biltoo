@@ -108,6 +108,8 @@ set(BILTOO_LIB_SOURCES
   src/mainwindow_clipboard.cpp
   src/mainwindow_project.cpp
   src/mainwindow_print.cpp
+  src/sessionexport.cpp
+  src/sessionexport.h
   src/mainwindow.h
   src/mainwindow_includes.h
   src/icons.cpp

@@ -97,17 +97,26 @@ void MainWindow::createActions()
         tr("Paper size and orientation for the page guide, preview, and PDF export"));
     connect(m_pageSetupAct, &QAction::triggered, this, &MainWindow::pageSetup);
 
-    m_exportPngAct = new QAction(tr("Export PN&G…"), this);
+    m_exportPngAct = new QAction(tr("Export &Page as PNG…"), this);
     m_exportPngAct->setIcon(themeIcon(QStringLiteral("image-x-generic"), QStyle::SP_FileDialogContentsView));
     m_exportPngAct->setStatusTip(
-        tr("Export the Workspace (or current view) as a PNG at a chosen resolution"));
+        tr("Workspace: export the page guide or content bounds as a PNG"));
     connect(m_exportPngAct, &QAction::triggered, this, &MainWindow::exportPng);
 
-    m_exportPdfAct = new QAction(tr("Export &PDF…"), this);
+    m_exportPdfAct = new QAction(tr("Export &Page as PDF…"), this);
     m_exportPdfAct->setIcon(themeIcon(QStringLiteral("application-pdf"), QStyle::SP_FileDialogContentsView));
     m_exportPdfAct->setStatusTip(
-        tr("Write a PDF using the app page size (not the physical printer tray)"));
+        tr("Workspace: write a single-page PDF using the app page size"));
     connect(m_exportPdfAct, &QAction::triggered, this, &MainWindow::exportPdf);
+
+    m_exportSessionImagesAct = new QAction(tr("Export &Images…"), this);
+    m_exportSessionImagesAct->setIcon(
+        themeIcon(QStringLiteral("document-save"), QStyle::SP_DialogSaveButton));
+    m_exportSessionImagesAct->setStatusTip(
+        tr("Bake rotate/flip/crop into new files (folder, CBZ, or multi-page PDF); "
+           "never overwrites originals"));
+    connect(m_exportSessionImagesAct, &QAction::triggered, this,
+            &MainWindow::exportSessionImages);
 
     m_exportTextAct = new QAction(tr("Export Te&xt…"), this);
     m_exportTextAct->setIcon(themeIcon(QStringLiteral("text-x-generic"), QStyle::SP_FileDialogContentsView));
@@ -948,6 +957,7 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_pageSetupAct);
     m_fileMenu->addAction(m_exportPngAct);
     m_fileMenu->addAction(m_exportPdfAct);
+    m_fileMenu->addAction(m_exportSessionImagesAct);
     m_fileMenu->addAction(m_exportTextAct);
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_quitAct);

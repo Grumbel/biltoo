@@ -1,6 +1,12 @@
 # Session export and session order UI
 
-Product notes (2026-09-23). Not implemented yet — parked so they are not lost.
+Product notes (2026-09-23).
+
+## Status
+
+**v1 implemented (biltoo-2320):** File → Export Images…
+(directory / .cbz / multi-page PDF), bake via SessionAppearance,
+File menu page exports mode-gated to Workspace. Reorder UI still open.
 
 ## 1. Session image export (Gallery / Image)
 

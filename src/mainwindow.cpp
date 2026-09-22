@@ -2218,6 +2218,7 @@ void MainWindow::showPreferences()
     m_thumbnailsPreferredGallery = dlg.thumbnailsPreferredGallery();
     updateLayoutPanelForMode();
     updateThumbnailBarForMode();
+    updateFileExportActions();
     {
         const int pos = dlg.thumbnailPositionIndex();
         ThumbnailEdge edge = ThumbnailEdge::Bottom;
@@ -2891,6 +2892,7 @@ void MainWindow::updateFullscreenUi()
         // pre-fullscreen snapshot (Gallery must not regain a Workspace layout dock).
         updateThumbnailBarForMode();
         updateLayoutPanelForMode();
+        updateFileExportActions();
         if (isWorkspaceMode() && m_workspaceToolBar) {
             m_workspaceToolBar->setVisible(true);
         }
