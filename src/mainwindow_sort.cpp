@@ -474,6 +474,24 @@ void MainWindow::applySessionOrder(const QStringList &paths,
     updateFileExportActions();
 }
 
+void MainWindow::selectSessionIdsOnFilmstrip(const QVector<SessionImageId> &ids)
+{
+    if (!m_thumbnailBar || ids.isEmpty()) {
+        return;
+    }
+    QList<int> indices;
+    indices.reserve(ids.size());
+    for (SessionImageId id : ids) {
+        const int idx = indexOfSessionId(id);
+        if (idx >= 0) {
+            indices.append(idx);
+        }
+    }
+    if (!indices.isEmpty()) {
+        m_thumbnailBar->setSelectedIndices(indices);
+    }
+}
+
 void MainWindow::reorderSessionRows(const QList<int> &rows, int insertBefore)
 {
     if (rows.isEmpty() || m_session.size() <= 1) {

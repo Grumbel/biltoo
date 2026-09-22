@@ -78,6 +78,11 @@ public:
     void markWorkspaceDirty();
     bool clipboardHasWorkspaceItems() const;
     int sessionIndexOfId(SessionImageId id) const;
+    /** SessionReorderCommand redo/undo (must be public — called from QUndoCommand). */
+    void applySessionOrder(const QStringList &paths,
+                           const QVector<SessionImageId> &ids,
+                           SessionImageId focusId = kInvalidSessionImageId);
+    void selectSessionIdsOnFilmstrip(const QVector<SessionImageId> &ids);
     bool writeProjectToPath(const QString &projectPath, QString *error = nullptr);
     QString promptLocateMissingAsset(const ProjectAsset &asset,
                                      const ProjectImage &im,
@@ -399,18 +404,10 @@ private:
                                  const QVector<SessionImageId> &newIds,
                                  const std::function<void()> &onDone);
     /**
-     * Replace session order (paths ∥ ids) and refresh filmstrip / Gallery /
-     * Workspace item order. Focus by SessionImageId when valid.
-     */
-    void applySessionOrder(const QStringList &paths,
-                           const QVector<SessionImageId> &ids,
-                           SessionImageId focusId = kInvalidSessionImageId);
-    /**
      * Move @p rows so they land starting at @p insertBefore in the list after
      * the moved rows are removed. Undoable via host undo stack.
      */
     void reorderSessionRows(const QList<int> &rows, int insertBefore);
-    void selectSessionIdsOnFilmstrip(const QVector<SessionImageId> &ids);
     bool sortModeNeedsImageProbe() const;
     /** Majority of paths are PDF/EPUB/DjVu page (or pdfimage) refs. */
     static bool sessionLooksLikePagedDocument(const QStringList &paths);
