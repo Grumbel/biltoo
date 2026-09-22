@@ -108,6 +108,8 @@ public:
 private:
     void finish();
     void updateProgressHud();
+    /** Write centre HUD from current counters (no pending sweep). */
+    void publishHudCounts();
     void ensureProgressTimer();
 
     GallerySizeResolveHost *m_host = nullptr;

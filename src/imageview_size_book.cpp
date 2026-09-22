@@ -438,10 +438,10 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
         return;
     }
     // Empty scene needs FullViewportUpdate or the centre panel never paints.
-    // Gallery with tiles must keep BoundingRectViewportUpdate — FullViewport
-    // during “Improving previews…” re-painted every item every frame and
-    // undid ItemCoordinateCache scroll savings.
-    if (m_items.isEmpty()) {
+    // Size-resolve is a blocking centre panel — FullViewport so detail updates
+    // are visible even when placeholders exist (BoundingRect alone can skip it).
+    // “Improving previews…” stays BoundingRect (many tiles + frequent updates).
+    if (m_items.isEmpty() || m_gallerySizeResolve.active()) {
         setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     }
     if (viewport()) {

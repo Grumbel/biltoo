@@ -141,11 +141,11 @@ void GallerySizeResolve::noteProbeSettled(const QString &path, bool sizeValid)
         if (m_host) {
             m_host->onSizeResolvePathSettled(path);
         }
+        // Light HUD only (no pending sweep) so the counter moves even when the
+        // 100ms timer is starved under heavy sizeReady traffic.
+        publishHudCounts();
     }
     if (!m_pending.isEmpty()) {
-        // Do not updateProgressHud here — it sweeps all pending + setCentreProgress
-        // on every sizeReady. Chunked memo delivery (16/turn) made that O(n) per
-        // path and froze the GUI. The 100ms progress timer owns the HUD.
         return;
     }
     finish();
@@ -179,7 +179,7 @@ void GallerySizeResolve::updateProgressHud()
     // callback. Sweep pending against the memo every progress tick — but only
     // a bounded batch. Settling hundreds in one tick (adopt + pathSettled each)
     // froze the GUI the same way sync sizeReady did.
-    constexpr int kMemoSettlePerTick = 24;
+    constexpr int kMemoSettlePerTick = 48;
     int settledThisTick = 0;
     const QList<QString> pending = m_pending.values();
     for (const QString &path : pending) {
@@ -214,15 +214,29 @@ void GallerySizeResolve::updateProgressHud()
         return;
     }
 
-    const int done = m_resolved + m_failed;
+    publishHudCounts();
+}
+
+void GallerySizeResolve::publishHudCounts()
+{
+    if (!m_active || m_total <= 0 || !m_host) {
+        return;
+    }
+    // Prefer pending-based done so the HUD cannot drift from m_resolved if a
+    // path settled only via the memo sweep.
     const int left = m_pending.size();
+    const int done = qMax(0, m_total - left);
+    // Keep counters aligned for ETA (failed already counted in done via total).
+    if (m_resolved + m_failed < done) {
+        m_resolved = done - m_failed;
+    }
     const qint64 ms = m_elapsed.isValid() ? m_elapsed.elapsed() : 0;
     QString detail = QStringLiteral("%1 / %2 sizes").arg(done).arg(m_total);
     if (m_failed > 0) {
         detail += QStringLiteral(" · %1 failed").arg(m_failed);
     }
     if (done > 0 && ms > 200) {
-        const double per = double(ms) / double(done);
+        const double per = double(ms) / double(qMax(1, done));
         const int etaMs = int(per * double(left));
         if (etaMs >= 1000) {
             detail += QStringLiteral(" · ~%1 s left").arg((etaMs + 500) / 1000);

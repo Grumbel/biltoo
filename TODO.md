@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2304-size-resolve-hud-live.**
+
+"Resolving sizes… 0/1024" stayed frozen: HUD only refreshed on a 100ms timer
+with a heavy pending sweep, and under sizeReady load the counter never moved.
+Also BoundingRect update could skip the centre panel while placeholders exist.
+
+- `publishHudCounts()` on every successful `noteProbeSettled` (no sweep)
+- done = `total - pending` (cannot drift)
+- FullViewportUpdate while size-resolve gate is active
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2304-size-resolve-hud-live-c0bffd5.bundle HEAD
+```
+
+Next: **2305**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2303-size-resolve-progress-keep-done.**
 
 "Resolving sizes…" counter restarted at 0 on mode switch because `startIfNeeded`
