@@ -39,14 +39,6 @@ public:
         m_selectIds.clear();
     }
 
-    /** Take and clear select-on-create session ids. */
-    QSet<SessionImageId> takeSelectIds()
-    {
-        QSet<SessionImageId> out = m_selectIds;
-        m_selectIds.clear();
-        return out;
-    }
-
     bool hasBindForPath(const QString &path) const
     {
         if (path.isEmpty()) {

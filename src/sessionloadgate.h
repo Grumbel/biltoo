@@ -42,13 +42,6 @@ public:
         m_pendingScenePos.clear();
     }
 
-    /** Session Open / full invalidate: bump + clear pending maps. */
-    LoadGeneration::Value invalidatePending()
-    {
-        clearPending();
-        return m_gen.bump();
-    }
-
     // --- LoadAdd path refcounts ------------------------------------------------
 
     bool hasPendingWorkspacePaths() const
@@ -130,8 +123,6 @@ public:
 
     // --- Deferred scene positions ----------------------------------------------
 
-    void clearPendingScenePos() { m_pendingScenePos.clear(); }
-
     void setPendingScenePos(const QString &path, const QPointF &pos)
     {
         if (!path.isEmpty()) {
@@ -140,11 +131,6 @@ public:
     }
 
     void removePendingScenePos(const QString &path) { m_pendingScenePos.remove(path); }
-
-    bool hasPendingScenePos(const QString &path) const
-    {
-        return !path.isEmpty() && m_pendingScenePos.contains(path);
-    }
 
     /** Take deferred scene pos for @p path; false if none. */
     bool takePendingScenePos(const QString &path, QPointF *out)

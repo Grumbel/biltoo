@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2272-drop-unused-bindbook-loadgate-apis.** Dead API cleanup:
+
+1. SessionBindBook: remove unused `takeSelectIds` (select ids cleared via
+   clearSelectIds / removeSelectId)
+2. SessionLoadGate: remove unused `invalidatePending` (callers use clearPending
+   + bumpGeneration), `clearPendingScenePos`, `hasPendingScenePos` (clearPending /
+   takePendingScenePos cover the same)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2272.1-drop-unused-bindbook-loadgate-apis-e6c70e4.bundle HEAD
+```
+
+Next: **2273**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2271-gallery-workspace-private-helpers.** API surface cleanup:
 
 1. GalleryController: privatize `galleryInstallHostSoftOntoBlanks`,
