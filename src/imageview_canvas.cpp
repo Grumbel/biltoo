@@ -191,11 +191,11 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // Align lengths: missing ids stay invalid (unbound rows).
     pathOrderSetOrder(paths, sessionIds);
 
-    // Gallery size-first: probe all unknown sizes before creating tiles so the
-    // first pack never uses 1024² stand-ins (first cell stuck square until reload).
+    // Gallery size-first for layouts that need aspects (masonry / fill / …).
+    // Grid family does not activate the gate (layoutDefersPopulateUntilSizes
+    // false) — pack immediately with stand-ins like the filmstrip.
     if (isGalleryMode() && !paths.isEmpty()
         && m_gallerySizeResolve.startIfNeeded(paths)) {
-        // Probes in flight — pack once in finishGallerySizeResolve with real sizes.
         TtfpTrace::mark("gallery_size_resolve_await_sizes");
         m_galleryDecodeBook.setDeferPopulate(true);
     } else {
@@ -209,15 +209,21 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // on this path.
     const bool virtualize = isGalleryMode();
 
-    // Cold Gallery: defer *new* item creation until sizes settle (finish packs
-    // once). NEVER hide existing live tiles — that made Gallery look empty after
-    // Image/Workspace return (restored stash → setWorkspacePaths → hide forever
-    // until finish/cancel). Membership is session; visibility is not a size gate.
-    if (isGalleryMode() && m_galleryDecodeBook.isDeferPopulate() && m_gallerySizeResolve.active()) {
+    // Progressive size gate: do not create the full session yet, but seed the
+    // ordered prefix that already has definitive sizes (warm memo / book) so
+    // masonry/flow can paint immediately — same idea as filmstrip.
+    // NEVER hide existing live tiles (stash restore).
+    if (isGalleryMode() && m_galleryDecodeBook.isDeferPopulate()
+        && m_gallerySizeResolve.active()) {
         for (ImageItem *item : m_items) {
             if (item && !item->isVisible()) {
                 item->setVisible(true);
             }
+        }
+        m_gallery.ensurePlaceholders();
+        if (!m_items.isEmpty() && !m_layout.isFreeForm()) {
+            m_gallery.applyLayout(GalleryPackReason::ContentChange);
+            m_gallery.updateDecodeWindow();
         }
         validateUniqueLiveSessionIds("setWorkspacePaths");
         emit statusChanged();

@@ -292,15 +292,23 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
 
 bool ImageView::layoutDefersPopulateUntilSizes(LayoutMode mode)
 {
-    // Packaged Gallery layouts need definitive aspects before the first pack.
-    // Provisional 1000² cells + sizeReady re-pack was the cold-open "glitch"
-    // (items flash in random positions before layout settles).
-    switch (mode) {
-    case LayoutMode::FreeForm:
+    // FreeForm: no pack gate.
+    // Grid / GridCrop: cells are fixed — stand-in sizes are fine (like filmstrip).
+    // Fill modes need every aspect before a stable global pack.
+    // Other packaged layouts (masonry, flow, …): progressive ordered prefix
+    // while sizes arrive (ensurePlaceholders stops at first unresolved).
+    if (mode == LayoutMode::FreeForm) {
         return false;
-    default:
+    }
+    if (layoutIsGridFamily(mode)) {
+        return false;
+    }
+    if (layoutNeedsAllSizes(mode)) {
         return true;
     }
+    // Masonry / flow / strips: gate on for ordered progressive pack, not a
+    // full block until the last size.
+    return true;
 }
 
 
@@ -341,8 +349,12 @@ void ImageView::onSizeResolvePathSettled(const QString &path)
     if (!isGalleryMode() || !m_gallerySizeResolve.active()) {
         return;
     }
-    // Ordered progressive pack: create + pack are coalesced on the layout
-    // debounce timer (ensurePlaceholders once per pack, not per sizeReady).
+    // Fill modes: one pack at gate complete only (global aspect needed).
+    if (layoutNeedsAllSizes(m_layout.currentMode())) {
+        return;
+    }
+    // Ordered progressive pack: create + pack coalesced on the layout debounce
+    // timer (ensurePlaceholders once per pack, not per sizeReady).
     if (!m_layout.isFreeForm()) {
         requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     }

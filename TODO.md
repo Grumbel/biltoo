@@ -2,6 +2,29 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2305-gallery-layout-early-pack.**
+
+Size-resolve vs pack:
+
+| Layout | Behaviour |
+|--------|-----------|
+| **Grid / GridCrop** | No size gate — pack immediately (stand-ins OK) |
+| **Masonry / Flow / strips** | Gate on; progressive ordered prefix; seed known sizes on open |
+| **\*Fill** | Gate on; pack only when all sizes known |
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2305-gallery-layout-early-pack-c0bffd5.bundle HEAD
+```
+
+Next: **2306**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2304-size-resolve-hud-live.**
 
 "Resolving sizes… 0/1024" stayed frozen: HUD only refreshed on a 100ms timer

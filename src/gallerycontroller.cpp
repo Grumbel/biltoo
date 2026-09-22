@@ -1361,7 +1361,12 @@ void GalleryController::ensurePlaceholders()
         const SessionImageId sid = pack.idAt(i);
 
         // Ordered progressive: stop at the first path still waiting for size.
+        // Fill layouts need every aspect before pack — do not grow a partial
+        // prefix (would reflow the whole grid on every sizeReady).
         if (sizeGate) {
+            if (layoutNeedsAllSizes(m_view->hostLayout().currentMode())) {
+                break;
+            }
             const ImageSizeBook &book = m_view->hostSizeBook();
             if (!book.hasDefinitive(path) && !book.isFailed(path)) {
                 break;
