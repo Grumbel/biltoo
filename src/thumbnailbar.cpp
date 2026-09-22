@@ -522,6 +522,33 @@ ThumbnailBar::ThumbnailBar(QWidget *parent)
                     }
                 }
             });
+    // Gallery may discover durable tiles first; PreferCache can settle short and
+    // leave filmstrip on LQIP forever (g_pixelsSettled + climbPending → evaluate None).
+    // Wake strip cells when the process memo flips to durable-yes.
+    connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::durableTilesReady, this,
+            [this](const QString &path) {
+                if (path.isEmpty() || m_files.isEmpty() || m_visibleLoadsSuspended) {
+                    return;
+                }
+                const int decodeSize = filmstripDecodeEdge();
+                bool any = false;
+                for (int i = 0; i < m_files.size(); ++i) {
+                    if (m_files.at(i) != path) {
+                        continue;
+                    }
+                    any = true;
+                    m_thumbAwaitLadder.remove(i);
+                    m_thumbLoadScheduled.remove(i);
+                    m_thumbFailed.remove(i);
+                }
+                if (!any) {
+                    return;
+                }
+                // Allow TileSynth/PreferCache to run again for strip edge.
+                ThumtooCache::forgetPixelsSettled(path, decodeSize);
+                scheduleFilmstripTilePixels(path, decodeSize);
+                scheduleVisibleThumbnailLoads();
+            });
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::ladderReady, this,
             [this](const QString &path, int /*maxEdge*/, const QImage &ready) {
                 if (path.isEmpty() || m_files.isEmpty()) {
@@ -1262,11 +1289,15 @@ void ThumbnailBar::scheduleFilmstripTilePixels(const QString &path, int edge) co
     if (path.isEmpty() || edge <= 0 || !ThumtooCache::isAvailable()) {
         return;
     }
-    // Warm host already covers strip edge — zero work.
+    // Warm host already covers strip edge — zero schedule work (surface tick
+    // installs into the cell icon). Early-out must not skip that install path.
     if (ImageCache::longEdge(ImageCache::get(path)) >= edge) {
         return;
     }
     if (ThumtooCache::hasDurableTilesKnown(path)) {
+        // PreferCache may have settled a short soft while Gallery already holds
+        // tiles; clear settle so TileSynth can run for the strip edge again.
+        ThumtooCache::forgetPixelsSettled(path, edge);
         (void)ThumtooCache::scheduleTileSynthOrPyramid(path, edge);
         return;
     }
@@ -1766,6 +1797,16 @@ void ThumbnailBar::filmstripSurfaceTick()
         // LQIP-only underlay is not terminal — keep driving tiles until strip edge.
         // Always re-arm TileSynth/pyramid for short visible cells (awaitLadder used
         // to stick after pyramid with no PreferCache).
+        // If PreferCache already settled short, forget so the next schedule is not a no-op.
+        if (climbPending
+            && DisplayQuality::hostLongEdge(path) < decodeSize
+            && ThumtooCache::hasDurableTilesKnown(path)) {
+            ThumtooCache::forgetPixelsSettled(path, decodeSize);
+            // Allow DisplaySurface to ScheduleClimb again; stuck climbPending +
+            // evaluate None left cells on LQIP until selection forced a reload.
+            m_thumbAwaitLadder.remove(i);
+            m_thumbLoadScheduled.remove(i);
+        }
         scheduleFilmstripTilePixels(path, decodeSize);
 
         // Session-id crop/appearance owns the cell — never paint raw host over it.
