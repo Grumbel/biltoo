@@ -41,19 +41,21 @@ void WorkspaceController::snapshot()
     }
     m_savedItems.clear();
     for (ImageItem *item : m_view->liveItems()) {
-        const WorkspaceItemState s = m_view->freezeItemAppearance(item);
-        m_savedItems.append(s);
+        WorkspaceItemState s = m_view->freezeItemAppearance(item);
         // Bound: durable content already on ItemWorld (flushApplied ran before
         // onLeave). freezeItemAppearance may carry live color lag into
         // colorAdjust — setAppearance would promote lag into durable Color
-        // (ECS_GUI_BYPASSES #5). Write Placement only.
+        // (ECS_GUI_BYPASSES #5). Snapshot slots are Placement-only for bound
+        // (2212/2213); restore re-reads content via sessionAppearanceValue.
         // Unbound: path map is the sole store (even when sessionIndex is -1).
         if (s.sessionId != kInvalidSessionImageId) {
+            s = SessionAppearance::clearedContentOps(s);
             m_view->itemWorld().setPlacement(
                 s.sessionId, ItemComponents::placementFromState(s));
         } else if (!s.path.isEmpty()) {
             m_view->itemWorld().setPathState(s.path, s);
         }
+        m_savedItems.append(s);
     }
     // Durable view backup when the live stash is later discarded (e.g. Gallery).
     m_savedViewTransform = m_view->transform();
@@ -73,7 +75,8 @@ void WorkspaceController::restore()
     for (WorkspaceItemState &slot : m_savedItems) {
         if (slot.sessionId != kInvalidSessionImageId) {
             if (m_view->itemWorld().hasDurableAppearance(slot.sessionId)) {
-                // Pose from snapshot; content only from ItemWorld (ECS_GUI_BYPASSES #5).
+                // Pose from snapshot (incl. placement display flips); content
+                // only from ItemWorld (ECS_GUI_BYPASSES #5 / 2213).
                 const WorkspaceItemState sit = m_view->sessionAppearanceValue(slot.sessionId);
                 const QPointF pos = slot.pos;
                 const qreal scale = slot.scale;
@@ -81,6 +84,8 @@ void WorkspaceController::restore()
                 const qreal rotation = slot.rotation;
                 const qreal opacity = slot.opacity;
                 const qreal z = slot.z;
+                const bool hFlip = slot.hFlip;
+                const bool vFlip = slot.vFlip;
                 const int sessionIndex = slot.sessionIndex;
                 const QString path = slot.path;
                 const SessionImageId sid = slot.sessionId;
@@ -91,6 +96,8 @@ void WorkspaceController::restore()
                 slot.rotation = rotation;
                 slot.opacity = opacity;
                 slot.z = z;
+                slot.hFlip = hFlip;
+                slot.vFlip = vFlip;
                 slot.sessionIndex = sessionIndex;
                 slot.path = path;
                 slot.sessionId = sid;

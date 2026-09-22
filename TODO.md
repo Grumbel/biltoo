@@ -2,6 +2,27 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2213-workspace-snapshot-placement-only.** Workspace leave snapshot
+for bound SessionImageIds is pose-only:
+
+1. `WorkspaceController::snapshot` — `clearedContentOps` on freeze before append;
+   ItemWorld Placement write unchanged. Content/grade never in `m_savedItems`.
+2. `restore` / `completeLoadRestore` — preserve placement display flips from the
+   snapshot when merging ItemWorld content.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2213-workspace-snapshot-placement-only-e6c70e4.bundle HEAD
+```
+
+Next: **2214**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2212-saved-appearance-placement-only.** Workspace durable snapshot
 slots must not dual-write content for bound ids:
 

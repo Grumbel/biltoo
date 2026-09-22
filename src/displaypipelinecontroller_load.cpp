@@ -817,13 +817,15 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
         m_view->setItemSessionId(item, state.sessionId);
         if (m_view->itemWorld().hasDurableAppearance(state.sessionId)) {
             app = m_view->sessionAppearanceValue(state.sessionId);
-            // Keep placement from the snapshot.
+            // Keep placement from the snapshot (pose + display flips).
             app.pos = state.pos;
             app.scale = state.scale;
             app.scaleY = state.scaleY;
             app.rotation = state.rotation;
             app.opacity = state.opacity;
             app.z = state.z;
+            app.hFlip = state.hFlip;
+            app.vFlip = state.vFlip;
         }
     }
     // List-order cache: prefer document position for the bound id; fall back to
