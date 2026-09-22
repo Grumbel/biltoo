@@ -2,6 +2,31 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.2-progressive-pack-maxwait-hud-clear.** Validate 2290 + fix:
+
+1. **Progressive pack starvation** — continuous `sizeReady` restarted the 48ms
+   quiet debounce and never packed until the probe stream paused, so sized cells
+   stayed at the origin for the whole size gate. Progressive arm now uses a 16ms
+   quiet interval and **forces a pack after 40ms max wait**.
+2. **"Loading tiles…" residual** — when only one on-screen blank remained the HUD
+   stopped updating but did not clear; now clears below the show threshold.
+3. **Warm durable detach** — durable `has_tile` runs on a detached thread after
+   size+LQIP so the warm pool job returns and cold size probes are not waiting on
+   a long durable join.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.2-progressive-pack-maxwait-hud-clear-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290-gallery-progressive-pack-tile-hud.** Verify + fix:
 
 1. **Progressive pack during size gate** — `applyLayout` no longer no-ops while

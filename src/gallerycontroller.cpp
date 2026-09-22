@@ -1479,8 +1479,14 @@ void GalleryController::updateSoftProgressHud()
         }
         return;
     }
-    // Only show when a meaningful fraction is still blank (avoid flicker on one cell).
+    // Only show when a meaningful fraction is still blank (avoid flicker on one
+    // cell). Clear a prior chip so we do not leave "Loading tiles…" stuck at
+    // 1 residual blank forever.
     if (blank < 2 && total > 8) {
+        if (m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Loading tiles"))
+            || m_view->hostCentreProgress().matchesTitlePrefix(m_view->tr("Improving previews"))) {
+            m_view->clearCentreProgress();
+        }
         return;
     }
     const QString detail =

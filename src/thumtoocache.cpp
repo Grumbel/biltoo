@@ -1838,8 +1838,13 @@ void warmSessionOpenMemos(const QStringList &paths)
         init();
         // Pass 1: sizes (+ LQIP) so the Gallery size gate can settle quickly.
         parallelFor(copy, workOneSize);
-        // Pass 2: durable tile discovery after sizes — does not block the gate.
-        parallelFor(copy, workOneDurable);
+        // Pass 2: durable has_tile off this pool slot so cold size probes are
+        // not waiting on a warm job that still joins N has_tile Store calls.
+        // Detached: discovery still notifies durableTilesReady when ready.
+        std::thread([copy, workOneDurable, parallelFor]() {
+            ASSERT_NOT_GUI_THREAD();
+            parallelFor(copy, workOneDurable);
+        }).detach();
     };
     // Never join Store warm on the GUI thread. Session-replace clears durable
     // memos (1234) so every Open paid a full cold warm wall and froze the UI.
