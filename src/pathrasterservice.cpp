@@ -140,6 +140,9 @@ void PathRasterService::noteDelivery(const QString &path, int requestEdge,
     if (!image.isNull()) {
         ImageCache::put(path, image);
     }
+    // Do not hold a QHash iterator across emit or any path that may re-enter
+    // ensure/cancel/invalidateAll (crop suspend removes the entry; Image focus
+    // ensure can rehash). Snapshot machine work, then re-find before pump.
     auto it = m_state.find(path);
     if (it == m_state.end()) {
         if (!image.isNull()) {
@@ -150,17 +153,26 @@ void PathRasterService::noteDelivery(const QString &path, int requestEdge,
     if (it->epoch != m_epoch) {
         return;
     }
-    RasterClimb::Machine &m = it->machine;
-    const int prev = m.state().have;
+    const int prev = it->machine.state().have;
     const int got = ImageCache::longEdge(image);
-    m.noteDelivery(requestEdge, got, ThumtooCache::kGalleryLadderEdge);
-    if (m.state().have > prev) {
-        emit rasterImproved(path, m.state().have);
+    it->machine.noteDelivery(requestEdge, got, ThumtooCache::kGalleryLadderEdge);
+    const int have = it->machine.state().have;
+    const int need = it->machine.effectiveNeed();
+    const bool improved = have > prev;
+    const bool covered = RasterClimb::covers(have, need);
+    // Drop iterator before any signal or further m_state mutation.
+    it = {};
+    if (improved) {
+        emit rasterImproved(path, have);
     }
-    if (RasterClimb::covers(m.state().have, m.effectiveNeed())) {
+    if (covered) {
         return;
     }
-    pump(path, *it);
+    auto again = m_state.find(path);
+    if (again == m_state.end() || again->epoch != m_epoch) {
+        return;
+    }
+    pump(path, *again);
 }
 
 void PathRasterService::pump(const QString &path, Entry &entry)
