@@ -63,8 +63,6 @@ public:
     void ensureWorkspaceQualityClimb();
     void scheduleImageModeNativeDecodeOnce(const QString &path);
     void requestEscalateClimb(const QString &path, int wantEdge);
-    void noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
-                                          const QImage &sample);
     void ensureImageModeQualityClimb(const QString &path, const QImage &sample);
     void installImageModeSampleInPlace(ImageItem *item, const QString &path,
                                        const QImage &image,

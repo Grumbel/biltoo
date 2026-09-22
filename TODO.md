@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2243-drop-dead-prefercache-delivery-note.** PreferCache cleanup:
+
+- Remove unused `DisplayPipelineController::noteImageModePreferCacheDelivery`
+  (thin forward to PathRasterService::noteDelivery; zero call sites — ladderReady
+  and other paths call noteDelivery directly)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2243-drop-dead-prefercache-delivery-note-e6c70e4.bundle HEAD
+```
+
+Next: **2244**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2242-workspace-tilelod-prefercache-skip.** PreferCache polish:
 
 1. Workspace climb: PreferCache skip is `tileLodWanted()` only (equiv. to

@@ -246,13 +246,6 @@ void DisplayPipelineController::requestEscalateClimb(const QString &path, int wa
                   static_cast<int>(policy));
     m_view->hostPathRaster()->ensure(path, edge, m_view->logicalSizeForPath(path), policy);
 }
-void DisplayPipelineController::noteImageModePreferCacheDelivery(const QString &path, int requestEdge,
-                                                 const QImage &sample)
-{
-    if (m_view->hostPathRaster() && !path.isEmpty()) {
-        m_view->hostPathRaster()->noteDelivery(path, requestEdge, sample);
-    }
-}
 void DisplayPipelineController::ensureImageModeQualityClimb(const QString &path, const QImage &sample)
 {
     if (path.isEmpty() || m_view->hostSlideshow().hud().isNavHot() || !m_view->hostPathRaster()) {
