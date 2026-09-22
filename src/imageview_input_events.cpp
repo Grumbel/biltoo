@@ -157,7 +157,8 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         || m_cropCtrl.tryMouseMoveCropDrag(event)
         || tryMouseMovePan(event)
         || m_cropCtrl.tryMouseMoveCropHover(event)
-        || tryMouseMoveZoomRegion(event)) {
+        || tryMouseMoveZoomRegion(event)
+        || m_gallery.tryMouseMoveGalleryDrag(event)) {
         return;
     }
     updateMouseInfo(event->pos());
@@ -255,6 +256,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         || tryMouseReleasePan(event)) {
         return;
     }
+    m_gallery.clearGalleryDragArm();
     tryMouseReleaseItemDrag(event);
     QGraphicsView::mouseReleaseEvent(event);
 }

@@ -7,6 +7,8 @@
 #include <QList>
 #include <QPointF>
 #include <QString>
+#include <QPointer>
+#include <QPoint>
 #include <QStringList>
 #include "imageview_types.h"
 #include "packorderview.h"
@@ -81,6 +83,9 @@ public:
     bool tryWheelGalleryScroll(QWheelEvent *event);
     bool tryMousePressGalleryRight(QMouseEvent *event);
     bool tryMousePressGalleryLeft(QMouseEvent *event);
+    /** Start session-row QDrag when armed and past drag distance. */
+    bool tryMouseMoveGalleryDrag(QMouseEvent *event);
+    void clearGalleryDragArm();
     bool tryKeyPressGallery(QKeyEvent *event);
     bool tryKeyPressDeleteSelection(QKeyEvent *event);
 
@@ -137,6 +142,11 @@ private:
 
 
     ImageItem *m_selectionAnchor = nullptr;
+
+    /** Gallery canvas session reorder drag (press + threshold → QDrag). */
+    bool m_dragArmed = false;
+    QPoint m_dragStartViewPos;
+    QPointer<ImageItem> m_dragPressItem;
     QString m_hoverPath;
 
     QTimer *m_statusRefreshTimer = nullptr;

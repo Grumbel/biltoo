@@ -32,6 +32,10 @@
 #include <QSet>
 #include <QHash>
 #include <QMouseEvent>
+#include <QDrag>
+#include <QMimeData>
+#include <QUrl>
+#include <QApplication>
 #include <QKeyEvent>
 #include <QWheelEvent>
 #include <QGraphicsScene>
@@ -660,6 +664,9 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
             }
             emit m_view->canvasSelectionChanged();
             m_view->emitGalleryItemFocus(hit);
+            m_dragArmed = true;
+            m_dragStartViewPos = event->pos();
+            m_dragPressItem = hit;
             event->accept();
             if (m_view->hostHudPrefs().isVisible() || m_view->hostHudFlash().isVisible()) {
                 emit m_view->statusChanged();
@@ -679,6 +686,13 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
             hit->invalidateDeviceCache();
             emit m_view->canvasSelectionChanged();
             m_view->emitGalleryItemFocus(hit);
+            if (hit->isSelected()) {
+                m_dragArmed = true;
+                m_dragStartViewPos = event->pos();
+                m_dragPressItem = hit;
+            } else {
+                clearGalleryDragArm();
+            }
             event->accept();
             if (m_view->hostHudPrefs().isVisible() || m_view->hostHudFlash().isVisible()) {
                 emit m_view->statusChanged();
@@ -692,10 +706,13 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
             if (!(hit->flags() & QGraphicsItem::ItemIsSelectable)) {
                 hit->setGallerySelectable(true);
             }
-            const bool already = hit->isSelected()
-                && m_view->canvasScene()->selectedItems().size() == 1;
-            if (already) {
+            // Press on an already-selected tile keeps the multi-select so the
+            // user can drag the whole set to reorder (filmstrip behaviour).
+            if (hit->isSelected()) {
                 setSelectionAnchor(hit);
+                m_dragArmed = true;
+                m_dragStartViewPos = event->pos();
+                m_dragPressItem = hit;
                 event->accept();
                 return true;
             }
@@ -710,11 +727,16 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
             emit m_view->canvasSelectionChanged();
             setSelectionAnchor(hit);
             m_view->emitGalleryItemFocus(hit);
+            // Arm reorder drag for the new single selection.
+            m_dragArmed = true;
+            m_dragStartViewPos = event->pos();
+            m_dragPressItem = hit;
             event->accept();
             return true;
         }
 
         // Empty space: clear selection (keep Ctrl-additive empty no-ops).
+        clearGalleryDragArm();
         if (!ctrl) {
             m_view->canvasScene()->clearSelection();
             emit m_view->canvasSelectionChanged();
@@ -726,6 +748,82 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
     return true;
 }
 
+
+
+void GalleryController::clearGalleryDragArm()
+{
+    m_dragArmed = false;
+    m_dragPressItem.clear();
+    m_dragStartViewPos = QPoint();
+}
+
+bool GalleryController::tryMouseMoveGalleryDrag(QMouseEvent *event)
+{
+    if (!m_view->isGalleryMode() || !m_dragArmed) {
+        return false;
+    }
+    if (!(event->buttons() & Qt::LeftButton)) {
+        clearGalleryDragArm();
+        return false;
+    }
+    const int dist = (event->pos() - m_dragStartViewPos).manhattanLength();
+    if (dist < QApplication::startDragDistance()) {
+        return false;
+    }
+
+    // Build ordered selection (session list order via liveItems order = pack order;
+    // reorder uses SessionImageId → document index).
+    QList<ImageItem *> selected;
+    for (ImageItem *it : m_view->liveItems()) {
+        if (it && it->isSelected()) {
+            selected.append(it);
+        }
+    }
+    if (selected.isEmpty() && m_dragPressItem) {
+        selected.append(m_dragPressItem.data());
+    }
+    clearGalleryDragArm();
+    if (selected.isEmpty()) {
+        return false;
+    }
+
+    QStringList fullPaths;
+    QByteArray idPayload;
+    for (ImageItem *it : selected) {
+        if (!it || it->path().isEmpty()) {
+            continue;
+        }
+        fullPaths.append(it->path());
+        const SessionImageId sid = it->sessionId();
+        if (!idPayload.isEmpty()) {
+            idPayload.append(',');
+        }
+        idPayload.append(QByteArray::number(static_cast<qint64>(sid)));
+    }
+    if (fullPaths.isEmpty()) {
+        return false;
+    }
+
+    auto *mime = new QMimeData;
+    mime->setData(QStringLiteral("application/x-biltoo-paths"),
+                  fullPaths.join(QLatin1Char('\n')).toUtf8());
+    if (!idPayload.isEmpty()) {
+        mime->setData(QStringLiteral("application/x-biltoo-session-ids"), idPayload);
+    }
+    // Placeholder URLs so generic acceptors see hasUrls().
+    QList<QUrl> placeholders;
+    for (int i = 0; i < fullPaths.size(); ++i) {
+        placeholders.append(QUrl(QStringLiteral("about:biltoo-session/%1").arg(i)));
+    }
+    mime->setUrls(placeholders);
+
+    QDrag drag(m_view);
+    drag.setMimeData(mime);
+    // Prefer Move so drops are treated as reorder, not copy-append.
+    drag.exec(Qt::MoveAction | Qt::CopyAction, Qt::MoveAction);
+    event->accept();
+    return true;
+}
 
 // --- Gallery key input (Tier 6e) ---
 

@@ -2,20 +2,20 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2338-open-selection-no-private-seed-api.**
+**Tip: biltoo-2339-gallery-canvas-drag-reorder.**
 
-Fix: do not call private DisplayPipelineController::markAppearanceSeedAttempted
-from MainWindow. Transferred appearance already wins over path-XDG seed via
-hasContentAppearance in applyStoredContentAppearanceSeed.
+Gallery tiles are draggable for session reorder: press keeps multi-select,
+past drag threshold starts QDrag with paths + session-ids; drop uses existing
+handleGalleryDrop internal reorder (same as filmstrip → Gallery).
 
-Requires **thumtoo-323**. Includes 2318–2337.
+Requires **thumtoo-323**. Includes 2318–2338.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2338.1-open-selection-no-private-seed-api-2f201f6.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2339.1-gallery-canvas-drag-reorder-2f201f6.bundle HEAD
 ```
 
-Next: **2339**.
+Next: **2340**.
 
 ## Backlog
-- Gallery-canvas drag reorder (drag tiles on the packed canvas itself)
+- (none for reorder — filmstrip + Gallery canvas + dialog covered)
