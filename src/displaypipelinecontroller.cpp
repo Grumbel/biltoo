@@ -188,11 +188,6 @@ void DisplayPipelineController::scheduleImageModeNativeDecodeOnce(const QString 
             Qt::QueuedConnection);
     });
 }
-void DisplayPipelineController::scheduleImageModePreferCacheClimb(const QString &path, int wantEdge)
-{
-    requestEscalateClimb(path, wantEdge);
-}
-
 bool DisplayPipelineController::tickTilesIfOwnDisplay(const QString &path)
 {
     if (path.isEmpty()) {
@@ -565,11 +560,9 @@ void DisplayPipelineController::maybeClimbImageModePixelsForView()
         return;
     }
 
-    // Tile LOD owns deep zoom when on-screen need exceeds soft max (TILE_LOD).
-    // PreferCache whole-frame climb is skipped for that band; soft/LQIP stays
-    // as underlay until tiles arrive.
-    tickPrimaryTileLod(8);
-    if (item->tileLodWanted()) {
+    // Tiles own display (tileLodWanted or durable pyramid): tick LOD, skip PreferCache.
+    // Matches requestEscalateClimb / ensureImageModeQualityClimb (tickTilesIfOwnDisplay).
+    if (tickTilesIfOwnDisplay(path)) {
         driveImageFocusSurface();
         return;
     }
@@ -594,7 +587,7 @@ void DisplayPipelineController::maybeClimbImageModePixelsForView()
     }
 
     // Moderate zoom still on soft band: PathRaster Soft→PreferCache→Full.
-    scheduleImageModePreferCacheClimb(path, need);
+    requestEscalateClimb(path, need);
     // Soft matching want + large host → ScheduleAsyncMaterialize via decide.
     driveImageFocusSurface();
 }
@@ -1362,7 +1355,7 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
             // Full native miss: PreferCache display ladder so onLadderReady can
             // upgrade Image mode (soft→HQ). Skip when tiles own display.
             if (!tickTilesIfOwnDisplay(path)) {
-                scheduleImageModePreferCacheClimb(path, ThumtooCache::kBatchOverviewEdge);
+                requestEscalateClimb(path, ThumtooCache::kBatchOverviewEdge);
             }
             m_view->hostSessionId().clearLastLoadError();
         } else {

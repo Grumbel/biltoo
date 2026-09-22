@@ -2,6 +2,25 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2240-maybe-climb-tiles-own.** Image-mode view climb PreferCache:
+
+1. `maybeClimbImageModePixelsForView` uses `tickTilesIfOwnDisplay` (same as
+   escalate / quality / completeLoadReplace) instead of tileLodWanted-only
+2. Drop pure alias `scheduleImageModePreferCacheClimb` → call `requestEscalateClimb`
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2240-maybe-climb-tiles-own-e6c70e4.bundle HEAD
+```
+
+Next: **2241**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2239-tick-tiles-if-own-display.** Shared PreferCache skip:
 
 - `DisplayPipelineController::tickTilesIfOwnDisplay(path)` consolidates

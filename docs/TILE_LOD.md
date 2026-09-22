@@ -316,8 +316,11 @@ Policy helpers:
 | Neither | PreferCache / Full climb as usual |
 
 - Gallery decode window skips tileLodWanted cells
-- `requestEscalateClimb` / `ensureImageModeQualityClimb` use `tilesOwnDisplay`
+- `requestEscalateClimb` / `ensureImageModeQualityClimb` / `maybeClimbImageModePixelsForView`
+  / `completeLoadReplace` use `tickTilesIfOwnDisplay` (tilesOwnDisplay + tick)
 - PathRaster cancel-once on enter tile band
+- Workspace climb still uses `tilesOwnDisplay(wanted, false)` so durable-only
+  SoftDisplay underlay can run until LOD wants
 
 
 ## Coverage + heartbeat (biltoo-1036 / 1037)
