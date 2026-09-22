@@ -1233,6 +1233,13 @@ SizeProbeActivity sizeProbeActivity()
     return workActivity();
 }
 
+bool workActivityBusy()
+{
+    const WorkActivity a = workActivity();
+    return (a.sizeQueued + a.sizeRunning + a.archiveReadRunning
+            + a.softQueued + a.softRunning + a.tileQueued + a.tileRunning) > 0;
+}
+
 
 QString loadingBreakdownLabel()
 {

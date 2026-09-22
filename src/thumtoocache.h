@@ -161,6 +161,8 @@ struct WorkActivity {
     QStringList tileRunningLabels;
 };
 WorkActivity workActivity();
+/** True if any size/archive/soft/tile work is queued or running. */
+bool workActivityBusy();
 /** @deprecated name — prefer workActivity(). */
 using SizeProbeActivity = WorkActivity;
 SizeProbeActivity sizeProbeActivity();

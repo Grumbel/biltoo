@@ -2486,8 +2486,48 @@ void MainWindow::applyWorkspaceLayoutFromPanel()
     }
 }
 
+void MainWindow::ensureWorkStatusPoll(bool workBusy)
+{
+    if (!workBusy) {
+        if (m_workStatusTimer) {
+            m_workStatusTimer->stop();
+        }
+        return;
+    }
+    if (!m_workStatusTimer) {
+        m_workStatusTimer = new QTimer(this);
+        m_workStatusTimer->setInterval(200);
+        connect(m_workStatusTimer, &QTimer::timeout, this, [this]() {
+            if (!statusBar() || !ThumtooCache::isAvailable()) {
+                if (m_workStatusTimer) {
+                    m_workStatusTimer->stop();
+                }
+                return;
+            }
+            if (!ThumtooCache::workActivityBusy()) {
+                if (m_workStatusTimer) {
+                    m_workStatusTimer->stop();
+                }
+                // Fall through to normal status (decode pending / clear).
+                updateStatus();
+                return;
+            }
+            // Cheap path: only the work line (no metadata/nav refresh).
+            refreshWorkActivityStatusBar();
+        });
+    }
+    if (!m_workStatusTimer->isActive()) {
+        m_workStatusTimer->start();
+    }
+}
+
 void MainWindow::updateStatus()
 {
+    if (m_inUpdateStatus) {
+        return;
+    }
+    m_inUpdateStatus = true;
+    const auto statusGuard = qScopeGuard([this]() { m_inUpdateStatus = false; });
     if (m_tocDock && m_tocDock->isVisible()) {
         updateTocPanel();
     }
@@ -2595,6 +2635,10 @@ void MainWindow::updateStatus()
                 }
                 sizeProbeStatusShown = true;
             }
+            ensureWorkStatusPoll(sizeProbeStatusShown
+                                 || ThumtooCache::workActivityBusy());
+        } else {
+            ensureWorkStatusPoll(false);
         }
         // Remaining decode work (Gallery blanks + filmstrip unloaded), not
         // concurrent inflight — the latter flickered 1↔0 between jobs.
