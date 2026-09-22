@@ -136,19 +136,25 @@ void paintTilePlanDebugOverlay(QPainter *painter, tilelod::TileSession *session,
         painter->setBrush(Qt::NoBrush);
         painter->drawRect(dst);
 
-        // TILE + scale + x,y — large centered text (no filename / pixel size).
+        // TILE + scale + x,y. setPixelSize is item-local; scale by 1/sx so
+        // on-screen size stays readable when zoomed out (was tiny before).
         const qreal cellDev = qMin(dst.width(), dst.height()) * sx;
-        if (cellDev < 28.0) {
-            continue;
+        if (cellDev < 10.0) {
+            continue; // pinhead tiles — wash only
         }
+        // ~28% of cell on screen; floor ~15 device px, cap ~56 device px.
+        const int wantDevicePx = qBound(15, int(cellDev * 0.28), 56);
+        const int fontLocalPx =
+            qMax(1, int(qRound(qreal(wantDevicePx) / qMax(sx, qreal(1e-6)))));
         QFont of = painter->font();
         of.setBold(true);
         of.setStyleHint(QFont::SansSerif);
         of.setFamily(QStringLiteral("Sans Serif"));
-        const int fontPx = qBound(10, int(cellDev * 0.22), 64);
-        of.setPixelSize(fontPx);
+        of.setPixelSize(fontLocalPx);
         painter->setFont(of);
-        const QString label = QStringLiteral("TILE\ns=%1\n%2,%3")
+        const QString label = QStringLiteral("TILE
+s=%1
+%2,%3")
                                   .arg(scale)
                                   .arg(tx)
                                   .arg(ty);

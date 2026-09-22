@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.23-tile-overlay-font-device-px.**
+
+Tile overlay `setPixelSize` was item-local, so when zoomed out (small view
+scale) labels shrank with the tiles. Size font for a **device-pixel** target
+(`wantDevice / sx`) with floor ~15px on screen; still grow with large cells
+when zoomed in.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.23-tile-overlay-font-device-px-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.22-filmstrip-no-soft-plateau.**
 
 Filmstrip stayed soft/pixelated then only reached ~512 because several paths
