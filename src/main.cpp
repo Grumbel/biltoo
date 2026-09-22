@@ -235,12 +235,9 @@ int main(int argc, char *argv[])
             "~/.cache/biltoo/thumtoo-debug.log"));
     parser.addOption(thumtooDebugOption);
 
-    QCommandLineOption helpAllOption(
-        QStringList() << QStringLiteral("help-all"),
-        QCoreApplication::translate("main",
-            "Show help plus environment variables for debugging "
-            "(see also docs/ENVIRONMENT.md)"));
-    parser.addOption(helpAllOption);
+    // --help-all is already registered by addHelpOption() (Qt shows generic
+    // Qt options). We intercept it before process() to print env vars instead.
+    // Do not addOption("help-all") again — that warns "option already added".
 
     // Rich --version: biltoo + optional features + linked thumtoo version.
     {
@@ -267,11 +264,9 @@ int main(int argc, char *argv[])
             out.flush();
             return 0;
         }
-    }
-
-    parser.process(app);
-
-    if (parser.isSet(helpAllOption)) {
+        // addHelpOption() already owns --help-all; process() would show Qt's
+        // generic help and exit. Intercept first and list biltoo/thumtoo env.
+        if (args.contains(QStringLiteral("--help-all"))) {
         QTextStream out(stdout);
         out << parser.helpText() << '\n';
         out << QCoreApplication::translate(
@@ -322,9 +317,12 @@ int main(int argc, char *argv[])
                "  HOME                       fallback when XDG_* unset\n"
                "\n"
                "CLI aliases: --debug, --thumtoo-debug\n";
-        out.flush();
-        return 0;
+            out.flush();
+            return 0;
+        }
     }
+
+    parser.process(app);
 
     const bool debug = parser.isSet(debugOption);
     // Quiet by default; --debug enables biltoo.slideshow qCDebug + Exiv2 warnings.

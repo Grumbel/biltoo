@@ -2,6 +2,26 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2291-help-all-no-duplicate.**
+
+`QCommandLineParser::addHelpOption()` already registers `--help-all`. Adding it
+again triggered `option already added: "help-all"`. Intercept `--help-all` in
+the early args block (same place as `--version`) and print help + env list;
+do not `addOption` a second time.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2291-help-all-no-duplicate-c0bffd5.bundle HEAD
+```
+
+Next: **2292**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.28-overlay-thumtoo-stamps.**
 
 - **thumtoo-314** (separate bundle): large centred TILE/SOFT source-space stamps.
