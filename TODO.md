@@ -2,6 +2,23 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2226-ecs-incremental-bake-closed.** Stale comments and ECS residual
+#7: no incremental `bakeRotate90`/`bakeFlip` on display. Missing host clears
+pixels + async rematerialize; soft stand-in only from host-raw materialize.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2226-ecs-incremental-bake-closed-e6c70e4.bundle HEAD
+```
+
+Next: **2227**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2225-orient-authority-series-closed.** ECS priority cleanup list
 marked complete for the orient / Placement authority series (2205–2224):
 

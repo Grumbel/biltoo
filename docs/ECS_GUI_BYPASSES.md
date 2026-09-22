@@ -95,15 +95,14 @@ Anything else that **drives paint, aspect, or orient** is a parallel authority.
 
 ---
 
-## 7. `ImageItem::bakeRotate90` / `bakeFlip` incremental (medium)
+## 7. `ImageItem::bakeRotate90` / `bakeFlip` incremental (done)
 
-**Where:** `imageitem.cpp`; last resort in `bakeItemRotate90` when host missing.
+**Where:** formerly `imageitem.cpp` last-resort incremental; callers in
+`bakeItemRotate90` / `bakeItemFlip`.
 
-**Why:** GUI feedback without host in cache.
-
-**Bypass risk:** Incremental transform on already-oriented display → not pure materialize(host, absolute want). Can desync fingerprint vs pixels until host rematerialize completes.
-
-**Respects ECS when:** only absolute materialize from host-raw; never incremental on display.
+**Status (2200 / 2226):** No incremental path. Missing host clears display pixels,
+sets absolute applied fingerprint, and schedules async host rematerialize. Soft
+stand-in only from host-raw (cache or disk load) via `materializeDisplay`.
 
 ---
 
@@ -155,7 +154,7 @@ authority bypass. Content orient remains ItemWorld contentBake/crop only.
 5. Audit every `ImageCache::put` for baked samples — **done** (see IMAGECACHE_PUT_AUDIT.md).
 6. Delete path-map content writes for bound session ids — **verified 2211**; `setPathState` no-ops when `sessionId` set.
 
-**Orient / Placement authority series closed (2205–2224).** Remaining residuals are low/accepted (#8 filmstrip display flips, #10 slideshow aligned, #11 crop draft local).
+**Orient / Placement authority series closed (2205–2224).** Residual #7 incremental bake closed (2200/2226). Remaining low/accepted: #8 filmstrip display flips, #10 slideshow aligned, #11 crop draft local.
 
 ---
 

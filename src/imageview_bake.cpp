@@ -68,7 +68,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             }
         }
         if (!gotDisplay && !path.isEmpty()) {
-            // Load host-raw from disk before any incremental bake (ECS).
+            // Load host-raw from disk for soft stand-in (ECS — no incremental).
             QImage disk = ImageLoader::loadThumbnail(
                 path, ThumtooCache::kGalleryLadderEdge);
             if (disk.isNull()) {
@@ -204,7 +204,8 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     want.cropSourceSize = cropMap.cropSourceSize;
     want.contentQuarterTurns = cropMap.contentQuarterTurns;
 
-    // Prefer pure rematerialize from unoriented host; else incremental + async.
+    // Prefer pure rematerialize from unoriented host; soft stand-in + async
+    // full when host is large or missing. Never incremental on display (#7).
     // Install applied ContentXform fingerprint (syncLiveContentMetaFromState).
     syncLiveContentMetaFromState(item, want);
     if (!tryRematerializeFromHost(item, want)) {
