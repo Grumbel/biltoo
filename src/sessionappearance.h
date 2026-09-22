@@ -42,29 +42,6 @@ enum class PixelKind {
     SoftPreview, /**< Soft ladder / thumbnail; crop scaled; no layout size write */
 };
 
-// Thin aliases so existing SessionAppearance:: call sites keep compiling.
-inline int normalizeQuarterTurns(int t) { return ContentXform::normalizeQuarterTurns(t); }
-inline bool contentSwapsAspect(const ContentXform::Value &x) { return ContentXform::swapsAspect(x); }
-bool contentSwapsAspect(const WorkspaceItemState &state);
-inline bool contentXformEqual(const ContentXform::Value &a, const ContentXform::Value &b)
-{
-    return ContentXform::equal(a, b);
-}
-inline QSize layoutSize(const QSize &native, const ContentXform::Value &x)
-{
-    return ContentXform::layoutSize(native, x);
-}
-inline QSize layoutSize(const QSize &native, const WorkspaceItemState &state)
-{
-    return ContentXform::layoutSize(native, state);
-}
-inline bool needsRematerialize(const ContentXform::Value &applied, const ContentXform::Value &want,
-                               int shown, int incoming)
-{
-    return ContentXform::needsRematerialize(applied, want, shown, incoming);
-}
-
-
 /**
  * Sole pixel pipeline: raw decode → display pixels.
  *

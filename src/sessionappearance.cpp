@@ -67,11 +67,6 @@ void mapCropThroughContentRotate90(WorkspaceItemState &state, int quarterTurns)
     state.cropRotation = x.cropRotation;
 }
 
-bool contentSwapsAspect(const WorkspaceItemState &state)
-{
-    return ContentXform::swapsAspect(ContentXform::Value::fromState(state));
-}
-
 QRectF mapSourceRectToContentDisplay(const QRectF &sourceRect, const QSize &sourceSize,
                                      const WorkspaceItemState &state)
 {

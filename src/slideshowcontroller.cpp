@@ -806,14 +806,6 @@ void SlideshowController::finishSlideshowAtlas(SlideshowAtlasKind kind, quint64 
 }
 
 
-void SlideshowController::finishDwellAtlasRebuild(quint64 generation, const QImage &scaled,
-                                        qreal atlasScale, int atlasVw, int atlasVh)
-{
-    finishSlideshowAtlas(SlideshowAtlasKind::From, generation, scaled, atlasScale,
-                         atlasVw, atlasVh);
-}
-
-
 void SlideshowController::requestSlideshowAtlas(SlideshowAtlasKind kind)
 {
     // Scale off the GUI thread; keep the previous atlas until finish assigns.
@@ -1606,28 +1598,6 @@ void SlideshowController::pumpSlideshowPreloadQueue()
 }
 
 
-void SlideshowController::finishSlideshowPreload(const QString &path, const QImage &image)
-{
-    // Legacy pool-preload completion — climb is owned by PathRasterService.
-    phase().removeRasterInflight(path);
-    if (!image.isNull()) {
-        if (m_view->hostPathRaster()) {
-            m_view->hostPathRaster()->noteDelivery(path, 0, image);
-        } else {
-            ImageCache::put(path, image);
-        }
-        onSlideshowRasterReady(path, image);
-        qCDebug(lcSlideshow).nospace()
-            << "[slideshow] preload-ready " << QFileInfo(path).fileName()
-            << " " << image.width() << "x" << image.height();
-    }
-    pumpSlideshowPreloadQueue();
-    if (m_view->viewport()) {
-        m_view->viewport()->update();
-    }
-}
-
-
 void SlideshowController::preloadSlideshowImage(const QString &path)
 {
     if (path.isEmpty() || !m_view->hostPathRaster()) {
@@ -1699,44 +1669,6 @@ DwellAtlasParams SlideshowController::dwellAtlasParams() const
 void SlideshowController::invalidateDwellAtlasRebuilds()
 {
     dwell().bumpAtlasRebuildGeneration();
-}
-
-
-void SlideshowController::ensureMotionAtlas(const QImage &image, QPixmap *atlas,
-                                  qreal *atlasScale, int *atlasVw, int *atlasVh) const
-{
-    if (!atlas || !atlasScale || !atlasVw || !atlasVh || image.isNull() || !m_view->viewport()) {
-        return;
-    }
-    // Rapid keyboard flip: skip atlas rebuild; paintMotionCover falls back to
-    // drawImage. Avoids a scale per key on the GUI thread.
-    if (hud().isNavHot()) {
-        return;
-    }
-    const DwellAtlasParams params = dwellAtlasParams();
-    if (!params.valid) {
-        return;
-    }
-    if (SlideshowAtlasPolicy::coversSource(*atlas, *atlasScale, *atlasVw, *atlasVh,
-                                           params, image)) {
-        return;
-    }
-    const int srcLong = ContentXform::longEdge(image.size());
-    // Upscale must be smooth; Fast on soft→viewport is nearest-neighbour mush.
-    const auto mode = (srcLong >= params.longCap)
-                          ? Qt::FastTransformation
-                          : Qt::SmoothTransformation;
-    QImage scaled = image.scaled(params.longCap, params.longCap, Qt::KeepAspectRatio,
-                                 mode);
-    if (scaled.isNull()) {
-        *atlas = QPixmap();
-        *atlasScale = 0.0;
-        return;
-    }
-    *atlas = QPixmap::fromImage(std::move(scaled));
-    *atlasScale = params.keyScale;
-    *atlasVw = params.vw;
-    *atlasVh = params.vh;
 }
 
 

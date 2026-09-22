@@ -2,6 +2,28 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2261-drop-sessionappearance-aliases-slideshow-stubs.** Dead API cleanup:
+
+1. SessionAppearance: remove unused ContentXform thin aliases
+   (normalizeQuarterTurns, contentSwapsAspect, contentXformEqual, layoutSize,
+   needsRematerialize) — callers use ContentXform:: directly
+2. SlideshowController: remove unused finishDwellAtlasRebuild (thin to
+   finishSlideshowAtlas), finishSlideshowPreload (legacy pool path),
+   ensureMotionAtlas (zero call sites)
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2261-drop-sessionappearance-aliases-slideshow-stubs-e6c70e4.bundle HEAD
+```
+
+Next: **2262**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2260-drop-dead-attention-chrome-bind-helpers.** Dead helper cleanup:
 
 1. `KeyboardShortcutsDialog::refreshEnabledStyles` (empty; never called)

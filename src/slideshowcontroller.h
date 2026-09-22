@@ -99,7 +99,6 @@ public:
     void finishSlideshowPhaseBufferUpgrade(const QString &path, const QImage &oriented, quint64 generation);
     void scheduleSlideshowPhaseBufferUpgrade(const QString &path, const QImage &image);
     void finishSlideshowAtlas(SlideshowAtlasKind kind, quint64 generation, const QImage &scaled, qreal atlasScale, int atlasVw, int atlasVh);
-    void finishDwellAtlasRebuild(quint64 generation, const QImage &scaled, qreal atlasScale, int atlasVw, int atlasVh);
     void requestSlideshowAtlas(SlideshowAtlasKind kind);
     void requestDwellAtlasRebuild();
     void requestToPhaseAtlasRebuild();
@@ -134,10 +133,8 @@ public:
     qreal slideshowZoomBaseScale(const QSize &logical, int vw, int vh) const;
     void setSlideshowNavHot(bool hot);
     void pumpSlideshowPreloadQueue();
-    void finishSlideshowPreload(const QString &path, const QImage &image);
     void preloadSlideshowImage(const QString &path);
     void invalidateDwellAtlasRebuilds();
-    void ensureMotionAtlas(const QImage &image, QPixmap *atlas, qreal *atlasScale, int *atlasVw, int *atlasVh) const;
     void setSlideshowUnderlayVisible(bool visible);
     void hideSlideshowUnderlay();
     void clearSlideshowZoomBlurSlots();
