@@ -20,9 +20,9 @@ struct LayoutDebounce {
      * timer would starve pack for the whole probe stream (cells stuck at the
      * origin). Cap the wait so a progressive pack runs at least this often.
      */
-    static constexpr int kProgressiveMaxWaitMs = 40;
+    static constexpr int kProgressiveMaxWaitMs = 120;
     /** Quiet interval used during the size gate (ms). */
-    static constexpr int kProgressiveIntervalMs = 16;
+    static constexpr int kProgressiveIntervalMs = 50;
 
     GalleryPackReason reason = GalleryPackReason::ContentChange;
     bool pending = false;

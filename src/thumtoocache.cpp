@@ -43,7 +43,6 @@
 #include <filesystem>
 #include <functional>
 #include <mutex>
-#include <thread>
 #include <optional>
 #include <atomic>
 #include <string>
@@ -1816,43 +1815,27 @@ void warmSessionOpenMemos(const QStringList &paths)
         // durableTilesReady fires on first positive hasDurableTiles hit.
         (void)hasDurableTiles(p);
     };
-    auto parallelFor = [](const QStringList &list, auto workOne) {
-        constexpr int kWorkers = 4;
-        const int n = list.size();
-        if (n <= 8) {
-            for (const QString &p : list) {
-                workOne(p);
-            }
-            return;
-        }
-        std::vector<std::thread> threads;
-        threads.reserve(size_t(kWorkers));
-        for (int w = 0; w < kWorkers; ++w) {
-            threads.emplace_back([&, w]() {
-                for (int i = w; i < n; i += kWorkers) {
-                    workOne(list.at(i));
-                }
-            });
-        }
-        for (std::thread &th : threads) {
-            th.join();
-        }
-    };
-    auto workAll = [copy, workOneSize, workOneDurable, parallelFor]() {
+    // Sequential on the global QThreadPool — never spawn std::thread workers.
+    // Nested pool wait would deadlock when already on a pool thread; raw
+    // threads stacked with per-path scheduleTilePyramid jobs under cold open.
+    auto workAll = [copy, workOneSize, workOneDurable]() {
         ASSERT_NOT_GUI_THREAD();
         init();
         // Pass 1: sizes (+ LQIP) so the Gallery size gate can settle quickly.
-        parallelFor(copy, workOneSize);
-        // Pass 2: durable has_tile only after size probes drain — otherwise
-        // warm has_tile races scheduleProbeBatch on the Store. Detached so
-        // this pool slot is free for request_size workers.
-        std::thread([copy, workOneDurable, parallelFor]() {
+        for (const QString &p : copy) {
+            workOneSize(p);
+        }
+        // Pass 2: durable has_tile after size probes drain. Separate pool job
+        // (do not join here) so this slot frees for request_size workers.
+        QThreadPool::globalInstance()->start([copy, workOneDurable]() {
             ASSERT_NOT_GUI_THREAD();
             for (int i = 0; i < 500 && sizeProbesBusy(); ++i) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                QThread::msleep(20);
             }
-            parallelFor(copy, workOneDurable);
-        }).detach();
+            for (const QString &p : copy) {
+                workOneDurable(p);
+            }
+        });
     };
     // Never join Store warm on the GUI thread. Session-replace clears durable
     // memos (1234) so every Open paid a full cold warm wall and froze the UI.

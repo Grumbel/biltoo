@@ -159,13 +159,9 @@ ImageView::ImageView(QWidget *parent)
                     // LQIP may already be in ImageCache (size probe callback).
                     // Still paint blank tiles; never block later soft upgrades.
                     if (isGalleryMode()) {
-                        QImage lqip = ImageCache::get(path);
-                        if (lqip.isNull()) {
-                            lqip = ThumtooCache::cachedLqipImage(path);
-                            if (!lqip.isNull()) {
-                                ImageCache::put(path, lqip);
-                            }
-                        }
+                        // ImageCache only on the GUI (cachedLqipImage is a Store
+                        // no-op here). Decode window installs remaining blanks.
+                        const QImage lqip = ImageCache::get(path);
                         if (!lqip.isNull()) {
                             for (ImageItem *item : m_items) {
                                 if (!item || item->path() != path) {

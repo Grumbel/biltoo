@@ -2,6 +2,30 @@
 
 ## Status (2026-09-22)
 
+**Tip: biltoo-2290.10-pool-warm-throttle-progressive.** Threads + GUI freeze:
+
+1. **`warmSessionOpenMemos`** spawned 4× `std::thread` per pass + a **detached**
+   durable thread (on top of global `QThreadPool` jobs for every pyramid/probe).
+   Now sequential on the global pool only; durable is a second pool job after
+   size probes drain — no raw threads.
+2. **Progressive pack** was every 16–40ms (`applyLayout` O(session)) and kept
+   the GUI dead during size stream. Interval 50ms, max-wait 120ms.
+3. **sizeReady** no longer calls `cachedLqipImage` on the GUI (always empty);
+   ImageCache only.
+
+### Apply
+```bash
+git pull --ff-only /path/to/biltoo-2290.10-pool-warm-throttle-progressive-5b36062.bundle HEAD
+```
+
+Next: **2291**.
+
+---
+
+# TODO / agent handoff
+
+## Status (2026-09-22)
+
 **Tip: biltoo-2290.9-loading-tiles-hud-ready-count.** Fix stuck "Loading tiles…":
 
 - HUD used a manual `contentSceneRect` walk (null/invalid rects counted as
