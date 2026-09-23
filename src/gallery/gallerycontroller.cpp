@@ -12,6 +12,7 @@
 #include "imageview_types.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
+#include "item/itemframegeometry.h"
 #include "item/itemcomponents.h"
 #include "view/viewtransform.h"
 #include "gallery/layoutapplyguard.h"
@@ -1785,18 +1786,16 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
     if (!painter || !m_view || !m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
         return;
     }
-    // Cheap cell frames for the offline plan. Live ImageItems paint on top when
-    // present; empty cells still show the packed grid instead of bare canvas.
+    // Same no-LQIP chrome as live ImageItem blanks (ItemFrameGeometry).
+    // Live items paint on top when present; empty cells match that look.
     painter->save();
-    painter->setPen(QPen(QColor(70, 70, 74), 0));
-    painter->setBrush(QColor(42, 42, 46));
     int drawn = 0;
     constexpr int kMaxDrawn = 400; // exposed region only; hard cap for safety
     for (const VirtualSlot &slot : m_virtualSlots) {
         if (!slot.bounds.intersects(exposed)) {
             continue;
         }
-        painter->drawRect(slot.bounds);
+        ItemFrameGeometry::paintNeutralPlaceholder(painter, slot.bounds);
         if (++drawn >= kMaxDrawn) {
             break;
         }

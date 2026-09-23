@@ -5,6 +5,10 @@
 #define ITEMFRAMEGEOMETRY_H
 
 #include <QPointF>
+#include <QPainter>
+#include <QPen>
+#include <QFont>
+#include <QColor>
 
 /**
  * Pure viewport-space geometry of a (possibly rotated) content frame:
@@ -132,6 +136,34 @@ inline qreal chromeGlyphPointSize(qreal buttonRadius)
 inline qreal placeholderInset(qreal contentW, qreal contentH, qreal frac = 0.06)
 {
     return qMin(contentW, contentH) * frac;
+}
+
+/**
+ * Gallery / Image no-LQIP cell chrome (sized blank or virtual plan slot).
+ * Outer fill + inset rounded rect + centred ellipsis — keep one look for
+ * live ImageItem placeholders and offline virtual plan frames.
+ */
+inline void paintNeutralPlaceholder(QPainter *painter, const QRectF &contentRect)
+{
+    if (!painter || contentRect.isEmpty()) {
+        return;
+    }
+    painter->fillRect(contentRect, QColor(40, 40, 44));
+    const qreal inset = placeholderInset(contentRect.width(), contentRect.height());
+    const QRectF inner = contentRect.adjusted(inset, inset, -inset, -inset);
+    if (inner.width() < 1.0 || inner.height() < 1.0) {
+        return;
+    }
+    painter->setPen(QPen(QColor(70, 72, 80), 0));
+    painter->setBrush(QColor(52, 54, 62));
+    painter->drawRoundedRect(inner, inset * 0.8, inset * 0.8);
+    painter->setPen(QPen(QColor(140, 145, 160), 0));
+    QFont f = painter->font();
+    const qreal edge = qMin(inner.width(), inner.height());
+    f.setPointSizeF(placeholderEllipsisPointSize(edge));
+    f.setBold(true);
+    painter->setFont(f);
+    painter->drawText(inner, Qt::AlignCenter, QStringLiteral("⋯"));
 }
 
 /**

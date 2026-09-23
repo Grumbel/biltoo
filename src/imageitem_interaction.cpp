@@ -1039,20 +1039,8 @@ void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
             } else {
                 // Sized placeholder (intrinsic from size memo/probe) or neutral
                 // provisional box while cold. Never invent LQIP here.
-                const QRectF cr = contentRect();
-                painter->fillRect(cr, QColor(40, 40, 44));
-                const qreal inset = ItemFrameGeometry::placeholderInset(cr.width(), cr.height());
-                const QRectF inner = cr.adjusted(inset, inset, -inset, -inset);
-                painter->setPen(QPen(QColor(70, 72, 80), 0));
-                painter->setBrush(QColor(52, 54, 62));
-                painter->drawRoundedRect(inner, inset * 0.8, inset * 0.8);
-                painter->setPen(QPen(QColor(140, 145, 160), 0));
-                QFont f = painter->font();
-                const qreal edge = qMin(inner.width(), inner.height());
-                f.setPointSizeF(ItemFrameGeometry::placeholderEllipsisPointSize(edge));
-                f.setBold(true);
-                painter->setFont(f);
-                painter->drawText(inner, Qt::AlignCenter, QStringLiteral("⋯"));
+                // Same chrome as Gallery virtual plan slots (paintNeutralPlaceholder).
+                ItemFrameGeometry::paintNeutralPlaceholder(painter, contentRect());
             }
         }
 
