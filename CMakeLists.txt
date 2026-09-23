@@ -194,13 +194,13 @@ set(BILTOO_LIB_SOURCES
   src/text/textlayersession.h
   src/slideshow/zoomregiongesture.h
   src/view/canvasbackground.h
-  src/layoutprefs.h
+  src/gallery/layoutprefs.h
   src/view/viewportchrome.h
   src/hud/hudappearance.h
   src/session/sessionchrome.h
   src/gallery/gallerydecodebook.h
   src/perfstats.h
-  src/layoutdebounce.h
+  src/gallery/layoutdebounce.h
   src/gallery/gallerypackfit.h
   src/item/selectiongeometry.h
   src/color/coloradjustcommit.h
@@ -212,7 +212,7 @@ set(BILTOO_LIB_SOURCES
   src/text/textsearchpolicy.cpp
   src/view/canvaspatterngeometry.h
   src/gallery/galleryrelayoutsuppress.h
-  src/layoutapplyguard.h
+  src/gallery/layoutapplyguard.h
   src/item/imagesizebook.h
   src/item/pathitemstatebook.h
   src/item/pendingitemappearancebook.h

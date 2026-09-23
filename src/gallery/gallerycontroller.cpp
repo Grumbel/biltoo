@@ -13,7 +13,7 @@
 #include "imageitem.h"
 #include "item/itemcomponents.h"
 #include "view/viewtransform.h"
-#include "layoutapplyguard.h"
+#include "gallery/layoutapplyguard.h"
 #include <QElapsedTimer>
 #include "session/sessionappearance.h"
 #include "biltoo_logging.h"
