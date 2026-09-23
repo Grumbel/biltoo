@@ -2,24 +2,28 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2397-size-first-all-layouts-emb** (on top of `660c49c` stack).
+**Tip: biltoo-2398-size-gate-underlay-warm** (on top of `660c49c` stack).
 
-Includes **2381–2396**.
+Includes **2381–2397**.
 
-### 2397
-- Size gate active for **all** packaged Gallery layouts (including grid)
-- Tiles blocked until session sizes settle
-- SizeReply underlay always → ImageCache; Gallery install accepts EMB ≤320
+### Double-check (2397 + 2398)
+Verified:
+- layoutDefersPopulateUntilSizes: all non-FreeForm → true (gate on)
+- TileLoadCoordinator::tick returns while gate active
+- updateDecodeWindow: LQIP-only while gate active
+- scheduleGalleryDecode: tiles only when !active; EMB band ≤320 for underlay
+- finishProbeSlot always ImageCache::put non-null SizeReply underlay
+- **2398:** size memo without ImageCache no longer skips request_size / closes gate
 
-**Next:** RC smoke; confirm LQIP/EMB appears after sizeReady when Store has blob.
+**Next:** RC smoke cold + second open same process (ImageCache clear + size memo).
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2397.1-size-first-all-layouts-emb-660c49c.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2398.1-size-gate-underlay-warm-660c49c.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
-- [x] 2381–2396
-- [x] 2397 size-first all layouts + EMB underlay
+- [x] 2381–2397
+- [x] 2398 size-gate underlay warm requirement
 - [ ] RC smoke
 - [ ] VERSION 0.2.0 + tag
