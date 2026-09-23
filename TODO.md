@@ -2,22 +2,23 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2391-unused-sizegate-rebuild** (on top of `660c49c` stack).
+**Tip: biltoo-2392-gallery-emb-underlay-accept** (on top of `660c49c` stack).
 
-Includes **2381–2390**.
+Includes **2381–2391**.
 
-### 2391
-Remove unused `sizeGate` in `GalleryController::rebuildVirtualPlan` (-Wunused-variable).
+### 2392
+Gallery SoftPreview underlay accept band is EMB (≤320), not only ThumbHash
+(≤96). sizeReady path installs + preview fallback.
 
 **Next:** RC smoke; VERSION 0.2.0 + tag.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2391.1-unused-sizegate-rebuild-660c49c.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2392.1-gallery-emb-underlay-accept-660c49c.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
-- [x] 2381–2390
-- [x] 2391 unused sizeGate warning
+- [x] 2381–2391
+- [x] 2392 Gallery EMB underlay accept
 - [ ] RC smoke
 - [ ] VERSION 0.2.0 + tag
