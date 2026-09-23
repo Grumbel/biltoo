@@ -18,6 +18,7 @@
 #include "gallery/layoutapplyguard.h"
 #include <QElapsedTimer>
 #include "session/sessionappearance.h"
+#include "content/contentxform.h"
 #include "util/biltoo_logging.h"
 #include "util/biltoo_thread.h"
 #include "gallery/gallerypackfit.h"
@@ -122,6 +123,7 @@ void GalleryController::restoreStashedItems()
         m_view->pathOrderSetOrder(m_stashedPackOrder.paths(), m_stashedPackOrder.ids());
     }
     m_stashedPackOrder = PackOrderView();
+    bool needContentPack = false;
     for (ImageItem *item : m_view->liveItems()) {
         if (!item) {
             continue;
@@ -130,18 +132,37 @@ void GalleryController::restoreStashedItems()
             m_view->canvasScene()->addItem(item);
         }
         m_view->applyItemModeFlags(item);
-        // Image-mode crop updates the appearance store and may have synced a
-        // bake onto the stash; if underlay still lags (or was never baked), force
-        // rematerialize from the store so Gallery does not show full-frame.
+        // Image-mode crop may have updated the appearance store. Rematerialize
+        // only when durable content exists and the live tile is out of date
+        // (or blank). Matching applied xform + pixels → no-op, no pack.
+        const SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId
+            || !m_view->itemWorld().hasDurableAppearance(sid)) {
+            continue;
+        }
+        const WorkspaceItemState st = m_view->sessionAppearanceValue(sid);
+        if (!SessionAppearance::hasContentAppearance(st)) {
+            continue;
+        }
+        const ContentXform::Value want = ContentXform::Value::fromState(st);
+        const ContentXform::Value applied = m_view->itemAppliedContentXform(item);
+        if (m_view->itemHasAppliedContentXform(item)
+            && ContentXform::equal(applied, want)
+            && item->hasDisplayPixels()) {
+            continue;
+        }
         m_view->rematerializeGalleryItemFromStore(item);
+        needContentPack = true;
     }
     {
         const PackOrderView pack = m_view->currentPackOrder();
         m_view->reorderItemsByPaths(pack.paths(), pack.ids());
     }
-    // Image-mode navigation may have filled global path RAM; bind/paint without
-    // waiting for the next decode-window timer.
-    m_view->hostDisplayPipeline().tickPrimaryTileLod(16);
+    // Crop/aspect change in Image mode: one ContentChange pack (preserve scroll).
+    // Plain return: enter() runs a light updateDecodeWindow only.
+    if (needContentPack) {
+        applyLayout(GalleryPackReason::ContentChange);
+    }
 }
 
 void GalleryController::snapshotViewport()
@@ -439,17 +460,16 @@ void GalleryController::enter(int packagedLayoutInt, int previousModeInt)
     if (layoutSwitch) {
         // Drop stale pack holes; keep path∥sessionId from live tiles (id-safe).
         setPathOrderFromLiveItems();
-    }
-    // Pack now only when tiles already belong to this Gallery session:
-    // layout switch inside Gallery, or restash return from Image.
-    // Cold enter from Image/Workspace still holds the previous mode's tiles
-    // (or a single Image item). Packing those first paints a random/wrong
-    // layout until populateGalleryCanvas → setWorkspacePaths rebuilds —
-    // worst on cold cache while size-resolve runs. First pack is owned by
-    // setWorkspacePaths / finishGallerySizeResolve.
-    if (layoutSwitch || restoredStash) {
         applyLayout(GalleryPackReason::EnterGallery);
+    } else if (restoredStash) {
+        // Warm Image↔Gallery: same ImageItem* cells already carry pack poses,
+        // underlays, and tile bags. applyLayout(EnterGallery) re-packed the
+        // whole session and ran a full decode window (tile re-issue) — that was
+        // the bulk of the “reload” after return. Only fill blanks / tile gaps.
+        updateDecodeWindow();
     }
+    // Cold enter (no stash): first pack is owned by setWorkspacePaths /
+    // finishGallerySizeResolve after populateGalleryCanvas.
 
     if (holdPaint && m_view->viewport()) {
         m_view->viewport()->setUpdatesEnabled(true);
