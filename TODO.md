@@ -2,13 +2,13 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2380-resolving-sizes-topleft** (on top of `43085d9` flake.lock).
+**Tip: biltoo-2381-unused-provcell-thumbnailbar** (on top of `660c49c`).
 
-**Source layout complete for 0.2.0** (phases 1–31).
-Root is façade-only: `imageview*`, `imageitem*`, `imageview_types.h`, `main.cpp`.
+Removed dead `provCell` in `ThumbnailBar::setFiles` (computed only in
+`appendFileRowsChunk` after chunked fill) — clears `-Wunused-but-set-variable`.
 
 **Thumtoo pinned** in `flake.lock` → `f71d183` (thumtoo-323).
-Human: builds and runs after reorganization; size-resolve HUD moved top-left.
+Source layout 0.2.0 complete (phases 1–31).
 
 **Next (release path):**
 1. RC smoke (open, Gallery, crop, export, shell icons after `.qrc` move)
@@ -16,15 +16,14 @@ Human: builds and runs after reorganization; size-resolve HUD moved top-left.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2380.1-resolving-sizes-topleft-43085d9.bundle HEAD
-# or full stack from origin after tip lands:
-# git fetch && git checkout origin/master
+git -C biltoo pull --ff-only …/biltoo-2381.1-unused-provcell-thumbnailbar-660c49c.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
 - [x] src subdirs phases 1–31 (layout complete)
 - [x] pin thumtoo ≥ 323 (`flake.lock` → f71d183)
 - [x] Resolving sizes… HUD top-left (non-blocking)
+- [x] drop unused provCell in ThumbnailBar::setFiles (2381)
 - [ ] RC smoke
 - [ ] VERSION 0.2.0 + tag
 
