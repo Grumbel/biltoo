@@ -7,7 +7,7 @@
 #include "host/thumtoocache.h"
 #include "display/displayquality.h"
 #include "display/pathrasterservice.h"
-#include "archivepath.h"
+#include "host/archivepath.h"
 #include "pagepath.h"
 #include "hud/hudmodel.h"
 

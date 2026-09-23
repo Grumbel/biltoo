@@ -12,7 +12,7 @@
 #include "session/sessionexpand.h"
 #include "ttfp_trace.h"
 #include "session/projectfile.h"
-#include "archivepath.h"
+#include "host/archivepath.h"
 #include "pagepath.h"
 #include "shell/epublayoutdialog.h"
 #include "workspace/workspacebackgrounddialog.h"

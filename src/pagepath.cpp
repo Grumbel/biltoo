@@ -3,7 +3,7 @@
 
 #include "pagepath.h"
 
-#include "archivepath.h"
+#include "host/archivepath.h"
 
 #include <QFileInfo>
 #include <QUrl>

@@ -8,7 +8,7 @@
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <cstdlib>
-#include "archivepath.h"
+#include "host/archivepath.h"
 #include "pagepath.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"

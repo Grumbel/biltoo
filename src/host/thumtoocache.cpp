@@ -9,7 +9,7 @@
 #include "display/imagecache.h"
 #include "biltoo_thread.h"
 
-#include "archivepath.h"
+#include "host/archivepath.h"
 #include "pagepath.h"
 #include <cstring>
 

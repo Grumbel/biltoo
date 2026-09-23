@@ -7,7 +7,7 @@
 #include "contentxform.h"
 #include "gallery/gallerydecodesm.h"
 #include "display/displayquality.h"
-#include "archivepath.h"
+#include "host/archivepath.h"
 #include "pagepath.h"
 #include "imageitem.h"
 #include "imageloader.h"

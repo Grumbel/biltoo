@@ -6,7 +6,7 @@
 #include "shell/filmstripgeometry.h"
 #include "display/displayquality.h"
 #include "display/displaysurface.h"
-#include "archivepath.h"
+#include "host/archivepath.h"
 #include "pagepath.h"
 #include "display/imagecache.h"
 #include "imageloader.h"

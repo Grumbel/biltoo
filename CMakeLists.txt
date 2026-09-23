@@ -293,8 +293,8 @@ set(BILTOO_LIB_SOURCES
   src/host/thumtoo_process_memos.cpp
   src/host/thumtoo_process_memos.h
   src/host/thumtoo_size_probe.cpp
-  src/archivepath.cpp
-  src/archivepath.h
+  src/host/archivepath.cpp
+  src/host/archivepath.h
   src/pagepath.cpp
   src/pagepath.h
   src/shell/thumbnailbar.cpp
@@ -655,7 +655,7 @@ if(Qt6Test_FOUND)
     tests/sessionsort_test.cpp
     src/session/sessionsort.cpp
     src/pagepath.cpp
-    src/archivepath.cpp
+    src/host/archivepath.cpp
   )
   target_include_directories(biltoo-sessionsort-test PRIVATE src)
   target_link_libraries(biltoo-sessionsort-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)

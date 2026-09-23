@@ -14,7 +14,7 @@
 #include "view/viewtransform.h"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
-#include "archivepath.h"
+#include "host/archivepath.h"
 #include "pagepath.h"
 
 #include <QBuffer>

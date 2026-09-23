@@ -3,7 +3,7 @@
 
 #include "session/sessionexpand.h"
 
-#include "archivepath.h"
+#include "host/archivepath.h"
 #include "imageloader.h"
 #include "pagepath.h"
 #include "host/thumtoocache.h"

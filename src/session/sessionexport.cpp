@@ -7,7 +7,7 @@
 #include "imageloader.h"
 #include "session/sessionappearance.h"
 #include "pagepath.h"
-#include "archivepath.h"
+#include "host/archivepath.h"
 
 #include <QBuffer>
 #include <QDir>
