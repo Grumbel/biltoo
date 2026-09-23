@@ -15,6 +15,7 @@ Flat `src/` → domain subdirectories. Pattern matches `src/tilelod/`:
 | 6 | `src/workspace/` | workspace controller, geometry/nav, background dialog, group transform, page guide, stack geometry | **done (2354)** |
 | 7 | `src/attention/` | attention controller, session, geometry | **done (2355)** |
 | 8 | `src/slideshow/` | controller, clocks, phase/atlas/motion policies, settings dialog, motion-scroll chrome | **done (2356)** |
+| 9 | `src/hud/` | hud model, appearance, flash, geometry | **done (2357)** |
 | — | `src/tilelod/` | unchanged | done |
 | — | `src/` root | `imageview*`, `imageitem*`, `imageloader`, `pagepath`, `main.cpp`, shared types (`placementlinear`, `itemframegeometry`, …) | stay until later |
 

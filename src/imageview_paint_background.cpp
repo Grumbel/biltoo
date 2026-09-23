@@ -5,7 +5,7 @@
 #include "textsearchpolicy.h"
 #include "canvaspatterngeometry.h"
 #include "viewtransform.h"
-#include "hudgeometry.h"
+#include "hud/hudgeometry.h"
 #include "slideshow/slideshowclocks.h"
 #include "textlayergeometry.h"
 #include "workspace/pageguidegeometry.h"

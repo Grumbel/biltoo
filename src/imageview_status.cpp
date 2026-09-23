@@ -9,7 +9,7 @@
 #include "display/pathrasterservice.h"
 #include "archivepath.h"
 #include "pagepath.h"
-#include "hudmodel.h"
+#include "hud/hudmodel.h"
 
 #include <QFileInfo>
 #include <QFontMetrics>

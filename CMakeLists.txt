@@ -128,8 +128,8 @@ set(BILTOO_LIB_SOURCES
   src/crop/cropcontroller.h
   src/attention/attentioncontroller.cpp
   src/attention/attentioncontroller.h
-  src/hudmodel.cpp
-  src/hudmodel.h
+  src/hud/hudmodel.cpp
+  src/hud/hudmodel.h
   src/display/displaypipelinecontroller.cpp
   src/display/displaypipelinecontroller_load.cpp
   src/display/displaypipelinecontroller_item.cpp
@@ -189,14 +189,14 @@ set(BILTOO_LIB_SOURCES
   src/itemhandlepolicy.h
   src/workspace/stackgeometry.cpp
   src/workspace/stackgeometry.h
-  src/hudflash.h
+  src/hud/hudflash.h
   src/viewframing.h
   src/textlayersession.h
   src/zoomregiongesture.h
   src/canvasbackground.h
   src/layoutprefs.h
   src/viewportchrome.h
-  src/hudappearance.h
+  src/hud/hudappearance.h
   src/session/sessionchrome.h
   src/gallery/gallerydecodebook.h
   src/perfstats.h
@@ -207,7 +207,7 @@ set(BILTOO_LIB_SOURCES
   src/viewtransform.h
   src/workspace/workspacenavgeometry.h
   src/toolpolicy.h
-  src/hudgeometry.h
+  src/hud/hudgeometry.h
   src/textsearchpolicy.h
   src/textsearchpolicy.cpp
   src/canvaspatterngeometry.h
@@ -633,7 +633,7 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-hudmodel-test
     tests/hudmodel_test.cpp
-    src/hudmodel.cpp
+    src/hud/hudmodel.cpp
   )
   target_include_directories(biltoo-hudmodel-test PRIVATE src)
   target_link_libraries(biltoo-hudmodel-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
