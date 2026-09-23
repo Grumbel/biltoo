@@ -4,7 +4,7 @@
 #include "imageview.h"
 #include <cstdlib>
 #include <QEvent>
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "gallery/gallerydecodesm.h"
 #include "toolpolicy.h"
 #include "workspace/workspacenavgeometry.h"

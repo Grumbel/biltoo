@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspace/workspacecontroller.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include <memory>
 #include <QSet>
 #include <QFileInfo>

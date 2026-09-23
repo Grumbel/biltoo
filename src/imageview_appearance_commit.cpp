@@ -10,7 +10,7 @@
 #include "session/sessionappearance.h"
 #include "host/thumtoocache.h"
 #include "imageitem.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "imageloader.h"
 
 void ImageView::syncSessionEditPeers(ImageItem *item)

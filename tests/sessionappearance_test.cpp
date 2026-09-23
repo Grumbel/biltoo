@@ -10,8 +10,8 @@
 #include "contentxform.h"
 #include "session/sessionseedbook.h"
 #include "session/sessiondocument.h"
-#include "itemworld.h"
-#include "itemcomponents.h"
+#include "item/itemworld.h"
+#include "item/itemcomponents.h"
 #include "host/thumtoocache.h"
 
 #include <QtTest/QtTest>

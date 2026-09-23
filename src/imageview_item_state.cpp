@@ -8,7 +8,7 @@
 #include "session/sessiondocument.h"
 #include "imageitem.h"
 #include "contentxform.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "session/sessionappearance.h"
 #include "selectiongeometry.h"
 #include "workspace/pageguidegeometry.h"

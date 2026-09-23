@@ -5,7 +5,7 @@
 
 #include "imageview.h"
 #include "imageitem.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "view/viewtransform.h"
 #include "view/viewframing.h"
 

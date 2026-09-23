@@ -5,7 +5,7 @@
 #define GROUPTRANSFORMSESSION_H
 
 #include "imageview_types.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 
 #include <QList>
 #include <QPointF>

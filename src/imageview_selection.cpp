@@ -4,7 +4,7 @@
 // Canvas selection, transform targets, and workspace clipboard.
 
 #include "imageview.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "imageitem.h"
 #include "session/sessionappearance.h"
 

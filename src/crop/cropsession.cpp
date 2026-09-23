@@ -6,7 +6,7 @@
 #include "contentxform.h"
 #include "placementlinear.h"
 #include "imageitem.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "session/sessionappearance.h"
 #include "display/imagecache.h"
 #include "host/thumtoocache.h"

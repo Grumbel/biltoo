@@ -4,7 +4,7 @@
 #include "slideshow/slideshowcontroller.h"
 #include "imageview.h"
 #include "imageitem.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "gallery/gallerylayout.h"
 #include "display/imagecache.h"
 #include "session/sessionappearance.h"

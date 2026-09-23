@@ -6,8 +6,8 @@
  * Phase 7: ItemWorld facade (Stage 0) + Crop/Attention components (Stage 1).
  */
 
-#include "itemworld.h"
-#include "itemcomponents.h"
+#include "item/itemworld.h"
+#include "item/itemcomponents.h"
 #include "contentxform.h"
 
 #include <QtTest/QtTest>

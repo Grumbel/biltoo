@@ -5,8 +5,8 @@
 #define ITEMINTERACTSESSION_H
 
 #include "imageview_types.h"
-#include "itemcomponents.h"
-#include "itemhandle.h"
+#include "item/itemcomponents.h"
+#include "item/itemhandle.h"
 
 class ImageItem;
 

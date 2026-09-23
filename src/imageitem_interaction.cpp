@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageitem.h"
-#include "itemframegeometry.h"
-#include "itemhandlepolicy.h"
+#include "item/itemframegeometry.h"
+#include "item/itemhandlepolicy.h"
 #include "display/displayquality.h"
 #include "biltoo_thread.h"
 

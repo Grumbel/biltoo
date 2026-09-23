@@ -5,7 +5,7 @@
 #include "view/viewtransform.h"
 #include "gallery/gallerypackfit.h"
 #include "imageitem.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 
 #include <QtMath>
 #include <cmath>

@@ -7,7 +7,7 @@
 #include <QList>
 #include <QVector>
 #include <QSizeF>
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include <cmath>
 #include "view/viewtransform.h"
 #include <functional>

@@ -4,9 +4,9 @@
 // Workspace viewport chrome and free-form rotate input (ImageView-owned).
 
 #include "imageview.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "imageitem.h"
-#include "itemhandlepolicy.h"
+#include "item/itemhandlepolicy.h"
 
 #include <QMouseEvent>
 #include "placementlinear.h"

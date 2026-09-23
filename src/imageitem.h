@@ -7,9 +7,9 @@
 #include "imageview_types.h"
 #include "color/coloradjust.h"
 #include "contentxform.h"
-#include "iteminteractsession.h"
-#include "itemhandle.h"
-#include "itemcomponents.h"
+#include "item/iteminteractsession.h"
+#include "item/itemhandle.h"
+#include "item/itemcomponents.h"
 #include <QGraphicsPixmapItem>
 #include <QColor>
 #include <QImage>

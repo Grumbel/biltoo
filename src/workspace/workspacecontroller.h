@@ -5,7 +5,7 @@
 #define WORKSPACECONTROLLER_H
 
 #include "imageview_types.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "gallery/gallerylayout.h"
 
 #include <QHash>

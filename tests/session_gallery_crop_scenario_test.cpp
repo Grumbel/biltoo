@@ -15,8 +15,8 @@
 #include "session/sessionappearance.h"
 #include "session/packorderview.h"
 #include "contentxform.h"
-#include "itemworld.h"
-#include "itemcomponents.h"
+#include "item/itemworld.h"
+#include "item/itemcomponents.h"
 
 #include <QtTest/QtTest>
 

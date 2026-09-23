@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "workspace/grouptransformgeometry.h"
 #include "workspace/pageguidegeometry.h"
 #include "imageitem.h"

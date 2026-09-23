@@ -4,7 +4,7 @@
 // Pending session binds, session-id canvas membership, and load-add placement.
 
 #include "imageview.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "imageitem.h"
 #include "display/imagecache.h"
 #include "session/sessionappearance.h"

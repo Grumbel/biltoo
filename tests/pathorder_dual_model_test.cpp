@@ -15,7 +15,7 @@
  */
 
 #include "session/sessiondocument.h"
-#include "itemworld.h"
+#include "item/itemworld.h"
 #include "session/sessionpathorder.h"
 #include "session/sessionappearance.h"
 #include "session/packorderoverlay.h"

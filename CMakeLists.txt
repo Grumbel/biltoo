@@ -179,14 +179,14 @@ set(BILTOO_LIB_SOURCES
   src/workspace/pageguidesession.h
   src/workspace/pageguidegeometry.cpp
   src/workspace/pageguidegeometry.h
-  src/iteminteractsession.h
-  src/itemframegeometry.cpp
-  src/itemframegeometry.h
+  src/item/iteminteractsession.h
+  src/item/itemframegeometry.cpp
+  src/item/itemframegeometry.h
   src/text/textlayergeometry.cpp
   src/text/textlayergeometry.h
-  src/itemhandle.h
-  src/itemhandlepolicy.cpp
-  src/itemhandlepolicy.h
+  src/item/itemhandle.h
+  src/item/itemhandlepolicy.cpp
+  src/item/itemhandlepolicy.h
   src/workspace/stackgeometry.cpp
   src/workspace/stackgeometry.h
   src/hud/hudflash.h

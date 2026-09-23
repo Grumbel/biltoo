@@ -11,7 +11,7 @@
 #include "imageview_types.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "view/viewtransform.h"
 #include "layoutapplyguard.h"
 #include <QElapsedTimer>

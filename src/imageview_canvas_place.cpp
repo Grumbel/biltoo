@@ -6,7 +6,7 @@
 #include "imageview.h"
 #include "session/packorderview.h"
 #include "imageitem.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "display/imagecache.h"
 #include "session/sessionappearance.h"
 #include "host/thumtoocache.h"

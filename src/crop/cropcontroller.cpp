@@ -4,7 +4,7 @@
 #include "crop/cropcontroller.h"
 
 #include "imageview.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "imageitem.h"
 #include "crop/croppathraster.h"
 #include "crop/cropflash.h"

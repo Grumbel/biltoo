@@ -5,7 +5,7 @@
 #define MAINWINDOW_H
 
 #include "imageview.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "session/sessiondocument.h"
 #include "session/sessionsort.h"
 #include "imageview_types.h"

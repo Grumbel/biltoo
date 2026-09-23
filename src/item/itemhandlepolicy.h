@@ -4,7 +4,7 @@
 #ifndef ITEMHANDLEPOLICY_H
 #define ITEMHANDLEPOLICY_H
 
-#include "itemhandle.h"
+#include "item/itemhandle.h"
 
 #include <QString>
 

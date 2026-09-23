@@ -7,7 +7,7 @@
 #include "imageitem.h"
 #include "contentxform.h"
 #include "session/sessionappearance.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "imageloader.h"

@@ -5,7 +5,7 @@
 #define ITEMWORLD_H
 
 #include "imagesizebook.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "contentxform.h"
 #include "pathitemstatebook.h"
 

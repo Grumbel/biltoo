@@ -13,7 +13,7 @@
 #include <QTimer>
 #include <QImage>
 #include "view/viewtransform.h"
-#include "itemcomponents.h"
+#include "item/itemcomponents.h"
 #include "crop/cropsession.h"
 #include "display/imagecache.h"
 #include "contentxform.h"
