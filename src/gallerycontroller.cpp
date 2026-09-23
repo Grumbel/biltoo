@@ -825,24 +825,46 @@ bool GalleryController::tryMouseMoveGalleryDrag(QMouseEvent *event)
     QDrag drag(m_view);
     drag.setMimeData(mime);
 
-    // Drag ghost: first selected tile's display sample, scaled for visibility.
-    // Multi-select shows a count badge (same idea as filmstrip thumb drag).
+    // Drag ghost: pick the sharpest available sample, then *always* normalize
+    // to kEdge. Gallery LQIP/soft tiles are often ~16–32px; scaling only when
+    // larger left those ghosts tiny.
     {
         ImageItem *previewSrc = selected.isEmpty() ? nullptr : selected.first();
-        QPixmap pix;
+        QImage best;
+        auto consider = [&best](const QImage &img) {
+            if (img.isNull()) {
+                return;
+            }
+            const int le = qMax(img.width(), img.height());
+            const int cur = best.isNull() ? 0 : qMax(best.width(), best.height());
+            if (le > cur) {
+                best = img;
+            }
+        };
         if (previewSrc) {
             if (!previewSrc->pixmap().isNull()) {
-                pix = previewSrc->pixmap();
-            } else {
-                const QImage &img = previewSrc->displayImage();
-                if (!img.isNull()) {
-                    pix = QPixmap::fromImage(img);
+                consider(previewSrc->pixmap().toImage());
+            }
+            consider(previewSrc->displayImage());
+            consider(previewSrc->sourceImage());
+            if (!previewSrc->path().isEmpty()) {
+                // Host soft cache may hold a larger sample than the live tile.
+                consider(ImageCache::get(previewSrc->path(), /*minLongEdge=*/64));
+                if (best.isNull()
+                    || qMax(best.width(), best.height()) < 64) {
+                    consider(ImageCache::get(previewSrc->path()));
                 }
             }
         }
+        QPixmap pix;
+        if (!best.isNull()) {
+            pix = QPixmap::fromImage(best);
+        }
         if (!pix.isNull()) {
             constexpr int kEdge = 128;
-            if (qMax(pix.width(), pix.height()) > kEdge) {
+            // Always target kEdge (upscale LQIP, downscale full) so the ghost
+            // is a consistent, visible size under the cursor.
+            if (qMax(pix.width(), pix.height()) != kEdge) {
                 pix = pix.scaled(kEdge, kEdge, Qt::KeepAspectRatio,
                                  Qt::SmoothTransformation);
             }

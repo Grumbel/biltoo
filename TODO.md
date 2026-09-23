@@ -2,19 +2,19 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2342-gallery-drag-pixmap.**
+**Tip: biltoo-2343-gallery-drag-pixmap-size.**
 
-Gallery session reorder drag shows a thumbnail ghost (tile display sample,
-~128px) with multi-select count badge.
+Gallery drag ghost always normalizes to 128px long edge (upscale LQIP).
+Picks the largest of pixmap / display / source / ImageCache samples.
 
-Requires **thumtoo-323**. Includes 2318–2341.
+Requires **thumtoo-323**. Includes 2318–2342.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2342.1-gallery-drag-pixmap-2f201f6.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2343.1-gallery-drag-pixmap-size-2f201f6.bundle HEAD
 ```
 
-Next: **2343**.
+Next: **2344**.
 
 ## Backlog
-- (reorder covered: filmstrip, Gallery canvas, dialog)
+- (reorder covered)
