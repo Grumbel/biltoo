@@ -471,9 +471,79 @@ inline QVector<PackPose> packPosesFacing(const QVector<QSizeF> &layoutSizes,
     return out;
 }
 
+
+/**
+ * Uniform scale about pack origin so content width equals @p availW (width-fit).
+ * Used after MasonryFill column equalization, which can widen short columns.
+ */
+inline void fitPackPosesToAvailWidth(QVector<PackPose> &out,
+                                     const QVector<QSizeF> &layoutSizes,
+                                     qreal margin, qreal availW)
+{
+    if (out.isEmpty() || availW <= 1e-6) {
+        return;
+    }
+    qreal maxRight = margin;
+    for (int i = 0; i < out.size() && i < layoutSizes.size(); ++i) {
+        if (out.at(i).scale <= 0.0) {
+            continue;
+        }
+        const qreal w = layoutSizes.at(i).width() * out.at(i).scale;
+        maxRight = qMax(maxRight, out.at(i).center.x() + w / 2.0);
+    }
+    const qreal contentW = maxRight - margin;
+    if (contentW <= 1e-6) {
+        return;
+    }
+    const qreal g = availW / contentW;
+    if (qAbs(g - 1.0) < 1e-9) {
+        return;
+    }
+    const QPointF origin(margin, margin);
+    for (int i = 0; i < out.size(); ++i) {
+        out[i].center = origin + (out.at(i).center - origin) * g;
+        out[i].scale *= g;
+    }
+}
+
+/**
+ * Uniform scale about pack origin so content height equals @p availH (height-fit).
+ * Used after MasonryRowsFill row equalization.
+ */
+inline void fitPackPosesToAvailHeight(QVector<PackPose> &out,
+                                      const QVector<QSizeF> &layoutSizes,
+                                      qreal margin, qreal availH)
+{
+    if (out.isEmpty() || availH <= 1e-6) {
+        return;
+    }
+    qreal maxBottom = margin;
+    for (int i = 0; i < out.size() && i < layoutSizes.size(); ++i) {
+        if (out.at(i).scale <= 0.0) {
+            continue;
+        }
+        const qreal h = layoutSizes.at(i).height() * out.at(i).scale;
+        maxBottom = qMax(maxBottom, out.at(i).center.y() + h / 2.0);
+    }
+    const qreal contentH = maxBottom - margin;
+    if (contentH <= 1e-6) {
+        return;
+    }
+    const qreal g = availH / contentH;
+    if (qAbs(g - 1.0) < 1e-9) {
+        return;
+    }
+    const QPointF origin(margin, margin);
+    for (int i = 0; i < out.size(); ++i) {
+        out[i].center = origin + (out.at(i).center - origin) * g;
+        out[i].scale *= g;
+    }
+}
+
 /**
  * MasonryFill: column masonry then uniform scale per column so heights match.
- * Poses are returned in @p layoutSizes order (same as pack input).
+ * Per-column scale widens short columns past availW; a final global fit restores
+ * exact layout width (bottoms stay aligned). Poses in @p layoutSizes order.
  */
 inline QVector<PackPose> packPosesMasonryFill(const QVector<QSizeF> &layoutSizes,
                                               qreal margin, qreal gap, qreal availW,
@@ -535,12 +605,14 @@ inline QVector<PackPose> packPosesMasonryFill(const QVector<QSizeF> &layoutSizes
         }
         x += colWidth + gap;
     }
+    fitPackPosesToAvailWidth(out, layoutSizes, margin, availW);
     return out;
 }
 
 /**
  * MasonryRowsFill: row masonry then uniform scale per row so widths match.
- * Poses are returned in @p layoutSizes order.
+ * Per-row scale can grow height past availH; a final global fit restores exact
+ * layout height (right edges stay aligned). Poses in @p layoutSizes order.
  */
 inline QVector<PackPose> packPosesMasonryRowsFill(const QVector<QSizeF> &layoutSizes,
                                                   qreal margin, qreal gap, qreal availH,
@@ -602,6 +674,7 @@ inline QVector<PackPose> packPosesMasonryRowsFill(const QVector<QSizeF> &layoutS
         }
         y += rowHeight + gap;
     }
+    fitPackPosesToAvailHeight(out, layoutSizes, margin, availH);
     return out;
 }
 

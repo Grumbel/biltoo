@@ -276,25 +276,34 @@ void GalleryLayoutTest::packPoses_masonryFillAndRowsFill()
     QCOMPARE(fill.at(0).center.x(), 25.0);
     QCOMPARE(fill.at(1).center.x(), 85.0);
 
-    // Unequal heights: tall column stretches short one so bottoms align.
-    // col0: 80, col1: 40 → col1 s=2; scales 1 and 2.
+    // Unequal heights: tall column stretches short one so bottoms align, then
+    // global fit restores availW (col1 scale-up had widened past layout width).
+    // Pre-fit: scales 1 and 2, widths 50+10+100=160; g=110/160.
     const QVector<QSizeF> uneven{QSizeF(50, 80), QSizeF(50, 40)};
     const auto u = GalleryLayout::packPosesMasonryFill(uneven, 0.0, 10.0, 110.0, 2);
     QCOMPARE(u.size(), 2);
-    QCOMPARE(u.at(0).scale, 1.0);
-    QCOMPARE(u.at(1).scale, 2.0);
-    // col1 centre y: h/2 = 40 after scale
-    QCOMPARE(u.at(1).center.y(), 40.0);
+    const qreal g = 110.0 / 160.0;
+    QVERIFY(qAbs(u.at(0).scale - 1.0 * g) < 1e-9);
+    QVERIFY(qAbs(u.at(1).scale - 2.0 * g) < 1e-9);
+    // Content right edge at margin+availW.
+    const qreal right0 = u.at(0).center.x() + 50.0 * u.at(0).scale / 2.0;
+    const qreal right1 = u.at(1).center.x() + 50.0 * u.at(1).scale / 2.0;
+    QVERIFY(qAbs(qMax(right0, right1) - 110.0) < 1e-6);
+    // Bottoms still aligned (same max y extent).
+    const qreal bot0 = u.at(0).center.y() + 80.0 * u.at(0).scale / 2.0;
+    const qreal bot1 = u.at(1).center.y() + 40.0 * u.at(1).scale / 2.0;
+    QVERIFY(qAbs(bot0 - bot1) < 1e-6);
 
-    // RowsFill dual: equal heights, unequal widths so axis-fill scale is 1.
-    // row0: 80, row1: 40 → row1 s=2; scales 1 and 2.
+    // RowsFill dual: row equalization then global fit to availH.
+    // Pre-fit: scales 1 and 2, heights 50+10+100=160; g=110/160.
     const QVector<QSizeF> unevenRows{QSizeF(80, 50), QSizeF(40, 50)};
     const auto rows = GalleryLayout::packPosesMasonryRowsFill(unevenRows, 0.0, 10.0, 110.0, 2);
     QCOMPARE(rows.size(), 2);
-    QCOMPARE(rows.at(0).scale, 1.0);
-    QCOMPARE(rows.at(1).scale, 2.0);
-    // row1 centre x: w/2 = 40 after scale
-    QCOMPARE(rows.at(1).center.x(), 40.0);
+    QVERIFY(qAbs(rows.at(0).scale - 1.0 * g) < 1e-9);
+    QVERIFY(qAbs(rows.at(1).scale - 2.0 * g) < 1e-9);
+    const qreal botR0 = rows.at(0).center.y() + 50.0 * rows.at(0).scale / 2.0;
+    const qreal botR1 = rows.at(1).center.y() + 50.0 * rows.at(1).scale / 2.0;
+    QVERIFY(qAbs(qMax(botR0, botR1) - 110.0) < 1e-6);
 }
 
 void GalleryLayoutTest::packPosesForMode_dispatches()
