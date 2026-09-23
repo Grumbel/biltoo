@@ -7,7 +7,6 @@
 #include <QList>
 #include <QPointF>
 #include <QString>
-#include <QPointer>
 #include <QPoint>
 #include <QStringList>
 #include "imageview_types.h"
