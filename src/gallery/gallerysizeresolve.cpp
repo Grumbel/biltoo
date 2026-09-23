@@ -6,6 +6,7 @@
 
 #include "imageview_types.h"
 #include "host/thumtoocache.h"
+#include "display/imagecache.h"
 
 #include <QTimer>
 #include "util/biltoo_thread.h"
@@ -42,14 +43,19 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
         }
         // Do not call isUnsupported on the GUI (Store get_meta). Probes no-op
         // unsupported paths on the worker.
-        if (m_host->hasDefinitiveHostSize(path)) {
-            ++already;
-            continue;
-        }
-        if (const QSize cached =
-                ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
-            isPositiveSize(cached)) {
-            m_host->adoptResolvedSize(path, cached);
+        // Size alone is not enough: underlay (EMB/LQIP) lives on the same Store
+        // size row. Process size memo can survive ImageCache::clear — those
+        // paths must still request_size so underlay is seeded again.
+        const bool sizeKnown = m_host->hasDefinitiveHostSize(path)
+            || isPositiveSize(ThumtooCache::cachedSize(
+                   path, /*scheduleRevalidate=*/false));
+        const bool underlayHot = ImageCache::has(path);
+        if (sizeKnown && underlayHot) {
+            if (!m_host->hasDefinitiveHostSize(path)) {
+                const QSize cached = ThumtooCache::cachedSize(
+                    path, /*scheduleRevalidate=*/false);
+                m_host->adoptResolvedSize(path, cached);
+            }
             ++already;
             continue;
         }
@@ -193,6 +199,9 @@ void GallerySizeResolve::updateProgressHud()
         if (path.isEmpty()) {
             continue;
         }
+        // Settle only when size is in the book (probe completed) or both
+        // process memo and ImageCache underlay are hot. Size-memo alone must
+        // not close the gate — that skipped request_size and left no LQIP.
         if (m_host->hasDefinitiveHostSize(path)) {
             m_pending.remove(path);
             ++m_resolved;
@@ -201,7 +210,7 @@ void GallerySizeResolve::updateProgressHud()
         }
         const QSize cached =
             ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
-        if (!isPositiveSize(cached)) {
+        if (!isPositiveSize(cached) || !ImageCache::has(path)) {
             continue;
         }
         m_host->adoptResolvedSize(path, cached);
