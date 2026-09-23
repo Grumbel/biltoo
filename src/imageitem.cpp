@@ -3,7 +3,7 @@
 
 #include "imageitem.h"
 #include "imageview.h"
-#include "cropgeometry.h"
+#include "crop/cropgeometry.h"
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
 #include "displayquality.h"

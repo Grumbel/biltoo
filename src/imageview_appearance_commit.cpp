@@ -4,7 +4,7 @@
 // Session appearance commit, peer sync, copy, and content-reset.
 
 #include "imageview.h"
-#include "cropsession.h"
+#include "crop/cropsession.h"
 #include "imagecache.h"
 #include "contentxform.h"
 #include "session/sessionappearance.h"

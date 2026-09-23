@@ -8,7 +8,7 @@ Flat `src/` → domain subdirectories. Pattern matches `src/tilelod/`:
 | Phase | Directory | Move | Status |
 |-------|-----------|------|--------|
 | 1 | `src/session/` | Session document, appearance, expand/export/open/sort/reorder, pack order views | **done (2349)** |
-| 2 | `src/crop/` | `crop*`, crop appearance command | next |
+| 2 | `src/crop/` | `crop*`, crop appearance command | **done (2350)** |
 | 3 | `src/gallery/` | gallery controller, layout, pack, size-resolve, decode SM/book | |
 | 4 | `src/shell/` | `mainwindow*`, icons, help panel, centre progress, default apps | |
 | 5 | `src/display/` | imagecache, display pipeline*, display quality/edge, displaysurface | optional pre-tag |

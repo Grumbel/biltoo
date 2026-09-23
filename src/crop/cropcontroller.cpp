@@ -1,21 +1,21 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "cropcontroller.h"
+#include "crop/cropcontroller.h"
 
 #include "imageview.h"
 #include "itemcomponents.h"
 #include "imageitem.h"
-#include "croppathraster.h"
-#include "cropflash.h"
+#include "crop/croppathraster.h"
+#include "crop/cropflash.h"
 #include "placementlinear.h"
 #include "imageitem.h"
-#include "cropappearancecommand.h"
+#include "crop/cropappearancecommand.h"
 #include "viewportupdatehold.h"
-#include "cropdebug.h"
+#include "crop/cropdebug.h"
 #include "session/sessionappearance.h"
 #include <QUndoStack>
-#include "cropgeometry.h"
+#include "crop/cropgeometry.h"
 #include "imagecache.h"
 #include "contentxform.h"
 #include <QGuiApplication>

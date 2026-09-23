@@ -3,7 +3,7 @@
 
 #include "session/sessionappearance.h"
 #include "contentxform.h"
-#include "cropgeometry.h"
+#include "crop/cropgeometry.h"
 #include "viewtransform.h"
 #include "biltoo_thread.h"
 #include "coloradjust.h"

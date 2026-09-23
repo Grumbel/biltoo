@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "cropsession.h"
-#include "cropgeometry.h"
+#include "crop/cropsession.h"
+#include "crop/cropgeometry.h"
 #include "contentxform.h"
 #include "placementlinear.h"
 #include "imageitem.h"

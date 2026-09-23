@@ -4,10 +4,10 @@
 #ifndef CROPCONTROLLER_H
 #define CROPCONTROLLER_H
 
-#include "cropsession.h"
-#include "crophandle.h"
-#include "cropflash.h"
-#include "cropgeometry.h"
+#include "crop/cropsession.h"
+#include "crop/crophandle.h"
+#include "crop/cropflash.h"
+#include "crop/cropgeometry.h"
 #include "imageview_types.h"
 
 #include <QImage>

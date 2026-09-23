@@ -124,8 +124,8 @@ set(BILTOO_LIB_SOURCES
   src/gallerycontroller.cpp
   src/slideshowcontroller.cpp
   src/slideshowcontroller.h
-  src/cropcontroller.cpp
-  src/cropcontroller.h
+  src/crop/cropcontroller.cpp
+  src/crop/cropcontroller.h
   src/attentioncontroller.cpp
   src/attentioncontroller.h
   src/hudmodel.cpp
@@ -159,15 +159,15 @@ set(BILTOO_LIB_SOURCES
   src/imageview_rematerialize.cpp
   src/imageview_bake.cpp
   src/imageview_item_state.cpp
-  src/cropgeometry.cpp
-  src/cropgeometry.h
-  src/cropsession.cpp
-  src/cropsession.h
-  src/cropappearancecommand.cpp
-  src/cropappearancecommand.h
-  src/croppathraster.h
-  src/cropflash.h
-  src/cropdebug.h
+  src/crop/cropgeometry.cpp
+  src/crop/cropgeometry.h
+  src/crop/cropsession.cpp
+  src/crop/cropsession.h
+  src/crop/cropappearancecommand.cpp
+  src/crop/cropappearancecommand.h
+  src/crop/croppathraster.h
+  src/crop/cropflash.h
+  src/crop/cropdebug.h
   src/viewportupdatehold.h
   src/attentionsession.h
   src/attentiongeometry.cpp

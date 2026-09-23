@@ -5,7 +5,7 @@
 #define CROPSESSION_H
 
 #include "imageview_types.h"
-#include "crophandle.h"
+#include "crop/crophandle.h"
 #include "contentxform.h"
 #include "session/sessionappearance.h"
 // WorkspaceItemState is in imageview_types.h

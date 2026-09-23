@@ -13,7 +13,7 @@
 #include <QImage>
 #include "viewtransform.h"
 #include "itemcomponents.h"
-#include "cropsession.h"
+#include "crop/cropsession.h"
 #include "imagecache.h"
 #include "contentxform.h"
 #include "session/sessionappearance.h"

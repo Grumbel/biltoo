@@ -4,7 +4,7 @@
 #ifndef CROPFLASH_H
 #define CROPFLASH_H
 
-#include "cropsession.h"
+#include "crop/cropsession.h"
 
 #include <QCoreApplication>
 #include <QString>
