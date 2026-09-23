@@ -19,5 +19,20 @@ Flat `src/` → domain subdirectories. Pattern matches `src/tilelod/`:
 | 10 | `src/text/` | text layer geometry/session, search policy | **done (2358)** |
 | 11 | `src/shell/` (+fold) | toc panel, thumbnail bar, keyboard shortcuts, EPUB layout dialog | **done (2359)** |
 | 12 | `src/color/` | color adjust pipeline + commit bag | **done (2360)** |
+| 13 | `src/host/` | ThumtooCache, process memos, size probe (host↔Store glue) | **done (2361)** |
+| 14 | `src/display/` (+fold) | TileLoadCoordinator, TileNeighborPrefetch | **done (2362)** |
+| 15 | `src/view/` | ViewTransform, ViewFraming, ViewportChrome, ViewportUpdateHold | **done (2363)** |
+| 16 | `src/slideshow/` (+fold) | ZoomBlur helpers, zoom-region gesture | **done (2364)** |
+| 17 | `src/item/` | item components, frame geometry, handles, interact session, ItemWorld | **done (2365)** |
 | — | `src/tilelod/` | unchanged | done |
-| — | `src/` root | `imageview*`, `imageitem*`, `imageloader`, `pagepath`, `main.cpp`, thumtoo host glue, shared geometry | stay until later |
+| — | `src/` root | `imageview*`, `imageitem*`, `imageloader`, `pagepath`, `main.cpp`, shared bags, contentxform, placementlinear | stay until later |
+
+## Rules
+
+1. One domain per tip/commit stack; no behaviour changes.
+2. Update `BILTOO_LIB_SOURCES` and test source lists.
+3. Includes: `"session/foo.h"` from outside; inside a domain prefer the same
+   prefix (tilelod style) so grep stays uniform.
+4. Build green after the phase.
+
+See also [RELEASE_0.2.0.md](RELEASE_0.2.0.md) §3a.

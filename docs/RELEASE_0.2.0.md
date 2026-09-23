@@ -161,7 +161,7 @@ leaving the façade at `src/` until controllers own more call sites (see
 
 `tilelod/` stays as the reference for how a leaf directory looks.
 
-**Progress:** Phases 1–12 complete through `color/` (2349–2360); shell UI fold-in 2359. See [SRC_LAYOUT.md](SRC_LAYOUT.md).
+**Progress:** Phases 1–17 complete through `item/` (2349–2365); host/view folds 2361–2363. See [SRC_LAYOUT.md](SRC_LAYOUT.md).
 
 ### Out of this move
 
