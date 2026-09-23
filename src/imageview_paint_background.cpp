@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
-#include "textsearchpolicy.h"
+#include "text/textsearchpolicy.h"
 #include "canvaspatterngeometry.h"
 #include "viewtransform.h"
 #include "hud/hudgeometry.h"
 #include "slideshow/slideshowclocks.h"
-#include "textlayergeometry.h"
+#include "text/textlayergeometry.h"
 #include "workspace/pageguidegeometry.h"
 #include "edgenavpolicy.h"
 #include <QElapsedTimer>

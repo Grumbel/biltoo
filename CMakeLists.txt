@@ -182,8 +182,8 @@ set(BILTOO_LIB_SOURCES
   src/iteminteractsession.h
   src/itemframegeometry.cpp
   src/itemframegeometry.h
-  src/textlayergeometry.cpp
-  src/textlayergeometry.h
+  src/text/textlayergeometry.cpp
+  src/text/textlayergeometry.h
   src/itemhandle.h
   src/itemhandlepolicy.cpp
   src/itemhandlepolicy.h
@@ -191,7 +191,7 @@ set(BILTOO_LIB_SOURCES
   src/workspace/stackgeometry.h
   src/hud/hudflash.h
   src/viewframing.h
-  src/textlayersession.h
+  src/text/textlayersession.h
   src/zoomregiongesture.h
   src/canvasbackground.h
   src/layoutprefs.h
@@ -208,8 +208,8 @@ set(BILTOO_LIB_SOURCES
   src/workspace/workspacenavgeometry.h
   src/toolpolicy.h
   src/hud/hudgeometry.h
-  src/textsearchpolicy.h
-  src/textsearchpolicy.cpp
+  src/text/textsearchpolicy.h
+  src/text/textsearchpolicy.cpp
   src/canvaspatterngeometry.h
   src/gallery/galleryrelayoutsuppress.h
   src/layoutapplyguard.h

@@ -16,7 +16,7 @@
 #include "iteminteractsession.h"
 #include "hud/hudflash.h"
 #include "viewframing.h"
-#include "textlayersession.h"
+#include "text/textlayersession.h"
 #include "zoomregiongesture.h"
 #include "canvasbackground.h"
 #include "layoutprefs.h"

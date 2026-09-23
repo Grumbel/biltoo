@@ -5,9 +5,9 @@
 
 #include "imageview.h"
 #include "imageitem.h"
-#include "textlayersession.h"
-#include "textlayergeometry.h"
-#include "textsearchpolicy.h"
+#include "text/textlayersession.h"
+#include "text/textlayergeometry.h"
+#include "text/textsearchpolicy.h"
 #include "thumtoocache.h"
 #include "contentxform.h"
 
