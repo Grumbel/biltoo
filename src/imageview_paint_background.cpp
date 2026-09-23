@@ -9,7 +9,7 @@
 #include "slideshow/slideshowclocks.h"
 #include "text/textlayergeometry.h"
 #include "workspace/pageguidegeometry.h"
-#include "edgenavpolicy.h"
+#include "image/edgenavpolicy.h"
 #include <QElapsedTimer>
 #include <QClipboard>
 #include <QGuiApplication>

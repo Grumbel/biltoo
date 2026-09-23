@@ -52,7 +52,7 @@
 #include "attention/attentioncontroller.h"
 #include "display/displaypipelinecontroller.h"
 #include "workspace/workspacecontroller.h"
-#include "imagecontroller.h"
+#include "image/imagecontroller.h"
 #include "display/pathrasterservice.h"
 #include "display/tile_load_coordinator.h"
 #include "display/displaysurface.h"

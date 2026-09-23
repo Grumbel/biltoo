@@ -13,7 +13,7 @@
 #include "view/viewtransform.h"
 #include "placementlinear.h"
 #include "attention/attentiongeometry.h"
-#include "edgenavpolicy.h"
+#include "image/edgenavpolicy.h"
 #include "pagepath.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"

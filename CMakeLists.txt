@@ -143,8 +143,8 @@ set(BILTOO_LIB_SOURCES
   src/display/tileneighborprefetch.h
   src/workspace/workspacecontroller.cpp
   src/workspace/workspacecontroller.h
-  src/imagecontroller.cpp
-  src/imagecontroller.h
+  src/image/imagecontroller.cpp
+  src/image/imagecontroller.h
   src/imageview_modes.cpp
   src/imageview_canvas.cpp
   src/imageview_canvas_focus.cpp
@@ -234,8 +234,8 @@ set(BILTOO_LIB_SOURCES
   src/session/packorderoverlay.h
   src/display/displayedgepolicy.h
   src/display/displayedgepolicy.cpp
-  src/edgenavpolicy.h
-  src/edgenavpolicy.cpp
+  src/image/edgenavpolicy.h
+  src/image/edgenavpolicy.cpp
   src/slideshow/motionscrollchrome.h
   src/display/lqipdisplaypolicy.h
   src/display/lqipdisplaypolicy.cpp
