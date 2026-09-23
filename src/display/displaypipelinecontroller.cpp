@@ -859,19 +859,25 @@ bool DisplayPipelineController::canAcceptDisplaySample(const ImageItem *item, co
     if (kind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
         return false;
     }
-    // Gallery: LQIP underlay only (≤kLqipMaxEdge). Never soft/HOST whole-frame.
+    // Gallery underlay: ThumbHash LQIP (≤96) or container EMB (≤320). Never
+    // soft/HOST whole-frame PreferCache. request_size often returns EMB >96 —
+    // rejecting those left every cell as a neutral rectangle (2392).
     if (m_view->isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview
-        && !LqipDisplayPolicy::galleryWithinLqipBand(
-               incoming, DisplayQuality::kLqipMaxEdge)) {
+        && incoming > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
         return false;
     }
     if (!item->hasDisplayPixels()) {
-        return true; // blank: LQIP-sized SoftPreview only (gated above)
+        return true; // blank: LQIP/EMB SoftPreview (gated above)
     }
     if (m_view->isGalleryMode() && kind == SessionAppearance::PixelKind::SoftPreview) {
-        // Only larger LQIP; never soft climb.
+        // Larger underlay within the EMB band; never soft climb past that.
+        const int shown = item->displayPixelLongEdge();
+        if (incoming > shown
+            && incoming <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+            return true;
+        }
         return LqipDisplayPolicy::galleryAcceptsLqipUpgrade(
-            item->displayPixelLongEdge(), incoming, DisplayQuality::kLqipMaxEdge);
+            shown, incoming, DisplayQuality::kLqipMaxEdge);
     }
     DisplaySurface::State ds = displaySurfaceStateForItem(item, incoming, false);
     if (m_view->hostCrop().isCropDraftLockedItem(item) || m_view->hostCrop().isCropDraftLockedPath(item->path())) {

@@ -162,10 +162,17 @@ ImageView::ImageView(QWidget *parent)
                     // LQIP may already be in ImageCache (size probe callback).
                     // Still paint blank tiles; never block later soft upgrades.
                     if (isGalleryMode()) {
-                        // ImageCache only on the GUI (cachedLqipImage is a Store
-                        // no-op here). Decode window installs remaining blanks.
-                        const QImage lqip = ImageCache::get(path);
-                        if (!lqip.isNull()) {
+                        // ImageCache only (seeded by request_size SizeReply).
+                        QImage under = ImageCache::get(path);
+                        if (!under.isNull()) {
+                            // Install-only downscale so SoftPreview passes the
+                            // Gallery underlay band (EMB can exceed kLqipMaxEdge).
+                            if (ImageCache::longEdge(under)
+                                > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+                                const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;
+                                under = under.scaled(cap, cap, Qt::KeepAspectRatio,
+                                                     Qt::SmoothTransformation);
+                            }
                             for (ImageItem *item : m_items) {
                                 if (!item || item->path() != path) {
                                     continue;
@@ -173,7 +180,6 @@ ImageView::ImageView(QWidget *parent)
                                 if (item->hasDisplayPixels()) {
                                     continue;
                                 }
-                                // Geometry first — LQIP must not pack from 1×1.
                                 const SessionImageId sid = item->sessionId();
                                 const WorkspaceItemState want =
                                     m_displayPipeline.wantAppearanceForItem(item, sid);
@@ -181,9 +187,14 @@ ImageView::ImageView(QWidget *parent)
                                 if (isPositiveSize(lay) && lay.width() > 1) {
                                     item->setIntrinsicSize(lay);
                                 }
-                                m_displayPipeline.installDisplayPixels(item, lqip,
-                                                     SessionAppearance::PixelKind::SoftPreview,
-                                                     sid);
+                                const int before = item->displayPixelLongEdge();
+                                m_displayPipeline.installDisplayPixels(
+                                    item, under,
+                                    SessionAppearance::PixelKind::SoftPreview, sid);
+                                if (item->displayPixelLongEdge() <= before
+                                    && !under.isNull()) {
+                                    setItemPreviewImage(item, under);
+                                }
                             }
                         }
                     }
