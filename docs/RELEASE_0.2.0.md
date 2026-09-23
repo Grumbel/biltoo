@@ -161,7 +161,7 @@ leaving the façade at `src/` until controllers own more call sites (see
 
 `tilelod/` stays as the reference for how a leaf directory looks.
 
-**Progress:** Phases 1–23 complete through host ArchivePath (2349–2371). Layout effectively done for 0.2.0. See [SRC_LAYOUT.md](SRC_LAYOUT.md).
+**Progress:** Phases 1–31 complete. Root is façade-only (`imageview*`, `imageitem*`, `main.cpp`). See [SRC_LAYOUT.md](SRC_LAYOUT.md).
 
 ### Out of this move
 
