@@ -2,34 +2,30 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2365-src-item-subdir.**
+**Tip: biltoo-2371-src-archivepath-host.**
 
-**Source layout phases 1–17 done** (domain subdirs largely complete for 0.2.0):
+**Source layout phases 1–23 done** — domain subdirs complete for 0.2.0.
 
-| Dir | Contents |
-|-----|----------|
-| `session/` `crop/` `gallery/` `shell/` | document, crop, gallery, chrome UI |
-| `display/` | pipeline, surface, quality, path raster, tile load/prefetch |
+| Dir | Role |
+|-----|------|
+| `session/` `crop/` `gallery/` `shell/` `image/` | session, crop, gallery, chrome, Image mode |
+| `display/` `host/` `tilelod/` | pixels, Store glue, tile LOD |
 | `workspace/` `attention/` `slideshow/` | mode collaborators |
-| `hud/` `text/` `color/` | HUD, text layer, colour grade |
-| `host/` | ThumtooCache + memos + size probe |
-| `view/` | pure view transform/framing/viewport helpers |
-| `item/` | item chrome/components/world (not `imageitem*`) |
-| `tilelod/` | unchanged |
-| `src/` root | `imageview*`, `imageitem*`, loader, pagepath, contentxform, placementlinear, bags |
+| `hud/` `text/` `color/` `view/` `item/` | HUD, text, grade, view geometry, item chrome |
+| `src/` root | `imageview*`, `imageitem*`, loader, pagepath, contentxform, bags |
 
-Static verify: 0 unprefixed domain includes; cmake paths exist except generated `version.h`.
+Static verify: 0 unprefixed domain includes; cmake OK except generated `version.h`.
 
-Next: **RC smoke** (open, Gallery, crop, export, shell icons); pin thumtoo ≥323; VERSION 0.2.0.
+**Next (release path):** RC smoke → pin thumtoo ≥323 → VERSION 0.2.0.
 
 Requires **thumtoo-323**.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2365.1-src-layout-continue-8d5061c.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2371.1-src-layout-continue-8d5061c.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
-- [x] src subdirs phases 1–17
-- [ ] RC smoke (esp. icons.qrc after shell move; crop; export)
+- [x] src subdirs phases 1–23
+- [ ] RC smoke (icons.qrc, Gallery, crop, export)
 - [ ] VERSION 0.2.0 + tag

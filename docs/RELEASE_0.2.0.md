@@ -161,7 +161,7 @@ leaving the façade at `src/` until controllers own more call sites (see
 
 `tilelod/` stays as the reference for how a leaf directory looks.
 
-**Progress:** Phases 1–17 complete through `item/` (2349–2365); host/view folds 2361–2363. See [SRC_LAYOUT.md](SRC_LAYOUT.md).
+**Progress:** Phases 1–23 complete through host ArchivePath (2349–2371). Layout effectively done for 0.2.0. See [SRC_LAYOUT.md](SRC_LAYOUT.md).
 
 ### Out of this move
 
