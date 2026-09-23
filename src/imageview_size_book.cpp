@@ -272,16 +272,28 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         }
         item->setIntrinsicSize(layoutSize);
         any = true;
+        // Drop stale pack clip: square (or wrong-aspect) galleryCellSize was
+        // cropping the updated contentRect until the next pack.
+        if (isGalleryMode() && !item->galleryCellSize().isEmpty()
+            && layoutSize.width() > 0 && layoutSize.height() > 0) {
+            const QSizeF cell = item->galleryCellSize();
+            if (cell.height() > 1e-3 && cell.width() > 1e-3) {
+                const qreal cellAr = cell.width() / cell.height();
+                const qreal layAr =
+                    qreal(layoutSize.width()) / qreal(layoutSize.height());
+                if (qAbs(cellAr - layAr) > 0.04) {
+                    item->setGalleryCellSize({});
+                }
+            }
+        }
         if (isImageMode() && item == targetItem()) {
             preserveImageViewOnLogicalSizeChange(item, cur, layoutSize);
         }
     }
     if (any && isGalleryMode() && !m_layout.isFreeForm()) {
-        // While the open-time size-resolve gate is active, pack once when all
-        // probes settle — not on every sizeReady (avoids thrash + tiny cells).
-        if (!m_gallerySizeResolve.active()) {
-            requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
-        }
+        // ContentChange is allowed during the size gate (prefix pack). Debounced
+        // so sizeReady chunks do not reflow every path.
+        requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
     } else if (any && viewport()) {
         viewport()->update();
     }

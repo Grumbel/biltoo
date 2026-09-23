@@ -1565,27 +1565,30 @@ void GalleryController::rebuildVirtualPlan()
     for (int i = 0; i < pack.size(); ++i) {
         const QString path = pack.pathAt(i);
         const SessionImageId sid = pack.idAt(i);
-        if (sizeGate) {
+        // Never invent square stand-ins (1000²) for pack — that made every cell
+        // square and galleryClipLocal cropped real content into the wrong aspect.
+        // Only definitive probe/fail sizes participate in the plan.
+        if (!book.hasDefinitive(path) && !book.isFailed(path)) {
             if (layoutNeedsAllSizes(m_view->hostLayout().currentMode())) {
-                // Wait for full gate — empty plan until complete.
-                if (!book.hasDefinitive(path) && !book.isFailed(path)) {
-                    m_virtualSlots.clear();
-                    return;
-                }
-            } else if (!book.hasDefinitive(path) && !book.isFailed(path)) {
-                // Ordered progressive: stop plan at first unresolved (prefix only).
-                break;
+                // Wait for full set — empty plan until sizes land.
+                m_virtualSlots.clear();
+                return;
             }
+            // Ordered progressive: stop at first unresolved (prefix only).
+            break;
         }
         // Orient-aware layout size without Store I/O (allowStoreAppearance=false).
-        // book.known alone dropped 90°/flip aspect; full contentLayoutSize could
-        // hit loadContentAppearance per path and froze large opens for minutes.
         QSize lay = m_view->contentLayoutSize(path, sid, /*allowStoreAppearance=*/false);
         if (!isPositiveSize(lay) || lay.width() <= 1) {
             lay = book.known(path);
         }
+        // Still nothing usable — skip row rather than standInNeutral square.
         if (!isPositiveSize(lay) || lay.width() <= 1) {
-            lay = ImageSizeBook::standInNeutral();
+            continue;
+        }
+        // Reject provisional-shaped geometry if it slipped into known().
+        if (book.isProvisional(path) && !book.isFailed(path)) {
+            break;
         }
         VirtualSlot slot;
         slot.path = path;
@@ -1727,8 +1730,12 @@ void GalleryController::syncVirtualWindow()
                 ThumtooCache::scheduleProbe(slot.path);
             }
             const QSize sz = slot.layoutSize.toSize();
-            item = m_view->hostDisplayPipeline().createPlaceholderItem(
-                slot.path, isPositiveSize(sz) ? sz : ImageSizeBook::standInNeutral());
+            // Slot layoutSize is definitive-only (rebuildVirtualPlan); never
+            // invent a square stand-in here.
+            if (!isPositiveSize(sz)) {
+                continue;
+            }
+            item = m_view->hostDisplayPipeline().createPlaceholderItem(slot.path, sz);
             if (!item) {
                 continue;
             }
