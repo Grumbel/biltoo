@@ -7,7 +7,7 @@
 #include "imageview.h"
 #include "session/sessiondocument.h"
 #include "imageitem.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "item/itemcomponents.h"
 #include "session/sessionappearance.h"
 #include "item/selectiongeometry.h"

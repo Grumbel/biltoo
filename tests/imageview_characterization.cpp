@@ -19,7 +19,7 @@
 #include "session/packorderoverlay.h"
 #include "item/itemworld.h"
 #include "item/itemcomponents.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "view/viewframing.h"
 #include "view/viewtransform.h"
 #include "imageview_types.h"

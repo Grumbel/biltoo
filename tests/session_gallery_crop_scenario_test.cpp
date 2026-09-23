@@ -14,7 +14,7 @@
 #include "session/sessionpathorder.h"
 #include "session/sessionappearance.h"
 #include "session/packorderview.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "item/itemworld.h"
 #include "item/itemcomponents.h"
 

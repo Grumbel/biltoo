@@ -8,7 +8,7 @@
 
 namespace ThumtooCache { struct StoredContentAppearance; }
 #include "color/coloradjust.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 
 #include <QImage>
 #include <QRect>

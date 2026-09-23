@@ -13,7 +13,7 @@
 #include "toolpolicy.h"
 #include <QPointer>
 #include <QTimer>
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "session/sessionappearance.h"
 
 void ImageView::setStickyZoomEnabled(bool on)

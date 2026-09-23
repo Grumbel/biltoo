@@ -12,7 +12,7 @@
 #include "imageloader.h"
 #include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 
 #include <QAction>
 #include <QApplication>

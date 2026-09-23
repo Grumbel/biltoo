@@ -4,7 +4,7 @@
 #ifndef DISPLAYSURFACE_H
 #define DISPLAYSURFACE_H
 
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "imageview_types.h"
 
 #include <QHash>

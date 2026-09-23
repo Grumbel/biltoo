@@ -8,7 +8,7 @@
 #include "gallery/gallerylayout.h"
 #include "display/imagecache.h"
 #include "session/sessionappearance.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "display/displayquality.h"
 #include "display/pathrasterservice.h"
 #include "view/viewtransform.h"

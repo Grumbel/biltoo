@@ -256,7 +256,7 @@ set(BILTOO_LIB_SOURCES
   src/imageview_types.h
   src/session/sessionappearance.cpp
   src/session/sessionseedbook.cpp
-  src/contentxform.cpp
+  src/content/contentxform.cpp
   src/session/sessionappearance.h
   src/session/sessionseedbook.h
   src/session/sessiondocument.cpp
@@ -644,7 +644,7 @@ if(Qt6Test_FOUND)
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-sessiondocument-test PRIVATE src)
@@ -674,7 +674,7 @@ if(Qt6Test_FOUND)
     tests/itemworld_test.cpp
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-itemworld-test PRIVATE src)
@@ -704,7 +704,7 @@ if(Qt6Test_FOUND)
       src/session/sessiondocument.cpp
       src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
-      src/contentxform.cpp
+      src/content/contentxform.cpp
       src/color/coloradjust.cpp
     )
     target_include_directories(biltoo-imageview-characterization-test PRIVATE src)
@@ -718,7 +718,7 @@ if(Qt6Test_FOUND)
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-pathorder-dual-model-test PRIVATE src)
@@ -730,7 +730,7 @@ if(Qt6Test_FOUND)
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-packorderview-test PRIVATE src)
@@ -742,7 +742,7 @@ if(Qt6Test_FOUND)
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-packorderoverlay-test PRIVATE src)
@@ -754,7 +754,7 @@ if(Qt6Test_FOUND)
     src/session/sessiondocument.cpp
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-session-gallery-crop-scenario-test PRIVATE src)
@@ -766,7 +766,7 @@ if(Qt6Test_FOUND)
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
     src/session/sessiondocument.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
     src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-sessionappearance-test PRIVATE src)
@@ -775,7 +775,7 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-contentxform-test
     tests/contentxform_test.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
   )
   target_include_directories(biltoo-contentxform-test PRIVATE src)
   target_link_libraries(biltoo-contentxform-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
@@ -785,7 +785,7 @@ if(Qt6Test_FOUND)
   # for every quarter-turn (and flips). Isolates "content rect does not rotate".
   add_executable(biltoo-content-orient-paint-contract-test
     tests/content_orient_paint_contract_test.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
   )
   target_include_directories(biltoo-content-orient-paint-contract-test PRIVATE src)
   target_link_libraries(biltoo-content-orient-paint-contract-test PRIVATE
@@ -796,7 +796,7 @@ if(Qt6Test_FOUND)
   add_executable(biltoo-displaysurface-test
     tests/displaysurface_test.cpp
     src/display/displaysurface.cpp
-    src/contentxform.cpp
+    src/content/contentxform.cpp
   )
   target_include_directories(biltoo-displaysurface-test PRIVATE src)
   target_link_libraries(biltoo-displaysurface-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)

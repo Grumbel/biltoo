@@ -6,7 +6,7 @@
 
 #include "imageview_types.h"
 #include "crop/crophandle.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "session/sessionappearance.h"
 // WorkspaceItemState is in imageview_types.h
 

@@ -4,7 +4,7 @@
 // Image size book, probes, and GallerySizeResolve host methods.
 
 #include "imageview.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "gallery/gallerydecodesm.h"
 #include "display/displayquality.h"
 #include "host/archivepath.h"

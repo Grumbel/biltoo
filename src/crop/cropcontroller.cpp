@@ -17,7 +17,7 @@
 #include <QUndoStack>
 #include "crop/cropgeometry.h"
 #include "display/imagecache.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include <QGuiApplication>
 #include <QPainter>
 #include <QMouseEvent>

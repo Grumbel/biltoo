@@ -21,7 +21,7 @@
 
 #include "imageloader.h"
 #include "display/imagecache.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "session/sessionappearance.h"
 #include "color/coloradjust.h"
 #include "imagesizebook.h"

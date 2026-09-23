@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "session/sessionappearance.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "crop/cropgeometry.h"
 #include "view/viewtransform.h"
 #include "biltoo_thread.h"

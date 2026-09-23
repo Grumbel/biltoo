@@ -9,7 +9,7 @@
 #include "text/textlayergeometry.h"
 #include "text/textsearchpolicy.h"
 #include "host/thumtoocache.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 
 #include <QApplication>
 #include <QClipboard>

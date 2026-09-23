@@ -5,7 +5,7 @@
 
 #include <QPainter>
 #include <QPainterPath>
-#include "contentxform.h"
+#include "content/contentxform.h"
 
 #include <QLineF>
 #include <QTransform>

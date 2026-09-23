@@ -8,7 +8,7 @@
 
 #include "item/itemworld.h"
 #include "item/itemcomponents.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 
 #include <QtTest/QtTest>
 

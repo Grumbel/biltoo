@@ -12,7 +12,7 @@
 #include <QUndoStack>
 #include <QGraphicsItem>
 #include "display/imagecache.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 
 void ImageView::selectBySessionIndices(const QList<int> &indices)
 {

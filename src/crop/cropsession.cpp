@@ -3,7 +3,7 @@
 
 #include "crop/cropsession.h"
 #include "crop/cropgeometry.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "item/placementlinear.h"
 #include "imageitem.h"
 #include "item/itemcomponents.h"

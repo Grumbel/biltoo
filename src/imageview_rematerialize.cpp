@@ -4,7 +4,7 @@
 // Rematerialize, bake flip/rotate, and interactive color-grade commits.
 
 #include "imageview.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "imageitem.h"

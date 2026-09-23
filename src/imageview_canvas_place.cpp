@@ -10,7 +10,7 @@
 #include "display/imagecache.h"
 #include "session/sessionappearance.h"
 #include "host/thumtoocache.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 
 #include <QSet>
 #include <QPointer>

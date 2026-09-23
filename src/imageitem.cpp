@@ -12,7 +12,7 @@
 
 #include "color/coloradjust.h"
 #include "item/placementlinear.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 
 #include <QCursor>
 #include <QGraphicsScene>

@@ -15,7 +15,7 @@
 #include "item/itemcomponents.h"
 #include "crop/cropsession.h"
 #include "display/imagecache.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "session/sessionappearance.h"
 #include "host/thumtoocache.h"
 #include "imageitem.h"

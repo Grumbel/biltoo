@@ -7,7 +7,7 @@
  */
 
 #include "session/sessionappearance.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "session/sessionseedbook.h"
 #include "session/sessiondocument.h"
 #include "item/itemworld.h"

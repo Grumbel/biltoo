@@ -21,7 +21,7 @@
 #include "shell/tocpanel.h"
 #include "shell/helppanel.h"
 #include "host/thumtoocache.h"
-#include "contentxform.h"
+#include "content/contentxform.h"
 #include "session/sessionappearance.h"
 #include "pagepath.h"
 
