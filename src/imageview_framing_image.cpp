@@ -40,22 +40,42 @@ void ImageView::releaseStickyZoom()
 
 
 
+/** True when intrinsic size is large enough that fitInView will not explode. */
+static bool itemHasReliableFrameSize(const ImageItem *item)
+{
+    if (!item) {
+        return false;
+    }
+    const QSize s = item->imageSize();
+    // QSize(1,1) placeholders produced ~5000% view scale via fitInView.
+    return s.width() > 8 && s.height() > 8;
+}
+
 void ImageView::captureStickyPanAnchor(ImageItem *item)
 {
-    // Always sample scale + pan when leaving an image so free navigation
-    // (no sticky Fit/Fill/1:1) can keep the same zoom and relative position.
-    m_framing.clearStickyPan();
-    m_framing.clearPreservedViewScale();
+    // Sample scale + pan when leaving an image so free navigation (and mode
+    // leave/enter) can keep the same zoom and relative position.
     if (!item || !viewport() || !m_scene) {
         return;
     }
     if (!m_items.contains(item) || item->scene() != m_scene) {
         return;
     }
-    const qreal sx = transform().m11();
-    if (qIsFinite(sx) && sx > 1e-6) {
-        m_framing.setPreservedViewScale(sx);
+    // Do not clobber a good preserved scale with a 1×1-placeholder frame.
+    if (!itemHasReliableFrameSize(item)) {
+        return;
     }
+    const qreal sx = ViewTransform::scaleFrom(transform());
+    if (!qIsFinite(sx) || sx <= 1e-6) {
+        return;
+    }
+    // Refuse absurd scales (fit-on-1×1 residue or transform corruption).
+    if (sx > 50.0) {
+        return;
+    }
+    m_framing.clearStickyPan();
+    m_framing.clearPreservedViewScale();
+    m_framing.setPreservedViewScale(sx);
     const QRectF r = item->sceneBoundingRect();
     if (r.width() < 1.0 || r.height() < 1.0) {
         return;
@@ -84,6 +104,12 @@ void ImageView::restoreStickyPanAnchor(ImageItem *item)
 void ImageView::applyImageModeFraming(ImageItem *item)
 {
     if (!item || !isImageMode()) {
+        return;
+    }
+    // Defer framing until the item has a real layout size. Fitting a 1×1
+    // placeholder yields multi-thousand-percent view scale and poisons
+    // preserved zoom for later images.
+    if (!itemHasReliableFrameSize(item)) {
         return;
     }
     if (m_framing.isStickyZoomEnabled()) {
@@ -137,6 +163,13 @@ void ImageView::applyImageModeFraming(ImageItem *item)
     // Non-sticky: keep the previous view scale + relative pan (prev/next at the
     // same zoom). Cold open with no prior capture still defaults to Fit.
     if (m_framing.hasPreservedViewScale()) {
+        const qreal sx = m_framing.currentPreservedViewScale();
+        if (!qIsFinite(sx) || sx <= 1e-6 || sx > 50.0) {
+            m_framing.clearPreservedViewScale();
+            m_framing.setFitOnly();
+            fitItem(item, Qt::KeepAspectRatio);
+            return;
+        }
         m_framing.clearFitFill();
         {
             ItemComponents::Placement pl = item->placement();
@@ -145,7 +178,7 @@ void ImageView::applyImageModeFraming(ImageItem *item)
             item->applyPlacement(pl);
         }
         resetTransform();
-        scale(m_framing.currentPreservedViewScale(), m_framing.currentPreservedViewScale());
+        scale(sx, sx);
         syncImageModeSceneRect(item);
         refreshScrollBarGeometry();
         restoreStickyPanAnchor(item);
@@ -196,8 +229,9 @@ void ImageView::preserveImageViewOnLogicalSizeChange(ImageItem *item,
         if (m_slideshow.hud().isProgressActive() && m_slideshow.settings().isMotionOff()) {
             m_slideshow.applySlideshowZoomFraming(item);
         } else if (!m_slideshow.hud().isProgressActive()) {
-            // Sticky Fill/1:1: reframe + restore pan (fitItem alone recentres).
-            if (m_framing.isStickyZoomEnabled()) {
+            // Sticky or preserved free-zoom: full framing path. fitItem alone
+            // would drop a leave/enter captured scale after a 1×1 placeholder.
+            if (m_framing.isStickyZoomEnabled() || m_framing.hasPreservedViewScale()) {
                 applyImageModeFraming(item);
             } else {
                 fitItem(item, currentFitAspectMode());

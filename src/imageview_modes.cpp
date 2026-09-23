@@ -327,6 +327,15 @@ void ImageView::setViewMode(ViewMode mode)
     // 2) Detach ALL live presentation. After Gallery/Workspace stash, live is
     // already empty; after Image, destroy the underlay so it cannot bleed onto
     // Workspace/Gallery.
+    // Image leave: capture view scale/pan *before* destroying the underlay so
+    // free zoom (and sticky pan) survive Gallery/Workspace round-trips.
+    if (previous == ViewMode::Image && !m_items.isEmpty()) {
+        if (ImageItem *cur = targetItem()) {
+            captureStickyPanAnchor(cur);
+        } else {
+            captureStickyPanAnchor(m_items.first());
+        }
+    }
     if (!m_items.isEmpty()) {
         biltooModeDbg("setViewMode detachLive residual=%d (prev=%d)",
                       itemCount(), static_cast<int>(previous));
@@ -338,10 +347,8 @@ void ImageView::setViewMode(ViewMode mode)
                   static_cast<int>(m_gallery.stashedItems().size()));
 
     // 3) Active mode + 4) attach destination presentation.
-    if (mode != ViewMode::Image) {
-        releaseStickyZoom();
-    }
-
+    // Keep sticky zoom preference across leave/enter — it is an Image framing
+    // preference, not presentation state tied to the underlay.
     if (mode == ViewMode::Image) {
         m_image.enter();
         return;
