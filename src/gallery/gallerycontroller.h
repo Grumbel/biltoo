@@ -97,6 +97,8 @@ public:
     /** Debounced viewport LQIP/tile decode window (scroll). */
     void scheduleDecodeWindowRefresh(int delayMs = 48);
     void updateDecodeWindow();
+    /** During size gate: coalesced rebuildVirtualPlan + syncVirtualWindow. */
+    void scheduleSizeGatePlanRefresh();
     void applyLayout(GalleryPackReason reason);
     /**
      * Ensure live ImageItems only for the viewport window (virtualized).
@@ -165,6 +167,7 @@ private:
 
     QTimer *m_statusRefreshTimer = nullptr;
     QTimer *m_decodeScrollTimer = nullptr;
+    QTimer *m_sizeGatePlanTimer = nullptr;
 
     /** Offline Gallery layout: one slot per session row (not a QGraphicsItem). */
     struct VirtualSlot {

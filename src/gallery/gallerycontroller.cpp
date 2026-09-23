@@ -1805,6 +1805,34 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
     painter->restore();
 }
 
+
+void GalleryController::scheduleSizeGatePlanRefresh()
+{
+    ASSERT_GUI_THREAD();
+    if (!m_view || !m_view->isGalleryMode()) {
+        return;
+    }
+    if (!m_sizeGatePlanTimer) {
+        m_sizeGatePlanTimer = new QTimer(m_view);
+        m_sizeGatePlanTimer->setSingleShot(true);
+        QObject::connect(m_sizeGatePlanTimer, &QTimer::timeout, m_view, [this]() {
+            if (!m_view || !m_view->isGalleryMode()) {
+                return;
+            }
+            if (!m_view->hostGallerySizeResolve().active()) {
+                return;
+            }
+            // Plan + visible window only — no full applyLayout (that froze opens).
+            (void)ensurePlaceholders();
+            if (m_view->viewport()) {
+                m_view->viewport()->update();
+            }
+        });
+    }
+    m_sizeGatePlanTimer->setInterval(40);
+    m_sizeGatePlanTimer->start();
+}
+
 void GalleryController::decodeWatchdogTick()
 {
     if (!m_view->isGalleryMode() || m_view->liveItems().isEmpty()) {

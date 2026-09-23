@@ -20,13 +20,12 @@ PreferCache for underlay.
 
 ## Open path
 
-1. **Size (ground truth)** — batch `scheduleProbeBatch` / warm memos for the
-   session; packaged layouts hold a size gate until each path has a definitive
-   size or an explicit probe failure (no wall-clock timeout).
-2. **Ordered placeholders + pack** — create cells only for the contiguous
-   session-order prefix that already has size (or failure); extend as results
-   arrive; never place out of order or with unknown/1×1 geometry.
-3. **LQIP** — install from ImageCache onto blank cells (never layout authority).
-4. **Tiles** — TileLoadCoordinator issues visible keys; pyramid only when durable
-   coverage is missing.
+See **[GALLERY_OPEN.md](GALLERY_OPEN.md)** for fences and phase order.
+
+1. **Size gate** — `request_size` for the session (warm skip only if size +
+   ImageCache underlay); tiles blocked until the set settles.
+2. **Underlay** — SizeReply EMB/LQIP → ImageCache → `tryInstallGalleryUnderlay`
+   and virtual-slot paint (never layout authority).
+3. **Plan + virtual window** — definitive sizes only; no stand-in squares.
+4. **Tiles** — after gate complete, TileLoadCoordinator for visible cells.
 5. HUD shows resolving progress (`N / M sizes`, failures, rough ETA).

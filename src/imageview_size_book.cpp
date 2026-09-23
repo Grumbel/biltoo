@@ -364,9 +364,10 @@ void ImageView::onSizeResolvePathSettled(const QString &path)
     if (!isGalleryMode() || !m_gallerySizeResolve.active()) {
         return;
     }
-    // Pack exactly once when the gate completes (onSizeResolveGateComplete).
-    // Progressive pack-on-settle reflowed the growing set continuously and
-    // made large opens unresponsive.
+    // Full pack still only on gate complete (avoids continuous reflow).
+    // Coalesced plan/window refresh so virtual cells can show SizeReply underlay
+    // as sizes land without waiting for the whole session.
+    m_gallery.scheduleSizeGatePlanRefresh();
 }
 
 
