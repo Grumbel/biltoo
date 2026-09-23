@@ -94,7 +94,8 @@ public:
     void scheduleDecodeWindowRefresh(int delayMs = 48);
     void updateDecodeWindow();
     void applyLayout(GalleryPackReason reason);
-    void ensurePlaceholders();
+    /** @return true if more items still need creating (caller should re-arm). */
+    bool ensurePlaceholders();
     void decodeWatchdogTick();
     void setGridColumns(int columns);
     void setMasonryColumns(int columns);

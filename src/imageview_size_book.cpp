@@ -352,15 +352,9 @@ void ImageView::onSizeResolvePathSettled(const QString &path)
     if (!isGalleryMode() || !m_gallerySizeResolve.active()) {
         return;
     }
-    // Fill modes: one pack at gate complete only (global aspect needed).
-    if (layoutNeedsAllSizes(m_layout.currentMode())) {
-        return;
-    }
-    // Ordered progressive pack: create + pack coalesced on the layout debounce
-    // timer (ensurePlaceholders once per pack, not per sizeReady).
-    if (!m_layout.isFreeForm()) {
-        requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
-    }
+    // Pack exactly once when the gate completes (onSizeResolveGateComplete).
+    // Progressive pack-on-settle reflowed the growing set continuously and
+    // made large opens unresponsive.
 }
 
 
@@ -395,16 +389,18 @@ void ImageView::onSizeResolveGateComplete()
                 item->setVisible(true);
             }
         }
-        m_gallery.ensurePlaceholders();
-    }
-    if (isGalleryMode() && !m_items.isEmpty() && !m_layout.isFreeForm()) {
-        m_gallery.applyLayout(GalleryPackReason::EnterGallery);
-        m_gallery.updateDecodeWindow();
-        QTimer::singleShot(0, this, [this]() {
-            if (isGalleryMode() && !m_items.isEmpty()) {
-                m_gallery.updateDecodeWindow();
-            }
-        });
+        // Chunked create may return true (more pending) — pack runs once when
+        // the last pulse finishes, not after every partial ensure.
+        const bool more = m_gallery.ensurePlaceholders();
+        if (!more && !m_items.isEmpty() && !m_layout.isFreeForm()) {
+            m_gallery.applyLayout(GalleryPackReason::EnterGallery);
+            m_gallery.updateDecodeWindow();
+            QTimer::singleShot(0, this, [this]() {
+                if (isGalleryMode() && !m_items.isEmpty()) {
+                    m_gallery.updateDecodeWindow();
+                }
+            });
+        }
     }
     if (viewport()) {
         viewport()->update();

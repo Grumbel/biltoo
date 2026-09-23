@@ -75,10 +75,11 @@ ImageView::ImageView(QWidget *parent)
     m_pathOrderOverlay.clearExplicit();
 
     m_scene = new QGraphicsScene(this);
-    // BSP indexing is fragile with frequent add/remove (Duplicate + Delete):
-    // deferred paints can walk a tree that still holds freed items. Linear
-    // search is fine for Workspace/Gallery counts we care about.
-    m_scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    // BSP for viewport queries (items(rect) / hit-test). Gallery layout is not
+    // rebuilt every frame — NoIndex made large sessions scan the full item
+    // list on every paint/query. Duplicate/Delete still go through normal
+    // removeItem; prefer index correctness over avoiding rare BSP edge cases.
+    m_scene->setItemIndexMethod(QGraphicsScene::BspTreeIndex);
     setScene(m_scene);
     connect(m_scene, &QGraphicsScene::selectionChanged, this, [this]() {
         // Rubber-band / programmatic selects: keep Gallery Shift-range anchor

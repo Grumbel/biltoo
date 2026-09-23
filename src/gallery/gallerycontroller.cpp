@@ -1540,12 +1540,12 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 
 // --- Gallery placeholders ---
 
-void GalleryController::ensurePlaceholders()
+bool GalleryController::ensurePlaceholders()
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET_MS("GalleryController::ensurePlaceholders", 8);
     if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()) {
-        return;
+        return false;
     }
     // While the size gate is active, grow an ordered prefix only (session order).
     // Do not clear defer-populate until the gate completes.
@@ -1687,17 +1687,22 @@ void GalleryController::ensurePlaceholders()
     // Reuse the pack snapshot from the loop above (same generation; avoids -Wshadow).
     m_view->reorderItemsByPaths(pack.paths(), pack.ids());
     if (morePlaceholdersPending) {
-        // Yield to the event loop — keep growing without a multi-second stall.
+        // Yield — create only. Do NOT applyLayout every pulse (that reflowed the
+        // whole growing set tens of times and froze large opens). Pack once when
+        // the catch-up finishes (see onSizeResolveGateComplete / callers).
         QTimer::singleShot(0, m_view, [this]() {
             if (!m_view || !m_view->isGalleryMode()) {
                 return;
             }
-            ensurePlaceholders();
-            if (!m_view->hostLayout().isFreeForm() && !m_view->liveItems().isEmpty()) {
-                applyLayout(GalleryPackReason::ContentChange);
+            if (!ensurePlaceholders()) {
+                // Creation finished — one pack for the full set.
+                if (!m_view->hostLayout().isFreeForm() && !m_view->liveItems().isEmpty()) {
+                    applyLayout(GalleryPackReason::EnterGallery);
+                }
             }
         });
     }
+    return morePlaceholdersPending;
 }
 
 

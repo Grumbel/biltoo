@@ -143,8 +143,8 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
         // No decode window until finishGallerySizeResolve packs + shows items.
     } else if (isGalleryMode() && m_items.isEmpty() && !paths.isEmpty()) {
         // Non-fill path should have created items; recover if not.
-        m_gallery.ensurePlaceholders();
-        if (!m_items.isEmpty()) {
+        // Chunked ensure packs once when the last pulse finishes.
+        if (!m_gallery.ensurePlaceholders() && !m_items.isEmpty()) {
             m_gallery.applyLayout(GalleryPackReason::EnterGallery);
             m_gallery.updateDecodeWindow();
         }
@@ -223,11 +223,8 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                 item->setVisible(true);
             }
         }
-        m_gallery.ensurePlaceholders();
-        if (!m_items.isEmpty() && !m_layout.isFreeForm()) {
-            m_gallery.applyLayout(GalleryPackReason::ContentChange);
-            m_gallery.updateDecodeWindow();
-        }
+        // Create ordered prefix only; pack once at size-gate complete.
+        (void)m_gallery.ensurePlaceholders();
         validateUniqueLiveSessionIds("setWorkspacePaths");
         emit statusChanged();
         emit workspacePathsChanged();
