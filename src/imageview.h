@@ -10,7 +10,7 @@
 #include "crop/cropgeometry.h"
 #include "crop/cropflash.h"
 #include "attentionsession.h"
-#include "centreprogress.h"
+#include "shell/centreprogress.h"
 #include "grouptransformsession.h"
 #include "pageguidesession.h"
 #include "iteminteractsession.h"

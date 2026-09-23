@@ -109,12 +109,12 @@
 | File | Reviewed | Notes / issues |
 |------|----------|----------------|
 | `src/main.cpp` | [x] | CLI untranslated; ImageLoader::init before QApp — OK for VIPS |
-| `src/mainwindow.h` | [x] | Large surface area; mode helpers clear |
-| `src/mainwindow.cpp` | [x] | Drop policy matrix; settings; session badge pulse flag |
+| `src/shell/mainwindow.h` | [x] | Large surface area; mode helpers clear |
+| `src/shell/mainwindow.cpp` | [x] | Drop policy matrix; settings; session badge pulse flag |
 | `src/mainwindow_session.cpp` | [x] | Slideshow/Gallery enable; nav actions |
 | `src/mainwindow_gallery.cpp` | [x] | Return-to-gallery; layout entry |
 | `src/mainwindow_ui.cpp` | [x] | Actions/menus/toolbars; shortcut set |
-| `src/mainwindow_includes.h` | [x] | Include hub — OK |
+| `src/shell/mainwindow_includes.h` | [x] | Include hub — OK |
 | `src/imageview.h` | [x] | Many responsibilities (view+controller) |
 | `src/imageview.cpp` | [x] | Load, fit, session position, HUD setters |
 | `src/imageview_input.cpp` | [x] | Paint HUD/chrome, mouse, keys, edges |
@@ -124,11 +124,11 @@
 | `src/imageitem_interaction.cpp` | [x] | Chrome paint/hit; dual hover path (H2) |
 | `src/gallery/gallerylayout.cpp` / `.h` | [x] | Pure packing — OK |
 | `src/thumbnailbar.cpp` / `.h` | [x] | Multi-select, drag, decode pool |
-| `src/preferencesdialog.cpp` / `.h` | [x] | HUD prefs; background; MIME defaults |
-| `src/metadatapanel.cpp` / `.h` | [x] | Side panel |
+| `src/shell/preferencesdialog.cpp` / `.h` | [x] | HUD prefs; background; MIME defaults |
+| `src/shell/metadatapanel.cpp` / `.h` | [x] | Side panel |
 | `src/imageloader.cpp` / `.h` | [x] | Qt then VIPS; suffix list |
-| `src/defaultapps.cpp` / `.h` | [x] | GIO; MIME sync comment |
-| `src/icons.cpp` / `.h` | [x] | Theme fallbacks |
+| `src/shell/defaultapps.cpp` / `.h` | [x] | GIO; MIME sync comment |
+| `src/shell/icons.cpp` / `.h` | [x] | Theme fallbacks |
 | `CMakeLists.txt` | [x] | Qt6, optional VIPS/GIO |
 | `default.nix` / `flake.nix` | [x] | RelWithDebInfo + separateDebugInfo |
 | `data/biltoo.desktop` | [x] | MIME vs loader gap (L6) |

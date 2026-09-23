@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "contentxform.h"
-#include "mainwindow.h"
+#include "shell/mainwindow.h"
 #include "imageview.h"
 #include "thumbnailbar.h"
 #include "session/sessionexport.h"

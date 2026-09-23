@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "mainwindow_includes.h"
+#include "shell/mainwindow_includes.h"
 #include "session/sessionopen.h"
 #include "keyboardshortcutsdialog.h"
 #include "version.h"

@@ -8,7 +8,7 @@
 #  include <gio/gdesktopappinfo.h>
 #endif
 
-#include "defaultapps.h"
+#include "shell/defaultapps.h"
 
 #include <QCoreApplication>
 #include <QHash>

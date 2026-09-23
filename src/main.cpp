@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "mainwindow.h"
+#include "shell/mainwindow.h"
 #include "viewtransform.h"
 #include "biltoo_logging.h"
-#include "metadatapanel.h"
+#include "shell/metadatapanel.h"
 #include "imageloader.h"
 #include "imagecache.h"
 #include "thumtoocache.h"

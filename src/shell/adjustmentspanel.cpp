@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "adjustmentspanel.h"
+#include "shell/adjustmentspanel.h"
 #include "coloradjust.h"
-#include "metadatapanel.h"
+#include "shell/metadatapanel.h"
 
 #include <QFormLayout>
 #include <QGroupBox>

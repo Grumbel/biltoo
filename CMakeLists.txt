@@ -96,24 +96,24 @@ find_package(PkgConfig)
 # Shared so an optional ImageView characterization harness can link the
 # same objects without duplicating the list (docs/IMAGEVIEW_CHARACTERIZATION.md).
 set(BILTOO_LIB_SOURCES
-  src/mainwindow.cpp
-  src/mainwindow_ui.cpp
-  src/mainwindow_gallery.cpp
-  src/mainwindow_session.cpp
-  src/mainwindow_session_remove.cpp
-  src/mainwindow_expand.cpp
-  src/mainwindow_sort.cpp
-  src/mainwindow_nav.cpp
-  src/mainwindow_slideshow.cpp
-  src/mainwindow_clipboard.cpp
-  src/mainwindow_project.cpp
-  src/mainwindow_print.cpp
+  src/shell/mainwindow.cpp
+  src/shell/mainwindow_ui.cpp
+  src/shell/mainwindow_gallery.cpp
+  src/shell/mainwindow_session.cpp
+  src/shell/mainwindow_session_remove.cpp
+  src/shell/mainwindow_expand.cpp
+  src/shell/mainwindow_sort.cpp
+  src/shell/mainwindow_nav.cpp
+  src/shell/mainwindow_slideshow.cpp
+  src/shell/mainwindow_clipboard.cpp
+  src/shell/mainwindow_project.cpp
+  src/shell/mainwindow_print.cpp
   src/session/sessionexport.cpp
   src/session/sessionexport.h
-  src/mainwindow.h
-  src/mainwindow_includes.h
-  src/icons.cpp
-  src/icons.h
+  src/shell/mainwindow.h
+  src/shell/mainwindow_includes.h
+  src/shell/icons.cpp
+  src/shell/icons.h
   src/biltoo_logging.cpp
   src/biltoo_logging.h
   src/gallery/gallerylayout.cpp
@@ -172,7 +172,7 @@ set(BILTOO_LIB_SOURCES
   src/attentionsession.h
   src/attentiongeometry.cpp
   src/attentiongeometry.h
-  src/centreprogress.h
+  src/shell/centreprogress.h
   src/grouptransformsession.h
   src/grouptransformgeometry.cpp
   src/grouptransformgeometry.h
@@ -299,8 +299,8 @@ set(BILTOO_LIB_SOURCES
   src/pagepath.h
   src/thumbnailbar.cpp
   src/thumbnailbar.h
-  src/preferencesdialog.cpp
-  src/preferencesdialog.h
+  src/shell/preferencesdialog.cpp
+  src/shell/preferencesdialog.h
   src/slideshowsettingsdialog.cpp
   src/slideshowsettingsdialog.h
   src/session/sessionreorderdialog.cpp
@@ -309,22 +309,22 @@ set(BILTOO_LIB_SOURCES
   src/epublayoutdialog.h
   src/workspacebackgrounddialog.cpp
   src/workspacebackgrounddialog.h
-  src/metadatapanel.cpp
-  src/metadatapanel.h
-  src/adjustmentspanel.cpp
-  src/adjustmentspanel.h
+  src/shell/metadatapanel.cpp
+  src/shell/metadatapanel.h
+  src/shell/adjustmentspanel.cpp
+  src/shell/adjustmentspanel.h
   src/coloradjust.cpp
   src/coloradjust.h
-  src/layoutpanel.cpp
+  src/shell/layoutpanel.cpp
   src/tocpanel.cpp
   src/tocpanel.h
-  src/helppanel.cpp
-  src/helppanel.h
+  src/shell/helppanel.cpp
+  src/shell/helppanel.h
   src/keyboardshortcutsdialog.cpp
   src/keyboardshortcutsdialog.h
-  src/layoutpanel.h
-  src/defaultapps.cpp
-  src/defaultapps.h
+  src/shell/layoutpanel.h
+  src/shell/defaultapps.cpp
+  src/shell/defaultapps.h
   src/tilelod/lod_planner.cpp
   src/tilelod/draw_plan.cpp
   src/tilelod/tile_memory_cache.cpp
@@ -333,7 +333,7 @@ set(BILTOO_LIB_SOURCES
   src/tilelod/thumtoo_tile_source.cpp
   src/tilelod/tile_lod_controller.cpp
   src/tilelod/tile_lod_registry.cpp
-  src/icons.qrc
+  src/shell/icons.qrc
 )
 
 # Application core as a static library so optional tests (ImageView

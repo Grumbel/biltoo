@@ -10,7 +10,7 @@ Flat `src/` → domain subdirectories. Pattern matches `src/tilelod/`:
 | 1 | `src/session/` | Session document, appearance, expand/export/open/sort/reorder, pack order views | **done (2349)** |
 | 2 | `src/crop/` | `crop*`, crop appearance command | **done (2350)** |
 | 3 | `src/gallery/` | gallery controller, layout, pack, size-resolve, decode SM/book | **done (2351)** |
-| 4 | `src/shell/` | `mainwindow*`, icons, help panel, centre progress, default apps | |
+| 4 | `src/shell/` | `mainwindow*`, icons, help, centre progress, default apps, prefs/panels | **done (2352)** |
 | 5 | `src/display/` | imagecache, display pipeline*, display quality/edge, displaysurface | optional pre-tag |
 | — | `src/tilelod/` | unchanged | done |
 | — | `src/` root | `imageview*`, `imageitem*`, `imageloader`, `pagepath`, `main.cpp`, shared types | stay until later |

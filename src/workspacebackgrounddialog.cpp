@@ -3,7 +3,7 @@
 
 #include "workspacebackgrounddialog.h"
 #include "viewtransform.h"
-#include "icons.h"
+#include "shell/icons.h"
 
 #include <QColorDialog>
 #include <QComboBox>

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "preferencesdialog.h"
+#include "shell/preferencesdialog.h"
 #include "slideshowclocks.h"
 #include "viewtransform.h"
 #include "hudappearance.h"
 #include "slideshowtypes.h"
-#include "defaultapps.h"
-#include "icons.h"
+#include "shell/defaultapps.h"
+#include "shell/icons.h"
 
 #include <QCheckBox>
 #include <QColorDialog>
