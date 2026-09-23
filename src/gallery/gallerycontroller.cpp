@@ -1614,14 +1614,17 @@ void GalleryController::rebuildVirtualPlan()
     QRectF bounds;
     for (int i = 0; i < m_virtualSlots.size() && i < poses.size(); ++i) {
         VirtualSlot &slot = m_virtualSlots[i];
-        slot.pose = poses.at(i);
-        QSizeF cell = slot.pose.cellSize;
+        const GalleryLayout::PackPose &pose = poses.at(i);
+        slot.center = pose.center;
+        slot.scale = pose.scale;
+        slot.cellSize = pose.cellSize;
+        QSizeF cell = slot.cellSize;
         if (cell.isEmpty()) {
-            cell = QSizeF(slot.layoutSize.width() * slot.pose.scale,
-                          slot.layoutSize.height() * slot.pose.scale);
+            cell = QSizeF(slot.layoutSize.width() * slot.scale,
+                          slot.layoutSize.height() * slot.scale);
         }
-        slot.bounds = QRectF(slot.pose.center.x() - cell.width() / 2.0,
-                             slot.pose.center.y() - cell.height() / 2.0,
+        slot.bounds = QRectF(slot.center.x() - cell.width() / 2.0,
+                             slot.center.y() - cell.height() / 2.0,
                              cell.width(), cell.height());
         bounds = bounds.united(slot.bounds);
     }
@@ -1729,15 +1732,15 @@ void GalleryController::syncVirtualWindow()
         }
         keep.insert(item);
         // Apply packed pose.
-        if (!slot.pose.cellSize.isEmpty()) {
-            GalleryLayout::setItemGalleryCellSize(item, slot.pose.cellSize);
+        if (!slot.cellSize.isEmpty()) {
+            GalleryLayout::setItemGalleryCellSize(item, slot.cellSize);
         } else {
             GalleryLayout::setItemGalleryCellSize(item, {});
         }
         ItemComponents::Placement pl = item->placement();
-        pl.pos = slot.pose.center;
-        pl.scale = slot.pose.scale;
-        pl.scaleY = slot.pose.scale;
+        pl.pos = slot.center;
+        pl.scale = slot.scale;
+        pl.scaleY = slot.scale;
         pl.shear = 0.0;
         pl.rotation = 0.0;
         pl.hFlip = false;

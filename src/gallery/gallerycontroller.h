@@ -168,7 +168,9 @@ private:
         QString path;
         SessionImageId id = kInvalidSessionImageId;
         QSizeF layoutSize;
-        GalleryLayout::PackPose pose;
+        QPointF center;
+        qreal scale = 1.0;
+        QSizeF cellSize; // GridCrop clip; empty otherwise
         QRectF bounds; // scene bounds of packed cell
     };
     QVector<VirtualSlot> m_virtualSlots;
