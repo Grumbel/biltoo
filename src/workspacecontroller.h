@@ -6,7 +6,7 @@
 
 #include "imageview_types.h"
 #include "itemcomponents.h"
-#include "gallerylayout.h"
+#include "gallery/gallerylayout.h"
 
 #include <QHash>
 #include <QList>

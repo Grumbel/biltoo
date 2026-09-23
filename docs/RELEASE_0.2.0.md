@@ -161,7 +161,7 @@ leaving the façade at `src/` until controllers own more call sites (see
 
 `tilelod/` stays as the reference for how a leaf directory looks.
 
-**Progress:** Phase 1 `src/session/` (2349), phase 2 `src/crop/` (2350). See [SRC_LAYOUT.md](SRC_LAYOUT.md).
+**Progress:** Phases 1–3: `session/` (2349), `crop/` (2350), `gallery/` (2351). See [SRC_LAYOUT.md](SRC_LAYOUT.md).
 
 ### Out of this move
 

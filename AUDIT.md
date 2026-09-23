@@ -122,7 +122,7 @@
 | `src/imageview_types.h` | [x] | Shared enums/structs |
 | `src/imageitem.h` / `.cpp` | [x] | Transform state; contentSceneRect |
 | `src/imageitem_interaction.cpp` | [x] | Chrome paint/hit; dual hover path (H2) |
-| `src/gallerylayout.cpp` / `.h` | [x] | Pure packing — OK |
+| `src/gallery/gallerylayout.cpp` / `.h` | [x] | Pure packing — OK |
 | `src/thumbnailbar.cpp` / `.h` | [x] | Multi-select, drag, decode pool |
 | `src/preferencesdialog.cpp` / `.h` | [x] | HUD prefs; background; MIME defaults |
 | `src/metadatapanel.cpp` / `.h` | [x] | Side panel |

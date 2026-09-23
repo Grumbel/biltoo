@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "gallerylayout.h"
+#include "gallery/gallerylayout.h"
 #include "viewtransform.h"
-#include "gallerypackfit.h"
+#include "gallery/gallerypackfit.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
 

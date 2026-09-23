@@ -12,8 +12,8 @@
 #include "imageview.h"
 #include "session/sessionbindbook.h"
 #include <QUndoStack>
-#include "gallerypackfit.h"
-#include "gallerylayout.h"
+#include "gallery/gallerypackfit.h"
+#include "gallery/gallerylayout.h"
 #include "imageitem.h"
 #include "placementlinear.h"
 #include <QMouseEvent>

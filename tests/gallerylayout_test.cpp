@@ -7,8 +7,8 @@
  * No ImageItem / QGraphicsView.
  */
 
-#include "gallerylayout.h"
-#include "gallerypackfit.h"
+#include "gallery/gallerylayout.h"
+#include "gallery/gallerypackfit.h"
 
 #include <QtTest/QtTest>
 

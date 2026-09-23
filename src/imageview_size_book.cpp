@@ -5,7 +5,7 @@
 
 #include "imageview.h"
 #include "contentxform.h"
-#include "gallerydecodesm.h"
+#include "gallery/gallerydecodesm.h"
 #include "displayquality.h"
 #include "archivepath.h"
 #include "pagepath.h"

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
-#include "gallerydecodesm.h"
+#include "gallery/gallerydecodesm.h"
 #include "displayquality.h"
 
 #include <QCoreApplication>
@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include "archivepath.h"
 #include "pagepath.h"
-#include "gallerylayout.h"
+#include "gallery/gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
 #include "imagecache.h"

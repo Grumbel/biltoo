@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
-#include "gallerydecodesm.h"
+#include "gallery/gallerydecodesm.h"
 #include "toolpolicy.h"
 #include "workspacenavgeometry.h"
 #include "grouptransformgeometry.h"
@@ -12,7 +12,7 @@
 #include "attentiongeometry.h"
 #include "edgenavpolicy.h"
 #include "pagepath.h"
-#include "gallerylayout.h"
+#include "gallery/gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
 

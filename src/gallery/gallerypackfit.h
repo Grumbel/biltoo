@@ -4,7 +4,7 @@
 #ifndef GALLERYPACKFIT_H
 #define GALLERYPACKFIT_H
 
-#include "gallerylayout.h"
+#include "gallery/gallerylayout.h"
 #include "imageview_types.h"
 
 #include <QRectF>

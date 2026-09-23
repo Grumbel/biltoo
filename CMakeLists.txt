@@ -116,12 +116,12 @@ set(BILTOO_LIB_SOURCES
   src/icons.h
   src/biltoo_logging.cpp
   src/biltoo_logging.h
-  src/gallerylayout.cpp
-  src/gallerylayout.h
+  src/gallery/gallerylayout.cpp
+  src/gallery/gallerylayout.h
   src/imageview.cpp
   src/imageview_accessors.cpp
   src/imageview_size_book.cpp
-  src/gallerycontroller.cpp
+  src/gallery/gallerycontroller.cpp
   src/slideshowcontroller.cpp
   src/slideshowcontroller.h
   src/crop/cropcontroller.cpp
@@ -136,9 +136,9 @@ set(BILTOO_LIB_SOURCES
   src/displaypipeline_jobs.cpp
   src/displaypipeline_jobs.h
   src/displaypipelinecontroller.h
-  src/gallerycontroller.h
-  src/gallerysizeresolve.cpp
-  src/gallerysizeresolve.h
+  src/gallery/gallerycontroller.h
+  src/gallery/gallerysizeresolve.cpp
+  src/gallery/gallerysizeresolve.h
   src/tileneighborprefetch.cpp
   src/tileneighborprefetch.h
   src/workspacecontroller.cpp
@@ -198,10 +198,10 @@ set(BILTOO_LIB_SOURCES
   src/viewportchrome.h
   src/hudappearance.h
   src/session/sessionchrome.h
-  src/gallerydecodebook.h
+  src/gallery/gallerydecodebook.h
   src/perfstats.h
   src/layoutdebounce.h
-  src/gallerypackfit.h
+  src/gallery/gallerypackfit.h
   src/selectiongeometry.h
   src/coloradjustcommit.h
   src/viewtransform.h
@@ -211,7 +211,7 @@ set(BILTOO_LIB_SOURCES
   src/textsearchpolicy.h
   src/textsearchpolicy.cpp
   src/canvaspatterngeometry.h
-  src/galleryrelayoutsuppress.h
+  src/gallery/galleryrelayoutsuppress.h
   src/layoutapplyguard.h
   src/imagesizebook.h
   src/pathitemstatebook.h
@@ -286,8 +286,8 @@ set(BILTOO_LIB_SOURCES
   src/pathrasterservice.h
   src/rasterclimbsm.cpp
   src/rasterclimbsm.h
-  src/gallerydecodesm.cpp
-  src/gallerydecodesm.h
+  src/gallery/gallerydecodesm.cpp
+  src/gallery/gallerydecodesm.h
   src/thumtoocache.cpp
   src/thumtoocache.h
   src/thumtoo_process_memos.cpp
@@ -625,7 +625,7 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-gallerydecodesm-test
     tests/gallerydecodesm_test.cpp
-    src/gallerydecodesm.cpp
+    src/gallery/gallerydecodesm.cpp
   )
   target_include_directories(biltoo-gallerydecodesm-test PRIVATE src)
   target_link_libraries(biltoo-gallerydecodesm-test PRIVATE Qt6::Core Qt6::Test)

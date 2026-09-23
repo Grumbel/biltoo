@@ -6,7 +6,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "imagecache.h"
-#include "gallerydecodesm.h"
+#include "gallery/gallerydecodesm.h"
 #include "displayquality.h"
 
 #include <QSet>

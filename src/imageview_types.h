@@ -11,7 +11,7 @@
 #include <QSize>
 #include <QString>
 
-#include "gallerydecodesm.h"
+#include "gallery/gallerydecodesm.h"
 #include <QVector>
 #include "coloradjust.h"
 #include <QtGlobal>

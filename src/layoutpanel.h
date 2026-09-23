@@ -4,7 +4,7 @@
 #ifndef LAYOUTPANEL_H
 #define LAYOUTPANEL_H
 
-#include "gallerylayout.h"
+#include "gallery/gallerylayout.h"
 
 #include <QWidget>
 

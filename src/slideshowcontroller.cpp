@@ -5,7 +5,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
-#include "gallerylayout.h"
+#include "gallery/gallerylayout.h"
 #include "imagecache.h"
 #include "session/sessionappearance.h"
 #include "contentxform.h"

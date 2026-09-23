@@ -13,7 +13,7 @@
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
 #include "pagepath.h"
-#include "gallerydecodesm.h"
+#include "gallery/gallerydecodesm.h"
 #include "displayquality.h"
 #include "lqipdisplaypolicy.h"
 #include "biltoo_thread.h"

@@ -4,7 +4,7 @@
 #ifndef IMAGEVIEW_H
 #define IMAGEVIEW_H
 #include "imageview_types.h"
-#include "gallerysizeresolve.h"
+#include "gallery/gallerysizeresolve.h"
 #include "tileneighborprefetch.h"
 #include "crop/cropsession.h"
 #include "crop/cropgeometry.h"
@@ -23,11 +23,11 @@
 #include "viewportchrome.h"
 #include "hudappearance.h"
 #include "session/sessionchrome.h"
-#include "gallerydecodebook.h"
+#include "gallery/gallerydecodebook.h"
 #include "perfstats.h"
 #include "coloradjustcommit.h"
 #include "layoutdebounce.h"
-#include "galleryrelayoutsuppress.h"
+#include "gallery/galleryrelayoutsuppress.h"
 #include "layoutapplyguard.h"
 #include "imagesizebook.h"
 #include "pathitemstatebook.h"
@@ -46,7 +46,7 @@
 #include "session/sessionseedbook.h"
 #include "itemworld.h"
 #include "session/sessiondocument.h"
-#include "gallerycontroller.h"
+#include "gallery/gallerycontroller.h"
 #include "slideshowcontroller.h"
 #include "crop/cropcontroller.h"
 #include "attentioncontroller.h"
@@ -56,7 +56,7 @@
 #include "pathrasterservice.h"
 #include "tile_load_coordinator.h"
 #include "displaysurface.h"
-#include "gallerylayout.h"
+#include "gallery/gallerylayout.h"
 #include <QColor>
 #include <QPixmap>
 #include <QElapsedTimer>

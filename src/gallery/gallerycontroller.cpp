@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "gallerycontroller.h"
+#include "gallery/gallerycontroller.h"
 #include <memory>
 #include <QFileInfo>
 #include "thumtoocache.h"
@@ -9,7 +9,7 @@
 #include "session/packorderview.h"
 #include "session/sessionbindbook.h"
 #include "imageview_types.h"
-#include "gallerylayout.h"
+#include "gallery/gallerylayout.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
 #include "viewtransform.h"
@@ -18,11 +18,11 @@
 #include "session/sessionappearance.h"
 #include "biltoo_logging.h"
 #include "biltoo_thread.h"
-#include "gallerypackfit.h"
+#include "gallery/gallerypackfit.h"
 #include "imagecache.h"
 #include "displayquality.h"
 #include "workspacenavgeometry.h"
-#include "gallerydecodesm.h"
+#include "gallery/gallerydecodesm.h"
 #include <functional>
 
 #include <QScrollBar>
