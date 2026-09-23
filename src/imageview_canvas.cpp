@@ -8,7 +8,7 @@
 #include <QtMath>
 #include "workspacegeometry.h"
 #include "viewtransform.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "ttfp_trace.h"
 #include "imagecache.h"
 #include "imageitem.h"

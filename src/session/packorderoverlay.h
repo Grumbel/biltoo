@@ -4,9 +4,9 @@
 #ifndef PACKORDEROVERLAY_H
 #define PACKORDEROVERLAY_H
 
-#include "packorderview.h"
-#include "sessiondocument.h"
-#include "sessionpathorder.h"
+#include "session/packorderview.h"
+#include "session/sessiondocument.h"
+#include "session/sessionpathorder.h"
 
 #include <QString>
 #include <QStringList>

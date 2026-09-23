@@ -10,7 +10,7 @@
 #include <QPoint>
 #include <QStringList>
 #include "imageview_types.h"
-#include "packorderview.h"
+#include "session/packorderview.h"
 
 class ImageView;
 class ImageItem;

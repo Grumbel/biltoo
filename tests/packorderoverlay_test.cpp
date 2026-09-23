@@ -9,7 +9,7 @@
  * SessionDocument still has membership (mode-leave / pathOrderClear).
  */
 
-#include "packorderoverlay.h"
+#include "session/packorderoverlay.h"
 
 #include <QtTest/QtTest>
 

@@ -4,11 +4,11 @@
 // Add / place / move images onto the canvas.
 
 #include "imageview.h"
-#include "packorderview.h"
+#include "session/packorderview.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
 #include "imagecache.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "thumtoocache.h"
 #include "contentxform.h"
 

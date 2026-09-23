@@ -12,11 +12,11 @@
  * pack-order / appearance invariants (decode/framing still soft).
  */
 
-#include "sessiondocument.h"
-#include "sessionpathorder.h"
-#include "sessionappearance.h"
-#include "packorderview.h"
-#include "packorderoverlay.h"
+#include "session/sessiondocument.h"
+#include "session/sessionpathorder.h"
+#include "session/sessionappearance.h"
+#include "session/packorderview.h"
+#include "session/packorderoverlay.h"
 #include "itemworld.h"
 #include "itemcomponents.h"
 #include "contentxform.h"

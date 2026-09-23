@@ -49,7 +49,7 @@ delete prune, aligned pack-order case, and mode-leave clear vs document.
 
 Offscreen ImageView harness plan: [IMAGEVIEW_CHARACTERIZATION.md](IMAGEVIEW_CHARACTERIZATION.md).
 
-`PackOrderView` (`src/packorderview.h`) is an immutable paths∥ids snapshot with
+`PackOrderView` (`src/session/packorderview.h`) is an immutable paths∥ids snapshot with
 `fromBook` / `fromDocument` factories. Gallery pack will eventually walk a
 `PackOrderView` so Tier 4 can switch the source without rewriting pack loops.
 Characterization: `tests/packorderview_test.cpp` (`packorderview` CTest).
@@ -67,7 +67,7 @@ paths∥ids (or `PackOrderView`).
 
 ## PackOrderOverlay (tips 1881–1884)
 
-Owner of view pack-order state. Header: `src/packorderoverlay.h`.
+Owner of view pack-order state. Header: `src/session/packorderoverlay.h`.
 Characterization: `tests/packorderoverlay_test.cpp` (`packorderoverlay` CTest).
 
 ### Modes

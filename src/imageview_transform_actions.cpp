@@ -7,7 +7,7 @@
 #include "stackgeometry.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "imageitem.h"
 
 #include <QUndoCommand>

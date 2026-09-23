@@ -7,7 +7,7 @@
 #include "imageview_types.h"
 #include "crophandle.h"
 #include "contentxform.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 // WorkspaceItemState is in imageview_types.h
 
 #include <QImage>

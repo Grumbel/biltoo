@@ -4,7 +4,7 @@
 #ifndef DISPLAYPIPELINE_JOBS_H
 #define DISPLAYPIPELINE_JOBS_H
 
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 
 #include <QImage>
 #include <QPointer>

@@ -6,7 +6,7 @@
 #include "imageview.h"
 #include "itemcomponents.h"
 #include "imageitem.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 
 #include <QSet>
 #include <QUndoStack>

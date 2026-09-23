@@ -108,8 +108,8 @@ set(BILTOO_LIB_SOURCES
   src/mainwindow_clipboard.cpp
   src/mainwindow_project.cpp
   src/mainwindow_print.cpp
-  src/sessionexport.cpp
-  src/sessionexport.h
+  src/session/sessionexport.cpp
+  src/session/sessionexport.h
   src/mainwindow.h
   src/mainwindow_includes.h
   src/icons.cpp
@@ -197,7 +197,7 @@ set(BILTOO_LIB_SOURCES
   src/layoutprefs.h
   src/viewportchrome.h
   src/hudappearance.h
-  src/sessionchrome.h
+  src/session/sessionchrome.h
   src/gallerydecodebook.h
   src/perfstats.h
   src/layoutdebounce.h
@@ -228,10 +228,10 @@ set(BILTOO_LIB_SOURCES
   src/zoomblurhelpers.h
   src/zoomblurhelpers.cpp
   src/loadgeneration.h
-  src/sessionloadgate.h
-  src/sessionbindbook.h
-  src/sessionpathorder.h
-  src/packorderoverlay.h
+  src/session/sessionloadgate.h
+  src/session/sessionbindbook.h
+  src/session/sessionpathorder.h
+  src/session/packorderoverlay.h
   src/displayedgepolicy.h
   src/displayedgepolicy.cpp
   src/edgenavpolicy.h
@@ -254,19 +254,19 @@ set(BILTOO_LIB_SOURCES
   src/imageview_group.cpp
   src/imageview.h
   src/imageview_types.h
-  src/sessionappearance.cpp
-  src/sessionseedbook.cpp
+  src/session/sessionappearance.cpp
+  src/session/sessionseedbook.cpp
   src/contentxform.cpp
-  src/sessionappearance.h
-  src/sessionseedbook.h
-  src/sessiondocument.cpp
-  src/sessiondocument.h
-  src/sessionopen.cpp
-  src/sessionopen.h
-  src/sessionsort.cpp
-  src/sessionsort.h
-  src/sessionexpand.cpp
-  src/sessionexpand.h
+  src/session/sessionappearance.h
+  src/session/sessionseedbook.h
+  src/session/sessiondocument.cpp
+  src/session/sessiondocument.h
+  src/session/sessionopen.cpp
+  src/session/sessionopen.h
+  src/session/sessionsort.cpp
+  src/session/sessionsort.h
+  src/session/sessionexpand.cpp
+  src/session/sessionexpand.h
   src/projectfile.cpp
   src/projectfile.h
   src/placementlinear.cpp
@@ -303,8 +303,8 @@ set(BILTOO_LIB_SOURCES
   src/preferencesdialog.h
   src/slideshowsettingsdialog.cpp
   src/slideshowsettingsdialog.h
-  src/sessionreorderdialog.cpp
-  src/sessionreorderdialog.h
+  src/session/sessionreorderdialog.cpp
+  src/session/sessionreorderdialog.h
   src/epublayoutdialog.cpp
   src/epublayoutdialog.h
   src/workspacebackgrounddialog.cpp
@@ -641,9 +641,9 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-sessiondocument-test
     tests/sessiondocument_test.cpp
-    src/sessiondocument.cpp
-    src/sessionappearance.cpp
-    src/sessionseedbook.cpp
+    src/session/sessiondocument.cpp
+    src/session/sessionappearance.cpp
+    src/session/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -653,7 +653,7 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-sessionsort-test
     tests/sessionsort_test.cpp
-    src/sessionsort.cpp
+    src/session/sessionsort.cpp
     src/pagepath.cpp
     src/archivepath.cpp
   )
@@ -672,8 +672,8 @@ if(Qt6Test_FOUND)
   # Links SessionAppearanceStore (ItemWorld dual-writes DTO + sparse tables).
   add_executable(biltoo-itemworld-test
     tests/itemworld_test.cpp
-    src/sessionappearance.cpp
-    src/sessionseedbook.cpp
+    src/session/sessionappearance.cpp
+    src/session/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -701,9 +701,9 @@ if(Qt6Test_FOUND)
     message(STATUS "ImageView characterization: pure scaffold only (-DBILTOO_IMAGEVIEW_CHARACTERIZATION=OFF)")
     add_executable(biltoo-imageview-characterization-test
       tests/imageview_characterization.cpp
-      src/sessiondocument.cpp
-      src/sessionappearance.cpp
-    src/sessionseedbook.cpp
+      src/session/sessiondocument.cpp
+      src/session/sessionappearance.cpp
+    src/session/sessionseedbook.cpp
       src/contentxform.cpp
       src/coloradjust.cpp
     )
@@ -715,9 +715,9 @@ if(Qt6Test_FOUND)
   # Dual model: SessionDocument vs SessionPathOrder independence (PATH_ORDER.md).
   add_executable(biltoo-pathorder-dual-model-test
     tests/pathorder_dual_model_test.cpp
-    src/sessiondocument.cpp
-    src/sessionappearance.cpp
-    src/sessionseedbook.cpp
+    src/session/sessiondocument.cpp
+    src/session/sessionappearance.cpp
+    src/session/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -727,9 +727,9 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-packorderview-test
     tests/packorderview_test.cpp
-    src/sessiondocument.cpp
-    src/sessionappearance.cpp
-    src/sessionseedbook.cpp
+    src/session/sessiondocument.cpp
+    src/session/sessionappearance.cpp
+    src/session/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -739,9 +739,9 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-packorderoverlay-test
     tests/packorderoverlay_test.cpp
-    src/sessiondocument.cpp
-    src/sessionappearance.cpp
-    src/sessionseedbook.cpp
+    src/session/sessiondocument.cpp
+    src/session/sessionappearance.cpp
+    src/session/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -751,9 +751,9 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-session-gallery-crop-scenario-test
     tests/session_gallery_crop_scenario_test.cpp
-    src/sessiondocument.cpp
-    src/sessionappearance.cpp
-    src/sessionseedbook.cpp
+    src/session/sessiondocument.cpp
+    src/session/sessionappearance.cpp
+    src/session/sessionseedbook.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )
@@ -763,9 +763,9 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-sessionappearance-test
     tests/sessionappearance_test.cpp
-    src/sessionappearance.cpp
-    src/sessionseedbook.cpp
-    src/sessiondocument.cpp
+    src/session/sessionappearance.cpp
+    src/session/sessionseedbook.cpp
+    src/session/sessiondocument.cpp
     src/contentxform.cpp
     src/coloradjust.cpp
   )

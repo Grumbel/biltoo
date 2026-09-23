@@ -6,8 +6,8 @@
 
 #include "imageview.h"
 #include "itemcomponents.h"
-#include "sessiondocument.h"
-#include "sessionsort.h"
+#include "session/sessiondocument.h"
+#include "session/sessionsort.h"
 #include "imageview_types.h"
 #include "projectfile.h"
 

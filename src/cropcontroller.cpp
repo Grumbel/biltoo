@@ -13,7 +13,7 @@
 #include "cropappearancecommand.h"
 #include "viewportupdatehold.h"
 #include "cropdebug.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include <QUndoStack>
 #include "cropgeometry.h"
 #include "imagecache.h"

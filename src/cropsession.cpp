@@ -7,7 +7,7 @@
 #include "placementlinear.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
 #include "imageloader.h"

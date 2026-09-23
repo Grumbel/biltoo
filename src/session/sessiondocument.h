@@ -5,7 +5,7 @@
 #define SESSIONDOCUMENT_H
 
 #include "imageview_types.h"
-#include "sessionseedbook.h"
+#include "session/sessionseedbook.h"
 
 #include <QString>
 #include <QList>

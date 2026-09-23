@@ -13,7 +13,7 @@
 #include "imageloader.h"
 #include "imagecache.h"
 #include "thumtoocache.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "biltoo_logging.h"
 
 #include <QFileInfo>

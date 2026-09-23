@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "sessionexport.h"
+#include "session/sessionexport.h"
 
 #include "biltoo_thread.h"
 #include "imageloader.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "pagepath.h"
 #include "archivepath.h"
 

@@ -5,7 +5,7 @@
 #include "mainwindow.h"
 #include "imageview.h"
 #include "thumbnailbar.h"
-#include "sessionexport.h"
+#include "session/sessionexport.h"
 
 #include <QFileDialog>
 #include <QDialog>

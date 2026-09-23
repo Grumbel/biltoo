@@ -5,7 +5,7 @@
  * Characterization for PackOrderView (Tier 4 pack-order snapshot).
  */
 
-#include "packorderview.h"
+#include "session/packorderview.h"
 
 #include <QtTest/QtTest>
 

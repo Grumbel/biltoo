@@ -11,7 +11,7 @@
 #include "imagecache.h"
 #include "imageloader.h"
 #include "thumtoocache.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "contentxform.h"
 
 #include <QAction>

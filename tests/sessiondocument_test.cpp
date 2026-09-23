@@ -9,7 +9,7 @@
  * setPaths clears fat appearance (Open/Replace); replaceAll keeps it (sort).
  */
 
-#include "sessiondocument.h"
+#include "session/sessiondocument.h"
 
 #include <QtTest/QtTest>
 

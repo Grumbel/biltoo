@@ -3,7 +3,7 @@
 
 #include "hudmodel.h"
 
-#include "sessionchrome.h"
+#include "session/sessionchrome.h"
 #include "displayedgepolicy.h"
 
 #include <QCoreApplication>

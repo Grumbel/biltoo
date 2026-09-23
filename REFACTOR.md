@@ -688,7 +688,7 @@ LoadAdd multiplicity still matter.
 **Policy type (tip 1873, removed 1887):** former `PackOrderReadSource` +
 `packOrderForRead()` — pack reads now only via overlay resolve.
 
-**PackOrderOverlay (tip 1881):** design type in `src/packorderoverlay.h` with
+**PackOrderOverlay (tip 1881):** design type in `src/session/packorderoverlay.h` with
 FollowDocument vs Explicit modes. Explicit empty models `pathOrderClear` (pack
 blank while document membership remains). Pure tests:
 `tests/packorderoverlay_test.cpp`. Normative write-up: [docs/PATH_ORDER.md](docs/PATH_ORDER.md)

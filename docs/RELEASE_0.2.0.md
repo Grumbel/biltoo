@@ -144,7 +144,7 @@ leaving the façade at `src/` until controllers own more call sites (see
 
 1. **One domain per commit** (or small stack): e.g. only `session/` first.
 2. Update `BILTOO_LIB_SOURCES` paths; add `target_include_directories` so
-   `#include "sessiondocument.h"` keeps working **or** switch that domain to
+   `#include "session/sessiondocument.h"` keeps working **or** switch that domain to
    `#include "session/sessiondocument.h"` consistently in the same commit.
 3. No symbol renames, no logic edits, no clang-format-only noise mixed in.
 4. Build green after each domain; smoke open + Gallery + crop once at end.
@@ -160,6 +160,8 @@ leaving the façade at `src/` until controllers own more call sites (see
 5. `display/` / `pixels/` — if time; else leave for immediate post-tag  
 
 `tilelod/` stays as the reference for how a leaf directory looks.
+
+**Progress:** Phase 1 `src/session/` done (tip 2349). See [SRC_LAYOUT.md](SRC_LAYOUT.md).
 
 ### Out of this move
 

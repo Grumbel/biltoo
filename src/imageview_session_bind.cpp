@@ -7,8 +7,8 @@
 #include "itemcomponents.h"
 #include "imageitem.h"
 #include "imagecache.h"
-#include "sessionappearance.h"
-#include "sessionbindbook.h"
+#include "session/sessionappearance.h"
+#include "session/sessionbindbook.h"
 #include "viewtransform.h"
 
 #include <QHash>

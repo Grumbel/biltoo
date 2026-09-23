@@ -6,10 +6,10 @@
  * Content appearance is ItemWorld sparse tables keyed by SessionImageId.
  */
 
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "contentxform.h"
-#include "sessionseedbook.h"
-#include "sessiondocument.h"
+#include "session/sessionseedbook.h"
+#include "session/sessiondocument.h"
 #include "itemworld.h"
 #include "itemcomponents.h"
 #include "thumtoocache.h"

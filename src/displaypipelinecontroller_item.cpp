@@ -21,7 +21,7 @@
 #include "imageloader.h"
 #include "imagecache.h"
 #include "contentxform.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "coloradjust.h"
 #include "imagesizebook.h"
 #include "biltoo_logging.h"

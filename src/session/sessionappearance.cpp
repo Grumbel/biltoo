@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "contentxform.h"
 #include "cropgeometry.h"
 #include "viewtransform.h"

@@ -14,7 +14,7 @@
 #include <QPointer>
 #include <QTimer>
 #include "contentxform.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 
 void ImageView::setStickyZoomEnabled(bool on)
 {

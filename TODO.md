@@ -2,29 +2,27 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2348-release-0.2.0-src-layout.**
+**Tip: biltoo-2349-src-session-subdir.**
 
-[docs/RELEASE_0.2.0.md](docs/RELEASE_0.2.0.md):
+Phase 1 of source layout: **`src/session/`** holds session document, appearance,
+seed book, expand/export/open/sort/reorder, pack order views.
 
-- **§3a Source tree layout is in scope for 0.2.0** (tag may slip a few days).
-  Move flat `src/` into domain dirs (`session/`, `crop/`, `gallery/`, `shell/`, …)
-  following `tilelod/`; one domain per commit; no behaviour change.
-- Known gaps §§4.1–4.8 still apply (Find, cold open, PDF embeds, Location, crop RC, menus).
-- Dual ImageView remains **0.3.0**.
+Includes use `session/foo.h` (tilelod style). See [docs/SRC_LAYOUT.md](docs/SRC_LAYOUT.md).
 
-Requires **thumtoo-323**. Code tip includes 2318–2343.
+Requires **thumtoo-323**. Includes prior 0.2 feature + doc tips.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2348.1-release-0.2.0-src-layout-2f201f6.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2349.1-src-session-subdir-2f201f6.bundle HEAD
 ```
 
-Next: **2349** — start `src/session/` move (or RC crop smoke).
+Next: **2350** — `src/crop/` move (or build-verify session phase).
 
 ## Backlog (0.2.0)
-- [ ] Source subdirectories (§3a): session → crop → gallery → shell → (display)
+- [x] `src/session/` (§3a phase 1)
+- [ ] `src/crop/`
+- [ ] `src/gallery/`
+- [ ] `src/shell/`
+- [ ] `src/display/` (optional pre-tag)
 - [ ] RC smoke incl. crop + Open Selection
 - [ ] VERSION 0.2.0 + tag
-
-## Backlog (post-tag / 0.3)
-- See RELEASE_0.2.0.md §§4.1–4.8

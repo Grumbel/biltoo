@@ -9,9 +9,9 @@
 #include <QtMath>
 #include <algorithm>
 #include "thumtoocache.h"
-#include "sessionopen.h"
-#include "sessionsort.h"
-#include "sessionexpand.h"
+#include "session/sessionopen.h"
+#include "session/sessionsort.h"
+#include "session/sessionexpand.h"
 #include "ttfp_trace.h"
 #include "projectfile.h"
 #include "archivepath.h"

@@ -9,12 +9,12 @@
 #include "mainwindow.h"
 #include "icons.h"
 #include "imageview.h"
-#include "sessiondocument.h"
+#include "session/sessiondocument.h"
 #include "imageloader.h"
 #include "thumbnailbar.h"
 #include "preferencesdialog.h"
 #include "slideshowsettingsdialog.h"
-#include "sessionreorderdialog.h"
+#include "session/sessionreorderdialog.h"
 #include "metadatapanel.h"
 #include "adjustmentspanel.h"
 #include "layoutpanel.h"
@@ -22,7 +22,7 @@
 #include "helppanel.h"
 #include "thumtoocache.h"
 #include "contentxform.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "pagepath.h"
 
 #include <QAbstractButton>

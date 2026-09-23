@@ -5,8 +5,8 @@
 #define PACKORDERVIEW_H
 
 #include "imageview_types.h"
-#include "sessiondocument.h"
-#include "sessionpathorder.h"
+#include "session/sessiondocument.h"
+#include "session/sessionpathorder.h"
 
 #include <QString>
 #include <QStringList>

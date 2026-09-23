@@ -17,7 +17,7 @@
 #include "thumtoocache.h"
 #include "tile_load_coordinator.h"
 #include "tilelod/tile_lod_controller.hpp"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 
 #include <QUndoCommand>
 #include <QUndoStack>

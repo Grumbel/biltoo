@@ -10,10 +10,10 @@
  * presence is asserted alongside the DTO.
  */
 
-#include "sessiondocument.h"
-#include "sessionpathorder.h"
-#include "sessionappearance.h"
-#include "packorderview.h"
+#include "session/sessiondocument.h"
+#include "session/sessionpathorder.h"
+#include "session/sessionappearance.h"
+#include "session/packorderview.h"
 #include "contentxform.h"
 #include "itemworld.h"
 #include "itemcomponents.h"

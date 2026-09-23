@@ -5,11 +5,11 @@
 // (7741d56) dropped their definitions without relocating them.
 
 #include "imageview.h"
-#include "sessiondocument.h"
+#include "session/sessiondocument.h"
 #include "imageitem.h"
 #include "contentxform.h"
 #include "itemcomponents.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "selectiongeometry.h"
 #include "pageguidegeometry.h"
 

@@ -14,12 +14,12 @@
  * environment; see docs/IMAGEVIEW_CHARACTERIZATION.md.
  */
 
-#include "sessiondocument.h"
+#include "session/sessiondocument.h"
 #include "itemworld.h"
-#include "sessionpathorder.h"
-#include "sessionappearance.h"
-#include "packorderoverlay.h"
-#include "packorderview.h"
+#include "session/sessionpathorder.h"
+#include "session/sessionappearance.h"
+#include "session/packorderoverlay.h"
+#include "session/packorderview.h"
 
 #include <QtTest/QtTest>
 

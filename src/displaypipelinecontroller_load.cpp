@@ -8,7 +8,7 @@
 #include "tile_load_coordinator.h"
 
 #include "imageview.h"
-#include "packorderview.h"
+#include "session/packorderview.h"
 #include "imageitem.h"
 #include "displayedgepolicy.h"
 #include "pathrasterservice.h"
@@ -22,7 +22,7 @@
 #include "imageloader.h"
 #include "imagecache.h"
 #include "contentxform.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "coloradjust.h"
 #include "imagesizebook.h"
 #include "biltoo_logging.h"

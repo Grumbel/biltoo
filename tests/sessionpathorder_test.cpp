@@ -6,7 +6,7 @@
  * See docs/PATH_ORDER.md — multiplicity is independent of SessionDocument.
  */
 
-#include "sessionpathorder.h"
+#include "session/sessionpathorder.h"
 
 #include <QtTest/QtTest>
 

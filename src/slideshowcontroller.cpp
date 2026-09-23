@@ -7,7 +7,7 @@
 #include "itemcomponents.h"
 #include "gallerylayout.h"
 #include "imagecache.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "contentxform.h"
 #include "displayquality.h"
 #include "pathrasterservice.h"

@@ -8,7 +8,7 @@
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "imageitem.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "viewtransform.h"
 
 #include <QImage>

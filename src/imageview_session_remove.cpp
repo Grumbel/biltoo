@@ -4,12 +4,12 @@
 // Pending session binds, session-id canvas membership, and load-add placement.
 
 #include "imageview.h"
-#include "packorderview.h"
+#include "session/packorderview.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
 #include "imagecache.h"
-#include "sessionappearance.h"
-#include "sessionbindbook.h"
+#include "session/sessionappearance.h"
+#include "session/sessionbindbook.h"
 #include "viewtransform.h"
 
 #include <QHash>

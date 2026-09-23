@@ -17,11 +17,11 @@
 #include "cropsession.h"
 #include "imagecache.h"
 #include "contentxform.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "thumtoocache.h"
 
 #include "imageitem.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
 #include "displayquality.h"

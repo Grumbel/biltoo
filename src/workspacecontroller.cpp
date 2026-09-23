@@ -10,7 +10,7 @@
 #include "imagecache.h"
 #include "viewtransform.h"
 #include "imageview.h"
-#include "sessionbindbook.h"
+#include "session/sessionbindbook.h"
 #include <QUndoStack>
 #include "gallerypackfit.h"
 #include "gallerylayout.h"
@@ -22,7 +22,7 @@
 #include "imageitem.h"
 #include "placementlinear.h"
 #include "imageloader.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 
 #include <QScrollBar>
 #include <QtMath>

@@ -7,7 +7,7 @@
 #include "imageitem.h"
 #include "contentxform.h"
 #include "thumtoocache.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "viewtransform.h"
 
 #include <QPainter>

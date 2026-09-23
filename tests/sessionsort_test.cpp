@@ -5,7 +5,7 @@
  * Pure session-list ordering (SessionSort).
  */
 
-#include "sessionsort.h"
+#include "session/sessionsort.h"
 #include "pagepath.h"
 
 #include <QtTest/QtTest>

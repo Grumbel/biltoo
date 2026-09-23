@@ -4,10 +4,10 @@
 #ifndef DISPLAYPIPELINECONTROLLER_H
 #define DISPLAYPIPELINECONTROLLER_H
 
-#include "sessionloadgate.h"
+#include "session/sessionloadgate.h"
 #include "displaysurface.h"
 #include "tilelod/tile_lod_item_bag.hpp"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "pathrasterservice.h"
 #include "thumtoocache.h"
 

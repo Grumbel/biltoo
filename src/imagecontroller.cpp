@@ -3,7 +3,7 @@
 
 #include "imagecontroller.h"
 #include "imageview.h"
-#include "sessionbindbook.h"
+#include "session/sessionbindbook.h"
 #include "imageview_types.h"
 #include <memory>
 #include <QSet>
@@ -11,7 +11,7 @@
 #include "thumtoocache.h"
 #include "imagecache.h"
 #include "imageitem.h"
-#include "sessionappearance.h"
+#include "session/sessionappearance.h"
 #include "biltoo_logging.h"
 #include <QKeyEvent>
 #include <QMouseEvent>
