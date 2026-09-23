@@ -51,7 +51,7 @@ public:
 
     virtual void setSizeResolveProgress(const QString &title,
                                         const QString &detail) = 0;
-    /** Clear centre HUD only when it still shows the resolving title. */
+    /** Clear size-resolve HUD only when it still shows the resolving title. */
     virtual void clearSizeResolveProgress() = 0;
 
     /**

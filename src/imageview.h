@@ -207,7 +207,8 @@ public:
     /** Controller host: stop layout debounce and clear applyingLayout. */
     void stopDeferredPacking();
     /**
-     * Centre viewport progress (archive expand, size resolve, sort probes).
+     * Progress HUD title/detail (archive expand, size resolve, tile load, …).
+     * Blocking messages paint centred; non-blocking (size resolve, tiles) top-left.
      * Suppresses the empty-session invite while set. Cleared with clearCentreProgress().
      */
     void setCentreProgress(const QString &title, const QString &detail = QString());

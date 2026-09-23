@@ -449,10 +449,10 @@ void ImageView::setCentreProgress(const QString &title, const QString &detail)
     if (!m_centreProgress.set(title, detail)) {
         return;
     }
-    // Empty scene needs FullViewportUpdate or the centre panel never paints.
-    // Size-resolve is a blocking centre panel — FullViewport so detail updates
-    // are visible even when placeholders exist (BoundingRect alone can skip it).
-    // “Improving previews…” stays BoundingRect (many tiles + frequent updates).
+    // Empty scene needs FullViewportUpdate or the progress panel never paints.
+    // Size-resolve is interactive (corner HUD) but still needs reliable redraws
+    // while placeholders exist — BoundingRect alone can skip the HUD region.
+    // “Improving previews…” keeps BoundingRect (many tiles + frequent updates).
     if (m_items.isEmpty() || m_gallerySizeResolve.active()) {
         setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     }

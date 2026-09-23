@@ -7,8 +7,12 @@
 #include <QString>
 
 /**
- * Centre-viewport progress panel (archive expand, size resolve, sort probes).
- * Suppresses the empty-session invite while title is non-empty.
+ * Progress title/detail bag for the viewport HUD.
+ *
+ * Placement is decided at paint time: blocking work (archive expand / open)
+ * is centred; non-blocking background work (size resolve, tile load, soft
+ * improve) uses the sticky top-left corner. Suppresses the empty-session
+ * invite while title is non-empty.
  */
 struct CentreProgress {
     QString title;

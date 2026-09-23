@@ -485,7 +485,7 @@ void ImageView::paintSlideshowSeekbar(QPainter &painter)
 void ImageView::paintEmptySessionInvite(QPainter &painter)
 {
     // Empty session: invite the user to open or drop images.
-    // Suppress while centre progress is active (archive expand / size resolve).
+    // Suppress while progress is active (expand / size resolve / tile load).
     if (m_items.isEmpty() && !m_image.hasClassicPath() && !m_cropCtrl.session().active()
         && m_centreProgress.titleRef().isEmpty() && !m_gallerySizeResolve.active()) {
         painter.save();
@@ -639,24 +639,25 @@ void ImageView::paintHudPanels(QPainter &painter)
             if (!m_centreProgress.detailRef().isEmpty()) {
                 lines.append({m_centreProgress.detailRef(), false});
             }
-            // Tile/decode progress belongs in the sticky HUD corner — not the
-            // viewport centre (that was for blocking size-resolve / expand).
+            // Non-blocking background work → sticky top-left. Only true
+            // blockers (archive expand / open progress) use the viewport centre.
             const bool corner =
                 m_centreProgress.matchesTitlePrefix(tr("Loading tiles"))
-                || m_centreProgress.matchesTitlePrefix(tr("Improving previews"));
+                || m_centreProgress.matchesTitlePrefix(tr("Improving previews"))
+                || m_centreProgress.matchesTitlePrefix(tr("Resolving sizes"));
             if (corner) {
                 drawPanel(lines, margin, margin, false, false, false);
             } else {
                 drawPanel(lines, 0, 0, false, false, true);
             }
         } else if (m_gallerySizeResolve.active() && m_gallerySizeResolve.total() > 0) {
-            // Fallback if title was cleared but gate still active.
+            // Fallback if title was cleared but gate still active (interactive).
             const int done = ViewTransform::nonNeg(
                 qint64(m_gallerySizeResolve.total())
                 - qint64(m_gallerySizeResolve.pendingCount()));
             drawPanel({{tr("Resolving sizes…"), true},
                        {tr("%1 / %2").arg(done).arg(m_gallerySizeResolve.total()), false}},
-                      0, 0, false, false, true);
+                      margin, margin, false, false, false);
         } else if (m_hudFlash.isVisible() && m_hudFlash.hasAction()) {
             QString actionLine = m_hudFlash.actionText();
             if (m_hudFlash.hasDetail()) {
