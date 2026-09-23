@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "slideshowcontroller.h"
+#include "slideshow/slideshowcontroller.h"
 #include "imageview.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
@@ -13,10 +13,10 @@
 #include "display/pathrasterservice.h"
 #include "viewtransform.h"
 #include "zoomblurhelpers.h"
-#include "slideshowclocks.h"
-#include "slideshowphasepolicy.h"
-#include "slideshowatlaspolicy.h"
-#include "slideshowmotiongeometry.h"
+#include "slideshow/slideshowclocks.h"
+#include "slideshow/slideshowphasepolicy.h"
+#include "slideshow/slideshowatlaspolicy.h"
+#include "slideshow/slideshowmotiongeometry.h"
 #include "attention/attentiongeometry.h"
 #include "tilelod/tile_lod_controller.hpp"
 

@@ -7,7 +7,7 @@
 #include "version.h"
 #include "thumtoo/version.hpp"
 #include "imageitem.h"
-#include "slideshowclocks.h"
+#include "slideshow/slideshowclocks.h"
 
 #include <QDebug>
 #include <QSet>

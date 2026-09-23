@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
-#include "slideshowclocks.h"
+#include "slideshow/slideshowclocks.h"
 #include "viewtransform.h"
 #include <QtMath>
 #include <algorithm>

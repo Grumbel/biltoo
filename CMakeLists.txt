@@ -122,8 +122,8 @@ set(BILTOO_LIB_SOURCES
   src/imageview_accessors.cpp
   src/imageview_size_book.cpp
   src/gallery/gallerycontroller.cpp
-  src/slideshowcontroller.cpp
-  src/slideshowcontroller.h
+  src/slideshow/slideshowcontroller.cpp
+  src/slideshow/slideshowcontroller.h
   src/crop/cropcontroller.cpp
   src/crop/cropcontroller.h
   src/attention/attentioncontroller.cpp
@@ -216,15 +216,15 @@ set(BILTOO_LIB_SOURCES
   src/imagesizebook.h
   src/pathitemstatebook.h
   src/pendingitemappearancebook.h
-  src/slideshowtypes.h
-  src/slideshowclocks.h
-  src/slideshowclocks.cpp
-  src/slideshowphasepolicy.h
-  src/slideshowphasepolicy.cpp
-  src/slideshowatlaspolicy.h
-  src/slideshowatlaspolicy.cpp
-  src/slideshowmotiongeometry.h
-  src/slideshowmotiongeometry.cpp
+  src/slideshow/slideshowtypes.h
+  src/slideshow/slideshowclocks.h
+  src/slideshow/slideshowclocks.cpp
+  src/slideshow/slideshowphasepolicy.h
+  src/slideshow/slideshowphasepolicy.cpp
+  src/slideshow/slideshowatlaspolicy.h
+  src/slideshow/slideshowatlaspolicy.cpp
+  src/slideshow/slideshowmotiongeometry.h
+  src/slideshow/slideshowmotiongeometry.cpp
   src/zoomblurhelpers.h
   src/zoomblurhelpers.cpp
   src/loadgeneration.h
@@ -236,7 +236,7 @@ set(BILTOO_LIB_SOURCES
   src/display/displayedgepolicy.cpp
   src/edgenavpolicy.h
   src/edgenavpolicy.cpp
-  src/motionscrollchrome.h
+  src/slideshow/motionscrollchrome.h
   src/display/lqipdisplaypolicy.h
   src/display/lqipdisplaypolicy.cpp
   src/tile_load_coordinator.cpp
@@ -301,8 +301,8 @@ set(BILTOO_LIB_SOURCES
   src/thumbnailbar.h
   src/shell/preferencesdialog.cpp
   src/shell/preferencesdialog.h
-  src/slideshowsettingsdialog.cpp
-  src/slideshowsettingsdialog.h
+  src/slideshow/slideshowsettingsdialog.cpp
+  src/slideshow/slideshowsettingsdialog.h
   src/session/sessionreorderdialog.cpp
   src/session/sessionreorderdialog.h
   src/epublayoutdialog.cpp

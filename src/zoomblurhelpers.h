@@ -4,7 +4,7 @@
 #ifndef ZOOMBLURHELPERS_H
 #define ZOOMBLURHELPERS_H
 
-#include "slideshowtypes.h"
+#include "slideshow/slideshowtypes.h"
 
 #include <QString>
 #include <QtGlobal>

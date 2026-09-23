@@ -4,9 +4,9 @@
 #ifndef SLIDESHOWCONTROLLER_H
 #define SLIDESHOWCONTROLLER_H
 
-#include "slideshowtypes.h"
+#include "slideshow/slideshowtypes.h"
 #include "imageview_types.h"
-#include "motionscrollchrome.h"
+#include "slideshow/motionscrollchrome.h"
 #include "display/displaysurface.h"
 
 #include <QColor>

@@ -4,7 +4,7 @@
 #ifndef SLIDESHOWCLOCKS_H
 #define SLIDESHOWCLOCKS_H
 
-#include "slideshowtypes.h"
+#include "slideshow/slideshowtypes.h"
 
 #include <QString>
 

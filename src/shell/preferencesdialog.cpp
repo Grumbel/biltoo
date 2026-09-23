@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/preferencesdialog.h"
-#include "slideshowclocks.h"
+#include "slideshow/slideshowclocks.h"
 #include "viewtransform.h"
 #include "hudappearance.h"
-#include "slideshowtypes.h"
+#include "slideshow/slideshowtypes.h"
 #include "shell/defaultapps.h"
 #include "shell/icons.h"
 

@@ -6,7 +6,7 @@
 #include "canvaspatterngeometry.h"
 #include "viewtransform.h"
 #include "hudgeometry.h"
-#include "slideshowclocks.h"
+#include "slideshow/slideshowclocks.h"
 #include "textlayergeometry.h"
 #include "workspace/pageguidegeometry.h"
 #include "edgenavpolicy.h"

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "slideshowatlaspolicy.h"
+#include "slideshow/slideshowatlaspolicy.h"
 
 #include "thumtoocache.h"
 #include "viewtransform.h"

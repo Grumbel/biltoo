@@ -4,7 +4,7 @@
 #ifndef SLIDESHOWATLASPOLICY_H
 #define SLIDESHOWATLASPOLICY_H
 
-#include "slideshowtypes.h"
+#include "slideshow/slideshowtypes.h"
 
 #include <QImage>
 #include <QPixmap>

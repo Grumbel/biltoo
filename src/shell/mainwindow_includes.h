@@ -13,7 +13,7 @@
 #include "imageloader.h"
 #include "thumbnailbar.h"
 #include "shell/preferencesdialog.h"
-#include "slideshowsettingsdialog.h"
+#include "slideshow/slideshowsettingsdialog.h"
 #include "session/sessionreorderdialog.h"
 #include "shell/metadatapanel.h"
 #include "shell/adjustmentspanel.h"
