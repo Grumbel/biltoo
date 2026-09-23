@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "util/biltoo_thread.h"
 #include "image/imagecontroller.h"
 #include "imageview.h"
 #include "session/sessionbindbook.h"
@@ -24,6 +25,7 @@ ImageController::ImageController(ImageView *view)
 
 void ImageController::enter()
 {
+    GUI_BUDGET("ImageController::enter");
     // Gallery/Workspace → Image: matching onLeave already stashed live tiles.
     // MODE_OWNERSHIP.md: never take ImageItem* out of a mode stash.
     m_view->setActiveMode(ImageView::ViewMode::Image, LayoutMode::FreeForm);

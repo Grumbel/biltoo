@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "util/biltoo_thread.h"
 #include "text/textsearchpolicy.h"
 #include "view/canvaspatterngeometry.h"
 #include "view/viewtransform.h"
@@ -164,6 +165,7 @@ void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
 
 void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 {
+    GUI_BUDGET("ImageView::drawBackground");
     paintCanvasBackground(painter, rect, transform().m11());
 
     // Virtualized Gallery: packed cell frames under items (slots with no live
@@ -193,6 +195,7 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 
 void ImageView::drawForeground(QPainter *painter, const QRectF &rect)
 {
+    GUI_BUDGET("ImageView::drawForeground");
     // Page guide outline above images so the frame stays visible when tiles
     // cover the white sheet (scene coordinates).
     if (m_pageGuide.isVisible() && isWorkspaceMode()) {

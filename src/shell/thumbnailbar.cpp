@@ -1915,6 +1915,7 @@ void ThumbnailBar::scheduleThumbnailLoads()
 
 void ThumbnailBar::scheduleVisibleThumbnailLoads()
 {
+    GUI_BUDGET("ThumbnailBar::scheduleVisibleThumbnailLoads");
     if (m_files.isEmpty() || m_visibleLoadsSuspended) {
         return;
     }
@@ -2424,7 +2425,7 @@ void ThumbnailBar::setFiles(const QStringList &files)
     // tens of thousands of QListWidgetItems in one
     // stack frame (setFiles was ~60s inside onSizeResolveGateComplete via a
     // same-thread DirectConnection to gallerySizeResolveFinished).
-    GUI_BUDGET_MS("ThumbnailBar::setFiles", 16);
+    GUI_BUDGET("ThumbnailBar::setFiles");
     m_fileFillGeneration += 1;
     m_fileFillNext = 0;
     m_fileFillPriority = -1;
@@ -2474,7 +2475,7 @@ void ThumbnailBar::materializeFileRows(int begin, int end, const QSize &provCell
 void ThumbnailBar::appendFileRowsChunk()
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("ThumbnailBar::appendFileRowsChunk", 12);
+    GUI_BUDGET("ThumbnailBar::appendFileRowsChunk");
     if (m_fileFillNext < 0 || m_fileFillNext > m_files.size()) {
         return;
     }
@@ -2527,6 +2528,7 @@ void ThumbnailBar::appendFileRowsChunk()
 
 void ThumbnailBar::ensureMaterializedThrough(int sessionIndex)
 {
+    GUI_BUDGET("ThumbnailBar::ensureMaterializedThrough");
     ASSERT_GUI_THREAD();
     if (m_files.isEmpty() || sessionIndex < 0) {
         return;

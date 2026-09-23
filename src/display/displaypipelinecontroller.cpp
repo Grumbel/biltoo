@@ -408,6 +408,7 @@ bool DisplayPipelineController::tryInstallImageModeSampleBaked(const QString &pa
 
 void DisplayPipelineController::onLadderReady(const QString &path, int maxEdge, const QImage &image)
 {
+    GUI_BUDGET("DisplayPipeline::onLadderReady");
     ASSERT_GUI_THREAD();
     if (path.isEmpty()) {
         return;
@@ -895,6 +896,7 @@ void DisplayPipelineController::installDisplayPixels(ImageItem *item, const QIma
                                      SessionAppearance::PixelKind kind,
                                      SessionImageId sid)
 {
+    GUI_BUDGET("DisplayPipeline::installDisplayPixels");
     if (!item) {
         return;
     }

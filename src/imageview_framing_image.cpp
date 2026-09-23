@@ -4,6 +4,7 @@
 // View zoom, fit/fill, sticky zoom/pan, and image-mode framing.
 
 #include "imageview.h"
+#include "util/biltoo_thread.h"
 #include "imageitem.h"
 #include "item/itemcomponents.h"
 #include "view/viewtransform.h"
@@ -103,6 +104,7 @@ void ImageView::restoreStickyPanAnchor(ImageItem *item)
 
 void ImageView::applyImageModeFraming(ImageItem *item)
 {
+    GUI_BUDGET("ImageView::applyImageModeFraming");
     if (!item || !isImageMode()) {
         return;
     }

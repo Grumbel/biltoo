@@ -130,7 +130,7 @@ void TileLoadCoordinator::sortByPolicy(QList<Cand> &cands)
 void TileLoadCoordinator::tick(int globalBudget)
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("TileLoadCoordinator::tick", 8);
+    GUI_BUDGET("TileLoadCoordinator::tick");
     if (!m_view || globalBudget < 0) {
         return;
     }

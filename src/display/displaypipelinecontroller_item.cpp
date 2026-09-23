@@ -260,14 +260,26 @@ void DisplayPipelineController::seedSessionAppearanceFromState(SessionImageId si
         return;
     }
     m_view->hostSeedBook().markSeedAttempted(sid);
-    ThumtooCache::StoredContentAppearance stored;
-    if (!ThumtooCache::loadContentAppearance(path, &stored)) {
-        return;
-    }
-    if (stored.isIdentity()) {
-        return;
-    }
-    applyStoredContentAppearanceSeed(sid, path, stored);
+    // Store loadContentAppearance is SQLite — never on the GUI.
+    const QPointer<ImageView> guard(m_view);
+    const SessionImageId sidCopy = sid;
+    const QString pathCopy = path;
+    QThreadPool::globalInstance()->start([guard, sidCopy, pathCopy]() {
+        ASSERT_NOT_GUI_THREAD();
+        ThumtooCache::StoredContentAppearance stored;
+        if (!ThumtooCache::loadContentAppearance(pathCopy, &stored)
+            || stored.isIdentity()) {
+            return;
+        }
+        QMetaObject::invokeMethod(guard.data(), [guard, sidCopy, pathCopy, stored]() {
+            ImageView *host = guard.data();
+            if (!host) {
+                return;
+            }
+            host->hostDisplayPipeline().applyStoredContentAppearanceSeed(
+                sidCopy, pathCopy, stored);
+        }, Qt::QueuedConnection);
+    });
 }
 
 

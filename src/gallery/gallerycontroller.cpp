@@ -1189,7 +1189,7 @@ int GalleryController::galleryInstallLqipOntoBlanks(int maxInstalls, bool *moreP
 void GalleryController::updateDecodeWindow()
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("updateGalleryDecodeWindow", 4);
+    GUI_BUDGET("updateGalleryDecodeWindow");
     QElapsedTimer decodeWinTimer;
     if (m_view->hostPerf().isEnabled()) {
         decodeWinTimer.start();
@@ -1373,7 +1373,7 @@ void GalleryController::updateDecodeWindow()
 void GalleryController::applyLayout(GalleryPackReason reason)
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("GalleryController::applyLayout", 12);
+    GUI_BUDGET("GalleryController::applyLayout");
     if (m_view->hostLayoutApply().active()) {
         return;
     }
@@ -1533,7 +1533,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 bool GalleryController::ensurePlaceholders()
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("GalleryController::ensurePlaceholders", 8);
+    GUI_BUDGET("GalleryController::ensurePlaceholders");
     if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()) {
         return false;
     }
@@ -1546,7 +1546,7 @@ bool GalleryController::ensurePlaceholders()
 void GalleryController::rebuildVirtualPlan()
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("GalleryController::rebuildVirtualPlan", 16);
+    GUI_BUDGET("GalleryController::rebuildVirtualPlan");
     m_virtualSlots.clear();
     m_virtualSceneBounds = QRectF();
     if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()
@@ -1642,7 +1642,7 @@ void GalleryController::rebuildVirtualPlan()
 void GalleryController::syncVirtualWindow()
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("GalleryController::syncVirtualWindow", 12);
+    GUI_BUDGET("GalleryController::syncVirtualWindow");
     if (!m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
         return;
     }
@@ -1783,6 +1783,7 @@ void GalleryController::syncVirtualWindow()
 
 void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF &exposed) const
 {
+    GUI_BUDGET("GalleryController::paintVirtualPlaceholders");
     if (!painter || !m_view || !m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
         return;
     }

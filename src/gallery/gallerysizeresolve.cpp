@@ -20,7 +20,7 @@ GallerySizeResolve::GallerySizeResolve(GallerySizeResolveHost *host,
 bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("GallerySizeResolve::startIfNeeded", 12);
+    GUI_BUDGET("GallerySizeResolve::startIfNeeded");
     if (!m_host) {
         return false;
     }

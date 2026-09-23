@@ -13,8 +13,8 @@
 #include <cstdio>
 
 /**
- * Heavy decode / scale / appearance bake must not run on the GUI thread.
- * Call at the top of worker-only functions so misuse aborts in debug builds.
+ * Heavy decode / scale / appearance bake / Store SQLite must not run on the GUI
+ * thread. Call at the top of worker-only functions so misuse aborts in debug.
  *
  * Completions back to the UI use QTimer::singleShot(0, …) or
  * Qt::QueuedConnection — that only *delivers* the result; the work itself
@@ -30,16 +30,27 @@
                "UI work must run on the GUI thread")
 
 /**
+ * Default GUI wall budget (ms). Generous enough to avoid noise on modest
+ * hardware; still catches multi-frame stalls. Override per-site with
+ * GUI_BUDGET_MS only when a tighter budget is intentional.
+ */
+constexpr qint64 kGuiBudgetDefaultMs = 25;
+
+/**
  * Scoped wall-time budget for code that is allowed on the GUI thread.
  * Always logs when exceeded. Aborts only if BILTOO_GUI_BUDGET_STRICT is set
  * (non-empty, not "0") so normal runs stay usable while budgets are tightened.
+ *
+ * Put a scope at every GUI entry that can do non-trivial work (paint, mode
+ * switch, sizeReady, layout, filmstrip fill, decode window, …). Nested scopes
+ * are fine; the outer one reports total wall time for that entry.
  */
 class GuiBudgetScope
 {
 public:
-    explicit GuiBudgetScope(const char *label, qint64 budgetMs = 2)
+    explicit GuiBudgetScope(const char *label, qint64 budgetMs = kGuiBudgetDefaultMs)
         : m_label(label)
-        , m_budgetMs(budgetMs > 0 ? budgetMs : 2)
+        , m_budgetMs(budgetMs > 0 ? budgetMs : kGuiBudgetDefaultMs)
     {
         m_timer.start();
     }
@@ -75,7 +86,7 @@ private:
     }
 
     const char *m_label = nullptr;
-    qint64 m_budgetMs = 2;
+    qint64 m_budgetMs = kGuiBudgetDefaultMs;
     QElapsedTimer m_timer;
 };
 

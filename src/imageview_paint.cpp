@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "util/biltoo_thread.h"
 #include "hud/hudmodel.h"
 #include "text/textsearchpolicy.h"
 #include "view/canvaspatterngeometry.h"
@@ -215,6 +216,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
 
 void ImageView::paintEvent(QPaintEvent *event)
 {
+    GUI_BUDGET("ImageView::paintEvent");
     // All overlays are drawn in drawForeground (single GL-safe paint path).
     if (!m_perf.isEnabled()) {
         QGraphicsView::paintEvent(event);

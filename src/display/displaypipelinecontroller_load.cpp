@@ -648,7 +648,7 @@ int DisplayPipelineController::galleryHaveEdgeFromItems(const QString &path, boo
 bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("scheduleGalleryDecode", 2);
+    GUI_BUDGET("scheduleGalleryDecode");
     if (!m_view->isGalleryMode() || path.isEmpty()) {
         return false;
     }

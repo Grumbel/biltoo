@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "util/biltoo_thread.h"
 #include "image/toolpolicy.h"
 #include "display/imagecache.h"
 #include <QDebug>
@@ -289,6 +290,7 @@ void ImageView::prepareImageModeCanvas()
 
 void ImageView::setViewMode(ViewMode mode)
 {
+    GUI_BUDGET("ImageView::setViewMode");
     if (mode == m_viewMode) {
         return;
     }

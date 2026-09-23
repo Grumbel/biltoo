@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include "util/biltoo_thread.h"
 #include "slideshow/slideshowclocks.h"
 #include "view/viewtransform.h"
 #include <QtMath>
@@ -112,6 +113,7 @@ void MainWindow::applyExpandedLoad(const QStringList &images, int startAt)
 
 void MainWindow::finishApplyExpandedLoad(int startAt)
 {
+    GUI_BUDGET("MainWindow::finishApplyExpandedLoad");
     TtfpTrace::begin("finishApplyExpandedLoad");
     m_currentIndex = -1;
 

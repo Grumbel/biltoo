@@ -883,6 +883,10 @@ bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs)
     if (path.isEmpty()) {
         return false;
     }
+    // find_locator is SQLite — workers only.
+    if (QThread::isMainThread()) {
+        return false;
+    }
     init();
     const std::string uri = toThumtooUri(path);
     if (uri.empty()) {
@@ -2982,6 +2986,10 @@ bool loadContentAppearance(const QString &path, StoredContentAppearance *out)
         return false;
     }
     *out = StoredContentAppearance{};
+    // SQLite + find_locator — never on the GUI (seed/layout must use workers).
+    if (QThread::isMainThread()) {
+        return false;
+    }
     const auto lid = locatorIdForPath(path);
     if (!lid) {
         if (appearanceDebug()) {

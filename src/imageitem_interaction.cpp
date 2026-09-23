@@ -928,7 +928,7 @@ QVariant ImageItem::itemChange(GraphicsItemChange change, const QVariant &value)
 void ImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                       QWidget *widget)
 {
-    GUI_BUDGET_MS("ImageItem::paint", 25);
+    GUI_BUDGET("ImageItem::paint");
     Q_UNUSED(widget);
     const QRectF crop = galleryClipLocal();
     const bool cropped = !crop.isEmpty();

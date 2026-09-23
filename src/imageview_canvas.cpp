@@ -175,7 +175,7 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
                                   const QVector<SessionImageId> &sessionIds)
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("ImageView::setWorkspacePaths", 16);
+    GUI_BUDGET("ImageView::setWorkspacePaths");
     if (isImageMode()) {
         return;
     }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
+#include "util/biltoo_thread.h"
 #include "gallery/gallerydecodesm.h"
 #include "display/displayquality.h"
 
@@ -144,6 +145,7 @@ ImageView::ImageView(QWidget *parent)
     // size-resolve gate (failed request_size must not stick forever).
     connect(ThumtooCache::bridge(), &ThumtooCache::Bridge::sizeReady, this,
             [this](const QString &path, const QSize &size) {
+                GUI_BUDGET("Bridge::sizeReady");
                 if (path.isEmpty()) {
                     return;
                 }

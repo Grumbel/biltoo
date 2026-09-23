@@ -29,6 +29,7 @@
 
 void ImageView::rememberImageSize(const QString &path, const QSize &size)
 {
+    GUI_BUDGET("ImageView::rememberImageSize");
     // HARD RULE lives in ImageSizeBook::noteDefinitive (SIZE.md identity).
     if (!m_sizeBook.noteDefinitive(path, size)) {
         return;
@@ -177,7 +178,7 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
 void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("ImageView::primeGalleryGeometryFromCache", 12);
+    GUI_BUDGET("ImageView::primeGalleryGeometryFromCache");
     // Expect warmSessionOpenMemos to have filled size memo + ImageCache LQIP.
     for (const QString &path : paths) {
         if (path.isEmpty()) {
@@ -248,6 +249,7 @@ void ImageView::scheduleImageSizeProbe(const QString &path)
 
 void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
 {
+    GUI_BUDGET("ImageView::applyProbedImageSize");
     if (path.isEmpty() || !size.isValid()) {
         return;
     }
@@ -379,7 +381,7 @@ void ImageView::clearSizeResolveProgress()
 void ImageView::onSizeResolveGateComplete()
 {
     ASSERT_GUI_THREAD();
-    GUI_BUDGET_MS("ImageView::onSizeResolveGateComplete", 16);
+    GUI_BUDGET("ImageView::onSizeResolveGateComplete");
     clearCentreProgress();
     if (isGalleryMode()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
