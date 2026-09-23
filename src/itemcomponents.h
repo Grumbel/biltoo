@@ -4,7 +4,7 @@
 #ifndef ITEMCOMPONENTS_H
 #define ITEMCOMPONENTS_H
 
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include "imageview_types.h"
 
 #include <QPointF>

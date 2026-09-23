@@ -11,7 +11,7 @@
 #include "display/imagecache.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 
 CropSession::EnterFullRaster CropSession::pickEnterFullRaster(ImageItem *item,
                                                               const QString &path,

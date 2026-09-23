@@ -6,7 +6,7 @@
 #include "crop/cropgeometry.h"
 #include "viewtransform.h"
 #include "biltoo_thread.h"
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include "thumtoocache.h"
 
 #include <QtMath>

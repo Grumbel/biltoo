@@ -10,7 +10,7 @@
 #include "display/imagecache.h"
 #include <QFileInfo>
 
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include "placementlinear.h"
 #include "contentxform.h"
 

@@ -4,7 +4,7 @@
 #ifndef CONTENTXFORM_H
 #define CONTENTXFORM_H
 
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include "imageview_types.h"
 
 #include <QRect>

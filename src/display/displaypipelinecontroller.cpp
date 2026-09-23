@@ -22,7 +22,7 @@
 #include "display/imagecache.h"
 #include "contentxform.h"
 #include "session/sessionappearance.h"
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include "imagesizebook.h"
 #include "viewtransform.h"
 #include "biltoo_logging.h"

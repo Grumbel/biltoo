@@ -13,7 +13,7 @@
 
 #include "gallery/gallerydecodesm.h"
 #include <QVector>
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include <QtGlobal>
 
 /**

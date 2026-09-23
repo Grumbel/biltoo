@@ -14,7 +14,7 @@
 #include "thumtoocache.h"
 #include "display/imagecache.h"
 #include "contentxform.h"
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 
 #include <QCoreApplication>
 #include "placementlinear.h"

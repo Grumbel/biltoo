@@ -7,7 +7,7 @@
 #include "imageview_types.h"
 
 namespace ThumtooCache { struct StoredContentAppearance; }
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include "contentxform.h"
 
 #include <QImage>

@@ -5,7 +5,7 @@
 #define IMAGEITEM_H
 
 #include "imageview_types.h"
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include "contentxform.h"
 #include "iteminteractsession.h"
 #include "itemhandle.h"

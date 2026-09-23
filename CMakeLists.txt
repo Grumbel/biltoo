@@ -203,7 +203,7 @@ set(BILTOO_LIB_SOURCES
   src/layoutdebounce.h
   src/gallery/gallerypackfit.h
   src/selectiongeometry.h
-  src/coloradjustcommit.h
+  src/color/coloradjustcommit.h
   src/viewtransform.h
   src/workspace/workspacenavgeometry.h
   src/toolpolicy.h
@@ -313,8 +313,8 @@ set(BILTOO_LIB_SOURCES
   src/shell/metadatapanel.h
   src/shell/adjustmentspanel.cpp
   src/shell/adjustmentspanel.h
-  src/coloradjust.cpp
-  src/coloradjust.h
+  src/color/coloradjust.cpp
+  src/color/coloradjust.h
   src/shell/layoutpanel.cpp
   src/shell/tocpanel.cpp
   src/shell/tocpanel.h
@@ -645,7 +645,7 @@ if(Qt6Test_FOUND)
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
     src/contentxform.cpp
-    src/coloradjust.cpp
+    src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-sessiondocument-test PRIVATE src)
   target_link_libraries(biltoo-sessiondocument-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
@@ -675,7 +675,7 @@ if(Qt6Test_FOUND)
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
     src/contentxform.cpp
-    src/coloradjust.cpp
+    src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-itemworld-test PRIVATE src)
   target_link_libraries(biltoo-itemworld-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
@@ -705,7 +705,7 @@ if(Qt6Test_FOUND)
       src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
       src/contentxform.cpp
-      src/coloradjust.cpp
+      src/color/coloradjust.cpp
     )
     target_include_directories(biltoo-imageview-characterization-test PRIVATE src)
     target_link_libraries(biltoo-imageview-characterization-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
@@ -719,7 +719,7 @@ if(Qt6Test_FOUND)
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
     src/contentxform.cpp
-    src/coloradjust.cpp
+    src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-pathorder-dual-model-test PRIVATE src)
   target_link_libraries(biltoo-pathorder-dual-model-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
@@ -731,7 +731,7 @@ if(Qt6Test_FOUND)
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
     src/contentxform.cpp
-    src/coloradjust.cpp
+    src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-packorderview-test PRIVATE src)
   target_link_libraries(biltoo-packorderview-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
@@ -743,7 +743,7 @@ if(Qt6Test_FOUND)
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
     src/contentxform.cpp
-    src/coloradjust.cpp
+    src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-packorderoverlay-test PRIVATE src)
   target_link_libraries(biltoo-packorderoverlay-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
@@ -755,7 +755,7 @@ if(Qt6Test_FOUND)
     src/session/sessionappearance.cpp
     src/session/sessionseedbook.cpp
     src/contentxform.cpp
-    src/coloradjust.cpp
+    src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-session-gallery-crop-scenario-test PRIVATE src)
   target_link_libraries(biltoo-session-gallery-crop-scenario-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
@@ -767,7 +767,7 @@ if(Qt6Test_FOUND)
     src/session/sessionseedbook.cpp
     src/session/sessiondocument.cpp
     src/contentxform.cpp
-    src/coloradjust.cpp
+    src/color/coloradjust.cpp
   )
   target_include_directories(biltoo-sessionappearance-test PRIVATE src)
   target_link_libraries(biltoo-sessionappearance-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #ifndef ADJUSTMENTSPANEL_H
 #define ADJUSTMENTSPANEL_H
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include <QWidget>
 class QLabel;
 class QSlider;

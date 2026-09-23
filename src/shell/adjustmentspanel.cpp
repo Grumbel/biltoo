@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/adjustmentspanel.h"
-#include "coloradjust.h"
+#include "color/coloradjust.h"
 #include "shell/metadatapanel.h"
 
 #include <QFormLayout>
