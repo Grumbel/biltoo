@@ -1766,6 +1766,29 @@ void GalleryController::syncVirtualWindow()
         pl.vFlip = false;
         pl.opacity = 1.0;
         GalleryLayout::applyItemPlacement(item, pl);
+
+        // Virtual window cells must show underlay as soon as they materialize.
+        // ImageCache is seeded by request_size SizeReply (EMB/LQIP with size);
+        // decode-window ticks alone left blanks until a later pass.
+        if (item && !item->hasDisplayPixels() && !item->path().isEmpty()
+            && (m_view->hostSizeBook().hasDefinitive(item->path())
+                || m_view->hostSizeBook().isFailed(item->path()))) {
+            QImage under = ImageCache::get(item->path());
+            if (!under.isNull()) {
+                if (ImageCache::longEdge(under)
+                    > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+                    const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;
+                    under = under.scaled(cap, cap, Qt::KeepAspectRatio,
+                                         Qt::SmoothTransformation);
+                }
+                const SessionImageId sid = item->sessionId();
+                m_view->hostDisplayPipeline().installDisplayPixels(
+                    item, under, SessionAppearance::PixelKind::SoftPreview, sid);
+                if (!item->hasDisplayPixels()) {
+                    m_view->setItemPreviewImage(item, under);
+                }
+            }
+        }
     }
 
     // Drop live items outside the window.
