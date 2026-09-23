@@ -2,20 +2,20 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2339-gallery-canvas-drag-reorder.**
+**Tip: biltoo-2340-export-dialog-ux.**
 
-Gallery tiles are draggable for session reorder: press keeps multi-select,
-past drag threshold starts QDrag with paths + session-ids; drop uses existing
-handleGalleryDrop internal reorder (same as filmstrip → Gallery).
+Export Images dialog: remembered settings (QSettings), selection-default scope
+with counts, long-edge presets, live summary, destination suggestions, overwrite
+confirm for CBZ/PDF, optional open-folder-when-done, richer help.
 
-Requires **thumtoo-323**. Includes 2318–2338.
+Requires **thumtoo-323**. Includes 2318–2339.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2339.1-gallery-canvas-drag-reorder-2f201f6.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2340.1-export-dialog-ux-2f201f6.bundle HEAD
 ```
 
-Next: **2340**.
+Next: **2341**.
 
 ## Backlog
-- (none for reorder — filmstrip + Gallery canvas + dialog covered)
+- (reorder covered: filmstrip, Gallery canvas, dialog)

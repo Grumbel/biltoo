@@ -28,6 +28,10 @@
 #include <QScreen>
 #include <QStatusBar>
 #include <QMessageBox>
+#include <QDir>
+#include <QFileInfo>
+#include <QUrl>
+#include <QDesktopServices>
 
 #include <QThreadPool>
 #include <QProgressDialog>
@@ -456,114 +460,299 @@ void MainWindow::exportSessionImages()
         return;
     }
 
+    QSettings settings;
+    settings.beginGroup(QStringLiteral("exportImages"));
+
     QDialog dlg(this);
     dlg.setWindowTitle(tr("Export Images"));
-    auto *layout = new QFormLayout(&dlg);
+    dlg.setMinimumWidth(460);
+    auto *layout = new QVBoxLayout(&dlg);
 
-    auto *scopeAll = new QRadioButton(tr("Entire session (%n image(s))", "", m_session.size()), &dlg);
-    auto *scopeSel = new QRadioButton(tr("Selection only"), &dlg);
-    scopeAll->setChecked(true);
-    QList<int> selectedRows;
-    if (m_thumbnailBar) {
-        selectedRows = m_thumbnailBar->selectedIndices();
-    }
-    // Gallery / Workspace canvas selection when filmstrip has nothing selected.
-    if (selectedRows.isEmpty() && m_imageView) {
-        selectedRows = m_imageView->selectedSessionIndices();
-    }
-    if (selectedRows.isEmpty()) {
-        scopeSel->setEnabled(false);
-    }
+    // --- Scope ---
+    const QList<int> selectedRows = sessionSelectionIndices();
+    const int selCount = selectedRows.size();
     auto *scopeBox = new QGroupBox(tr("Scope"), &dlg);
     auto *scopeLay = new QVBoxLayout(scopeBox);
+    auto *scopeAll = new QRadioButton(
+        tr("Entire session (%n image(s))", "", m_session.size()), scopeBox);
+    auto *scopeSel = new QRadioButton(
+        tr("Selection only (%n image(s))", "", qMax(selCount, 1)), scopeBox);
+    if (selCount == 0) {
+        scopeSel->setText(tr("Selection only (none)"));
+        scopeSel->setEnabled(false);
+        scopeAll->setChecked(true);
+    } else if (selCount < m_session.size() && selCount > 0) {
+        scopeSel->setChecked(true);
+    } else {
+        scopeAll->setChecked(true);
+    }
     scopeLay->addWidget(scopeAll);
     scopeLay->addWidget(scopeSel);
-    layout->addRow(scopeBox);
+    layout->addWidget(scopeBox);
 
-    auto *containerCombo = new QComboBox(&dlg);
-    containerCombo->addItem(tr("Folder of images"), static_cast<int>(SessionExport::Container::Directory));
-    containerCombo->addItem(tr("Comic book archive (.cbz)"), static_cast<int>(SessionExport::Container::Cbz));
-    containerCombo->addItem(tr("Multi-page PDF"), static_cast<int>(SessionExport::Container::Pdf));
-    layout->addRow(tr("Output"), containerCombo);
+    // --- Output ---
+    auto *outBox = new QGroupBox(tr("Output"), &dlg);
+    auto *outForm = new QFormLayout(outBox);
 
-    auto *formatCombo = new QComboBox(&dlg);
+    auto *containerCombo = new QComboBox(outBox);
+    containerCombo->addItem(tr("Folder of images"),
+                            static_cast<int>(SessionExport::Container::Directory));
+    containerCombo->addItem(tr("Comic book archive (.cbz)"),
+                            static_cast<int>(SessionExport::Container::Cbz));
+    containerCombo->addItem(tr("Multi-page PDF"),
+                            static_cast<int>(SessionExport::Container::Pdf));
+    {
+        const int saved = settings.value(QStringLiteral("container"), 0).toInt();
+        const int idx = containerCombo->findData(saved);
+        if (idx >= 0) {
+            containerCombo->setCurrentIndex(idx);
+        }
+    }
+    outForm->addRow(tr("Container"), containerCombo);
+
+    auto *formatCombo = new QComboBox(outBox);
     formatCombo->addItem(tr("JPEG"), static_cast<int>(SessionExport::Format::Jpeg));
     formatCombo->addItem(tr("PNG"), static_cast<int>(SessionExport::Format::Png));
-    layout->addRow(tr("Image format"), formatCombo);
+    {
+        const int saved = settings.value(QStringLiteral("format"), 0).toInt();
+        const int idx = formatCombo->findData(saved);
+        if (idx >= 0) {
+            formatCombo->setCurrentIndex(idx);
+        }
+    }
+    outForm->addRow(tr("Image format"), formatCombo);
 
-    auto *qualitySpin = new QSpinBox(&dlg);
+    auto *qualitySpin = new QSpinBox(outBox);
     qualitySpin->setRange(1, 100);
-    qualitySpin->setValue(90);
+    qualitySpin->setValue(settings.value(QStringLiteral("jpegQuality"), 90).toInt());
     qualitySpin->setSuffix(tr("%"));
-    layout->addRow(tr("JPEG quality"), qualitySpin);
+    qualitySpin->setToolTip(tr("JPEG quality (ignored for PNG and PDF)."));
+    outForm->addRow(tr("JPEG quality"), qualitySpin);
 
-    auto *edgeSpin = new QSpinBox(&dlg);
-    edgeSpin->setRange(0, 16384);
-    edgeSpin->setValue(0);
-    edgeSpin->setSpecialValueText(tr("Native (after bake)"));
-    edgeSpin->setToolTip(tr("0 = full resolution after rotate/flip/crop. "
-                            "Otherwise long edge is limited."));
-    layout->addRow(tr("Max long edge"), edgeSpin);
+    auto *edgeCombo = new QComboBox(outBox);
+    edgeCombo->setEditable(false);
+    edgeCombo->addItem(tr("Native (after bake)"), 0);
+    edgeCombo->addItem(tr("2048 px long edge"), 2048);
+    edgeCombo->addItem(tr("4096 px long edge"), 4096);
+    edgeCombo->addItem(tr("8192 px long edge"), 8192);
+    edgeCombo->addItem(tr("Custom…"), -1);
+    auto *edgeSpin = new QSpinBox(outBox);
+    edgeSpin->setRange(64, 16384);
+    edgeSpin->setSingleStep(64);
+    edgeSpin->setValue(settings.value(QStringLiteral("maxLongEdge"), 0).toInt());
+    if (edgeSpin->value() <= 0) {
+        edgeSpin->setValue(2048);
+    }
+    edgeSpin->setSuffix(tr(" px"));
+    {
+        const int savedEdge = settings.value(QStringLiteral("maxLongEdge"), 0).toInt();
+        const int preset = edgeCombo->findData(savedEdge);
+        if (savedEdge <= 0) {
+            edgeCombo->setCurrentIndex(0); // Native
+            edgeSpin->setVisible(false);
+        } else if (preset >= 0) {
+            edgeCombo->setCurrentIndex(preset);
+            edgeSpin->setVisible(false);
+        } else {
+            edgeCombo->setCurrentIndex(edgeCombo->findData(-1));
+            edgeSpin->setValue(savedEdge);
+            edgeSpin->setVisible(true);
+        }
+    }
+    auto *edgeRow = new QHBoxLayout;
+    edgeRow->addWidget(edgeCombo, 1);
+    edgeRow->addWidget(edgeSpin);
+    outForm->addRow(tr("Max long edge"), edgeRow);
+    outForm->addRow(QString(), new QLabel(
+        tr("Sources are never overwritten — only new files are written."), outBox));
 
-    auto *destEdit = new QLineEdit(&dlg);
-    auto *browseBtn = new QPushButton(tr("Browse…"), &dlg);
+    layout->addWidget(outBox);
+
+    // --- Destination ---
+    auto *destBox = new QGroupBox(tr("Destination"), &dlg);
+    auto *destLay = new QVBoxLayout(destBox);
+    auto *destEdit = new QLineEdit(destBox);
+    destEdit->setClearButtonEnabled(true);
+    auto *browseBtn = new QPushButton(tr("Browse…"), destBox);
     auto *destRow = new QHBoxLayout;
-    destRow->addWidget(destEdit);
+    destRow->addWidget(destEdit, 1);
     destRow->addWidget(browseBtn);
-    layout->addRow(tr("Destination"), destRow);
+    destLay->addLayout(destRow);
+    auto *openAfter = new QCheckBox(tr("Open destination when finished"), destBox);
+    openAfter->setChecked(settings.value(QStringLiteral("openAfter"), false).toBool());
+    destLay->addWidget(openAfter);
+    layout->addWidget(destBox);
 
-    auto updateDestFilter = [&]() {
-        const auto c = static_cast<SessionExport::Container>(
-            containerCombo->currentData().toInt());
-        formatCombo->setEnabled(c != SessionExport::Container::Pdf);
-        qualitySpin->setEnabled(
-            c != SessionExport::Container::Pdf
-            && formatCombo->currentData().toInt()
-                == static_cast<int>(SessionExport::Format::Jpeg));
+    auto *summary = new QLabel(&dlg);
+    summary->setWordWrap(true);
+    summary->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    layout->addWidget(summary);
+
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    buttons->button(QDialogButtonBox::Ok)->setText(tr("Export"));
+    layout->addWidget(buttons);
+
+    const auto containerOf = [containerCombo]() {
+        return static_cast<SessionExport::Container>(containerCombo->currentData().toInt());
     };
+    const auto formatOf = [formatCombo]() {
+        return static_cast<SessionExport::Format>(formatCombo->currentData().toInt());
+    };
+    const auto longEdgeOf = [edgeCombo, edgeSpin]() -> int {
+        const int d = edgeCombo->currentData().toInt();
+        if (d == 0) {
+            return 0;
+        }
+        if (d > 0) {
+            return d;
+        }
+        return edgeSpin->value();
+    };
+    const auto itemCount = [scopeAll, scopeSel, selCount, this]() -> int {
+        if (scopeSel->isChecked() && scopeSel->isEnabled()) {
+            return selCount;
+        }
+        return m_session.size();
+    };
+    const auto defaultStem = [this]() -> QString {
+        if (m_session.isEmpty()) {
+            return QStringLiteral("export");
+        }
+        return SessionExport::fileStem(m_session.pathAt(0));
+    };
+    const auto suggestDest = [&]() {
+        const QString lastDir = settings.value(QStringLiteral("lastDir")).toString();
+        QString base = lastDir;
+        if (base.isEmpty()) {
+            const QFileInfo fi(m_session.pathAt(0));
+            // Virtual paths: use parent of the document when possible.
+            QString p = fi.absolutePath();
+            if (p.isEmpty() || p == QLatin1String(".")) {
+                p = QDir::homePath();
+            }
+            base = p;
+        }
+        const auto c = containerOf();
+        if (c == SessionExport::Container::Directory) {
+            return QDir(base).filePath(defaultStem() + QStringLiteral("_export"));
+        }
+        if (c == SessionExport::Container::Cbz) {
+            return QDir(base).filePath(defaultStem() + QStringLiteral(".cbz"));
+        }
+        return QDir(base).filePath(defaultStem() + QStringLiteral(".pdf"));
+    };
+
+    // Seed destination from last path or a sensible default.
+    {
+        const QString lastDest = settings.value(QStringLiteral("lastDest")).toString();
+        if (!lastDest.isEmpty()) {
+            destEdit->setText(lastDest);
+        } else {
+            destEdit->setText(suggestDest());
+        }
+        destEdit->setPlaceholderText(suggestDest());
+    }
+
+    const auto updateControls = [&]() {
+        const auto c = containerOf();
+        const bool raster = (c != SessionExport::Container::Pdf);
+        formatCombo->setEnabled(raster);
+        const bool jpeg = raster
+            && formatOf() == SessionExport::Format::Jpeg;
+        qualitySpin->setEnabled(jpeg);
+        edgeSpin->setVisible(edgeCombo->currentData().toInt() < 0);
+
+        const int n = itemCount();
+        QString fmtName;
+        if (c == SessionExport::Container::Pdf) {
+            fmtName = tr("PDF");
+        } else if (formatOf() == SessionExport::Format::Png) {
+            fmtName = tr("PNG");
+        } else {
+            fmtName = tr("JPEG");
+        }
+        QString destHint = destEdit->text().trimmed();
+        if (destHint.isEmpty()) {
+            destHint = tr("(choose destination)");
+        }
+        summary->setText(
+            tr("Will export %n image(s) as %1 → %2", "", n)
+                .arg(fmtName, destHint));
+        buttons->button(QDialogButtonBox::Ok)->setEnabled(n > 0);
+    };
+
     QObject::connect(containerCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                     &dlg, updateDestFilter);
+                     &dlg, [&](int) {
+                         // Refresh suggestion when container type changes and
+                         // the field still matches an old extension/folder pattern.
+                         const QString cur = destEdit->text().trimmed();
+                         const auto c = containerOf();
+                         if (cur.isEmpty()
+                             || cur.endsWith(QLatin1String(".cbz"), Qt::CaseInsensitive)
+                             || cur.endsWith(QLatin1String(".pdf"), Qt::CaseInsensitive)
+                             || QFileInfo(cur).isDir()
+                             || cur.endsWith(QLatin1String("_export"))) {
+                             destEdit->setText(suggestDest());
+                         } else if (c == SessionExport::Container::Cbz
+                                    && !cur.endsWith(QLatin1String(".cbz"), Qt::CaseInsensitive)) {
+                             destEdit->setText(cur + QStringLiteral(".cbz"));
+                         } else if (c == SessionExport::Container::Pdf
+                                    && !cur.endsWith(QLatin1String(".pdf"), Qt::CaseInsensitive)) {
+                             destEdit->setText(cur + QStringLiteral(".pdf"));
+                         }
+                         destEdit->setPlaceholderText(suggestDest());
+                         updateControls();
+                     });
     QObject::connect(formatCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                     &dlg, updateDestFilter);
-    updateDestFilter();
+                     &dlg, [&](int) { updateControls(); });
+    QObject::connect(edgeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     &dlg, [&](int) { updateControls(); });
+    QObject::connect(edgeSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     &dlg, [&](int) { updateControls(); });
+    QObject::connect(scopeAll, &QRadioButton::toggled, &dlg, [&](bool) { updateControls(); });
+    QObject::connect(scopeSel, &QRadioButton::toggled, &dlg, [&](bool) { updateControls(); });
+    QObject::connect(destEdit, &QLineEdit::textChanged, &dlg, [&](const QString &) {
+        updateControls();
+    });
+    updateControls();
 
     QObject::connect(browseBtn, &QPushButton::clicked, &dlg, [&]() {
-        const auto c = static_cast<SessionExport::Container>(
-            containerCombo->currentData().toInt());
+        const auto c = containerOf();
+        const QString start = destEdit->text().trimmed().isEmpty()
+            ? suggestDest()
+            : destEdit->text().trimmed();
         if (c == SessionExport::Container::Directory) {
             const QString d = QFileDialog::getExistingDirectory(
-                &dlg, tr("Export Folder"), destEdit->text());
+                &dlg, tr("Export Folder"), start);
             if (!d.isEmpty()) {
                 destEdit->setText(d);
             }
         } else if (c == SessionExport::Container::Cbz) {
             const QString f = QFileDialog::getSaveFileName(
-                &dlg, tr("Export CBZ"), destEdit->text(),
-                tr("Comic book (*.cbz)"));
+                &dlg, tr("Export CBZ"), start, tr("Comic book (*.cbz)"));
             if (!f.isEmpty()) {
                 destEdit->setText(f);
             }
         } else {
             const QString f = QFileDialog::getSaveFileName(
-                &dlg, tr("Export PDF"), destEdit->text(),
-                tr("PDF (*.pdf)"));
+                &dlg, tr("Export PDF"), start, tr("PDF (*.pdf)"));
             if (!f.isEmpty()) {
                 destEdit->setText(f);
             }
         }
     });
 
-    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
-    layout->addRow(buttons);
     QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
 
     if (dlg.exec() != QDialog::Accepted) {
+        settings.endGroup();
         return;
     }
 
     QString dest = destEdit->text().trimmed();
     if (dest.isEmpty()) {
+        settings.endGroup();
         if (statusBar()) {
             statusBar()->showMessage(tr("No destination chosen."), 4000);
         }
@@ -571,11 +760,10 @@ void MainWindow::exportSessionImages()
     }
 
     SessionExport::Options opt;
-    opt.container = static_cast<SessionExport::Container>(
-        containerCombo->currentData().toInt());
-    opt.format = static_cast<SessionExport::Format>(formatCombo->currentData().toInt());
+    opt.container = containerOf();
+    opt.format = formatOf();
     opt.jpegQuality = qualitySpin->value();
-    opt.maxLongEdge = edgeSpin->value();
+    opt.maxLongEdge = longEdgeOf();
     opt.destPath = dest;
     if (opt.container == SessionExport::Container::Cbz
         && !opt.destPath.endsWith(QLatin1String(".cbz"), Qt::CaseInsensitive)) {
@@ -586,10 +774,38 @@ void MainWindow::exportSessionImages()
         opt.destPath += QStringLiteral(".pdf");
     }
 
+    // Confirm overwrite for file containers.
+    if (opt.container != SessionExport::Container::Directory
+        && QFileInfo::exists(opt.destPath)) {
+        const auto ans = QMessageBox::question(
+            this, tr("Export Images"),
+            tr("“%1” already exists. Overwrite?").arg(QFileInfo(opt.destPath).fileName()),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (ans != QMessageBox::Yes) {
+            settings.endGroup();
+            return;
+        }
+    }
+
+    settings.setValue(QStringLiteral("container"), static_cast<int>(opt.container));
+    settings.setValue(QStringLiteral("format"), static_cast<int>(opt.format));
+    settings.setValue(QStringLiteral("jpegQuality"), opt.jpegQuality);
+    settings.setValue(QStringLiteral("maxLongEdge"), opt.maxLongEdge);
+    settings.setValue(QStringLiteral("lastDest"), opt.destPath);
+    settings.setValue(QStringLiteral("openAfter"), openAfter->isChecked());
+    {
+        const QFileInfo fi(opt.destPath);
+        settings.setValue(QStringLiteral("lastDir"),
+                          fi.isDir() ? fi.absoluteFilePath() : fi.absolutePath());
+    }
+    const bool openWhenDone = openAfter->isChecked();
+    settings.endGroup();
+
     QList<int> indices;
-    if (scopeSel->isChecked() && !selectedRows.isEmpty()) {
+    if (scopeSel->isChecked() && scopeSel->isEnabled() && !selectedRows.isEmpty()) {
         indices = selectedRows;
         std::sort(indices.begin(), indices.end());
+        indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
     } else {
         for (int i = 0; i < m_session.size(); ++i) {
             indices.append(i);
@@ -625,92 +841,105 @@ void MainWindow::exportSessionImages()
     auto *progress = new QProgressDialog(
         tr("Exporting images…"), tr("Cancel"), 0, items.size(), this);
     progress->setWindowModality(Qt::WindowModal);
-    progress->setMinimumDuration(0);
+    progress->setMinimumDuration(400);
     progress->setValue(0);
-    progress->setAutoClose(true);
-    progress->setAutoReset(true);
 
+    // Shared cancel flag for dialog button + worker.
     auto cancelFlag = std::make_shared<std::atomic<bool>>(false);
     QObject::connect(progress, &QProgressDialog::canceled, this, [cancelFlag]() {
         cancelFlag->store(true, std::memory_order_relaxed);
     });
 
-    const SessionExport::Options optCopy = opt;
     const QVector<SessionExport::Item> itemsCopy = items;
+    const SessionExport::Options optCopy = opt;
     QPointer<MainWindow> guard(this);
     QPointer<QProgressDialog> progressGuard(progress);
 
-    QThreadPool::globalInstance()->start(
-        [guard, progressGuard, optCopy, itemsCopy, cancelFlag]() {
-            SessionExport::ProgressFn progressFn =
-                [progressGuard](int completed, int total) -> bool {
-                    if (!progressGuard) {
-                        return false;
-                    }
-                    // Progress UI must run on the GUI thread.
-                    QMetaObject::invokeMethod(
-                        progressGuard.data(),
-                        [progressGuard, completed, total]() {
-                            if (!progressGuard) {
-                                return;
-                            }
-                            progressGuard->setMaximum(total);
-                            progressGuard->setValue(completed);
-                            progressGuard->setLabelText(
-                                QObject::tr("Exporting %1 / %2…")
-                                    .arg(completed)
-                                    .arg(total));
-                        },
-                        Qt::QueuedConnection);
-                    return true; // cancel is via cancelFlag / dialog button
-                };
+    QThreadPool::globalInstance()->start([guard, progressGuard, itemsCopy, optCopy,
+                                          cancelFlag, openWhenDone]() {
+        SessionExport::ProgressFn progressFn =
+            [progressGuard](int completed, int total) -> bool {
+                if (!progressGuard) {
+                    return false;
+                }
+                QMetaObject::invokeMethod(
+                    progressGuard.data(),
+                    [progressGuard, completed, total]() {
+                        if (!progressGuard) {
+                            return;
+                        }
+                        progressGuard->setMaximum(total);
+                        progressGuard->setValue(completed);
+                        progressGuard->setLabelText(
+                            QObject::tr("Exporting %1 / %2…")
+                                .arg(completed)
+                                .arg(total));
+                    },
+                    Qt::QueuedConnection);
+                return true;
+            };
 
-            const SessionExport::Result result = SessionExport::exportItems(
-                itemsCopy, optCopy, progressFn, cancelFlag.get());
+        const SessionExport::Result result = SessionExport::exportItems(
+            itemsCopy, optCopy, progressFn, cancelFlag.get());
 
-            if (!guard) {
+        if (!guard) {
+            return;
+        }
+        QTimer::singleShot(0, guard, [guard, progressGuard, result, openWhenDone]() {
+            MainWindow *host = guard.data();
+            if (progressGuard) {
+                progressGuard->reset();
+                progressGuard->deleteLater();
+            }
+            if (!host || !host->statusBar()) {
                 return;
             }
-            QTimer::singleShot(0, guard, [guard, progressGuard, result]() {
-                MainWindow *host = guard.data();
-                if (progressGuard) {
-                    progressGuard->reset();
-                    progressGuard->deleteLater();
-                }
-                if (!host || !host->statusBar()) {
-                    return;
-                }
-                if (result.cancelled) {
-                    host->statusBar()->showMessage(
-                        QObject::tr("Export cancelled (%1 written, %2 failed)")
-                            .arg(result.written)
-                            .arg(result.failed),
-                        6000);
-                    return;
-                }
-                if (result.written > 0 && result.failed == 0) {
-                    host->statusBar()->showMessage(
-                        QObject::tr("Exported %1 image(s) → %2")
-                            .arg(result.written)
-                            .arg(result.destPath),
-                        6000);
-                } else if (result.written > 0) {
-                    host->statusBar()->showMessage(
-                        QObject::tr("Exported %1, failed %2 → %3")
-                            .arg(result.written)
-                            .arg(result.failed)
-                            .arg(result.destPath),
-                        8000);
-                } else {
-                    const QString detail = result.errors.isEmpty()
-                        ? QObject::tr("unknown error")
-                        : result.errors.first();
-                    host->statusBar()->showMessage(
-                        QObject::tr("Export failed: %1").arg(detail), 8000);
+            if (result.cancelled) {
+                host->statusBar()->showMessage(
+                    QObject::tr("Export cancelled (%1 written, %2 failed)")
+                        .arg(result.written)
+                        .arg(result.failed),
+                    6000);
+                return;
+            }
+            if (result.written > 0 && result.failed == 0) {
+                host->statusBar()->showMessage(
+                    QObject::tr("Exported %1 image(s) → %2")
+                        .arg(result.written)
+                        .arg(result.destPath),
+                    6000);
+            } else if (result.written > 0) {
+                host->statusBar()->showMessage(
+                    QObject::tr("Exported %1, failed %2 → %3")
+                        .arg(result.written)
+                        .arg(result.failed)
+                        .arg(result.destPath),
+                    8000);
+                if (!result.errors.isEmpty()) {
                     QMessageBox::warning(
                         host, QObject::tr("Export Images"),
-                        QObject::tr("Export failed.\n%1").arg(detail));
+                        QObject::tr("Exported with errors.\n%1")
+                            .arg(result.errors.join(QLatin1Char('\n'))));
                 }
-            });
+            } else {
+                const QString detail = result.errors.isEmpty()
+                    ? QObject::tr("unknown error")
+                    : result.errors.join(QLatin1Char('\n'));
+                host->statusBar()->showMessage(
+                    QObject::tr("Export failed: %1").arg(detail), 8000);
+                QMessageBox::warning(
+                    host, QObject::tr("Export Images"),
+                    QObject::tr("Export failed.\n%1").arg(detail));
+            }
+            if (openWhenDone && result.written > 0 && !result.destPath.isEmpty()) {
+                QString openPath = result.destPath;
+                const QFileInfo fi(openPath);
+                if (!fi.isDir()) {
+                    openPath = fi.absolutePath();
+                }
+                QDesktopServices::openUrl(QUrl::fromLocalFile(openPath));
+            }
         });
+    });
 }
+

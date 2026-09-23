@@ -8,7 +8,7 @@ Product notes (2026-09-23).
 (directory / .cbz / multi-page PDF), bake via SessionAppearance,
 File menu page exports mode-gated to Workspace.
 Selection: filmstrip indices, else Gallery/Workspace `selectedSessionIndices`.
-Progress dialog + cancel (2325). Reorder UI still open.
+Progress dialog + cancel (2325). Export dialog: remembered settings, edge presets, selection-default scope, overwrite confirm, open-after (2340).
 
 ## 1. Session image export (Gallery / Image)
 

@@ -113,8 +113,8 @@ void MainWindow::createActions()
     m_exportSessionImagesAct->setIcon(
         themeIcon(QStringLiteral("document-save"), QStyle::SP_DialogSaveButton));
     m_exportSessionImagesAct->setStatusTip(
-        tr("Bake rotate/flip/crop into new files (folder, CBZ, or multi-page PDF); "
-           "never overwrites originals"));
+        tr("Export session images as folder, CBZ, or PDF (appearance applied; "
+           "sources never overwritten)"));
     connect(m_exportSessionImagesAct, &QAction::triggered, this,
             &MainWindow::exportSessionImages);
 
@@ -1719,6 +1719,12 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_exportTextAct, tr(
         "<p>Export extracted text when the current document provides it "
         "(e.g. some PDF/EPUB flows).</p>"));
+    setHelp(m_exportSessionImagesAct, tr(
+        "<p>Export session images with content appearance applied (crop, flip, "
+        "rotation, colour grade). Choose a folder of JPEG/PNG files, a .cbz comic "
+        "archive, or a multi-page PDF. Sources are never overwritten.</p>"
+        "<p>Scope can be the entire session or the current selection. Settings "
+        "are remembered between runs.</p>"));
 
     // --- View / zoom ---
     setHelp(m_zoomInAct, tr("<p>Zoom the view in around the viewport centre (or cursor where applicable).</p>"));
