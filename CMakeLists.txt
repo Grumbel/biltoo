@@ -615,6 +615,14 @@ if(Qt6Test_FOUND)
   target_link_libraries(biltoo-gallerylayout-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
   add_test(NAME gallerylayout-pure COMMAND biltoo-gallerylayout-test)
 
+  add_executable(biltoo-imagesizebook-test
+    tests/imagesizebook_test.cpp
+  )
+  target_include_directories(biltoo-imagesizebook-test PRIVATE src)
+  target_link_libraries(biltoo-imagesizebook-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+  add_test(NAME imagesizebook COMMAND biltoo-imagesizebook-test)
+
+
   add_executable(biltoo-rasterclimbsm-test
     tests/rasterclimbsm_test.cpp
     src/display/rasterclimbsm.cpp

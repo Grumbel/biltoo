@@ -30,6 +30,11 @@ private slots:
     void packPoses_facing();
     void packPoses_masonryFillAndRowsFill();
     void packPosesForMode_dispatches();
+    // Regression: size / crop contracts (square stand-in → cropped cells)
+    void grid_landscape_noCellClip_containScale();
+    void gridCrop_landscape_squareCell_coverScale();
+    void masonry_mixedAspects_preserveFootprintRatio();
+    void sideBySide_mixedAspects_preserveFootprintRatio();
 };
 
 void GalleryLayoutTest::axesSwap_cardinalAndDiagonal()
@@ -314,6 +319,71 @@ void GalleryLayoutTest::packPosesForMode_dispatches()
         GalleryLayout::packPosesFlow(sizes, 0.0, 10.0, 110.0, 2, true);
     QCOMPARE(flowVia.size(), flowDirect.size());
     QCOMPARE(flowVia.at(0).scale, flowDirect.at(0).scale);
+}
+
+
+void GalleryLayoutTest::grid_landscape_noCellClip_containScale()
+{
+    // Grid uses square *slots* in the layout grid but contain-scales content
+    // and must NOT set cellSize (no galleryClipLocal crop). Landscape 200×100
+    // into 50×50 cell → scale 0.25, empty cellSize.
+    const auto poses = GalleryLayout::packPosesGrid({QSizeF(200, 100)}, 0.0, 0.0, 50.0, 1);
+    QCOMPARE(poses.size(), 1);
+    QCOMPARE(poses.at(0).scale, 0.25);
+    QVERIFY(poses.at(0).cellSize.isEmpty());
+}
+
+void GalleryLayoutTest::gridCrop_landscape_squareCell_coverScale()
+{
+    // GridCrop is the only mode that *should* set a square cellSize clip.
+    const auto poses = GalleryLayout::packPosesGridCrop({QSizeF(200, 100)}, 0.0, 0.0, 50.0, 1);
+    QCOMPARE(poses.size(), 1);
+    QCOMPARE(poses.at(0).cellSize, QSizeF(50.0, 50.0));
+    // Cover: max(50/200, 50/100) = 0.5
+    QCOMPARE(poses.at(0).scale, 0.5);
+}
+
+void GalleryLayoutTest::masonry_mixedAspects_preserveFootprintRatio()
+{
+    // Mixed landscape / portrait / square — displayed footprint aspect must
+    // match native aspect (scale is uniform). Feeding square stand-ins here
+    // would make every footprint square (the 2388 bug at pack input).
+    const QVector<QSizeF> mixed{QSizeF(400, 200), QSizeF(200, 400), QSizeF(300, 300)};
+    // availW=210 gap=10 cols=2 → colW = 100
+    const auto poses = GalleryLayout::packPosesMasonry(mixed, 0.0, 10.0, 210.0, 2);
+    QCOMPARE(poses.size(), 3);
+    for (int i = 0; i < mixed.size(); ++i) {
+        const QSizeF ns = mixed.at(i);
+        const qreal scale = poses.at(i).scale;
+        const qreal fw = ns.width() * scale;
+        const qreal fh = ns.height() * scale;
+        const qreal nativeAr = ns.width() / ns.height();
+        const qreal footAr = fw / fh;
+        QVERIFY2(qAbs(nativeAr - footAr) < 1e-9,
+                 qPrintable(QStringLiteral("item %1 footprint aspect diverged").arg(i)));
+        // No crop cell in masonry.
+        QVERIFY(poses.at(i).cellSize.isEmpty());
+    }
+    // Landscape must not become square footprint.
+    QVERIFY(qAbs(poses.at(0).scale * mixed.at(0).width()
+                 - poses.at(0).scale * mixed.at(0).height()) > 1.0);
+}
+
+void GalleryLayoutTest::sideBySide_mixedAspects_preserveFootprintRatio()
+{
+    const QVector<QSizeF> mixed{QSizeF(400, 200), QSizeF(100, 200)};
+    // availH=200 → scale 1 for both (height fill).
+    const auto poses = GalleryLayout::packPosesSideBySide(mixed, 0.0, 10.0, 200.0);
+    QCOMPARE(poses.size(), 2);
+    for (int i = 0; i < mixed.size(); ++i) {
+        const QSizeF ns = mixed.at(i);
+        const qreal scale = poses.at(i).scale;
+        QCOMPARE(scale, 1.0);
+        const qreal nativeAr = ns.width() / ns.height();
+        const qreal footAr = (ns.width() * scale) / (ns.height() * scale);
+        QCOMPARE(footAr, nativeAr);
+        QVERIFY(poses.at(i).cellSize.isEmpty());
+    }
 }
 
 QTEST_MAIN(GalleryLayoutTest)
