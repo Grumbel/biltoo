@@ -21,6 +21,7 @@ class QMouseEvent;
 class QWheelEvent;
 class QKeyEvent;
 class QTimer;
+class QPainter;
 class QPoint;
 
 /**
@@ -107,6 +108,8 @@ public:
     void rebuildVirtualPlan();
     /** Create/destroy ImageItems so only near-viewport slots are live. */
     void syncVirtualWindow();
+    /** Scene-space cell frames for slots without/under live items. */
+    void paintVirtualPlaceholders(QPainter *painter, const QRectF &exposed) const;
     void decodeWatchdogTick();
     void setGridColumns(int columns);
     void setMasonryColumns(int columns);

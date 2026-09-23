@@ -166,6 +166,12 @@ void ImageView::drawBackground(QPainter *painter, const QRectF &rect)
 {
     paintCanvasBackground(painter, rect, transform().m11());
 
+    // Virtualized Gallery: packed cell frames under items (slots with no live
+    // ImageItem yet, or while soft pixels are still loading).
+    if (isGalleryMode() && painter) {
+        m_gallery.paintVirtualPlaceholders(painter, rect);
+    }
+
     // Page guide paper (under images): plain white sheet in scene units.
     if (m_pageGuide.isVisible() && isWorkspaceMode()) {
         const QRectF page = pageGuideSceneRect();

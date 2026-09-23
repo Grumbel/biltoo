@@ -1774,6 +1774,30 @@ void GalleryController::syncVirtualWindow()
     }
 }
 
+void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF &exposed) const
+{
+    if (!painter || !m_view || !m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
+        return;
+    }
+    // Cheap cell frames for the offline plan. Live ImageItems paint on top when
+    // present; empty cells still show the packed grid instead of bare canvas.
+    painter->save();
+    painter->setPen(QPen(QColor(70, 70, 74), 0));
+    painter->setBrush(QColor(42, 42, 46));
+    int drawn = 0;
+    constexpr int kMaxDrawn = 400; // exposed region only; hard cap for safety
+    for (const VirtualSlot &slot : m_virtualSlots) {
+        if (!slot.bounds.intersects(exposed)) {
+            continue;
+        }
+        painter->drawRect(slot.bounds);
+        if (++drawn >= kMaxDrawn) {
+            break;
+        }
+    }
+    painter->restore();
+}
+
 void GalleryController::decodeWatchdogTick()
 {
     if (!m_view->isGalleryMode() || m_view->liveItems().isEmpty()) {
