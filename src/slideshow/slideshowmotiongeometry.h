@@ -5,7 +5,7 @@
 #define SLIDESHOWMOTIONGEOMETRY_H
 
 #include "slideshow/slideshowtypes.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QPointF>
 #include <QRectF>

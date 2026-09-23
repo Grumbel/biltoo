@@ -5,7 +5,7 @@
 #define VIEWFRAMING_H
 
 #include <QtGlobal>
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include <QPointF>
 #include <QRectF>
 #include <QtCore/qnamespace.h>

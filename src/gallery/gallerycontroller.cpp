@@ -12,7 +12,7 @@
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "layoutapplyguard.h"
 #include <QElapsedTimer>
 #include "session/sessionappearance.h"

@@ -11,7 +11,7 @@
 #include "biltoo_thread.h"
 #include <QTimer>
 #include <QImage>
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "itemcomponents.h"
 #include "crop/cropsession.h"
 #include "display/imagecache.h"

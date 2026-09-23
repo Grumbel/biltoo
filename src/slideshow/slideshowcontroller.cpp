@@ -11,7 +11,7 @@
 #include "contentxform.h"
 #include "display/displayquality.h"
 #include "display/pathrasterservice.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "zoomblurhelpers.h"
 #include "slideshow/slideshowclocks.h"
 #include "slideshow/slideshowphasepolicy.h"

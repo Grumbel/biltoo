@@ -11,7 +11,7 @@
 #include "placementlinear.h"
 #include "imageitem.h"
 #include "crop/cropappearancecommand.h"
-#include "viewportupdatehold.h"
+#include "view/viewportupdatehold.h"
 #include "crop/cropdebug.h"
 #include "session/sessionappearance.h"
 #include <QUndoStack>

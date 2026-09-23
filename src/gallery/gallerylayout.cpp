@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "gallery/gallerylayout.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "gallery/gallerypackfit.h"
 #include "imageitem.h"
 #include "itemcomponents.h"

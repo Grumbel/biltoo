@@ -9,7 +9,7 @@
 #include "display/imagecache.h"
 #include "imageitem.h"
 #include "session/sessionappearance.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QImage>
 #include <QTimer>

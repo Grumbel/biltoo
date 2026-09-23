@@ -20,8 +20,8 @@
 #include "itemworld.h"
 #include "itemcomponents.h"
 #include "contentxform.h"
-#include "viewframing.h"
-#include "viewtransform.h"
+#include "view/viewframing.h"
+#include "view/viewtransform.h"
 #include "imageview_types.h"
 
 #if defined(BILTOO_HAVE_IMAGEVIEW_HARNESS)

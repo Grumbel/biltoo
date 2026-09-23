@@ -4,7 +4,7 @@
 #ifndef ZOOMREGIONGESTURE_H
 #define ZOOMREGIONGESTURE_H
 
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QPoint>
 #include <QRect>

@@ -5,7 +5,7 @@
 #include <QUndoCommand>
 #include <QSet>
 #include "slideshow/slideshowclocks.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include <QtMath>
 #include <algorithm>
 #include "host/thumtoocache.h"

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspace/workspacebackgrounddialog.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "shell/icons.h"
 
 #include <QColorDialog>

@@ -4,7 +4,7 @@
 #include "slideshow/slideshowatlaspolicy.h"
 
 #include "host/thumtoocache.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QtGlobal>
 #include <QtMath>

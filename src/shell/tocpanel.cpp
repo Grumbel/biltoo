@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/tocpanel.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QLabel>
 #include <QTreeWidget>

@@ -10,7 +10,7 @@
 #include <QScrollBar>
 #include <QtMath>
 #include "workspace/workspacegeometry.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "session/sessionappearance.h"
 #include "ttfp_trace.h"
 #include "display/imagecache.h"

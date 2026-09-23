@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "display/tile_load_coordinator.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include "biltoo_thread.h"
 #include "imageitem.h"

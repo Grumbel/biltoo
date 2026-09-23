@@ -5,7 +5,7 @@
 #define IMAGECACHE_H
 
 #include <QImage>
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include <QString>
 #include <QStringList>
 

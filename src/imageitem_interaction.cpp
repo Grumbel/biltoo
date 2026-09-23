@@ -18,7 +18,7 @@
 
 #include <QCoreApplication>
 #include "placementlinear.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "imageview.h"
 
 #include <QCursor>

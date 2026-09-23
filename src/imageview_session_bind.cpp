@@ -9,7 +9,7 @@
 #include "display/imagecache.h"
 #include "session/sessionappearance.h"
 #include "session/sessionbindbook.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QHash>
 #include <QSet>

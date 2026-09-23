@@ -8,7 +8,7 @@
 #include <QFileInfo>
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "imageview.h"
 #include "session/sessionbindbook.h"
 #include <QUndoStack>

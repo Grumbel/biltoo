@@ -3,7 +3,7 @@
 
 #include "slideshow/slideshowsettingsdialog.h"
 #include "slideshow/slideshowclocks.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "slideshow/slideshowmotiongeometry.h"
 
 #include <QCheckBox>

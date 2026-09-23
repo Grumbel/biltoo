@@ -10,7 +10,7 @@
 #include "workspace/workspacenavgeometry.h"
 #include "workspace/grouptransformgeometry.h"
 #include "selectiongeometry.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "placementlinear.h"
 #include "attention/attentiongeometry.h"
 #include "edgenavpolicy.h"

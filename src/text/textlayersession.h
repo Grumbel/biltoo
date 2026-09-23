@@ -5,7 +5,7 @@
 #define TEXTLAYERSESSION_H
 
 #include "host/thumtoocache.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QPoint>
 #include <QRect>

@@ -4,7 +4,7 @@
 #include "session/sessionappearance.h"
 #include "contentxform.h"
 #include "crop/cropgeometry.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "biltoo_thread.h"
 #include "color/coloradjust.h"
 #include "host/thumtoocache.h"

@@ -168,7 +168,7 @@ set(BILTOO_LIB_SOURCES
   src/crop/croppathraster.h
   src/crop/cropflash.h
   src/crop/cropdebug.h
-  src/viewportupdatehold.h
+  src/view/viewportupdatehold.h
   src/attention/attentionsession.h
   src/attention/attentiongeometry.cpp
   src/attention/attentiongeometry.h
@@ -190,12 +190,12 @@ set(BILTOO_LIB_SOURCES
   src/workspace/stackgeometry.cpp
   src/workspace/stackgeometry.h
   src/hud/hudflash.h
-  src/viewframing.h
+  src/view/viewframing.h
   src/text/textlayersession.h
   src/zoomregiongesture.h
   src/canvasbackground.h
   src/layoutprefs.h
-  src/viewportchrome.h
+  src/view/viewportchrome.h
   src/hud/hudappearance.h
   src/session/sessionchrome.h
   src/gallery/gallerydecodebook.h
@@ -204,7 +204,7 @@ set(BILTOO_LIB_SOURCES
   src/gallery/gallerypackfit.h
   src/selectiongeometry.h
   src/color/coloradjustcommit.h
-  src/viewtransform.h
+  src/view/viewtransform.h
   src/workspace/workspacenavgeometry.h
   src/toolpolicy.h
   src/hud/hudgeometry.h

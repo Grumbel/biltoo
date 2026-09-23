@@ -6,8 +6,8 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
-#include "viewtransform.h"
-#include "viewframing.h"
+#include "view/viewtransform.h"
+#include "view/viewframing.h"
 
 #include <QScrollBar>
 #include "toolpolicy.h"

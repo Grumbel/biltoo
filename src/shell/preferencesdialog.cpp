@@ -3,7 +3,7 @@
 
 #include "shell/preferencesdialog.h"
 #include "slideshow/slideshowclocks.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "hud/hudappearance.h"
 #include "slideshow/slideshowtypes.h"
 #include "shell/defaultapps.h"

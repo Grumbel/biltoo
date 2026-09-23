@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/thumbnailbar.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "filmstripgeometry.h"
 #include "display/displayquality.h"
 #include "display/displaysurface.h"

@@ -27,7 +27,7 @@
 #include "imagesizebook.h"
 #include "biltoo_logging.h"
 #include "ttfp_trace.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QFileInfo>
 #include <QThreadPool>

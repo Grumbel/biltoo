@@ -3,7 +3,7 @@
 
 #include "workspace/grouptransformgeometry.h"
 #include "placementlinear.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QLineF>
 #include <QtMath>

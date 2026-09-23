@@ -6,7 +6,7 @@
 
 #include <QSize>
 #include <QtGlobal>
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 /**
  * Pure filmstrip / ThumbnailBar layout helpers (no QListView state).

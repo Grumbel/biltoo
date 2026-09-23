@@ -8,7 +8,7 @@
 #include "contentxform.h"
 #include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QPainter>
 #include <QImage>

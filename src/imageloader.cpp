@@ -11,7 +11,7 @@
 #include "biltoo_thread.h"
 #include "imageloader.h"
 #include "attention/attentiongeometry.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "archivepath.h"

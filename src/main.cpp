@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "biltoo_logging.h"
 #include "shell/metadatapanel.h"
 #include "imageloader.h"

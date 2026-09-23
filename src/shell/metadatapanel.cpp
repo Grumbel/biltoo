@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/metadatapanel.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include "archivepath.h"
 #include "pagepath.h"
 #include "imageloader.h"

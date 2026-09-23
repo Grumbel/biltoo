@@ -9,7 +9,7 @@
 #include <QSizeF>
 #include "itemcomponents.h"
 #include <cmath>
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 #include <functional>
 
 class ImageItem;

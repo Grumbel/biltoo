@@ -6,7 +6,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "workspace/pageguidegeometry.h"
-#include "viewtransform.h"
+#include "view/viewtransform.h"
 
 #include <QPainter>
 #include <QPrinter>
