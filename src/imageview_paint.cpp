@@ -4,7 +4,7 @@
 #include "imageview.h"
 #include "hud/hudmodel.h"
 #include "text/textsearchpolicy.h"
-#include "canvaspatterngeometry.h"
+#include "view/canvaspatterngeometry.h"
 #include "view/viewtransform.h"
 #include "hud/hudgeometry.h"
 #include "slideshow/slideshowclocks.h"

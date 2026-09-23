@@ -18,7 +18,7 @@
 #include "view/viewframing.h"
 #include "text/textlayersession.h"
 #include "slideshow/zoomregiongesture.h"
-#include "canvasbackground.h"
+#include "view/canvasbackground.h"
 #include "layoutprefs.h"
 #include "view/viewportchrome.h"
 #include "hud/hudappearance.h"

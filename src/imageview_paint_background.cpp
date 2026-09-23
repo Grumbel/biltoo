@@ -3,7 +3,7 @@
 
 #include "imageview.h"
 #include "text/textsearchpolicy.h"
-#include "canvaspatterngeometry.h"
+#include "view/canvaspatterngeometry.h"
 #include "view/viewtransform.h"
 #include "hud/hudgeometry.h"
 #include "slideshow/slideshowclocks.h"
@@ -28,7 +28,7 @@
 #include <QStyleOptionGraphicsItem>
 #include "biltoo_logging.h"
 #include <QGraphicsItem>
-#include "canvasbackground.h"
+#include "view/canvasbackground.h"
 
 void ImageView::paintCanvasBackground(QPainter *painter, const QRectF &rect,
                                            qreal viewScale)

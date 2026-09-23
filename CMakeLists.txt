@@ -193,7 +193,7 @@ set(BILTOO_LIB_SOURCES
   src/view/viewframing.h
   src/text/textlayersession.h
   src/slideshow/zoomregiongesture.h
-  src/canvasbackground.h
+  src/view/canvasbackground.h
   src/layoutprefs.h
   src/view/viewportchrome.h
   src/hud/hudappearance.h
@@ -210,7 +210,7 @@ set(BILTOO_LIB_SOURCES
   src/hud/hudgeometry.h
   src/text/textsearchpolicy.h
   src/text/textsearchpolicy.cpp
-  src/canvaspatterngeometry.h
+  src/view/canvaspatterngeometry.h
   src/gallery/galleryrelayoutsuppress.h
   src/layoutapplyguard.h
   src/imagesizebook.h
