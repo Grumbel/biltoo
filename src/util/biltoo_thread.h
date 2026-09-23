@@ -30,20 +30,28 @@
                "UI work must run on the GUI thread")
 
 /**
- * Default GUI wall budget (ms). Generous enough to avoid noise on modest
- * hardware; still catches multi-frame stalls. Override per-site with
- * GUI_BUDGET_MS only when a tighter budget is intentional.
+ * Default GUI wall budget (ms) for a single scope *or* a tight chain of scopes
+ * in one event-loop burst (e.g. 16× sizeReady in one chunk).
  */
 constexpr qint64 kGuiBudgetDefaultMs = 25;
 
 /**
+ * Gap (ms) after which sequential GuiBudgetScope instances are treated as a
+ * new event-loop turn instead of one chained burst.
+ */
+constexpr qint64 kGuiBudgetChainGapMs = 3;
+
+/**
  * Scoped wall-time budget for code that is allowed on the GUI thread.
- * Always logs when exceeded. Aborts only if BILTOO_GUI_BUDGET_STRICT is set
- * (non-empty, not "0") so normal runs stay usable while budgets are tightened.
+ * Always logs when *this* scope exceeds the budget.
  *
- * Put a scope at every GUI entry that can do non-trivial work (paint, mode
- * switch, sizeReady, layout, filmstrip fill, decode window, …). Nested scopes
- * are fine; the outer one reports total wall time for that entry.
+ * Also tracks a **chain**: scopes that start within kGuiBudgetChainGapMs of
+ * the previous scope's end share one turn clock. If the chain total exceeds
+ * the budget, logs once:
+ *   biltoo/GUI_BUDGET EXCEEDED: chained-turn … (via last-label)
+ * so N× small handlers cannot freeze the UI without a report.
+ *
+ * Aborts only if BILTOO_GUI_BUDGET_STRICT is set (non-empty, not "0").
  */
 class GuiBudgetScope
 {
@@ -52,33 +60,59 @@ public:
         : m_label(label)
         , m_budgetMs(budgetMs > 0 ? budgetMs : kGuiBudgetDefaultMs)
     {
+        if (!QThread::isMainThread()) {
+            return;
+        }
+        m_onGui = true;
+        // Continue or start the event-burst chain.
+        if (!s_chainOn || s_chain.elapsed() - s_lastEndElapsed > kGuiBudgetChainGapMs) {
+            s_chain.restart();
+            s_chainOn = true;
+            s_chainReported = false;
+            s_lastEndElapsed = 0;
+        }
         m_timer.start();
     }
     ~GuiBudgetScope()
     {
-        if (!QThread::isMainThread()) {
+        if (!m_onGui) {
             return;
         }
-        const qint64 ms = m_timer.elapsed();
-        if (ms <= m_budgetMs) {
-            return;
+        const qint64 selfMs = m_timer.elapsed();
+        const qint64 chainMs = s_chain.elapsed();
+        s_lastEndElapsed = chainMs;
+
+        if (selfMs > m_budgetMs) {
+            logExceed(m_label, selfMs, m_budgetMs);
         }
-        std::fprintf(stderr,
-                     "biltoo/GUI_BUDGET EXCEEDED: %s took %lld ms (budget %lld ms)%s\n",
-                     m_label ? m_label : "?",
-                     static_cast<long long>(ms),
-                     static_cast<long long>(m_budgetMs),
-                     strictMode() ? " [STRICT abort]" : " [log only; set BILTOO_GUI_BUDGET_STRICT=1 to abort]");
-        std::fflush(stderr);
-        if (strictMode()) {
-            Q_ASSERT_X(ms <= m_budgetMs, m_label ? m_label : "GuiBudget",
-                       "GUI thread work exceeded budget — move off GUI or shrink");
+        // One report per chain when the burst total blows the budget.
+        if (!s_chainReported && chainMs > kGuiBudgetDefaultMs) {
+            s_chainReported = true;
+            char buf[256];
+            std::snprintf(buf, sizeof(buf), "chained-turn (last=%s)",
+                          m_label ? m_label : "?");
+            logExceed(buf, chainMs, kGuiBudgetDefaultMs);
         }
     }
     GuiBudgetScope(const GuiBudgetScope &) = delete;
     GuiBudgetScope &operator=(const GuiBudgetScope &) = delete;
 
 private:
+    static void logExceed(const char *label, qint64 ms, qint64 budgetMs)
+    {
+        std::fprintf(stderr,
+                     "biltoo/GUI_BUDGET EXCEEDED: %s took %lld ms (budget %lld ms)%s\n",
+                     label ? label : "?",
+                     static_cast<long long>(ms),
+                     static_cast<long long>(budgetMs),
+                     strictMode() ? " [STRICT abort]"
+                                  : " [log only; set BILTOO_GUI_BUDGET_STRICT=1 to abort]");
+        std::fflush(stderr);
+        if (strictMode()) {
+            Q_ASSERT_X(ms <= budgetMs, label ? label : "GuiBudget",
+                       "GUI thread work exceeded budget — move off GUI or shrink");
+        }
+    }
     static bool strictMode()
     {
         const char *e = std::getenv("BILTOO_GUI_BUDGET_STRICT");
@@ -88,6 +122,12 @@ private:
     const char *m_label = nullptr;
     qint64 m_budgetMs = kGuiBudgetDefaultMs;
     QElapsedTimer m_timer;
+    bool m_onGui = false;
+
+    static inline thread_local bool s_chainOn = false;
+    static inline thread_local bool s_chainReported = false;
+    static inline thread_local QElapsedTimer s_chain{};
+    static inline thread_local qint64 s_lastEndElapsed = 0;
 };
 
 #define GUI_BUDGET(label) \

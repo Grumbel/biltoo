@@ -1689,6 +1689,10 @@ void GalleryController::syncVirtualWindow()
     }
 
     QSet<ImageItem *> keep;
+    QElapsedTimer sliceTimer;
+    sliceTimer.start();
+    constexpr qint64 kVirtualWindowSliceMs = 12;
+    bool needAnotherSlice = false;
     for (int idx : want) {
         const VirtualSlot &slot = m_virtualSlots.at(idx);
         ImageItem *item = nullptr;
@@ -1703,6 +1707,10 @@ void GalleryController::syncVirtualWindow()
             }
         }
         if (!item) {
+            if (sliceTimer.elapsed() >= kVirtualWindowSliceMs) {
+                needAnotherSlice = true;
+                continue;
+            }
             // Lazy size probe for on-screen rows not covered by the open prefix.
             if (!slot.path.isEmpty()
                 && !m_view->hostSizeBook().hasDefinitive(slot.path)
@@ -1788,6 +1796,13 @@ void GalleryController::syncVirtualWindow()
         if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
             m_view->canvasScene()->setSceneRect(m_virtualSceneBounds);
         }
+    }
+    if (needAnotherSlice) {
+        QTimer::singleShot(0, m_view, [this]() {
+            if (m_view && m_view->isGalleryMode()) {
+                syncVirtualWindow();
+            }
+        });
     }
 }
 

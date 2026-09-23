@@ -61,6 +61,7 @@ void emitSizeReadyChunked(QVector<QPair<QString, QSize>> hits, quint64 generatio
         if (generation != g_probeGeneration.load(std::memory_order_acquire)) {
             return;
         }
+        GUI_BUDGET("ThumtooCache::sizeReadyChunk");
         const int n = hits.size();
         if (index >= n) {
             return;
