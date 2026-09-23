@@ -94,6 +94,7 @@ Distinct from Workspace **Export page as PNG/PDF…** (composed page guide).
    | Export | Folder + CBZ + PDF; selection-only; PDF `//page:` sources |
    | Open Selection | Multi + crop → new window keeps crop |
    | Multi-window | Shortcuts not process-wide (Space, Ctrl+Q, …) |
+   | Cold open | Wipe Store or new files: dir of JPEGs stays responsive; note PDF/7z stalls (§4.2) |
 
 5. **Docs**  
    - Point [TODO.md](../TODO.md) / [AGENTS.md](../AGENTS.md) tip at the release commit  
@@ -144,14 +145,67 @@ Distinct from Workspace **Export page as PNG/PDF…** (composed page guide).
 Until then: prefer shorter queries that fit one box, or accept that some
 multi-box phrases need manual scanning.
 
-### 4.2 Other deferred items (optional later)
+### 4.2 Cold-cache open: speed, progress, pathological inputs
+
+**What works today**
+
+- Open / History runs expand → size gate → Gallery pack with progressive
+  pixels (LQIP / soft / tiles depending on path and thumtoo Store state).
+- Centre HUD and status can show “Opening…”, indexing, and per-count export
+  progress; expand reports are rate-limited so huge listings do not flood the
+  GUI thread.
+- Warm Store (repeat open of the same files) is much cheaper than first touch.
+
+**Limitation — needs more testing and debugging before calling open “done”**
+
+Cold open (empty or thin thumtoo Store) can still feel **stuck or arbitrarily
+slow**, with **suboptimal progress reporting**: the UI may not show which file
+or stage is blocking, so long stalls look like hangs.
+
+Especially pathological:
+
+| Input | Observed pain |
+|-------|----------------|
+| **Some PDFs** | Extremely slow page decode; **no useful thumbnails** for a long time (or ever on first pass). Size probes and full raster compete; user sees empty/soft placeholders while one bad page burns the worker pool. |
+| **7z (and similar solid archives)** | Member listing and sequential extract are costly; solid compression makes random member access worse. Expand + first-pixel path can stall with little incremental feedback. |
+| **Huge mixed drops** | Directory + archive + multi-page PDF in one open: progress jumps between expand, sort, size resolve, and decode without a single clear “now doing X of Y” story. |
+
+**Why (engineering sketch)**
+
+- Cold path pays extract + decode + optional soft encode; progress is often
+  generation/count based, not **stage + current URI**.
+- PDF page raster cost varies wildly (scanned full-page images vs text PDFs);
+  lack of a cheap overview for some files means no early filmstrip/Gallery ghost.
+- Solid archives do not allow cheap parallel member reads; one slow member
+  serializes the queue.
+- Worker priority (sizes vs tiles vs soft) can leave the HUD on a generic
+  “Opening…” while the slow work is elsewhere.
+
+**Post-0.2 direction (not a hard gate for the 0.2.0 tag, but a release note)**
+
+1. **Stage-aware progress** — expand / size-resolve / soft / page-raster as
+   distinct HUD lines; show **current path or page ref** when blocked >N ms.
+2. **Pathological PDF policy** — cap concurrent page decodes; prefer cheap
+   size/LQIP when available; skip or defer “no overview” pages without
+   blocking the whole session; optional per-page timeout messaging.
+3. **Archive policy** — for 7z/solid, emphasize sequential warm with countable
+   progress (“member i/n”); avoid pretending random access is fast.
+4. **Test corpus** — explicit cold-cache cases: large 7z comic, image-heavy PDF
+   with no embedded thumbs, USB/slow disk, first open after wiping Store.
+
+**0.2.0 expectation:** ship with honest docs; treat multi-second silent stalls
+on known-bad files as **known issues** to file with sample paths, not as
+blockers unless a regression makes normal JPEGs unusable.
+
+### 4.3 Other deferred items (optional later)
 
 | Item | Notes |
 |------|--------|
 | Print from Gallery / Image | Matrix still weak; Workspace page print is primary |
 | Export page PNG from Image mode | “Maybe” single view — not required for 0.2 |
 | Workspace session export | Export Images is Gallery/Image-first; Workspace optional |
-| Deeper tile / performance work | Engineering track; not a 0.2 feature gate |
+| Deeper tile / performance work | Overlaps §4.2; engineering track |
+| Cross-region text search | §4.1 |
 
 ---
 
@@ -184,5 +238,7 @@ multi-box phrases need manual scanning.
 4. Tag `v0.2.0` (or project tag scheme).  
 5. Publish package / update flake consumers.
 
-**Post-tag:** open a 0.2.1 or 0.3 track for **cross-region text search** (§4.1)
-if that becomes the next product priority.
+**Post-tag priorities (pick by product need):**
+
+- **Cross-region text search** (§4.1)
+- **Cold-cache open / progress / pathological PDF & 7z** (§4.2)
