@@ -2,6 +2,7 @@
 
 **Status:** `VERSION` is `0.2.0-dev`. This document is the product checklist
 for cutting **0.2.0** (tag / package), not a substitute for git history.
+Release may slip a few days for **source tree layout** (§3a) — intentional.
 
 **Related:** [SESSION_EXPORT_AND_ORDER.md](SESSION_EXPORT_AND_ORDER.md),
 [IDENTITY.md](../IDENTITY.md), [DOMAIN.md](../DOMAIN.md), [TODO.md](../TODO.md),
@@ -106,6 +107,65 @@ Distinct from Workspace **Export page as PNG/PDF…** (composed page guide).
 
 6. **Package**  
    `nix build` (or project equivalent); About box version; `.desktop` still valid.
+
+---
+
+## 3a. Source tree layout (in scope for 0.2.0)
+
+Flat `src/` is ~250 translation units with a single subdirectory (`src/tilelod/`).
+After the identity / controller / export refactor, **moving code into domain
+subdirectories is planned for 0.2.0**, not deferred to 0.3. Accept a short slip
+of the tag (days, not weeks) to land this cleanly.
+
+### Goals
+
+- Navigable tree for humans and agents
+- Same pattern as `tilelod/`: **bounded subsystem**, explicit edges
+- No behaviour change: move + CMake/include fix only (no renames in the same step)
+
+### Target layout (sketch — adjust while moving)
+
+| Directory | Contents (indicative) |
+|-----------|------------------------|
+| `src/tilelod/` | Unchanged |
+| `src/session/` | `sessiondocument`, `sessionopen`, `sessionexport`, `sessionexpand`, `sessionreorderdialog`, path expand helpers tied only to session |
+| `src/crop/` | `crop*`, `cropappearancecommand`, crop geometry/session |
+| `src/gallery/` | `gallerycontroller`, layout/pack/size-resolve, gallery decode book/SM |
+| `src/shell/` | `mainwindow*`, icons entry, centre progress, help panel wiring owned by shell |
+| `src/workspace/` | workspace controller + geometry/group transform session pieces owned by Workspace |
+| `src/pixels/` or `src/display/` | `imagecache`, display pipeline/controller, display quality/edge policy |
+| `src/` (root) | Thin façades still shared: `imageview*`, `imageitem*`, `imageloader`, `pagepath`, `main.cpp` until a later cut |
+
+Do **not** dump all `imageview_*.cpp` into one folder without ownership: prefer
+leaving the façade at `src/` until controllers own more call sites (see
+[REFACTOR.md](../REFACTOR.md)).
+
+### Execution rules
+
+1. **One domain per commit** (or small stack): e.g. only `session/` first.
+2. Update `BILTOO_LIB_SOURCES` paths; add `target_include_directories` so
+   `#include "sessiondocument.h"` keeps working **or** switch that domain to
+   `#include "session/sessiondocument.h"` consistently in the same commit.
+3. No symbol renames, no logic edits, no clang-format-only noise mixed in.
+4. Build green after each domain; smoke open + Gallery + crop once at end.
+5. Refresh [AGENTS.md](../AGENTS.md) “where things live” if paths change.
+6. Agents: still deliver **full-stack git bundles** from the agreed base.
+
+### Order (suggested)
+
+1. `session/` — newest export/reorder code; fewest paint dependencies  
+2. `crop/` — already typed as CropSession / CropController  
+3. `gallery/` — controller + pack  
+4. `shell/` — mainwindow splits  
+5. `display/` / `pixels/` — if time; else leave for immediate post-tag  
+
+`tilelod/` stays as the reference for how a leaf directory looks.
+
+### Out of this move
+
+- Dual ImageView (§4.8)  
+- Behaviour fixes for Location / cross-region Find / cold open  
+- Mass include-style churn beyond what the move requires  
 
 ---
 
@@ -409,11 +469,13 @@ tiles for reading order). Facing stays a Gallery layout mode in 0.2.
 
 ## 7. Suggested cut sequence
 
-1. Final smoke on tip (reorder + export + open selection + PDF pages).  
-2. Doc commit: this file + SESSION_EXPORT + TODO/AGENTS tip.  
-3. `VERSION` → `0.2.0`.  
-4. Tag `v0.2.0` (or project tag scheme).  
-5. Publish package / update flake consumers.
+1. Land **source subdirectories** (§3a) domain-by-domain; build green each step.  
+2. RC smoke: reorder + export + open selection + PDF pages + **committed crop → Open Selection**.  
+3. Optional menu polish (§4.6) if still confusing after the tree move.  
+4. Doc tip + AGENTS paths; `VERSION` → `0.2.0`.  
+5. Tag `v0.2.0`; publish package / flake consumers.
+
+Tag may land **a few days later** than the feature freeze of reorder/export; that is expected.
 
 **Post-tag priorities (pick by product need):**
 
@@ -421,6 +483,7 @@ tiles for reading order). Facing stays a Gallery layout mode in 0.2.
 - **Cold-cache open / progress / pathological PDF & 7z** (§4.2)
 - **PDF Embedded Images** hardening (§4.3)
 - **Location / URL session vs leaf** semantics (§4.4)
-- **Crop transfer** edge cases if RC finds committed-crop loss (§4.5)
-- **Menu regroup** polish (§4.6)
-- **0.3.0:** dual ImageView / two-up compare (§4.8) — not 0.2
+- **Crop transfer** if anything remains after RC (§4.5)
+- **Menu regroup** if not done pre-tag (§4.6)
+- Finish any leftover directory moves (`display/` / `pixels/`) if deferred mid-§3a  
+- **0.3.0:** dual ImageView / two-up compare (§4.8)
