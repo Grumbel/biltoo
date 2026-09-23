@@ -1567,17 +1567,40 @@ void DisplayPipelineController::tickPrimaryTileLod(int budget)
     }
     tileCoordinator()->tick(budget);
 
-    // Image/Workspace: keep issuing until every tileLodWanted item is covered.
-    // Without a re-arm, only the first budget of center keys climbed to target
-    // scale; outer cells stayed one level coarse until a scroll forced a tick.
+    // Keep issuing until visible coverage is done.
+    // Gallery: only on-screen cells. Off-screen items stay tileLodWanted but
+    // are never issued by the coordinator — checking them kept this timer at
+    // 16 ms forever (GUI spin + worker wake) after the decode-window fix.
+    // Image/Workspace: few items; climb every tileLodWanted until covered.
     bool needMore = false;
-    for (ImageItem *ii : m_view->liveItems()) {
-        if (!ii || !ii->tileLodWanted()) {
-            continue;
+    if (m_view->isGalleryMode()) {
+        QRectF sceneVis;
+        if (m_view->viewport()) {
+            sceneVis = m_view->mapToScene(m_view->viewport()->rect()).boundingRect();
         }
-        if (!ii->tileLodViewportCovered()) {
-            needMore = true;
-            break;
+        if (!sceneVis.isNull() && m_view->canvasScene()) {
+            const QList<QGraphicsItem *> hit = m_view->canvasScene()->items(
+                sceneVis, Qt::IntersectsItemBoundingRect);
+            for (QGraphicsItem *gi : hit) {
+                auto *ii = qgraphicsitem_cast<ImageItem *>(gi);
+                if (!ii || !ii->tileLodWanted()) {
+                    continue;
+                }
+                if (!ii->tileLodViewportCovered()) {
+                    needMore = true;
+                    break;
+                }
+            }
+        }
+    } else {
+        for (ImageItem *ii : m_view->liveItems()) {
+            if (!ii || !ii->tileLodWanted()) {
+                continue;
+            }
+            if (!ii->tileLodViewportCovered()) {
+                needMore = true;
+                break;
+            }
         }
     }
     if (!needMore) {
