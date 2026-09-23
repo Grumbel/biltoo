@@ -17,36 +17,7 @@ Flat `src/` → domain subdirectories. Pattern matches `src/tilelod/`:
 | 8 | `src/slideshow/` | controller, clocks, phase/atlas/motion policies, settings dialog, motion-scroll chrome | **done (2356)** |
 | 9 | `src/hud/` | hud model, appearance, flash, geometry | **done (2357)** |
 | 10 | `src/text/` | text layer geometry/session, search policy | **done (2358)** |
+| 11 | `src/shell/` (+fold) | toc panel, thumbnail bar, keyboard shortcuts, EPUB layout dialog | **done (2359)** |
+| 12 | `src/color/` | color adjust pipeline + commit bag | **done (2360)** |
 | — | `src/tilelod/` | unchanged | done |
-| — | `src/` root | `imageview*`, `imageitem*`, `imageloader`, `pagepath`, `main.cpp`, shared types (`placementlinear`, `itemframegeometry`, …) | stay until later |
-
-## Phase 1 file list (`src/session/`)
-
-- `sessiondocument.{h,cpp}`
-- `sessionappearance.{h,cpp}`
-- `sessionseedbook.{h,cpp}`
-- `sessionexpand.{h,cpp}`
-- `sessionexport.{h,cpp}`
-- `sessionopen.{h,cpp}`
-- `sessionsort.{h,cpp}`
-- `sessionpathorder.h`
-- `sessionreorderdialog.{h,cpp}`
-- `sessionbindbook.h`
-- `sessionchrome.h`
-- `sessionloadgate.h`
-- `packorderview.h`
-- `packorderoverlay.h`
-
-**Not in phase 1:** `cropsession`, `attentionsession`, `grouptransformsession`,
-`textlayersession`, `pageguidesession`, `iteminteractsession`,
-`mainwindow_session*`, `imageview_session*`.
-
-## Rules
-
-1. One domain per tip/commit stack; no behaviour changes.
-2. Update `BILTOO_LIB_SOURCES` and test source lists.
-3. Includes: `"session/foo.h"` from outside; inside `session/` prefer the same
-   prefix (tilelod style) so grep stays uniform.
-4. Build green after the phase.
-
-See also [RELEASE_0.2.0.md](RELEASE_0.2.0.md) §3a.
+| — | `src/` root | `imageview*`, `imageitem*`, `imageloader`, `pagepath`, `main.cpp`, thumtoo host glue, shared geometry | stay until later |
