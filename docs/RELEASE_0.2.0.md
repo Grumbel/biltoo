@@ -491,4 +491,4 @@ Tag may land **a few days later** than the feature freeze of reorder/export; tha
 - **Crop transfer** if anything remains after RC (§4.5)
 - **Menu regroup** if not done pre-tag (§4.6)
 - Finish any leftover directory moves (`display/` / `pixels/`) if deferred mid-§3a  
-- **0.3.0:** dual ImageView / two-up compare (§4.8); ImageView ownership extraction (TODO.md)
+- **0.3.0:** dual ImageView / two-up compare (§4.8); ImageView ownership extraction; Gallery size-resolve throughput + failure diagnostics (TODO.md)
