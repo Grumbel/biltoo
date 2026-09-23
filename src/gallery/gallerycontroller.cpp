@@ -1660,36 +1660,17 @@ void GalleryController::syncVirtualWindow()
     }
     if (sceneVis.isNull() || !sceneVis.isValid()) {
         // Before first show: materialize a small prefix so the window is not empty.
+        // Before first show: use the full planned scene so the top of the
+        // session materializes; viewport size will refine on the next scroll.
         sceneVis = m_virtualSceneBounds;
-        if (sceneVis.height() > 2400.0) {
-            sceneVis.setHeight(2400.0);
-        }
-        if (sceneVis.width() > 4000.0) {
-            sceneVis.setWidth(4000.0);
-        }
     }
 
+    // Live set = slots intersecting the (overscanned) viewport. No arbitrary
+    // hard cap — dense packs must materialize every visible cell.
     QSet<int> want;
     for (int i = 0; i < m_virtualSlots.size(); ++i) {
         if (m_virtualSlots.at(i).bounds.intersects(sceneVis)) {
             want.insert(i);
-        }
-    }
-    // Hard cap — pathological dense packs.
-    constexpr int kMaxLive = 180;
-    if (want.size() > kMaxLive) {
-        QList<int> ranked = want.values();
-        const QPointF c = sceneVis.center();
-        std::sort(ranked.begin(), ranked.end(), [&](int a, int b) {
-            const QPointF ca = m_virtualSlots.at(a).bounds.center();
-            const QPointF cb = m_virtualSlots.at(b).bounds.center();
-            const qreal da = QPointF(ca - c).manhattanLength();
-            const qreal db = QPointF(cb - c).manhattanLength();
-            return da < db;
-        });
-        want.clear();
-        for (int i = 0; i < kMaxLive && i < ranked.size(); ++i) {
-            want.insert(ranked.at(i));
         }
     }
 
@@ -1818,17 +1799,13 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
     }
     // Same no-LQIP chrome as live ImageItem blanks (ItemFrameGeometry).
     // Live items paint on top when present; empty cells match that look.
+    // Draw every slot in the exposed region — no fixed draw-count cap.
     painter->save();
-    int drawn = 0;
-    constexpr int kMaxDrawn = 400; // exposed region only; hard cap for safety
     for (const VirtualSlot &slot : m_virtualSlots) {
         if (!slot.bounds.intersects(exposed)) {
             continue;
         }
         ItemFrameGeometry::paintNeutralPlaceholder(painter, slot.bounds);
-        if (++drawn >= kMaxDrawn) {
-            break;
-        }
     }
     painter->restore();
 }
