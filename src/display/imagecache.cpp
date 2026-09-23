@@ -48,7 +48,36 @@ QSet<QString> &inFlight()
     return s;
 }
 
-constexpr int kMaxEntries = 1024;
+/** Running approximate ARGB32 cost of map() entries (KiB). */
+qint64 &totalCostKiB()
+{
+    static qint64 c = 0;
+    return c;
+}
+
+/**
+ * Hard ceiling on path entries so a flood of tiny underlays cannot grow the
+ * hash unboundedly when each is only a few KiB.
+ */
+constexpr int kHardMaxEntries = 8192;
+
+qint64 budgetKiB()
+{
+    static qint64 cached = -1;
+    if (cached >= 0) {
+        return cached;
+    }
+    qint64 mib = kDefaultBudgetMiB;
+    if (const char *e = std::getenv("BILTOO_IMAGECACHE_MIB"); e && e[0]) {
+        char *end = nullptr;
+        const long v = std::strtol(e, &end, 10);
+        if (end != e && v > 0 && v < 65536) {
+            mib = v;
+        }
+    }
+    cached = mib * 1024; // MiB → KiB
+    return cached;
+}
 
 QString ensureKey(const QString &path, int maxEdge)
 {
@@ -62,30 +91,57 @@ void touchUnlocked(const QString &path)
     ord.append(path);
 }
 
-void evictOldestUnlocked()
+void removeEntryUnlocked(const QString &key)
+{
+    QHash<QString, QImage> &m = map();
+    const auto it = m.constFind(key);
+    if (it == m.cend()) {
+        return;
+    }
+    totalCostKiB() -= rgbaCostKiB(*it);
+    if (totalCostKiB() < 0) {
+        totalCostKiB() = 0;
+    }
+    m.erase(it);
+    order().removeAll(key);
+}
+
+/**
+ * Evict until totalCost + needKiB fits the budget (and entry count ≤ hard max).
+ * Prefer dropping large samples first so Gallery underlays (EMB/LQIP ≤
+ * kEmbeddedUnderlayMaxEdge) survive mode switches and materialize.
+ */
+void ensureRoomUnlocked(int needKiB)
 {
     QHash<QString, QImage> &m = map();
     QStringList &ord = order();
-    // Prefer dropping large samples first so Gallery SizeReply underlays
-    // (EMB/LQIP ≤ kEmbeddedUnderlayMaxEdge) survive until materialize.
-    while (!ord.isEmpty() && m.size() >= kMaxEntries) {
-        int victim = -1;
+    const qint64 limit = budgetKiB();
+
+    auto pickVictim = [&](bool largeOnly) -> int {
         for (int i = 0; i < ord.size(); ++i) {
             const QImage &img = m.value(ord.at(i));
             if (img.isNull()) {
-                victim = i;
-                break;
+                return i;
             }
-            if (longEdge(img) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-                victim = i;
-                break;
+            const bool large =
+                longEdge(img) > DisplayQuality::kEmbeddedUnderlayMaxEdge;
+            if (!largeOnly || large) {
+                return i;
             }
+        }
+        return -1;
+    };
+
+    while (!ord.isEmpty()
+           && (totalCostKiB() + needKiB > limit || m.size() >= kHardMaxEntries)) {
+        int victim = pickVictim(true);
+        if (victim < 0) {
+            victim = pickVictim(false); // all underlays — still enforce budget
         }
         if (victim < 0) {
-            victim = 0; // all underlays — still enforce the entry cap
+            break;
         }
-        const QString key = ord.takeAt(victim);
-        m.remove(key);
+        removeEntryUnlocked(ord.at(victim));
     }
 }
 
@@ -191,6 +247,7 @@ void put(const QString &path, const QImage &image, const QString &forceTag)
     // watermark (soft→PreferCache was replacing stamped soft with clean HQ).
     stampDebugOverlayIfEnabled(&stored, QFileInfo(path).fileName(), forceTag);
     const int incoming = longEdge(stored);
+    const int incomingCost = rgbaCostKiB(stored);
 
     QMutexLocker lock(&mutex());
     QHash<QString, QImage> &m = map();
@@ -200,15 +257,22 @@ void put(const QString &path, const QImage &image, const QString &forceTag)
             touchUnlocked(path);
             return;
         }
+        // Replace smaller sample: drop old cost, make room for the delta.
+        const int oldCost = rgbaCostKiB(m.value(path));
+        totalCostKiB() -= oldCost;
+        if (totalCostKiB() < 0) {
+            totalCostKiB() = 0;
+        }
+        ensureRoomUnlocked(incomingCost);
         m.insert(path, stored);
+        totalCostKiB() += incomingCost;
         touchUnlocked(path);
         return;
     }
 
-    if (m.size() >= kMaxEntries) {
-        evictOldestUnlocked();
-    }
+    ensureRoomUnlocked(incomingCost);
     m.insert(path, stored);
+    totalCostKiB() += incomingCost;
     order().append(path);
 }
 
@@ -264,6 +328,7 @@ void clear()
     map().clear();
     order().clear();
     inFlight().clear();
+    totalCostKiB() = 0;
 }
 
 void remove(const QString &path)
@@ -272,8 +337,7 @@ void remove(const QString &path)
         return;
     }
     QMutexLocker lock(&mutex());
-    map().remove(path);
-    order().removeAll(path);
+    removeEntryUnlocked(path);
     // Drop in-flight ensure keys for this path (key is path + '\n' + edge).
     QSet<QString> &flight = inFlight();
     const QString prefix = path + QLatin1Char('\n');

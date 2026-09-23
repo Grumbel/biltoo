@@ -60,6 +60,7 @@ PreferCache **TileSynth** only when durable tiles are known; else
 | **`BILTOO_FILMSTRIP_THUMB_LOADS`** | 24 | 1–64 | Concurrent filmstrip thumbnail load jobs (separate from thumtoo pixel jobs). |
 | **`BILTOO_TILE_RAM_MIB`** | 384 | 1–1048575 | Process-wide Succeeded tile RAM budget for `TileLodRegistry` (MiB). |
 | **`BILTOO_TILE_MAX_IDLE`** | 64 | 1–99999 | Max zero-ref path entries retained for A→B→A / mode-switch reuse. |
+| **`BILTOO_IMAGECACHE_MIB`** | 384 | 1–65535 | Process-wide host sample (`ImageCache`) RAM budget (MiB). LRU; prefers keeping small underlays. |
 
 ---
 

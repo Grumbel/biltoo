@@ -36,9 +36,19 @@ D. putSlideshowRaster always ImageCache::put; slideshow read path prefers cache
 E. Docs + TODO handoff; small readable commits
 
 ## Risk
-Memory: 2048² RGBA × many paths. Mitigate: clamp to 2048, keep entry cap 384,
-evict on insert (existing). Prefer thumtoo for cold paths.
+Memory: large soft/full samples × many paths. Mitigate: clamp to
+`kDisplayMaxEdge`, **memory-budget** eviction (default 384 MiB), prefer
+dropping large samples before underlays. Prefer thumtoo for cold paths.
 
 ## Eviction
 
-LRU via access-order list (get/put touch). Cap `kMaxEntries` (384).
+LRU via access-order list (get/put touch). Budget is **total approximate
+ARGB32 KiB**, not entry count (hard entry ceiling 8192 only as a safety net).
+
+| Knob | Default | Notes |
+|------|---------|--------|
+| `BILTOO_IMAGECACHE_MIB` | 384 | Process RAM budget for host samples (MiB) |
+| Victim order | large first | Keep EMB/LQIP ≤ `kEmbeddedUnderlayMaxEdge` while over budget |
+
+Survives Gallery↔Image↔Workspace mode switches. Cleared on session replace /
+process exit only.

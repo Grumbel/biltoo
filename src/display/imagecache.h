@@ -22,7 +22,10 @@
  * - Frames larger than kDisplayMaxEdge are clamped on insert (RAM bound).
  * - Soft ladder (≤512) and display edges (≤8192 interim) share one slot per path.
  *   True deep zoom should use grid tiles; raised cap is a stopgap.
- * - Eviction is LRU by access order (get/put touch the entry).
+ * - Eviction is **memory-budget** LRU (not entry count). Prefer dropping large
+ *   samples before small underlays (EMB/LQIP). Default budget 384 MiB; override
+ *   with `BILTOO_IMAGECACHE_MIB` (positive integer MiB). Survives mode switches;
+ *   cleared only on session replace / process exit.
  *
  * See docs/PIXEL_HOST_CACHE.md.
  */
@@ -36,6 +39,13 @@ constexpr int kPreviewEdge = 512;
  * Matches thumtoo kFullMaxEdge / Full schedule. Real deep zoom needs tiles.
  */
 constexpr int kDisplayMaxEdge = 8192;
+
+/**
+ * Default process RAM budget for ImageCache (MiB). Override via
+ * BILTOO_IMAGECACHE_MIB. Underlays are small; budget is driven by full/soft
+ * samples from Image mode and PreferCache.
+ */
+constexpr int kDefaultBudgetMiB = 384;
 
 /** Long edge of image, or 0 if null. */
 inline int longEdge(const QImage &img)
