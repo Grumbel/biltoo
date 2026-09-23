@@ -2419,14 +2419,9 @@ void ThumbnailBar::setFiles(const QStringList &files)
         m_sessionImageOverrides.swap(kept);
     }
 
-    // Provisional square only when size is unknown. Prefer durable cache size
-    // (same path as Gallery::primeGalleryGeometryFromCache) so PDF pages layout
-    // with real aspect before ladder pixels arrive.
-    const QSize provCell = (m_delegate && !m_cropToSquare)
-        ? m_delegate->cellSizeForContent(font(), m_delegate->provisionalContentSize())
-        : (m_delegate ? m_delegate->cellSize(font())
-                      : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight()));
-    // Large sessions: do not build tens of thousands of QListWidgetItems in one
+    // Provisional cell size is computed in appendFileRowsChunk (same path as
+    // Gallery::primeGalleryGeometryFromCache). Large sessions: do not build
+    // tens of thousands of QListWidgetItems in one
     // stack frame (setFiles was ~60s inside onSizeResolveGateComplete via a
     // same-thread DirectConnection to gallerySizeResolveFinished).
     GUI_BUDGET_MS("ThumbnailBar::setFiles", 16);
