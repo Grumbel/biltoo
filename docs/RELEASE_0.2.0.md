@@ -445,6 +445,9 @@ tiles for reading order). Facing stays a Gallery layout mode in 0.2.
 - Navigation: which pane receives ←/→; optional lock-step page turn for books.
 - Identity: each pane binds a `SessionImageId`; crop/grade remain per id.
 - Explicitly defer until after 0.2 release cut and Location/crop hardening.
+- **ImageView ownership extraction** (see TODO.md 0.3 backlog): continue Phase 5
+  controller pattern — paint/input/session-bind/rematerialize Hosts — so dual
+  ImageView is not two copies of a 12k-line façade. Not a directory-only move.
 
 ---
 
@@ -488,4 +491,4 @@ Tag may land **a few days later** than the feature freeze of reorder/export; tha
 - **Crop transfer** if anything remains after RC (§4.5)
 - **Menu regroup** if not done pre-tag (§4.6)
 - Finish any leftover directory moves (`display/` / `pixels/`) if deferred mid-§3a  
-- **0.3.0:** dual ImageView / two-up compare (§4.8)
+- **0.3.0:** dual ImageView / two-up compare (§4.8); ImageView ownership extraction (TODO.md)

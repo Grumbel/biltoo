@@ -434,6 +434,20 @@ part of early-phase exit criteria).
 - Phase 5v: document mode-controller host API banner on ImageView; update
   structural stop line to mark Phase 5 controller work complete.
 
+### Post–Phase 5 → **0.3.0** ImageView ownership extraction
+
+Phase 5 controller extraction (Gallery / Workspace / Image / crop collaborators)
+is complete for the current design. Remaining `imageview_*.cpp` slices are an
+intentional façade, not unfinished layout.
+
+**0.3.0 (planned):** further ownership transfer — paint/overlay, input router,
+session bind/remove + size book, rematerialize/bake host — same Host +
+collaborator pattern. Tracked in [TODO.md](TODO.md) § Backlog (0.3.0). Do not
+re-run domain subdirectory moves for these files without ownership transfer.
+
+Optional anytime: split `imageitem_interaction.cpp` into focused TUs if
+interaction work resumes.
+
 ### Post–Phase 5 (product polish, same session)
 
 - Duplicate path tiles are first-class (occurrence + SessionImageId); Gallery
