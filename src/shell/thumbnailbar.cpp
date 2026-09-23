@@ -3,7 +3,7 @@
 
 #include "shell/thumbnailbar.h"
 #include "view/viewtransform.h"
-#include "filmstripgeometry.h"
+#include "shell/filmstripgeometry.h"
 #include "display/displayquality.h"
 #include "display/displaysurface.h"
 #include "archivepath.h"
