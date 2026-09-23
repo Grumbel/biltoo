@@ -173,7 +173,13 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
                             }
                             // Queued: must not run inside onSizeResolveGateComplete
                             // (Direct AutoConnection made setFiles block the gate ~60s).
-                            installFilmstrip();
+                            // Large sessions: delay strip so Gallery plan/tiles get
+                            // the event loop first (strip is capped at 256 rows).
+                            if (m_session.size() > 512) {
+                                QTimer::singleShot(200, this, installFilmstrip);
+                            } else {
+                                installFilmstrip();
+                            }
                             // Do not preparePaths/warmUris the entire session — that
                             // floods workers after virtualized Gallery open.
                             if (m_imageView) {

@@ -2448,9 +2448,13 @@ void ThumbnailBar::appendFileRowsChunk()
         : (m_delegate ? m_delegate->cellSize(font())
                       : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight()));
 
-    constexpr int kChunk = 64;
+    // Cap live filmstrip rows. Beyond this, placeholders are not built — Gallery
+    // is virtualized; the strip is navigation chrome, not a second full session.
+    constexpr int kMaxMaterializedRows = 256;
+    constexpr int kChunk = 32;
+    const int limit = qMin(m_files.size(), kMaxMaterializedRows);
     const int begin = m_fileFillNext;
-    const int end = qMin(begin + kChunk, m_files.size());
+    const int end = qMin(begin + kChunk, limit);
     setUpdatesEnabled(false);
     for (int i = begin; i < end; ++i) {
         const QString &path = m_files.at(i);
@@ -2490,8 +2494,9 @@ void ThumbnailBar::appendFileRowsChunk()
     if (gen != m_fileFillGeneration) {
         return; // superseded by a newer setFiles
     }
-    if (m_fileFillNext < m_files.size()) {
-        QTimer::singleShot(0, this, &ThumbnailBar::appendFileRowsChunk);
+    if (m_fileFillNext < limit) {
+        // Yield time to paints/tiles — 0ms re-arm starved the GUI for a minute.
+        QTimer::singleShot(16, this, &ThumbnailBar::appendFileRowsChunk);
         return;
     }
     m_fileFillNext = -1;

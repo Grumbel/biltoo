@@ -1576,7 +1576,9 @@ void GalleryController::rebuildVirtualPlan()
                 break;
             }
         }
-        QSize lay = m_view->contentLayoutSize(path, sid);
+        // Plan sizes from the size book only — contentLayoutSize can hit Store
+        // (loadContentAppearance) per path and froze large opens for ~minutes.
+        QSize lay = book.known(path);
         if (!isPositiveSize(lay) || lay.width() <= 1) {
             lay = ImageSizeBook::standInNeutral();
         }
