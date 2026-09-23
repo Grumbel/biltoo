@@ -80,8 +80,22 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
         }
     }
 
+    // Virtualized Gallery: do not enqueue tens of thousands of ProbeSize jobs at
+    // open — that pegged every core for minutes after first paint. Probe a
+    // prefix for the first screens; the rest use stand-in aspects until the
+    // viewport window schedules probes (syncVirtualWindow).
+    constexpr int kOpenProbePrefix = 128;
+    if (ordered.size() > kOpenProbePrefix) {
+        for (int i = kOpenProbePrefix; i < ordered.size(); ++i) {
+            m_pending.remove(ordered.at(i));
+        }
+        ordered = ordered.mid(0, kOpenProbePrefix);
+        m_total = already + m_pending.size();
+        m_resolved = already;
+    }
+
     if (!m_host->sizeResolveLayoutDefersPopulate()) {
-        // FreeForm / non-packaged: still batch-probe sizes, but do not hold the gate.
+        // Grid / no gate: still only the open prefix (not the whole session).
         m_pending.clear();
         m_total = 0;
         if (!ordered.isEmpty()) {

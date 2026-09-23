@@ -1786,26 +1786,38 @@ bool scheduleTilePyramid(const QString &path)
     if (path.isEmpty()) {
         return false;
     }
-    // Size probes first: pyramid encode shares Store/CPU with request_size and
-    // made cold Gallery open feel like "tiles during size query".
     if (sizeProbesBusy()) {
         return false;
     }
-    // Memo hit: pyramid already on Store — never re-encode (Gallery open was
-    // queuing N full FocusFull rebuilds and burning seconds of CPU).
     if (hasDurableTilesKnown(path)) {
         return false;
     }
-    // Never isUnsupported on the GUI (get_meta). Worker filters unsupported.
+    // Cap concurrent FocusFull jobs (was unbounded pool starts → all cores busy).
+    static std::atomic<int> pyramidInflight{0};
+    constexpr int kMaxConcurrentPyramids = 2;
+    int cur = pyramidInflight.load();
+    while (cur < kMaxConcurrentPyramids) {
+        if (pyramidInflight.compare_exchange_weak(cur, cur + 1)) {
+            break;
+        }
+    }
+    if (cur >= kMaxConcurrentPyramids) {
+        return false;
+    }
     init();
     const QString pathCopy = path;
     QThreadPool::globalInstance()->start([pathCopy]() {
         ASSERT_NOT_GUI_THREAD();
-        if (isUnsupported(pathCopy)) {
-            return;
-        }
-        // Discover once; skip encode when coverage already exists.
-        if (hasDurableTiles(pathCopy)) {
+        struct SlotGuard {
+            std::atomic<int> *counter;
+            ~SlotGuard()
+            {
+                if (counter) {
+                    counter->fetch_sub(1);
+                }
+            }
+        } guard{&pyramidInflight};
+        if (isUnsupported(pathCopy) || hasDurableTiles(pathCopy)) {
             return;
         }
         thumtoo::Client *c = nullptr;

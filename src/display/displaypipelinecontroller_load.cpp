@@ -703,22 +703,19 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
     st.have = GalleryDecode::maxHave(st.have, galleryHaveEdgeFromItems(path, nullptr));
 
     if (anyTileWanted && !m_view->hostGallerySizeResolve().active()) {
-        // Size must be known before pyramid encode (expensive).
+        // Size must be known for tile requests.
         if (!m_view->hostSizeBook().hasDefinitive(path)
             && !ThumtooCache::cachedSize(path).isValid()) {
+            // Visible cell without size — one probe, not a full-session batch.
+            ThumtooCache::scheduleProbe(path);
             return didWork;
         }
-        // Only encode a pyramid when Store has no durable coverage yet.
-        // Mark queued only after a successful schedule (or durable already
-        // known). sizeProbesBusy makes scheduleTilePyramid return false —
-        // must not mark queued or this path never retries.
-        if (!st.isTilesPyramidQueued()) {
-            if (ThumtooCache::hasDurableTilesKnown(path)) {
-                st.markTilesPyramidQueued();
-            } else if (ThumtooCache::scheduleTilePyramid(path)) {
-                st.markTilesPyramidQueued();
-                didWork = true;
-            }
+        // Do NOT scheduleTilePyramid for every Gallery blank. Full FocusFull
+        // encodes on cold open of large sessions pegged all cores for minutes;
+        // TileLoadCoordinator / request_tiles covers the viewport. Durable
+        // pyramid remains available via explicit paths / neighbor prefetch.
+        if (ThumtooCache::hasDurableTilesKnown(path)) {
+            st.markTilesPyramidQueued();
         }
     }
     return didWork;

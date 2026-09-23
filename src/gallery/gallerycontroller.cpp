@@ -1713,6 +1713,12 @@ void GalleryController::syncVirtualWindow()
             }
         }
         if (!item) {
+            // Lazy size probe for on-screen rows not covered by the open prefix.
+            if (!slot.path.isEmpty()
+                && !m_view->hostSizeBook().hasDefinitive(slot.path)
+                && !m_view->hostSizeBook().isFailed(slot.path)) {
+                ThumtooCache::scheduleProbe(slot.path);
+            }
             const QSize sz = slot.layoutSize.toSize();
             item = m_view->hostDisplayPipeline().createPlaceholderItem(
                 slot.path, isPositiveSize(sz) ? sz : ImageSizeBook::standInNeutral());
