@@ -9,7 +9,7 @@
 #include "session/sessiondocument.h"
 #include "session/sessionsort.h"
 #include "imageview_types.h"
-#include "projectfile.h"
+#include "session/projectfile.h"
 
 #include <QMainWindow>
 #include <QLineEdit>

@@ -267,8 +267,8 @@ set(BILTOO_LIB_SOURCES
   src/session/sessionsort.h
   src/session/sessionexpand.cpp
   src/session/sessionexpand.h
-  src/projectfile.cpp
-  src/projectfile.h
+  src/session/projectfile.cpp
+  src/session/projectfile.h
   src/placementlinear.cpp
   src/placementlinear.h
   src/imageitem.cpp
@@ -593,7 +593,7 @@ find_package(Qt6 COMPONENTS Test QUIET)
 if(Qt6Test_FOUND)
   add_executable(biltoo-projectfile-test
     tests/projectfile_roundtrip.cpp
-    src/projectfile.cpp
+    src/session/projectfile.cpp
   )
   target_include_directories(biltoo-projectfile-test PRIVATE src)
   target_link_libraries(biltoo-projectfile-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
