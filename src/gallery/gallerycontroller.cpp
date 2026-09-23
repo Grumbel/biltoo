@@ -8,6 +8,7 @@
 #include "imageview.h"
 #include "session/packorderview.h"
 #include "session/sessionbindbook.h"
+#include "item/imagesizebook.h"
 #include "imageview_types.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
@@ -1069,6 +1070,7 @@ void GalleryController::scheduleDecodeWindowRefresh(int delayMs)
         m_decodeScrollTimer->setSingleShot(true);
         QObject::connect(m_decodeScrollTimer, &QTimer::timeout, m_view, [this]() {
             if (m_view->isGalleryMode()) {
+                syncVirtualWindow();
                 updateDecodeWindow();
             }
         });
@@ -1386,7 +1388,8 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         return;
     }
     // Packaged packing is Gallery-only; never rearrange Workspace free-form items.
-    if (!m_view->isGalleryMode() || m_view->liveItems().isEmpty() || m_view->hostLayout().isFreeForm()) {
+    // Virtualized: path order may be full while liveItems is still empty.
+    if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty() || m_view->hostLayout().isFreeForm()) {
         return;
     }
 
@@ -1462,32 +1465,18 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     // Progressive packs during the size gate only need scene poses for display.
     // Writing ItemWorld for every cell every ~50–120ms was pure overhead (and
     // EnterGallery / gate-complete pack persists the final poses once).
-    const bool persistWorld =
-        !(m_view->hostGallerySizeResolve().active()
-          && reason == GalleryPackReason::ContentChange);
-    GalleryLayout::pack(m_view->liveItems(), params,
-                        persistWorld
-                            ? std::function<void(ImageItem *)>([this](ImageItem *item) {
-                                  if (!item) {
-                                      return;
-                                  }
-                                  // Pack only moves pose — sparse Placement.
-                                  const ItemComponents::Placement pl = item->placement();
-                                  if (item->sessionId() != kInvalidSessionImageId) {
-                                      m_view->itemWorld().setPlacement(item->sessionId(), pl);
-                                  } else if (!item->path().isEmpty()) {
-                                      WorkspaceItemState s;
-                                      if (const WorkspaceItemState *prev =
-                                              m_view->itemWorld().getPathState(item->path())) {
-                                          s = *prev;
-                                      }
-                                      ItemComponents::applyPlacementToState(s, pl);
-                                      m_view->itemWorld().setPathState(item->path(), s);
-                                  }
-                              })
-                            : std::function<void(ImageItem *)>());
+// Virtualized pack: poses for the full session, live items only in the window.
+    rebuildVirtualPlan();
+    syncVirtualWindow();
+    for (ImageItem *item : m_view->liveItems()) {
+        if (item) {
+            item->setVisible(true);
+        }
+    }
 
-    const QRectF bounds = ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), margin);
+    const QRectF bounds = m_virtualSceneBounds.isValid()
+        ? m_virtualSceneBounds
+        : ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), margin);
     if (m_view->canvasScene()->sceneRect() != bounds) {
         m_view->canvasScene()->setSceneRect(bounds);
     }
@@ -1547,172 +1536,234 @@ bool GalleryController::ensurePlaceholders()
     if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()) {
         return false;
     }
-    // While the size gate is active, grow an ordered prefix only (session order).
-    // Do not clear defer-populate until the gate completes.
-    const bool sizeGate = m_view->hostGallerySizeResolve().active();
-    if (!sizeGate) {
-        m_view->hostGalleryDecodeBook().setDeferPopulate(false);
+    // Size gate: only plan rows that already have definitive sizes (prefix).
+    rebuildVirtualPlan();
+    syncVirtualWindow();
+    return false;
+}
+
+void GalleryController::rebuildVirtualPlan()
+{
+    ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("GalleryController::rebuildVirtualPlan", 16);
+    m_virtualSlots.clear();
+    m_virtualSceneBounds = QRectF();
+    if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()
+        || m_view->hostLayout().isFreeForm()) {
+        return;
     }
-    // Local indexes — findItemBySessionId / path scan were O(n) per pack row and
-    // made progressive ensure O(n²) on every size-gate pack.
-    QHash<SessionImageId, ImageItem *> bySessionId;
-    QHash<QString, ImageItem *> byPathUnbound;
-    bySessionId.reserve(m_view->liveItems().size() * 2);
-    byPathUnbound.reserve(m_view->liveItems().size() * 2);
+
+    const PackOrderView pack = m_view->currentPackOrder();
+    const bool sizeGate = m_view->hostGallerySizeResolve().active();
+    const ImageSizeBook &book = m_view->hostSizeBook();
+
+    QVector<QSizeF> sizes;
+    sizes.reserve(pack.size());
+    m_virtualSlots.reserve(pack.size());
+
+    for (int i = 0; i < pack.size(); ++i) {
+        const QString path = pack.pathAt(i);
+        const SessionImageId sid = pack.idAt(i);
+        if (sizeGate) {
+            if (layoutNeedsAllSizes(m_view->hostLayout().currentMode())) {
+                // Wait for full gate — empty plan until complete.
+                if (!book.hasDefinitive(path) && !book.isFailed(path)) {
+                    m_virtualSlots.clear();
+                    return;
+                }
+            } else if (!book.hasDefinitive(path) && !book.isFailed(path)) {
+                // Ordered progressive: stop plan at first unresolved (prefix only).
+                break;
+            }
+        }
+        QSize lay = m_view->contentLayoutSize(path, sid);
+        if (!isPositiveSize(lay) || lay.width() <= 1) {
+            lay = ImageSizeBook::standInNeutral();
+        }
+        VirtualSlot slot;
+        slot.path = path;
+        slot.id = sid;
+        slot.layoutSize = GalleryLayout::layoutSizeForNative(QSizeF(lay), 0.0);
+        m_virtualSlots.append(slot);
+        sizes.append(slot.layoutSize);
+    }
+
+    if (m_virtualSlots.isEmpty()) {
+        return;
+    }
+
+    const qreal margin = GalleryLayout::Params::kDefaultMargin;
+    const qreal gap = GalleryLayout::Params::kDefaultGap;
+    const qreal availW = GalleryPackFit::packAvailAxis(
+        m_view->viewport() ? m_view->viewport()->width() : 800, margin);
+    const qreal availH = GalleryPackFit::packAvailAxis(
+        m_view->viewport() ? m_view->viewport()->height() : 600, margin);
+
+    GalleryLayout::Params params;
+    params.margin = margin;
+    params.gap = gap;
+    params.availW = availW;
+    params.availH = availH;
+    params.masonryColumns = m_view->hostLayout().masonryColumnsValue();
+    params.gridColumns = m_view->hostLayout().gridColumnsValue();
+    params.masonryRows = m_view->hostLayout().masonryRowsValue();
+    params.mode = GalleryPackFit::modeFromLayoutMode(m_view->hostLayout().currentMode());
+
+    const QVector<GalleryLayout::PackPose> poses =
+        GalleryLayout::packPosesForMode(params.mode, sizes, params);
+    QRectF bounds;
+    for (int i = 0; i < m_virtualSlots.size() && i < poses.size(); ++i) {
+        VirtualSlot &slot = m_virtualSlots[i];
+        slot.pose = poses.at(i);
+        QSizeF cell = slot.pose.cellSize;
+        if (cell.isEmpty()) {
+            cell = QSizeF(slot.layoutSize.width() * slot.pose.scale,
+                          slot.layoutSize.height() * slot.pose.scale);
+        }
+        slot.bounds = QRectF(slot.pose.center.x() - cell.width() / 2.0,
+                             slot.pose.center.y() - cell.height() / 2.0,
+                             cell.width(), cell.height());
+        bounds = bounds.united(slot.bounds);
+    }
+    m_virtualSceneBounds = ViewTransform::padded(bounds, margin);
+    ++m_virtualPlanGeneration;
+}
+
+void GalleryController::syncVirtualWindow()
+{
+    ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("GalleryController::syncVirtualWindow", 12);
+    if (!m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
+        return;
+    }
+
+    QRectF sceneVis;
+    if (m_view->viewport()) {
+        const QRect vr = m_view->viewport()->rect().adjusted(
+            -GalleryPackFit::kDecodeOverscanPx * 3,
+            -GalleryPackFit::kDecodeOverscanPx * 3,
+            GalleryPackFit::kDecodeOverscanPx * 3,
+            GalleryPackFit::kDecodeOverscanPx * 3);
+        sceneVis = m_view->mapToScene(vr).boundingRect();
+    }
+    if (sceneVis.isNull() || !sceneVis.isValid()) {
+        // Before first show: materialize a small prefix so the window is not empty.
+        sceneVis = m_virtualSceneBounds;
+        if (sceneVis.height() > 2400.0) {
+            sceneVis.setHeight(2400.0);
+        }
+        if (sceneVis.width() > 4000.0) {
+            sceneVis.setWidth(4000.0);
+        }
+    }
+
+    QSet<int> want;
+    for (int i = 0; i < m_virtualSlots.size(); ++i) {
+        if (m_virtualSlots.at(i).bounds.intersects(sceneVis)) {
+            want.insert(i);
+        }
+    }
+    // Hard cap — pathological dense packs.
+    constexpr int kMaxLive = 180;
+    if (want.size() > kMaxLive) {
+        QList<int> ranked = want.values();
+        const QPointF c = sceneVis.center();
+        std::sort(ranked.begin(), ranked.end(), [&](int a, int b) {
+            const QPointF ca = m_virtualSlots.at(a).bounds.center();
+            const QPointF cb = m_virtualSlots.at(b).bounds.center();
+            const qreal da = QPointF(ca - c).manhattanLength();
+            const qreal db = QPointF(cb - c).manhattanLength();
+            return da < db;
+        });
+        want.clear();
+        for (int i = 0; i < kMaxLive && i < ranked.size(); ++i) {
+            want.insert(ranked.at(i));
+        }
+    }
+
+    // Index live items by session id / path occurrence.
+    QHash<SessionImageId, ImageItem *> byId;
+    QMultiHash<QString, ImageItem *> byPath;
     for (ImageItem *item : m_view->liveItems()) {
         if (!item) {
             continue;
         }
-        const SessionImageId id = item->sessionId();
-        if (id != kInvalidSessionImageId) {
-            bySessionId.insert(id, item);
-        } else if (!item->path().isEmpty() && !byPathUnbound.contains(item->path())) {
-            byPathUnbound.insert(item->path(), item);
+        if (item->sessionId() != kInvalidSessionImageId) {
+            byId.insert(item->sessionId(), item);
+        } else {
+            byPath.insert(item->path(), item);
         }
     }
-    QSet<ImageItem *> claimed;
-    const PackOrderView pack = m_view->currentPackOrder();
-    int newCreated = 0;
-    bool morePlaceholdersPending = false;
-    for (int i = 0; i < pack.size(); ++i) {
-        const QString path = pack.pathAt(i);
-        const SessionImageId sid = pack.idAt(i);
 
-        // Ordered progressive: stop at the first path still waiting for size.
-        // Fill layouts need every aspect before pack — do not grow a partial
-        // prefix (would reflow the whole grid on every sizeReady).
-        if (sizeGate) {
-            if (layoutNeedsAllSizes(m_view->hostLayout().currentMode())) {
-                break;
-            }
-            const ImageSizeBook &book = m_view->hostSizeBook();
-            if (!book.hasDefinitive(path) && !book.isFailed(path)) {
-                break;
+    QSet<ImageItem *> keep;
+    for (int idx : want) {
+        const VirtualSlot &slot = m_virtualSlots.at(idx);
+        ImageItem *item = nullptr;
+        if (slot.id != kInvalidSessionImageId) {
+            item = byId.value(slot.id, nullptr);
+        }
+        if (!item && !slot.path.isEmpty()) {
+            auto it = byPath.find(slot.path);
+            if (it != byPath.end()) {
+                item = it.value();
+                byPath.erase(it);
             }
         }
+        if (!item) {
+            const QSize sz = slot.layoutSize.toSize();
+            item = m_view->hostDisplayPipeline().createPlaceholderItem(
+                slot.path, isPositiveSize(sz) ? sz : ImageSizeBook::standInNeutral());
+            if (!item) {
+                continue;
+            }
+            if (slot.id != kInvalidSessionImageId) {
+                m_view->setItemSessionId(item, slot.id);
+            }
+            if (m_view->sessionListIndex(item) < 0) {
+                item->setSessionIndex(idx);
+            }
+            item->setVisible(true);
+            if (slot.id != kInvalidSessionImageId) {
+                byId.insert(slot.id, item);
+            }
+        }
+        keep.insert(item);
+        // Apply packed pose.
+        if (!slot.pose.cellSize.isEmpty()) {
+            GalleryLayout::setItemGalleryCellSize(item, slot.pose.cellSize);
+        } else {
+            GalleryLayout::setItemGalleryCellSize(item, {});
+        }
+        ItemComponents::Placement pl = item->placement();
+        pl.pos = slot.pose.center;
+        pl.scale = slot.pose.scale;
+        pl.scaleY = slot.pose.scale;
+        pl.shear = 0.0;
+        pl.rotation = 0.0;
+        pl.hFlip = false;
+        pl.vFlip = false;
+        pl.opacity = 1.0;
+        GalleryLayout::applyItemPlacement(item, pl);
+    }
 
-        ImageItem *existing = nullptr;
-        if (sid != kInvalidSessionImageId) {
-            existing = bySessionId.value(sid, nullptr);
-        }
-        if (!existing && !path.isEmpty()) {
-            existing = byPathUnbound.value(path, nullptr);
-            if (existing && claimed.contains(existing)) {
-                existing = nullptr;
-            }
-            // Bound item with matching path but different sid already claimed via id.
-            if (!existing) {
-                // Rare: bound duplicate path without sid in pack — linear fallback.
-                for (ImageItem *item : m_view->liveItems()) {
-                    if (!item || item->path() != path || claimed.contains(item)) {
-                        continue;
-                    }
-                    if (sid != kInvalidSessionImageId
-                        && item->sessionId() != kInvalidSessionImageId
-                        && item->sessionId() != sid) {
-                        continue;
-                    }
-                    existing = item;
-                    break;
-                }
-            }
-        }
-        if (existing) {
-            claimed.insert(existing);
-            if (sid != kInvalidSessionImageId
-                && existing->sessionId() == kInvalidSessionImageId) {
-                m_view->setItemSessionId(existing, sid);
-                bySessionId.insert(sid, existing);
-                byPathUnbound.remove(path);
-            } else {
-                m_view->refreshSessionIndexCache(existing);
-            }
-            // sessionIndex is session-list order, not pack row (IDENTITY / Stage 2).
-            // Pack multiplicity shares one document index; unbound keeps pack hint.
-            if (m_view->sessionListIndex(existing) < 0) {
-                existing->setSessionIndex(i);
-            }
-            existing->setVisible(true);
-            // Content layout (ItemWorld orient/crop), not file-native alone.
-            const QSize sz = m_view->contentLayoutSize(path, sid);
-            if (isPositiveSize(sz) && !m_view->hostSizeBook().isProvisional(path)) {
-                m_view->setItemIntrinsicSize(existing, sz);
-            }
-            continue;
-        }
-
-        if (sid != kInvalidSessionImageId || i >= 0) {
-            PendingSessionBind b;
-            b.path = path;
-            b.id = sid;
-            b.index = i;
-            m_view->hostBindBook().append(b);
-        }
-
-        // Prefer content layout size (ItemWorld); LQIP install may follow.
-        // Never create a 1×1 / unknown-size tile on the scene.
-        const QSize sz = m_view->contentLayoutSize(path, sid);
-        if (!isPositiveSize(sz) || sz.width() <= 1) {
-            continue;
-        }
-        // Large sessions: one ensurePlaceholders used to create tens of thousands
-        // of QGraphicsItems on the GUI thread (~minute freeze, no GUI_BUDGET).
-        if (newCreated >= GalleryDecode::kMaxNewPlaceholdersPerPulse) {
-            morePlaceholdersPending = true;
-            break;
-        }
-        const QImage hint = ImageCache::get(path);
-        ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(path, sz);
-        if (ph) {
-            if (sid != kInvalidSessionImageId) {
-                m_view->setItemSessionId(ph, sid);
-                bySessionId.insert(sid, ph);
-            } else if (!path.isEmpty()) {
-                byPathUnbound.insert(path, ph);
-            }
-            // List-order cache from document when bound; pack i only unbound hint.
-            if (m_view->sessionListIndex(ph) < 0) {
-                ph->setSessionIndex(i);
-            }
-            ph->setVisible(true);
-            if (!hint.isNull()) {
-                m_view->hostDisplayPipeline().installDisplayPixels(ph, hint,
-                                     SessionAppearance::PixelKind::SoftPreview,
-                                     sid);
-            }
-            claimed.insert(ph);
-            ++newCreated;
+    // Drop live items outside the window.
+    QList<ImageItem *> doomed;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (item && !keep.contains(item)) {
+            doomed.append(item);
         }
     }
-    // Reuse the pack snapshot from the loop above (same generation; avoids -Wshadow).
-    m_view->reorderItemsByPaths(pack.paths(), pack.ids());
-    if (morePlaceholdersPending) {
-        // Yield — create only. Do NOT applyLayout every pulse (that reflowed the
-        // whole growing set tens of times and froze large opens). Pack once when
-        // the catch-up finishes (see onSizeResolveGateComplete / callers).
-        QTimer::singleShot(0, m_view, [this]() {
-            if (!m_view || !m_view->isGalleryMode()) {
-                return;
-            }
-            if (!ensurePlaceholders()) {
-                // Creation finished — one pack, then show (items stayed hidden).
-                if (!m_view->hostLayout().isFreeForm() && !m_view->liveItems().isEmpty()) {
-                    applyLayout(GalleryPackReason::EnterGallery);
-                    for (ImageItem *item : m_view->liveItems()) {
-                        if (item) {
-                            item->setVisible(true);
-                        }
-                    }
-                    updateDecodeWindow();
-                }
-            }
-        });
+    for (ImageItem *item : doomed) {
+        m_view->hostDisplayPipeline().galleryDecodeResetPath(item->path());
+        m_view->destroyCanvasItem(item);
     }
-    return morePlaceholdersPending;
+
+    if (m_view->canvasScene() && m_virtualSceneBounds.isValid()) {
+        if (m_view->canvasScene()->sceneRect() != m_virtualSceneBounds) {
+            m_view->canvasScene()->setSceneRect(m_virtualSceneBounds);
+        }
+    }
 }
-
-
-// --- Gallery decode watchdog + layout columns ---
 
 void GalleryController::decodeWatchdogTick()
 {

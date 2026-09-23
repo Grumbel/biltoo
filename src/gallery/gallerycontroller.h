@@ -5,6 +5,9 @@
 #define GALLERYCONTROLLER_H
 
 #include <QList>
+#include <QVector>
+#include <QRectF>
+#include <QSizeF>
 #include <QPointF>
 #include <QString>
 #include <QPoint>
@@ -94,8 +97,16 @@ public:
     void scheduleDecodeWindowRefresh(int delayMs = 48);
     void updateDecodeWindow();
     void applyLayout(GalleryPackReason reason);
-    /** @return true if more items still need creating (caller should re-arm). */
+    /**
+     * Ensure live ImageItems only for the viewport window (virtualized).
+     * Full session lives in path order + size book + layout plan — not on the scene.
+     * @return always false (no create-chunk re-arm; scroll triggers sync).
+     */
     bool ensurePlaceholders();
+    /** Recompute pack poses for the whole session without creating items. */
+    void rebuildVirtualPlan();
+    /** Create/destroy ImageItems so only near-viewport slots are live. */
+    void syncVirtualWindow();
     void decodeWatchdogTick();
     void setGridColumns(int columns);
     void setMasonryColumns(int columns);
@@ -151,6 +162,18 @@ private:
 
     QTimer *m_statusRefreshTimer = nullptr;
     QTimer *m_decodeScrollTimer = nullptr;
+
+    /** Offline Gallery layout: one slot per session row (not a QGraphicsItem). */
+    struct VirtualSlot {
+        QString path;
+        SessionImageId id = kInvalidSessionImageId;
+        QSizeF layoutSize;
+        GalleryLayout::PackPose pose;
+        QRectF bounds; // scene bounds of packed cell
+    };
+    QVector<VirtualSlot> m_virtualSlots;
+    QRectF m_virtualSceneBounds;
+    int m_virtualPlanGeneration = 0;
 };
 
 #endif // GALLERYCONTROLLER_H

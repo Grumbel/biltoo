@@ -308,32 +308,10 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
         }
 
         if (virtualize) {
-            // Size-first: only create when layout size is known (warm path).
-            // Cold path uses the size gate + ordered ensurePlaceholders.
-            const QSize lay = contentLayoutSize(path, sid);
-            if (!isPositiveSize(lay) || lay.width() <= 1 || lay.height() <= 1) {
-                if (isGalleryMode()) {
-                    scheduleImageSizeProbe(path);
-                }
-                continue;
-            }
-            const QImage hint = ImageCache::get(path);
-            ImageItem *ph = m_displayPipeline.createPlaceholderItem(path, lay);
-            if (ph) {
-                if (sid != kInvalidSessionImageId) {
-                    setItemSessionId(ph, sid);
-                }
-                // List-order cache from document when bound; pack i only unbound hint.
-                if (sessionListIndex(ph) < 0) {
-                    ph->setSessionIndex(i);
-                }
-                if (!hint.isNull()) {
-                    m_displayPipeline.installDisplayPixels(ph, hint,
-                                         SessionAppearance::PixelKind::SoftPreview,
-                                         sid);
-                }
-                claimed.insert(ph);
-            }
+            // Gallery is viewport-virtualized: path order + size book + layout plan
+            // hold the session; ImageItems exist only for the visible window
+            // (GalleryController::syncVirtualWindow). Do not create N items here.
+            continue;
         } else {
             m_displayPipeline.scheduleImageLoad(path, LoadAdd);
         }
