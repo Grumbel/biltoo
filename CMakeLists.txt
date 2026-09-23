@@ -297,16 +297,16 @@ set(BILTOO_LIB_SOURCES
   src/archivepath.h
   src/pagepath.cpp
   src/pagepath.h
-  src/thumbnailbar.cpp
-  src/thumbnailbar.h
+  src/shell/thumbnailbar.cpp
+  src/shell/thumbnailbar.h
   src/shell/preferencesdialog.cpp
   src/shell/preferencesdialog.h
   src/slideshow/slideshowsettingsdialog.cpp
   src/slideshow/slideshowsettingsdialog.h
   src/session/sessionreorderdialog.cpp
   src/session/sessionreorderdialog.h
-  src/epublayoutdialog.cpp
-  src/epublayoutdialog.h
+  src/shell/epublayoutdialog.cpp
+  src/shell/epublayoutdialog.h
   src/workspace/workspacebackgrounddialog.cpp
   src/workspace/workspacebackgrounddialog.h
   src/shell/metadatapanel.cpp
@@ -316,12 +316,12 @@ set(BILTOO_LIB_SOURCES
   src/coloradjust.cpp
   src/coloradjust.h
   src/shell/layoutpanel.cpp
-  src/tocpanel.cpp
-  src/tocpanel.h
+  src/shell/tocpanel.cpp
+  src/shell/tocpanel.h
   src/shell/helppanel.cpp
   src/shell/helppanel.h
-  src/keyboardshortcutsdialog.cpp
-  src/keyboardshortcutsdialog.h
+  src/shell/keyboardshortcutsdialog.cpp
+  src/shell/keyboardshortcutsdialog.h
   src/shell/layoutpanel.h
   src/shell/defaultapps.cpp
   src/shell/defaultapps.h

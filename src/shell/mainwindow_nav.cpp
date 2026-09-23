@@ -14,7 +14,7 @@
 #include "projectfile.h"
 #include "archivepath.h"
 #include "pagepath.h"
-#include "epublayoutdialog.h"
+#include "shell/epublayoutdialog.h"
 #include "workspace/workspacebackgrounddialog.h"
 #include "imageitem.h"
 #include "display/imagecache.h"

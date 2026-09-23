@@ -3,7 +3,7 @@
 
 #include "shell/mainwindow_includes.h"
 #include "session/sessionopen.h"
-#include "keyboardshortcutsdialog.h"
+#include "shell/keyboardshortcutsdialog.h"
 #include "version.h"
 #include "thumtoo/version.hpp"
 #include "imageitem.h"

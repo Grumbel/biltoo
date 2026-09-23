@@ -4,7 +4,7 @@
 #include "contentxform.h"
 #include "shell/mainwindow.h"
 #include "imageview.h"
-#include "thumbnailbar.h"
+#include "shell/thumbnailbar.h"
 #include "session/sessionexport.h"
 
 #include <QFileDialog>

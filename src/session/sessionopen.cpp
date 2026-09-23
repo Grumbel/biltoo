@@ -4,7 +4,7 @@
 #include "session/sessionopen.h"
 
 #include "imageview.h"
-#include "thumbnailbar.h"
+#include "shell/thumbnailbar.h"
 #include "thumtoocache.h"
 #include "ttfp_trace.h"
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "thumbnailbar.h"
+#include "shell/thumbnailbar.h"
 #include "viewtransform.h"
 #include "filmstripgeometry.h"
 #include "display/displayquality.h"
