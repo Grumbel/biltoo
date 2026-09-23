@@ -7,18 +7,16 @@
 #include "gallery/gallerylayout.h"
 #include "imageview_types.h"
 
-#include <QAbstractScrollArea>
 #include <QRectF>
-#include <QWidget>
 #include <QtGlobal>
 
 /**
- * Pack measurement and post-pack fit so sceneRect does not force dual
- * scrollbars on the fitted axis (see GalleryLayout::pack).
+ * Pure post-pack fit helpers (no QWidget / QAbstractScrollArea).
+ * Viewport policy for pack measurement lives in GalleryController
+ * (PackViewportGuard) so unit tests can include this header without Widgets.
  *
- * Gallery packs to a viewport that always includes both scrollbar gutters
- * (ScrollBarAlwaysOn during measure). That prevents the classic loop:
- * content fits full viewport → one bar appears → client shrinks → other bar.
+ * Pack to a client that always includes both scrollbar gutters, then restore
+ * AsNeeded — avoids: content fits full viewport → one bar → other axis overshoots.
  */
 namespace GalleryPackFit {
 
@@ -72,64 +70,6 @@ inline qreal packAvailAxis(int viewportAxis, qreal margin, qreal floor = 32.0)
 {
     return qMax(floor, qreal(viewportAxis) - 2.0 * margin - kPackAxisSlackPx);
 }
-
-/**
- * Force both scrollbars on, read viewport size for pack measurement.
- * Restores the previous policy on restore() / destruction.
- * Nested guards (applyLayout + rebuildVirtualPlan) are safe: outer restore
- * wins only after inner has restored its own saved policy.
- */
-class PackViewportGuard
-{
-public:
-    explicit PackViewportGuard(QAbstractScrollArea *view)
-        : m_view(view)
-    {
-        if (!m_view) {
-            return;
-        }
-        m_savedH = m_view->horizontalScrollBarPolicy();
-        m_savedV = m_view->verticalScrollBarPolicy();
-        if (m_savedH != Qt::ScrollBarAlwaysOn
-            || m_savedV != Qt::ScrollBarAlwaysOn) {
-            m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-            m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-        }
-        if (QWidget *vp = m_view->viewport()) {
-            m_width = vp->width();
-            m_height = vp->height();
-        }
-    }
-
-    PackViewportGuard(const PackViewportGuard &) = delete;
-    PackViewportGuard &operator=(const PackViewportGuard &) = delete;
-
-    ~PackViewportGuard() { restore(); }
-
-    void restore()
-    {
-        if (!m_view) {
-            return;
-        }
-        if (m_view->horizontalScrollBarPolicy() != m_savedH) {
-            m_view->setHorizontalScrollBarPolicy(m_savedH);
-        }
-        if (m_view->verticalScrollBarPolicy() != m_savedV) {
-            m_view->setVerticalScrollBarPolicy(m_savedV);
-        }
-        m_view = nullptr;
-    }
-
-    [[nodiscard]] int width() const { return m_width; }
-    [[nodiscard]] int height() const { return m_height; }
-
-private:
-    QAbstractScrollArea *m_view = nullptr;
-    Qt::ScrollBarPolicy m_savedH = Qt::ScrollBarAsNeeded;
-    Qt::ScrollBarPolicy m_savedV = Qt::ScrollBarAsNeeded;
-    int m_width = 0;
-    int m_height = 0;
-};
 
 /**
  * Fitted-axis targets for @p mode (-1 = unconstrained).
@@ -191,7 +131,6 @@ inline QRectF clampSceneRectToPack(QRectF bounds, GalleryLayout::Mode mode,
     qreal targetW = -1.0;
     qreal targetH = -1.0;
     fittedTargets(mode, maxW, maxH, &targetW, &targetH);
-    // fittedTargets with outer sizes: width-fitted gets targetW=maxW, etc.
     if (targetW > 0.0 && bounds.width() > targetW) {
         bounds.setWidth(targetW);
     }

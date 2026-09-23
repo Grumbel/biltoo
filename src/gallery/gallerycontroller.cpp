@@ -29,6 +29,7 @@
 #include <functional>
 
 #include <QScrollBar>
+#include <QAbstractScrollArea>
 #include <QTimer>
 #include <QObject>
 #include <QUndoStack>
@@ -49,6 +50,64 @@
 #include <QGraphicsScene>
 #include <algorithm>
 #include <QGraphicsItem>
+
+
+namespace {
+
+/** AlwaysOn both axes for pack measure; restore previous policy on exit. */
+class PackViewportGuard
+{
+public:
+    explicit PackViewportGuard(QAbstractScrollArea *view)
+        : m_view(view)
+    {
+        if (!m_view) {
+            return;
+        }
+        m_savedH = m_view->horizontalScrollBarPolicy();
+        m_savedV = m_view->verticalScrollBarPolicy();
+        if (m_savedH != Qt::ScrollBarAlwaysOn
+            || m_savedV != Qt::ScrollBarAlwaysOn) {
+            m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+            m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        }
+        if (QWidget *vp = m_view->viewport()) {
+            m_width = vp->width();
+            m_height = vp->height();
+        }
+    }
+
+    PackViewportGuard(const PackViewportGuard &) = delete;
+    PackViewportGuard &operator=(const PackViewportGuard &) = delete;
+
+    ~PackViewportGuard() { restore(); }
+
+    void restore()
+    {
+        if (!m_view) {
+            return;
+        }
+        if (m_view->horizontalScrollBarPolicy() != m_savedH) {
+            m_view->setHorizontalScrollBarPolicy(m_savedH);
+        }
+        if (m_view->verticalScrollBarPolicy() != m_savedV) {
+            m_view->setVerticalScrollBarPolicy(m_savedV);
+        }
+        m_view = nullptr;
+    }
+
+    [[nodiscard]] int width() const { return m_width; }
+    [[nodiscard]] int height() const { return m_height; }
+
+private:
+    QAbstractScrollArea *m_view = nullptr;
+    Qt::ScrollBarPolicy m_savedH = Qt::ScrollBarAsNeeded;
+    Qt::ScrollBarPolicy m_savedV = Qt::ScrollBarAsNeeded;
+    int m_width = 0;
+    int m_height = 0;
+};
+
+} // namespace
 
 GalleryController::GalleryController(ImageView *view)
     : m_view(view)
@@ -1429,7 +1488,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     // pack to the full client, then one bar shrinks the viewport and the other
     // axis overshoots — dual scrollbars. hostLayoutApply is active so policy
     // changes do not re-enter pack via resizeEvent.
-    GalleryPackFit::PackViewportGuard packVp(m_view);
+    PackViewportGuard packVp(m_view);
     const qreal margin = GalleryLayout::Params::kDefaultMargin;
     const qreal gap = GalleryLayout::Params::kDefaultGap;
     const qreal availW = GalleryPackFit::packAvailAxis(packVp.width(), margin);
@@ -1585,7 +1644,7 @@ void GalleryController::rebuildVirtualPlan()
 
         // Same gutter reservation as applyLayout — virtual plan must not pack to a
     // wider/taller client than live items (AsNeeded viewport without bars).
-    GalleryPackFit::PackViewportGuard packVp(m_view);
+    PackViewportGuard packVp(m_view);
     const qreal margin = GalleryLayout::Params::kDefaultMargin;
     const qreal gap = GalleryLayout::Params::kDefaultGap;
     const int vpW = packVp.width() > 0 ? packVp.width() : 800;
