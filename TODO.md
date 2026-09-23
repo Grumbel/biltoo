@@ -2,37 +2,39 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2383-probe-cancel-races-orient-plan** (on top of `660c49c` stack).
+**Tip: biltoo-2384-filmstrip-full-session-fill** (on top of `660c49c` stack).
 
-Includes **2381–2382**.
+Includes **2381–2383**.
 
-### 2383 fixes (review of 2381–2382)
-1. Stale `finishProbeSlot` no longer removes a re-enqueued path from
-   `g_probeQueued` after `cancelSizeProbes`.
-2. `preparePaths` respects `sizeProbeGeneration` (no ImageCache/`sizeReady`
-   after session replace).
-3. Virtual plan uses orient-aware `contentLayoutSize(..., false)` without Store.
+### 2384
+- Removed filmstrip **256-row cap**. Progressive chunked fill materializes the
+  **full** session (16ms between 32-row chunks) so scroll/navigate work end-to-end.
+- Thumb **pixels** stay viewport-virtualized (`scheduleVisibleThumbnailLoads`).
+- `ensureMaterializedThrough` + `setCurrentIndex` catch-up when jumping ahead of
+  the fill cursor.
+- Dropped 200ms large-session filmstrip install delay.
 
-**Thumtoo pinned** in `flake.lock` → `f71d183` (thumtoo-323).
+**Note:** Letterbox variable cell widths need real `QListWidgetItem`s for correct
+scroll extent. Item shells are progressive, not a sliding window; a true
+model-window virtualization would need a different layout engine (0.3).
 
-**Next (release path):**
-1. RC smoke (session switch mid-resolve; rotated gallery pack; cold open sizes)
-2. VERSION 0.2.0 + tag
+**Thumtoo pinned** → `f71d183` (thumtoo-323).
+
+**Next:** RC smoke; VERSION 0.2.0 + tag.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2383.1-probe-cancel-races-orient-plan-660c49c.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2384.1-filmstrip-full-session-fill-660c49c.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
-- [x] src subdirs phases 1–31
-- [x] pin thumtoo ≥ 323
-- [x] Resolving sizes… HUD top-left
-- [x] 2381 unused provCell
-- [x] 2382 cancel size probes; sizes before layout
-- [x] 2383 probe cancel races; preparePaths epoch; orient plan
+- [x] 2381–2383 (probe cancel, orient plan, …)
+- [x] 2384 filmstrip full-session fill (no 256 cap)
 - [ ] RC smoke
 - [ ] VERSION 0.2.0 + tag
 
 ## Backlog (0.3.0)
-See prior TODO: size-resolve throughput, failure diagnostics, ImageView ownership.
+- True filmstrip item-window virtualization (QAbstractListModel + uniform or
+  measured extent) if 20k QListWidgetItem RAM becomes an issue
+- Size-resolve throughput / failure diagnostics
+- ImageView ownership extraction
