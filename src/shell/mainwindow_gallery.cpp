@@ -87,12 +87,28 @@ void MainWindow::enterGalleryMode(LayoutMode layout)
     // setWorkspacePaths refuses Image mode. Enter Gallery first so the session
     // paths are actually scheduled; otherwise the first open after startup only
     // shows the single Image-mode item until Gallery is chosen again.
+    //
+    // Warm Image→Gallery: stash non-empty ⇒ enter() restores the same cells.
+    // Skip populateGalleryCanvas (same as returnToGallery) so layout menu /
+    // goToGalleryCurrentLayout cannot re-walk the full session after restash.
+    // Gallery→Gallery layout switch and Workspace→Gallery still populate.
+    // If session grew/shrank while in Image (append drop, etc.), live count
+    // will not match — fall through to populate.
+    const bool warmRestash = m_imageView->isImageMode()
+        && !m_imageView->hostGallery().stashedItems().isEmpty();
     m_imageView->enterGallery(layout);
     // Apply mode policy before populate. Packing itself temporarily forces
     // AlwaysOn while measuring avail (see ImageView::applyLayout) so AsNeeded
     // does not shrink the viewport mid-pack.
     updateScrollBarPolicyForMode();
-    populateGalleryCanvas();
+    const bool membershipOk = warmRestash
+        && m_imageView->itemCount() == m_session.size();
+    if (membershipOk) {
+        m_imageView->hostGalleryDecodeBook().setDeferPopulate(false);
+        m_imageView->hostDisplayPipeline().tickPrimaryTileLod(16);
+    } else {
+        populateGalleryCanvas();
+    }
 
     syncGalleryLayoutUi(layout);
     updateMasonryCountControl();
@@ -379,9 +395,13 @@ void MainWindow::returnToGallery()
         restoredStash = m_imageView->hostGallery().returnFromImage(
             static_cast<int>(layout), focusPath, focusId);
     }
-    if (!restoredStash) {
+    // Membership check: session may have grown (drop-append) while in Image
+    // without discarding the Gallery stash — then restash is incomplete.
+    const bool membershipOk = restoredStash && m_imageView
+        && m_imageView->itemCount() == m_session.size();
+    if (!membershipOk) {
         populateGalleryCanvas();
-    } else if (m_imageView) {
+    } else {
         m_imageView->hostGalleryDecodeBook().setDeferPopulate(false);
         m_imageView->hostDisplayPipeline().tickPrimaryTileLod(16);
     }
