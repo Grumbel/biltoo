@@ -4,10 +4,10 @@
 #ifndef ITEMWORLD_H
 #define ITEMWORLD_H
 
-#include "imagesizebook.h"
+#include "item/imagesizebook.h"
 #include "item/itemcomponents.h"
 #include "content/contentxform.h"
-#include "pathitemstatebook.h"
+#include "item/pathitemstatebook.h"
 
 #include <QHash>
 #include <QString>

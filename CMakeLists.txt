@@ -213,9 +213,9 @@ set(BILTOO_LIB_SOURCES
   src/view/canvaspatterngeometry.h
   src/gallery/galleryrelayoutsuppress.h
   src/layoutapplyguard.h
-  src/imagesizebook.h
-  src/pathitemstatebook.h
-  src/pendingitemappearancebook.h
+  src/item/imagesizebook.h
+  src/item/pathitemstatebook.h
+  src/item/pendingitemappearancebook.h
   src/slideshow/slideshowtypes.h
   src/slideshow/slideshowclocks.h
   src/slideshow/slideshowclocks.cpp

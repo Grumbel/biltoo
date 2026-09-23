@@ -23,7 +23,7 @@
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"
 #include "color/coloradjust.h"
-#include "imagesizebook.h"
+#include "item/imagesizebook.h"
 #include "view/viewtransform.h"
 #include "biltoo_logging.h"
 #include "ttfp_trace.h"
