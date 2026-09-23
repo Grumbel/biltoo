@@ -4,7 +4,7 @@
 #ifndef ATTENTIONCONTROLLER_H
 #define ATTENTIONCONTROLLER_H
 
-#include "attentionsession.h"
+#include "attention/attentionsession.h"
 #include "imageview_types.h"
 
 #include <QPointF>

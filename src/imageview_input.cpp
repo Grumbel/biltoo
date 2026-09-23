@@ -9,7 +9,7 @@
 #include "selectiongeometry.h"
 #include "viewtransform.h"
 #include "placementlinear.h"
-#include "attentiongeometry.h"
+#include "attention/attentiongeometry.h"
 #include "edgenavpolicy.h"
 #include "pagepath.h"
 #include "gallery/gallerylayout.h"

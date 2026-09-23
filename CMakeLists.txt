@@ -126,8 +126,8 @@ set(BILTOO_LIB_SOURCES
   src/slideshowcontroller.h
   src/crop/cropcontroller.cpp
   src/crop/cropcontroller.h
-  src/attentioncontroller.cpp
-  src/attentioncontroller.h
+  src/attention/attentioncontroller.cpp
+  src/attention/attentioncontroller.h
   src/hudmodel.cpp
   src/hudmodel.h
   src/display/displaypipelinecontroller.cpp
@@ -169,9 +169,9 @@ set(BILTOO_LIB_SOURCES
   src/crop/cropflash.h
   src/crop/cropdebug.h
   src/viewportupdatehold.h
-  src/attentionsession.h
-  src/attentiongeometry.cpp
-  src/attentiongeometry.h
+  src/attention/attentionsession.h
+  src/attention/attentiongeometry.cpp
+  src/attention/attentiongeometry.h
   src/shell/centreprogress.h
   src/workspace/grouptransformsession.h
   src/workspace/grouptransformgeometry.cpp

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "projectfile.h"
-#include "attentiongeometry.h"
+#include "attention/attentiongeometry.h"
 
 #include <QCryptographicHash>
 #include <QDir>

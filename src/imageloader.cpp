@@ -10,7 +10,7 @@
 
 #include "biltoo_thread.h"
 #include "imageloader.h"
-#include "attentiongeometry.h"
+#include "attention/attentiongeometry.h"
 #include "viewtransform.h"
 #include "thumtoocache.h"
 #include "display/imagecache.h"

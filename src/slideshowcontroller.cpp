@@ -17,7 +17,7 @@
 #include "slideshowphasepolicy.h"
 #include "slideshowatlaspolicy.h"
 #include "slideshowmotiongeometry.h"
-#include "attentiongeometry.h"
+#include "attention/attentiongeometry.h"
 #include "tilelod/tile_lod_controller.hpp"
 
 #include <QGraphicsScene>

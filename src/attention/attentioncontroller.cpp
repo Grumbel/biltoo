@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "attentioncontroller.h"
+#include "attention/attentioncontroller.h"
 #include "imageview.h"
 
-#include "attentiongeometry.h"
+#include "attention/attentiongeometry.h"
 #include "imageitem.h"
 #include "imageloader.h"
 
