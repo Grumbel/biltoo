@@ -77,7 +77,8 @@ public:
     void scheduleImageLoad(const QString &path, int role);
     void galleryDecodeResetPath(const QString &path);
     void galleryDecodeResetAll();
-    void scheduleGalleryDecode(const QString &path);
+    /** @return true if probe/LQIP/pyramid work was started (not a no-op). */
+    bool scheduleGalleryDecode(const QString &path);
 
     void scheduleTileLodAfterInteraction(int delayMs = 50);
     void purgeTilePathRam(const QString &path);

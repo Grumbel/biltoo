@@ -645,12 +645,12 @@ int DisplayPipelineController::galleryHaveEdgeFromItems(const QString &path, boo
 
 
 
-void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
+bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET_MS("scheduleGalleryDecode", 2);
     if (!m_view->isGalleryMode() || path.isEmpty()) {
-        return;
+        return false;
     }
     // Gallery: LQIP placeholder + tiles only. Soft PreferCache is removed.
     // Size is ground truth: never install samples or schedule tiles before a
@@ -658,11 +658,11 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
     {
         const ImageSizeBook &book = m_view->hostSizeBook();
         if (book.isFailed(path)) {
-            return;
+            return false;
         }
         if (!book.hasDefinitive(path)) {
             m_view->scheduleImageSizeProbe(path);
-            return;
+            return true; // probe queued
         }
     }
 
@@ -680,8 +680,9 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
         }
     }
 
+    bool didWork = false;
     if (needLqip) {
-        // ImageCache only (warmSessionOpenMemos / probe workers put LQIP there).
+        // ImageCache only (warmSessionOpenMemos / size-probe workers).
         const QImage host = ImageCache::get(path);
         if (!host.isNull()
             && ImageCache::longEdge(host) <= DisplayQuality::kLqipMaxEdge) {
@@ -692,6 +693,7 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
                 installDisplayPixels(ii, host,
                                      SessionAppearance::PixelKind::SoftPreview,
                                      ii->sessionId());
+                didWork = true;
             }
         }
     }
@@ -704,7 +706,7 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
         // Size must be known before pyramid encode (expensive).
         if (!m_view->hostSizeBook().hasDefinitive(path)
             && !ThumtooCache::cachedSize(path).isValid()) {
-            return;
+            return didWork;
         }
         // Only encode a pyramid when Store has no durable coverage yet.
         // Mark queued only after a successful schedule (or durable already
@@ -715,9 +717,11 @@ void DisplayPipelineController::scheduleGalleryDecode(const QString &path)
                 st.markTilesPyramidQueued();
             } else if (ThumtooCache::scheduleTilePyramid(path)) {
                 st.markTilesPyramidQueued();
+                didWork = true;
             }
         }
     }
+    return didWork;
 }
 
 void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const QImage &image, quint64 generation,

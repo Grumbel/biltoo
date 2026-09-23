@@ -1091,19 +1091,34 @@ int GalleryController::galleryInstallLqipOntoBlanks(int maxInstalls, bool *moreP
     }
     int installed = 0;
     // Underlay only (LQIP / EMB) — never install PreferCache whole-frame into cells.
+    // Prefer viewport hits: full liveItems walks dominated idle decode windows on
+    // large sessions (O(n) every 16 ms re-arm with nothing to install).
     QList<ImageItem *> ordered;
-    ordered.reserve(m_view->liveItems().size());
-    for (ImageItem *item : m_view->liveItems()) {
-        if (!item || item->path().isEmpty()) {
+    ordered.reserve(64);
+    QRectF sceneVisible;
+    if (m_view->viewport()) {
+        sceneVisible = m_view->mapToScene(
+            m_view->viewport()->rect().adjusted(
+                -GalleryPackFit::kDecodeOverscanPx, -GalleryPackFit::kDecodeOverscanPx,
+                GalleryPackFit::kDecodeOverscanPx, GalleryPackFit::kDecodeOverscanPx))
+            .boundingRect();
+    }
+    const QList<QGraphicsItem *> hit =
+        sceneVisible.isNull()
+            ? QList<QGraphicsItem *>()
+            : m_view->canvasScene()->items(sceneVisible, Qt::IntersectsItemBoundingRect);
+    QSet<ImageItem *> seen;
+    for (QGraphicsItem *gi : hit) {
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
+        if (!item || item->path().isEmpty() || seen.contains(item)) {
             continue;
         }
+        seen.insert(item);
         const int e = item->displayPixelLongEdge();
         // Allow EMB band (≤320) so EXIF/PDF /Thumb can replace a tiny ThumbHash.
         if (!item->hasDisplayPixels()
             || e <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-            ordered.prepend(item);
-        } else {
-            continue; // past embedded underlay — tiles own sharpness
+            ordered.append(item);
         }
     }
     for (ImageItem *item : ordered) {
@@ -1242,6 +1257,7 @@ void GalleryController::updateDecodeWindow()
     // ------------------------------------------------------------------
     // Pass 2: LQIP install for blank cells (tiles owned by coordinator).
     // ------------------------------------------------------------------
+    bool needSlice = false;
     QStringList visible;
     QSet<QString> seen;
 
@@ -1253,7 +1269,7 @@ void GalleryController::updateDecodeWindow()
             : m_view->canvasScene()->items(sceneVisible, Qt::IntersectsItemBoundingRect);
     for (QGraphicsItem *gi : hit) {
         if (wall.elapsed() >= kDecodeWindowWallMs) {
-            scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSliceMs);
+            needSlice = true;
             break;
         }
         auto *item = qgraphicsitem_cast<ImageItem *>(gi);
@@ -1278,12 +1294,17 @@ void GalleryController::updateDecodeWindow()
 
     constexpr int kSchedBudget = 32;
     int scheduled = 0;
+    int realWork = 0;
     for (const QString &path : visible) {
         if (scheduled >= kSchedBudget || wall.elapsed() >= kDecodeWindowWallMs) {
-            scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSliceMs);
+            needSlice = true;
             break;
         }
-        m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
+        // Count only real probe/LQIP/pyramid starts — blank cells that are
+        // already waiting on workers must not re-arm every 16 ms forever.
+        if (m_view->hostDisplayPipeline().scheduleGalleryDecode(path)) {
+            ++realWork;
+        }
         ++scheduled;
     }
     if (m_view->hostPerf().isEnabled()) {
@@ -1291,18 +1312,18 @@ void GalleryController::updateDecodeWindow()
         phaseTimer.restart();
     }
 
-    const bool lqipBusy = scheduled > 0 || moreInstallsPending;
+    const bool lqipBusy = realWork > 0 || moreInstallsPending;
     if (m_view->hostPerf().isEnabled()) {
         usInterest = phaseTimer.nsecsElapsed() / 1000;
     }
 
     // Tile issue: one coordinator tick per decode window (not per path).
-    // Skip if the LQIP/schedule slice already burned the wall — re-arm instead.
+    // Skip if the LQIP/schedule slice already burned the wall — mark needSlice.
     if (wall.elapsed() < kDecodeWindowWallMs) {
         int tileBudget = m_view->isGalleryMode() ? 32 : 8;
         m_view->hostDisplayPipeline().tickPrimaryTileLod(tileBudget);
     } else {
-        scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSliceMs);
+        needSlice = true;
     }
 
     // Rate-limited tile debug (BILTOO_TILE_DEBUG=1) — sample viewport hits only.
@@ -1319,9 +1340,11 @@ void GalleryController::updateDecodeWindow()
         }
     }
 
-    // Re-arm while LQIP installs or schedules remain; tile coverage continues
-    // via TileLoadCoordinator re-arm / completion wake.
-    if (scheduled > 0 || moreInstallsPending) {
+    // Re-arm only when this pass started real work or hit the wall mid-slice.
+    // Blank on-screen cells waiting on workers must not spin every 16 ms
+    // (that was idle GUI_BUDGET spam on large galleries). Tile coverage
+    // continues via TileLoadCoordinator re-arm / completion / watchdog.
+    if (needSlice || realWork > 0 || moreInstallsPending) {
         scheduleDecodeWindowRefresh(GalleryDecode::kDecodeWindowSliceMs);
     }
     updateSoftProgressHud();
@@ -1668,20 +1691,25 @@ void GalleryController::decodeWatchdogTick()
     }
     // Soft PreferCache is gone. Watchdog only re-installs LQIP on blank
     // on-screen cells and keeps the tile coordinator awake.
+    // Viewport hit-test only — full liveItems walks were O(n) every second.
     const QRectF sceneVisible =
         m_view->mapToScene(m_view->viewport()->rect().adjusted(-80, -80, 80, 80)).boundingRect();
     bool needWindow = false;
-    for (ImageItem *item : m_view->liveItems()) {
-        if (!item || item->path().isEmpty()) {
+    const QList<QGraphicsItem *> hit =
+        sceneVisible.isNull()
+            ? QList<QGraphicsItem *>()
+            : m_view->canvasScene()->items(sceneVisible, Qt::IntersectsItemBoundingRect);
+    QSet<ImageItem *> seen;
+    for (QGraphicsItem *gi : hit) {
+        auto *item = qgraphicsitem_cast<ImageItem *>(gi);
+        if (!item || item->path().isEmpty() || seen.contains(item)) {
             continue;
         }
-        const QRectF tile = item->contentSceneRect();
-        if (!tile.isNull() && tile.isValid() && !tile.intersects(sceneVisible)) {
-            continue;
-        }
+        seen.insert(item);
         if (!item->hasDisplayPixels()) {
-            m_view->hostDisplayPipeline().scheduleGalleryDecode(item->path());
-            needWindow = true;
+            if (m_view->hostDisplayPipeline().scheduleGalleryDecode(item->path())) {
+                needWindow = true;
+            }
         }
     }
     if (needWindow) {
