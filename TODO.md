@@ -2,21 +2,32 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2381-unused-provcell-thumbnailbar** (on top of `660c49c`).
+**Tip: biltoo-2382-cancel-size-probes-sizes-first** (on top of `660c49c` stack).
 
-Removed dead `provCell` in `ThumbnailBar::setFiles` (computed only in
-`appendFileRowsChunk` after chunked fill) — clears `-Wunused-but-set-variable`.
+Includes **2381** (unused provCell).
+
+### Fixes
+1. **Session replace:** `ThumtooCache::cancelSizeProbes()` clears the host size
+   probe FIFO and bumps a generation so in-flight Store size callbacks cannot
+   emit `sizeReady` or refill `ImageCache` for the previous path set (old thumbs
+   in a new session). Wired from `ImageView::invalidateSessionLoads`.
+2. **Sizes before layout:** removed the open probe-prefix (128) truncation of
+   the Gallery size-resolve gate. Packaged layouts need real sizes for the full
+   session; concurrency stays bounded (`kMaxConcurrentSizeProbes`) and
+   `sizeReady` stays chunked.
 
 **Thumtoo pinned** in `flake.lock` → `f71d183` (thumtoo-323).
 Source layout 0.2.0 complete (phases 1–31).
 
 **Next (release path):**
-1. RC smoke (open, Gallery, crop, export, shell icons after `.qrc` move)
+1. RC smoke (open, Gallery, crop, export, shell icons after `.qrc` move;
+   verify session switch drops old filmstrip/gallery pixels; cold open packs
+   after sizes)
 2. VERSION 0.2.0 + tag
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2381.1-unused-provcell-thumbnailbar-660c49c.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2382.1-cancel-size-probes-sizes-first-660c49c.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
@@ -24,6 +35,7 @@ git -C biltoo pull --ff-only …/biltoo-2381.1-unused-provcell-thumbnailbar-660c
 - [x] pin thumtoo ≥ 323 (`flake.lock` → f71d183)
 - [x] Resolving sizes… HUD top-left (non-blocking)
 - [x] drop unused provCell in ThumbnailBar::setFiles (2381)
+- [x] cancel size probes on session replace; sizes before layout (2382)
 - [ ] RC smoke
 - [ ] VERSION 0.2.0 + tag
 
