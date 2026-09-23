@@ -218,16 +218,11 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // NEVER hide existing live tiles (stash restore).
     if (isGalleryMode() && m_galleryDecodeBook.isDeferPopulate()
         && m_gallerySizeResolve.active()) {
-        for (ImageItem *item : m_items) {
-            if (item && !item->isVisible()) {
-                item->setVisible(true);
-            }
-        }
-        // Create ordered prefix only; pack once at size-gate complete.
+        // Seed any already-sized prefix, but stay hidden until gate-complete pack.
+        // Showing unstacked items at the origin (previous behaviour after the
+        // pack-once change) made the whole session look like one pile.
         (void)m_gallery.ensurePlaceholders();
-        validateUniqueLiveSessionIds("setWorkspacePaths");
-        emit statusChanged();
-        emit workspacePathsChanged();
+        finishSetWorkspacePaths(haveIds, paths, sessionIds);
         return;
     }
 

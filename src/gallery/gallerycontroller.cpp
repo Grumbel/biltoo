@@ -1695,9 +1695,15 @@ bool GalleryController::ensurePlaceholders()
                 return;
             }
             if (!ensurePlaceholders()) {
-                // Creation finished — one pack for the full set.
+                // Creation finished — one pack, then show (items stayed hidden).
                 if (!m_view->hostLayout().isFreeForm() && !m_view->liveItems().isEmpty()) {
                     applyLayout(GalleryPackReason::EnterGallery);
+                    for (ImageItem *item : m_view->liveItems()) {
+                        if (item) {
+                            item->setVisible(true);
+                        }
+                    }
+                    updateDecodeWindow();
                 }
             }
         });

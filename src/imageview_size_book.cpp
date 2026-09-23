@@ -384,16 +384,20 @@ void ImageView::onSizeResolveGateComplete()
     // an explicit relayout.
     m_galleryDecodeBook.setDeferPopulate(false);
     if (isGalleryMode() && !pathOrderIsEmpty()) {
+        // Stay hidden while placeholders are created (chunked). Pack once, then show.
         for (ImageItem *item : m_items) {
             if (item) {
-                item->setVisible(true);
+                item->setVisible(false);
             }
         }
-        // Chunked create may return true (more pending) — pack runs once when
-        // the last pulse finishes, not after every partial ensure.
         const bool more = m_gallery.ensurePlaceholders();
         if (!more && !m_items.isEmpty() && !m_layout.isFreeForm()) {
             m_gallery.applyLayout(GalleryPackReason::EnterGallery);
+            for (ImageItem *item : m_items) {
+                if (item) {
+                    item->setVisible(true);
+                }
+            }
             m_gallery.updateDecodeWindow();
             QTimer::singleShot(0, this, [this]() {
                 if (isGalleryMode() && !m_items.isEmpty()) {
