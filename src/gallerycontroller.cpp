@@ -753,7 +753,7 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
 void GalleryController::clearGalleryDragArm()
 {
     m_dragArmed = false;
-    m_dragPressItem.clear();
+    m_dragPressItem = nullptr;
     m_dragStartViewPos = QPoint();
 }
 
@@ -780,7 +780,7 @@ bool GalleryController::tryMouseMoveGalleryDrag(QMouseEvent *event)
         }
     }
     if (selected.isEmpty() && m_dragPressItem) {
-        selected.append(m_dragPressItem.data());
+        selected.append(m_dragPressItem);
     }
     clearGalleryDragArm();
     if (selected.isEmpty()) {

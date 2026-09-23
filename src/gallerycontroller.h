@@ -146,7 +146,7 @@ private:
     /** Gallery canvas session reorder drag (press + threshold → QDrag). */
     bool m_dragArmed = false;
     QPoint m_dragStartViewPos;
-    QPointer<ImageItem> m_dragPressItem;
+    ImageItem *m_dragPressItem = nullptr;  // not QObject — no QPointer
     QString m_hoverPath;
 
     QTimer *m_statusRefreshTimer = nullptr;
