@@ -2,19 +2,19 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2341.2-gallery-drag-no-qpointer.**
+**Tip: biltoo-2342-gallery-drag-pixmap.**
 
-Fix: ImageItem is not QObject — Gallery drag uses raw ImageItem* (not
-QPointer). Dropped unused QPointer include.
+Gallery session reorder drag shows a thumbnail ghost (tile display sample,
+~128px) with multi-select count badge.
 
-Requires **thumtoo-323**. Includes 2318–2340.
+Requires **thumtoo-323**. Includes 2318–2341.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2341.2-gallery-drag-no-qpointer-2f201f6.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2342.1-gallery-drag-pixmap-2f201f6.bundle HEAD
 ```
 
-Next: **2342**.
+Next: **2343**.
 
 ## Backlog
 - (reorder covered: filmstrip, Gallery canvas, dialog)

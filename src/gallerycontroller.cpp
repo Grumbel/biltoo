@@ -33,6 +33,11 @@
 #include <QHash>
 #include <QMouseEvent>
 #include <QDrag>
+#include <QColor>
+#include <QFontMetrics>
+#include <QFont>
+#include <QPainter>
+#include <QPixmap>
 #include <QMimeData>
 #include <QUrl>
 #include <QApplication>
@@ -819,6 +824,67 @@ bool GalleryController::tryMouseMoveGalleryDrag(QMouseEvent *event)
 
     QDrag drag(m_view);
     drag.setMimeData(mime);
+
+    // Drag ghost: first selected tile's display sample, scaled for visibility.
+    // Multi-select shows a count badge (same idea as filmstrip thumb drag).
+    {
+        ImageItem *previewSrc = selected.isEmpty() ? nullptr : selected.first();
+        QPixmap pix;
+        if (previewSrc) {
+            if (!previewSrc->pixmap().isNull()) {
+                pix = previewSrc->pixmap();
+            } else {
+                const QImage &img = previewSrc->displayImage();
+                if (!img.isNull()) {
+                    pix = QPixmap::fromImage(img);
+                }
+            }
+        }
+        if (!pix.isNull()) {
+            constexpr int kEdge = 128;
+            if (qMax(pix.width(), pix.height()) > kEdge) {
+                pix = pix.scaled(kEdge, kEdge, Qt::KeepAspectRatio,
+                                 Qt::SmoothTransformation);
+            }
+            if (selected.size() > 1) {
+                QPixmap badged(pix.width() + 8, pix.height() + 8);
+                badged.fill(Qt::transparent);
+                QPainter p(&badged);
+                p.setRenderHint(QPainter::Antialiasing, true);
+                p.setOpacity(0.92);
+                p.drawPixmap(0, 0, pix);
+                p.setOpacity(1.0);
+                const QString label = QString::number(selected.size());
+                QFont f = p.font();
+                f.setBold(true);
+                f.setPointSize(qMax(9, f.pointSize()));
+                p.setFont(f);
+                const QFontMetrics fm(f);
+                const int pad = 4;
+                const int bw = fm.horizontalAdvance(label) + pad * 2;
+                const int bh = fm.height() + pad;
+                const QRect badge(badged.width() - bw - 2, 2, bw, bh);
+                p.setBrush(QColor(30, 30, 30, 220));
+                p.setPen(Qt::NoPen);
+                p.drawRoundedRect(badge, 6, 6);
+                p.setPen(Qt::white);
+                p.drawText(badge, Qt::AlignCenter, label);
+                p.end();
+                pix = badged;
+            } else {
+                QPixmap faded(pix.size());
+                faded.fill(Qt::transparent);
+                QPainter p(&faded);
+                p.setOpacity(0.90);
+                p.drawPixmap(0, 0, pix);
+                p.end();
+                pix = faded;
+            }
+            drag.setPixmap(pix);
+            drag.setHotSpot(QPoint(pix.width() / 2, pix.height() / 2));
+        }
+    }
+
     // Prefer Move so drops are treated as reorder, not copy-append.
     drag.exec(Qt::MoveAction | Qt::CopyAction, Qt::MoveAction);
     event->accept();
