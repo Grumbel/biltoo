@@ -34,7 +34,7 @@
 #include <QMouseEvent>
 #include "biltoo_logging.h"
 #include "hud/hudmodel.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include <QGraphicsItem>
 #include "host/thumtoocache.h"
 

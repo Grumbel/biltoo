@@ -10,7 +10,7 @@
 #include "session/sessionappearance.h"
 #include "display/imagecache.h"
 #include "host/thumtoocache.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "color/coloradjust.h"
 
 CropSession::EnterFullRaster CropSession::pickEnterFullRaster(ImageItem *item,

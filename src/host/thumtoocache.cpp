@@ -5,7 +5,7 @@
 #include "host/thumtoo_process_memos.h"
 #include "tilelod/thumtoo_tile_source.hpp"
 #include "tilelod/tile_painter.hpp"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "display/imagecache.h"
 #include "biltoo_thread.h"
 

@@ -11,7 +11,7 @@
 #include "host/thumtoocache.h"
 #include "imageitem.h"
 #include "item/itemcomponents.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 
 void ImageView::syncSessionEditPeers(ImageItem *item)
 {

@@ -10,7 +10,7 @@
 #include "item/itemcomponents.h"
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "display/displayquality.h"
 
 #include <QImage>

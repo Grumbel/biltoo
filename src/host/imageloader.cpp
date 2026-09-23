@@ -9,7 +9,7 @@
 #endif
 
 #include "biltoo_thread.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "attention/attentiongeometry.h"
 #include "view/viewtransform.h"
 #include "host/thumtoocache.h"

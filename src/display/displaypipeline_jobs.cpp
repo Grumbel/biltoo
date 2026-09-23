@@ -8,7 +8,7 @@
 #include "display/displayedgepolicy.h"
 #include "display/lqipdisplaypolicy.h"
 #include "host/thumtoocache.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "biltoo_logging.h"
 #include "biltoo_thread.h"
 

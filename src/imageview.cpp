@@ -12,7 +12,7 @@
 #include "host/pagepath.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "display/imagecache.h"
 #include "host/thumtoocache.h"
 #include "display/tile_load_coordinator.h"

@@ -19,7 +19,7 @@
 #include "session/sessionappearance.h"
 #include "host/thumtoocache.h"
 #include "imageitem.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 
 // --- Crop appearance (was imageview_crop.cpp) ---
 

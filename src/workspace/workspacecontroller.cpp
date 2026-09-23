@@ -21,7 +21,7 @@
 #include <QGraphicsScene>
 #include "imageitem.h"
 #include "item/placementlinear.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "session/sessionappearance.h"
 
 #include <QScrollBar>

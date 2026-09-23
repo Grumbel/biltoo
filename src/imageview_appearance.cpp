@@ -23,7 +23,7 @@
 #include "imageitem.h"
 #include "session/sessionappearance.h"
 #include "host/thumtoocache.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "display/displayquality.h"
 
 const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,

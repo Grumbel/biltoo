@@ -5,7 +5,7 @@
 #include "view/viewtransform.h"
 #include "host/archivepath.h"
 #include "host/pagepath.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 
 #include <QDateTime>
 #include <QFileInfo>

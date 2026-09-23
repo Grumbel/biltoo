@@ -9,7 +9,7 @@
 #include "host/archivepath.h"
 #include "host/pagepath.h"
 #include "display/imagecache.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
 #include "content/contentxform.h"

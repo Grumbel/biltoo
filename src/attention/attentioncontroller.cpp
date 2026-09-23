@@ -6,7 +6,7 @@
 
 #include "attention/attentiongeometry.h"
 #include "imageitem.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 
 #include <QCursor>
 #include <QPainter>

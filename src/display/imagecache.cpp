@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "display/imagecache.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "display/displayquality.h"
 
 #include <QFileInfo>

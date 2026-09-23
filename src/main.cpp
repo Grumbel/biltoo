@@ -5,7 +5,7 @@
 #include "view/viewtransform.h"
 #include "biltoo_logging.h"
 #include "shell/metadatapanel.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "display/imagecache.h"
 #include "host/thumtoocache.h"
 #include "tilelod/tile_lod_registry.hpp"

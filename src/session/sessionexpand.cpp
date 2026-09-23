@@ -4,7 +4,7 @@
 #include "session/sessionexpand.h"
 
 #include "host/archivepath.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "host/pagepath.h"
 #include "host/thumtoocache.h"
 

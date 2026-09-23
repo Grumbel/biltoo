@@ -19,7 +19,7 @@
 #include "session/sessionappearance.h"
 #include "host/thumtoocache.h"
 #include "imageitem.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 
 // --- Colour grade (was imageview_color_grade.cpp) ---
 

@@ -19,7 +19,7 @@
 #include "display/lqipdisplaypolicy.h"
 #include "biltoo_thread.h"
 
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "display/imagecache.h"
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"

@@ -23,7 +23,7 @@
 #include <QMouseEvent>
 #include <QToolTip>
 #include <QKeyEvent>
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include <QThreadPool>
 #include <QPointer>
 #include <QMetaObject>

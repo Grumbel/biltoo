@@ -15,7 +15,7 @@
 #include "ttfp_trace.h"
 #include "display/imagecache.h"
 #include "imageitem.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 
 #include <QSet>
 #include <QDebug>

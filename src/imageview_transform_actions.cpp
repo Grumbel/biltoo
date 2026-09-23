@@ -6,7 +6,7 @@
 #include "item/placementlinear.h"
 #include "workspace/stackgeometry.h"
 #include "host/thumtoocache.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "session/sessionappearance.h"
 #include "imageitem.h"
 

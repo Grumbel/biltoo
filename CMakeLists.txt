@@ -278,8 +278,8 @@ set(BILTOO_LIB_SOURCES
   src/imageitem_interaction.cpp
   src/imageitem_tilelod.cpp
   src/imageitem.h
-  src/imageloader.cpp
-  src/imageloader.h
+  src/host/imageloader.cpp
+  src/host/imageloader.h
   src/display/imagecache.cpp
   src/display/imagecache.h
   src/display/pathrasterservice.cpp

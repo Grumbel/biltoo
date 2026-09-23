@@ -13,7 +13,7 @@
 #include <QPainter>
 #include <QImage>
 #include "display/imagecache.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "biltoo_thread.h"
 #include <QMutex>
 #include <QWaitCondition>

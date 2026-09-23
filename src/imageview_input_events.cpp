@@ -17,7 +17,7 @@
 #include "host/pagepath.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 
 #include <QUndoCommand>
 #include <QUndoStack>

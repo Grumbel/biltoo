@@ -10,7 +10,7 @@
 #include "shell/icons.h"
 #include "imageview.h"
 #include "session/sessiondocument.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "shell/thumbnailbar.h"
 #include "shell/preferencesdialog.h"
 #include "slideshow/slideshowsettingsdialog.h"

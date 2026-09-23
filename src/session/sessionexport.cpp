@@ -4,7 +4,7 @@
 #include "session/sessionexport.h"
 
 #include "biltoo_thread.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "session/sessionappearance.h"
 #include "host/pagepath.h"
 #include "host/archivepath.h"

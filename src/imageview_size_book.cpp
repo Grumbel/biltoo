@@ -10,7 +10,7 @@
 #include "host/archivepath.h"
 #include "host/pagepath.h"
 #include "imageitem.h"
-#include "imageloader.h"
+#include "host/imageloader.h"
 #include "display/imagecache.h"
 #include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
