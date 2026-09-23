@@ -104,6 +104,8 @@ void finishProbeSlot(const QString &pathCopy, bool ok, const QSize &size,
         pumpProbeQueue();
         return;
     }
+    // Seed underlay only from SizeReply (stored with size — not get_lqip,
+    // not generation). GUI installs from ImageCache when present.
     if (!lqip.isNull() && !ImageCache::has(pathCopy)) {
         const int le = ImageCache::longEdge(lqip);
         const QString tag = (le > DisplayQuality::kLqipMaxEdge)
@@ -123,11 +125,14 @@ void pumpProbeQueue()
     const quint64 generation = g_probeGeneration.load(std::memory_order_acquire);
     {
         QMutexLocker lock(&g_probeMu);
-        // Drain memo hits without holding a Store slot.
+        // True warm hit: process size memo AND underlay already in ImageCache.
+        // Size-only memo is not enough — request_size returns size + stored
+        // EMB/LQIP in one Store row (never generate LQIP; never get_lqip alone).
         while (!g_probeFifo.isEmpty()) {
             const QString p = g_probeFifo.first();
             const QSize memoSz = ProcessMemos::instance().size(p);
-            if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0) {
+            if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0
+                && ImageCache::has(p)) {
                 g_probeFifo.removeFirst();
                 g_probeQueued.remove(p);
                 memoHits.append(qMakePair(p, memoSz));
@@ -138,7 +143,8 @@ void pumpProbeQueue()
         while (g_probeInflight < kMaxConcurrentSizeProbes && !g_probeFifo.isEmpty()) {
             const QString p = g_probeFifo.first();
             const QSize memoSz = ProcessMemos::instance().size(p);
-            if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0) {
+            if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0
+                && ImageCache::has(p)) {
                 g_probeFifo.removeFirst();
                 g_probeQueued.remove(p);
                 memoHits.append(qMakePair(p, memoSz));
@@ -186,10 +192,12 @@ void scheduleProbe(const QString &path)
     if (path.isEmpty()) {
         return;
     }
-    // Already have size in process memo — no Store round-trip, but still notify
-    // so Gallery size-resolve pending is not left waiting forever.
+    // Warm only when size memo and ImageCache underlay are both present.
+    // Size-only memo still needs request_size so stored EMB/LQIP can seed the
+    // cache with the size row (no separate get_lqip / generation).
     if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
-        memo.isValid() && memo.width() > 0 && memo.height() > 0) {
+        memo.isValid() && memo.width() > 0 && memo.height() > 0
+        && ImageCache::has(path)) {
         emitSizeReadyChunked({{path, memo}},
                              g_probeGeneration.load(std::memory_order_acquire));
         return;
@@ -212,7 +220,8 @@ void scheduleProbeBatch(const QStringList &paths)
             continue;
         }
         if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
-            memo.isValid() && memo.width() > 0 && memo.height() > 0) {
+            memo.isValid() && memo.width() > 0 && memo.height() > 0
+            && ImageCache::has(path)) {
             memoHits.append(qMakePair(path, memo));
             continue;
         }

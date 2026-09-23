@@ -946,36 +946,13 @@ QImage qimageFromLqipBlob(const std::vector<std::uint8_t> &blob)
 
 QImage cachedLqipImage(const QString &path)
 {
-#if defined(BILTOO_HAVE_THUMTOO_LQIP)
+    // Process ImageCache only. Never Store get_lqip / LQIP generation.
+    // Underlay is seeded solely from request_size SizeReply (EMB/LQIP blob
+    // stored with the size row) via finishProbeSlot → ImageCache::put.
     if (path.isEmpty()) {
         return {};
     }
-    // Store get_lqip is I/O — GUI must use ImageCache (size probe mirrors LQIP).
-    if (QThread::isMainThread()) {
-        return {};
-    }
-    init();
-    const std::string uri = toThumtooUri(path);
-    if (uri.empty()) {
-        return {};
-    }
-    thumtoo::Client *c = nullptr;
-    {
-        std::lock_guard lock(g_mu);
-        c = clientUnlocked();
-    }
-    if (!c) {
-        return {};
-    }
-    auto blob = c->get_lqip(uri);
-    if (!blob || blob->empty()) {
-        return {};
-    }
-    return qimageFromLqipBlob(*blob);
-#else
-    Q_UNUSED(path);
-    return {};
-#endif
+    return ImageCache::get(path);
 }
 
 QImage cachedEmbeddedPreviewImage(const QString &path)
@@ -1919,33 +1896,17 @@ void warmSessionOpenMemos(const QStringList &paths)
         return;
     }
     const QStringList copy = paths;
-    // Size + LQIP only. Durable has_tile used to run in the same pass and
-    // contended with scheduleProbeBatch / request_size on the Store — size
-    // resolve felt like "tiles in parallel" and slowed the gate.
+    // Size memo only (no underlay Store reads). Durable has_tile was split
+    // out so size resolve does not contend with request_size on the Store.
     auto workOneSize = [](const QString &p) {
         if (p.isEmpty()) {
             return;
         }
-        // Fill process size memo (+ LQIP into ImageCache). Do NOT emit sizeReady
-        // per path — concurrent warm + scheduleProbeBatch double-flooded the
-        // GUI with hundreds of handlers. Gate progress timer sweeps memos;
-        // scheduleProbeBatch delivers memo hits in chunks.
+        // Size memo only. Do not Store get_lqip / get_embedded here — that is a
+        // separate underlay fetch. LQIP/EMB enter ImageCache only when
+        // request_size returns them with the size row (finishProbeSlot).
+        // Do NOT emit sizeReady per path — scheduleProbeBatch delivers hits.
         (void)cachedSize(p, /*scheduleRevalidate=*/false);
-        if (!ImageCache::has(p)) {
-            // Prefer durable EMB (EXIF / PDF /Thumb) over ThumbHash LQIP.
-            const QImage emb = cachedEmbeddedPreviewImage(p);
-            if (!emb.isNull()) {
-                ImageCache::put(p, emb, QStringLiteral("EMB"));
-            }
-#if defined(BILTOO_HAVE_THUMTOO_LQIP)
-            else {
-                const QImage lqip = cachedLqipImage(p);
-                if (!lqip.isNull()) {
-                    ImageCache::put(p, lqip, QStringLiteral("LQIP"));
-                }
-            }
-#endif
-        }
     };
     auto workOneDurable = [](const QString &p) {
         if (p.isEmpty()) {

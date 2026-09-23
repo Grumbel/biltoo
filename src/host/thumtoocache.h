@@ -106,8 +106,9 @@ void noteCachedSize(const QString &path, const QSize &size);
 bool cachedFileStat(const QString &path, qint64 *sizeBytes, qint64 *mtimeNs);
 
 /**
- * Cache-only LQIP (Handsum/ThumbHash) as a small QImage.
- * Empty if missing from the durable index — does not schedule encode.
+ * Process ImageCache underlay only (LQIP/EMB already seeded).
+ * Never Store get_lqip and never schedules LQIP generation/encode.
+ * Underlay is seeded from request_size SizeReply via finishProbeSlot.
  */
 QImage cachedLqipImage(const QString &path);
 
@@ -269,7 +270,8 @@ bool hasDurableTiles(const QString &path);
  */
 bool hasDurableTilesKnown(const QString &path);
 /**
- * Session open: fill process size memo + ImageCache LQIP + durable-tile memo
+ * Session open: fill process size memo + durable-tile memo (no LQIP fetch).
+ * Underlay is seeded only by request_size replies into ImageCache.
  * from the Store. Safe on the GUI: schedules pool work and returns immediately
  * (never joins). sizeReady / durableTilesReady notify as memos land; the
  * sizes_cold path in finishApplyExpandedLoad covers the first pack.
