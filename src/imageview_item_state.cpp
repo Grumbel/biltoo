@@ -10,7 +10,7 @@
 #include "contentxform.h"
 #include "item/itemcomponents.h"
 #include "session/sessionappearance.h"
-#include "selectiongeometry.h"
+#include "item/selectiongeometry.h"
 #include "workspace/pageguidegeometry.h"
 
 #include <QGraphicsItem>

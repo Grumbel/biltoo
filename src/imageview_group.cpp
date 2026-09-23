@@ -6,7 +6,7 @@
 #include "workspace/grouptransformgeometry.h"
 #include "workspace/pageguidegeometry.h"
 #include "imageitem.h"
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 
 #include <QTransform>
 #include <QtMath>

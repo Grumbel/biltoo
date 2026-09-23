@@ -9,7 +9,7 @@
 #include "item/itemhandlepolicy.h"
 
 #include <QMouseEvent>
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 #include "workspace/grouptransformgeometry.h"
 #include <QToolTip>
 #include <QGraphicsItem>

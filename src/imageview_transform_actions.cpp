@@ -3,7 +3,7 @@
 
 #include "imageview.h"
 #include "item/itemcomponents.h"
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 #include "workspace/stackgeometry.h"
 #include "host/thumtoocache.h"
 #include "imageloader.h"

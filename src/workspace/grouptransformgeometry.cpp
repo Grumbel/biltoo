@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspace/grouptransformgeometry.h"
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 #include "view/viewtransform.h"
 
 #include <QLineF>

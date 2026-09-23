@@ -8,7 +8,7 @@
 #include "imageitem.h"
 #include "crop/croppathraster.h"
 #include "crop/cropflash.h"
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 #include "imageitem.h"
 #include "crop/cropappearancecommand.h"
 #include "view/viewportupdatehold.h"

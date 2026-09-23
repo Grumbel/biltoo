@@ -202,7 +202,7 @@ set(BILTOO_LIB_SOURCES
   src/perfstats.h
   src/layoutdebounce.h
   src/gallery/gallerypackfit.h
-  src/selectiongeometry.h
+  src/item/selectiongeometry.h
   src/color/coloradjustcommit.h
   src/view/viewtransform.h
   src/workspace/workspacenavgeometry.h
@@ -269,8 +269,8 @@ set(BILTOO_LIB_SOURCES
   src/session/sessionexpand.h
   src/session/projectfile.cpp
   src/session/projectfile.h
-  src/placementlinear.cpp
-  src/placementlinear.h
+  src/item/placementlinear.cpp
+  src/item/placementlinear.h
   src/imageitem.cpp
   src/display/displayquality.cpp
   src/display/displaysurface.cpp
@@ -601,7 +601,7 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-placementlinear-test
     tests/placementlinear_test.cpp
-    src/placementlinear.cpp
+    src/item/placementlinear.cpp
   )
   target_include_directories(biltoo-placementlinear-test PRIVATE src)
   target_link_libraries(biltoo-placementlinear-test PRIVATE Qt6::Core Qt6::Gui Qt6::Test)

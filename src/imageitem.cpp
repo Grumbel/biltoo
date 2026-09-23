@@ -11,7 +11,7 @@
 #include <QFileInfo>
 
 #include "color/coloradjust.h"
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 #include "contentxform.h"
 
 #include <QCursor>

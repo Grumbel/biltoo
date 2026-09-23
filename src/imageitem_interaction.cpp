@@ -17,7 +17,7 @@
 #include "color/coloradjust.h"
 
 #include <QCoreApplication>
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 #include "view/viewtransform.h"
 #include "imageview.h"
 

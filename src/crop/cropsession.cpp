@@ -4,7 +4,7 @@
 #include "crop/cropsession.h"
 #include "crop/cropgeometry.h"
 #include "contentxform.h"
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 #include "imageitem.h"
 #include "item/itemcomponents.h"
 #include "session/sessionappearance.h"

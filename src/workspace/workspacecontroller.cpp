@@ -15,12 +15,12 @@
 #include "gallery/gallerypackfit.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QGraphicsScene>
 #include "imageitem.h"
-#include "placementlinear.h"
+#include "item/placementlinear.h"
 #include "imageloader.h"
 #include "session/sessionappearance.h"
 
