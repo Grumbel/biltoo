@@ -2,24 +2,24 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2396-virtual-offline-darker** (on top of `660c49c` stack).
+**Tip: biltoo-2397-size-first-all-layouts-emb** (on top of `660c49c` stack).
 
-Includes **2381–2395**.
+Includes **2381–2396**.
 
-### 2396
-Offline virtual plan cells are slightly darker than live blank chrome so
-materialize / LQIP is visible as a subtle lift.
+### 2397
+- Size gate active for **all** packaged Gallery layouts (including grid)
+- Tiles blocked until session sizes settle
+- SizeReply underlay always → ImageCache; Gallery install accepts EMB ≤320
 
-**Next:** Diagnose empty ImageCache after sizeReady if LQIP still never shows;
-RC smoke.
+**Next:** RC smoke; confirm LQIP/EMB appears after sizeReady when Store has blob.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2396.1-virtual-offline-darker-660c49c.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2397.1-size-first-all-layouts-emb-660c49c.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
-- [x] 2381–2395
-- [x] 2396 virtual offline darker chrome
-- [ ] RC smoke / LQIP ImageCache path if still blank
+- [x] 2381–2396
+- [x] 2397 size-first all layouts + EMB underlay
+- [ ] RC smoke
 - [ ] VERSION 0.2.0 + tag
