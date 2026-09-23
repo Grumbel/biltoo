@@ -3,7 +3,7 @@
 
 #include "shell/mainwindow_includes.h"
 #include "imageitem.h"
-#include "biltoo_logging.h"
+#include "util/biltoo_logging.h"
 
 void MainWindow::setLayoutFreeForm()
 {

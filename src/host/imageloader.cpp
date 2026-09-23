@@ -8,7 +8,7 @@
 #include <vips/vips.h>
 #endif
 
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 #include "host/imageloader.h"
 #include "attention/attentiongeometry.h"
 #include "view/viewtransform.h"

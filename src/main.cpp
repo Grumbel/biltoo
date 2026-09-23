@@ -3,7 +3,7 @@
 
 #include "shell/mainwindow.h"
 #include "view/viewtransform.h"
-#include "biltoo_logging.h"
+#include "util/biltoo_logging.h"
 #include "shell/metadatapanel.h"
 #include "host/imageloader.h"
 #include "display/imagecache.h"

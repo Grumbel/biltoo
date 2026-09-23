@@ -24,7 +24,7 @@
 #include "hud/hudappearance.h"
 #include "session/sessionchrome.h"
 #include "gallery/gallerydecodebook.h"
-#include "perfstats.h"
+#include "util/perfstats.h"
 #include "color/coloradjustcommit.h"
 #include "gallery/layoutdebounce.h"
 #include "gallery/galleryrelayoutsuppress.h"

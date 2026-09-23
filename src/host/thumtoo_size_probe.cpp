@@ -5,7 +5,7 @@
 #include "host/thumtoo_process_memos.h"
 #include "display/imagecache.h"
 #include "display/displayquality.h"
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 
 #include <QMutex>
 #include <QMutexLocker>

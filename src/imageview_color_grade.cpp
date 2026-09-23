@@ -8,7 +8,7 @@
 #include <QMetaObject>
 #include <QThreadPool>
 #include <QPointer>
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 #include <QTimer>
 #include <QImage>
 #include "view/viewtransform.h"

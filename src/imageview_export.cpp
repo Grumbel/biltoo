@@ -14,7 +14,7 @@
 #include <QImage>
 #include "display/imagecache.h"
 #include "host/imageloader.h"
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 #include <QMutex>
 #include <QWaitCondition>
 #include <QThreadPool>

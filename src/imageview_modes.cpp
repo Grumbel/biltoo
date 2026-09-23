@@ -8,7 +8,7 @@
 #include "imageitem.h"
 #include "host/imageloader.h"
 #include "host/thumtoocache.h"
-#include "biltoo_logging.h"
+#include "util/biltoo_logging.h"
 #include "tilelod/tile_lod_registry.hpp"
 #include "tilelod/tile_lod_controller.hpp"
 

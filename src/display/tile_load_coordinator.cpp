@@ -4,7 +4,7 @@
 #include "display/tile_load_coordinator.h"
 #include "view/viewtransform.h"
 
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 #include "imageitem.h"
 #include "imageview.h"
 #include "display/pathrasterservice.h"

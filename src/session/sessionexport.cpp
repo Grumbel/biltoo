@@ -3,7 +3,7 @@
 
 #include "session/sessionexport.h"
 
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 #include "host/imageloader.h"
 #include "session/sessionappearance.h"
 #include "host/pagepath.h"

@@ -17,7 +17,7 @@
 #include "gallery/gallerydecodesm.h"
 #include "display/displayquality.h"
 #include "display/lqipdisplaypolicy.h"
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 
 #include "host/imageloader.h"
 #include "display/imagecache.h"
@@ -25,8 +25,8 @@
 #include "session/sessionappearance.h"
 #include "color/coloradjust.h"
 #include "item/imagesizebook.h"
-#include "biltoo_logging.h"
-#include "ttfp_trace.h"
+#include "util/biltoo_logging.h"
+#include "util/ttfp_trace.h"
 #include "view/viewtransform.h"
 
 #include <QFileInfo>

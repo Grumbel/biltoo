@@ -13,7 +13,7 @@
 
 #include <QImage>
 #include <QTimer>
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 #include <QPointer>
 #include <QThreadPool>
 #include <QMetaObject>

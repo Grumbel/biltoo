@@ -16,8 +16,8 @@
 #include "gallery/layoutapplyguard.h"
 #include <QElapsedTimer>
 #include "session/sessionappearance.h"
-#include "biltoo_logging.h"
-#include "biltoo_thread.h"
+#include "util/biltoo_logging.h"
+#include "util/biltoo_thread.h"
 #include "gallery/gallerypackfit.h"
 #include "display/imagecache.h"
 #include "display/displayquality.h"

@@ -3,7 +3,7 @@
 
 #include "display/tileneighborprefetch.h"
 
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 #include "host/thumtoocache.h"
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"

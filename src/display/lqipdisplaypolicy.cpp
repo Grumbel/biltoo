@@ -3,7 +3,7 @@
 
 #include "display/lqipdisplaypolicy.h"
 
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 #include "display/displayquality.h"
 #include "display/imagecache.h"
 #include "host/thumtoocache.h"

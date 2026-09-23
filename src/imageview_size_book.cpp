@@ -14,7 +14,7 @@
 #include "display/imagecache.h"
 #include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
-#include "biltoo_logging.h"
+#include "util/biltoo_logging.h"
 
 #include <QFileInfo>
 #include <QImageReader>

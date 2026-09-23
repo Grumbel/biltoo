@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "biltoo_logging.h"
+#include "util/biltoo_logging.h"
 
 Q_LOGGING_CATEGORY(lcSlideshow, "biltoo.slideshow")
 

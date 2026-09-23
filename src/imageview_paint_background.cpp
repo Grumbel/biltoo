@@ -26,7 +26,7 @@
 #include <QPainterPath>
 #include <QPaintEvent>
 #include <QStyleOptionGraphicsItem>
-#include "biltoo_logging.h"
+#include "util/biltoo_logging.h"
 #include <QGraphicsItem>
 #include "view/canvasbackground.h"
 

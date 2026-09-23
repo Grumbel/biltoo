@@ -32,7 +32,7 @@
 #include <cstdlib>
 #include <QFileInfo>
 #include <QMouseEvent>
-#include "biltoo_logging.h"
+#include "util/biltoo_logging.h"
 #include "hud/hudmodel.h"
 #include "host/imageloader.h"
 #include <QGraphicsItem>

@@ -12,7 +12,7 @@
 #include <QDebug>
 #include <QSet>
 #include <QRect>
-#include "biltoo_logging.h"
+#include "util/biltoo_logging.h"
 #include <cmath>
 #include <algorithm>
 #include <QtMath>

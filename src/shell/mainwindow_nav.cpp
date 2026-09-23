@@ -10,7 +10,7 @@
 #include "session/sessionopen.h"
 #include "session/sessionsort.h"
 #include "session/sessionexpand.h"
-#include "ttfp_trace.h"
+#include "util/ttfp_trace.h"
 #include "session/projectfile.h"
 #include "host/archivepath.h"
 #include "host/pagepath.h"

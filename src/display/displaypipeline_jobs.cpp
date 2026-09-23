@@ -9,8 +9,8 @@
 #include "display/lqipdisplaypolicy.h"
 #include "host/thumtoocache.h"
 #include "host/imageloader.h"
-#include "biltoo_logging.h"
-#include "biltoo_thread.h"
+#include "util/biltoo_logging.h"
+#include "util/biltoo_thread.h"
 
 #include <QFileInfo>
 #include <QMetaObject>

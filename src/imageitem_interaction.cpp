@@ -5,7 +5,7 @@
 #include "item/itemframegeometry.h"
 #include "item/itemhandlepolicy.h"
 #include "display/displayquality.h"
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 
 #include <cstdlib>
 #include <cmath>

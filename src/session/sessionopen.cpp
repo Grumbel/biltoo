@@ -6,7 +6,7 @@
 #include "imageview.h"
 #include "shell/thumbnailbar.h"
 #include "host/thumtoocache.h"
-#include "ttfp_trace.h"
+#include "util/ttfp_trace.h"
 
 namespace SessionOpen {
 

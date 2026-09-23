@@ -9,7 +9,7 @@
 #include "workspace/workspacegeometry.h"
 #include "view/viewtransform.h"
 #include "session/sessionappearance.h"
-#include "ttfp_trace.h"
+#include "util/ttfp_trace.h"
 #include "display/imagecache.h"
 #include "imageitem.h"
 #include "host/imageloader.h"

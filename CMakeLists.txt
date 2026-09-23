@@ -114,8 +114,8 @@ set(BILTOO_LIB_SOURCES
   src/shell/mainwindow_includes.h
   src/shell/icons.cpp
   src/shell/icons.h
-  src/biltoo_logging.cpp
-  src/biltoo_logging.h
+  src/util/biltoo_logging.cpp
+  src/util/biltoo_logging.h
   src/gallery/gallerylayout.cpp
   src/gallery/gallerylayout.h
   src/imageview.cpp
@@ -199,7 +199,7 @@ set(BILTOO_LIB_SOURCES
   src/hud/hudappearance.h
   src/session/sessionchrome.h
   src/gallery/gallerydecodebook.h
-  src/perfstats.h
+  src/util/perfstats.h
   src/gallery/layoutdebounce.h
   src/gallery/gallerypackfit.h
   src/item/selectiongeometry.h

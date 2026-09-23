@@ -7,7 +7,7 @@
 #include "tilelod/tile_painter.hpp"
 #include "host/imageloader.h"
 #include "display/imagecache.h"
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 
 #include "host/archivepath.h"
 #include "host/pagepath.h"

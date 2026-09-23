@@ -5,7 +5,7 @@
 #include "content/contentxform.h"
 #include "crop/cropgeometry.h"
 #include "view/viewtransform.h"
-#include "biltoo_thread.h"
+#include "util/biltoo_thread.h"
 #include "color/coloradjust.h"
 #include "host/thumtoocache.h"
 
