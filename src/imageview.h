@@ -34,7 +34,7 @@
 #include "item/pendingitemappearancebook.h"
 #include "slideshow/slideshowtypes.h"
 #include "slideshow/motionscrollchrome.h"
-#include "loadgeneration.h"
+#include "display/loadgeneration.h"
 #include "session/sessionloadgate.h"
 #include "session/sessionbindbook.h"
 #include "session/sessionpathorder.h"

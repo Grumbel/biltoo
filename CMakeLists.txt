@@ -227,7 +227,7 @@ set(BILTOO_LIB_SOURCES
   src/slideshow/slideshowmotiongeometry.cpp
   src/slideshow/zoomblurhelpers.h
   src/slideshow/zoomblurhelpers.cpp
-  src/loadgeneration.h
+  src/display/loadgeneration.h
   src/session/sessionloadgate.h
   src/session/sessionbindbook.h
   src/session/sessionpathorder.h

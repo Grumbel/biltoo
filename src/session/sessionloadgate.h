@@ -5,7 +5,7 @@
 #define SESSIONLOADGATE_H
 
 #include "imageview_types.h"
-#include "loadgeneration.h"
+#include "display/loadgeneration.h"
 
 #include <QHash>
 #include <QList>
