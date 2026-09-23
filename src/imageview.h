@@ -5,7 +5,7 @@
 #define IMAGEVIEW_H
 #include "imageview_types.h"
 #include "gallery/gallerysizeresolve.h"
-#include "tileneighborprefetch.h"
+#include "display/tileneighborprefetch.h"
 #include "crop/cropsession.h"
 #include "crop/cropgeometry.h"
 #include "crop/cropflash.h"
@@ -54,7 +54,7 @@
 #include "workspace/workspacecontroller.h"
 #include "imagecontroller.h"
 #include "display/pathrasterservice.h"
-#include "tile_load_coordinator.h"
+#include "display/tile_load_coordinator.h"
 #include "display/displaysurface.h"
 #include "gallery/gallerylayout.h"
 #include <QColor>

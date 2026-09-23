@@ -4,7 +4,7 @@
 #include "display/displaypipelinecontroller.h"
 #include "display/displaypipeline_jobs.h"
 
-#include "tile_load_coordinator.h"
+#include "display/tile_load_coordinator.h"
 #include "tilelod/tile_lod_registry.hpp"
 
 #include "imageview.h"

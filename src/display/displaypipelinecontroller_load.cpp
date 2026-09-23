@@ -5,7 +5,7 @@
 #include "itemcomponents.h"
 #include "display/displaypipeline_jobs.h"
 
-#include "tile_load_coordinator.h"
+#include "display/tile_load_coordinator.h"
 
 #include "imageview.h"
 #include "session/packorderview.h"

@@ -139,8 +139,8 @@ set(BILTOO_LIB_SOURCES
   src/gallery/gallerycontroller.h
   src/gallery/gallerysizeresolve.cpp
   src/gallery/gallerysizeresolve.h
-  src/tileneighborprefetch.cpp
-  src/tileneighborprefetch.h
+  src/display/tileneighborprefetch.cpp
+  src/display/tileneighborprefetch.h
   src/workspace/workspacecontroller.cpp
   src/workspace/workspacecontroller.h
   src/imagecontroller.cpp
@@ -239,7 +239,7 @@ set(BILTOO_LIB_SOURCES
   src/slideshow/motionscrollchrome.h
   src/display/lqipdisplaypolicy.h
   src/display/lqipdisplaypolicy.cpp
-  src/tile_load_coordinator.cpp
+  src/display/tile_load_coordinator.cpp
   src/imageview_framing_image.cpp
   src/imageview_status.cpp
   src/imageview_transform_actions.cpp
