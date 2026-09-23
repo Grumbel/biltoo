@@ -17,7 +17,7 @@
 #include "hud/hudflash.h"
 #include "view/viewframing.h"
 #include "text/textlayersession.h"
-#include "zoomregiongesture.h"
+#include "slideshow/zoomregiongesture.h"
 #include "canvasbackground.h"
 #include "layoutprefs.h"
 #include "view/viewportchrome.h"

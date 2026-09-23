@@ -192,7 +192,7 @@ set(BILTOO_LIB_SOURCES
   src/hud/hudflash.h
   src/view/viewframing.h
   src/text/textlayersession.h
-  src/zoomregiongesture.h
+  src/slideshow/zoomregiongesture.h
   src/canvasbackground.h
   src/layoutprefs.h
   src/view/viewportchrome.h
@@ -225,8 +225,8 @@ set(BILTOO_LIB_SOURCES
   src/slideshow/slideshowatlaspolicy.cpp
   src/slideshow/slideshowmotiongeometry.h
   src/slideshow/slideshowmotiongeometry.cpp
-  src/zoomblurhelpers.h
-  src/zoomblurhelpers.cpp
+  src/slideshow/zoomblurhelpers.h
+  src/slideshow/zoomblurhelpers.cpp
   src/loadgeneration.h
   src/session/sessionloadgate.h
   src/session/sessionbindbook.h
