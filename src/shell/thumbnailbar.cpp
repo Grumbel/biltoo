@@ -2426,17 +2426,34 @@ void ThumbnailBar::setFiles(const QStringList &files)
         ? m_delegate->cellSizeForContent(font(), m_delegate->provisionalContentSize())
         : (m_delegate ? m_delegate->cellSize(font())
                       : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight()));
-    // Bulk insert: avoid per-item repaints (large archives can have thousands of rows).
-    // 20k rows still freeze the GUI for tens of seconds — yield the event loop
-    // every chunk so size-resolve HUD / Open progress can paint.
+    // Large sessions: do not build tens of thousands of QListWidgetItems in one
+    // stack frame (setFiles was ~60s inside onSizeResolveGateComplete via a
+    // same-thread DirectConnection to gallerySizeResolveFinished).
     GUI_BUDGET_MS("ThumbnailBar::setFiles", 16);
+    m_fileFillGeneration += 1;
+    m_fileFillNext = 0;
+    appendFileRowsChunk();
+}
+
+void ThumbnailBar::appendFileRowsChunk()
+{
+    ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("ThumbnailBar::appendFileRowsChunk", 12);
+    if (m_fileFillNext < 0 || m_fileFillNext > m_files.size()) {
+        return;
+    }
+    const quint64 gen = m_fileFillGeneration;
+    const QSize provCell = (m_delegate && !m_cropToSquare)
+        ? m_delegate->cellSizeForContent(font(), m_delegate->provisionalContentSize())
+        : (m_delegate ? m_delegate->cellSize(font())
+                      : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight()));
+
+    constexpr int kChunk = 64;
+    const int begin = m_fileFillNext;
+    const int end = qMin(begin + kChunk, m_files.size());
     setUpdatesEnabled(false);
-    constexpr int kYieldEvery = 256;
-    for (int i = 0; i < files.size(); ++i) {
-        if (i > 0 && (i % kYieldEvery) == 0) {
-            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-        }
-        const QString &path = files.at(i);
+    for (int i = begin; i < end; ++i) {
+        const QString &path = m_files.at(i);
         auto *item = new QListWidgetItem(this);
         item->setText(PagePath::displayName(path));
         item->setToolTip(path);
@@ -2444,9 +2461,6 @@ void ThumbnailBar::setFiles(const QStringList &files)
         const SessionImageId sid = (i < m_sessionIds.size()) ? m_sessionIds.at(i)
                                                             : kInvalidSessionImageId;
         item->setData(RoleSessionId, QVariant::fromValue(static_cast<qint64>(sid)));
-        // No theme placeholder — empty icon shows loading chrome and allows
-        // scheduleVisibleThumbnailLoads to pick the row up (non-null icons were
-        // treated as already loaded).
         item->setData(ThumbnailDelegate::ThumbLoadedRole, false);
         QSize native;
         if (!m_cropToSquare && !path.isEmpty()) {
@@ -2454,17 +2468,14 @@ void ThumbnailBar::setFiles(const QStringList &files)
         }
         if (m_delegate && !m_cropToSquare && native.isValid()
             && native.width() > 0 && native.height() > 0) {
-            // ItemWorld (via provider) or XDG — not raw native alone.
             applyLayoutAspect(item, i, native);
         } else if (m_delegate && !m_cropToSquare) {
             const QSize prov = m_delegate->letterboxContentSize(
                 m_delegate->provisionalContentSize());
             item->setData(ThumbnailDelegate::ThumbContentSizeRole, prov);
             item->setSizeHint(provCell);
-            if (!path.isEmpty() && ThumtooCache::isAvailable()) {
-                // scheduleProbe skips unsupported on the worker — never get_meta on GUI.
-                ThumtooCache::scheduleProbe(path);
-            }
+            // Size probes: scheduleVisibleThumbnailLoads when the row is on-screen.
+            // Probing every filmstrip row flooded workers on 20k opens.
         } else if (m_delegate) {
             item->setData(ThumbnailDelegate::ThumbContentSizeRole,
                           QSize(m_thumbSize, m_thumbSize));
@@ -2474,21 +2485,27 @@ void ThumbnailBar::setFiles(const QStringList &files)
         }
     }
     setUpdatesEnabled(true);
+    m_fileFillNext = end;
+
+    if (gen != m_fileFillGeneration) {
+        return; // superseded by a newer setFiles
+    }
+    if (m_fileFillNext < m_files.size()) {
+        QTimer::singleShot(0, this, &ThumbnailBar::appendFileRowsChunk);
+        return;
+    }
+    m_fileFillNext = -1;
 
     if (m_multiSelect) {
         setSelectionMode(QAbstractItemView::MultiSelection);
         setSelectionRectVisible(false);
     }
-
     if (count() > 0 && !m_multiSelect) {
         setCurrentRow(0);
     }
-
     scheduleThumbnailLoads();
     updateCenteringMargins();
-    // Layout/visibility may not be final during setFiles — kick again next tick.
     QTimer::singleShot(0, this, [this]() {
-        // Re-read cache in case prepare finished between loop and now.
         primeGeometryFromCache();
         scheduleVisibleThumbnailLoads();
     });
@@ -2496,7 +2513,6 @@ void ThumbnailBar::setFiles(const QStringList &files)
         scheduleVisibleThumbnailLoads();
     });
 }
-
 
 void ThumbnailBar::setVisibleLoadsSuspended(bool on)
 {

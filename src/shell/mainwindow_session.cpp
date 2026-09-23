@@ -171,11 +171,26 @@ void MainWindow::finishApplyExpandedLoad(int startAt)
                             if (m_thumbnailBar) {
                                 m_thumbnailBar->setVisibleLoadsSuspended(false);
                             }
+                            // Queued: must not run inside onSizeResolveGateComplete
+                            // (Direct AutoConnection made setFiles block the gate ~60s).
                             installFilmstrip();
-                            ThumtooCache::preparePaths(m_session.paths());
-                            ThumtooCache::warmUris(m_session.paths());
+                            // Do not preparePaths/warmUris the entire session — that
+                            // floods workers after virtualized Gallery open.
+                            if (m_imageView) {
+                                QStringList warm;
+                                for (ImageItem *it : m_imageView->liveItems()) {
+                                    if (it && !it->path().isEmpty()) {
+                                        warm.append(it->path());
+                                    }
+                                }
+                                if (!warm.isEmpty()) {
+                                    ThumtooCache::preparePaths(warm);
+                                    ThumtooCache::warmUris(warm);
+                                }
+                            }
                         },
-                        static_cast<Qt::ConnectionType>(Qt::SingleShotConnection));
+                        static_cast<Qt::ConnectionType>(
+                            Qt::QueuedConnection | Qt::SingleShotConnection));
             } else {
                 // FreeForm / no size-gate: still serial probes, but allow strip.
                 QTimer::singleShot(0, this, installFilmstrip);

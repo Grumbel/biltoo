@@ -96,6 +96,8 @@ public:
     ~ThumbnailBar() override;
 
     void setFiles(const QStringList &files);
+    /** Continue async row fill (large sessions). */
+    void appendFileRowsChunk();
 
     /**
      * Best in-process sample for Image-mode ←/→ pending tile (shared with
@@ -346,6 +348,9 @@ private:
     LayoutAspectProvider m_layoutAspectProvider;
     ContentAppearanceProvider m_contentAppearanceProvider;
     QStringList m_files;
+    /** Async setFiles: next index to insert; -1 when idle. */
+    int m_fileFillNext = -1;
+    quint64 m_fileFillGeneration = 0;
     DisplaySurfaceController m_displaySurfaces;
     /** Parallel to m_files: surface id per row (0 = unbound). */
     QVector<DisplaySurface::SurfaceId> m_rowSurfaceIds;
