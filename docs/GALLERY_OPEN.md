@@ -54,8 +54,10 @@ PHASE 1 — Size gate (active until every path settled)
     YES: underlay via tryInstallGalleryUnderlay / virtual paint from ImageCache
     NO:  TileLoadCoordinator, scheduleTilePyramid for viewport climb
 
-PHASE 2 — Layout + materialize
-  rebuildVirtualPlan()     // definitive | failed only; no 1000² stand-ins
+PHASE 2 — Layout + materialize (during gate and after)
+  rebuildVirtualPlan()     // every definitive|failed row; skip unresolved holes
+                           // (not ordered-prefix — out-of-order SizeReply must
+                           // still grow the plan). Fill layouts wait for full set.
   syncVirtualWindow()      // visible ∩ plan → live items
   tryInstallGalleryUnderlay on each live cell
   paintVirtualPlaceholders: ImageCache underlay if hot, else dark chrome

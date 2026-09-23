@@ -1347,11 +1347,10 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     if (m_view->hostLayoutApply().active()) {
         return;
     }
-    // Size-first open: while the gate is active, liveItems are only the ordered
-    // sized prefix (ensurePlaceholders stops at the first unresolved path). Pack
-    // that prefix so cells are not stacked at the origin until the gate completes.
-    // Provisional stand-ins are no longer installed in Gallery, so packing here
-    // is safe. Full session pack still runs on gate complete (EnterGallery).
+    // Size-first open: while the gate is active, the virtual plan holds every
+    // definitive/failed row (sparse — holes skipped). ContentChange packs that
+    // set so cells are not stuck at the origin. Full session pack still runs
+    // on gate complete (EnterGallery).
     if (m_view->hostGallerySizeResolve().active()
         && reason != GalleryPackReason::ContentChange
         && reason != GalleryPackReason::EnterGallery
@@ -1507,7 +1506,7 @@ bool GalleryController::ensurePlaceholders()
     if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()) {
         return false;
     }
-    // Size gate: only plan rows that already have definitive sizes (prefix).
+    // Size gate: plan every definitive/failed row (sparse; unresolved skipped).
     rebuildVirtualPlan();
     syncVirtualWindow();
     return false;
@@ -1539,12 +1538,15 @@ void GalleryController::rebuildVirtualPlan()
         // Only definitive probe/fail sizes participate in the plan.
         if (!book.hasDefinitive(path) && !book.isFailed(path)) {
             if (layoutNeedsAllSizes(m_view->hostLayout().currentMode())) {
-                // Wait for full set — empty plan until sizes land.
+                // Fill layouts need the full aspect set — empty plan until done.
                 m_virtualSlots.clear();
                 return;
             }
-            // Ordered progressive: stop at first unresolved (prefix only).
-            break;
+            // Sparse progressive: skip unresolved holes. SizeReply is out of
+            // order (bounded workers); an ordered prefix stopped the plan at the
+            // first gap so ~dozens of cells appeared then nothing until the
+            // whole gate finished. Include every definitive/failed row.
+            continue;
         }
         // Orient-aware layout size without Store I/O (allowStoreAppearance=false).
         QSize lay = m_view->contentLayoutSize(path, sid, /*allowStoreAppearance=*/false);
@@ -1557,7 +1559,7 @@ void GalleryController::rebuildVirtualPlan()
         }
         // Reject provisional-shaped geometry if it slipped into known().
         if (book.isProvisional(path) && !book.isFailed(path)) {
-            break;
+            continue;
         }
         VirtualSlot slot;
         slot.path = path;
