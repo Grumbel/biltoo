@@ -95,6 +95,7 @@ Distinct from Workspace **Export page as PNG/PDF…** (composed page guide).
    | Open Selection | Multi + crop → new window keeps crop |
    | Multi-window | Shortcuts not process-wide (Space, Ctrl+Q, …) |
    | Cold open | Wipe Store or new files: dir of JPEGs stays responsive; note PDF/7z stalls (§4.2) |
+   | PDF Embedded Images | One image-heavy PDF → Image menu → Gallery + export a few leaves (§4.3) |
 
 5. **Docs**  
    - Point [TODO.md](../TODO.md) / [AGENTS.md](../AGENTS.md) tip at the release commit  
@@ -197,7 +198,39 @@ Especially pathological:
 on known-bad files as **known issues** to file with sample paths, not as
 blockers unless a regression makes normal JPEGs unusable.
 
-### 4.3 Other deferred items (optional later)
+### 4.3 Image → PDF Embedded Images (more testing needed)
+
+**What it is**
+
+- Menu: **Image → PDF Embedded Images** (`openPdfAsEmbeddedImages`).
+- Re-opens the current PDF (or the PDF behind a `//page:` / existing
+  `//pdfimage:` session) as a session of **native embedded images**:
+  collection URI `path.pdf//pdfimages` expands to leaves
+  `path.pdf//pdfimage:1..N`.
+- Decode is **thumtoo-backed** (no host fallback for embedded image leaves).
+  Intended for comics/illustrated PDFs where the useful content is the
+  embedded bitmaps rather than rendered full pages.
+
+**Limitation — needs more testing**
+
+This path is **newer and less exercised** than page-render (`//page:N`) open:
+
+| Concern | Notes |
+|---------|--------|
+| **Coverage** | Which PDFs expose a useful `//pdfimages` set vs empty / partial / wrong order |
+| **Count and order** | Image indices vs visual reading order; duplicates; masks / soft masks |
+| **Cold open** | Same class of stalls as §4.2 when thumtoo must extract many large embeds with weak progress |
+| **Thumbnails** | Early filmstrip/Gallery ghosts may be missing or tiny until Store fills |
+| **Toggle / round-trip** | Page session → Embedded Images → back to pages; selection and appearance |
+| **Export** | Export Images of `//pdfimage:N` leaves (bake path already special-cased for stems; needs corpus checks) |
+| **Non-PDF** | Action correctly no-ops on EPUB/DjVu; confirm messaging |
+
+**0.2.0 expectation:** ship the action as **experimental / use with care**;
+file issues with sample PDFs. Not a tag blocker if page-mode PDF open remains
+the primary document path. Add a short smoke: one image-heavy PDF → Embedded
+Images → scroll Gallery → Export folder of a few leaves.
+
+### 4.4 Other deferred items (optional later)
 
 | Item | Notes |
 |------|--------|
@@ -206,6 +239,8 @@ blockers unless a regression makes normal JPEGs unusable.
 | Workspace session export | Export Images is Gallery/Image-first; Workspace optional |
 | Deeper tile / performance work | Overlaps §4.2; engineering track |
 | Cross-region text search | §4.1 |
+| Cold-cache / pathological PDF & 7z | §4.2 |
+| PDF Embedded Images hardening | §4.3 |
 
 ---
 
@@ -242,3 +277,4 @@ blockers unless a regression makes normal JPEGs unusable.
 
 - **Cross-region text search** (§4.1)
 - **Cold-cache open / progress / pathological PDF & 7z** (§4.2)
+- **PDF Embedded Images** hardening and corpus testing (§4.3)
