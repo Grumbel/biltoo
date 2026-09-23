@@ -199,21 +199,18 @@ void GallerySizeResolve::updateProgressHud()
         if (path.isEmpty()) {
             continue;
         }
-        // Settle only when size is in the book (probe completed) or both
-        // process memo and ImageCache underlay are hot. Size-memo alone must
-        // not close the gate — that skipped request_size and left no LQIP.
-        if (m_host->hasDefinitiveHostSize(path)) {
-            m_pending.remove(path);
-            ++m_resolved;
-            ++settledThisTick;
-            continue;
-        }
+        // Never settle on definitive size alone while a re-probe for underlay
+        // is in flight — that closed the gate before SizeReply seeded ImageCache
+        // and let tiles run with blank cells. Settlement for in-flight probes is
+        // noteProbeSettled (sizeReady). Warm shortcut: size memo + underlay hot.
         const QSize cached =
             ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
         if (!isPositiveSize(cached) || !ImageCache::has(path)) {
             continue;
         }
-        m_host->adoptResolvedSize(path, cached);
+        if (!m_host->hasDefinitiveHostSize(path)) {
+            m_host->adoptResolvedSize(path, cached);
+        }
         m_pending.remove(path);
         ++m_resolved;
         ++settledThisTick;
