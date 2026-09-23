@@ -810,9 +810,11 @@ void requestSizeAsync(const QString &path,
                 return;
             }
             const QSize sz(reply.size->width, reply.size->height);
-            putEmbeddedOrLqipUnderlay(path, reply);
-            QImage underlay = ImageCache::get(path);
-            if (underlay.isNull() && reply.embedded && !reply.embedded->bytes.empty()) {
+            // Do not ImageCache::put here — session replace may have cleared the
+            // cache; finishProbeSlot installs underlay only when the probe
+            // generation is still live.
+            QImage underlay;
+            if (reply.embedded && !reply.embedded->bytes.empty()) {
                 underlay.loadFromData(reply.embedded->bytes.data(),
                                       static_cast<int>(reply.embedded->bytes.size()),
                                       "JPEG");

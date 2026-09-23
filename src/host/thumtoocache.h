@@ -151,6 +151,14 @@ void scheduleProbeBatch(const QStringList &paths);
  */
 bool sizeProbesBusy();
 
+/**
+ * Session Open / Replace: drop the host size-probe FIFO and bump the probe
+ * generation so in-flight Store callbacks do not emit sizeReady or refill
+ * ImageCache for the previous path set. In-flight slots still complete
+ * (decrement counters) but are otherwise ignored.
+ */
+void cancelSizeProbes();
+
 /** Phase-1 work status: size-probe queued/running counts + sample URIs. */
 /** Live thumtoo activity snapshot (size / archive / soft / tiles). */
 struct WorkActivity {

@@ -66,6 +66,9 @@ void ImageView::invalidateSessionLoads()
     // stand-ins must not skip resolve on the next open).
     m_sizeBook.clear();
     m_gallerySizeResolve.cancel();
+    // Drop host size-probe FIFO + bump generation so previous-session Store
+    // size callbacks cannot emit sizeReady or refill ImageCache after clear.
+    ThumtooCache::cancelSizeProbes();
     if (isImageMode()) {
         clearLiveCanvas();
         m_image.clearClassicPath();

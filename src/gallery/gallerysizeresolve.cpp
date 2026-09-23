@@ -80,20 +80,11 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
         }
     }
 
-    // Virtualized Gallery: do not enqueue tens of thousands of ProbeSize jobs at
-    // open — that pegged every core for minutes after first paint. Probe a
-    // prefix for the first screens; the rest use stand-in aspects until the
-    // viewport window schedules probes (syncVirtualWindow).
-    constexpr int kOpenProbePrefix = 128;
-    if (ordered.size() > kOpenProbePrefix) {
-        for (int i = kOpenProbePrefix; i < ordered.size(); ++i) {
-            m_pending.remove(ordered.at(i));
-        }
-        ordered = ordered.mid(0, kOpenProbePrefix);
-        m_total = already + m_pending.size();
-        m_resolved = already;
-    }
-
+    // Size resolve must finish for the full session before packaged layout:
+    // stand-in aspects produce wrong masonry/flow geometry. Bounded host
+    // concurrency (kMaxConcurrentSizeProbes) keeps workers from pegging;
+    // chunked sizeReady keeps the GUI responsive. Virtual window still probes
+    // lazily only for paths that failed the gate or were added later.
     if (!m_host->sizeResolveLayoutDefersPopulate()) {
         // Grid / no gate: still only the open prefix (not the whole session).
         m_pending.clear();

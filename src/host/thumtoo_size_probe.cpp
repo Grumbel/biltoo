@@ -15,6 +15,7 @@
 #include <QThreadPool>
 #include <QTimer>
 #include <QVector>
+#include <atomic>
 #include <functional>
 #include <memory>
 
@@ -32,6 +33,12 @@ constexpr int kMaxConcurrentSizeProbes = 8;
 /** Memo sizeReady emits per event-loop turn — avoids GUI freeze on warm open. */
 constexpr int kSizeReadyChunk = 16;
 QMutex g_probeMu;
+/**
+ * Bumped on cancelSizeProbes / session replace. In-flight Store callbacks and
+ * chunked memo emits capture the generation at start and no-op side effects
+ * when it no longer matches.
+ */
+std::atomic<quint64> g_probeGeneration{0};
 
 void pumpProbeQueue();
 
@@ -40,7 +47,7 @@ void pumpProbeQueue();
  * paint between batches. Synchronous emit of hundreds of memo hits from
  * scheduleProbeBatch froze the GUI for the whole warm size pass.
  */
-void emitSizeReadyChunked(QVector<QPair<QString, QSize>> hits)
+void emitSizeReadyChunked(QVector<QPair<QString, QSize>> hits, quint64 generation)
 {
     if (hits.isEmpty()) {
         return;
@@ -50,7 +57,10 @@ void emitSizeReadyChunked(QVector<QPair<QString, QSize>> hits)
         return;
     }
     auto deliver = std::make_shared<std::function<void(int)>>();
-    *deliver = [hits, b, deliver](int index) {
+    *deliver = [hits, b, deliver, generation](int index) {
+        if (generation != g_probeGeneration.load(std::memory_order_acquire)) {
+            return;
+        }
         const int n = hits.size();
         if (index >= n) {
             return;
@@ -69,7 +79,7 @@ void emitSizeReadyChunked(QVector<QPair<QString, QSize>> hits)
 }
 
 void finishProbeSlot(const QString &pathCopy, bool ok, const QSize &size,
-                     const QImage &lqip)
+                     const QImage &lqip, quint64 generation)
 {
     {
         QMutexLocker lock(&g_probeMu);
@@ -78,14 +88,18 @@ void finishProbeSlot(const QString &pathCopy, bool ok, const QSize &size,
             --g_probeInflight;
         }
     }
+    const bool live = (generation == g_probeGeneration.load(std::memory_order_acquire));
+    if (!live) {
+        // Superseded session: do not emit, memo, or refill ImageCache.
+        pumpProbeQueue();
+        return;
+    }
     if (!ok || !size.isValid() || size.width() < 1 || size.height() < 1) {
         emit bridge()->sizeReady(pathCopy, QSize());
         pumpProbeQueue();
         return;
     }
     if (!lqip.isNull() && !ImageCache::has(pathCopy)) {
-        // requestSizeAsync already put EMB/LQIP when SizeReply had them; this is
-        // a fallback for the underlay QImage returned on the callback.
         const int le = ImageCache::longEdge(lqip);
         const QString tag = (le > DisplayQuality::kLqipMaxEdge)
             ? QStringLiteral("EMB")
@@ -101,6 +115,7 @@ void pumpProbeQueue()
 {
     QVector<QPair<QString, QSize>> memoHits;
     QStringList toStart;
+    const quint64 generation = g_probeGeneration.load(std::memory_order_acquire);
     {
         QMutexLocker lock(&g_probeMu);
         // Drain memo hits without holding a Store slot.
@@ -116,7 +131,6 @@ void pumpProbeQueue()
             break;
         }
         while (g_probeInflight < kMaxConcurrentSizeProbes && !g_probeFifo.isEmpty()) {
-            // Skip pure memo hits already handled; if next is memo, drain again.
             const QString p = g_probeFifo.first();
             const QSize memoSz = ProcessMemos::instance().size(p);
             if (memoSz.isValid() && memoSz.width() > 0 && memoSz.height() > 0) {
@@ -131,11 +145,12 @@ void pumpProbeQueue()
         }
     }
     if (!memoHits.isEmpty()) {
-        emitSizeReadyChunked(std::move(memoHits));
+        emitSizeReadyChunked(std::move(memoHits), generation);
     }
     for (const QString &pathCopy : toStart) {
-        requestSizeAsync(pathCopy, [pathCopy](bool ok, const QSize &size, const QImage &lqip) {
-            finishProbeSlot(pathCopy, ok, size, lqip);
+        requestSizeAsync(pathCopy, [pathCopy, generation](bool ok, const QSize &size,
+                                                          const QImage &lqip) {
+            finishProbeSlot(pathCopy, ok, size, lqip, generation);
         });
     }
 }
@@ -170,7 +185,8 @@ void scheduleProbe(const QString &path)
     // so Gallery size-resolve pending is not left waiting forever.
     if (const QSize memo = cachedSize(path, /*scheduleRevalidate=*/false);
         memo.isValid() && memo.width() > 0 && memo.height() > 0) {
-        emitSizeReadyChunked({{path, memo}});
+        emitSizeReadyChunked({{path, memo}},
+                             g_probeGeneration.load(std::memory_order_acquire));
         return;
     }
     enqueueProbePaths(QStringList{path});
@@ -181,6 +197,7 @@ void scheduleProbeBatch(const QStringList &paths)
     if (paths.isEmpty()) {
         return;
     }
+    const quint64 generation = g_probeGeneration.load(std::memory_order_acquire);
     QVector<QPair<QString, QSize>> memoHits;
     QStringList need;
     need.reserve(paths.size());
@@ -197,7 +214,7 @@ void scheduleProbeBatch(const QStringList &paths)
         need.append(path);
     }
     if (!memoHits.isEmpty()) {
-        emitSizeReadyChunked(std::move(memoHits));
+        emitSizeReadyChunked(std::move(memoHits), generation);
     }
     if (!need.isEmpty()) {
         enqueueProbePaths(need);
@@ -208,6 +225,17 @@ bool sizeProbesBusy()
 {
     QMutexLocker lock(&g_probeMu);
     return g_probeInflight > 0 || !g_probeFifo.isEmpty();
+}
+
+void cancelSizeProbes()
+{
+    {
+        QMutexLocker lock(&g_probeMu);
+        g_probeFifo.clear();
+        g_probeQueued.clear();
+        // Leave g_probeInflight — finishProbeSlot decrements when Store replies.
+    }
+    g_probeGeneration.fetch_add(1, std::memory_order_acq_rel);
 }
 
 } // namespace ThumtooCache
