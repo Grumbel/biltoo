@@ -10,7 +10,7 @@
 #include "view/viewframing.h"
 
 #include <QScrollBar>
-#include "toolpolicy.h"
+#include "image/toolpolicy.h"
 #include <QPointer>
 #include <QTimer>
 #include "content/contentxform.h"

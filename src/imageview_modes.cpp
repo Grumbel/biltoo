@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "imageview.h"
-#include "toolpolicy.h"
+#include "image/toolpolicy.h"
 #include "display/imagecache.h"
 #include <QDebug>
 #include "imageitem.h"

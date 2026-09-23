@@ -3,7 +3,7 @@
 
 #include "imageview.h"
 #include "gallery/gallerydecodesm.h"
-#include "toolpolicy.h"
+#include "image/toolpolicy.h"
 #include "workspace/workspacenavgeometry.h"
 #include "workspace/grouptransformgeometry.h"
 #include "item/selectiongeometry.h"

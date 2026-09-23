@@ -206,7 +206,7 @@ set(BILTOO_LIB_SOURCES
   src/color/coloradjustcommit.h
   src/view/viewtransform.h
   src/workspace/workspacenavgeometry.h
-  src/toolpolicy.h
+  src/image/toolpolicy.h
   src/hud/hudgeometry.h
   src/text/textsearchpolicy.h
   src/text/textsearchpolicy.cpp
