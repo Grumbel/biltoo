@@ -5,6 +5,7 @@
 #define ITEMFRAMEGEOMETRY_H
 
 #include <QPointF>
+#include <QRectF>
 #include <QPainter>
 #include <QPen>
 #include <QFont>

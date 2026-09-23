@@ -2,25 +2,23 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2385-image-zoom-enter-persist** (on top of `660c49c` stack).
+**Tip: biltoo-2386-virtual-placeholder-chrome** (on top of `660c49c` stack).
 
-Includes **2381–2384**.
+Includes **2381–2385**.
 
-### 2385
-- Defer Image framing until item size is reliable (avoid fitInView on 1×1 →
-  ~5000% zoom).
-- Capture view scale/pan on Image leave; keep sticky preference across modes.
-- Size-arrival reframe uses preserved/sticky path when set.
+### 2386
+Virtual Gallery plan slots use the same no-LQIP placeholder chrome as live
+`ImageItem` blanks (`ItemFrameGeometry::paintNeutralPlaceholder`).
 
 **Next:** RC smoke; VERSION 0.2.0 + tag.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2385.1-image-zoom-enter-persist-660c49c.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2386.1-virtual-placeholder-chrome-660c49c.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
-- [x] 2381–2384
-- [x] 2385 Image zoom enter / persist
+- [x] 2381–2385
+- [x] 2386 virtual placeholder chrome matches no-LQIP
 - [ ] RC smoke
 - [ ] VERSION 0.2.0 + tag
