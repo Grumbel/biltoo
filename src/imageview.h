@@ -241,7 +241,8 @@ public:
      * and applyContentLayoutSize — never soft sample dims, never native alone
      * when orient/crop is known.
      */
-    QSize contentLayoutSize(const QString &path, SessionImageId sessionId) const;
+    QSize contentLayoutSize(const QString &path, SessionImageId sessionId,
+                            bool allowStoreAppearance = true) const;
     // Host accessors (controllers): path raster, books, prefs — imageview_host_accessors.inc
 #include "imageview_host_accessors.inc"
 

@@ -122,7 +122,8 @@ QSize ImageView::layoutSizeForPath(const QString &path, const QImage &previewHin
     return imageSizeForPath(path);
 }
 
-QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId) const
+QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId,
+                                   bool allowStoreAppearance) const
 {
     // Ground truth: native × ItemWorld content ops (same as filmstrip provider).
     QSize native = logicalSizeForPath(path);
@@ -132,11 +133,16 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
     if (!(native.width() > 1 && native.height() > 1)) {
         // Trigger probe on non-const path via const_cast schedule is awkward;
         // callers still call layoutSizeForPath which schedules. Return native-ish.
-        const QSize known = ThumtooCache::cachedSize(path);
-        if (known.width() > 1 && known.height() > 1) {
-            native = known;
+        // Bulk virtual plan passes allowStoreAppearance=false — skip Store size too.
+        if (allowStoreAppearance) {
+            const QSize known = ThumtooCache::cachedSize(path);
+            if (known.width() > 1 && known.height() > 1) {
+                native = known;
+            } else {
+                return native; // may be empty/provisional
+            }
         } else {
-            return native; // may be empty/provisional
+            return native;
         }
     }
     WorkspaceItemState want;
@@ -152,8 +158,9 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
         }
     }
     // Bound: never path XDG. Unbound path rows may still use full XDG including crop.
-    if (!SessionAppearance::hasContentAppearance(want) && !path.isEmpty()
-        && sessionId == kInvalidSessionImageId) {
+    // Virtual plan / bulk open: never Store loadContentAppearance (GUI freeze).
+    if (allowStoreAppearance && !SessionAppearance::hasContentAppearance(want)
+        && !path.isEmpty() && sessionId == kInvalidSessionImageId) {
         ThumtooCache::StoredContentAppearance stored;
         if (ThumtooCache::loadContentAppearance(path, &stored) && !stored.isIdentity()) {
             SessionAppearance::applyStoredContentAppearance(&want, stored, false);

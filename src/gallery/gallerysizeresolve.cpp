@@ -86,7 +86,7 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
     // chunked sizeReady keeps the GUI responsive. Virtual window still probes
     // lazily only for paths that failed the gate or were added later.
     if (!m_host->sizeResolveLayoutDefersPopulate()) {
-        // Grid / no gate: still only the open prefix (not the whole session).
+        // No packaged gate: still batch-probe (full ordered list; bounded concurrency).
         m_pending.clear();
         m_total = 0;
         if (!ordered.isEmpty()) {

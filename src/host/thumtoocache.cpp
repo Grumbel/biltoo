@@ -2056,7 +2056,13 @@ void preparePaths(const QStringList &paths)
     if (need.isEmpty()) {
         return;
     }
-    QThreadPool::globalInstance()->start([need]() {
+    // Capture session-work epoch so a superseded prepare_paths cannot refill
+    // ImageCache / emit sizeReady after cancelSizeProbes (session replace).
+    const quint64 generation = sizeProbeGeneration();
+    QThreadPool::globalInstance()->start([need, generation]() {
+        if (generation != sizeProbeGeneration()) {
+            return;
+        }
         init();
         thumtoo::Client *c = nullptr;
         {
@@ -2078,7 +2084,10 @@ void preparePaths(const QStringList &paths)
         if (fsPaths.empty()) {
             return;
         }
-        c->prepare_paths(fsPaths, [plainPaths](std::string uri, thumtoo::SizeReply reply) {
+        c->prepare_paths(fsPaths, [plainPaths, generation](std::string uri, thumtoo::SizeReply reply) {
+            if (generation != sizeProbeGeneration()) {
+                return;
+            }
             QString path;
             for (const QString &p : plainPaths) {
                 if (toThumtooUri(p) == uri) {

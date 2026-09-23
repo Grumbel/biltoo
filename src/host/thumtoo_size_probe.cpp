@@ -81,14 +81,19 @@ void emitSizeReadyChunked(QVector<QPair<QString, QSize>> hits, quint64 generatio
 void finishProbeSlot(const QString &pathCopy, bool ok, const QSize &size,
                      const QImage &lqip, quint64 generation)
 {
+    const bool live = (generation == g_probeGeneration.load(std::memory_order_acquire));
     {
         QMutexLocker lock(&g_probeMu);
-        g_probeQueued.remove(pathCopy);
+        // Only drop the queued mark when this slot is still live. After cancel +
+        // re-enqueue of the same path, a stale callback must not erase the new
+        // session's dedupe entry (that caused double request_size).
+        if (live) {
+            g_probeQueued.remove(pathCopy);
+        }
         if (g_probeInflight > 0) {
             --g_probeInflight;
         }
     }
-    const bool live = (generation == g_probeGeneration.load(std::memory_order_acquire));
     if (!live) {
         // Superseded session: do not emit, memo, or refill ImageCache.
         pumpProbeQueue();
@@ -225,6 +230,11 @@ bool sizeProbesBusy()
 {
     QMutexLocker lock(&g_probeMu);
     return g_probeInflight > 0 || !g_probeFifo.isEmpty();
+}
+
+quint64 sizeProbeGeneration()
+{
+    return g_probeGeneration.load(std::memory_order_acquire);
 }
 
 void cancelSizeProbes()

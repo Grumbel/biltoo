@@ -159,6 +159,9 @@ bool sizeProbesBusy();
  */
 void cancelSizeProbes();
 
+/** Monotonic epoch bumped by cancelSizeProbes (session replace). */
+quint64 sizeProbeGeneration();
+
 /** Phase-1 work status: size-probe queued/running counts + sample URIs. */
 /** Live thumtoo activity snapshot (size / archive / soft / tiles). */
 struct WorkActivity {

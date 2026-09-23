@@ -1576,9 +1576,13 @@ void GalleryController::rebuildVirtualPlan()
                 break;
             }
         }
-        // Plan sizes from the size book only — contentLayoutSize can hit Store
-        // (loadContentAppearance) per path and froze large opens for ~minutes.
-        QSize lay = book.known(path);
+        // Orient-aware layout size without Store I/O (allowStoreAppearance=false).
+        // book.known alone dropped 90°/flip aspect; full contentLayoutSize could
+        // hit loadContentAppearance per path and froze large opens for minutes.
+        QSize lay = m_view->contentLayoutSize(path, sid, /*allowStoreAppearance=*/false);
+        if (!isPositiveSize(lay) || lay.width() <= 1) {
+            lay = book.known(path);
+        }
         if (!isPositiveSize(lay) || lay.width() <= 1) {
             lay = ImageSizeBook::standInNeutral();
         }
