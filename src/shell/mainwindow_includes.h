@@ -23,7 +23,7 @@
 #include "host/thumtoocache.h"
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 
 #include <QAbstractButton>
 #include <QAction>

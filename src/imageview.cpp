@@ -9,7 +9,7 @@
 #include <QEventLoop>
 #include <cstdlib>
 #include "host/archivepath.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"

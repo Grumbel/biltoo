@@ -15,7 +15,7 @@
 #include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "host/archivepath.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 
 #include <QBuffer>
 #include <cstring>

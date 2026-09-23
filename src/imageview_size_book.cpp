@@ -8,7 +8,7 @@
 #include "gallery/gallerydecodesm.h"
 #include "display/displayquality.h"
 #include "host/archivepath.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 #include "imageitem.h"
 #include "imageloader.h"
 #include "display/imagecache.h"

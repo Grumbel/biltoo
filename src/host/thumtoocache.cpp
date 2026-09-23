@@ -10,7 +10,7 @@
 #include "biltoo_thread.h"
 
 #include "host/archivepath.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 #include <cstring>
 
 #include <QCoreApplication>

@@ -295,8 +295,8 @@ set(BILTOO_LIB_SOURCES
   src/host/thumtoo_size_probe.cpp
   src/host/archivepath.cpp
   src/host/archivepath.h
-  src/pagepath.cpp
-  src/pagepath.h
+  src/host/pagepath.cpp
+  src/host/pagepath.h
   src/shell/thumbnailbar.cpp
   src/shell/thumbnailbar.h
   src/shell/preferencesdialog.cpp
@@ -654,7 +654,7 @@ if(Qt6Test_FOUND)
   add_executable(biltoo-sessionsort-test
     tests/sessionsort_test.cpp
     src/session/sessionsort.cpp
-    src/pagepath.cpp
+    src/host/pagepath.cpp
     src/host/archivepath.cpp
   )
   target_include_directories(biltoo-sessionsort-test PRIVATE src)

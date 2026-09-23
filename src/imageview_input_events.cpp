@@ -14,7 +14,7 @@
 #include "item/placementlinear.h"
 #include "attention/attentiongeometry.h"
 #include "image/edgenavpolicy.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"

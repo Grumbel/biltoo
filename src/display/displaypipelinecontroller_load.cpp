@@ -13,7 +13,7 @@
 #include "display/displayedgepolicy.h"
 #include "display/pathrasterservice.h"
 #include "host/thumtoocache.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 #include "gallery/gallerydecodesm.h"
 #include "display/displayquality.h"
 #include "display/lqipdisplaypolicy.h"

@@ -6,7 +6,7 @@
 #include "biltoo_thread.h"
 #include "imageloader.h"
 #include "session/sessionappearance.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 #include "host/archivepath.h"
 
 #include <QBuffer>

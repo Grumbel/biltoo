@@ -8,7 +8,7 @@
 #include "display/displayquality.h"
 #include "display/pathrasterservice.h"
 #include "host/archivepath.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 #include "hud/hudmodel.h"
 
 #include <QFileInfo>

@@ -3,7 +3,7 @@
 
 #include "session/sessionsort.h"
 
-#include "pagepath.h"
+#include "host/pagepath.h"
 
 #include <QtMath>
 

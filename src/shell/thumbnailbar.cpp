@@ -7,7 +7,7 @@
 #include "display/displayquality.h"
 #include "display/displaysurface.h"
 #include "host/archivepath.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 #include "display/imagecache.h"
 #include "imageloader.h"
 #include "host/thumtoocache.h"

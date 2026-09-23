@@ -4,7 +4,7 @@
 #include "shell/metadatapanel.h"
 #include "view/viewtransform.h"
 #include "host/archivepath.h"
-#include "pagepath.h"
+#include "host/pagepath.h"
 #include "imageloader.h"
 
 #include <QDateTime>
