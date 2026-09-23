@@ -28,6 +28,19 @@ git -C biltoo pull --ff-only …/biltoo-2380.1-resolving-sizes-topleft-43085d9.b
 - [ ] RC smoke
 - [ ] VERSION 0.2.0 + tag
 
+## Notes (0.2 interaction)
+
+### Cold-cache scroll / request flood
+
+Gallery decode-window already debounces scrollbar (`kDecodeWindowSettleMs`).
+Image/Workspace used to call `tickPrimaryTileLod` on **every** `valueChanged` /
+pan move — that flooded EnsureTiles on cold cache. Now coalesced via
+`scheduleTileLodAfterInteraction(32)` (tile tick + climb on settle).
+
+Remaining cold-cache jank is often **worker/Store pressure** after the settle
+fires (legitimate visible cells), not missing debounce — profile under
+`THUMTOO_DEBUG` if UI still stalls once scrolling stops.
+
 ## Backlog (0.3.0)
 
 ### Gallery size-resolve throughput (plain files / SSD)

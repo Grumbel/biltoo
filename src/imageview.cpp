@@ -348,17 +348,16 @@ ImageView::ImageView(QWidget *parent)
     };
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
         refreshHover();
-        // Debounce: every scroll pixel used to scan all tiles + start pool
-        // work and could peg a core while the user was only panning.
-        // Gallery soft install needs a responsive window while LQIP→soft climbs.
+        // Debounce: every scroll pixel used to scan tiles + start pool work
+        // and could peg a core while the user was only panning.
+        // Gallery: decode-window settle. Image/Workspace: tile LOD + climb after
+        // the scrollbar stops moving (not per pixel — that flooded cold cache).
         m_gallery.scheduleDecodeWindowRefresh(isGalleryMode()
             ? GalleryDecode::kDecodeWindowSettleMs
             : GalleryDecode::kDecodeWindowImageMs);
-        // Image/Workspace deep zoom: timer may be stopped after coverage;
-        // scrollbar drag (or pan setValue) must re-issue visible cells.
-        // Hand pan already ticks; skip when m_chrome.isPanning() to avoid double work.
+        // Hand pan ticks on a separate coalesced path; skip double work here.
         if (!m_chrome.isPanning() && !isGalleryMode()) {
-            m_displayPipeline.tickPrimaryTileLod(4);
+            m_displayPipeline.scheduleTileLodAfterInteraction(32);
         }
     });
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this, refreshHover](int) {
@@ -367,7 +366,7 @@ ImageView::ImageView(QWidget *parent)
             ? GalleryDecode::kDecodeWindowSettleMs
             : GalleryDecode::kDecodeWindowImageMs);
         if (!m_chrome.isPanning() && !isGalleryMode()) {
-            m_displayPipeline.tickPrimaryTileLod(4);
+            m_displayPipeline.scheduleTileLodAfterInteraction(32);
         }
     });
 

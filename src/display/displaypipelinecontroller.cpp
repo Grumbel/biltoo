@@ -1406,10 +1406,10 @@ void DisplayPipelineController::scheduleTileLodAfterInteraction(int delayMs)
         tileLodZoomDebounce() = new QTimer(m_view);
         tileLodZoomDebounce()->setSingleShot(true);
         QObject::connect(tileLodZoomDebounce(), &QTimer::timeout, m_view, [this]() {
-            if (m_view->isGalleryMode()) {
-                tickPrimaryTileLod(8);
-                return;
-            }
+            // Always issue visible tiles first (scroll/pan settle). Gallery
+            // uses this path for Ctrl+wheel; Image/Workspace also need LOD
+            // coverage after scrollbar storms — not only PreferCache climb.
+            tickPrimaryTileLod(8);
             if (m_view->isImageMode()) {
                 maybeClimbImageModePixelsForView();
             } else if (m_view->isWorkspaceMode()) {

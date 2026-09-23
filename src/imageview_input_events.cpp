@@ -134,8 +134,8 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
     horizontalScrollBar()->setValue(horizontalScrollBar()->value() - delta.x());
     verticalScrollBar()->setValue(verticalScrollBar()->value() - delta.y());
     // Tile LOD timer stops once the viewport is covered. Panning changes the
-    // visible set without a zoom/climb event — keep issuing requests.
-    m_displayPipeline.tickPrimaryTileLod(4);
+    // visible set without a zoom/climb event — coalesce issues (not per move).
+    m_displayPipeline.scheduleTileLodAfterInteraction(32);
     event->accept();
     return true;
 }
