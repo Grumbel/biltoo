@@ -162,40 +162,18 @@ ImageView::ImageView(QWidget *parent)
                     // LQIP may already be in ImageCache (size probe callback).
                     // Still paint blank tiles; never block later soft upgrades.
                     if (isGalleryMode()) {
-                        // ImageCache only (seeded by request_size SizeReply).
-                        QImage under = ImageCache::get(path);
-                        if (!under.isNull()) {
-                            // Install-only downscale so SoftPreview passes the
-                            // Gallery underlay band (EMB can exceed kLqipMaxEdge).
-                            if (ImageCache::longEdge(under)
-                                > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-                                const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;
-                                under = under.scaled(cap, cap, Qt::KeepAspectRatio,
-                                                     Qt::SmoothTransformation);
+                        for (ImageItem *item : m_items) {
+                            if (!item || item->path() != path) {
+                                continue;
                             }
-                            for (ImageItem *item : m_items) {
-                                if (!item || item->path() != path) {
-                                    continue;
-                                }
-                                if (item->hasDisplayPixels()) {
-                                    continue;
-                                }
-                                const SessionImageId sid = item->sessionId();
-                                const WorkspaceItemState want =
-                                    m_displayPipeline.wantAppearanceForItem(item, sid);
-                                const QSize lay = ContentXform::layoutSize(size, want);
-                                if (isPositiveSize(lay) && lay.width() > 1) {
-                                    item->setIntrinsicSize(lay);
-                                }
-                                const int before = item->displayPixelLongEdge();
-                                m_displayPipeline.installDisplayPixels(
-                                    item, under,
-                                    SessionAppearance::PixelKind::SoftPreview, sid);
-                                if (item->displayPixelLongEdge() <= before
-                                    && !under.isNull()) {
-                                    setItemPreviewImage(item, under);
-                                }
+                            const SessionImageId sid = item->sessionId();
+                            const WorkspaceItemState want =
+                                m_displayPipeline.wantAppearanceForItem(item, sid);
+                            const QSize lay = ContentXform::layoutSize(size, want);
+                            if (isPositiveSize(lay) && lay.width() > 1) {
+                                item->setIntrinsicSize(lay);
                             }
+                            m_displayPipeline.tryInstallGalleryUnderlay(item);
                         }
                     }
                 }

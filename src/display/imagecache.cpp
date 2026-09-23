@@ -48,7 +48,7 @@ QSet<QString> &inFlight()
     return s;
 }
 
-constexpr int kMaxEntries = 384;
+constexpr int kMaxEntries = 1024;
 
 QString ensureKey(const QString &path, int maxEdge)
 {
@@ -66,9 +66,26 @@ void evictOldestUnlocked()
 {
     QHash<QString, QImage> &m = map();
     QStringList &ord = order();
+    // Prefer dropping large samples first so Gallery SizeReply underlays
+    // (EMB/LQIP ≤ kEmbeddedUnderlayMaxEdge) survive until materialize.
     while (!ord.isEmpty() && m.size() >= kMaxEntries) {
-        const QString oldest = ord.takeFirst();
-        m.remove(oldest);
+        int victim = -1;
+        for (int i = 0; i < ord.size(); ++i) {
+            const QImage &img = m.value(ord.at(i));
+            if (img.isNull()) {
+                victim = i;
+                break;
+            }
+            if (longEdge(img) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+                victim = i;
+                break;
+            }
+        }
+        if (victim < 0) {
+            victim = 0; // all underlays — still enforce the entry cap
+        }
+        const QString key = ord.takeAt(victim);
+        m.remove(key);
     }
 }
 

@@ -1134,51 +1134,16 @@ int GalleryController::galleryInstallLqipOntoBlanks(int maxInstalls, bool *moreP
             }
             break;
         }
-        const QString &path = item->path();
-        // LQIP only from ImageCache (warmSessionOpenMemos / size-probe workers).
-        // Never ThumtooCache::cachedLqipImage on the GUI — it is a no-op there.
-        QImage hostSample = ImageCache::get(path);
-        if (hostSample.isNull()) {
+        const int before = item->displayPixelLongEdge();
+        const bool had = item->hasDisplayPixels();
+        if (!m_view->hostDisplayPipeline().tryInstallGalleryUnderlay(item)) {
             continue;
         }
-        const int hostEdge = ImageCache::longEdge(hostSample);
-        const int shown = item->displayPixelLongEdge();
-        if (item->hasDisplayPixels() && hostEdge <= shown) {
+        const int after = item->displayPixelLongEdge();
+        if (after <= before && had) {
             continue;
         }
-        QImage sample = hostSample;
-        int sampleEdge = hostEdge;
-        // Underlay only — downscale huge host samples for install paint, but do
-        // not put a smaller raster back into ImageCache (that wiped EMB EXIF).
-        if (sampleEdge > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-            if (item->hasDisplayPixels()
-                && shown >= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-                continue;
-            }
-            const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;
-            sample = hostSample.scaled(
-                cap, cap, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            sampleEdge = ImageCache::longEdge(sample);
-            if (sample.isNull() || sampleEdge <= 0) {
-                continue;
-            }
-            // Install-only scale — leave ImageCache at the larger EMB/HOST sample.
-        }
-        const SessionAppearance::PixelKind kind =
-            SessionAppearance::PixelKind::SoftPreview;
-        const int before = shown;
-        const bool hadDisplay = item->hasDisplayPixels();
-        m_view->hostDisplayPipeline().installDisplayPixels(item, sample, kind, item->sessionId());
-        int after = item->displayPixelLongEdge();
-        if (after <= before && !hadDisplay && !sample.isNull()) {
-            m_view->setItemPreviewImage(item, sample);
-            after = item->displayPixelLongEdge();
-        }
-        if (after <= before && hadDisplay) {
-            continue;
-        }
-        GalleryDecodeState &st = m_view->hostGalleryDecodeBook().state(path);
-        // Shown edge only — hostEdge can exceed what install actually attached.
+        GalleryDecodeState &st = m_view->hostGalleryDecodeBook().state(item->path());
         st.have = GalleryDecode::maxHave(st.have, after);
         item->update();
         ++installed;
@@ -1812,15 +1777,30 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
     if (!painter || !m_view || !m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
         return;
     }
-    // Darker offline chrome than live blanks so materialize/LQIP reads as a
-    // subtle lift. Live ImageItems paint on top when present.
-    // Draw every slot in the exposed region — no fixed draw-count cap.
+    // Underlay from ImageCache when SizeReply seeded it; else darker offline
+    // chrome. Live ImageItems paint on top when present.
     painter->save();
     for (const VirtualSlot &slot : m_virtualSlots) {
         if (!slot.bounds.intersects(exposed)) {
             continue;
         }
-        ItemFrameGeometry::paintVirtualOfflinePlaceholder(painter, slot.bounds);
+        QImage under;
+        if (!slot.path.isEmpty()) {
+            under = ImageCache::get(slot.path);
+        }
+        if (!under.isNull()) {
+            // Draw scaled underlay into the plan cell (spec: virtualized LQIP).
+            const QRectF &r = slot.bounds;
+            const QSize target(qMax(1, int(r.width())), qMax(1, int(r.height())));
+            const QImage scaled = under.scaled(target, Qt::KeepAspectRatio,
+                                              Qt::SmoothTransformation);
+            const qreal x = r.x() + (r.width() - scaled.width()) * 0.5;
+            const qreal y = r.y() + (r.height() - scaled.height()) * 0.5;
+            painter->fillRect(r, QColor(28, 28, 30));
+            painter->drawImage(QPointF(x, y), scaled);
+        } else {
+            ItemFrameGeometry::paintVirtualOfflinePlaceholder(painter, slot.bounds);
+        }
     }
     painter->restore();
 }

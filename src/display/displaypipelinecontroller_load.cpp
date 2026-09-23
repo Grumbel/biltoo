@@ -682,30 +682,12 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 
     bool didWork = false;
     if (needLqip) {
-        // ImageCache only (seeded by request_size SizeReply EMB/LQIP).
-        QImage host = ImageCache::get(path);
-        if (!host.isNull()) {
-            if (ImageCache::longEdge(host)
-                > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-                const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;
-                host = host.scaled(cap, cap, Qt::KeepAspectRatio,
-                                   Qt::SmoothTransformation);
+        for (ImageItem *ii : m_view->liveItems()) {
+            if (!ii || ii->path() != path) {
+                continue;
             }
-            if (!host.isNull()
-                && ImageCache::longEdge(host)
-                    <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-                for (ImageItem *ii : m_view->liveItems()) {
-                    if (!ii || ii->path() != path || ii->hasDisplayPixels()) {
-                        continue;
-                    }
-                    installDisplayPixels(ii, host,
-                                         SessionAppearance::PixelKind::SoftPreview,
-                                         ii->sessionId());
-                    if (!ii->hasDisplayPixels()) {
-                        m_view->setItemPreviewImage(ii, host);
-                    }
-                    didWork = true;
-                }
+            if (tryInstallGalleryUnderlay(ii)) {
+                didWork = true;
             }
         }
     }

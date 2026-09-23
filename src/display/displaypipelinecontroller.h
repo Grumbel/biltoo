@@ -71,6 +71,12 @@ public:
     void installDisplayPixels(ImageItem *item, const QImage &pixels,
                               SessionAppearance::PixelKind kind,
                               SessionImageId sid);
+    /**
+     * Gallery underlay from ImageCache only (SizeReply EMB/LQIP).
+     * Scales to EMB band, installDisplayPixels + setItemPreviewImage fallback.
+     * @return true if the item shows display pixels afterward.
+     */
+    bool tryInstallGalleryUnderlay(ImageItem *item);
     void installImageModeReplaceItem(const QString &path, const QImage &image);
     void completeLoadReplace(const QString &path, const QImage &image, quint64 generation);
     /** @p role is ImageView::LoadRole as int (avoid circular header). */

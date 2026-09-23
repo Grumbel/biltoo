@@ -1383,6 +1383,44 @@ void DisplayPipelineController::completeLoadReplace(const QString &path, const Q
     seedEmptyWorkspaceFromReplace(path, image);
 }
 
+bool DisplayPipelineController::tryInstallGalleryUnderlay(ImageItem *item)
+{
+    ASSERT_GUI_THREAD();
+    if (!item || !m_view->isGalleryMode()) {
+        return false;
+    }
+    if (item->hasDisplayPixels()) {
+        return true;
+    }
+    const QString path = item->path();
+    if (path.isEmpty()) {
+        return false;
+    }
+    const ImageSizeBook &book = m_view->hostSizeBook();
+    if (book.isFailed(path) || !book.hasDefinitive(path)) {
+        return false;
+    }
+    QImage under = ImageCache::get(path);
+    if (under.isNull()) {
+        return false;
+    }
+    if (ImageCache::longEdge(under) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+        const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;
+        under = under.scaled(cap, cap, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    if (under.isNull()
+        || ImageCache::longEdge(under) > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+        return false;
+    }
+    const SessionImageId sid = item->sessionId();
+    const int before = item->displayPixelLongEdge();
+    installDisplayPixels(item, under, SessionAppearance::PixelKind::SoftPreview, sid);
+    if (item->displayPixelLongEdge() <= before) {
+        m_view->setItemPreviewImage(item, under);
+    }
+    return item->hasDisplayPixels();
+}
+
 ImageItem *DisplayPipelineController::createPlaceholderItem(const QString &path, const QSize &intrinsicSize)
 {
     // Defer-populate blocks bulk setWorkspacePaths create while the size gate
