@@ -1812,15 +1812,15 @@ void GalleryController::paintVirtualPlaceholders(QPainter *painter, const QRectF
     if (!painter || !m_view || !m_view->isGalleryMode() || m_virtualSlots.isEmpty()) {
         return;
     }
-    // Same no-LQIP chrome as live ImageItem blanks (ItemFrameGeometry).
-    // Live items paint on top when present; empty cells match that look.
+    // Darker offline chrome than live blanks so materialize/LQIP reads as a
+    // subtle lift. Live ImageItems paint on top when present.
     // Draw every slot in the exposed region — no fixed draw-count cap.
     painter->save();
     for (const VirtualSlot &slot : m_virtualSlots) {
         if (!slot.bounds.intersects(exposed)) {
             continue;
         }
-        ItemFrameGeometry::paintNeutralPlaceholder(painter, slot.bounds);
+        ItemFrameGeometry::paintVirtualOfflinePlaceholder(painter, slot.bounds);
     }
     painter->restore();
 }

@@ -168,6 +168,33 @@ inline void paintNeutralPlaceholder(QPainter *painter, const QRectF &contentRect
 }
 
 /**
+ * Offline virtual-plan cell (not yet a live ImageItem). Slightly darker than
+ * live blank / LQIP cells so materialize + underlay is visible as a lift.
+ */
+inline void paintVirtualOfflinePlaceholder(QPainter *painter, const QRectF &contentRect)
+{
+    if (!painter || contentRect.isEmpty()) {
+        return;
+    }
+    painter->fillRect(contentRect, QColor(28, 28, 30));
+    const qreal inset = placeholderInset(contentRect.width(), contentRect.height());
+    const QRectF inner = contentRect.adjusted(inset, inset, -inset, -inset);
+    if (inner.width() < 1.0 || inner.height() < 1.0) {
+        return;
+    }
+    painter->setPen(QPen(QColor(48, 48, 52), 0));
+    painter->setBrush(QColor(36, 36, 40));
+    painter->drawRoundedRect(inner, inset * 0.8, inset * 0.8);
+    painter->setPen(QPen(QColor(90, 92, 100), 0));
+    QFont f = painter->font();
+    const qreal edge = qMin(inner.width(), inner.height());
+    f.setPointSizeF(placeholderEllipsisPointSize(edge));
+    f.setBold(true);
+    painter->setFont(f);
+    painter->drawText(inner, Qt::AlignCenter, QStringLiteral("⋯"));
+}
+
+/**
  * Local AABB pad for selected interactive chrome (scene-space only).
  * Clamped so near-zero item scale cannot explode the rect.
  */
