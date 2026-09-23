@@ -158,8 +158,10 @@ void TileLoadCoordinator::tick(int globalBudget)
     wall.start();
     // Gallery overview: many small cells need coarse tiles quickly. Image-mode
     // focus needs a longer wall so progressive climb is not starved at 4 keys.
+    // Hard wall — one tickItemTileLod must not run multi-second (warm PDF
+    // pyramid issue used to do SQLite get_tile + JPEG decode on this thread).
     const bool gallery = m_view->isGalleryMode();
-    const qint64 kWallMs = gallery ? 12 : 16;
+    const qint64 kWallMs = gallery ? 8 : 12;
 
     QRectF sceneVis;
     if (m_view->scene()) {
@@ -175,8 +177,9 @@ void TileLoadCoordinator::tick(int globalBudget)
     sortByPolicy(cands);
 
     // Prefer draining cells with zero tiles first (stuck LQIP / blank).
-    // Gallery: many overview cells; Image: few items but each needs many keys.
-    const int kMaxTargets = gallery ? 16 : 2;
+    // Cap targets tightly — each item runs prepare+issue; 16× was drowning the
+    // GUI when durable tiles were ready (hit path used to SQLite on this thread).
+    const int kMaxTargets = gallery ? 6 : 1;
     if (cands.size() > kMaxTargets) {
         cands.resize(kMaxTargets);
     }
@@ -273,7 +276,7 @@ void TileLoadCoordinator::tick(int globalBudget)
     }
 
     const int n = issueTargets.size();
-    int remaining = ViewTransform::nonNeg(gallery ? qMax(globalBudget, 48) : globalBudget);
+    int remaining = ViewTransform::nonNeg(gallery ? qMax(globalBudget, 24) : globalBudget);
     for (int i = 0; i < n; ++i) {
         if (wall.elapsed() >= kWallMs) {
             break;
@@ -285,12 +288,13 @@ void TileLoadCoordinator::tick(int globalBudget)
         // Gallery: small overview cells. Image: spend most of the budget on the
         // focus item so progressive scale climb is not starved at 4 keys/tick.
         const int left = n - i;
-        const int perCellCap = gallery ? 8 : 24;
+        const int perCellCap = gallery ? 4 : 12;
         const int share = remaining > 0
             ? qMin(perCellCap, ViewTransform::atLeast1(remaining / left))
             : 0;
         m_view->hostDisplayPipeline().tickItemTileLod(item, share);
         remaining -= share;
+        // If one item already ate the wall, stop — do not start the next.
         if (wall.elapsed() >= kWallMs) {
             break;
         }

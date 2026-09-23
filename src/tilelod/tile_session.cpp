@@ -348,7 +348,19 @@ int TileSession::pump()
   std::vector<PendingCompletion> batch;
   if (m_inbox) {
     std::lock_guard<std::mutex> lock(m_inbox->mu);
-    batch.swap(m_inbox->pending);
+    // Cap per tick so a completion storm (warm durable pyramid) cannot hold
+    // the GUI for seconds inside TileLoadCoordinator::tick.
+    constexpr std::size_t kMaxPumpPerTick = 16;
+    if (m_inbox->pending.size() <= kMaxPumpPerTick) {
+      batch.swap(m_inbox->pending);
+    } else {
+      batch.reserve(kMaxPumpPerTick);
+      for (std::size_t i = 0; i < kMaxPumpPerTick; ++i) {
+        batch.push_back(std::move(m_inbox->pending[i]));
+      }
+      m_inbox->pending.erase(m_inbox->pending.begin(),
+                             m_inbox->pending.begin() + static_cast<std::ptrdiff_t>(kMaxPumpPerTick));
+    }
   }
 
   int applied = 0;

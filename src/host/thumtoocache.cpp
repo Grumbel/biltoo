@@ -2117,17 +2117,38 @@ void requestTiles(const QString &path, const QVector<TileCoord> &coords,
     for (const TileCoord &t : coords) {
         tc.push_back({t.scale, t.x, t.y});
     }
-    // Decode once to rgba8 TileBitmap — no QImage intermediate for the RAM cache.
-    c->request_tiles(uri, std::move(tc),
-                     [on_cell](std::size_t index, std::optional<thumtoo::TileBlob> tile) {
-                         if (!tile) {
-                             on_cell(index, std::nullopt);
-                             return;
-                         }
-                         on_cell(index, tilelod::decode_tile_payload(
-                                            tile->width, tile->height, tile->codec,
-                                            tile->bytes));
-                     });
+    // Completions arrive on the Qt executor (GUI). JPEG→rgba8 must not run
+    // there — a warm prepare --tiles album floods the GUI with decode work and
+    // TileLoadCoordinator::tick reports multi-second budgets. Decode on the
+    // pool, then deliver rgba8 on the GUI.
+    c->request_tiles(
+        uri, std::move(tc),
+        [on_cell](std::size_t index, std::optional<thumtoo::TileBlob> tile) {
+            if (!tile) {
+                on_cell(index, std::nullopt);
+                return;
+            }
+            // rgb888/rgba8: cheap expand — keep on this thread (already GUI).
+            const std::string &codec = tile->codec;
+            if (codec == "rgb888" || codec == "rgba8" || codec.empty()) {
+                on_cell(index, tilelod::decode_tile_payload(
+                                   tile->width, tile->height, tile->codec,
+                                   tile->bytes));
+                return;
+            }
+            auto blob = std::make_shared<thumtoo::TileBlob>(std::move(*tile));
+            QThreadPool::globalInstance()->start(
+                [on_cell, index, blob]() {
+                    auto bm = tilelod::decode_tile_payload(
+                        blob->width, blob->height, blob->codec, blob->bytes);
+                    QMetaObject::invokeMethod(
+                        QCoreApplication::instance(),
+                        [on_cell, index, bm = std::move(bm)]() mutable {
+                            on_cell(index, std::move(bm));
+                        },
+                        Qt::QueuedConnection);
+                });
+        });
 }
 
 bool isAvailable()
