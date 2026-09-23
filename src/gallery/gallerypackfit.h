@@ -7,12 +7,18 @@
 #include "gallery/gallerylayout.h"
 #include "imageview_types.h"
 
+#include <QAbstractScrollArea>
 #include <QRectF>
+#include <QWidget>
 #include <QtGlobal>
 
 /**
- * Pure post-pack fit: correct sub-pixel overshoot so sceneRect does not
- * force dual scrollbars on the fitted axis (see GalleryLayout::pack).
+ * Pack measurement and post-pack fit so sceneRect does not force dual
+ * scrollbars on the fitted axis (see GalleryLayout::pack).
+ *
+ * Gallery packs to a viewport that always includes both scrollbar gutters
+ * (ScrollBarAlwaysOn during measure). That prevents the classic loop:
+ * content fits full viewport → one bar appears → client shrinks → other bar.
  */
 namespace GalleryPackFit {
 
@@ -51,11 +57,79 @@ inline GalleryLayout::Mode modeFromLayoutMode(LayoutMode mode)
 /** Viewport CSS overscan for gallery soft-decode window. */
 constexpr int kDecodeOverscanPx = 400;
 
-/** Usable pack axis length after margin (min @p floor). */
+/**
+ * Extra pixels subtracted from each pack axis after margin.
+ * Integer scrollbars + float layout otherwise leave a 1px overshoot that
+ * re-introduces dual bars after AsNeeded policy restore.
+ */
+constexpr qreal kPackAxisSlackPx = 1.0;
+
+/** Default overshoot compare epsilon (device pixels). */
+constexpr qreal kOvershootEpsilonPx = 0.5;
+
+/** Usable pack axis length after margin and slack (min @p floor). */
 inline qreal packAvailAxis(int viewportAxis, qreal margin, qreal floor = 32.0)
 {
-    return qMax(floor, qreal(viewportAxis) - 2.0 * margin);
+    return qMax(floor, qreal(viewportAxis) - 2.0 * margin - kPackAxisSlackPx);
 }
+
+/**
+ * Force both scrollbars on, read viewport size for pack measurement.
+ * Restores the previous policy on restore() / destruction.
+ * Nested guards (applyLayout + rebuildVirtualPlan) are safe: outer restore
+ * wins only after inner has restored its own saved policy.
+ */
+class PackViewportGuard
+{
+public:
+    explicit PackViewportGuard(QAbstractScrollArea *view)
+        : m_view(view)
+    {
+        if (!m_view) {
+            return;
+        }
+        m_savedH = m_view->horizontalScrollBarPolicy();
+        m_savedV = m_view->verticalScrollBarPolicy();
+        if (m_savedH != Qt::ScrollBarAlwaysOn
+            || m_savedV != Qt::ScrollBarAlwaysOn) {
+            m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+            m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        }
+        if (QWidget *vp = m_view->viewport()) {
+            m_width = vp->width();
+            m_height = vp->height();
+        }
+    }
+
+    PackViewportGuard(const PackViewportGuard &) = delete;
+    PackViewportGuard &operator=(const PackViewportGuard &) = delete;
+
+    ~PackViewportGuard() { restore(); }
+
+    void restore()
+    {
+        if (!m_view) {
+            return;
+        }
+        if (m_view->horizontalScrollBarPolicy() != m_savedH) {
+            m_view->setHorizontalScrollBarPolicy(m_savedH);
+        }
+        if (m_view->verticalScrollBarPolicy() != m_savedV) {
+            m_view->setVerticalScrollBarPolicy(m_savedV);
+        }
+        m_view = nullptr;
+    }
+
+    [[nodiscard]] int width() const { return m_width; }
+    [[nodiscard]] int height() const { return m_height; }
+
+private:
+    QAbstractScrollArea *m_view = nullptr;
+    Qt::ScrollBarPolicy m_savedH = Qt::ScrollBarAsNeeded;
+    Qt::ScrollBarPolicy m_savedV = Qt::ScrollBarAsNeeded;
+    int m_width = 0;
+    int m_height = 0;
+};
 
 /**
  * Fitted-axis targets for @p mode (-1 = unconstrained).
@@ -94,6 +168,40 @@ inline void fittedTargets(GalleryLayout::Mode mode, qreal availW, qreal availH,
 }
 
 /**
+ * Outer scene size that matches pack coordinates: content [margin..margin+avail]
+ * plus the same margin padding used for sceneRect (ViewTransform::padded).
+ */
+inline qreal packOuterAxis(qreal avail, qreal margin)
+{
+    return avail + 2.0 * margin;
+}
+
+/**
+ * Clamp sceneRect on the fitted axis so AsNeeded restore cannot reintroduce
+ * a dual-scrollbar loop from float/integer residue.
+ */
+inline QRectF clampSceneRectToPack(QRectF bounds, GalleryLayout::Mode mode,
+                                   qreal availW, qreal availH, qreal margin)
+{
+    if (!bounds.isValid()) {
+        return bounds;
+    }
+    const qreal maxW = packOuterAxis(availW, margin);
+    const qreal maxH = packOuterAxis(availH, margin);
+    qreal targetW = -1.0;
+    qreal targetH = -1.0;
+    fittedTargets(mode, maxW, maxH, &targetW, &targetH);
+    // fittedTargets with outer sizes: width-fitted gets targetW=maxW, etc.
+    if (targetW > 0.0 && bounds.width() > targetW) {
+        bounds.setWidth(targetW);
+    }
+    if (targetH > 0.0 && bounds.height() > targetH) {
+        bounds.setHeight(targetH);
+    }
+    return bounds;
+}
+
+/**
  * Display size from pack layout size and placement scales (uniform when
  * @p scaleY ≤ 0). Pure — no ImageItem.
  */
@@ -124,7 +232,7 @@ inline QRectF centeredTileBounds(const QPointF &center, const QSizeF &sz)
  * Returns 1.0 when there is no overshoot beyond @p epsilon.
  */
 inline qreal overshootUniformScale(const QRectF &content, qreal targetW, qreal targetH,
-                                   qreal epsilon = 1e-4)
+                                   qreal epsilon = kOvershootEpsilonPx)
 {
     if (content.isEmpty()) {
         return 1.0;

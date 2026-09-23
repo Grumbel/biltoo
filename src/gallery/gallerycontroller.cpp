@@ -1425,22 +1425,15 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         m_view->centerOn(0, 0);
     }
 
-    // Reserve scrollbar space for the pack measurement. AsNeeded would let the
-    // first bar appear, shrink the viewport, and leave the fitted axis slightly
-    // oversized (dual bars). AlwaysOn only for this critical section; policy is
-    // restored after sceneRect is set so Zoom Fit/Fill can hide unused bars.
-    // m_view->hostLayoutApply() is already active — resizeEvent will not re-enter pack.
-    const auto savedHBar = m_view->horizontalScrollBarPolicy();
-    const auto savedVBar = m_view->verticalScrollBarPolicy();
-    if (savedHBar != Qt::ScrollBarAlwaysOn || savedVBar != Qt::ScrollBarAlwaysOn) {
-        m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-        m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    }
-
+    // Measure with both scrollbar gutters reserved (AlwaysOn). AsNeeded would
+    // pack to the full client, then one bar shrinks the viewport and the other
+    // axis overshoots — dual scrollbars. hostLayoutApply is active so policy
+    // changes do not re-enter pack via resizeEvent.
+    GalleryPackFit::PackViewportGuard packVp(m_view);
     const qreal margin = GalleryLayout::Params::kDefaultMargin;
     const qreal gap = GalleryLayout::Params::kDefaultGap;
-    const qreal availW = GalleryPackFit::packAvailAxis(m_view->viewport()->width(), margin);
-    const qreal availH = GalleryPackFit::packAvailAxis(m_view->viewport()->height(), margin);
+    const qreal availW = GalleryPackFit::packAvailAxis(packVp.width(), margin);
+    const qreal availH = GalleryPackFit::packAvailAxis(packVp.height(), margin);
 
     GalleryLayout::Params params;
     params.margin = margin;
@@ -1464,21 +1457,18 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         }
     }
 
-    const QRectF bounds = m_virtualSceneBounds.isValid()
+    QRectF bounds = m_virtualSceneBounds.isValid()
         ? m_virtualSceneBounds
         : ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), margin);
+    const GalleryLayout::Mode packMode =
+        GalleryPackFit::modeFromLayoutMode(m_view->hostLayout().currentMode());
+    bounds = GalleryPackFit::clampSceneRectToPack(bounds, packMode, availW, availH, margin);
     if (m_view->canvasScene()->sceneRect() != bounds) {
         m_view->canvasScene()->setSceneRect(bounds);
     }
-    // Restore caller policy (AsNeeded/Off). With overshoot correction the packed
-    // fitted axis should not need a bar; AsNeeded can hide it. Still under
-    // m_view->hostLayoutApply() so a policy-driven resize does not repack.
-    if (m_view->horizontalScrollBarPolicy() != savedHBar) {
-        m_view->setHorizontalScrollBarPolicy(savedHBar);
-    }
-    if (m_view->verticalScrollBarPolicy() != savedVBar) {
-        m_view->setVerticalScrollBarPolicy(savedVBar);
-    }
+    // Restore AsNeeded/Off only after sceneRect is clamped to the measured pack
+    // size. Still under hostLayoutApply so policy-driven resize does not repack.
+    packVp.restore();
     m_view->hostFraming().armFit();
     // Progressive packs during the size gate fire every ~16–40ms. Emitting
     // statusChanged each time runs MainWindow::updateStatus (TOC/metadata/
@@ -1593,12 +1583,16 @@ void GalleryController::rebuildVirtualPlan()
         return;
     }
 
+        // Same gutter reservation as applyLayout — virtual plan must not pack to a
+    // wider/taller client than live items (AsNeeded viewport without bars).
+    GalleryPackFit::PackViewportGuard packVp(m_view);
     const qreal margin = GalleryLayout::Params::kDefaultMargin;
     const qreal gap = GalleryLayout::Params::kDefaultGap;
-    const qreal availW = GalleryPackFit::packAvailAxis(
-        m_view->viewport() ? m_view->viewport()->width() : 800, margin);
-    const qreal availH = GalleryPackFit::packAvailAxis(
-        m_view->viewport() ? m_view->viewport()->height() : 600, margin);
+    const int vpW = packVp.width() > 0 ? packVp.width() : 800;
+    const int vpH = packVp.height() > 0 ? packVp.height() : 600;
+    const qreal availW = GalleryPackFit::packAvailAxis(vpW, margin);
+    const qreal availH = GalleryPackFit::packAvailAxis(vpH, margin);
+
 
     GalleryLayout::Params params;
     params.margin = margin;
@@ -1630,8 +1624,11 @@ void GalleryController::rebuildVirtualPlan()
         bounds = bounds.united(slot.bounds);
     }
     m_virtualSceneBounds = ViewTransform::padded(bounds, margin);
+    m_virtualSceneBounds = GalleryPackFit::clampSceneRectToPack(
+        m_virtualSceneBounds, params.mode, availW, availH, margin);
     ++m_virtualPlanGeneration;
 }
+
 
 void GalleryController::syncVirtualWindow()
 {
