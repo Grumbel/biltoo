@@ -1555,7 +1555,6 @@ void GalleryController::rebuildVirtualPlan()
     }
 
     const PackOrderView pack = m_view->currentPackOrder();
-    const bool sizeGate = m_view->hostGallerySizeResolve().active();
     const ImageSizeBook &book = m_view->hostSizeBook();
 
     QVector<QSizeF> sizes;
