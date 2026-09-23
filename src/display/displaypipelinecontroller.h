@@ -5,10 +5,10 @@
 #define DISPLAYPIPELINECONTROLLER_H
 
 #include "session/sessionloadgate.h"
-#include "displaysurface.h"
+#include "display/displaysurface.h"
 #include "tilelod/tile_lod_item_bag.hpp"
 #include "session/sessionappearance.h"
-#include "pathrasterservice.h"
+#include "display/pathrasterservice.h"
 #include "thumtoocache.h"
 
 #include <QTimer>

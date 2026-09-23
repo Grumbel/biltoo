@@ -7,7 +7,7 @@
 #include "session/packorderview.h"
 #include "imageitem.h"
 #include "itemcomponents.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "session/sessionappearance.h"
 #include "session/sessionbindbook.h"
 #include "viewtransform.h"

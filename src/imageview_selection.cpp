@@ -11,7 +11,7 @@
 #include <QSet>
 #include <QUndoStack>
 #include <QGraphicsItem>
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "contentxform.h"
 
 void ImageView::selectBySessionIndices(const QList<int> &indices)

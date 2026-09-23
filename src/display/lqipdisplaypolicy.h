@@ -8,7 +8,7 @@
 #include <QString>
 #include <utility>
 
-#include "displayquality.h"
+#include "display/displayquality.h"
 
 /**
  * Pure LQIP underlay sample selection for worker threads.

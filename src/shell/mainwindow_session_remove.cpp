@@ -17,7 +17,7 @@
 #include "epublayoutdialog.h"
 #include "workspacebackgrounddialog.h"
 #include "imageitem.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include <QFileInfo>
 #include <QUrl>
 #include <QPointer>

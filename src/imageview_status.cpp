@@ -3,10 +3,10 @@
 
 #include "imageview.h"
 #include "imageitem.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "thumtoocache.h"
-#include "displayquality.h"
-#include "pathrasterservice.h"
+#include "display/displayquality.h"
+#include "display/pathrasterservice.h"
 #include "archivepath.h"
 #include "pagepath.h"
 #include "hudmodel.h"

@@ -10,7 +10,7 @@
 #include "imageview_types.h"
 #include <QListWidget>
 #include <functional>
-#include "displaysurface.h"
+#include "display/displaysurface.h"
 #include <QVector>
 #include <QMimeData>
 #include <QPoint>

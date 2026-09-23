@@ -19,8 +19,8 @@
 #include "biltoo_logging.h"
 #include "biltoo_thread.h"
 #include "gallery/gallerypackfit.h"
-#include "imagecache.h"
-#include "displayquality.h"
+#include "display/imagecache.h"
+#include "display/displayquality.h"
 #include "workspacenavgeometry.h"
 #include "gallery/gallerydecodesm.h"
 #include <functional>

@@ -16,7 +16,7 @@
 #include "session/sessionappearance.h"
 #include <QUndoStack>
 #include "crop/cropgeometry.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "contentxform.h"
 #include <QGuiApplication>
 #include <QPainter>

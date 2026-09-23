@@ -10,7 +10,7 @@
 #include "viewtransform.h"
 #include "session/sessionappearance.h"
 #include "ttfp_trace.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "imageitem.h"
 #include "imageloader.h"
 

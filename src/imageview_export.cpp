@@ -12,7 +12,7 @@
 
 #include <QPainter>
 #include <QImage>
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "imageloader.h"
 #include "biltoo_thread.h"
 #include <QMutex>

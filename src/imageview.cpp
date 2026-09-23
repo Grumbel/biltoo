@@ -3,7 +3,7 @@
 
 #include "imageview.h"
 #include "gallery/gallerydecodesm.h"
-#include "displayquality.h"
+#include "display/displayquality.h"
 
 #include <QCoreApplication>
 #include <QEventLoop>
@@ -13,7 +13,7 @@
 #include "gallery/gallerylayout.h"
 #include "imageitem.h"
 #include "imageloader.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "thumtoocache.h"
 #include "tile_load_coordinator.h"
 #include "tilelod/tile_lod_controller.hpp"

@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "lqipdisplaypolicy.h"
+#include "display/lqipdisplaypolicy.h"
 
 #include "biltoo_thread.h"
-#include "displayquality.h"
-#include "imagecache.h"
+#include "display/displayquality.h"
+#include "display/imagecache.h"
 #include "thumtoocache.h"
 
 namespace LqipDisplayPolicy {

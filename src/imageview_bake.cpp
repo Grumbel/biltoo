@@ -9,9 +9,9 @@
 #include "session/sessionappearance.h"
 #include "itemcomponents.h"
 #include "thumtoocache.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "imageloader.h"
-#include "displayquality.h"
+#include "display/displayquality.h"
 
 #include <QImage>
 

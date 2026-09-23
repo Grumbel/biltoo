@@ -4,7 +4,7 @@
 #ifndef PATHRASTERSERVICE_H
 #define PATHRASTERSERVICE_H
 
-#include "rasterclimbsm.h"
+#include "display/rasterclimbsm.h"
 
 #include <QHash>
 #include <QImage>

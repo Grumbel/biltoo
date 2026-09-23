@@ -4,7 +4,7 @@
 #include "imageitem.h"
 #include "itemframegeometry.h"
 #include "itemhandlepolicy.h"
-#include "displayquality.h"
+#include "display/displayquality.h"
 #include "biltoo_thread.h"
 
 #include <cstdlib>
@@ -12,7 +12,7 @@
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
 #include "thumtoocache.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "contentxform.h"
 #include "coloradjust.h"
 

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "pathrasterservice.h"
+#include "display/pathrasterservice.h"
 
-#include "imagecache.h"
-#include "displayedgepolicy.h"
+#include "display/imagecache.h"
+#include "display/displayedgepolicy.h"
 #include "thumtoocache.h"
 #include "biltoo_thread.h"
 

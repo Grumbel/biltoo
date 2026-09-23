@@ -3,7 +3,7 @@
 
 #include "imageview.h"
 #include "toolpolicy.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include <QDebug>
 #include "imageitem.h"
 #include "imageloader.h"

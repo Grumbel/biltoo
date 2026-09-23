@@ -130,12 +130,12 @@ set(BILTOO_LIB_SOURCES
   src/attentioncontroller.h
   src/hudmodel.cpp
   src/hudmodel.h
-  src/displaypipelinecontroller.cpp
-  src/displaypipelinecontroller_load.cpp
-  src/displaypipelinecontroller_item.cpp
-  src/displaypipeline_jobs.cpp
-  src/displaypipeline_jobs.h
-  src/displaypipelinecontroller.h
+  src/display/displaypipelinecontroller.cpp
+  src/display/displaypipelinecontroller_load.cpp
+  src/display/displaypipelinecontroller_item.cpp
+  src/display/displaypipeline_jobs.cpp
+  src/display/displaypipeline_jobs.h
+  src/display/displaypipelinecontroller.h
   src/gallery/gallerycontroller.h
   src/gallery/gallerysizeresolve.cpp
   src/gallery/gallerysizeresolve.h
@@ -232,13 +232,13 @@ set(BILTOO_LIB_SOURCES
   src/session/sessionbindbook.h
   src/session/sessionpathorder.h
   src/session/packorderoverlay.h
-  src/displayedgepolicy.h
-  src/displayedgepolicy.cpp
+  src/display/displayedgepolicy.h
+  src/display/displayedgepolicy.cpp
   src/edgenavpolicy.h
   src/edgenavpolicy.cpp
   src/motionscrollchrome.h
-  src/lqipdisplaypolicy.h
-  src/lqipdisplaypolicy.cpp
+  src/display/lqipdisplaypolicy.h
+  src/display/lqipdisplaypolicy.cpp
   src/tile_load_coordinator.cpp
   src/imageview_framing_image.cpp
   src/imageview_status.cpp
@@ -272,20 +272,20 @@ set(BILTOO_LIB_SOURCES
   src/placementlinear.cpp
   src/placementlinear.h
   src/imageitem.cpp
-  src/displayquality.cpp
-  src/displaysurface.cpp
-  src/displaysurface.h
+  src/display/displayquality.cpp
+  src/display/displaysurface.cpp
+  src/display/displaysurface.h
   src/imageitem_interaction.cpp
   src/imageitem_tilelod.cpp
   src/imageitem.h
   src/imageloader.cpp
   src/imageloader.h
-  src/imagecache.cpp
-  src/imagecache.h
-  src/pathrasterservice.cpp
-  src/pathrasterservice.h
-  src/rasterclimbsm.cpp
-  src/rasterclimbsm.h
+  src/display/imagecache.cpp
+  src/display/imagecache.h
+  src/display/pathrasterservice.cpp
+  src/display/pathrasterservice.h
+  src/display/rasterclimbsm.cpp
+  src/display/rasterclimbsm.h
   src/gallery/gallerydecodesm.cpp
   src/gallery/gallerydecodesm.h
   src/thumtoocache.cpp
@@ -617,7 +617,7 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-rasterclimbsm-test
     tests/rasterclimbsm_test.cpp
-    src/rasterclimbsm.cpp
+    src/display/rasterclimbsm.cpp
   )
   target_include_directories(biltoo-rasterclimbsm-test PRIVATE src)
   target_link_libraries(biltoo-rasterclimbsm-test PRIVATE Qt6::Core Qt6::Test)
@@ -795,7 +795,7 @@ if(Qt6Test_FOUND)
 
   add_executable(biltoo-displaysurface-test
     tests/displaysurface_test.cpp
-    src/displaysurface.cpp
+    src/display/displaysurface.cpp
     src/contentxform.cpp
   )
   target_include_directories(biltoo-displaysurface-test PRIVATE src)

@@ -2,22 +2,33 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2352-src-shell-subdir.**
+**Tip: biltoo-2353-src-display-subdir.**
 
-Source layout phases 1–4:
+**Source layout phases 1–5 done** (verified):
 
-- `src/session/`, `src/crop/`, `src/gallery/`, `src/shell/`
+| Dir | Contents |
+|-----|----------|
+| `src/session/` | document, appearance, expand/export/open/sort/reorder, pack order |
+| `src/crop/` | controller, session, geometry, command, handles |
+| `src/gallery/` | controller, layout, pack, size-resolve, decode SM |
+| `src/shell/` | mainwindow*, icons, panels, prefs |
+| `src/display/` | imagecache, pipeline, surface, quality, path raster |
+| `src/tilelod/` | unchanged |
+| `src/` | imageview*, imageitem*, loader, workspace, attention, … |
 
-`icons.qrc` paths adjusted to `../../data/…`. Next optional: **`src/display/`**.
+Includes: `session/…`, `crop/…`, `gallery/…`, `shell/…`, `display/…`.
+Static verify: 0 unprefixed includes of moved headers; all domain `.cpp` in CMake.
 
-See [docs/SRC_LAYOUT.md](docs/SRC_LAYOUT.md). Requires **thumtoo-323**.
+Next: **RC smoke** (open, Gallery, crop, export, shell icons); then VERSION 0.2.0.
+
+Requires **thumtoo-323**.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2352.1-src-shell-subdir-2f201f6.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2353.1-src-display-subdir-2f201f6.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
-- [x] session / crop / gallery / shell
-- [ ] display (optional pre-tag)
-- [ ] RC smoke; VERSION 0.2.0 + tag
+- [x] src subdirs phases 1–5
+- [ ] RC smoke (esp. icons.qrc after shell move; crop; export)
+- [ ] VERSION 0.2.0 + tag

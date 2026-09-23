@@ -4,7 +4,7 @@
 #ifndef SLIDESHOWTYPES_H
 #define SLIDESHOWTYPES_H
 
-#include "displaysurface.h"
+#include "display/displaysurface.h"
 
 #include <QElapsedTimer>
 #include <QImage>

@@ -7,7 +7,7 @@
 #include <QSet>
 #include <QFileInfo>
 #include "thumtoocache.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "viewtransform.h"
 #include "imageview.h"
 #include "session/sessionbindbook.h"

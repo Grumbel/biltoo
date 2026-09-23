@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "displayedgepolicy.h"
+#include "display/displayedgepolicy.h"
 
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "thumtoocache.h"
 #include "viewtransform.h"
 

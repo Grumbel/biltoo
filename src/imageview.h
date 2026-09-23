@@ -50,12 +50,12 @@
 #include "slideshowcontroller.h"
 #include "crop/cropcontroller.h"
 #include "attentioncontroller.h"
-#include "displaypipelinecontroller.h"
+#include "display/displaypipelinecontroller.h"
 #include "workspacecontroller.h"
 #include "imagecontroller.h"
-#include "pathrasterservice.h"
+#include "display/pathrasterservice.h"
 #include "tile_load_coordinator.h"
-#include "displaysurface.h"
+#include "display/displaysurface.h"
 #include "gallery/gallerylayout.h"
 #include <QColor>
 #include <QPixmap>

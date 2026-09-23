@@ -103,7 +103,7 @@ that band, not pixel-identical.
 
 ## 4. `DisplaySurface::decide` (display install SM)
 
-Code: `src/displaysurface.cpp`. Spec: [DISPLAY_SURFACE.md](DISPLAY_SURFACE.md) §4.1.
+Code: `src/display/displaysurface.cpp`. Spec: [DISPLAY_SURFACE.md](DISPLAY_SURFACE.md) §4.1.
 
 ### 4.1 Frozen (crop draft)
 

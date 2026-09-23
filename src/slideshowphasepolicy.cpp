@@ -3,7 +3,7 @@
 
 #include "slideshowphasepolicy.h"
 
-#include "imagecache.h"
+#include "display/imagecache.h"
 
 namespace SlideshowPhasePolicy {
 

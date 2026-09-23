@@ -7,7 +7,7 @@
 #include "slideshowtypes.h"
 #include "imageview_types.h"
 #include "motionscrollchrome.h"
-#include "displaysurface.h"
+#include "display/displaysurface.h"
 
 #include <QColor>
 #include <QElapsedTimer>

@@ -1,26 +1,26 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "displaypipelinecontroller.h"
+#include "display/displaypipelinecontroller.h"
 #include "itemcomponents.h"
-#include "displaypipeline_jobs.h"
+#include "display/displaypipeline_jobs.h"
 
 #include "tile_load_coordinator.h"
 
 #include "imageview.h"
 #include "session/packorderview.h"
 #include "imageitem.h"
-#include "displayedgepolicy.h"
-#include "pathrasterservice.h"
+#include "display/displayedgepolicy.h"
+#include "display/pathrasterservice.h"
 #include "thumtoocache.h"
 #include "pagepath.h"
 #include "gallery/gallerydecodesm.h"
-#include "displayquality.h"
-#include "lqipdisplaypolicy.h"
+#include "display/displayquality.h"
+#include "display/lqipdisplaypolicy.h"
 #include "biltoo_thread.h"
 
 #include "imageloader.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "contentxform.h"
 #include "session/sessionappearance.h"
 #include "coloradjust.h"

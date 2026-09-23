@@ -15,7 +15,7 @@
 #include "viewtransform.h"
 #include "itemcomponents.h"
 #include "crop/cropsession.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "contentxform.h"
 #include "session/sessionappearance.h"
 #include "thumtoocache.h"
@@ -24,7 +24,7 @@
 #include "session/sessionappearance.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
-#include "displayquality.h"
+#include "display/displayquality.h"
 
 const WorkspaceItemState *ImageView::resolveStoredAppearance(ImageItem *item,
                                                              WorkspaceItemState *fallback,

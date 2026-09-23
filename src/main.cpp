@@ -6,7 +6,7 @@
 #include "biltoo_logging.h"
 #include "shell/metadatapanel.h"
 #include "imageloader.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "thumtoocache.h"
 #include "tilelod/tile_lod_registry.hpp"
 #include "version.h"

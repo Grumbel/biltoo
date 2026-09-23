@@ -13,7 +13,7 @@
 #include "attentiongeometry.h"
 #include "viewtransform.h"
 #include "thumtoocache.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "archivepath.h"
 #include "pagepath.h"
 

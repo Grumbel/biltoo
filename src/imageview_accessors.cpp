@@ -5,9 +5,9 @@
 
 #include "imageview.h"
 #include "imageitem.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "gallery/gallerydecodesm.h"
-#include "displayquality.h"
+#include "display/displayquality.h"
 
 #include <QSet>
 #include <QGraphicsItem>

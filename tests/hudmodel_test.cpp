@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "hudmodel.h"
-#include "displayedgepolicy.h"
+#include "display/displayedgepolicy.h"
 
 #include <QtTest/QtTest>
 

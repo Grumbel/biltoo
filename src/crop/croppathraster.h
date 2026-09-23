@@ -4,7 +4,7 @@
 #ifndef CROPPATHRASTER_H
 #define CROPPATHRASTER_H
 
-#include "pathrasterservice.h"
+#include "display/pathrasterservice.h"
 
 #include <QString>
 

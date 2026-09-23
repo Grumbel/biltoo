@@ -4,7 +4,7 @@
 #ifndef HUDMODEL_H
 #define HUDMODEL_H
 
-#include "displayedgepolicy.h"
+#include "display/displayedgepolicy.h"
 
 #include <QString>
 

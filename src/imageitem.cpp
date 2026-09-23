@@ -6,8 +6,8 @@
 #include "crop/cropgeometry.h"
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
-#include "displayquality.h"
-#include "imagecache.h"
+#include "display/displayquality.h"
+#include "display/imagecache.h"
 #include <QFileInfo>
 
 #include "coloradjust.h"

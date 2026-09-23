@@ -7,7 +7,7 @@
 #include "biltoo_thread.h"
 #include "imageitem.h"
 #include "imageview.h"
-#include "pathrasterservice.h"
+#include "display/pathrasterservice.h"
 #include "thumtoocache.h"
 #include "tilelod/tile_session.hpp"
 #include "tilelod/tile_lod_registry.hpp"

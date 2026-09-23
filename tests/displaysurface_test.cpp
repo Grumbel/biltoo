@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "displaysurface.h"
-#include "displayedgepolicy.h"
+#include "display/displaysurface.h"
+#include "display/displayedgepolicy.h"
 
 #include <QtTest/QtTest>
 

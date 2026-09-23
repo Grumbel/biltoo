@@ -3,8 +3,8 @@
 
 #include "thumtoocache.h"
 #include "thumtoo_process_memos.h"
-#include "imagecache.h"
-#include "displayquality.h"
+#include "display/imagecache.h"
+#include "display/displayquality.h"
 #include "biltoo_thread.h"
 
 #include <QMutex>

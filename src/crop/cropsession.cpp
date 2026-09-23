@@ -8,7 +8,7 @@
 #include "imageitem.h"
 #include "itemcomponents.h"
 #include "session/sessionappearance.h"
-#include "imagecache.h"
+#include "display/imagecache.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
 #include "coloradjust.h"

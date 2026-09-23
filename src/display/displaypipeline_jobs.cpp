@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "displaypipeline_jobs.h"
+#include "display/displaypipeline_jobs.h"
 
 #include "imageview.h"
-#include "imagecache.h"
-#include "displayedgepolicy.h"
-#include "lqipdisplaypolicy.h"
+#include "display/imagecache.h"
+#include "display/displayedgepolicy.h"
+#include "display/lqipdisplaypolicy.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
 #include "biltoo_logging.h"
