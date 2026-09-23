@@ -96,6 +96,8 @@ Distinct from Workspace **Export page as PNG/PDF…** (composed page guide).
    | Multi-window | Shortcuts not process-wide (Space, Ctrl+Q, …) |
    | Cold open | Wipe Store or new files: dir of JPEGs stays responsive; note PDF/7z stalls (§4.2) |
    | PDF Embedded Images | One image-heavy PDF → Image menu → Gallery + export a few leaves (§4.3) |
+   | Location Ctrl+L | Typed path replaces session (document); note leaf vs whole-doc confusion (§4.4) |
+   | Crop + Open Selection | Commit crop → Open Selection in New Window still shows crop (§4.5) |
 
 5. **Docs**  
    - Point [TODO.md](../TODO.md) / [AGENTS.md](../AGENTS.md) tip at the release commit  
@@ -230,7 +232,128 @@ file issues with sample PDFs. Not a tag blocker if page-mode PDF open remains
 the primary document path. Add a short smoke: one image-heavy PDF → Embedded
 Images → scroll Gallery → Export folder of a few leaves.
 
-### 4.4 Other deferred items (optional later)
+### 4.4 Location bar (Ctrl+L) and URL / path semantics
+
+**What works today**
+
+- **File → Open Location…** / **Ctrl+L** focuses the location toolbar
+  (`commitLocationBar` on Enter).
+- Accepts plain paths, `file://` URLs, and virtual refs (`//page:`, `//archive:`,
+  `//pdfimage:`, …).
+- Heuristic: if the user strips `//page:N` back to the bare document path while
+  the current session entry is a page of that document, `loadFiles` expands the
+  whole document and tries to **start at the previous page index**.
+
+**Confusion (session vs single leaf)**
+
+`commitLocationBar` always ends in **`loadFiles(...)`**, which **replaces the
+session**. There is no first-class distinction between:
+
+| Intent | Desired behaviour | Today |
+|--------|-------------------|--------|
+| **Focus / navigate** | Keep the session; jump to an existing row or page | Not available via Location; only index nav / filmstrip |
+| **Open whole document, focus page** | Expand PDF/EPUB/archive to all leaves; select page N | Partial: bare path + prior page heuristic; typing `doc.pdf//page:5` still tends to open **that leaf as the session** (or expand only that ref depending on expand rules) |
+| **Open only this leaf** | Session becomes a single path (one page or one file) | Default for many typed refs — **destroys** a multi-page session |
+
+So users cannot reliably “go to page 12 of this book” from the location bar
+without risking a full session replace, and cannot express “add this path” vs
+“replace with this document”.
+
+**Post-0.2 direction — explicit URL / commit modes**
+
+1. **Syntax or prefix** (examples for design, not final grammar):
+   - `doc.pdf` or `doc.pdf#session` → expand whole document (keep or replace
+     session by policy).
+   - `doc.pdf//page:12` → leaf-only open **or** whole session + focus page 12,
+     depending on a chosen default documented in the bar placeholder.
+   - Optional: `+path` append to session; plain path = replace (browser-like).
+2. **Commit modifiers:** Enter = navigate-in-session if the path matches an
+   existing row; Shift+Enter = replace session; Ctrl+Enter = append.
+3. **Display:** location bar shows **session identity + focus** (e.g. document
+   name + `p.12`) rather than only the raw leaf URI when in a multi-leaf
+   document session.
+4. Document the chosen rules in DOMAIN / help panel; align filmstrip badge and
+   Ctrl+L text.
+
+**0.2.0 expectation:** Location remains a **power-user open** path; document the
+replace-session behaviour. Not a tag blocker.
+
+### 4.5 Crop / appearance lost on some actions
+
+**Reported:** crop (and possibly other content appearance) can disappear across
+actions such as **Open Selection in New Window**.
+
+**Intended behaviour (this cycle)**
+
+- Open Selection snapshots `sessionAppearanceValue` / `freezeItemAppearance` and
+  re-applies via `setSessionAppearance` on new ids (`loadSessionSnapshots`).
+- Export bakes appearance into new files; sources stay untouched.
+
+**Why crop may still be lost (test matrix)**
+
+| Case | Risk |
+|------|------|
+| Crop **draft** not committed | Only live crop chrome; ItemWorld has no durable crop yet |
+| `hasSessionAppearance` true but **content-empty** | Snapshot may copy a sparse pose-only slot and skip live freeze |
+| Image mode primary vs multi-select | Wrong id / unbound primary when selection is filmstrip-only |
+| Mode switch / reload / hard reload | Appearance path vs id mismatches (IDENTITY) |
+| Location `loadFiles` replace | New session; old ids gone — expected unless user re-opens same files with Store-only orient (crop is id-scoped, not path XDG) |
+
+**0.2.0 expectation:** treat as **must-test** before tag; if Open Selection still
+drops **committed** crop, that is a **release bug** (fix before 0.2.0). Uncommitted
+draft loss is acceptable if documented (commit crop before Open Selection).
+
+Suggested smoke: crop in Image → Apply → Gallery → select → Open Selection in
+New Window → crop still applied; undo stack in source window unchanged.
+
+### 4.6 Menu and GUI cleanup (audit notes)
+
+Not a full HIG rewrite; things that look **outdated or confusing** after 0.2
+features landed:
+
+**File**
+
+- Open / Open Location / Add / Open Directory / Open Selection in New Window are
+  clustered — OK; consider grouping “Open session” vs “Open document leaf”.
+- **Print / Page setup / Export page PNG/PDF** sit next to **Export Images…** and
+  **Export Text…**. Page exports are Workspace-primary (often hidden in Gallery);
+  session export is the 0.2 deliverable. A separator or submenu
+  (“Export page…” vs “Export session images…”) would reduce mix-ups.
+- Recent Projects under File is fine; ensure enabled-state matches empty session.
+
+**Edit**
+
+- Workspace **Copy / Cut / Paste** next to **Duplicate** and **Reorder Session…**
+  mixes canvas-clipboard with session order. Consider a “Session” subsection or
+  moving Reorder next to sort actions if Sort lives under View/Gallery.
+- **Find on page** is document-text Find; keep near Edit but help text should
+  stress per-region limit (§4.1).
+
+**Image**
+
+- Rotate / flip / reset / crop / attention, then **EPUB layout** and **PDF
+  Embedded Images**. Document actions are not really “image transforms” —
+  a “Document” submenu (or View-adjacent) would age better.
+- PDF Embedded Images is experimental (§4.3); status tip should say so until
+  hardened.
+
+**View / Gallery**
+
+- Layout modes (Grid, Masonry, Flow, **Facing** two-up, …) are Gallery pack
+  modes — not dual Image-mode viewers (§4.8). Naming in UI (“Facing pages”) is
+  fine; avoid implying two independent Image controllers.
+- Location bar pin / show actions: verify they are not duplicated under View and
+  File.
+
+**Toolbars**
+
+- After Export Images and Reorder, check overflow and that Workspace-only
+  actions do not leave empty gaps in Gallery.
+
+**0.2.0 expectation:** optional polish commit; not required to tag if labels are
+honest. Prefer one cleanup pass over drive-by renames during RC.
+
+### 4.7 Other deferred items (optional later)
 
 | Item | Notes |
 |------|--------|
@@ -241,6 +364,25 @@ Images → scroll Gallery → Export folder of a few leaves.
 | Cross-region text search | §4.1 |
 | Cold-cache / pathological PDF & 7z | §4.2 |
 | PDF Embedded Images hardening | §4.3 |
+| Location / URL session vs leaf | §4.4 |
+| Crop transfer / commit edge cases | §4.5 |
+| Menu regroup | §4.6 |
+
+### 4.8 ImageView: two images at once → **0.3.0** candidate
+
+**Idea:** a true **dual Image-mode** surface (two focused session images side by
+side for compare / proof), with independent or linked pan-zoom.
+
+**Not the same as** Gallery **Facing** layout (two-up **pack** of many session
+tiles for reading order). Facing stays a Gallery layout mode in 0.2.
+
+**0.3.0 scope sketch (out of 0.2)**
+
+- Shell layout: split view or two ImageView controllers sharing one session
+  document (or two focus ids into one session).
+- Navigation: which pane receives ←/→; optional lock-step page turn for books.
+- Identity: each pane binds a `SessionImageId`; crop/grade remain per id.
+- Explicitly defer until after 0.2 release cut and Location/crop hardening.
 
 ---
 
@@ -277,4 +419,8 @@ Images → scroll Gallery → Export folder of a few leaves.
 
 - **Cross-region text search** (§4.1)
 - **Cold-cache open / progress / pathological PDF & 7z** (§4.2)
-- **PDF Embedded Images** hardening and corpus testing (§4.3)
+- **PDF Embedded Images** hardening (§4.3)
+- **Location / URL session vs leaf** semantics (§4.4)
+- **Crop transfer** edge cases if RC finds committed-crop loss (§4.5)
+- **Menu regroup** polish (§4.6)
+- **0.3.0:** dual ImageView / two-up compare (§4.8) — not 0.2
