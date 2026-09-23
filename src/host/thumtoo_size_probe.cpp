@@ -105,9 +105,10 @@ void finishProbeSlot(const QString &pathCopy, bool ok, const QSize &size,
         pumpProbeQueue();
         return;
     }
-    // Seed underlay only from SizeReply (stored with size — not get_lqip,
-    // not generation). GUI installs from ImageCache when present.
-    if (!lqip.isNull() && !ImageCache::has(pathCopy)) {
+    // Seed underlay from SizeReply (stored with size row — not get_lqip,
+    // not generation). Always put when non-null; ImageCache keeps the larger
+    // sample. GUI installs from ImageCache when present.
+    if (!lqip.isNull()) {
         const int le = ImageCache::longEdge(lqip);
         const QString tag = (le > DisplayQuality::kLqipMaxEdge)
             ? QStringLiteral("EMB")

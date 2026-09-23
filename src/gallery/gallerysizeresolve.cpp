@@ -80,15 +80,11 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
         }
     }
 
-    // Size resolve must finish for the full session before packaged layout:
-    // stand-in aspects produce wrong masonry/flow geometry. Bounded host
-    // concurrency (kMaxConcurrentSizeProbes) keeps workers from pegging;
-    // chunked sizeReady keeps the GUI responsive. Virtual window still probes
-    // lazily only for paths that failed the gate or were added later.
+    // Size first for every packaged Gallery layout. Gate stays active until
+    // the full pending set settles — tiles are blocked while active.
+    // Bounded concurrency + chunked sizeReady keep the GUI responsive.
     if (!m_host->sizeResolveLayoutDefersPopulate()) {
-        // No packaged gate: still batch-probe (full ordered list; bounded concurrency).
-        m_pending.clear();
-        m_total = 0;
+        // FreeForm / non-Gallery: probe without a gate.
         if (!ordered.isEmpty()) {
             m_host->scheduleSizeProbeBatch(ordered);
         }

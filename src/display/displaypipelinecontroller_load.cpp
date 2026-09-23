@@ -682,18 +682,30 @@ bool DisplayPipelineController::scheduleGalleryDecode(const QString &path)
 
     bool didWork = false;
     if (needLqip) {
-        // ImageCache only (warmSessionOpenMemos / size-probe workers).
-        const QImage host = ImageCache::get(path);
-        if (!host.isNull()
-            && ImageCache::longEdge(host) <= DisplayQuality::kLqipMaxEdge) {
-            for (ImageItem *ii : m_view->liveItems()) {
-                if (!ii || ii->path() != path || ii->hasDisplayPixels()) {
-                    continue;
+        // ImageCache only (seeded by request_size SizeReply EMB/LQIP).
+        QImage host = ImageCache::get(path);
+        if (!host.isNull()) {
+            if (ImageCache::longEdge(host)
+                > DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+                const int cap = DisplayQuality::kEmbeddedUnderlayMaxEdge;
+                host = host.scaled(cap, cap, Qt::KeepAspectRatio,
+                                   Qt::SmoothTransformation);
+            }
+            if (!host.isNull()
+                && ImageCache::longEdge(host)
+                    <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
+                for (ImageItem *ii : m_view->liveItems()) {
+                    if (!ii || ii->path() != path || ii->hasDisplayPixels()) {
+                        continue;
+                    }
+                    installDisplayPixels(ii, host,
+                                         SessionAppearance::PixelKind::SoftPreview,
+                                         ii->sessionId());
+                    if (!ii->hasDisplayPixels()) {
+                        m_view->setItemPreviewImage(ii, host);
+                    }
+                    didWork = true;
                 }
-                installDisplayPixels(ii, host,
-                                     SessionAppearance::PixelKind::SoftPreview,
-                                     ii->sessionId());
-                didWork = true;
             }
         }
     }
@@ -752,7 +764,8 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
     // Gallery: LQIP placeholder only. Soft PreferCache deliveries must not
     // climb Gallery cells (filmstrip soft used SoftDisplay here).
     if (m_view->isGalleryMode()) {
-        if (incoming > 0 && incoming <= DisplayQuality::kLqipMaxEdge) {
+        if (incoming > 0
+            && incoming <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
             for (ImageItem *item : m_view->liveItems()) {
                 if (!item || item->path() != path || item->hasDisplayPixels()) {
                     continue;

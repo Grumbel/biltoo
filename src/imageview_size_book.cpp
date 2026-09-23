@@ -317,21 +317,12 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
 bool ImageView::layoutDefersPopulateUntilSizes(LayoutMode mode)
 {
     // FreeForm: no pack gate.
-    // Grid / GridCrop: cells are fixed — stand-in sizes are fine (like filmstrip).
-    // Fill modes need every aspect before a stable global pack.
-    // Other packaged layouts (masonry, flow, …): progressive ordered prefix
-    // while sizes arrive (ensurePlaceholders stops at first unresolved).
+    // Every other Gallery layout: sizes first (gate active). Tiles must not
+    // compete with ProbeSize. Grid no longer packs on stand-ins while the
+    // session is still resolving — that showed real pixels before sizes landed.
     if (mode == LayoutMode::FreeForm) {
         return false;
     }
-    if (layoutIsGridFamily(mode)) {
-        return false;
-    }
-    if (layoutNeedsAllSizes(mode)) {
-        return true;
-    }
-    // Masonry / flow / strips: gate on for ordered progressive pack, not a
-    // full block until the last size.
     return true;
 }
 

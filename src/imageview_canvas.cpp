@@ -194,9 +194,8 @@ void ImageView::setWorkspacePaths(const QStringList &paths,
     // Align lengths: missing ids stay invalid (unbound rows).
     pathOrderSetOrder(paths, sessionIds);
 
-    // Gallery size-first for layouts that need aspects (masonry / fill / …).
-    // Grid family does not activate the gate (layoutDefersPopulateUntilSizes
-    // false) — pack immediately with stand-ins like the filmstrip.
+    // Gallery size-first for every packaged layout (including grid).
+    // Gate blocks tiles until the session size set settles.
     if (isGalleryMode() && !paths.isEmpty()
         && m_gallerySizeResolve.startIfNeeded(paths)) {
         TtfpTrace::mark("gallery_size_resolve_await_sizes");
