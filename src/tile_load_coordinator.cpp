@@ -8,7 +8,7 @@
 #include "imageitem.h"
 #include "imageview.h"
 #include "display/pathrasterservice.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "tilelod/tile_session.hpp"
 #include "tilelod/tile_lod_registry.hpp"
 

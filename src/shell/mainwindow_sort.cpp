@@ -8,7 +8,7 @@
 #include "viewtransform.h"
 #include <QtMath>
 #include <algorithm>
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "session/sessionopen.h"
 #include "session/sessionsort.h"
 #include "session/sessionexpand.h"

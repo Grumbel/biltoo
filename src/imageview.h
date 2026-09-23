@@ -40,7 +40,7 @@
 #include "session/sessionpathorder.h"
 #include "session/packorderview.h"
 #include "session/packorderoverlay.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "color/coloradjust.h"
 #include "session/sessionappearance.h"
 #include "session/sessionseedbook.h"

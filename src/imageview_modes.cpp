@@ -7,7 +7,7 @@
 #include <QDebug>
 #include "imageitem.h"
 #include "imageloader.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "biltoo_logging.h"
 #include "tilelod/tile_lod_registry.hpp"
 #include "tilelod/tile_lod_controller.hpp"

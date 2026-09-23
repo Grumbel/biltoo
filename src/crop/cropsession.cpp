@@ -9,7 +9,7 @@
 #include "itemcomponents.h"
 #include "session/sessionappearance.h"
 #include "display/imagecache.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "imageloader.h"
 #include "color/coloradjust.h"
 

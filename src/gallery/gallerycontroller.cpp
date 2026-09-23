@@ -4,7 +4,7 @@
 #include "gallery/gallerycontroller.h"
 #include <memory>
 #include <QFileInfo>
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "imageview.h"
 #include "session/packorderview.h"
 #include "session/sessionbindbook.h"

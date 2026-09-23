@@ -14,7 +14,7 @@
 #include "imageitem.h"
 #include "imageloader.h"
 #include "display/imagecache.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "tile_load_coordinator.h"
 #include "tilelod/tile_lod_controller.hpp"
 #include "session/sessionappearance.h"

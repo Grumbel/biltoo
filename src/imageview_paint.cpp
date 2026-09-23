@@ -15,7 +15,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <algorithm>
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "pagepath.h"
 #include <QFileInfo>
 #include <QDebug>

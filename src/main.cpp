@@ -7,7 +7,7 @@
 #include "shell/metadatapanel.h"
 #include "imageloader.h"
 #include "display/imagecache.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "tilelod/tile_lod_registry.hpp"
 #include "version.h"
 #include "thumtoo/version.hpp"

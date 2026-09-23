@@ -50,7 +50,7 @@
 #include <cstdio>
 #include <cmath>
 #include <QGraphicsItem>
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
 {

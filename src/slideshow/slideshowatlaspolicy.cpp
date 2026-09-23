@@ -3,7 +3,7 @@
 
 #include "slideshow/slideshowatlaspolicy.h"
 
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "viewtransform.h"
 
 #include <QtGlobal>

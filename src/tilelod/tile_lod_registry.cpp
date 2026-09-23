@@ -3,7 +3,7 @@
 
 #include "tilelod/tile_lod_registry.hpp"
 
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 #include <QString>
 #include <QByteArray>

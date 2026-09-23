@@ -10,7 +10,7 @@
 #include "pagepath.h"
 #include "display/imagecache.h"
 #include "imageloader.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
 #include "contentxform.h"
 

@@ -5,7 +5,7 @@
 #include "viewtransform.h"
 
 #include "imageview_types.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 #include <QTimer>
 

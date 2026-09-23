@@ -8,7 +8,7 @@
 #include <memory>
 #include <QSet>
 #include <QFileInfo>
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "imageitem.h"
 #include "session/sessionappearance.h"

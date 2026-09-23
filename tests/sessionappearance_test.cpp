@@ -12,7 +12,7 @@
 #include "session/sessiondocument.h"
 #include "itemworld.h"
 #include "itemcomponents.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 #include <QtTest/QtTest>
 

@@ -9,7 +9,7 @@
 #include "itemcomponents.h"
 #include "display/imagecache.h"
 #include "session/sessionappearance.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "contentxform.h"
 
 #include <QSet>

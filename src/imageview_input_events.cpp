@@ -53,7 +53,7 @@
 #include <cstdio>
 #include <cmath>
 #include <QGraphicsItem>
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 void ImageView::mousePressEvent(QMouseEvent *event)
 {

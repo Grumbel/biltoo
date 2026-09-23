@@ -5,7 +5,7 @@
 
 #include "imageview.h"
 #include "contentxform.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "imageitem.h"
 #include "session/sessionappearance.h"

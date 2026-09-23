@@ -6,7 +6,7 @@
 #include "archivepath.h"
 #include "imageloader.h"
 #include "pagepath.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 #include <QDir>
 #include <QDirIterator>

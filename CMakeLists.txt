@@ -288,11 +288,11 @@ set(BILTOO_LIB_SOURCES
   src/display/rasterclimbsm.h
   src/gallery/gallerydecodesm.cpp
   src/gallery/gallerydecodesm.h
-  src/thumtoocache.cpp
-  src/thumtoocache.h
-  src/thumtoo_process_memos.cpp
-  src/thumtoo_process_memos.h
-  src/thumtoo_size_probe.cpp
+  src/host/thumtoocache.cpp
+  src/host/thumtoocache.h
+  src/host/thumtoo_process_memos.cpp
+  src/host/thumtoo_process_memos.h
+  src/host/thumtoo_size_probe.cpp
   src/archivepath.cpp
   src/archivepath.h
   src/pagepath.cpp

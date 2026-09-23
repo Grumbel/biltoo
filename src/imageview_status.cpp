@@ -4,7 +4,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "display/imagecache.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "display/displayquality.h"
 #include "display/pathrasterservice.h"
 #include "archivepath.h"

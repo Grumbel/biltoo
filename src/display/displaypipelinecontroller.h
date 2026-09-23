@@ -9,7 +9,7 @@
 #include "tilelod/tile_lod_item_bag.hpp"
 #include "session/sessionappearance.h"
 #include "display/pathrasterservice.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 #include <QTimer>
 

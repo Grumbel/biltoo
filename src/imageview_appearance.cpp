@@ -18,11 +18,11 @@
 #include "display/imagecache.h"
 #include "contentxform.h"
 #include "session/sessionappearance.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 #include "imageitem.h"
 #include "session/sessionappearance.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "imageloader.h"
 #include "display/displayquality.h"
 

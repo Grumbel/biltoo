@@ -11,7 +11,7 @@
 #include "imageitem.h"
 #include "display/displayedgepolicy.h"
 #include "display/pathrasterservice.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "pagepath.h"
 #include "gallery/gallerydecodesm.h"
 #include "display/displayquality.h"

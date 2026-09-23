@@ -12,7 +12,7 @@
 #include "imageitem.h"
 #include "imageloader.h"
 #include "display/imagecache.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
 #include "biltoo_logging.h"
 

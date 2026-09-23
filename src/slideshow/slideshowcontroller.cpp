@@ -36,7 +36,7 @@
 #include "hud/hudmodel.h"
 #include "imageloader.h"
 #include <QGraphicsItem>
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 
 SlideshowController::SlideshowController(ImageView *view)

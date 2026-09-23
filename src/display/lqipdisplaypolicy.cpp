@@ -6,7 +6,7 @@
 #include "biltoo_thread.h"
 #include "display/displayquality.h"
 #include "display/imagecache.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 namespace LqipDisplayPolicy {
 

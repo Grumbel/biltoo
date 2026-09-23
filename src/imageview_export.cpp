@@ -6,7 +6,7 @@
 #include "imageview.h"
 #include "imageitem.h"
 #include "contentxform.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
 #include "viewtransform.h"
 

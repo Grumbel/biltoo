@@ -12,7 +12,7 @@
 #include "imageloader.h"
 #include "attention/attentiongeometry.h"
 #include "viewtransform.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "archivepath.h"
 #include "pagepath.h"

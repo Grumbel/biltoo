@@ -8,7 +8,7 @@
 #include "contentxform.h"
 #include "session/sessionappearance.h"
 #include "itemcomponents.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "imageloader.h"
 #include "display/displayquality.h"

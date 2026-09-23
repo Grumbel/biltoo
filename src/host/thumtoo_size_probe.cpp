@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "thumtoocache.h"
-#include "thumtoo_process_memos.h"
+#include "host/thumtoocache.h"
+#include "host/thumtoo_process_memos.h"
 #include "display/imagecache.h"
 #include "display/displayquality.h"
 #include "biltoo_thread.h"

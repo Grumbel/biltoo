@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "thumtoocache.h"
-#include "thumtoo_process_memos.h"
+#include "host/thumtoocache.h"
+#include "host/thumtoo_process_memos.h"
 #include "tilelod/thumtoo_tile_source.hpp"
 #include "tilelod/tile_painter.hpp"
 #include "imageloader.h"

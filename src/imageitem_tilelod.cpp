@@ -11,7 +11,7 @@
 #include <cmath>
 #include "tilelod/tile_lod_controller.hpp"
 #include "tilelod/tile_lod_registry.hpp"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "display/imagecache.h"
 #include "contentxform.h"
 #include "color/coloradjust.h"

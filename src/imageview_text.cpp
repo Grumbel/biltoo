@@ -8,7 +8,7 @@
 #include "text/textlayersession.h"
 #include "text/textlayergeometry.h"
 #include "text/textsearchpolicy.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "contentxform.h"
 
 #include <QApplication>

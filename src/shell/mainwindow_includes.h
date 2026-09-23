@@ -20,7 +20,7 @@
 #include "shell/layoutpanel.h"
 #include "shell/tocpanel.h"
 #include "shell/helppanel.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "contentxform.h"
 #include "session/sessionappearance.h"
 #include "pagepath.h"

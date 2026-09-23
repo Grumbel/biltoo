@@ -4,7 +4,7 @@
 #ifndef TOCPANEL_H
 #define TOCPANEL_H
 
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 
 #include <QWidget>
 

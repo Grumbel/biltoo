@@ -5,7 +5,7 @@
 
 #include "display/imagecache.h"
 #include "display/displayedgepolicy.h"
-#include "thumtoocache.h"
+#include "host/thumtoocache.h"
 #include "biltoo_thread.h"
 
 #include <QtGlobal>
