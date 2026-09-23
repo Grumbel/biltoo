@@ -98,6 +98,12 @@ public:
     void setFiles(const QStringList &files);
     /** Continue async row fill (large sessions). */
     void appendFileRowsChunk();
+    /**
+     * Ensure QListWidget rows exist through @p sessionIndex (inclusive).
+     * Used when navigating before progressive fill has reached that row.
+     */
+    void ensureMaterializedThrough(int sessionIndex);
+    void materializeFileRows(int begin, int end, const QSize &provCell);
 
     /**
      * Best in-process sample for Image-mode ←/→ pending tile (shared with
@@ -350,6 +356,8 @@ private:
     QStringList m_files;
     /** Async setFiles: next index to insert; -1 when idle. */
     int m_fileFillNext = -1;
+    /** Prefer filling toward this session index first (-1 = sequential from 0). */
+    int m_fileFillPriority = -1;
     quint64 m_fileFillGeneration = 0;
     DisplaySurfaceController m_displaySurfaces;
     /** Parallel to m_files: surface id per row (0 = unbound). */

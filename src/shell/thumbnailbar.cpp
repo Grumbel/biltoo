@@ -2427,7 +2427,48 @@ void ThumbnailBar::setFiles(const QStringList &files)
     GUI_BUDGET_MS("ThumbnailBar::setFiles", 16);
     m_fileFillGeneration += 1;
     m_fileFillNext = 0;
+    m_fileFillPriority = -1;
     appendFileRowsChunk();
+}
+
+void ThumbnailBar::materializeFileRows(int begin, int end, const QSize &provCell)
+{
+    if (begin < 0 || end <= begin || begin >= m_files.size()) {
+        return;
+    }
+    end = qMin(end, m_files.size());
+    for (int i = begin; i < end; ++i) {
+        const QString &path = m_files.at(i);
+        auto *item = new QListWidgetItem(this);
+        item->setText(PagePath::displayName(path));
+        item->setToolTip(path);
+        item->setData(RolePath, path);
+        const SessionImageId sid = (i < m_sessionIds.size()) ? m_sessionIds.at(i)
+                                                            : kInvalidSessionImageId;
+        item->setData(RoleSessionId, QVariant::fromValue(static_cast<qint64>(sid)));
+        item->setData(ThumbnailDelegate::ThumbLoadedRole, false);
+        QSize native;
+        if (!m_cropToSquare && !path.isEmpty()) {
+            // Process memo only on GUI — never Store I/O during bulk fill.
+            native = ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
+        }
+        if (m_delegate && !m_cropToSquare && native.isValid()
+            && native.width() > 0 && native.height() > 0) {
+            applyLayoutAspect(item, i, native);
+        } else if (m_delegate && !m_cropToSquare) {
+            const QSize prov = m_delegate->letterboxContentSize(
+                m_delegate->provisionalContentSize());
+            item->setData(ThumbnailDelegate::ThumbContentSizeRole, prov);
+            item->setSizeHint(provCell);
+            // Size probes only when the row is on-screen (scheduleVisible).
+        } else if (m_delegate) {
+            item->setData(ThumbnailDelegate::ThumbContentSizeRole,
+                          QSize(m_thumbSize, m_thumbSize));
+            item->setSizeHint(provCell);
+        } else {
+            item->setSizeHint(provCell);
+        }
+    }
 }
 
 void ThumbnailBar::appendFileRowsChunk()
@@ -2443,46 +2484,15 @@ void ThumbnailBar::appendFileRowsChunk()
         : (m_delegate ? m_delegate->cellSize(font())
                       : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight()));
 
-    // Cap live filmstrip rows. Beyond this, placeholders are not built — Gallery
-    // is virtualized; the strip is navigation chrome, not a second full session.
-    constexpr int kMaxMaterializedRows = 256;
+    // Full session — no hard row cap. Progressive chunks keep the GUI responsive;
+    // thumb *pixels* stay viewport-virtualized (scheduleVisibleThumbnailLoads).
+    // Letterbox variable widths need real items for correct scroll extent.
     constexpr int kChunk = 32;
-    const int limit = qMin(m_files.size(), kMaxMaterializedRows);
+    const int limit = m_files.size();
     const int begin = m_fileFillNext;
     const int end = qMin(begin + kChunk, limit);
     setUpdatesEnabled(false);
-    for (int i = begin; i < end; ++i) {
-        const QString &path = m_files.at(i);
-        auto *item = new QListWidgetItem(this);
-        item->setText(PagePath::displayName(path));
-        item->setToolTip(path);
-        item->setData(RolePath, path);
-        const SessionImageId sid = (i < m_sessionIds.size()) ? m_sessionIds.at(i)
-                                                            : kInvalidSessionImageId;
-        item->setData(RoleSessionId, QVariant::fromValue(static_cast<qint64>(sid)));
-        item->setData(ThumbnailDelegate::ThumbLoadedRole, false);
-        QSize native;
-        if (!m_cropToSquare && !path.isEmpty()) {
-            native = ThumtooCache::cachedSize(path);
-        }
-        if (m_delegate && !m_cropToSquare && native.isValid()
-            && native.width() > 0 && native.height() > 0) {
-            applyLayoutAspect(item, i, native);
-        } else if (m_delegate && !m_cropToSquare) {
-            const QSize prov = m_delegate->letterboxContentSize(
-                m_delegate->provisionalContentSize());
-            item->setData(ThumbnailDelegate::ThumbContentSizeRole, prov);
-            item->setSizeHint(provCell);
-            // Size probes: scheduleVisibleThumbnailLoads when the row is on-screen.
-            // Probing every filmstrip row flooded workers on 20k opens.
-        } else if (m_delegate) {
-            item->setData(ThumbnailDelegate::ThumbContentSizeRole,
-                          QSize(m_thumbSize, m_thumbSize));
-            item->setSizeHint(provCell);
-        } else {
-            item->setSizeHint(provCell);
-        }
-    }
+    materializeFileRows(begin, end, provCell);
     setUpdatesEnabled(true);
     m_fileFillNext = end;
 
@@ -2490,17 +2500,18 @@ void ThumbnailBar::appendFileRowsChunk()
         return; // superseded by a newer setFiles
     }
     if (m_fileFillNext < limit) {
-        // Yield time to paints/tiles — 0ms re-arm starved the GUI for a minute.
+        // Yield paints/tiles — 0ms re-arm starved the GUI for a minute on large N.
         QTimer::singleShot(16, this, &ThumbnailBar::appendFileRowsChunk);
         return;
     }
     m_fileFillNext = -1;
+    m_fileFillPriority = -1;
 
     if (m_multiSelect) {
         setSelectionMode(QAbstractItemView::MultiSelection);
         setSelectionRectVisible(false);
     }
-    if (count() > 0 && !m_multiSelect) {
+    if (count() > 0 && !m_multiSelect && currentRow() < 0) {
         setCurrentRow(0);
     }
     scheduleThumbnailLoads();
@@ -2512,6 +2523,60 @@ void ThumbnailBar::appendFileRowsChunk()
     QTimer::singleShot(100, this, [this]() {
         scheduleVisibleThumbnailLoads();
     });
+}
+
+void ThumbnailBar::ensureMaterializedThrough(int sessionIndex)
+{
+    ASSERT_GUI_THREAD();
+    if (m_files.isEmpty() || sessionIndex < 0) {
+        return;
+    }
+    sessionIndex = qMin(sessionIndex, m_files.size() - 1);
+    // Already past this index (fill idle with full count, or fill cursor ahead).
+    if (count() > sessionIndex) {
+        return;
+    }
+    if (m_fileFillNext < 0) {
+        // Fill finished or never started but count is short — should not happen.
+        return;
+    }
+    const quint64 gen = m_fileFillGeneration;
+    const QSize provCell = (m_delegate && !m_cropToSquare)
+        ? m_delegate->cellSizeForContent(font(), m_delegate->provisionalContentSize())
+        : (m_delegate ? m_delegate->cellSize(font())
+                      : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight()));
+    // Catch up in bounded bursts so a jump to a high index does not freeze the GUI.
+    constexpr int kBurst = 64;
+    int guard = 0;
+    setUpdatesEnabled(false);
+    while (m_fileFillNext >= 0 && m_fileFillNext <= sessionIndex
+           && m_fileFillNext < m_files.size() && guard++ < 512) {
+        if (gen != m_fileFillGeneration) {
+            setUpdatesEnabled(true);
+            return;
+        }
+        const int begin = m_fileFillNext;
+        const int end = qMin(begin + kBurst, m_files.size());
+        materializeFileRows(begin, end, provCell);
+        m_fileFillNext = end;
+        if (m_fileFillNext >= m_files.size()) {
+            m_fileFillNext = -1;
+            m_fileFillPriority = -1;
+            break;
+        }
+    }
+    setUpdatesEnabled(true);
+    updateCenteringMargins();
+    if (m_fileFillNext >= 0 && m_fileFillNext < m_files.size()
+        && gen == m_fileFillGeneration) {
+        QTimer::singleShot(16, this, &ThumbnailBar::appendFileRowsChunk);
+    } else if (m_fileFillNext < 0) {
+        scheduleThumbnailLoads();
+        QTimer::singleShot(0, this, [this]() {
+            primeGeometryFromCache();
+            scheduleVisibleThumbnailLoads();
+        });
+    }
 }
 
 void ThumbnailBar::setVisibleLoadsSuspended(bool on)
@@ -2527,23 +2592,35 @@ void ThumbnailBar::setVisibleLoadsSuspended(bool on)
 
 void ThumbnailBar::setCurrentIndex(int index)
 {
-    if (index >= 0 && index < count()) {
-        QListWidgetItem *it = item(index);
-        if (!it) {
-            return;
+    if (index < 0 || index >= m_files.size()) {
+        return;
+    }
+    // Progressive fill may not have reached this row yet — catch up (bounded).
+    if (index >= count()) {
+        m_fileFillPriority = index;
+        ensureMaterializedThrough(index);
+    }
+    if (index < 0 || index >= count()) {
+        return;
+    }
+    QListWidgetItem *it = item(index);
+    if (!it) {
+        return;
+    }
+    const bool blocked = blockSignals(true);
+    setCurrentRow(index);
+    blockSignals(blocked);
+    // Only scroll when the row is outside the viewport — EnsureVisible on
+    // every ←/→ re-layouts the strip and retriggers thumbnail loads.
+    if (viewport()) {
+        const QRect vr = viewport()->rect();
+        const QRect ir = visualItemRect(it);
+        if (!vr.intersects(ir.adjusted(-8, -8, 8, 8))) {
+            scrollToItem(it, QAbstractItemView::EnsureVisible);
         }
-        const bool blocked = blockSignals(true);
-        setCurrentRow(index);
-        blockSignals(blocked);
-        // Only scroll when the row is outside the viewport — EnsureVisible on
-        // every ←/→ re-layouts the strip and retriggers thumbnail loads.
-        if (viewport()) {
-            const QRect vr = viewport()->rect();
-            const QRect ir = visualItemRect(it);
-            if (!vr.intersects(ir.adjusted(-8, -8, 8, 8))) {
-                scrollToItem(it, QAbstractItemView::EnsureVisible);
-            }
-        }
+    }
+    if (!m_visibleLoadsSuspended) {
+        scheduleVisibleThumbnailLoads();
     }
 }
 
