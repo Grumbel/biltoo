@@ -3,8 +3,8 @@
 
 #include "imageview.h"
 #include "itemcomponents.h"
-#include "grouptransformgeometry.h"
-#include "pageguidegeometry.h"
+#include "workspace/grouptransformgeometry.h"
+#include "workspace/pageguidegeometry.h"
 #include "imageitem.h"
 #include "placementlinear.h"
 

@@ -6,7 +6,7 @@
 #include "imageview.h"
 #include <QScrollBar>
 #include <QtMath>
-#include "workspacegeometry.h"
+#include "workspace/workspacegeometry.h"
 #include "viewtransform.h"
 #include "session/sessionappearance.h"
 #include "ttfp_trace.h"

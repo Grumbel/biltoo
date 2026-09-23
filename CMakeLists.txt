@@ -141,8 +141,8 @@ set(BILTOO_LIB_SOURCES
   src/gallery/gallerysizeresolve.h
   src/tileneighborprefetch.cpp
   src/tileneighborprefetch.h
-  src/workspacecontroller.cpp
-  src/workspacecontroller.h
+  src/workspace/workspacecontroller.cpp
+  src/workspace/workspacecontroller.h
   src/imagecontroller.cpp
   src/imagecontroller.h
   src/imageview_modes.cpp
@@ -173,12 +173,12 @@ set(BILTOO_LIB_SOURCES
   src/attentiongeometry.cpp
   src/attentiongeometry.h
   src/shell/centreprogress.h
-  src/grouptransformsession.h
-  src/grouptransformgeometry.cpp
-  src/grouptransformgeometry.h
-  src/pageguidesession.h
-  src/pageguidegeometry.cpp
-  src/pageguidegeometry.h
+  src/workspace/grouptransformsession.h
+  src/workspace/grouptransformgeometry.cpp
+  src/workspace/grouptransformgeometry.h
+  src/workspace/pageguidesession.h
+  src/workspace/pageguidegeometry.cpp
+  src/workspace/pageguidegeometry.h
   src/iteminteractsession.h
   src/itemframegeometry.cpp
   src/itemframegeometry.h
@@ -187,8 +187,8 @@ set(BILTOO_LIB_SOURCES
   src/itemhandle.h
   src/itemhandlepolicy.cpp
   src/itemhandlepolicy.h
-  src/stackgeometry.cpp
-  src/stackgeometry.h
+  src/workspace/stackgeometry.cpp
+  src/workspace/stackgeometry.h
   src/hudflash.h
   src/viewframing.h
   src/textlayersession.h
@@ -205,7 +205,7 @@ set(BILTOO_LIB_SOURCES
   src/selectiongeometry.h
   src/coloradjustcommit.h
   src/viewtransform.h
-  src/workspacenavgeometry.h
+  src/workspace/workspacenavgeometry.h
   src/toolpolicy.h
   src/hudgeometry.h
   src/textsearchpolicy.h
@@ -307,8 +307,8 @@ set(BILTOO_LIB_SOURCES
   src/session/sessionreorderdialog.h
   src/epublayoutdialog.cpp
   src/epublayoutdialog.h
-  src/workspacebackgrounddialog.cpp
-  src/workspacebackgrounddialog.h
+  src/workspace/workspacebackgrounddialog.cpp
+  src/workspace/workspacebackgrounddialog.h
   src/shell/metadatapanel.cpp
   src/shell/metadatapanel.h
   src/shell/adjustmentspanel.cpp

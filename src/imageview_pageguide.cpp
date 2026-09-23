@@ -5,7 +5,7 @@
 
 #include "imageview.h"
 #include "imageitem.h"
-#include "pageguidegeometry.h"
+#include "workspace/pageguidegeometry.h"
 #include "viewtransform.h"
 
 #include <QPainter>

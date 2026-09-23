@@ -4,7 +4,7 @@
 #include "imageview.h"
 #include "itemcomponents.h"
 #include "placementlinear.h"
-#include "stackgeometry.h"
+#include "workspace/stackgeometry.h"
 #include "thumtoocache.h"
 #include "imageloader.h"
 #include "session/sessionappearance.h"

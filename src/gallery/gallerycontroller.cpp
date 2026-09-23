@@ -21,7 +21,7 @@
 #include "gallery/gallerypackfit.h"
 #include "display/imagecache.h"
 #include "display/displayquality.h"
-#include "workspacenavgeometry.h"
+#include "workspace/workspacenavgeometry.h"
 #include "gallery/gallerydecodesm.h"
 #include <functional>
 

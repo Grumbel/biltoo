@@ -12,8 +12,9 @@ Flat `src/` → domain subdirectories. Pattern matches `src/tilelod/`:
 | 3 | `src/gallery/` | gallery controller, layout, pack, size-resolve, decode SM/book | **done (2351)** |
 | 4 | `src/shell/` | `mainwindow*`, icons, help, centre progress, default apps, prefs/panels | **done (2352)** |
 | 5 | `src/display/` | imagecache, pipeline, quality/edge, surface, path raster, climb SM | **done (2353)** |
+| 6 | `src/workspace/` | workspace controller, geometry/nav, background dialog, group transform, page guide, stack geometry | **done (2354)** |
 | — | `src/tilelod/` | unchanged | done |
-| — | `src/` root | `imageview*`, `imageitem*`, `imageloader`, `pagepath`, `main.cpp`, shared types | stay until later |
+| — | `src/` root | `imageview*`, `imageitem*`, `imageloader`, `pagepath`, `main.cpp`, shared types (`placementlinear`, `itemframegeometry`, …) | stay until later |
 
 ## Phase 1 file list (`src/session/`)
 

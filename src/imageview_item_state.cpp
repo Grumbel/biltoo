@@ -11,7 +11,7 @@
 #include "itemcomponents.h"
 #include "session/sessionappearance.h"
 #include "selectiongeometry.h"
-#include "pageguidegeometry.h"
+#include "workspace/pageguidegeometry.h"
 
 #include <QGraphicsItem>
 #include <QVector>

@@ -10,7 +10,7 @@
 
 #include <QMouseEvent>
 #include "placementlinear.h"
-#include "grouptransformgeometry.h"
+#include "workspace/grouptransformgeometry.h"
 #include <QToolTip>
 #include <QGraphicsItem>
 

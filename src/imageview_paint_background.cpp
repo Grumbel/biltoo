@@ -8,7 +8,7 @@
 #include "hudgeometry.h"
 #include "slideshowclocks.h"
 #include "textlayergeometry.h"
-#include "pageguidegeometry.h"
+#include "workspace/pageguidegeometry.h"
 #include "edgenavpolicy.h"
 #include <QElapsedTimer>
 #include <QClipboard>

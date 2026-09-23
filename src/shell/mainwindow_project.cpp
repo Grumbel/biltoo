@@ -14,7 +14,7 @@
 #include "archivepath.h"
 #include "pagepath.h"
 #include "epublayoutdialog.h"
-#include "workspacebackgrounddialog.h"
+#include "workspace/workspacebackgrounddialog.h"
 #include "imageitem.h"
 #include "display/imagecache.h"
 #include <QFileInfo>
