@@ -743,22 +743,17 @@ void DisplayPipelineController::onImagePreviewLoaded(const QString &path, const 
 
     const int incoming = ImageCache::longEdge(image);
 
-    // Gallery: LQIP placeholder only. Soft PreferCache deliveries must not
-    // climb Gallery cells (filmstrip soft used SoftDisplay here).
+    // Gallery: underlay only from ImageCache (SizeReply). Soft PreferCache
+    // deliveries must not climb cells.
     if (m_view->isGalleryMode()) {
-        if (incoming > 0
-            && incoming <= DisplayQuality::kEmbeddedUnderlayMaxEdge) {
-            for (ImageItem *item : m_view->liveItems()) {
-                if (!item || item->path() != path || item->hasDisplayPixels()) {
-                    continue;
-                }
-                installDisplayPixels(item, image,
-                                     SessionAppearance::PixelKind::SoftPreview,
-                                     item->sessionId());
+        for (ImageItem *item : m_view->liveItems()) {
+            if (!item || item->path() != path) {
+                continue;
             }
-            if (m_view->viewport()) {
-                m_view->viewport()->update();
-            }
+            tryInstallGalleryUnderlay(item);
+        }
+        if (m_view->viewport()) {
+            m_view->viewport()->update();
         }
         return;
     }
