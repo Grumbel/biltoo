@@ -1370,6 +1370,7 @@ void GalleryController::updateDecodeWindow()
 void GalleryController::applyLayout(GalleryPackReason reason)
 {
     ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("GalleryController::applyLayout", 12);
     if (m_view->hostLayoutApply().active()) {
         return;
     }
@@ -1541,6 +1542,8 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 
 void GalleryController::ensurePlaceholders()
 {
+    ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("GalleryController::ensurePlaceholders", 8);
     if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()) {
         return;
     }
@@ -1569,6 +1572,8 @@ void GalleryController::ensurePlaceholders()
     }
     QSet<ImageItem *> claimed;
     const PackOrderView pack = m_view->currentPackOrder();
+    int newCreated = 0;
+    bool morePlaceholdersPending = false;
     for (int i = 0; i < pack.size(); ++i) {
         const QString path = pack.pathAt(i);
         const SessionImageId sid = pack.idAt(i);
@@ -1650,6 +1655,12 @@ void GalleryController::ensurePlaceholders()
         if (!isPositiveSize(sz) || sz.width() <= 1) {
             continue;
         }
+        // Large sessions: one ensurePlaceholders used to create tens of thousands
+        // of QGraphicsItems on the GUI thread (~minute freeze, no GUI_BUDGET).
+        if (newCreated >= GalleryDecode::kMaxNewPlaceholdersPerPulse) {
+            morePlaceholdersPending = true;
+            break;
+        }
         const QImage hint = ImageCache::get(path);
         ImageItem *ph = m_view->hostDisplayPipeline().createPlaceholderItem(path, sz);
         if (ph) {
@@ -1670,10 +1681,23 @@ void GalleryController::ensurePlaceholders()
                                      sid);
             }
             claimed.insert(ph);
+            ++newCreated;
         }
     }
     // Reuse the pack snapshot from the loop above (same generation; avoids -Wshadow).
     m_view->reorderItemsByPaths(pack.paths(), pack.ids());
+    if (morePlaceholdersPending) {
+        // Yield to the event loop — keep growing without a multi-second stall.
+        QTimer::singleShot(0, m_view, [this]() {
+            if (!m_view || !m_view->isGalleryMode()) {
+                return;
+            }
+            ensurePlaceholders();
+            if (!m_view->hostLayout().isFreeForm() && !m_view->liveItems().isEmpty()) {
+                applyLayout(GalleryPackReason::ContentChange);
+            }
+        });
+    }
 }
 
 

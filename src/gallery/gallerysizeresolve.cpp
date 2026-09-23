@@ -8,6 +8,7 @@
 #include "host/thumtoocache.h"
 
 #include <QTimer>
+#include "util/biltoo_thread.h"
 
 GallerySizeResolve::GallerySizeResolve(GallerySizeResolveHost *host,
                                        QObject *parent)
@@ -18,6 +19,8 @@ GallerySizeResolve::GallerySizeResolve(GallerySizeResolveHost *host,
 
 bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
 {
+    ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("GallerySizeResolve::startIfNeeded", 12);
     if (!m_host) {
         return false;
     }

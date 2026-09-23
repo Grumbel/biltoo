@@ -159,6 +159,10 @@ struct InstallDecision {
 InstallDecision decideHostInstall(int shownEdge, int hostEdge, bool hasDisplay,
                                   bool hasFullDecoded, int softMax);
 
+/** New ImageItems created per ensurePlaceholders pulse (large sessions). */
+constexpr int kMaxNewPlaceholdersPerPulse = 48;
+
 } // namespace GalleryDecode
 
 #endif
+

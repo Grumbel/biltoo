@@ -43,6 +43,9 @@
 #include <QThreadPool>
 #include <QTimer>
 #include <QScrollBar>
+#include <QCoreApplication>
+#include <QEventLoop>
+#include "util/biltoo_thread.h"
 #include <QUrl>
 #include <QVariant>
 #include <algorithm>
@@ -2424,8 +2427,15 @@ void ThumbnailBar::setFiles(const QStringList &files)
         : (m_delegate ? m_delegate->cellSize(font())
                       : QSize(m_thumbSize + 4, m_thumbSize + labelBandHeight()));
     // Bulk insert: avoid per-item repaints (large archives can have thousands of rows).
+    // 20k rows still freeze the GUI for tens of seconds — yield the event loop
+    // every chunk so size-resolve HUD / Open progress can paint.
+    GUI_BUDGET_MS("ThumbnailBar::setFiles", 16);
     setUpdatesEnabled(false);
+    constexpr int kYieldEvery = 256;
     for (int i = 0; i < files.size(); ++i) {
+        if (i > 0 && (i % kYieldEvery) == 0) {
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        }
         const QString &path = files.at(i);
         auto *item = new QListWidgetItem(this);
         item->setText(PagePath::displayName(path));

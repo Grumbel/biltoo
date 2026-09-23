@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "imageview.h"
+#include "util/biltoo_thread.h"
 #include <QScrollBar>
 #include <QtMath>
 #include "workspace/workspacegeometry.h"
@@ -173,6 +174,8 @@ void ImageView::finishSetWorkspacePaths(bool haveIds, const QStringList &paths,
 void ImageView::setWorkspacePaths(const QStringList &paths,
                                   const QVector<SessionImageId> &sessionIds)
 {
+    ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("ImageView::setWorkspacePaths", 16);
     if (isImageMode()) {
         return;
     }

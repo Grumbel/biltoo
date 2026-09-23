@@ -15,6 +15,7 @@
 #include "host/thumtoocache.h"
 #include "session/sessionappearance.h"
 #include "util/biltoo_logging.h"
+#include "util/biltoo_thread.h"
 
 #include <QFileInfo>
 #include <QImageReader>
@@ -168,6 +169,8 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
 
 void ImageView::primeGalleryGeometryFromCache(const QStringList &paths)
 {
+    ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("ImageView::primeGalleryGeometryFromCache", 12);
     // Expect warmSessionOpenMemos to have filled size memo + ImageCache LQIP.
     for (const QString &path : paths) {
         if (path.isEmpty()) {
@@ -374,6 +377,8 @@ void ImageView::clearSizeResolveProgress()
 
 void ImageView::onSizeResolveGateComplete()
 {
+    ASSERT_GUI_THREAD();
+    GUI_BUDGET_MS("ImageView::onSizeResolveGateComplete", 16);
     clearCentreProgress();
     if (isGalleryMode()) {
         setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
