@@ -2,24 +2,24 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2395-gui-budget-chain-slice** (on top of `660c49c` stack).
+**Tip: biltoo-2396-virtual-offline-darker** (on top of `660c49c` stack).
 
-Includes **2381–2394**.
+Includes **2381–2395**.
 
-### 2395
-- GUI_BUDGET reports **chained-turn** totals across tight sequential scopes
-- sizeReady chunk outer budget
-- virtual window materialize 12ms-sliced + re-arm
+### 2396
+Offline virtual plan cells are slightly darker than live blank chrome so
+materialize / LQIP is visible as a subtle lift.
 
-**Next:** RC smoke under load; watch `chained-turn` in stderr.
+**Next:** Diagnose empty ImageCache after sizeReady if LQIP still never shows;
+RC smoke.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2395.1-gui-budget-chain-slice-660c49c.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2396.1-virtual-offline-darker-660c49c.bundle HEAD
 ```
 
 ## Backlog (0.2.0)
-- [x] 2381–2394
-- [x] 2395 GUI budget chain + virtual window slice
-- [ ] RC smoke
+- [x] 2381–2395
+- [x] 2396 virtual offline darker chrome
+- [ ] RC smoke / LQIP ImageCache path if still blank
 - [ ] VERSION 0.2.0 + tag
