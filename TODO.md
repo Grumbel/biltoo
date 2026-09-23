@@ -2,32 +2,31 @@
 
 ## Status (2026-09-23)
 
-**Tip: biltoo-2404-imagecache-memory-budget** (base `d80d461`, includes 2403).
+**Tip: biltoo-2405-warm-gallery-restash** (base `d80d461`, includes 2403–2404).
+
+### 2405 — Warm Gallery restash (no membership rebuild)
+Gallery → Image → Gallery with an intact tile stash no longer runs
+`populateGalleryCanvas` / `setWorkspacePaths`. Same `ImageItem*` cells return
+(pixels + tile registry idle paths). Cold path (empty stash) still populates.
+
+Verified: `TileLodRegistry::invalidateAll` is **session replace only**
+(`invalidateSessionLoads` / `clearWorkspace`), not mode switch.
 
 ### 2404 — ImageCache memory budget
-- Eviction is total approximate ARGB32 KiB (default **384 MiB**), not entry count.
-- Prefer drop large samples before EMB/LQIP underlays (mode-switch friendly).
-- Override: `BILTOO_IMAGECACHE_MIB`. Hard entry ceiling 8192 as safety only.
-- Docs: `PIXEL_HOST_CACHE.md`, `ENVIRONMENT.md`.
+Default 384 MiB (`BILTOO_IMAGECACHE_MIB`); prefer keep underlays.
 
 ### 2403 — Size gate size-only
-Gallery → Image → Gallery no longer re-arms full size probe when sizes are known
-but underlay is cold. Gate = size book / process memo only.
+Gate settles on size book / process memo; underlay not required.
 
 ### Architecture direction (remaining)
-- **Tiles:** host tile sessions already have `BILTOO_TILE_RAM_MIB` +
-  `BILTOO_TILE_MAX_IDLE`; verify mode switch does not needlessly
-  `invalidateAll`.
-- Qt only materializes; SessionDocument / ItemWorld / SessionImageId stay ground
-  truth (IDENTITY.md).
-- Optional: underlay-only Store pass when size known and ImageCache cold (no
-  size-gate involvement).
+- Optional underlay-only Store pass when size known and ImageCache cold.
+- Qt materializes only; SessionDocument / ItemWorld / SessionImageId ground truth.
 
 **Next:** RC smoke; VERSION 0.2.0 + tag.
 
 ### Apply
 ```bash
-git -C biltoo pull --ff-only …/biltoo-2404.1-imagecache-memory-budget-d80d461.bundle HEAD
+git -C biltoo pull --ff-only …/biltoo-2405.1-warm-gallery-restash-d80d461.bundle HEAD
 ```
 
 ## Prior (2026-09-23)
@@ -49,5 +48,6 @@ git -C biltoo pull --ff-only …/biltoo-2402.1-underlay-path-complete-660c49c.bu
 - [x] 2402 underlay path completeness
 - [x] 2403 size gate size-only (mode switch no full re-probe)
 - [x] 2404 ImageCache memory budget
+- [x] 2405 warm Gallery restash (skip populate on return)
 - [ ] RC smoke
 - [ ] VERSION 0.2.0 + tag

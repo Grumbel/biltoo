@@ -288,11 +288,15 @@ void GalleryController::leaveForImageMode()
     m_view->setViewMode(ImageView::ViewMode::Image);
 }
 
-void GalleryController::returnFromImage(int layoutMode, const QString &focusPath,
+bool GalleryController::returnFromImage(int layoutMode, const QString &focusPath,
                                         SessionImageId focusId)
 {
     // Arm restore before enter/applyLayout so packs re-centre on the
     // snapshotted scene point (flags preserved across Gallery→Image leave).
+    // Stash non-empty ⇒ enter() will restore the same ImageItem* cells; the
+    // shell must not run populateGalleryCanvas / setWorkspacePaths (that was
+    // re-walking the full session and could re-arm size work).
+    const bool willRestoreStash = !m_stashedItems.isEmpty();
     restoreViewport(focusPath, focusId);
     // Central leave → setActiveMode → enter (MODE_OWNERSHIP). enterGallery
     // routes through setViewMode when not already Gallery so previous=Image is
@@ -303,6 +307,7 @@ void GalleryController::returnFromImage(int layoutMode, const QString &focusPath
     }
     m_view->enterGallery(layout);
     applyPendingRestore();
+    return willRestoreStash;
 }
 
 void GalleryController::enter(int packagedLayoutInt, int previousModeInt)

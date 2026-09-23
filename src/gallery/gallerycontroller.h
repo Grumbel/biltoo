@@ -49,7 +49,13 @@ public:
     /** Gallery → other mode: clear hover/anchor, stop pack; stash tiles when next is Image. */
     void onLeave(int nextMode);
     void leaveForImageMode();
-    void returnFromImage(int layoutMode, const QString &focusPath = QString(),
+    /**
+     * Return from Image mode into Gallery. Restores the Gallery tile stash when
+     * present (same ImageItem* cells — no size/membership rebuild).
+     * @return true when the stash was restored (warm path; caller should not
+     *         run populateGalleryCanvas / setWorkspacePaths).
+     */
+    bool returnFromImage(int layoutMode, const QString &focusPath = QString(),
                          SessionImageId focusId = kInvalidSessionImageId);
     void enter(int packagedLayoutInt, int previousModeInt = -1);
 

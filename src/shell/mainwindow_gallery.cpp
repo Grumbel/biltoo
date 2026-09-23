@@ -371,10 +371,20 @@ void MainWindow::returnToGallery()
     }
 
     // Phase 3: restore arm + enter Gallery + apply pending centre in one place.
+    // Warm stash restore keeps the same ImageItem* cells (pixels, tile sessions
+    // via registry idle). Skipping populateGalleryCanvas avoids setWorkspacePaths
+    // re-walking the full session (size gate / membership) after a mode switch.
+    bool restoredStash = false;
     if (m_imageView) {
-        m_imageView->hostGallery().returnFromImage(static_cast<int>(layout), focusPath, focusId);
+        restoredStash = m_imageView->hostGallery().returnFromImage(
+            static_cast<int>(layout), focusPath, focusId);
     }
-    populateGalleryCanvas();
+    if (!restoredStash) {
+        populateGalleryCanvas();
+    } else if (m_imageView) {
+        m_imageView->hostGalleryDecodeBook().setDeferPopulate(false);
+        m_imageView->hostDisplayPipeline().tickPrimaryTileLod(16);
+    }
     if (m_imageView) {
         m_imageView->hostGallery().applyPendingRestore();
         QTimer::singleShot(0, this, [this, focusPath, focusId]() {
