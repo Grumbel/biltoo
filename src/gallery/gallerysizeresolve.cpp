@@ -6,7 +6,6 @@
 
 #include "imageview_types.h"
 #include "host/thumtoocache.h"
-#include "display/imagecache.h"
 
 #include <QTimer>
 #include "util/biltoo_thread.h"
@@ -43,14 +42,17 @@ bool GallerySizeResolve::startIfNeeded(const QStringList &paths)
         }
         // Do not call isUnsupported on the GUI (Store get_meta). Probes no-op
         // unsupported paths on the worker.
-        // Size alone is not enough: underlay (EMB/LQIP) lives on the same Store
-        // size row. Process size memo can survive ImageCache::clear — those
-        // paths must still request_size so underlay is seeded again.
+        //
+        // Size gate is size-only. Underlay (EMB/LQIP) is opportunistic on the
+        // same SizeReply when a probe does run, but must not force a full-session
+        // re-probe on Gallery↔Image mode switches. Process size memos and the
+        // host size book survive mode changes; ImageCache underlays may be
+        // cold/evicted — missing underlay paints dark chrome until PreferCache
+        // or a later probe seeds ImageCache, without blocking the gate or tiles.
         const bool sizeKnown = m_host->hasDefinitiveHostSize(path)
             || isPositiveSize(ThumtooCache::cachedSize(
                    path, /*scheduleRevalidate=*/false));
-        const bool underlayHot = ImageCache::has(path);
-        if (sizeKnown && underlayHot) {
+        if (sizeKnown) {
             if (!m_host->hasDefinitiveHostSize(path)) {
                 const QSize cached = ThumtooCache::cachedSize(
                     path, /*scheduleRevalidate=*/false);
@@ -199,13 +201,12 @@ void GallerySizeResolve::updateProgressHud()
         if (path.isEmpty()) {
             continue;
         }
-        // Never settle on definitive size alone while a re-probe for underlay
-        // is in flight — that closed the gate before SizeReply seeded ImageCache
-        // and let tiles run with blank cells. Settlement for in-flight probes is
-        // noteProbeSettled (sizeReady). Warm shortcut: size memo + underlay hot.
+        // Warm shortcut: process size memo alone is enough to settle. Underlay
+        // is not a gate condition (see startIfNeeded). In-flight Store probes
+        // still settle via noteProbeSettled (sizeReady).
         const QSize cached =
             ThumtooCache::cachedSize(path, /*scheduleRevalidate=*/false);
-        if (!isPositiveSize(cached) || !ImageCache::has(path)) {
+        if (!isPositiveSize(cached)) {
             continue;
         }
         if (!m_host->hasDefinitiveHostSize(path)) {

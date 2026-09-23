@@ -12,13 +12,18 @@ earlier fences for a path or for the session.
 
 | Stage | Allowed | Forbidden |
 |-------|---------|-----------|
-| **Size gate** (session) | `request_size`, size book, ImageCache underlay put, plan of definitive sizes, underlay on settled paths | Tiles, PreferCache soft climb, stand-in plan sizes |
+| **Size gate** (session) | `request_size`, size book / process memo, plan of definitive sizes | Tiles, PreferCache soft climb, stand-in plan sizes; **requiring ImageCache underlay to settle** |
 | **After gate** | Materialize visible ∩ plan, underlay install, tiles | — |
 
+**Size gate is size-only.** A path settles when the host size book or process
+memo has a definitive size (or failure). Missing `ImageCache` underlay must
+**not** re-arm the gate on Gallery↔Image mode switches.
+
 **Underlay** = EMB (container thumb) or LQIP (ThumbHash) from the **same Store
-row as size** (`request_size` SizeReply). Never generate underlay; never
-standalone `get_lqip` as a product path. GUI reads underlay only from
-`ImageCache`.
+row as size** (`request_size` SizeReply) when a probe runs. Never generate
+underlay; never standalone `get_lqip` as a product path. GUI reads underlay only
+from `ImageCache`. Underlay is opportunistic: dark chrome until seeded;
+PreferCache / later probes may fill it without blocking the size gate.
 
 **Tiles** wait until the **full session** size set has settled. Underlay may
 appear **per path** once that path has a definitive size and a cached sample
@@ -29,19 +34,19 @@ appear **per path** once that path has a definitive size and a cached sample
 ```
 PHASE 0 — Session fence
   cancelSizeProbes()          // generation++
-  ImageCache::clear()         // on session replace
+  ImageCache::clear()         // on session replace only (not mode switch)
   clear size book / live items / virtual plan
 
 PHASE 1 — Size gate (active until every path settled)
   for path in session:
-    if definitive size AND ImageCache.has(path):
-      count warm
+    if definitive size (book or process memo):
+      adopt into book if needed; count warm
     else:
       enqueue request_size(path)
 
   on SizeReply (generation live):
     sizeBook.noteDefinitive (or fail)
-    if underlay blob: ImageCache.put
+    if underlay blob: ImageCache.put   // opportunistic, not a settle condition
     noteProbeSettled
     scheduleSizeGatePlanRefresh()  // coalesced plan + virtual window
 
@@ -70,9 +75,8 @@ All Gallery underlay attaches go through:
 ## Dependencies (must not invert)
 
 ```
-request_size  →  sizeBook definitive  →  plan geometry
-request_size  →  ImageCache underlay  →  SoftPreview / virtual paint
-gate complete →  tiles
+request_size  →  sizeBook definitive  →  plan geometry  →  gate complete → tiles
+request_size  →  ImageCache underlay  →  SoftPreview / virtual paint   (parallel, optional)
 ```
 
 ## Related
