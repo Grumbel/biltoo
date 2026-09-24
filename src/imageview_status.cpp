@@ -126,23 +126,14 @@ QString ImageView::pixelQualityLabel(const ImageItem *item) const
 
 void ImageView::appendThumtooDebugStatus(QString *text, ImageItem *item) const
 {
-    if (!text || !item) {
+    if (!text || !item || !HudModel::isThumtooDebugEnabled()) {
         return;
     }
     // "via file decode" / ladder provenance is pipeline debug, not live status.
     // Showing it next to a stuck "Improving quality…" looked like an active decode.
-    const char *dbg = std::getenv("THUMTOO_DEBUG");
-    if (!dbg || !dbg[0] || dbg[0] == '0') {
-        return;
-    }
-    const QString src = ThumtooCache::lastPixelSourceLabel(item->path());
-    if (!src.isEmpty()) {
-        *text += tr(" · via %1").arg(src);
-    }
-    const QString q = ThumtooCache::queueStatsLabel();
-    if (!q.isEmpty()) {
-        *text += tr(" · %1").arg(q);
-    }
+    *text += HudModel::thumtooDebugStatusSuffix(
+        ThumtooCache::lastPixelSourceLabel(item->path()),
+        ThumtooCache::queueStatsLabel());
 }
 
 QString ImageView::statusTextEmpty() const
@@ -191,8 +182,7 @@ QString ImageView::statusTextMultiItem(ImageItem *item, const QString &quality,
             }
         }
         // Pipeline mix is debug-only — never put "LQIP" in the status bar.
-        const char *dbg = std::getenv("THUMTOO_DEBUG");
-        if (dbg && dbg[0] && dbg[0] != '0') {
+        if (HudModel::isThumtooDebugEnabled()) {
             text += HudModel::galleryDebugPixelMixSuffix(blank, lqip, soft, better, climb);
         }
     }
@@ -213,10 +203,9 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
 {
     QString text = HudModel::imageModeStatusHeader(
         native.width(), native.height(), qRound(viewScale() * 100));
-    // quality may already include "show Npx · native Mpx" — avoid double edge.
-    const bool appendEdgePx = edge > 0 && !item->hasDecodedPixels()
-        && !quality.contains(QLatin1String("px"));
-    text += HudModel::qualityStatusSuffix(quality, edge, appendEdgePx);
+    text += HudModel::qualityStatusSuffix(
+        quality, edge,
+        HudModel::shouldAppendQualityEdgePx(edge, item->hasDecodedPixels(), quality));
     text += HudModel::labeledStatusSuffix(
         m_displayPipeline->imageModeClimbActivityLabel(item));
     {

@@ -11,6 +11,8 @@
 #include <QSize>
 #include <QtMath>
 
+#include <cstdlib>
+
 namespace HudModel {
 namespace {
 
@@ -251,6 +253,31 @@ QString fileNameWithModifiedSuffix(const QString &displayName, bool modified)
         return displayName + tr(" · modified");
     }
     return displayName;
+}
+
+bool shouldAppendQualityEdgePx(int edge, bool hasDecodedPixels, const QString &quality)
+{
+    // quality may already include "show Npx · native Mpx" — avoid double edge.
+    return edge > 0 && !hasDecodedPixels && !quality.contains(QLatin1String("px"));
+}
+
+bool isThumtooDebugEnabled()
+{
+    const char *dbg = std::getenv("THUMTOO_DEBUG");
+    return dbg && dbg[0] && dbg[0] != '0';
+}
+
+QString thumtooDebugStatusSuffix(const QString &pixelSourceLabel,
+                                 const QString &queueStatsLabel)
+{
+    QString text;
+    if (!pixelSourceLabel.isEmpty()) {
+        text += tr(" · via %1").arg(pixelSourceLabel);
+    }
+    if (!queueStatsLabel.isEmpty()) {
+        text += tr(" · %1").arg(queueStatsLabel);
+    }
+    return text;
 }
 
 } // namespace HudModel

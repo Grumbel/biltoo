@@ -87,6 +87,22 @@ QString editedStatusSuffix(bool edited);
 /** Display name with optional " · modified" content-edit mark. */
 QString fileNameWithModifiedSuffix(const QString &displayName, bool modified);
 
+/**
+ * Image-mode quality suffix: append "(Npx)" only when the quality label does
+ * not already embed a px figure and pixels are still provisional.
+ */
+bool shouldAppendQualityEdgePx(int edge, bool hasDecodedPixels, const QString &quality);
+
+/** True when THUMTOO_DEBUG is set to a non-empty, non-"0" value. */
+bool isThumtooDebugEnabled();
+
+/**
+ * Optional " · via source" / " · queue" suffix for THUMTOO_DEBUG status lines.
+ * Empty when both inputs are empty.
+ */
+QString thumtooDebugStatusSuffix(const QString &pixelSourceLabel,
+                                 const QString &queueStatsLabel);
+
 } // namespace HudModel
 
 #endif // HUDMODEL_H
