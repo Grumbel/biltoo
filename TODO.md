@@ -2,19 +2,23 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2415-slideshow-tile-cover** (base `d80d461`).
+**Tip: biltoo-2416-item-ownership-doc** (base `d80d461`).
 
-### Slideshow tiles / up-res
-- Shared `tilelod::prepare_and_paint_cover` (dest cover transform + tick + paint)
-- Slideshow prefers live **ImageItem** TileLodController for the path (same climb as ImageView)
-- Phase fallback still uses ensureFromTiles/ToTiles
-- `min_scale = 0` (was durable floor → stuck coarse)
-- Motion timer ticks primary TileLod so in-flight tiles complete
-- Soft atlas only when tiles cannot paint yet
+### Phase 5 ownership — slice 1 started
+- **Doc:** `docs/IMAGEVIEW_ITEM_OWNERSHIP.md` (graph + backlog)
+- Linked from `MODE_OWNERSHIP.md`, `AGENTS.md`, `ImageItem` class comment
+- Hygiene: ImageView `*.cpp` clear/intrinsic go through `clearItemDecodedPixels` /
+  `setItemIntrinsicSize` (except the wrappers themselves in `imageview_appearance.cpp`)
+- Pipeline remains authorized friend for install paths
+
+### Next slices
+2. Move `attachDisplaySample` body into `DisplayPipelineController`
+3. Narrow / remove `friend class ImageView` on `ImageItem`
+4. Dual ImageView (0.3) on top of thin façade
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2415.1-slideshow-tile-cover-d80d461.bundle HEAD
+git pull --ff-only …/biltoo-2416.1-item-ownership-doc-d80d461.bundle HEAD
 ```
 
-Prior: 2414 pan-zoom factor ceiling; 2413 climb complete loop.
+Prior: 2415 slideshow tile cover; 2414 pan-zoom factor.

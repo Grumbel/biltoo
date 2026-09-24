@@ -331,7 +331,7 @@ int ImageView::resetContentAppearanceForTargets()
             }
             if (native.isValid() && native.width() > 1 && native.height() > 1
                 && native != QSize(1000, 1000) && native != QSize(1024, 1024)) {
-                item->setIntrinsicSize(native);
+                setItemIntrinsicSize(item, native);
             }
         }
 
@@ -349,7 +349,7 @@ int ImageView::resetContentAppearanceForTargets()
         // (FullSource install) looked correct. Always drop pixels first.
         if (isGalleryMode()) {
             m_displayPipeline.galleryDecodeResetPath(path);
-            item->clearDecodedPixels();
+            clearItemDecodedPixels(item);
             const int softEdge = ThumtooCache::kGalleryLadderEdge;
             QImage soft = ImageLoader::loadThumbnail(path, softEdge);
             if (!soft.isNull()) {
@@ -364,7 +364,7 @@ int ImageView::resetContentAppearanceForTargets()
                 m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource,
                                      sid);
             } else {
-                item->clearDecodedPixels();
+                clearItemDecodedPixels(item);
             }
         }
 

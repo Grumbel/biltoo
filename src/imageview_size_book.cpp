@@ -270,7 +270,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         if (cur == layoutSize) {
             continue;
         }
-        item->setIntrinsicSize(layoutSize);
+        setItemIntrinsicSize(item, layoutSize);
         any = true;
         // Drop stale pack clip: square (or wrong-aspect) galleryCellSize was
         // cropping the updated contentRect until the next pack.

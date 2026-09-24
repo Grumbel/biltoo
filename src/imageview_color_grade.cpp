@@ -69,7 +69,7 @@ void ImageView::applyInteractiveColorGrade(ImageItem *item, const WorkspaceItemS
     if (item->hasDecodedPixels()
         && ImageCache::longEdge(item->sourceImage()) > kInteractiveGradeMaxEdge) {
         // Soft stand-in for the drag; keep session id / path on the item.
-        item->clearDecodedPixels();
+        clearItemDecodedPixels(item);
     }
     attachDisplaySample(item, display, want, kind);
     // Filmstrip / Gallery chrome: push soft appearance while dragging so the

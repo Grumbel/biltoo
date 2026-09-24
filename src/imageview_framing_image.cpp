@@ -333,7 +333,7 @@ void ImageView::fitItem(ImageItem *item, Qt::AspectRatioMode mode)
             const WorkspaceItemState want = m_displayPipeline.wantAppearanceForItem(item, sid);
             const QSize lay = ContentXform::layoutSize(fileNative, want);
             if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-                item->setIntrinsicSize(lay);
+                setItemIntrinsicSize(item, lay);
             }
         }
     } else if (cropDraft && !path.isEmpty()) {

@@ -295,6 +295,9 @@ targets, or session ↔ canvas sync. If code and DOMAIN.md disagree, fix the cod
 
 ### Ownership contracts
 
+ImageItem / ImageView / DisplayPipeline (Phase 5): [docs/IMAGEVIEW_ITEM_OWNERSHIP.md](docs/IMAGEVIEW_ITEM_OWNERSHIP.md). Mode stashes: [docs/MODE_OWNERSHIP.md](docs/MODE_OWNERSHIP.md).
+
+
 | Mode | Object scale | Object rotation | View matrix |
 |------|-------------|----------------|-------------|
 | Image | Typically 1; view fits/zooms | Object keeps user orientation | Fit / zoom / pan |

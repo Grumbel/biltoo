@@ -61,7 +61,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
                 soft, want, SessionAppearance::PixelKind::SoftPreview);
             if (!display.isNull()) {
                 // Soft attach must not be ignored when full was present.
-                item->clearDecodedPixels();
+                clearItemDecodedPixels(item);
                 attachDisplaySample(item, display, want,
                                     SessionAppearance::PixelKind::SoftPreview);
                 gotDisplay = true;
@@ -85,7 +85,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
                 const QImage display = SessionAppearance::materializeDisplay(
                     soft, want, SessionAppearance::PixelKind::SoftPreview);
                 if (!display.isNull()) {
-                    item->clearDecodedPixels();
+                    clearItemDecodedPixels(item);
                     attachDisplaySample(item, display, want,
                                         SessionAppearance::PixelKind::SoftPreview);
                     gotDisplay = true;
@@ -98,7 +98,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
             // syncLiveContentMetaFromState; drop pixels so paint does not show
             // a mismatched orient until async host rematerialize completes.
             if (item->hasDisplayPixels()) {
-                item->clearDecodedPixels();
+                clearItemDecodedPixels(item);
             }
         }
         applyContentLayoutSize(item, want);
@@ -228,7 +228,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
             const QImage display = SessionAppearance::materializeDisplay(
                 soft, want, SessionAppearance::PixelKind::SoftPreview);
             if (!display.isNull()) {
-                item->clearDecodedPixels();
+                clearItemDecodedPixels(item);
                 attachDisplaySample(item, display, want,
                                     SessionAppearance::PixelKind::SoftPreview);
                 gotDisplay = true;
@@ -237,7 +237,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
         if (!gotDisplay) {
             // No host-raw: never incremental-transform display (ECS_GUI_BYPASSES #7).
             if (item->hasDisplayPixels()) {
-                item->clearDecodedPixels();
+                clearItemDecodedPixels(item);
             }
         }
         syncLiveContentMetaFromState(item, want);

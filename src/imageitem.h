@@ -33,6 +33,11 @@
  * GalleryController, GalleryLayout helpers). Public surface is readers,
  * interaction handlers, and paint chrome for the view.
  *
+ * Ownership graph (who may create, install pixels, own tile bags):
+ *   docs/IMAGEVIEW_ITEM_OWNERSHIP.md
+ * Mode stashes (Workspace/Gallery/Image underlay):
+ *   docs/MODE_OWNERSHIP.md
+ *
  * Geometry (pixmap + item transform) is independent of interaction chrome.
  * Scale/rotation/flip live in QGraphicsItem::transform; chrome is painted in
  * device/viewport pixels so anisotropic scale never stretches the controls.

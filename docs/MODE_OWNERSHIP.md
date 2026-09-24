@@ -5,6 +5,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Mode ownership (Gallery / Workspace / Image)
 
+Item / pipeline / pixel ownership (Phase 5 extraction): [IMAGEVIEW_ITEM_OWNERSHIP.md](IMAGEVIEW_ITEM_OWNERSHIP.md).
+
 ## Source of truth for *which images exist*
 
 | Structure | Owner | Role |

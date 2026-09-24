@@ -121,7 +121,7 @@ void ImageView::rematerializeItemContent(ImageItem *item, const WorkspaceItemSta
         return;
     }
     if (bakeKind == SessionAppearance::PixelKind::SoftPreview && item->hasDecodedPixels()) {
-        item->clearDecodedPixels();
+        clearItemDecodedPixels(item);
     }
     attachDisplaySample(item, display, want, bakeKind);
     if (scheduleFull) {
@@ -257,20 +257,20 @@ void ImageView::applyContentLayoutSize(ImageItem *item, const WorkspaceItemState
             const QRect c = SessionAppearance::scaleCropRect(
                 want.cropRect.normalized(), want.cropSourceSize, basis);
             if (c.width() > 1 && c.height() > 1) {
-                item->setIntrinsicSize(c.size());
+                setItemIntrinsicSize(item, c.size());
             }
         } else if (ContentXform::swapsAspect(ContentXform::Value::fromState(want))) {
             // Orient-only with no usable native: transpose current box if odd turns.
             const QSize cur = item->imageSize();
             if (isPositiveSize(cur) && cur.width() > 1 && cur.height() > 1) {
-                item->setIntrinsicSize(QSize(cur.height(), cur.width()));
+                setItemIntrinsicSize(item, QSize(cur.height(), cur.width()));
             }
         }
         return;
     }
     const QSize lay = ContentXform::layoutSize(fileNative, want);
     if (isPositiveSize(lay) && lay.width() > 1 && lay.height() > 1) {
-        item->setIntrinsicSize(lay);
+        setItemIntrinsicSize(item, lay);
     }
 }
 
