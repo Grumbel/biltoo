@@ -262,3 +262,41 @@ void ImageController::copySessionAppearance(SessionImageId fromId, SessionImageI
         }
     }
 }
+
+void ImageController::flushAppliedContentToItemWorld()
+{
+    if (!m_view) {
+        return;
+    }
+    // Applied ContentXform is mid-edit *presentation* state. Sparse contentBake
+    // / crop are the durable ground truth. Before mode leave: commit applied →
+    // sparse, then clear ItemWorld applied residual so the next mode's underlay
+    // materializes from contentBake only (not a stale dual-write fingerprint).
+    for (ImageItem *item : m_view->liveItems()) {
+        if (!item) {
+            continue;
+        }
+        const SessionImageId sid = item->sessionId();
+        if (sid == kInvalidSessionImageId) {
+            continue;
+        }
+        // Prefer item-local applied (this presentation); fall back to ItemWorld residual.
+        ContentXform::Value applied;
+        if (item->hasAppliedContentXform()) {
+            applied = item->tileContentXform();
+        } else if (m_view->itemWorld().hasAppliedContentXform(sid)) {
+            applied = m_view->itemWorld().appliedContentXform(sid);
+        } else {
+            continue;
+        }
+        const WorkspaceItemState s = SessionAppearance::mergeAppliedIntoDurable(
+            m_view->sessionAppearanceValue(sid), applied, sid, item->path());
+        m_view->itemWorld().setContentBake(sid, ItemComponents::contentBakeFromState(s));
+        m_view->itemWorld().setCrop(sid, ItemComponents::cropFromState(s));
+        // Intentionally no setColor — applied.colorAdjust is not durable authority.
+        // Drop live applied on the tile so stash/restore cannot treat mid-edit
+        // fingerprint as parallel authority (ECS_GUI_BYPASSES #4 / #6).
+        m_view->clearLiveContentMeta(item);
+    }
+    m_view->itemWorld().clearAllAppliedContentXforms();
+}

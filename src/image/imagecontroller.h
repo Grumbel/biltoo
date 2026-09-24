@@ -95,6 +95,12 @@ public:
      * ImageView public API is a thin router.
      */
     void copySessionAppearance(SessionImageId fromId, SessionImageId toId);
+    /**
+     * Mode leave: commit applied ContentXform into sparse bake/crop, clear
+     * live applied residual. ImageView setViewMode calls this via thin router.
+     */
+    void flushAppliedContentToItemWorld();
+
 
 
 

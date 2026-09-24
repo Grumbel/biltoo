@@ -380,17 +380,8 @@ void ImageView::persistSessionAppearanceSlot(ImageItem *item)
     if (haveContentSlot) {
         // Durable local state (XDG_STATE_HOME/thumtoo): content-hash keyed.
         // Bound: orient/flip/grade only in XDG — crop lives in ItemWorld sparse by id.
-        // Unbound: may include crop (legacy single-instance path edit).
-        // Writing identity deletes the SQLite row; intentional clear goes
-        // through clearContentAppearance (Reset / undo-to-identity).
-        const bool writeCrop = SessionAppearance::shouldWriteCropToPathStore(
-            sid != kInvalidSessionImageId, contentSlot.hasCrop,
-            contentSlot.cropRect.isEmpty());
-        ThumtooCache::StoredContentAppearance stored;
-        if (SessionAppearance::fillStoredContentAppearance(
-                &stored, contentSlot, writeCrop)) {
-            ThumtooCache::saveContentAppearance(item->path(), stored);
-        }
+        SessionAppearance::persistPathContentAppearance(
+            item->path(), sid != kInvalidSessionImageId, contentSlot);
     }
     if (sid != kInvalidSessionImageId) {
         // Bound: do not last-write appearance onto the path map (duplicates
