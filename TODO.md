@@ -2,31 +2,31 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2443.2-drop-rematerialize-forwards-tu** (base `d80d461`).
+**Tip: biltoo-2444.1-phase5-complete-tier0-exit** (base `d80d461`).
 
-### Phase 5 / Tier 0 cleanup
-- **Deleted `src/imageview_rematerialize.cpp`** and CMake entry
-- Removed dead private ImageView forwards (no callers):
-  - attachDisplaySample, applyContentLayoutSize, scheduleAsyncHostRematerialize
-  - rematerializeItemContent, rematerializeGalleryItemFromStore, clearStale…
-  - clearItemDecodedPixels, setItemIntrinsicSize, setItemPreviewImage
-- All pixel/layout install goes to DisplayPipelineController only
+### Phase 5 ownership — COMPLETE
+- Sole ImageItem pixel friend: DisplayPipelineController
+- No ImageView pixel/layout thin-forward TUs (bake + rematerialize deleted)
+- Mode controllers + ImageView TUs call pipeline directly
+- Content bake rotate/flip on pipeline
+- Intrinsic sole writer: hostSetIntrinsicSize
 
-### Verification
-- Friend: only DisplayPipelineController
-- Private pixel mutators: only displaypipelinecontroller.cpp
-- No ImageView rematerialize/attach/clear/preview/intrinsic symbols
-- Full nix build not run in this sandbox
+### Phase 6 Tier 0 — exit criteria met
+- `imageview.h` ~693 lines (target &lt;1000)
+- ~217 public methods (target &lt;260)
+- Event overrides already `protected`
+- Further privatize is optional polish
 
-### Residual on ImageView
-- interactive grade live-grade fast path + filmstrip emit
-- bake host helpers public for pipeline
-- rotateContentByQuarterTurns public
+### Residual (not blocking Phase 5)
+- Interactive grade: live-grade fast path + filmstrip `sessionAppearanceChanged` emit
+- Bake host helpers public for pipeline (capture/undo/persist)
+- `rotateContentByQuarterTurns` public (framing after pipeline bake)
 
 ### Next
-- Phase 6 Tier 0 remainder / Dual ImageView (0.3)
+- Dual ImageView (0.3) — product track; shares pipeline + ItemWorld
+- Optional: more Tier 0 privatize of non-host public methods
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2443.2-drop-rematerialize-forwards-tu-d80d461.bundle HEAD
+git pull --ff-only …/biltoo-2444.1-phase5-complete-tier0-exit-d80d461.bundle HEAD
 ```

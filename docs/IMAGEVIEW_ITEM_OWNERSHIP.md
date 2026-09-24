@@ -123,12 +123,33 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3w. **Done:** drop ImageView bake TU; pipeline sole bake entry.
 3x. **Done:** drop imageview_rematerialize.cpp and dead private pixel/layout forwards;
     callers use DisplayPipelineController exclusively.
+3y. **Done (status):** Phase 5 pixel/layout/bake ownership complete; Phase 6 Tier 0
+    exit criteria met (~693-line imageview.h, ~217 public methods, sole friend =
+    DisplayPipelineController).
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
-5. Residual on ImageView: interactive grade live-grade fast path + filmstrip emit;
+5. Residual (not pixel ownership): interactive grade live-grade + filmstrip emit policy;
     bake host helpers + sticky capture + clearTextSelection public for pipeline;
     `rotateContentByQuarterTurns` public (chrome + framing after pipeline bake).
 
 6. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book collaborators.
+
+
+## Phase 5 completion (biltoo-2443+)
+
+**Pixel / layout / content-bake install is owned by `DisplayPipelineController`.**
+
+| Concern | Owner |
+|---------|--------|
+| Private ImageItem pixel/path/tile mutators | Sole friend: DisplayPipelineController |
+| attach / rematerialize / async / cold disk / SoftPreview grade | Pipeline |
+| Content bake rotate/flip | Pipeline (`bakeItemRotate90` / `bakeItemFlip`) |
+| Intrinsic size (incl. Gallery LQIP guard) | `hostSetIntrinsicSize` |
+| Mode controllers | `hostDisplayPipeline()` — no ImageView pixel hop |
+| ImageView pixel thin forwards | Removed (bake + rematerialize TUs deleted) |
+
+**Phase 6 Tier 0 (header closure):** `imageview.h` ~693 lines; public method count
+~217 (exit target &lt;1000 lines, &lt;260 public). Further privatizations are optional
+polish; remaining public surface is largely host API for controllers/pipeline.
 
 ## Related
 
