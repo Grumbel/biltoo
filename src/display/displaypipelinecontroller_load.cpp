@@ -21,6 +21,7 @@
 
 #include "host/imageloader.h"
 #include "display/imagecache.h"
+#include "tilelod/tile_lod_registry.hpp"
 #include "content/contentxform.h"
 #include "session/sessionappearance.h"
 #include "color/coloradjust.h"
@@ -39,6 +40,10 @@
 #include <QVarLengthArray>
 #include <cstdlib>
 #include <cstdio>
+#include "slideshow/slideshowcontroller.h"
+#include "gallery/gallerysizeresolve.h"
+#include "display/tileneighborprefetch.h"
+#include "image/imagecontroller.h"
 
 void DisplayPipelineController::finishLoadAddStatus(bool refreshGalleryWindow)
 {
@@ -856,3 +861,49 @@ void DisplayPipelineController::completeLoadRestore(const QString &path, const Q
     m_host->notifyWorkspacePathsChanged();
 }
 
+
+void DisplayPipelineController::invalidateSessionLoads()
+{
+    // New Open / History session: cancel every in-flight decode and drop the
+    // live canvas so a late soft/PreferCache for the previous session cannot
+    // paint over the first image of the new set.
+    loadGate().bumpGeneration();
+    if (tileCoordinator()) {
+        tileCoordinator()->clearPreferCancelled();
+    }
+    loadGate().clearPending();
+    galleryDecodeResetAll();
+    m_host->hostSlideshow().phase().clearRasterQueues();
+    m_host->hostSlideshow().phase().bumpPhaseUpgradeGeneration();
+    m_host->hostSlideshow().dwell().bumpAtlasRebuildGeneration();
+    m_host->hostSlideshow().phase().bumpToAtlasRebuildGeneration();
+    // Drop logical-size memory so the size-first gate re-probes (stale square
+    // stand-ins must not skip resolve on the next open).
+    m_host->hostSizeBook().clear();
+    m_host->hostGallerySizeResolve().cancel();
+    // Drop host size-probe FIFO + bump generation so previous-session Store
+    // size callbacks cannot emit sizeReady or refill ImageCache after clear.
+    ThumtooCache::cancelSizeProbes();
+    if (m_host->isImageMode()) {
+        m_host->clearLiveCanvas();
+        m_host->hostImage().clearClassicPath();
+    }
+    if (m_host->isGalleryMode()) {
+        m_host->clearLiveCanvas();
+    }
+    // Drop process tile RAM and host underlays retained across sessions
+    // (old archive paths / LQIP samples). clearWorkspace does the same for
+    // Workspace; Gallery Open only hits invalidateSessionLoads.
+    m_host->hostTileNeighborPrefetch().clear();
+    // Stashed Gallery/Workspace items can still hold SharedPathTiles.
+    dropAllTileLodSessions();
+    tilelod::TileLodRegistry::instance().invalidateAll();
+    ThumtooCache::clearSessionReplaceMemos();
+    ImageCache::clear();
+    if (m_host->hostPathRaster()) {
+        m_host->hostPathRaster()->invalidateAll();
+    }
+    if (ThumtooCache::isAvailable()) {
+        (void)ThumtooCache::bumpInterestEpoch();
+    }
+}

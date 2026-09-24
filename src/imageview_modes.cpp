@@ -48,49 +48,9 @@ void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
 
 void ImageView::invalidateSessionLoads()
 {
-    // New Open / History session: cancel every in-flight decode and drop the
-    // live canvas so a late soft/PreferCache for the previous session cannot
-    // paint over the first image of the new set.
-    m_displayPipeline->loadGate().bumpGeneration();
-    if (m_displayPipeline->tileCoordinator()) {
-        m_displayPipeline->tileCoordinator()->clearPreferCancelled();
-    }
-    m_displayPipeline->loadGate().clearPending();
-    m_displayPipeline->galleryDecodeResetAll();
-    m_slideshow.phase().clearRasterQueues();
-    m_slideshow.phase().bumpPhaseUpgradeGeneration();
-    m_slideshow.dwell().bumpAtlasRebuildGeneration();
-    m_slideshow.phase().bumpToAtlasRebuildGeneration();
-    // Drop logical-size memory so the size-first gate re-probes (stale square
-    // stand-ins must not skip resolve on the next open).
-    m_size.book().clear();
-    hostGallerySizeResolve().cancel();
-    // Drop host size-probe FIFO + bump generation so previous-session Store
-    // size callbacks cannot emit sizeReady or refill ImageCache after clear.
-    ThumtooCache::cancelSizeProbes();
-    if (isImageMode()) {
-        clearLiveCanvas();
-        m_image.clearClassicPath();
-    }
-    if (isGalleryMode()) {
-        clearLiveCanvas();
-    }
-    // Drop process tile RAM and host underlays retained across sessions
-    // (old archive paths / LQIP samples). clearWorkspace does the same for
-    // Workspace; Gallery Open only hits invalidateSessionLoads.
-    m_tileNeighborPrefetch.clear();
-    // Stashed Gallery/Workspace items can still hold SharedPathTiles.
-    m_displayPipeline->dropAllTileLodSessions();
-    tilelod::TileLodRegistry::instance().invalidateAll();
-    ThumtooCache::clearSessionReplaceMemos();
-    ImageCache::clear();
-    if (hostPathRaster()) {
-        hostPathRaster()->invalidateAll();
-    }
-    if (ThumtooCache::isAvailable()) {
-        (void)ThumtooCache::bumpInterestEpoch();
-    }
+    m_displayPipeline->invalidateSessionLoads();
 }
+
 
 void ImageView::takePendingWorkspacePath(const QString &path)
 {

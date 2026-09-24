@@ -168,6 +168,8 @@ public:
     void completeLoadReplace(const QString &path, const QImage &image, quint64 generation);
     /** @p role is ImageView::LoadRole as int (avoid circular header). */
     void scheduleImageLoad(const QString &path, int role);
+    /** Cancel in-flight decodes and drop session-scoped caches (Open/History). */
+    void invalidateSessionLoads();
     void galleryDecodeResetPath(const QString &path);
     void galleryDecodeResetAll();
     /** @return true if probe/LQIP/pyramid work was started (not a no-op). */

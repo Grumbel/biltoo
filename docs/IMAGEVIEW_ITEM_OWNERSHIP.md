@@ -520,3 +520,7 @@ Product shell (minimal):
 56. **biltoo-2514:** GalleryController owns enterGallery (layout-only switch or
     full setViewMode path); ImageView thin router.
 
+57. **biltoo-2515:** DisplayPipelineController owns invalidateSessionLoads
+    (cancel in-flight decodes, drop size book / tile RAM / ImageCache, clear
+    live canvas on Image/Gallery Open); ImageView thin router.
+
