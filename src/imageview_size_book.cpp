@@ -122,7 +122,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
             preserveImageViewOnLogicalSizeChange(item, cur, layoutSize);
         }
     }
-    if (any && isGalleryMode() && !m_layout.isFreeForm()) {
+    if (any && isGalleryMode() && !hostLayout().isFreeForm()) {
         // ContentChange is allowed during the size gate (prefix pack). Debounced
         // so sizeReady chunks do not reflow every path.
         requestDebouncedGalleryPack(GalleryPackReason::ContentChange);

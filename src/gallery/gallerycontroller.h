@@ -16,6 +16,10 @@
 #include "session/packorderview.h"
 #include "gallery/gallerysizeresolve.h"
 #include "gallery/gallerydecodebook.h"
+#include "gallery/layoutprefs.h"
+#include "gallery/layoutdebounce.h"
+#include "gallery/galleryrelayoutsuppress.h"
+#include "gallery/layoutapplyguard.h"
 
 class ImageView;
 class ImageItem;
@@ -30,8 +34,8 @@ class QPoint;
  * Gallery-mode collaborator for ImageView.
  *
  * Owns Gallery-private state (tile stash, viewport snapshot, selection anchor,
- * hover path), the packaged-layout size gate (GallerySizeResolve), and enter/
- * leave / return transition helpers.
+ * hover path), GallerySizeResolve, GalleryDecodeBook, LayoutPrefs + pack
+ * debounce/suppress/apply guards, and enter/leave/return transition helpers.
  * ImageView remains the QGraphicsView shell and public API surface.
  */
 class GalleryController : public GallerySizeResolveHost
@@ -149,6 +153,19 @@ public:
     GalleryDecodeBook &decodeBook() { return m_decodeBook; }
     const GalleryDecodeBook &decodeBook() const { return m_decodeBook; }
 
+    /** Packaged layout mode + grid/masonry prefs (also FreeForm for Workspace). */
+    LayoutPrefs &layout() { return m_layout; }
+    const LayoutPrefs &layout() const { return m_layout; }
+
+    LayoutDebounce &layoutDebounce() { return m_layoutDebounce; }
+    const LayoutDebounce &layoutDebounce() const { return m_layoutDebounce; }
+
+    GalleryRelayoutSuppress &relayoutSuppress() { return m_relayoutSuppress; }
+    const GalleryRelayoutSuppress &relayoutSuppress() const { return m_relayoutSuppress; }
+
+    LayoutApplyGuard &layoutApply() { return m_layoutApply; }
+    const LayoutApplyGuard &layoutApply() const { return m_layoutApply; }
+
     // GallerySizeResolveHost
     bool hasDefinitiveHostSize(const QString &path) const override;
     void adoptResolvedSize(const QString &path, const QSize &size) override;
@@ -177,6 +194,10 @@ private:
     ImageView *m_view = nullptr;
     GallerySizeResolve m_sizeResolve;
     GalleryDecodeBook m_decodeBook;
+    LayoutPrefs m_layout;
+    LayoutDebounce m_layoutDebounce;
+    GalleryRelayoutSuppress m_relayoutSuppress;
+    LayoutApplyGuard m_layoutApply;
 
     QList<ImageItem *> m_stashedItems;
     PackOrderView m_stashedPackOrder;

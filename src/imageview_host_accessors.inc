@@ -45,13 +45,13 @@
     GallerySizeResolve &hostGallerySizeResolve() override { return m_gallery.sizeResolve(); }
     const GallerySizeResolve &hostGallerySizeResolve() const override { return m_gallery.sizeResolve(); }
     /** Display pipeline host: layout prefs (free-form check). */
-    LayoutPrefs &hostLayout() override { return m_layout; }
-    const LayoutPrefs &hostLayout() const override { return m_layout; }
+    LayoutPrefs &hostLayout() override { return m_gallery.layout(); }
+    const LayoutPrefs &hostLayout() const override { return m_gallery.layout(); }
     /** Display pipeline host: gallery relayout suppress guard. */
-    GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() override { return m_galleryRelayoutSuppress; }
+    GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() override { return m_gallery.relayoutSuppress(); }
     const GalleryRelayoutSuppress &hostGalleryRelayoutSuppress() const override
     {
-        return m_galleryRelayoutSuppress;
+        return m_gallery.relayoutSuppress();
     }
     /** Display pipeline host: gallery controller (stashed items). */
     GalleryController &hostGallery() override { return m_gallery; }
@@ -62,8 +62,8 @@
     const ItemInteractSession &hostItemInteract() const { return m_workspace.itemInteract(); }
     PerfStats &hostPerf() { return m_perf; }
     const PerfStats &hostPerf() const { return m_perf; }
-    LayoutApplyGuard &hostLayoutApply() { return m_layoutApply; }
-    const LayoutApplyGuard &hostLayoutApply() const { return m_layoutApply; }
+    LayoutApplyGuard &hostLayoutApply() { return m_gallery.layoutApply(); }
+    const LayoutApplyGuard &hostLayoutApply() const { return m_gallery.layoutApply(); }
     /** Gallery pack debounce single-shot timer (may be null until first use). */
     QTimer *&hostLayoutDebounceTimer() { return m_layoutDebounceTimer; }
     QTimer *hostLayoutDebounceTimer() const { return m_layoutDebounceTimer; }

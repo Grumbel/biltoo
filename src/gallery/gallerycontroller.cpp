@@ -656,9 +656,9 @@ bool GalleryController::tryWheelGalleryScroll(QWheelEvent *event)
 
     // Horizontal strip layouts: vertical wheel pans sideways.
     const bool preferHorizontalScroll =
-        m_view->hostLayout().currentMode() == LayoutMode::SideBySide
-        || m_view->hostLayout().currentMode() == LayoutMode::MasonryRows
-        || m_view->hostLayout().currentMode() == LayoutMode::MasonryRowsFill;
+        m_layout.currentMode() == LayoutMode::SideBySide
+        || m_layout.currentMode() == LayoutMode::MasonryRows
+        || m_layout.currentMode() == LayoutMode::MasonryRowsFill;
 
     if (preferHorizontalScroll && dx == 0 && dy != 0) {
         dx = dy;
@@ -1424,7 +1424,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
 {
     ASSERT_GUI_THREAD();
     GUI_BUDGET("GalleryController::applyLayout");
-    if (m_view->hostLayoutApply().active()) {
+    if (m_layoutApply.active()) {
         return;
     }
     // Size-first open: while the gate is active, the virtual plan holds every
@@ -1439,7 +1439,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     }
     // Packaged packing is Gallery-only; never rearrange Workspace free-form items.
     // Virtualized: path order may be full while liveItems is still empty.
-    if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty() || m_view->hostLayout().isFreeForm()) {
+    if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty() || m_layout.isFreeForm()) {
         return;
     }
 
@@ -1477,7 +1477,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     const int keptScrollV =
         (preserveView && m_view->verticalScrollBar()) ? m_view->verticalScrollBar()->value() : -1;
 
-    LayoutApplyGuard::Scoped layoutApplyScope(&m_view->hostLayoutApply());
+    LayoutApplyGuard::Scoped layoutApplyScope(&m_layoutApply);
 
     // Packaged layouts use view pixels as scene units so images scale to the window
     m_view->resetTransform();
@@ -1500,10 +1500,10 @@ void GalleryController::applyLayout(GalleryPackReason reason)
     params.gap = gap;
     params.availW = availW;
     params.availH = availH;
-    params.masonryColumns = m_view->hostLayout().masonryColumnsValue();
-    params.gridColumns = m_view->hostLayout().gridColumnsValue();
-    params.masonryRows = m_view->hostLayout().masonryRowsValue();
-    params.mode = GalleryPackFit::modeFromLayoutMode(m_view->hostLayout().currentMode());
+    params.masonryColumns = m_layout.masonryColumnsValue();
+    params.gridColumns = m_layout.gridColumnsValue();
+    params.masonryRows = m_layout.masonryRowsValue();
+    params.mode = GalleryPackFit::modeFromLayoutMode(m_layout.currentMode());
 
     // Progressive packs during the size gate only need scene poses for display.
     // Writing ItemWorld for every cell every ~50–120ms was pure overhead (and
@@ -1521,7 +1521,7 @@ void GalleryController::applyLayout(GalleryPackReason reason)
         ? m_virtualSceneBounds
         : ViewTransform::padded(m_view->canvasScene()->itemsBoundingRect(), margin);
     const GalleryLayout::Mode packMode =
-        GalleryPackFit::modeFromLayoutMode(m_view->hostLayout().currentMode());
+        GalleryPackFit::modeFromLayoutMode(m_layout.currentMode());
     bounds = GalleryPackFit::clampSceneRectToPack(bounds, packMode, availW, availH, margin);
     if (m_view->canvasScene()->sceneRect() != bounds) {
         m_view->canvasScene()->setSceneRect(bounds);
@@ -1589,7 +1589,7 @@ void GalleryController::rebuildVirtualPlan()
     m_virtualSlots.clear();
     m_virtualSceneBounds = QRectF();
     if (!m_view->isGalleryMode() || m_view->pathOrderIsEmpty()
-        || m_view->hostLayout().isFreeForm()) {
+        || m_layout.isFreeForm()) {
         return;
     }
 
@@ -1607,7 +1607,7 @@ void GalleryController::rebuildVirtualPlan()
         // square and galleryClipLocal cropped real content into the wrong aspect.
         // Only definitive probe/fail sizes participate in the plan.
         if (!book.hasDefinitive(path) && !book.isFailed(path)) {
-            if (layoutNeedsAllSizes(m_view->hostLayout().currentMode())) {
+            if (layoutNeedsAllSizes(m_layout.currentMode())) {
                 // Fill layouts need the full aspect set — empty plan until done.
                 m_virtualSlots.clear();
                 return;
@@ -1659,10 +1659,10 @@ void GalleryController::rebuildVirtualPlan()
     params.gap = gap;
     params.availW = availW;
     params.availH = availH;
-    params.masonryColumns = m_view->hostLayout().masonryColumnsValue();
-    params.gridColumns = m_view->hostLayout().gridColumnsValue();
-    params.masonryRows = m_view->hostLayout().masonryRowsValue();
-    params.mode = GalleryPackFit::modeFromLayoutMode(m_view->hostLayout().currentMode());
+    params.masonryColumns = m_layout.masonryColumnsValue();
+    params.gridColumns = m_layout.gridColumnsValue();
+    params.masonryRows = m_layout.masonryRowsValue();
+    params.mode = GalleryPackFit::modeFromLayoutMode(m_layout.currentMode());
 
     const QVector<GalleryLayout::PackPose> poses =
         GalleryLayout::packPosesForMode(params.mode, sizes, params);
@@ -2006,27 +2006,27 @@ void GalleryController::updateSoftProgressHud()
 
 void GalleryController::setGridColumns(int columns)
 {
-    const int before = m_view->hostLayout().gridColumnsValue();
-    m_view->hostLayout().setGridColumns(columns);
-    if (m_view->hostLayout().gridColumns == before) {
+    const int before = m_layout.gridColumnsValue();
+    m_layout.setGridColumns(columns);
+    if (m_layout.gridColumns == before) {
         return;
     }
     if (m_view->isGalleryMode()
-        && (layoutIsGridFamily(m_view->hostLayout().currentMode())
-            || layoutIsFlowFamily(m_view->hostLayout().currentMode())
-            || m_view->hostLayout().currentMode() == LayoutMode::Facing)) {
+        && (layoutIsGridFamily(m_layout.currentMode())
+            || layoutIsFlowFamily(m_layout.currentMode())
+            || m_layout.currentMode() == LayoutMode::Facing)) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
 }
 
 void GalleryController::setMasonryColumns(int columns)
 {
-    const int before = m_view->hostLayout().masonryColumnsValue();
-    m_view->hostLayout().setMasonryColumns(columns);
-    if (m_view->hostLayout().masonryColumns == before) {
+    const int before = m_layout.masonryColumnsValue();
+    m_layout.setMasonryColumns(columns);
+    if (m_layout.masonryColumns == before) {
         return;
     }
-    if ((layoutIsMasonryColumns(m_view->hostLayout().currentMode()))
+    if ((layoutIsMasonryColumns(m_layout.currentMode()))
         && !m_view->liveItems().isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
@@ -2034,12 +2034,12 @@ void GalleryController::setMasonryColumns(int columns)
 
 void GalleryController::setMasonryRows(int rows)
 {
-    const int before = m_view->hostLayout().masonryRowsValue();
-    m_view->hostLayout().setMasonryRows(rows);
-    if (m_view->hostLayout().masonryRows == before) {
+    const int before = m_layout.masonryRowsValue();
+    m_layout.setMasonryRows(rows);
+    if (m_layout.masonryRows == before) {
         return;
     }
-    if ((m_view->hostLayout().currentMode() == LayoutMode::MasonryRows || m_view->hostLayout().currentMode() == LayoutMode::MasonryRowsFill)
+    if ((m_layout.currentMode() == LayoutMode::MasonryRows || m_layout.currentMode() == LayoutMode::MasonryRowsFill)
         && !m_view->liveItems().isEmpty()) {
         applyLayout(GalleryPackReason::ExplicitLayout);
     }
@@ -2091,11 +2091,11 @@ void GalleryController::setLayoutMode(LayoutMode mode)
         return;
     }
 
-    if (m_view->hostLayout().isFreeForm() && mode != LayoutMode::FreeForm) {
+    if (m_layout.isFreeForm() && mode != LayoutMode::FreeForm) {
         m_view->hostWorkspace().snapshotFreeFormStates();
     }
 
-    m_view->hostLayout().setMode(mode);
+    m_layout.setMode(mode);
     for (ImageItem *item : m_view->liveItems()) {
         m_view->applyItemModeFlags(item);
     }
@@ -2232,12 +2232,12 @@ void GalleryController::hardReloadFromDisk(bool relayout)
 void GalleryController::setRelayoutSuppressed(bool on)
 {
     if (on) {
-        m_view->hostGalleryRelayoutSuppress().push(true);
+        m_relayoutSuppress.push(true);
         if (m_view->hostLayoutDebounceTimer()) {
             m_view->hostLayoutDebounceTimer()->stop();
         }
-    } else if (m_view->hostGalleryRelayoutSuppress().active()) {
-        m_view->hostGalleryRelayoutSuppress().push(false);
+    } else if (m_relayoutSuppress.active()) {
+        m_relayoutSuppress.push(false);
     }
 }
 

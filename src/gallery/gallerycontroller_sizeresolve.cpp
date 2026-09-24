@@ -58,7 +58,7 @@ QStringList GalleryController::sizeResolvePathOrder() const
 
 bool GalleryController::sizeResolveLayoutDefersPopulate() const
 {
-    return layoutDefersPopulateUntilSizes(m_view->hostLayout().currentMode());
+    return layoutDefersPopulateUntilSizes(m_layout.currentMode());
 }
 
 bool GalleryController::layoutDefersPopulateUntilSizes(LayoutMode mode)
@@ -107,7 +107,7 @@ void GalleryController::onSizeResolveGateComplete()
             }
         }
         const bool more = ensurePlaceholders();
-        if (!more && !m_view->liveItems().isEmpty() && !m_view->hostLayout().isFreeForm()) {
+        if (!more && !m_view->liveItems().isEmpty() && !m_layout.isFreeForm()) {
             applyLayout(GalleryPackReason::EnterGallery);
             for (ImageItem *item : m_view->liveItems()) {
                 if (item) {

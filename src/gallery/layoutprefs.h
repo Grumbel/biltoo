@@ -9,7 +9,9 @@
 #include <QtGlobal>
 
 /**
- * Workspace layout mode and grid/masonry column counts.
+ * Layout mode and grid/masonry column counts.
+ * Owned by GalleryController; ImageView exposes hostLayout().
+ * FreeForm is the Workspace mode flag on the same prefs bag.
  */
 struct LayoutPrefs {
     LayoutMode mode = LayoutMode::FreeForm;

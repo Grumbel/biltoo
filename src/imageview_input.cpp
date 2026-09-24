@@ -141,7 +141,7 @@ void ImageView::wheelEvent(QWheelEvent *event)
 void ImageView::resizeEvent(QResizeEvent *event)
 {
     QGraphicsView::resizeEvent(event);
-    if (m_layoutApply.active()) {
+    if (hostLayoutApply().active()) {
         return;
     }
     if (isImageMode() && !m_slideshow.hud().isProgressActive()) {

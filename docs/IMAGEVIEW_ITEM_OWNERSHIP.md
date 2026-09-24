@@ -355,3 +355,7 @@ Product shell (minimal):
 14. **biltoo-2472:** GalleryDecodeBook owned by GalleryController; hostGalleryDecodeBook
     forwards; ImageView / pipeline / shell use host surface only.
 
+15. **biltoo-2473:** LayoutPrefs + LayoutDebounce + GalleryRelayoutSuppress +
+    LayoutApplyGuard owned by GalleryController; hostLayout* forwards; debounce
+    QTimer stays on ImageView.
+

@@ -24,13 +24,13 @@ void ImageView::stopDeferredPacking()
     if (m_layoutDebounceTimer) {
         m_layoutDebounceTimer->stop();
     }
-    m_layoutApply.clear();
+    hostLayoutApply().clear();
 }
 
 void ImageView::setActiveMode(ViewMode mode, LayoutMode layout)
 {
     m_viewMode = mode;
-    m_layout.setMode(layout);
+    hostLayout().setMode(layout);
     // Gallery: BoundingRect — FullViewportUpdate repaints every tile on each
     // scroll/zoom tick and is unusable with large soft bitmaps. Soft upgrades
     // must call item->update() (installDisplayPixels already does).
@@ -362,7 +362,7 @@ void ImageView::setViewMode(ViewMode mode)
         return;
     }
 
-    LayoutMode layout = m_layout.currentMode();
+    LayoutMode layout = hostLayout().currentMode();
     if (layout == LayoutMode::FreeForm) {
         layout = LayoutMode::Masonry;
     }
@@ -448,7 +448,7 @@ void ImageView::enterGallery(LayoutMode packagedLayout)
     // Full mode switch through the central path so Workspace/Image leave runs
     // and setActiveMode happens before GalleryController::enter.
     // Preserve requested layout for setViewMode's Gallery branch.
-    m_layout.setMode(packagedLayout);
+    hostLayout().setMode(packagedLayout);
     setViewMode(ViewMode::Gallery);
 }
 

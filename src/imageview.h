@@ -210,7 +210,7 @@ public:
      */
     void setCentreProgress(const QString &title, const QString &detail = QString());
     void clearCentreProgress();
-    /** Controller host: set m_viewMode + m_layout.currentMode() and refresh viewport. */
+    /** Controller host: set m_viewMode + hostLayout().currentMode() and refresh viewport. */
     void setActiveMode(ViewMode mode, LayoutMode layout);
     /** Open/History session barrier: bump gen, clear canvas, cancel thumtoo. */
     void invalidateSessionLoads();

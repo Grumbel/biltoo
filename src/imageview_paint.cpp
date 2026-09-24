@@ -489,7 +489,7 @@ void ImageView::paintEmptySessionInvite(QPainter &painter)
     // Empty session: invite the user to open or drop images.
     // Suppress while progress is active (expand / size resolve / tile load).
     if (m_items.isEmpty() && !m_image.hasClassicPath() && !m_cropCtrl.session().active()
-        && m_centreProgress.titleRef().isEmpty() && !m_gallerySizeResolve.active()) {
+        && m_centreProgress.titleRef().isEmpty() && !hostGallerySizeResolve().active()) {
         painter.save();
         painter.setRenderHint(QPainter::TextAntialiasing, true);
         QFont titleFont = font();
@@ -559,7 +559,7 @@ void ImageView::paintHudPanels(QPainter &painter)
     // chip during slideshow or normal Image browsing.
     const QString loadingLine = m_hudPrefs.isVisible() ? loadingStatusHudLine() : QString();
     if (m_cropCtrl.session().active() || m_hudPrefs.isVisible() || m_hudFlash.isVisible() || m_hudFlash.isIdentityPulse()
-        || m_slideshow.hud().isPausedHud() || m_gallerySizeResolve.active()
+        || m_slideshow.hud().isPausedHud() || hostGallerySizeResolve().active()
         || !m_centreProgress.titleRef().isEmpty()
         || !ssPrefetchLine.isEmpty()
         || !m_gallery.hoverPath().isEmpty()) {
@@ -652,13 +652,13 @@ void ImageView::paintHudPanels(QPainter &painter)
             } else {
                 drawPanel(lines, 0, 0, false, false, true);
             }
-        } else if (m_gallerySizeResolve.active() && m_gallerySizeResolve.total() > 0) {
+        } else if (hostGallerySizeResolve().active() && hostGallerySizeResolve().total() > 0) {
             // Fallback if title was cleared but gate still active (interactive).
             const int done = ViewTransform::nonNeg(
-                qint64(m_gallerySizeResolve.total())
-                - qint64(m_gallerySizeResolve.pendingCount()));
+                qint64(hostGallerySizeResolve().total())
+                - qint64(hostGallerySizeResolve().pendingCount()));
             drawPanel({{tr("Resolving sizes…"), true},
-                       {tr("%1 / %2").arg(done).arg(m_gallerySizeResolve.total()), false}},
+                       {tr("%1 / %2").arg(done).arg(hostGallerySizeResolve().total()), false}},
                       margin, margin, false, false, false);
         } else if (m_hudFlash.isVisible() && m_hudFlash.hasAction()) {
             QString actionLine = m_hudFlash.actionText();

@@ -2,18 +2,19 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2472.1-own-gallery-decode-book** (base `7d823d8`).
+**Tip: biltoo-2473.1-own-gallery-layout-prefs** (base `7d823d8`).
 
 ### Ownership transfer
-- **GalleryDecodeBook** moved from ImageView to GalleryController
-- `hostGalleryDecodeBook()` forwards to `m_gallery.decodeBook()`
-- ImageView / pipeline / shell keep host surface; Gallery uses `m_decodeBook` directly
+- **LayoutPrefs**, **LayoutDebounce**, **GalleryRelayoutSuppress**, **LayoutApplyGuard**
+  moved from ImageView to GalleryController
+- `hostLayout` / `hostGalleryRelayoutSuppress` / `hostLayoutApply` forward
+- Debounce **QTimer** remains on ImageView (QObject parent)
+- Residual: replace leftover `m_gallerySizeResolve` with `hostGallerySizeResolve()` (2469 incomplete)
 
-### Prior
-- 2471: Workspace page-guide/group/item input ownership
-- 2471.2: moc fix notifyGallerySizeResolveFinished
+### Stack
+2471 Workspace input · 2471.2 moc · 2472 GalleryDecodeBook · 2473 layout bags
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2472.1-own-gallery-decode-book-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2473.1-own-gallery-layout-prefs-7d823d8.bundle HEAD
 ```

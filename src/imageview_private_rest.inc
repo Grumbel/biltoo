@@ -147,7 +147,7 @@
     QTimer *m_hudFlashTimer = nullptr;
     EdgeZone m_hoverEdge = EdgeZone::None;
     Tool m_tool = Tool::Select;
-    LayoutPrefs m_layout;
+    // LayoutPrefs: owned by GalleryController (hostLayout).
     // GalleryDecodeBook: owned by GalleryController (hostGalleryDecodeBook).
     /** Central path→raster climb (slideshow + shared PreferCache policy). */
     ImageModeSoftProvider m_imageModeSoftProvider;
@@ -169,9 +169,8 @@
 
     /** Multi-select group scale/rotate gesture (Workspace). */
 
-    LayoutApplyGuard m_layoutApply;
-    /** Nested suppress: Gallery delete must not repack via resizeEvent. */
-    GalleryRelayoutSuppress m_galleryRelayoutSuppress;
+    // LayoutApplyGuard: owned by GalleryController.
+    // GalleryRelayoutSuppress: owned by GalleryController.
     QTimer *m_statusRefreshTimer = nullptr;
     /** Off-canvas neighbor tile prefetch (session-replace clears). */
     TileNeighborPrefetch m_tileNeighborPrefetch;
@@ -180,7 +179,7 @@
 
     QTimer *m_galleryDecodeWatchdog = nullptr;
     QTimer *m_layoutDebounceTimer = nullptr;
-    LayoutDebounce m_layoutDebounce;
+    // LayoutDebounce: owned by GalleryController.
     /** Debounce colour-slider durable write + filmstrip (see setTargetColorAdjustments). */
     QTimer *m_colorAdjustCommitTimer = nullptr;
     ColorAdjustCommit m_colorAdjustCommit;

@@ -10,7 +10,7 @@
 
 /**
  * Pending Gallery pack reason while the debounce QTimer is armed.
- * Timer ownership stays on ImageView.
+ * Owned by GalleryController; debounce QTimer stays on ImageView.
  */
 struct LayoutDebounce {
     /** Quiet-period debounce for steady-state packs (ms). */

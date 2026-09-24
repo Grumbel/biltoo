@@ -270,8 +270,8 @@ ImageView::ImageView(QWidget *parent)
     m_layoutDebounceTimer->setInterval(LayoutDebounce::kIntervalMs);
     connect(m_layoutDebounceTimer, &QTimer::timeout, this, [this]() {
         GalleryPackReason reason = GalleryPackReason::ContentChange;
-        if (isGalleryMode() && !m_layout.isFreeForm()
-            && m_layoutDebounce.take(&reason)) {
+        if (isGalleryMode() && !hostLayout().isFreeForm()
+            && m_gallery.layoutDebounce().take(&reason)) {
             // Coalesce create+pack: ensurePlaceholders was O(session) per
             // sizeReady; run once with the pack so progressive open stays smooth.
             if (hostGallerySizeResolve().active()) {

@@ -86,7 +86,7 @@ bool ImageView::installFullPreservingWorkspaceFootprint(ImageItem *item, const Q
     const QSize after = item->imageSize();
     const bool grew = before.isValid() && after.isValid()
         && (before.width() != after.width() || before.height() != after.height());
-    if (grew && isWorkspaceMode() && m_layout.isFreeForm()
+    if (grew && isWorkspaceMode() && hostLayout().isFreeForm()
         && after.width() > 0 && after.height() > 0) {
         const bool neutralScale =
             qAbs(sx0 - 1.0) < 1e-6 && qAbs(sy0 - 1.0) < 1e-6;
