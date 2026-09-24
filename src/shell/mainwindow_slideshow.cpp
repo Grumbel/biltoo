@@ -115,7 +115,7 @@ void MainWindow::slideshowFaster()
     if (next == m_slideshowIntervalMs) {
         const QString msg = tr("Slideshow already at maximum speed (0 ms)");
         if (m_imageView) {
-            m_imageView->flashHud(tr("Slideshow interval"), msg);
+            m_imageView->hostHud().showFlash(tr("Slideshow interval"), msg, [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
         }
         if (statusBar()) {
             statusBar()->showMessage(msg, 2000);
@@ -125,7 +125,7 @@ void MainWindow::slideshowFaster()
     setSlideshowIntervalMs(next);
     const QString detail = formatSlideshowInterval(m_slideshowIntervalMs);
     if (m_imageView) {
-        m_imageView->flashHud(tr("Slideshow interval"), detail);
+        m_imageView->hostHud().showFlash(tr("Slideshow interval"), detail, [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
     }
     if (statusBar()) {
         statusBar()->showMessage(tr("Slideshow interval: %1").arg(detail), 2000);
@@ -139,7 +139,7 @@ void MainWindow::slideshowSlower()
     if (next == m_slideshowIntervalMs) {
         const QString msg = tr("Slideshow already at maximum interval (60 s)");
         if (m_imageView) {
-            m_imageView->flashHud(tr("Slideshow interval"), msg);
+            m_imageView->hostHud().showFlash(tr("Slideshow interval"), msg, [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
         }
         if (statusBar()) {
             statusBar()->showMessage(msg, 2000);
@@ -149,7 +149,7 @@ void MainWindow::slideshowSlower()
     setSlideshowIntervalMs(next);
     const QString detail = formatSlideshowInterval(m_slideshowIntervalMs);
     if (m_imageView) {
-        m_imageView->flashHud(tr("Slideshow interval"), detail);
+        m_imageView->hostHud().showFlash(tr("Slideshow interval"), detail, [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
     }
     if (statusBar()) {
         statusBar()->showMessage(tr("Slideshow interval: %1").arg(detail), 2000);
@@ -368,8 +368,8 @@ void MainWindow::startSlideshow()
             }
             m_imageView->hostSlideshow().preloadSlideshowImage(m_session.paths().at(n));
         }
-        m_imageView->flashHud(tr("▶  Slideshow"),
-                              formatSlideshowInterval(m_slideshowIntervalMs));
+        m_imageView->hostHud().showFlash(tr("▶  Slideshow"),
+                              formatSlideshowInterval(m_slideshowIntervalMs), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
     }
     // Clock last — may immediately start a transition when pureMs==0.
     armSlideshowAdvanceTimer();
@@ -471,8 +471,8 @@ void MainWindow::resumeSlideshow()
         m_imageView->hostSlideshow().setSlideshowMotionPaused(false);
         m_imageView->hostSlideshow().setSlideshowPausedHud(false);
         m_imageView->hostSlideshow().setSlideshowProgressPaused(false);
-        m_imageView->flashHud(tr("▶  Slideshow"),
-                              formatSlideshowInterval(m_slideshowIntervalMs));
+        m_imageView->hostHud().showFlash(tr("▶  Slideshow"),
+                              formatSlideshowInterval(m_slideshowIntervalMs), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
     }
     if (m_slideshowTimer && !m_slideshowTimer->isActive()) {
         m_slideshowTimer->start();
@@ -531,10 +531,10 @@ void MainWindow::stopSlideshow()
             && m_currentIndex < m_session.paths().size()) {
             m_imageView->hostDisplayPipeline().loadImage(m_session.paths().at(m_currentIndex));
             m_imageView->hostSlideshow().restoreImageFramingAfterSlideshow();
-            m_imageView->flashHud(tr("■  Slideshow stopped"));
+            m_imageView->hostHud().showFlash(tr("■  Slideshow stopped"), QString(), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
         } else if (announce) {
             m_imageView->hostSlideshow().restoreImageFramingAfterSlideshow();
-            m_imageView->flashHud(tr("■  Slideshow stopped"));
+            m_imageView->hostHud().showFlash(tr("■  Slideshow stopped"), QString(), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
         }
     }
     updateScrollBarPolicyForMode();

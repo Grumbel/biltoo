@@ -368,24 +368,8 @@ public:
     void rotateContentByQuarterTurns(ImageItem *item, int quarterTurns);
 
 
-    /** Debug: paint text/link region rects for page documents (Image mode). */
-    void setShowTextRegions(bool on);
 
-    /**
-     * Highlight regions whose text contains @p query (case-insensitive).
-     * Empty query clears highlights. Loads the text layer if needed.
-     * Returns number of matching regions on the current page.
-     */
-    int setTextSearchQuery(const QString &query);
-    bool hasTextLayer() const;
-    int textLayerRegionCount() const;
-    /** Soft match for OCR noise (alnum-only + light edit distance). Default on. */
-    void setTextSearchFuzzy(bool on);
-    /** True if @p regionText matches @p query under the same rules as Find. */
-    static bool textMatchesQuery(const QString &regionText, const QString &query, bool fuzzy);
 
-    /** Copy selected text to the clipboard; returns false if nothing selected. */
-    bool copySelectedText();
 
     /**
      * Effective solid pad colour for slideshow letterbox (Solid mode colour,
@@ -403,18 +387,8 @@ public:
      */
     void setCurrentSessionId(SessionImageId id) override;
 
-    /** Pin the on-image HUD overlay (filename, zoom, …). */
-    void setHudVisible(bool on);
     bool contentEditMarksVisible() const;
-    void setHudFontPointSize(int pt);
-    void setHudTextColor(const QColor &color);
-    void setHudPanelColor(const QColor &color);
 
-    /**
-     * Brief top-left HUD action (slideshow, fit mode, …).
-     * Visible for ~1.8s; never used for Next/Prev (session badge covers that).
-     */
-    void flashHud(const QString &action, const QString &detail = QString());
 
     // Slideshow dwell/timeline/phase/Ken Burns/pause cues: SlideshowController
     // (hostSlideshow()). Not re-exported on ImageView.

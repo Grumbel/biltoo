@@ -22,52 +22,6 @@ void ImageView::refreshStatus()
         }
     });
 }
-
-void ImageView::setHudVisible(bool on)
-{
-    m_hud.setVisible(on, [this, on]() {
-        m_slideshow.syncProgressTimerWithHud(on);
-        if (viewport()) {
-            viewport()->update();
-        }
-    });
-}
-
-void ImageView::setHudFontPointSize(int pt)
-{
-    m_hud.setFontPointSize(pt, [this]() {
-        if (viewport()) {
-            viewport()->update();
-        }
-    });
-}
-
-void ImageView::setHudTextColor(const QColor &color)
-{
-    m_hud.setTextColor(color, [this]() {
-        if (viewport()) {
-            viewport()->update();
-        }
-    });
-}
-
-void ImageView::setHudPanelColor(const QColor &color)
-{
-    m_hud.setPanelColor(color, [this]() {
-        if (viewport()) {
-            viewport()->update();
-        }
-    });
-}
-
-void ImageView::flashHud(const QString &action, const QString &detail)
-{
-    m_hud.showFlash(action, detail, [this]() {
-        if (viewport()) {
-            viewport()->update();
-        }
-    });
-}
 QString ImageView::loadingStatusHudLine() const
 {
     // Dedicated HUD line: job queue + cache vs file/archive + weak tiles.

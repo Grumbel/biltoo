@@ -477,7 +477,7 @@ void MainWindow::copyWorkspaceItems()
     // Prefer page text selection in Image mode (Shift+drag regions).
     if (m_imageView && m_imageView->isImageMode()
         && m_imageView->hostTextLayer().selectionCount() > 0) {
-        if (m_imageView->copySelectedText()) {
+        if (m_imageView->hostText().copySelectedText()) {
             statusBar()->showMessage(
                 tr("Copied %n text region(s)", "", m_imageView->hostTextLayer().selectionCount()),
                 3000);

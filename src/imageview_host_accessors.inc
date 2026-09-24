@@ -15,6 +15,8 @@
     const ImageController &hostImage() const override { return m_image; }
     /** Display pipeline host: slideshow controller (nav-hot, rasters, hud). */
     SlideshowController &hostSlideshow() override { return m_slideshow; }
+    HudChrome &hostHud() { return m_hud; }
+    const HudChrome &hostHud() const { return m_hud; }
     const SlideshowController &hostSlideshow() const override { return m_slideshow; }
     /** Display pipeline host: gallery soft SM book (owned by GalleryController). */
     GalleryDecodeBook &hostGalleryDecodeBook() override { return m_gallery.decodeBook(); }

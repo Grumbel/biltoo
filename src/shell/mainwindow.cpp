@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "shell/mainwindow_includes.h"
+#include "text/textsearchpolicy.h"
 #include "shell/dualimageshell.h"
 #include "session/sessionopen.h"
 #include "shell/keyboardshortcutsdialog.h"
@@ -1007,9 +1008,9 @@ void MainWindow::onSearchTextChanged(const QString &text)
         return;
     }
     const bool fuzzy = !m_searchFuzzyCheck || m_searchFuzzyCheck->isChecked();
-    m_imageView->setTextSearchFuzzy(fuzzy);
+    m_imageView->hostText().setSearchFuzzy(fuzzy);
     const QString path = m_imageView->hostImage().classicPath();
-    m_docSearchPageMatchCount = m_imageView->setTextSearchQuery(text);
+    m_docSearchPageMatchCount = m_imageView->hostText().setSearchQuery(text);
     m_docSearchHitPages.clear();
     m_docSearchHitIndex = -1;
     m_docSearchQuery = text.trimmed();
@@ -1021,8 +1022,8 @@ void MainWindow::onSearchTextChanged(const QString &text)
                .arg(fuzzy)
                .arg(path)
                .arg(PagePath::isPageRef(path))
-               .arg(m_imageView->hasTextLayer())
-               .arg(m_imageView->textLayerRegionCount())
+               .arg(m_imageView->hostText().hasLayer())
+               .arg(m_imageView->hostText().regionCount())
                .arg(m_docSearchPageMatchCount)
                .arg(m_imageView->isImageMode()
                         ? QStringLiteral("image")
@@ -1032,14 +1033,14 @@ void MainWindow::onSearchTextChanged(const QString &text)
         if (!PagePath::isPageRef(path)) {
             statusBar()->showMessage(
                 tr("Find works on PDF / DjVu / EPUB pages"), 4000);
-        } else if (!m_imageView->hasTextLayer()) {
+        } else if (!m_imageView->hostText().hasLayer()) {
             statusBar()->showMessage(
                 tr("No extractable text on this page (scanned image?) — try File → Export Text"),
                 5000);
         } else if (m_docSearchPageMatchCount == 0) {
             statusBar()->showMessage(
                 tr("No matches on this page (%n text region(s))", "",
-                   m_imageView->textLayerRegionCount()),
+                   m_imageView->hostText().regionCount()),
                 3000);
         }
     }
@@ -1077,7 +1078,7 @@ void MainWindow::updateSearchMatchLabel()
         }
     } else if (pageHits > 0) {
         text = tr("%n on page", "", pageHits);
-    } else if (m_imageView && !m_imageView->hasTextLayer()
+    } else if (m_imageView && !m_imageView->hostText().hasLayer()
                && PagePath::isPageRef(m_imageView->hostImage().classicPath())) {
         text = tr("No text");
     } else if (m_imageView && !PagePath::isPageRef(m_imageView->hostImage().classicPath())) {
@@ -1199,7 +1200,7 @@ void MainWindow::startDocumentSearch(const QString &query)
                 if (r.text.isEmpty()) {
                     continue;
                 }
-                if (ImageView::textMatchesQuery(r.text, trimmed, fuzzy)) {
+                if (TextSearchPolicy::matches(r.text, trimmed, fuzzy)) {
                     ++matches;
                 }
             }
@@ -1279,7 +1280,7 @@ void MainWindow::goToSearchHit(int index)
     navigateDocumentPage(page);
     // Re-apply query so highlights load for the new page.
     if (m_imageView && !m_docSearchQuery.isEmpty()) {
-        m_docSearchPageMatchCount = m_imageView->setTextSearchQuery(m_docSearchQuery);
+        m_docSearchPageMatchCount = m_imageView->hostText().setSearchQuery(m_docSearchQuery);
     }
     updateSearchMatchLabel();
 }
@@ -1317,7 +1318,10 @@ void MainWindow::findPreviousMatch()
 void MainWindow::toggleHud()
 {
     const bool on = m_toggleHudAct->isChecked();
-    m_imageView->setHudVisible(on);
+    m_imageView->hostHud().setVisible(on, [v = m_imageView, on = bool(on)]() {
+            v->hostSlideshow().syncProgressTimerWithHud(on);
+            if (v->viewport()) v->viewport()->update();
+        });
 }
 
 void MainWindow::toggleThumbnailLabels()
@@ -2385,9 +2389,9 @@ void MainWindow::showPreferences()
         dlg.backgroundPatternIndex() == 1 ? BackgroundPattern::Checkerboard
                                           : BackgroundPattern::Solid);
     m_imageView->hostShell().setCheckerboardWorkspaceOnly(dlg.checkerboardWorkspaceOnly());
-    m_imageView->setHudFontPointSize(dlg.hudFontPointSize());
-    m_imageView->setHudTextColor(dlg.hudTextColor());
-    m_imageView->setHudPanelColor(dlg.hudPanelColor());
+    m_imageView->hostHud().setFontPointSize(dlg.hudFontPointSize(), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
+    m_imageView->hostHud().setTextColor(dlg.hudTextColor(), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
+    m_imageView->hostHud().setPanelColor(dlg.hudPanelColor(), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
 
     if (m_toggleScrollBarsAct) {
         m_toggleScrollBarsAct->setChecked(dlg.scrollBarsVisible());
@@ -3360,7 +3364,10 @@ void MainWindow::readSettings()
             settings.value(QStringLiteral("imageModeLeftDragPan"), true).toBool();
         m_imageView->hostChrome().setImageModeLeftDragPan(leftPan);
         const bool hud = settings.value(QStringLiteral("hudVisible"), false).toBool();
-        m_imageView->setHudVisible(hud);
+        m_imageView->hostHud().setVisible(hud, [v = m_imageView, on = bool(hud)]() {
+            v->hostSlideshow().syncProgressTimerWithHud(on);
+            if (v->viewport()) v->viewport()->update();
+        });
         if (m_toggleHudAct) {
             m_toggleHudAct->setChecked(hud);
         }
@@ -3374,13 +3381,14 @@ void MainWindow::readSettings()
                 m_imageView->hostShell().setContentEditMarksVisible(editMarks);
             }
         }
-        m_imageView->setHudFontPointSize(
-            settings.value(QStringLiteral("hudFontPointSize"), 11).toInt());
+        m_imageView->hostHud().setFontPointSize(
+            settings.value(QStringLiteral("hudFontPointSize"), 11).toInt(),
+            [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
         {
             const QColor tc(settings.value(QStringLiteral("hudTextColor"),
                                            QStringLiteral("#ffffff")).toString());
             if (tc.isValid()) {
-                m_imageView->setHudTextColor(tc);
+                m_imageView->hostHud().setTextColor(tc, [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
             }
             // HexArgb is #AARRGGBB (Qt). Legacy #RRGGBBAA with alpha trailing is
             // rejected by the length-8 parser as fully transparent — migrate.
@@ -3396,10 +3404,10 @@ void MainWindow::readSettings()
                 }
             }
             if (pc.isValid() && pc.alpha() > 0) {
-                m_imageView->setHudPanelColor(pc);
+                m_imageView->hostHud().setPanelColor(pc, [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
             } else if (pc.isValid() && pc.alpha() == 0) {
                 // Never leave a fully transparent panel as the loaded preference.
-                m_imageView->setHudPanelColor(QColor(0, 0, 0, 160));
+                m_imageView->hostHud().setPanelColor(QColor(0, 0, 0, 160), [v = m_imageView]() { if (v->viewport()) v->viewport()->update(); });
             }
         }
         const QColor bg = QColor(settings.value(QStringLiteral("backgroundColor"),

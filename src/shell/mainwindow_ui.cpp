@@ -332,7 +332,7 @@ void MainWindow::createActions()
         tr("Debug: outline text and link regions from the document text layer (PDF/DjVu/EPUB pages)"));
     connect(m_showTextRegionsAct, &QAction::toggled, this, [this](bool on) {
         if (m_imageView) {
-            m_imageView->setShowTextRegions(on);
+            m_imageView->hostText().setShowRegions(on);
         }
     });
     m_findOnPageAct = new QAction(tr("&Find…"), this);
@@ -1380,7 +1380,7 @@ void MainWindow::createToolBar()
         tr("Tolerate OCR noise (punctuation, spacing, single-character slips)"));
     connect(m_searchFuzzyCheck, &QCheckBox::toggled, this, [this](bool on) {
         if (m_imageView) {
-            m_imageView->setTextSearchFuzzy(on);
+            m_imageView->hostText().setSearchFuzzy(on);
         }
         if (m_searchEdit) {
             scheduleDocumentSearch(m_searchEdit->text());

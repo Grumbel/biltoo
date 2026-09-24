@@ -2,38 +2,32 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2605.1-peel-shell-workspace-gallery-forwards** (base `7d823d8`).
+**Tip: biltoo-2606.1-peel-text-hud-forwards** (base `7d823d8`).
 
-### Wave A continued (this tip)
-Added `hostShell()` (`ViewShellChrome`). Peeled more pure-forward public
-`ImageView` methods onto controllers / shell.
+### Wave B (this tip)
+Added `hostHud()` (`HudChrome`). Peeled text + HUD public forwards.
 
 | Was `ImageView::` | Now |
 |-------------------|-----|
-| setCentreProgress / clearCentreProgress | hostShell().… |
-| setBackground* / setWorkspaceBackground* / clearWorkspaceBackground / setViewBackground / setCheckerboard* / setContentEditMarksVisible | hostShell().… |
-| raise/lower/opacity/resetItem* / select* / duplicateSelected / applyToolDragMode | hostWorkspace().… |
-| enterGallery | hostGallery().enterGallery |
-| copySessionAppearance / flushColorAdjustCommit / clearSceneKeepingStashes | hostImage().… (self-call on ImageController for clearScene) |
-| applyCropAppearance | hostCrop().applyCropAppearance |
+| setShowTextRegions / setTextSearch* / hasTextLayer / textLayerRegionCount / copySelectedText | hostText().… |
+| textMatchesQuery | TextSearchPolicy::matches |
+| setHudVisible / setHudFontPointSize / setHudTextColor / setHudPanelColor / flashHud | hostHud().… (+ viewport afterChange; setVisible also syncs slideshow timer) |
 
-Header ~660 → ~600 lines.
+**Kept on ImageView (complex gather):** statusText, hudFileName, loadingStatusHudLine,
+refreshStatus. Host overrides: clearTextSelection, refreshTextLayer.
 
-### Prior peel (2604.1)
-23 workspace/gallery/image forwards — see previous tip.
+Header ~599 → ~573 lines.
 
-### Still on ImageView (next)
-**Keep:** DisplayPipelineHost overrides, QGraphicsView overrides, mode
-orchestration (`setViewMode` / `setLayoutMode` / `reloadFromDisk`),
-signals, host surface.
+### Cumulative peels (2604–2606)
+~60+ pure-forward public methods removed from ImageView.
 
-**Wave B:** HUD / statusText / hudFileName / loadingStatusHudLine /
-appearance gather that still routes through the view.
-
-**Wave C:** thin `setViewMode` dispatcher; push branch bodies into mode
-controllers.
+### Next
+- statusText / hudFileName / loadingStatusHudLine → HudModel or StatusPresenter
+  (multi-controller gather; higher risk)
+- Wave C: thin setViewMode dispatcher; push branch bodies into mode controllers
+- Remaining public surface audit
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2605.1-peel-shell-workspace-gallery-forwards-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2606.1-peel-text-hud-forwards-7d823d8.bundle HEAD
 ```
