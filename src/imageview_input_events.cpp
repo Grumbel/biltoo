@@ -190,87 +190,11 @@ void ImageView::keyPressEvent(QKeyEvent *event)
 
 void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    // Rapid edge clicks arrive as double-clicks (second press is not a Press event).
-    // Treat them as navigation, same as a single click on the affordance.
-    if (isImageMode() && event->button() == Qt::LeftButton
-        && !(event->modifiers() & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
-        const EdgeZone zone = edgeZoneAt(event->pos());
-        if (zone == EdgeZone::Previous) {
-            emit navigatePreviousRequested();
-            event->accept();
-            return;
-        }
-        if (zone == EdgeZone::Next) {
-            emit navigateNextRequested();
-            event->accept();
-            return;
-        }
-        emit fullscreenToggleRequested();
-        event->accept();
+    if (m_image.tryMouseDoubleClick(event)
+        || m_gallery.tryMouseDoubleClick(event)
+        || m_workspace.tryMouseDoubleClick(event)) {
         return;
     }
-
-    // Gallery: double-click opens the tile in Image mode (classic file view).
-    // Prefer SessionImageId so duplicate paths open the correct session row.
-    if (isGalleryMode() && event->button() == Qt::LeftButton) {
-        const QPointF scenePos = mapToScene(event->pos());
-        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                m_gallery.emitItemOpenInImageMode(item);
-                event->accept();
-                return;
-            }
-        }
-        event->accept();
-        return;
-    }
-
-    // Workspace: double-click on chrome starts a handle drag; on the image
-    // body opens Image mode (same path as Gallery). Empty space is swallowed
-    // so the missing second press does not clear selection via the base class.
-    if (isWorkspaceMode() && event->button() == Qt::LeftButton
-        && m_workspace.currentTool() == Tool::Select && m_scene) {
-        const QPointF scenePos = mapToScene(event->pos());
-        // Selected item handles first (chrome is above tiles).
-        QList<ImageItem *> selected;
-        for (QGraphicsItem *gi : m_scene->selectedItems()) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive() && m_items.contains(ii)) {
-                    selected.append(ii);
-                }
-            }
-        }
-        if (selected.size() == 1) {
-            ImageItem *item = selected.first();
-            HandlePressScratch press;
-            if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
-                && press.hasContinuousHandle()) {
-                m_workspace.itemInteract().beginHandleDrag(item, placementFromItem(item), press);
-                event->accept();
-                return;
-            }
-        } else if (selected.size() > 1) {
-            const int gh = m_workspace.groupHandleAt(event->pos(), selected);
-            if (gh >= 0 && m_workspace.beginGroupScale(gh, selected)) {
-                event->accept();
-                return;
-            }
-        }
-        // Image body under cursor → Image mode for *this* session slot
-        // (path-only open would always hit the first duplicate in the session).
-        for (QGraphicsItem *gi : m_scene->items(scenePos)) {
-            if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive() && m_items.contains(ii)) {
-                    m_gallery.emitItemOpenInImageMode(ii);
-                    event->accept();
-                    return;
-                }
-            }
-        }
-        event->accept();
-        return;
-    }
-
     QGraphicsView::mouseDoubleClickEvent(event);
 }
 

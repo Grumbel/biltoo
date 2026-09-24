@@ -49,6 +49,8 @@ public:
     /** Left/Right/PageUp/PageDown session navigation (Image mode). */
     bool tryKeyPressNavigate(QKeyEvent *event);
     bool tryMousePressEdges(QMouseEvent *event);
+    /** Image-mode double-click: edge nav or fullscreen toggle. */
+    bool tryMouseDoubleClick(QMouseEvent *event);
 
     // Edge hover chrome (owns zone; EdgeNavPolicy is pure geometry).
     EdgeNavPolicy::Zone hoverEdge() const;

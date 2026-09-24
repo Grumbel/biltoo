@@ -65,6 +65,8 @@ public:
 
     /** Select tool: item hit / page-guide / rubber-band (Tier 6d). */
     bool tryMousePressSelect(QMouseEvent *event);
+    /** Workspace double-click: handle drag or open Image mode. */
+    bool tryMouseDoubleClick(QMouseEvent *event);
     bool tryKeyPressDeleteSelection(QKeyEvent *event);
     bool tryKeyPressShear(QKeyEvent *event);
     /** Gallery / Workspace: Ctrl/Cmd+A selects every live tile. */

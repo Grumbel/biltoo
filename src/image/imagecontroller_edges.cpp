@@ -12,6 +12,7 @@
 #include <QPainterPath>
 #include <QRadialGradient>
 #include <QWidget>
+#include <QMouseEvent>
 
 namespace {
 
@@ -202,4 +203,29 @@ void ImageController::setGalleryReturnAvailable(bool on)
     if (QWidget *vp = m_view->viewport()) {
         vp->update();
     }
+}
+
+bool ImageController::tryMouseDoubleClick(QMouseEvent *event)
+{
+    // Rapid edge clicks arrive as double-clicks (second press is not a Press event).
+    // Treat them as navigation, same as a single click on the affordance.
+    if (!m_view->isImageMode() || event->button() != Qt::LeftButton
+        || (event->modifiers()
+            & (Qt::AltModifier | Qt::ShiftModifier | Qt::ControlModifier))) {
+        return false;
+    }
+    const EdgeNavPolicy::Zone zone = edgeZoneAt(event->pos());
+    if (zone == EdgeNavPolicy::Zone::Previous) {
+        emit m_view->navigatePreviousRequested();
+        event->accept();
+        return true;
+    }
+    if (zone == EdgeNavPolicy::Zone::Next) {
+        emit m_view->navigateNextRequested();
+        event->accept();
+        return true;
+    }
+    emit m_view->fullscreenToggleRequested();
+    event->accept();
+    return true;
 }

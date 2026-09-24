@@ -853,10 +853,33 @@ bool GalleryController::tryMousePressGalleryLeft(QMouseEvent *event)
         // Allow rubber-band start via base class when drag mode is RubberBandDrag.
         m_view->forwardGraphicsViewMousePress(event);
         return true;
-    return true;
 }
 
 
+
+
+bool GalleryController::tryMouseDoubleClick(QMouseEvent *event)
+{
+    // Prefer SessionImageId so duplicate paths open the correct session row.
+    if (!m_view->isGalleryMode() || event->button() != Qt::LeftButton) {
+        return false;
+    }
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        event->accept();
+        return true;
+    }
+    const QPointF scenePos = m_view->mapToScene(event->pos());
+    for (QGraphicsItem *gi : scene->items(scenePos)) {
+        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+            emitItemOpenInImageMode(item);
+            event->accept();
+            return true;
+        }
+    }
+    event->accept();
+    return true;
+}
 
 void GalleryController::clearGalleryDragArm()
 {

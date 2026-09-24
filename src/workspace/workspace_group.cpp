@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "workspace/workspacecontroller.h"
+#include "imageitem.h"
+#include "item/iteminteractsession.h"
 #include "imageview.h"
 #include "item/selectiongeometry.h"
 #include "item/itemcomponents.h"
@@ -17,6 +19,8 @@
 #include <cmath>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QGraphicsScene>
+#include <QGraphicsItem>
 #include <QUndoStack>
 #include <QWidget>
 
@@ -425,3 +429,55 @@ bool WorkspaceController::tryMouseReleaseItemDrag(QMouseEvent *event)
     return false;
 }
 
+bool WorkspaceController::tryMouseDoubleClick(QMouseEvent *event)
+{
+    // Double-click on chrome starts a handle drag; on the image body opens
+    // Image mode (same path as Gallery). Empty space is swallowed so the
+    // missing second press does not clear selection via the base class.
+    if (!m_view->isWorkspaceMode() || event->button() != Qt::LeftButton
+        || currentTool() != Tool::Select) {
+        return false;
+    }
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene) {
+        return false;
+    }
+    const QPointF scenePos = m_view->mapToScene(event->pos());
+    QList<ImageItem *> selected;
+    for (QGraphicsItem *gi : scene->selectedItems()) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (ii->isInteractive() && m_view->liveItems().contains(ii)) {
+                selected.append(ii);
+            }
+        }
+    }
+    if (selected.size() == 1) {
+        ImageItem *item = selected.first();
+        HandlePressScratch press;
+        if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
+            && press.hasContinuousHandle()) {
+            m_itemInteract.beginHandleDrag(item, item->placement(), press);
+            event->accept();
+            return true;
+        }
+    } else if (selected.size() > 1) {
+        const int gh = groupHandleAt(event->pos(), selected);
+        if (gh >= 0 && beginGroupScale(gh, selected)) {
+            event->accept();
+            return true;
+        }
+    }
+    // Image body under cursor → Image mode for *this* session slot
+    // (path-only open would always hit the first duplicate in the session).
+    for (QGraphicsItem *gi : scene->items(scenePos)) {
+        if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
+            if (ii->isInteractive() && m_view->liveItems().contains(ii)) {
+                m_view->hostGallery().emitItemOpenInImageMode(ii);
+                event->accept();
+                return true;
+            }
+        }
+    }
+    event->accept();
+    return true;
+}

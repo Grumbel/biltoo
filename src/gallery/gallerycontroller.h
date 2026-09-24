@@ -118,6 +118,8 @@ public:
     bool tryWheelGalleryScroll(QWheelEvent *event);
     bool tryMousePressGalleryRight(QMouseEvent *event);
     bool tryMousePressGalleryLeft(QMouseEvent *event);
+    /** Gallery double-click: open tile in Image mode. */
+    bool tryMouseDoubleClick(QMouseEvent *event);
     /** Start session-row QDrag when armed and past drag distance. */
     bool tryMouseMoveGalleryDrag(QMouseEvent *event);
     void clearGalleryDragArm();
