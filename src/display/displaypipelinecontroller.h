@@ -118,7 +118,7 @@ public:
      */
     void bakeItemRotate90(ImageItem *item, int quarterTurns);
     /**
-     * Durable content flip bake. ImageView::bakeItemFlip forwards here.
+     * Durable content flip bake (chrome / toolbar).
      */
     void bakeItemFlip(ImageItem *item, bool horizontal, bool vertical);
     /**
