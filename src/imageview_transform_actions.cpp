@@ -4,7 +4,6 @@
 // Transform action thin routers. Geometry/content undo: item/geometryundocommand.cpp.
 
 #include "imageview.h"
-#include "item/placementlinear.h"
 #include "imageitem.h"
 
 void ImageView::flipHorizontal()
@@ -67,24 +66,17 @@ void ImageView::opacityReset()
     m_workspace.opacityReset();
 }
 
-void ImageView::resetItemScale(ImageItem *item)
+void ImageView::resetItemScale()
 {
-    m_workspace.resetItemScale(item);
+    m_workspace.resetItemScale();
 }
 
-void ImageView::resetItemRotation(ImageItem *item)
+void ImageView::resetItemRotation()
 {
-    m_workspace.resetItemRotation(item);
+    m_workspace.resetItemRotation();
 }
 
-void ImageView::resetItemShear(ImageItem *item)
+void ImageView::resetItemShear()
 {
-    m_workspace.resetItemShear(item);
-}
-
-qreal ImageView::snapRotationDegrees(qreal degrees)
-{
-    // Image mode: always nearest 90° content orientation. Free Workspace tilt
-    // (residual off the cardinal) is discarded — never shown as an arbitrary angle.
-    return PlacementLinear::cardinalRotationOrZero(degrees);
+    m_workspace.resetItemShear();
 }

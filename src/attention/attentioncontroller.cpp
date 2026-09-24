@@ -101,6 +101,18 @@ void AttentionController::ensureAttentionPoint()
     detectAttentionPoint();
 }
 
+void AttentionController::onCurrentSessionChanged()
+{
+    if (!session().active()) {
+        return;
+    }
+    session().clearDraft();
+    ensureAttentionPoint();
+    if (m_view->viewport()) {
+        m_view->viewport()->update();
+    }
+}
+
 void AttentionController::restoreAttentionPoints(const QVector<QPointF> &pts)
 {
     setAttentionPointsForTarget(pts);

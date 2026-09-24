@@ -2,14 +2,15 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2521.1-own-workspace-session-remove** (base `7d823d8`).
+**Tip: biltoo-2522.1-fix-transform-reset-thin** (base `7d823d8`).
 
 ### Build fix
-- ViewModeFlags uses `int` mode (ImageView::ViewMode is nested in ImageView)
+- `resetItemScale` / `resetItemRotation` / `resetItemShear` match no-arg header + WorkspaceController
+- Dropped dead `ImageView::snapRotationDegrees` (callers use `PlacementLinear` / crop snap)
 
-### Ownership transfer
-- **removeWorkspaceSessionId** + session-id remove helpers on WorkspaceController
-- ImageView thin routers
+### Ownership / hygiene
+- **AttentionController::onCurrentSessionChanged** owns attention draft reload on session id change
+- ImageView selection / canvas_focus / session_remove TUs: pure thin routers (dead includes gone)
 
 ### Residual on ImageView (intentional)
 ViewMode, ViewShellChrome, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -25,5 +26,5 @@ refreshScrollBarGeometry (view-matrix shell)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2521.1-own-workspace-session-remove-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2522.1-fix-transform-reset-thin-7d823d8.bundle HEAD
 ```

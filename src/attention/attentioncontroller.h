@@ -37,6 +37,8 @@ public:
 
     void ensureAttentionPoint();
     void restoreAttentionPoints(const QVector<QPointF> &pts);
+    /** Current session image changed: reload draft when attention mode is active. */
+    void onCurrentSessionChanged();
     void setAttentionMode(bool on);
     void paintAttentionOverlay(QPainter &painter);
 

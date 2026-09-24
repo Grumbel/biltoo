@@ -2,18 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Canvas selection and transform targets — WorkspaceController thin routers.
-// validateUniqueLiveSessionIds stays on ImageView (live + both stashes).
+// validateUniqueLiveSessionIds body lives on WorkspaceController (live + stashes).
 
 #include "imageview.h"
-#include "item/itemcomponents.h"
-#include "imageitem.h"
-#include "session/sessionappearance.h"
-
-#include <QSet>
-#include <QUndoStack>
-#include <QGraphicsItem>
-#include "display/imagecache.h"
-#include "content/contentxform.h"
 
 void ImageView::selectBySessionIndices(const QList<int> &indices)
 {
@@ -50,7 +41,6 @@ bool ImageView::validateUniqueLiveSessionIds(const char *context) const
     return m_workspace.validateUniqueLiveSessionIds(context);
 }
 
-
 QList<int> ImageView::selectedSessionIndices() const
 {
     return m_workspace.selectedSessionIndices();
@@ -60,7 +50,6 @@ void ImageView::selectAllCanvasItems()
 {
     m_workspace.selectAllCanvasItems();
 }
-
 
 QList<ImageItem *> ImageView::transformTargets() const
 {
@@ -86,4 +75,3 @@ void ImageView::placeWorkspaceClipboardItems(const QList<WorkspaceItemState> &it
 {
     m_workspace.placeClipboardItems(items, newIds, sessionIndices);
 }
-
