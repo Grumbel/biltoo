@@ -100,3 +100,23 @@ void GalleryController::revealSessionId(SessionImageId sessionId)
         }
     }
 }
+
+void GalleryController::enterGallery(LayoutMode packagedLayout)
+{
+    // Sticky Fit/Fill/1:1 is Image-mode only.
+    m_view->releaseStickyZoom();
+    if (packagedLayout == LayoutMode::FreeForm) {
+        packagedLayout = LayoutMode::Masonry;
+    }
+    if (m_view->isGalleryMode()) {
+        // Layout-only switch inside Gallery (no leave/enter of other modes).
+        enter(static_cast<int>(packagedLayout),
+              static_cast<int>(ImageView::ViewMode::Gallery));
+        return;
+    }
+    // Full mode switch through the central path so Workspace/Image leave runs
+    // and setActiveMode happens before GalleryController::enter.
+    // Preserve requested layout for setViewMode's Gallery branch.
+    m_view->hostLayout().setMode(packagedLayout);
+    m_view->setViewMode(ImageView::ViewMode::Gallery);
+}

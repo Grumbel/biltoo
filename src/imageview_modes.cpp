@@ -308,23 +308,9 @@ void ImageView::hardReloadFromDisk(bool relayoutGallery)
 
 void ImageView::enterGallery(LayoutMode packagedLayout)
 {
-    // Sticky Fit/Fill/1:1 is Image-mode only.
-    releaseStickyZoom();
-    if (packagedLayout == LayoutMode::FreeForm) {
-        packagedLayout = LayoutMode::Masonry;
-    }
-    if (m_viewMode == ViewMode::Gallery) {
-        // Layout-only switch inside Gallery (no leave/enter of other modes).
-        m_gallery.enter(static_cast<int>(packagedLayout),
-                        static_cast<int>(ViewMode::Gallery));
-        return;
-    }
-    // Full mode switch through the central path so Workspace/Image leave runs
-    // and setActiveMode happens before GalleryController::enter.
-    // Preserve requested layout for setViewMode's Gallery branch.
-    hostLayout().setMode(packagedLayout);
-    setViewMode(ViewMode::Gallery);
+    m_gallery.enterGallery(packagedLayout);
 }
+
 
 // --- Tool / nav shell (was imageview_view.cpp) ---
 

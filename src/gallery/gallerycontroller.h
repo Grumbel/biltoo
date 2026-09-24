@@ -92,6 +92,8 @@ public:
     void focusSessionPath(const QString &path);
     void revealPath(const QString &path);
     void revealSessionId(SessionImageId sessionId);
+    /** Enter Gallery mode (or switch packaged layout if already Gallery). */
+    void enterGallery(LayoutMode packagedLayout);
 
     /** Drop hover path and selection anchor (leave / wipe). */
     void clearChrome()

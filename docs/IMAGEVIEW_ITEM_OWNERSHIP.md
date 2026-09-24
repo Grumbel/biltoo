@@ -517,3 +517,6 @@ Product shell (minimal):
     clearSceneKeepingStashes (Image enter canvas reset; stash-safe scene
     detach); ImageView thin routers.
 
+56. **biltoo-2514:** GalleryController owns enterGallery (layout-only switch or
+    full setViewMode path); ImageView thin router.
+
