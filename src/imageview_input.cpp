@@ -153,13 +153,7 @@ void ImageView::resizeEvent(QResizeEvent *event)
 }
 bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
 {
-    if (!(m_zoomRegion.isArmed() || (isWorkspaceMode() && m_tool == Tool::Zoom))
-        || event->button() != Qt::LeftButton) {
-        return false;
-    }
-    m_zoomRegion.tryBeginPress(event->pos(), viewport());
-    event->accept();
-    return true;
+    return m_image.tryMousePressZoomRegion(event);
 }
 bool ImageView::tryMousePressImageLink(QMouseEvent *event)
 {

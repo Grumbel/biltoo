@@ -377,7 +377,7 @@ QString ImageView::statusTextImageMode(ImageItem *item, const QString &quality,
 
 QString ImageView::statusText() const
 {
-    if (m_zoomRegion.isActive()) {
+    if (m_image.zoomRegion().isActive()) {
         return tr("Zoom region: drag a rectangle · Esc cancels");
     }
     ImageItem *item = targetItem();

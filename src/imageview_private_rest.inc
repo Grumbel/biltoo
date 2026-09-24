@@ -162,8 +162,7 @@
     /** Content appearance staged by Duplicate until bind-on-create. */
     PendingItemAppearanceBook m_pendingAppearance;
     ViewportChrome m_chrome;
-    /** One-shot rubber-band zoom (Z). */
-    ZoomRegionGesture m_zoomRegion;
+    // ZoomRegionGesture: owned by ImageController (m_image).
 
 
     /** Multi-select group scale/rotate gesture (Workspace). */

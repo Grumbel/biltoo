@@ -363,3 +363,6 @@ Product shell (minimal):
     (EdgeNavPolicy::Zone); ImageView::EdgeZone remains public host enum with
     conversion bridges.
 
+17. **biltoo-2475:** ZoomRegionGesture (Z-key / Workspace Zoom tool) owned by
+    ImageController; ImageView thin arm/cancel/try* routers.
+

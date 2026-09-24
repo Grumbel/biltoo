@@ -141,11 +141,7 @@ bool ImageView::tryMouseMovePan(QMouseEvent *event)
 }
 bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
 {
-    if (!m_zoomRegion.tryUpdateMove(event->pos())) {
-        return false;
-    }
-    event->accept();
-    return true;
+    return m_image.tryMouseMoveZoomRegion(event);
 }
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
@@ -204,24 +200,10 @@ void ImageView::hostPushItemTransformUndo(ImageItem *item, const ItemComponents:
 }
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 {
-    if (!m_zoomRegion.isDragging()) {
-        return false;
-    }
-    QRect viewRect;
-    // Significant rubber → fit; tiny click cancels without zooming.
-    if (m_zoomRegion.tryEndRelease(event->pos(), &viewRect)) {
-        const QRectF sceneRect = mapToScene(viewRect).boundingRect();
-        if (sceneRect.isValid() && !sceneRect.isEmpty()) {
-            releaseStickyZoom();
-            m_framing.clearFitFill();
-            fitInView(sceneRect, Qt::KeepAspectRatio);
-            emit statusChanged();
-        }
-    }
-    cancelZoomRegion();
-    event->accept();
-    return true;
+    return m_image.tryMouseReleaseZoomRegion(event);
 }
+
+
 bool ImageView::tryMouseReleasePan(QMouseEvent *event)
 {
     if (!m_chrome.isPanning()
@@ -258,12 +240,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
 }
 bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
 {
-    if (event->key() != Qt::Key_Escape || !(m_zoomRegion.isActive())) {
-        return false;
-    }
-    cancelZoomRegion();
-    event->accept();
-    return true;
+    return m_image.tryKeyPressZoomRegion(event);
 }
 bool ImageView::tryKeyPressSelectAll(QKeyEvent *event)
 {

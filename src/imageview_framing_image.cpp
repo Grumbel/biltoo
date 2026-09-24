@@ -54,12 +54,7 @@ static bool itemHasReliableFrameSize(const ImageItem *item)
 
 void ImageView::cancelZoomRegion()
 {
-    m_zoomRegion.disarm();
-    m_zoomRegion.hideRubber();
-    if (!m_chrome.isPanning() && !m_workspace.itemInteract().isRotating()) {
-        setCursor(ToolPolicy::cursorFor(m_tool));
-    }
-    emit statusChanged();
+    m_image.cancelZoomRegion();
 }
 
 
@@ -351,14 +346,7 @@ void ImageView::zoomFill()
 
 void ImageView::armZoomRegion()
 {
-    if (m_items.isEmpty() && isImageMode() && !m_image.hasClassicPath()) {
-        return;
-    }
-    cancelZoomRegion();
-    m_zoomRegion.arm();
-    setCursor(Qt::CrossCursor);
-    emit statusChanged();
-    viewport()->update();
+    m_image.armZoomRegion();
 }
 
 

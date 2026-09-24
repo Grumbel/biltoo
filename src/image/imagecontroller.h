@@ -6,6 +6,7 @@
 
 #include <QString>
 #include "image/edgenavpolicy.h"
+#include "slideshow/zoomregiongesture.h"
 #include <QSize>
 
 class ImageView;
@@ -65,10 +66,21 @@ public:
                                               const QSize &after);
     void syncImageModeSceneRect(ImageItem *item);
 
+    // Z-key / Workspace Zoom-tool rubber-band (owns ZoomRegionGesture).
+    ZoomRegionGesture &zoomRegion() { return m_zoomRegion; }
+    const ZoomRegionGesture &zoomRegion() const { return m_zoomRegion; }
+    void armZoomRegion();
+    void cancelZoomRegion();
+    bool tryMousePressZoomRegion(QMouseEvent *event);
+    bool tryMouseMoveZoomRegion(QMouseEvent *event);
+    bool tryMouseReleaseZoomRegion(QMouseEvent *event);
+    bool tryKeyPressZoomRegion(QKeyEvent *event);
+
 private:
     ImageView *m_view = nullptr;
     QString m_classicPath;
     EdgeNavPolicy::Zone m_hoverEdge = EdgeNavPolicy::Zone::None;
+    ZoomRegionGesture m_zoomRegion;
 };
 
 #endif // IMAGECONTROLLER_H

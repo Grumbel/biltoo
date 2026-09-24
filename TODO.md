@@ -2,16 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2474.2-fix-sizeresolve-qpointer** (base `7d823d8`).
+**Tip: biltoo-2475.1-own-zoom-region** (base `7d823d8`).
 
-### Fix compile after 2474
-- `gallerycontroller_sizeresolve.cpp`: `#include <QPointer>` (incomplete type on QPointer<ImageView>)
-- ImageView ctor: init-list order matches declaration (`m_gallery` before `m_size`)
+### Ownership transfer
+- **ZoomRegionGesture** on ImageController (`imagecontroller_zoom.cpp`)
+- ImageView: thin `armZoomRegion` / `cancelZoomRegion` / try* routers
 
 ### Stack
-2471–2474 ownership · **2474.2** compile fix
+2471–2474 · 2474.2 compile · **2475 zoom region**
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2474.2-fix-sizeresolve-qpointer-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2475.1-own-zoom-region-7d823d8.bundle HEAD
 ```
