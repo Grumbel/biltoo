@@ -42,6 +42,8 @@ public:
     void onViewResized();
     /** Pointer left the viewport: clear edge hover. */
     void onViewportLeave();
+    /** Session content appearance changed for live Image underlay. */
+    void onContentAppearancePropagated(ImageItem *item);
 
     QString classicPath() const { return m_classicPath; }
     bool hasClassicPath() const { return !m_classicPath.isEmpty(); }

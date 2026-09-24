@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "gallery/gallerycontroller.h"
+#include "gallery/gallerylayout.h"
 #include <QWidget>
 #include "gallery/gallerydecodesm.h"
 #include <memory>
@@ -1225,6 +1226,13 @@ void GalleryController::onViewportLeave()
             vp->update();
         }
     }
+}
+
+void GalleryController::onContentAppearancePropagated()
+{
+    // Aspect / crop may change pack cell size — debounce packs concurrent
+    // multi-select rotates into one layout pass.
+    requestDebouncedPack(GalleryPackReason::ContentChange);
 }
 
 

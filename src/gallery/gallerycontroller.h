@@ -134,6 +134,8 @@ public:
     void onViewResized();
     /** Pointer left the viewport: clear hover path. */
     void onViewportLeave();
+    /** Session content appearance changed: debounce pack for aspect/crop. */
+    void onContentAppearancePropagated();
     void updateDecodeWindow();
     /** During size gate: coalesced rebuildVirtualPlan + syncVirtualWindow. */
     void scheduleSizeGatePlanRefresh();

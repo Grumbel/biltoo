@@ -359,3 +359,18 @@ void ImageController::onViewportLeave()
         }
     }
 }
+
+void ImageController::onContentAppearancePropagated(ImageItem *item)
+{
+    if (!item || !m_view->isImageMode()) {
+        return;
+    }
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene || item->scene() != scene) {
+        return;
+    }
+    scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+}

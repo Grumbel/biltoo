@@ -142,16 +142,11 @@ void ImageView::propagateSessionAppearanceToViews(ImageItem *item)
     }
 
     if (isGalleryMode()) {
-        // Aspect / crop may change pack cell size — debounce packs concurrent
-        // multi-select rotates into one layout pass.
-        requestDebouncedGalleryPack(GalleryPackReason::ContentChange);
+        m_gallery.onContentAppearancePropagated();
     } else if (isWorkspaceMode()) {
-        updateWorkspaceSceneRect();
-    } else if (isImageMode() && m_scene && item->scene() == m_scene) {
-        m_scene->setSceneRect(item->sceneBoundingRect().adjusted(-8, -8, 8, 8));
-        if (viewport()) {
-            viewport()->update();
-        }
+        m_workspace.updateSceneRect();
+    } else if (isImageMode()) {
+        m_image.onContentAppearancePropagated(item);
     }
 }
 
