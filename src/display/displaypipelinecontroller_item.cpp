@@ -69,7 +69,7 @@ WorkspaceItemState DisplayPipelineController::appearanceForNewImageModeItem(cons
             // Session open (seedSessionAppearancesFromPaths) and Gallery already
             // seed; installDisplayPixels also refuses XDG (ECS_GUI_BYPASSES #7).
             if (m_host->itemWorld().hasDurableAppearance(curId)) {
-                return m_view->sessionAppearanceValue(curId);
+                return m_host->sessionAppearanceValue(curId);
             }
             // Bound with empty ItemWorld = full frame, no path fallback.
             return {};
@@ -138,8 +138,8 @@ ImageItem *DisplayPipelineController::createItemFromImage(const QString &path, c
     if (wantBake) {
         // Seed item chrome so wantAppearanceForItem can merge if the store slot
         // is still empty (bound id with no entry yet).
-        m_view->syncLiveContentMetaFromState(item, app);
-        m_view->syncLiveColorFromState(item, storeGrade);
+        m_host->syncLiveContentMetaFromState(item, app);
+        m_host->syncLiveColorFromState(item, storeGrade);
         const SessionImageId sid = sidEarly;
         const int hostEdge = ImageCache::longEdge(image);
         const auto kind = (hostEdge > ThumtooCache::kGalleryLadderEdge)
@@ -303,7 +303,7 @@ void DisplayPipelineController::applyStoredContentAppearanceSeed(SessionImageId 
     if (m_host->itemWorld().hasDurableAppearance(sid)) {
         // Keep a non-identity entry; refill only if the slot is still empty of
         // content ops so Gallery→Image cannot miss durable orientation.
-        if (SessionAppearance::hasContentAppearance(m_view->sessionAppearanceValue(sid))) {
+        if (SessionAppearance::hasContentAppearance(m_host->sessionAppearanceValue(sid))) {
             return;
         }
     }
@@ -348,7 +348,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
     const SessionImageId id = resolveItemSessionId(item, sid);
     if (id != kInvalidSessionImageId) {
         if (m_host->itemWorld().hasDurableAppearance(id)) {
-            want = m_view->sessionAppearanceValue(id);
+            want = m_host->sessionAppearanceValue(id);
         }
         // Gallery/Workspace: path XDG seed when id slot is empty (cold pack).
         // Image mode: never seed here — session open seeds; underlay install
@@ -360,7 +360,7 @@ WorkspaceItemState DisplayPipelineController::wantAppearanceForItem(const ImageI
             const_cast<DisplayPipelineController *>(this)->seedSessionAppearanceFromState(
                 id, item->path());
             if (m_host->itemWorld().hasDurableAppearance(id)) {
-                want = m_view->sessionAppearanceValue(id);
+                want = m_host->sessionAppearanceValue(id);
             }
         }
     } else if (item->sessionId() == kInvalidSessionImageId) {
@@ -465,8 +465,8 @@ void DisplayPipelineController::bindImageModeSessionCursor(ImageItem *item)
             }
         }
         if (sid != kInvalidSessionImageId) {
-            m_view->setItemSessionId(item, sid);
-            if (m_view->sessionListIndex(item) < 0 && listIdx >= 0) {
+            m_host->setItemSessionId(item, sid);
+            if (m_host->sessionListIndex(item) < 0 && listIdx >= 0) {
                 item->setSessionIndex(listIdx);
             }
         } else if (listIdx >= 0) {
@@ -512,7 +512,7 @@ QImage DisplayPipelineController::resolveImageModePendingPixels(const QString &p
     if (!preview.isNull()) {
         return preview;
     }
-    QImage pixels = m_view->hostSlideshow().slideshowRaster(path);
+    QImage pixels = m_host->hostSlideshow().slideshowRaster(path);
     if (!pixels.isNull()) {
         return pixels;
     }
@@ -568,24 +568,24 @@ void DisplayPipelineController::frameImageModeReplaceItem(ImageItem *item, const
     // Slideshow framing: when dwell motion is on, the camera sets the
     // transform (including handoff from a live transition). Applying zoom
     // framing first would centre the image then jump to motion t0.
-    if (m_view->hostSlideshow().hud().isProgressActive() && m_view->hostSlideshow().settings().isMotionOff()) {
-        m_view->hostSlideshow().applySlideshowZoomFraming(item);
-    } else if (!m_view->hostSlideshow().hud().isProgressActive()) {
-        m_view->applyImageModeFraming(item);
+    if (m_host->hostSlideshow().hud().isProgressActive() && m_host->hostSlideshow().settings().isMotionOff()) {
+        m_host->hostSlideshow().applySlideshowZoomFraming(item);
+    } else if (!m_host->hostSlideshow().hud().isProgressActive()) {
+        m_host->applyImageModeFraming(item);
     }
-    m_view->syncImageModeSceneRect(item);
+    m_host->syncImageModeSceneRect(item);
     // Apply camera while updates are still blocked and any live hold still
     // covers the viewport — avoids a flash of identity / wrong pan pose.
-    m_view->hostSlideshow().maybeStartSlideshowMotion();
-    if (m_view->hostSlideshow().hud().isProgressActive() && !m_view->hostSlideshow().settings().isMotionOff()
-        && !m_view->hostSlideshow().dwell().isMotionActive()) {
-        m_view->hostSlideshow().applySlideshowZoomFraming(item);
+    m_host->hostSlideshow().maybeStartSlideshowMotion();
+    if (m_host->hostSlideshow().hud().isProgressActive() && !m_host->hostSlideshow().settings().isMotionOff()
+        && !m_host->hostSlideshow().dwell().isMotionActive()) {
+        m_host->hostSlideshow().applySlideshowZoomFraming(item);
     }
-    if (m_view->hostSlideshow().hud().isProgressActive()) {
+    if (m_host->hostSlideshow().hud().isProgressActive()) {
         item->setVisible(false);
         // Paused ←/→ loads the underlay while pure phase still paints the
         // previous path — refresh dwell to this decode.
-        m_view->hostSlideshow().setSlideshowPhase(path, QString(), -1.0);
+        m_host->hostSlideshow().setSlideshowPhase(path, QString(), -1.0);
     }
 }
 
@@ -610,21 +610,21 @@ void DisplayPipelineController::seedEmptyWorkspaceFromReplace(const QString &pat
     // ad-hoc path place — hostSessionId is the cursor identity.
     if (m_host->hostSessionId().hasCurrentId()) {
         const SessionImageId sid = m_host->hostSessionId().currentIdValue();
-        m_view->setItemSessionId(item, sid);
-        if (m_view->sessionListIndex(item) < 0
+        m_host->setItemSessionId(item, sid);
+        if (m_host->sessionListIndex(item) < 0
             && m_host->hostSessionId().currentIndex() >= 0) {
             item->setSessionIndex(m_host->hostSessionId().currentIndex());
         }
         if (m_host->itemWorld().hasDurableAppearance(sid)) {
-            m_view->applyState(item, m_view->sessionAppearanceValue(sid));
+            m_view->applyState(item, m_host->sessionAppearanceValue(sid));
         }
     } else if (m_host->hostSessionId().currentIndex() >= 0) {
         item->setSessionIndex(m_host->hostSessionId().currentIndex());
     }
     item->setSelected(true);
-    m_view->hostFraming().armFit();
+    m_host->hostFraming().armFit();
     m_view->fitItem(item, m_view->currentFitAspectMode());
-    emit m_view->statusChanged();
+    m_host->notifyStatusChanged();
 }
 
 
@@ -634,11 +634,11 @@ ImageItem *DisplayPipelineController::imageModeItemForPath(const QString &path) 
     if (path.isEmpty()) {
         return nullptr;
     }
-    ImageItem *cur = m_view->targetItem();
+    ImageItem *cur = m_host->targetItem();
     if (cur && cur->path() == path) {
         return cur;
     }
-    cur = m_view->primaryItem();
+    cur = m_host->primaryItem();
     if (cur && cur->path() == path) {
         return cur;
     }
@@ -667,9 +667,9 @@ int DisplayPipelineController::imageModeOnScreenNeedEdge() const
     if (!m_host->isImageMode()) {
         return 0;
     }
-    const ImageItem *item = m_view->targetItem();
+    const ImageItem *item = m_host->targetItem();
     if (!item) {
-        item = m_view->primaryItem();
+        item = m_host->primaryItem();
     }
     return itemOnScreenNeedEdge(item, /*allowHighRes=*/true);
 }
@@ -683,8 +683,8 @@ void DisplayPipelineController::onImageLoaded(const QString &path, const QImage 
     if (!image.isNull() && !path.isEmpty()) {
         ImageCache::put(path, image);
         // Quality/soft climb during slideshow → phase buffer + atlas upgrade.
-        if (m_view->hostSlideshow().hud().isProgressActive()) {
-            m_view->hostSlideshow().onSlideshowRasterReady(path, image);
+        if (m_host->hostSlideshow().hud().isProgressActive()) {
+            m_host->hostSlideshow().onSlideshowRasterReady(path, image);
         }
     }
     switch (static_cast<ImageView::LoadRole>(role)) {
@@ -704,7 +704,7 @@ void DisplayPipelineController::onImageLoaded(const QString &path, const QImage 
 
 bool DisplayPipelineController::loadImage(const QString &path)
 {
-    m_view->hostImage().setClassicPath(path);
+    m_host->hostImage().setClassicPath(path);
     m_view->clearTextSelection();
     m_view->hostTextLayer().clearLinkHoverTip();
     if (m_view->hostTextLayer().showsRegions() || m_view->hostTextLayer().hasSearchQuery()) {
@@ -719,7 +719,7 @@ bool DisplayPipelineController::loadImage(const QString &path)
         if (m_host->liveItems().isEmpty()) {
             scheduleImageLoad(path, ImageView::LoadReplace);
         }
-        emit m_view->statusChanged();
+        m_host->notifyStatusChanged();
         return true;
     }
 
@@ -739,7 +739,7 @@ void DisplayPipelineController::ensureImageFocusSurface()
         }
         return;
     }
-    ImageItem *item = m_view->primaryItem();
+    ImageItem *item = m_host->primaryItem();
     if (!item || item->path().isEmpty()) {
         imageFocusSurfaceRef() = DisplaySurface::kInvalidSurfaceId;
         return;
@@ -766,7 +766,7 @@ void DisplayPipelineController::syncImageFocusSurfaceState()
     if (imageFocusSurfaceRef() == DisplaySurface::kInvalidSurfaceId) {
         return;
     }
-    ImageItem *item = m_view->primaryItem();
+    ImageItem *item = m_host->primaryItem();
     if (!item) {
         return;
     }
@@ -774,7 +774,7 @@ void DisplayPipelineController::syncImageFocusSurfaceState()
     const bool pending =
         m_host->hostPathRaster() && !path.isEmpty() && m_host->hostPathRaster()->isClimbPending(path);
     syncItemDisplaySurface(item, -1, pending);
-    if (m_view->hostCrop().session().isDraftSampleFrozen() && m_view->hostCrop().isCropDraftLockedPath(path)) {
+    if (m_host->hostCrop().session().isDraftSampleFrozen() && m_host->hostCrop().isCropDraftLockedPath(path)) {
         displaySurfaces().setFrozen(imageFocusSurfaceRef(), true);
     }
 }

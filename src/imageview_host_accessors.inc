@@ -5,28 +5,28 @@
     PathRasterService *hostPathRaster() override { return m_pathRaster; }
     const PathRasterService *hostPathRaster() const override { return m_pathRaster; }
     /** Image-mode controller (classic path, enter, reload). */
-    ImageController &hostImage() { return m_image; }
-    const ImageController &hostImage() const { return m_image; }
+    ImageController &hostImage() override { return m_image; }
+    const ImageController &hostImage() const override { return m_image; }
     /** Display pipeline host: slideshow controller (nav-hot, rasters, hud). */
-    SlideshowController &hostSlideshow() { return m_slideshow; }
-    const SlideshowController &hostSlideshow() const { return m_slideshow; }
+    SlideshowController &hostSlideshow() override { return m_slideshow; }
+    const SlideshowController &hostSlideshow() const override { return m_slideshow; }
     /** Display pipeline host: gallery soft SM book. */
-    GalleryDecodeBook &hostGalleryDecodeBook() { return m_galleryDecodeBook; }
-    const GalleryDecodeBook &hostGalleryDecodeBook() const { return m_galleryDecodeBook; }
+    GalleryDecodeBook &hostGalleryDecodeBook() override { return m_galleryDecodeBook; }
+    const GalleryDecodeBook &hostGalleryDecodeBook() const override { return m_galleryDecodeBook; }
     /** Display pipeline host: pending session binds. */
     SessionBindBook &hostBindBook() override { return m_bindBook; }
     const SessionBindBook &hostBindBook() const override { return m_bindBook; }
     ImageSizeBook &hostSizeBook() override { return m_sizeBook; }
     const ImageSizeBook &hostSizeBook() const override { return m_sizeBook; }
-    ViewFraming &hostFraming() { return m_framing; }
-    const ViewFraming &hostFraming() const { return m_framing; }
+    ViewFraming &hostFraming() override { return m_framing; }
+    const ViewFraming &hostFraming() const override { return m_framing; }
     ViewportChrome &hostChrome() { return m_chrome; }
     const ViewportChrome &hostChrome() const { return m_chrome; }
     /** Print page-guide session (Workspace overlay). */
     PageGuideSession &hostPageGuide() { return m_pageGuide; }
     const PageGuideSession &hostPageGuide() const { return m_pageGuide; }
-    GallerySizeResolve &hostGallerySizeResolve() { return m_gallerySizeResolve; }
-    const GallerySizeResolve &hostGallerySizeResolve() const { return m_gallerySizeResolve; }
+    GallerySizeResolve &hostGallerySizeResolve() override { return m_gallerySizeResolve; }
+    const GallerySizeResolve &hostGallerySizeResolve() const override { return m_gallerySizeResolve; }
     /** Display pipeline host: layout prefs (free-form check). */
     LayoutPrefs &hostLayout() { return m_layout; }
     const LayoutPrefs &hostLayout() const { return m_layout; }
@@ -37,8 +37,8 @@
         return m_galleryRelayoutSuppress;
     }
     /** Display pipeline host: gallery controller (stashed items). */
-    GalleryController &hostGallery() { return m_gallery; }
-    const GalleryController &hostGallery() const { return m_gallery; }
+    GalleryController &hostGallery() override { return m_gallery; }
+    const GalleryController &hostGallery() const override { return m_gallery; }
     WorkspaceController &hostWorkspace() { return m_workspace; }
     const WorkspaceController &hostWorkspace() const { return m_workspace; }
     ItemInteractSession &hostItemInteract() { return m_itemInteract; }
@@ -58,8 +58,8 @@
     const DisplayPipelineController &hostDisplayPipeline() const { return m_displayPipeline; }
 
     /** Display pipeline host: crop controller (draft freeze). */
-    CropController &hostCrop() { return m_cropCtrl; }
-    const CropController &hostCrop() const { return m_cropCtrl; }
+    CropController &hostCrop() override { return m_cropCtrl; }
+    const CropController &hostCrop() const override { return m_cropCtrl; }
     AttentionController &hostAttention() { return m_attentionCtrl; }
     const AttentionController &hostAttention() const { return m_attentionCtrl; }
     /** Display pipeline host: text layer (loadImage side effects). */

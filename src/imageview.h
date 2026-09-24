@@ -165,7 +165,7 @@ public:
      * the item is bound; falls back to the cached ImageItem::sessionIndex().
      * List position is not identity (IDENTITY.md) — use sessionId for that.
      */
-    int sessionListIndex(const ImageItem *item) const;
+    int sessionListIndex(const ImageItem *item) const override;
     /**
      * Stamp list-order cache from document when bound; clear to -1 when unbound.
      * Pack-row hints must be restamped by the caller after refresh.
@@ -239,7 +239,7 @@ public:
      * when orient/crop is known.
      */
     QSize contentLayoutSize(const QString &path, SessionImageId sessionId,
-                            bool allowStoreAppearance = true) const;
+                            bool allowStoreAppearance = true) const override;
     // Host accessors (controllers): path raster, books, prefs — imageview_host_accessors.inc
 #include "imageview_host_accessors.inc"
 
@@ -285,6 +285,10 @@ public:
     bool isWorkspaceMode() const override { return m_viewMode == ViewMode::Workspace; }
     /** DisplayPipelineHost: QGraphicsView viewport for update/geometry. */
     QWidget *viewportWidget() override { return viewport(); }
+    QObject *hostObject() override { return this; }
+    void notifyStatusChanged() override { emit statusChanged(); }
+    void notifyWorkspacePathsChanged() override { emit workspacePathsChanged(); }
+    void setUpdatesEnabled(bool enabled) override { QGraphicsView::setUpdatesEnabled(enabled); }
 
 
     /**
@@ -535,31 +539,31 @@ public:
      * Install applied ContentXform fingerprint on the live ImageItem.
      * ItemWorld remains authority for bound ids. Applied survives pixel clear.
      */
-    void syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state);
+    void syncLiveContentMetaFromState(ImageItem *item, const WorkspaceItemState &state) override;
     /**
      * Install live color grade on the item (record-only or rebuild display).
      * ItemWorld Color table remains authority for bound ids.
      */
     void syncLiveColorFromState(ImageItem *item, const ColorAdjustments &grade,
-                                bool rebuildDisplay = false);
+                                bool rebuildDisplay = false) override;
     /**
      * Identity clear: drop applied ContentXform fingerprint.
      */
-    void clearLiveContentMeta(ImageItem *item);
+    void clearLiveContentMeta(ImageItem *item) override;
     /**
      * Applied ContentXform fingerprint for @p item.
      * Prefer ItemWorld runtime table when bound (Stage 2 residual 2081);
      * fall back to ImageItem mirror (paint / unbound).
      */
-    bool itemHasAppliedContentXform(const ImageItem *item) const;
-    ContentXform::Value itemAppliedContentXform(const ImageItem *item) const;
+    bool itemHasAppliedContentXform(const ImageItem *item) const override;
+    ContentXform::Value itemAppliedContentXform(const ImageItem *item) const override;
     /**
      * Live colour grade for @p item (slider / paint lag).
      * Prefer ItemWorld runtime lag when bound (host-side scratch); ImageItem
      * mirror for paint / unbound. Durable grade is ItemWorld Color.
      */
     ColorAdjustments itemLiveColor(const ImageItem *item) const;
-    void setItemSessionId(ImageItem *item, SessionImageId id);
+    void setItemSessionId(ImageItem *item, SessionImageId id) override;
     void setItemSessionIndex(ImageItem *item, int index);
     /** Persist session state and refresh filmstrip (chrome / toolbar edits). */
     void commitItemSessionEdit(ImageItem *item);
@@ -567,7 +571,7 @@ public:
     /**
      * Bound appearance for @p id (ItemWorld::appearanceValue — sparse-prefer).
      */
-    WorkspaceItemState sessionAppearanceValue(SessionImageId id) const;
+    WorkspaceItemState sessionAppearanceValue(SessionImageId id) const override;
     bool hasSessionAppearance(SessionImageId id) const;
     /** Restore appearance after session undo (store only; no canvas mutate). */
     void setSessionAppearance(SessionImageId id, const WorkspaceItemState &state);

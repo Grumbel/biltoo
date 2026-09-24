@@ -22,7 +22,7 @@
 
     // --- Display / framing host ops ---
     EdgeZone edgeZoneAt(const QPoint &viewPos) const;
-    ImageItem *primaryItem() const;
+    ImageItem *primaryItem() const override;
     void setHostHoverEdge(EdgeZone z) { m_hoverEdge = z; }
     /** Resolve/cache logical pixel size for @p path (probes if needed). */
     QSize ensureLogicalSizeForPath(const QString &path);

@@ -34,7 +34,7 @@
     void emitItemOpenInImageMode(ImageItem *item);
     /** Page-guide selection chrome (Workspace print frame). */
     void setPageGuideSelected(bool on);
-    ImageItem *targetItem() const;
+    ImageItem *targetItem() const override;
     /**
      * Remove @p item from the scene and delete it.
      * @p persistState when true snapshots via rememberItemState (pose/content

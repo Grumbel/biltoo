@@ -10,10 +10,10 @@
     }
     void refreshTextLayer();
     void requestDebouncedGalleryPack(GalleryPackReason reason = GalleryPackReason::ContentChange);
-    void syncImageModeSceneRect(ImageItem *item);
-    void captureStickyPanAnchor(ImageItem *item);
+    void syncImageModeSceneRect(ImageItem *item) override;
+    void captureStickyPanAnchor(ImageItem *item) override;
     void restoreStickyPanAnchor(ImageItem *item);
-    void applyImageModeFraming(ImageItem *item);
+    void applyImageModeFraming(ImageItem *item) override;
     /** View-local pack multiplicity (never SessionDocument — pathOrderClear). */
     int pathOrderOccurrences(const QString &path) const
     {

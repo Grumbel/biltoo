@@ -207,13 +207,27 @@ and sticky pan stay per-surface.
 - `DisplayPipelineController` holds `m_host` + `m_view`; Stage 0 call sites use
   `m_host->…` for the dual-critical surface above.
 
-### Stage 1 (next code)
+### Stage 1 (landed — biltoo-2450)
 
-- Grow `DisplayPipelineHost` (slideshow, crop, gallery controllers, framing
-  helpers, status signals) until `m_view` is only needed for QObject lifetime
-  or is removed.
-- Decide active-host switching (which surface receives install for a given
-  SessionImageId when two panes show different ids).
+- Host grows: controller bags (slideshow/crop/gallery/image/framing/
+  gallerySizeResolve), appearance helpers (sessionAppearanceValue,
+  applied ContentXform, sync live meta/color, contentLayoutSize,
+  sessionListIndex, setItemSessionId), primary/target items, Image-mode
+  framing/sticky anchors, setUpdatesEnabled, notifyStatusChanged /
+  notifyWorkspacePathsChanged, hostObject().
+- Pipeline migrates those sites to `m_host` (~471 host calls; ~76 residual
+  on `m_view` for tr(), load/place helpers, text layer, pack order, etc.).
+- `QPointer<ImageView>` guards and timer parents still use `m_view` (async
+  lambdas call ImageView-only APIs such as matchesLoadGeneration /
+  hostDisplayPipeline).
+
+### Stage 1b / Stage 2 (next)
+
+- Residual `m_view` long-tail (tr, clearLiveCanvas, applyState, load/place,
+  pack order, mapFromScene/mapToScene, hostTextLayer, …).
+- Active-host switching when two panes bind different SessionImageIds.
+- Optional: drop `m_view` once residual is zero and guards use hostObject +
+  narrow async surface.
 
 ### Residual on single ImageView (ok to keep)
 
