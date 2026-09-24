@@ -93,6 +93,11 @@ public:
      */
     void rematerializeItemContent(ImageItem *item, const WorkspaceItemState &want);
     /**
+     * Host ≤ GUI edge: materialize + attach. False if multi-MP or no host.
+     * Used by content bake (rotate/flip) for the pure GUI path.
+     */
+    bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
+    /**
      * Async full-host materialize when multi-MP exceeds GUI edge.
      * ImageView::scheduleAsyncHostRematerialize forwards here.
      */
@@ -235,8 +240,6 @@ private:
     ImageItem *imageModeItemForPath(const QString &path) const;
     void ensureImageFocusSurface();
     void syncImageFocusSurfaceState();
-
-    bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
 
     /**
      * SessionImageId for materialize / layout: @p preferred if set, else

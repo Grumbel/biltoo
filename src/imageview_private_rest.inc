@@ -10,16 +10,6 @@
     QImage blockingExportDisplayForItem(const ImageItem *item) const;
     void paintHighResExportItems(QPainter *painter, const QRectF &sourceScene,
                                  const QRectF &targetRect) const;
-    /** Host ≤512 materialize + attach; multi-MP returns false (caller schedules). */
-    bool tryRematerializeFromHost(ImageItem *item, const WorkspaceItemState &want);
-    /**
-     * Force contentRect / intrinsic from file-native + want (SIZE.md).
-     * Soft sample dimensions must never redefine geometry when a durable size
-     * is known. After live rotate/flip, always call this so paint does not
-     * stretch oriented pixels into the pre-orient box.
-     */
-    void finishAsyncHostRematerialize(const QString &path, SessionImageId sid,
-                                      const WorkspaceItemState &want, const QImage &display);
     /**
      * Best-known native pixel size for @p path from the session cache only.
      * Never does filesystem I/O — returns a neutral size and schedules an async

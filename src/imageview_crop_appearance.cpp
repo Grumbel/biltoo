@@ -92,7 +92,7 @@ void ImageView::restoreSessionCropAppearance(ImageItem *item)
     CropSession::applyItemPlacementFromState(item, app, isImageMode());
     if (full.isNull()) {
         rematerializeItemContent(item, app);
-    } else if (!tryRematerializeFromHost(item, app)) {
+    } else if (!m_displayPipeline.tryRematerializeFromHost(item, app)) {
         m_displayPipeline.installDisplayPixels(item, full, SessionAppearance::PixelKind::FullSource, sid);
         if (!ContentXform::equal(itemAppliedContentXform(item),
                                  ContentXform::Value::fromState(app))) {

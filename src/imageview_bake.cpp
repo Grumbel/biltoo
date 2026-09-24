@@ -46,7 +46,7 @@ void ImageView::bakeItemRotate90(ImageItem *item, int quarterTurns)
     // ContentXform is ground truth: absolute want from store + delta, pure
     // materialize from unoriented host. Never stack incremental transforms.
     // ≤512 host: GUI pure. Multi-MP: soft stand-in from clamped host + async.
-    if (!tryRematerializeFromHost(item, want)) {
+    if (!m_displayPipeline.tryRematerializeFromHost(item, want)) {
         const QString path = item->path();
         const QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
         bool gotDisplay = false;
@@ -208,7 +208,7 @@ void ImageView::bakeItemFlip(ImageItem *item, bool horizontal, bool vertical)
     // full when host is large or missing. Never incremental on display (#7).
     // Install applied ContentXform fingerprint (syncLiveContentMetaFromState).
     syncLiveContentMetaFromState(item, want);
-    if (!tryRematerializeFromHost(item, want)) {
+    if (!m_displayPipeline.tryRematerializeFromHost(item, want)) {
         const QString path = item->path();
         QImage host = path.isEmpty() ? QImage() : ImageCache::get(path);
         bool gotDisplay = false;
