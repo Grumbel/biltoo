@@ -327,6 +327,13 @@ QSize layoutSizeOrNative(const QSize &native, const WorkspaceItemState &want);
 [[nodiscard]] bool galleryCellAspectStale(const QSizeF &cell, const QSize &layoutSize,
                                           qreal tolerance = 0.04);
 
+/**
+ * Resolve file-native size for layout: logical → size-book → optional store cache.
+ * Returns the best known size (may still be empty/provisional).
+ */
+QSize pickNativeSize(const QSize &logical, const QSize &bookKnown,
+                     const QSize &storeKnown, bool allowStore);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H

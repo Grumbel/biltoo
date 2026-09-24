@@ -31,24 +31,14 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
                                    bool allowStoreAppearance) const
 {
     // Ground truth: native × ItemWorld content ops (same as filmstrip provider).
-    QSize native = logicalSizeForPath(path);
+    const QSize native = SessionAppearance::pickNativeSize(
+        logicalSizeForPath(path),
+        m_size.book().known(path),
+        allowStoreAppearance ? ThumtooCache::cachedSize(path) : QSize(),
+        allowStoreAppearance);
     if (!(native.width() > 1 && native.height() > 1)) {
-        native = m_size.book().known(path);
-    }
-    if (!(native.width() > 1 && native.height() > 1)) {
-        // Trigger probe on non-const path via const_cast schedule is awkward;
-        // callers still call layoutSizeForPath which schedules. Return native-ish.
-        // Bulk virtual plan passes allowStoreAppearance=false — skip Store size too.
-        if (allowStoreAppearance) {
-            const QSize known = ThumtooCache::cachedSize(path);
-            if (known.width() > 1 && known.height() > 1) {
-                native = known;
-            } else {
-                return native; // may be empty/provisional
-            }
-        } else {
-            return native;
-        }
+        // Callers still call layoutSizeForPath which schedules probes.
+        return native; // may be empty/provisional
     }
     WorkspaceItemState want;
     if (sessionId != kInvalidSessionImageId && hasSessionAppearance(sessionId)) {

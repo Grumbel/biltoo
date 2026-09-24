@@ -25,6 +25,23 @@ inline QRectF unionContentAabbs(const QVector<QRectF> &rects)
     return bounds;
 }
 
+/**
+ * Path-item preference for duplicate opens / crop: unique selected match wins,
+ * else unique live instance. Ambiguous multi-match → nullptr.
+ */
+template<typename Item>
+Item *preferUniquePathItem(Item *selectedMatch, int selectedMatches,
+                           Item *liveOnly, int liveMatches)
+{
+    if (selectedMatches == 1) {
+        return selectedMatch;
+    }
+    if (liveMatches == 1) {
+        return liveOnly;
+    }
+    return nullptr;
+}
+
 } // namespace SelectionGeometry
 
 #endif // SELECTIONGEOMETRY_H

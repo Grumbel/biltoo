@@ -650,4 +650,24 @@ bool galleryCellAspectStale(const QSizeF &cell, const QSize &layoutSize, qreal t
     return qAbs(cellAr - layAr) > tolerance;
 }
 
+
+QSize pickNativeSize(const QSize &logical, const QSize &bookKnown,
+                     const QSize &storeKnown, bool allowStore)
+{
+    const auto ok = [](const QSize &s) {
+        return s.width() > 1 && s.height() > 1;
+    };
+    if (ok(logical)) {
+        return logical;
+    }
+    if (ok(bookKnown)) {
+        return bookKnown;
+    }
+    if (allowStore && ok(storeKnown)) {
+        return storeKnown;
+    }
+    // Provisional: book (or empty logical) so callers can still schedule probes.
+    return bookKnown.isValid() && !bookKnown.isEmpty() ? bookKnown : logical;
+}
+
 } // namespace SessionAppearance

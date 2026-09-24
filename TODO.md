@@ -2,16 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2566.1-own-layout-size-pure** (base `7d823d8`).
+**Tip: biltoo-2567.1-own-native-path-prefer-pure** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::layoutSizeOrNative** — content layout size with native fallback
-- **SessionAppearance::galleryCellAspectStale** — Gallery pack clip aspect check
-- `contentLayoutSize` / `applyProbedImageSize` keep host size-book resolution
-- loading HUD weak-tile threshold uses **DisplayQuality::kLqipMaxEdge**
+- **SessionAppearance::pickNativeSize** — logical → book → optional store cache
+- **SelectionGeometry::preferUniquePathItem** — unique selected / unique live
+  path preference for duplicates
+- `contentLayoutSize` / `findPreferredItemForPath` keep host resolution loops
 
 ### Prior
-**2565.1** Own soft paint state pure on SessionAppearance.
+**2566.1** Own layout size pure helpers on SessionAppearance.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -29,5 +29,5 @@ input event routers (QGraphicsView overrides)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2566.1-own-layout-size-pure-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2567.1-own-native-path-prefer-pure-7d823d8.bundle HEAD
 ```

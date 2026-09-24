@@ -157,9 +157,6 @@ ImageItem *ImageView::findPreferredItemForPath(const QString &path) const
             selectedMatch = item;
         }
     }
-    if (selectedMatches == 1) {
-        return selectedMatch;
-    }
     // Sole live instance of this path.
     ImageItem *only = nullptr;
     int liveMatches = 0;
@@ -170,11 +167,9 @@ ImageItem *ImageView::findPreferredItemForPath(const QString &path) const
         ++liveMatches;
         only = item;
     }
-    if (liveMatches == 1) {
-        return only;
-    }
-    // Ambiguous multi-match with no exclusive selection — caller falls back.
-    return nullptr;
+    // Unique selected wins; else unique live; else ambiguous → null.
+    return SelectionGeometry::preferUniquePathItem(
+        selectedMatch, selectedMatches, only, liveMatches);
 }
 
 ImageItem *ImageView::findItemForPath(const QString &path) const
