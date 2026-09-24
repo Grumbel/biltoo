@@ -67,7 +67,7 @@ bool ImageController::tryMouseReleaseZoomRegion(QMouseEvent *event)
     if (m_zoomRegion.tryEndRelease(event->pos(), &viewRect)) {
         const QRectF sceneRect = m_view->mapToScene(viewRect).boundingRect();
         if (sceneRect.isValid() && !sceneRect.isEmpty()) {
-            m_view->releaseStickyZoom();
+            releaseStickyZoom();
             m_framing.clearFitFill();
             m_view->fitInView(sceneRect, Qt::KeepAspectRatio);
             emit m_view->statusChanged();

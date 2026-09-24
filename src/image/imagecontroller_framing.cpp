@@ -490,7 +490,7 @@ void ImageController::zoomViewBy(qreal factor)
     // preserved for inspection (matches wheel zoom). Pack /
     // resize still resets the view transform so tiles stay layout-correct
     // (AUDIT M4 — one policy: zoom works until next pack).
-    m_view->releaseStickyZoom();
+    releaseStickyZoom();
     m_framing.clearFitFill();
     // Keep the viewport centre stable when zooming via toolbar/shortcuts
     m_view->setTransformationAnchor(QGraphicsView::AnchorViewCenter);
@@ -533,7 +533,7 @@ void ImageController::wheelZoomAboutCursor(QWheelEvent *event)
     // Do not touch selected-item geometry here — prepareGeometryChange on
     // handle pads was expanding AABBs and fighting the user's pan/zoom.
     m_view->hostSlideshow().cancelSlideshowMotion();
-    m_view->releaseStickyZoom();
+    releaseStickyZoom();
     m_framing.releaseFit();
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     m_view->scale(factor, factor);
