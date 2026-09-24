@@ -84,17 +84,8 @@ ImageItem *ImageView::targetItem() const
 
 int ImageView::workspacePathOccurrenceCount(const QString &path) const
 {
-    int n = 0;
-    for (ImageItem *item : m_items) {
-        if (item->path() == path) {
-            ++n;
-        }
-    }
-    return n;
+    return m_workspace.pathOccurrenceCount(path);
 }
-
-
-
 
 void ImageView::focusGalleryItem(ImageItem *item)
 {

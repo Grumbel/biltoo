@@ -119,6 +119,9 @@ public:
     /** Refresh live tile SessionImageId / list-index from session document. */
     void rebindSession(const QStringList &sessionFiles,
                        const QVector<SessionImageId> &sessionIds);
+    int pathOccurrenceCount(const QString &path) const;
+    bool pathOnLiveCanvas(const QString &path) const;
+    void selectAllCanvasItems();
 
     /** Duplicate selection (Workspace + Gallery; MainWindow supplies new ids). */
     void duplicateSelected(const QVector<SessionImageId> &newIds, int firstSessionIndex);

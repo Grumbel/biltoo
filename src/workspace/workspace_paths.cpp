@@ -6,12 +6,16 @@
 
 #include "workspace/workspacecontroller.h"
 #include "imageview.h"
+#include "gallery/gallerycontroller.h"
 #include "imageitem.h"
 #include "display/displaypipelinecontroller.h"
 #include "imageview_types.h"
 
 #include <QHash>
 #include <QSet>
+#include <QGraphicsScene>
+#include <QGraphicsItem>
+#include <QWidget>
 #include <QStringList>
 #include <QVector>
 
@@ -312,4 +316,55 @@ void WorkspaceController::rebindSession(const QStringList &sessionFiles,
         }
     }
     m_view->hostValidateUniqueLiveSessionIds("rebindWorkspaceSession");
+}
+
+int WorkspaceController::pathOccurrenceCount(const QString &path) const
+{
+    int n = 0;
+    for (ImageItem *item : m_view->liveItems()) {
+        if (item && item->path() == path) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+bool WorkspaceController::pathOnLiveCanvas(const QString &path) const
+{
+    for (const ImageItem *ii : m_view->liveItems()) {
+        if (ii && ii->path() == path) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+void WorkspaceController::selectAllCanvasItems()
+{
+    QGraphicsScene *scene = m_view->canvasScene();
+    if (!scene || m_view->isImageMode() || m_view->liveItems().isEmpty()) {
+        return;
+    }
+    scene->blockSignals(true);
+    for (ImageItem *item : m_view->liveItems()) {
+        if (item) {
+            if (m_view->isGalleryMode()
+                && !(item->flags() & QGraphicsItem::ItemIsSelectable)) {
+                item->setGallerySelectable(true);
+            }
+            item->setSelected(true);
+        }
+    }
+    scene->blockSignals(false);
+    if (m_view->isGalleryMode()) {
+        if (QWidget *vp = m_view->viewport()) {
+            vp->update();
+        }
+    }
+    if (!m_view->liveItems().isEmpty()) {
+        m_view->hostGallery().setSelectionAnchor(m_view->liveItems().first());
+    }
+    emit m_view->canvasSelectionChanged();
+    emit m_view->statusChanged();
 }

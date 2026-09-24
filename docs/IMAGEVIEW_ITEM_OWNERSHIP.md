@@ -480,3 +480,7 @@ Product shell (minimal):
     focusSessionId/Path, revealPath/SessionId); ImageView thin routers for
     MainWindow and Gallery internal callers.
 
+47. **biltoo-2505:** WorkspaceController owns pathOnLiveCanvas,
+    pathOccurrenceCount, and selectAllCanvasItems; ImageView thin routers
+    (TileNeighborPrefetchHost pathOnLiveCanvas stays on ImageView surface).
+

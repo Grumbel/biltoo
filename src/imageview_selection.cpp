@@ -156,31 +156,8 @@ QList<int> ImageView::selectedSessionIndices() const
 
 void ImageView::selectAllCanvasItems()
 {
-    if (!m_scene || isImageMode() || m_items.isEmpty()) {
-        return;
-    }
-    m_scene->blockSignals(true);
-    for (ImageItem *item : m_items) {
-        if (item) {
-            if (isGalleryMode()
-                && !(item->flags() & QGraphicsItem::ItemIsSelectable)) {
-                item->setGallerySelectable(true);
-            }
-            item->setSelected(true);
-        }
-    }
-    m_scene->blockSignals(false);
-    if (isGalleryMode() && viewport()) {
-        viewport()->update();
-    }
-    if (!m_items.isEmpty()) {
-        m_gallery.setSelectionAnchor(m_items.first());
-    }
-    emit canvasSelectionChanged();
-    emit statusChanged();
+    m_workspace.selectAllCanvasItems();
 }
-
-
 
 
 QList<ImageItem *> ImageView::transformTargets() const
