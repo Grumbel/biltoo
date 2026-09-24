@@ -134,6 +134,8 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 6. Phase 6 (REFACTOR.md): header closure, then paint/input/size-book collaborators.
 7. **biltoo-2464:** Workspace multi-select group scale/rotate owned by
    `WorkspaceController` (`workspace_group.cpp`); ImageView is input router only.
+8. **biltoo-2465:** Page-guide session + behaviour on WorkspaceController.
+9. **biltoo-2466:** Workspace chrome try* + ItemInteractSession on WorkspaceController.
 8. **biltoo-2465:** Print page-guide (`PageGuideSession` + resize/chrome) owned by
    `WorkspaceController` (`workspace_pageguide.cpp`); ImageView thin API + print render.
 

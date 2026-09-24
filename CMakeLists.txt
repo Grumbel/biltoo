@@ -147,6 +147,7 @@ set(BILTOO_LIB_SOURCES
   src/workspace/workspacecontroller.cpp
   src/workspace/workspace_group.cpp
   src/workspace/workspace_pageguide.cpp
+  src/workspace/workspace_chrome.cpp
   src/workspace/workspacecontroller.h
   src/image/imagecontroller.cpp
   src/image/imagecontroller.h
@@ -248,7 +249,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview_transform_actions.cpp
   src/imageview_input.cpp
   src/imageview_input_events.cpp
-  src/imageview_workspace_chrome.cpp
   src/imageview_paint.cpp
   src/imageview_paint_background.cpp
   src/imageview_text.cpp

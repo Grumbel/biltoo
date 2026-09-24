@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Workspace viewport chrome and free-form rotate input (ImageView-owned).
+// Workspace viewport chrome and free-form rotate input (owned by WorkspaceController).
 
+#include "workspace/workspacecontroller.h"
 #include "imageview.h"
+#include "view/viewframing.h"
 #include "item/itemcomponents.h"
 #include "imageitem.h"
 #include "item/itemhandlepolicy.h"
@@ -13,30 +15,31 @@
 #include "workspace/grouptransformgeometry.h"
 #include <QToolTip>
 #include <QGraphicsItem>
+#include <QGraphicsScene>
 
-bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
+bool WorkspaceController::tryMousePressWorkspaceChrome(QMouseEvent *event)
 {
-    if (!isWorkspaceMode() || event->button() != Qt::LeftButton
-        || m_tool != Tool::Select) {
+    if (!m_view->isWorkspaceMode() || event->button() != Qt::LeftButton
+        || m_view->currentTool() != Tool::Select) {
         return false;
     }
     // Workspace chrome hit-testing is view-owned (DOMAIN: free-object transforms).
     // Chrome is painted above all tiles in viewport space; hit-testing must
     // similarly ignore scene z-order of other images under the pointer.
-    const QPointF scenePos = mapToScene(event->pos());
+    const QPointF scenePos = m_view->mapToScene(event->pos());
     QList<ImageItem *> selected;
-    for (QGraphicsItem *gi : m_scene->selectedItems()) {
+    for (QGraphicsItem *gi : m_view->canvasScene()->selectedItems()) {
         if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-            if (ii->isInteractive() && m_items.contains(ii)) {
+            if (ii->isInteractive() && m_view->liveItems().contains(ii)) {
                 selected.append(ii);
             }
         }
     }
     if (selected.size() > 1) {
         // Multi-select: group frame only (no per-item handles).
-        const int gh = m_workspace.groupHandleAt(event->pos(), selected);
-        if (gh >= 0 && m_workspace.beginGroupScale(gh, selected)) {
-            m_workspace.groupSession().setPressScenePos(mapToScene(event->pos()));
+        const int gh = groupHandleAt(event->pos(), selected);
+        if (gh >= 0 && beginGroupScale(gh, selected)) {
+            groupSession().setPressScenePos(m_view->mapToScene(event->pos()));
             event->accept();
             return true;
         }
@@ -47,16 +50,16 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
         HandlePressScratch press;
         if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
             && press.hasContinuousHandle()) {
-            m_itemInteract.beginHandleDrag(item, placementFromItem(item), press);
+            m_itemInteract.beginHandleDrag(item, (item ? item->placement() : ItemComponents::Placement{}), press);
             setPageGuideSelected(false);
             event->accept();
             return true;
         }
     }
     // Page guide scale grips when the guide is selected.
-    if (m_workspace.pageGuideSession().isInteractive()) {
-        const int ph = m_workspace.pageGuideHandleAt(event->pos());
-        if (ph >= 0 && m_workspace.beginPageGuideResize(ph)) {
+    if (pageGuideSession().isInteractive()) {
+        const int ph = pageGuideHandleAt(event->pos());
+        if (ph >= 0 && beginPageGuideResize(ph)) {
             event->accept();
             return true;
         }
@@ -65,24 +68,24 @@ bool ImageView::tryMousePressWorkspaceChrome(QMouseEvent *event)
     return false;
 }
 
-bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
+bool WorkspaceController::tryMousePressWorkspaceRotate(QMouseEvent *event)
 {
     // Workspace only: Shift + left button free-rotates (unless the press is on
     // a selected item's scale/chrome handle — those use Shift for opposite-edge scale).
-    if (!isWorkspaceMode() || event->button() != Qt::LeftButton
+    if (!m_view->isWorkspaceMode() || event->button() != Qt::LeftButton
         || !(event->modifiers() & Qt::ShiftModifier)) {
         return false;
     }
     ImageItem *hit = nullptr;
-    const QPointF scenePos = mapToScene(event->pos());
-    for (QGraphicsItem *gi : m_scene->items(scenePos)) {
+    const QPointF scenePos = m_view->mapToScene(event->pos());
+    for (QGraphicsItem *gi : m_view->canvasScene()->items(scenePos)) {
         if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
             hit = ii;
             break;
         }
     }
     if (!hit) {
-        hit = targetItem();
+        hit = m_view->targetItem();
     }
     if (hit && hit->isSelected() && hit->hasHandleAt(hit->mapFromScene(scenePos))) {
         // Fall through to QGraphicsView → ImageItem handle interaction.
@@ -91,21 +94,21 @@ bool ImageView::tryMousePressWorkspaceRotate(QMouseEvent *event)
     if (!hit) {
         return false;
     }
-    m_itemInteract.beginRotate(hit, angleAt(scenePos, hit), placementFromItem(hit));
-    m_scene->clearSelection();
+    m_itemInteract.beginRotate(hit, m_view->angleAt(scenePos, hit), (hit ? hit->placement() : ItemComponents::Placement{}));
+    m_view->canvasScene()->clearSelection();
     hit->setSelected(true);
-    setCursor(Qt::CrossCursor);
+    m_view->viewport()->setCursor(Qt::CrossCursor);
     event->accept();
     return true;
 }
 
-bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
+bool WorkspaceController::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
 {
     if (!m_itemInteract.isRotating()) {
         return false;
     }
-    const QPointF scenePos = mapToScene(event->pos());
-    const qreal angle = angleAt(scenePos, m_itemInteract.currentRotateItem());
+    const QPointF scenePos = m_view->mapToScene(event->pos());
+    const qreal angle = m_view->angleAt(scenePos, m_itemInteract.currentRotateItem());
     // Shift is held to start free-rotate; Ctrl snaps 90°, Shift alone 45°.
     // Stage 2: press-time placement rotation from interact session Placement.
     const qreal rot = PlacementLinear::placementRotationFromDrag(
@@ -117,23 +120,23 @@ bool ImageView::tryMouseMoveWorkspaceRotate(QMouseEvent *event)
     ItemComponents::Placement pl = m_itemInteract.currentDragStartPlacement();
     pl.rotation = rot;
     item->applyPlacement(pl);
-    m_framing.releaseFit();
-    emit statusChanged();
+    m_view->hostFraming().releaseFit();
+    m_view->notifyStatusChanged();
     event->accept();
     return true;
 }
 
-void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
+void WorkspaceController::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
 {
     // Workspace: drive handle hover from the view so highlight matches the
     // view-owned hit path (rotated / covered items included).
-    if (isWorkspaceMode() && m_tool == Tool::Select && !m_itemInteract.isHandleDragging()
-        && !m_workspace.groupSession().isScaleDrag() && !m_workspace.groupSession().isRotateDrag() && !m_chrome.isPanning()) {
-        const QPointF scenePos = mapToScene(event->pos());
+    if (m_view->isWorkspaceMode() && m_view->currentTool() == Tool::Select && !m_itemInteract.isHandleDragging()
+        && !groupSession().isScaleDrag() && !groupSession().isRotateDrag() && !m_view->hostChrome().isPanning()) {
+        const QPointF scenePos = m_view->mapToScene(event->pos());
         QList<ImageItem *> candidates;
-        for (QGraphicsItem *gi : m_scene->selectedItems()) {
+        for (QGraphicsItem *gi : m_view->canvasScene()->selectedItems()) {
             if (auto *ii = qgraphicsitem_cast<ImageItem *>(gi)) {
-                if (ii->isInteractive() && m_items.contains(ii)) {
+                if (ii->isInteractive() && m_view->liveItems().contains(ii)) {
                     candidates.append(ii);
                 }
             }
@@ -146,49 +149,49 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                     item->setHoverHandle(ImageItem::Handle::None);
                 }
             }
-            const int gh = m_workspace.groupHandleAt(event->pos(), candidates);
-            const bool groupHoverChanged = m_workspace.groupSession().setHoverHandle(gh);
+            const int gh = groupHandleAt(event->pos(), candidates);
+            const bool groupHoverChanged = groupSession().setHoverHandle(gh);
             if (groupHoverChanged) {
-                viewport()->update();
+                m_view->viewport()->update();
             }
             if (gh >= 0) {
                 // 0=TL 1=T 2=TR 3=R 4=BR 5=B 6=BL 7=L; 8–11 rotate
                 switch (gh) {
                 case 0: case 4: // TL, BR — NW–SE diagonal
-                    viewport()->setCursor(Qt::SizeFDiagCursor);
+                    m_view->viewport()->setCursor(Qt::SizeFDiagCursor);
                     break;
                 case 2: case 6: // TR, BL — NE–SW diagonal
-                    viewport()->setCursor(Qt::SizeBDiagCursor);
+                    m_view->viewport()->setCursor(Qt::SizeBDiagCursor);
                     break;
                 case 1: case 5:
-                    viewport()->setCursor(Qt::SizeVerCursor);
+                    m_view->viewport()->setCursor(Qt::SizeVerCursor);
                     break;
                 case 3: case 7:
-                    viewport()->setCursor(Qt::SizeHorCursor);
+                    m_view->viewport()->setCursor(Qt::SizeHorCursor);
                     break;
                 case 8: case 9: case 10: case 11:
-                    viewport()->setCursor(Qt::CrossCursor);
+                    m_view->viewport()->setCursor(Qt::CrossCursor);
                     break;
                 default:
-                    viewport()->setCursor(Qt::ArrowCursor);
+                    m_view->viewport()->setCursor(Qt::ArrowCursor);
                     break;
                 }
                 if (groupHoverChanged) {
                     const QString tip = GroupTransformGeometry::isRotateHandle(gh)
-                        ? tr("Rotate selection")
-                        : tr("Scale selection");
-                    QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
+                        ? QCoreApplication::translate("ImageView", "Rotate selection")
+                        : QCoreApplication::translate("ImageView", "Scale selection");
+                    QToolTip::showText(m_view->viewport()->mapToGlobal(event->pos()), tip, m_view->viewport());
                 }
-            } else if (!m_chrome.isPanning()) {
-                viewport()->unsetCursor();
+            } else if (!m_view->hostChrome().isPanning()) {
+                m_view->viewport()->unsetCursor();
                 if (groupHoverChanged) {
                     QToolTip::hideText();
                 }
             }
         } else {
-            if (m_workspace.groupSession().hasHoverHandle()) {
-                m_workspace.groupSession().clearHover();
-                viewport()->update();
+            if (groupSession().hasHoverHandle()) {
+                groupSession().clearHover();
+                m_view->viewport()->update();
             }
             ImageItem *hoverOwner = nullptr;
             ImageItem::Handle hoverH = ImageItem::Handle::None;
@@ -214,54 +217,54 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
                 item->setHoverHandle(next);
             }
             if (hoverChanged) {
-                viewport()->update();
+                m_view->viewport()->update();
             }
             if (hoverOwner && hoverH != ImageItem::Handle::None) {
                 using H = ImageItem::Handle;
                 switch (hoverH) {
                 case H::RotateTop: case H::RotateRight:
                 case H::RotateBottom: case H::RotateLeft:
-                    viewport()->setCursor(Qt::CrossCursor);
+                    m_view->viewport()->setCursor(Qt::CrossCursor);
                     break;
                 case H::ScaleTopLeft: case H::ScaleBottomRight:
                     // NW–SE diagonal
-                    viewport()->setCursor(Qt::SizeFDiagCursor);
+                    m_view->viewport()->setCursor(Qt::SizeFDiagCursor);
                     break;
                 case H::ScaleTopRight: case H::ScaleBottomLeft:
                     // NE–SW diagonal
-                    viewport()->setCursor(Qt::SizeBDiagCursor);
+                    m_view->viewport()->setCursor(Qt::SizeBDiagCursor);
                     break;
                 case H::ScaleTop: case H::ScaleBottom:
-                    viewport()->setCursor(Qt::SizeVerCursor);
+                    m_view->viewport()->setCursor(Qt::SizeVerCursor);
                     break;
                 case H::ScaleLeft: case H::ScaleRight:
-                    viewport()->setCursor(Qt::SizeHorCursor);
+                    m_view->viewport()->setCursor(Qt::SizeHorCursor);
                     break;
                 case H::ShearTop: case H::ShearBottom:
                     // Horizontal shear: drag along local X (↔ when upright).
-                    viewport()->setCursor(Qt::SizeHorCursor);
+                    m_view->viewport()->setCursor(Qt::SizeHorCursor);
                     break;
                 case H::ShearLeft: case H::ShearRight:
                     // Vertical local shear: drag along local Y (↕ when upright).
-                    viewport()->setCursor(Qt::SizeVerCursor);
+                    m_view->viewport()->setCursor(Qt::SizeVerCursor);
                     break;
                 case H::OpacitySlider:
-                    viewport()->setCursor(Qt::SizeVerCursor);
+                    m_view->viewport()->setCursor(Qt::SizeVerCursor);
                     break;
                 default:
-                    viewport()->setCursor(Qt::PointingHandCursor);
+                    m_view->viewport()->setCursor(Qt::PointingHandCursor);
                     break;
                 }
                 if (hoverChanged) {
                     const QString tip = ItemHandlePolicy::toolTip(hoverH);
                     if (!tip.isEmpty()) {
-                        QToolTip::showText(viewport()->mapToGlobal(event->pos()), tip, viewport());
+                        QToolTip::showText(m_view->viewport()->mapToGlobal(event->pos()), tip, m_view->viewport());
                     } else {
                         QToolTip::hideText();
                     }
                 }
-            } else if (!m_chrome.isPanning() && !m_itemInteract.isHandleDragging()) {
-                viewport()->unsetCursor();
+            } else if (!m_view->hostChrome().isPanning() && !m_itemInteract.isHandleDragging()) {
+                m_view->viewport()->unsetCursor();
                 if (hoverChanged) {
                     QToolTip::hideText();
                 }
@@ -271,17 +274,17 @@ void ImageView::updateMouseMoveWorkspaceChromeHover(QMouseEvent *event)
 
 }
 
-bool ImageView::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
+bool WorkspaceController::tryMouseReleaseWorkspaceRotate(QMouseEvent *event)
 {
     if (!m_itemInteract.isRotating() || event->button() != Qt::LeftButton) {
         return false;
     }
     if (m_itemInteract.currentRotateItem()) {
-        pushItemTransformUndo(m_itemInteract.currentRotateItem(), m_itemInteract.currentDragStartPlacement(),
-                              placementFromItem(m_itemInteract.currentRotateItem()), tr("Rotate"));
+        m_view->hostPushItemTransformUndo(m_itemInteract.currentRotateItem(), m_itemInteract.currentDragStartPlacement(),
+                              (m_itemInteract.currentRotateItem() ? m_itemInteract.currentRotateItem()->placement() : ItemComponents::Placement{}), QCoreApplication::translate("ImageView", "Rotate"));
     }
     m_itemInteract.endRotate();
-    restoreToolCursor();
+    m_view->restoreToolCursor();
     event->accept();
     return true;
 }

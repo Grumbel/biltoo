@@ -205,7 +205,7 @@ void ImageView::destroyCanvasItem(ImageItem *item, bool persistState)
     }
     // AUDIT H8/H9: clear every view-owned pointer before delete so paint /
     // input cannot touch a dangling ImageItem (BSP crashes in scene paint).
-    m_itemInteract.dropIfItem(item);
+    m_workspace.itemInteract().dropIfItem(item);
     if (item == m_gallery.selectionAnchor()) {
         m_gallery.setSelectionAnchor(nullptr);
     }

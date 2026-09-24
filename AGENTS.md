@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2465.1-own-workspace-page-guide**.
-Latest tip: **biltoo-2465** (+ thumtoo-338). Own: page guide on WorkspaceController.
+Latest agent handoff: **TODO.md → biltoo-2466.1-own-workspace-chrome**.
+Latest tip: **biltoo-2466** (+ thumtoo-338). Own: Workspace chrome + ItemInteract on WorkspaceController.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

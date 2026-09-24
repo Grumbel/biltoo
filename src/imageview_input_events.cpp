@@ -61,12 +61,12 @@ void ImageView::mousePressEvent(QMouseEvent *event)
         || m_attentionCtrl.tryMousePressAttention(event)
         || m_cropCtrl.tryMousePressCrop(event)
         || tryMousePressZoomRegion(event)
-        || tryMousePressWorkspaceChrome(event)
+        || m_workspace.tryMousePressWorkspaceChrome(event)
         || tryMousePressImageLink(event)
         || tryMousePressTextRubber(event)
         || m_image.tryMousePressEdges(event)
         || tryMousePressPan(event)
-        || tryMousePressWorkspaceRotate(event)
+        || m_workspace.tryMousePressWorkspaceRotate(event)
         || m_gallery.tryMousePressGalleryRight(event)
         || m_gallery.tryMousePressGalleryLeft(event)
         || m_workspace.tryMousePressSelect(event)) {
@@ -164,7 +164,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     updateMouseInfo(event->pos());
     if (tryMouseMovePageGuide(event)
         || tryMouseMoveGroupAndHandleDrag(event)
-        || tryMouseMoveWorkspaceRotate(event)) {
+        || m_workspace.tryMouseMoveWorkspaceRotate(event)) {
         return;
     }
 
@@ -175,7 +175,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
     m_chrome.setHoverViewPos(event->pos());
     m_slideshow.updateMouseMoveSlideshowSeek(event);
     m_gallery.updateGalleryHoverAt(m_chrome.hoverViewPos());
-    updateMouseMoveWorkspaceChromeHover(event);
+    m_workspace.updateMouseMoveWorkspaceChromeHover(event);
 
     QGraphicsView::mouseMoveEvent(event);
 }
@@ -195,6 +195,12 @@ void ImageView::pushItemTransformUndo(ImageItem *item, const ItemComponents::Pla
     // Single geometry undo path (persist + Placement command).
     pushItemGeometryCommand(text, item, before, after);
     emit statusChanged();
+}
+
+void ImageView::hostPushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
+                                          const ItemComponents::Placement &after, const QString &text)
+{
+    pushItemTransformUndo(item, before, after, text);
 }
 bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
 {
@@ -230,13 +236,13 @@ bool ImageView::tryMouseReleasePan(QMouseEvent *event)
 }
 bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
 {
-    if (!m_itemInteract.currentDragItem() || event->button() != Qt::LeftButton) {
+    if (!m_workspace.itemInteract().currentDragItem() || event->button() != Qt::LeftButton) {
         return false;
     }
-    pushItemTransformUndo(m_itemInteract.currentDragItem(),
-                          m_itemInteract.currentDragStartPlacement(),
-                          placementFromItem(m_itemInteract.currentDragItem()), tr("Move"));
-    m_itemInteract.endMove();
+    pushItemTransformUndo(m_workspace.itemInteract().currentDragItem(),
+                          m_workspace.itemInteract().currentDragStartPlacement(),
+                          placementFromItem(m_workspace.itemInteract().currentDragItem()), tr("Move"));
+    m_workspace.itemInteract().endMove();
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }
@@ -252,7 +258,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
         || tryMouseReleasePageGuide(event)
         || tryMouseReleaseGroupDrag(event)
         || tryMouseReleaseHandleDrag(event)
-        || tryMouseReleaseWorkspaceRotate(event)
+        || m_workspace.tryMouseReleaseWorkspaceRotate(event)
         || tryMouseReleasePan(event)) {
         return;
     }
@@ -428,7 +434,7 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
             HandlePressScratch press;
             if (item->beginHandleInteraction(scenePos, event->modifiers(), &press)
                 && press.hasContinuousHandle()) {
-                m_itemInteract.beginHandleDrag(item, placementFromItem(item), press);
+                m_workspace.itemInteract().beginHandleDrag(item, placementFromItem(item), press);
                 event->accept();
                 return;
             }

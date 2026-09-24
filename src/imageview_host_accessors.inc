@@ -58,8 +58,8 @@
     const GalleryController &hostGallery() const override { return m_gallery; }
     WorkspaceController &hostWorkspace() override { return m_workspace; }
     const WorkspaceController &hostWorkspace() const override { return m_workspace; }
-    ItemInteractSession &hostItemInteract() { return m_itemInteract; }
-    const ItemInteractSession &hostItemInteract() const { return m_itemInteract; }
+    ItemInteractSession &hostItemInteract() { return m_workspace.itemInteract(); }
+    const ItemInteractSession &hostItemInteract() const { return m_workspace.itemInteract(); }
     PerfStats &hostPerf() { return m_perf; }
     const PerfStats &hostPerf() const { return m_perf; }
     LayoutApplyGuard &hostLayoutApply() { return m_layoutApply; }

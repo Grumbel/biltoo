@@ -173,11 +173,9 @@
 
     // mousePressEvent phases (return true if the event was handled)
     bool tryMousePressZoomRegion(QMouseEvent *event);
-    bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressImageLink(QMouseEvent *event);
     bool tryMousePressTextRubber(QMouseEvent *event);
     bool tryMousePressPan(QMouseEvent *event);
-    bool tryMousePressWorkspaceRotate(QMouseEvent *event);
 
     // mouseMoveEvent phases
     bool tryMouseMoveTextRubber(QMouseEvent *event);
@@ -186,11 +184,8 @@
     bool tryMouseMoveZoomRegion(QMouseEvent *event);
     bool tryMouseMovePageGuide(QMouseEvent *event);
     bool tryMouseMoveGroupAndHandleDrag(QMouseEvent *event);
-    bool tryMouseMoveWorkspaceRotate(QMouseEvent *event);
-    void updateMouseMoveWorkspaceChromeHover(QMouseEvent *event);
 
     // mouseReleaseEvent phases
-    void restoreToolCursor();
     void pushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
                                const ItemComponents::Placement &after, const QString &text);
     bool tryMouseReleaseTextRubber(QMouseEvent *event);
@@ -198,7 +193,6 @@
     bool tryMouseReleasePageGuide(QMouseEvent *event);
     bool tryMouseReleaseGroupDrag(QMouseEvent *event);
     bool tryMouseReleaseHandleDrag(QMouseEvent *event);
-    bool tryMouseReleaseWorkspaceRotate(QMouseEvent *event);
     bool tryMouseReleasePan(QMouseEvent *event);
     bool tryMouseReleaseItemDrag(QMouseEvent *event);
 

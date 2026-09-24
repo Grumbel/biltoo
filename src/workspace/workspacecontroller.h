@@ -14,6 +14,7 @@
 #include <QString>
 #include <QTransform>
 #include "workspace/grouptransformsession.h"
+#include "item/iteminteractsession.h"
 #include "workspace/pageguidesession.h"
 
 class ImageView;
@@ -70,6 +71,16 @@ public:
     void hardReloadFromDisk();
 
 
+
+    ItemInteractSession &itemInteract() { return m_itemInteract; }
+    const ItemInteractSession &itemInteract() const { return m_itemInteract; }
+
+    bool tryMousePressWorkspaceChrome(QMouseEvent *event);
+    bool tryMousePressWorkspaceRotate(QMouseEvent *event);
+    bool tryMouseMoveWorkspaceRotate(QMouseEvent *event);
+    void updateMouseMoveWorkspaceChromeHover(QMouseEvent *event);
+    bool tryMouseReleaseWorkspaceRotate(QMouseEvent *event);
+
     // Multi-select group scale/rotate (owns GroupTransformSession).
     GroupTransformSession &groupSession() { return m_groupXform; }
     const GroupTransformSession &groupSession() const { return m_groupXform; }
@@ -114,6 +125,7 @@ private:
     QPointF m_savedViewCenter;
     bool m_hasSavedView = false;
 
+    ItemInteractSession m_itemInteract;
     GroupTransformSession m_groupXform;
     PageGuideSession m_pageGuide;
 

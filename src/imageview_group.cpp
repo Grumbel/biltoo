@@ -25,9 +25,9 @@ bool ImageView::tryMouseMoveGroupAndHandleDrag(QMouseEvent *event)
         event->accept();
         return true;
     }
-    if (m_itemInteract.isHandleDragging()) {
-        m_itemInteract.currentHandleDragItem()->updateHandleInteraction(
-            mapToScene(event->pos()), event->modifiers(), m_itemInteract.handlePressRef());
+    if (m_workspace.itemInteract().isHandleDragging()) {
+        m_workspace.itemInteract().currentHandleDragItem()->updateHandleInteraction(
+            mapToScene(event->pos()), event->modifiers(), m_workspace.itemInteract().handlePressRef());
         viewport()->update();
         event->accept();
         return true;
@@ -65,14 +65,14 @@ bool ImageView::tryMouseReleaseGroupDrag(QMouseEvent *event)
 
 bool ImageView::tryMouseReleaseHandleDrag(QMouseEvent *event)
 {
-    if (!m_itemInteract.isHandleDragging() || event->button() != Qt::LeftButton) {
+    if (!m_workspace.itemInteract().isHandleDragging() || event->button() != Qt::LeftButton) {
         return false;
     }
-    ImageItem *handleItem = m_itemInteract.currentHandleDragItem();
-    handleItem->endHandleInteraction(m_itemInteract.handlePressRef().handle);
-    pushItemTransformUndo(handleItem, m_itemInteract.currentDragStartPlacement(),
+    ImageItem *handleItem = m_workspace.itemInteract().currentHandleDragItem();
+    handleItem->endHandleInteraction(m_workspace.itemInteract().handlePressRef().handle);
+    pushItemTransformUndo(handleItem, m_workspace.itemInteract().currentDragStartPlacement(),
                           placementFromItem(handleItem), tr("Transform"));
-    m_itemInteract.endHandleDrag();
+    m_workspace.itemInteract().endHandleDrag();
     if (isWorkspaceMode()) {
         updateWorkspaceSceneRect();
     }

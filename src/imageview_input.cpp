@@ -250,7 +250,7 @@ bool ImageView::setHoverEdge(EdgeZone zone)
     m_hoverEdge = zone;
     if (isNavEdge(m_hoverEdge)) {
         setCursor(Qt::PointingHandCursor);
-    } else if (!m_chrome.isPanning() && !m_itemInteract.isRotating()) {
+    } else if (!m_chrome.isPanning() && !m_workspace.itemInteract().isRotating()) {
         setCursor(ToolPolicy::cursorFor(m_tool));
     }
     if (viewport()) {

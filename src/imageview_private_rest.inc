@@ -91,7 +91,6 @@
      * asymmetric pan when the image is fitted. No-op outside Image mode.
      */
     void ensureVisibleItem(ImageItem *item);
-    qreal angleAt(const QPointF &scenePos, ImageItem *item) const;
     void rememberItemState(ImageItem *item);
     WorkspaceItemState defaultStateForPath(const QString &path, int ordinal) const;
     /** Centre position that does not overlap existing items (viewport-aware). */
@@ -199,7 +198,6 @@
     /** One-shot rubber-band zoom (Z). */
     ZoomRegionGesture m_zoomRegion;
 
-    ItemInteractSession m_itemInteract;
 
     /** Multi-select group scale/rotate gesture (Workspace). */
 
