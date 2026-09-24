@@ -14,6 +14,7 @@ namespace ThumtooCache { struct StoredContentAppearance; }
 #include <QImage>
 #include <QRect>
 #include <QSize>
+#include <QSizeF>
 #include <QString>
 
 
@@ -312,6 +313,19 @@ WorkspaceItemState preferDurableColor(WorkspaceItemState slot,
                                           SessionImageId sid,
                                           bool hasSparseColor,
                                           const ColorAdjustments &sparseGrade);
+
+/**
+ * Content layout size from native × content ops; falls back to @p native when
+ * the derived size is empty/provisional.
+ */
+QSize layoutSizeOrNative(const QSize &native, const WorkspaceItemState &want);
+
+/**
+ * True when a Gallery cell clip aspect no longer matches content layout
+ * (stale square pack after probe / orient change).
+ */
+[[nodiscard]] bool galleryCellAspectStale(const QSizeF &cell, const QSize &layoutSize,
+                                          qreal tolerance = 0.04);
 
 } // namespace SessionAppearance
 

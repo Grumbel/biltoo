@@ -84,7 +84,7 @@ QString ImageView::loadingStatusHudLine() const
             if (!item->hasDisplayPixels()) {
                 ++blank;
             } else if (item->displayPixelLongEdge() > 0
-                       && item->displayPixelLongEdge() < 96) {
+                       && item->displayPixelLongEdge() <= DisplayQuality::kLqipMaxEdge) {
                 ++weak;
             }
         }

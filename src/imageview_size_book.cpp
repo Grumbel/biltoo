@@ -71,11 +71,7 @@ QSize ImageView::contentLayoutSize(const QString &path, SessionImageId sessionId
             SessionAppearance::applyStoredContentAppearance(&want, stored, false);
         }
     }
-    const QSize lay = ContentXform::layoutSize(native, want);
-    if (lay.width() > 1 && lay.height() > 1) {
-        return lay;
-    }
-    return native;
+    return SessionAppearance::layoutSizeOrNative(native, want);
 }
 
 
@@ -94,10 +90,7 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         // (turns + crop), not a simple axis swap.
         const SessionImageId sid = resolveContentEditSessionId(item);
         WorkspaceItemState want = m_displayPipeline->wantAppearanceForItem(item, sid);
-        QSize layoutSize = ContentXform::layoutSize(size, want);
-        if (!(layoutSize.width() > 1 && layoutSize.height() > 1)) {
-            layoutSize = size;
-        }
+        const QSize layoutSize = SessionAppearance::layoutSizeOrNative(size, want);
         const QSize cur = item->imageSize();
         if (cur == layoutSize) {
             continue;
@@ -106,17 +99,10 @@ void ImageView::applyProbedImageSize(const QString &path, const QSize &size)
         any = true;
         // Drop stale pack clip: square (or wrong-aspect) galleryCellSize was
         // cropping the updated contentRect until the next pack.
-        if (isGalleryMode() && !item->galleryCellSize().isEmpty()
-            && layoutSize.width() > 0 && layoutSize.height() > 0) {
-            const QSizeF cell = item->galleryCellSize();
-            if (cell.height() > 1e-3 && cell.width() > 1e-3) {
-                const qreal cellAr = cell.width() / cell.height();
-                const qreal layAr =
-                    qreal(layoutSize.width()) / qreal(layoutSize.height());
-                if (qAbs(cellAr - layAr) > 0.04) {
-                    item->setGalleryCellSize({});
-                }
-            }
+        if (isGalleryMode()
+            && SessionAppearance::galleryCellAspectStale(item->galleryCellSize(),
+                                                         layoutSize)) {
+            item->setGalleryCellSize({});
         }
         if (isImageMode() && item == targetItem()) {
             preserveImageViewOnLogicalSizeChange(item, cur, layoutSize);

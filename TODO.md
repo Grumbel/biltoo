@@ -2,16 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2565.1-own-soft-paint-state-pure** (base `7d823d8`).
+**Tip: biltoo-2566.1-own-layout-size-pure** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionAppearance::assembleSoftPaintState** — durable app + sparse Color →
-  filmstrip/soft materialize state (false when identity)
-- Gallery status pixel-mix uses **DisplayQuality::tierOf** (no local thresholds)
-- `imageWithSessionAppearance` keeps ItemWorld / path-map / XDG host resolution
+- **SessionAppearance::layoutSizeOrNative** — content layout size with native fallback
+- **SessionAppearance::galleryCellAspectStale** — Gallery pack clip aspect check
+- `contentLayoutSize` / `applyProbedImageSize` keep host size-book resolution
+- loading HUD weak-tile threshold uses **DisplayQuality::kLqipMaxEdge**
 
 ### Prior
-**2564.1** Own status suffix formatters on HudModel.
+**2565.1** Own soft paint state pure on SessionAppearance.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
@@ -29,5 +29,5 @@ input event routers (QGraphicsView overrides)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2565.1-own-soft-paint-state-pure-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2566.1-own-layout-size-pure-7d823d8.bundle HEAD
 ```

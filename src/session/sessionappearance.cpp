@@ -627,4 +627,27 @@ bool assembleSoftPaintState(WorkspaceItemState *out,
     return true;
 }
 
+
+QSize layoutSizeOrNative(const QSize &native, const WorkspaceItemState &want)
+{
+    const QSize lay = ContentXform::layoutSize(native, want);
+    if (lay.width() > 1 && lay.height() > 1) {
+        return lay;
+    }
+    return native;
+}
+
+bool galleryCellAspectStale(const QSizeF &cell, const QSize &layoutSize, qreal tolerance)
+{
+    if (cell.isEmpty() || layoutSize.width() <= 0 || layoutSize.height() <= 0) {
+        return false;
+    }
+    if (!(cell.height() > 1e-3 && cell.width() > 1e-3)) {
+        return false;
+    }
+    const qreal cellAr = cell.width() / cell.height();
+    const qreal layAr = qreal(layoutSize.width()) / qreal(layoutSize.height());
+    return qAbs(cellAr - layAr) > tolerance;
+}
+
 } // namespace SessionAppearance
