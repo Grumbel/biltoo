@@ -16,8 +16,25 @@
     /** Display pipeline host: pending session binds. */
     SessionBindBook &hostBindBook() override { return m_bindBook; }
     const SessionBindBook &hostBindBook() const override { return m_bindBook; }
-    ImageSizeBook &hostSizeBook() override { return m_sizeBook; }
-    const ImageSizeBook &hostSizeBook() const override { return m_sizeBook; }
+    /**
+     * Dual ImageView: secondary hosts that bindSharedItemWorld must use the
+     * shared world's size book (primary-owned). Local m_sizeBook stays empty
+     * otherwise layout stays 1×1 and the compare pane paints blank.
+     */
+    ImageSizeBook &hostSizeBook() override
+    {
+        if (m_sharedItemWorld && m_sharedItemWorld->hasSizeBookBound()) {
+            return m_sharedItemWorld->sizeBook();
+        }
+        return m_sizeBook;
+    }
+    const ImageSizeBook &hostSizeBook() const override
+    {
+        if (m_sharedItemWorld && m_sharedItemWorld->hasSizeBookBound()) {
+            return m_sharedItemWorld->sizeBook();
+        }
+        return m_sizeBook;
+    }
     ViewFraming &hostFraming() override { return m_framing; }
     const ViewFraming &hostFraming() const override { return m_framing; }
     ViewportChrome &hostChrome() { return m_chrome; }

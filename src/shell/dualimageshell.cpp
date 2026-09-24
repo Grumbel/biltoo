@@ -56,6 +56,9 @@ void DualImageShell::ensureSecondary(SessionDocument *sessionDoc, SessionSeedBoo
 
     m_secondary->bindSharedItemWorld(&m_primary->itemWorld());
     m_secondary->bindSharedDisplayPipeline(&m_primary->hostDisplayPipeline());
+    // Filmstrip soft samples + canvas chrome match the primary session surface.
+    m_secondary->setImageModeSoftProvider(m_primary->hostImageModeSoftProvider());
+    m_secondary->setBackgroundBrush(m_primary->backgroundBrush());
 
     m_secondary->installEventFilter(this);
     m_splitter->addWidget(m_secondary);
@@ -110,6 +113,7 @@ void DualImageShell::openOnSecondary(const QString &path, SessionImageId sid)
         return;
     }
 
+    // Shared pipeline must install into the secondary's liveItems / scene.
     noteFocus(m_secondary);
 
     m_secondary->hostImage().setClassicPath(path);
@@ -117,11 +121,15 @@ void DualImageShell::openOnSecondary(const QString &path, SessionImageId sid)
     m_secondarySessionId = sid;
     m_secondaryPath = path;
 
-    if (!m_secondary->isImageMode()) {
-        m_secondary->hostImage().enter();
-    } else {
-        m_secondary->hostDisplayPipeline().loadImage(path);
+    // Always enter Image mode: prepare canvas, clearLiveCanvas, loadImage.
+    // loadImage alone leaves a first-time secondary without setActiveMode side
+    // effects and can race an empty size book (fixed via shared hostSizeBook).
+    m_secondary->hostImage().enter();
+
+    if (QWidget *vp = m_secondary->viewport()) {
+        vp->update();
     }
+    m_secondary->update();
 
     emit secondarySessionChanged(sid, path);
 }

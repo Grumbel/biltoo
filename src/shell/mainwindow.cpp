@@ -4128,12 +4128,21 @@ void MainWindow::setDualCompareEnabled(bool on)
         return;
     }
     // Stage 2c.3: seed secondary with the next session row (wrap; same if n==1).
+    // Defer until the splitter has a non-zero geometry so fit/framing sees a
+    // real viewport (open-on-enable used to race a 0-size secondary).
     const int n = m_session.size();
     int seed = m_currentIndex;
     if (seed < 0 || seed >= n) {
         seed = 0;
     }
     const int other = (n > 1) ? (seed + 1) % n : seed;
-    m_dualShell->openOnSecondary(m_session.paths().at(other), sessionIdAt(other));
+    const QString path = m_session.paths().at(other);
+    const SessionImageId sid = sessionIdAt(other);
+    QTimer::singleShot(0, this, [this, path, sid]() {
+        if (!m_dualShell || !m_dualShell->isDualEnabled()) {
+            return;
+        }
+        m_dualShell->openOnSecondary(path, sid);
+    });
 }
 
