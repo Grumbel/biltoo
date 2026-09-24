@@ -19,19 +19,13 @@ void ImageView::refreshStatus()
 {
     // Coalesce rapid soft-climb / provenance updates so the HUD and status
     // bar are not rewritten every frame.
-    if (!m_statusRefreshTimer) {
-        m_statusRefreshTimer = new QTimer(this);
-        m_statusRefreshTimer->setSingleShot(true);
-        m_statusRefreshTimer->setInterval(HudAppearance::kStatusRefreshMs);
-        connect(m_statusRefreshTimer, &QTimer::timeout, this, [this]() {
-            emit statusChanged();
-            if ((m_hud.appearance().isVisible() || m_hud.flash().isVisible() || m_slideshow.hud().isPausedHud())
-                && viewport()) {
-                viewport()->update();
-            }
-        });
-    }
-    m_statusRefreshTimer->start();
+    m_hud.scheduleStatusRefresh(this, [this]() {
+        emit statusChanged();
+        if ((m_hud.appearance().isVisible() || m_hud.flash().isVisible() || m_slideshow.hud().isPausedHud())
+            && viewport()) {
+            viewport()->update();
+        }
+    });
 }
 
 void ImageView::setHudVisible(bool on)

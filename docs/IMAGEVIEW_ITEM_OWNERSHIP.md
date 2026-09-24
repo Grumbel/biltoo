@@ -393,3 +393,6 @@ Product shell (minimal):
 26. **biltoo-2484:** PendingItemAppearanceBook owned by SessionBindBook
     (clears with bind queue on session wipe).
 
+27. **biltoo-2485:** Status-refresh coalesce QTimer owned by HudChrome
+    (parented to ImageView); Gallery keeps its own scheduleStatusRefresh timer.
+

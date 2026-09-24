@@ -14,8 +14,8 @@ class QTimer;
 class QWidget;
 
 /**
- * Shell HUD chrome: pinned appearance prefs + transient action flash.
- * Owns bags and the flash QTimer (parented to the ImageView shell).
+ * Shell HUD chrome: pinned appearance prefs + transient action flash +
+ * coalesced status refresh timer. Timers parented to the ImageView shell.
  */
 class HudChrome
 {
@@ -27,6 +27,7 @@ public:
     const HudFlash &flash() const { return m_flash; }
 
     QTimer *flashTimer() const { return m_flashTimer; }
+    QTimer *statusRefreshTimer() const { return m_statusRefreshTimer; }
 
     /**
      * Create single-shot flash timer parented to @p parentShell.
@@ -39,10 +40,19 @@ public:
     /** Show action flash, arm timer, optional viewport update. */
     void showFlash(const QString &action, const QString &detail, QWidget *viewport);
 
+    /**
+     * Coalesce rapid statusChanged / soft-climb updates.
+     * Ensures timer parented to @p parentShell; @p onTimeout emits status + paint.
+     */
+    void scheduleStatusRefresh(QObject *parentShell, const std::function<void()> &onTimeout);
+
+    void stopStatusRefreshTimer();
+
 private:
     HudAppearance m_appearance;
     HudFlash m_flash;
     QTimer *m_flashTimer = nullptr;
+    QTimer *m_statusRefreshTimer = nullptr;
 };
 
 #endif // HUDCHROME_H

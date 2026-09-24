@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2484.1-own-pending-appearance-in-bind-book**.
-Latest tip: **biltoo-2484** (+ thumtoo-338). Own: PendingItemAppearanceBook in SessionBindBook.
+Latest agent handoff: **TODO.md → biltoo-2485.1-own-hud-status-refresh-timer**.
+Latest tip: **biltoo-2485** (+ thumtoo-338). Own: HUD status-refresh timer on HudChrome.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

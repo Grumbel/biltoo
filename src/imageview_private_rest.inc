@@ -168,7 +168,7 @@
 
     // LayoutApplyGuard: owned by GalleryController.
     // GalleryRelayoutSuppress: owned by GalleryController.
-    QTimer *m_statusRefreshTimer = nullptr;
+    // Status-refresh QTimer: owned by HudChrome.
     /** Off-canvas neighbor tile prefetch (session-replace clears). */
     TileNeighborPrefetch m_tileNeighborPrefetch;
     /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
