@@ -93,7 +93,7 @@ void ImageView::mouseMoveEvent(QMouseEvent *event)
         || m_gallery.tryMouseMoveGalleryDrag(event)) {
         return;
     }
-    updateMouseInfo(event->pos());
+    m_shell.updateMouseInfo(event->pos());
     if (tryMouseMovePageGuide(event)
         || tryMouseMoveGroupAndHandleDrag(event)
         || m_workspace.tryMouseMoveWorkspaceRotate(event)) {
@@ -200,24 +200,10 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
 
 void ImageView::leaveEvent(QEvent *event)
 {
-    if (m_shell.viewport().hasMouseInfo()) {
-        m_shell.viewport().clearMouseInfo();
-        emit mouseInfoChanged(m_shell.viewport().currentMouseInfo());
-    }
-    if (hostHoverEdge() != EdgeZone::None) {
-        clearHoverEdge();
-        viewport()->update();
-    }
-    if (!m_gallery.hoverPath().isEmpty()) {
-        m_gallery.clearHoverPath();
-        viewport()->update();
-    }
-    if (m_slideshow.hud().isSeekbarVisible() && !m_slideshow.hud().isSeekDragging()) {
-        m_slideshow.hud().setSeekbarVisible(false);
-        if (viewport()) {
-            viewport()->update();
-        }
-    }
+    m_shell.onLeave();
+    m_image.onViewportLeave();
+    m_gallery.onViewportLeave();
+    m_slideshow.onViewportLeave();
     QGraphicsView::leaveEvent(event);
 }
 

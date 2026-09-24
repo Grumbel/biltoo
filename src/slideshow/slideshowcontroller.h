@@ -95,6 +95,8 @@ public:
     void cancelSlideshowMotion();
     /** Viewport resized while dwell motion is active. */
     void onViewResizedDuringDwell();
+    /** Pointer left the viewport: hide seekbar when not dragging. */
+    void onViewportLeave();
     void restoreImageFramingAfterSlideshow();
     void requestDwellAtlasRebuild();
     void requestToPhaseAtlasRebuild();

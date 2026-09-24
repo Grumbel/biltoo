@@ -40,6 +40,8 @@ public:
     void enter();
     /** Viewport resized in Image mode: quality climb + sticky fit. */
     void onViewResized();
+    /** Pointer left the viewport: clear edge hover. */
+    void onViewportLeave();
 
     QString classicPath() const { return m_classicPath; }
     bool hasClassicPath() const { return !m_classicPath.isEmpty(); }

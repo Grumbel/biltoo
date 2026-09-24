@@ -5,6 +5,10 @@
 
 #include "view/viewshellchrome.h"
 #include "imageview.h"
+#include <QPoint>
+#include <QGraphicsItem>
+#include <QGraphicsScene>
+#include "imageitem.h"
 #include "image/toolpolicy.h"
 #include "display/displaypipelinecontroller.h"
 
@@ -86,4 +90,49 @@ bool ViewShellChrome::tryMouseReleasePan(QMouseEvent *event)
     m_view->hostDisplayPipeline().tickPrimaryTileLod(8);
     event->accept();
     return true;
+}
+
+void ViewShellChrome::updateMouseInfo(const QPoint &viewPos)
+{
+    if (!m_view) {
+        return;
+    }
+    ImageMouseInfo info;
+    const QPointF scenePos = m_view->mapToScene(viewPos);
+
+    // Prefer the topmost item under the cursor
+    ImageItem *hit = nullptr;
+    if (QGraphicsScene *scene = m_view->canvasScene()) {
+        for (QGraphicsItem *gi : scene->items(scenePos)) {
+            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                hit = item;
+                break;
+            }
+        }
+    }
+
+    if (hit) {
+        const QPoint pixel = hit->pixelAtScenePos(scenePos);
+        if (pixel.x() >= 0) {
+            info.valid = true;
+            info.imagePos = pixel;
+            info.pixelColor = hit->colorAtPixel(pixel);
+            info.path = hit->path();
+        }
+    }
+
+    if (m_viewport.setMouseInfo(info)) {
+        emit m_view->mouseInfoChanged(m_viewport.currentMouseInfo());
+    }
+}
+
+void ViewShellChrome::onLeave()
+{
+    if (!m_view) {
+        return;
+    }
+    if (m_viewport.hasMouseInfo()) {
+        m_viewport.clearMouseInfo();
+        emit m_view->mouseInfoChanged(m_viewport.currentMouseInfo());
+    }
 }

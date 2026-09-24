@@ -9,6 +9,7 @@
 
 class ImageView;
 class QMouseEvent;
+class QPoint;
 
 /**
  * Shell view chrome: transient viewport pointer state + canvas materials +
@@ -30,6 +31,11 @@ public:
     bool tryMousePressPan(QMouseEvent *event);
     bool tryMouseMovePan(QMouseEvent *event);
     bool tryMouseReleasePan(QMouseEvent *event);
+
+    /** Hit-test under cursor → status-bar mouse info. */
+    void updateMouseInfo(const QPoint &viewPos);
+    /** Pointer left the viewport: clear transient mouse info. */
+    void onLeave();
 
 private:
     ImageView *m_view = nullptr;

@@ -513,6 +513,16 @@ void SlideshowController::onViewResizedDuringDwell()
     }
 }
 
+void SlideshowController::onViewportLeave()
+{
+    if (hud().isSeekbarVisible() && !hud().isSeekDragging()) {
+        hud().setSeekbarVisible(false);
+        if (m_view->viewport()) {
+            m_view->viewport()->update();
+        }
+    }
+}
+
 
 void SlideshowController::restoreImageFramingAfterSlideshow()
 {

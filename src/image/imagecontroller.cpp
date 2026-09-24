@@ -349,3 +349,13 @@ void ImageController::onViewResized()
         fitItem(m_view->liveItems().first(), m_view->currentFitAspectMode());
     }
 }
+
+void ImageController::onViewportLeave()
+{
+    if (m_hoverEdge != EdgeNavPolicy::Zone::None) {
+        clearHoverEdge();
+        if (QWidget *vp = m_view->viewport()) {
+            vp->update();
+        }
+    }
+}

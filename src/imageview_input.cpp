@@ -57,34 +57,8 @@ ImageView::EdgeZone ImageView::edgeZoneAt(const QPoint &viewPos) const
     return edgeZoneFromPolicy(m_image.edgeZoneAt(viewPos));
 }
 void ImageView::updateMouseInfo(const QPoint &viewPos)
-
 {
-    ImageMouseInfo info;
-    const QPointF scenePos = mapToScene(viewPos);
-
-    // Prefer the topmost item under the cursor
-    ImageItem *hit = nullptr;
-    const QList<QGraphicsItem *> hits = m_scene->items(scenePos);
-    for (QGraphicsItem *gi : hits) {
-        if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-            hit = item;
-            break;
-        }
-    }
-
-    if (hit) {
-        const QPoint pixel = hit->pixelAtScenePos(scenePos);
-        if (pixel.x() >= 0) {
-            info.valid = true;
-            info.imagePos = pixel;
-            info.pixelColor = hit->colorAtPixel(pixel);
-            info.path = hit->path();
-        }
-    }
-
-    if (m_shell.viewport().setMouseInfo(info)) {
-        emit mouseInfoChanged(m_shell.viewport().currentMouseInfo());
-    }
+    m_shell.updateMouseInfo(viewPos);
 }
 void ImageView::wheelEvent(QWheelEvent *event)
 {

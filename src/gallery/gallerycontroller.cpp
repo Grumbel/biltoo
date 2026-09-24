@@ -1217,6 +1217,16 @@ void GalleryController::onViewResized()
     }
 }
 
+void GalleryController::onViewportLeave()
+{
+    if (!hoverPath().isEmpty()) {
+        clearHoverPath();
+        if (QWidget *vp = m_view->viewport()) {
+            vp->update();
+        }
+    }
+}
+
 
 // --- Gallery decode window body (Tier 5 residual) ---
 

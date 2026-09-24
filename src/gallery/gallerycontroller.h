@@ -132,6 +132,8 @@ public:
     void scheduleDecodeWindowRefresh(int delayMs = 48);
     /** Viewport resized in Gallery: re-arm decode window (no pack). */
     void onViewResized();
+    /** Pointer left the viewport: clear hover path. */
+    void onViewportLeave();
     void updateDecodeWindow();
     /** During size gate: coalesced rebuildVirtualPlan + syncVirtualWindow. */
     void scheduleSizeGatePlanRefresh();
