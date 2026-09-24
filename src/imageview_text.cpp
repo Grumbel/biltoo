@@ -63,17 +63,3 @@ bool ImageView::copySelectedText()
     return m_textCtrl.copySelectedText();
 }
 
-bool ImageView::tryMousePressTextRubber(QMouseEvent *event)
-{
-    return m_textCtrl.tryMousePressRubber(event);
-}
-
-bool ImageView::tryMouseMoveTextRubber(QMouseEvent *event)
-{
-    return m_textCtrl.tryMouseMoveRubber(event);
-}
-
-bool ImageView::tryMouseReleaseTextRubber(QMouseEvent *event)
-{
-    return m_textCtrl.tryMouseReleaseRubber(event);
-}

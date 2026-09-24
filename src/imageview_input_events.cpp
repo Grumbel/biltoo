@@ -62,10 +62,6 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     }
     QGraphicsView::mousePressEvent(event);
 }
-bool ImageView::tryMouseMoveZoomRegion(QMouseEvent *event)
-{
-    return m_image.tryMouseMoveZoomRegion(event);
-}
 void ImageView::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_shell.handleMouseMove(event)) {
@@ -96,16 +92,6 @@ void ImageView::hostPushItemTransformUndo(ImageItem *item, const ItemComponents:
 {
     pushItemTransformUndo(item, before, after, text);
 }
-bool ImageView::tryMouseReleaseZoomRegion(QMouseEvent *event)
-{
-    return m_image.tryMouseReleaseZoomRegion(event);
-}
-
-
-bool ImageView::tryMouseReleaseItemDrag(QMouseEvent *event)
-{
-    return m_workspace.tryMouseReleaseItemDrag(event);
-}
 void ImageView::mouseReleaseEvent(QMouseEvent *event)
 {
     if (m_shell.handleMouseRelease(event)) {
@@ -113,14 +99,6 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
     }
     QGraphicsView::mouseReleaseEvent(event);
 }
-bool ImageView::tryKeyPressZoomRegion(QKeyEvent *event)
-{
-    return m_image.tryKeyPressZoomRegion(event);
-}
-
-
-
-
 void ImageView::keyPressEvent(QKeyEvent *event)
 {
     if (m_shell.handleKeyPress(event)) {

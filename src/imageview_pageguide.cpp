@@ -97,12 +97,3 @@ void ImageView::renderForPrint(QPainter *painter, const QRectF &pageRect) const
 }
 
 
-bool ImageView::tryMouseMovePageGuide(QMouseEvent *event)
-{
-    return m_workspace.tryMouseMovePageGuide(event);
-}
-
-bool ImageView::tryMouseReleasePageGuide(QMouseEvent *event)
-{
-    return m_workspace.tryMouseReleasePageGuide(event);
-}

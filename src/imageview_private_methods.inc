@@ -171,28 +171,7 @@
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
 
-    // mousePressEvent phases (return true if the event was handled)
-    bool tryMousePressZoomRegion(QMouseEvent *event);
-    bool tryMousePressImageLink(QMouseEvent *event);
-    bool tryMousePressTextRubber(QMouseEvent *event);
-
-    // mouseMoveEvent phases
-    bool tryMouseMoveTextRubber(QMouseEvent *event);
-    bool tryMouseMoveZoomRegion(QMouseEvent *event);
-    bool tryMouseMovePageGuide(QMouseEvent *event);
-    bool tryMouseMoveGroupAndHandleDrag(QMouseEvent *event);
-
-    // mouseReleaseEvent phases
+    // Geometry undo (also host surface for controllers)
     void pushItemTransformUndo(ImageItem *item, const ItemComponents::Placement &before,
                                const ItemComponents::Placement &after, const QString &text);
-    bool tryMouseReleaseTextRubber(QMouseEvent *event);
-    bool tryMouseReleaseZoomRegion(QMouseEvent *event);
-    bool tryMouseReleasePageGuide(QMouseEvent *event);
-    bool tryMouseReleaseGroupDrag(QMouseEvent *event);
-    bool tryMouseReleaseHandleDrag(QMouseEvent *event);
-    bool tryMouseReleaseItemDrag(QMouseEvent *event);
 
-    // keyPressEvent phases
-    bool tryKeyPressZoomRegion(QKeyEvent *event);
-
-    // wheelEvent phases

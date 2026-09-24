@@ -91,15 +91,6 @@ void ImageView::resizeEvent(QResizeEvent *event)
     }
     m_image.onViewResized();
 }
-bool ImageView::tryMousePressZoomRegion(QMouseEvent *event)
-{
-    return m_image.tryMousePressZoomRegion(event);
-}
-bool ImageView::tryMousePressImageLink(QMouseEvent *event)
-{
-    return m_textCtrl.tryMousePressLink(event);
-}
-
 bool ImageView::setHoverEdge(EdgeZone zone)
 {
     return m_image.setHoverEdge(edgeZoneToPolicy(zone));
