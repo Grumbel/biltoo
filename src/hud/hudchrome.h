@@ -7,6 +7,7 @@
 #include "hud/hudappearance.h"
 #include "hud/hudflash.h"
 #include "shell/centreprogress.h"
+#include "util/perfstats.h"
 
 #include <functional>
 
@@ -14,8 +15,9 @@ class QObject;
 class QTimer;
 
 /**
- * Shell HUD chrome: pinned appearance prefs + transient action flash +
- * coalesced status refresh timer. Timers parented to the ImageView shell.
+ * Shell HUD chrome: appearance prefs, action flash, centre progress,
+ * perf overlay stats, and status-refresh timer. Timers parented to the
+ * ImageView shell.
  */
 class HudChrome
 {
@@ -28,6 +30,9 @@ public:
 
     CentreProgress &centreProgress() { return m_centreProgress; }
     const CentreProgress &centreProgress() const { return m_centreProgress; }
+
+    PerfStats &perf() { return m_perf; }
+    const PerfStats &perf() const { return m_perf; }
 
     QTimer *flashTimer() const { return m_flashTimer; }
     QTimer *statusRefreshTimer() const { return m_statusRefreshTimer; }
@@ -59,6 +64,7 @@ private:
     HudAppearance m_appearance;
     HudFlash m_flash;
     CentreProgress m_centreProgress;
+    PerfStats m_perf;
     QTimer *m_flashTimer = nullptr;
     QTimer *m_statusRefreshTimer = nullptr;
 };

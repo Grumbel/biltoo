@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2490.1-own-session-shell**.
-Latest tip: **biltoo-2490** (+ thumtoo-338). Own: SessionShell for identity + bind + pack-order.
+Latest agent handoff: **TODO.md → biltoo-2491.1-own-perf-stats-in-hud**.
+Latest tip: **biltoo-2491** (+ thumtoo-338). Own: PerfStats on HudChrome.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

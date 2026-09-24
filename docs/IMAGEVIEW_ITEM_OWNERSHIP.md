@@ -411,3 +411,6 @@ Product shell (minimal):
 32. **biltoo-2490:** SessionShell owns SessionIdentity, SessionBindBook, and
     PackOrderOverlay; hostSessionId / hostBindBook / pathOrder* forward to m_session.
 
+33. **biltoo-2491:** PerfStats owned by HudChrome (HUD overlay diagnostics);
+    TileNeighborPrefetch stays on ImageView (per-view pathOnLiveCanvas for dual pane).
+

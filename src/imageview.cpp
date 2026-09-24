@@ -263,7 +263,7 @@ ImageView::ImageView(QWidget *parent)
         }
     });
 
-    m_perf.enableFromEnv();
+    m_hud.perf().enableFromEnv();
     // Layout debounce QTimer: owned by GalleryController (parented to this).
     // Colour-adjust commit QTimer: owned by ImageController (parented to this).
     m_hud.ensureFlashTimer(this, [this]() {

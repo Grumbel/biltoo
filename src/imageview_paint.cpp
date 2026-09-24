@@ -102,14 +102,14 @@ void ImageView::paintEvent(QPaintEvent *event)
 {
     GUI_BUDGET("ImageView::paintEvent");
     // All overlays are drawn in drawForeground (single GL-safe paint path).
-    if (!m_perf.isEnabled()) {
+    if (!m_hud.perf().isEnabled()) {
         QGraphicsView::paintEvent(event);
         return;
     }
     QElapsedTimer t;
     t.start();
     QGraphicsView::paintEvent(event);
-    m_perf.notePaintUs(t.nsecsElapsed() / 1000);
+    m_hud.perf().notePaintUs(t.nsecsElapsed() / 1000);
 }
 
 void ImageView::paintGallerySelectionFrames(QPainter *painter, const QRectF &exposed) const
@@ -558,13 +558,13 @@ void ImageView::paintHudPanels(QPainter &painter)
             if (!ssPrefetchLine.isEmpty()) {
                 topLeft.append({ssPrefetchLine, false});
             }
-            if (m_perf.isEnabled()) {
+            if (m_hud.perf().isEnabled()) {
                 topLeft.append({
                     tr("FPS %1 · paint %2 ms · decode-win %3 ms (max %4)")
-                        .arg(m_perf.fpsValue(), 0, 'f', 1)
-                        .arg(m_perf.lastPaintUsValue() / 1000.0, 0, 'f', 1)
-                        .arg(m_perf.lastDecodeWindowUsValue() / 1000.0, 0, 'f', 1)
-                        .arg(m_perf.maxDecodeWindowUsValue() / 1000.0, 0, 'f', 1),
+                        .arg(m_hud.perf().fpsValue(), 0, 'f', 1)
+                        .arg(m_hud.perf().lastPaintUsValue() / 1000.0, 0, 'f', 1)
+                        .arg(m_hud.perf().lastDecodeWindowUsValue() / 1000.0, 0, 'f', 1)
+                        .arg(m_hud.perf().maxDecodeWindowUsValue() / 1000.0, 0, 'f', 1),
                     false});
             }
             ImageItem *focus = targetItem();

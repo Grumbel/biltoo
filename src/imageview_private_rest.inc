@@ -162,8 +162,7 @@
     // Status-refresh QTimer: owned by HudChrome.
     /** Off-canvas neighbor tile prefetch (session-replace clears). */
     TileNeighborPrefetch m_tileNeighborPrefetch;
-    /** BILTOO_PERF / THUMTOO_DEBUG: paint + decode-window timings. */
-    PerfStats m_perf;
+    // PerfStats: owned by HudChrome (m_hud.perf()).
 
     // Gallery decode watchdog QTimer: owned by GalleryController.
     // Layout debounce QTimer: owned by GalleryController.

@@ -68,8 +68,8 @@
     const WorkspaceController &hostWorkspace() const override { return m_workspace; }
     ItemInteractSession &hostItemInteract() { return m_workspace.itemInteract(); }
     const ItemInteractSession &hostItemInteract() const { return m_workspace.itemInteract(); }
-    PerfStats &hostPerf() { return m_perf; }
-    const PerfStats &hostPerf() const { return m_perf; }
+    PerfStats &hostPerf() { return m_hud.perf(); }
+    const PerfStats &hostPerf() const { return m_hud.perf(); }
     LayoutApplyGuard &hostLayoutApply() { return m_gallery.layoutApply(); }
     const LayoutApplyGuard &hostLayoutApply() const { return m_gallery.layoutApply(); }
     /** Gallery pack debounce single-shot timer (may be null until first use). */

@@ -2,17 +2,18 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2490.1-own-session-shell** (base `7d823d8`).
+**Tip: biltoo-2491.1-own-perf-stats-in-hud** (base `7d823d8`).
 
 ### Ownership transfer
-- **SessionShell** owns SessionIdentity, SessionBindBook, PackOrderOverlay
-- ImageView host accessors forward to m_session
+- **PerfStats** on HudChrome (`perf()`)
+- TileNeighborPrefetch remains per-ImageView (dual-pane canvas membership)
 
 ### Residual on ImageView (intentional shell/host)
 ViewFraming, ViewMode, ImageSizeCoordinator, TileNeighborPrefetch,
-ImageModeSoftProvider, PerfStats, HudChrome, ViewShellChrome, controllers
+ImageModeSoftProvider, ItemWorld/path books, SessionShell, HudChrome,
+ViewShellChrome, mode controllers
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2490.1-own-session-shell-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2491.1-own-perf-stats-in-hud-7d823d8.bundle HEAD
 ```
