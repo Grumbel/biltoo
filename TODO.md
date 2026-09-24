@@ -2,32 +2,31 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2607.1-fix-orphan-api-peel-pad-marks** (base `7d823d8`).
+**Tip: biltoo-2608.1-restore-reorder-peel-rebind** (base `7d823d8`).
 
 ### This tip
-- **Bugfix:** `rotateContentByQuarterTurns` / `setWorkspaceDefaultViewScale`
-  were declared on `ImageView` without definitions after earlier peels.
-  Callers now use `hostImage()`.
-- **Peel:** `slideshowPadColor` → `hostSlideshow().padColorForPaint()`;
-  `contentEditMarksVisible` → `ImageItem::contentEditMarksVisible()`.
-- WorkspaceController uses `updateSceneRect()` / `hostImage().setWorkspaceDefaultViewScale()`
-  instead of ImageView wrappers.
-- Header cleanup: removed orphan sticky/zoom/duplicate docs + leftover
-  `duplicateSelected` declaration.
+- **Bugfix:** `ImageView::reorderItemsByPaths` was removed in the transform
+  peel but remains a **DisplayPipelineHost** pure virtual + public override.
+  Restored thin forward to `m_workspace.reorderItemsByPaths`.
+- **Peel:** `rebindWorkspaceSession` → `hostWorkspace().rebindSession`
+  (declaration + callers; was another declared-without-body orphan).
 
-Header ~573 → ~526 lines.
+### Wave C status (mode shell)
+`setViewMode` / `setLayoutMode` / `reloadFromDisk` / `hardReloadFromDisk` are
+already **thin dispatchers** (leave prep + controller enter/leave). Keep them
+on ImageView as the mode shell; do not push mode branching into MainWindow.
 
-### Cumulative (2604–2607)
-~65+ pure-forward public methods removed; a few link-break orphans closed.
+### Prior (2604–2607)
+~65+ pure-forward methods peeled; SelectionGeometry include; orphan rotate /
+setWorkspaceDefaultViewScale fixed.
 
-### Still on ImageView (next)
-- **Complex gather:** statusText, hudFileName, loadingStatusHudLine, refreshStatus
-- **Mode shell:** setViewMode / setLayoutMode / reloadFromDisk / hardReloadFromDisk
-  (orchestration — push branch bodies into controllers; keep thin dispatcher)
-- **Host surface:** DisplayPipelineHost overrides, queries (itemPaths, imageSize, …)
-- **QGraphicsView overrides**
+### Still on ImageView
+- Mode shell dispatchers (above)
+- statusText / hudFileName / loadingStatusHudLine / refreshStatus
+- DisplayPipelineHost surface + QGraphicsView overrides
+- Shell queries (itemPaths, selectedPaths, imageSize, pendingDecodeCount, …)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2607.1-fix-orphan-api-peel-pad-marks-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2608.1-restore-reorder-peel-rebind-7d823d8.bundle HEAD
 ```

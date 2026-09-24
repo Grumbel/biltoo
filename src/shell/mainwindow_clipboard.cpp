@@ -351,7 +351,7 @@ QVector<SessionImageId> MainWindow::applyDuplicate(const QList<SessionImageId> &
     m_session.validateUniqueIds("applyDuplicate");
     m_imageView->hostWorkspace().duplicateSelected(newIds, firstNew);
     // Copies are already id-bound; rebind refreshes path-order / membership.
-    m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
+    m_imageView->hostWorkspace().rebindSession(m_session.paths(), m_session.ids());
     syncThumbnailCanvasMembership();
 
     // Select the new tiles by stable id — not path occurrence or stale index.

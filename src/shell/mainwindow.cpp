@@ -590,7 +590,7 @@ void MainWindow::syncThumbnailCanvasMembership()
         return;
     }
     // Ensure every on-canvas item is tied to a session row (badges + shared selection).
-    m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
+    m_imageView->hostWorkspace().rebindSession(m_session.paths(), m_session.ids());
 
     // After rebind demotes duplicate SessionImageIds, allocate a fresh session
     // image for each still-unbound live tile so two Workspace tiles never share
@@ -623,7 +623,7 @@ void MainWindow::syncThumbnailCanvasMembership()
     }
     if (grew) {
         m_thumbnailBar->setSession(m_session.paths(), m_session.ids());
-        m_imageView->rebindWorkspaceSession(m_session.paths(), m_session.ids());
+        m_imageView->hostWorkspace().rebindSession(m_session.paths(), m_session.ids());
     }
 
     // Badge by stable id → session row, not path (duplicate-safe).

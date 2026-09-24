@@ -168,8 +168,6 @@ public:
      * document order. Returns the stamped index, or -1 when unbound/unknown.
      */
     int refreshSessionIndexCache(ImageItem *item) override;
-    void rebindWorkspaceSession(const QStringList &sessionFiles,
-                                const QVector<SessionImageId> &sessionIds);
     // Load roles (public for DisplayPipelineController; not under public slots — moc).
     enum LoadRole {
         LoadReplace = 0,

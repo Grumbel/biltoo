@@ -21,6 +21,14 @@ bool ImageView::pathOnLiveCanvas(const QString &path) const
 }
 
 
+void ImageView::reorderItemsByPaths(const QStringList &paths,
+                                    const QVector<SessionImageId> &ids)
+{
+    m_workspace.reorderItemsByPaths(paths, ids);
+}
+
+
+
 // --- from src/imageview_canvas_focus.cpp ---
 ImageItem *ImageView::primaryItem() const
 {
