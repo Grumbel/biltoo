@@ -47,6 +47,8 @@ public:
 
     /** Empty-canvas open/drop invite + edge-zone captions (viewport device pixels). */
     void paintEmptySessionInvite(QPainter &painter) const;
+    /** Pinned HUD panels, action flash, centre progress (viewport device pixels). */
+    void paintHudPanels(QPainter &painter) const;
 
 private:
     ImageView *m_view = nullptr;

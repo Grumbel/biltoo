@@ -638,6 +638,10 @@ public:
     int resetContentAppearanceForTargets();
 
     QString statusText() const;
+    /** Basename of the current/target image for the bottom HUD. */
+    QString hudFileName() const;
+    /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
+    QString loadingStatusHudLine() const;
     QSize imageSize() const;
     int itemCount() const override;
     /** Live tiles, stashed tiles, or durable snapshot — Workspace is non-empty. */

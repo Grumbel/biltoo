@@ -55,7 +55,6 @@
     void persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl);
 
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
-    QString loadingStatusHudLine() const;
 
     /** Re-apply scrollbar policies so AsNeeded ranges update after fit/zoom. */
 
@@ -147,7 +146,6 @@
     QString pixelQualityLabel(const ImageItem *item) const;
 
     /** Basename of the current/target image for the bottom HUD. */
-    QString hudFileName() const;
 
     // --- Paint / input phases (were public via host_pipeline mid-include) ---
 
@@ -158,7 +156,6 @@
     void scheduleColorAdjustCommit(SessionImageId sid, const QString &path);
     void paintTextRubberBandOverlay(QPainter &painter);
     /** Gallery multi-select frames in scene space (not inside item paint cache). */
-    void paintHudPanels(QPainter &painter);
     /**
      * Map a page text/link region into the primary item's current image-pixel
      * space (after session content flip / quarter-turn bake). Empty if the
