@@ -90,7 +90,7 @@ void ImageView::paintViewportOverlays(QPainter &painter)
     paintEmptySessionInvite(painter);
 
     if (!m_cropCtrl.session().active() && !m_attentionCtrl.session().active() && hostHoverEdge() != EdgeZone::None && isImageMode()
-        && (m_sessionNav.isImageModeNavEnabled() || hostHoverEdge() == EdgeZone::GalleryReturn)) {
+        && (m_image.sessionNav().isImageModeNavEnabled() || hostHoverEdge() == EdgeZone::GalleryReturn)) {
         drawEdgeAffordances(painter);
     }
 

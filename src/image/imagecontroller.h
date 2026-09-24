@@ -7,6 +7,7 @@
 #include <QString>
 #include "image/edgenavpolicy.h"
 #include "slideshow/zoomregiongesture.h"
+#include "session/sessionchrome.h"
 #include <QSize>
 
 class ImageView;
@@ -76,11 +77,16 @@ public:
     bool tryMouseReleaseZoomRegion(QMouseEvent *event);
     bool tryKeyPressZoomRegion(QKeyEvent *event);
 
+    /** Image-mode edge/session nav flags (prev/next + gallery return). */
+    SessionNavFlags &sessionNav() { return m_sessionNav; }
+    const SessionNavFlags &sessionNav() const { return m_sessionNav; }
+
 private:
     ImageView *m_view = nullptr;
     QString m_classicPath;
     EdgeNavPolicy::Zone m_hoverEdge = EdgeNavPolicy::Zone::None;
     ZoomRegionGesture m_zoomRegion;
+    SessionNavFlags m_sessionNav;
 };
 
 #endif // IMAGECONTROLLER_H

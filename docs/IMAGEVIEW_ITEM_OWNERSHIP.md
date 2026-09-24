@@ -372,3 +372,6 @@ Product shell (minimal):
 19. **biltoo-2477:** Tool (Select/Pan/Zoom) owned by WorkspaceController;
     ImageView setTool/currentTool thin forwards.
 
+20. **biltoo-2478:** SessionNavFlags owned by ImageController (with edge nav);
+    hostSessionNav forwards.
+

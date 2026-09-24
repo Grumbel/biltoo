@@ -16,8 +16,8 @@ Path→raster climb: [docs/PATH_RASTER_SERVICE.md](docs/PATH_RASTER_SERVICE.md).
 Performance model (ladder, JPEG scale, tiles, archives): [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 See [TODO.md](TODO.md) for the roadmap and open questions.
-Latest agent handoff: **TODO.md → biltoo-2477.1-own-workspace-tool**.
-Latest tip: **biltoo-2477** (+ thumtoo-338). Own: Tool state on WorkspaceController.
+Latest agent handoff: **TODO.md → biltoo-2478.1-own-session-nav-flags**.
+Latest tip: **biltoo-2478** (+ thumtoo-338). Own: SessionNavFlags on ImageController.
 **Tile LOD / open:** startup I/O off GUI; [docs/TILE_LOD.md](docs/TILE_LOD.md).
 Requires **thumtoo ≥ 280** (Store-only + page LQIP; see ENVIRONMENT);
 **thumtoo Store-only** (`Client::open` + `data_root` for user.sqlite; schema ≥100, **101** OK).

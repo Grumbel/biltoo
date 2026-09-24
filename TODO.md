@@ -2,16 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2477.1-own-workspace-tool** (base `7d823d8`).
+**Tip: biltoo-2478.1-own-session-nav-flags** (base `7d823d8`).
 
 ### Ownership transfer
-- **Tool** state on WorkspaceController (`setTool` / `currentTool`)
-- ImageView: thin `setTool` / `currentTool` for shell
-
-### Note
-- Unused `itemHasReliableFrameSize` already removed in 2475.2 (in this stack)
+- **SessionNavFlags** on ImageController (`sessionNav()`)
+- hostSessionNav → m_image.sessionNav()
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2477.1-own-workspace-tool-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2478.1-own-session-nav-flags-7d823d8.bundle HEAD
 ```

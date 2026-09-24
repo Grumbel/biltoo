@@ -461,7 +461,7 @@ void ImageView::setTool(Tool tool)
 
 void ImageView::setImageModeNavigationEnabled(bool on)
 {
-    if (!m_sessionNav.setImageModeNav(on)) {
+    if (!m_image.sessionNav().setImageModeNav(on)) {
         return;
     }
     if (!on && hostHoverEdge() != EdgeZone::GalleryReturn) {
@@ -472,7 +472,7 @@ void ImageView::setImageModeNavigationEnabled(bool on)
 
 void ImageView::setGalleryReturnAvailable(bool on)
 {
-    if (!m_sessionNav.setGalleryReturnAvailable(on)) {
+    if (!m_image.sessionNav().setGalleryReturnAvailable(on)) {
         return;
     }
     if (!on && hostHoverEdge() == EdgeZone::GalleryReturn) {

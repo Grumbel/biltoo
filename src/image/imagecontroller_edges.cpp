@@ -38,8 +38,8 @@ EdgeNavPolicy::Zone ImageController::edgeZoneAt(const QPoint &viewPos) const
     }
     return EdgeNavPolicy::zoneAt(
         viewPos, m_view->width(), m_view->height(),
-        m_view->hostSessionNav().isGalleryReturnAvailable(),
-        m_view->hostSessionNav().isImageModeNavEnabled());
+        sessionNav().isGalleryReturnAvailable(),
+        sessionNav().isImageModeNavEnabled());
 }
 
 int ImageController::edgeZoneWidth() const
@@ -86,7 +86,7 @@ void ImageController::drawEdgeAffordances(QPainter &painter) const
         return;
     }
     if (m_hoverEdge != EdgeNavPolicy::Zone::GalleryReturn
-        && !m_view->hostSessionNav().isImageModeNavEnabled()) {
+        && !sessionNav().isImageModeNavEnabled()) {
         return;
     }
 

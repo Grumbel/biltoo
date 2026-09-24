@@ -138,7 +138,7 @@
 
     ViewFraming m_framing;
     ViewMode m_viewMode = ViewMode::Image;
-    SessionNavFlags m_sessionNav;
+    // SessionNavFlags: owned by ImageController (m_image).
     /** Last mouse position in viewport coords (gallery hover + scroll). */
     CanvasBackground m_canvasBg;
     // TextLayerSession: owned by TextLayerController (m_textCtrl).

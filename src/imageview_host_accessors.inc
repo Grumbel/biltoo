@@ -39,8 +39,8 @@
     const ViewFraming &hostFraming() const override { return m_framing; }
     ViewportChrome &hostChrome() { return m_chrome; }
     const ViewportChrome &hostChrome() const { return m_chrome; }
-    SessionNavFlags &hostSessionNav() { return m_sessionNav; }
-    const SessionNavFlags &hostSessionNav() const { return m_sessionNav; }
+    SessionNavFlags &hostSessionNav() { return m_image.sessionNav(); }
+    const SessionNavFlags &hostSessionNav() const { return m_image.sessionNav(); }
     /** Print page-guide session (Workspace overlay). */
     PageGuideSession &hostPageGuide() { return m_workspace.pageGuideSession(); }
     const PageGuideSession &hostPageGuide() const { return m_workspace.pageGuideSession(); }
