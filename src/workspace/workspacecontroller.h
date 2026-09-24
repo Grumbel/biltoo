@@ -90,6 +90,9 @@ public:
     void opacityUp();
     void opacityDown();
     void opacityReset();
+    void resetItemScale();
+    void resetItemRotation();
+    void resetItemShear();
 
     bool tryMousePressWorkspaceChrome(QMouseEvent *event);
     bool tryMousePressWorkspaceRotate(QMouseEvent *event);

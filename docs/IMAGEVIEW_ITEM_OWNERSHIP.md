@@ -444,3 +444,7 @@ Product shell (minimal):
     z-order) and opacity up/down/reset; ImageView thin routers. Helpers live in
     workspace_stack.cpp beside group/page-guide.
 
+38. **biltoo-2496:** WorkspaceController owns placement resets (scale / rotation /
+    shear) for Workspace selection and Image target/primary; ImageView thin
+    routers. Completes transform_actions Workspace geometry ownership with 2495.
+

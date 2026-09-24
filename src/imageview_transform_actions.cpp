@@ -11,7 +11,6 @@
 
 #include <QUndoCommand>
 #include <QUndoStack>
-#include <QGraphicsItem>
 
 /** Geometry undo/redo — friend of ImageView; stores Placement only (Stage 2). */
 class ImageViewTransformGeometryCommand : public QUndoCommand {
@@ -190,120 +189,18 @@ void ImageView::opacityReset()
 
 void ImageView::resetItemScale()
 {
-    QList<ImageItem *> targets;
-    if (isWorkspaceMode()) {
-        for (QGraphicsItem *gi : m_scene->selectedItems()) {
-            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                targets.append(item);
-            }
-        }
-    }
-    if (targets.isEmpty()) {
-        if (ImageItem *tgt = targetItem()) {
-            targets.append(tgt);
-        } else if (ImageItem *p = primaryItem()) {
-            targets.append(p);
-        }
-    }
-    if (targets.isEmpty()) {
-        return;
-    }
-    const bool macro = m_undoStack && targets.size() > 1;
-    if (macro) {
-        m_undoStack->beginMacro(tr("Reset scale"));
-    }
-    for (ImageItem *item : targets) {
-        const ItemComponents::Placement before = placementFromItem(item);
-        ItemComponents::Placement pl = item->placement();
-        pl.scale = 1.0;
-        pl.scaleY = 1.0;
-        pl.shear = 0.0;
-        item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Reset scale"), item, before, placementFromItem(item));
-    }
-    if (macro) {
-        m_undoStack->endMacro();
-    }
-    emit statusChanged();
-    viewport()->update();
+    m_workspace.resetItemScale();
 }
 
 void ImageView::resetItemRotation()
 {
-    QList<ImageItem *> targets;
-    if (isWorkspaceMode()) {
-        for (QGraphicsItem *gi : m_scene->selectedItems()) {
-            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                targets.append(item);
-            }
-        }
-    }
-    if (targets.isEmpty()) {
-        if (ImageItem *tgt = targetItem()) {
-            targets.append(tgt);
-        } else if (ImageItem *p = primaryItem()) {
-            targets.append(p);
-        }
-    }
-    if (targets.isEmpty()) {
-        return;
-    }
-    const bool macro = m_undoStack && targets.size() > 1;
-    if (macro) {
-        m_undoStack->beginMacro(tr("Reset rotation"));
-    }
-    for (ImageItem *item : targets) {
-        const ItemComponents::Placement before = placementFromItem(item);
-        ItemComponents::Placement pl = item->placement();
-        pl.rotation = 0.0;
-        item->applyPlacement(pl);
-        commitItemSessionEdit(item);
-        pushItemGeometryCommand(tr("Reset rotation"), item, before, placementFromItem(item));
-    }
-    if (macro) {
-        m_undoStack->endMacro();
-    }
-    viewport()->update();
+    m_workspace.resetItemRotation();
 }
 
 void ImageView::resetItemShear()
 {
-    QList<ImageItem *> targets;
-    if (isWorkspaceMode()) {
-        for (QGraphicsItem *gi : m_scene->selectedItems()) {
-            if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
-                targets.append(item);
-            }
-        }
-    }
-    if (targets.isEmpty()) {
-        if (ImageItem *tgt = targetItem()) {
-            targets.append(tgt);
-        } else if (ImageItem *p = primaryItem()) {
-            targets.append(p);
-        }
-    }
-    if (targets.isEmpty()) {
-        return;
-    }
-    const bool macro = m_undoStack && targets.size() > 1;
-    if (macro) {
-        m_undoStack->beginMacro(tr("Reset shear"));
-    }
-    for (ImageItem *item : targets) {
-        const ItemComponents::Placement before = placementFromItem(item);
-        ItemComponents::Placement pl = item->placement();
-        pl.shear = 0.0;
-        item->applyPlacement(pl);
-        pushItemGeometryCommand(tr("Reset shear"), item, before, placementFromItem(item));
-    }
-    if (macro) {
-        m_undoStack->endMacro();
-    }
-    emit statusChanged();
-    viewport()->update();
+    m_workspace.resetItemShear();
 }
-
 
 qreal ImageView::angleAt(const QPointF &scenePos, ImageItem *item) const
 {

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Workspace stack z-order (raise/lower by scene overlap) and opacity edits.
-// ImageView keeps thin public routers for MainWindow actions.
+// Workspace stack z-order (raise/lower by scene overlap), opacity, and
+// placement resets (scale/rotation/shear). ImageView keeps thin routers.
 
 #include "workspace/workspacecontroller.h"
 #include "imageview.h"
@@ -14,6 +14,7 @@
 #include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <QUndoStack>
+#include <QWidget>
 #include <algorithm>
 
 namespace {
@@ -247,5 +248,120 @@ void WorkspaceController::opacityReset()
         item->applyPlacement(pl);
         m_view->hostPushItemTransformUndo(item, before, item->placement(),
                                           m_view->tr("Reset opacity"));
+    }
+}
+
+namespace {
+
+QList<ImageItem *> placementResetTargets(ImageView *view)
+{
+    QList<ImageItem *> targets;
+    if (!view) {
+        return targets;
+    }
+    if (view->isWorkspaceMode()) {
+        if (QGraphicsScene *scene = view->canvasScene()) {
+            for (QGraphicsItem *gi : scene->selectedItems()) {
+                if (auto *item = qgraphicsitem_cast<ImageItem *>(gi)) {
+                    targets.append(item);
+                }
+            }
+        }
+    }
+    if (targets.isEmpty()) {
+        if (ImageItem *tgt = view->targetItem()) {
+            targets.append(tgt);
+        } else if (ImageItem *p = view->primaryItem()) {
+            targets.append(p);
+        }
+    }
+    return targets;
+}
+
+} // namespace
+
+void WorkspaceController::resetItemScale()
+{
+    const QList<ImageItem *> targets = placementResetTargets(m_view);
+    if (targets.isEmpty()) {
+        return;
+    }
+    QUndoStack *stack = m_view->hostUndoStack();
+    const bool macro = stack && targets.size() > 1;
+    if (macro) {
+        stack->beginMacro(m_view->tr("Reset scale"));
+    }
+    for (ImageItem *item : targets) {
+        const ItemComponents::Placement before = item->placement();
+        ItemComponents::Placement pl = item->placement();
+        pl.scale = 1.0;
+        pl.scaleY = 1.0;
+        pl.shear = 0.0;
+        item->applyPlacement(pl);
+        m_view->hostPushItemTransformUndo(item, before, item->placement(),
+                                          m_view->tr("Reset scale"));
+    }
+    if (macro) {
+        stack->endMacro();
+    }
+    emit m_view->statusChanged();
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+}
+
+void WorkspaceController::resetItemRotation()
+{
+    const QList<ImageItem *> targets = placementResetTargets(m_view);
+    if (targets.isEmpty()) {
+        return;
+    }
+    QUndoStack *stack = m_view->hostUndoStack();
+    const bool macro = stack && targets.size() > 1;
+    if (macro) {
+        stack->beginMacro(m_view->tr("Reset rotation"));
+    }
+    for (ImageItem *item : targets) {
+        const ItemComponents::Placement before = item->placement();
+        ItemComponents::Placement pl = item->placement();
+        pl.rotation = 0.0;
+        item->applyPlacement(pl);
+        m_view->commitItemSessionEdit(item);
+        m_view->hostPushItemTransformUndo(item, before, item->placement(),
+                                          m_view->tr("Reset rotation"));
+    }
+    if (macro) {
+        stack->endMacro();
+    }
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
+    }
+}
+
+void WorkspaceController::resetItemShear()
+{
+    const QList<ImageItem *> targets = placementResetTargets(m_view);
+    if (targets.isEmpty()) {
+        return;
+    }
+    QUndoStack *stack = m_view->hostUndoStack();
+    const bool macro = stack && targets.size() > 1;
+    if (macro) {
+        stack->beginMacro(m_view->tr("Reset shear"));
+    }
+    for (ImageItem *item : targets) {
+        const ItemComponents::Placement before = item->placement();
+        ItemComponents::Placement pl = item->placement();
+        pl.shear = 0.0;
+        item->applyPlacement(pl);
+        m_view->hostPushItemTransformUndo(item, before, item->placement(),
+                                          m_view->tr("Reset shear"));
+    }
+    if (macro) {
+        stack->endMacro();
+    }
+    emit m_view->statusChanged();
+    if (QWidget *vp = m_view->viewport()) {
+        vp->update();
     }
 }
