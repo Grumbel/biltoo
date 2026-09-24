@@ -41,17 +41,6 @@ void ImageView::releaseStickyZoom()
 
 
 
-/** True when intrinsic size is large enough that fitInView will not explode. */
-static bool itemHasReliableFrameSize(const ImageItem *item)
-{
-    if (!item) {
-        return false;
-    }
-    const QSize s = item->imageSize();
-    // QSize(1,1) placeholders produced ~5000% view scale via fitInView.
-    return s.width() > 8 && s.height() > 8;
-}
-
 void ImageView::cancelZoomRegion()
 {
     m_image.cancelZoomRegion();

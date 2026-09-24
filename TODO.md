@@ -2,16 +2,13 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2475.1-own-zoom-region** (base `7d823d8`).
+**Tip: biltoo-2475.2-drop-unused-frame-size-helper** (base `7d823d8`).
 
-### Ownership transfer
-- **ZoomRegionGesture** on ImageController (`imagecontroller_zoom.cpp`)
-- ImageView: thin `armZoomRegion` / `cancelZoomRegion` / try* routers
-
-### Stack
-2471–2474 · 2474.2 compile · **2475 zoom region**
+### Fix
+- Drop unused `itemHasReliableFrameSize` from `imageview_framing_image.cpp`
+  (live copy is in `imagecontroller_framing.cpp` after ownership move)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2475.1-own-zoom-region-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2475.2-drop-unused-frame-size-helper-7d823d8.bundle HEAD
 ```
