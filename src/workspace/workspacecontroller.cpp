@@ -775,7 +775,7 @@ void WorkspaceController::reloadFromDisk()
         m_view->hostBindBook().append(b);
         m_view->hostDisplayPipeline().scheduleImageLoad(path, static_cast<int>(ImageView::LoadAdd));
     }
-    m_view->flashHud(ImageView::tr("Reload"), ImageView::tr("Workspace"));
+    m_view->hostHud().showFlash(ImageView::tr("Reload"), ImageView::tr("Workspace"), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
     emit m_view->statusChanged();
 }
 
@@ -832,7 +832,7 @@ void WorkspaceController::hardReloadFromDisk()
     const QString detail = (paths.size() == 1)
         ? QFileInfo(paths.constFirst()).fileName()
         : ImageView::tr("%1 paths · %2 items").arg(paths.size()).arg(itemCount);
-    m_view->flashHud(ImageView::tr("Hard reload"), detail);
+    m_view->hostHud().showFlash(ImageView::tr("Hard reload"), detail, [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
 
     auto remaining = std::make_shared<int>(paths.size());
     auto tileTotal = std::make_shared<qint64>(0);
@@ -853,8 +853,7 @@ void WorkspaceController::hardReloadFromDisk()
                 b.path, static_cast<int>(ImageView::LoadAdd));
         }
         if (*tileTotal > 0) {
-            m_view->flashHud(ImageView::tr("Hard reload"),
-                             ImageView::tr("%1 Store tiles removed").arg(*tileTotal));
+            m_view->hostHud().showFlash(ImageView::tr("Hard reload"), ImageView::tr("%1 Store tiles removed").arg(*tileTotal), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
         }
         emit m_view->statusChanged();
     };

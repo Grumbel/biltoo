@@ -11,7 +11,7 @@
 
 /**
  * Crop-mode HUD copy (titles/details). Translation context is "ImageView"
- * so existing .ts / tr catalogs stay valid. ImageView only calls flashHud.
+ * so existing .ts / tr catalogs stay valid. callers use hostHud().showFlash.
  */
 namespace CropFlash {
 

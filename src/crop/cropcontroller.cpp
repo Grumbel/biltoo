@@ -186,7 +186,7 @@ void CropController::applyAutoCrop()
 
 void CropController::flashCropHud(const CropFlash::Hud &hud)
 {
-    m_view->flashHud(hud.title, hud.detail);
+    m_view->hostHud().showFlash(hud.title, hud.detail, [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
 }
 
 // --- from src/imageview_crop_apply.cpp ---

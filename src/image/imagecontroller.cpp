@@ -184,7 +184,7 @@ void ImageController::reloadFromDisk()
     m_view->hostDisplayPipeline().purgeTilePathRam(path);
     // Force a fresh decode of the focused session image only.
     m_view->scheduleReplaceLoad(path);
-    m_view->flashHud(ImageView::tr("Reload"), QFileInfo(path).fileName());
+    m_view->hostHud().showFlash(ImageView::tr("Reload"), QFileInfo(path).fileName(), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
 }
 
 void ImageController::hardReloadFromDisk()
@@ -211,7 +211,7 @@ void ImageController::hardReloadFromDisk()
         for (int edge : ThumtooCache::kLadderEdges) {
             ThumtooCache::forgetPixelsSettled(path, edge);
         }
-        m_view->flashHud(ImageView::tr("Hard reload"), QFileInfo(path).fileName());
+        m_view->hostHud().showFlash(ImageView::tr("Hard reload"), QFileInfo(path).fileName(), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
         ThumtooCache::purgePathDurable(path, [this, path](qint64 /*tiles*/) {
             ThumtooCache::scheduleProbe(path);
             m_view->scheduleReplaceLoad(path);
@@ -251,7 +251,7 @@ void ImageController::hardReloadFromDisk()
     if (paths.isEmpty()) {
         return;
     }
-    m_view->flashHud(ImageView::tr("Hard reload"), QFileInfo(path).fileName());
+    m_view->hostHud().showFlash(ImageView::tr("Hard reload"), QFileInfo(path).fileName(), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
 
     auto remaining = std::make_shared<int>(paths.size());
     auto tileTotal = std::make_shared<qint64>(0);
@@ -270,8 +270,7 @@ void ImageController::hardReloadFromDisk()
             m_view->scheduleReplaceLoad(b.path);
         }
         if (*tileTotal > 0) {
-            m_view->flashHud(ImageView::tr("Hard reload"),
-                             ImageView::tr("%1 Store tiles removed").arg(*tileTotal));
+            m_view->hostHud().showFlash(ImageView::tr("Hard reload"), ImageView::tr("%1 Store tiles removed").arg(*tileTotal), [v = m_view]() { if (v && v->viewport()) v->viewport()->update(); });
         }
         emit m_view->statusChanged();
     };
