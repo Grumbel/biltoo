@@ -6,6 +6,10 @@
 
 #include "workspace/workspacecontroller.h"
 #include "imageview.h"
+#include "item/itemworld.h"
+#include "session/sessionbindbook.h"
+#include "session/sessionappearance.h"
+#include "util/biltoo_thread.h"
 #include "gallery/gallerycontroller.h"
 #include "imageitem.h"
 #include "display/displaypipelinecontroller.h"
@@ -434,3 +438,153 @@ void WorkspaceController::finishPathsSet(bool haveIds, const QStringList &paths,
     emit m_view->statusChanged();
     emit m_view->workspacePathsChanged();
 }
+
+void WorkspaceController::setPaths(const QStringList &paths,
+                                   const QVector<SessionImageId> &sessionIds)
+{
+    ASSERT_GUI_THREAD();
+    GUI_BUDGET("WorkspaceController::setPaths");
+    if (m_view->isImageMode()) {
+        return;
+    }
+
+    // Phase 1: cache-only sizes + LQIP so the first pack uses real aspects.
+    if (m_view->isGalleryMode() && !paths.isEmpty()) {
+        m_view->hostPrimeGalleryGeometryFromCache(paths);
+        TtfpTrace::mark("after_primeGalleryGeometryFromCache");
+    }
+
+    const bool haveIds = !sessionIds.isEmpty();
+
+    // --- Remove tiles that are not part of the new session -------------------
+    destroyDoomedItems(collectDoomedItems(paths, sessionIds));
+
+    // Align lengths: missing ids stay invalid (unbound rows).
+    m_view->pathOrderSetOrder(paths, sessionIds);
+
+    // Gallery size-first for every packaged layout (including grid).
+    // Gate blocks tiles until the session size set settles.
+    if (m_view->isGalleryMode() && !paths.isEmpty()
+        && m_view->hostGallerySizeResolve().startIfNeeded(paths)) {
+        TtfpTrace::mark("gallery_size_resolve_await_sizes");
+        m_view->hostGalleryDecodeBook().setDeferPopulate(true);
+    } else {
+        m_view->hostGalleryDecodeBook().setDeferPopulate(false);
+    }
+
+    // Gallery always virtualizes: placeholders + soft/full ladder. The old
+    // threshold (80) left smaller PDF/DjVu sessions with *no* tiles — LoadAdd
+    // full decode is null for //page: under thumtoo, and soft only upgrades
+    // existing items. ImageView/filmstrip still load because they do not depend
+    // on this path.
+    const bool virtualize = m_view->isGalleryMode();
+
+    // Progressive size gate: do not create the full session yet, but seed the
+    // ordered prefix that already has definitive sizes (warm memo / book) so
+    // masonry/flow can paint immediately — same idea as filmstrip.
+    // NEVER hide existing live tiles (stash restore).
+    if (m_view->isGalleryMode() && m_view->hostGalleryDecodeBook().isDeferPopulate()
+        && m_view->hostGallerySizeResolve().active()) {
+        // Seed any already-sized prefix, but stay hidden until gate-complete pack.
+        // Showing unstacked items at the origin (previous behaviour after the
+        // pack-once change) made the whole session look like one pile.
+        (void)m_view->hostGallery().ensurePlaceholders();
+        finishPathsSet(haveIds, paths, sessionIds);
+        return;
+    }
+
+    // --- Ensure one live tile per session row (duplicates = separate items) ---
+    QSet<ImageItem *> claimed;
+    for (int i = 0; i < paths.size(); ++i) {
+        const QString &path = paths.at(i);
+        const SessionImageId sid = (haveIds && i < sessionIds.size())
+            ? sessionIds.at(i)
+            : kInvalidSessionImageId;
+
+        ImageItem *existing = nullptr;
+        if (sid != kInvalidSessionImageId) {
+            existing = m_view->findItemBySessionId(sid);
+        }
+        if (!existing) {
+            // Next unclaimed live tile with this path (occurrence match).
+            for (ImageItem *item : m_view->liveItems()) {
+                if (!item || item->path() != path || claimed.contains(item)) {
+                    continue;
+                }
+                // Do not steal a tile already bound to a different session id.
+                if (sid != kInvalidSessionImageId
+                    && item->sessionId() != kInvalidSessionImageId
+                    && item->sessionId() != sid) {
+                    continue;
+                }
+                existing = item;
+                break;
+            }
+        }
+        if (existing) {
+            claimed.insert(existing);
+            const bool newlyBoundId = (sid != kInvalidSessionImageId
+                                      && existing->sessionId() == kInvalidSessionImageId);
+            if (newlyBoundId) {
+                m_view->setItemSessionId(existing, sid);
+            } else {
+                m_view->refreshSessionIndexCache(existing);
+            }
+            // sessionIndex is session-list order, not pack row (Stage 2 residual).
+            if (m_view->sessionListIndex(existing) < 0) {
+                existing->setSessionIndex(i);
+            }
+            if (newlyBoundId && existing->hasDecodedPixels()
+                && sid != kInvalidSessionImageId) {
+                if (!m_view->itemWorld().hasDurableAppearance(sid)) {
+                    continue;
+                }
+                const WorkspaceItemState app = m_view->sessionAppearanceValue(sid);
+                // Crop / content bakes need a full-source redecode; colour grade
+                // alone can be applied in place via the central content path.
+                if (app.hasCrop || app.contentHFlip || app.contentVFlip
+                    || app.contentQuarterTurns != 0) {
+                    m_view->hostDisplayPipeline().hostClearDecodedPixels(existing);
+                    m_view->hostDisplayPipeline().galleryDecodeResetPath(path);
+                    m_view->takePendingWorkspacePath(path);
+
+                    PendingSessionBind b;
+                    b.path = path;
+                    b.id = sid;
+                    b.index = i;
+                    m_view->hostBindBook().append(b);
+                    if (m_view->isGalleryMode()) {
+                        m_view->hostDisplayPipeline().scheduleGalleryDecode(path);
+                    } else {
+                        m_view->hostDisplayPipeline().scheduleImageLoad(path, ImageView::LoadAdd);
+                    }
+                } else if (SessionAppearance::hasContentAppearance(app)) {
+                    m_view->hostDisplayPipeline().rematerializeItemContent(existing, app);
+                }
+            }
+            continue;
+        }
+
+        // No tile for this session row yet — create / schedule one.
+        if (sid != kInvalidSessionImageId || i >= 0) {
+            PendingSessionBind b;
+            b.path = path;
+            b.id = sid;
+            b.index = i;
+            m_view->hostBindBook().append(b);
+        }
+
+        if (virtualize) {
+            // Gallery is viewport-virtualized: path order + size book + layout plan
+            // hold the session; ImageItems exist only for the visible window
+            // (GalleryController::syncVirtualWindow). Do not create N items here.
+            continue;
+        } else {
+            m_view->hostDisplayPipeline().scheduleImageLoad(path, ImageView::LoadAdd);
+        }
+    }
+    TtfpTrace::mark("after_createPlaceholders");
+
+    finishPathsSet(haveIds, paths, sessionIds);
+}
+

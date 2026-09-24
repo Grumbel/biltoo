@@ -122,6 +122,9 @@ public:
     /** Post path membership: reorder, rebind, gallery pack/decode pulse. */
     void finishPathsSet(bool haveIds, const QStringList &paths,
                         const QVector<SessionImageId> &sessionIds);
+    /** Session membership ensure + load schedule (Gallery/Workspace). */
+    void setPaths(const QStringList &paths,
+                  const QVector<SessionImageId> &sessionIds);
     int pathOccurrenceCount(const QString &path) const;
     bool pathOnLiveCanvas(const QString &path) const;
     void selectAllCanvasItems();

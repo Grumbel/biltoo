@@ -501,3 +501,7 @@ Product shell (minimal):
     workspace seed selection, gallery pack/decode pulse); ImageView thin
     private router used by setWorkspacePaths.
 
+52. **biltoo-2510:** WorkspaceController owns setPaths (session membership
+    ensure, doomed destroy, path order, gallery size-gate, load schedule);
+    ImageView thin public router. Host exposes hostPrimeGalleryGeometryFromCache.
+

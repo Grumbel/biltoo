@@ -110,3 +110,9 @@
     void hostRememberItemState(ImageItem *item) { rememberItemState(item); }
     bool hostPreserveUndoOnDestroy() const { return m_preserveUndoOnDestroy; }
 
+    /** Controller host: cache-only sizes + LQIP before first gallery pack. */
+    void hostPrimeGalleryGeometryFromCache(const QStringList &paths)
+    {
+        primeGalleryGeometryFromCache(paths);
+    }
+
