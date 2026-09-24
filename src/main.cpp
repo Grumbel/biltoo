@@ -293,6 +293,7 @@ int main(int argc, char *argv[])
                "  BILTOO_TTFP                time-to-first-paint traces\n"
                "  THUMTOO_DEBUG_OVERLAY      watermark decoded samples (soft vs full)\n"
                "  BILTOO_DEBUG_OVERLAY       alias for THUMTOO_DEBUG_OVERLAY\n"
+               "  BILTOO_GUI_BUDGET_LOG      log GUI_BUDGET exceeds (off by default)\n"
                "  BILTOO_GUI_BUDGET_STRICT   abort when GUI_BUDGET is exceeded\n"
                "\n"
                "Thumtoo cache policy (mostly ignored on modern thumtoo)\n"
