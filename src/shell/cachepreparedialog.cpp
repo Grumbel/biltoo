@@ -5,13 +5,13 @@
 #include "host/thumtoocache.h"
 #include "util/biltoo_thread.h"
 
+#include <QCloseEvent>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QGroupBox>
-#include <QHBoxLayout>
 #include <QLabel>
-#include <QMessageBox>
+#include <QPointer>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QThreadPool>
@@ -116,32 +116,7 @@ CachePrepareDialog::CachePrepareDialog(const QStringList &sessionPaths, QWidget 
         return;
     }
 
-    // Stats off the GUI (Store has_tile).
-    QThreadPool::globalInstance()->start([this]() {
-        ASSERT_NOT_GUI_THREAD();
-        const ThumtooCache::TilePrepareStats st =
-            ThumtooCache::queryTilePrepareStats(m_paths);
-        QMetaObject::invokeMethod(
-            this,
-            [this, st]() {
-                m_statsLabel->setText(
-                    tr("%1 images in session\n"
-                       "%2 already have tiles\n"
-                       "%3 still need tiles%4")
-                        .arg(st.total)
-                        .arg(st.withTiles)
-                        .arg(st.missingTiles)
-                        .arg(st.unsupported > 0
-                                 ? tr("\n%1 unsupported").arg(st.unsupported)
-                                 : QString()));
-                if (st.missingTiles == 0 && st.total > 0) {
-                    m_statusLabel->setText(
-                        tr("All session images already have tiles. "
-                           "Start again to rebuild at a finer detail level."));
-                }
-            },
-            Qt::QueuedConnection);
-    });
+    refreshStats();
 }
 
 CachePrepareDialog::~CachePrepareDialog()
@@ -149,29 +124,65 @@ CachePrepareDialog::~CachePrepareDialog()
     m_cancel.store(true);
 }
 
+void CachePrepareDialog::reject()
+{
+    if (m_running) {
+        cancelPrepare();
+        return;
+    }
+    QDialog::reject();
+}
+
+void CachePrepareDialog::closeEvent(QCloseEvent *event)
+{
+    if (m_running) {
+        cancelPrepare();
+        event->ignore();
+        return;
+    }
+    QDialog::closeEvent(event);
+}
+
+void CachePrepareDialog::applyStatsLabel(int total, int withTiles, int missing, int unsupported)
+{
+    m_statsLabel->setText(
+        tr("%1 images in session\n"
+           "%2 already have tiles\n"
+           "%3 still need tiles%4")
+            .arg(total)
+            .arg(withTiles)
+            .arg(missing)
+            .arg(unsupported > 0 ? tr("\n%1 unsupported").arg(unsupported) : QString()));
+    if (missing == 0 && total > 0 && !m_running) {
+        m_statusLabel->setText(
+            tr("All session images already have tiles. "
+               "Start again to fill a finer detail level if needed."));
+    }
+}
+
 void CachePrepareDialog::refreshStats()
 {
-    // Reserved for post-run refresh (invoked from onFinished).
     if (!ThumtooCache::isAvailable() || m_paths.isEmpty()) {
         return;
     }
-    QThreadPool::globalInstance()->start([this]() {
+    m_statsLabel->setText(tr("Scanning…"));
+    const QStringList paths = m_paths;
+    QPointer<CachePrepareDialog> self(this);
+    QThreadPool::globalInstance()->start([self, paths]() {
         ASSERT_NOT_GUI_THREAD();
         const ThumtooCache::TilePrepareStats st =
-            ThumtooCache::queryTilePrepareStats(m_paths);
+            ThumtooCache::queryTilePrepareStats(paths);
+        if (!self) {
+            return;
+        }
         QMetaObject::invokeMethod(
-            this,
-            [this, st]() {
-                m_statsLabel->setText(
-                    tr("%1 images in session\n"
-                       "%2 already have tiles\n"
-                       "%3 still need tiles%4")
-                        .arg(st.total)
-                        .arg(st.withTiles)
-                        .arg(st.missingTiles)
-                        .arg(st.unsupported > 0
-                                 ? tr("\n%1 unsupported").arg(st.unsupported)
-                                 : QString()));
+            self,
+            [self, st]() {
+                if (!self) {
+                    return;
+                }
+                self->applyStatsLabel(st.total, st.withTiles, st.missingTiles,
+                                      st.unsupported);
             },
             Qt::QueuedConnection);
     });
@@ -200,20 +211,37 @@ void CachePrepareDialog::startPrepare()
 
     const QStringList paths = m_paths;
     std::atomic<bool> *cancel = &m_cancel;
-    QThreadPool::globalInstance()->start([this, paths, minScale, cancel]() {
+    QPointer<CachePrepareDialog> self(this);
+    QThreadPool::globalInstance()->start([self, paths, minScale, cancel]() {
         ASSERT_NOT_GUI_THREAD();
         ThumtooCache::prepareTiles(
             paths, minScale,
-            [this](int done, int total, int ok, int skipped, int failed) {
+            [self](int done, int total, int ok, int skipped, int failed) {
+                if (!self) {
+                    return;
+                }
                 QMetaObject::invokeMethod(
-                    this,
-                    [this, done, total, ok, skipped, failed]() {
-                        onProgress(done, total, ok, skipped, failed);
+                    self,
+                    [self, done, total, ok, skipped, failed]() {
+                        if (!self) {
+                            return;
+                        }
+                        self->onProgress(done, total, ok, skipped, failed);
                     },
                     Qt::QueuedConnection);
             },
             cancel);
-        QMetaObject::invokeMethod(this, [this]() { onFinished(); }, Qt::QueuedConnection);
+        if (!self) {
+            return;
+        }
+        QMetaObject::invokeMethod(
+            self,
+            [self]() {
+                if (self) {
+                    self->onFinished();
+                }
+            },
+            Qt::QueuedConnection);
     });
 }
 

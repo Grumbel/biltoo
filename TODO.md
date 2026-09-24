@@ -2,17 +2,15 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2631.1-prepare-tile-cache-dialog** (base `560319b`).
+**Tip: biltoo-2631.2-prepare-tile-cache-verify** (base `560319b`).
 
-### This tip — Prepare Tile Cache dialog
-- Edit → **Prepare Tile Cache…**
-- Dialog: session cache stats (have / missing / unsupported), detail level
-  (full→overview → min_scale 0..3), progress bar, cancel
-- `ThumtooCache::queryTilePrepareStats` + `prepareTiles` (worker; waits on
-  pyramid completion; LQIP opportunistic via thumtoo tile encode)
-- Tiles only — no ladder / sizes-only UI
+### Stack
+- 2631.1 — Prepare Tile Cache dialog (feature)
+- 2631.2 — verify/harden: QPointer worker callbacks, reject/close while running
+  cancels instead of destroying, durable min_scale memo uses requested minS,
+  shared stats label helper
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2631.1-prepare-tile-cache-dialog-560319b.bundle HEAD
+git pull --ff-only …/biltoo-2631.2-prepare-tile-cache-verify-560319b.bundle HEAD
 ```

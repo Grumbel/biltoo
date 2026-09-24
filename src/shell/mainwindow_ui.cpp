@@ -1917,6 +1917,11 @@ void MainWindow::populateActionHelpTexts()
     setHelp(m_preferencesAct, tr(
         "<p>Application preferences: slideshow, background, HUD, thumbnail defaults, "
         "and more.</p>"));
+    setHelp(m_prepareTileCacheAct, tr(
+        "<p>Build durable <b>zoom tiles</b> for every image in the current session "
+        "(same idea as <code>thumtoo-prepare --tiles</code>). Choose a detail level, "
+        "watch progress, and cancel if needed. Small LQIP previews are filled "
+        "automatically while tiles are written. Does not change your original files.</p>"));
     setHelp(m_keyboardShortcutsAct, tr(
         "<p>Dialog listing main keyboard shortcuts. For longer per-command text, keep "
         "the Help panel open and hover commands, or open Help → Guides.</p>"));

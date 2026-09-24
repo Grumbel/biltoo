@@ -8,6 +8,7 @@
 #include <QStringList>
 #include <atomic>
 
+class QCloseEvent;
 class QComboBox;
 class QLabel;
 class QProgressBar;
@@ -25,6 +26,11 @@ public:
     explicit CachePrepareDialog(const QStringList &sessionPaths, QWidget *parent = nullptr);
     ~CachePrepareDialog() override;
 
+    void reject() override;
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private slots:
     void refreshStats();
     void startPrepare();
@@ -32,6 +38,7 @@ private slots:
 
 private:
     void setBusy(bool busy);
+    void applyStatsLabel(int total, int withTiles, int missing, int unsupported);
     void onProgress(int done, int total, int ok, int skipped, int failed);
     void onFinished();
 

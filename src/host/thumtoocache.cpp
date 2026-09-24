@@ -2140,13 +2140,16 @@ void prepareTiles(const QStringList &paths, int minScale,
         const QString pathCopy = path;
         c->request_tile_pyramid(
             uri, minS, /*max_scale=*/-1,
-            [pathCopy, &done, &ok, &failed, &doneMu, &doneCv, &remaining, &report](
-                std::string, int, int, int, std::optional<thumtoo::TileBlob> tile) {
+            [pathCopy, minS, &done, &ok, &failed, &doneMu, &doneCv, &remaining,
+             &report](std::string, int, int, int,
+                      std::optional<thumtoo::TileBlob> tile) {
                 // Completion marker uses codec "pyramid-ok"; nullopt = fail.
                 const bool pyramidOk = tile && tile->codec == "pyramid-ok";
                 if (pyramidOk) {
                     ok.fetch_add(1);
-                    ProcessMemos::instance().noteDurableYes(pathCopy, 0);
+                    // Finest scale we asked for (0 = full res). Coarser-only
+                    // runs still mark durable yes at that min_scale.
+                    ProcessMemos::instance().noteDurableYes(pathCopy, minS);
                     const QString p = pathCopy;
                     QMetaObject::invokeMethod(
                         bridge(),
