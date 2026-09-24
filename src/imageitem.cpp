@@ -286,7 +286,7 @@ void ImageItem::setItemShear(qreal shear)
 void ImageItem::setItemRotation(qreal degrees)
 {
     // Placement only — never content. Content orient is absolute materialize
-    // from host-raw via ImageView::bakeItemRotate90 (ItemWorld contentBake).
+    // from host-raw via DisplayPipelineController::bakeItemRotate90 (ItemWorld contentBake).
     m_rotation = PlacementLinear::normalizeDegrees(degrees);
     applyLocalTransform();
     prepareGeometryChange();

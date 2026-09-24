@@ -154,7 +154,7 @@ WorkspaceItemState orientAuthorityWant(bool hasContentOrient,
  * True when @p want itself carries orient/crop (flips, quarter turns, crop).
  * Used with orientAuthorityWant so the **first** content rotate/crop still
  * drives layoutSize: ItemWorld hasContentOrient is still false until
- * setContentBake runs *after* applyContentLayoutSize in bakeItemRotate90.
+ * setContentBake runs *after* applyContentLayoutSize in DisplayPipelineController::bakeItemRotate90.
  */
 [[nodiscard]] bool wantSpecifiesContentOrient(const WorkspaceItemState &want);
 

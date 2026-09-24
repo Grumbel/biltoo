@@ -367,7 +367,7 @@ public:
     void rotateRight();
     /**
      * Sole content ±90° path (Workspace chrome, toolbar, keyboard).
-     * ContentXform bake + mode framing. Prefer this over bakeItemRotate90
+     * ContentXform bake (pipeline) + mode framing.
      * from UI code so chrome and shortcuts cannot diverge.
      */
     void rotateContentByQuarterTurns(ImageItem *item, int quarterTurns);

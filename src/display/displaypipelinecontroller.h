@@ -114,7 +114,7 @@ public:
     void clearStaleAppliedFingerprintIfNeeded(ImageItem *item);
     /**
      * Durable ±90° content bake: want composition, rematerialize, ItemWorld, undo.
-     * ImageView::bakeItemRotate90 forwards here.
+     * Called from rotateContentByQuarterTurns and content chrome.
      */
     void bakeItemRotate90(ImageItem *item, int quarterTurns);
     /**

@@ -131,7 +131,6 @@
     void attachDisplaySample(ImageItem *item, const QImage &display,
                              const WorkspaceItemState &want,
                              SessionAppearance::PixelKind kind);
-    void bakeItemRotate90(ImageItem *item, int quarterTurns);
     void bakeItemFlip(ImageItem *item, bool horizontal, bool vertical);
 
     void appendThumtooDebugStatus(QString *text, ImageItem *item) const;
