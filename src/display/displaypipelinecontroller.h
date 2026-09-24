@@ -97,6 +97,13 @@ public:
     void attachDisplaySample(ImageItem *item, const QImage &display,
                              const WorkspaceItemState &want,
                              SessionAppearance::PixelKind kind);
+
+    /**
+     * Propagate pixel / flip / orientation session edits to matching live and
+     * stashed peers (same SessionImageId). Placement (pos, scale, free tilt)
+     * is preserved on each peer.
+     */
+    void syncSessionEditPeers(ImageItem *item);
     /**
      * Intrinsic = ContentXform::layoutSize(file-native, want) — never sample dims.
      * Sole layout writer after pixel install (attachDisplaySample calls this).

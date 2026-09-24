@@ -12,90 +12,6 @@
 #include "imageitem.h"
 #include "item/itemcomponents.h"
 
-void ImageView::syncSessionEditPeers(ImageItem *item)
-{
-    // Propagate pixel / flip / orientation session edits to matching canvas and
-    // stashed instances. Placement (pos, scale, free tilt) is preserved.
-    const QString path = item->path();
-    // Strict identity: only a valid SessionImageId. Never m_session.identity().currentIdValue()
-    // fallback here — that would push this item's pixels onto another tile.
-    const SessionImageId sessionId = item->sessionId();
-    const QImage src = item->sourceImage();
-    const ItemComponents::Placement itemPl = item->placement();
-    const bool hFlip = itemPl.hFlip;
-    const bool vFlip = itemPl.vFlip;
-
-    QList<ImageItem *> peers;
-    auto collect = [&](const QList<ImageItem *> &list) {
-        for (ImageItem *other : list) {
-            if (other && other != item) {
-                peers.append(other);
-            }
-        }
-    };
-    collect(m_items);
-    collect(m_workspace.stashedItems());
-    collect(m_gallery.stashedItems());
-
-    auto shouldSync = [&](ImageItem *other) -> bool {
-        if (!other || other == item) {
-            return false;
-        }
-        // Same stable session-image id only. Path / list-index must never merge
-        // independent duplicates on the Workspace.
-        if (sessionId == kInvalidSessionImageId || other->sessionId() != sessionId) {
-            return false;
-        }
-        if (other->path() != path) {
-            qCritical("commitItemSessionEdit: SessionImageId %lld bound to different paths (%s vs %s) — refusing peer sync",
-                      static_cast<long long>(sessionId),
-                      qPrintable(path), qPrintable(other->path()));
-            return false;
-        }
-        return true;
-    };
-
-    auto syncOne = [&](ImageItem *other) {
-        if (!shouldSync(other)) {
-            return;
-        }
-        // Already-baked display from the edited peer. Must replace peers fully:
-        // setPreviewImage is a no-op when the peer still holds full m_source
-        // (Gallery stash after Image crop). That left crop intrinsic + full
-        // pixels for one frame / until next soft install (Gallery return glitch).
-        const QImage baked = !src.isNull() ? src
-            : (!item->previewImage().isNull() ? item->previewImage()
-                                              : item->displayImage());
-        if (!baked.isNull()) {
-            m_displayPipeline->hostClearDecodedPixels(other);
-            // Already-baked display from the editor. Attach via the same gate
-            // as install (layout + applied + chrome) — do not put into ImageCache.
-            WorkspaceItemState want;
-            if (sessionId != kInvalidSessionImageId) {
-                want = sessionAppearanceValue(sessionId);
-            }
-            // Applied fingerprint is mid-edit authority when store slot is empty.
-            if (!SessionAppearance::hasContentAppearance(want) && itemHasAppliedContentXform(item)) {
-                itemAppliedContentXform(item).applyToState(want);
-            }
-            const auto kind = !src.isNull()
-                ? SessionAppearance::PixelKind::FullSource
-                : SessionAppearance::PixelKind::SoftPreview;
-            m_displayPipeline->attachDisplaySample(other, baked, want, kind);
-        } else if (sessionId != kInvalidSessionImageId) {
-            m_displayPipeline->applyContentLayoutSize(other, sessionAppearanceValue(sessionId));
-        }
-        {
-            ItemComponents::Placement pl = other->placement();
-            pl.hFlip = hFlip;
-            pl.vFlip = vFlip;
-            other->applyPlacement(pl);
-        }
-    };
-    for (ImageItem *other : peers) {
-        syncOne(other);
-    }
-}
 
 
 
@@ -113,7 +29,7 @@ void ImageView::commitItemSessionEdit(ImageItem *item)
     }
     persistSessionAppearanceSlot(item);
     validateUniqueLiveSessionIds("commitItemSessionEdit");
-    syncSessionEditPeers(item);
+    m_displayPipeline->syncSessionEditPeers(item);
     m_workspace.updateSavedAppearanceFromItem(item);
     // All modes / widgets that depend on content aspect or appearance pixels.
     propagateSessionAppearanceToViews(item);

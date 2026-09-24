@@ -105,7 +105,6 @@
 
     void persistSessionAppearanceSlot(ImageItem *item);
 
-    void syncSessionEditPeers(ImageItem *item);
 
 
     /**
