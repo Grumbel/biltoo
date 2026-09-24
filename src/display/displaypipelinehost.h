@@ -38,6 +38,7 @@ class GalleryDecodeBook;
 class ViewFraming;
 class GallerySizeResolve;
 class TextLayerSession;
+class TextLayerController;
 class WorkspaceController;
 class TileNeighborPrefetch;
 class LayoutPrefs;
