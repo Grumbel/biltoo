@@ -86,17 +86,6 @@ Qt::AspectRatioMode ImageView::currentFitAspectMode() const
 
 
 
-QSize ImageView::imageSize() const
-{
-    if (ImageItem *item = targetItem()) {
-        return item->imageSize();
-    }
-    if (ImageItem *item = primaryItem()) {
-        return item->imageSize();
-    }
-    return {};
-}
-
 int ImageView::itemCount() const
 {
     return m_items.size();

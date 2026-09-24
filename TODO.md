@@ -2,19 +2,19 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2617.1-peel-itempaths-sessionids** (base `7d823d8`).
+**Tip: biltoo-2618.1-drop-unused-imagesize** (base `7d823d8`).
 
 ### This tip
-Peel `itemPaths` / `itemSessionIds` — single MainWindow call site now walks
-`liveItems()`. Header ~518 lines.
+Removed unused `ImageView::imageSize()` (no external callers; items expose
+`ImageItem::imageSize()`). Header ~517 lines.
 
-### Remaining shell queries on ImageView
-- `selectedPaths` (mode-aware; keep as shell API)
-- `pendingDecodeCount` (multi-controller gather)
-- `imageSize` / `currentPath` (target/primary)
-- `statusText` / `hudFileName` / …
+### Remaining non-host public (intentional shell)
+- `selectedPaths`, `pendingDecodeCount`
+- `statusText`, `hudFileName`, `loadingStatusHudLine`
+- Mode shell: `setViewMode`, `setLayoutMode`, `reloadFromDisk`, `hardReloadFromDisk`
+- `currentPath` — host-surface declaration (crop display)
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2617.1-peel-itempaths-sessionids-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2618.1-drop-unused-imagesize-7d823d8.bundle HEAD
 ```

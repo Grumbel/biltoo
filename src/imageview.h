@@ -417,7 +417,6 @@ public:
     QString hudFileName() const;
     /** Dedicated HUD line: Loading · N active · cache vs file/archive. */
     QString loadingStatusHudLine() const;
-    QSize imageSize() const;
     int itemCount() const override;
     /** Paths of selected canvas items (Gallery/Workspace). Image mode: current path. */
     QStringList selectedPaths() const;
