@@ -2,25 +2,16 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2602.1-peel-transform-workspace-api** (base `7d823d8`).
+**Tip: biltoo-2603.1-fix-selectiongeometry-include** (base `7d823d8`).
 
-### Proper class split (not file moves)
-Co-locating `ImageView::` routers into domain dirs was **premature** —
-the class still owned the API surface. This tip starts **peeling** public
-methods off `ImageView` onto controllers that already own the bodies.
+### Fix
+`imageview_routers.cpp` used `SelectionGeometry::preferUniquePathItem` /
+`unionContentAabbs` without including `item/selectiongeometry.h` (moved
+with the domain co-location peel). Build broke on those two call sites.
 
-### Peeled off ImageView public API → call controllers instead
-
-| Was `ImageView::` | Now call |
-|-------------------|----------|
-| flip / rotate / zoom / sticky / armZoomRegion | `hostImage().…` (`ImageController`) |
-| resetContentAppearanceForTargets | `hostImage().…` |
-| setWorkspacePaths / addImageForSession / placeOrMoveImageAt | `hostWorkspace().setPaths` / `…` |
-| setTool | `hostWorkspace().setTool` |
-
-MainWindow + Gallery/Crop internal callers updated.
-`commitItemSessionEdit` stays on ImageView as `DisplayPipelineHost` override
-(routes to ImageController).
+### Prior tip (still current design direction)
+Proper class split (not file moves): peel public methods off `ImageView`
+onto controllers. See previous tip notes for what already moved.
 
 ### Still on ImageView (next peel candidates)
 - setViewMode / setLayoutMode / reloadFromDisk (multi-mode shell)
@@ -36,5 +27,5 @@ API + deleting methods over moving files.
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2602.1-peel-transform-workspace-api-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2603.1-fix-selectiongeometry-include-7d823d8.bundle HEAD
 ```
