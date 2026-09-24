@@ -120,7 +120,9 @@ See [MODE_OWNERSHIP.md](MODE_OWNERSHIP.md). Summary:
 3t. **Done:** Tier 0 privatize `sessionIdMatchesPath`, `restoreStickyPanAnchor` (imageview-only).
 3u. **Done:** `bakeItemFlip` private; chrome/toolbar call pipeline bakeItemFlip.
 3v. **Done:** drop ImageView::bakeItemRotate90 forward; rotateContent uses pipeline only.
-3w. **Done:** drop ImageView::bakeItemFlip + imageview_bake.cpp; pipeline sole bake entry.
+3w. **Done:** drop ImageView bake TU; pipeline sole bake entry.
+3x. **Done:** drop imageview_rematerialize.cpp and dead private pixel/layout forwards;
+    callers use DisplayPipelineController exclusively.
 4. Dual ImageView shares pipeline + ItemWorld, not a forked façade (0.3 product track).
 5. Residual on ImageView: interactive grade live-grade fast path + filmstrip emit;
     bake host helpers + sticky capture + clearTextSelection public for pipeline;

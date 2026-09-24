@@ -156,7 +156,6 @@ set(BILTOO_LIB_SOURCES
   src/imageview_color_grade.cpp
   src/imageview_crop_appearance.cpp
   src/imageview_appearance_commit.cpp
-  src/imageview_rematerialize.cpp
   src/imageview_item_state.cpp
   src/crop/cropgeometry.cpp
   src/crop/cropgeometry.h

@@ -198,20 +198,6 @@ ColorAdjustments ImageView::itemLiveColor(const ImageItem *item) const
     return item->colorAdjustments();
 }
 
-void ImageView::clearItemDecodedPixels(ImageItem *item)
-{
-    if (!item) {
-        return;
-    }
-    m_displayPipeline.hostClearDecodedPixels(item);
-}
-
-void ImageView::setItemIntrinsicSize(ImageItem *item, const QSize &size)
-{
-    // Gallery LQIP guard lives on DisplayPipelineController::hostSetIntrinsicSize.
-    m_displayPipeline.hostSetIntrinsicSize(item, size);
-}
-
 void ImageView::setItemSessionId(ImageItem *item, SessionImageId id)
 {
     if (!item) {
@@ -266,14 +252,6 @@ void ImageView::setItemSessionIndex(ImageItem *item, int index)
         return;
     }
     item->setSessionIndex(index);
-}
-
-void ImageView::setItemPreviewImage(ImageItem *item, const QImage &preview)
-{
-    if (!item) {
-        return;
-    }
-    m_displayPipeline.hostSetPreviewImage(item, preview);
 }
 
 void ImageView::persistGeometrySessionState(ImageItem *item, const ItemComponents::Placement &pl)
