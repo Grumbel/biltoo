@@ -31,6 +31,10 @@
 
 #include <QFileInfo>
 #include <QThreadPool>
+#include <QMutex>
+#include <QWaitCondition>
+#include <QMutexLocker>
+#include <memory>
 #include <QPointer>
 #include <QMetaObject>
 #include <cstdlib>
@@ -2302,3 +2306,64 @@ void DisplayPipelineController::bakeItemFlip(ImageItem *item, bool horizontal, b
                                    beforeSt, afterSt);
 }
 
+
+QImage DisplayPipelineController::blockingExportDisplayForItem(const ImageItem *item) const
+{
+    if (!item || item->path().isEmpty()) {
+        return {};
+    }
+    const QString path = item->path();
+    const WorkspaceItemState want = wantAppearanceForItem(item, item->sessionId());
+    const QImage fallback = item->displayImage();
+
+    struct Shared {
+        QMutex mu;
+        QWaitCondition cv;
+        QImage out;
+        bool done = false;
+    };
+    auto shared = std::make_shared<Shared>();
+    QThreadPool::globalInstance()->start([path, want, shared]() {
+        ASSERT_NOT_GUI_THREAD();
+        QImage host = ImageCache::get(path);
+        const int hostEdge = ImageCache::longEdge(host);
+        bool needLoad = host.isNull();
+        if (!needLoad) {
+            const QSize cached = ThumtooCache::cachedSize(path);
+            if (cached.isValid() && cached.width() > 0 && cached.height() > 0) {
+                const int native = ContentXform::longEdge(cached);
+                if (hostEdge < native) {
+                    needLoad = true;
+                }
+            } else if (hostEdge > 0 && hostEdge <= ThumtooCache::kBatchOverviewEdge) {
+                needLoad = true;
+            }
+        }
+        if (needLoad) {
+            const QImage loaded = ImageLoader::load(path);
+            if (!loaded.isNull()) {
+                host = loaded;
+                ImageCache::put(path, loaded);
+            }
+        }
+        QImage display;
+        if (host.isNull()) {
+            display = {};
+        } else if (!SessionAppearance::hasContentAppearance(want)
+                   && want.colorAdjust.isIdentity()) {
+            display = host;
+        } else {
+            display = SessionAppearance::materializeDisplay(
+                host, want, SessionAppearance::PixelKind::FullSource);
+        }
+        QMutexLocker lock(&shared->mu);
+        shared->out = display;
+        shared->done = true;
+        shared->cv.wakeOne();
+    });
+    QMutexLocker lock(&shared->mu);
+    while (!shared->done) {
+        shared->cv.wait(&shared->mu);
+    }
+    return shared->out.isNull() ? fallback : shared->out;
+}
