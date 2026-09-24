@@ -244,6 +244,24 @@ WorkspaceItemState durableFreezeFromParts(
     SessionImageId sid,
     int sessionIndex);
 
+/**
+ * Mode-leave flush: merge mid-edit applied ContentXform into durable appearance.
+ * Never promotes applied.colorAdjust (grade commit is sole color authority).
+ * When applied has no crop, keeps durable crop geometry.
+ * Sets sessionId and path on the result.
+ */
+WorkspaceItemState mergeAppliedIntoDurable(const WorkspaceItemState &durable,
+                                           const ContentXform::Value &applied,
+                                           SessionImageId sid,
+                                           const QString &path);
+
+/**
+ * Content-edit SessionImageId: item binding, else Image-mode current id.
+ */
+[[nodiscard]] SessionImageId resolveEditSessionId(SessionImageId itemSid,
+                                                  bool imageMode,
+                                                  SessionImageId currentImageSid);
+
 } // namespace SessionAppearance
 
 #endif // SESSIONAPPEARANCE_H

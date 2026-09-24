@@ -489,4 +489,46 @@ WorkspaceItemState durableFreezeFromParts(
     return s;
 }
 
+
+WorkspaceItemState mergeAppliedIntoDurable(const WorkspaceItemState &durable,
+                                           const ContentXform::Value &applied,
+                                           SessionImageId sid,
+                                           const QString &path)
+{
+    WorkspaceItemState s = durable;
+    // applyToState overwrites every field. Applied is orient/crop mid-edit
+    // fingerprint (and paint may mirror live lag into applied.colorAdjust via
+    // attachDisplaySample). Durable Color is only written by the grade commit
+    // path — never promote applied.colorAdjust.
+    const ColorAdjustments durableColor = s.colorAdjust;
+    const bool hadCrop = s.hasCrop;
+    const QRect durableCropRect = s.cropRect;
+    const QSize durableCropSource = s.cropSourceSize;
+    const qreal durableCropRot = s.cropRotation;
+    applied.applyToState(s);
+    s.colorAdjust = durableColor;
+    if (!applied.hasCrop && hadCrop) {
+        s.hasCrop = true;
+        s.cropRect = durableCropRect;
+        s.cropSourceSize = durableCropSource;
+        s.cropRotation = durableCropRot;
+    }
+    s.sessionId = sid;
+    s.path = path;
+    return s;
+}
+
+SessionImageId resolveEditSessionId(SessionImageId itemSid,
+                                    bool imageMode,
+                                    SessionImageId currentImageSid)
+{
+    if (itemSid != kInvalidSessionImageId) {
+        return itemSid;
+    }
+    if (imageMode) {
+        return currentImageSid;
+    }
+    return kInvalidSessionImageId;
+}
+
 } // namespace SessionAppearance

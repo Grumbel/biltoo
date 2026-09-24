@@ -113,11 +113,8 @@ SessionImageId ImageView::resolveContentEditSessionId(const ImageItem *item) con
     if (!item) {
         return kInvalidSessionImageId;
     }
-    SessionImageId sid = item->sessionId();
-    if (sid == kInvalidSessionImageId && isImageMode()) {
-        sid = m_session.identity().currentIdValue();
-    }
-    return sid;
+    return SessionAppearance::resolveEditSessionId(
+        item->sessionId(), isImageMode(), m_session.identity().currentIdValue());
 }
 
 WorkspaceItemState ImageView::appearanceCropMapForEdit(ImageItem *item,
@@ -323,26 +320,8 @@ void ImageView::flushAppliedContentToItemWorld()
         } else {
             continue;
         }
-        WorkspaceItemState s = sessionAppearanceValue(sid);
-        // applyToState overwrites every field. Applied is orient/crop mid-edit
-        // fingerprint (and paint may mirror live lag into applied.colorAdjust via
-        // attachDisplaySample). Durable Color is only written by the grade commit
-        // path (setTargetColorAdjustments) — never promote applied.colorAdjust.
-        const ColorAdjustments durableColor = s.colorAdjust;
-        const bool hadCrop = s.hasCrop;
-        const QRect durableCropRect = s.cropRect;
-        const QSize durableCropSource = s.cropSourceSize;
-        const qreal durableCropRot = s.cropRotation;
-        applied.applyToState(s);
-        s.colorAdjust = durableColor;
-        if (!applied.hasCrop && hadCrop) {
-            s.hasCrop = true;
-            s.cropRect = durableCropRect;
-            s.cropSourceSize = durableCropSource;
-            s.cropRotation = durableCropRot;
-        }
-        s.sessionId = sid;
-        s.path = item->path();
+        const WorkspaceItemState s = SessionAppearance::mergeAppliedIntoDurable(
+            sessionAppearanceValue(sid), applied, sid, item->path());
         m_itemWorld.setContentBake(sid, ItemComponents::contentBakeFromState(s));
         m_itemWorld.setCrop(sid, ItemComponents::cropFromState(s));
         // Intentionally no setColor — applied.colorAdjust is not durable authority.

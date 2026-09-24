@@ -2,24 +2,25 @@
 
 ## Status (2026-09-24)
 
-**Tip: biltoo-2559.1-own-view-matrix-shell** (base `7d823d8`).
+**Tip: biltoo-2560.1-own-applied-flush-pure** (base `7d823d8`).
 
 ### Ownership transfer
-- **ViewShellChrome::refreshScrollBarGeometry** — AsNeeded bar stale-range fix
-- **ViewShellChrome::applyModeViewportPolicy** — Gallery BoundingRect vs
-  Image/Workspace FullViewportUpdate
-- `ImageView::refreshScrollBarGeometry` / `setActiveMode` viewport policy thin
+- **SessionAppearance::mergeAppliedIntoDurable** — mode-leave applied→sparse merge
+  (no color promote; preserve durable crop when applied has none)
+- **SessionAppearance::resolveEditSessionId** — pure item / Image-mode current id
+- `flushAppliedContentToItemWorld` / `resolveContentEditSessionId` keep host
+  ItemWorld + live-tile orchestration
 
 ### Prior
-**2558.1** Own drawBackground on ViewShellChrome.
+**2559.1** Own view-matrix shell helpers on ViewShellChrome.
 
 ### Residual on ImageView (intentional)
 ViewMode, HudChrome, SessionShell, TileNeighborPrefetch,
 ImageSizeCoordinator, ImageModeSoftProvider, ItemWorld/path books,
 QUndoStack, display pipeline host APIs, fitItem/zoom host APIs (thin),
-setViewMode / setActiveMode mode shell (mode + layout bag; viewport policy on shell),
+setViewMode / setActiveMode mode shell,
 applyItemModeFlags (thin), pushItemGeometryCommand (body in item/),
-freezeItemAppearance host residual (orchestration only),
+freezeItemAppearance / flushApplied host residual (orchestration only),
 drawBackground / drawForeground one-line QGraphicsView overrides
 
 ### Next thinning candidates
@@ -28,5 +29,5 @@ drawBackground / drawForeground one-line QGraphicsView overrides
 
 ### Apply
 ```bash
-git pull --ff-only …/biltoo-2559.1-own-view-matrix-shell-7d823d8.bundle HEAD
+git pull --ff-only …/biltoo-2560.1-own-applied-flush-pure-7d823d8.bundle HEAD
 ```
